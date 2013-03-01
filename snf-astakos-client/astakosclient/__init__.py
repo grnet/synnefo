@@ -95,8 +95,8 @@ class AstakosClient():
 
         # Check for supported scheme
         p = urlparse.urlparse(astakos_url)
-        conn = _scheme_to_class(p.scheme, use_pool)
-        if conn is None:
+        conn_class = _scheme_to_class(p.scheme, use_pool)
+        if conn_class is None:
             m = "Unsupported scheme: %s" % p.scheme
             logger.error(m)
             raise ValueError(m)
@@ -106,7 +106,7 @@ class AstakosClient():
         self.logger = logger
         self.netloc = p.netloc
         self.scheme = p.scheme
-        self.conn = conn
+        self.conn_class = conn_class
 
     # ----------------------------------
     def retry(func):
@@ -153,7 +153,7 @@ class AstakosClient():
                                      len(body) if body else 0)
 
         # Get the connection object
-        conn = self.conn(self.netloc)
+        conn = self.conn_class(self.netloc)
 
         # Send request
         try:

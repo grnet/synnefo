@@ -35,6 +35,7 @@ import logging
 import urlparse
 import httplib
 import urllib
+from copy import copy
 
 import simplejson
 import objpool.http
@@ -85,7 +86,7 @@ class AstakosClient():
         """
         if logger is None:
             logger = logging.getLogger("astakosclient")
-        logger.debug("Intialize AstakosClient: astakos_url = %s"
+        logger.debug("Intialize AstakosClient: astakos_url = %s, "
                      "use_pool = %s" % (astakos_url, use_pool))
 
         if not astakos_url:
@@ -129,7 +130,7 @@ class AstakosClient():
     # ----------------------------------
     @retry
     def _callAstakos(self, token, request_path,
-                     headers={}, body={}, method="GET"):
+                     headers=None, body=None, method="GET"):
         """Make the actual call to Astakos Service"""
         self.logger.debug(
             "Make a %s request to %s with headers %s "
@@ -140,13 +141,17 @@ class AstakosClient():
             m = "Token not given"
             self.logger.error(m)
             raise ValueError(m)
+        if headers is None:
+            headers = {}
+        if body is None:
+            body = {}
 
         # Build request's header and body
         kwargs = {}
-        kwargs['headers'] = headers
+        kwargs['headers'] = copy(headers)
         kwargs['headers']['X-Auth-Token'] = token
         if body:
-            kwargs['body'] = body
+            kwargs['body'] = copy(body)
             kwargs['headers'].setdefault(
                 'content-type', 'application/octet-stream')
         kwargs['headers'].setdefault('content-length',

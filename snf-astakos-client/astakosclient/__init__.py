@@ -73,12 +73,10 @@ class AstakosClient():
     """AstakosClient Class Implementation"""
 
     # ----------------------------------
-    def __init__(self, token, astakos_url,
-                 use_pool=False, retry=0, logger=None):
+    def __init__(self, astakos_url, use_pool=False, retry=0, logger=None):
         """Intialize AstakosClient Class
 
         Keyword arguments:
-        token       -- user's token (string)
         astakos_url -- i.e https://accounts.example.com (string)
         use_pool    -- use objpool for http requests (boolean)
         retry       -- how many time to retry (integer)
@@ -90,11 +88,6 @@ class AstakosClient():
         logger.debug("Intialize AstakosClient: astakos_url = %s"
                      "use_pool = %s" % (astakos_url, use_pool))
 
-        # Check Input
-        if not token:
-            m = "Token not given"
-            logger.error(m)
-            raise ValueError(m)
         if not astakos_url:
             m = "Astakos url not given"
             logger.error(m)
@@ -108,10 +101,9 @@ class AstakosClient():
             logger.error(m)
             raise ValueError(m)
 
-        # Save token and url
+        # Save astakos_url etc. in our class
         self.retry = retry
         self.logger = logger
-        self.token = token
         self.netloc = p.netloc
         self.scheme = p.scheme
         self.conn = conn
@@ -136,16 +128,23 @@ class AstakosClient():
 
     # ----------------------------------
     @retry
-    def _callAstakos(self, request_path, headers={}, body={}, method="GET"):
+    def _callAstakos(self, token, request_path,
+                     headers={}, body={}, method="GET"):
         """Make the actual call to Astakos Service"""
         self.logger.debug(
             "Make a %s request to %s with headers %s "
             "and body %s" % (method, request_path, headers, body))
 
+        # Check Input
+        if not token:
+            m = "Token not given"
+            self.logger.error(m)
+            raise ValueError(m)
+
         # Build request's header and body
         kwargs = {}
         kwargs['headers'] = headers
-        kwargs['headers']['X-Auth-Token'] = self.token
+        kwargs['headers']['X-Auth-Token'] = token
         if body:
             kwargs['body'] = body
             kwargs['headers'].setdefault(
@@ -172,26 +171,29 @@ class AstakosClient():
         return simplejson.loads(unicode(data))
 
     # ------------------------
-    def authenticate(self, usage=False):
+    def authenticate(self, token, usage=False):
         """Check if user is authenticated Astakos user
 
         Keyword arguments:
+        token   -- user's token (string)
         usage   -- return usage information for user (boolean)
 
         In case of success return user information (json parsed format).
         Otherwise raise an AstakosClientException.
 
         """
+        # Send request
         auth_path = "/im/authenticate"
         if usage:
             auth_path += "?usage=1"
-        return self._callAstakos(auth_path)
+        return self._callAstakos(token, auth_path)
 
     # ----------------------------------
-    def getDisplayNames(self, uuids):
+    def getDisplayNames(self, token, uuids):
         """Return a uuid_catalog dictionary for the given uuids
 
         Keyword arguments:
+        token   -- user's token (string)
         uuids   -- list of user ids (list of strings)
 
         The returned uuid_catalog is a dictionary with uuids as
@@ -202,17 +204,18 @@ class AstakosClient():
         req_body = simplejson.dumps({'uuids': uuids})
         req_path = "/user_catalogs"
 
-        data = self._callAstakos(req_path, req_headers, req_body, "POST")
+        data = self._callAstakos(
+            token, req_path, req_headers, req_body, "POST")
         # XXX: check if exists
         return data.get("uuid_catalog")
 
-    def getDisplayName(self, uuid):
+    def getDisplayName(self, token, uuid):
         """Return the displayName of a uuid (see getDisplayNames)"""
         if not uuid:
             m = "No uuid was given"
             self.logger.error(m)
             raise ValueError(m)
-        uuid_dict = self.getDisplayNames([uuid])
+        uuid_dict = self.getDisplayNames(token, [uuid])
         # XXX: check if exists
         return uuid_dict.get(uuid)
 

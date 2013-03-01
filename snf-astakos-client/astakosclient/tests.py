@@ -259,9 +259,8 @@ class TestCallAstakos(unittest.TestCase):
         global token_1
         _mockRequest([_requestOffline])
         try:
-            client = AstakosClient(
-                token_1, "https://example.com", use_pool=pool)
-            client._callAstakos("/im/authenticate")
+            client = AstakosClient("https://example.com", use_pool=pool)
+            client._callAstakos(token_1, "/im/authenticate")
         except AstakosClientException:
             pass
         else:
@@ -281,9 +280,8 @@ class TestCallAstakos(unittest.TestCase):
         token = "skaksaFlBl+fasFdaf24sx=="
         _mockRequest([_requestOk])
         try:
-            client = AstakosClient(
-                token, "https://example.com", use_pool=pool)
-            client._callAstakos("/im/authenticate")
+            client = AstakosClient("https://example.com", use_pool=pool)
+            client._callAstakos(token, "/im/authenticate")
         except AstakosClientException as err:
             if err.status != 401:
                 self.fail("Should have returned 401 (Invalid X-Auth-Token)")
@@ -304,9 +302,8 @@ class TestCallAstakos(unittest.TestCase):
         global token_1
         _mockRequest([_requestOk])
         try:
-            client = AstakosClient(
-                token_1, "https://example.com", use_pool=pool)
-            client._callAstakos("/im/misspelled")
+            client = AstakosClient("https://example.com", use_pool=pool)
+            client._callAstakos(token_1, "/im/misspelled")
         except AstakosClientException as err:
             if err.status != 404:
                 self.fail("Should have returned 404 (Not Found)")
@@ -327,9 +324,8 @@ class TestCallAstakos(unittest.TestCase):
         global token_1
         _mockRequest([_requestOk])
         try:
-            client = AstakosClient(
-                token_1, "ftp://example.com", use_pool=pool)
-            client._callAstakos("/im/authenticate")
+            client = AstakosClient("ftp://example.com", use_pool=pool)
+            client._callAstakos(token_1, "/im/authenticate")
         except ValueError:
             pass
         except Exception:
@@ -351,9 +347,8 @@ class TestCallAstakos(unittest.TestCase):
         global token_1
         _mockRequest([_requestOk])
         try:
-            client = AstakosClient(
-                token_1, "http://example.com", use_pool=pool)
-            client._callAstakos("/im/authenticate")
+            client = AstakosClient("http://example.com", use_pool=pool)
+            client._callAstakos(token_1, "/im/authenticate")
         except AstakosClientException as err:
             if err.status != 302:
                 self.fail("Should have returned 302 (Found)")
@@ -374,9 +369,8 @@ class TestCallAstakos(unittest.TestCase):
         global token_1
         _mockRequest([_requestOk])
         try:
-            client = AstakosClient(
-                token_1, "https://example.com", use_pool=pool)
-            client._callAstakos("/im/authenticate", method="POST")
+            client = AstakosClient("https://example.com", use_pool=pool)
+            client._callAstakos(token_1, "/im/authenticate", method="POST")
         except AstakosClientException as err:
             if err.status != 400:
                 self.fail("Should have returned 400 (Method not allowed)")
@@ -397,9 +391,8 @@ class TestCallAstakos(unittest.TestCase):
         global token_1
         _mockRequest([_requestOk])
         try:
-            client = AstakosClient(
-                token_1, "https://example.com", use_pool=pool)
-            client._callAstakos("/user_catalogs")
+            client = AstakosClient("https://example.com", use_pool=pool)
+            client._callAstakos(token_1, "/user_catalogs")
         except AstakosClientException as err:
             if err.status != 400:
                 self.fail("Should have returned 400 (Method not allowed)")
@@ -425,9 +418,8 @@ class TestAuthenticate(unittest.TestCase):
         global token_1
         _mockRequest([_requestOffline])
         try:
-            client = AstakosClient(
-                token_1, "https://example.com", retry=3)
-            client.authenticate()
+            client = AstakosClient("https://example.com", retry=3)
+            client.authenticate(token_1)
         except AstakosClientException:
             pass
         else:
@@ -439,9 +431,8 @@ class TestAuthenticate(unittest.TestCase):
         token = "skaksaFlBl+fasFdaf24sx=="
         _mockRequest([_requestOk])
         try:
-            client = AstakosClient(
-                token, "https://example.com", use_pool=pool)
-            client.authenticate()
+            client = AstakosClient("https://example.com", use_pool=pool)
+            client.authenticate(token)
         except AstakosClientException as err:
             if err.status != 401:
                 self.fail("Should have returned 401 (Invalid X-Auth-Token)")
@@ -461,9 +452,8 @@ class TestAuthenticate(unittest.TestCase):
     def _authUser(self, token, user_info, usage, pool):
         _mockRequest([_requestOk])
         try:
-            client = AstakosClient(
-                token, "https://example.com", use_pool=pool)
-            auth_info = client.authenticate(usage=usage)
+            client = AstakosClient("https://example.com", use_pool=pool)
+            auth_info = client.authenticate(token, usage=usage)
         except:
             self.fail("Shouldn't raise an Exception")
         self.assertEqual(user_info, auth_info)
@@ -509,9 +499,8 @@ class TestAuthenticate(unittest.TestCase):
         global token_1, user_1
         _mockRequest([_requestOffline, _requestOffline, _requestOk])
         try:
-            client = AstakosClient(
-                token_1, "https://example.com", retry=2)
-            auth_info = client.authenticate(usage=True)
+            client = AstakosClient("https://example.com", retry=2)
+            auth_info = client.authenticate(token_1, usage=True)
         except:
             self.fail("Shouldn't raise an Exception")
         self.assertEqual(user_1, auth_info)
@@ -528,8 +517,8 @@ class TestDisplayNames(unittest.TestCase):
         token = "skaksaFlBl+fasFdaf24sx=="
         _mockRequest([_requestOk])
         try:
-            client = AstakosClient(token, "https://example.com")
-            client.getDisplayNames([user_1['uuid']])
+            client = AstakosClient("https://example.com")
+            client.getDisplayNames(token, [user_1['uuid']])
         except AstakosClientException as err:
             if err.status != 401:
                 self.fail("Should have returned 401 (Invalid X-Auth-Token)")
@@ -543,8 +532,9 @@ class TestDisplayNames(unittest.TestCase):
         global token_1, user_1, user_2
         _mockRequest([_requestOk])
         try:
-            client = AstakosClient(token_1, "https://example.com")
-            catalog = client.getDisplayNames([user_1['uuid'], user_2['uuid']])
+            client = AstakosClient("https://example.com")
+            catalog = client.getDisplayNames(
+                token_1, [user_1['uuid'], user_2['uuid']])
         except:
             self.fail("Shouldn't raise an Exception")
         self.assertEqual(catalog[user_1['uuid']], user_1['username'])
@@ -558,8 +548,8 @@ class TestDisplayNames(unittest.TestCase):
         _mockRequest([_requestOffline, _requestOk])
         try:
             client = AstakosClient(
-                token_2, "https://example.com", use_pool=True, retry=2)
-            info = client.getDisplayName(user_1['uuid'])
+                "https://example.com", use_pool=True, retry=2)
+            info = client.getDisplayName(token_2, user_1['uuid'])
         except:
             self.fail("Shouldn't raise an Exception")
         self.assertEqual(info, user_1['username'])

@@ -56,13 +56,15 @@ class AstakosClient():
     """AstakosClient Class Implementation"""
 
     # ----------------------------------
-    def __init__(self, token, astakos_url, use_pool=False, logger=None):
+    def __init__(self, token, astakos_url,
+                 use_pool=False, retry=0, logger=None):
         """Intialize AstakosClient Class
 
         Keyword arguments:
         token       -- user's token (string)
         astakos_url -- i.e https://accounts.example.com (string)
         use_pool    -- use objpool for http requests (boolean)
+        retry       -- how many time to retry (integer)
         logger      -- pass a different logger
 
         """
@@ -90,6 +92,7 @@ class AstakosClient():
             raise ValueError(m)
 
         # Save token and url
+        self.retry = retry
         self.logger = logger
         self.token = token
         self.netloc = p.netloc
@@ -97,6 +100,25 @@ class AstakosClient():
         self.conn = conn
 
     # ----------------------------------
+    def retry(func):
+        def decorator(self, *args, **kwargs):
+            attemps = 0
+            while True:
+                try:
+                    return func(self, *args, **kwargs)
+                except AstakosClientException as err:
+                    is_last_attempt = attemps == self.retry
+                    if is_last_attempt:
+                        raise err
+                    if err.status == 401 or err.status == 404:
+                        # In case of Unauthorized response
+                        # or Not Found return immediately
+                        raise err
+                    attemps += 1
+        return decorator
+
+    # ----------------------------------
+    @retry
     def _callAstakos(self, request_path, headers={}, body={}, method="GET"):
         """Make the actual call to Astakos Service"""
         self.logger.debug(
@@ -176,29 +198,6 @@ class AstakosClient():
         uuid_dict = self.getDisplayNames([uuid])
         # XXX: check if exists
         return uuid_dict.get(uuid)
-
-
-# A simple retry decorator
-def retry(howmany):
-    def decorator(func):
-        def f(*args, **kwargs):
-            attemps = 0
-            while True:
-                try:
-                    return func(*args, **kwargs)
-                except Exception as e:
-                    is_last_attempt = attemps == howmany - 1
-                    if is_last_attempt:
-                        raise e
-                    if e.args:
-                        status = e[0]
-                        # In case of Unauthorized response
-                        # or Not Found return immediately
-                        if status == 401 or status == 404:
-                            raise e
-                    attemps += 1
-        return f
-    return decorator
 
 
 # --------------------------------------------------------------------

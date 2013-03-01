@@ -149,6 +149,8 @@ class AstakosClient():
             headers = {}
         if body is None:
             body = {}
+        if request_path[0] != '/':
+            request_path = "/" + request_path
 
         # Build request's header and body
         kwargs = {}
@@ -258,6 +260,11 @@ class AstakosClient():
         name_dict = self.getUUIDs(token, [display_name])
         # XXX: check if exists
         return name_dict.get(display_name)
+
+    # ----------------------------------
+    def getServices(self):
+        """Return a list of dicts with the registered services"""
+        return self._callAstakos("dummy token", "/im/get_services")
 
 
 # --------------------------------------------------------------------

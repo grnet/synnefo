@@ -47,8 +47,7 @@ from astakos.im.models import AstakosUser, AstakosUserQuota, Resource
 AddResourceArgs = namedtuple('AddQuotaArgs', ('resource',
                                               'capacity',
                                               'quantity',
-                                              'import_limit',
-                                              'export_limit'))
+                                              ))
 
 class Command(BaseCommand):
     help = """Import user quota limits from file or set quota
@@ -57,15 +56,12 @@ for a single user from the command line
     The file must contain non-empty lines, and each line must
     contain a single-space-separated list of values:
 
-    <user> <resource name> <capacity> <quantity> <import_limit> <export_limit>
+    <user> <resource name> <capacity> <quantity>
 
     For example to grant the following user with 10 private networks
     (independent of any he receives from projects):
 
-    6119a50b-cbc7-42c0-bafc-4b6570e3f6ac cyclades.network.private 10 0 1000000 1000000
-
-    The last two values are arbitrarily large to represent no
-    import/export limit at all.
+    6119a50b-cbc7-42c0-bafc-4b6570e3f6ac cyclades.network.private 10 0
 
     When setting quota from the command line, specify only capacity.
     Quantity and import/export limit will get default values. Example:
@@ -139,8 +135,6 @@ for a single user from the command line
         args = AddResourceArgs(resource=resource,
                                capacity=capacity,
                                quantity=0,
-                               import_limit=QH_PRACTICALLY_INFINITE,
-                               export_limit=QH_PRACTICALLY_INFINITE,
                                )
 
         try:

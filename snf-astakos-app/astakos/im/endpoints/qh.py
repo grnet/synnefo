@@ -99,10 +99,10 @@ def qh_get_holdings(users, resources):
 
 def quota_limits_per_user_from_get(lst):
     quotas = {}
-    for holder, resource, q, c, il, el, imp, exp, ret, rel, flags in lst:
+    for holder, resource, q, c, imp, exp, ret, rel, flags in lst:
         userquotas = quotas.get(holder, {})
         userquotas[resource] = QuotaValues(quantity=q, capacity=c,
-                                           import_limit=il, export_limit=el)
+                                           )
         quotas[holder] = userquotas
     return quotas
 
@@ -110,10 +110,10 @@ def quota_limits_per_user_from_get(lst):
 def quotas_per_user_from_get(lst):
     limits = {}
     counters = {}
-    for holder, resource, q, c, il, el, imp, exp, ret, rel, flags in lst:
+    for holder, resource, q, c, imp, exp, ret, rel, flags in lst:
         userlimits = limits.get(holder, {})
         userlimits[resource] = QuotaValues(quantity=q, capacity=c,
-                                           import_limit=il, export_limit=el)
+                                           )
         limits[holder] = userlimits
 
         usercounters = counters.get(holder, {})
@@ -154,15 +154,12 @@ SetQuotaPayload = namedtuple('SetQuotaPayload', ('holder',
                                                  'resource',
                                                  'quantity',
                                                  'capacity',
-                                                 'import_limit',
-                                                 'export_limit',
                                                  'flags'))
 
 QuotaLimits = namedtuple('QuotaLimits', ('holder',
                                          'resource',
                                          'capacity',
-                                         'import_limit',
-                                         'export_limit'))
+                                         ))
 
 QuotaCounters = namedtuple('QuotaCounters', ('imported',
                                              'exported',
@@ -172,12 +169,11 @@ QuotaCounters = namedtuple('QuotaCounters', ('imported',
 
 class QuotaValues(namedtuple('QuotaValues', ('quantity',
                                              'capacity',
-                                             'import_limit',
-                                             'export_limit'))):
+                                             ))):
     __slots__ = ()
 
     def __dir__(self):
-            return ['quantity', 'capacity', 'import_limit', 'export_limit']
+            return ['quantity', 'capacity']
 
     def __str__(self):
         return '\t'.join(['%s=%s' % (f, strbigdec(getattr(self, f)))
@@ -188,8 +184,7 @@ def add_quota_values(q1, q2):
     return QuotaValues(
         quantity = q1.quantity + q2.quantity,
         capacity = q1.capacity + q2.capacity,
-        import_limit = q1.import_limit + q2.import_limit,
-        export_limit = q1.export_limit + q2.export_limit)
+        )
 
 
 def register_quotas(quotas):
@@ -205,8 +200,6 @@ def register_quotas(quotas):
                     resource=resource,
                     quantity=q.quantity,
                     capacity=q.capacity,
-                    import_limit=q.import_limit,
-                    export_limit=q.export_limit,
                     flags=0))
     return set_quota(payload)
 
@@ -224,8 +217,6 @@ def send_quotas(userquotas):
                     resource=resource,
                     quantity=q.quantity,
                     capacity=q.capacity,
-                    import_limit=q.import_limit,
-                    export_limit=q.export_limit,
                     flags=0))
     return set_quota(payload)
 
@@ -237,8 +228,6 @@ def register_resources(resources):
             resource=resource,
             quantity=QH_PRACTICALLY_INFINITE,
             capacity=QH_PRACTICALLY_INFINITE,
-            import_limit=QH_PRACTICALLY_INFINITE,
-            export_limit=QH_PRACTICALLY_INFINITE,
             flags=0) for resource in resources)
     return set_quota(payload)
 
@@ -254,12 +243,12 @@ def qh_add_quota(sub_list, add_list):
 
     for ql in sub_list:
         args = (ql.holder, ql.resource,
-                0, ql.capacity, ql.import_limit, ql.export_limit)
+                0, ql.capacity)
         sub_append(args)
 
     for ql in add_list:
         args = (ql.holder, ql.resource,
-                0, ql.capacity, ql.import_limit, ql.export_limit)
+                0, ql.capacity)
         add_append(args)
 
     result = c.add_quota(context=context,

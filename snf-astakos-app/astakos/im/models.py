@@ -259,8 +259,7 @@ def _quota_values(capacity):
     return QuotaValues(
         quantity = 0,
         capacity = capacity,
-        import_limit = QH_PRACTICALLY_INFINITE,
-        export_limit = QH_PRACTICALLY_INFINITE)
+        )
 
 def get_default_quota():
     _DEFAULT_QUOTA = {}
@@ -460,14 +459,12 @@ class AstakosUser(User):
             p.setdefault('resource', '')
             p.setdefault('capacity', 0)
             p.setdefault('quantity', 0)
-            p.setdefault('import_limit', 0)
-            p.setdefault('export_limit', 0)
             p.setdefault('update', True)
             self.add_resource_policy(**p)
 
     def add_resource_policy(
-            self, resource, capacity, quantity, import_limit,
-            export_limit, update=True):
+            self, resource, capacity, quantity,
+            update=True):
         """Raises ObjectDoesNotExist, IntegrityError"""
         s, sep, r = resource.partition(RESOURCE_SEPARATOR)
         resource = Resource.objects.get(service__name=s, name=r)
@@ -476,13 +473,12 @@ class AstakosUser(User):
                 user=self, resource=resource, defaults={
                     'capacity':capacity,
                     'quantity': quantity,
-                    'import_limit':import_limit,
-                    'export_limit':export_limit})
+                    })
         else:
             q = self.astakosuserquota_set
             q.create(
                 resource=resource, capacity=capacity, quanity=quantity,
-                import_limit=import_limit, export_limit=export_limit)
+                )
 
     def get_resource_policy(self, resource):
         s, sep, r = resource.partition(RESOURCE_SEPARATOR)
@@ -1066,8 +1062,7 @@ class AstakosUserQuota(models.Model):
         return QuotaValues(
             quantity = self.quantity,
             capacity = self.capacity,
-            import_limit = self.import_limit,
-            export_limit = self.export_limit)
+            )
 
 
 class ApprovalTerms(models.Model):
@@ -1792,8 +1787,7 @@ class ProjectResourceGrant(models.Model):
         return QuotaValues(
             quantity = 0,
             capacity = self.member_capacity,
-            import_limit = self.member_import_limit,
-            export_limit = self.member_export_limit)
+            )
 
     def display_member_capacity(self):
         if self.member_capacity:
@@ -2295,8 +2289,7 @@ class ProjectMembership(models.Model):
                                holder       = holder,
                                resource     = str(grant.resource),
                                capacity     = grant.member_capacity,
-                               import_limit = grant.member_import_limit,
-                               export_limit = grant.member_export_limit))
+                               ))
 
         pending_application = self.pending_application
         if pending_application is not None:
@@ -2306,8 +2299,7 @@ class ProjectMembership(models.Model):
                                holder       = holder,
                                resource     = str(new_grant.resource),
                                capacity     = new_grant.member_capacity,
-                               import_limit = new_grant.member_import_limit,
-                               export_limit = new_grant.member_export_limit))
+                               ))
 
         return (sub_list, add_list)
 

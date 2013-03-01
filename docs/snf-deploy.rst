@@ -3,54 +3,84 @@
 snf-deploy tool
 ^^^^^^^^^^^^^^^
 
+The `snf-deploy` tool allows you to automatically deploy Synnefo.
+You can use `snf-deploy` to deploy Synnefo, in two ways:
 
-This tool allows you to deploy all Synnefo components from scratch
-or to an existing cluster.
+1. Create a virtual cluster on your local machine and then deploy on that cluster.
+2. Deploy on a pre-existent cluster of physical nodes.
 
-This is useful mostly for testing/demo installation and is not suggested for
-production environments. At the end you will have an up-and-running Synnefo but
-the end-to-end functionallity will depend from your underlying infrastracture
-(e.g. is nested virtualization enabled in your PC, is the router properly
-configured, do node have fully qualified domain names, etc.). Nevertheless you
-will be able to experience the API/UI and base funtionality the Synnefo IaaS
-provides and you 'll get a proper configuration that will guide you through
-setting a production environment that will scale up and use all available
-features (e.g. rados, archipelagos, etc).
+Currently, `snf-deploy` is mostly useful for testing/demo installations and is not
+recommended for production environment Synnefo deployments. If you want to deploy
+Synnefo in production, please read first the :ref:`Admin's quick installation
+guide <quick-install-admin-guide>` and then the :ref:`Admin's guide
+<admin-guide>`.
 
-snf-deploy is a debian package that should be installed locally and allow you
-install Synnefo on remote nodes (either already existing or not). To this
-end this guide will break the whole procedure into three; the configuration,
-the virtual cluster creation (optional) and finally the Synnefo installation.
+If you use `snf-deploy` you will setup an up-and-running Synnefo installation, but
+the end-to-end functionality will depend on your underlying infrastracture (e.g.
+is nested virtualization enabled in your PC, is the router properly configured, do
+nodes have fully qualified domain names, etc.). In any way, it will enable you to
+get a grasp of the Web UI/API and base funtionality of Synnefo and also provide a
+proper configuration that you can afterwards consult while reading the Admin
+guides to set up a production environment that will scale up and use all available
+features (e.g. RADOS, Archipelago, etc).
 
-Before getting any further we should mention the roles that snf-deploy refers
-to. Note that more than one roles can co-exist in the same node (except for few)
-but it is highy recommended to dedicate one node (VM or physical) to each role:
+`snf-deploy` is a debian package that should be installed locally and allows you
+to install Synnefo on remote nodes (if you go for (2)), or spawn a cluster of VMs
+on your local machine using KVM and then install Synnefo on this cluster (if you
+go for (1)). To this end, here we will break down our description into three
+sections:
 
- - existing nodes: All available nodes in the cluster
+a. `snf-deploy` configuration
+b. Creating a virtual cluster (needed for (1))
+c. Synnefo deployment (either on virtual nodes created on section b, or on
+   remote physical nodes)
 
- - accounts: Identity Management
- - pithos: Storage Service
- - cms: Content Management System
- - cyclades: Compute Service to manage Instances, Networks, etc.
- - mq: Asynchronous Message Queue System for inter-service communication
- - qh: Quota Holder to keep track of resources utilization
+If you go for (1) you will need to walk through all the sections. If you go for
+(2), you should skip section (b), since you only need sections (a) and (c).
 
- - ns: Nameserver to resolve Synnefo FQDN
- - router: The node to do any routing and NAT needed
- - client: The node to setup a command line tool to manage a user account
+Before getting any further we should mention the roles that `snf-deploy` refers
+to. The roles are described :ref:`here <physical-node-roles`. Note that multiple
+roles can co-exist in the same node (virtual or physical).
 
-All these define the synnefo components. In order to have instances up-and-running,
-at least a backend must be associated with Cyclades. Backends are
-Ganeti clusters each with multiple nodes. Please note that these nodes may be the
-same as the ones used before. To this end we refer to:
+Currently, `snf-deploy` recognizes the following combined roles:
 
- - ganeti nodes: All available nodes for a specific backend
- - master: The master node in each ganeti backend
+* **astakos** = **WEBSERVER** + **ASTAKOS**
+* **pithos** = **WEBSERVER** + **PITHOS**
+* **cyclades** = **WEBSERVER** + **CYCLADES**
+* **db** = **ASTAKOS_DB** + **PITHOS_DB** + **CYCLADES_DB**
 
-Configuration
-=============
+the following independent roles:
 
-The configuration files to edit are under /etc/snf-deploy:
+* **cms** = **CMS**
+* **mq** = **MQ**
+* **ns** = **NS**
+* **client** = **CLIENT**
+* **router**: The node to do any routing and NAT needed
+
+The above define the roles relative to the Synnefo components. However, in
+order to have instances up-and-running, at least one backend must be associated
+with Cyclades. Backends are Ganeti clusters each with multiple
+**GANETI_NODE**s. Please note that these nodes may be the same as the ones used
+for the previous roles. To this end, `snf-deploy` also recognizes:
+
+* **ganeti_backend** = **G_BACKEND** = All available nodes of a specific backend
+* **ganeti_master** = **GANETI_MASTER**
+
+Finally, it recognizes the group role:
+
+* **existing_nodes** = **SYNNEFO** + (N x **G_BACKEND**)
+
+In the future, `snf-deploy` will recognize all the independent roles of a scale
+out deployment as stated in the :ref:`scale up section <scale-up>`. When that's
+done it won't need to introduce its own roles (stated here with lowercase) but
+rather use the scale out ones (stated with uppercase on the admin guide).
+
+
+Configuration (a)
+=================
+
+All configuration of `snf-deploy` happens by editting the following files under
+``/etc/snf-deploy``:
 
 nodes.conf
 ----------
@@ -96,8 +126,8 @@ to use (if you create a virtual cluster from scratch), and where are the
 necessary local directories (packages, templates, images, etc..)
 
 
-Virtual Cluster Creation
-========================
+Virtual Cluster Creation (b)
+============================
 
 Supposing you want to install Synnefo from scratch the best way is to launch
 a couple of VM's locally. To this end you need a debian base image. An 8GB one
@@ -142,8 +172,11 @@ before. Their taps will be connected with the already created bridge and their
 primary interface should get the given address.
 
 
+Synnefo Installation (c)
+========================
+
 Setting up the Synnefo DNS
-==========================
+--------------------------
 
 At this point you should have an up-and-running cluster (either virtual or not)
 with valid hostnames and IPs. Synnefo expects fqdn and therefore a nameserver
@@ -161,15 +194,9 @@ To setup the nameserver in the node specified in setup.conf please run:
 
    snf-deploy dns
 
-
-
-Synnefo Installation
-====================
-
 At this point you should have a cluster with fqdns and reverse DNS lookups ready
 for synnefo deployment. To sum up we mention all the node requirements for a
 successful synnefo installation:
-
 
 Node Requirements
 -----------------
@@ -216,7 +243,7 @@ and login with:
 or whatever you gave in setup.conf and get a small taste of your private cloud setup.
 
 Adding a Ganeti Backend
-=======================
+-----------------------
 
 Assuming that all have worked out fine as expected, you must have astakos,
 pithos, cms, db and mq up and running. Cyclades work too but partially. No
@@ -251,8 +278,8 @@ To test deployment state please visit:
 and try to create a VM.
 
 
-snf-deploy as DevTool
-=====================
+snf-deploy as a DevTool
+=======================
 
 For developers who want to contribute a single node setup is highly recommended.
 snf-deploy tools also supports updating packages that are localy generated. This

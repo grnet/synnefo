@@ -2117,10 +2117,6 @@ CHAIN_STATE = {
     }
 
 
-class PendingMembershipError(Exception):
-    pass
-
-
 class ProjectMembershipManager(ForUpdateManager):
 
     def any_accepted(self):
@@ -2209,9 +2205,6 @@ class ProjectMembership(models.Model):
     def user_friendly_state_display(self):
         return self.USER_FRIENDLY_STATE_DISPLAY.get(self.state, _('Unknown'))
 
-    def get_combined_state(self):
-        return self.state, self.is_active, self.is_pending
-
     class Meta:
         unique_together = ("person", "project")
         #index_together = [["project", "state"]]
@@ -2243,10 +2236,6 @@ class ProjectMembership(models.Model):
         return self.state == self.REQUESTED
 
     def accept(self):
-        if self.is_pending:
-            m = _("%s: attempt to accept while is pending") % (self,)
-            raise AssertionError(m)
-
         if not self.can_accept():
             m = _("%s: attempt to accept in state '%s'") % (self, self.state)
             raise AssertionError(m)
@@ -2255,17 +2244,12 @@ class ProjectMembership(models.Model):
         self.acceptance_date = now
         self._set_history_item(reason='ACCEPT', date=now)
         self.state = self.ACCEPTED
-        self.is_pending = True
         self.save()
 
     def can_leave(self):
         return self.state in self.ACCEPTED_STATES
 
     def leave_request(self):
-        if self.is_pending:
-            m = _("%s: attempt to request to leave while is pending") % (self,)
-            raise AssertionError(m)
-
         if not self.can_leave():
             m = _("%s: attempt to request to leave in state '%s'") % (
                 self, self.state)
@@ -2279,11 +2263,6 @@ class ProjectMembership(models.Model):
         return self.state == self.LEAVE_REQUESTED
 
     def leave_request_deny(self):
-        if self.is_pending:
-            m = _("%s: attempt to deny leave request while is pending") % (
-                self,)
-            raise AssertionError(m)
-
         if not self.can_deny_leave():
             m = _("%s: attempt to deny leave request in state '%s'") % (
                 self, self.state)
@@ -2297,11 +2276,6 @@ class ProjectMembership(models.Model):
         return self.state == self.LEAVE_REQUESTED
 
     def leave_request_cancel(self):
-        if self.is_pending:
-            m = _("%s: attempt to cancel leave request while is pending") % (
-                self,)
-            raise AssertionError(m)
-
         if not self.can_cancel_leave():
             m = _("%s: attempt to cancel leave request in state '%s'") % (
                 self, self.state)
@@ -2315,27 +2289,18 @@ class ProjectMembership(models.Model):
         return self.state in self.ACCEPTED_STATES
 
     def remove(self):
-        if self.is_pending:
-            m = _("%s: attempt to remove while is pending") % (self,)
-            raise AssertionError(m)
-
         if not self.can_remove():
             m = _("%s: attempt to remove in state '%s'") % (self, self.state)
             raise AssertionError(m)
 
         self._set_history_item(reason='REMOVE')
         self.state = self.REMOVED
-        self.is_pending = True
         self.save()
 
     def can_reject(self):
         return self.state == self.REQUESTED
 
     def reject(self):
-        if self.is_pending:
-            m = _("%s: attempt to reject while is pending") % (self,)
-            raise AssertionError(m)
-
         if not self.can_reject():
             m = _("%s: attempt to reject in state '%s'") % (self, self.state)
             raise AssertionError(m)
@@ -2349,10 +2314,6 @@ class ProjectMembership(models.Model):
         return self.state == self.REQUESTED
 
     def cancel(self):
-        if self.is_pending:
-            m = _("%s: attempt to cancel while is pending") % (self,)
-            raise AssertionError(m)
-
         if not self.can_cancel():
             m = _("%s: attempt to cancel in state '%s'") % (self, self.state)
             raise AssertionError(m)

@@ -70,8 +70,7 @@ from astakos.im.notifications import build_notification, NotificationError
 from astakos.im.models import (
     AstakosUser, Invitation, ProjectMembership, ProjectApplication, Project,
     UserSetting,
-    PendingMembershipError, get_resource_names, new_chain,
-    users_quotas)
+    get_resource_names, new_chain, users_quotas)
 from astakos.im.project_notif import (
     membership_change_notify, membership_enroll_notify,
     membership_request_notify, membership_leave_request_notify,
@@ -483,8 +482,6 @@ def get_membership_for_update(project, user):
     try:
         objs = ProjectMembership.objects
         m = objs.get_for_update(project=project, person=user)
-        if m.is_pending:
-            raise PendingMembershipError()
         return m
     except ProjectMembership.DoesNotExist:
         raise IOError(_(astakos_messages.NOT_MEMBERSHIP_REQUEST))

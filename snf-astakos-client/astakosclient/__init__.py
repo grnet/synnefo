@@ -34,6 +34,7 @@
 import logging
 import urlparse
 import httplib
+import urllib
 
 import simplejson
 import objpool.http
@@ -52,6 +53,22 @@ class AstakosClientException(Exception):
 
 # --------------------------------------------------------------------
 # Astakos Client Class
+
+def getTokenFromCookie(request, cookie_name):
+    """Extract token from the cookie name provided
+
+    Cookie should be in the same form as astakos
+    service sets its cookie contents:
+        <user_uniq>|<user_token>
+
+    """
+    try:
+        cookie_content = urllib.unquote(request.COOKIE.get(cookie_name, None))
+        return cookie_content.split("|")[1]
+    except:
+        return None
+
+
 class AstakosClient():
     """AstakosClient Class Implementation"""
 

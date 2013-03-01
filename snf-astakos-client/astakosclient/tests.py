@@ -400,103 +400,106 @@ class TestCallAstakos(unittest.TestCase):
         self._getUserCatalogs(True)
 
 
-#class TestAuthenticate(unittest.TestCase):
-#    """Test cases for function authenticate"""
-#
-#    # ----------------------------------
-#    # Test the response we get if we don't have internet access
-#    def test_Offline(self):
-#        """Test offline after 3 replies"""
-#        global token_1
-#        _mockRequest([_requestOffline])
-#        try:
-#            astakosclient.authenticate(token_1, "https://example.com")
-#        except socket.error:
-#            pass
-#        except Exception:
-#            self.fail("Should have raised socket exception")
-#        else:
-#            self.fail("Shouldn't succeed")
-#
-#    # ----------------------------------
-#    # Test the response we get for invalid token
-#    def _invalidToken(self, pool):
-#        token = "skaksaFlBl+fasFdaf24sx=="
-#        _mockRequest([_requestOk])
-#        try:
-#            astakosclient.authenticate(
-#                token, "https://example.com", use_pool=pool)
-#        except Exception as (status, data):
-#            if status != 401:
-#                self.fail("Should have returned 401 (Invalide X-Auth-Token)")
-#        else:
-#            self.fail("Should have returned 401 (Invalide X-Auth-Token)")
-#
-#    def test_InvalidToken(self):
-#        """Test _invalidToken without pool"""
-#        self._invalidToken(False)
-#
-#    def test_InvalidTokenPool(self):
-#        """Test _invalidToken using pool"""
-#        self._invalidToken(True)
-#
-#    #- ---------------------------------
-#    # Test response for user 1
-#    def _authUser(self, token, user_info, usage, pool):
-#        _mockRequest([_requestOk])
-#        try:
-#            auth_info = astakosclient.authenticate(
-#                token, "https://example.com/", usage=usage, use_pool=pool)
-#        except:
-#            self.fail("Shouldn't raise an Exception")
-#        self.assertEqual(user_info, auth_info)
-#
-#    def test_AuthUserOne(self):
-#        """Test _authUser for User 1 without pool, without usage"""
-#        global token_1, user_1
-#        user_info = dict(user_1)
-#        del user_info['usage']
-#        self._authUser(token_1, user_info, False, False)
-#
-#    def test_AuthUserOneUsage(self):
-#        """Test _authUser for User 1 without pool, with usage"""
-#        global token_1, user_1
-#        self._authUser(token_1, user_1, True, False)
-#
-#    def test_AuthUserOneUsagePool(self):
-#        """Test _authUser for User 1 using pool, with usage"""
-#        global token_1, user_1
-#        self._authUser(token_1, user_1, True, True)
-#
-#    def test_AuthUserTwo(self):
-#        """Test _authUser for User 2 without pool, without usage"""
-#        global token_2, user_2
-#        user_info = dict(user_2)
-#        del user_info['usage']
-#        self._authUser(token_2, user_info, False, False)
-#
-#    def test_AuthUserTwoUsage(self):
-#        """Test _authUser for User 2 without pool, with usage"""
-#        global token_2, user_2
-#        self._authUser(token_2, user_2, True, False)
-#
-#    def test_AuthUserTwoUsagePool(self):
-#        """Test _authUser for User 2 using pool, with usage"""
-#        global token_2, user_2
-#        self._authUser(token_2, user_2, True, True)
-#
-#    # ----------------------------------
-#    # Test retry functionality
-#    def test_OfflineRetry(self):
-#        """Test retry functionality for authentication"""
-#        global token_1, user_1
-#        _mockRequest([_requestOffline, _requestOffline, _requestOk])
-#        try:
-#            auth_info = astakosclient.authenticate(
-#                token_1, "https://example.com", usage=True)
-#        except:
-#            self.fail("Shouldn't raise an Exception")
-#        self.assertEqual(user_1, auth_info)
+class TestAuthenticate(unittest.TestCase):
+    """Test cases for function authenticate"""
+
+    # ----------------------------------
+    # Test the response we get if we don't have internet access
+    def test_Offline(self):
+        """Test offline after 3 retries"""
+        global token_1
+        _mockRequest([_requestOffline])
+        try:
+            client = AstakosClient(
+                token_1, "https://example.com", retry=3)
+            client.authenticate()
+        except AstakosClientException:
+            pass
+        else:
+            self.fail("Should have raised AstakosClientException exception")
+
+    # ----------------------------------
+    # Test the response we get for invalid token
+    def _invalidToken(self, pool):
+        token = "skaksaFlBl+fasFdaf24sx=="
+        _mockRequest([_requestOk])
+        try:
+            client = AstakosClient(
+                token, "https://example.com", use_pool=pool)
+            client.authenticate()
+        except AstakosClientException as err:
+            if err.status != 401:
+                self.fail("Should have returned 401 (Invalide X-Auth-Token)")
+        else:
+            self.fail("Should have returned 401 (Invalide X-Auth-Token)")
+
+    def test_InvalidToken(self):
+        """Test _invalidToken without pool"""
+        self._invalidToken(False)
+
+    def test_InvalidTokenPool(self):
+        """Test _invalidToken using pool"""
+        self._invalidToken(True)
+
+    #- ---------------------------------
+    # Test response for user 1
+    def _authUser(self, token, user_info, usage, pool):
+        _mockRequest([_requestOk])
+        try:
+            client = AstakosClient(
+                token, "https://example.com", use_pool=pool)
+            auth_info = client.authenticate(usage=usage)
+        except:
+            self.fail("Shouldn't raise an Exception")
+        self.assertEqual(user_info, auth_info)
+
+    def test_AuthUserOne(self):
+        """Test _authUser for User 1 without pool, without usage"""
+        global token_1, user_1
+        user_info = dict(user_1)
+        del user_info['usage']
+        self._authUser(token_1, user_info, False, False)
+
+    def test_AuthUserOneUsage(self):
+        """Test _authUser for User 1 without pool, with usage"""
+        global token_1, user_1
+        self._authUser(token_1, user_1, True, False)
+
+    def test_AuthUserOneUsagePool(self):
+        """Test _authUser for User 1 using pool, with usage"""
+        global token_1, user_1
+        self._authUser(token_1, user_1, True, True)
+
+    def test_AuthUserTwo(self):
+        """Test _authUser for User 2 without pool, without usage"""
+        global token_2, user_2
+        user_info = dict(user_2)
+        del user_info['usage']
+        self._authUser(token_2, user_info, False, False)
+
+    def test_AuthUserTwoUsage(self):
+        """Test _authUser for User 2 without pool, with usage"""
+        global token_2, user_2
+        self._authUser(token_2, user_2, True, False)
+
+    def test_AuthUserTwoUsagePool(self):
+        """Test _authUser for User 2 using pool, with usage"""
+        global token_2, user_2
+        self._authUser(token_2, user_2, True, True)
+
+    # ----------------------------------
+    # Test retry functionality
+    def test_OfflineRetry(self):
+        """Test retry functionality for authentication"""
+        global token_1, user_1
+        _mockRequest([_requestOffline, _requestOffline, _requestOk])
+        try:
+            client = AstakosClient(
+                token_1, "https://example.com", retry=2)
+            auth_info = client.authenticate(usage=True)
+        except:
+            self.fail("Shouldn't raise an Exception")
+        self.assertEqual(user_1, auth_info)
 
 
 # ----------------------------

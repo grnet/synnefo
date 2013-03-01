@@ -228,6 +228,37 @@ class AstakosClient():
         # XXX: check if exists
         return uuid_dict.get(uuid)
 
+    # ----------------------------------
+    def getUUIDs(self, token, display_names):
+        """Return a displayname_catalog for the given names
+
+        Keyword arguments:
+        token           -- user's token (string)
+        display_names   -- list of user names (list of strings)
+
+        The returned displayname_catalog is a dictionary with
+        the names as keys and the corresponding uuids as values
+
+        """
+        req_headers = {'content-type': 'application/json'}
+        req_body = simplejson.dumps({'displaynames': display_names})
+        req_path = "/user_catalogs"
+
+        data = self._callAstakos(
+            token, req_path, req_headers, req_body, "POST")
+        # XXX: check if exists
+        return data.get("displayname_catalog")
+
+    def getUUID(self, token, display_name):
+        """Return the uuid of a name (see getUUIDs)"""
+        if not display_name:
+            m = "No display_name was given"
+            self.logger.error(m)
+            raise ValueError(m)
+        name_dict = self.getUUIDs(token, [display_name])
+        # XXX: check if exists
+        return name_dict.get(display_name)
+
 
 # --------------------------------------------------------------------
 # Private functions

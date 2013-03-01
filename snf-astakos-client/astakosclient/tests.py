@@ -153,13 +153,26 @@ def _reqCatalogs(conn, method, url, **kwargs):
 
     # Return
     body = simplejson.loads(kwargs['body'])
-    uuids = body['uuids']
-    catalogs = {}
-    if user_1['uuid'] in uuids:
-        catalogs[user_1['uuid']] = user_1['username']
-    if user_2['uuid'] in uuids:
-        catalogs[user_2['uuid']] = user_2['username']
-    return_catalog = {"displayname_catalog": {}, "uuid_catalog": catalogs}
+    if 'uuids' in body:
+        # Return uuid_catalog
+        uuids = body['uuids']
+        catalogs = {}
+        if user_1['uuid'] in uuids:
+            catalogs[user_1['uuid']] = user_1['username']
+        if user_2['uuid'] in uuids:
+            catalogs[user_2['uuid']] = user_2['username']
+        return_catalog = {"displayname_catalog": {}, "uuid_catalog": catalogs}
+    elif 'displaynames' in body:
+        # Return displayname_catalog
+        names = body['displaynames']
+        catalogs = {}
+        if user_1['username'] in names:
+            catalogs[user_1['username']] = user_1['uuid']
+        if user_2['username'] in names:
+            catalogs[user_2['username']] = user_2['uuid']
+        return_catalog = {"displayname_catalog": catalogs, "uuid_catalog": {}}
+    else:
+        return_catalog = {"displayname_catalog": {}, "uuid_catalog": {}}
     return (simplejson.dumps(return_catalog), 200)
 
 
@@ -527,7 +540,7 @@ class TestDisplayNames(unittest.TestCase):
 
     # ----------------------------------
     # Get Info for both users
-    def test_DisplayNamesWithGet(self):
+    def test_DisplayNames(self):
         """Test getDisplayNames with both users"""
         global token_1, user_1, user_2
         _mockRequest([_requestOk])
@@ -553,6 +566,54 @@ class TestDisplayNames(unittest.TestCase):
         except:
             self.fail("Shouldn't raise an Exception")
         self.assertEqual(info, user_1['username'])
+
+
+class TestGetUUIDs(unittest.TestCase):
+    """Test cases for functions getUUIDs/getUUID"""
+
+    # ----------------------------------
+    # Test the response we get for invalid token
+    def test_InvalidToken(self):
+        """Test the response we get for invalid token (using pool)"""
+        global user_1
+        token = "skaksaFlBl+fasFdaf24sx=="
+        _mockRequest([_requestOk])
+        try:
+            client = AstakosClient("https://example.com")
+            client.getUUIDs(token, [user_1['username']])
+        except AstakosClientException as err:
+            if err.status != 401:
+                self.fail("Should have returned 401 (Invalid X-Auth-Token)")
+        else:
+            self.fail("Should have returned 401 (Invalid X-Auth-Token)")
+
+    # ----------------------------------
+    # Get info for both users
+    def test_UUIDs(self):
+        """Test getUUIDs with both users"""
+        global token_1, user_1, user_2
+        _mockRequest([_requestOk])
+        try:
+            client = AstakosClient("https://example.com")
+            catalog = client.getUUIDs(
+                token_1, [user_1['username'], user_2['username']])
+        except:
+            self.fail("Shouldn't raise an Exception")
+        self.assertEqual(catalog[user_1['username']], user_1['uuid'])
+        self.assertEqual(catalog[user_2['username']], user_2['uuid'])
+
+    # ----------------------------------
+    # Get uuid for user 2
+    def test_GetUUIDUserTwo(self):
+        """Test getUUID for User Two"""
+        global token_1, user_2
+        _mockRequest([_requestOffline, _requestOk])
+        try:
+            client = AstakosClient("https://example.com", retry=1)
+            info = client.getUUID(token_2, user_1['username'])
+        except:
+            self.fail("Shouldn't raise an Exception")
+        self.assertEqual(info, user_1['uuid'])
 
 
 # ----------------------------

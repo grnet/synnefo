@@ -812,7 +812,7 @@ def users_quotas(users, initial=None):
         quotas = copy.deepcopy(initial)
 
     objs = ProjectMembership.objects.select_related('application', 'person')
-    memberships = objs.filter(person__in=users, is_active=True)
+    memberships = objs.filter(person__in=users)
 
     apps = set(m.application for m in memberships if m.application is not None)
     objs = ProjectResourceGrant.objects.select_related()
@@ -824,9 +824,7 @@ def users_quotas(users, initial=None):
 
         application = membership.application
         if application is None:
-            m = _("missing application for active membership %s"
-                  % (membership,))
-            raise AssertionError(m)
+            continue
 
         for grant in grants:
             if grant.project_application_id != application.id:
@@ -1849,23 +1847,12 @@ class ProjectManager(ForUpdateManager):
         q = ~self.model.Q_TERMINATED
         return self.filter(q)
 
-    def terminating_projects(self):
-        q = self.model.Q_TERMINATED & Q(is_active=True)
-        return self.filter(q)
-
     def deactivated_projects(self):
         q = self.model.Q_DEACTIVATED
         return self.filter(q)
 
-    def deactivating_projects(self):
-        q = self.model.Q_DEACTIVATED & Q(is_active=True)
-        return self.filter(q)
-
     def modified_projects(self):
         return self.filter(is_modified=True)
-
-    def reactivating_projects(self):
-        return self.filter(state=Project.APPROVED, is_active=False)
 
     def expired_projects(self):
         q = (~Q(state=Project.TERMINATED) &
@@ -1941,17 +1928,6 @@ class Project(models.Model):
     def state_display(self):
         return self.STATE_DISPLAY.get(self.state, _('Unknown'))
 
-    def admin_state_display(self):
-        s = self.state_display()
-        if self.sync_pending():
-            s += ' (sync pending)'
-        return s
-
-    def sync_pending(self):
-        if self.state != self.APPROVED:
-            return self.is_active
-        return not self.is_active or self.is_modified
-
     def expiration_info(self):
         return (str(self.id), self.name, self.state_display(),
                 str(self.application.end_date))
@@ -1962,47 +1938,24 @@ class Project(models.Model):
 
         return self.state != self.APPROVED
 
-    def is_deactivating(self, reason=None):
-        if not self.is_active:
-            return False
-
-        return self.is_deactivated(reason)
-
-    def is_deactivated_strict(self, reason=None):
-        if self.is_active:
-            return False
-
-        return self.is_deactivated(reason)
-
     ### Deactivation calls
-
-    def unset_modified(self):
-        self.is_modified = False
-        self.save()
-
-    def deactivate(self):
-        self.deactivation_date = datetime.now()
-        self.is_active = False
-        self.save()
-
-    def reactivate(self):
-        self.deactivation_date = None
-        self.is_active = True
-        self.save()
 
     def terminate(self):
         self.deactivation_reason = 'TERMINATED'
+        self.deactivation_date = datetime.now()
         self.state = self.TERMINATED
         self.name = None
         self.save()
 
     def suspend(self):
         self.deactivation_reason = 'SUSPENDED'
+        self.deactivation_date = datetime.now()
         self.state = self.SUSPENDED
         self.save()
 
     def resume(self):
         self.deactivation_reason = None
+        self.deactivation_date = None
         self.state = self.APPROVED
         self.save()
 

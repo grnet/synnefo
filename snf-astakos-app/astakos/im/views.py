@@ -614,6 +614,7 @@ def feedback(request, template_name='im/feedback.html', email_template_name='im/
             else:
                 message = _(astakos_messages.FEEDBACK_SENT)
                 messages.success(request, message)
+            return HttpResponseRedirect(reverse('feedback'))
     return render_response(template_name,
                            feedback_form=form,
                            context_instance=get_context(request, extra_context))

@@ -376,7 +376,8 @@ class FlavorsTestCase(unittest.TestCase):
         Where xx is vCPU count, yy is RAM in MiB, zz is Disk in GiB
         """
         for f in self.dflavors:
-            self.assertEqual("C%dR%dD%d" % (f["cpu"], f["ram"], f["disk"]),
+            flavor = (f["cpu"], f["ram"], f["disk"], f["SNF:disk_template"])
+            self.assertEqual("C%dR%dD%d%s" % flavor),
                              f["name"],
                              "Flavor %s does not match its specs." % f["name"])
 

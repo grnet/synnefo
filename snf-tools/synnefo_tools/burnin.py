@@ -1123,7 +1123,8 @@ class NetworkTestCase(unittest.TestCase):
 
         name = SNF_TEST_PREFIX + TEST_RUN_ID
         #previous_num = len(self.client.list_networks())
-        network = self.client.create_network(name, cidr='10.0.1.0/28')
+        network = self.client.create_network(name, cidr='10.0.1.0/28',
+                                             dhcp=True)
 
         #Test if right name is assigned
         self.assertEqual(network['name'], name)
@@ -1201,8 +1202,8 @@ class NetworkTestCase(unittest.TestCase):
             self.result_dict["Server B private IP"] = str(cls.priv_ip["B"])
 
         self.assertTrue(conn_exists)
-        self.assertIsNot(cls.priv_ip["A"], "")
-        self.assertIsNot(cls.priv_ip["B"], "")
+        self.assertIsNot(cls.priv_ip["A"], None)
+        self.assertIsNot(cls.priv_ip["B"], None)
 
     def test_002a_reboot(self):
         """Rebooting server A"""

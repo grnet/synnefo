@@ -223,9 +223,11 @@ def pprint_table(out, table, headers=None, separator=None):
     to this value.
     """
 
+    assert(isinstance(table, (list, tuple))), "Invalid table type"
     sep = separator if separator else "  "
 
     if headers:
+        assert(isinstance(headers, (list, tuple))), "Invalid headers type"
         table.insert(0, headers)
 
     # Find out the max width of each column

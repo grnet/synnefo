@@ -5,6 +5,7 @@
     {{ network|network_deleted_badge|safe }}
      
     <span class="badge badge-info">ID: {{ network.pk }}</span>
+    {{ network|object_status_badge|safe }}
     
     <div class="network-details-content object-details-content">
         <ul class="nav nav-tabs">

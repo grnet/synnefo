@@ -679,10 +679,10 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
     except AstakosUser.DoesNotExist:
         return HttpResponseBadRequest(_(astakos_messages.ACCOUNT_UNKNOWN))
 
-    if user.is_active:
+    if user.is_active or user.email_verified:
         message = _(astakos_messages.ACCOUNT_ALREADY_ACTIVE)
         messages.error(request, message)
-        return index(request)
+        return HttpResponseRedirect(reverse('index'))
 
     try:
         activate_func(user, greeting_email_template_name,

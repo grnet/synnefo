@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -35,7 +35,7 @@ from optparse import make_option
 
 from django.core.management.base import NoArgsCommand
 
-from astakos.im.models import AstakosUser
+from astakos.im.models import AstakosUser, AstakosUserAuthProvider
 
 from ._common import format
 
@@ -68,6 +68,12 @@ class Command(NoArgsCommand):
         elif options['pending_send_mail']:
             users = users.filter(is_active=False, activation_sent=None)
 
+        ids = [user.id for user in users]
+        auths = AstakosUserAuthProvider.objects.filter(
+            user__in=ids, active=True)
+
+        all_auth = partition_by(lambda a: a.user_id, auths)
+
         labels = ('id', 'email', 'real name', 'active', 'admin', 'uuid', 'providers')
         columns = (3, 24, 24, 6, 5, 12, 36, 24)
 
@@ -82,12 +88,14 @@ class Command(NoArgsCommand):
             active = user.is_active
             admin = user.is_superuser
             uuid = user.uuid or ''
+            auths = all_auth[user.id]
+            auth_display = ",".join(unicode(auth) for auth in auths)
             fields = (format(elem) for elem in (
                             id,
                             user.email,
                             user.realname,
                             active, admin, uuid,
-                            user.auth_providers_display
+                            auth_display
             ))
 
             if options['csv']:
@@ -96,3 +104,13 @@ class Command(NoArgsCommand):
                 line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
 
             self.stdout.write(line + '\n')
+
+
+def partition_by(f, l):
+    d = {}
+    for x in l:
+        group = f(x)
+        group_l = d.get(group, [])
+        group_l.append(x)
+        d[group] = group_l
+    return d

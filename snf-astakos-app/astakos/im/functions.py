@@ -69,14 +69,16 @@ from astakos.im.notifications import build_notification, NotificationError
 from astakos.im.models import (
     AstakosUser, Invitation, ProjectMembership, ProjectApplication, Project,
     UserSetting,
-    PendingMembershipError, get_resource_names, new_chain)
+    PendingMembershipError, get_resource_names, new_chain,
+    users_quotas)
 from astakos.im.project_notif import (
     membership_change_notify, membership_enroll_notify,
     membership_request_notify, membership_leave_request_notify,
     application_submit_notify, application_approve_notify,
     application_deny_notify,
     project_termination_notify, project_suspension_notify)
-from astakos.im.endpoints.qh import qh_register_user_with_quotas, qh_get_quota
+from astakos.im.endpoints.qh import (
+    register_users, register_quotas, qh_get_quota)
 
 import astakos.im.messages as astakos_messages
 
@@ -310,7 +312,7 @@ def activate(
     if not user.activation_sent:
         user.activation_sent = datetime.now()
     user.save()
-    qh_register_user_with_quotas(user)
+    register_user_with_quotas(user)
     send_helpdesk_notification(user, helpdesk_email_template_name)
     send_greeting(user, email_template_name)
 
@@ -386,6 +388,13 @@ class SendNotificationError(SendMailError):
     def __init__(self):
         self.message = _(astakos_messages.NOTIFICATION_SEND_ERR)
         super(SendNotificationError, self).__init__()
+
+
+def register_user_with_quotas(user):
+    rejected = register_users([user])
+    if not rejected:
+        quotas = users_quotas([user])
+        register_quotas(quotas)
 
 
 def get_quota(users):

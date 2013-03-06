@@ -228,16 +228,6 @@ def add_quota_values(q1, q2):
         export_limit = q1.export_limit + q2.export_limit)
 
 
-def qh_register_user_with_quotas(user):
-    return register_users_with_quotas([user])
-
-
-def register_users_with_quotas(users):
-    rejected = register_users(users)
-    if not rejected:
-        register_quotas(users)
-
-
 def register_users(users):
     if not users:
         return
@@ -250,16 +240,16 @@ def register_users(users):
     return create_entity(payload)
 
 
-def register_quotas(users):
-    if not users:
+def register_quotas(quotas):
+    if not quotas:
         return
 
     payload = []
     append = payload.append
-    for u in users:
-        for resource, q in u.all_quotas().iteritems():
+    for uuid, userquotas in quotas.iteritems():
+        for resource, q in userquotas.iteritems():
             append(SetQuotaPayload(
-                    holder=u.uuid,
+                    holder=uuid,
                     resource=resource,
                     key=ENTITY_KEY,
                     quantity=q.quantity,

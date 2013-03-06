@@ -823,6 +823,13 @@ class AstakosUser(User):
     def settings(self):
         return UserSetting.objects.filter(user=self)
 
+    def all_quotas(self):
+        quotas = users_quotas([self])
+        try:
+            return quotas[self.uuid]
+        except:
+            raise ValueError("could not compute quotas")
+
 
 def initial_quotas(users):
     initial = {}
@@ -835,7 +842,7 @@ def initial_quotas(users):
     objs = AstakosUserQuota.objects.select_related()
     orig_quotas = objs.filter(user__in=users)
     for user_quota in orig_quotas:
-        uuid = user_quota.uuid
+        uuid = user_quota.user.uuid
         user_init = initial.get(uuid, {})
         resource = user_quota.resource.full_name()
         user_init[resource] = user_quota.quota_values()

@@ -1056,7 +1056,7 @@ class ModularBackend(BaseBackend):
         """Return the (account, container, name) for the UUID given."""
 
         logger.debug("get_uuid: %s %s", user, uuid)
-        info = self.node.latest_uuid(uuid)
+        info = self.node.latest_uuid(uuid, CLUSTER_NORMAL)
         if info is None:
             raise NameError
         path, serial = info

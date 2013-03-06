@@ -972,14 +972,25 @@ class Node(DBWorker):
 
         return matches, prefixes
 
-    def latest_uuid(self, uuid):
-        """Return a (path, serial) tuple, for the latest version of the given uuid."""
+    def latest_uuid(self, uuid, cluster):
+        """Return the latest version of the given uuid and cluster.
+
+        Return a (path, serial) tuple.
+        If cluster is None, all clusters are considered.
+
+        """
+        if cluster is not None:
+            cluster_where = "and cluster = ?"
+            args = (uuid, int(cluster))
+        else:
+            cluster_where = ""
+            args = (uuid,)
 
         q = ("select n.path, v.serial "
              "from versions v, nodes n "
              "where v.serial = (select max(serial) "
              "from versions "
-             "where uuid = ?) "
-             "and n.node = v.node")
-        self.execute(q, (uuid,))
+             "where uuid = ? %s) "
+             "and n.node = v.node") % cluster_where
+        self.execute(q, args)
         return self.fetchone()

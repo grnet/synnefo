@@ -208,7 +208,7 @@ by running:
 
 .. code-block:: console
 
-   snf-deploy vcluster prep-image
+   snf-deploy vcluster image
 
 This will download the image from the URL defined at ``squeeez_image_url``
 (Pithos by default) and save it locally under ``/var/lib/snf-deploy/images``.
@@ -220,7 +220,7 @@ appropriately. You can do this by running:
 
 .. code-block:: console
 
-   snf-deploy vcluster prep-net
+   snf-deploy vcluster network
 
 This will add a bridge (defined with the ``bridge`` option inside
 ``vcluster.conf``), iptables to allow traffic from/to the cluster, and enable
@@ -233,7 +233,7 @@ selected hostnames and IPs to the cluster (defined under ``[ips]`` in
 
 .. code-block:: console
 
-   snf-deploy vcluster prep-dhcp
+   snf-deploy vcluster dhcp
 
 This will launch a dnsmasq instance, acting only as DHCP server and listening
 only on the cluster's bridge. Every time you make changes inside ``nodes.conf``
@@ -311,7 +311,7 @@ To check the network configuration (FQDNs, connectivity):
 
 .. code-block:: console
 
-   snf-deploy check-net
+   snf-deploy check
 
 WARNING: In case ping fails check ``/etc/nsswitch.conf`` hosts entry and put dns
 after files!!!
@@ -384,13 +384,13 @@ networking. To do so, we run:
 
 .. code-block:: console
 
-   snf-deploy backend setup-network --backend-name ganeti1
+   snf-deploy backend network --backend-name ganeti1
 
 And finally, we need to setup the backend storage:
 
 .. code-block:: console
 
-   snf-deploy backend setup-storage --backend-name ganeti1
+   snf-deploy backend storage --backend-name ganeti1
 
 This command will first check the ``extra_disk`` in ``nodes.conf`` and try to
 find it on the nodes of the cluster. If the nodes indeed have that disk,

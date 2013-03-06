@@ -51,7 +51,7 @@ from .models import (Policy, Holding,
 
 class QuotaholderDjangoDBCallpoint(object):
 
-    def get_limits(self, context=None, get_limits=()):
+    def get_limits(self, context=None, get_limits=[]):
         limits = []
         append = limits.append
 
@@ -65,7 +65,7 @@ class QuotaholderDjangoDBCallpoint(object):
 
         return limits
 
-    def set_limits(self, context=None, set_limits=()):
+    def set_limits(self, context=None, set_limits=[]):
 
         for (policy, quantity, capacity) in set_limits:
 
@@ -83,7 +83,7 @@ class QuotaholderDjangoDBCallpoint(object):
 
         return ()
 
-    def get_holding(self, context=None, get_holding=()):
+    def get_holding(self, context=None, get_holding=[]):
         holdings = []
         append = holdings.append
 
@@ -99,7 +99,7 @@ class QuotaholderDjangoDBCallpoint(object):
 
         return holdings
 
-    def set_holding(self, context=None, set_holding=()):
+    def set_holding(self, context=None, set_holding=[]):
         rejected = []
         append = rejected.append
 
@@ -146,7 +146,7 @@ class QuotaholderDjangoDBCallpoint(object):
         h.releasing = released
         h.save()
 
-    def init_holding(self, context=None, init_holding=()):
+    def init_holding(self, context=None, init_holding=[]):
         rejected = []
         append = rejected.append
 
@@ -169,7 +169,7 @@ class QuotaholderDjangoDBCallpoint(object):
             raise QuotaholderError(rejected)
         return rejected
 
-    def reset_holding(self, context=None, reset_holding=()):
+    def reset_holding(self, context=None, reset_holding=[]):
         rejected = []
         append = rejected.append
 
@@ -212,7 +212,7 @@ class QuotaholderDjangoDBCallpoint(object):
         return hp.quantity + (holding.imported + holding.returned -
                               holding.exported - holding.released)
 
-    def release_holding(self, context=None, release_holding=()):
+    def release_holding(self, context=None, release_holding=[]):
         rejected = []
         append = rejected.append
 
@@ -244,7 +244,7 @@ class QuotaholderDjangoDBCallpoint(object):
         resources = [h.resource for h in holdings]
         return resources
 
-    def list_holdings(self, context=None, list_holdings=()):
+    def list_holdings(self, context=None, list_holdings=[]):
         rejected = []
         reject = rejected.append
         holdings_list = []
@@ -262,7 +262,7 @@ class QuotaholderDjangoDBCallpoint(object):
 
         return holdings_list, rejected
 
-    def get_quota(self, context=None, get_quota=()):
+    def get_quota(self, context=None, get_quota=[]):
         quotas = []
         append = quotas.append
 
@@ -287,7 +287,7 @@ class QuotaholderDjangoDBCallpoint(object):
 
         return quotas
 
-    def set_quota(self, context=None, set_quota=()):
+    def set_quota(self, context=None, set_quota=[]):
         rejected = []
         append = rejected.append
 
@@ -338,7 +338,7 @@ class QuotaholderDjangoDBCallpoint(object):
 
     def add_quota(self,
                   context=None,
-                  sub_quota=(), add_quota=()):
+                  sub_quota=[], add_quota=[]):
         rejected = []
         append = rejected.append
 
@@ -413,7 +413,7 @@ class QuotaholderDjangoDBCallpoint(object):
                          clientkey=None,
                          target=None,
                          name=None,
-                         provisions=()):
+                         provisions=[]):
 
         create = Commission.objects.create
         commission = create(holder=target, clientkey=clientkey, name=name)
@@ -582,7 +582,7 @@ class QuotaholderDjangoDBCallpoint(object):
 
     def accept_commission(self,
                           context=None, clientkey=None,
-                          serials=(), reason=''):
+                          serials=[], reason=''):
         log_time = now()
 
         for serial in serials:
@@ -628,7 +628,7 @@ class QuotaholderDjangoDBCallpoint(object):
 
     def reject_commission(self,
                           context=None, clientkey=None,
-                          serials=(), reason=''):
+                          serials=[], reason=''):
         log_time = now()
 
         for serial in serials:
@@ -679,7 +679,7 @@ class QuotaholderDjangoDBCallpoint(object):
 
     def resolve_pending_commissions(self,
                                     context=None, clientkey=None,
-                                    max_serial=None, accept_set=()):
+                                    max_serial=None, accept_set=[]):
         accept_set = set(accept_set)
         pending = self.get_pending_commissions(context=context,
                                                clientkey=clientkey)
@@ -699,7 +699,7 @@ class QuotaholderDjangoDBCallpoint(object):
 
         return
 
-    def get_timeline(self, context=None, after="", before="Z", get_timeline=()):
+    def get_timeline(self, context=None, after="", before="Z", get_timeline=[]):
         holder_set = set()
         e_add = holder_set.add
         resource_set = set()

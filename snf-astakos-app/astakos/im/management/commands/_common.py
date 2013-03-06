@@ -32,7 +32,9 @@
 # or implied, of GRNET S.A.
 
 from datetime import datetime
+import uuid
 
+from django.core.validators import validate_email
 from django.utils.timesince import timesince, timeuntil
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
@@ -210,3 +212,25 @@ def filter_results(objects, filter_by):
         raise CommandError(e)
     except Exception as e:
         raise CommandError("Can not filter results: %s" % e)
+
+
+def is_uuid(s):
+    if s is None:
+        return False
+    try:
+        uuid.UUID(s)
+    except ValueError:
+        return False
+    else:
+        return True
+
+
+def is_email(s):
+    if s is None:
+        return False
+    try:
+        validate_email(s)
+    except:
+        return False
+    else:
+        return True

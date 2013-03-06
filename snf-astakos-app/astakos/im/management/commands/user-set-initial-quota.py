@@ -83,7 +83,7 @@ for a single user from the command line
                     metavar='<uuid or email> <resource> <capacity>',
                     nargs=3,
                     help="Set capacity for a specified user/resource pair"),
-        make_option('-f', '--force',
+        make_option('-f', '--no-confirm',
                     action='store_true',
                     default=False,
                     dest='force',

@@ -316,6 +316,12 @@ To check the network configuration (FQDNs, connectivity):
 WARNING: In case ping fails check ``/etc/nsswitch.conf`` hosts entry and put dns
 after files!!!
 
+To setup the apt repository and update each nodes' package index files:
+
+.. code-block:: console
+
+   snf-deploy apt
+
 If everything is setup correctly and all prerequisites are met, we can start
 the Synnefo deployment.
 

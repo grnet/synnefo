@@ -110,18 +110,18 @@ class Command(BaseCommand):
         displayname = options['displayname']
 
         headers = filter(lambda x: x is not Omit,
-                        ['id',
-                         'name',
-                         'flavor',
-                         'owner_uuid',
-                         'owner_name' if displayname else Omit,
-                         'mac_prefix',
-                         'dhcp',
-                         'state',
-                         'link',
-                         'vms',
-                         'public',
-                         ])
+                         ['id',
+                          'name',
+                          'flavor',
+                          'owner_uuid',
+                          'owner_name' if displayname else Omit,
+                          'mac_prefix',
+                          'dhcp',
+                          'state',
+                          'link',
+                          'vms',
+                          'public',
+                          ])
 
         if options['ipv6']:
             headers.extend(['IPv6 Subnet', 'IPv6 Gateway'])

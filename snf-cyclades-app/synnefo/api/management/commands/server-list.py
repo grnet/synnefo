@@ -126,14 +126,14 @@ class Command(BaseCommand):
         cache = ImageCache()
 
         headers = filter(lambda x: x is not Omit,
-                        ['id',
-                         'name',
-                         'owner_uuid',
-                         'owner_name' if displayname else Omit,
-                         'flavor',
-                         'image',
-                         'state',
-                         'backend',
+                         ['id',
+                          'name',
+                          'owner_uuid',
+                          'owner_name' if displayname else Omit,
+                          'flavor',
+                          'image',
+                          'state',
+                          'backend',
                           ])
 
         uuids = list(set([server.userid for server in servers]))
@@ -165,7 +165,7 @@ class Command(BaseCommand):
                              image,
                              state,
                              str(server.backend),
-                            ])
+                             ])
             table.append(fields)
 
         separator = " | " if options['csv'] else None

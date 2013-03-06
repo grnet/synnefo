@@ -139,7 +139,7 @@ class Command(NoArgsCommand):
                             user.username if displayname else Omit,
                             user.realname,
                             active, admin, uuid,
-                            auth_display
+                            auth_display,
                             ])
             fields = (format(elem) for elem in elems)
 

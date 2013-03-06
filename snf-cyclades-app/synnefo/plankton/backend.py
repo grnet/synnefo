@@ -79,6 +79,7 @@ PLANKTON_META = ('container_format', 'disk_format', 'name', 'properties',
 
 TRANSLATE_UUIDS = getattr(settings, 'TRANSLATE_UUIDS', False)
 
+
 def get_displaynames(names):
     try:
         auth_url = settings.ASTAKOS_URL

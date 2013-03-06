@@ -110,8 +110,9 @@ class Command(BaseCommand):
             self.stdout.write(l.ljust(18) + ': ' + f.ljust(20) + '\n')
         self.stdout.write('\n')
         for nic in vm.nics.all():
-            self.stdout.write("nic/%d: IPv4: %s, MAC: %s, IPv6:%s,  Network: %s\n"\
-                              % (nic.index, nic.ipv4, nic.mac, nic.ipv6,  nic.network))
+            params = (nic.index, nic.ipv4, nic.mac, nic.ipv6,  nic.network)
+            self.stdout.write("nic/%d: IPv4: %s, MAC: %s, IPv6:%s,"
+                              " Network: %s\n" % params)
 
         client = vm.get_client()
         try:

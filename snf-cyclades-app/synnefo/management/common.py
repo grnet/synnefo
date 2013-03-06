@@ -248,23 +248,56 @@ def pprint_table(out, table, headers=None, separator=None):
                                for val, width in zip(row, widths)))
 
 
-class UUIDCache(object):
-    """UUID-to-email cache"""
+class UserCache(object):
+    """uuid<->displayname user 'cache'"""
 
     user_catalogs_url = ASTAKOS_URL.replace("im/authenticate",
                                             "service/api/user_catalogs")
 
-    def __init__(self):
+    def __init__(self, split=100):
         self.users = {}
 
-    def get_user(self, uuid):
+        self.split = split
+        assert(self.split > 0), "split must be positive"
+
+    def fetch_names(self, uuid_list):
+        l = len(uuid_list)
+
+        start = 0
+        while start < l:
+            end = self.split if l > self.split else l
+            try:
+                names = \
+                    astakos.get_displaynames(token=ASTAKOS_TOKEN,
+                                             url=UserCache.user_catalogs_url,
+                                             uuids=uuid_list[start:end])
+                self.users.update(names)
+            except Exception as e:
+                log.error("Failed to fetch names: %s",  e)
+
+            start = end
+
+    def get_uuid(self, name):
+        if not name in self.users:
+            try:
+                self.users[name] = \
+                    astakos.get_user_uuid(token=ASTAKOS_TOKEN,
+                                          url=UserCache.user_catalogs_url,
+                                          displayname=name)
+            except Exception as e:
+                log.error("Can not get uuid for name %s: %s", name, e)
+                self.users[name] = name
+
+        return self.users[name]
+
+    def get_name(self, uuid):
         """Do the uuid-to-email resolving"""
 
         if not uuid in self.users:
             try:
                 self.users[uuid] = \
                     astakos.get_displayname(token=ASTAKOS_TOKEN,
-                                            url=UUIDCache.user_catalogs_url,
+                                            url=UserCache.user_catalogs_url,
                                             uuid=uuid)
             except Exception as e:
                 log.error("Can not get display name for uuid %s: %s", uuid, e)

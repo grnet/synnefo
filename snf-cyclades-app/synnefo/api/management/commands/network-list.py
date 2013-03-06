@@ -34,7 +34,7 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import (format_bool, filter_results, UUIDCache,
+from synnefo.management.common import (format_bool, filter_results, UserCache,
                                        Omit)
 from synnefo.db.models import Network
 from synnefo.management.common import pprint_table
@@ -87,7 +87,7 @@ class Command(BaseCommand):
         if args:
             raise CommandError("Command doesn't accept any arguments")
 
-        ucache = UUIDCache()
+        ucache = UserCache()
 
         if options['deleted']:
             networks = Network.objects.all()
@@ -100,7 +100,7 @@ class Command(BaseCommand):
         user = options['user']
         if user:
             if '@' in user:
-                user = ucache.get_user(user)
+                user = ucache.get_uuid(user)
             networks = networks.filter(userid=user)
 
         filter_by = options['filter_by']
@@ -128,11 +128,14 @@ class Command(BaseCommand):
         else:
             headers.extend(['IPv4 Subnet', 'IPv4 Gateway'])
 
+        uuids = list(set([network.userid for network in networks]))
+        ucache.fetch_names(uuids)
+
         table = []
         for network in networks.order_by("id"):
             uuid = network.userid
             if displayname:
-                dname = ucache.get_user(uuid)
+                dname = ucache.get_name(uuid)
 
             fields = filter(lambda x: x is not Omit,
                             [str(network.id),

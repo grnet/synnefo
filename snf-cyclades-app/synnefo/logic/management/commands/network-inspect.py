@@ -36,7 +36,7 @@ import json
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import get_network, UUIDCache, Omit
+from synnefo.management.common import get_network, UserCache, Omit
 
 from synnefo.db.models import (Backend, BackendNetwork,
                                pooled_rapi_client)
@@ -62,7 +62,7 @@ class Command(BaseCommand):
 
         net = get_network(args[0])
 
-        ucache = UUIDCache()
+        ucache = UserCache()
 
         displayname = options['displayname']
 
@@ -75,7 +75,7 @@ class Command(BaseCommand):
 
         uuid = net.userid
         if displayname:
-            dname = ucache.get_user(uuid)
+            dname = ucache.get_name(uuid)
 
         fields = filter(lambda x: x is not Omit,
                         [net.name, net.backend_id, net.state, uuid or '-',

@@ -35,7 +35,7 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 from synnefo.management.common import (format_vm_state, get_backend, Omit,
-                                       filter_results, pprint_table, UUIDCache)
+                                       filter_results, pprint_table, UserCache)
 from synnefo.api.util import get_image
 from synnefo.db.models import VirtualMachine
 
@@ -92,7 +92,7 @@ class Command(BaseCommand):
         if args:
             raise CommandError("Command doesn't accept any arguments")
 
-        ucache = UUIDCache()
+        ucache = UserCache()
 
         if options['backend_id']:
             backend = get_backend(options['backend_id'])
@@ -114,7 +114,7 @@ class Command(BaseCommand):
         user = options['user']
         if user:
             if '@' in user:
-                user = ucache.get_user(user)
+                user = ucache.get_uuid(user)
             servers = servers.filter(userid=user)
 
         filter_by = options['filter_by']
@@ -136,6 +136,9 @@ class Command(BaseCommand):
                          'backend',
                           ])
 
+        uuids = list(set([server.userid for server in servers]))
+        ucache.fetch_names(uuids)
+
         table = []
         for server in servers.order_by('id'):
             try:
@@ -151,7 +154,7 @@ class Command(BaseCommand):
 
             uuid = server.userid
             if displayname:
-                dname = ucache.get_user(server.userid)
+                dname = ucache.get_name(server.userid)
 
             fields = filter(lambda x: x is not Omit,
                             [str(server.id),

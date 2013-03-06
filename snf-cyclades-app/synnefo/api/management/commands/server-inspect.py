@@ -77,7 +77,7 @@ class Command(BaseCommand):
 
         displayname = options['displayname']
 
-        ucache = common.UUIDCache()
+        ucache = common.UserCache()
 
         try:
             image = common.get_image(vm.imageid, vm.userid)['name']
@@ -94,7 +94,7 @@ class Command(BaseCommand):
 
         uuid = vm.userid
         if displayname:
-            dname = ucache.get_user(uuid)
+            dname = ucache.get_name(uuid)
 
         fields = filter(lambda x: x is not Omit,
                         [vm.name, uuid, dname if displayname else Omit,

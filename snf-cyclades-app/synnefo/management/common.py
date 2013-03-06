@@ -49,6 +49,8 @@ from synnefo.settings import (CYCLADES_ASTAKOS_SERVICE_TOKEN as ASTAKOS_TOKEN,
 from synnefo.logic.rapi import GanetiApiError, GanetiRapiClient
 from synnefo.lib import astakos
 
+from synnefo.util.text import uenc
+
 import logging
 log = logging.getLogger(__name__)
 
@@ -231,7 +233,7 @@ def pprint_table(out, table, headers=None, separator=None):
         table.insert(0, headers)
 
     # Find out the max width of each column
-    widths = [max(map(len, str(col))) for col in zip(*table)]
+    widths = [max(map(len, col)) for col in zip(*table)]
 
     t_length = sum(widths) + len(sep) * (len(widths) - 1)
     if headers:
@@ -244,8 +246,8 @@ def pprint_table(out, table, headers=None, separator=None):
 
     # print the rest table
     for row in table:
-        print >> out, sep.join((str(val).rjust(width).encode('utf8')
-                               for val, width in zip(row, widths)))
+        print >> out, sep.join(uenc(val.rjust(width))
+                               for val, width in zip(row, widths))
 
 
 class UserCache(object):

@@ -39,6 +39,8 @@ from synnefo.management.common import (format_vm_state, get_backend,
 from synnefo.api.util import get_image
 from synnefo.db.models import VirtualMachine
 
+import logging
+log = logging.getLogger(__name__)
 
 FIELDS = VirtualMachine._meta.get_all_field_names()
 
@@ -126,10 +128,7 @@ class Command(BaseCommand):
 
             flavor = server.flavor.name
 
-            try:
-                image = cache.get_image(server.imageid, server.userid)['name']
-            except:
-                image = server.imageid
+            image = cache.get_image(server.imageid, server.userid)
 
             state = format_vm_state(server)
 
@@ -151,5 +150,11 @@ class ImageCache(object):
 
     def get_image(self, imageid, userid):
         if not imageid in self.images:
-            self.images[imageid] = get_image(imageid, userid)
+            try:
+                self.images[imageid] = get_image(imageid, userid)['name']
+            except Exception as e:
+                log.warning("Error getting image name from imageid %s",
+                            imageid, e)
+                self.images[imageid] = imageid
+
         return self.images[imageid]

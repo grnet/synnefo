@@ -268,6 +268,10 @@ class UUIDCache(object):
                                             uuid=uuid)
             except Exception as e:
                 log.error("Can not get display name for uuid %s: %s", uuid, e)
-                return uuid
+                self.users[uuid] = "-"
 
         return self.users[uuid]
+
+
+class Omit(object):
+    pass

@@ -36,7 +36,7 @@ import json
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import get_network, UUIDCache
+from synnefo.management.common import get_network, UUIDCache, Omit
 
 from synnefo.db.models import (Backend, BackendNetwork,
                                pooled_rapi_client)
@@ -48,12 +48,12 @@ class Command(BaseCommand):
     help = "Inspect a network on DB and Ganeti."
 
     option_list = BaseCommand.option_list + (
-        make_option('--uuids',
+        make_option('--displayname',
             action='store_true',
-            dest='use_uuids',
+            dest='displayname',
             default=False,
-            help="Display UUIDs instead of user emails"),
-        )
+            help="Display both uuid and display name"),
+    )
 
     def handle(self, *args, **options):
         write = self.stdout.write
@@ -62,21 +62,28 @@ class Command(BaseCommand):
 
         net = get_network(args[0])
 
+        ucache = UUIDCache()
+
+        displayname = options['displayname']
+
         sep = '-' * 80 + '\n'
-        labels = ('name', 'backend-name', 'state', 'owner', 'subnet',
-                  'gateway', 'mac_prefix', 'link', 'public', 'dhcp', 'flavor',
-                  'deleted', 'action', 'pool')
+        labels = filter(lambda x: x is not Omit,
+                        ['name', 'backend-name', 'state', 'owner uuid',
+                         'owner_name' if displayname else Omit, 'subnet',
+                         'gateway', 'mac_prefix', 'link', 'public', 'dhcp',
+                         'flavor', 'deleted', 'action', 'pool'])
 
-        user = net.userid
-        if options['use_uuids'] is False:
-            ucache = UUIDCache()
-            user = ucache.get_user(net.userid)
+        uuid = net.userid
+        if displayname:
+            dname = ucache.get_user(uuid)
 
-        fields = (net.name, net.backend_id, net.state, user or '',
-                  str(net.subnet), str(net.gateway), str(net.mac_prefix),
-                  str(net.link), str(net.public),  str(net.dhcp),
-                  str(net.flavor), str(net.deleted), str(net.action),
-                  str(splitPoolMap(net.get_pool().to_map(), 64)))
+        fields = filter(lambda x: x is not Omit,
+                        [net.name, net.backend_id, net.state, uuid or '-',
+                         dname or '-' if displayname else Omit,
+                         str(net.subnet), str(net.gateway), str(net.mac_prefix),
+                         str(net.link), str(net.public),  str(net.dhcp),
+                         str(net.flavor), str(net.deleted), str(net.action),
+                         str(splitPoolMap(net.get_pool().to_map(), 64))])
 
         write(sep)
         write('State of Network in DB\n')

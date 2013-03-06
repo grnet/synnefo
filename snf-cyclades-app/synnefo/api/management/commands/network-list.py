@@ -34,7 +34,8 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import format_bool, filter_results, UUIDCache
+from synnefo.management.common import (format_bool, filter_results, UUIDCache,
+                                       Omit)
 from synnefo.db.models import Network
 from synnefo.management.common import pprint_table
 
@@ -60,6 +61,10 @@ class Command(BaseCommand):
             dest='public',
             default=False,
             help="List only public networks"),
+        make_option('--user',
+            dest='user',
+            help="List only networks of the specified user"
+                 " (uuid or display name"),
         make_option('--ipv6',
             action='store_true',
             dest='ipv6',
@@ -71,19 +76,19 @@ class Command(BaseCommand):
                  " that displayed entries must satisfy. e.g."
                  " --filter-by \"name=Network-1,link!=prv0\"."
                  " Available keys are: %s" % ", ".join(FIELDS)),
-        make_option(
-            '--uuids',
+        make_option('--displayname',
             action='store_true',
-            dest='use_uuids',
+            dest='displayname',
             default=False,
-            help="Display UUIDs instead of user emails"),
+            help="Display both uuid and display name"),
         )
 
     def handle(self, *args, **options):
         if args:
             raise CommandError("Command doesn't accept any arguments")
 
-        use_uuids = options["use_uuids"]
+        ucache = UUIDCache()
+
         if options['deleted']:
             networks = Network.objects.all()
         else:
@@ -92,37 +97,56 @@ class Command(BaseCommand):
         if options['public']:
             networks = networks.filter(public=True)
 
+        user = options['user']
+        if user:
+            if '@' in user:
+                user = ucache.get_user(user)
+            networks = networks.filter(userid=user)
+
         filter_by = options['filter_by']
         if filter_by:
             networks = filter_results(networks, filter_by)
 
-        headers = ['id', 'name', 'flavor', 'owner',
-                  'mac_prefix', 'dhcp', 'state', 'link', 'vms', 'public']
+        displayname = options['displayname']
+
+        headers = filter(lambda x: x is not Omit,
+                        ['id',
+                         'name',
+                         'flavor',
+                         'owner_uuid',
+                         'owner_name' if displayname else Omit,
+                         'mac_prefix',
+                         'dhcp',
+                         'state',
+                         'link',
+                         'vms',
+                         'public',
+                         ])
 
         if options['ipv6']:
             headers.extend(['IPv6 Subnet', 'IPv6 Gateway'])
         else:
             headers.extend(['IPv4 Subnet', 'IPv4 Gateway'])
 
-        if not use_uuids:
-            ucache = UUIDCache()
-
         table = []
         for network in networks.order_by("id"):
-            user = network.userid
-            if not use_uuids:
-                user = ucache.get_user(network.userid)
+            uuid = network.userid
+            if displayname:
+                dname = ucache.get_user(uuid)
 
-            fields = [str(network.id),
-                      network.name,
-                      network.flavor,
-                      user or '',
-                      network.mac_prefix or '',
-                      str(network.dhcp),
-                      network.state,
-                      network.link or '',
-                      str(network.machines.count()),
-                      format_bool(network.public)]
+            fields = filter(lambda x: x is not Omit,
+                            [str(network.id),
+                             network.name,
+                             network.flavor,
+                             uuid or '-',
+                             dname or '-' if displayname else Omit,
+                             network.mac_prefix or '-',
+                             str(network.dhcp),
+                             network.state,
+                             network.link or '-',
+                             str(network.machines.count()),
+                             format_bool(network.public),
+                             ])
 
             if options['ipv6']:
                 fields.extend([network.subnet6 or '', network.gateway6 or ''])

@@ -49,6 +49,8 @@ from synnefo.settings import (CYCLADES_ASTAKOS_SERVICE_TOKEN as ASTAKOS_TOKEN,
 from synnefo.logic.rapi import GanetiApiError, GanetiRapiClient
 from synnefo.lib import astakos
 
+from synnefo.util.text import uenc
+
 import logging
 log = logging.getLogger(__name__)
 
@@ -223,9 +225,11 @@ def pprint_table(out, table, headers=None, separator=None):
     to this value.
     """
 
+    assert(isinstance(table, (list, tuple))), "Invalid table type"
     sep = separator if separator else "  "
 
     if headers:
+        assert(isinstance(headers, (list, tuple))), "Invalid headers type"
         table.insert(0, headers)
 
     # Find out the max width of each column
@@ -234,7 +238,7 @@ def pprint_table(out, table, headers=None, separator=None):
     t_length = sum(widths) + len(sep) * (len(widths) - 1)
     if headers:
         # pretty print the headers
-        print >> out, sep.join((val.rjust(width)
+        print >> out, sep.join((str(val).rjust(width)
                                for val, width in zip(headers, widths)))
         print >> out, "-" * t_length
         # remove headers
@@ -242,30 +246,67 @@ def pprint_table(out, table, headers=None, separator=None):
 
     # print the rest table
     for row in table:
-        print >> out, sep.join((val.rjust(width).encode('utf8')
-                               for val, width in zip(row, widths)))
+        print >> out, sep.join(uenc(val.rjust(width))
+                               for val, width in zip(row, widths))
 
 
-class UUIDCache(object):
-    """UUID-to-email cache"""
+class UserCache(object):
+    """uuid<->displayname user 'cache'"""
 
     user_catalogs_url = ASTAKOS_URL.replace("im/authenticate",
                                             "service/api/user_catalogs")
 
-    def __init__(self):
+    def __init__(self, split=100):
         self.users = {}
 
-    def get_user(self, uuid):
+        self.split = split
+        assert(self.split > 0), "split must be positive"
+
+    def fetch_names(self, uuid_list):
+        l = len(uuid_list)
+
+        start = 0
+        while start < l:
+            end = self.split if l > self.split else l
+            try:
+                names = \
+                    astakos.get_displaynames(token=ASTAKOS_TOKEN,
+                                             url=UserCache.user_catalogs_url,
+                                             uuids=uuid_list[start:end])
+                self.users.update(names)
+            except Exception as e:
+                log.error("Failed to fetch names: %s",  e)
+
+            start = end
+
+    def get_uuid(self, name):
+        if not name in self.users:
+            try:
+                self.users[name] = \
+                    astakos.get_user_uuid(token=ASTAKOS_TOKEN,
+                                          url=UserCache.user_catalogs_url,
+                                          displayname=name)
+            except Exception as e:
+                log.error("Can not get uuid for name %s: %s", name, e)
+                self.users[name] = name
+
+        return self.users[name]
+
+    def get_name(self, uuid):
         """Do the uuid-to-email resolving"""
 
         if not uuid in self.users:
             try:
                 self.users[uuid] = \
                     astakos.get_displayname(token=ASTAKOS_TOKEN,
-                                            url=UUIDCache.user_catalogs_url,
+                                            url=UserCache.user_catalogs_url,
                                             uuid=uuid)
             except Exception as e:
                 log.error("Can not get display name for uuid %s: %s", uuid, e)
-                return uuid
+                self.users[uuid] = "-"
 
         return self.users[uuid]
+
+
+class Omit(object):
+    pass

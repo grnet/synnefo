@@ -439,18 +439,21 @@ def feedback_submit(request):
 
     message = request.POST.get("feedback-msg")
     data = request.POST.get("feedback-data")
+    if isinstance(request.user.get('email'), list):
+        email = request.user.get('email')[0]
+    else:
+        email = request.user.get('email')
 
     # default to True (calls from error pages)
     allow_data_send = request.POST.get("feedback-submit-data", True)
 
     mail_subject = unicode(_("Feedback from synnefo application"))
 
-    mail_context = {'message': message, 'data': data,
+    mail_context = {'message': message, 'data': data, 'email': email,
                     'allow_data_send': allow_data_send, 'request': request}
     mail_content = render_to_string("feedback_mail.txt", mail_context)
 
     send_mail(mail_subject, mail_content, FEEDBACK_EMAIL_FROM,
-            dict(FEEDBACK_CONTACTS).values(), fail_silently=False)
+              dict(FEEDBACK_CONTACTS).values(), fail_silently=False)
 
-    return HttpResponse('{"status":"send"}');
-
+    return HttpResponse('{"status":"send"}')

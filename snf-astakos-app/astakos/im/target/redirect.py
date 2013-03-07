@@ -65,7 +65,7 @@ def login(request):
     """
     next = request.GET.get('next')
     if not next:
-        next = reverse('astakos.im.views.home')
+        next = reverse('index')
 
     if not restrict_next(
         next, domain=COOKIE_DOMAIN, allowed_schemes=('pithos',)

@@ -32,10 +32,14 @@
 # or implied, of GRNET S.A.
 
 from datetime import datetime
+import uuid
 
+from django.core.validators import validate_email
 from django.utils.timesince import timesince, timeuntil
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import FieldError
+from django.core.management import CommandError
 
 from synnefo.lib.ordereddict import OrderedDict
 from astakos.im.models import AstakosUser
@@ -163,3 +167,70 @@ def shortened(s, limit, suffix=True):
             return '..' + s[-display:]
         else:
             return s[:display] + '..'
+
+
+# Copied from snf-cyclades-app/synnefo/management/common.py
+# It could be moved to snf-common
+def filter_results(objects, filter_by):
+    filter_list = filter_by.split(",")
+    filter_dict = {}
+    exclude_dict = {}
+
+    def map_field_type(query):
+        def fix_bool(val):
+            if val.lower() in ("yes", "true", "t"):
+                return True
+            if val.lower() in ("no", "false", "f"):
+                return False
+            return val
+
+        if "!=" in query:
+            key, val = query.split("!=")
+            exclude_dict[key] = fix_bool(val)
+            return
+        OP_MAP = {
+            ">=": "__gte",
+            "=>": "__gte",
+            ">":  "__gt",
+            "<=": "__lte",
+            "=<": "__lte",
+            "<":  "__lt",
+            "=":  "",
+        }
+        for op, new_op in OP_MAP.items():
+            if op in query:
+                key, val = query.split(op)
+                filter_dict[key + new_op] = fix_bool(val)
+                return
+
+    map(lambda x: map_field_type(x), filter_list)
+
+    try:
+        objects = objects.filter(**filter_dict)
+        return objects.exclude(**exclude_dict)
+    except FieldError as e:
+        raise CommandError(e)
+    except Exception as e:
+        raise CommandError("Can not filter results: %s" % e)
+
+
+def is_uuid(s):
+    if s is None:
+        return False
+    try:
+        uuid.UUID(s)
+    except ValueError:
+        return False
+    else:
+        return True
+
+
+def is_email(s):
+    if s is None:
+        return False
+    try:
+        validate_email(s)
+    except:
+        return False
+    else:
+        return True

@@ -34,11 +34,13 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import (format_vm_state, get_backend,
-                                       filter_results, pprint_table, UUIDCache)
+from synnefo.management.common import (format_vm_state, get_backend, Omit,
+                                       filter_results, pprint_table, UserCache)
 from synnefo.api.util import get_image
 from synnefo.db.models import VirtualMachine
 
+import logging
+log = logging.getLogger(__name__)
 
 FIELDS = VirtualMachine._meta.get_all_field_names()
 
@@ -70,25 +72,28 @@ class Command(BaseCommand):
         make_option('--backend-id',
             dest='backend_id',
             help="List only servers of the specified backend"),
+        make_option('--user',
+            dest='user',
+            help="List only servers of the specified user (uuid or email)"),
         make_option('--filter-by',
             dest='filter_by',
             help="Filter results. Comma seperated list of key `cond` val pairs"
                  " that displayed entries must satisfy. e.g."
                  " --filter-by \"operstate=STARTED,id>=22\"."
                  " Available keys are: %s" % ", ".join(FIELDS)),
-        make_option(
-            '--uuids',
+        make_option('--displayname',
             action='store_true',
-            dest='use_uuids',
+            dest='displayname',
             default=False,
-            help="Display UUIDs instead of user emails"),
+            help="Display both uuid and display name"),
     )
 
     def handle(self, *args, **options):
         if args:
             raise CommandError("Command doesn't accept any arguments")
 
-        use_uuids = options["use_uuids"]
+        ucache = UserCache()
+
         if options['backend_id']:
             backend = get_backend(options['backend_id'])
             servers = backend.virtual_machines
@@ -106,16 +111,33 @@ class Command(BaseCommand):
         if options['build']:
             servers = servers.filter(operstate='BUILD')
 
+        user = options['user']
+        if user:
+            if '@' in user:
+                user = ucache.get_uuid(user)
+            servers = servers.filter(userid=user)
+
         filter_by = options['filter_by']
         if filter_by:
             servers = filter_results(servers, filter_by)
 
-        cache = ImageCache()
-        if not use_uuids:
-            ucache = UUIDCache()
+        displayname = options['displayname']
 
-        headers = ('id', 'name', 'owner', 'flavor', 'image', 'state',
-                   'backend')
+        cache = ImageCache()
+
+        headers = filter(lambda x: x is not Omit,
+                         ['id',
+                          'name',
+                          'owner_uuid',
+                          'owner_name' if displayname else Omit,
+                          'flavor',
+                          'image',
+                          'state',
+                          'backend',
+                          ])
+
+        uuids = list(set([server.userid for server in servers]))
+        ucache.fetch_names(uuids)
 
         table = []
         for server in servers.order_by('id'):
@@ -126,19 +148,24 @@ class Command(BaseCommand):
 
             flavor = server.flavor.name
 
-            try:
-                image = cache.get_image(server.imageid, server.userid)['name']
-            except:
-                image = server.imageid
+            image = cache.get_image(server.imageid, server.userid)
 
             state = format_vm_state(server)
 
-            user = server.userid
-            if not use_uuids:
-                user = ucache.get_user(server.userid)
+            uuid = server.userid
+            if displayname:
+                dname = ucache.get_name(server.userid)
 
-            fields = (str(server.id), name, user, flavor, image,
-                      state, str(server.backend))
+            fields = filter(lambda x: x is not Omit,
+                            [str(server.id),
+                             name,
+                             uuid,
+                             dname if displayname else Omit,
+                             flavor,
+                             image,
+                             state,
+                             str(server.backend),
+                             ])
             table.append(fields)
 
         separator = " | " if options['csv'] else None
@@ -151,5 +178,11 @@ class ImageCache(object):
 
     def get_image(self, imageid, userid):
         if not imageid in self.images:
-            self.images[imageid] = get_image(imageid, userid)
+            try:
+                self.images[imageid] = get_image(imageid, userid)['name']
+            except Exception as e:
+                log.warning("Error getting image name from imageid %s: %s",
+                            imageid, e)
+                self.images[imageid] = imageid
+
         return self.images[imageid]

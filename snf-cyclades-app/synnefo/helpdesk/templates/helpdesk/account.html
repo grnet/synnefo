@@ -1,7 +1,7 @@
 {% extends "helpdesk/base.html" %}
 
 {% block extraheader %}
-<small>/ {{ account }}</small>
+<small>/ {{ account_name }}</small>
 {% endblock %}
 
 {% block content %}
@@ -35,12 +35,12 @@
             </li>
           </ul>
       </li>
-      <li><h2>{{ account }}</h2></li>
+      <li><h2>{{ account_name }}</h2></li>
   </ul>
 </div>
 <div class="row-fluid">
     <div class="object-anchor" id="account"></div>
-    <h3 class="info">{{ account }} | {{ vms|length }} VMs |  {{ networks|length }} Networks</h3>
+    <h3 class="info">{{ account_name }} | {{ account }} | {{ vms|length }} VMs |  {{ networks|length }} Networks</h3>
     </div>
     <div class="object-anchor" id="vms"></div>
     <div class="vms info-block well">

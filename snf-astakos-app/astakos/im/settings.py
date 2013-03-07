@@ -359,3 +359,8 @@ GOOGLE_SECRET = getattr(settings, 'ASTAKOS_GOOGLE_SECRET', '')
 # OAuth2 LinkedIn credentials.
 LINKEDIN_TOKEN = getattr(settings, 'ASTAKOS_LINKEDIN_TOKEN', '')
 LINKEDIN_SECRET = getattr(settings, 'ASTAKOS_LINKEDIN_SECRET', '')
+
+# Where to redirect the user after successful login when no next parameter is
+# set
+LOGIN_SUCCESS_URL = getattr(settings, 'ASTAKOS_LOGIN_SUCCESS_URL',
+                            '/im/landing')

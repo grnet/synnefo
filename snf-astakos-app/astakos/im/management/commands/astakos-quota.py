@@ -74,11 +74,7 @@ class Command(BaseCommand):
         user_ident = options['user']
 
         if user_ident is not None:
-            if verify:
-                raise CommandError("Cannot combine `--user' option "
-                                   "with `--verify' or `--sync'.")
-
-            log = self.run_sync_user(user_ident)
+            log = self.run_sync_user(user_ident, sync)
         else:
             log = self.run(sync)
 
@@ -91,7 +87,7 @@ class Command(BaseCommand):
             self.list_quotas(qh_l, qh_c, astakos_i, info)
 
     @transaction.commit_on_success
-    def run_sync_user(self, user_ident):
+    def run_sync_user(self, user_ident, sync):
         if is_uuid(user_ident):
             try:
                 user = AstakosUser.objects.get(uuid=user_ident)
@@ -107,8 +103,11 @@ class Command(BaseCommand):
         else:
             raise CommandError('Please specify user by uuid or email')
 
+        if not user.email_verified and sync:
+            raise CommandError('User %s is not verified.' % user.uuid)
+
         try:
-            return sync_users([user], sync=False)
+            return sync_users([user], sync=sync)
         except BaseException, e:
             logger.exception(e)
             raise CommandError("Failed to compute quotas.")

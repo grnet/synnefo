@@ -118,17 +118,17 @@ def migrate(callback):
         bar.next()
     bar.finish()
 
-    s = sa.select([v.c.node, v.c.muser])
-    versions = connection.execute(s).fetchall()
+    s = sa.select([v.c.muser]).distinct()
+    musers = connection.execute(s).fetchall()
     bar = IncrementalBar('Migrating version modification users...',
-                         max=len(versions)
+                         max=len(musers)
     )
-    for node, muser in versions:
+    for muser, in musers:
         match = callback(muser)
         if not match:
             bar.next()
             continue
-        u = v.update().where(v.c.node == node).values({'muser':match})
+        u = v.update().where(v.c.muser == muser).values({'muser': match})
         connection.execute(u)
         bar.next()
     bar.finish()

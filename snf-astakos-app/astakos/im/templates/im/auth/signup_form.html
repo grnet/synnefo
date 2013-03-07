@@ -20,4 +20,10 @@
       </div>
   </form>
 </div>
-
+{% if auth_providers|length == 1 %}
+<style>
+  .two-cols .rt > p { display: none }
+  .form-stacked { display: block !important }
+  a.submit.standalone { display: none !important }
+</style>
+{% endif %}

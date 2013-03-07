@@ -244,7 +244,7 @@ RESOURCES_PRESENTATION_DATA = getattr(
                  'verbose_name':'storage',
             },
             'network': {
-                'help_text':' Network resources (amount of Private Networks)  ',
+                'help_text':' Network resources (number of Private Networks)  ',
                 'is_abbreviation':False,
                 'report_desc':'',
                 'verbose_name':'network',
@@ -340,6 +340,12 @@ TRANSLATE_UUIDS = getattr(settings, 'ASTAKOS_TRANSLATE_UUIDS', False)
 # Users that can approve or deny project applications from the web.
 PROJECT_ADMINS = getattr(settings, 'ASTAKOS_PROJECT_ADMINS', set())
 
+# Maximum pending project applications per applicant.
+# This is to reduce the volume of applications
+# in case users abuse the mechanism.
+PENDING_APPLICATION_LIMIT = getattr(settings,
+                                    'ASTAKOS_PENDING_APPLICATION_LIMIT', 1)
+
 # OAuth2 Twitter credentials.
 TWITTER_TOKEN = getattr(settings, 'ASTAKOS_TWITTER_TOKEN', '')
 TWITTER_SECRET = getattr(settings, 'ASTAKOS_TWITTER_SECRET', '')
@@ -353,3 +359,8 @@ GOOGLE_SECRET = getattr(settings, 'ASTAKOS_GOOGLE_SECRET', '')
 # OAuth2 LinkedIn credentials.
 LINKEDIN_TOKEN = getattr(settings, 'ASTAKOS_LINKEDIN_TOKEN', '')
 LINKEDIN_SECRET = getattr(settings, 'ASTAKOS_LINKEDIN_SECRET', '')
+
+# Where to redirect the user after successful login when no next parameter is
+# set
+LOGIN_SUCCESS_URL = getattr(settings, 'ASTAKOS_LOGIN_SUCCESS_URL',
+                            '/im/landing')

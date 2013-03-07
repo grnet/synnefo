@@ -34,7 +34,7 @@
 from django.core.management.base import BaseCommand, CommandError
 from synnefo.management.common import (format_bool, format_date,
                                        format_vm_state, get_vm,
-                                       get_image, UUIDCache)
+                                       get_image, UserCache)
 
 
 class Command(BaseCommand):
@@ -61,7 +61,7 @@ class Command(BaseCommand):
             'id': server.id,
             'name': server.name,
             'owner_uuid': userid,
-            'owner_name': UUIDCache().get_user(userid),
+            'owner_name': UserCache().get_name(userid),
             'created': format_date(server.created),
             'updated': format_date(server.updated),
             'image': image,
@@ -69,7 +69,7 @@ class Command(BaseCommand):
             'flavor': flavor,
             'deleted': format_bool(server.deleted),
             'suspended': format_bool(server.suspended),
-            'state': format_vm_state(server)
+            'state': format_vm_state(server),
         }
 
         for key, val in sorted(kv.items()):

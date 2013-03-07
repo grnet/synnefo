@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -163,6 +163,25 @@ class QHAPITest(QHTestCase):
         k = Key.random()
         r = self.qh.get_entity(get_entity=[(self.e_name, self.e_key), (e, k)])
         self.assertEqual(r, [(self.e_name, 'system')])
+
+    def test_0051_get_entity(self):
+        e = self.rand_entity()
+        k = Key.random()
+        e1, k1 = self.new_entity()
+        e2, k2 = self.new_entity()
+        e3, k3 = self.new_entity(e1, k1)
+        r = self.qh.get_entity(get_entity=[(self.e_name, self.e_key),
+                                           (e, k),
+                                           (e2, k2),
+                                           (e2, k2+'wrong'),
+                                           (e3, k3),
+                                           (e3, k3),
+                                           ])
+        self.assertEqual(r, [(self.e_name, 'system'),
+                             (e2, 'system'),
+                             (e3, e1),
+                             (e3, e1),
+                             ])
 
     def test_006_get_set_limits(self):
 
@@ -370,56 +389,56 @@ class QHAPITest(QHTestCase):
         self.new_quota(et1, kt1, resource, (0, 15, 3, 20))
         self.new_quota(et2, kt2, resource, (0, 15, 20, 20))
 
-        try:
+        with self.assertRaises(NoQuantityError) as cm:
             self.qh.issue_commission(clientkey=self.client, target=et1, key=kt1,
                                      name='something',
                                      provisions=[(es1, resource, 12)])
-        except NoQuantityError, e:
-            self.assertEqual(e.source, es1)
-            self.assertEqual(e.target, et1)
-            self.assertEqual(e.resource, resource)
-            self.assertEqual(e.limit, 10)
-            self.assertEqual(e.requested, 12)
-            self.assertEqual(e.current, 0)
+        e = cm.exception
+        self.assertEqual(e.source, es1)
+        self.assertEqual(e.target, et1)
+        self.assertEqual(e.resource, resource)
+        self.assertEqual(int(e.limit), 10)
+        self.assertEqual(int(e.requested), 12)
+        self.assertEqual(int(e.current), 0)
 
-            r = self.qh.issue_commission(clientkey=self.client, target=et1,
-                                         key=kt1,
-                                         name='something',
-                                         provisions=[(es1, resource, 2)])
-            self.assertGreater(r, 0)
+        r = self.qh.issue_commission(clientkey=self.client, target=et1,
+                                     key=kt1,
+                                     name='something',
+                                     provisions=[(es1, resource, 2)])
+        self.assertGreater(r, 0)
 
-        try:
+        with self.assertRaises(ImportLimitError) as cm:
             self.qh.issue_commission(clientkey=self.client, target=et1, key=kt1,
                                      name='something',
                                      provisions=[(es1, resource, 2)])
-        except ImportLimitError, e:
-            self.assertEqual(e.source, es1)
-            self.assertEqual(e.target, et1)
-            self.assertEqual(e.resource, resource)
-            self.assertEqual(e.limit, 3)
-            self.assertEqual(e.requested, 2)
-            self.assertEqual(e.current, 2)
+        e = cm.exception
+        self.assertEqual(e.source, es1)
+        self.assertEqual(e.target, et1)
+        self.assertEqual(e.resource, resource)
+        self.assertEqual(int(e.limit), 3)
+        self.assertEqual(int(e.requested), 2)
+        self.assertEqual(int(e.current), 2)
 
-            r = self.qh.issue_commission(clientkey=self.client, target=et2,
-                                         key=kt2,
-                                         name='something',
-                                         provisions=[(es2, resource, 9)])
-            self.assertGreater(r, 0)
+        r = self.qh.issue_commission(clientkey=self.client, target=et2,
+                                     key=kt2,
+                                     name='something',
+                                     provisions=[(es2, resource, 9)])
+        self.assertGreater(r, 0)
 
-        try:
+        with self.assertRaises(NoCapacityError) as cm:
             self.qh.issue_commission(clientkey=self.client, target=et2,
                                      key=kt2,
                                      name='something',
                                      provisions=[(es2, resource, 1),
-                                                 (es1, resource, 2)])
-        except NoCapacityError, e:
-            self.assertEqual(e.source, es1)
-            self.assertEqual(e.target, et2)
-            self.assertEqual(e.resource, resource)
-            self.assertEqual(e.limit, 10)
-            self.assertEqual(e.requested, 2)
-            # 9 actual + 1 from the first provision
-            self.assertEqual(e.current, 10)
+                                                 (es1, resource, 6)])
+        e = cm.exception
+        self.assertEqual(e.source, es1)
+        self.assertEqual(e.target, et2)
+        self.assertEqual(e.resource, resource)
+        self.assertEqual(int(e.limit), 15)
+        self.assertEqual(int(e.requested), 6)
+        # 9 actual + 1 from the first provision
+        self.assertEqual(int(e.current), 10)
 
 
     def test_010_list_holdings(self):

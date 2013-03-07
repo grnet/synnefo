@@ -37,6 +37,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from synnefo.lib.utils import merge_time
 from synnefo.logic.rapi import GanetiApiError
+from synnefo.management.common import Omit
 from synnefo.management import common
 
 
@@ -63,11 +64,11 @@ class Command(BaseCommand):
             default=False,
             help="Show non-archived jobs concerning server."),
         make_option(
-            '--uuids',
+            '--displayname',
             action='store_true',
-            dest='use_uuids',
+            dest='displayname',
             default=False,
-            help="Display UUIDs instead of user emails"),
+            help="Display both uuid and display name"),
     )
 
     def handle(self, *args, **options):
@@ -76,26 +77,33 @@ class Command(BaseCommand):
 
         vm = common.get_vm(args[0])
 
+        displayname = options['displayname']
+
+        ucache = common.UserCache()
+
         try:
             image = common.get_image(vm.imageid, vm.userid)['name']
         except:
             image = vm.imageid
 
         sep = '-' * 80 + '\n'
-        labels = ('name', 'owner', 'flavor', 'image', 'state', 'backend',
-                  'deleted', 'action', 'backendjobid', 'backendopcode',
-                  'backendjobstatus', 'backend_time')
+        labels = filter(lambda x: x is not Omit,
+                        ['name', 'owner_uuid',
+                         'owner_name' if displayname else Omit,
+                         'flavor', 'image', 'state', 'backend', 'deleted',
+                         'action', 'backendjobid', 'backendopcode',
+                         'backendjobstatus', 'backend_time'])
 
-        user = vm.userid
-        if options['use_uuids'] is False:
-            ucache = common.UUIDCache()
-            user = ucache.get_user(vm.userid)
+        uuid = vm.userid
+        if displayname:
+            dname = ucache.get_name(uuid)
 
-        fields = (vm.name, user, vm.flavor.name, image,
-                  common.format_vm_state(vm), str(vm.backend),
-                  str(vm.deleted), str(vm.action), str(vm.backendjobid),
-                  str(vm.backendopcode), str(vm.backendjobstatus),
-                  str(vm.backendtime))
+        fields = filter(lambda x: x is not Omit,
+                        [vm.name, uuid, dname if displayname else Omit,
+                         vm.flavor.name, image, common.format_vm_state(vm),
+                         str(vm.backend), str(vm.deleted), str(vm.action),
+                         str(vm.backendjobid), str(vm.backendopcode),
+                         str(vm.backendjobstatus), str(vm.backendtime)])
 
         self.stdout.write(sep)
         self.stdout.write('State of Server in DB\n')
@@ -104,9 +112,9 @@ class Command(BaseCommand):
             self.stdout.write(l.ljust(18) + ': ' + f.ljust(20) + '\n')
         self.stdout.write('\n')
         for nic in vm.nics.all():
-            msg = "nic/%d: IPv4: %s, MAC: %s, IPv6:%s,  Network: %s\n"\
-                  % (nic.index, nic.ipv4, nic.mac, nic.ipv6,  nic.network)
-            self.stdout.write(msg)
+            params = (nic.index, nic.ipv4, nic.mac, nic.ipv6,  nic.network)
+            self.stdout.write("nic/%d: IPv4: %s, MAC: %s, IPv6:%s,"
+                              " Network: %s\n" % params)
 
         client = vm.get_client()
         try:

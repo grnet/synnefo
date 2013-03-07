@@ -63,6 +63,10 @@ from pithos.backends.base import NotAllowedError as PithosNotAllowedError
 import synnefo.lib.astakos as lib_astakos
 import logging
 
+from synnefo.settings import (CYCLADES_USE_QUOTAHOLDER,
+                              CYCLADES_QUOTAHOLDER_URL,
+                              CYCLADES_QUOTAHOLDER_TOKEN)
+
 logger = logging.getLogger(__name__)
 
 
@@ -74,6 +78,7 @@ PLANKTON_META = ('container_format', 'disk_format', 'name', 'properties',
                  'status')
 
 TRANSLATE_UUIDS = getattr(settings, 'TRANSLATE_UUIDS', False)
+
 
 def get_displaynames(names):
     try:
@@ -113,6 +118,9 @@ from pithos.backends.util import PithosBackendPool
 POOL_SIZE = 8
 _pithos_backend_pool = \
     PithosBackendPool(POOL_SIZE,
+                      quotaholder_enabled=CYCLADES_USE_QUOTAHOLDER,
+                      quotaholder_url=CYCLADES_QUOTAHOLDER_URL,
+                      quotaholder_token=CYCLADES_QUOTAHOLDER_TOKEN,
                       db_connection=settings.BACKEND_DB_CONNECTION,
                       block_path=settings.BACKEND_BLOCK_PATH)
 

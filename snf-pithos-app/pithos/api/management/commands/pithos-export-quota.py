@@ -72,9 +72,10 @@ class Command(NoArgsCommand):
         except IOError, e:
             raise CommandError(e)
 
+        INF = str(10**30)
         for p in conn.execute(s).fetchall():
             f.write(' '.join(
-                [p.path, 'pithos+.diskspace', p.value, '0', '0', '0']))
+                [p.path, 'pithos+.diskspace', p.value, '0', INF, INF]))
             f.write('\n')
         f.close()
         backend.close()

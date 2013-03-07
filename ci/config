@@ -5,7 +5,6 @@ PROJECTS="\
  snf-pithos-backend\
  snf-cyclades-gtools\
  snf-cyclades-app\
- snf-pithos-tools\
  snf-pithos-app\
  snf-quotaholder-app\
  snf-tools"

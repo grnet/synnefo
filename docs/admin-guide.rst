@@ -960,6 +960,8 @@ By default, the Django webapp and snf-manage logs to syslog, while
 `snf-dispatcher` logs to `/var/log/synnefo/dispatcher.log`.
 
 
+.. _scale-up:
+
 Scaling up to multiple nodes
 ============================
 
@@ -984,6 +986,8 @@ The above graph is actually the same with the one at the beginning of this
 Synnefo roles of each physical node. These roles are described in the
 following section.
 
+.. _physical-node-roles:
+
 Physical Node roles
 -------------------
 
@@ -1004,7 +1008,7 @@ multiple physical nodes that have the following roles:
 You will probably also have:
 
 * **CMS**: The CMS used as a frotend portal for the Synnefo services
-* **NS**: A nameserver serving all other nodes
+* **NS**: A nameserver serving all other Synnefo nodes and resolving Synnefo FQDNs
 * **CLIENT**: A machine that runs the Synnefo clients (e.g.: kamaki, Web UI),
               most of the times, the end user's local machine
 

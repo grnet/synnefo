@@ -60,7 +60,6 @@ INSTALL_REQUIRES = [
     'gdmodule',
     'py-rrdtool',
     'Django>=1.2, <1.3',
-    'snf-common>=0.9.0',
 ]
 
 setup(
@@ -90,7 +89,6 @@ setup(
              'default_settings = synnefo_stats.synnefo_settings',
              'web_apps = synnefo_stats.synnefo_settings:installed_apps',
              'urls = synnefo_stats.urls:urlpatterns',
-             'loggers = synnefo_stats.synnefo_settings:loggers'
         ]
     }
 )

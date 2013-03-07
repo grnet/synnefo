@@ -34,26 +34,26 @@
 import re
 import logging
 
-from itertools import chain
-
-from django.shortcuts import redirect, get_object_or_404
+from django.shortcuts import redirect
 from django.views.generic.simple import direct_to_template
-from django.db.models import get_apps
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
-from django.db.models import Q
-from django.http import Http404, HttpResponse, HttpResponseRedirect
-from django.utils import simplejson as json
+from django.http import Http404, HttpResponseRedirect
 from django.core.urlresolvers import reverse
 
 from urllib import unquote
 
 from synnefo.lib.astakos import get_user
-from synnefo.db.models import *
+from synnefo.db.models import VirtualMachine, NetworkInterface, Network
+from synnefo.lib import astakos
 
 logger = logging.getLogger(__name__)
 
 IP_SEARCH_REGEX = re.compile('([0-9]+)(?:\.[0-9]+){3}')
+UUID_SEARCH_REGEX = re.compile('([0-9a-z]{8}-([0-9a-z]{4}-){3}[0-9a-z]{12})')
+
+USER_CATALOG_URL = settings.CYCLADES_USER_CATALOG_URL
+
 
 def get_token_from_cookie(request, cookiename):
     """
@@ -71,10 +71,10 @@ def get_token_from_cookie(request, cookiename):
     return None
 
 
-AUTH_COOKIE_NAME = getattr(settings, 'HELPDESK_AUTH_COOKIE_NAME', getattr(settings,
-    'UI_AUTH_COOKIE_NAME', '_pithos2_a'))
-PERMITTED_GROUPS = getattr(settings, 'HELPDESK_PERMITTED_GROUPS',
-                                    ['helpdesk'])
+AUTH_COOKIE_NAME = getattr(settings, 'HELPDESK_AUTH_COOKIE_NAME',
+                           getattr(settings, 'UI_AUTH_COOKIE_NAME',
+                                   '_pithos2_a'))
+PERMITTED_GROUPS = getattr(settings, 'HELPDESK_PERMITTED_GROUPS', ['helpdesk'])
 SHOW_DELETED_VMS = getattr(settings, 'HELPDESK_SHOW_DELETED_VMS', False)
 
 
@@ -138,7 +138,8 @@ def index(request):
     # if form submitted redirect to details
     account = request.GET.get('account', None)
     if account:
-        return redirect('synnefo.helpdesk.views.account', account_or_ip=account)
+        return redirect('synnefo.helpdesk.views.account',
+                        account_or_ip=account)
 
     # show index template
     return direct_to_template(request, "helpdesk/index.html")
@@ -156,44 +157,60 @@ def account(request, account_or_ip):
     vms = []
     networks = []
     is_ip = IP_SEARCH_REGEX.match(account_or_ip)
-    account = account_or_ip
+    is_uuid = UUID_SEARCH_REGEX.match(account_or_ip)
+    account_name = account_or_ip
+    auth_token = request.user.get('auth_token')
 
     if is_ip:
         try:
             nic = NetworkInterface.objects.get(ipv4=account_or_ip)
-            account = nic.machine.userid
+            account_or_ip = nic.machine.userid
+            is_uuid = True
         except NetworkInterface.DoesNotExist:
             account_exists = False
+
+    if is_uuid:
+        account = account_or_ip
+        account_name = astakos.get_displayname(auth_token, account,
+                                               USER_CATALOG_URL)
     else:
-        filter_extra = {}
-        if not show_deleted:
-            filter_extra['deleted'] = False
+        account_name = account_or_ip
+        account = astakos.get_user_uuid(auth_token, account_name,
+                                        USER_CATALOG_URL)
 
-        # all user vms
-        vms = VirtualMachine.objects.filter(userid=account,
-                                            **filter_extra).order_by('deleted')
-        # return all user private and public networks
-        public_networks = Network.objects.filter(public=True,
-                                                 **filter_extra).order_by('state')
-        private_networks = Network.objects.filter(userid=account,
-                                                 **filter_extra).order_by('state')
-        networks = list(public_networks) + list(private_networks)
+    filter_extra = {}
+    if not show_deleted:
+        filter_extra['deleted'] = False
 
-        if vms.count() == 0 and private_networks.count() == 0:
-            account_exists = False
+    # all user vms
+    vms = VirtualMachine.objects.filter(userid=account,
+                                        **filter_extra).order_by('deleted')
+    # return all user private and public networks
+    public_networks = Network.objects.filter(public=True,
+                                             nics__machine__userid=account,
+                                             **filter_extra
+                                             ).order_by('state').distinct()
+    private_networks = Network.objects.filter(userid=account,
+                                              **filter_extra).order_by('state')
+    networks = list(public_networks) + list(private_networks)
+
+    if vms.count() == 0 and private_networks.count() == 0:
+        account_exists = False
 
     user_context = {
         'account_exists': account_exists,
         'is_ip': is_ip,
         'account': account,
         'vms': vms,
+        'show_deleted': show_deleted,
+        'account_name': account_name,
         'csrf_token': request.user['auth_token'],
         'networks': networks,
         'UI_MEDIA_URL': settings.UI_MEDIA_URL
     }
 
     return direct_to_template(request, "helpdesk/account.html",
-        extra_context=user_context)
+                              extra_context=user_context)
 
 
 @helpdesk_user_required
@@ -214,25 +231,3 @@ def suspend_vm_release(request, vm_id):
     vm.save()
     account = vm.userid
     return HttpResponseRedirect(reverse('helpdesk-details', args=(account,)))
-
-
-@helpdesk_user_required
-def user_list(request):
-    """
-    Return a json list of users based on the prefix provided. Prefix
-    should end with "@".
-    """
-
-    prefix = request.GET.get('prefix', None)
-    if not prefix or "@" not in prefix:
-        raise Http404
-
-    # keep only the user part (e.g. "user@")
-    prefix = prefix.split("@")[0] + "@"
-
-    q = Q(userid__startswith=prefix) & ~Q(userid=None)
-    vm_users = VirtualMachine.objects.filter(q).values_list("userid", flat=True)
-    net_users = Network.objects.filter(q).values_list("userid", flat=True)
-    users = list(set(list(vm_users) + list(net_users)))
-    return HttpResponse(json.dumps(users), content_type="application/json")
-

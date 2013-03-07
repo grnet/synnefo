@@ -181,7 +181,7 @@ class ImageCache(object):
             try:
                 self.images[imageid] = get_image(imageid, userid)['name']
             except Exception as e:
-                log.warning("Error getting image name from imageid %s",
+                log.warning("Error getting image name from imageid %s: %s",
                             imageid, e)
                 self.images[imageid] = imageid
 

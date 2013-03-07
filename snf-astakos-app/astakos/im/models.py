@@ -482,10 +482,12 @@ class AstakosUser(User):
     def get_resource_policy(self, resource):
         s, sep, r = resource.partition(RESOURCE_SEPARATOR)
         resource = Resource.objects.get(service__name=s, name=r)
+        default_capacity = resource.uplimit
         try:
-            return AstakosUserQuota.objects.get(user=self, resource=resource)
+            policy = AstakosUserQuota.objects.get(user=self, resource=resource)
+            return policy, default_capacity
         except AstakosUserQuota.DoesNotExist:
-            return None
+            return None, default_capacity
 
     def remove_resource_policy(self, service, resource):
         """Raises ObjectDoesNotExist, IntegrityError"""

@@ -71,6 +71,8 @@ for a single user from the command line
     Quantity and import/export limit will get default values. Example:
 
     --set-capacity 6119a50b-cbc7-42c0-bafc-4b6570e3f6ac cyclades.vm 10
+
+    The special value of 'default' sets the user setting to the default.
     """
 
     option_list = BaseCommand.option_list + (
@@ -83,6 +85,7 @@ for a single user from the command line
                     metavar='<uuid or email> <resource> <capacity>',
                     nargs=3,
                     help="Set capacity for a specified user/resource pair"),
+
         make_option('-f', '--no-confirm',
                     action='store_true',
                     default=False,
@@ -125,6 +128,13 @@ for a single user from the command line
         else:
             raise CommandError('Please specify user by uuid or email')
 
+        if capacity != 'default':
+            try:
+                capacity = int(capacity)
+            except ValueError:
+                m = "Please specify capacity as a decimal integer or 'default'"
+                raise CommandError(m)
+
         args = AddResourceArgs(resource=resource,
                                capacity=capacity,
                                quantity=0,
@@ -133,14 +143,15 @@ for a single user from the command line
                                )
 
         try:
-            quota = user.get_resource_policy(resource)
+            quota, default_capacity = user.get_resource_policy(resource)
         except Resource.DoesNotExist:
             raise CommandError("No such resource: %s" % resource)
 
-        current = quota.capacity if quota is not None else None
+        current = quota.capacity if quota is not None else 'default'
 
         if not force:
             self.stdout.write("user: %s (%s)\n" % (user.uuid, user.username))
+            self.stdout.write("default capacity: %s\n" % default_capacity)
             self.stdout.write("current capacity: %s\n" % current)
             self.stdout.write("new capacity: %s\n" % capacity)
             self.stdout.write("Confirm? (y/n) ")
@@ -149,10 +160,23 @@ for a single user from the command line
                 self.stdout.write("Aborted.\n")
                 return
 
-        try:
-            user.add_resource_policy(*args)
-        except Exception as e:
-            raise CommandError("Failed to add policy: %s" % e)
+        if capacity == 'default':
+            try:
+                service, sep, name = resource.partition('.')
+                q = AstakosUserQuota.objects.get(
+                        user=user,
+                        resource__service__name=service,
+                        resource__name=name)
+                q.delete()
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                raise CommandError("Failed to remove policy: %s" % e)
+        else:
+            try:
+                user.add_resource_policy(*args)
+            except Exception as e:
+                raise CommandError("Failed to add policy: %s" % e)
 
     def import_from_file(self, location):
         try:

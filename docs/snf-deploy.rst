@@ -260,15 +260,33 @@ Synnefo Installation (c)
 ========================
 
 At this point you should have an up-and-running cluster, either virtual
-(created in the `previous section <vcluster>` on your local machine) or
+(created in the :ref:`previous section <vcluster>` on your local machine) or
 physical on remote nodes. The cluster should also have valid hostnames and IPs.
 And all its nodes should be defined in ``nodes.conf``.
 
 You should also have set up ``synnefo.conf`` to reflect which Synnefo component
 will reside in which node.
 
-Setting up the Synnefo DNS
---------------------------
+Node Requirements
+-----------------
+
+ - OS: Debian Squeeze
+ - authentication: `root` with same password for all nodes
+ - primary network interface: `eth0`
+ - primary IP in the same IPv4 subnet and network domain
+ - spare network interfaces: `eth1`, `eth2` (or vlans on `eth0`)
+
+In case you have created a virtual cluster as described in the :ref:`section
+(b) <vcluster>`, the above requirements are already taken care of. In case of a
+physical cluster, you need to set them up manually by yourself, before
+proceeding with the Synnefo installation.
+
+Preparing the Synnefo deployment
+--------------------------------
+
+The following actions are mandatory and must run before the actual deployment.
+In the following we refer to the sub commands of ``snf-deploy prepare`` and
+what they actually do.
 
 Synnefo expects FQDNs and therefore a nameserver (BIND) should be setup in a
 node inside the cluster. All nodes along with your local machine should use
@@ -281,37 +299,33 @@ ones of your custom configuration):
    search <your_domain> synnefo.deploy.local
    nameserver 192.168.0.1
 
+WARNING: In case you are running the installation on physical nodes please
+ensure that they have the same `resolv.conf` and it does not change during
+and after installation (because of NetworkManager hooks or something..)
+
 To actually setup the nameserver in the node specified as ``ns`` in
 ``synnefo.conf`` run:
 
 .. code-block:: console
 
-   snf-deploy dns
+   snf-deploy prepare ns
+
+To do some node tweaking and install correct `id_rsa/dsa` keys and `authorized_keys`
+needed for password-less intra-node communication run:
+
+.. code-block:: console
+
+   snf-deploy prepare hosts
 
 At this point you should have a cluster with FQDNs and reverse DNS lookups
 ready for the Synnefo deployment. To sum up, we mention all the node
 requirements for a successful Synnefo installation, before proceeding.
 
-Node Requirements
------------------
-
- - OS: Debian Squeeze
- - authentication: `root` with same password for all nodes
- - primary network interface: `eth0`
- - primary IP in the same IPv4 subnet and network domain
- - spare network interfaces: `eth1`, `eth2` (or vlans on `eth0`)
- - password-less intra-node communication: same `id_rsa/dsa` keys and `authorized_keys`
-
-In case you have created a virtual cluster as described in the :ref:`section
-(b) <vcluster>`, the above requirements are already taken care of. In case of a
-physical cluster, you need to set them up manually by yourself, before
-proceeding with the Synnefo installation.
-
 To check the network configuration (FQDNs, connectivity):
 
 .. code-block:: console
 
-   snf-deploy check
+   snf-deploy prepare check
 
 WARNING: In case ping fails check ``/etc/nsswitch.conf`` hosts entry and put dns
 after files!!!
@@ -320,19 +334,20 @@ To setup the apt repository and update each nodes' package index files:
 
 .. code-block:: console
 
-   snf-deploy apt
+   snf-deploy prepare apt
+
+Finally Synnefo needs a shared file system, so we need to setup the NFS server
+on node ``pithos`` defined in ``synnefo.conf``:
+
+.. code-block:: console
+
+   snf-deploy prepare nfs
 
 If everything is setup correctly and all prerequisites are met, we can start
 the Synnefo deployment.
 
 Synnefo deployment
 ------------------
-
-First, we need to setup the NFS:
-
-.. code-block:: console
-
-   snf-deploy nfs
 
 To install the Synnefo stack on the existing cluster run:
 
@@ -428,8 +443,8 @@ directory (see ``deploy.conf``) and set the ``use_local_packages`` option to
 
 .. code-block:: console
 
-   snf-deploy synnefo --update --use-local-packages
-   snf-deploy backend create --backend-name ganeti2 --update --use-local-packages
+   snf-deploy synnefo update --use-local-packages
+   snf-deploy backend update --backend-name ganeti2 --use-local-packages
 
 For advanced users, `snf-deploy` gives the ability to run one or more times
 independently some of the supported actions. To find out which are those, run:

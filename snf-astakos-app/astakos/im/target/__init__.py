@@ -44,6 +44,9 @@ from astakos.im import messages as astakos_messages
 from astakos.im import auth_providers
 from astakos.im.util import prepare_response, get_context
 from astakos.im.views import requires_anonymous, render_response
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def init_third_party_session(request):
@@ -89,8 +92,12 @@ def handle_third_party_signup(request, userid, provider_module, third_party_key,
 
     provider = auth_providers.get_provider(provider_module)
     if not provider.is_available_for_create():
+        logger.info('%s signup is disabled.' %
+                    (provider_module,))
         messages.error(request,
-                       _(astakos_messages.AUTH_PROVIDER_INVALID_LOGIN))
+                       _(astakos_messages.AUTH_PROVIDER_INVALID_LOGIN)
+                       % {'provider_name': provider.get_title_display,
+                          'provider': provider_module})
         return HttpResponseRedirect(reverse('login'))
 
     # identifier not stored in astakos models, create pending profile
@@ -151,6 +158,8 @@ def handle_third_party_login(request, provider_module, identifier,
         user = request.user
         if not request.user.can_add_auth_provider(provider_module,
                                                   identifier=identifier):
+            logger.info('%s failed to add %s: %r' % \
+                        (user.log_display, provider_module, provider_info))
             # TODO: handle existing uuid message separately
             messages.error(request, _(astakos_messages.AUTH_PROVIDER_ADD_FAILED) +
                           u' ' + _(astakos_messages.AUTH_PROVIDER_ADD_EXISTS))
@@ -159,6 +168,8 @@ def handle_third_party_login(request, provider_module, identifier,
         user.add_auth_provider(provider_module, identifier=identifier,
                                affiliation=affiliation,
                                provider_info=provider_info)
+        logger.info('%s added %s: %r' % \
+                    (user.log_display, provider_module, provider_info))
         provider = auth_providers.get_provider(provider_module)
         message = _(astakos_messages.AUTH_PROVIDER_ADDED) % provider.get_method_prompt_display
         messages.success(request, message)

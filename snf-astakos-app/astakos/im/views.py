@@ -918,6 +918,11 @@ def remove_auth_provider(request, pk):
         provider.delete()
         message = astakos_messages.AUTH_PROVIDER_REMOVED % \
                             provider.settings.get_method_prompt_display
+        user = request.user
+        logger.info("%s deleted %s provider (%d): %r" % (user.log_display,
+                                                         provider.module,
+                                                         int(pk),
+                                                         provider.info))
         messages.success(request, message)
         return HttpResponseRedirect(reverse('edit_profile'))
     else:

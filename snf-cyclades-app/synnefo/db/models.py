@@ -285,7 +285,7 @@ class VirtualMachine(models.Model):
 
     name = models.CharField('Virtual Machine Name', max_length=255)
     userid = models.CharField('User ID of the owner', max_length=100,
-                              db_index=True)
+                              db_index=True, null=False)
     backend = models.ForeignKey(Backend, null=True,
                                 related_name="virtual_machines",)
     backend_hash = models.CharField(max_length=128, null=True, editable=False)

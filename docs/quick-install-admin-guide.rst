@@ -101,6 +101,7 @@ General Synnefo dependencies
  * postgresql (database)
  * rabbitmq (message queue)
  * ntp (NTP daemon)
+ * gevent
 
 You can install apache2, progresql and ntp by running:
 
@@ -114,6 +115,12 @@ the official debian backports:
 .. code-block:: console
 
    # apt-get -t squeeze-backports install gunicorn
+
+Also, make sure to install gevent >= 0.13.6. Again from the debian backports:
+
+.. code-block:: console
+
+   # apt-get -t squeeze-backports install python-gevent
 
 On node1, we will create our databases, so you will also need the
 python-psycopg2 package:
@@ -209,6 +216,7 @@ Create the file ``synnefo`` under ``/etc/gunicorn.d/`` containing the following:
     'group': 'www-data',
     'args': (
       '--bind=127.0.0.1:8080',
+      '--worker-class=gevent',
       '--workers=8',
       '--log-level=debug',
     ),
@@ -338,6 +346,7 @@ General Synnefo dependencies
  * gunicorn (WSGI http server)
  * postgresql (database)
  * ntp (NTP daemon)
+ * gevent
 
 You can install the above by running:
 
@@ -351,6 +360,12 @@ the official debian backports:
 .. code-block:: console
 
    # apt-get -t squeeze-backports install gunicorn
+
+Also, make sure to install gevent >= 0.13.6. Again from the debian backports:
+
+.. code-block:: console
+
+   # apt-get -t squeeze-backports install python-gevent
 
 Node2 will connect to the databases on node1, so you will also need the
 python-psycopg2 package:
@@ -386,6 +401,7 @@ Create the file ``synnefo`` under ``/etc/gunicorn.d/`` containing the following
     'group': 'www-data',
     'args': (
       '--bind=127.0.0.1:8080',
+      '--worker-class=gevent',
       '--workers=4',
       '--log-level=debug',
       '--timeout=43200'
@@ -629,8 +645,8 @@ To use, first monkey-patch psycopg2. For Django, run this before the
    from synnefo.lib.db.pooled_psycopg2 import monkey_patch_psycopg2
    monkey_patch_psycopg2()
 
-If running with greenlets, we should modify psycopg2 behavior, so it works
-properly in a greenlet context:
+Since we are running with greenlets, we should modify psycopg2 behavior, so it
+works properly in a greenlet context:
 
 .. code-block:: console
 
@@ -899,38 +915,15 @@ Pithos is pooling-ready without the need of further configuration, because it
 doesn't use a Django DB. It pools HTTP connections to Astakos and pithos
 backend objects for access to the Pithos DB.
 
-However, as in Astakos, if running with Greenlets, it is also recommended to
-modify psycopg2 behavior so it works properly in a greenlet context. This means
-adding the following lines at the top of your
+However, as in Astakos, since we are running with Greenlets, it is also
+recommended to modify psycopg2 behavior so it works properly in a greenlet
+context. This means adding the following lines at the top of your
 ``/etc/synnefo/10-snf-webproject-database.conf`` file:
 
 .. code-block:: console
 
    from synnefo.lib.db.psyco_gevent import make_psycopg_green
    make_psycopg_green()
-
-Furthermore, add the ``--worker-class=gevent`` argument on your
-``/etc/gunicorn.d/synnefo`` configuration file. The file should look something like
-this:
-
-.. code-block:: console
-
-   CONFIG = {
-    'mode': 'django',
-    'environment': {
-      'DJANGO_SETTINGS_MODULE': 'synnefo.settings',
-    },
-    'working_dir': '/etc/synnefo',
-    'user': 'www-data',
-    'group': 'www-data',
-    'args': (
-      '--bind=127.0.0.1:8080',
-      '--workers=4',
-      '--worker-class=gevent',
-      '--log-level=debug',
-      '--timeout=43200'
-    ),
-   }
 
 Servers Initialization
 ----------------------
@@ -1013,75 +1006,21 @@ For the purpose of this guide, we will assume that the :ref:`GANETI-MASTER
 :ref:`GANETI-NODE <GANETI_NODES>` and is Master-capable and VM-capable too.
 
 We highly recommend that you read the official Ganeti documentation, if you are
-not familiar with Ganeti. If you are extremely impatient, you can result with
-the above assumed setup by running on both nodes:
+not familiar with Ganeti.
+
+Unfortunatelly, the current stable version of the stock Ganeti (v2.6.2) doesn't
+support IP pool management. This feature will be available in Ganeti >= 2.7.
+Synnefo depends on the IP pool functionality of Ganeti, so you have to use
+GRNET provided packages until stable 2.7 is out. To do so:
 
 .. code-block:: console
 
-   # apt-get install -t squeeze-backports ganeti2 ganeti-htools
+   # apt-get install snf-ganeti ganeti-htools
    # modprobe drbd minor_count=255 usermode_helper=/bin/true
 
-Unfortunatelly, stock Ganeti doesn't support IP pool management yet (we are
-working hard to merge it upstream for Ganeti 2.7). Synnefo depends on the IP
-pool functionality of Ganeti, so you have to use GRNET's patches for now. To
-do so you have to build your own package from source. Please clone our local
-repo:
+You should have:
 
-.. code-block:: console
-
-   # git clone https://code.grnet.gr/git/ganeti-local
-   # cd ganeti-local
-   # git checkout stable-2.6-ippool-hotplug-esi
-   # git checkout debian-2.6
-
-Then please check if you can complile ganeti:
-
-.. code-block:: console
-
-   # cd ganeti-local
-   # ./automake.sh
-   # ./configure
-   # make
-
-To do so you must have a correct build environment. Please refer to INSTALL
-file in the source tree. Most of the packages needed are refered here:
-
-.. code-block:: console
-
-   #  apt-get install graphviz automake lvm2 ssh bridge-utils iproute iputils-arping \
-                      ndisc6 python python-pyopenssl openssl \
-                      python-pyparsing python-simplejson \
-                      python-pyinotify python-pycurl socat \
-                      python-elementtree kvm qemu-kvm \
-                      ghc6 libghc6-json-dev libghc6-network-dev \
-                      libghc6-parallel-dev libghc6-curl-dev \
-                      libghc-quickcheck2-dev hscolour hlint
-                      python-support python-paramiko \
-                      python-fdsend python-ipaddr python-bitarray libjs-jquery fping pandoc
-
-Now lets try to build the package:
-
-.. code-block:: console
-
-   # apt-get install git-buildpackage
-   # mkdir ../build-area
-   # git-buildpackage --git-upstream-branch=stable-2.6-ippool-hotplug-esi \
-                   --git-debian-branch=debian-2.6 \
-                   --git-export=INDEX \
-                   --git-ignore-new
-
-To be able to sign the packages a key must be found in the system to comply to the
-name and email of the last debian/changelog entry in debian branch. Please note
-that signing is optional.
-
-This will create two deb packages in build-area. You should then run in both
-nodes:
-
-.. code-block:: console
-
-   # dpkg -i ../build-area/ganeti-htools.*deb
-   # dpkg -i ../build-area/snf-ganeti.*deb
-   # apt-get install -f
+Ganeti >= 2.6.2+ippool11+hotplug5+extstorage3+rdbfix1+kvmfix2-1
 
 We assume that Ganeti will use the KVM hypervisor. After installing Ganeti on
 both nodes, choose a domain name that resolves to a valid floating IP (let's
@@ -1653,10 +1592,6 @@ corresponding package by running on node1:
 
    # apt-get install snf-cyclades-app
 
-.. warning:: Make sure you have installed ``python-gevent`` version >= 0.13.6.
-    This version is available at squeeze-backports and can be installed by
-    running: ``apt-get install -t squeeze-backports python-gevent``
-
 If all packages install successfully, then Cyclades and Plankton are installed
 and we proceed with their configuration.
 
@@ -1866,7 +1801,6 @@ Ganeti MASTER:
 
    $ gnt-network list
    $ gnt-network info <network_name>
-
 
 Create pools for Private Networks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

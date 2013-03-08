@@ -38,7 +38,9 @@ from config import printf
 from astakos.quotaholder.exception import (
                             QuotaholderError,
                             InvalidDataError,
-                            NoQuantityError, NoCapacityError,
+                            NoCapacityError,
+                            NoStockError,
+                            NonExportedError,
                             CommissionValueException,
                             DuplicateError)
 
@@ -84,9 +86,8 @@ class QHAPITest(QHTestCase):
         return self.rand_name(self.used_resources)
 
     def rand_limits(self):
-        q = random_nat()
         c = random_nat()
-        return q, c,
+        return (c,)
 
     def rand_policy_limits(self):
         p = self.rand_policy()
@@ -180,28 +181,28 @@ class QHAPITest(QHTestCase):
         resource1 = self.rand_resource()
 
         self.qh.set_quota(
-            set_quota=[(e0, resource0) + (5, QH_PRACTICALLY_INFINITE) + (0,),
-                       (e1, resource0) + (5, 5) + (0,)])
+            set_quota=[(e0, resource0) + (QH_PRACTICALLY_INFINITE, 0),
+                       (e1, resource0) + (5, 0)])
 
         self.qh.add_quota(sub_quota=[(e0, resource0,
-                                      0, QH_PRACTICALLY_INFINITE)],
+                                      QH_PRACTICALLY_INFINITE)],
                           add_quota=[(e0, resource0,
-                                      0, 3),
+                                      3),
                                      # new holding
                                      (e0, resource1,
-                                      0, QH_PRACTICALLY_INFINITE)])
+                                      QH_PRACTICALLY_INFINITE)])
 
         r = self.qh.get_quota(get_quota=[(e0, resource0),
                                          (e0, resource1)])
-        self.assertEqual(r, [(e0, resource0, 5, 3)
+        self.assertEqual(r, [(e0, resource0, 3)
                              + DEFAULT_HOLDING + (0,),
-                             (e0, resource1, 0, QH_PRACTICALLY_INFINITE)
+                             (e0, resource1, QH_PRACTICALLY_INFINITE)
                              + DEFAULT_HOLDING + (0,)])
 
         with self.assertRaises(QuotaholderError) as cm:
             self.qh.add_quota(add_quota=[(e1, resource0,
-                                          0, (-10)),
-                                         (e0, resource1, 1, 0)])
+                                          (-10)),
+                                         (e0, resource1, 0)])
 
         err = cm.exception
         self.assertEqual(err.message, [(e1, resource0)])
@@ -222,13 +223,13 @@ class QHAPITest(QHTestCase):
 
         self.qh.set_quota(
             set_quota=[(e0, resource0) +
-                       (5, QH_PRACTICALLY_INFINITE) + (0,)])
+                       (QH_PRACTICALLY_INFINITE,) + (0,)])
 
         self.qh.add_quota(add_quota=[(e0, resource0,
-                                      0, QH_PRACTICALLY_INFINITE)])
+                                      QH_PRACTICALLY_INFINITE)])
 
         r = self.qh.get_quota(get_quota=[(e0, resource0)])
-        self.assertEqual(r, [(e0, resource0, 5, 2*QH_PRACTICALLY_INFINITE)
+        self.assertEqual(r, [(e0, resource0, 2*QH_PRACTICALLY_INFINITE)
                              + DEFAULT_HOLDING + (0,)])
 
     @transaction.commit_on_success
@@ -236,20 +237,24 @@ class QHAPITest(QHTestCase):
         e0 = self.rand_holder()
         e1 = self.rand_holder()
         resource = self.rand_resource()
-        q0, c0 = self.new_quota(e0, resource)
-        q1, c1 = self.new_quota(e1, resource)
-
-        most = min(c0, q1)
-        if most < 0:
-            raise AssertionError("%s <= 0" % most)
+        c0, = self.new_quota(e0, resource)
+        c1, = self.new_quota(e1, resource)
 
         @transaction.commit_on_success
         def f():
+            self.qh.reset_holding(
+                reset_holding=[(e1, resource, c1, c1, c1, c1)])
+
+            most = min(c0, c1)
+            if most < 0:
+                raise AssertionError("%s <= 0" % most)
+
             return self.qh.issue_commission(clientkey=self.client, target=e0,
                                             name='something',
                                             provisions=[(e1, resource, most)])
 
         r = f()
+
         self.assertEqual(r, 1)
 
         @transaction.commit_on_success
@@ -275,39 +280,31 @@ class QHAPITest(QHTestCase):
         et1 = self.rand_holder()
         et2 = self.rand_holder()
         resource = self.rand_resource()
-        self.new_quota(es1, resource, (10, 5))
-        self.new_quota(es2, resource, (10, 5))
-        self.new_quota(et1, resource, (0, 15))
-        self.new_quota(et2, resource, (0, 15))
+        self.new_quota(es1, resource, (10,))
+        self.new_quota(es2, resource, (10,))
+        self.new_quota(et1, resource, (15,))
+        self.new_quota(et2, resource, (15,))
 
-        with self.assertRaises(NoQuantityError) as cm:
+        self.qh.reset_holding(
+            reset_holding=[(es1, resource, 10, 10, 10, 10),
+                           (es2, resource, 10, 10, 10, 10)])
+
+        with self.assertRaises(NoStockError) as cm:
             self.qh.issue_commission(clientkey=self.client, target=et1,
                                      name='something',
                                      provisions=[(es1, resource, 12)])
         e = cm.exception
-        self.assertEqual(e.source, es1)
-        self.assertEqual(e.target, et1)
+        self.assertEqual(e.holder, es1)
         self.assertEqual(e.resource, resource)
         self.assertEqual(int(e.limit), 10)
         self.assertEqual(int(e.requested), 12)
-        self.assertEqual(int(e.current), 0)
 
         r = self.qh.issue_commission(clientkey=self.client, target=et1,
                                      name='something',
                                      provisions=[(es1, resource, 2)])
         self.assertGreater(r, 0)
 
-        # with self.assertRaises(ImportLimitError) as cm:
-        #     self.qh.issue_commission(clientkey=self.client, target=et1,
-        #                              name='something',
-        #                              provisions=[(es1, resource, 2)])
-        # e = cm.exception
-        # self.assertEqual(e.source, es1)
-        # self.assertEqual(e.target, et1)
-        # self.assertEqual(e.resource, resource)
-        # self.assertEqual(int(e.limit), 3)
-        # self.assertEqual(int(e.requested), 2)
-        # self.assertEqual(int(e.current), 2)
+
 
         r = self.qh.issue_commission(clientkey=self.client, target=et2,
                                      name='something',
@@ -320,8 +317,7 @@ class QHAPITest(QHTestCase):
                                      provisions=[(es2, resource, 1),
                                                  (es1, resource, 6)])
         e = cm.exception
-        self.assertEqual(e.source, es1)
-        self.assertEqual(e.target, et2)
+        self.assertEqual(e.holder, et2)
         self.assertEqual(e.resource, resource)
         self.assertEqual(int(e.limit), 15)
         self.assertEqual(int(e.requested), 6)
@@ -335,9 +331,12 @@ class QHAPITest(QHTestCase):
         resource = 'list_holdings_resource'
         sys = 'system'
 
-        self.qh.set_quota(set_quota=[(sys, resource, 10, 0, 0),
-                                     (e0, resource, 0, 10, 0),
-                                     (e1, resource, 0, 10, 0)])
+        self.qh.set_quota(set_quota=[(sys, resource, 10, 0),
+                                     (e0, resource, 10, 0),
+                                     (e1, resource, 10, 0)])
+
+        self.qh.reset_holding(
+            reset_holding=[(sys, resource, 10, 10, 10, 10)])
 
         s0 = self.qh.issue_commission(clientkey=self.client, target=e0,
                                       name='a commission',
@@ -347,21 +346,30 @@ class QHAPITest(QHTestCase):
                                       name='a commission',
                                       provisions=[('system', resource, 4)])
 
+        holdings_list, rejected = self.qh.list_holdings(
+            list_holdings=[e0, e1, e0+e1])
+
+        self.assertEqual(rejected, [e0+e1])
+        self.assertEqual(holdings_list, [[(e0, resource, 0, 3, 0, 0)],
+                                         [(e1, resource, 0, 4, 0, 0)]])
+
         self.qh.accept_commission(clientkey=self.client, serials=[s0, s1])
 
         holdings_list, rejected = self.qh.list_holdings(
             list_holdings=[e0, e1, e0+e1])
 
         self.assertEqual(rejected, [e0+e1])
-        self.assertEqual(holdings_list, [[(e0, resource, 3, 0, 0, 0)],
-                                         [(e1, resource, 4, 0, 0, 0)]])
+        self.assertEqual(holdings_list, [[(e0, resource, 3, 3, 3, 3)],
+                                         [(e1, resource, 4, 4, 4, 4)]])
 
 
     @transaction.commit_on_success
     def test_0130_release_holding(self):
         e = self.rand_holder()
         resource = self.rand_resource()
-        limits = self.new_quota(e, resource, (1, 2))
+        limits = self.new_quota(e, resource, (2,))
+        self.qh.reset_holding(
+            reset_holding=[(e, resource, 1, 1, 1, 1)])
 
         with self.assertRaises(QuotaholderError) as cm:
             self.qh.release_holding(release_holding=[(e, resource)])
@@ -373,7 +381,7 @@ class QHAPITest(QHTestCase):
     def test_0131_release_holding(self):
         e = self.rand_holder()
         resource = self.rand_resource()
-        limits = self.new_quota(e, resource, (0, 2))
+        limits = self.new_quota(e, resource, (2,))
 
         self.qh.release_holding(release_holding=[(e, resource)])
 
@@ -382,9 +390,13 @@ class QHAPITest(QHTestCase):
         resource = self.rand_resource()
 
         es = self.rand_holder()
-        limits_s = self.new_quota(es, resource, (3, 3))
+        limits_s = self.new_quota(es, resource, (3,))
+
+        self.qh.reset_holding(
+            reset_holding=[(es, resource, 3, 3, 3, 3)])
+
         e = self.rand_holder()
-        limits = self.new_quota(e, resource, (0, 2))
+        limits = self.new_quota(e, resource, (2,))
 
         r = self.qh.issue_commission(clientkey=self.client, target=e,
                                      name='something',
@@ -427,9 +439,9 @@ class QHAPITest(QHTestCase):
         resource = "resource"
         target = "test_015_release_nocapacity_target"
         flags = 0
-        source_limits  = [source, 6, 0]
+        source_limits  = [source, 6]
         source_holding = [source, resource, source, flags]
-        target_limits  = [target, 0, 5]
+        target_limits  = [target, 5]
         target_holding = [target, resource, target, flags]
 
         failed = AssertionError("Quotaholder call failed")
@@ -438,6 +450,9 @@ class QHAPITest(QHTestCase):
         if qh.set_holding(set_holding=[source_holding, target_holding]):
             raise failed
 
+        self.qh.reset_holding(
+            reset_holding=[(source, resource, 6, 6, 6, 6)])
+
         serial = qh.issue_commission(clientkey=self.client, target=target,
                                      name="something",
                                      provisions=[(source, resource, 5)])
@@ -445,12 +460,13 @@ class QHAPITest(QHTestCase):
 
         holding = qh.get_holding(get_holding=[[source, resource]])
         self.assertEqual(tuple(holding[0]),
-                         (source, resource, source, 0, 5, 0, 0, flags))
+                         (source, resource, source, 6, 6, 1, 1, flags))
         holding = qh.get_holding(get_holding=[[target, resource]])
         self.assertEqual(tuple(holding[0]),
-                         (target, resource, target, 5, 0, 0, 0, flags))
+                         (target, resource, target, 5, 5, 5, 5, flags))
 
-        if qh.reset_holding(reset_holding=[[target, resource, 10, 0, 0, 0]]):
+        if qh.reset_holding(
+            reset_holding=[[target, resource, 10, 10, 10, 10]]):
             raise failed
 
         with self.assertRaises(NoCapacityError):
@@ -458,14 +474,10 @@ class QHAPITest(QHTestCase):
                                 name="something",
                                 provisions=[(source, resource, 1)])
 
-        with self.assertRaises(NoQuantityError):
+        with self.assertRaises(NonExportedError):
             qh.issue_commission(clientkey=self.client, target=target,
                                 name="something",
                                 provisions=[(source, resource, -7)])
-
-        source_limits  = [source, 6, 10]
-        if qh.set_limits(set_limits=[source_limits]):
-            raise failed
 
         serial = qh.issue_commission(clientkey=self.client, target=target,
                                      name="something",
@@ -474,12 +486,12 @@ class QHAPITest(QHTestCase):
 
         holding = qh.get_holding(get_holding=[[source, resource]])
         self.assertEqual(tuple(holding[0]),
-                         (source, resource, source, 0, 5, 1, 0, flags))
+                         (source, resource, source, 6, 6, 2, 2, flags))
         holding = qh.get_holding(get_holding=[[target, resource]])
         self.assertEqual(tuple(holding[0]),
-                         (target, resource, target, 10, 0, 0, 1, flags))
+                         (target, resource, target, 9, 9, 9, 9, flags))
 
-        with self.assertRaises(NoCapacityError):
+        with self.assertRaises(NonExportedError):
             qh.issue_commission(clientkey=self.client, target=target,
                                 name="something",
                                 provisions=[(source, resource, -10)])

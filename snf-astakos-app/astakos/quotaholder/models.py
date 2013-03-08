@@ -42,7 +42,6 @@ from synnefo.lib.db.managers import ForUpdateManager
 class Policy(Model):
 
     policy          =   CharField(max_length=4096, primary_key=True)
-    quantity        =   intDecimalField()
     capacity        =   intDecimalField()
 
     objects     =   ForUpdateManager()
@@ -55,14 +54,10 @@ class Holding(Model):
     policy      =   ForeignKey(Policy, to_field='policy')
     flags       =   BigIntegerField(null=False, default=0)
 
-    imported    =   intDecimalField(default=0)
-    importing   =   intDecimalField(default=0)
-    exported    =   intDecimalField(default=0)
-    exporting   =   intDecimalField(default=0)
-    returned    =   intDecimalField(default=0)
-    returning   =   intDecimalField(default=0)
-    released    =   intDecimalField(default=0)
-    releasing   =   intDecimalField(default=0)
+    imported_min    =   intDecimalField(default=0)
+    imported_max    =   intDecimalField(default=0)
+    stock_min       =   intDecimalField(default=0)
+    stock_max       =   intDecimalField(default=0)
 
     objects     =   ForUpdateManager()
 
@@ -107,62 +102,20 @@ class ProvisionLog(Model):
     issue_time          =   CharField(max_length=4096)
     log_time            =   CharField(max_length=4096)
     resource            =   CharField(max_length=4096)
-    source_quantity     =   intDecimalField()
     source_capacity     =   intDecimalField()
-    source_imported     =   intDecimalField()
-    source_exported     =   intDecimalField()
-    source_returned     =   intDecimalField()
-    source_released     =   intDecimalField()
-    target_quantity     =   intDecimalField()
+    source_imported_min =   intDecimalField()
+    source_imported_max =   intDecimalField()
+    source_stock_min    =   intDecimalField()
+    source_stock_max    =   intDecimalField()
     target_capacity     =   intDecimalField()
-    target_imported     =   intDecimalField()
-    target_exported     =   intDecimalField()
-    target_returned     =   intDecimalField()
-    target_released     =   intDecimalField()
+    target_imported_min =   intDecimalField()
+    target_imported_max =   intDecimalField()
+    target_stock_min    =   intDecimalField()
+    target_stock_max    =   intDecimalField()
     delta_quantity      =   intDecimalField()
     reason              =   CharField(max_length=4096)
 
     objects     =   ForUpdateManager()
-
-    def source_allocated_through(self):
-        return self.source_imported - self.source_released
-
-    def source_allocated(self):
-        return (+ self.source_allocated_through()
-                - self.source_exported
-                + self.source_returned)
-
-    def source_inbound_through(self):
-        return self.source_imported
-
-    def source_inbound(self):
-        return self.source_inbound_through() + self.source_returned
-
-    def source_outbound_through(self):
-        return self.source_released
-
-    def source_outbound(self):
-        return self.source_outbound_through() + self.source_exported
-
-    def target_allocated_through(self):
-        return self.target_imported - self.target_released
-
-    def target_allocated(self):
-        return (+ self.target_allocated_through()
-                - self.target_exported
-                + self.target_returned)
-
-    def target_inbound_through(self):
-        return self.target_imported
-
-    def target_inbound(self):
-        return self.target_inbound_through() + self.target_returned
-
-    def target_outbound_through(self):
-        return self.target_released
-
-    def target_outbound(self):
-        return self.target_outbound_through() + self.target_exported
 
 
 def _get(*args, **kwargs):

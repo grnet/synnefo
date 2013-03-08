@@ -51,19 +51,31 @@ class CommissionException(QuotaholderError):
 class CommissionValueException(CommissionException):
     def __init__(self, *args, **kwargs):
 
-        self.source    = kwargs['source']
-        self.target    = kwargs['target']
-        self.resource  = kwargs['resource']
-        self.requested = kwargs['requested']
-        self.current   = kwargs['current']
-        self.limit     = kwargs['limit']
+        self.holder    = kwargs.pop('holder', None)
+        self.resource  = kwargs.pop('resource', None)
+        self.requested = kwargs.pop('requested', None)
+        self.current   = kwargs.pop('current', None)
+        self.limit     = kwargs.pop('limit', None)
+        CommissionException.__init__(self, *args, **kwargs)
 
 
-class NoQuantityError(CommissionValueException):
+class NoStockError(CommissionValueException):
     pass
 
 
 class NoCapacityError(CommissionValueException):
+    pass
+
+
+class NonImportedError(CommissionValueException):
+    pass
+
+
+class NoStockReleaseError(CommissionValueException):
+    pass
+
+
+class NonExportedError(CommissionValueException):
     pass
 
 

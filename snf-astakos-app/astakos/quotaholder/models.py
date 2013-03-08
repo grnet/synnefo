@@ -39,19 +39,12 @@ from django.db.models import (Model, BigIntegerField, CharField,
 from django.db import transaction
 from synnefo.lib.db.managers import ForUpdateManager
 
-class Policy(Model):
-
-    policy          =   CharField(max_length=4096, primary_key=True)
-    capacity        =   intDecimalField()
-
-    objects     =   ForUpdateManager()
-
 class Holding(Model):
 
     holder      =   CharField(max_length=4096, db_index=True)
     resource    =   CharField(max_length=4096, null=False)
 
-    policy      =   ForeignKey(Policy, to_field='policy')
+    capacity    =   intDecimalField()
     flags       =   BigIntegerField(null=False, default=0)
 
     imported_min    =   intDecimalField(default=0)
@@ -141,9 +134,6 @@ def _filter(*args, **kwargs):
 
 def db_get_holding(*args, **kwargs):
     return _get(Holding, *args, **kwargs)
-
-def db_get_policy(*args, **kwargs):
-    return _get(Policy, *args, **kwargs)
 
 def db_get_commission(*args, **kwargs):
     return _get(Commission, *args, **kwargs)

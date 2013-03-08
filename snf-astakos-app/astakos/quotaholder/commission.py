@@ -80,7 +80,7 @@ class Import(Operation):
         imported_max = holding.imported_max
         new_imported_max = imported_max + quantity
 
-        capacity = holding.policy.capacity
+        capacity = holding.capacity
         if check and new_imported_max > capacity:
             holder = holding.holder
             resource = holding.resource

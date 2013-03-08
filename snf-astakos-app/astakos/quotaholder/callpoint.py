@@ -45,88 +45,17 @@ from astakos.quotaholder.api import QH_PRACTICALLY_INFINITE
 
 from django.db.models import Q, Count
 from django.db.models import Q
-from .models import (Policy, Holding,
+from .models import (Holding,
                      Commission, Provision, ProvisionLog,
                      now,
-                     db_get_holding, db_get_policy,
+                     db_get_holding,
                      db_get_commission, db_filter_provision)
 
 
 class QuotaholderDjangoDBCallpoint(object):
 
-    def get_limits(self, context=None, get_limits=[]):
-        limits = []
-        append = limits.append
-
-        for policy in get_limits:
-            try:
-                p = Policy.objects.get(policy=policy)
-            except Policy.DoesNotExist:
-                continue
-
-            append((policy, p.capacity))
-
-        return limits
-
-    def set_limits(self, context=None, set_limits=[]):
-
-        for (policy, capacity) in set_limits:
-
-            try:
-                policy = db_get_policy(policy=policy, for_update=True)
-            except Policy.DoesNotExist:
-                Policy.objects.create(policy=policy,
-                                      capacity=capacity,
-                                      )
-            else:
-                policy.capacity = capacity
-                policy.save()
-
-        return ()
-
-    def get_holding(self, context=None, get_holding=[]):
-        holdings = []
-        append = holdings.append
-
-        for holder, resource in get_holding:
-            try:
-                h = Holding.objects.get(holder=holder, resource=resource)
-            except Holding.DoesNotExist:
-                continue
-
-            append((h.holder, h.resource, h.policy.policy,
-                    h.imported_min, h.imported_max,
-                    h.stock_min, h.stock_max, h.flags))
-
-        return holdings
-
-    def set_holding(self, context=None, set_holding=[]):
-        rejected = []
-        append = rejected.append
-
-        for holder, resource, policy, flags in set_holding:
-            try:
-                p = Policy.objects.get(policy=policy)
-            except Policy.DoesNotExist:
-                append((holder, resource, policy))
-                continue
-
-            try:
-                h = db_get_holding(holder=holder, resource=resource,
-                                   for_update=True)
-                h.policy = p
-                h.flags = flags
-                h.save()
-            except Holding.DoesNotExist:
-                h = Holding.objects.create(holder=holder, resource=resource,
-                                           policy=p, flags=flags)
-
-        if rejected:
-            raise QuotaholderError(rejected)
-        return rejected
-
     def _init_holding(self,
-                      holder, resource, policy,
+                      holder, resource, capacity,
                       imported_min, imported_max, stock_min, stock_max,
                       flags):
         try:
@@ -135,7 +64,7 @@ class QuotaholderDjangoDBCallpoint(object):
         except Holding.DoesNotExist:
             h = Holding(holder=holder, resource=resource)
 
-        h.policy = policy
+        h.capacity = capacity
         h.flags = flags
         h.imported_min = imported_min
         h.imported_max = imported_max
@@ -148,17 +77,11 @@ class QuotaholderDjangoDBCallpoint(object):
         append = rejected.append
 
         for idx, sfh in enumerate(init_holding):
-            (holder, resource, policy,
+            (holder, resource, capacity,
              imported_min, imported_max, stock_min, stock_max,
              flags) = sfh
 
-            try:
-                p = Policy.objects.get(policy=policy)
-            except Policy.DoesNotExist:
-                append(idx)
-                continue
-
-            self._init_holding(holder, resource, p,
+            self._init_holding(holder, resource, capacity,
                                imported_min, imported_max,
                                stock_min, stock_max,
                                flags)
@@ -254,7 +177,7 @@ class QuotaholderDjangoDBCallpoint(object):
         append = quotas.append
 
         holders = set(holder for holder, r in get_quota)
-        hs = Holding.objects.select_related().filter(holder__in=holders)
+        hs = Holding.objects.filter(holder__in=holders)
         holdings = {}
         for h in hs:
             holdings[(h.holder, h.resource)] = h
@@ -265,9 +188,7 @@ class QuotaholderDjangoDBCallpoint(object):
             except:
                 continue
 
-            p = h.policy
-
-            append((h.holder, h.resource, p.capacity,
+            append((h.holder, h.resource, h.capacity,
                     h.imported_min, h.imported_max,
                     h.stock_min, h.stock_max,
                     h.flags))
@@ -288,35 +209,20 @@ class QuotaholderDjangoDBCallpoint(object):
         for h in hs:
             holdings[(h.holder, h.resource)] = h
 
-        old_policies = []
-
         for (holder, resource,
              capacity,
              flags) in set_quota:
 
-            policy = newname('policy_')
-            newp = Policy(policy=policy,
-                          capacity=capacity,
-                          )
-
             try:
                 h = holdings[(holder, resource)]
-                old_policies.append(h.policy_id)
-                h.policy = newp
                 h.flags = flags
             except KeyError:
                 h = Holding(holder=holder, resource=resource,
-                            policy=newp, flags=flags)
+                            flags=flags)
 
-            # the order is intentionally reversed so that it
-            # would break if we are not within a transaction.
-            # Has helped before.
+            h.capacity = capacity
             h.save()
-            newp.save()
             holdings[(holder, resource)] = h
-
-        objs = Policy.objects.annotate(refs=Count('holding'))
-        objs.filter(policy__in=old_policies, refs=0).delete()
 
         if rejected:
             raise QuotaholderError(rejected)
@@ -339,11 +245,6 @@ class QuotaholderDjangoDBCallpoint(object):
         for h in hs:
             holdings[(h.holder, h.resource)] = h
 
-        pids = [h.policy_id for h in hs]
-        policies = Policy.objects.in_bulk(pids)
-
-        old_policies = []
-
         for removing, source in [(True, sub_quota), (False, add_quota)]:
             for (holder, resource,
                  capacity,
@@ -351,41 +252,24 @@ class QuotaholderDjangoDBCallpoint(object):
 
                 try:
                     h = holdings[(holder, resource)]
-                    old_policies.append(h.policy_id)
-                    try:
-                        p = policies[h.policy_id]
-                    except KeyError:
-                        raise AssertionError("no policy %s" % h.policy_id)
+                    current_capacity = h.capacity
                 except KeyError:
                     if removing:
                         append((holder, resource))
                         continue
 
                     h = Holding(holder=holder, resource=resource, flags=0)
-                    p = None
+                    current_capacity = 0
 
-                policy = newname('policy_')
-                newp = Policy(policy=policy)
+                h.capacity = (current_capacity - capacity if removing else
+                              current_capacity + capacity)
 
-                newp.capacity = _add(p.capacity if p else 0, capacity,
-                                     invert=removing)
-
-                if _isneg(newp.capacity):
+                if h.capacity < 0:
                     append((holder, resource))
                     continue
 
-                h.policy = newp
-
-                # the order is intentionally reversed so that it
-                # would break if we are not within a transaction.
-                # Has helped before.
                 h.save()
-                newp.save()
-                policies[policy] = newp
                 holdings[(holder, resource)] = h
-
-        objs = Policy.objects.annotate(refs=Count('holding'))
-        objs.filter(policy__in=old_policies, refs=0).delete()
 
         if rejected:
             raise QuotaholderError(rejected)
@@ -473,9 +357,7 @@ class QuotaholderDjangoDBCallpoint(object):
                        provision, log_time, reason):
 
         s_holder = s_holding.holder
-        s_policy = s_holding.policy
         t_holder = t_holding.holder
-        t_policy = t_holding.policy
 
         kwargs = {
             'serial':              commission.serial,
@@ -483,12 +365,12 @@ class QuotaholderDjangoDBCallpoint(object):
             'source':              s_holder,
             'target':              t_holder,
             'resource':            provision.resource,
-            'source_capacity':     s_policy.capacity,
+            'source_capacity':     s_holding.capacity,
             'source_imported_min': s_holding.imported_min,
             'source_imported_max': s_holding.imported_max,
             'source_stock_min':    s_holding.stock_min,
             'source_stock_max':    s_holding.stock_max,
-            'target_capacity':     t_policy.capacity,
+            'target_capacity':     t_holding.capacity,
             'target_imported_min': t_holding.imported_min,
             'target_imported_max': t_holding.imported_max,
             'target_stock_min':    t_holding.stock_min,
@@ -688,14 +570,6 @@ class QuotaholderDjangoDBCallpoint(object):
                 break
 
         return timeline
-
-
-def _add(x, y, invert=False):
-    return x + y if not invert else x - y
-
-
-def _isneg(x):
-    return x < 0
 
 
 API_Callpoint = QuotaholderDjangoDBCallpoint

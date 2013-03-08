@@ -73,12 +73,6 @@ class QHAPITest(QHTestCase):
     def rand_holder(self):
         return self.rand_name(self.used_entities)
 
-    used_policies = []
-
-    @classmethod
-    def rand_policy(self):
-        return self.rand_name(self.used_policies)
-
     used_resources = []
 
     @classmethod
@@ -88,11 +82,6 @@ class QHAPITest(QHTestCase):
     def rand_limits(self):
         c = random_nat()
         return (c,)
-
-    def rand_policy_limits(self):
-        p = self.rand_policy()
-        limits = self.rand_limits()
-        return p, limits
 
     def rand_flags(self):
         return random_nat()
@@ -104,50 +93,6 @@ class QHAPITest(QHTestCase):
         p, limits = self.rand_policy_limits()
         self.qh.set_limits(set_limits=[(p,) + limits])
         return p, limits
-
-    @transaction.commit_on_success
-    def test_006_get_set_limits(self):
-
-        p1, limits1 = self.rand_policy_limits()
-        limits2 = self.rand_limits()
-        r = self.qh.set_limits(set_limits=[(p1,) + limits1,
-                                           (p1,) + limits2])
-
-        p2, _ = self.rand_policy_limits()
-        r = self.qh.get_limits(get_limits=[p1, p2])
-        self.assertEqual(r, [(p1,) + limits2])
-
-    @transaction.commit_on_success
-    def test_007_get_set_holding(self):
-        e = self.rand_holder()
-        resource = self.rand_resource()
-
-        p0 = self.rand_policy()
-        f0 = self.rand_flags()
-        p1, _ = self.new_policy()
-        f1 = self.rand_flags()
-        p2, _ = self.new_policy()
-        f2 = self.rand_flags()
-
-        with self.assertRaises(QuotaholderError) as cm:
-            self.qh.set_holding(set_holding=[(e, resource, p0, f0),
-                                             (e, resource, p1, f1),
-                                             (e, resource, p2, f2)])
-
-        # Python people consider this a legal use
-        # It's even in the library docs... whatever
-        err = cm.exception
-        self.assertEqual(err.message, [(e, resource, p0)])
-
-        self.qh.get_holding(get_holding=[(e, resource)])
-
-        self.qh.set_holding(set_holding=[(e, resource, p1, f1),
-                                         (e, resource, p2, f2)])
-
-        resource1 = self.rand_resource()
-        r = self.qh.get_holding(get_holding=[(e, resource),
-                                             (e, resource1)])
-        self.assertEqual(r, [(e, resource, p2) + DEFAULT_HOLDING + (f2,)])
 
     @transaction.commit_on_success
     def test_0080_get_set_quota(self):
@@ -414,9 +359,9 @@ class QHAPITest(QHTestCase):
         e0 = self.rand_holder()
         e1 = self.rand_holder()
         resource = self.rand_resource()
-        p, _ = self.new_policy()
+        c, = self.rand_limits()
         f = self.rand_flags()
-        r = self.qh.set_holding(set_holding=[(e1, resource, p, f)])
+        r = self.qh.set_quota(set_quota=[(e1, resource, c, f)])
 
         counters = self.rand_counters()
 
@@ -428,8 +373,8 @@ class QHAPITest(QHTestCase):
         err = cm.exception
         self.assertEqual(err.message, [0])
 
-        r = self.qh.get_holding(get_holding=[(e1, resource)])
-        self.assertEqual(r, [(e1, resource, p) + counters + (f,)])
+        r = self.qh.get_quota(get_quota=[(e1, resource)])
+        self.assertEqual(r, [(e1, resource, c) + counters + (f,)])
 
     @transaction.commit_on_success
     def test_015_release_nocapacity(self):
@@ -439,31 +384,21 @@ class QHAPITest(QHTestCase):
         resource = "resource"
         target = "test_015_release_nocapacity_target"
         flags = 0
-        source_limits  = [source, 6]
-        source_holding = [source, resource, source, flags]
-        target_limits  = [target, 5]
-        target_holding = [target, resource, target, flags]
 
-        failed = AssertionError("Quotaholder call failed")
-        if qh.set_limits(set_limits=[source_limits, target_limits]):
-            raise failed
-        if qh.set_holding(set_holding=[source_holding, target_holding]):
-            raise failed
-
-        self.qh.reset_holding(
-            reset_holding=[(source, resource, 6, 6, 6, 6)])
+        qh.init_holding(init_holding=[(source, resource, 6, 6, 6, 6, 6, 0)])
+        qh.set_quota(set_quota=[(target, resource, 5, 0)])
 
         serial = qh.issue_commission(clientkey=self.client, target=target,
                                      name="something",
                                      provisions=[(source, resource, 5)])
         qh.accept_commission(clientkey=self.client, serials=[serial])
 
-        holding = qh.get_holding(get_holding=[[source, resource]])
+        holding = qh.get_quota(get_quota=[[source, resource]])
         self.assertEqual(tuple(holding[0]),
-                         (source, resource, source, 6, 6, 1, 1, flags))
-        holding = qh.get_holding(get_holding=[[target, resource]])
+                         (source, resource, 6, 6, 6, 1, 1, flags))
+        holding = qh.get_quota(get_quota=[[target, resource]])
         self.assertEqual(tuple(holding[0]),
-                         (target, resource, target, 5, 5, 5, 5, flags))
+                         (target, resource, 5, 5, 5, 5, 5, flags))
 
         if qh.reset_holding(
             reset_holding=[[target, resource, 10, 10, 10, 10]]):
@@ -484,12 +419,12 @@ class QHAPITest(QHTestCase):
                                      provisions=[(source, resource, -1)])
         qh.accept_commission(clientkey=self.client, serials=[serial])
 
-        holding = qh.get_holding(get_holding=[[source, resource]])
+        holding = qh.get_quota(get_quota=[[source, resource]])
         self.assertEqual(tuple(holding[0]),
-                         (source, resource, source, 6, 6, 2, 2, flags))
-        holding = qh.get_holding(get_holding=[[target, resource]])
+                         (source, resource, 6, 6, 6, 2, 2, flags))
+        holding = qh.get_quota(get_quota=[[target, resource]])
         self.assertEqual(tuple(holding[0]),
-                         (target, resource, target, 9, 9, 9, 9, flags))
+                         (target, resource, 5, 9, 9, 9, 9, flags))
 
         with self.assertRaises(NonExportedError):
             qh.issue_commission(clientkey=self.client, target=target,

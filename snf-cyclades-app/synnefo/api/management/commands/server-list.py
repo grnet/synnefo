@@ -144,8 +144,9 @@ class Command(BaseCommand):
                           'backend',
                           ])
 
-        uuids = list(set([server.userid for server in servers]))
-        ucache.fetch_names(uuids)
+        if displayname:
+            uuids = list(set([server.userid for server in servers]))
+            ucache.fetch_names(uuids)
 
         table = []
         for server in servers.order_by('id'):

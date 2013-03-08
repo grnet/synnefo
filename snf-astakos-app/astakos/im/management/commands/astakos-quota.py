@@ -115,6 +115,7 @@ class Command(BaseCommand):
     @transaction.commit_on_success
     def run(self, sync):
         try:
+            self.stderr.write("Calculating all quotas...\n")
             return sync_all_users(sync=sync)
         except BaseException, e:
             logger.exception(e)

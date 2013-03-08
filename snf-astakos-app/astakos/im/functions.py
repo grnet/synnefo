@@ -85,23 +85,6 @@ import astakos.im.messages as astakos_messages
 logger = logging.getLogger(__name__)
 
 
-def logged(func, msg):
-    @wraps(func)
-    def with_logging(*args, **kwargs):
-        email = ''
-        user = None
-        try:
-            request = args[0]
-            email = request.user.email
-        except (KeyError, AttributeError), e:
-            email = ''
-        r = func(*args, **kwargs)
-        if LOGGING_LEVEL:
-            logger.log(LOGGING_LEVEL, msg % email)
-        return r
-    return with_logging
-
-
 def login(request, user):
     auth_login(request, user)
     from astakos.im.models import SessionCatalog
@@ -109,9 +92,13 @@ def login(request, user):
         session_key=request.session.session_key,
         user=user
     ).save()
+    logger.info('%s logged in.', user.log_display)
 
-login = logged(login, '%s logged in.')
-logout = logged(auth_logout, '%s logged out.')
+
+def logout(request, *args, **kwargs):
+    user = request.user
+    auth_logout(request, *args, **kwargs)
+    logger.info('%s logged out.', user.log_display)
 
 
 def send_verification(user, template_name='im/activation_email.txt'):
@@ -168,8 +155,8 @@ def _send_admin_notification(template_name,
         logger.exception(e)
         raise SendNotificationError()
     else:
-        msg = 'Sent admin notification for user %s' % dictionary.get('email',
-                                                                     None)
+        msg = 'Sent admin notification for user %s' % \
+              (dictionary.get('user', {}).get('email', None), )
         logger.log(LOGGING_LEVEL, msg)
 
 

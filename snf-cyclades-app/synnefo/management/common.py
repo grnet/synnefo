@@ -263,11 +263,11 @@ class UserCache(object):
         assert(self.split > 0), "split must be positive"
 
     def fetch_names(self, uuid_list):
-        l = len(uuid_list)
+        total = len(uuid_list)
+        split = self.split
 
-        start = 0
-        while start < l:
-            end = self.split if l > self.split else l
+        for start in range(0, total, split):
+            end = start + split
             try:
                 names = \
                     astakos.get_displaynames(token=ASTAKOS_TOKEN,
@@ -276,8 +276,6 @@ class UserCache(object):
                 self.users.update(names)
             except Exception as e:
                 log.error("Failed to fetch names: %s",  e)
-
-            start = end
 
     def get_uuid(self, name):
         if not name in self.users:

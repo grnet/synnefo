@@ -410,6 +410,14 @@ class AstakosUser(User):
     def realname(self):
         return '%s %s' % (self.first_name, self.last_name)
 
+    @property
+    def log_display(self):
+        """
+        Should be used in all logger.* calls that refer to a user so that
+        user display is consistent across log entries.
+        """
+        return '%s (%s)' % (self.uuid, self.email)
+
     @realname.setter
     def realname(self, value):
         parts = value.split(' ')

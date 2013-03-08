@@ -128,8 +128,9 @@ class Command(BaseCommand):
         else:
             headers.extend(['IPv4 Subnet', 'IPv4 Gateway'])
 
-        uuids = list(set([network.userid for network in networks]))
-        ucache.fetch_names(uuids)
+        if displayname:
+            uuids = list(set([network.userid for network in networks]))
+            ucache.fetch_names(uuids)
 
         table = []
         for network in networks.order_by("id"):

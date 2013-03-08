@@ -306,8 +306,10 @@ class QuotaholderDjangoDBCallpoint(object):
 
                 # Source
                 try:
-                    h = db_get_holding(holder=holder, resource=resource,
-                                       for_update=True)
+                    h = (db_get_holding(holder=holder, resource=resource,
+                                        for_update=True)
+                         if holder is not None
+                         else None)
                 except Holding.DoesNotExist:
                     m = ("%s has no stock of %s." % (holder, resource))
                     raise NoStockError(m,
@@ -332,13 +334,15 @@ class QuotaholderDjangoDBCallpoint(object):
                                           limit=0)
 
                 if quantity >= 0:
-                    operations.prepare(Export, h, quantity)
+                    if h is not None:
+                        operations.prepare(Export, h, quantity)
                     operations.prepare(Import, th, quantity)
 
                 else: # release
                     abs_quantity = -quantity
 
-                    operations.prepare(Reclaim, h, abs_quantity)
+                    if h is not None:
+                        operations.prepare(Reclaim, h, abs_quantity)
                     operations.prepare(Release, th, abs_quantity)
 
                 Provision.objects.create(serial=commission,
@@ -356,20 +360,32 @@ class QuotaholderDjangoDBCallpoint(object):
                        commission, s_holding, t_holding,
                        provision, log_time, reason):
 
-        s_holder = s_holding.holder
-        t_holder = t_holding.holder
+        if s_holding is not None:
+            s_holder = s_holding.holder
+            s_capacity = s_holding.capacity
+            s_imported_min = s_holding.imported_min
+            s_imported_max = s_holding.imported_max
+            s_stock_min = s_holding.stock_min
+            s_stock_max = s_holding.stock_max
+        else:
+            s_holder = None
+            s_capacity = None
+            s_imported_min = None
+            s_imported_max = None
+            s_stock_min = None
+            s_stock_max = None
 
         kwargs = {
             'serial':              commission.serial,
             'name':                commission.name,
             'source':              s_holder,
-            'target':              t_holder,
+            'target':              t_holding.holder,
             'resource':            provision.resource,
-            'source_capacity':     s_holding.capacity,
-            'source_imported_min': s_holding.imported_min,
-            'source_imported_max': s_holding.imported_max,
-            'source_stock_min':    s_holding.stock_min,
-            'source_stock_max':    s_holding.stock_max,
+            'source_capacity':     s_capacity,
+            'source_imported_min': s_imported_min,
+            'source_imported_max': s_imported_max,
+            'source_stock_min':    s_stock_min,
+            'source_stock_max':    s_stock_max,
             'target_capacity':     t_holding.capacity,
             'target_imported_min': t_holding.imported_min,
             'target_imported_max': t_holding.imported_max,
@@ -402,8 +418,10 @@ class QuotaholderDjangoDBCallpoint(object):
             provisions = db_filter_provision(serial=serial, for_update=True)
             for pv in provisions:
                 try:
-                    h = db_get_holding(holder=pv.holder,
-                                       resource=pv.resource, for_update=True)
+                    h = (db_get_holding(holder=pv.holder,
+                                        resource=pv.resource, for_update=True)
+                         if pv.holder is not None
+                         else None)
                     th = db_get_holding(holder=t, resource=pv.resource,
                                         for_update=True)
                 except Holding.DoesNotExist:
@@ -413,12 +431,14 @@ class QuotaholderDjangoDBCallpoint(object):
                 quantity = pv.quantity
 
                 if quantity >= 0:
-                    operations.finalize(Export, h, quantity)
+                    if h is not None:
+                        operations.finalize(Export, h, quantity)
                     operations.finalize(Import, th, quantity)
                 else: # release
                     abs_quantity = -quantity
 
-                    operations.finalize(Reclaim, h, abs_quantity)
+                    if h is not None:
+                        operations.finalize(Reclaim, h, abs_quantity)
                     operations.finalize(Release, th, abs_quantity)
 
                 reason = 'ACCEPT:' + reason[-121:]
@@ -447,8 +467,10 @@ class QuotaholderDjangoDBCallpoint(object):
             provisions = db_filter_provision(serial=serial, for_update=True)
             for pv in provisions:
                 try:
-                    h = db_get_holding(holder=pv.holder,
-                                       resource=pv.resource, for_update=True)
+                    h = (db_get_holding(holder=pv.holder,
+                                        resource=pv.resource, for_update=True)
+                         if pv.holder is not None
+                         else None)
                     th = db_get_holding(holder=t, resource=pv.resource,
                                         for_update=True)
                 except Holding.DoesNotExist:
@@ -458,12 +480,14 @@ class QuotaholderDjangoDBCallpoint(object):
                 quantity = pv.quantity
 
                 if quantity >= 0:
-                    operations.undo(Export, h, quantity)
+                    if h is not None:
+                        operations.undo(Export, h, quantity)
                     operations.undo(Import, th, quantity)
                 else: # release
                     abs_quantity = -quantity
 
-                    operations.undo(Reclaim, h, abs_quantity)
+                    if h is not None:
+                        operations.undo(Reclaim, h, abs_quantity)
                     operations.undo(Release, th, abs_quantity)
 
                 reason = 'REJECT:' + reason[-121:]

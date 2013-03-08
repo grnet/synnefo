@@ -80,7 +80,7 @@ class Provision(Model):
                                 to_field='serial',
                                 related_name='provisions'   )
 
-    holder      =   CharField(max_length=4096, db_index=True)
+    holder      =   CharField(max_length=4096, db_index=True, null=True)
     resource    =   CharField(max_length=4096, null=False)
     quantity    =   intDecimalField()
 
@@ -89,17 +89,17 @@ class Provision(Model):
 class ProvisionLog(Model):
 
     serial              =   BigIntegerField()
-    source              =   CharField(max_length=4096)
+    source              =   CharField(max_length=4096, null=True)
     target              =   CharField(max_length=4096)
     name                =   CharField(max_length=4096)
     issue_time          =   CharField(max_length=4096)
     log_time            =   CharField(max_length=4096)
     resource            =   CharField(max_length=4096)
-    source_capacity     =   intDecimalField()
-    source_imported_min =   intDecimalField()
-    source_imported_max =   intDecimalField()
-    source_stock_min    =   intDecimalField()
-    source_stock_max    =   intDecimalField()
+    source_capacity     =   intDecimalField(null=True)
+    source_imported_min =   intDecimalField(null=True)
+    source_imported_max =   intDecimalField(null=True)
+    source_stock_min    =   intDecimalField(null=True)
+    source_stock_max    =   intDecimalField(null=True)
     target_capacity     =   intDecimalField()
     target_imported_min =   intDecimalField()
     target_imported_max =   intDecimalField()

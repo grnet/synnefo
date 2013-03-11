@@ -50,7 +50,7 @@ except ImportError:
         raise Exception("The unittest2 package is required for Python < 2.7")
     import unittest
 
-from kamaki.clients.quotaholder import QuotaholderClient
+from synnefo.lib.quotaholder import QuotaholderClient
 from synnefo.lib.quotaholder.api import (InvalidKeyError, NoEntityError,
                                          NoQuantityError, NoCapacityError,
                                          ExportLimitError, ImportLimitError)

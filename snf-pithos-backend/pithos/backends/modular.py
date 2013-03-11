@@ -39,7 +39,7 @@ import logging
 import hashlib
 import binascii
 
-from kamaki.clients.quotaholder import QuotaholderClient
+from synnefo.lib.quotaholder import QuotaholderClient
 
 from base import DEFAULT_QUOTA, DEFAULT_VERSIONING, NotAllowedError, QuotaError, BaseBackend, \
     AccountExists, ContainerExists, AccountNotEmpty, ContainerNotEmpty, ItemNotExists, VersionNotExists
@@ -145,8 +145,9 @@ class ModularBackend(BaseBackend):
     def __init__(self, db_module=None, db_connection=None,
                  block_module=None, block_path=None, block_umask=None,
                  queue_module=None, queue_hosts=None, queue_exchange=None,
-                 quotaholder_enabled=True,
+                 quotaholder_enabled=False,
                  quotaholder_url=None, quotaholder_token=None,
+                 quotaholder_client_poolsize=None,
                  free_versioning=True, block_params=None):
         db_module = db_module or DEFAULT_DB_MODULE
         db_connection = db_connection or DEFAULT_DB_CONNECTION
@@ -209,9 +210,14 @@ class ModularBackend(BaseBackend):
             self.queue = NoQueue()
 
         self.quotaholder_enabled = quotaholder_enabled
-        self.quotaholder_url = quotaholder_url
-        self.quotaholder_token = quotaholder_token
-        self.quotaholder = QuotaholderClient(quotaholder_url, quotaholder_token)
+        if quotaholder_enabled:
+            self.quotaholder_url = quotaholder_url
+            self.quotaholder_token = quotaholder_token
+            self.quotaholder = QuotaholderClient(
+                                    quotaholder_url,
+                                    token=quotaholder_token,
+                                    poolsize=quotaholder_client_poolsize)
+
         self.serials = []
         self.messages = []
 

@@ -35,6 +35,7 @@ import logging
 import urlparse
 import httplib
 import urllib
+import hashlib
 from copy import copy
 
 import simplejson
@@ -128,6 +129,7 @@ class AstakosClient():
                         # In case of Unauthorized response
                         # or Not Found return immediately
                         raise err
+                    self.logger.info("AstakosClient request failed..retrying")
                     attemps += 1
         return decorator
 
@@ -136,9 +138,12 @@ class AstakosClient():
     def _callAstakos(self, token, request_path,
                      headers=None, body=None, method="GET"):
         """Make the actual call to Astakos Service"""
+        hashed_token = hashlib.sha1()
+        hashed_token.update(token)
         self.logger.debug(
-            "Make a %s request to %s with headers %s "
-            "and body %s" % (method, request_path, headers, body))
+            "Make a %s request to %s using token %s "
+            "with headers %s and body %s"
+            % (method, request_path, hashed_token.hexdigest(), headers, body))
 
         # Check Input
         if not token:

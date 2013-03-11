@@ -37,15 +37,15 @@ from synnefo.settings import CYCLADES_USE_QUOTAHOLDER
 
 if CYCLADES_USE_QUOTAHOLDER:
     from synnefo.settings import (CYCLADES_QUOTAHOLDER_URL,
-                                  CYCLADES_QUOTAHOLDER_TOKEN)
-    from kamaki.clients.quotaholder import QuotaholderClient
+                                  CYCLADES_QUOTAHOLDER_TOKEN,
+                                  CYCLADES_QUOTAHOLDER_POOLSIZE)
+    from synnefo.lib.quotaholder import QuotaholderClient
 else:
     from synnefo.settings import (VMS_USER_QUOTA, MAX_VMS_PER_USER,
                                   NETWORKS_USER_QUOTA, MAX_NETWORKS_PER_USER)
 
-from kamaki.clients.quotaholder.api import (NoCapacityError, NoQuantityError,
-                                            NoEntityError)
-from kamaki.clients.commissioning import CallError
+from synnefo.lib.quotaholder.api import (NoCapacityError, NoQuantityError,
+                                         NoEntityError, CallError)
 
 import logging
 log = logging.getLogger(__name__)
@@ -110,7 +110,8 @@ def get_quota_holder():
     """Context manager for using a QuotaHolder."""
     if CYCLADES_USE_QUOTAHOLDER:
         quotaholder = QuotaholderClient(CYCLADES_QUOTAHOLDER_URL,
-                                        token=CYCLADES_QUOTAHOLDER_TOKEN)
+                                        token=CYCLADES_QUOTAHOLDER_TOKEN,
+                                        poolsize=CYCLADES_QUOTAHOLDER_POOLSIZE)
     else:
         quotaholder = DummyQuotaholderClient()
 

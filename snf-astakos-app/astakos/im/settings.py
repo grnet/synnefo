@@ -159,6 +159,7 @@ PROJECT_MEMBERSHIP_LEAVE_REQUEST_SUBJECT = getattr(
 # Set the quota holder component URI
 QUOTAHOLDER_URL = getattr(settings, 'ASTAKOS_QUOTAHOLDER_URL', '')
 QUOTAHOLDER_TOKEN = getattr(settings, 'ASTAKOS_QUOTAHOLDER_TOKEN', '')
+QUOTAHOLDER_POOLSIZE = getattr(settings, 'ASTAKOS_QUOTAHOLDER_POOLSIZE', 50)
 
 # Set the cloud service properties
 SERVICES = getattr(settings, 'ASTAKOS_SERVICES', {

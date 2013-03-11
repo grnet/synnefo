@@ -827,10 +827,14 @@
             }
 
             if (this.__added_flavors.ram.indexOf(values.mem) == -1) {
-                var mem = $(('<li class="option mem value-{0}">' + 
+                var mem_value = parseInt(_.escape(values.mem))*1024*1024;
+                var displayvalue = synnefo.util.readablizeBytes(mem_value, 
+                                                               0).split(" ");
+                var mem = $(('<li class="option mem value-{2}">' + 
                              '<span class="value">{0}</span>' + 
-                             '<span class="metric">MB</span></li>').format(
-                            _.escape(values.mem))).data('value', values.mem);
+                             '<span class="metric">{1}</span></li>').format(
+                          displayvalue[0], displayvalue[1], values.mem)).data(
+                          'value', values.mem);
                 this.mems.append(mem);
                 this.__added_flavors.ram.push(values.mem);
             }

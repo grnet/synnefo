@@ -93,7 +93,8 @@ class AstakosClient():
     """AstakosClient Class Implementation"""
 
     # ----------------------------------
-    def __init__(self, astakos_url, use_pool=False, retry=0, logger=None):
+    def __init__(self, astakos_url, retry=0,
+                 use_pool=False, pool_size=8, logger=None):
         """Intialize AstakosClient Class
 
         Keyword arguments:
@@ -119,7 +120,7 @@ class AstakosClient():
 
         # Check for supported scheme
         p = urlparse.urlparse(astakos_url)
-        conn_class = _scheme_to_class(p.scheme, use_pool)
+        conn_class = _scheme_to_class(p.scheme, use_pool, pool_size)
         if conn_class is None:
             m = "Unsupported scheme: %s" % p.scheme
             logger.error(m)
@@ -193,7 +194,7 @@ class AstakosClient():
         try:
             (data, status) = _doRequest(conn, method, request_path, **kwargs)
         except Exception as err:
-            self.logger.error("Failed to send request: %s" % err)
+            self.logger.error("Failed to send request: %s" % repr(err))
             raise AstakosClientException(str(err))
         finally:
             conn.close()
@@ -332,30 +333,24 @@ class AstakosClient():
 
 # --------------------------------------------------------------------
 # Private functions
-def _scheme_to_class(scheme, use_pool):
+def _scheme_to_class(scheme, use_pool, pool_size):
     """Return the appropriate conn class for given scheme"""
+    def _objpool(netloc):
+        return objpool.http.get_http_connection(
+            netloc=netloc, scheme=scheme, pool_size=pool_size)
+
     if scheme == "http":
         if use_pool:
-            return _objpoolHttpScheme
+            return _objpool
         else:
             return httplib.HTTPConnection
     elif scheme == "https":
         if use_pool:
-            return _objpoolHttpsScheme
+            return _objpool
         else:
             return httplib.HTTPSConnection
     else:
         return None
-
-
-def _objpoolHttpScheme(netloc):
-    """Intialize the appropriate objpool.http class"""
-    return objpool.http.get_http_connection(netloc, "http")
-
-
-def _objpoolHttpsScheme(netloc):
-    """Intialize the appropriate objpool.http class"""
-    return objpool.http.get_http_connection(netloc, "https")
 
 
 def _doRequest(conn, method, url, **kwargs):

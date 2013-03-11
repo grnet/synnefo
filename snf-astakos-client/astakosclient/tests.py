@@ -45,7 +45,8 @@ import socket
 import simplejson
 
 import astakosclient
-from astakosclient import AstakosClient, AstakosClientException
+from astakosclient import AstakosClient, AstakosClientException, \
+    AstakosClientEInvalid, AstakosClientEMethod, AstakosClientENotFound
 
 # Use backported unittest functionality if Python < 2.7
 try:
@@ -295,9 +296,10 @@ class TestCallAstakos(unittest.TestCase):
         try:
             client = AstakosClient("https://example.com", use_pool=pool)
             client._callAstakos(token, "/im/authenticate")
-        except AstakosClientException as err:
-            if err.status != 401:
-                self.fail("Should have returned 401 (Invalid X-Auth-Token)")
+        except AstakosClientEInvalid:
+            pass
+        except Exception:
+            self.fail("Should have returned 401 (Invalid X-Auth-Token)")
         else:
             self.fail("Should have returned 401 (Invalid X-Auth-Token)")
 
@@ -317,9 +319,10 @@ class TestCallAstakos(unittest.TestCase):
         try:
             client = AstakosClient("https://example.com", use_pool=pool)
             client._callAstakos(token_1, "/im/misspelled")
-        except AstakosClientException as err:
-            if err.status != 404:
-                self.fail("Should have returned 404 (Not Found)")
+        except AstakosClientENotFound:
+            pass
+        except Exception:
+            self.fail("Should have returned 404 (Not Found)")
         else:
             self.fail("Should have returned 404 (Not Found)")
 
@@ -384,9 +387,10 @@ class TestCallAstakos(unittest.TestCase):
         try:
             client = AstakosClient("https://example.com", use_pool=pool)
             client._callAstakos(token_1, "/im/authenticate", method="POST")
-        except AstakosClientException as err:
-            if err.status != 400:
-                self.fail("Should have returned 400 (Method not allowed)")
+        except AstakosClientEMethod:
+            pass
+        except Exception:
+            self.fail("Should have returned 400 (Method not allowed)")
         else:
             self.fail("Should have returned 400 (Method not allowed)")
 
@@ -406,9 +410,10 @@ class TestCallAstakos(unittest.TestCase):
         try:
             client = AstakosClient("https://example.com", use_pool=pool)
             client._callAstakos(token_1, "/user_catalogs")
-        except AstakosClientException as err:
-            if err.status != 400:
-                self.fail("Should have returned 400 (Method not allowed)")
+        except AstakosClientEMethod:
+            pass
+        except Exception:
+            self.fail("Should have returned 400 (Method not allowed)")
         else:
             self.fail("Should have returned 400 (Method not allowed)")
 
@@ -446,9 +451,10 @@ class TestAuthenticate(unittest.TestCase):
         try:
             client = AstakosClient("https://example.com", use_pool=pool)
             client.authenticate(token)
-        except AstakosClientException as err:
-            if err.status != 401:
-                self.fail("Should have returned 401 (Invalid X-Auth-Token)")
+        except AstakosClientEInvalid:
+            pass
+        except Exception:
+            self.fail("Should have returned 401 (Invalid X-Auth-Token)")
         else:
             self.fail("Should have returned 401 (Invalid X-Auth-Token)")
 
@@ -532,9 +538,10 @@ class TestDisplayNames(unittest.TestCase):
         try:
             client = AstakosClient("https://example.com")
             client.getDisplayNames(token, [user_1['uuid']])
-        except AstakosClientException as err:
-            if err.status != 401:
-                self.fail("Should have returned 401 (Invalid X-Auth-Token)")
+        except AstakosClientEInvalid:
+            pass
+        except Exception:
+            self.fail("Should have returned 401 (Invalid X-Auth-Token)")
         else:
             self.fail("Should have returned 401 (Invalid X-Auth-Token)")
 
@@ -581,9 +588,10 @@ class TestGetUUIDs(unittest.TestCase):
         try:
             client = AstakosClient("https://example.com")
             client.getUUIDs(token, [user_1['username']])
-        except AstakosClientException as err:
-            if err.status != 401:
-                self.fail("Should have returned 401 (Invalid X-Auth-Token)")
+        except AstakosClientEInvalid:
+            pass
+        except Exception:
+            self.fail("Should have returned 401 (Invalid X-Auth-Token)")
         else:
             self.fail("Should have returned 401 (Invalid X-Auth-Token)")
 

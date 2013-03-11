@@ -53,6 +53,24 @@ class AstakosClientException(Exception):
         return repr(self.message)
 
 
+class AstakosClientEInvalid(AstakosClientException):
+    def __init__(self, message):
+        """Invalid X-Auth-Token"""
+        super(AstakosClientEInvalid, self).__init__(message, 401)
+
+
+class AstakosClientEMethod(AstakosClientException):
+    def __init__(self, message):
+        """Method not allowed"""
+        super(AstakosClientEMethod, self).__init__(message, 400)
+
+
+class AstakosClientENotFound(AstakosClientException):
+    def __init__(self, message):
+        """404 Not Found"""
+        super(AstakosClientENotFound, self).__init__(message, 404)
+
+
 # --------------------------------------------------------------------
 # Astakos Client Class
 
@@ -182,6 +200,12 @@ class AstakosClient():
 
         # Return
         self.logger.debug("Request returned with status %s" % status)
+        if status == 400:
+            raise AstakosClientEMethod(data)
+        if status == 401:
+            raise AstakosClientEInvalid(data)
+        if status == 404:
+            raise AstakosClientENotFound(data)
         if status < 200 or status >= 300:
             raise AstakosClientException(data, status)
         return simplejson.loads(unicode(data))

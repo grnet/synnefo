@@ -91,7 +91,8 @@ def login(
     shibboleth_headers = {}
     for token in dir(Tokens):
         if token == token.upper():
-            shibboleth_headers[token] = tokens.get(token, 'NOT_SET')
+            shibboleth_headers[token] = request.META.get(token, 'NOT_SET')
+
     # log shibboleth headers
     # TODO: info -> debug
     logger.info("shibboleth request: %r" % shibboleth_headers)

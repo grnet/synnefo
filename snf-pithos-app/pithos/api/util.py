@@ -62,6 +62,7 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_QUEUE_MODULE, BACKEND_QUEUE_HOSTS,
                                  BACKEND_QUEUE_EXCHANGE, USE_QUOTAHOLDER,
                                  QUOTAHOLDER_URL, QUOTAHOLDER_TOKEN,
+                                 QUOTAHOLDER_POOLSIZE,
                                  BACKEND_QUOTA, BACKEND_VERSIONING,
                                  BACKEND_FREE_VERSIONING,
                                  AUTHENTICATION_URL, AUTHENTICATION_USERS,
@@ -967,20 +968,22 @@ else:
                    }
 
 
-_pithos_backend_pool = PithosBackendPool(size=POOL_SIZE,
-                                         db_module=BACKEND_DB_MODULE,
-                                         db_connection=BACKEND_DB_CONNECTION,
-                                         block_module=BACKEND_BLOCK_MODULE,
-                                         block_path=BACKEND_BLOCK_PATH,
-                                         block_umask=BACKEND_BLOCK_UMASK,
-                                         queue_module=BACKEND_QUEUE_MODULE,
-                                         queue_hosts=BACKEND_QUEUE_HOSTS,
-                                         queue_exchange=BACKEND_QUEUE_EXCHANGE,
-                                         quotaholder_enabled=USE_QUOTAHOLDER,
-                                         quotaholder_url=QUOTAHOLDER_URL,
-                                         quotaholder_token=QUOTAHOLDER_TOKEN,
-                                         free_versioning=BACKEND_FREE_VERSIONING,
-                                         block_params=BLOCK_PARAMS)
+_pithos_backend_pool = PithosBackendPool(
+        size=POOL_SIZE,
+        db_module=BACKEND_DB_MODULE,
+        db_connection=BACKEND_DB_CONNECTION,
+        block_module=BACKEND_BLOCK_MODULE,
+        block_path=BACKEND_BLOCK_PATH,
+        block_umask=BACKEND_BLOCK_UMASK,
+        queue_module=BACKEND_QUEUE_MODULE,
+        queue_hosts=BACKEND_QUEUE_HOSTS,
+        queue_exchange=BACKEND_QUEUE_EXCHANGE,
+        quotaholder_enabled=USE_QUOTAHOLDER,
+        quotaholder_url=QUOTAHOLDER_URL,
+        quotaholder_token=QUOTAHOLDER_TOKEN,
+        quotaholder_client_poolsize=QUOTAHOLDER_POOLSIZE,
+        free_versioning=BACKEND_FREE_VERSIONING,
+        block_params=BLOCK_PARAMS)
 
 def get_backend():
     backend = _pithos_backend_pool.pool_get()

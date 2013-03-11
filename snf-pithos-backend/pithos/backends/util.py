@@ -47,6 +47,7 @@ class PithosBackendPool(ObjectPool):
                  queue_exchange=None, free_versioning=True,
                  quotaholder_enabled=True,
                  quotaholder_url=None, quotaholder_token=None,
+                 quotaholder_client_poolsize=None,
                  block_params=None):
         super(PithosBackendPool, self).__init__(size=size)
         self.db_module = db_module
@@ -61,22 +62,25 @@ class PithosBackendPool(ObjectPool):
         self.quotaholder_enabled = quotaholder_enabled
         self.quotaholder_url = quotaholder_url
         self.quotaholder_token = quotaholder_token
+        self.quotaholder_client_poolsize = quotaholder_client_poolsize
         self.free_versioning = free_versioning
 
     def _pool_create(self):
-        backend = connect_backend(db_module=self.db_module,
-                                  db_connection=self.db_connection,
-                                  block_module=self.block_module,
-                                  block_path=self.block_path,
-                                  block_umask=self.block_umask,
-                                  queue_module=self.queue_module,
-                                  block_params=self.block_params,
-                                  queue_hosts=self.queue_hosts,
-                                  queue_exchange=self.queue_exchange,
-                                  quotaholder_enabled=self.quotaholder_enabled,
-                                  quotaholder_url=self.quotaholder_url,
-                                  quotaholder_token=self.quotaholder_token,
-                                  free_versioning=self.free_versioning)
+        backend = connect_backend(
+                db_module=self.db_module,
+                db_connection=self.db_connection,
+                block_module=self.block_module,
+                block_path=self.block_path,
+                block_umask=self.block_umask,
+                queue_module=self.queue_module,
+                block_params=self.block_params,
+                queue_hosts=self.queue_hosts,
+                queue_exchange=self.queue_exchange,
+                quotaholder_enabled=self.quotaholder_enabled,
+                quotaholder_url=self.quotaholder_url,
+                quotaholder_token=self.quotaholder_token,
+                quotaholder_client_poolsize=self.quotaholder_client_poolsize,
+                free_versioning=self.free_versioning)
 
         backend._real_close = backend.close
         backend.close = instancemethod(_pooled_backend_close, backend,

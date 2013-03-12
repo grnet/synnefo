@@ -531,7 +531,6 @@
             }, this));
 
             this.predefined = this.$(".predefined-list");
-            this.update_predefined_flavors();
         },
 
         handle_image_change: function(data) {
@@ -539,6 +538,7 @@
             this.update_valid_predefined();
             this.current_flavor = undefined;
             this.update_flavors_data();
+            this.update_predefined_flavors();
             this.reset_flavors();
             this.update_layout();
         },
@@ -578,6 +578,18 @@
         select_valid_flavor: function() {
             var found = false;
             var self = this;
+
+            _.each(["cpu", "mem", "disk"], function(t) {
+              var el = $(".flavor-options."+t);
+              var all = el.find(".flavor-opts-list li").length;
+              var disabled = el.find(".flavor-opts-list li.disabled").length;
+              if (disabled >= all) {
+                el.find("h4").addClass("error");
+              } else {
+                el.find("h4").removeClass("error");
+              }
+            })
+
             _.each(this.flavors, function(flv) {
                 if (self.flavor_is_valid(flv)) {
                     found = flv;
@@ -925,6 +937,26 @@
             this.update_disabled_flavors();
             this.validate();
             this.validate_selected_flavor();
+            this.update_quota_display();
+        },
+        
+        update_quota_display: function() {
+          if (!snf.user.quota || !snf.user.quota.data) { return };
+
+          _.each(["disk", "ram", "cpu"], function(type) {
+            var available_dsp = snf.user.quota.get_available_readable(type);
+            var available = snf.user.quota.get_available(type);
+            var content = "({0} left)".format(available_dsp);
+            if (available <= 0) { content = "(None left)" }
+            
+            if (type == "ram") { type = "mem" }
+            $(".flavor-options."+type+" h4 .available").text(content);
+            if (available <= 0) {
+              $(".flavor-options."+type+" h4 .available").addClass("error");
+            } else {
+              $(".flavor-options."+type+" h4 .available").removeClass("error");
+            }
+          })
         },
 
         reset: function() {

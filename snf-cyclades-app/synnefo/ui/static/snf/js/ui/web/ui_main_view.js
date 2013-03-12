@@ -776,6 +776,7 @@
           if (!snf.user.quota) {
             snf.user.quota = new snf.quota.Quota("cyclades");
             main_view.init_quotas_handlers();
+      
           }
 
           snf.api.sync('read', undefined, {

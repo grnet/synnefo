@@ -152,6 +152,17 @@
 
       can_consume: function(key, value) {
         return (this.get_available(key) - parseInt(value)) >= 0
+      },
+
+      get_available_readable: function(key) {
+        var value;
+        if (this.is_bytes(key)) {
+          var value = this.get_available(key);
+          if (!value) { return 0 }
+          return snf.util.readablizeBytes(value);
+        } else {
+          return this.get_available(key);
+        }
       }
 
     });

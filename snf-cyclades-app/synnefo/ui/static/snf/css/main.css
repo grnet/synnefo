@@ -32,6 +32,9 @@ pre {
     font-family: monospace;
 }
 
+h4.error .title {
+  color: red !important;
+}
 #okeanos-image {
     position: absolute;
     bottom: -0px;
@@ -5477,6 +5480,12 @@ table.list-machines .wave {
 .create-vm .flavor-options .metric {
     font-size: 0.8em;
     margin-left: 2px;
+}
+
+.create-vm .flavor-options span.available {
+  font-size: 0.8em;
+  font-weight: normal;
+  margin-left: 5px;
 }
 
 .create-vm .flavor-options span.title {

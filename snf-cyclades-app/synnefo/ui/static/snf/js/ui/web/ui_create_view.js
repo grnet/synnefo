@@ -754,15 +754,14 @@
                 if (el.hasClass("disk_template")) { self.last_choice = ["disk_template", $(this).data("value")] }
 
                 self.update_selected_from_ui();
-            })
+            });
 
-            //this.$(".flavor-options li.disk_template.option").mouseover(function(){
-                //$(this).parent().find(".description").hide();
-                //$(this).find(".description").show();
-            //}).mouseout(function(){
-                //$(this).parent().find(".description").hide();
-                //$(this).parent().find(".selected .description").show();
-            //});
+            $(".flavor-opts-list").each(function(){
+              var el = $(this);
+              if (el.find(".option").length > 6) {
+                el.addClass("compact");
+              }
+            });
         },
 
         sort_flavors: function(els) {

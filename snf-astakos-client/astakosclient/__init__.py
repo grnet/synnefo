@@ -33,42 +33,14 @@
 
 import logging
 import urlparse
-import httplib
 import urllib
 import hashlib
 from copy import copy
 
 import simplejson
-import objpool.http
-
-
-# --------------------------------------------------------------------
-# Astakos Client Exception
-class AstakosClientException(Exception):
-    def __init__(self, message, status=0):
-        self.message = message
-        self.status = status
-
-    def __str__(self):
-        return repr(self.message)
-
-
-class AstakosClientEInvalid(AstakosClientException):
-    def __init__(self, message):
-        """Invalid X-Auth-Token"""
-        super(AstakosClientEInvalid, self).__init__(message, 401)
-
-
-class AstakosClientEMethod(AstakosClientException):
-    def __init__(self, message):
-        """Method not allowed"""
-        super(AstakosClientEMethod, self).__init__(message, 400)
-
-
-class AstakosClientENotFound(AstakosClientException):
-    def __init__(self, message):
-        """404 Not Found"""
-        super(AstakosClientENotFound, self).__init__(message, 404)
+from astakosclient.utils import retry, scheme_to_class
+from astakosclient.errors import \
+    AstakosClientException, Unauthorized, BadRequest, NotFound, Forbidden
 
 
 # --------------------------------------------------------------------
@@ -120,7 +92,7 @@ class AstakosClient():
 
         # Check for supported scheme
         p = urlparse.urlparse(astakos_url)
-        conn_class = _scheme_to_class(p.scheme, use_pool, pool_size)
+        conn_class = scheme_to_class(p.scheme, use_pool, pool_size)
         if conn_class is None:
             m = "Unsupported scheme: %s" % p.scheme
             logger.error(m)
@@ -132,25 +104,6 @@ class AstakosClient():
         self.netloc = p.netloc
         self.scheme = p.scheme
         self.conn_class = conn_class
-
-    # ----------------------------------
-    def retry(func):
-        def decorator(self, *args, **kwargs):
-            attemps = 0
-            while True:
-                try:
-                    return func(self, *args, **kwargs)
-                except AstakosClientException as err:
-                    is_last_attempt = attemps == self.retry
-                    if is_last_attempt:
-                        raise err
-                    if err.status == 401 or err.status == 404:
-                        # In case of Unauthorized response
-                        # or Not Found return immediately
-                        raise err
-                    self.logger.info("AstakosClient request failed..retrying")
-                    attemps += 1
-        return decorator
 
     # ----------------------------------
     @retry
@@ -202,11 +155,13 @@ class AstakosClient():
         # Return
         self.logger.debug("Request returned with status %s" % status)
         if status == 400:
-            raise AstakosClientEMethod(data)
+            raise BadRequest(data)
         if status == 401:
-            raise AstakosClientEInvalid(data)
+            raise Unauthorized(data)
+        if status == 403:
+            raise Forbidden(data)
         if status == 404:
-            raise AstakosClientENotFound(data)
+            raise NotFound(data)
         if status < 200 or status >= 300:
             raise AstakosClientException(data, status)
         return simplejson.loads(unicode(data))
@@ -333,26 +288,8 @@ class AstakosClient():
 
 # --------------------------------------------------------------------
 # Private functions
-def _scheme_to_class(scheme, use_pool, pool_size):
-    """Return the appropriate conn class for given scheme"""
-    def _objpool(netloc):
-        return objpool.http.get_http_connection(
-            netloc=netloc, scheme=scheme, pool_size=pool_size)
-
-    if scheme == "http":
-        if use_pool:
-            return _objpool
-        else:
-            return httplib.HTTPConnection
-    elif scheme == "https":
-        if use_pool:
-            return _objpool
-        else:
-            return httplib.HTTPSConnection
-    else:
-        return None
-
-
+# We want _doRequest to be a distinct function
+# so that we can replace it during unit tests.
 def _doRequest(conn, method, url, **kwargs):
     """The actual request. This function can easily be mocked"""
     conn.request(method, url, **kwargs)

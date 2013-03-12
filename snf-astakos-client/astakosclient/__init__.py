@@ -156,13 +156,13 @@ class AstakosClient():
         self.logger.debug("Request returned with status %s" % status)
         if status == 400:
             raise BadRequest(data)
-        if status == 401:
+        elif status == 401:
             raise Unauthorized(data)
-        if status == 403:
+        elif status == 403:
             raise Forbidden(data)
-        if status == 404:
+        elif status == 404:
             raise NotFound(data)
-        if status < 200 or status >= 300:
+        elif status < 200 or status >= 300:
             raise AstakosClientException(data, status)
         return simplejson.loads(unicode(data))
 

@@ -242,27 +242,26 @@ def user_quota(request):
         # astakos client backwards compatibility
         get_user(request, settings.ASTAKOS_URL)
 
-    vms_limit_for_user = \
-        settings.VMS_USER_QUOTA.get(request.user_uniq,
-                settings.MAX_VMS_PER_USER)
-
-    networks_limit_for_user = \
-        settings.NETWORKS_USER_QUOTA.get(request.user_uniq,
-                settings.MAX_NETWORKS_PER_USER)
-
     if request.user and 'usage' in request.user:
-        quota = dict(zip([q['name'] for q in request.user['usage']],
-                         request.user['usage']))
+        response = json.dumps(request.user['usage'])
+    else:
+        # hmmm, old astakos ???
+        # try to mimic astakos response using cyclades quota settings
+        networks_limit_for_user = \
+            settings.NETWORKS_USER_QUOTA.get(request.user_uniq,
+                    settings.MAX_NETWORKS_PER_USER)
+        vms_limit_for_user = \
+            settings.VMS_USER_QUOTA.get(request.user_uniq,
+                    settings.MAX_NETWORKS_PER_USER)
+        usage = [{'name':'cyclades.vm',
+                  'maxValue': vms_limit_for_user
+                 },
+                 {'name':'cyclades.network.private',
+                  'maxValue': networks_limit_for_user
+                 }]
+        response = json.dumps(usage);
 
-        # TODO: is it ok to use hardcoded resource name ???
-        if 'cyclades.vm' in quota:
-            vms_limit_for_user = quota['cyclades.vm']['maxValue']
-        if 'cyclades.network.private' in quota:
-            networks_limit_for_user = quota['cyclades.network.private']['maxValue']
-
-    return HttpResponse('{"vms_quota":%d, "networks_quota":%d}' % (vms_limit_for_user,
-                                                               networks_limit_for_user),
-                        mimetype="application/json")
+    return HttpResponse(response, mimetype="application/json")
 
 def js_tests(request):
     return template('tests', request, {})

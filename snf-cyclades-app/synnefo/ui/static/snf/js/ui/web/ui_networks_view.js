@@ -1290,8 +1290,6 @@
               self.$("#networkscreate").removeClass("disabled").attr("title", 
                                                             "");
             });
-            
-            synnefo.ui.main.check_quotas("networks");
         },
 
         update_networks: function(nets) {

@@ -32,6 +32,9 @@ pre {
     font-family: monospace;
 }
 
+h4.error .title {
+  color: red !important;
+}
 #okeanos-image {
     position: absolute;
     bottom: -0px;
@@ -4550,6 +4553,10 @@ table.list-machines .wave {
     width: 600px;
 }
 
+.overlay.overlay-createvm {
+    width: 640px;
+}
+
 .overlay a {
     color: #387693;
 }
@@ -5110,7 +5117,7 @@ table.list-machines .wave {
 }
 
 .overlay-createvm .container {
-    width: 584px !important;
+    width: 624px !important;
 }
 
 .create-vm .header-step.current {
@@ -5312,7 +5319,7 @@ table.list-machines .wave {
 .create-vm .create-step-cont {
     min-height: 250px;
     float: left;
-    width: 584px;
+    width: 624px;
 }
 
 .create-vm .create-controls {
@@ -5460,6 +5467,11 @@ table.list-machines .wave {
     filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#D1E7F0', endColorstr='#E8F4FA', GradientType=0);
 }
 
+.create-vm .flavor-opts-list.compact li {
+    padding: 7px 9px;
+    margin-right: 7px;
+}
+
 .create-vm .flavor-options-cont .flavor-options {
     margin-bottom: 2px;
 }
@@ -5468,6 +5480,12 @@ table.list-machines .wave {
 .create-vm .flavor-options .metric {
     font-size: 0.8em;
     margin-left: 2px;
+}
+
+.create-vm .flavor-options span.available {
+  font-size: 0.8em;
+  font-weight: normal;
+  margin-left: 5px;
 }
 
 .create-vm .flavor-options span.title {
@@ -5672,6 +5690,7 @@ table.list-machines .wave {
     font-size: 0.8em;
 }
 
+
 .create-vm .select-image.wide .images-info-cont .image-detail {
 }
 
@@ -5679,6 +5698,13 @@ table.list-machines .wave {
     height: 310px;
     overflow-y: scroll;
     padding-right: 3%;
+}
+
+.flavors-predefined-cont {
+
+}
+
+.flavor-options-cont {
 }
 
 .create-vm .select-image.wide .images-info-cont {
@@ -5802,7 +5828,7 @@ table.list-machines .wave {
 }
 
 #createvm-overlay-content {
-    width: 584px;
+    width: 624px;
     overflow: hidden;
 }
 
@@ -5864,7 +5890,7 @@ table.list-machines .wave {
 .create-vm .steps-history .steps-history-cont.current {
     background-color: #A1C8DB;
     color: #fff;
-    width: 428px;
+    width: 468px;
 }
 
 .create-vm .steps-history-step {

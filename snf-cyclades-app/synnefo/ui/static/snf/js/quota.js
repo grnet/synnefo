@@ -69,6 +69,7 @@
     snf.quota.Quota = function(defaultns) {
         if (defaultns == undefined) { defaultns = "" }
         this.ns = defaultns;
+        this.data = {};
     }
 
     _.extend(snf.quota.Quota.prototype, bb.Events, {
@@ -81,6 +82,7 @@
           } else {
             this.data[q.name] = q;
           }
+
           q.maxValue = parseInt(q.maxValue);
           q.currValue = parseInt(q.currValue);
           this.update_exceeded(q.name, true);

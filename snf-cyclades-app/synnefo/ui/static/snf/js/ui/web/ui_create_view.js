@@ -657,10 +657,36 @@
         },
 
         update_unavailable_values: function() {
-            if (!this.current_image) { this.unavailable_values = {disk:[], ram:[], cpu:[]}; return };
-            this.unavailable_values = storage.flavors.unavailable_values_for_image(this.current_image);
+            
+            var unavailable = {disk:[], ram:[], cpu:[]}
+            var user_excluded = {disk:[], ram:[], cpu:[]}
+            var image_excluded = {disk:[], ram:[], cpu:[]}
+
+            if (this.current_image) {
+              image_excluded = storage.flavors.unavailable_values_for_image(this.current_image);
+            }
+
+            if (snf.user.quota) {
+              quotas = this.get_vm_params_quotas();
+              user_excluded = storage.flavors.unavailable_values_for_quotas(quotas);
+            }
+
+            unavailable.disk = user_excluded.disk.concat(image_excluded.disk);
+            unavailable.ram = user_excluded.ram.concat(image_excluded.ram);
+            unavailable.cpu = user_excluded.cpu.concat(image_excluded.cpu);
+            
+            this.unavailable_values = unavailable;
         },
         
+        get_vm_params_quotas: function() {
+          var quota = {
+            'ram': snf.user.quota.get_available('cyclades.ram'),
+            'cpu': snf.user.quota.get_available('cyclades.cpu'),
+            'disk': snf.user.quota.get_available('cyclades.disk')
+          }
+          return quota;
+        },
+
         flavor_is_valid: function(flv) {
             if (!flv) { return false };
 
@@ -668,6 +694,12 @@
             if (!existing) { return false };
             
             if (this.unavailable_values && (this.unavailable_values.disk.indexOf(parseInt(flv.get("disk")) * 1000) > -1)) {
+                return false;
+            }
+            if (this.unavailable_values && (this.unavailable_values.ram.indexOf(parseInt(flv.get("ram"))) > -1)) {
+                return false;
+            }
+            if (this.unavailable_values && (this.unavailable_values.cpu.indexOf(parseInt(flv.get("cpu"))) > -1)) {
                 return false;
             }
             return true;
@@ -721,6 +753,23 @@
                 var el_value = $(el).data("value") * 1000;
                 if (this.unavailable_values.disk.indexOf(el_value) > -1) {
                     $(el).addClass("disabled");
+                    $(el).removeClass("selected");
+                };
+            }, this));
+
+            this.$("#create-vm-flavor-options .flavor-options.ram li").each(_.bind(function(i, el){
+                var el_value = $(el).data("value");
+                if (this.unavailable_values.ram.indexOf(el_value) > -1) {
+                    $(el).addClass("disabled");
+                    $(el).removeClass("selected");
+                };
+            }, this));
+
+            this.$("#create-vm-flavor-options .flavor-options.cpu li").each(_.bind(function(i, el){
+                var el_value = $(el).data("value");
+                if (this.unavailable_values.cpu.indexOf(el_value) > -1) {
+                    $(el).addClass("disabled");
+                    $(el).removeClass("selected");
                 };
             }, this));
         },
@@ -747,7 +796,7 @@
 
                 el.parent().find(".option").removeClass("selected");
                 el.addClass("selected");
-                
+
                 if (el.hasClass("mem")) { self.last_choice = ["ram", $(this).data("value")] }
                 if (el.hasClass("cpu")) { self.last_choice = ["cpu", $(this).data("value")] }
                 if (el.hasClass("disk")) { self.last_choice = ["disk", $(this).data("value")] }
@@ -782,7 +831,7 @@
                 this.$(".option.disk.selected").data("value"),
                 this.$(".option.disk_template.selected").data("value"),
             this.flavors];
-
+            
             var flv = storage.flavors.get_flavor.apply(storage.flavors, args);
             return flv;
         },

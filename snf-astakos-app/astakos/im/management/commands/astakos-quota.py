@@ -139,11 +139,9 @@ class Command(BaseCommand):
             h_initial = astakos_initial[holder]
             email = info[holder]
             for resource, limits in resources.iteritems():
-                initials = h_initial[resource]
-                initial = str(initials.capacity)
-                capacity = str(limits.capacity)
-                c = h_counters[resource]
-                used = str(c.imported - c.exported + c.returned - c.released)
+                initial = str(h_initial[resource])
+                capacity = str(limits)
+                used = str(h_counters[resource])
 
                 fields = holder, email, resource, initial, capacity, used
                 output = []

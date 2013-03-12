@@ -67,9 +67,6 @@ class Command(BaseCommand):
 
         for user in users:
             quotas = user.all_quotas()
-            showable_quotas = {}
-            for resource, limits in quotas.iteritems():
-                showable_quotas[resource] = limits.capacity
 
             settings_dict = {}
             settings = user.settings()
@@ -107,7 +104,7 @@ class Command(BaseCommand):
             if settings_dict:
                 kv['settings'] = settings_dict
 
-            kv['resources'] = showable_quotas
+            kv['resources'] = quotas
 
             if get_latest_terms():
                 has_signed_terms = user.signed_terms

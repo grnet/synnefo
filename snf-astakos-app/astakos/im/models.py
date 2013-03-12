@@ -74,7 +74,7 @@ from astakos.im import settings as astakos_settings
 from astakos.im.endpoints.qh import (
     send_quotas, qh_get_quotas,
     register_resources, qh_add_quota, QuotaLimits,
-    QuotaValues, add_quota_values)
+    )
 from astakos.im import auth_providers as auth
 
 import astakos.im.messages as astakos_messages
@@ -255,19 +255,13 @@ def load_service_resources():
 
     register_resources(rs)
 
-def _quota_values(capacity):
-    return QuotaValues(
-        quantity = 0,
-        capacity = capacity,
-        )
 
 def get_default_quota():
     _DEFAULT_QUOTA = {}
     resources = Resource.objects.select_related('service').all()
     for resource in resources:
         capacity = resource.uplimit
-        limits = _quota_values(capacity)
-        _DEFAULT_QUOTA[resource.full_name()] = limits
+        _DEFAULT_QUOTA[resource.full_name()] = capacity
 
     return _DEFAULT_QUOTA
 
@@ -463,7 +457,7 @@ class AstakosUser(User):
             self.add_resource_policy(**p)
 
     def add_resource_policy(
-            self, resource, capacity, quantity,
+            self, resource, capacity,
             update=True):
         """Raises ObjectDoesNotExist, IntegrityError"""
         s, sep, r = resource.partition(RESOURCE_SEPARATOR)
@@ -472,7 +466,6 @@ class AstakosUser(User):
             AstakosUserQuota.objects.update_or_create(
                 user=self, resource=resource, defaults={
                     'capacity':capacity,
-                    'quantity': quantity,
                     })
         else:
             q = self.astakosuserquota_set
@@ -795,7 +788,7 @@ def initial_quotas(users):
         uuid = user_quota.user.uuid
         user_init = initial.get(uuid, {})
         resource = user_quota.resource.full_name()
-        user_init[resource] = user_quota.quota_values()
+        user_init[resource] = user_quota.capacity
         initial[uuid] = user_init
 
     return initial
@@ -827,7 +820,7 @@ def users_quotas(users, initial=None):
                 continue
             resource = grant.resource.full_name()
             prev = userquotas.get(resource, 0)
-            new = add_quota_values(prev, grant.member_quota_values())
+            new = prev + grant.member_capacity
             userquotas[resource] = new
         quotas[uuid] = userquotas
 
@@ -1057,12 +1050,6 @@ class AstakosUserQuota(models.Model):
 
     class Meta:
         unique_together = ("resource", "user")
-
-    def quota_values(self):
-        return QuotaValues(
-            quantity = self.quantity,
-            capacity = self.capacity,
-            )
 
 
 class ApprovalTerms(models.Model):
@@ -1783,12 +1770,6 @@ class ProjectResourceGrant(models.Model):
 
     class Meta:
         unique_together = ("resource", "project_application")
-
-    def member_quota_values(self):
-        return QuotaValues(
-            quantity = 0,
-            capacity = self.member_capacity,
-            )
 
     def display_member_capacity(self):
         if self.member_capacity:

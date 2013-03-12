@@ -76,51 +76,18 @@ def set_quota(payload):
     return result
 
 
-def get_holding(payload):
-    c = get_client()
-    if not c:
-        return
-    if payload == []:
-        return []
-    result = c.get_holding(context={}, get_holding=payload)
-    logger.debug('get_holding: %s reply: %s' % (payload, result))
-    return result
-
-
-def qh_get_holdings(users, resources):
-    payload = []
-    append = payload.append
-    for user in users:
-        for resource in resources:
-            append((user.uuid, resource),)
-    result = get_holding(payload)
-    return result
-
-
-def quota_limits_per_user_from_get(lst):
-    quotas = {}
-    for holder, resource, q, c, imp, exp, ret, rel, flags in lst:
-        userquotas = quotas.get(holder, {})
-        userquotas[resource] = QuotaValues(quantity=q, capacity=c,
-                                           )
-        quotas[holder] = userquotas
-    return quotas
-
-
 def quotas_per_user_from_get(lst):
     limits = {}
-    counters = {}
-    for holder, resource, q, c, imp, exp, ret, rel, flags in lst:
+    usage = {}
+    for holder, resource, c, imp_min, imp_max, st_min, st_max, flags in lst:
         userlimits = limits.get(holder, {})
-        userlimits[resource] = QuotaValues(quantity=q, capacity=c,
-                                           )
+        userlimits[resource] = c
         limits[holder] = userlimits
 
-        usercounters = counters.get(holder, {})
-        usercounters[resource] = QuotaCounters(imported=imp, exported=exp,
-                                               returned=ret, released=rel)
-        counters[holder] = usercounters
-    return limits, counters
+        user_usage = usage.get(holder, {})
+        user_usage[resource] = imp_max
+        usage[holder] = user_usage
+    return limits, usage
 
 
 def qh_get_quota(users, resources):
@@ -131,18 +98,13 @@ def qh_get_quota(users, resources):
     append = payload.append
     for user in users:
         for resource in resources:
-            append((user.uuid, resource),)
+            append((user.uuid, str(resource)),)
 
     if payload == []:
         return []
     result = c.get_quota(context={}, get_quota=payload)
     logger.debug('get_quota: %s rejected: %s' % (payload, result))
     return result
-
-
-def qh_get_quota_limits(users, resources):
-    result = qh_get_quota(users, resources)
-    return quota_limits_per_user_from_get(result)
 
 
 def qh_get_quotas(users, resources):
@@ -152,7 +114,6 @@ def qh_get_quotas(users, resources):
 
 SetQuotaPayload = namedtuple('SetQuotaPayload', ('holder',
                                                  'resource',
-                                                 'quantity',
                                                  'capacity',
                                                  'flags'))
 
@@ -160,31 +121,6 @@ QuotaLimits = namedtuple('QuotaLimits', ('holder',
                                          'resource',
                                          'capacity',
                                          ))
-
-QuotaCounters = namedtuple('QuotaCounters', ('imported',
-                                             'exported',
-                                             'returned',
-                                             'released'))
-
-
-class QuotaValues(namedtuple('QuotaValues', ('quantity',
-                                             'capacity',
-                                             ))):
-    __slots__ = ()
-
-    def __dir__(self):
-            return ['quantity', 'capacity']
-
-    def __str__(self):
-        return '\t'.join(['%s=%s' % (f, strbigdec(getattr(self, f)))
-                          for f in dir(self)])
-
-
-def add_quota_values(q1, q2):
-    return QuotaValues(
-        quantity = q1.quantity + q2.quantity,
-        capacity = q1.capacity + q2.capacity,
-        )
 
 
 def register_quotas(quotas):
@@ -194,12 +130,11 @@ def register_quotas(quotas):
     payload = []
     append = payload.append
     for uuid, userquotas in quotas.iteritems():
-        for resource, q in userquotas.iteritems():
+        for resource, capacity in userquotas.iteritems():
             append(SetQuotaPayload(
                     holder=uuid,
-                    resource=resource,
-                    quantity=q.quantity,
-                    capacity=q.capacity,
+                    resource=str(resource),
+                    capacity=capacity,
                     flags=0))
     return set_quota(payload)
 
@@ -214,46 +149,45 @@ def send_quotas(userquotas):
         for resource, q in quotas.iteritems():
             append(SetQuotaPayload(
                     holder=holder,
-                    resource=resource,
-                    quantity=q.quantity,
+                    resource=str(resource),
                     capacity=q.capacity,
                     flags=0))
     return set_quota(payload)
 
 
+def initial_commission(resources):
+    c = get_client()
+    if not c:
+        return
+
+    for resource in resources:
+        s = c.issue_commission(
+            clientkey=clientkey,
+            target=str(resource.service),
+            name='initialization',
+            provisions=[(None, str(resource), QH_PRACTICALLY_INFINITE)])
+
+        c.accept_commission(clientkey=clientkey, serials=[s], reason='')
+
+
 def register_resources(resources):
 
     payload = list(SetQuotaPayload(
-            holder=resource.service,
-            resource=resource,
-            quantity=QH_PRACTICALLY_INFINITE,
+            holder=str(resource.service),
+            resource=str(resource),
             capacity=QH_PRACTICALLY_INFINITE,
             flags=0) for resource in resources)
-    return set_quota(payload)
+    set_quota(payload)
+    initial_commission(resources)
 
 
 def qh_add_quota(sub_list, add_list):
     context = {}
     c = get_client()
 
-    sub_quota = []
-    sub_append = sub_quota.append
-    add_quota = []
-    add_append = add_quota.append
-
-    for ql in sub_list:
-        args = (ql.holder, ql.resource,
-                0, ql.capacity)
-        sub_append(args)
-
-    for ql in add_list:
-        args = (ql.holder, ql.resource,
-                0, ql.capacity)
-        add_append(args)
-
     result = c.add_quota(context=context,
-                         sub_quota=sub_quota,
-                         add_quota=add_quota)
+                         sub_quota=sub_list,
+                         add_quota=add_list)
 
     return result
 

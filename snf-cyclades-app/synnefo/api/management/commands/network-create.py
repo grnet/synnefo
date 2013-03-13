@@ -35,6 +35,7 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 from synnefo.management.common import validate_network_info, get_backend
+from synnefo.management.common import pprint_table
 
 from synnefo.db.models import Network
 from synnefo.logic.backend import create_network
@@ -50,6 +51,12 @@ class Command(BaseCommand):
     help = "Create a new network"
 
     option_list = BaseCommand.option_list + (
+        make_option(
+            "-n",
+            "--dry-run",
+            dest="dry_run",
+            default=False,
+            action="store_true"),
         make_option(
             '--name',
             dest='name',
@@ -129,6 +136,7 @@ class Command(BaseCommand):
         if args:
             raise CommandError("Command doesn't accept any arguments")
 
+        dry_run = options["dry_run"]
         name = options['name']
         subnet = options['subnet']
         backend_id = options['backend_id']
@@ -170,21 +178,28 @@ class Command(BaseCommand):
         if not link or not mode:
             raise CommandError("Can not create network."
                                " No connectivity link or mode")
+        netinfo = {
+           "name": name,
+           "userid": options["owner"],
+           "subnet": subnet,
+           "gateway": gateway,
+           "gateway6": gateway6,
+           "subnet6": subnet6,
+           "dhcp": options["dhcp"],
+           "flavor": flavor,
+           "public": public,
+           "mode": mode,
+           "link": link,
+           "mac_prefix": mac_prefix,
+           "tags": tags,
+           "state": "PENDING"}
 
-        network = Network.objects.create(name=name,
-                                         userid=options['owner'],
-                                         subnet=subnet,
-                                         gateway=gateway,
-                                         gateway6=gateway6,
-                                         subnet6=subnet6,
-                                         dhcp=options['dhcp'],
-                                         flavor=flavor,
-                                         public=public,
-                                         mode=mode,
-                                         link=link,
-                                         mac_prefix=mac_prefix,
-                                         tags=tags,
-                                         state='PENDING')
+        if dry_run:
+            self.stdout.write("Creating network:\n")
+            pprint_table(self.stdout, tuple(netinfo.items()))
+            return
+
+        network = Network.objects.create(**netinfo)
 
         if public:
             # Create BackendNetwork only to the specified Backend

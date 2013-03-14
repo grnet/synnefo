@@ -31,6 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import json
 from datetime import datetime
 from django.utils.timesince import timesince, timeuntil
 
@@ -113,7 +114,8 @@ def parse_filters(filter_by):
     return (filter_dict, exclude_dict)
 
 
-def pprint_table(out, table, headers=None, separator=None):
+def pprint_table(out, table, headers=None, output_format='pretty',
+                 separator=None):
     """Print a pretty, aligned string representation of table.
 
     Works by finding out the max width of each column and padding to data
@@ -121,33 +123,45 @@ def pprint_table(out, table, headers=None, separator=None):
     """
 
     assert(isinstance(table, (list, tuple))), "Invalid table type"
-    sep = separator if separator else "  "
-
     if headers:
         assert(isinstance(headers, (list, tuple))), "Invalid headers type"
-        table.insert(0, headers)
 
-    def strignify(obj):
+    sep = separator if separator else "  "
+
+    def stringnify(obj):
         if isinstance(obj, (unicode, str)):
             return udec(obj)
         else:
             return str(obj)
 
-    table = [map(strignify, row) for row in table]
+    headers = map(stringnify, headers)
+    table = [map(stringnify, row) for row in table]
 
-    # Find out the max width of each column
-    widths = [max(map(len, col)) for col in zip(*table)]
+    if output_format == "json":
+        table = [dict(zip(headers, row)) for row in table]
+        out.write(json.dumps(table, indent=4))
+        out.write("\n")
+    elif output_format == "csv":
+        if headers:
+            line = ",".join("\"%s\"" % uenc(v) for v in headers)
+            out.write(line + "\n")
+            for row in table:
+                line = ",".join("\"%s\"" % uenc(v) for v in row)
+                out.write(line + "\n")
+    elif output_format == "pretty":
+        # Find out the max width of each column
+        widths = [max(map(len, col)) for col in zip(*([headers] + table))]
 
-    t_length = sum(widths) + len(sep) * (len(widths) - 1)
-    if headers:
-        # pretty print the headers
-        line = sep.join(uenc(v.rjust(w)) for v, w in zip(headers, widths))
-        out.write(line + "\n")
-        out.write("-" * t_length + "\n")
-        # remove headers
-        table = table[1:]
+        t_length = sum(widths) + len(sep) * (len(widths) - 1)
+        if headers:
+            # pretty print the headers
+            line = sep.join(uenc(v.rjust(w)) for v, w in zip(headers, widths))
+            out.write(line + "\n")
+            out.write("-" * t_length + "\n")
 
-    # print the rest table
-    for row in table:
-        line = sep.join(uenc(v.rjust(w)) for v, w in zip(row, widths))
-        out.write(line + "\n")
+        # print the rest table
+        for row in table:
+            line = sep.join(uenc(v.rjust(w)) for v, w in zip(row, widths))
+            out.write(line + "\n")
+    else:
+        raise ValueError("Unknown output format '%s'" % output_format)

@@ -33,8 +33,8 @@
 
 from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import (get_backend, check_backend_credentials,
-                                       parse_bool)
+from synnefo.webproject.management.util import parse_bool
+from synnefo.management.common import (get_backend, check_backend_credentials)
 
 
 class Command(BaseCommand):
@@ -89,8 +89,8 @@ class Command(BaseCommand):
                 check_backend_credentials(backend.clustername, backend.port,
                                           backend.username, backend.password)
         if options['drained']:
-            backend.drained = parse_bool(options['drained'])
+            backend.drained = parse_bool(options['drained'], strict=True)
         if options['offline']:
-            backend.offline = parse_bool(options['offline'])
+            backend.offline = parse_bool(options['offline'], strict=True)
 
         backend.save()

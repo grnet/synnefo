@@ -35,7 +35,7 @@ from django.core.management.base import BaseCommand
 from optparse import make_option
 
 from synnefo.quotas.util import get_db_holdings, get_quotaholder_holdings
-from synnefo.management.common import pprint_table
+from synnefo.webproject.management.util import pprint_table
 
 
 class Command(BaseCommand):

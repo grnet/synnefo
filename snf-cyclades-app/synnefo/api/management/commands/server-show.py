@@ -32,8 +32,8 @@
 # or implied, of GRNET S.A.
 
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import (format_bool, format_date,
-                                       format_vm_state, get_vm,
+from synnefo.webproject.management.util import format_bool, format_date
+from synnefo.management.common import (format_vm_state, get_vm,
                                        get_image, UserCache)
 
 

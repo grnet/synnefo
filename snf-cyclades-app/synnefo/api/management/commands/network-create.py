@@ -35,7 +35,7 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 from synnefo.management.common import validate_network_info, get_backend
-from synnefo.management.common import pprint_table
+from synnefo.webproject.management.util import pprint_table
 
 from synnefo.db.models import Network
 from synnefo.logic.backend import create_network

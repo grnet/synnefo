@@ -91,6 +91,11 @@ def login(request, on_failure='im/login.html'):
     user = form.user_cache
     provider = auth.get_provider('local', user)
 
+    if not provider.get_login_policy:
+        message = provider.get_login_disabled_msg
+        messages.error(request, message)
+        return HttpResponseRedirect(reverse('login'))
+
     message = None
     if not user:
         message = provider.get_authentication_failed_msg
@@ -148,8 +153,14 @@ def password_change(request, template_name='registration/password_change_form.ht
 
     create_password = False
 
+    provider = auth.get_provider('local', request.user)
+
     # no local backend user wants to create a password
     if not request.user.has_auth_provider('local'):
+        if not provider.get_add_policy:
+            messages.error(request, provider.get_add_disabled_msg)
+            return HttpResponseRedirect(reverse('edit_profile'))
+
         create_password = True
         password_change_form = ExtendedSetPasswordForm
 

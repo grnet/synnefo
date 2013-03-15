@@ -107,7 +107,6 @@ def handle_third_party_signup(request, userid, provider_module,
                                     third_party_key)
 
     if not provider.get_create_policy:
-		logger.info('%s signup is disabled.' % (provider.module,))
         messages.error(request, provider.get_disabled_for_create_msg)
         return HttpResponseRedirect(reverse('login'))
 
@@ -171,12 +170,14 @@ def handle_third_party_login(request, provider_module, identifier,
             return HttpResponseRedirect(reverse('edit_profile'))
 
         if provider.verified_exists():
+            provider.log("add failed (identifier exists to another user)")
             messages.error(request, provider.get_add_exists_msg)
             return HttpResponseRedirect(reverse('edit_profile'))
 
         # automatically add identifier provider to user
         if not switch_from and not provider.get_add_policy:
             # TODO: handle existing uuid message separately
+            provider.log("user cannot add provider")
             messages.error(request, provider.get_add_failed_msg)
             return HttpResponseRedirect(reverse('edit_profile'))
 
@@ -190,15 +191,20 @@ def handle_third_party_login(request, provider_module, identifier,
             # provider.remove_from_user. Use low level access to the provider
             # db instance.
             if not provider.verified_exists():
-                existing_provider._instance.delete()
                 if provider.get_add_policy:
+                    existing_provider._instance.delete()
+                    existing_provider.log("removed")
                     provider.add_to_user()
+                    provider.log("added")
             else:
                 messages.error(request, provider.get_add_exists_msg)
+                return HttpResponseRedirect(reverse('edit_profile'))
+
             messages.success(request, provider.get_switch_success_msg)
             return HttpResponseRedirect(reverse('edit_profile'))
 
         provider.add_to_user()
+        provider.log("added")
         provider = user.get_auth_provider(provider_module, identifier)
         messages.success(request, provider.get_added_msg)
         return HttpResponseRedirect(reverse('edit_profile'))
@@ -229,8 +235,6 @@ def handle_third_party_login(request, provider_module, identifier,
         # authenticate user
         response = prepare_response(request, user, next_redirect,
                                     'renew' in request.GET)
-        messages.error(request, provider.get_add_disabled_msg)
-        return HttpResponseRedirect(reverse('edit_profile'))
 
         messages.success(request, provider.get_login_success_msg)
         add_pending_auth_provider(request, third_party_key, provider)
@@ -240,4 +244,3 @@ def handle_third_party_login(request, provider_module, identifier,
         message = user.get_inactive_message(provider_module, identifier)
         messages.error(request, message)
         return HttpResponseRedirect(login_url(request))
-

@@ -147,7 +147,8 @@ class AuthProvider(object):
 
         user and identifier: Used to provide details about a user's specific
         login method.
-        >>> p = auth_providers.get_provider('google', identifier='1421421')
+        >>> p = auth_providers.get_provider('google', user,
+        >>>                                 identifier='1421421')
         >>> # provider (google) details prompt
         >>> print p.get_method_details()
         "Google account: 1421421"
@@ -220,10 +221,14 @@ class AuthProvider(object):
             for group_name in self.get_creation_groups_policy:
                 group, created = Group.objects.get_or_create(name=group_name)
                 self.user.groups.add(group)
+                self.log("added to %s group due to creation_groups_policy",
+                         group_name)
 
         for group_name in self.get_add_groups_policy:
             group, created = Group.objects.get_or_create(name=group_name)
             self.user.groups.add(group)
+            self.log("added to %s group due to add_groups_policy",
+                     group_name)
 
         if self.identifier:
             pending = self.get_provider_model().objects.unverified(
@@ -243,14 +248,16 @@ class AuthProvider(object):
 
         create_params.update(self.provider_details)
         create_params.update(params)
-        return self.user.auth_providers.create(**create_params)
+        create = self.user.auth_providers.create(**create_params)
+        self.log("created %r" % create_params)
+        return create
 
     def __repr__(self):
         r = "'%s' module" % self.__class__.__name__
         if self.user:
             r += ' (user: %s)' % self.user
         if self.identifier:
-            r += ' (identifier: %s)' % self.identifier
+            r += '(identifier: %s)' % self.identifier
         return r
 
     def _message_params(self, **extra_params):
@@ -311,7 +318,7 @@ class AuthProvider(object):
                 ','.join(map(get_msg, available_providers))
 
             get_msg = lambda p: "<a href='%s'>%s</a>" % \
-                (p.get_method_prompt_msg, p.get_login_url)
+                (p.get_login_url, p.get_method_prompt_msg)
 
             params['available_methods_links'] = \
                 ','.join(map(get_msg, available_providers))
@@ -349,7 +356,7 @@ class AuthProvider(object):
         return self.get_provider_model().objects.verified(
             self.module, identifier=self.identifier)
 
-    def get_user_policy(self, policy, default=None):
+    def resolve_policy(self, policy, default=None):
 
         if policy == 'switch' and default and not self.get_add_policy:
             return not self.get_policy('remove')
@@ -385,7 +392,7 @@ class AuthProvider(object):
             user_policies = self.get_user_policies()
             settings_default = user_policies.get(policy, settings_default)
 
-        return self.get_user_policy(policy, settings_default)
+        return self.resolve_policy(policy, settings_default)
 
     def get_message(self, msg, **extra_params):
         """
@@ -512,6 +519,22 @@ class AuthProvider(object):
 
     def is_active(self):
         return self.module_enabled
+
+    @property
+    def log_display(self):
+        dsp = "%sAuth" % self.module.title()
+        if self.user:
+            dsp += "[%s]" % self.user.log_display
+            if self.identifier:
+                dsp += '[%s]' % self.identifier
+                if self._instance and self._instance.pk:
+                    dsp += '[%d]' % self._instance.pk
+        return dsp
+
+    def log(self, msg, *args, **kwargs):
+        level = kwargs.pop('level', logging.INFO)
+        message = '%s: %s' % (self.log_display, msg)
+        logger.log(level, message, *args, **kwargs)
 
 
 class LocalAuthProvider(AuthProvider):

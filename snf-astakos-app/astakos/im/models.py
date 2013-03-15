@@ -611,9 +611,11 @@ class AstakosUser(User):
         if not module:
             return self.auth_providers.active()[0].settings
 
-        return self.auth_providers.active().get(module=module,
-                                                identifier=identifier,
-                                                **filters).settings
+        params = {'module': module}
+        if identifier:
+            params['identifier'] = identifier
+        params.update(filters)
+        return self.auth_providers.active().get(**params).settings
 
     def has_auth_provider(self, provider, **kwargs):
         return bool(self.auth_providers.active().filter(module=provider,

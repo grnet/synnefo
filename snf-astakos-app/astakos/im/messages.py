@@ -49,7 +49,7 @@ PASSWORD_CHANGED                        =   'Your new password was set successfu
 ACCOUNT_RESEND_ACTIVATION               =   'Resend activation email'
 ACCOUNT_USER_ACTIVATION_PENDING         =   'You have not followed the activation link'
 
-ACCOUNT_UNKNOWN                         =   'It seems there is no account with those .'
+ACCOUNT_UNKNOWN                         =   'Unknown account.'
 TOKEN_UNKNOWN                           =   'There is no user matching this authentication token.'
 TOKEN_UPDATED                           =   'Your authentication token has been updated successfully.'
 
@@ -206,7 +206,6 @@ AUTH_PROVIDER_LOGIN_SUCCESS                  =   "Logged in successfully, using 
 AUTH_PROVIDER_LOGOUT_SUCCESS                 =   "Logged out successfully."
 AUTH_PROVIDER_LOGOUT_SUCCESS_EXTRA           =   "You may still be logged in at {title} though. Consider logging out from there too."
 AUTH_PROVIDER_NOT_ACTIVE                     =   "'{method_prompt}' is disabled."
-AUTH_PROVIDER_LOGIN_DISABLED                 =   "Logging in using '{method_prompt}' is disabled for your account."
 AUTH_PROVIDER_ADD_DISABLED                   =   "{method_prompt} is disabled for your account."
 AUTH_PROVIDER_NOT_ACTIVE_FOR_USER            =   "You cannot login using '{method_prompt}'."
 AUTH_PROVIDER_NOT_ACTIVE_FOR_CREATE          =   "Sign up using '{method_prompt}' is disabled."
@@ -224,6 +223,7 @@ AUTH_PROVIDER_SIGNUP_FROM_LOGIN              =   None
 AUTH_PROVIDER_UNUSABLE_PASSWORD              =   '{method_prompt} is not enabled' \
                                                  ' for your account. You can access your account by logging in with' \
                                                  ' {available_methods_links}.'
+AUTH_PROVIDER_LOGIN_DISABLED                 =   AUTH_PROVIDER_UNUSABLE_PASSWORD
 AUTH_PROVIDER_SIGNUP_FROM_LOGIN              =   ''
 AUTH_PROVIDER_AUTHENTICATION_FAILED          =   'Authentication with this account failed.'
 

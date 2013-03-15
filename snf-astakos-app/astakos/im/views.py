@@ -685,6 +685,12 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
         messages.error(request, message)
         return HttpResponseRedirect(reverse('index'))
 
+    if not user.activation_sent:
+        provider = user.get_auth_provider()
+        message = user.get_inactive_message(provider.module)
+        messages.error(request, message)
+        return HttpResponseRedirect(reverse('index'))
+
     try:
         activate_func(user, greeting_email_template_name,
                       helpdesk_email_template_name, verify_email=True)

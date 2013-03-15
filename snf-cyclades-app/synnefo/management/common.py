@@ -40,6 +40,8 @@ from synnefo.api.util import validate_network_params
 from synnefo.settings import (CYCLADES_ASTAKOS_SERVICE_TOKEN as ASTAKOS_TOKEN,
                               ASTAKOS_URL)
 from synnefo.logic.rapi import GanetiApiError, GanetiRapiClient
+from synnefo.logic.utils import (id_from_instance_name,
+                                 id_from_network_name)
 from synnefo.lib import astakos
 
 import logging
@@ -92,11 +94,22 @@ def get_image(image_id, user_id):
 
 
 def get_vm(server_id):
+    """Get a VirtualMachine object by its ID.
+
+    @type server_id: int or string
+    @param server_id: The server's DB id or the Ganeti name
+
+    """
     try:
         server_id = int(server_id)
+    except (ValueError, TypeError):
+        try:
+            server_id = id_from_instance_name(server_id)
+        except VirtualMachine.InvalidBackendIdError:
+            raise CommandError("Invalid server ID: %s" % server_id)
+
+    try:
         return VirtualMachine.objects.get(id=server_id)
-    except ValueError:
-        raise CommandError("Invalid server ID: %s", server_id)
     except VirtualMachine.DoesNotExist:
         raise CommandError("Server with ID %s not found in DB."
                            " Use snf-manage server-list to find out"
@@ -104,11 +117,23 @@ def get_vm(server_id):
 
 
 def get_network(network_id):
+    """Get a Network object by its ID.
+
+    @type network_id: int or string
+    @param network_id: The networks DB id or the Ganeti name
+
+    """
+
     try:
         network_id = int(network_id)
+    except (ValueError, TypeError):
+        try:
+            network_id = id_from_network_name(network_id)
+        except Network.InvalidBackendIdError:
+            raise CommandError("Invalid network ID: %s" % network_id)
+
+    try:
         return Network.objects.get(id=network_id)
-    except ValueError:
-        raise CommandError("Invalid network ID: %s", network_id)
     except Network.DoesNotExist:
         raise CommandError("Network with ID %s not found in DB."
                            " Use snf-manage network-list to find out"

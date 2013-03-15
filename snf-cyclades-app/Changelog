@@ -1,6 +1,13 @@
 Changelog
 ---------
 
+v0.14.0 *UNRELEASED*
+*****
+
+  snf-manage:
+	* Make snf-manage server-* and network* commands to accept the Ganeti
+	name, besides the DB id.
+
 v0.13.0
 *******
   * Remove 'snf-admin' and 'snf-cloud' tools

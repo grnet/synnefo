@@ -155,14 +155,14 @@ def _send_admin_notification(template_name,
         logger.exception(e)
         raise SendNotificationError()
     else:
-        msg = 'Sent admin notification for user %s' % \
-              (dictionary.get('user', {}).get('email', None), )
+        user = dictionary.get('user')
+        msg = 'Sent admin notification for user %s' % user.log_display
         logger.log(LOGGING_LEVEL, msg)
 
 
 def send_account_creation_notification(template_name, dictionary=None):
-    user = dictionary.get('user', AnonymousUser())
-    subject = _(ACCOUNT_CREATION_SUBJECT) % {'user':user.get('email', '')}
+    user = dictionary.get('user')
+    subject = _(ACCOUNT_CREATION_SUBJECT) % {'user': user.email}
     return _send_admin_notification(template_name, dictionary, subject=subject)
 
 
@@ -241,7 +241,7 @@ def send_greeting(user, email_template_name='im/welcome_email.txt'):
         logger.exception(e)
         raise SendGreetingError()
     else:
-        msg = 'Sent greeting %s' % user.email
+        msg = 'Sent greeting %s' % user.log_display
         logger.log(LOGGING_LEVEL, msg)
 
 
@@ -260,7 +260,7 @@ def send_feedback(msg, data, user, email_template_name='im/feedback_mail.txt'):
         logger.exception(e)
         raise SendFeedbackError()
     else:
-        msg = 'Sent feedback from %s' % user.email
+        msg = 'Sent feedback from %s' % user.log_display
         logger.log(LOGGING_LEVEL, msg)
 
 
@@ -280,7 +280,7 @@ def send_change_email(
         logger.exception(e)
         raise ChangeEmailError()
     else:
-        msg = 'Sent change email for %s' % ec.user.email
+        msg = 'Sent change email for %s' % ec.user.log_display
         logger.log(LOGGING_LEVEL, msg)
 
 

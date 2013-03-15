@@ -140,7 +140,7 @@ class ActivationBackend(object):
             else:
                 send_account_creation_notification(
                     template_name=admin_email_template_name,
-                    dictionary={'user': user.__dict__, 'group_creation': True}
+                    dictionary={'user': user, 'group_creation': True}
                 )
                 return NotificationSent()
         except BaseException, e:

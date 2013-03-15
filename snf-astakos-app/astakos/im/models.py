@@ -416,7 +416,7 @@ class AstakosUser(User):
         Should be used in all logger.* calls that refer to a user so that
         user display is consistent across log entries.
         """
-        return '%s (%s)' % (self.uuid, self.email)
+        return '%s::%s' % (self.uuid, self.email)
 
     @realname.setter
     def realname(self, value):
@@ -1149,8 +1149,9 @@ class EmailChangeManager(models.Manager):
             user.email = email_change.new_email_address
             user.save()
             email_change.delete()
-            msg = "User %d changed email from %s to %s" % (user.pk, old_email,
-                                                          user.email)
+            msg = "User %s changed email from %s to %s" % (user.log_display,
+                                                           old_email,
+                                                           user.email)
             logger.log(LOGGING_LEVEL, msg)
             return user
         except EmailChange.DoesNotExist:

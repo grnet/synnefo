@@ -234,10 +234,10 @@ def put_object_headers(response, meta, restricted=False, token=None):
     if not restricted:
         response['X-Object-Hash'] = meta['hash']
         response['X-Object-UUID'] = meta['uuid']
-        modified_by = retrieve_displayname(token, meta['modified_by'])
         if TRANSLATE_UUIDS:
-            response['X-Object-Modified-By'] = smart_str(
-                    modified_by, strings_only=True)
+            meta['modified_by'] = retrieve_displayname(token, meta['modified_by'])
+        response['X-Object-Modified-By'] = smart_str(
+            meta['modified_by'], strings_only=True)
         response['X-Object-Version'] = meta['version']
         response['X-Object-Version-Timestamp'] = http_date(
             int(meta['version_timestamp']))

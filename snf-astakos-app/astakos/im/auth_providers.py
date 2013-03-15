@@ -193,7 +193,14 @@ class AuthProvider(object):
         if not self.get_remove_policy:
             raise Exception("Provider cannot be removed")
 
+        for group_name in self.get_add_groups_policy:
+            group = Group.objects.get(name=group_name)
+            self.user.groups.remove(group)
+            self.log('removed from group due to add_groups_policy %s',
+                     group.name)
+
         self._instance.delete()
+        self.log('removed')
 
     def add_to_user(self, **params):
         if self._instance:
@@ -545,9 +552,6 @@ class LocalAuthProvider(AuthProvider):
         super(LocalAuthProvider, self).remove_from_user()
         self.user.set_unusable_password()
         self.user.save()
-        for group_name in self.get_add_groups_policy:
-            group = Group.objects.get(name=group_name)
-            self.user.groups.remove(group)
 
 
 class ShibbolethAuthProvider(AuthProvider):

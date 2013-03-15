@@ -1124,7 +1124,7 @@ def api_method(http_method=None, format_allowed=False, user_required=True,
                 return render_fault(request, fault)
             except BaseException, e:
                 logger.exception('Unexpected error: %s' % e)
-                fault = InternalServerError('Unexpected error: %s' % e)
+                fault = InternalServerError('Unexpected error')
                 return render_fault(request, fault)
             finally:
                 if getattr(request, 'backend', None) is not None:

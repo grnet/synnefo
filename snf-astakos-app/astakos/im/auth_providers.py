@@ -168,7 +168,7 @@ class AuthProvider(object):
         self.module_policies = copy.copy(self.default_policies)
         self.module_policies['automoderate'] = not \
             astakos_settings.MODERATION_ENABLED
-        for policy, value in self.policies.keys():
+        for policy, value in self.policies.iteritems():
             setting_key = "%s_POLICY" % policy.upper()
             if self.has_setting(setting_key):
                 self.module_policies[policy] = self.get_setting(setting_key)
@@ -520,6 +520,10 @@ class LocalAuthProvider(AuthProvider):
         'login_success': _('Logged in successfully.'),
         'method_details': 'Username: {username}',
         'logout_success_extra': ' '
+    }
+
+    policies = {
+        'limit': 1
     }
 
     @property

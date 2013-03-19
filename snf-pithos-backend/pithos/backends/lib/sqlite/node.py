@@ -804,11 +804,13 @@ class Node(DBWorker):
             args += [before]
         return q % where_cond, args
 
-    def latest_attribute_keys(self, parent, domain, before=inf, except_cluster=0, pathq=[]):
+    def latest_attribute_keys(self, parent, domain, before=inf, except_cluster=0, pathq=None):
         """Return a list with all keys pairs defined
            for all latest versions under parent that
            do not belong to the cluster.
         """
+
+        pathq = pathq or []
 
         # TODO: Use another table to store before=inf results.
         q = ("select distinct a.key "

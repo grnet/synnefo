@@ -2182,7 +2182,8 @@ class TestPermissions(BaseTestCase):
         self.upload_random_data(self.container, self.object+'a/')
         self.dir_content_types = ('application/directory', 'application/folder')
 
-    def assert_read(self, authorized=[], any=False, depth=0):
+    def assert_read(self, authorized=None, any=False, depth=0):
+        authorized = authorized or []
         for token, account in OTHER_ACCOUNTS.items():
             cl = Pithos_Client(get_url(), token, account)
             if account in authorized or any:
@@ -2213,7 +2214,8 @@ class TestPermissions(BaseTestCase):
                     self.assert_raises_fault(403, cl.retrieve_object_metadata,
                                          self.container, o, account=get_user())
 
-    def assert_write(self, authorized=[], any=False):
+    def assert_write(self, authorized=None, any=False):
+        authorized = authorized or []
         o_data = self.client.retrieve_object(self.container, self.object)
         for token, account in OTHER_ACCOUNTS.items():
             cl = Pithos_Client(get_url(), token, account)

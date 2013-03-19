@@ -2441,7 +2441,7 @@ class TestUsageFreeVersioningAutoContainerPolicy(BaseTestCase):
     def create_container(self, cname):
         self.client.create_container(cname)
 
-    def test_delete_object_container(self):
+    def _test_delete_object_container(self):
         """
             assume account usage = 0
             scenario:
@@ -2469,7 +2469,7 @@ class TestUsageFreeVersioningAutoContainerPolicy(BaseTestCase):
         print 'Current account usage: %d' % self.usage
         self.assertEqual(self.usage, self.initial_usage)
 
-    def test_purge_delete_object(self):
+    def _test_purge_delete_object(self):
         """
             assume account usage = 0
             scenario:
@@ -2506,7 +2506,7 @@ class TestUsageFreeVersioningAutoContainerPolicy(BaseTestCase):
         print 'Current account usage: %d' % self.usage
         self.assertEqual(self.usage, self.initial_usage)
 
-    def test_delete_object_purge_container_history(self):
+    def _test_delete_object_purge_container_history(self):
         """
             assume account usage = 0
             scenario:
@@ -2544,7 +2544,7 @@ class TestUsageFreeVersioningAutoContainerPolicy(BaseTestCase):
         print 'Current account usage: %d' % self.usage
         self.assertEqual(self.usage, self.initial_usage)
 
-    def test_purge_container_delete_object(self):
+    def _test_purge_container_delete_object(self):
         """
             assume account usage = 0
             scenario:
@@ -2581,7 +2581,7 @@ class TestUsageFreeVersioningAutoContainerPolicy(BaseTestCase):
         print 'Current account usage: %d' % self.usage
         self.assertEqual(self.usage, self.initial_usage)
 
-    def test_successive_purging(self):
+    def _test_successive_purging(self):
         """
             assume account usage = 0
             scenario:
@@ -2649,7 +2649,7 @@ class TestUsageFreeVersioningAutoContainerPolicy(BaseTestCase):
         print 'Current account usage: %d' % self.usage
         self.assertEqual(self.usage, self.initial_usage)
 
-    def test_delete_object_empty_container_content(self):
+    def _test_delete_object_empty_container_content(self):
         """
             assume account usage = 0
             scenario:
@@ -2685,7 +2685,7 @@ class TestUsageFreeVersioningAutoContainerPolicy(BaseTestCase):
         print 'Current account usage: %d' % self.usage
         self.assertEqual(self.usage, self.initial_usage)
 
-    def test_delete_container_content(self):
+    def _test_delete_container_content(self):
         """
             assume account usage = 0
             scenario:
@@ -2776,7 +2776,7 @@ class TestUsageDebitVersioningAutoContainerPolicy(BaseTestCase):
     def create_container(self, cname):
         self.client.create_container(cname)
 
-    def test_delete_object_container(self):
+    def _test_delete_object_container(self):
         """
             assume account usage = 0
             scenario:
@@ -2804,7 +2804,7 @@ class TestUsageDebitVersioningAutoContainerPolicy(BaseTestCase):
         print 'Current account usage: %d' % self.usage
         self.assertEqual(self.usage, self.initial_usage)
 
-    def test_purge_delete_object(self):
+    def _test_purge_delete_object(self):
         """
             assume account usage = 0
             scenario:
@@ -2841,7 +2841,7 @@ class TestUsageDebitVersioningAutoContainerPolicy(BaseTestCase):
         print 'Current account usage: %d' % self.usage
         self.assertEqual(self.usage, self.initial_usage)
 
-    def test_delete_object_purge_container_history(self):
+    def _test_delete_object_purge_container_history(self):
         """
             assume account usage = 0
             scenario:
@@ -2878,7 +2878,7 @@ class TestUsageDebitVersioningAutoContainerPolicy(BaseTestCase):
         print 'Current account usage: %d' % self.usage
         self.assertEqual(self.usage, self.initial_usage)
 
-    def test_purge_container_delete_object(self):
+    def _test_purge_container_delete_object(self):
         """
             assume account usage = 0
             scenario:
@@ -2922,7 +2922,7 @@ class TestUsageDebitVersioningAutoContainerPolicy(BaseTestCase):
         print 'Current account usage: %d' % self.usage
         self.assertEqual(self.usage, self.initial_usage)
 
-    def test_successive_purging(self):
+    def _test_successive_purging(self):
         """
             assume account usage = 0
             scenario:
@@ -3001,7 +3001,7 @@ class TestUsageDebitVersioningAutoContainerPolicy(BaseTestCase):
         print 'Current account usage: %d' % self.usage
         self.assertEqual(self.usage, self.initial_usage)
 
-    def test_delete_object_empty_container_content(self):
+    def _test_delete_object_empty_container_content(self):
         """
             assume account usage = 0
             scenario:
@@ -3037,7 +3037,7 @@ class TestUsageDebitVersioningAutoContainerPolicy(BaseTestCase):
         print 'Current account usage: %d' % self.usage
         self.assertEqual(self.usage, self.initial_usage)
 
-    def test_delete_container_content(self):
+    def _test_delete_container_content(self):
         """
             assume account usage = 0
             scenario:
@@ -3114,7 +3114,7 @@ class TestUsageDebitVersioningNoneContainerPolicy(BaseTestCase):
         self.client.create_container(cname,
                                      policies={'versioning':'none'})
 
-    def test_delete_object_container(self):
+    def _test_delete_object_container(self):
         """
             assume account usage = 0
             scenario:
@@ -3142,7 +3142,7 @@ class TestUsageDebitVersioningNoneContainerPolicy(BaseTestCase):
         print 'Current account usage: %d' % self.usage
         self.assertEqual(self.usage, self.initial_usage)
 
-    def test_purge_delete_object(self):
+    def _test_purge_delete_object(self):
         """
             assume account usage = 0
             scenario:
@@ -3178,7 +3178,7 @@ class TestUsageDebitVersioningNoneContainerPolicy(BaseTestCase):
         print 'Current account usage: %d' % self.usage
         self.assertEqual(self.usage, self.initial_usage)
 
-    def test_delete_object_purge_container_history(self):
+    def _test_delete_object_purge_container_history(self):
         """
             assume account usage = 0
             scenario:
@@ -3214,7 +3214,7 @@ class TestUsageDebitVersioningNoneContainerPolicy(BaseTestCase):
         print 'Current account usage: %d' % self.usage
         self.assertEqual(self.usage, self.initial_usage)
 
-    def test_purge_container_delete_object(self):
+    def _test_purge_container_delete_object(self):
         """
             assume account usage = 0
             scenario:
@@ -3250,7 +3250,7 @@ class TestUsageDebitVersioningNoneContainerPolicy(BaseTestCase):
         print 'Current account usage: %d' % self.usage
         self.assertEqual(self.usage, self.initial_usage)
 
-    def test_successive_purging(self):
+    def _test_successive_purging(self):
         """
             assume account usage = 0
             scenario:
@@ -3302,7 +3302,7 @@ class TestUsageDebitVersioningNoneContainerPolicy(BaseTestCase):
         print 'Current account usage: %d' % self.usage
         self.assertEqual(self.usage, self.initial_usage)
 
-    def test_delete_object_empty_container_content(self):
+    def _test_delete_object_empty_container_content(self):
         """
             assume account usage = 0
             scenario:
@@ -3337,7 +3337,7 @@ class TestUsageDebitVersioningNoneContainerPolicy(BaseTestCase):
         print 'Current account usage: %d' % self.usage
         self.assertEqual(self.usage, self.initial_usage)
 
-    def test_delete_container_content(self):
+    def _test_delete_container_content(self):
         """
             assume account usage = 0
             scenario:

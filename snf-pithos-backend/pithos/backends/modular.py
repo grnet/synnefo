@@ -538,9 +538,14 @@ class ModularBackend(BaseBackend):
             for h in hashes:
                 self.store.map_delete(h)
             self.node.node_purge_children(node, until, CLUSTER_DELETED)
-            self._report_size_change(user, account, -size,
-                                     {'action':'container purge', 'path': path,
-                                      'versions': ','.join(str(i) for i in serials)})
+            if not self.free_versioning:
+                self._report_size_change(
+                    user, account, -size, {
+                        'action':'container purge',
+                        'path': path,
+                        'versions': ','.join(str(i) for i in serials)
+                    }
+                )
             return
 
         if not delimiter:
@@ -552,10 +557,14 @@ class ModularBackend(BaseBackend):
                 self.store.map_delete(h)
             self.node.node_purge_children(node, inf, CLUSTER_DELETED)
             self.node.node_remove(node)
-            self._report_size_change(user, account, -size,
-                                     {'action': 'container delete',
-                                      'path': path,
-                                      'versions': ','.join(str(i) for i in serials)})
+            if not self.free_versioning:
+                self._report_size_change(
+                    user, account, -size, {
+                        'action':'container purge',
+                        'path': path,
+                        'versions': ','.join(str(i) for i in serials)
+                    }
+                )
         else:
             # remove only contents
             src_names = self._list_objects_no_limit(user, account, container, prefix='', delimiter=None, virtual=False, domain=None, keys=[], shared=False, until=None, size_range=None, all_props=True, public=False)
@@ -995,7 +1004,8 @@ class ModularBackend(BaseBackend):
             serials += v
             h, s, v = self.node.node_purge(node, until, CLUSTER_HISTORY)
             hashes += h
-            size += s
+            if not self.free_versioning:
+                size += s
             serials += v
             for h in hashes:
                 self.store.map_delete(h)
@@ -1004,9 +1014,13 @@ class ModularBackend(BaseBackend):
                 props = self._get_version(node)
             except NameError:
                 self.permissions.access_clear(path)
-            self._report_size_change(user, account, -size,
-                                    {'action': 'object purge', 'path': path,
-                                     'versions': ','.join(str(i) for i in serials)})
+            self._report_size_change(
+                user, account, -size, {
+                    'action': 'object purge',
+                    'path': path,
+                    'versions': ','.join(str(i) for i in serials)
+                }
+            )
             return
 
         path, node = self._lookup_object(account, container, name)

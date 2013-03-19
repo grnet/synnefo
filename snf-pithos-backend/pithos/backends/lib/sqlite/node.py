@@ -259,7 +259,7 @@ class Node(DBWorker):
     def node_purge_children(self, parent, before=inf, cluster=0):
         """Delete all versions with the specified
            parent and cluster, and return
-           the hashes and size of versions deleted.
+           the hashes, the size and the serials of versions deleted.
            Clears out nodes with no remaining versions.
         """
 
@@ -311,7 +311,7 @@ class Node(DBWorker):
     def node_purge(self, node, before=inf, cluster=0):
         """Delete all versions with the specified
            node and cluster, and return
-           the hashes and size of versions deleted.
+           the hashes, the size and the serials of versions deleted.
            Clears out the node if it has no remaining versions.
         """
 

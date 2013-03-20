@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright (C) 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,33 +31,35 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import os
 
-from django.conf.urls.defaults import patterns
+class AstakosClientException(Exception):
+    def __init__(self, message, status=0):
+        self.message = message
+        self.status = status
+
+    def __str__(self):
+        return repr(self.message)
 
 
-urlpatterns = patterns('synnefo.admin.views',
-    (r'^/?$', 'index'),
-    (r'^/flavors/?$', 'flavors_list'),
-    (r'^/flavors/create/?$', 'flavors_create'),
-    (r'^/flavors/(\d+)/?$', 'flavors_info'),
-    (r'^/flavors/(\d+)/modify/?$', 'flavors_modify'),
-    (r'^/flavors/(\d+)/delete/?$', 'flavors_delete'),
-    
-    (r'^/images/?$', 'images_list'),
-    (r'^/images/register/?$', 'images_register'),
-    (r'^/images/(\d+)/?$', 'images_info'),
-    (r'^/images/(\d+)/modify/?$', 'images_modify'),
+class BadRequest(AstakosClientException):
+    def __init__(self, message):
+        """400 Bad Request"""
+        super(BadRequest, self).__init__(message, 400)
 
-    (r'^/servers/?$', 'servers_list'),
-)
 
-urlpatterns += patterns('synnefo.admin.api',
-    (r'^/api/servers/(\d+)$', 'servers_info'),
-    (r'^/api/users/(\d+)$', 'users_info'),
-)
+class Unauthorized(AstakosClientException):
+    def __init__(self, message):
+        """401 Invalid X-Auth-Token"""
+        super(Unauthorized, self).__init__(message, 401)
 
-urlpatterns += patterns('',
-    (r'^/static/(?P<path>.*)$', 'django.views.static.serve', {
-        'document_root': os.path.join(os.path.dirname(__file__), 'static')})
-)
+
+class Forbidden(AstakosClientException):
+    def __init__(self, message):
+        """403 Forbidden"""
+        super(Forbidden, self).__init__(message, 403)
+
+
+class NotFound(AstakosClientException):
+    def __init__(self, message):
+        """404 Not Found"""
+        super(NotFound, self).__init__(message, 404)

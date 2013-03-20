@@ -49,8 +49,10 @@ class Command(BaseCommand):
            "<ram>[,<ram>,...] " \
            "<disk>[,<disk>,...] " \
            "<disk template>[,<disk template>,...]"
-    help = "Create one or more flavors.\n\nThe flavors that will be created are"\
+    help = "Create one or more flavors.\n\n"\
+           " The flavors that will be created are"\
            " those belonging to the cartesian product of the arguments"\
+
 
     def handle(self, *args, **options):
         if len(args) != 4:

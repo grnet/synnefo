@@ -34,3 +34,4 @@ snf-quotaholder-app/quotaholder_django/version.py
 *.iml
 *.graffle
 snf-stats-app/synnefo_stats/version.py
+snf-astakos-client/astakosclient/version.py

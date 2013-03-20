@@ -2,6 +2,7 @@ PROJECTS="\
  snf-common\
  snf-webproject\
  snf-astakos-app\
+ snf-astakos-client\
  snf-pithos-backend\
  snf-cyclades-gtools\
  snf-cyclades-app\

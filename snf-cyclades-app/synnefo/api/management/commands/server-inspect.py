@@ -36,9 +36,12 @@ from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 
 from synnefo.lib.utils import merge_time
+from synnefo.lib.astakos import UserCache
 from synnefo.logic.rapi import GanetiApiError
 from synnefo.management.common import Omit
 from synnefo.management import common
+from synnefo.settings import (CYCLADES_ASTAKOS_SERVICE_TOKEN as ASTAKOS_TOKEN,
+                              ASTAKOS_URL)
 
 
 # Fields to print from a gnt-instance info
@@ -57,12 +60,14 @@ class Command(BaseCommand):
     args = "<server ID>"
 
     option_list = BaseCommand.option_list + (
-        make_option('--jobs',
+        make_option(
+            '--jobs',
             action='store_true',
             dest='jobs',
             default=False,
             help="Show non-archived jobs concerning server."),
-        make_option('--displayname',
+        make_option(
+            '--displayname',
             action='store_true',
             dest='displayname',
             default=False,
@@ -77,7 +82,7 @@ class Command(BaseCommand):
 
         displayname = options['displayname']
 
-        ucache = common.UserCache()
+        ucache = UserCache(ASTAKOS_URL, ASTAKOS_TOKEN)
 
         try:
             image = common.get_image(vm.imageid, vm.userid)['name']
@@ -147,14 +152,15 @@ class Command(BaseCommand):
         for j in jobs:
             info = client.GetJobStatus(j)
             summary = ' '.join(info['summary'])
-            if summary.startswith("INSTANCE") and \
-               summary.find(vm.backend_vm_id) != -1:
+            job_is_relevant = summary.startswith("INSTANCE") and\
+                (summary.find(vm.backend_vm_id) != -1)
+            if job_is_relevant:
                 for i in GANETI_JOB_FIELDS:
                     value = info[i]
                     if i.find('_ts') != -1:
                         value = merge_time(value)
                     try:
-                        self.stdout.write(i.ljust(14) + ': ' + str(value) +\
+                        self.stdout.write(i.ljust(14) + ': ' + str(value) +
                                           '\n')
                     except KeyError:
                         pass

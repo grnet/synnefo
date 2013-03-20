@@ -40,10 +40,11 @@ from os import path
 class Command(NoArgsCommand):
     help = "Export account quota policies"
     option_list = NoArgsCommand.option_list + (
-        make_option('--location',
-                dest='location',
-                default='exported_quota',
-                help="Where to save the output file"),
+        make_option(
+            '--location',
+            dest='location',
+            default='exported_quota',
+            help="Where to save the output file"),
     )
 
     def handle_noargs(self, **options):

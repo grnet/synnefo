@@ -121,8 +121,9 @@ def unsynced_operstate(D, G):
     idG = set(G.keys())
 
     for i in idD & idG:
-        if (G[i] and D[i] != 'STARTED' or
-            not G[i] and D[i] not in ('BUILD', 'ERROR', 'STOPPED')):
+        vm_unsynced = (G[i] and D[i] != "STARTED") or\
+                      (not G[i] and D[i] not in ('BUILD', 'ERROR', 'STOPPED'))
+        if vm_unsynced:
             unsynced.add((i, D[i], G[i]))
         if not G[i] and D[i] == 'BUILD':
             vm = VirtualMachine.objects.get(id=i)
@@ -281,9 +282,10 @@ def unsynced_nics(DBNics, GNics):
         for index in nicsG.keys():
             nicD = nicsD[index]
             nicG = nicsG[index]
-            if (nicD['ipv4'] != nicG['ipv4'] or
-                nicD['mac'] != nicG['mac'] or
-                nicD['network'] != nicG['network']):
+            diff = (nicD['ipv4'] != nicG['ipv4'] or
+                    nicD['mac'] != nicG['mac'] or
+                    nicD['network'] != nicG['network'])
+            if diff:
                     unsynced[i] = (nicsD, nicsG)
                     break
 

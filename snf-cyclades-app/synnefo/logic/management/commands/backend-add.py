@@ -38,7 +38,8 @@ from synnefo.logic.backend import (get_physical_resources,
                                    update_resources,
                                    create_network_synced,
                                    connect_network_synced)
-from synnefo.management.common import check_backend_credentials, pprint_table
+from synnefo.management.common import check_backend_credentials
+from synnefo.webproject.management.util import pprint_table
 
 
 class Command(BaseCommand):

@@ -38,8 +38,7 @@ from django.core.management.base import BaseCommand, CommandError
 from synnefo.db.models import Network, pooled_rapi_client
 from synnefo.management.common import validate_network_info, get_network
 
-HELP_MSG = \
-"""Modify a network.
+HELP_MSG = """Modify a network.
 
 This management command will only modify the state of the network in Cyclades
 DB. The state of the network in the Ganeti backends will remain unchanged. You
@@ -57,42 +56,54 @@ class Command(BaseCommand):
     output_transaction = True
 
     option_list = BaseCommand.option_list + (
-        make_option('--name',
+        make_option(
+            '--name',
             dest='name',
             metavar='NAME',
             help="Set network's name"),
-        make_option('--userid',
+        make_option(
+            '--userid',
             dest='userid',
             help="Set the userid of the network owner"),
-        make_option('--subnet',
+        make_option(
+            '--subnet',
             dest='subnet',
             help="Set network's subnet"),
-        make_option('--gateway',
+        make_option(
+            '--gateway',
             dest='gateway',
             help="Set network's gateway"),
-        make_option('--subnet6',
+        make_option(
+            '--subnet6',
             dest='subnet6',
             help="Set network's IPv6 subnet"),
-        make_option('--gateway6',
+        make_option(
+            '--gateway6',
             dest='gateway6',
             help="Set network's IPv6 gateway"),
-        make_option('--dhcp',
+        make_option(
+            '--dhcp',
             dest='dhcp',
             help="Set if network will use nfdhcp"),
-        make_option('--state',
+        make_option(
+            '--state',
             dest='state',
             metavar='STATE',
             help="Set network's state"),
-        make_option('--link',
+        make_option(
+            '--link',
             dest='link',
             help="Set the connectivity link"),
-        make_option('--mac-prefix',
+        make_option(
+            '--mac-prefix',
             dest="mac_prefix",
             help="Set the MAC prefix"),
-        make_option('--add-reserved-ips',
+        make_option(
+            '--add-reserved-ips',
             dest="add_reserved_ips",
             help="Comma seperated list of IPs to externally reserve."),
-        make_option('--remove-reserved-ips',
+        make_option(
+            '--remove-reserved-ips',
             dest="remove_reserved_ips",
             help="Comma seperated list of IPs to externally release."),
 

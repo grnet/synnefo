@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright (C) 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,19 +31,46 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import json
+import httplib
 
-from django.core.urlresolvers import reverse
-from django.http import HttpResponse
-
-from synnefo.admin.views import requires_admin
-from synnefo.db.models import VirtualMachine
+import objpool.http
+from astakosclient.errors import AstakosClientException
 
 
-@requires_admin
-def servers_info(request, server_id):
-    server = VirtualMachine.objects.get(id=server_id)
-    reply = {
-    	'name': server.name,
-    	'ref': '#'}
-    return HttpResponse(json.dumps(reply), content_type='application/json')
+def retry(func):
+    def decorator(self, *args, **kwargs):
+        attemps = 0
+        while True:
+            try:
+                return func(self, *args, **kwargs)
+            except AstakosClientException as err:
+                is_last_attempt = attemps == self.retry
+                if is_last_attempt:
+                    raise err
+                if err.status == 401 or err.status == 404:
+                    # In case of Unauthorized response
+                    # or Not Found return immediately
+                    raise err
+                self.logger.info("AstakosClient request failed..retrying")
+                attemps += 1
+    return decorator
+
+
+def scheme_to_class(scheme, use_pool, pool_size):
+    """Return the appropriate conn class for given scheme"""
+    def _objpool(netloc):
+        return objpool.http.get_http_connection(
+            netloc=netloc, scheme=scheme, pool_size=pool_size)
+
+    if scheme == "http":
+        if use_pool:
+            return _objpool
+        else:
+            return httplib.HTTPConnection
+    elif scheme == "https":
+        if use_pool:
+            return _objpool
+        else:
+            return httplib.HTTPSConnection
+    else:
+        return None

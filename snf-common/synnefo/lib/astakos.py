@@ -239,3 +239,58 @@ def get_token_from_cookie(request, cookiename):
         pass
 
     return None
+
+
+class UserCache(object):
+    """uuid<->displayname user 'cache'"""
+
+    def __init__(self, astakos_url, astakos_token, split=100):
+        self.astakos_token = astakos_token
+        self.astakos_url = astakos_url
+        self.user_catalog_url = astakos_url.replace("im/authenticate",
+                                               "service/api/user_catalogs")
+        self.users = {}
+
+        self.split = split
+        assert(self.split > 0), "split must be positive"
+
+    def fetch_names(self, uuid_list):
+        total = len(uuid_list)
+        split = self.split
+
+        for start in range(0, total, split):
+            end = start + split
+            try:
+                names = get_displaynames(token=self.astakos_token,
+                                         url=self.user_catalog_url,
+                                         uuids=uuid_list[start:end])
+                self.users.update(names)
+            except Exception as e:
+                logger.error("Failed to fetch names: %s",  e)
+
+    def get_uuid(self, name):
+        if not name in self.users:
+            try:
+                self.users[name] = get_user_uuid(token=self.astakos_token,
+                                                 url=self.user_catalog_url,
+                                                 displayname=name)
+            except Exception as e:
+                logger.error("Can not get uuid for name %s: %s", name, e)
+                self.users[name] = name
+
+        return self.users[name]
+
+    def get_name(self, uuid):
+        """Do the uuid-to-email resolving"""
+
+        if not uuid in self.users:
+            try:
+                self.users[uuid] = get_displayname(token=self.astakos_token,
+                                                   url=self.user_catalog_url,
+                                                   uuid=uuid)
+            except Exception as e:
+                logging.error("Can not get display name for uuid %s: %s",
+                              uuid, e)
+                self.users[uuid] = "-"
+
+        return self.users[uuid]

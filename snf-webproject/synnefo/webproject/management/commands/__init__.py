@@ -37,7 +37,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.core.exceptions import FieldError
 
 from synnefo.webproject.management import util
-from synnefo.management.common import UserCache
+from synnefo.lib.astakos import UserCache
 
 
 class ListCommand(BaseCommand):
@@ -92,6 +92,10 @@ class ListCommand(BaseCommand):
     filters = {}
     excludes = {}
 
+    # Fields used only with user_user_field
+    astakos_url = None
+    astakos_token = None
+
     help = "Generic List Command"
     option_list = BaseCommand.option_list + (
         make_option(
@@ -135,6 +139,10 @@ class ListCommand(BaseCommand):
 
     def __init__(self, *args, **kwargs):
         if self.user_uuid_field:
+            assert(self.astakos_url), "astakos_url attribute is needed when"\
+                                      " user_uuid_field is declared"
+            assert(self.astakos_token), "astakos_token attribute is needed"\
+                                        " user_uuid_field is declared"
             self.option_list += (
                 make_option(
                     "-u", "--user",
@@ -195,7 +203,8 @@ class ListCommand(BaseCommand):
         user = options.get("user")
         if user:
             if "@" in user:
-                user = UserCache().get_uuid(user)
+                ucache = UserCache(self.astakos_url, self.astakos_token)
+                user = ucache.get_uuid(user)
             self.filters[self.user_uuid_field] = user
 
         # --deleted option
@@ -228,7 +237,7 @@ class ListCommand(BaseCommand):
             self.FIELDS["user.email"] =\
                 ("user_email", "The email of the owner.")
             uuids = [getattr(obj, self.user_uuid_field) for obj in objects]
-            ucache = UserCache()
+            ucache = UserCache(self.astakos_url, self.astakos_token)
             ucache.fetch_names(list(set(uuids)))
             for obj in objects:
                 uuid = getattr(obj, self.user_uuid_field)

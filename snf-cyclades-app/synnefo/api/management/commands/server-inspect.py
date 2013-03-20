@@ -36,9 +36,12 @@ from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 
 from synnefo.lib.utils import merge_time
+from synnefo.lib.astakos import UserCache
 from synnefo.logic.rapi import GanetiApiError
 from synnefo.management.common import Omit
 from synnefo.management import common
+from synnefo.settings import (CYCLADES_ASTAKOS_SERVICE_TOKEN as ASTAKOS_TOKEN,
+                              ASTAKOS_URL)
 
 
 # Fields to print from a gnt-instance info
@@ -79,7 +82,7 @@ class Command(BaseCommand):
 
         displayname = options['displayname']
 
-        ucache = common.UserCache()
+        ucache = UserCache(ASTAKOS_URL, ASTAKOS_TOKEN)
 
         try:
             image = common.get_image(vm.imageid, vm.userid)['name']

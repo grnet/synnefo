@@ -600,27 +600,33 @@
             if (this.completed_items == 2) {
                 this.load_nets_and_vms();
             }
-
             if (this.completed_items == this.items_to_load) {
-                this.update_status("Rendering layout...");
+                this.update_status("layout", 1);
                 var self = this;
                 window.setTimeout(function(){
                     self.after_load();
                 }, 10)
             }
         },
+            
+        load_missing_images: function(cb) {
+            synnefo.storage.vms.load_missing_images(cb);
+        },
 
         load_nets_and_vms: function() {
             var self = this;
-            this.update_status("Loading vms...");
+            this.update_status("vms", 0);
             storage.vms.fetch({refresh:true, update:false, success: function(){
-                self.update_status("VMS Loaded.");
-                self.check_status();
+                self.load_missing_images(function(){
+                    self.update_status("vms", 1);
+                    self.update_status("layout", 0);
+                    self.check_status();
+                });
             }});
 
-            this.update_status("Loading networks...");
+            this.update_status("networks", 0);
             storage.networks.fetch({refresh:true, update:false, success: function(){
-                self.update_status("Networks loaded.");
+                self.update_status("networks", 1);
                 self.check_status();
             }});
         },  
@@ -664,10 +670,9 @@
 
         after_load: function() {
             var self = this;
-            this.update_status("Setting vms update interval...");
             this.init_intervals();
             this.update_intervals();
-            this.update_status("Showing initial view...");
+            this.update_status("layout", 0);
             
             // bypass update_hidden_views in initial view
             // rendering to force all views to get render
@@ -678,7 +683,7 @@
             snf.config.update_hidden_views = uhv;
 
             window.setTimeout(function() {
-                self.update_status("Initializing overlays...");
+                self.update_status("layout", 0);
                 self.load_initialize_overlays();
             }, 20);
         },
@@ -717,21 +722,26 @@
             // display loading message
             this.show_loading_view();
             // sync load initial data
-            this.update_status("Loading images...");
+            this.update_status("images", 0);
             storage.images.fetch({refresh:true, update:false, success: function(){
+                self.update_status("images", 1);
                 self.check_status()
             }});
-            this.update_status("Loading flavors...");
+            this.update_status("flavors", 0);
             storage.flavors.fetch({refresh:true, update:false, success:function(){
+                self.update_status("flavors", 1);
                 self.check_status()
             }});
         },
 
-        update_status: function(msg) {
-            //this.log.debug(msg)
-            this.status = msg;
-            $("#loading-view .info").removeClass("hidden")
-            $("#loading-view .info").text(this.status);
+        update_status: function(ns, state) {
+            var el = $("#loading-view .header."+ns);
+            if (state == 0) {
+                el.removeClass("off").addClass("on");
+            }
+            if (state == 1) {
+                el.removeClass("on").addClass("done");
+            }
         },
 
         initialize_views: function() {

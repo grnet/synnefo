@@ -2119,6 +2119,19 @@
             opts = _.extend(opts, extra);
 
             this.api_call(this.path, "create", {'server': opts}, undefined, undefined, callback, {critical: true});
+        },
+
+        load_missing_images: function(callback) {
+          var missing_ids = [];
+          this.each(function(el) {
+            var imgid = el.get("imageRef");
+            var existing = synnefo.storage.images.get(imgid);
+            if (!existing && missing_ids.indexOf(imgid) == -1) {
+                missing_ids.push(imgid);
+                synnefo.storage.images.update_unknown_id(imgid, function(){});
+            }
+          });
+          callback(missing_ids);
         }
 
     })

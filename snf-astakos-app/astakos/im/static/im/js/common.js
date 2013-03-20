@@ -23,7 +23,17 @@ function tableFixedCols(table, firstColWidth ){
 	
 }
 
-
+function addClassHover(hoverEl, applicableEl){ 
+	$(hoverEl).hover(
+      function () {
+      	 
+         $(applicableEl).addClass('red-border')
+      }, 
+      function () {
+      	$(applicableEl).removeClass('red-border');
+    
+    });
+}
 //equal heights
  
 (function($) {
@@ -74,6 +84,7 @@ if (navigator.userAgent.match(/iPhone/i)) {
 }
 //end of fix
 
+ 
 $(document).ready(function() {
 	
 	 
@@ -241,23 +252,8 @@ $(document).ready(function() {
     
     
     
-     $('.auth_methods').find('li>a').click(function(e){
-     	e.preventDefault();
-     	$(this).siblings('.wrap').toggle('slow');
-     	$(this).toggleClass('up');
-     });
-     
-     $('.auth_methods a.red').click(function(e){
-     	e.preventDefault();
-     	$(this).siblings('.dialog').show();
-     })
-     
+   
       
-     $('.auth_methods .dialog .no').click( function(e){	 
-     	e.preventDefault();
-     	console.log($(this));
-     	$(this).parents('.dialog').hide();
-     })
     
     setTimeout(function() {
       if ($('input#id_username').val()){ 
@@ -268,6 +264,71 @@ $(document).ready(function() {
       }
 	}, 100);
 	
+	
+	
+	
+	$('.landing-page .cms').hover(
+      function () {
+      	 el = $('.cloudbar ul.services li').first();
+      	 var offset = el.offset();
+      	 positionX = offset.left;
+      	 $('#hand').css('left',positionX);  		 
+         $('#hand').show();
+      }, 
+      function () {
+      	$('#hand').hide();
+    
+    });  
+    
+    $('.landing-page .pithos').hover(
+      function () {
+      	 el = $('.cloudbar ul.services li:nth-child(3)');
+      	 var offset = el.offset();
+      	 positionX = offset.left;
+      	 left = parseInt(positionX) +20;
+      	 $('#hand').css('left',left+'px');  		 
+         $('#hand').show();
+      }, 
+      function () {
+      	$('#hand').hide();
+    
+    });  
+    
+    $('.landing-page .cyclades').hover(
+      function () {
+      	 el = $('.cloudbar ul.services li:nth-child(2)').first();
+      	 var offset = el.offset();
+      	 positionX = offset.left;
+      	 left = parseInt(positionX) +20;
+      	 $('#hand').css('left',left+'px');  		 
+         $('#hand').show();
+      }, 
+      function () {
+      	$('#hand').hide();
+    
+    });  
+    
+    
+    $('.landing-page .dashboard').hover(
+      function () {
+      	 el = $('.cloudbar .profile');
+      	 var offset = el.offset();
+      	 positionX = offset.left +50;
+      	 $('#hand').css('left',positionX);  		 
+         $('#hand').show();
+      }, 
+      function () {
+      	$('#hand').hide();
+    
+    });  
+    
+    $('.pagination a.disabled').click(function(e){
+    	e.preventDefault();
+    });
+	  
+	// fix for recaptcha fields
+	$('#okeanos_recaptcha').parents('.form-row').find('.extra-img').hide();	  
+     
 	 
 	    
 });

@@ -101,6 +101,7 @@ General Synnefo dependencies
  * postgresql (database)
  * rabbitmq (message queue)
  * ntp (NTP daemon)
+ * gevent
 
 You can install apache2, progresql and ntp by running:
 
@@ -114,6 +115,12 @@ the official debian backports:
 .. code-block:: console
 
    # apt-get -t squeeze-backports install gunicorn
+
+Also, make sure to install gevent >= 0.13.6. Again from the debian backports:
+
+.. code-block:: console
+
+   # apt-get -t squeeze-backports install python-gevent
 
 On node1, we will create our databases, so you will also need the
 python-psycopg2 package:
@@ -209,6 +216,7 @@ Create the file ``synnefo`` under ``/etc/gunicorn.d/`` containing the following:
     'group': 'www-data',
     'args': (
       '--bind=127.0.0.1:8080',
+      '--worker-class=gevent',
       '--workers=8',
       '--log-level=debug',
     ),
@@ -271,7 +279,6 @@ containing the following:
      RewriteEngine On
      RewriteCond %{THE_REQUEST} ^.*(\\r|\\n|%0A|%0D).* [NC]
      RewriteRule ^(.*)$ - [F,L]
-     RewriteRule ^/login(.*) /im/login/redirect$1 [PT,NE]
 
      SSLEngine on
      SSLCertificateFile    /etc/ssl/certs/ssl-cert-snakeoil.pem
@@ -339,6 +346,7 @@ General Synnefo dependencies
  * gunicorn (WSGI http server)
  * postgresql (database)
  * ntp (NTP daemon)
+ * gevent
 
 You can install the above by running:
 
@@ -352,6 +360,12 @@ the official debian backports:
 .. code-block:: console
 
    # apt-get -t squeeze-backports install gunicorn
+
+Also, make sure to install gevent >= 0.13.6. Again from the debian backports:
+
+.. code-block:: console
+
+   # apt-get -t squeeze-backports install python-gevent
 
 Node2 will connect to the databases on node1, so you will also need the
 python-psycopg2 package:
@@ -387,6 +401,7 @@ Create the file ``synnefo`` under ``/etc/gunicorn.d/`` containing the following
     'group': 'www-data',
     'args': (
       '--bind=127.0.0.1:8080',
+      '--worker-class=gevent',
       '--workers=4',
       '--log-level=debug',
       '--timeout=43200'
@@ -630,8 +645,8 @@ To use, first monkey-patch psycopg2. For Django, run this before the
    from synnefo.lib.db.pooled_psycopg2 import monkey_patch_psycopg2
    monkey_patch_psycopg2()
 
-If running with greenlets, we should modify psycopg2 behavior, so it works
-properly in a greenlet context:
+Since we are running with greenlets, we should modify psycopg2 behavior, so it
+works properly in a greenlet context:
 
 .. code-block:: console
 
@@ -752,7 +767,7 @@ This user should have an id with a value of ``1``. It should also have an
 
 .. code-block:: console
 
-   root@node1:~ # snf-manage user-modify --set-active 1
+   root@node1:~ # snf-manage user-update --set-active 1
 
 This modifies the active value to ``1``, and actually activates the user.
 When running in production, the activation is done automatically with different
@@ -822,6 +837,10 @@ this options:
    PITHOS_AUTHENTICATION_USERS = None
 
    PITHOS_SERVICE_TOKEN = 'pithos_service_token22w=='
+   PITHOS_USER_CATALOG_URL = 'http://node1.example.com/user_catalogs'
+   PITHOS_USER_FEEDBACK_URL = 'http://node1.example.com/feedback'
+   PITHOS_USER_LOGIN_URL = 'http://node1.example.com/login'
+
 
 The ``PITHOS_BACKEND_DB_CONNECTION`` option tells to the pithos+ app where to
 find the pithos+ backend database. Above we tell pithos+ that its database is
@@ -854,7 +873,7 @@ Then we need to setup the web UI and connect it to astakos. To do so, edit
 .. code-block:: console
 
    PITHOS_UI_LOGIN_URL = "https://node1.example.com/im/login?next="
-   PITHOS_UI_FEEDBACK_URL = "https://node1.example.com/im/feedback"
+   PITHOS_UI_FEEDBACK_URL = "https://node2.example.com/feedback"
 
 The ``PITHOS_UI_LOGIN_URL`` option tells the client where to redirect you, if
 you are not logged in. The ``PITHOS_UI_FEEDBACK_URL`` option points at the
@@ -896,38 +915,15 @@ Pithos is pooling-ready without the need of further configuration, because it
 doesn't use a Django DB. It pools HTTP connections to Astakos and pithos
 backend objects for access to the Pithos DB.
 
-However, as in Astakos, if running with Greenlets, it is also recommended to
-modify psycopg2 behavior so it works properly in a greenlet context. This means
-adding the following lines at the top of your
+However, as in Astakos, since we are running with Greenlets, it is also
+recommended to modify psycopg2 behavior so it works properly in a greenlet
+context. This means adding the following lines at the top of your
 ``/etc/synnefo/10-snf-webproject-database.conf`` file:
 
 .. code-block:: console
 
    from synnefo.lib.db.psyco_gevent import make_psycopg_green
    make_psycopg_green()
-
-Furthermore, add the ``--worker-class=gevent`` argument on your
-``/etc/gunicorn.d/synnefo`` configuration file. The file should look something like
-this:
-
-.. code-block:: console
-
-   CONFIG = {
-    'mode': 'django',
-    'environment': {
-      'DJANGO_SETTINGS_MODULE': 'synnefo.settings',
-    },
-    'working_dir': '/etc/synnefo',
-    'user': 'www-data',
-    'group': 'www-data',
-    'args': (
-      '--bind=127.0.0.1:8080',
-      '--workers=4',
-      '--worker-class=gevent',
-      '--log-level=debug',
-      '--timeout=43200'
-    ),
-   }
 
 Servers Initialization
 ----------------------
@@ -1010,78 +1006,31 @@ For the purpose of this guide, we will assume that the :ref:`GANETI-MASTER
 :ref:`GANETI-NODE <GANETI_NODES>` and is Master-capable and VM-capable too.
 
 We highly recommend that you read the official Ganeti documentation, if you are
-not familiar with Ganeti. If you are extremely impatient, you can result with
-the above assumed setup by running on both nodes:
+not familiar with Ganeti.
+
+Unfortunatelly, the current stable version of the stock Ganeti (v2.6.2) doesn't
+support IP pool management. This feature will be available in Ganeti >= 2.7.
+Synnefo depends on the IP pool functionality of Ganeti, so you have to use
+GRNET provided packages until stable 2.7 is out. To do so:
 
 .. code-block:: console
 
-   # apt-get install -t squeeze-backports ganeti2 ganeti-htools
+   # apt-get install snf-ganeti ganeti-htools
    # modprobe drbd minor_count=255 usermode_helper=/bin/true
 
-Unfortunatelly, stock Ganeti doesn't support IP pool management yet (we are
-working hard to merge it upstream for Ganeti 2.7). Synnefo depends on the IP
-pool functionality of Ganeti, so you have to use GRNET's patches for now. To
-do so you have to build your own package from source. Please clone our local
-repo:
+You should have:
 
-.. code-block:: console
-
-   # git clone https://code.grnet.gr/git/ganeti-local
-   # cd ganeti-local
-   # git checkout stable-2.6-ippool-hotplug-esi
-   # git checkout debian-2.6
-
-Then please check if you can complile ganeti:
-
-.. code-block:: console
-
-   # cd ganeti-local
-   # ./automake.sh
-   # ./configure
-   # make
-
-To do so you must have a correct build environment. Please refer to INSTALL
-file in the source tree. Most of the packages needed are refered here:
-
-.. code-block:: console
-
-   #  apt-get install graphviz automake lvm2 ssh bridge-utils iproute iputils-arping \
-                      ndisc6 python python-pyopenssl openssl \
-                      python-pyparsing python-simplejson \
-                      python-pyinotify python-pycurl socat \
-                      python-elementtree kvm qemu-kvm \
-                      ghc6 libghc6-json-dev libghc6-network-dev \
-                      libghc6-parallel-dev libghc6-curl-dev \
-                      libghc-quickcheck2-dev hscolour hlint
-                      python-support python-paramiko \
-                      python-fdsend python-ipaddr python-bitarray libjs-jquery fping
-
-Now let try to build the package:
-
-.. code-block:: console
-
-   # apt-get install git-buildpackage
-   # mkdir ../build-area
-   # git-buildpackage --git-upstream-branch=stable-2.6-ippool-hotplug-esi \
-                   --git-debian-branch=debian-2.6 \
-                   --git-export=INDEX \
-                   --git-ignore-new
-
-This will create two deb packages in build-area. You should then run in both
-nodes:
-
-.. code-block:: console
-
-   # dpkg -i ../build-area/snf-ganeti.*deb
-   # dpkg -i ../build-area/ganeti-htools.*deb
-   # apt-get install -f
+Ganeti >= 2.6.2+ippool11+hotplug5+extstorage3+rdbfix1+kvmfix2-1
 
 We assume that Ganeti will use the KVM hypervisor. After installing Ganeti on
-both nodes, choose a domain name that resolves to a valid floating IP (let's say
-it's ``ganeti.node1.example.com``). Make sure node1 and node2 have root access
-between each other using ssh keys and not passwords. Also, make sure there is an
-lvm volume group named ``ganeti`` that will host your VMs' disks. Finally, setup
-a bridge interface on the host machines (e.g: br0). Then run on node1:
+both nodes, choose a domain name that resolves to a valid floating IP (let's
+say it's ``ganeti.node1.example.com``). Make sure node1 and node2 have same
+dsa/rsa keys and authorised_keys for password-less root ssh between each other.
+If not then skip passing --no-ssh-init but be aware that it will replace
+/root/.ssh/* related files and you might lose access to master node. Also,
+make sure there is an lvm volume group named ``ganeti`` that will host your
+VMs' disks. Finally, setup a bridge interface on the host machines (e.g: br0).
+Then run on node1:
 
 .. code-block:: console
 
@@ -1093,7 +1042,7 @@ a bridge interface on the host machines (e.g: br0). Then run on node1:
    root@node1:~ # gnt-cluster modify --hypervisor-parameters kvm:kernel_path=
    root@node1:~ # gnt-cluster modify --hypervisor-parameters kvm:vnc_bind_address=0.0.0.0
 
-   root@node1:~ # gnt-node add --no-node-setup --master-capable=yes \
+   root@node1:~ # gnt-node add --no-ssh-key-check --master-capable=yes \
                                --vm-capable=yes node2.example.com
    root@node1:~ # gnt-cluster modify --disk-parameters=drbd:metavg=ganeti
    root@node1:~ # gnt-group modify --disk-parameters=drbd:metavg=ganeti default
@@ -1123,29 +1072,16 @@ handle image files stored on Pithos+. It also needs `python-psycopg2` to be able
 to access the Pithos+ database. This is why, we also install them on *all*
 VM-capable Ganeti nodes.
 
-Now, you need to download and save the corresponding helper package. Please see
-`here <https://code.grnet.gr/projects/snf-image/files>`_ for the latest package. Let's
-assume that you installed snf-image-host version 0.4.4-1. Then, you need
-snf-image-helper v0.4.4-1 on *both* nodes:
-
-.. code-block:: console
-
-   # cd /var/lib/snf-image/helper/
-   # wget https://code.grnet.gr/attachments/download/1058/snf-image-helper_0.4.4-1_all.deb
-
-.. warning:: Be careful: Do NOT install the snf-image-helper debian package.
-             Just put it under /var/lib/snf-image/helper/
-
-Once, you have downloaded the snf-image-helper package, create the helper VM by
+After `snf-image-host` has been installed successfully, create the helper VM by
 running on *both* nodes:
 
 .. code-block:: console
 
-   # ln -s snf-image-helper_0.4.4-1_all.deb snf-image-helper.deb
    # snf-image-update-helper
 
 This will create all the needed files under ``/var/lib/snf-image/helper/`` for
-snf-image-host to run successfully.
+snf-image-host to run successfully, and it may take a few minutes depending on
+your Internet connection.
 
 Configuration
 ~~~~~~~~~~~~~
@@ -1189,13 +1125,13 @@ supported Image formats.
 
 .. _snf-image-images:
 
-snf-image's actual Images
--------------------------
+Actual Images for snf-image
+---------------------------
 
 Now that snf-image is installed successfully we need to provide it with some
 Images. :ref:`snf-image <snf-image>` supports Images stored in ``extdump``,
 ``ntfsdump`` or ``diskdump`` format. We recommend the use of the ``diskdump``
-format. For more information about snf-image's Image formats see `here
+format. For more information about snf-image Image formats see `here
 <https://code.grnet.gr/projects/snf-image/wiki/Image_Format>`_.
 
 :ref:`snf-image <snf-image>` also supports three (3) different locations for the
@@ -1255,11 +1191,10 @@ In the above command:
  * ``img_passwd``: the arbitrary root password of your new instance
  * ``img_format``: set to ``diskdump`` to reflect the type of the uploaded Image
  * ``img_id``: If you want to deploy an Image stored on Pithos+ (our case), this
-               should have the format
-               ``pithos://<username>/<container>/<filename>``:
-                * ``username``: ``user@example.com`` (defined during Astakos sign up)
-                * ``container``: ``pithos`` (default, if the Web UI was used)
-                * ``filename``: the name of file (visible also from the Web UI)
+               should have the format ``pithos://<username>/<container>/<filename>``:
+               * ``username``: ``user@example.com`` (defined during Astakos sign up)
+               * ``container``: ``pithos`` (default, if the Web UI was used)
+               * ``filename``: the name of file (visible also from the Web UI)
  * ``img_properties``: taken from the metadata file. Used only the two mandatory
                        properties ``OSFAMILY`` and ``ROOT_PARTITION``. `Learn more
                        <https://code.grnet.gr/projects/snf-image/wiki/Image_Format#Image-Properties>`_
@@ -1285,6 +1220,7 @@ If everything works, you have successfully connected Ganeti with Pithos+. Let's
 move on to networking now.
 
 .. warning::
+
     You can bypass the networking sections and go straight to
     :ref:`Cyclades Ganeti tools <cyclades-gtools>`, if you do not want to setup
     the Cyclades Network Service, but only the Cyclades Compute Service
@@ -1656,10 +1592,6 @@ corresponding package by running on node1:
 
    # apt-get install snf-cyclades-app
 
-.. warning:: Make sure you have installed ``python-gevent`` version >= 0.13.6.
-    This version is available at squeeze-backports and can be installed by
-    running: ``apt-get install -t squeeze-backports python-gevent``
-
 If all packages install successfully, then Cyclades and Plankton are installed
 and we proceed with their configuration.
 
@@ -1838,7 +1770,8 @@ backend node edit Synnefo setting CUSTOM_BRIDGED_BRIDGE to 'br0':
                                --gateway=5.6.7.1 \
                                --subnet6=2001:648:2FFC:1322::/64 \
                                --gateway6=2001:648:2FFC:1322::1 \
-                               --public --dhcp --type=CUSTOM_BRIDGED \
+                               --public --dhcp --flavor=CUSTOM \
+                               --link=br0 --mode=bridged \
                                --name=public_network \
                                --backend-id=1
 
@@ -1869,7 +1802,6 @@ Ganeti MASTER:
    $ gnt-network list
    $ gnt-network info <network_name>
 
-
 Create pools for Private Networks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1893,7 +1825,7 @@ Also, change the Synnefo setting in :file:`20-snf-cyclades-app-api.conf`:
 
 .. code-block:: console
 
-   PRIVATE_MAC_FILTERED_BRIDGE = 'prv0'
+   DEFAULT_MAC_FILTERED_BRIDGE = 'prv0'
 
 Servers restart
 ---------------
@@ -2017,10 +1949,14 @@ installation. We do this by running:
    $ kamaki config set image.url "https://node1.example.com/plankton"
    $ kamaki config set store.url "https://node2.example.com/v1"
    $ kamaki config set global.account "user@example.com"
-   $ kamaki config set global.token "bdY_example_user_tokenYUff=="
+   $ kamaki config set store.enable on
+   $ kamaki config set store.pithos_extensions on
+   $ kamaki config set store.url "https://node2.example.com/v1"
+   $ kamaki config set store.account USER_UUID
+   $ kamaki config set global.token USER_TOKEN
 
-The token at the last kamaki command is our user's (``user@example.com``) token,
-as it appears on the user's `Profile` web page on the Astakos Web UI.
+The USER_TOKEN and USER_UUID appear on the user's (``user@example.com``) `Profile` web
+page on the Astakos Web UI.
 
 You can see that the new configuration options have been applied correctly, by
 running:
@@ -2071,7 +2007,7 @@ it to Plankton (so that it becomes visible to Cyclades), by running:
 .. code-block:: console
 
    $ kamaki image register "Debian Base" \
-                           pithos://user@example.com/images/debian_base-6.0-7-x86_64.diskdump \
+                           pithos://USER_UUID/images/debian_base-6.0-7-x86_64.diskdump \
                            --public \
                            --disk-format=diskdump \
                            --property OSFAMILY=linux --property ROOT_PARTITION=1 \

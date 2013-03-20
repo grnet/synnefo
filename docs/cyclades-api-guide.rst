@@ -563,7 +563,7 @@ overLimit (413)
 
 This operation changes the name of the network in the Compute system.
 
-**Example Update Network Name Request: JSON**::
+**Example Update Network Name Request: JSON**:
 
 .. code-block:: javascript
 

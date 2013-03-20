@@ -27,6 +27,9 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
+0.13 (Jan 21, 2013)        Proxy identity management services
+\                          UUID to displayname translation
+0.9 (Feb 17, 2012)         Change permissions model.
 0.10 (Jul 18, 2012)        Support for bulk COPY/MOVE/DELETE
 \                          Optionally include public objects in listings.
 0.9 (Feb 17, 2012)         Change permissions model.
@@ -72,7 +75,7 @@ Revision                   Description
 \                          Create object using hashmap.
 0.3 (June 14, 2011)        Large object support with ``X-Object-Manifest``.
 \                          Allow for publicly available objects via ``https://hostname/public``.
-\                          Support time-variant account/container listings. 
+\                          Support time-variant account/container listings.
 \                          Add source version when duplicating with ``PUT``/``COPY``.
 \                          Request version in object ``HEAD``/``GET`` requests (list versions with ``GET``).
 0.2 (May 31, 2011)         Add object meta listing and filtering in containers.
@@ -106,6 +109,95 @@ When done with logging in, the service's login URI should redirect to the URI pr
 
 A user management service that implements a login URI according to these conventions is Astakos (https://code.grnet.gr/projects/astakos), by GRNET.
 
+User feedback
+-------------
+
+Client software using Pithos, should forward to the ``/feedback`` URI. The Pithos service, depending on its configuration will delegate the request to the appropriate identity management URI.
+
+========================= =========  ==================
+Uri                       Method     Description
+========================= =========  ==================
+``/feedback``             POST       Send feedback
+========================= =========  ==================
+
+|
+
+======================  =========================
+Request Parameter Name  Value
+======================  =========================
+feedback_msg            Feedback message
+feedback_data           Additional information about service client status
+======================  =========================
+
+|
+
+====================  ===========================
+Request Header Name   Value
+====================  ===========================
+X-Auth-Token          User authentication token
+====================  ===========================
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    The request succeeded
+502 (Bad Gateway)           Send feedback failure
+400 (Bad Request)           Method not allowed or invalid message data
+401 (Unauthorized)          Missing or expired user token
+500 (Internal Server Error) The request cannot be completed because of an internal error
+=========================== =====================
+
+User translation catalogs
+-------------------------
+
+Client software using Pithos, should forward to the ``/user_catalogs`` URI to get uuid to displayname translations and vice versa. The Pithos service, depending on its configuration will delegate the request to the appropriate identity management URI.
+
+================================ =========  ==================
+Uri                              Method     Description
+================================ =========  ==================
+``/user_catalogs``               POST       Get 2 catalogs containing uuid to displayname mapping and the opposite
+================================ =========  ==================
+
+|
+
+====================  ===========================
+Request Header Name   Value
+====================  ===========================
+X-Auth-Token          User authentication token
+====================  ===========================
+
+The request body is a json formatted dictionary containing a list with uuids and another list of displaynames to translate.
+
+Example request content:
+
+::
+
+  {"displaynames": ["user1@example.com", "user2@example.com"],
+   "uuids":["ff53baa9-c025-4d56-a6e3-963db0438830", "a9dc21d2-bcb2-4104-9a9e-402b7c70d6d8"]}
+
+Example reply:
+
+::
+
+  {"displayname_catalog": {"user1@example.com": "a9dc21d2-bcb2-4104-9a9e-402b7c70d6d8",
+                        "user2@example.com": "816351c7-7405-4f26-a968-6380cf47ba1f"},
+  'uuid_catalog': {"a9dc21d2-bcb2-4104-9a9e-402b7c70d6d8": "user1@example.com",
+                   "ff53baa9-c025-4d56-a6e3-963db0438830": "user2@example.com"}}
+
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    The request succeeded
+400 (Bad Request)           Method not allowed or request body is not json formatted
+401 (Unauthorized)          Missing or expired or invalid user token
+500 (Internal Server Error) The request cannot be completed because of an internal error
+=========================== =====================
+
 The Pithos API
 --------------
 
@@ -120,15 +212,16 @@ All requests must include an ``X-Auth-Token`` - as a header, or a parameter.
 
 The allowable request operations and respective return codes per level are presented in the remainder of this chapter. Common to all requests are the following return codes.
 
-=========================  ================================
-Return Code                Description
-=========================  ================================
-400 (Bad Request)          The request is invalid
-401 (Unauthorized)         Missing or invalid token
-403 (Forbidden)            Request not allowed
-404 (Not Found)            The requested resource was not found
-503 (Service Unavailable)  The request cannot be completed because of an internal error
-=========================  ================================
+==============================  ================================
+Return Code                     Description
+==============================  ================================
+400 (Bad Request)               The request is invalid
+401 (Unauthorized)              Missing or invalid token
+403 (Forbidden)                 Request not allowed
+404 (Not Found)                 The requested resource was not found
+413 (Request Entity Too Large)  Insufficient quota to complete the request
+503 (Service Unavailable)       The request cannot be completed because of an internal error
+==============================  ================================
 
 Top Level
 ^^^^^^^^^
@@ -359,7 +452,7 @@ update                  Do not replace metadata/groups (no value parameter)
 No reply content/headers.
 
 The operation will overwrite all user defined metadata, except if ``update`` is defined.
-To create a group, include an ``X-Account-Group-*`` header with the name in the key and a comma separated list of user names in the value. If no ``X-Account-Group-*`` header is present, no changes will be applied to groups. The ``update`` parameter also applies to groups. To delete a specific group, use ``update`` and an empty header value.
+To create a group, include an ``X-Account-Group-*`` header with the name in the key and a comma separated list of user identifiers in the value. If no ``X-Account-Group-*`` header is present, no changes will be applied to groups. The ``update`` parameter also applies to groups. To delete a specific group, use ``update`` and an empty header value.
 
 ================  ===============================
 Return Code       Description
@@ -1092,6 +1185,7 @@ List of differences from the OOS API:
 * Large object support with ``X-Object-Manifest``.
 * Trace the user that created/modified an object with ``X-Object-Modified-By``.
 * Purge container/object history with the ``until`` parameter in ``DELETE``.
+* Bulk COPY/MOVE/DELETE objects starting with prefix
 
 Clarifications/suggestions:
 

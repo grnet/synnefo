@@ -39,7 +39,7 @@ import logging
 import hashlib
 import binascii
 
-from kamaki.clients.quotaholder import QuotaholderClient
+from synnefo.lib.quotaholder import QuotaholderClient
 
 from base import DEFAULT_QUOTA, DEFAULT_VERSIONING, NotAllowedError, QuotaError, BaseBackend, \
     AccountExists, ContainerExists, AccountNotEmpty, ContainerNotEmpty, ItemNotExists, VersionNotExists
@@ -145,7 +145,9 @@ class ModularBackend(BaseBackend):
     def __init__(self, db_module=None, db_connection=None,
                  block_module=None, block_path=None, block_umask=None,
                  queue_module=None, queue_hosts=None, queue_exchange=None,
+                 quotaholder_enabled=False,
                  quotaholder_url=None, quotaholder_token=None,
+                 quotaholder_client_poolsize=None,
                  free_versioning=True, block_params=None):
         db_module = db_module or DEFAULT_DB_MODULE
         db_connection = db_connection or DEFAULT_DB_CONNECTION
@@ -207,9 +209,15 @@ class ModularBackend(BaseBackend):
 
             self.queue = NoQueue()
 
-        self.quotaholder_url = quotaholder_url
-        self.quotaholder_token = quotaholder_token
-        self.quotaholder = QuotaholderClient(quotaholder_url, quotaholder_token)
+        self.quotaholder_enabled = quotaholder_enabled
+        if quotaholder_enabled:
+            self.quotaholder_url = quotaholder_url
+            self.quotaholder_token = quotaholder_token
+            self.quotaholder = QuotaholderClient(
+                                    quotaholder_url,
+                                    token=quotaholder_token,
+                                    poolsize=quotaholder_client_poolsize)
+
         self.serials = []
         self.messages = []
 
@@ -219,9 +227,7 @@ class ModularBackend(BaseBackend):
 
     @property
     def using_external_quotaholder(self):
-        if self.quotaholder_url:
-            return True
-        return False
+        return self.quotaholder_enabled
 
     @backend_method
     def list_accounts(self, user, marker=None, limit=10000):
@@ -848,24 +854,25 @@ class ModularBackend(BaseBackend):
 
         del_size = self._apply_versioning(account, container, pre_version_id)
         size_delta = size - del_size
-        if not self.using_external_quotaholder: # Check quota.
+        if not self.using_external_quotaholder: # Check account quota.
             if size_delta > 0:
                 account_quota = long(self._get_policy(account_node)['quota'])
                 account_usage = self._get_statistics(account_node)[1] + size_delta
-                container_quota = long(self._get_policy(container_node)['quota'])
-                container_usage = self._get_statistics(container_node)[1] + size_delta
                 if (account_quota > 0 and account_usage > account_quota):
-                    logger.error('account_quota: %s, account_usage: %s' % (
+                    raise QuotaError('account quota exceeded: limit: %s, usage: %s' % (
                         account_quota, account_usage
                     ))
-                    raise QuotaError
-                if (container_quota > 0 and container_usage > container_quota):
-                    # This must be executed in a transaction, so the version is
-                    # never created if it fails.
-                    logger.error('container_quota: %s, container_usage: %s' % (
-                        container_quota, container_usage
-                    ))
-                    raise QuotaError
+
+        # Check container quota.
+        container_quota = long(self._get_policy(container_node)['quota'])
+        container_usage = self._get_statistics(container_node)[1] + size_delta
+        if (container_quota > 0 and container_usage > container_quota):
+            # This must be executed in a transaction, so the version is
+            # never created if it fails.
+            raise QuotaError('container quota exceeded: limit: %s, usage: %s' % (
+                container_quota, container_usage
+            ))
+
         self._report_size_change(user, account, size_delta,
                                  {'action': 'object update', 'path': path,
                                   'versions': ','.join([str(dest_version_id)])})
@@ -1055,7 +1062,7 @@ class ModularBackend(BaseBackend):
         """Return the (account, container, name) for the UUID given."""
 
         logger.debug("get_uuid: %s %s", user, uuid)
-        info = self.node.latest_uuid(uuid)
+        info = self.node.latest_uuid(uuid, CLUSTER_NORMAL)
         if info is None:
             raise NameError
         path, serial = info
@@ -1277,28 +1284,35 @@ class ModularBackend(BaseBackend):
     # Reporting functions.
 
     def _report_size_change(self, user, account, size, details={}):
+        if size == 0:
+            return
+
         account_node = self._lookup_account(account, True)[1]
         total = self._get_statistics(account_node)[1]
         details.update({'user': user, 'total': total})
         logger.debug(
             "_report_size_change: %s %s %s %s", user, account, size, details)
-        self.messages.append((QUEUE_MESSAGE_KEY_PREFIX % ('resource.diskspace',), 
+        self.messages.append((QUEUE_MESSAGE_KEY_PREFIX % ('resource.diskspace',),
                               account, QUEUE_INSTANCE_ID, 'diskspace',
                               float(size), details))
 
         if not self.using_external_quotaholder:
             return
 
-        serial = self.quotaholder.issue_commission(
-                context     =   {},
-                target      =   user.uuid,
-                key         =   '1',
-                clientkey   =   'pithos',
-                ownerkey    =   '',
-                        name        =   details['path'] if 'path' in details else '',
-                provisions  =   (('pithos+', 'pithos+.diskspace', size),)
-        )
-        self.serials.append(serial)
+        try:
+            serial = self.quotaholder.issue_commission(
+                    context     =   {},
+                    target      =   account,
+                    key         =   '1',
+                    clientkey   =   'pithos',
+                    ownerkey    =   '',
+                    name        =   details['path'] if 'path' in details else '',
+                    provisions  =   (('pithos+', 'pithos+.diskspace', size),)
+            )
+        except BaseException, e:
+            raise QuotaError(e)
+        else:
+            self.serials.append(serial)
 
     def _report_object_change(self, user, account, path, details={}):
         details.update({'user': user})

@@ -48,7 +48,7 @@ from django.utils.translation import ugettext as _
 
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.settings import (
-    COOKIE_DOMAIN, FORCE_PROFILE_UPDATE)
+    COOKIE_DOMAIN, FORCE_PROFILE_UPDATE, LOGIN_SUCCESS_URL)
 from astakos.im.functions import login
 
 import astakos.im.messages as astakos_messages
@@ -114,9 +114,9 @@ def restrict_next(url, domain=None, allowed_schemes=()):
     //pithos.okeanos.grnet.gr/im/feedback
     >>> print restrict_next('https://pithos.okeanos.grnet.gr/im/feedback', '.okeanos.grnet.gr')
     https://pithos.okeanos.grnet.gr/im/feedback
-    >>> print restrict_next('pithos://127.0.0,1', '.okeanos.grnet.gr')
+    >>> print restrict_next('pithos://127.0.0.1', '.okeanos.grnet.gr')
     None
-    >>> print restrict_next('pithos://127.0.0,1', '.okeanos.grnet.gr', allowed_schemes=('pithos'))
+    >>> print restrict_next('pithos://127.0.0.1', '.okeanos.grnet.gr', allowed_schemes=('pithos'))
     pithos://127.0.0,1
     >>> print restrict_next('node1.example.com', '.okeanos.grnet.gr')
     None
@@ -186,7 +186,7 @@ def prepare_response(request, user, next='', renew=False):
     request.session.set_expiry(user.auth_token_expires)
 
     if not next:
-        next = reverse('astakos.im.views.index')
+        next = LOGIN_SUCCESS_URL
 
     response['Location'] = next
     response.status_code = 302
@@ -228,7 +228,7 @@ def get_properties(obj):
             return getattr(_class, attr)
         except AttributeError:
             return
- 
+
     return (i for i in vars(obj.__class__) \
         if isinstance(get_class_attr(obj.__class__, i), property))
 

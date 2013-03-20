@@ -8,8 +8,7 @@ CONFIG = {
  'group': 'www-data',
  'args': (
    '--bind=127.0.0.1:8080',
-   '--workers=12',
-   '--workers=1',
+   '--workers=4',
    '--worker-class=gevent',
    '--log-level=DEBUG',
    '--timeout=90'

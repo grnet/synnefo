@@ -9,6 +9,7 @@
 
 {% block page.body %}
 <div class="maincol {% block innerpage.class %}{% endblock %}"> 
+	<h2>RESOURCE USAGE</h2>
 	<div class="stats clearfix">
 		<ul>
 			{% for rdata in resource_usage %}
@@ -36,15 +37,23 @@
                             <span class="unit">{{ rdata.unit }}</span>
                         </span>
 						{% endif %}
-                        {% if rdata.is_abbreviation %}{{ rdata.verbose_name|upper }}{% else %}{{ rdata.verbose_name }}{% endif %}{% if rdata.maxValue|floatformat:"0" != "1" and not rdata.unit %}s {% endif  %}
+                        {{rdata.pluralized_display_name}}
 						</p>
 					</div>
 					<div class="bar" data-steps="">
 						<div>
-							<span style="width:{{ rdata.ratio_limited|floatformat }}%;">
-                                <em data-value="{{ rdata.ratio }}" class="value {% if rdata.ratio > 18 %}hovered{% endif %}
-">{{ rdata.ratio|floatformat }}&#37; &nbsp;&nbsp;</em>	
+							{% if rdata.ratio > 18 %}
+							<span style="width:{{ rdata.ratio_limited|floatformat }}%;" class="hovered">
+                                <em data-value="{{ rdata.ratio }}" class="value">{{ rdata.ratio|floatformat }}&#37; &nbsp;&nbsp;</em>	
 							</span>
+							{% else %}
+							<span style="width:{{ rdata.ratio_limited|floatformat }}%;">
+                                	&nbsp;
+							</span>
+							<em data-value="{{ rdata.ratio }}" class="value">
+                                	{{ rdata.ratio|floatformat }}&#37; &nbsp;&nbsp;
+                                </em>
+							{% endif %}
 						</div>
 					</div>
 		 		</li>

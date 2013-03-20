@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -32,24 +32,25 @@
 # or implied, of GRNET S.A.
 
 from synnefo.lib.quotaholder.api import (
-                            QuotaholderAPI,
-                            QH_PRACTICALLY_INFINITE,
-                            InvalidKeyError, NoEntityError,
-                            NoQuantityError, NoCapacityError,
-                            ExportLimitError, ImportLimitError,
-                            DuplicateError)
+    QuotaholderAPI,
+    QH_PRACTICALLY_INFINITE,
+    InvalidKeyError, NoEntityError,
+    NoQuantityError, NoCapacityError,
+    ExportLimitError, ImportLimitError,
+    DuplicateError)
 
-from synnefo.lib.commissioning import \
-    Callpoint, CorruptedError, InvalidDataError, ReturnButFail
+from synnefo.lib.commissioning import (
+    Callpoint, CorruptedError, InvalidDataError, ReturnButFail)
 from synnefo.lib.commissioning.utils.newname import newname
 
-from django.db.models import Q
-from django.db import transaction, IntegrityError
-from .models import (Holder, Entity, Policy, Holding,
+from django.db.models import Q, Count
+from django.db import transaction
+from .models import (Entity, Policy, Holding,
                      Commission, Provision, ProvisionLog, CallSerial,
                      now,
                      db_get_entity, db_get_holding, db_get_policy,
                      db_get_commission, db_filter_provision, db_get_callserial)
+
 
 class QuotaholderDjangoDBCallpoint(Callpoint):
 
@@ -68,7 +69,6 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         if connection is not None:
             raise ValueError("Cannot specify connection args with %s" %
                              type(self).__name__)
-        pass
 
     def commit(self):
         transaction.commit()
@@ -140,12 +140,16 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         entities = []
         append = entities.append
 
-        for entity, key in get_entity:
-            try:
-                e = Entity.objects.get(entity=entity, key=key)
-            except Entity.DoesNotExist:
-                continue
+        names = [entity for entity, key in get_entity]
+        es = Entity.objects.select_related(depth=1).filter(entity__in=names)
+        data = {}
+        for e in es:
+            data[e.entity] = e
 
+        for entity, key in get_entity:
+            e = data.get(entity, None)
+            if e is None or e.key != key:
+                continue
             append((entity, e.owner.entity))
 
         return entities
@@ -167,23 +171,23 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
     def set_limits(self, context={}, set_limits=()):
 
-        for (   policy, quantity, capacity,
-                import_limit, export_limit  ) in set_limits:
+        for (policy, quantity, capacity,
+             import_limit, export_limit) in set_limits:
 
-                try:
-                    policy = db_get_policy(policy=policy, for_update=True)
-                except Policy.DoesNotExist:
-                    Policy.objects.create(  policy=policy,
-                                            quantity=quantity,
-                                            capacity=capacity,
-                                            import_limit=import_limit,
-                                            export_limit=export_limit   )
-                else:
-                    policy.quantity = quantity
-                    policy.capacity = capacity
-                    policy.export_limit = export_limit
-                    policy.import_limit = import_limit
-                    policy.save()
+            try:
+                policy = db_get_policy(policy=policy, for_update=True)
+            except Policy.DoesNotExist:
+                Policy.objects.create(policy=policy,
+                                      quantity=quantity,
+                                      capacity=capacity,
+                                      import_limit=import_limit,
+                                      export_limit=export_limit)
+            else:
+                policy.quantity = quantity
+                policy.capacity = capacity
+                policy.export_limit = export_limit
+                policy.import_limit = import_limit
+                policy.save()
 
         return ()
 
@@ -214,8 +218,8 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             h.flags = flags
             h.save()
         except Holding.DoesNotExist:
-            h = Holding.objects.create( entity=e, resource=resource,
-                                        policy=p, flags=flags      )
+            h = Holding.objects.create(entity=e, resource=resource,
+                                       policy=p, flags=flags)
         return h
 
     def set_holding(self, context={}, set_holding=()):
@@ -246,16 +250,17 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 h.flags = flags
                 h.save()
             except Holding.DoesNotExist:
-                h = Holding.objects.create( entity=e, resource=resource,
-                                            policy=p, flags=flags      )
+                h = Holding.objects.create(entity=e, resource=resource,
+                                           policy=p, flags=flags)
 
         if rejected:
             raise ReturnButFail(rejected)
         return rejected
 
-    def _init_holding(self, entity, resource, policy,
-                          imported, exported, returned, released,
-                          flags):
+    def _init_holding(self,
+                      entity, resource, policy,
+                      imported, exported, returned, released,
+                      flags):
         try:
             h = db_get_holding(entity=entity, resource=resource,
                                for_update=True)
@@ -264,14 +269,14 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         h.policy = policy
         h.flags = flags
-        h.imported=imported
-        h.importing=imported
-        h.exported=exported
-        h.exporting=exported
-        h.returned=returned
-        h.returning=returned
-        h.released=released
-        h.releasing=released
+        h.imported = imported
+        h.importing = imported
+        h.exported = exported
+        h.exporting = exported
+        h.returned = returned
+        h.returning = returned
+        h.released = released
+        h.releasing = released
         h.save()
 
     def init_holding(self, context={}, init_holding=()):
@@ -299,9 +304,9 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 continue
 
             self._init_holding(e, resource, p,
-                                   imported, exported,
-                                   returned, released,
-                                   flags)
+                               imported, exported,
+                               returned, released,
+                               flags)
         if rejected:
             raise ReturnButFail(rejected)
         return rejected
@@ -322,14 +327,14 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             try:
                 h = db_get_holding(entity=entity, resource=resource,
                                    for_update=True)
-                h.imported=imported
-                h.importing=imported
-                h.exported=exported
-                h.exporting=exported
-                h.returned=returned
-                h.returning=returned
-                h.released=released
-                h.releasing=released
+                h.imported = imported
+                h.importing = imported
+                h.exported = exported
+                h.exporting = exported
+                h.returned = returned
+                h.returning = returned
+                h.released = released
+                h.releasing = released
                 h.save()
             except Holding.DoesNotExist:
                 append(idx)
@@ -436,7 +441,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             holdings = e.holding_set.filter(entity=entity)
             append([[entity, h.resource,
                      h.imported, h.exported, h.returned, h.released]
-                        for h in holdings])
+                    for h in holdings])
 
         return holdings_list, rejected
 
@@ -444,10 +449,16 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         quotas = []
         append = quotas.append
 
+        entities = set(e for e, r, k in get_quota)
+        hs = Holding.objects.select_related().filter(entity__in=entities)
+        holdings = {}
+        for h in hs:
+            holdings[(h.entity_id, h.resource)] = h
+
         for entity, resource, key in get_quota:
             try:
-                h = Holding.objects.get(entity=entity, resource=resource)
-            except Holding.DoesNotExist:
+                h = holdings[(entity, resource)]
+            except:
                 continue
 
             if h.entity.key != key:
@@ -467,50 +478,63 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         rejected = []
         append = rejected.append
 
-        for (   entity, resource, key,
-                quantity, capacity,
-                import_limit, export_limit, flags  ) in set_quota:
+        q_holdings = Q()
+        entities = []
+        for (entity, resource, key, _, _, _, _, _) in set_quota:
 
-                try:
-                    e = Entity.objects.get(entity=entity, key=key)
-                except Entity.DoesNotExist:
-                    append((entity, resource))
-                    continue
+            q_holdings |= Q(entity=entity, resource=resource)
+            entities.append(entity)
 
-                policy = newname('policy_')
-                newp = Policy   (
-                            policy=policy,
-                            quantity=quantity,
-                            capacity=capacity,
-                            import_limit=import_limit,
-                            export_limit=export_limit
-                )
+        hs = Holding.objects.filter(q_holdings).select_for_update()
+        holdings = {}
+        for h in hs:
+            holdings[(h.entity_id, h.resource)] = h
 
-                try:
-                    h = db_get_holding(entity=entity, resource=resource,
-                                       for_update=True)
-                    p = h.policy
-                    h.policy = newp
-                    h.flags = flags
-                except Holding.DoesNotExist:
-                    h = Holding(entity=e, resource=resource,
-                                policy=newp, flags=flags)
-                    p = None
+        entities = Entity.objects.in_bulk(entities)
 
-                # the order is intentionally reversed so that it
-                # would break if we are not within a transaction.
-                # Has helped before.
-                h.save()
-                newp.save()
+        old_policies = []
 
-                if p is not None and p.holding_set.count() == 0:
-                    p.delete()
+        for (entity, resource, key,
+             quantity, capacity,
+             import_limit, export_limit, flags) in set_quota:
+
+            e = entities.get(entity, None)
+            if e is None or e.key != key:
+                append((entity, resource))
+                continue
+
+            policy = newname('policy_')
+            newp = Policy(policy=policy,
+                          quantity=quantity,
+                          capacity=capacity,
+                          import_limit=import_limit,
+                          export_limit=export_limit)
+
+            try:
+                h = holdings[(entity, resource)]
+                old_policies.append(h.policy_id)
+                h.policy = newp
+                h.flags = flags
+            except KeyError:
+                h = Holding(entity=e, resource=resource,
+                            policy=newp, flags=flags)
+
+            # the order is intentionally reversed so that it
+            # would break if we are not within a transaction.
+            # Has helped before.
+            h.save()
+            newp.save()
+            holdings[(entity, resource)] = h
+
+        objs = Policy.objects.annotate(refs=Count('holding'))
+        objs.filter(policy__in=old_policies, refs=0).delete()
 
         if rejected:
             raise ReturnButFail(rejected)
         return rejected
 
-    def add_quota(self, context={}, clientkey=None, serial=None,
+    def add_quota(self,
+                  context={}, clientkey=None, serial=None,
                   sub_quota=(), add_quota=()):
         rejected = []
         append = rejected.append
@@ -526,56 +550,80 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             except CallSerial.DoesNotExist:
                 pass
 
+        sources = sub_quota + add_quota
+        q_holdings = Q()
+        entities = []
+        for (entity, resource, key, _, _, _, _) in sources:
+
+            q_holdings |= Q(entity=entity, resource=resource)
+            entities.append(entity)
+
+        hs = Holding.objects.filter(q_holdings).select_for_update()
+        holdings = {}
+        for h in hs:
+            holdings[(h.entity_id, h.resource)] = h
+
+        entities = Entity.objects.in_bulk(entities)
+
+        pids = [h.policy_id for h in hs]
+        policies = Policy.objects.in_bulk(pids)
+
+        old_policies = []
+
         for removing, source in [(True, sub_quota), (False, add_quota)]:
-            for (   entity, resource, key,
-                    quantity, capacity,
-                    import_limit, export_limit ) in source:
+            for (entity, resource, key,
+                 quantity, capacity,
+                 import_limit, export_limit) in source:
 
+                e = entities.get(entity, None)
+                if e is None or e.key != key:
+                    append((entity, resource))
+                    continue
+
+                try:
+                    h = holdings[(entity, resource)]
+                    old_policies.append(h.policy_id)
                     try:
-                        e = Entity.objects.get(entity=entity, key=key)
-                    except Entity.DoesNotExist:
+                        p = policies[h.policy_id]
+                    except KeyError:
+                        raise AssertionError("no policy %s" % h.policy_id)
+                except KeyError:
+                    if removing:
                         append((entity, resource))
                         continue
+                    h = Holding(entity=e, resource=resource, flags=0)
+                    p = None
 
-                    try:
-                        h = db_get_holding(entity=entity, resource=resource,
-                                           for_update=True)
-                        p = h.policy
-                    except Holding.DoesNotExist:
-                        if removing:
-                            append((entity, resource))
-                            continue
-                        h = Holding(entity=e, resource=resource, flags=0)
-                        p = None
+                policy = newname('policy_')
+                newp = Policy(policy=policy)
 
-                    policy = newname('policy_')
-                    newp = Policy(policy=policy)
+                newp.quantity = _add(p.quantity if p else 0, quantity,
+                                     invert=removing)
+                newp.capacity = _add(p.capacity if p else 0, capacity,
+                                     invert=removing)
+                newp.import_limit = _add(p.import_limit if p else 0,
+                                         import_limit, invert=removing)
+                newp.export_limit = _add(p.export_limit if p else 0,
+                                         export_limit, invert=removing)
 
-                    newp.quantity = _add(p.quantity if p else 0, quantity,
-                                         invert=removing)
-                    newp.capacity = _add(p.capacity if p else 0, capacity,
-                                         invert=removing)
-                    newp.import_limit = _add(p.import_limit if p else 0,
-                                                  import_limit, invert=removing)
-                    newp.export_limit = _add(p.export_limit if p else 0,
-                                                  export_limit, invert=removing)
+                new_values = [newp.capacity,
+                              newp.import_limit, newp.export_limit]
+                if any(map(_isneg, new_values)):
+                    append((entity, resource))
+                    continue
 
-                    new_values = [newp.capacity,
-                                  newp.import_limit, newp.export_limit]
-                    if any(map(_isneg, new_values)):
-                        append((entity, resource))
-                        continue
+                h.policy = newp
 
-                    h.policy = newp
+                # the order is intentionally reversed so that it
+                # would break if we are not within a transaction.
+                # Has helped before.
+                h.save()
+                newp.save()
+                policies[policy] = newp
+                holdings[(entity, resource)] = h
 
-                    # the order is intentionally reversed so that it
-                    # would break if we are not within a transaction.
-                    # Has helped before.
-                    h.save()
-                    newp.save()
-
-                    if p is not None and p.holding_set.count() == 0:
-                        p.delete()
+        objs = Policy.objects.annotate(refs=Count('holding'))
+        objs.filter(policy__in=old_policies, refs=0).delete()
 
         if rejected:
             raise ReturnButFail(rejected)
@@ -618,12 +666,13 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         return result
 
-    def issue_commission(self,  context     =   {},
-                                clientkey   =   None,
-                                target      =   None,
-                                key         =   None,
-                                name        =   None,
-                                provisions  =   ()  ):
+    def issue_commission(self,
+                         context={},
+                         clientkey=None,
+                         target=None,
+                         key=None,
+                         name=None,
+                         provisions=()):
 
         try:
             t = Entity.objects.get(entity=target)
@@ -683,9 +732,12 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 if current + quantity > limit:
                     m = ("Export limit reached for %s.%s" % (entity, resource))
                     raise ExportLimitError(m,
-                                           source=entity, target=target,
-                                           resource=resource, requested=quantity,
-                                           current=current, limit=limit)
+                                           source=entity,
+                                           target=target,
+                                           resource=resource,
+                                           requested=quantity,
+                                           current=current,
+                                           limit=limit)
 
                 limit = hp.quantity + h.imported - h.releasing
                 unavailable = h.exporting - h.returned
@@ -695,20 +747,26 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                     m = ("There is not enough quantity "
                          "to allocate from in %s.%s" % (entity, resource))
                     raise NoQuantityError(m,
-                                          source=entity, target=target,
-                                          resource=resource, requested=quantity,
-                                          current=unavailable, limit=limit)
+                                          source=entity,
+                                          target=target,
+                                          resource=resource,
+                                          requested=quantity,
+                                          current=unavailable,
+                                          limit=limit)
             else:
                 current = (+ h.importing + h.returning
-                           - h.exported  - h.returned)
+                           - h.exported - h.returned)
                 limit = hp.capacity
                 if current - quantity > limit:
                     m = ("There is not enough capacity "
                          "to release to in %s.%s" % (entity, resource))
                     raise NoQuantityError(m,
-                                          source=entity, target=target,
-                                          resource=resource, requested=quantity,
-                                          current=current, limit=limit)
+                                          source=entity,
+                                          target=target,
+                                          resource=resource,
+                                          requested=quantity,
+                                          current=current,
+                                          limit=limit)
 
             # Target limits checks
             try:
@@ -718,9 +776,12 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 m = ("There is no capacity "
                      "to allocate into in %s.%s" % (target, resource))
                 raise NoCapacityError(m,
-                                      source=entity, target=target,
-                                      resource=resource, requested=quantity,
-                                      current=0, limit=0)
+                                      source=entity,
+                                      target=target,
+                                      resource=resource,
+                                      requested=quantity,
+                                      current=0,
+                                      limit=0)
 
             tp = th.policy
 
@@ -730,20 +791,27 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 if current + quantity > limit:
                     m = ("Import limit reached for %s.%s" % (target, resource))
                     raise ImportLimitError(m,
-                                           source=entity, target=target,
-                                           resource=resource, requested=quantity,
-                                           current=current, limit=limit)
+                                           source=entity,
+                                           target=target,
+                                           resource=resource,
+                                           requested=quantity,
+                                           current=current,
+                                           limit=limit)
 
-                current = (+ th.importing + th.returning
+                limit = tp.quantity + tp.capacity
+                current = (+ th.importing + th.returning + tp.quantity
                            - th.exported - th.released)
 
-                if current + quantity > tp.quantity + tp.capacity:
+                if current + quantity > limit:
                     m = ("There is not enough capacity "
                          "to allocate into in %s.%s" % (target, resource))
                     raise NoCapacityError(m,
-                                          source=entity, target=target,
-                                          resource=resource, requested=quantity,
-                                          current=current, limit=limit)
+                                          source=entity,
+                                          target=target,
+                                          resource=resource,
+                                          requested=quantity,
+                                          current=current,
+                                          limit=limit)
             else:
                 limit = tp.quantity + th.imported - th.releasing
                 unavailable = th.exporting - th.returned
@@ -753,14 +821,17 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                     m = ("There is not enough quantity "
                          "to release from in %s.%s" % (target, resource))
                     raise NoCapacityError(m,
-                                          source=entity, target=target,
-                                          resource=resource, requested=quantity,
-                                          current=unavailable, limit=limit)
+                                          source=entity,
+                                          target=target,
+                                          resource=resource,
+                                          requested=quantity,
+                                          current=unavailable,
+                                          limit=limit)
 
-            Provision.objects.create(   serial      =   commission,
-                                        entity      =   e,
-                                        resource    =   resource,
-                                        quantity    =   quantity   )
+            Provision.objects.create(serial=commission,
+                                     entity=e,
+                                     resource=resource,
+                                     quantity=quantity)
             if release:
                 h.returning -= quantity
                 th.releasing -= quantity
@@ -773,43 +844,48 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         return serial
 
-    def _log_provision(self, commission, s_holding, t_holding,
-                             provision, log_time, reason):
+    def _log_provision(self,
+                       commission, s_holding, t_holding,
+                       provision, log_time, reason):
 
         s_entity = s_holding.entity
         s_policy = s_holding.policy
         t_entity = t_holding.entity
         t_policy = t_holding.policy
 
-        ProvisionLog.objects.create(
-                        serial              =   commission.serial,
-                        name                =   commission.name,
-                        source              =   s_entity.entity,
-                        target              =   t_entity.entity,
-                        resource            =   provision.resource,
-                        source_quantity     =   s_policy.quantity,
-                        source_capacity     =   s_policy.capacity,
-                        source_import_limit =   s_policy.import_limit,
-                        source_export_limit =   s_policy.export_limit,
-                        source_imported     =   s_holding.imported,
-                        source_exported     =   s_holding.exported,
-                        source_returned     =   s_holding.returned,
-                        source_released     =   s_holding.released,
-                        target_quantity     =   t_policy.quantity,
-                        target_capacity     =   t_policy.capacity,
-                        target_import_limit =   t_policy.import_limit,
-                        target_export_limit =   t_policy.export_limit,
-                        target_imported     =   t_holding.imported,
-                        target_exported     =   t_holding.exported,
-                        target_returned     =   t_holding.returned,
-                        target_released     =   t_holding.released,
-                        delta_quantity      =   provision.quantity,
-                        issue_time          =   commission.issue_time,
-                        log_time            =   log_time,
-                        reason              =   reason)
+        kwargs = {
+            'serial':              commission.serial,
+            'name':                commission.name,
+            'source':              s_entity.entity,
+            'target':              t_entity.entity,
+            'resource':            provision.resource,
+            'source_quantity':     s_policy.quantity,
+            'source_capacity':     s_policy.capacity,
+            'source_import_limit': s_policy.import_limit,
+            'source_export_limit': s_policy.export_limit,
+            'source_imported':     s_holding.imported,
+            'source_exported':     s_holding.exported,
+            'source_returned':     s_holding.returned,
+            'source_released':     s_holding.released,
+            'target_quantity':     t_policy.quantity,
+            'target_capacity':     t_policy.capacity,
+            'target_import_limit': t_policy.import_limit,
+            'target_export_limit': t_policy.export_limit,
+            'target_imported':     t_holding.imported,
+            'target_exported':     t_holding.exported,
+            'target_returned':     t_holding.returned,
+            'target_released':     t_holding.released,
+            'delta_quantity':      provision.quantity,
+            'issue_time':          commission.issue_time,
+            'log_time':            log_time,
+            'reason':              reason,
+        }
 
-    def accept_commission(self, context={}, clientkey=None,
-                                serials=(), reason=''):
+        ProvisionLog.objects.create(**kwargs)
+
+    def accept_commission(self,
+                          context={}, clientkey=None,
+                          serials=(), reason=''):
         log_time = now()
 
         for serial in serials:
@@ -853,8 +929,9 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         return
 
-    def reject_commission(self, context={}, clientkey=None,
-                                serials=(), reason=''):
+    def reject_commission(self,
+                          context={}, clientkey=None,
+                          serials=(), reason=''):
         log_time = now()
 
         for serial in serials:
@@ -899,14 +976,16 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         return
 
     def get_pending_commissions(self, context={}, clientkey=None):
-        pending = Commission.objects.filter(clientkey=clientkey)\
-                                    .values_list('serial', flat=True)
-        return pending
+        pending = Commission.objects.filter(clientkey=clientkey)
+        pending_list = pending.values_list('serial', flat=True)
+        return pending_list
 
-    def resolve_pending_commissions(self,   context={}, clientkey=None,
-                                            max_serial=None, accept_set=()  ):
+    def resolve_pending_commissions(self,
+                                    context={}, clientkey=None,
+                                    max_serial=None, accept_set=()):
         accept_set = set(accept_set)
-        pending = self.get_pending_commissions(context=context, clientkey=clientkey)
+        pending = self.get_pending_commissions(context=context,
+                                               clientkey=clientkey)
         pending = sorted(pending)
 
         accept = self.accept_commission
@@ -969,15 +1048,15 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         append = timeline.append
         filterlogs = ProvisionLog.objects.filter
         if entity_set:
-            q_entity = Q(source__in = entity_set) | Q(target__in = entity_set)
+            q_entity = Q(source__in=entity_set) | Q(target__in=entity_set)
         else:
             q_entity = Q()
 
         while 1:
-            logs = filterlogs(  q_entity,
-                                issue_time__gt      =   after,
-                                issue_time__lte     =   before,
-                                reason__startswith  =   'ACCEPT:'   )
+            logs = filterlogs(q_entity,
+                              issue_time__gt=after,
+                              issue_time__lte=before,
+                              reason__startswith='ACCEPT:')
 
             logs = logs.order_by('issue_time')
             #logs = logs.values()
@@ -988,30 +1067,30 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             for g in logs:
                 if ((g.source, g.resource) not in resource_set
                     or (g.target, g.resource) not in resource_set):
-                        continue
+                    continue
 
                 o = {
-                    'serial'                    :   g.serial,
-                    'source'                    :   g.source,
-                    'target'                    :   g.target,
-                    'resource'                  :   g.resource,
-                    'name'                      :   g.name,
-                    'quantity'                  :   g.delta_quantity,
-                    'source_allocated'          :   g.source_allocated(),
-                    'source_allocated_through'  :   g.source_allocated_through(),
-                    'source_inbound'            :   g.source_inbound(),
-                    'source_inbound_through'    :   g.source_inbound_through(),
-                    'source_outbound'           :   g.source_outbound(),
-                    'source_outbound_through'   :   g.source_outbound_through(),
-                    'target_allocated'          :   g.target_allocated(),
-                    'target_allocated_through'  :   g.target_allocated_through(),
-                    'target_inbound'            :   g.target_inbound(),
-                    'target_inbound_through'    :   g.target_inbound_through(),
-                    'target_outbound'           :   g.target_outbound(),
-                    'target_outbound_through'   :   g.target_outbound_through(),
-                    'issue_time'                :   g.issue_time,
-                    'log_time'                  :   g.log_time,
-                    'reason'                    :   g.reason,
+                    'serial':                   g.serial,
+                    'source':                   g.source,
+                    'target':                   g.target,
+                    'resource':                 g.resource,
+                    'name':                     g.name,
+                    'quantity':                 g.delta_quantity,
+                    'source_allocated':         g.source_allocated(),
+                    'source_allocated_through': g.source_allocated_through(),
+                    'source_inbound':           g.source_inbound(),
+                    'source_inbound_through':   g.source_inbound_through(),
+                    'source_outbound':          g.source_outbound(),
+                    'source_outbound_through':  g.source_outbound_through(),
+                    'target_allocated':         g.target_allocated(),
+                    'target_allocated_through': g.target_allocated_through(),
+                    'target_inbound':           g.target_inbound(),
+                    'target_inbound_through':   g.target_inbound_through(),
+                    'target_outbound':          g.target_outbound(),
+                    'target_outbound_through':  g.target_outbound_through(),
+                    'issue_time':               g.issue_time,
+                    'log_time':                 g.log_time,
+                    'reason':                   g.reason,
                 }
 
                 append(o)
@@ -1022,15 +1101,18 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         return timeline
 
+
 def _add(x, y, invert=False):
     return x + y if not invert else x - y
+
 
 def _update(dest, source, attr, delta):
     dest_attr = getattr(dest, attr)
     dest_attr = _add(getattr(source, attr, 0), delta)
 
+
 def _isneg(x):
     return x < 0
 
-API_Callpoint = QuotaholderDjangoDBCallpoint
 
+API_Callpoint = QuotaholderDjangoDBCallpoint

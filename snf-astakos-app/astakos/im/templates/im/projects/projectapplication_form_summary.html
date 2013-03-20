@@ -46,11 +46,11 @@
 		 
 		 <div class="full-dotted">
 			<h3>RESOURCES</h3>
-			<p>The following ~okeanos resources will be granted to each member of this Project:</p>
+			<p>The following resources will be granted to each member of this Project:</p>
 		 	<dl class="alt-style">
 		 	    {% for rp in form.resource_policies %}
 		 		    <dt>
-           				Max {% if rp.is_abbreviation %}{{ rp.verbose_name|upper }}{% else %}{{ rp.verbose_name }}{% endif %}{% if not rp.unit %}s {% endif  %}  per user
+                        {{rp.pluralized_display_name}} per user
            			</dt>
 			 		<dd>
 			 			
@@ -79,9 +79,10 @@
 		<div class="form-row submit">
             <input type="submit" value="BACK" class="submit lt"  onclick='this.form.action="?edit=1&verify=0";'>
             <input type="submit" value="SUBMIT" class="submit" >
+            <a href="{% url project_add %}" class="rt-link">CANCEL</a>
         </div>
 	</form>
-    <a href="{% url project_add %}" class="blue">CANCEL</a>
+    
     
 </div>
 	 

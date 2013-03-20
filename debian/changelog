@@ -1,3 +1,69 @@
+synnefo (0.13~rc12-1) stable; urgency=low
+
+  * New upstream version
+
+ -- Christos Stavrakakis <cstavr@grnet.gr>  Wed, 13 Mar 2013 16:48:18 +0200
+
+synnefo (0.13~rc11-1) stable; urgency=low
+
+  * New upstream version
+
+ -- Christos Stavrakakis <cstavr@grnet.gr>  Tue, 12 Mar 2013 17:38:13 +0200
+
+synnefo (0.13~rc10-1) stable; urgency=low
+
+  * Yet another release candidate
+
+ -- Christos Stavrakakis <cstavr@grnet.gr>  Mon, 11 Mar 2013 18:39:51 +0200
+
+synnefo (0.13~rc9-1) stable; urgency=low
+
+  * New upstream version
+
+ -- Christos Stavrakakis <cstavr@grnet.gr>  Fri, 08 Mar 2013 16:26:10 +0200
+
+synnefo (0.13~rc8-1) stable; urgency=low
+
+  * New upstream version
+
+ -- Christos Stavrakakis <cstavr@grnet.gr>  Fri, 08 Mar 2013 14:26:39 +0200
+
+synnefo (0.13~rc7-1) stable; urgency=low
+
+  * New upstream version
+
+ -- Christos Stavrakakis <cstavr@grnet.gr>  Thu, 07 Mar 2013 17:01:43 +0200
+
+synnefo (0.13~rc6-1) stable; urgency=low
+
+  * New upstream version
+
+ -- Christos Stavrakakis <cstavr@grnet.gr>  Thu, 28 Feb 2013 19:42:04 +0200
+
+synnefo (0.13~rc5-1) stable; urgency=low
+
+  * New upstream version
+
+ -- Christos Stavrakakis <cstavr@grnet.gr>  Thu, 28 Feb 2013 14:02:07 +0200
+
+synnefo (0.13~rc3-1) stable; urgency=low
+
+  * New upstream version
+
+ -- Christos Stavrakakis <cstavr@grnet.gr>  Tue, 19 Feb 2013 14:16:03 +0200
+
+synnefo (0.13~rc2-1) stable; urgency=low
+
+  * New upstream version
+
+ -- Christos Stavrakakis <cstavr@grnet.gr>  Mon, 18 Feb 2013 12:00:03 +0200
+
+synnefo (0.13~rc1-1) stable; urgency=low
+
+  * New upstream version
+
+ -- Christos Stavrakakis <cstavr@grnet.gr>  Thu, 14 Feb 2013 18:24:07 +0200
+
 synnefo (0.12.5-1) stable; urgency=low
 
   [ Vangelis Koukis ]

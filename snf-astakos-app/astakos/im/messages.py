@@ -33,43 +33,42 @@
 
 from django.conf import settings
 
-ACCOUNT_AUTHENTICATION_FAILED           =   'Authenticate with this account failed.'
+ACCOUNT_AUTHENTICATION_FAILED           =   'Authentication with this account failed.'
 ACCOUNT_ALREADY_ACTIVE                  =   'This account is already active.'
 ACCOUNT_PENDING_ACTIVATION              =   'Your account request is pending activation.'
 ACCOUNT_PENDING_MODERATION              =   'Your account request is pending moderation.'
 ACCOUNT_INACTIVE                        =   'Your account is disabled.'
+ACCOUNT_NOT_ACTIVE                      =   'User account is not active.'
 ACCOUNT_RESEND_ACTIVATION               =   'It seems that an activation email has been sent to you, but you have not followed the activation link. <a href="%(send_activation_url)s">Resend activation email.</a>'
 INACTIVE_ACCOUNT_CHANGE_EMAIL           =   ''.join([ACCOUNT_RESEND_ACTIVATION, ' Or <a href="%(signup_url)s">Send activation to a new email.</a>'])
 
 ACCOUNT_PENDING_ACTIVATION_HELP         =   'An activation email has been sent to you. Make sure you check your spam folder, too.'
 
 ACCOUNT_ACTIVATED                       =   'Congratulations. Your account has' + \
-                                            ' been activated and you have been' + \
-                                            ' automatically signed in.'
+                                            ' been activated. You are now logged in.'
 PASSWORD_RESET_DONE                     =   'An email with details on how to change your password has been sent. Please check your Inbox.'
 PASSWORD_RESET_CONFIRM_DONE             =   'Your password has changed successfully. You can now login using your new password.'
+PASSWORD_CHANGED                        =   'Your new password was set successfully.'
 
 ACCOUNT_RESEND_ACTIVATION_PROMPT        =   'Resend activation email'
 ACCOUNT_USER_ACTIVATION_PENDING         =   'You have not followed the activation link'
 
 ACCOUNT_UNKNOWN                         =   'It seems there is no account with those .'
-TOKEN_UNKNOWN                           =   'There is no user matching this token.'
+TOKEN_UNKNOWN                           =   'There is no user matching this authentication token.'
+TOKEN_UPDATED                           =   'Your authentication token has been updated successfully.'
 
 PROFILE_UPDATED                         =   'Your profile has been updated successfully.'
-FEEDBACK_SENT                           =   'Thank you for your feedback. We will process it carefully.'
+FEEDBACK_SENT                           =   'Thank you for contacting us. We will process your message carefully and get back to you.'
 EMAIL_CHANGED                           =   'The email of your account changed successfully.'
-EMAIL_CHANGE_REGISTERED                 =   'Your request for changing your email has been registered succefully. \
-                                               A verification email at your new address is going to be sent.'
+EMAIL_CHANGE_REGISTERED                 =   'Your request for changing your email has been registered successfully. \
+                                               A verification email will be sent to your new address.'
 
 OBJECT_CREATED                          =   'The %(verbose_name)s was created successfully.'
-USER_JOINED_GROUP                       =   'User %(realname)s joined the project.'
-USER_LEFT_GROUP                         =   'User %(realname)s left the project.'
-USER_MEMBERSHIP_REJECTED                =   'User\'s %(realname)s request to join the project has been rejected.'
-MEMBER_REMOVED                          =   'User %(realname)s has been successfully removed from the project.'
+USER_MEMBERSHIP_REJECTED                =   'Request by %s to join the project has been rejected.'
 BILLING_ERROR                           =   'Service response status: %(status)d'
-LOGOUT_SUCCESS                          =   'Logged out from ~okeanos.'
-LOGIN_SUCCESS                           =   'You are logged in to ~okeanos with your %s account.'
-LOCAL_LOGIN_SUCCESS                     =   'You are logged in to your ~okeanos account.'
+LOGOUT_SUCCESS                          =   'Logged out successfully.'
+LOGIN_SUCCESS                           =   'Logged in successfully, using %s.'
+LOCAL_LOGIN_SUCCESS                     =   'Logged in successfully.'
 
 GENERIC_ERROR                           =   'Hmm... It seems something bad has happened, and we don\'t know the details right now. \
                                                Please contact the administrators by email for more details.'
@@ -79,7 +78,7 @@ GROUP_MAX_PARTICIPANT_NUMBER_REACHED    =   'This Group reached its maximum numb
 PROJECT_MAX_PARTICIPANT_NUMBER_REACHED  =   'This Project reached its maximum number of members. No other member can be added.'
 NO_APPROVAL_TERMS                       =   'There are no terms of service to approve.'
 PENDING_EMAIL_CHANGE_REQUEST            =   'It seems there is already a pending request for an email change. ' + \
-                                            'Submiting a new request to change your email will cancel all previous requests.'
+                                            'Submitting a new request to change your email will cancel all previous requests.'
 OBJECT_CREATED_FAILED                   =   'The %(verbose_name)s creation failed: %(reason)s.'
 GROUP_JOIN_FAILURE                      =   'Failed to join this Group.'
 PROJECT_JOIN_FAILURE                    =   'Failed to join this Project.'
@@ -90,27 +89,27 @@ OWNER_CANNOT_LEAVE_GROUP                =   'You are the owner of this Project. 
 
 # Field validation fields
 REQUIRED_FIELD                          =   'This field is required.'
-EMAIL_USED                              =   'The email address you provided is already in use. Please provide a different email address.'
+EMAIL_USED                              =   'There is already an account with this email address.'
 SHIBBOLETH_EMAIL_USED                   =   'This email is already associated with another shibboleth account.'
 SHIBBOLETH_INACTIVE_ACC                 =   'This email is already associated with an account that is not yet activated. \
                                                If that is your account, you need to activate it before being able to \
                                                associate it with this shibboleth account.'
-SHIBBOLETH_MISSING_EPPN = 'Your request is missing a unique ' + \
-                          'token. This means your academic ' + \
-                          'institution does not yet allow its users to log ' + \
-                          'into %(domain)s with their academic ' + \
-                          'credentials. Please contact %(contact_email)s' + \
-                          ' for more information.'
+SHIBBOLETH_MISSING_EPPN                 =   'Your request is missing a unique ' + \
+                                            'token. This means your academic ' + \
+                                            'institution does not yet allow its users to log ' + \
+                                            'into %(domain)s with their academic ' + \
+                                            'account. Please contact %(contact_email)s' + \
+                                            ' for more information.'
 SHIBBOLETH_MISSING_NAME                 =   'This request is missing the user name.'
 
 SIGN_TERMS                              =   'Please, you need to \'Agree with the terms\' before proceeding.'
 CAPTCHA_VALIDATION_ERR                  =   'You have not entered the correct words. Please try again.'
-SUSPENDED_LOCAL_ACC                     =   'You can not login with your local credentials. This account does not have a local password. \
+SUSPENDED_LOCAL_ACC                     =   'This account does not have a local password. \
                                                Please try logging in using an external login provider (e.g.: twitter)'
-UNUSABLE_PASSWORD                       =   'You can not use a local password for this account. Only external login providers are enabled.'
+UNUSABLE_PASSWORD                       =   '%s is not enabled for your account. You can may access your account by logging in with %s.'
 EMAIL_UNKNOWN                           =   'This email address doesn\'t have an associated user account. \
                                                Please make sure you have registered, before proceeding.'
-INVITATION_EMAIL_EXISTS                 =   'There is already invitation for this email.'
+INVITATION_EMAIL_EXISTS                 =   'An invitation has already been sent to this email.'
 INVITATION_CONSUMED_ERR                 =   'Invitation is used.'
 UNKNOWN_USERS                           =   'Unknown users: %s'
 UNIQUE_EMAIL_IS_ACTIVE_CONSTRAIN_ERR    =   'More than one account with the same email & \'is_active\' field. Error.'
@@ -126,7 +125,6 @@ SWITCH_ACCOUNT_SUCCESS                  =   'Account successfully switched to %(
 ADD_GROUP_MEMBERS_Q_HELP                =   'Add a comma separated list of user emails, eg. user1@user.com, user2@user.com'
 ASTAKOSUSER_GROUPS_HELP                 =   'In addition to the permissions assigned manually, \
                                                this user will also get all permissions coming from his/her groups.'
-EMAIL_CHANGE_NEW_ADDR_HELP              =   'Your old email address will be used, until you verify your new one.'
 
 EMAIL_SEND_ERR                          =   'Failed to send %s.'
 ADMIN_NOTIFICATION_SEND_ERR             =   EMAIL_SEND_ERR % 'admin notification'
@@ -169,11 +167,12 @@ MEMBER_NUMBER_LIMIT_REACHED             =   'You have reached the maximum number
 MEMBER_JOIN_POLICY_CLOSED               =   'The Project\'s member join policy is closed.'
 MEMBER_LEAVE_POLICY_CLOSED              =   'The project\'s member leave policy is closed.'
 NOT_MEMBERSHIP_REQUEST                  =   'This is not a valid membership request.'
+NOT_ACCEPTED_MEMBERSHIP                 =   'This is not an accepted membership.'
 MEMBERSHIP_REQUEST_EXISTS               =   'The membership request already exists.'
-NO_APPLICANT                            =   'Project application requires an applicant. None found.'
-INVALID_PROJECT_START_DATE              =   'Project start date should be equal or greater than the current date'
-INVALID_PROJECT_END_DATE                =   'Project end date should be equal or greater than than the current date'
-INCONSISTENT_PROJECT_DATES              =   'Project end date should be greater than the project start date'
+NO_APPLICANT                            =   'Project application requires at least one applicant. None found.'
+INVALID_PROJECT_START_DATE              =   'Project start date should be equal or greater than the current date.'
+INVALID_PROJECT_END_DATE                =   'Project end date should be equal or greater than than the current date.'
+INCONSISTENT_PROJECT_DATES              =   'Project end date should be greater than the project start date.'
 ADD_PROJECT_MEMBERS_Q_HELP              =   'Add a comma separated list of user emails, eg. user1@user.com, user2@user.com'
 MISSING_IDENTIFIER                      =   'Missing identifier.'
 UNKNOWN_USER_ID                         =   'There is no user identified by %s.'
@@ -181,25 +180,52 @@ UNKNOWN_PROJECT_APPLICATION_ID          =   'There is no project application ide
 UNKNOWN_PROJECT_ID                      =   'There is no project identified by %s.'
 UNKNOWN_IDENTIFIER                      =   'Unknown identifier.'
 PENDING_MEMBERSHIP_LEAVE                =   'Your request is pending moderation by the Project owner.'
-USER_JOINED_PROJECT                     =   '%(realname)s has joined the Project.'
-USER_LEFT_PROJECT                       =   '%(realname)s has left the Project.'
-USER_JOIN_REQUEST_SUBMITED              =   'Join request submitted.'
+USER_MEMBERSHIP_ACCEPTED                =   '%s has been accepted in the project.'
+USER_MEMBERSHIP_REMOVED                 =   '%s has been removed from the project.'
+USER_LEFT_PROJECT                       =   'You have left the project.'
+USER_LEAVE_REQUEST_SUBMITTED            =   'Your request to leave the project has been submitted successfully.'
+USER_JOIN_REQUEST_SUBMITTED             =   'Your request to join the project has been submitted successfully.'
+USER_JOINED_PROJECT                     =   'You have joined the project.'
+USER_REQUEST_CANCELLED                  =   'Your request to join the project has been cancelled.'
+
+APPLICATION_CANNOT_APPROVE              =   "Cannot approve application %s in state '%s'"
+APPLICATION_CANNOT_DENY                 =   "Cannot deny application %s in state '%s'"
+APPLICATION_CANNOT_DISMISS              =   "Cannot dismiss application %s in state '%s'"
+APPLICATION_CANNOT_CANCEL               =   "Cannot cancel application %s in state '%s'"
+APPLICATION_CANCELLED                   =   "Your project application has been cancelled."
+
+REACHED_PENDING_APPLICATION_LIMIT = ("You have reached the maximum number "
+                                     "of pending project applications: %s.")
+
+PENDING_APPLICATION_LIMIT_ADD = \
+    ("You are not allowed to create a new project "
+     "because you have reached the maximum [%s] for "
+     "pending project applications. "
+     "Consider cancelling any unnecessary ones.")
+
+PENDING_APPLICATION_LIMIT_MODIFY = \
+    ("You are not allowed to modify this project "
+     "because you have reached the maximum [%s] for "
+     "pending project applications. "
+     "Consider cancelling any unnecessary ones.")
 
 # Auth providers messages
 AUTH_PROVIDER_NOT_ACTIVE                     =   "'%(provider)s' is disabled."
 AUTH_PROVIDER_NOT_ACTIVE_FOR_LOGIN           =   "Login using '%(provider)s' is disabled."
 AUTH_PROVIDER_NOT_ACTIVE_FOR_USER            =   "You cannot login using '%(provider)s'."
-AUTH_PROVIDER_NOT_ACTIVE_FOR_CREATE          =   "Signup using '%(provider)s' is disabled."
+AUTH_PROVIDER_NOT_ACTIVE_FOR_CREATE          =   "Sign up using '%(provider)s' is disabled."
 AUTH_PROVIDER_NOT_ACTIVE_FOR_ADD             =   "You cannot add %(provider)s login method."
-AUTH_PROVIDER_ADDED                          =   "New login method added."
+AUTH_PROVIDER_ADDED                          =   "%s enabled for this account."
+AUTH_PROVIDER_REMOVED                        =   "%s removed for this account."
 AUTH_PROVIDER_ADD_FAILED                     =   "Failed to add new login method."
-AUTH_PROVIDER_ADD_EXISTS                     =   "Account already assigned to another user."
+AUTH_PROVIDER_ADD_EXISTS                     =   "It seems that this account is already assigned to another user."
 AUTH_PROVIDER_LOGIN_TO_ADD                   =   "The new login method will be assigned once you login to your account."
 AUTH_PROVIDER_INVALID_LOGIN                  =   "No account exists."
 AUTH_PROVIDER_REQUIRED                       =   "%(provider)s login method is required. Add one from your profile page."
 AUTH_PROVIDER_CANNOT_CHANGE_PASSWORD         =   "Changing password is not supported."
+AUTH_PROVIDER_SIGNUP_FROM_LOGIN              =   None
 
-EXISTING_EMAIL_THIRD_PARTY_NOTIFICATION      =   "You can add '%s' login method to your existing account from your " \
+EXISTING_EMAIL_THIRD_PARTY_NOTIFICATION      =   "You can add the '%s' login method to your existing account from your " \
                                                  " <a href='%s'>profile page</a>"
 
 messages = locals().keys()

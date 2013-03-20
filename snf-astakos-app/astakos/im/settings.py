@@ -4,21 +4,6 @@ from django.conf import settings
 # to be this many hours after their creation time.
 AUTH_TOKEN_DURATION = getattr(settings, 'ASTAKOS_AUTH_TOKEN_DURATION', 30 * 24)
 
-# OAuth2 Twitter credentials.
-TWITTER_TOKEN = getattr(settings, 'ASTAKOS_TWITTER_TOKEN', '')
-TWITTER_SECRET = getattr(settings, 'ASTAKOS_TWITTER_SECRET', '')
-TWITTER_AUTH_FORCE_LOGIN = getattr(settings, 'ASTAKOS_TWITTER_AUTH_FORCE_LOGIN',
-                                  False)
-
-
-# OAuth2 Google credentials.
-GOOGLE_CLIENT_ID = getattr(settings, 'ASTAKOS_GOOGLE_CLIENT_ID', '')
-GOOGLE_SECRET = getattr(settings, 'ASTAKOS_GOOGLE_SECRET', '')
-
-# OAuth2 LinkedIn credentials.
-LINKEDIN_TOKEN = getattr(settings, 'ASTAKOS_LINKEDIN_TOKEN', '')
-LINKEDIN_SECRET = getattr(settings, 'ASTAKOS_LINKEDIN_SECRET', '')
-
 DEFAULT_USER_LEVEL = getattr(settings, 'ASTAKOS_DEFAULT_USER_LEVEL', 4)
 
 INVITATIONS_PER_LEVEL = getattr(settings, 'ASTAKOS_INVITATIONS_PER_LEVEL', {
@@ -31,7 +16,7 @@ INVITATIONS_PER_LEVEL = getattr(settings, 'ASTAKOS_INVITATIONS_PER_LEVEL', {
 
 # Address to use for outgoing emails
 DEFAULT_CONTACT_EMAIL = getattr(
-    settings, 'ASTAKOS_DEFAULT_CONTACT_EMAIL', 'support@cloud.grnet.gr')
+    settings, 'ASTAKOS_DEFAULT_CONTACT_EMAIL', 'support@example.synnefo.org')
 
 SERVER_EMAIL = getattr(settings, 'SERVER_EMAIL', None)
 ADMINS = getattr(settings, 'ADMINS', None)
@@ -56,10 +41,10 @@ IM_STATIC_URL = getattr(settings, 'ASTAKOS_IM_STATIC_URL', '/static/im/')
 MODERATION_ENABLED = getattr(settings, 'ASTAKOS_MODERATION_ENABLED', True)
 
 # Set baseurl
-BASEURL = getattr(settings, 'ASTAKOS_BASEURL', 'http://pithos.dev.grnet.gr')
+BASEURL = getattr(settings, 'ASTAKOS_BASEURL', 'https://accounts.example.synnefo.org')
 
 # Set service name
-SITENAME = getattr(settings, 'ASTAKOS_SITENAME', 'GRNET Cloud')
+SITENAME = getattr(settings, 'ASTAKOS_SITENAME', 'Synnefo Cloud')
 
 # Set recaptcha keys
 RECAPTCHA_PUBLIC_KEY = getattr(settings, 'ASTAKOS_RECAPTCHA_PUBLIC_KEY', '')
@@ -161,52 +146,69 @@ PROJECT_SUSPENSION_SUBJECT = getattr(
 PROJECT_MEMBERSHIP_CHANGE_SUBJECT = getattr(
     settings, 'ASTAKOS_PROJECT_MEMBERSHIP_CHANGE_SUBJECT',
     '%s alpha2 testing project membership changed (%%(name)s)' % SITENAME)
+PROJECT_MEMBERSHIP_ENROLL_SUBJECT = getattr(
+    settings, 'ASTAKOS_PROJECT_MEMBERSHIP_ENROLL_SUBJECT',
+    '%s alpha2 testing project enrollment (%%(name)s)' % SITENAME)
+PROJECT_MEMBERSHIP_REQUEST_SUBJECT = getattr(
+    settings, 'ASTAKOS_PROJECT_MEMBERSHIP_REQUEST_SUBJECT',
+    '%s alpha2 testing project membership request (%%(name)s)' % SITENAME)
+PROJECT_MEMBERSHIP_LEAVE_REQUEST_SUBJECT = getattr(
+    settings, 'ASTAKOS_PROJECT_MEMBERSHIP_LEAVE_REQUEST_SUBJECT',
+    '%s alpha2 testing project membership leave request (%%(name)s)' % SITENAME)
 
 # Set the quota holder component URI
 QUOTAHOLDER_URL = getattr(settings, 'ASTAKOS_QUOTAHOLDER_URL', '')
 QUOTAHOLDER_TOKEN = getattr(settings, 'ASTAKOS_QUOTAHOLDER_TOKEN', '')
+QUOTAHOLDER_POOLSIZE = getattr(settings, 'ASTAKOS_QUOTAHOLDER_POOLSIZE', 50)
 
 # Set the cloud service properties
 SERVICES = getattr(settings, 'ASTAKOS_SERVICES', {
     'cyclades': {
-        'url': 'https://node1.example.com/ui/',
+#        # Specifying the key 'url' will overwrite it.
+#        # Use this to (re)set service URL.
+#        'url': 'https://cyclades.example.synnefo.org/ui/',
+#        # order services in listings, cloudbar, etc.
+#        'order' : 1
         'resources': [{
-            'name':'disk',
-            'group':'compute',
-            'uplimit':30*1024*1024*1024,
-            'unit':'bytes',
+            'name': 'disk',
+            'group': 'compute',
+            'uplimit': 30*1024*1024*1024,
+            'unit': 'bytes',
             'desc': 'Virtual machine disk size'
-            },{
-            'name':'cpu',
-            'group':'compute',
-            'uplimit':6,
+            }, {
+            'name': 'cpu',
+            'group': 'compute',
+            'uplimit': 6,
             'desc': 'Number of virtual machine processors'
-            },{
-            'name':'ram',
-            'group':'compute',
-            'uplimit':6*1024*1024*1024,
-            'unit':'bytes',
+            }, {
+            'name': 'ram',
+            'group': 'compute',
+            'uplimit': 6*1024*1024*1024,
+            'unit': 'bytes',
             'desc': 'Virtual machines'
-            },{
-            'name':'vm',
-            'group':'compute',
-            'uplimit':2,
+            }, {
+            'name': 'vm',
+            'group': 'compute',
+            'uplimit': 2,
             'desc': 'Number of virtual machines'
-            },{
-            'name':'network.private',
-            'group':'network',
-            'uplimit':1,
+            }, {
+            'name': 'network.private',
+            'group': 'network',
+            'uplimit': 1,
             'desc': 'Private networks'
             }
         ]
     },
     'pithos+': {
-        'url': 'https://node2.example.com/ui/',
+#        # Use this to (re)set service URL.
+#        'url': 'https://pithos.example.synnefo.org/ui/',
+#        # order services in listings, cloudbar, etc.
+#        'order' : 2
         'resources':[{
-            'name':'diskspace',
-            'group':'storage',
-            'uplimit':5 * 1024 * 1024 * 1024,
-            'unit':'bytes',
+            'name': 'diskspace',
+            'group': 'storage',
+            'uplimit': 5*1024*1024*1024,
+            'unit': 'bytes',
             'desc': 'Pithos account diskspace'
             }]
     }
@@ -218,7 +220,7 @@ AQUARIUM_URL = getattr(settings, 'ASTAKOS_AQUARIUM_URL', '')
 # Set how many objects should be displayed per page
 PAGINATE_BY = getattr(settings, 'ASTAKOS_PAGINATE_BY', 8)
 
-# Set how many objects should be displayed per page in show all groups page
+# Set how many objects should be displayed per page in show all projects page
 PAGINATE_BY_ALL = getattr(settings, 'ASTAKOS_PAGINATE_BY_ALL', 15)
 
 # Enforce token renewal on password change/reset
@@ -243,7 +245,7 @@ RESOURCES_PRESENTATION_DATA = getattr(
                  'verbose_name':'storage',
             },
             'network': {
-                'help_text':' Network resources (amount of Private Networks)  ',
+                'help_text':' Network resources (number of Private Networks)  ',
                 'is_abbreviation':False,
                 'report_desc':'',
                 'verbose_name':'network',
@@ -299,7 +301,12 @@ RESOURCES_PRESENTATION_DATA = getattr(
                 'verbose_name':'private network'
             }
 
-        }
+        },
+
+        'groups_order': ['storage', 'compute', 'network'],
+        'resources_order': ['pithos+.diskspace', 'cyclades.disk',
+                            'cyclades.cpu', 'cyclades.ram', 'cyclades.vm',
+                            'cyclades.network.private']
 
     })
 
@@ -322,3 +329,39 @@ PROJECT_MEMBER_LEAVE_POLICIES = getattr(settings,
                                 {'1':'automatically accepted',
                                  '2':'owner accepts',
                                  '3':'closed'})
+
+ACTIVATION_REDIRECT_URL = getattr(settings,
+                                  'ASTAKOS_ACTIVATION_REDIRECT_URL',
+                                  "/im/landing")
+
+# If true, this enables a ui compatibility layer for the introduction of UUIDs
+# in identity management. WARNING: Setting to True will break your installation.
+TRANSLATE_UUIDS = getattr(settings, 'ASTAKOS_TRANSLATE_UUIDS', False)
+
+# Users that can approve or deny project applications from the web.
+PROJECT_ADMINS = getattr(settings, 'ASTAKOS_PROJECT_ADMINS', set())
+
+# Maximum pending project applications per applicant.
+# This is to reduce the volume of applications
+# in case users abuse the mechanism.
+PENDING_APPLICATION_LIMIT = getattr(settings,
+                                    'ASTAKOS_PENDING_APPLICATION_LIMIT', 1)
+
+# OAuth2 Twitter credentials.
+TWITTER_TOKEN = getattr(settings, 'ASTAKOS_TWITTER_TOKEN', '')
+TWITTER_SECRET = getattr(settings, 'ASTAKOS_TWITTER_SECRET', '')
+TWITTER_AUTH_FORCE_LOGIN = getattr(settings, 'ASTAKOS_TWITTER_AUTH_FORCE_LOGIN',
+                                  False)
+
+# OAuth2 Google credentials.
+GOOGLE_CLIENT_ID = getattr(settings, 'ASTAKOS_GOOGLE_CLIENT_ID', '')
+GOOGLE_SECRET = getattr(settings, 'ASTAKOS_GOOGLE_SECRET', '')
+
+# OAuth2 LinkedIn credentials.
+LINKEDIN_TOKEN = getattr(settings, 'ASTAKOS_LINKEDIN_TOKEN', '')
+LINKEDIN_SECRET = getattr(settings, 'ASTAKOS_LINKEDIN_SECRET', '')
+
+# Where to redirect the user after successful login when no next parameter is
+# set
+LOGIN_SUCCESS_URL = getattr(settings, 'ASTAKOS_LOGIN_SUCCESS_URL',
+                            '/im/landing')

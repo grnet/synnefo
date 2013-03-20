@@ -57,7 +57,8 @@ server_created = dispatch.Signal(providing_args=["created_vm_params"])
 from logging import getLogger
 log = getLogger('synnefo.api')
 
-urlpatterns = patterns('synnefo.api.servers',
+urlpatterns = patterns(
+    'synnefo.api.servers',
     (r'^(?:/|.json|.xml)?$', 'demux'),
     (r'^/detail(?:.json|.xml)?$', 'list_servers', {'detail': True}),
     (r'^/(\d+)(?:.json|.xml)?$', 'server_demux'),
@@ -128,7 +129,7 @@ def vm_to_dict(vm, detail=False):
     if detail:
         d['status'] = get_rsapi_state(vm)
         d['progress'] = 100 if get_rsapi_state(vm) == 'ACTIVE' \
-                        else vm.buildpercentage
+            else vm.buildpercentage
         d['hostId'] = vm.hostid
         d['updated'] = util.isoformat(vm.updated)
         d['created'] = util.isoformat(vm.created)
@@ -229,7 +230,7 @@ def list_servers(request, detail=False):
     else:
         user_vms = user_vms.filter(deleted=False)
 
-    servers = [vm_to_dict(server, detail)\
+    servers = [vm_to_dict(server, detail)
                for server in user_vms.order_by('id')]
 
     if request.serialization == 'xml':
@@ -305,6 +306,19 @@ def create_server(serials, request):
     else:
         transaction.commit()
 
+    # Fix flavor for archipelago
+    password = util.random_password()
+    disk_template, provider = util.get_flavor_provider(flavor)
+    if provider:
+        flavor.disk_template = disk_template
+        flavor.disk_provider = provider
+        flavor.disk_origin = None
+        if provider == 'vlmc':
+            flavor.disk_origin = image['checksum']
+            image['backend_id'] = 'null'
+    else:
+        flavor.disk_provider = None
+
     try:
         # Issue commission
         serial = quotas.issue_vm_commission(user_id, flavor)
@@ -325,18 +339,7 @@ def create_server(serials, request):
             action="CREATE",
             serial=serial)
 
-        password = util.random_password()
-
-        disk_template, provider = util.get_flavor_provider(flavor)
-        if provider:
-            flavor.disk_template = disk_template
-            flavor.disk_provider = provider
-            flavor.disk_origin = None
-            if provider == 'vlmc':
-                flavor.disk_origin = image['backend_id']
-                image['backend_id'] = 'null'
-        else:
-            flavor.disk_provider = None
+        log.info("Created entry in DB for VM '%s'", vm)
 
         # dispatch server created signal
         server_created.send(sender=vm, created_vm_params={
@@ -347,34 +350,41 @@ def create_server(serials, request):
             'img_properties': json.dumps(image['metadata']),
         })
 
-        try:
-            jobID = create_instance(vm, nic, flavor, image)
-        except GanetiApiError:
-            vm.delete()
-            raise
-
-        log.info("User %s created VM %s, NIC %s, Backend %s, JobID %s",
-                user_id, vm, nic, backend, str(jobID))
-
-        vm.backendjobid = jobID
-        vm.save()
-
+        # Also we must create the VM metadata in the same transaction.
         for key, val in metadata.items():
             VirtualMachineMetadata.objects.create(
                 meta_key=key,
                 meta_value=val,
                 vm=vm)
-
-        server = vm_to_dict(vm, detail=True)
-        server['status'] = 'BUILD'
-        server['adminPass'] = password
-
-        respsone = render_server(request, server, status=202)
     except:
         transaction.rollback()
         raise
     else:
         transaction.commit()
+
+    try:
+        jobID = create_instance(vm, nic, flavor, image)
+        # At this point the job is enqueued in the Ganeti backend
+        vm.backendjobid = jobID
+        vm.save()
+        transaction.commit()
+        log.info("User %s created VM %s, NIC %s, Backend %s, JobID %s",
+                 user_id, vm, nic, backend, str(jobID))
+    except GanetiApiError as e:
+        log.exception("Can not communicate to backend %s: %s. Deleting VM %s",
+                      backend, e, vm)
+        vm.delete()
+        transaction.commit()
+        raise
+    except:
+        transaction.rollback()
+        raise
+
+    server = vm_to_dict(vm, detail=True)
+    server['status'] = 'BUILD'
+    server['adminPass'] = password
+
+    respsone = render_server(request, server, status=202)
 
     return respsone
 
@@ -446,11 +456,11 @@ def delete_server(request, server_id):
 # additional server actions
 ARBITRARY_ACTIONS = ['console', 'firewallProfile']
 
+
 @util.api_method('POST')
 def server_action(request, server_id):
     req = util.get_request_dict(request)
     log.debug('server_action %s %s', server_id, req)
-
 
     if len(req) != 1:
         raise faults.BadRequest("Malformed request")

@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+#
 # Copyright 2011 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
@@ -37,18 +39,11 @@ distribute_setup.use_setuptools()
 
 import os
 
-from distutils.util import convert_path
-from fnmatch import fnmatchcase
+#from distutils.util import convert_path
+#from fnmatch import fnmatchcase
 from setuptools import setup, find_packages
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
-
-try:
-    # try to update the version file
-    from synnefo.util.version import update_version
-    update_version('synnefo_tools', 'version', HERE)
-except ImportError:
-    pass
 
 from synnefo_tools.version import __version__
 
@@ -56,7 +51,7 @@ from synnefo_tools.version import __version__
 VERSION = __version__
 README = open(os.path.join(HERE, 'README')).read()
 CHANGES = open(os.path.join(HERE, 'Changelog')).read()
-SHORT_DESCRIPTION = 'Package short description'
+SHORT_DESCRIPTION = "Integration testing tool for a running Synnefo."
 
 PACKAGES_ROOT = '.'
 PACKAGES = find_packages(PACKAGES_ROOT)
@@ -65,37 +60,37 @@ PACKAGES = find_packages(PACKAGES_ROOT)
 CLASSIFIERS = []
 
 # Package requirements
-INSTALL_REQUIRES = ["fabric","IPy","unittest2", "python-prctl", "paramiko", "vncauthproxy", "kamaki"]
+INSTALL_REQUIRES = [
+    "IPy",
+    "unittest2",
+    "python-prctl",
+    "paramiko",
+    "vncauthproxy",
+    "kamaki >= 0.6.2"]
 
 setup(
-    name = 'snf-tools',
-    version = VERSION,
-    license = 'BSD',
-    url = 'http://code.grnet.gr/',
-    description = SHORT_DESCRIPTION,
-    long_description=README + '\n\n' +  CHANGES,
-    classifiers = CLASSIFIERS,
+    name='snf-tools',
+    version=VERSION,
+    license='BSD',
+    url='http://www.synnefo.org/',
+    description=SHORT_DESCRIPTION,
+    long_description=README + '\n\n' + CHANGES,
+    classifiers=CLASSIFIERS,
 
-    author = 'Package author',
-    author_email = 'author@grnet.gr',
-    maintainer = 'Package maintainer',
-    maintainer_email = 'maintainer@grnet.gr',
+    author='Synnefo development team',
+    author_email='synnefo-devel@googlegroups.com',
+    maintainer='Synnefo development team',
+    maintainer_email='synnefo-devel@googlegroups.com',
 
-    packages = PACKAGES,
-    package_dir= {'': PACKAGES_ROOT},
-    include_package_data = True,
-    zip_safe = False,
+    packages=PACKAGES,
+    package_dir={'': PACKAGES_ROOT},
+    include_package_data=True,
+    zip_safe=False,
 
-    install_requires = INSTALL_REQUIRES,
+    install_requires=INSTALL_REQUIRES,
 
-    dependency_links = ['http://docs.dev.grnet.gr/pypi'],
+    dependency_links=['http://docs.dev.grnet.gr/pypi'],
 
-    entry_points = {
-     'console_scripts': [
-         'snf-burnin = synnefo_tools.burnin:main',
-         ],
-      }
-
-
+    entry_points={
+        'console_scripts': ['snf-burnin = synnefo_tools.burnin:main']}
 )
-

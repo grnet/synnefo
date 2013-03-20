@@ -1,0 +1,30 @@
+README
+======
+
+Pithos is a file storage service, built by GRNET using Django (https://www.djangoproject.com/).
+Learn more about Pithos at: http://code.grnet.gr/projects/pithos
+
+Consult COPYRIGHT for licensing information.
+
+About Pithos tools
+------------------
+
+This packange contains the following utilities:
+
+==============  =============================
+pithos-sh       Pithos shell
+pithos-sync     Pithos synchronization client
+pithos-fs       Pithos FUSE implementation
+pithos-test     Pithos server tests
+==============  =============================
+
+Also, installs the pithos.tools.lib, which contains a python library that can be used to access Pithos and manage stored objects. All tools use the included lib.
+
+Connection options can be set via environmental variables:
+
+======================  =========================================================
+PITHOS_USER             Login user
+PITHOS_TOKEN            Login token
+PITHOS_URL              Pithos server (default: \https://pithos.example.synnefo.org/v1)
+PITHOS_SYNC_CONTAINER   Container to sync with (default: pithos)
+======================  =========================================================

@@ -4,16 +4,13 @@ from south.v2 import SchemaMigration
 
 
 class Migration(SchemaMigration):
+    """Obsolete migration"""
 
     def forwards(self, orm):
-
-        # Removing unique constraint on 'AdditionalMail', fields ['email']
-        db.delete_unique('im_additionalmail', ['email'])
+        return
 
     def backwards(self, orm):
-
-        # Adding unique constraint on 'AdditionalMail', fields ['email']
-        db.create_unique('im_additionalmail', ['email'])
+        return
 
     models = {
         'auth.group': {

@@ -46,7 +46,7 @@ class GanetiRapiClientPool(ObjectPool):
     """Pool of Ganeti RAPI Clients."""
 
     def __init__(self, host, port, user, passwd, size=None):
-        log.debug("INIT: Initializing pool of size %d, host %s," \
+        log.debug("INIT: Initializing pool of size %d, host %s,"
                   " port %d, user %s", size, host, port, user)
         ObjectPool.__init__(self, size=size)
         self.host = host

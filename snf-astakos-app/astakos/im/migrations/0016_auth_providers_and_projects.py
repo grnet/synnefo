@@ -13,11 +13,12 @@ class Migration(DataMigration):
 
     def forwards(self, orm):
         # valid activation_sent/email_verified
-        for user in orm.AstakosUser.objects.filter(is_active=True):
-            if not user.activation_sent:
-                user.activation_sent = datetime.datetime.now()
-                user.email_verified = True
-                user.save()
+        for user in orm.AstakosUser.objects.all():
+            if user.is_active:
+                if not user.activation_sent:
+                    user.activation_sent = datetime.datetime.now()
+                    user.email_verified = True
+                    user.save()
 
             while not user.uuid:
                 uuid_val =  str(uuid.uuid4())
@@ -45,7 +46,20 @@ class Migration(DataMigration):
                             'ASTAKOS_MIGRATION_0045_DELETE_DUPLICATE_USER_IDS',
                             [])
         for pk in to_remove:
-            orm.AstakosUser.objects.filter(pk=int(pk)).delete()
+            try:
+                u = orm.AstakosUser.objects.get(pk=int(pk))
+                print "Removing user: %s (%d)" % (u.email, u.pk)
+            except Exception:
+                msg = "You requested user with id %s to be removed but such user doesn't exist in database" % str(pk)
+                raise Exception(msg)
+
+            if orm.AstakosUser.objects.filter(email__iexact=u.email).count() == 1:
+                msg = ("You requested user with duplicate email %s and id (%d) to"
+                " be removed, but it seems that only one user exists with this"
+                " email in the database.") % (u.email , pk)
+                raise Exception(msg)
+            else:
+                orm.AstakosUser.objects.filter(pk=int(pk)).delete()
 
         for u in orm.AstakosUser.objects.all():
             if orm.AstakosUser.objects.filter(email__iexact=u.email).count() > 1:
@@ -54,7 +68,7 @@ class Migration(DataMigration):
                 print "Duplicate email found in database"
                 for e in existing:
                     print "%d: %s (is_active: %s)" % (e.pk, e.email, e.is_active)
-                keep = input("Select which user id you want to be preserved in the database: ")
+                keep = input("Select which user id you want to BE PRESERVED in the database: ")
                 if keep:
                     for e in existing.exclude(pk=int(keep)):
                         e.delete()
@@ -82,6 +96,7 @@ class Migration(DataMigration):
         # reset usernames
         for u in orm.AstakosUser.objects.all():
             u.uuid = None
+            u.auth_providers.all().delete()
             if email_re.match(u.username):
                 username = None
                 while not username:

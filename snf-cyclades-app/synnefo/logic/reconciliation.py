@@ -147,8 +147,13 @@ def instances_with_build_errors(D, G):
     for i in idD & idG:
         if not G[i] and D[i] == 'BUILD':
             vm = VirtualMachine.objects.get(id=i)
-            # Check time to avoid many rapi calls
-            if datetime.now() > vm.backendtime + timedelta(seconds=5):
+            if not vm.backendjobid:  # VM has not been enqueued in the backend
+                if datetime.now() > vm.created + timedelta(seconds=120):
+                    # If a job has not been enqueued after 2 minutues, then
+                    # it must be a stale entry..
+                    failed.add(i)
+            elif datetime.now() > vm.backendtime + timedelta(seconds=30):
+                # Check time to avoid many rapi calls
                 with pooled_rapi_client(vm) as c:
                     try:
                         job_info = c.GetJobStatus(job_id=vm.backendjobid)
@@ -178,18 +183,19 @@ def get_instances_from_ganeti(backend=None):
                 id = utils.id_from_instance_name(i['name'])
             except Exception:
                 log.error("Ignoring instance with malformed name %s",
-                              i['name'])
+                          i['name'])
                 continue
 
             if id in snf_instances:
                 log.error("Ignoring instance with duplicate Synnefo id %s",
-                    i['name'])
+                          i['name'])
                 continue
 
             snf_instances[id] = i['oper_state']
             snf_nics[id] = get_nics_from_instance(i)
 
     return snf_instances, snf_nics
+
 
 #
 # Nics
@@ -208,11 +214,11 @@ def get_nics_from_ganeti(backend=None):
                 id = utils.id_from_instance_name(i['name'])
             except Exception:
                 log.error("Ignoring instance with malformed name %s",
-                              i['name'])
+                          i['name'])
                 continue
             if id in snf_instances_nics:
                 log.error("Ignoring instance with duplicate Synnefo id %s",
-                    i['name'])
+                          i['name'])
                 continue
 
             snf_instances_nics[id] = get_nics_from_instance(i)
@@ -275,11 +281,11 @@ def unsynced_nics(DBNics, GNics):
         for index in nicsG.keys():
             nicD = nicsD[index]
             nicG = nicsG[index]
-            if nicD['ipv4'] != nicG['ipv4'] or \
-               nicD['mac'] != nicG['mac'] or \
-               nicD['network'] != nicG['network']:
-                unsynced[i] = (nicsD, nicsG)
-                break
+            if (nicD['ipv4'] != nicG['ipv4'] or
+                nicD['mac'] != nicG['mac'] or
+                nicD['network'] != nicG['network']):
+                    unsynced[i] = (nicsD, nicsG)
+                    break
 
     return unsynced
 

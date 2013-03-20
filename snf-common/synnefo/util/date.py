@@ -31,9 +31,10 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from datetime import timedelta, tzinfo, datetime
+from datetime import timedelta, tzinfo
 
 import dateutil.parser
+
 
 class UTC(tzinfo):
     """
@@ -74,4 +75,3 @@ def isoparse(s):
     since = dateutil.parser.parse(s)
     utc_since = since.astimezone(UTC()).replace(tzinfo=None)
     return utc_since
-

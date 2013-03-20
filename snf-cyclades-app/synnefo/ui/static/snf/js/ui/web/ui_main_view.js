@@ -568,6 +568,7 @@
             var msg = data.msg, code = data.code, err_obj = data.error;
             error = msg + "<br /><br />" + snf.util.stacktrace().replace("at", "<br /><br />at");
             params = { title: "UI error", extra_details: data.extra };
+            delete data.extra.allow_close;
             params.allow_close = data.extra.allow_close === undefined ? true : data.extra.allow_close;
             this.error_view.show_error("UI", -1, msg, "JS Exception", error, params);
         },
@@ -772,22 +773,16 @@
 
         load_user_quotas: function() {
           var main_view = this;
+          if (!snf.user.quota) {
+            snf.user.quota = new snf.quota.Quota("cyclades");
+            main_view.init_quotas_handlers();
+      
+          }
+
           snf.api.sync('read', undefined, {
             url: synnefo.config.quota_url, 
             success: function(d) {
-              snf.user.quotas = {};
-              snf.user.quotas['vms'] = d.vms_quota;
-              snf.user.quotas['networks'] = d.networks_quota;
-              if (!main_view.quota_handlers_initialized) {
-                  main_view.init_quotas_handlers(['vms','networks']);
-                  main_view.quota_handlers_initialized = true;
-              }
-              try {
-                main_view.check_quotas('vms');
-                main_view.check_quotas('networks');
-              } catch (err) {
-                console.error(err);
-              }
+              snf.user.quota.load(d);
             },
             complete: function() {
                 setTimeout(function(){
@@ -800,30 +795,34 @@
         check_quotas: function(type) {
           var storage = synnefo.storage[type];
           var consumed = storage.length;
+          var quotakey = {
+            'networks': 'cyclades.network.private',
+            'vms': 'cyclades.vm'
+          }
           if (type == "networks") {
             consumed = storage.filter(function(net){
               return !net.is_public() && !net.is_deleted();
             }).length;
           }
-          if (snf.user.quotas && consumed >= snf.user.quotas[type]) {
+          
+          var limit = snf.user.quota.get_limit(quotakey[type]);
+          if (snf.user.quota && snf.user.quota.data && consumed >= limit) {
             storage.trigger("quota_reached");
           } else {
             storage.trigger("quota_free");
           }
         },
 
-        init_quotas_handlers: function(types) {
-          var self = this;
-          _.each(types, function(type) {
-            var storage = synnefo.storage[type];
-            if (!storage) { return };
-            var check_quotas = function() {
-              self.check_quotas(type);
-            }
-            storage.bind("add", check_quotas);
-            storage.bind("remove", check_quotas);
-            check_quotas();
-          })
+        init_quotas_handlers: function() {
+          var self = this, event;
+          snf.user.quota.bind("cyclades.vm.quota.changed", function() {
+            this.check_quotas("vms");
+          }, this);
+
+          var event = "cyclades.network.private.quota.changed";
+          snf.user.quota.bind(event, function() {
+            this.check_quotas("networks");
+          }, this);
         },
 
         // initial view based on user cookie
@@ -861,7 +860,6 @@
               $("#createcontainer #create").attr("title", "");
             });
 
-            this.check_quotas('vms');
         },
 
         check_empty: function() {
@@ -923,7 +921,7 @@
                 if (this.skip_errors) {
                     this.views[view_id] = new cls();
                     $(this.views[view_id]).bind("resize", _.bind(function() {
-                        window.positionFooter();
+                        window.forcePositionFooter();
                         this.multiple_actions_view.fix_position();
                     }, this));
                 } else {
@@ -1094,7 +1092,7 @@
     snf.ui.init = function() {
         if (snf.config.handle_window_exceptions) {
             window.onerror = function(msg, file, line) {
-                snf.ui.trigger_error("CRITICAL", msg, {}, { file:file + ":" + line, allow_close: false });
+                snf.ui.trigger_error("CRITICAL", msg, {}, { file:file + ":" + line, allow_close: true });
             };
         }
         snf.ui.main.load();

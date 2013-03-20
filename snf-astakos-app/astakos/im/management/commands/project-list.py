@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -35,13 +35,72 @@ from optparse import make_option
 
 from django.core.management.base import NoArgsCommand
 
-from astakos.im.models import ProjectApplication
-from ._common import format_bool
+from astakos.im.models import Chain
+from ._common import format, shortened
+
 
 class Command(NoArgsCommand):
-    help = "List resources"
+    help = """
+    List projects and project status.
+
+    Project status can be one of:
+      Pending              an application <AppId> for a new project
+
+      Active               an active project
+
+      Active - Pending     an active project with
+                           a pending modification <AppId>
+
+      Denied               an application for a new project,
+                           denied by the admin
+
+      Dismissed            a denied project, dismissed by the applicant
+
+      Cancelled            an application for a new project,
+                           cancelled by the applicant
+
+      Suspended            a project suspended by the admin;
+                           it can later be resumed
+
+      Suspended - Pending  a suspended project with
+                           a pending modification <AppId>
+
+      Terminated           a terminated project; its name can be claimed
+                           by a new project
+"""
 
     option_list = NoArgsCommand.option_list + (
+        make_option('--all',
+                    action='store_true',
+                    dest='all',
+                    default=False,
+                    help="List all projects (default)"),
+        make_option('--new',
+                    action='store_true',
+                    dest='new',
+                    default=False,
+                    help="List only new project applications"),
+        make_option('--modified',
+                    action='store_true',
+                    dest='modified',
+                    default=False,
+                    help="List only projects with pending modification"),
+        make_option('--pending',
+                    action='store_true',
+                    dest='pending',
+                    default=False,
+                    help=("Show only projects with a pending application "
+                          "(equiv. --modified --new)")),
+        make_option('--skip',
+                    action='store_true',
+                    dest='skip',
+                    default=False,
+                    help="Skip cancelled and terminated projects"),
+        make_option('--full',
+                    action='store_true',
+                    dest='full',
+                    default=False,
+                    help="Do not shorten long names"),
         make_option('-c',
                     action='store_true',
                     dest='csv',
@@ -50,50 +109,91 @@ class Command(NoArgsCommand):
     )
 
     def handle_noargs(self, **options):
-        apps = ProjectApplication.objects.select_related().all().order_by('id')
+        allow_shorten = not options['full']
+        csv = options['csv']
 
-        labels = (
-            'Application', 'Precursor', 'Status', 'Name', 'Project', 'Status'
-        )
-        columns = (11, 10, 14, 30, 10, 10)
+        chain_dict = Chain.objects.all_full_state()
 
-        if not options['csv']:
+        if not options['all']:
+            f_states = []
+            if options['new']:
+                f_states.append(Chain.PENDING)
+            if options['modified']:
+                f_states += Chain.MODIFICATION_STATES
+            if options['pending']:
+                f_states.append(Chain.PENDING)
+                f_states += Chain.MODIFICATION_STATES
+            if options['skip']:
+                if not f_states:
+                    f_states = Chain.RELEVANT_STATES
+
+            if f_states:
+                chain_dict = filter_by_state(chain_dict, f_states)
+
+        self.show(csv, allow_shorten, chain_dict)
+
+    def show(self, csv, allow_shorten, chain_dict):
+        labels = ('ProjID', 'Name', 'Applicant', 'Email', 'Status', 'AppID')
+        columns = (7, 23, 20, 20, 17, 7)
+
+        if not csv:
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
             self.stdout.write(line + '\n')
             sep = '-' * len(line)
             self.stdout.write(sep + '\n')
 
-        for app in apps:
-            precursor = app.precursor_application
-            prec_id = precursor.id if precursor else ''
+        for info in chain_info(chain_dict):
 
-            try:
-                project = app.project
-                project_id = project.id
-                if project.is_alive:
-                    status = 'ALIVE'
-                elif project.is_terminated:
-                    status = 'TERMINATED'
-                elif project.is_suspended:
-                    status = 'SUSPENDED'
-                else:
-                    status = 'UNKNOWN'
-            except:
-                project_id = ''
-                status     = ''
+            fields = [
+                (info['projectid'], False),
+                (info['name'], True),
+                (info['applicant'], True),
+                (info['email'], True),
+                (info['status'], False),
+                (info['appid'], False),
+            ]
 
-            fields = (
-                str(app.id),
-                str(prec_id),
-                app.state_display(),
-                app.name,
-                str(project_id),
-                status
-            )
+            fields = [(format(elem), flag) for (elem, flag) in fields]
 
-            if options['csv']:
+            if csv:
                 line = '|'.join(fields)
             else:
-                line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
+                output = []
+                for (field, shorten), width in zip(fields, columns):
+                    s = (shortened(field, width) if shorten and allow_shorten
+                         else field)
+                    s = s.rjust(width)
+                    output.append(s)
 
-            self.stdout.write(line.encode('utf8') + '\n')
+                line = ' '.join(output)
+
+            self.stdout.write(line + '\n')
+
+
+def filter_by_state(chain_dict, states):
+    d = {}
+    for chain, (state, project, app) in chain_dict.iteritems():
+        if state in states:
+            d[chain] = (state, project, app)
+    return d
+
+
+def chain_info(chain_dict):
+    l = []
+    for chain, (state, project, app) in chain_dict.iteritems():
+        status = Chain.state_display(state)
+        if state in Chain.PENDING_STATES:
+            appid = str(app.id)
+        else:
+            appid = ""
+
+        d = {
+            'projectid': str(chain),
+            'name': project.application.name if project else app.name,
+            'applicant': app.applicant.realname,
+            'email': app.applicant.email,
+            'status': status,
+            'appid': appid,
+        }
+        l.append(d)
+    return l

@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -32,28 +32,153 @@
 # or implied, of GRNET S.A.
 
 import os
+import uuid
+import string
 
 from optparse import make_option
 from collections import namedtuple
 
 from django.core.management.base import BaseCommand, CommandError
+from django.core.validators import validate_email
+from synnefo.lib.quotaholder.api import QH_PRACTICALLY_INFINITE
 
-from astakos.im.models import AstakosUser
+from astakos.im.models import AstakosUser, AstakosUserQuota, Resource
 
 AddResourceArgs = namedtuple('AddQuotaArgs', ('resource',
-                                              'quantity',
                                               'capacity',
+                                              'quantity',
                                               'import_limit',
                                               'export_limit'))
 
 class Command(BaseCommand):
-    help = "Import account quota policies"
+    help = """Import user quota limits from file or set quota
+for a single user from the command line
+
+    The file must contain non-empty lines, and each line must
+    contain a single-space-separated list of values:
+
+    <user> <resource name> <capacity> <quantity> <import_limit> <export_limit>
+
+    For example to grant the following user with 10 private networks
+    (independent of any he receives from projects):
+
+    6119a50b-cbc7-42c0-bafc-4b6570e3f6ac cyclades.network.private 10 0 1000000 1000000
+
+    The last two values are arbitrarily large to represent no
+    import/export limit at all.
+
+    When setting quota from the command line, specify only capacity.
+    Quantity and import/export limit will get default values. Example:
+
+    --set-capacity 6119a50b-cbc7-42c0-bafc-4b6570e3f6ac cyclades.vm 10
+
+    The special value of 'default' sets the user setting to the default.
+    """
+
+    option_list = BaseCommand.option_list + (
+        make_option('--from-file',
+                    dest='from_file',
+                    metavar='<exported-quotas.txt>',
+                    help="Import quotas from file"),
+        make_option('--set-capacity',
+                    dest='set_capacity',
+                    metavar='<uuid or email> <resource> <capacity>',
+                    nargs=3,
+                    help="Set capacity for a specified user/resource pair"),
+
+        make_option('-f', '--no-confirm',
+                    action='store_true',
+                    default=False,
+                    dest='force',
+                    help="Do not ask for confirmation"),
+    )
 
     def handle(self, *args, **options):
-        if len(args) != 1:
-            raise CommandError('Invalid number of arguments')
- 
-        location = os.path.abspath(args[0])
+        from_file = options['from_file']
+        set_capacity = options['set_capacity']
+        force = options['force']
+
+        if from_file is not None:
+            if set_capacity is not None:
+                raise CommandError("Cannot combine option `--from-file' with "
+                                   "`--set-capacity'.")
+            self.import_from_file(from_file)
+
+        if set_capacity is not None:
+            user, resource, capacity = set_capacity
+            self.set_limit(user, resource, capacity, force)
+            return
+
+        m = "Please use either `--from-file' or `--set-capacity' options"
+        raise CommandError(m)
+
+    def set_limit(self, user_ident, resource, capacity, force):
+        if is_uuid(user_ident):
+            try:
+                user = AstakosUser.objects.get(uuid=user_ident)
+            except AstakosUser.DoesNotExist:
+                raise CommandError('Not found user having uuid: %s' %
+                                   user_ident)
+        elif is_email(user_ident):
+            try:
+                user = AstakosUser.objects.get(username=user_ident)
+            except AstakosUser.DoesNotExist:
+                raise CommandError('Not found user having email: %s' %
+                                   user_ident)
+        else:
+            raise CommandError('Please specify user by uuid or email')
+
+        if capacity != 'default':
+            try:
+                capacity = int(capacity)
+            except ValueError:
+                m = "Please specify capacity as a decimal integer or 'default'"
+                raise CommandError(m)
+
+        args = AddResourceArgs(resource=resource,
+                               capacity=capacity,
+                               quantity=0,
+                               import_limit=QH_PRACTICALLY_INFINITE,
+                               export_limit=QH_PRACTICALLY_INFINITE,
+                               )
+
+        try:
+            quota, default_capacity = user.get_resource_policy(resource)
+        except Resource.DoesNotExist:
+            raise CommandError("No such resource: %s" % resource)
+
+        current = quota.capacity if quota is not None else 'default'
+
+        if not force:
+            self.stdout.write("user: %s (%s)\n" % (user.uuid, user.username))
+            self.stdout.write("default capacity: %s\n" % default_capacity)
+            self.stdout.write("current capacity: %s\n" % current)
+            self.stdout.write("new capacity: %s\n" % capacity)
+            self.stdout.write("Confirm? (y/n) ")
+            response = raw_input()
+            if string.lower(response) not in ['y', 'yes']:
+                self.stdout.write("Aborted.\n")
+                return
+
+        if capacity == 'default':
+            try:
+                service, sep, name = resource.partition('.')
+                q = AstakosUserQuota.objects.get(
+                        user=user,
+                        resource__service__name=service,
+                        resource__name=name)
+                q.delete()
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                raise CommandError("Failed to remove policy: %s" % e)
+        else:
+            try:
+                user.add_resource_policy(*args)
+            except Exception as e:
+                raise CommandError("Failed to add policy: %s" % e)
+
+    def import_from_file(self, location):
         try:
             f = open(location, 'r')
         except IOError, e:
@@ -81,3 +206,25 @@ class Command(BaseCommand):
                         continue
             finally:
                 f.close()
+
+
+def is_uuid(s):
+    if s is None:
+        return False
+    try:
+        uuid.UUID(s)
+    except ValueError:
+        return False
+    else:
+        return True
+
+
+def is_email(s):
+    if s is None:
+        return False
+    try:
+        validate_email(s)
+    except:
+        return False
+    else:
+        return True

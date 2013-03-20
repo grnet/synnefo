@@ -34,12 +34,15 @@
 from optparse import make_option
 from datetime import datetime
 
+from django.utils.translation import ugettext as _
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 
 from astakos.im.models import AstakosUser
-from astakos.im.functions import activate, deactivate
+from astakos.im.functions import (activate, deactivate,
+                                  set_pending_application_limit,
+                                  unset_pending_application_limit)
 from ._common import remove_user_permission, add_user_permission
 
 
@@ -102,6 +105,17 @@ class Command(BaseCommand):
         make_option('--delete-permission',
                     dest='delete-permission',
                     help="Delete user permission"),
+        make_option('--set-max-pending',
+                    dest='pending',
+                    metavar='INT',
+                    help=("Set limit on user's maximum pending "
+                          "project applications")),
+        make_option('--unset-max-pending',
+                    dest='unset_pending',
+                    action='store_true',
+                    default=False,
+                    help=("Restore default limit of user's maximum pending "
+                          "project applications")),
     )
 
     def handle(self, *args, **options):
@@ -109,7 +123,8 @@ class Command(BaseCommand):
             raise CommandError("Please provide a user ID")
 
         if args[0].isdigit():
-            user = AstakosUser.objects.get(id=int(args[0]))
+            user_id = int(args[0])
+            user = AstakosUser.objects.get(id=user_id)
         else:
             raise CommandError("Invalid ID")
 
@@ -202,3 +217,17 @@ class Command(BaseCommand):
 
         if password:
             self.stdout.write('User\'s new password: %s\n' % password)
+
+        pending = options.get('pending')
+        if pending:
+            try:
+                pending = int(pending)
+            except ValueError as e:
+                m = _("Expected integer argument")
+                raise CommandError(m)
+            else:
+                set_pending_application_limit(user_id, pending)
+
+        unset_pending = options.get('unset_pending')
+        if unset_pending:
+            unset_pending_application_limit(user_id)

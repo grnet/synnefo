@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -33,7 +33,7 @@
 
 
 from django.http import HttpResponse
-from django.db import transaction 
+from django.db import transaction
 from django.conf import settings
 from synnefo.lib.commissioning import CallError
 
@@ -42,11 +42,15 @@ from .callpoint import API_Callpoint
 import json
 from traceback import format_exc
 
+import logging
+logger = logging.getLogger(__name__)
+
 try:
     from django.views.decorators.csrf import csrf_exempt
 except ImportError:
     def csrf_exempt(func):
         return func
+
 
 def _get_body(request):
     body = request.raw_post_data
@@ -56,13 +60,14 @@ def _get_body(request):
 
 callpoints = {('quotaholder', 'v'): API_Callpoint()}
 
+
 @transaction.commit_manually
 @csrf_exempt
 def view(request, appname='quotaholder', version=None, callname=None):
     if (appname, version) not in callpoints:
         return HttpResponse(status=404)
 
-    if request.META['HTTP_X_AUTH_TOKEN'] != settings.QUOTAHOLDER_TOKEN:
+    if request.META.get('HTTP_X_AUTH_TOKEN') != settings.QUOTAHOLDER_TOKEN:
         return HttpResponse(status=403, content='invalid token')
 
     callpoint = callpoints[(appname, version)]
@@ -70,7 +75,8 @@ def view(request, appname='quotaholder', version=None, callname=None):
     try:
         body = callpoint.make_call_from_json(callname, body)
         status = 200
-    except Exception, e:
+    except Exception as e:
+        logger.exception(e)
         status = 450
         if not isinstance(e, CallError):
             e.args += (''.join(format_exc()),)

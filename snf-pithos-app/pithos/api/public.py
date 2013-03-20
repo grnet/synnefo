@@ -38,10 +38,12 @@ from django.views.decorators.csrf import csrf_exempt
 
 from synnefo.lib.astakos import get_user
 
-from pithos.api.faults import (Fault, BadRequest, ItemNotFound)
+from pithos.api.faults import (Fault, BadRequest, ItemNotFound, NotModified)
 from pithos.api.util import (put_object_headers, update_manifest_meta,
-                             validate_modification_preconditions, validate_matching_preconditions,
-                             object_data_response, api_method)
+                             validate_modification_preconditions,
+                             validate_matching_preconditions,
+                             object_data_response, api_method,
+                             split_container_object_string)
 from pithos.api.short_url import decode_url
 from pithos.api.settings import AUTHENTICATION_URL, AUTHENTICATION_USERS
 

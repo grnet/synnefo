@@ -326,7 +326,7 @@ class Node(DBWorker):
         row = r.fetchone()
         r.close()
         if not row:
-            return (), 0
+            return (), 0, ()
         nr, size = row[0], -row[1] if row[1] else 0
         mtime = time()
         self.statistics_update(parent, -nr, size, mtime, cluster)
@@ -381,7 +381,7 @@ class Node(DBWorker):
         nr, size = row[0], row[1]
         r.close()
         if not nr:
-            return (), 0
+            return (), 0, ()
         mtime = time()
         self.statistics_update_ancestors(node, -nr, -size, mtime, cluster)
 
@@ -437,6 +437,12 @@ class Node(DBWorker):
         s = self.nodes.delete().where(self.nodes.c.node == node)
         self.conn.execute(s).close()
         return True
+
+    def node_accounts(self):
+        s = select([self.nodes.c.path])
+        s = s.where(and_(self.nodes.c.node != 0, self.nodes.c.parent == 0))
+        account_nodes = self.conn.execute(s).fetchall()
+        return sorted(i[0] for i in account_nodes)
 
     def policy_get(self, node):
         s = select([self.policy.c.key, self.policy.c.value],
@@ -1067,14 +1073,22 @@ class Node(DBWorker):
 
         return matches, prefixes
 
-    def latest_uuid(self, uuid):
-        """Return a (path, serial) tuple, for the latest version of the given uuid."""
+    def latest_uuid(self, uuid, cluster):
+        """Return the latest version of the given uuid and cluster.
+
+        Return a (path, serial) tuple.
+        If cluster is None, all clusters are considered.
+
+        """
 
         v = self.versions.alias('v')
         n = self.nodes.alias('n')
         s = select([n.c.path, v.c.serial])
         filtered = select([func.max(self.versions.c.serial)])
-        s = s.where(v.c.serial == filtered.where(self.versions.c.uuid == uuid))
+        filtered = filtered.where(self.versions.c.uuid == uuid)
+        if cluster is not None:
+            filtered = filtered.where(self.versions.c.cluster == cluster)
+        s = s.where(v.c.serial == filtered)
         s = s.where(n.c.node == v.c.node)
 
         r = self.conn.execute(s)

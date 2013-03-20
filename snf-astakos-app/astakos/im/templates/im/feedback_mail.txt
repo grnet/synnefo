@@ -1,10 +1,10 @@
 Feedback message:
-{{ message|safe }}
+{{ message }}
 
 User info:
-ID: {{ user.id }}
+UUID: {{ user.uuid }}
 Email: {{ user.email }}
 
 User application data:
-{{ data|safe }}
+{{ data }}
 

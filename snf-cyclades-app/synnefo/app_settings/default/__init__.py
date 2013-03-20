@@ -31,7 +31,6 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from synnefo.app_settings.default.logging import *
 from synnefo.app_settings.default.backend import *
 from synnefo.app_settings.default.queues import *
 from synnefo.app_settings.default.api import *

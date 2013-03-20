@@ -2,12 +2,12 @@
 <div class="object-anchor" id="vm-{{vm.pk}}"></div>
 <div class="vm-details object-details {{ rowcls }}">
   <h4><em><img src="{{ UI_MEDIA_URL }}images/icons/os/{{ vm|get_os }}.png" />{{ vm|get_os }}</em><i class="icon-tasks"></i>{{ vm.name }}<span class="badge">&nbsp;</span></h4>
-  {{ vm|vm_status_badge|safe }}
-  <span class="badge badge-inverse">ID: {{ vm.pk }}</span>
-  <span class="badge badge-inverse">{{ vm|vm_public_ip }}</span>
   {% if vm.suspended %}
   <span class="badge badge-important">SUSPENDED</span>
   {% endif %}
+  {{ vm|object_status_badge|safe }}
+  <span class="badge badge-inverse">ID: {{ vm.pk }}</span>
+  <span class="badge badge-inverse">{{ vm|vm_public_ip }}</span>
   <span class="badge badge-inverse flavor">
     <span class="cpu">{{ vm.flavor.cpu }}x</span>
     <span class="ram">{{ vm.flavor.ram}}MB</span>

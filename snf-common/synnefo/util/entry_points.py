@@ -33,12 +33,10 @@
 
 import sys
 import pkg_resources
-import inspect
 import types
 import os
 
 from collections import defaultdict
-import inspect
 
 # List of python distribution names which entry points will get excluded
 # from snf-common settings extension mechanism
@@ -54,7 +52,7 @@ def get_entry_points(ns, name):
 
 def extend_module(module_name, attrs):
     module = sys.modules[module_name]
-    for k,v in attrs.iteritems():
+    for k, v in attrs.iteritems():
         setattr(module, k, v)
 
 
@@ -67,7 +65,7 @@ def entry_point_to_object(ep):
     if hasattr(object_or_func, '__call__'):
         obj = object_or_func()
 
-    if type(obj) == types.ModuleType:
+    if isinstance(obj, types.ModuleType):
         dct = {}
         for k in dir(obj):
             if k.startswith("__"):
@@ -95,7 +93,7 @@ def extend_dict_from_entry_point(settings_object, ns, entry_point_name):
 
 
 def extend_list_from_entry_point(settings_object, ns, entry_point_name,
-        unique=True):
+                                 unique=True):
     settings_object = list(settings_object)
     for e in get_entry_points(ns, entry_point_name):
         obj = entry_point_to_object(e)
@@ -104,8 +102,8 @@ def extend_list_from_entry_point(settings_object, ns, entry_point_name,
             if row in settings_object:
                 continue
 
-            if type(row) == dict and (row.get('before', False) or \
-                    row.get('after', False)):
+            if type(row) == dict and (row.get('before', False) or
+                                      row.get('after', False)):
                 if row.get('before', False):
                     position = settings_object.index(row.get('before'))
                     insert_at = position - 1
@@ -118,7 +116,7 @@ def extend_list_from_entry_point(settings_object, ns, entry_point_name,
 
                 inserts = row.get('insert', [])
                 if not type(inserts) == list:
-                    inserts  = [inserts]
+                    inserts = [inserts]
 
                 for entry in inserts:
                     if not entry in settings_object:
@@ -148,4 +146,3 @@ def extend_urls(patterns, ns):
         patterns += e.load()
 
     return patterns
-

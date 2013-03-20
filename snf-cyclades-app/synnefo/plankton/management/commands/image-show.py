@@ -39,9 +39,11 @@ class Command(BaseCommand):
     args = "<image_id>"
     help = "Display available information about an image"
     option_list = BaseCommand.option_list + (
-        make_option('--user-id', dest='userid',
-                help="The ID of the owner of the Image."),
-        )
+        make_option(
+            '--user-id',
+            dest='userid',
+            help="The ID of the owner of the Image."),
+    )
 
     def handle(self, *args, **options):
 

@@ -76,7 +76,7 @@ $(document).ready(function(){
     if (ACTIVE_MENU == "accounts") { user.addClass("hover active")}
     var username = $('<a href="#"></a>');
     var usermenu = $("<ul>");
-    var get_menu_url = (window.GET_MENU_URL || window.CLOUDBAR_MENU) + '?callback=?&location=' + window.location.toString();
+    var get_menu_url = (window.GET_MENU_URL || window.CLOUDBAR_MENU) + '?callback=?&location=' + window.location.toString().split("?")[0];
 
     $.getJSON(get_menu_url, function(data) {
         $.each(data, function(i,el) {
@@ -94,6 +94,7 @@ $(document).ready(function(){
                 user.addClass('full');
             }
         });
+    
     });
     
     //profile.filter(".user a").attr("href", 
@@ -105,28 +106,43 @@ $(document).ready(function(){
     bar.append(profile).append(services);
     
 
+    root.css('border-top', 'none');
     root.prepend(bar);
     var firstlink = profile.find("ul li:first-child a").attr("href");
     profile.find(".user > a").attr("href", firstlink);
 
-    // ie fix
-    user.hover(function(){$(this).addClass("hover")}, function(){$(this).removeClass("hover")});
-    $('html').live('click', function(e){
-	 	$('.cloudbar .profile .full>a').removeClass('open');
-	 	$('.cloudbar .profile .full>a').siblings('ul').hide();
-	});
  
-   
-   	$('.cloudbar .profile .full>a').live('click', function(e){
-   		
-   		e.stopPropagation();
-        e.preventDefault();
+    // ie fix
+    user.hover(
+    	function(){
+    		equalWidths ( $('.cloudbar .profile ul'), $('.cloudbar .profile'));
+    		$(this).addClass("hover")}, 
+    	function(){
+    		$(this).removeClass("hover")
+    		}
+    	);
+     
+    equalWidths ( $('.cloudbar .profile ul'), $('.cloudbar .profile'));
+     
+	$('.cloudbar .profile .full>a').live('focus', function(e){
+		console.info('i just focused');
+		e.preventDefault();
         equalWidths ( $('.cloudbar .profile ul'), $('.cloudbar .profile'));
-   		$(this).siblings('ul').toggle();
-   		$(this).toggleClass('open');
-   		
-   	});
-
+   		$(this).siblings('ul').show();
+   		$(this).addClass('open');
+	})	;
+	 
+	$('.cloudbar .profile .full>a').live('click', function(e){
+		e.preventDefault();
+	}); 
+ 
+ 	$('.cloudbar .profile ul li:last a').live('focusout', function(e){	
+ 		console.info('i just focused out in style');
+ 		$(this).parents('ul').attr('style', '');
+ 		$(this).parents('ul').removeAttr('style');
+ 		equalWidths ( $('.cloudbar .profile ul'), $('.cloudbar .profile'));
+ 		$(this).parents('ul').siblings('a').removeClass('open');
+ 	});
     
 });
 

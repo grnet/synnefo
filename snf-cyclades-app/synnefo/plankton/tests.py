@@ -101,7 +101,7 @@ class BaseAPITest(TestCase):
             content_type = 'application/json'
         with astakos_user(user):
             response = self.client.put(url, params, content_type=content_type,
-                    *args, **kwargs)
+                                       *args, **kwargs)
         return response
 
     def assertSuccess(self, response):
@@ -109,11 +109,11 @@ class BaseAPITest(TestCase):
 
     def assertFault(self, response, status_code, name):
         self.assertEqual(response.status_code, status_code)
-        fault = json.loads(response.content)
-        self.assertEqual(fault.keys(), [name])
+        fault = response.content
+        self.assertEqual(fault, name)
 
     def assertBadRequest(self, response):
-        self.assertFault(response, 400, 'badRequest')
+        self.assertFault(response, 400, '400 Bad Request')
 
     def assertItemNotFound(self, response):
         self.assertFault(response, 404, 'itemNotFound')
@@ -233,9 +233,19 @@ class PlanktonTest(BaseAPITest):
         response = self.get("/plankton/images/?size_max=1000")
         self.assertSuccess(response)
         backend.return_value\
-                .list.assert_called_once_with({'size_max': '1000'},
+                .list.assert_called_once_with({'size_max': 1000},
                                               {'sort_key': 'created_at',
                                                'sort_dir': 'desc'})
+
+    @assert_backend_closed
+    def test_list_images_filters_error_1(self, backend):
+        response = self.get("/plankton/images/?size_max=")
+        self.assertBadRequest(response)
+
+    @assert_backend_closed
+    def test_list_images_filters_error_2(self, backend):
+        response = self.get("/plankton/images/?size_min=foo")
+        self.assertBadRequest(response)
 
     @assert_backend_closed
     def test_update_image(self, backend):

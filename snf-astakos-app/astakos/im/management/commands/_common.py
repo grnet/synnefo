@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -32,11 +32,16 @@
 # or implied, of GRNET S.A.
 
 from datetime import datetime
+import uuid
 
+from django.core.validators import validate_email
 from django.utils.timesince import timesince, timeuntil
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import FieldError
+from django.core.management import CommandError
 
+from synnefo.lib.ordereddict import OrderedDict
 from astakos.im.models import AstakosUser
 
 DEFAULT_CONTENT_TYPE = None
@@ -64,6 +69,34 @@ def format_date(d):
         return timesince(d) + ' ago'
     else:
         return 'in ' + timeuntil(d)
+
+
+def format_dict(d, level=1, ident=22):
+    iteritems = d.iteritems()
+    if not isinstance(d, OrderedDict):
+        iteritems = sorted(iteritems)
+
+    l = ['%s: %s\n' % (k.rjust(level*ident), format(v, level+1))
+         for k, v in iteritems]
+    l.insert(0, '\n')
+    return ''.join(l)
+
+
+def format_set(s):
+    return list(s)
+
+
+def format(obj, level=1, ident=22):
+    if isinstance(obj, bool):
+        return format_bool(obj)
+    elif isinstance(obj, datetime):
+        return format_date(obj)
+    elif isinstance(obj, dict):
+        return format_dict(obj, level, ident)
+    elif isinstance(obj, set):
+        return format_set(obj)
+    else:
+        return obj
 
 
 def get_astakosuser_content_type():
@@ -122,3 +155,82 @@ def remove_group_permission(group, pname):
         return 1
     except Permission.DoesNotExist:
         return -1
+
+
+def shortened(s, limit, suffix=True):
+    length = len(s)
+    if length <= limit:
+        return s
+    else:
+        display = limit - 2
+        if suffix:
+            return '..' + s[-display:]
+        else:
+            return s[:display] + '..'
+
+
+# Copied from snf-cyclades-app/synnefo/management/common.py
+# It could be moved to snf-common
+def filter_results(objects, filter_by):
+    filter_list = filter_by.split(",")
+    filter_dict = {}
+    exclude_dict = {}
+
+    def map_field_type(query):
+        def fix_bool(val):
+            if val.lower() in ("yes", "true", "t"):
+                return True
+            if val.lower() in ("no", "false", "f"):
+                return False
+            return val
+
+        if "!=" in query:
+            key, val = query.split("!=")
+            exclude_dict[key] = fix_bool(val)
+            return
+        OP_MAP = {
+            ">=": "__gte",
+            "=>": "__gte",
+            ">":  "__gt",
+            "<=": "__lte",
+            "=<": "__lte",
+            "<":  "__lt",
+            "=":  "",
+        }
+        for op, new_op in OP_MAP.items():
+            if op in query:
+                key, val = query.split(op)
+                filter_dict[key + new_op] = fix_bool(val)
+                return
+
+    map(lambda x: map_field_type(x), filter_list)
+
+    try:
+        objects = objects.filter(**filter_dict)
+        return objects.exclude(**exclude_dict)
+    except FieldError as e:
+        raise CommandError(e)
+    except Exception as e:
+        raise CommandError("Can not filter results: %s" % e)
+
+
+def is_uuid(s):
+    if s is None:
+        return False
+    try:
+        uuid.UUID(s)
+    except ValueError:
+        return False
+    else:
+        return True
+
+
+def is_email(s):
+    if s is None:
+        return False
+    try:
+        validate_email(s)
+    except:
+        return False
+    else:
+        return True

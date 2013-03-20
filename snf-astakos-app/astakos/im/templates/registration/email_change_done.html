@@ -1,10 +1,17 @@
-{% extends 'im/one_col_base.html'%}
+{% extends "im/account_base.html" %}
 
-{%block page.title %}Email change{% endblock %}
 {% block body %}
-<div class="section">
-    {% if modified_user %}
-    <h2>Email changed syccessfully for user {{modified_user.id}}.</h2>
-    {% endif %}
+
+<div class="two-cols clearfix">
+	<div class="lt">
+		<img class="pic" src="{{ IM_STATIC_URL }}images/mailbox.png" />
+	</div>
+	<div class="rt">
+		 {% if modified_user %}
+	    <h2>Email changed syccessfully for user {{modified_user.id}}.</h2>
+	    {% endif %}
+	</div>
 </div>
+
+ 
 {% endblock %}

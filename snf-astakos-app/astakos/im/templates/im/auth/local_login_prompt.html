@@ -1,4 +1,4 @@
-<form action="{% url astakos.im.target.local.login %}#other-login-methods" method="post" 
+<form action="{% url astakos.im.target.local.login %}" method="post" 
   class="login-form login innerlabels">{% csrf_token %}
   <p>
     {{ provider.get_login_prompt_display }}
@@ -25,4 +25,6 @@
     </div>
   </form>
   <br> 
-  LOGIN using
+  {% if not forloop.last %}
+  LOGIN using &nbsp;&nbsp;
+  {% endif %}

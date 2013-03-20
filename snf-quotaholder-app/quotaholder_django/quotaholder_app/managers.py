@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -45,27 +45,15 @@ class ForUpdateManager(Manager):
         transactions that abort due to deadlocks.
 
         Example:
-            networks = Network.objects.select_for_update().filter(public=True)
+            networks = Network.objects.filter(public=True).select_for_update()
 
     """
 
-    def __init__(self, *args, **kwargs):
-        super(ForUpdateManager, self).__init__(*args, **kwargs)
-        self._select_for_update = False
+    def get_query_set(self):
+        return ForUpdateQuerySet(self.model, using=self._db)
 
-    def filter(self, *args, **kwargs):
-        query = self.get_query_set().filter(*args, **kwargs)
-        if self._select_for_update:
-            self._select_for_update = False
-            return for_update(query)
-        else:
-            return query
-
-    def get(self, *args, **kwargs):
-        if not self._select_for_update:
-            return self.get_query_set().get(*args, **kwargs)
-
-        query = self.filter(*args, **kwargs)
+    def get_for_update(self, *args, **kwargs):
+        query = for_update(self.filter(*args, **kwargs))
         query = list(query)
         num = len(query)
         if num == 1:
@@ -80,9 +68,11 @@ class ForUpdateManager(Manager):
             "Lookup parameters were %s" %
             (self.model._meta.object_name, num, kwargs))
 
-    def select_for_update(self, *args, **kwargs):
-        self._select_for_update = True
-        return self
+
+class ForUpdateQuerySet(QuerySet):
+
+    def select_for_update(self):
+        return for_update(self)
 
 
 def for_update(query):
@@ -95,21 +85,3 @@ def for_update(query):
     sql, params = query.query.get_compiler(query.db).as_sql()
     return query.model._default_manager.raw(sql.rstrip() + ' FOR UPDATE',
                                             params)
-
-
-class ProtectedDeleteManager(ForUpdateManager):
-    """ Manager for protecting Backend deletion.
-
-        Call Backend delete() method in order to prevent deletion
-        of Backends that host non-deleted VirtualMachines.
-
-    """
-
-    def get_query_set(self):
-        return BackendQuerySet(self.model, using=self._db)
-
-
-class BackendQuerySet(QuerySet):
-    def delete(self):
-        for backend in self._clone():
-            backend.delete()

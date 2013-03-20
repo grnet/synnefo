@@ -523,7 +523,7 @@
         disconnect_nic: function() {
             this.$("a.selected").removeClass("selected");
             this.nic.get_network().remove_nic(this.nic);
-        },
+        }
     })
 
     views.NetworkModelRenameView = views.View.extend({
@@ -1290,8 +1290,6 @@
               self.$("#networkscreate").removeClass("disabled").attr("title", 
                                                             "");
             });
-            
-            synnefo.ui.main.check_quotas("networks");
         },
 
         update_networks: function(nets) {

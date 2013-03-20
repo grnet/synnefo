@@ -38,10 +38,12 @@ from time import time, mktime
 
 from django.http import HttpResponse
 from django.utils import simplejson as json
+from django.views.decorators.csrf import csrf_exempt
 
 from .faults import (
     Fault, Unauthorized, InternalServerError, BadRequest, Forbidden)
-from . import render_fault
+from . import render_fault, __get_uuid_displayname_catalogs, __send_feedback
+
 from astakos.im.models import AstakosUser
 from astakos.im.util import epoch
 
@@ -114,9 +116,10 @@ def authenticate(request, user=None):
         'uuid': user.uuid,
         'email': [user.email],
         'name': user.realname,
+        'groups': list(user.groups.all().values_list('name', flat=True)),
+        'auth_token': request.META.get('HTTP_X_AUTH_TOKEN'),
         'auth_token_created': epoch(user.auth_token_created),
-        'auth_token_expires': epoch(user.auth_token_expires),
-        'has_credits': user.has_credits}
+        'auth_token_expires': epoch(user.auth_token_expires)}
 
     # append usage data if requested
     if request.REQUEST.get('usage', None):
@@ -132,3 +135,23 @@ def authenticate(request, user=None):
     response['Content-Type'] = 'application/json; charset=UTF-8'
     response['Content-Length'] = len(response.content)
     return response
+
+@csrf_exempt
+@api_method(http_method='POST', token_required=True)
+def get_uuid_displayname_catalogs(request, user=None):
+    # Normal Response Codes: 200
+    # Error Response Codes: internalServerError (500)
+    #                       badRequest (400)
+    #                       unauthorised (401)
+
+    return __get_uuid_displayname_catalogs(request)
+
+@csrf_exempt
+@api_method(http_method='POST', token_required=True)
+def send_feedback(request, email_template_name='im/feedback_mail.txt', user=None):
+    # Normal Response Codes: 200
+    # Error Response Codes: internalServerError (500)
+    #                       badRequest (400)
+    #                       unauthorised (401)
+
+    return __send_feedback(request, email_template_name, user)

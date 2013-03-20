@@ -1,8 +1,22 @@
-Changelog
----------
+snf-tools (0.13.0)
 
-v0.10.0
-*******
+	* Adopt package
+	* Add more tests for Images
+	  - Download image from pithos+
+	  - Upload and register image
+	* Add tests for Pithos+
+	  - Test container list actually returns containers
+	  - Test if containers have unique names
+	  - Create e new container
+	  - Upload something to pithos+
+	  - Download something from pithos+
+	  - Remove files/containers from pithos+
+	* Add two (mandatory) flags
+	  - `--pithos' for specifing pithos url
+	  - `--astakos' for specifing astakos url
 
-* Initial snf-tools release
+ -- Ilias Tsitsimpis <iliastsi@grnet.gr> Tue, 29 Jan 2013
 
+snf-tools (0.10.0)
+
+	* Initial snf-tools release

@@ -36,6 +36,7 @@ import distribute_setup
 distribute_setup.use_setuptools()
 
 import os
+import sys
 
 from distutils.util import convert_path
 from fnmatch import fnmatchcase
@@ -43,20 +44,14 @@ from setuptools import setup, find_packages
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 
-try:
-    # try to update the version file
-    from synnefo.util.version import update_version
-    update_version('synnefo.versions', 'webproject', HERE)
-except ImportError:
-    pass
-
 from synnefo.versions.webproject import __version__
 
 # Package info
 VERSION = __version__
 README = open(os.path.join(HERE, 'README')).read()
 CHANGES = open(os.path.join(HERE, 'Changelog')).read()
-SHORT_DESCRIPTION = 'Package short description'
+SHORT_DESCRIPTION = "Helper package to ease up the deployment of "\
+                    " components."
 
 PACKAGES_ROOT = "."
 PACKAGES = find_packages(PACKAGES_ROOT)
@@ -80,7 +75,8 @@ TESTS_REQUIRES = [
 # of replicating them:
 standard_exclude = ["*.py", "*.pyc", "*$py.class", "*~", ".*", "*.bak"]
 standard_exclude_directories = [
-    ".*", "CVS", "_darcs", "./build", "./dist", "EGG-INFO", "*.egg-info", "snf-0.7"
+    ".*", "CVS", "_darcs", "./build", "./dist", "EGG-INFO", "*.egg-info",
+    "snf-0.7"
 ]
 
 # (c) 2005 Ian Bicking and contributors; written for Paste (http://pythonpaste.org)
@@ -165,34 +161,35 @@ def find_package_data(
                     continue
                 out.setdefault(package, []).append(prefix+name)
     return out
+
 setup(
-    name = 'snf-webproject',
-    version = VERSION,
-    license = 'BSD',
-    url = 'http://code.grnet.gr/',
-    description = SHORT_DESCRIPTION,
-    long_description=README + '\n\n' +  CHANGES,
-    classifiers = CLASSIFIERS,
+    name='snf-webproject',
+    version=VERSION,
+    license='BSD',
+    url='http://www.synnefo.org/',
+    description=SHORT_DESCRIPTION,
+    long_description=README + '\n\n' + CHANGES,
+    classifiers=CLASSIFIERS,
 
-    author = 'Package author',
-    author_email = 'author@grnet.gr',
-    maintainer = 'Package maintainer',
-    maintainer_email = 'maintainer@grnet.gr',
+    author='Synnefo development team',
+    author_email='synnefo-devel@googlegroups.com',
+    maintainer='Synnefo development team',
+    maintainer_email='synnefo-devel@googlegroups.com',
 
-    namespace_packages = ['synnefo', 'synnefo.versions'],
-    packages = PACKAGES,
-    package_dir= {'': PACKAGES_ROOT},
-    include_package_data = True,
-    package_data = find_package_data('.'),
-    zip_safe = False,
+    namespace_packages=['synnefo', 'synnefo.versions'],
+    packages=PACKAGES,
+    package_dir={'': PACKAGES_ROOT},
+    include_package_data=True,
+    package_data=find_package_data('.'),
+    zip_safe=False,
 
-    install_requires = INSTALL_REQUIRES,
-    extras_require = EXTRAS_REQUIRES,
-    tests_require = TESTS_REQUIRES,
+    install_requires=INSTALL_REQUIRES,
+    extras_require=EXTRAS_REQUIRES,
+    tests_require=TESTS_REQUIRES,
 
-    dependency_links = ['http://docs.dev.grnet.gr/pypi'],
+    dependency_links=['http://docs.dev.grnet.gr/pypi'],
 
-    entry_points = {
+    entry_points={
      'console_scripts': [
          'snf-manage = synnefo.webproject.manage:main',
          ],
@@ -201,4 +198,3 @@ setup(
          ]
       },
 )
-

@@ -33,6 +33,7 @@ from synnefo.db.models import VirtualMachine, Network
 from django.conf import settings
 from copy import deepcopy
 
+
 def id_from_instance_name(name):
     """Returns VirtualMachine's Django id, given a ganeti machine name.
 
@@ -82,14 +83,15 @@ def get_rsapi_state(vm):
       (vm.operstate) through the RSAPI_STATE_FROM_OPER_STATE dictionary.
 
       The last state reported by Ganeti is set whenever Ganeti reports
-      successful completion of an operation. If Ganeti says an OP_INSTANCE_STARTUP
-      operation succeeded, vm.operstate is set to "STARTED".
+      successful completion of an operation. If Ganeti says an
+      OP_INSTANCE_STARTUP operation succeeded, vm.operstate is set to
+      "STARTED".
 
-    * To support any transitional states defined by the API (only REBOOT for the time
-      being) this mapping is amended with information reported by Ganeti regarding
-      any outstanding operation. If an OP_INSTANCE_STARTUP had succeeded previously
-      and an OP_INSTANCE_REBOOT has been reported as in progress, the API state is
-      "REBOOT".
+    * To support any transitional states defined by the API (only REBOOT for
+    the time being) this mapping is amended with information reported by Ganeti
+    regarding any outstanding operation. If an OP_INSTANCE_STARTUP had
+    succeeded previously and an OP_INSTANCE_REBOOT has been reported as in
+    progress, the API state is "REBOOT".
 
     """
     try:

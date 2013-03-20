@@ -55,6 +55,7 @@
     
     <script src="{{ SYNNEFO_JS_URL }}utils.js"></script>
     <script src="{{ SYNNEFO_JS_URL }}auth.js"></script>
+    <script src="{{ SYNNEFO_JS_URL }}quota.js"></script>
     <script src="{{ SYNNEFO_JS_URL }}sync.js"></script>
     <script src="{{ SYNNEFO_JS_URL }}models.js"></script>
     <script src="{{ SYNNEFO_JS_URL }}glance_models.js"></script>
@@ -335,45 +336,53 @@
         function positionBottomMessages() {
             var el = $("#multiple_actions_container");
         }
+        
+        
+        $(document).ready(function() {
+          // Footer position handlers
+          var footerHeight = 0;
+          var footerTop = 0;
+          var $footer = $("#footer-container");
+          function _positionFooter() {
 
-        $(window).bind("load", function() { 
-               var footerHeight = 0;
-               var footerTop = 0;
-               var $footer = $("#footer-container");
+              footerHeight = 80;
+              footerTop = ($(window).scrollTop()+$(window).height()-footerHeight)+"px";
+              if (($(document.body).height()+footerHeight) < $(window).height()) {
 
-               function positionFooter() {
-                   footerHeight = 80;
-                   footerTop = ($(window).scrollTop()+$(window).height()-footerHeight)+"px";
-                   if (($(document.body).height()+footerHeight) < $(window).height()) {
-
-                       $footer.css({
-                            position: "absolute"
-                       }).css({
-                            top: footerTop
-                       })
-                    } else {
-                    
-                       if ($footer.css("position") == "static") {
-                           if ($(document.body).height() < $(window).height()) {    
-                               $footer.css({
-                                    position: "absolute"
-                               }).css({
-                                    top: footerTop
-                                })
-                            }
-                        } else {
-
-                           $footer.css({
-                               position: "static"
+                  $footer.css({
+                       position: "absolute"
+                  }).css({
+                       top: footerTop
+                  })
+               } else {
+               
+                  if ($footer.css("position") == "static") {
+                      if ($(document.body).height() < $(window).height()) {    
+                          $footer.css({
+                               position: "absolute"
+                          }).css({
+                               top: footerTop
                            })
                        }
-                   }
+                   } else {
 
-               }
-               positionFooter();
-               window.positionFooter = _.throttle(positionFooter, 100);
-               $(window).scroll(positionFooter).resize(positionFooter)
-        });
+                      $footer.css({
+                          position: "static"
+                      })
+                  }
+              }
+
+          }
+          _positionFooter();
+          window.positionFooter = _.throttle(_positionFooter, 100);
+          window.forcePositionFooter = _positionFooter;
+          $(window).scroll(window.positionFooter).resize(window.positionFooter)
+
+          $(window).bind("load", function() { 
+            _positionFooter();
+          });
+        
+        })
     </script>
 
     <!-- base notification for error/success reporting -->
@@ -626,6 +635,9 @@
             synnefo.config.logout_redirect = '{{ logout_redirect }}';
             synnefo.config.login_redirect = '{{ login_redirect }}';
             synnefo.config.auth_cookie_name = '{{ auth_cookie_name }}';
+
+            synnefo.config.translate_uuids = {{ translate_uuids|safe }};
+            synnefo.config.user_catalog_url = {{ user_catalog_url|safe }};
 
             synnefo.config.network_suggested_subnets = {{ network_suggested_subnets|safe }};
             synnefo.config.network_available_types = {{ network_available_types|safe }};

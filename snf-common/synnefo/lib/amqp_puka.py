@@ -63,7 +63,8 @@ def reconnect_decorator(func):
         try:
             return func(self, *args, **kwargs)
         except (socket_error, spec_exceptions.ConnectionForced) as e:
-            self.log.error('Connection Closed while in %s: %s', func.__name__, e)
+            self.log.error('Connection Closed while in %s: %s', func.__name__,
+                           e)
             self.connect()
 
     return wrapper
@@ -106,7 +107,7 @@ class AMQPPukaClient(object):
     def connect(self, retries=0):
         if self.max_retries and retries >= self.max_retries:
             self.log.error("Aborting after %d retries", retries)
-            raise AMQPConnectionError('Aborting after %d connection failures.'\
+            raise AMQPConnectionError('Aborting after %d connection failures.'
                                       % retries)
             return
 
@@ -211,7 +212,7 @@ class AMQPPukaClient(object):
                 arguments = {'x-ha-policy': 'all'}
             elif isinstance(mirrored_nodes, list):
                 arguments = {'x-ha-policy': 'nodes',
-                           'x-ha-policy-params': mirrored_nodes}
+                             'x-ha-policy-params': mirrored_nodes}
             else:
                 raise AttributeError
         else:
@@ -319,9 +320,9 @@ class AMQPPukaClient(object):
                 raise socket_error
 
         consume_promise = \
-                self.client.basic_consume(queue=queue,
-                                          prefetch_count=prefetch_count,
-                                          callback=handle_delivery)
+            self.client.basic_consume(queue=queue,
+                                      prefetch_count=prefetch_count,
+                                      callback=handle_delivery)
 
         self.consume_promises.append(consume_promise)
         return consume_promise

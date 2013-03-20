@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 import datetime
+import ipaddr
 
 from base64 import b64encode, b64decode
 from datetime import timedelta, tzinfo
@@ -206,8 +207,10 @@ def get_image_dict(image_id, user_id):
     properties = img.get('properties', {})
     image['backend_id'] = img['location']
     image['format'] = img['disk_format']
-    image['metadata'] = dict((key.upper(), val) \
+    image['metadata'] = dict((key.upper(), val)
                              for key, val in properties.items())
+    image['checksum'] = img['checksum']
+
     return image
 
 
@@ -235,6 +238,43 @@ def get_network(network_id, user_id, for_update=False):
         return objects.get(Q(userid=user_id) | Q(public=True), id=network_id)
     except (ValueError, Network.DoesNotExist):
         raise ItemNotFound('Network not found.')
+
+
+def validate_network_params(subnet, gateway=None, subnet6=None, gateway6=None):
+    try:
+        # Use strict option to not all subnets with host bits set
+        network = ipaddr.IPv4Network(subnet, strict=True)
+    except ValueError:
+        raise BadRequest("Invalid network IPv4 subnet")
+
+    # Check that network size is allowed!
+    if not validate_network_size(network.prefixlen):
+        raise OverLimit(message="Unsupported network size",
+                        details="Network mask must be in range (%s, 29]" %
+                                MAX_CIDR_BLOCK)
+
+    # Check that gateway belongs to network
+    if gateway:
+        try:
+            gateway = ipaddr.IPv4Address(gateway)
+        except ValueError:
+            raise BadRequest("Invalid network IPv4 gateway")
+        if not gateway in network:
+            raise BadRequest("Invalid network IPv4 gateway")
+
+    if subnet6:
+        try:
+            # Use strict option to not all subnets with host bits set
+            network6 = ipaddr.IPv6Network(subnet6, strict=True)
+        except ValueError:
+            raise BadRequest("Invalid network IPv6 subnet")
+        if gateway6:
+            try:
+                gateway6 = ipaddr.IPv6Address(gateway6)
+            except ValueError:
+                raise BadRequest("Invalid network IPv6 gateway")
+            if not gateway6 in network6:
+                raise BadRequest("Invalid network IPv6 gateway")
 
 
 def validate_network_size(cidr_block):
@@ -316,7 +356,7 @@ def get_nic_from_index(vm, nic_index):
     matching_nics = vm.nics.filter(index=nic_index)
     matching_nics_len = len(matching_nics)
     if matching_nics_len < 1:
-        raise  ItemNotFound('NIC not found on VM')
+        raise ItemNotFound('NIC not found on VM')
     elif matching_nics_len > 1:
         raise BadMediaType('NIC index conflict on VM')
     nic = matching_nics[0]
@@ -377,10 +417,9 @@ def render_fault(request, fault):
     if request.serialization == 'xml':
         data = render_to_string('fault.xml', {'fault': fault})
     else:
-        d = {fault.name: {
-                'code': fault.code,
-                'message': fault.message,
-                'details': fault.details}}
+        d = {fault.name: {'code': fault.code,
+                          'message': fault.message,
+                          'details': fault.details}}
         data = json.dumps(d)
 
     resp = HttpResponse(data, status=fault.code)
@@ -466,7 +505,7 @@ def verify_personality(personality):
     """Verify that a a list of personalities is well formed"""
     if len(personality) > settings.MAX_PERSONALITY:
         raise OverLimit("Maximum number of personalities"
-                               " exceeded")
+                        " exceeded")
     for p in personality:
         # Verify that personalities are well-formed
         try:
@@ -497,6 +536,7 @@ def get_flavor_provider(flavor):
     if disk_template.startswith("ext"):
         disk_template, provider = disk_template.split("_", 1)
     return disk_template, provider
+
 
 def values_from_flavor(flavor):
     """Get Ganeti connectivity info from flavor type.
@@ -558,12 +598,11 @@ def get_existing_users():
     from synnefo.db.models import VirtualMachine, Network
 
     keypairusernames = PublicKeyPair.objects.filter().values_list('user',
-                                                               flat=True)
+                                                                  flat=True)
     serverusernames = VirtualMachine.objects.filter().values_list('userid',
-                                                                   flat=True)
+                                                                  flat=True)
     networkusernames = Network.objects.filter().values_list('userid',
                                                             flat=True)
 
-    return set(list(keypairusernames) + list(serverusernames) + \
-           list(networkusernames))
-
+    return set(list(keypairusernames) + list(serverusernames) +
+               list(networkusernames))

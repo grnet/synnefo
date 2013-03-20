@@ -1,11 +1,11 @@
 Source: synnefo
 Section: python
 Priority: optional
-Maintainer: Dimitris Aragiorgis <dimara@grnet.gr>
+Maintainer: Synnefo development team <synnefo-devel@googlegroups.com>
 Build-Depends: debhelper (>= 8), python-all (>= 2.5)
 Standards-Version: 3.9.2
 XS-Python-Version: >= 2.6
-Homepage: https://code.grnet.gr/projects/synnefo
+Homepage: http://www.synnefo.org
 Vcs-Browser: https://code.grnet.gr/git/synnefo
 
 Package: synnefo
@@ -88,22 +88,13 @@ Depends: ${misc:Depends}, ${python:Depends}, snf-common,
     python-argparse
 Replaces: snf-pithos-lib
 Provides: ${python:Provides}
+Recommends: python-ceph
 XB-Python-Version: ${python:Versions}
 Description: Synnefo File/Object Storage backend library
  This package handles the low level management for the Synnefo
  File/Object Storage service. This means handling of the DB, object
  hashing, object mapping and also handling of different underlying
  storage backend technologies, such as NFS and/or RADOS.
-
-Package: snf-pithos-tools
-Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}, snf-common
-Provides: ${python:Provides}
-Replaces: snf-pithos-backend
-XB-Python-Version: ${python:Versions}
-Description: Synnefo additional tools for File/Object Storage
- This package containts command line tools that interact with
- the File/Object Storage service.
 
 Package: snf-tools
 Architecture: all
@@ -119,7 +110,7 @@ Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}
 Provides: ${python:Provides}
 XB-Python-Version: ${python:Versions}
-Description: TODO
+Description: Synnefo quota enforcement service
 
 Package: snf-stats-app
 Architecture: all

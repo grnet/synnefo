@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -35,13 +35,15 @@ from optparse import make_option
 
 from django.core.management.base import NoArgsCommand
 
-from astakos.im.models import AstakosUser
+from astakos.im.models import AstakosUser, AstakosUserAuthProvider
 
-from ._common import format_bool
+from ._common import format, filter_results
 
 
 class Command(NoArgsCommand):
     help = "List users"
+
+    FIELDS = AstakosUser._meta.get_all_field_names()
 
     option_list = NoArgsCommand.option_list + (
         make_option('-c',
@@ -59,6 +61,28 @@ class Command(NoArgsCommand):
                     dest='pending_send_mail',
                     default=False,
                     help="List only users who have not received activation"),
+        make_option('--uuid',
+                    action='store_true',
+                    dest='only_uuid',
+                    default=False,
+                    help="Only display user uuid (default)"),
+        make_option('--displayname',
+                    action='store_true',
+                    dest='displayname',
+                    default=False,
+                    help="Display both uuid and display name"),
+        make_option('--active',
+                    action='store_true',
+                    dest='active',
+                    default=False,
+                    help="Display only active users"),
+        make_option('--filter-by',
+                    dest='filter_by',
+                    help="Filter results. Comma seperated list of key `cond`"
+                    " val pairs that displayed entries must satisfy. e.g."
+                    " --filter-by \"is_active=True,email_verified=True\"."
+                    " Available keys are: %s" % ", ".join(FIELDS)),
+
     )
 
     def handle_noargs(self, **options):
@@ -68,27 +92,74 @@ class Command(NoArgsCommand):
         elif options['pending_send_mail']:
             users = users.filter(is_active=False, activation_sent=None)
 
-        labels = ('id', 'email', 'real name', 'active', 'admin', 'providers')
-        columns = (3, 24, 24, 6, 5, 12, 24)
+        active_only = options['active']
+        if active_only:
+            users = filter_results(users, "is_active=True")
+
+        filter_by = options['filter_by']
+        if filter_by:
+            users = filter_results(users, filter_by)
+
+        displayname = options['displayname']
+
+        ids = [user.id for user in users]
+        auths = AstakosUserAuthProvider.objects.filter(
+            user__in=ids, active=True)
+
+        all_auth = partition_by(lambda a: a.user_id, auths)
+
+        labels = filter(lambda x: x is not Omit,
+                        [('id', 3),
+                         ('display name', 24) if displayname else Omit,
+                         ('real name', 24),
+                         ('active', 6),
+                         ('admin', 5),
+                         ('uuid', 36),
+                         ('providers', 24),
+                         ])
+
+        columns = [c for (l, c) in labels]
 
         if not options['csv']:
-            line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
+            line = ' '.join(l.rjust(w) for l, w in labels)
             self.stdout.write(line + '\n')
             sep = '-' * len(line)
             self.stdout.write(sep + '\n')
 
         for user in users:
             id = str(user.id)
-            active = format_bool(user.is_active)
-            admin = format_bool(user.is_superuser)
-            fields = (
-                id, user.email, user.realname, active, admin, \
-                        user.auth_providers_display
-            )
+            active = user.is_active
+            admin = user.is_superuser
+            uuid = user.uuid or ''
+            auths = all_auth[user.id]
+            auth_display = ",".join(unicode(auth) for auth in auths)
+
+            elems = filter(lambda x: x is not Omit,
+                           [id,
+                            user.username if displayname else Omit,
+                            user.realname,
+                            active, admin, uuid,
+                            auth_display,
+                            ])
+            fields = (format(elem) for elem in elems)
 
             if options['csv']:
                 line = '|'.join(fields)
             else:
                 line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
 
-            self.stdout.write(line.encode('utf8') + '\n')
+            self.stdout.write(line + '\n')
+
+
+class Omit(object):
+    pass
+
+
+def partition_by(f, l):
+    d = {}
+    for x in l:
+        group = f(x)
+        group_l = d.get(group, [])
+        group_l.append(x)
+        d[group] = group_l
+    return d

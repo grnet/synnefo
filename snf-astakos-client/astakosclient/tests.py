@@ -47,7 +47,8 @@ import simplejson
 import astakosclient
 from astakosclient import AstakosClient
 from astakosclient.errors import \
-    AstakosClientException, Unauthorized, BadRequest, NotFound
+    AstakosClientException, Unauthorized, BadRequest, NotFound, \
+    NoDisplayName, NoUUID
 
 # Use backported unittest functionality if Python < 2.7
 try:
@@ -575,6 +576,21 @@ class TestDisplayNames(unittest.TestCase):
             self.fail("Shouldn't raise an Exception")
         self.assertEqual(info, user_1['username'])
 
+    # ----------------------------------
+    # Get info with wrong uuid
+    def test_NoDisplayName(self):
+        global token_1
+        _mockRequest([_requestOk])
+        try:
+            client = AstakosClient("https://example.com")
+            client.getDisplayName(token_1, "1234")
+        except NoDisplayName:
+            pass
+        except:
+            self.fail("Should have raised NoDisplayName exception")
+        else:
+            self.fail("Should have raised NoDisplayName exception")
+
 
 class TestGetUUIDs(unittest.TestCase):
     """Test cases for functions getUUIDs/getUUID"""
@@ -623,6 +639,21 @@ class TestGetUUIDs(unittest.TestCase):
         except:
             self.fail("Shouldn't raise an Exception")
         self.assertEqual(info, user_1['uuid'])
+
+    # ----------------------------------
+    # Get uuid with wrong username
+    def test_NoUUID(self):
+        global token_1
+        _mockRequest([_requestOk])
+        try:
+            client = AstakosClient("https://example.com")
+            client.getUUID(token_1, "1234")
+        except NoUUID:
+            pass
+        except:
+            self.fail("Should have raised NoUUID exception")
+        else:
+            self.fail("Should have raised NoUUID exception")
 
 
 # ----------------------------

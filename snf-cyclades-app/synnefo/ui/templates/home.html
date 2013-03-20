@@ -663,8 +663,10 @@
             });
 
             // user config
-            synnefo.user = synnefo.auth_client.get_user();
-            if (!synnefo.user) { synnefo.auth_client.redirect_to_login(); }
+            synnefo.user = synnefo.auth_client;
+            if (!synnefo.user.get_token()) { 
+              synnefo.auth_client.redirect_to_login(); 
+            }
 
             $(".usermenu .username").text("options");
 

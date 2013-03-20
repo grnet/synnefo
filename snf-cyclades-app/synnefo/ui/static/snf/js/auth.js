@@ -52,10 +52,9 @@
     //            client.redirect_to_logout();
     //        }
     //
-    //  var astakos_client = new snf.auth.AstakosClient(astakos_config);
-    //  var user = astakos_client.get_user();
-    //  if (!user) { astakos_client.redirect_to_login() };
-    //  console.log(user.username, user.token);
+    //  var user = new snf.auth.AstakosClient(astakos_config);
+    //  if (!user.get_token() { user.redirect_to_login() };
+    //  console.log(user.get_username(), user.get_token());
     //
 
     var root = root;
@@ -66,6 +65,14 @@
     
     snf.auth.AstakosClient = function(config) {
         this.config = $.extend(this.default_config, config);
+        this.current_token = undefined;
+        this.current_username = undefined;
+      
+        var self = this;
+        this.updater = window.setInterval(function(){
+          self.get_token();
+          self.get_username();
+        }, 10000);
     }
 
     snf.auth.AstakosClient.prototype.default_config = {
@@ -121,14 +128,34 @@
         }
     }
     
-    // set username and token
-    snf.auth.AstakosClient.prototype.get_user = function() {
+    snf.auth.AstakosClient.prototype.extract_cookie_contents = function() {
         var data = this.get_cookie_data();
         if (!data) {
-            return false;
+            return {};
         }
-        var parsed_data = this.parse_cookie_data(data);
-        return parsed_data;
+        return this.parse_cookie_data(data);
+    }
+
+    snf.auth.AstakosClient.prototype.get_token = function() {
+      var newtoken;
+      newtoken = this.extract_cookie_contents().token;
+      if (newtoken === undefined || (newtoken != this.current_token && 
+          this.current_token != undefined)) {
+        this.redirect_to_login();
+      }
+      this.current_token = newtoken;
+      return this.current_token;
+    }
+
+    snf.auth.AstakosClient.prototype.get_username = function() {
+      var newusername;
+      newusername = this.extract_cookie_contents().username;
+      if (newusername === undefined || (newusername != this.current_username && 
+          this.current_username != undefined)) {
+        this.redirect_to_login();
+      }
+      this.current_username = newusername;
+      return this.current_token;
     }
     
 })(this);

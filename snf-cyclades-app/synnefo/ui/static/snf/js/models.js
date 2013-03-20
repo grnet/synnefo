@@ -272,7 +272,7 @@
 
         owned_by: function(user) {
           if (!user) { user = synnefo.user }
-          return user.username == this.get('owner_uuid');
+          return user.get_username() == this.get('owner_uuid');
         },
 
         display_owner: function() {

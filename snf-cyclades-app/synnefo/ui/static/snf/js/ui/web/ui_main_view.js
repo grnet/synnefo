@@ -123,7 +123,7 @@
 
         beforeOpen: function() {
             var cont = this.$(".copy-content p");
-            var token = snf.user.token;
+            var token = snf.user.get_token();
 
             cont.html("");
             cont.text(token);

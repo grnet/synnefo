@@ -86,7 +86,7 @@
             cookie_name: '{{ auth_cookie_name }}',
             login_url: '{{ login_redirect }}'
         });
-        if (!tmp_auth_client.get_user()) { tmp_auth_client.redirect_to_login(); }
+        if (!tmp_auth_client.get_token()) { tmp_auth_client.redirect_to_login(); }
     </script>
     {{ CLOUDBAR_CODE }}
     

@@ -92,7 +92,7 @@ def token_check(func):
             raise PermissionDenied
 
         token = request.POST.get('token', None)
-        if token and token != request.user.get('auth_token', None):
+        if token and token == request.user.get('auth_token', None):
             return func(request, *args, **kwargs)
 
         raise PermissionDenied
@@ -116,6 +116,8 @@ def helpdesk_user_required(func, permitted_groups=PERMITTED_GROUPS):
             groups = request.user.get('groups', [])
 
             if not groups:
+                logger.error("Failed to access helpdesk view %r",
+                             request.user_uniq)
                 raise PermissionDenied
 
             has_perm = False
@@ -124,11 +126,18 @@ def helpdesk_user_required(func, permitted_groups=PERMITTED_GROUPS):
                     has_perm = True
 
             if not has_perm:
+                logger.error("Failed to access helpdesk view %r. No valid "
+                             "helpdesk group (%r) matches user groups (%r)"
+                             "valid helpdesk group", request.user_uniq,
+                             permitted_groups, groups)
                 raise PermissionDenied
         else:
+            logger.error("Failed to access helpdesk view %r. No authenticated "
+                         "user found.")
             raise PermissionDenied
 
-        logging.debug("User %s accessed helpdesk view" % (request.user_uniq))
+        logging.info("User %s accessed helpdesk view (%s)", request.user_uniq,
+                     request.path)
         return func(request, *args, **kwargs)
 
     return wrapper
@@ -139,7 +148,6 @@ def index(request):
     """
     Helpdesk index view.
     """
-
     # if form submitted redirect to details
     account = request.GET.get('account', None)
     if account:
@@ -156,6 +164,7 @@ def account(request, search_query):
     Account details view.
     """
 
+    logging.info("Helpdesk search by %s: %s", request.user_uniq, search_query)
     show_deleted = bool(int(request.GET.get('deleted', SHOW_DELETED_VMS)))
 
     account_exists = True
@@ -244,6 +253,7 @@ def suspend_vm(request, vm_id):
     vm = VirtualMachine.objects.get(pk=vm_id)
     vm.suspended = True
     vm.save()
+    logging.info("VM %s suspended by %s", vm_id, request.user_uniq)
     account = vm.userid
     return HttpResponseRedirect(reverse('helpdesk-details', args=(account,)))
 
@@ -254,5 +264,6 @@ def suspend_vm_release(request, vm_id):
     vm = VirtualMachine.objects.get(pk=vm_id)
     vm.suspended = False
     vm.save()
+    logging.info("VM %s unsuspended by %s", vm_id, request.user_uniq)
     account = vm.userid
     return HttpResponseRedirect(reverse('helpdesk-details', args=(account,)))

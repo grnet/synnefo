@@ -615,6 +615,7 @@
 
                 var _success = _.bind(function() {
                     if (success) { success() };
+                    snf.ui.main.load_user_quotas();
                 }, this);
                 var _error = _.bind(function() {
                     this.set({state: previous_state, status: previous_status})
@@ -1439,7 +1440,9 @@
                                          function() {
                                              // set state after successful call
                                              self.state('DESTROY');
-                                             success.apply(this, arguments)
+                                             success.apply(this, arguments);
+                                             snf.ui.main.load_user_quotas();
+
                                          },  
                                          error, 'destroy', params);
                     break;
@@ -1688,7 +1691,11 @@
                 params.network.dhcp = false;
             }
             
-            return this.api_call(this.path, "create", params, callback);
+            var cb = function() {
+              callback();
+              snf.ui.main.load_user_quotas();
+            }
+            return this.api_call(this.path, "create", params, cb);
         },
 
         get_public: function(){
@@ -2117,8 +2124,13 @@
             
             opts = {name: name, imageRef: image.id, flavorRef: flavor.id, metadata:meta}
             opts = _.extend(opts, extra);
+            
+            var cb = function() {
+              snf.ui.main.load_user_quotas();
+              callback();
+            }
 
-            this.api_call(this.path, "create", {'server': opts}, undefined, undefined, callback, {critical: true});
+            this.api_call(this.path, "create", {'server': opts}, undefined, undefined, cb, {critical: true});
         },
 
         load_missing_images: function(callback) {

@@ -781,7 +781,7 @@
         
         quota_handlers_initialized: false,
 
-        load_user_quotas: function() {
+        load_user_quotas: function(repeat) {
           var main_view = this;
           if (!snf.user.quota) {
             snf.user.quota = new snf.quota.Quota("cyclades");
@@ -795,9 +795,11 @@
               snf.user.quota.load(d);
             },
             complete: function() {
-                setTimeout(function(){
-                    main_view.load_user_quotas();
-                }, synnefo.config.quotas_update_interval || 10000);
+                if (repeat) {
+                  setTimeout(function(){
+                      main_view.load_user_quotas(1);
+                  }, synnefo.config.quotas_update_interval || 10000);
+                }
             }
           });
         },
@@ -838,7 +840,7 @@
         // initial view based on user cookie
         show_initial_view: function() {
           this.set_vm_view_handlers();
-          this.load_user_quotas();
+          this.load_user_quotas(1);
           this.hide_loading_view();
           
           bb.history.start();

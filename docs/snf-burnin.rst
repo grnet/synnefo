@@ -4,13 +4,14 @@ snf-burnin
 ^^^^^^^^^^
 
 :ref:`snf-burnin <snf-burnin>` is an integration testing tool for a running
-Synnefo deployment. It runs test scenarios from the following categories:
+Synnefo deployment. It uses the Synnefo REST APIs to run test scenarios for the
+following categories:
 
 * :ref:`Authentication <unauthorizedtestcase>`
 * :ref:`Images <imagestestcase>`
 * :ref:`Flavors <flavorstestcase>`
 * :ref:`Servers <serverstestcase>`
-* :ref:`Networking <networktestcase>`
+* :ref:`Network <networktestcase>`
 * :ref:`Storage <pithostestcase>`
 
 
@@ -21,13 +22,13 @@ Usage
 
 ::
 
-  snf-burnin --api=API_URL \
-             --token=TOKEN \
-             --plankton=PLANKTON_API \
-             --plankton-user=PLANKTON_SYSTEM_USER \
-             --image-id=IMAGE-ID \
+  snf-burnin --token=TOKEN \
+             --api=CYCLADES_URL
              --pithos=PITHOS_URL \
              --astakos=ASTAKOS_URL \
+             --plankton=PLANKTON_URL \
+             --plankton-user=PLANKTON_SYSTEM_USER \
+             --image-id=IMAGE_ID \
              --log-folder=LOG_FOLDER
 
 For more info
@@ -97,18 +98,18 @@ Detailed description of testcases
 
 UnauthorizedTestCase
 --------------------
-* Test access without a valid token fails
+* Test that trying to access without a valid token, fails
 
 .. _imagestestcase:
 
 ImagesTestCase
 --------------
 * Test image list actually returns images
-* Test detailed image list is the same length as list
-* Test detailed and simple image list contain same names
+* Test detailed image list has the same length as list
+* Test detailed and simple image list contain the same names
 * Test system images have unique names
 * Test every image has specific metadata defined
-* Download image from Pithos+
+* Download image from Pithos
 * Upload and register image
 
 .. _flavorstestcase:
@@ -116,8 +117,8 @@ ImagesTestCase
 FlavorsTestCase
 ---------------
 * Test flavor list actually returns flavors
-* Test detailed flavor list is the stame length as list
-* Test detailed and simple flavor list contain same names
+* Test detailed flavor list has the same length as list
+* Test detailed and simple flavor list contain the same names
 * Test flavors have unique names
 * Test flavor names have correct format
 
@@ -132,11 +133,11 @@ SpawnServerTestCase
 -------------------
 * Submit create server
 * Test server is in BUILD state in server list
-* Test server is in BUILD state in details
+* Test server is in BUILD state in server details
 * Change server metadata
 * Verify the changed metadata are correct
 * Verify server metadata are set based on image metadata
-* Wait until server change state to ACTIVE, and verify state
+* Wait until server changes state to ACTIVE, and verify state
 * Test if OOB server console works
 * Test if server has IPv4
 * Test if server has IPv6
@@ -166,7 +167,7 @@ NetworkTestCase
 * Submit create server B request
 * Test server B becomes ACTIVE
 * Submit create private network request
-* Connect VMs to private network
+* Submit connect VMs to private network
 * Test if VMs are connected to network
 * Submit reboot request to server A
 * Test server A responds to ping on IPv4 address (verify up and running)
@@ -175,9 +176,9 @@ NetworkTestCase
 * Connect via SSH and setup the new network interface in server A
 * Connect via SSH and setup the new network interface in server B
 * Connect via SSH to server A and test if server B responds to ping on IPv4 address
-* Disconnect servers from network and verfiy the network details
+* Disconnect servers from network and verify the network details
 * Send delete network request and verify that the network is deleted from the list
-* Send request to delete servers and wait until they are actyally deleted
+* Send request to delete servers and wait until they are actually deleted
 
 .. _pithostestcase:
 
@@ -187,5 +188,5 @@ PithosTestCase
 * Test containers have unique names
 * Create a new container
 * Upload simple file to newly created container
-* Download file from Pithos+ and test they are the same
-* Remove created file and container from Pithos+
+* Download file from Pithos and test it is the same with the one uploaded
+* Remove created file and container from Pithos

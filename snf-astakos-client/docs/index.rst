@@ -3,28 +3,31 @@
 Component snf-astakos-client
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-synnefo component :ref:`snf-common <snf-common>` defines a default client
-for the :ref:`astakos <astakos>` service. It is designed to be minimal,
-hence easily debugged and unit tested.
+The Synnefo component :ref:`snf-astakos-client <snf-astakos-client>` defines a
+default client for the :ref:`Astakos <astakos>` service. It is designed to be
+simple and minimal, hence easy to debug and test.
 
-It uses the user's authentication token to query astakos for:
+It uses the user's authentication token to query Astakos for:
+
     * User's info
-    * Usernames of given uuids
-    * Uuids of given usernames
+    * Usernames for given UUIDs
+    * UUIDs for given usernames
 
-It can also query astakos with a service's auth token for:
-    * Usernames of given uuids
-    * Uuids of given usernames
+It can also query Astakos with another service's (Cyclades or Pithos)
+authentication token for:
 
-Additionally there are options for using the objpool library to
-pool the http connections.
+    * Usernames for given UUIDs
+    * UUIDs for given usernames
+
+Additionally, there are options for using the `objpool
+<https://github.com/grnet/objpool>`_ library to pool the http connections.
 
 
 Basic example
 =============
 
-The astakosclient module provides the AstakosClient class. This section
-demonstrates how to get user's info using astakosclient.
+The ``astakosclient`` module provides the ``AstakosClient`` class. This section
+demonstrates how to get user's info using ``astakosclient``.
 
 .. code-block:: python
 
@@ -34,7 +37,8 @@ demonstrates how to get user's info using astakosclient.
     user_info = client.authenticate("UQpYas7ElzWGD5yCcEXtjw==")
     print user_info['username']
 
-Another example where we ask for the uuid of user user1@example.com
+Another example where we ask for the username of a user with UUID:
+``b3de8eb0-3958-477e-als9-789af8dd352c``
 
 .. code-block:: python
 
@@ -49,7 +53,7 @@ Another example where we ask for the uuid of user user1@example.com
 Classes and functions
 =====================
 
-This section describes in depth the API of astakosclient.
+This section describes in depth the API of ``astakosclient``.
 
 Astakos Client
 --------------
@@ -70,16 +74,16 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
         In case of error raise an AstakosClientException exception.
 
     **getDisplayNames(**\ token, uuids\ **)**
-        Given a valid authentication token and a list of uuids
+        Given a valid authentication token and a list of UUIDs
         return a uuid_catalog, that is a dictionary with the given
-        uuids as keys and the corresponding user names as values.
-        Invalid uuids will not be in the dictionary.
+        UUIDs as keys and the corresponding user names as values.
+        Invalid UUIDs will not be in the dictionary.
         In case of error raise an AstakosClientException exception.
 
     **getDisplayName(**\ token, uuid\ **)**
-        Given a valid authentication token and a uuid (as string)
+        Given a valid authentication token and a UUID (as string)
         return the corresponding user name (as string).
-        In case of invalid uuid raise NoDisplayName exception.
+        In case of invalid UUID raise NoDisplayName exception.
         In case of error raise an AstakosClientException exception.
 
     **getServiceDisplayNames(**\ token, uuids\ **)**
@@ -91,13 +95,13 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
     **getUUIDs(**\ token, display_names\ **)**
         Given a valid authentication token and a list of usernames
         return a displayname_catalog, that is a dictionary with the given
-        usernames as keys and the corresponding uuids as values.
+        usernames as keys and the corresponding UUIDs as values.
         Invalid usernames will not be in the dictionary.
         In case of error raise an AstakosClientException exception.
 
     **getUUID(**\ token, display_name\ **)**
         Given a valid authentication token and a username (as string)
-        return the corresponding uuid (as string).
+        return the corresponding UUID (as string).
         In case of invalid user name raise NoUUID exception.
         In case of error raise an AstakosClientException exception.
 
@@ -115,8 +119,8 @@ Public Functions
 ----------------
 
 **getTokenFromCookie(**\ request, cookie_name\ **)**
-    Given a django request object and astako's cookie name
-    extract user's token from it.
+    Given a Django request object and an Astakos cookie name
+    extract the user's token from it.
 
 
 Exceptions and Errors
@@ -142,7 +146,7 @@ Exceptions and Errors
 
 *exception* **NoDisplayName**
     Raised by getDisplayName and getServiceDisplayName when an invalid
-    uuid was given.
+    UUID was given.
 
 *exception* **NoUUID**
     Raised by *getUUID* and *getServiceUUID* when an invalid

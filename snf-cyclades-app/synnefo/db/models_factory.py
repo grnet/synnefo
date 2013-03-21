@@ -176,6 +176,7 @@ class NetworkInterfaceFactory(factory.Factory):
         'aa:{0}{0}:{0}{0}:aa:{0}{0}:{0}{0}'.format(hex(int(n) % 15)[2:3]))
     ipv4 = factory.LazyAttributeSequence(lambda a, n: a.network.subnet[:-4] +
                                          '{0}'.format(int(n) + 2))
+    state = "ACTIVE"
     firewall_profile =\
         factory.Sequence(round_seq_first(FACTORY_FOR.FIREWALL_PROFILES))
 

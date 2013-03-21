@@ -44,7 +44,8 @@ from django.utils import simplejson as json
 from synnefo.api import faults, util
 from synnefo.api.actions import server_actions
 from synnefo.api.common import method_not_allowed
-from synnefo.db.models import VirtualMachine, VirtualMachineMetadata
+from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata,
+                               NetworkInterface)
 from synnefo.logic.backend import create_instance, delete_instance
 from synnefo.logic.utils import get_rsapi_state
 from synnefo.logic.rapi import GanetiApiError
@@ -141,7 +142,8 @@ def vm_to_dict(vm, detail=False):
         if metadata:
             d['metadata'] = {'values': metadata}
 
-        attachments = [nic_to_dict(nic) for nic in vm.nics.order_by('index')]
+        vm_nics = vm.nics.filter(state="ACTIVE").order_by("index")
+        attachments = map(nic_to_dict, vm_nics)
         if attachments:
             d['attachments'] = {'values': attachments}
 
@@ -338,6 +340,12 @@ def create_server(serials, request):
             flavor=flavor,
             action="CREATE",
             serial=serial)
+
+        # Create VM's public NIC. Do not wait notification form ganeti hooks to
+        # create this NIC, because if the hooks never run (e.g. building error)
+        # the VM's public IP address will never be released!
+        NetworkInterface.objects.create(machine=vm, network=network, index=0,
+                                        ipv4=address, state="Buidling")
 
         log.info("Created entry in DB for VM '%s'", vm)
 

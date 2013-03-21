@@ -99,6 +99,7 @@ def network_to_dict(network, user_id, detail=True):
 
         attachments = [util.construct_nic_id(nic)
                        for nic in network.nics.filter(machine__userid=user_id)
+                                              .filter(state="ACTIVE")
                                               .order_by('machine')]
         d['attachments'] = {'values': attachments}
     return d

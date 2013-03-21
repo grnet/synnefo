@@ -663,17 +663,24 @@ class NetworkInterface(models.Model):
         ('PROTECTED', 'Protected')
     )
 
+    STATES = (
+        ("ACTIVE", "Active"),
+        ("BUILDING", "Building"),
+    )
+
     machine = models.ForeignKey(VirtualMachine, related_name='nics')
     network = models.ForeignKey(Network, related_name='nics')
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     index = models.IntegerField(null=False)
-    mac = models.CharField(max_length=32, null=False, unique=True)
+    mac = models.CharField(max_length=32, null=True, unique=True)
     ipv4 = models.CharField(max_length=15, null=True)
     ipv6 = models.CharField(max_length=100, null=True)
     firewall_profile = models.CharField(choices=FIREWALL_PROFILES,
                                         max_length=30, null=True)
     dirty = models.BooleanField(default=False)
+    state = models.CharField(max_length=32, null=False, default="Building",
+                             choices=STATES)
 
     def __unicode__(self):
         return '%s@%s' % (self.machine.name, self.network.name)

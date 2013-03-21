@@ -32,8 +32,7 @@
 # or implied, of GRNET S.A.
 
 from astakos.quotaholder.exception import (
-    NoCapacityError, NoStockError,
-    NonImportedError, NoStockReleaseError, NonExportedError)
+    NoCapacityError, NonImportedError)
 
 
 class Operation(object):
@@ -42,8 +41,6 @@ class Operation(object):
     def assertions(holding):
         assert(0 <= holding.imported_min)
         assert(holding.imported_min <= holding.imported_max)
-        assert(0 <= holding.stock_min)
-        assert(holding.stock_min <= holding.stock_max)
 
     @classmethod
     def _prepare(cls, holding, quantity, check=True):
@@ -98,34 +95,6 @@ class Import(Operation):
     @classmethod
     def _finalize(cls, holding, quantity):
         holding.imported_min += quantity
-        holding.stock_min += quantity
-        holding.stock_max += quantity
-        holding.save()
-
-
-class Export(Operation):
-
-    @classmethod
-    def _prepare(cls, holding, quantity, check=True):
-        stock_min = holding.stock_min
-        new_stock_min = stock_min - quantity
-
-        if check and new_stock_min < 0:
-            holder = holding.holder
-            resource = holding.resource
-            m = ("%s has not enough stock of %s." % (holder, resource))
-            raise NoStockError(m,
-                               holder=holder,
-                               resource=resource,
-                               requested=quantity,
-                               limit=stock_min)
-
-        holding.stock_min = new_stock_min
-        holding.save()
-
-    @classmethod
-    def _finalize(cls, holding, quantity):
-        holding.stock_max -= quantity
         holding.save()
 
 
@@ -135,11 +104,6 @@ class Release(Operation):
     def _prepare(cls, holding, quantity, check=True):
         imported_min = holding.imported_min
         new_imported_min = imported_min - quantity
-
-        stock_min = holding.stock_min
-        new_stock_min = stock_min - quantity
-        stock_max = holding.stock_max
-        new_stock_max = stock_max - quantity
 
         if check and new_imported_min < 0:
             holder = holding.holder
@@ -152,54 +116,12 @@ class Release(Operation):
                                    requested=quantity,
                                    limit=imported_min)
 
-        if check and new_stock_min < 0:
-            holder = holding.holder
-            resource = holding.resource
-            m = ("%s attempts to release %s that has been reexported." %
-                 (holder, resource))
-            raise NoStockReleaseError(m,
-                                      holder=holder,
-                                      resource=resource,
-                                      requested=quantity,
-                                      limit=stock_min)
-
         holding.imported_min = new_imported_min
-        holding.stock_min = new_stock_min
-        holding.stock_max = new_stock_max
         holding.save()
 
     @classmethod
     def _finalize(cls, holding, quantity):
         holding.imported_max -= quantity
-        holding.save()
-
-
-class Reclaim(Operation):
-
-    @classmethod
-    def _prepare(cls, holding, quantity, check=True):
-        stock_max = holding.stock_max
-        new_stock_max = stock_max + quantity
-
-        imported_min = holding.imported_min
-        if check and new_stock_max > imported_min:
-            holder = holding.holder
-            resource = holding.resource
-            m = ("%s attempts to reclaim %s not originating by itself." %
-                 (holder, resource))
-            raise NonExportedError(m,
-                                   holder=holder,
-                                   resource=resource,
-                                   requested=quantity,
-                                   current=stock_max,
-                                   limit=imported_min)
-
-        holding.stock_max = new_stock_max
-        holding.save()
-
-    @classmethod
-    def _finalize(cls, holding, quantity):
-        holding.stock_min += quantity
         holding.save()
 
 

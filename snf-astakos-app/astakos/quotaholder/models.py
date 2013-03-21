@@ -42,6 +42,7 @@ from synnefo.lib.db.managers import ForUpdateManager
 class Holding(Model):
 
     holder      =   CharField(max_length=4096, db_index=True)
+    source      =   CharField(max_length=4096, null=True)
     resource    =   CharField(max_length=4096, null=False)
 
     capacity    =   intDecimalField()
@@ -49,13 +50,11 @@ class Holding(Model):
 
     imported_min    =   intDecimalField(default=0)
     imported_max    =   intDecimalField(default=0)
-    stock_min       =   intDecimalField(default=0)
-    stock_max       =   intDecimalField(default=0)
 
     objects     =   ForUpdateManager()
 
     class Meta:
-        unique_together = (('holder', 'resource'),)
+        unique_together = (('holder', 'source', 'resource'),)
 
 
 from datetime import datetime
@@ -67,7 +66,6 @@ def now():
 class Commission(Model):
 
     serial      =   AutoField(primary_key=True)
-    holder      =   CharField(max_length=4096, db_index=True)
     name        =   CharField(max_length=4096, null=True)
     clientkey   =   CharField(max_length=4096, null=False)
     issue_time  =   CharField(max_length=24, default=now)
@@ -79,9 +77,8 @@ class Provision(Model):
     serial      =   ForeignKey( Commission,
                                 to_field='serial',
                                 related_name='provisions'   )
-
-    holder      =   CharField(max_length=4096, db_index=True, null=True)
-    resource    =   CharField(max_length=4096, null=False)
+    holding     =   ForeignKey(Holding,
+                               related_name='provisions')
     quantity    =   intDecimalField()
 
     objects     =   ForUpdateManager()
@@ -89,22 +86,15 @@ class Provision(Model):
 class ProvisionLog(Model):
 
     serial              =   BigIntegerField()
-    source              =   CharField(max_length=4096, null=True)
-    target              =   CharField(max_length=4096)
-    name                =   CharField(max_length=4096)
+    name                =   CharField(max_length=4096, null=True)
     issue_time          =   CharField(max_length=4096)
     log_time            =   CharField(max_length=4096)
+    holder              =   CharField(max_length=4096)
+    source              =   CharField(max_length=4096, null=True)
     resource            =   CharField(max_length=4096)
-    source_capacity     =   intDecimalField(null=True)
-    source_imported_min =   intDecimalField(null=True)
-    source_imported_max =   intDecimalField(null=True)
-    source_stock_min    =   intDecimalField(null=True)
-    source_stock_max    =   intDecimalField(null=True)
-    target_capacity     =   intDecimalField()
-    target_imported_min =   intDecimalField()
-    target_imported_max =   intDecimalField()
-    target_stock_min    =   intDecimalField()
-    target_stock_max    =   intDecimalField()
+    capacity            =   intDecimalField()
+    imported_min        =   intDecimalField()
+    imported_max        =   intDecimalField()
     delta_quantity      =   intDecimalField()
     reason              =   CharField(max_length=4096)
 

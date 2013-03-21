@@ -59,23 +59,11 @@ class CommissionValueException(CommissionException):
         CommissionException.__init__(self, *args, **kwargs)
 
 
-class NoStockError(CommissionValueException):
-    pass
-
-
 class NoCapacityError(CommissionValueException):
     pass
 
 
 class NonImportedError(CommissionValueException):
-    pass
-
-
-class NoStockReleaseError(CommissionValueException):
-    pass
-
-
-class NonExportedError(CommissionValueException):
     pass
 
 

@@ -1905,7 +1905,7 @@
 
                 var ram_available = quotas['ram'];
                 var ram_size = el.get_ram_size();
-                if (index.ram.indexOf(disk_size) == -1) {
+                if (index.ram.indexOf(ram_size) == -1) {
                   var ram = el.ram_to_bytes();
                   if (ram > ram_available) {
                     index.ram.push(el.get('ram'))

@@ -481,11 +481,9 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         q_holdings = Q()
         entities = []
         for (entity, resource, key, _, _, _, _, _) in set_quota:
-
-            q_holdings |= Q(entity=entity, resource=resource)
             entities.append(entity)
 
-        hs = Holding.objects.filter(q_holdings).select_for_update()
+        hs = Holding.objects.filter(entity__in=entities).select_for_update()
         holdings = {}
         for h in hs:
             holdings[(h.entity_id, h.resource)] = h
@@ -554,11 +552,9 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         q_holdings = Q()
         entities = []
         for (entity, resource, key, _, _, _, _) in sources:
-
-            q_holdings |= Q(entity=entity, resource=resource)
             entities.append(entity)
 
-        hs = Holding.objects.filter(q_holdings).select_for_update()
+        hs = Holding.objects.filter(entity__in=entities).select_for_update()
         holdings = {}
         for h in hs:
             holdings[(h.entity_id, h.resource)] = h

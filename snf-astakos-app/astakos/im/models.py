@@ -2750,9 +2750,15 @@ def sync_users(users, sync=True, retries=3, retry_wait=1.0):
         astakos_initial = initial_quotas(users)
         astakos_quotas = users_quotas(users, astakos_initial)
 
+        diff_quotas = {}
+        for holder, local in astakos_quotas.iteritems():
+            registered = qh_limits.get(holder, None)
+            if local != registered:
+                diff_quotas[holder] = dict(local)
+
         if sync:
             r = register_users(nonexisting)
-            r = send_quotas(astakos_quotas)
+            r = send_quotas(diff_quotas)
 
         return (existing, nonexisting,
                 qh_limits, qh_counters,

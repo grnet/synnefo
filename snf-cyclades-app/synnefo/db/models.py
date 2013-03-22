@@ -679,7 +679,7 @@ class NetworkInterface(models.Model):
     firewall_profile = models.CharField(choices=FIREWALL_PROFILES,
                                         max_length=30, null=True)
     dirty = models.BooleanField(default=False)
-    state = models.CharField(max_length=32, null=False, default="Building",
+    state = models.CharField(max_length=32, null=False, default="ACTIVE",
                              choices=STATES)
 
     def __unicode__(self):

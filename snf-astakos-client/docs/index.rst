@@ -34,7 +34,7 @@ demonstrates how to get user's info using ``astakosclient``.
     from astakosclient import AstakosClient
 
     client = AstakosClient("https://accounts.example.com")
-    user_info = client.getUserInfo("UQpYas7ElzWGD5yCcEXtjw==")
+    user_info = client.get_user_info("UQpYas7ElzWGD5yCcEXtjw==")
     print user_info['username']
 
 Another example where we ask for the username of a user with UUID:
@@ -45,8 +45,8 @@ Another example where we ask for the username of a user with UUID:
     from astakosclient import AstakosClient
 
     client = AstakosClient("https://accounts.example.com")
-    username = client.getDisplayName("UQpYas7ElzWGD5yCcEXtjw==",
-                                     "b3de8eb0-3958-477e-als9-789af8dd352c")
+    username = client.get_username("UQpYas7ElzWGD5yCcEXtjw==",
+                                   "b3de8eb0-3958-477e-als9-789af8dd352c")
     print username
 
 
@@ -67,58 +67,58 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
 
     This class provides the following methods:
 
-    **getUserInfo(**\ token, usage=False\ **)**
+    **get_user_info(**\ token, usage=False\ **)**
         Given a valid authentication token it returns a dict with the
         correspoinding user's info. If usage is set to True more
         information about user's resources will be returned.
         In case of error raise an AstakosClientException exception.
 
-    **getDisplayNames(**\ token, uuids\ **)**
+    **get_usernames(**\ token, uuids\ **)**
         Given a valid authentication token and a list of UUIDs
         return a uuid_catalog, that is a dictionary with the given
         UUIDs as keys and the corresponding user names as values.
         Invalid UUIDs will not be in the dictionary.
         In case of error raise an AstakosClientException exception.
 
-    **getDisplayName(**\ token, uuid\ **)**
+    **get_username(**\ token, uuid\ **)**
         Given a valid authentication token and a UUID (as string)
         return the corresponding user name (as string).
-        In case of invalid UUID raise NoDisplayName exception.
+        In case of invalid UUID raise NoUserName exception.
         In case of error raise an AstakosClientException exception.
 
-    **getServiceDisplayNames(**\ token, uuids\ **)**
-        Same as getDisplayNames but called with a service's token.
+    **service_get_usernames(**\ token, uuids\ **)**
+        Same as get_usernames but called with a service's token.
 
-    **getServiceDisplayName(**\ token, uuid\ **)**
-        Same as getDisplayName but called with a service's token.
+    **service_get_username(**\ token, uuid\ **)**
+        Same as get_username but called with a service's token.
 
-    **getUUIDs(**\ token, display_names\ **)**
+    **get_uuids(**\ token, display_names\ **)**
         Given a valid authentication token and a list of usernames
         return a displayname_catalog, that is a dictionary with the given
         usernames as keys and the corresponding UUIDs as values.
         Invalid usernames will not be in the dictionary.
         In case of error raise an AstakosClientException exception.
 
-    **getUUID(**\ token, display_name\ **)**
+    **get_uuid(**\ token, display_name\ **)**
         Given a valid authentication token and a username (as string)
         return the corresponding UUID (as string).
         In case of invalid user name raise NoUUID exception.
         In case of error raise an AstakosClientException exception.
 
-    **getServiceUUIDs(**\ token, uuids\ **)**
-        Same as getUUIDs but called with a service's token.
+    **service_get_uuids(**\ token, uuids\ **)**
+        Same as get_uuids but called with a service's token.
 
-    **getServiceUUID(**\ token, uuid\ **)**
-        Same as getUUID but called with a service's token.
+    **service_get_uuid(**\ token, uuid\ **)**
+        Same as get_uuid but called with a service's token.
 
-    **getServices()**
+    **get_services()**
         Return a list of dicts with the registered services.
 
 
 Public Functions
 ----------------
 
-**getTokenFromCookie(**\ request, cookie_name\ **)**
+**get_token_from_cookie(**\ request, cookie_name\ **)**
     Given a Django request object and an Astakos cookie name
     extract the user's token from it.
 
@@ -144,7 +144,7 @@ Exceptions and Errors
 *exception* **NotFound**
     The server has not found anything matching the Request-URI. Status 404.
 
-*exception* **NoDisplayName**
+*exception* **NoUserName**
     Raised by getDisplayName and getServiceDisplayName when an invalid
     UUID was given.
 

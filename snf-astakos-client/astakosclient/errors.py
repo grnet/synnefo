@@ -65,11 +65,11 @@ class NotFound(AstakosClientException):
         super(NotFound, self).__init__(message, 404)
 
 
-class NoDisplayName(AstakosClientException):
+class NoUserName(AstakosClientException):
     def __init__(self, uuid):
         """No display name for the given uuid"""
         message = "No display name for the given uuid: %s" % uuid
-        super(NoDisplayName, self).__init__(message)
+        super(NoUserName, self).__init__(message)
 
 
 class NoUUID(AstakosClientException):

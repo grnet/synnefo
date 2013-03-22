@@ -342,6 +342,7 @@ class ImageBackend(object):
             # To get shared images, we connect as shared_from member and
             # get the list shared by us
             user = shared_from
+            accounts = [self.user]
         else:
             user = None if public else self.user
             accounts = backend.list_accounts(user)

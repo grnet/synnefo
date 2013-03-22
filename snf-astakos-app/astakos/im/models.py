@@ -80,7 +80,7 @@ from astakos.im import auth_providers
 
 import astakos.im.messages as astakos_messages
 from astakos.im.lock import with_lock
-from .managers import ForUpdateManager
+from synnefo.lib.db.managers import ForUpdateManager
 
 from synnefo.lib.quotaholder.api import QH_PRACTICALLY_INFINITE
 from synnefo.lib.db.intdecimalfield import intDecimalField

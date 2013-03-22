@@ -2762,7 +2762,7 @@ def sync_users(users, sync=True, retries=3, retry_wait=1.0):
 
         return (existing, nonexisting,
                 qh_limits, qh_counters,
-                astakos_initial, astakos_quotas, info)
+                astakos_initial, diff_quotas, info)
     return _sync_users(users, sync)
 
 

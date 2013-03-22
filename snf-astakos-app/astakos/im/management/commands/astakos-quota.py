@@ -70,21 +70,25 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         sync = options['sync']
-        verify = options['verify'] or sync
+        verify = options['verify']
         user_ident = options['user']
+        list_only = not sync and not verify
+
 
         if user_ident is not None:
             log = self.run_sync_user(user_ident, sync)
         else:
             log = self.run(sync)
 
-        ex, nonex, qh_l, qh_c, astakos_i, astakos_q, info = log
+        ex, nonex, qh_l, qh_c, astakos_i, diff_q, info = log
 
-        if verify:
-            self.print_verify(nonex, qh_l, astakos_q)
-
-        else:
+        if list_only:
             self.list_quotas(qh_l, qh_c, astakos_i, info)
+        else:
+            if verify:
+                self.print_verify(nonex, qh_l, diff_q)
+            if sync:
+                self.print_sync(diff_q)
 
     @transaction.commit_on_success
     def run_sync_user(self, user_ident, sync):
@@ -150,10 +154,20 @@ class Command(BaseCommand):
                 line = ' '.join(output)
                 self.stdout.write(line + '\n')
 
+    def print_sync(self, diff_quotas):
+        size = len(diff_quotas)
+        if size == 0:
+            self.stdout.write("No sync needed.\n")
+        else:
+            self.stdout.write("Synced %s users:\n" % size)
+            for holder in diff_quotas.keys():
+                user = get_user_by_uuid(holder)
+                self.stdout.write("%s (%s)\n" % (holder, user.username))
+
     def print_verify(self,
                      nonexisting,
                      qh_limits,
-                     astakos_quotas):
+                     diff_quotas):
 
             if nonexisting:
                 self.stdout.write("Users not registered in quotaholder:\n")
@@ -161,21 +175,21 @@ class Command(BaseCommand):
                     self.stdout.write("%s\n" % (user))
                 self.stdout.write("\n")
 
-            diffs = 0
-            for holder, local in astakos_quotas.iteritems():
+            for holder, local in diff_quotas.iteritems():
                 registered = qh_limits.pop(holder, None)
+                user = get_user_by_uuid(holder)
                 if registered is None:
-                    diffs += 1
-                    self.stdout.write("No quotas for %s in quotaholder.\n\n" %
-                                      (get_user_by_uuid(holder)))
-                elif local != registered:
-                    diffs += 1
-                    self.stdout.write("Quotas differ for %s:\n" %
-                                      (get_user_by_uuid(holder)))
+                    self.stdout.write(
+                        "No quotas for %s (%s) in quotaholder.\n" %
+                        (holder, user.username))
+                else:
+                    self.stdout.write("Quotas differ for %s (%s):\n" %
+                                      (holder, user.username))
                     self.stdout.write("Quotas according to quotaholder:\n")
                     self.stdout.write("%s\n" % (registered))
                     self.stdout.write("Quotas according to astakos:\n")
                     self.stdout.write("%s\n\n" % (local))
 
+            diffs = len(diff_quotas)
             if diffs:
                 self.stdout.write("Quotas differ for %d users.\n" % (diffs))

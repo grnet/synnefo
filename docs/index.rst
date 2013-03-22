@@ -35,6 +35,7 @@ There are also the following tools:
    snf-deploy: Synnefo deployment tool <snf-deploy>
    snf-image-creator: Image bundling/uploading/registering tool <http://docs.dev.grnet.gr/snf-image-creator/latest/index.html>
    snf-image: Secure image deployment tool <snf-image>
+   snf-burnin: Integration testing tool for a running Synnefo deployment <snf-burnin>
 
 
 Synnefo is designed to be as simple, scalable and production ready as possible.

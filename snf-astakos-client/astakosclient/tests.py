@@ -429,7 +429,7 @@ class TestCallAstakos(unittest.TestCase):
 
 
 class TestAuthenticate(unittest.TestCase):
-    """Test cases for function authenticate"""
+    """Test cases for function getUserInfo"""
 
     # ----------------------------------
     # Test the response we get if we don't have internet access
@@ -439,7 +439,7 @@ class TestAuthenticate(unittest.TestCase):
         _mockRequest([_requestOffline])
         try:
             client = AstakosClient("https://example.com", retry=3)
-            client.authenticate(token_1)
+            client.getUserInfo(token_1)
         except AstakosClientException:
             pass
         else:
@@ -452,7 +452,7 @@ class TestAuthenticate(unittest.TestCase):
         _mockRequest([_requestOk])
         try:
             client = AstakosClient("https://example.com", use_pool=pool)
-            client.authenticate(token)
+            client.getUserInfo(token)
         except Unauthorized:
             pass
         except Exception:
@@ -474,7 +474,7 @@ class TestAuthenticate(unittest.TestCase):
         _mockRequest([_requestOk])
         try:
             client = AstakosClient("https://example.com", use_pool=pool)
-            auth_info = client.authenticate(token, usage=usage)
+            auth_info = client.getUserInfo(token, usage=usage)
         except:
             self.fail("Shouldn't raise an Exception")
         self.assertEqual(user_info, auth_info)
@@ -516,12 +516,12 @@ class TestAuthenticate(unittest.TestCase):
     # ----------------------------------
     # Test retry functionality
     def test_OfflineRetry(self):
-        """Test retry functionality for authentication"""
+        """Test retry functionality for getUserInfo"""
         global token_1, user_1
         _mockRequest([_requestOffline, _requestOffline, _requestOk])
         try:
             client = AstakosClient("https://example.com", retry=2)
-            auth_info = client.authenticate(token_1, usage=True)
+            auth_info = client.getUserInfo(token_1, usage=True)
         except:
             self.fail("Shouldn't raise an Exception")
         self.assertEqual(user_1, auth_info)

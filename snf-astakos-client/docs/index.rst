@@ -34,7 +34,7 @@ demonstrates how to get user's info using ``astakosclient``.
     from astakosclient import AstakosClient
 
     client = AstakosClient("https://accounts.example.com")
-    user_info = client.authenticate("UQpYas7ElzWGD5yCcEXtjw==")
+    user_info = client.getUserInfo("UQpYas7ElzWGD5yCcEXtjw==")
     print user_info['username']
 
 Another example where we ask for the username of a user with UUID:
@@ -67,7 +67,7 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
 
     This class provides the following methods:
 
-    **authenticate(**\ token, usage=False\ **)**
+    **getUserInfo(**\ token, usage=False\ **)**
         Given a valid authentication token it returns a dict with the
         correspoinding user's info. If usage is set to True more
         information about user's resources will be returned.

@@ -168,8 +168,8 @@ class AstakosClient():
         return simplejson.loads(unicode(data))
 
     # ------------------------
-    def authenticate(self, token, usage=False):
-        """Check if user is authenticated Astakos user
+    def getUserInfo(self, token, usage=False):
+        """Authenticate user and get user's info as a dictionary
 
         Keyword arguments:
         token   -- user's token (string)

@@ -738,7 +738,7 @@ def dismiss_application(application_id, request_user=None):
 
     application.dismiss()
 
-def deny_application(application_id):
+def deny_application(application_id, reason=None):
     application = get_application_for_update(application_id)
 
     if not application.can_deny():
@@ -746,7 +746,9 @@ def deny_application(application_id):
                 application.id, application.state_display()))
         raise PermissionDenied(m)
 
-    application.deny()
+    if reason is None:
+        reason = ""
+    application.deny(reason)
     application_deny_notify(application)
 
 def approve_application(app_id):

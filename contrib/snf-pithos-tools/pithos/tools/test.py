@@ -2182,7 +2182,8 @@ class TestPermissions(BaseTestCase):
         self.upload_random_data(self.container, self.object+'a/')
         self.dir_content_types = ('application/directory', 'application/folder')
 
-    def assert_read(self, authorized=[], any=False, depth=0):
+    def assert_read(self, authorized=None, any=False, depth=0):
+        authorized = authorized or []
         for token, account in OTHER_ACCOUNTS.items():
             cl = Pithos_Client(get_url(), token, account)
             if account in authorized or any:
@@ -2213,7 +2214,8 @@ class TestPermissions(BaseTestCase):
                     self.assert_raises_fault(403, cl.retrieve_object_metadata,
                                          self.container, o, account=get_user())
 
-    def assert_write(self, authorized=[], any=False):
+    def assert_write(self, authorized=None, any=False):
+        authorized = authorized or []
         o_data = self.client.retrieve_object(self.container, self.object)
         for token, account in OTHER_ACCOUNTS.items():
             cl = Pithos_Client(get_url(), token, account)
@@ -2384,6 +2386,984 @@ class TestPolicies(BaseTestCase):
         self.assertEqual(meta['x-container-policy-quota'], '0')
         self.assert_not_raises_fault(413, self.upload_random_data, 'c', 'o',
                                  length=1024*1024+1)
+
+class TestUsageFreeVersioningAutoContainerPolicy(BaseTestCase):
+    """ Challenge free version accounting
+       in a container with auto versioning policy
+
+       In case of unknown server version accounting policy or
+       debit version accounting policy
+       enforce all test cases to return immediately
+    """
+    def setUp(self):
+        BaseTestCase.setUp(self)
+
+        # TODO Only works if tests are running in the same host with the server. Add support for remote server
+        self.stop_execution = False
+        try:
+            from pithos.api.settings import BACKEND_FREE_VERSIONING
+        except ImportError:
+            print 'Unable to execute the test: unknown version accounting policy'
+            self.stop_execution = True
+            return
+        else:
+            if not BACKEND_FREE_VERSIONING:
+                print 'Unable to execute the test: no free version accounting policy'
+                self.stop_execution = True
+                return
+
+        self.create_container('container')
+        meta = self.client.retrieve_account_metadata()
+        self.initial_usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.initial_usage
+
+        self.usage = self.initial_usage
+        #self.mtime = {}
+        l =  (50, 100, 150, 70, 80)
+        self.curr_acc_usage = self.initial_usage
+        for i, length in list(enumerate(l)):
+            self.upload_random_data('container', 'object', length=length)
+            meta = self.client.retrieve_account_metadata()
+            self.usage = int(meta['x-account-bytes-used'])
+            print 'Current account usage: %d' % self.usage
+            self.curr_acc_usage = self.initial_usage + length
+            self.assertEqual(self.usage, self.curr_acc_usage)
+
+            #t = datetime.datetime.utcnow()
+            #self.mtime[i] = int(_time.mktime(t.timetuple()))
+            _time.sleep(1)
+
+        versions = self.client.retrieve_object_versionlist(
+            'container', 'object'
+        )['versions']
+        self.mtime = [int(i[1]) for i in versions]
+
+    def create_container(self, cname):
+        self.client.create_container(cname)
+
+    def _test_delete_object_container(self):
+        """
+            assume account usage = 0
+            scenario:
+                upload object (length=50)
+                update object (length=100)
+                update object (length=150)
+                update object (length=70)
+                update object (length=80)
+                delete object
+                delete container
+            account usage sequel: 50|100|150|70|80|0|0
+        """
+        if self.stop_execution:
+            return
+
+        self.client.delete_object('container', 'object')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+        self.client.delete_container('container')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+    def _test_purge_delete_object(self):
+        """
+            assume account usage = 0
+            scenario:
+                upload object (length=50)
+                update object (length=100)
+                update object (length=150)
+                update object (length=70)
+                update object (length=80)
+                delete object history
+                delete object
+                delete container
+            account usage sequel: 50|100|150|70|80|80|0|0
+        """
+        if self.stop_execution:
+            return
+
+        # purge some object history
+        i = random.randrange(len(self.mtime))
+        self.client.delete_object('container', 'object', until=self.mtime[i])
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.curr_acc_usage)
+
+        self.client.delete_object('container', 'object')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+        self.client.delete_container('container')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+    def _test_delete_object_purge_container_history(self):
+        """
+            assume account usage = 0
+            scenario:
+                upload object (length=50)
+                update object (length=100)
+                update object (length=150)
+                update object (length=70)
+                update object (length=80)
+                delete object
+                delete container history
+                delete container
+            account usage sequel: 50|100|150|70|80|0|0|0
+        """
+        if self.stop_execution:
+            return
+
+        self.client.delete_object('container', 'object')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage,
+                         self.initial_usage)
+
+        # purge some container history
+        i = random.randrange(len(self.mtime))
+        self.client.delete_container('container', until=self.mtime[i])
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+        self.client.delete_container('container')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+    def _test_purge_container_delete_object(self):
+        """
+            assume account usage = 0
+            scenario:
+                upload object (length=50)
+                update object (length=100)
+                update object (length=150)
+                update object (length=70)
+                update object (length=80)
+                delete container history
+                delete object
+                delete container
+            account usage sequel: 50|100|150|70|80|80|0|0
+        """
+        if self.stop_execution:
+            return
+
+        # purge some container history
+        i = random.randrange(len(self.mtime))
+        self.client.delete_container('container', until=self.mtime[i])
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual( self.usage, self.curr_acc_usage)
+
+        self.client.delete_object('container', 'object')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+        self.client.delete_container('container')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+    def _test_successive_purging(self):
+        """
+            assume account usage = 0
+            scenario:
+                upload object (length=50)
+                update object (length=100)
+                update object (length=150)
+                update object (length=70)
+                update object (length=80)
+                delete earlier 2 object history versions
+                delete next earlier object history version
+                delete rest object history and current version
+                delete object (404 status)
+                delete container
+            account usage sequel: 50|100|150|70|80|80|80|0|0|0
+        """
+        if self.stop_execution:
+            return
+
+        # purge some object history
+        i = random.randrange(len(self.mtime))
+        self.client.delete_object('container', 'object', until=self.mtime[i])
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.curr_acc_usage)
+
+        # purge some container history
+        i = random.randrange(len(self.mtime))
+        self.client.delete_container('container', until=self.mtime[i])
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.curr_acc_usage)
+
+        # purge some more object history
+        i = random.randrange(len(self.mtime))
+        self.client.delete_object('container', 'object', until=self.mtime[i])
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.curr_acc_usage)
+
+        # purge some object history and current
+        t = datetime.datetime.utcnow()
+        now = int(_time.mktime(t.timetuple()))
+        self.client.delete_object('container', 'object', until=now)
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+        # try to delete object and assert object is not found
+        self.assert_raises_fault(
+            404, self.client.delete_object, 'container', 'object'
+        )
+
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+        self.client.delete_container('container')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+    def _test_delete_object_empty_container_content(self):
+        """
+            assume account usage = 0
+            scenario:
+                upload object (length=50)
+                update object (length=100)
+                update object (length=150)
+                update object (length=70)
+                update object (length=80)
+                delete object
+                delete container contents
+                delete container
+            account usage sequel: 50|100|150|70|80|0|0|0
+        """
+        if self.stop_execution:
+            return
+
+        self.client.delete_object('container', 'object')
+
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+        self.client.delete_container('container', delimiter='/')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+        self.client.delete_container('container')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+    def _test_delete_container_content(self):
+        """
+            assume account usage = 0
+            scenario:
+                upload object (length=50)
+                update object (length=100)
+                update object (length=150)
+                update object (length=70)
+                update object (length=80)
+                delete container contents
+                delete container
+            account usage sequel: 50|100|150|70|80|0|0
+        """
+        if self.stop_execution:
+            return
+
+        self.client.delete_container('container', delimiter='/')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+        self.client.delete_container('container')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+
+class TestUsageFreeVersioningNoneContainerPolicy(
+    TestUsageFreeVersioningAutoContainerPolicy):
+    """ Challenge free version accounting
+       in a container with none versioning policy
+
+       In case of unknown server version accounting policy or
+       debit version accounting policy
+       enforce all test cases to return immediately
+    """
+    def create_container(self, cname):
+        self.client.create_container(cname,
+                                     policies={'versioning':'none'})
+
+class TestUsageDebitVersioningAutoContainerPolicy(BaseTestCase):
+    """ Challenge debit version accounting
+       in a container with auto versioning policy
+
+       In case of unknown server version accounting policy or
+       free version accounting policy
+       enforce all test cases to return immediately
+    """
+    def setUp(self):
+        BaseTestCase.setUp(self)
+
+        self.stop_execution = False
+        try:
+            from pithos.api.settings import BACKEND_FREE_VERSIONING
+        except ImportError:
+            print 'Unable to execute the test: unknown version accounting policy'
+            self.stop_execution = True
+            return
+        else:
+            if BACKEND_FREE_VERSIONING:
+                print 'Unable to execute the test: free version accounting policy'
+                self.stop_execution = True
+                return
+
+        self.create_container('container')
+        meta = self.client.retrieve_account_metadata()
+        self.initial_usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.initial_usage
+
+        self.usage = self.initial_usage
+        self.l = (50, 100, 150, 70, 80)
+        self.curr_acc_usage = self.initial_usage
+        for i, length in list(enumerate(self.l)):
+            self.upload_random_data('container', 'object', length=length)
+            meta = self.client.retrieve_account_metadata()
+            self.usage = int(meta['x-account-bytes-used'])
+            print 'Current account usage: %d' % self.usage
+            self.curr_acc_usage += length
+            self.assertEqual(self.usage, self.curr_acc_usage)
+            _time.sleep(1)
+
+        versions = self.client.retrieve_object_versionlist(
+            'container', 'object'
+        )['versions']
+        self.mtime = [int(i[1]) for i in versions]
+
+    def create_container(self, cname):
+        self.client.create_container(cname)
+
+    def _test_delete_object_container(self):
+        """
+            assume account usage = 0
+            scenario:
+                upload object (length=50)
+                update object (length=100)
+                update object (length=150)
+                update object (length=70)
+                update object (length=80)
+                delete object
+                delete container
+            account usage sequel: 50|150|300|370|450|450|0
+        """
+        if self.stop_execution:
+            return
+
+        self.client.delete_object('container', 'object')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage + sum(self.l))
+
+        self.client.delete_container('container')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+    def _test_purge_delete_object(self):
+        """
+            assume account usage = 0
+            scenario:
+                upload object (length=50)
+                update object (length=100)
+                update object (length=150)
+                update object (length=70)
+                update object (length=80)
+                delete 3 earlier object versions
+                delete object
+                delete container
+            account usage sequel: 50|150|300|370|450|150|150|0
+        """
+        if self.stop_execution:
+            return
+
+        # purge some object history
+        i = 3
+        self.client.delete_object('container', 'object', until=self.mtime[i])
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.curr_acc_usage - sum(self.l[:i]))
+
+        self.client.delete_object('container', 'object')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.curr_acc_usage - sum(self.l[:i]))
+
+        self.client.delete_container('container')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+    def _test_delete_object_purge_container_history(self):
+        """
+            assume account usage = 0
+            scenario:
+                upload object (length=50)
+                update object (length=100)
+                update object (length=150)
+                update object (length=70)
+                update object (length=80)
+                delete object
+                delete container history (3 earlier object versions)
+                delete container
+            account usage sequel: 50|150|300|370|450|450|150|0
+        """
+        if self.stop_execution:
+            return
+
+        self.client.delete_object('container', 'object')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.curr_acc_usage)
+
+        # purge some container history
+        i = 3
+        self.client.delete_container('container', until=self.mtime[i])
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.curr_acc_usage - sum(self.l[:i]))
+
+        self.client.delete_container('container')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+    def _test_purge_container_delete_object(self):
+        """
+            assume account usage = 0
+            scenario:
+                upload object (length=50)
+                update object (length=100)
+                update object (length=150)
+                update object (length=70)
+                update object (length=80)
+                delete container history
+                delete object
+                delete container
+            account usage sequel: 50|150|300|370|450|150|150|0
+        """
+        if self.stop_execution:
+            return
+
+        versions = self.client.retrieve_object_versionlist(
+            'container', 'object'
+        )['versions']
+        mtime = [i[1] for i in versions]
+
+        # purge some container history
+        i = 3
+        until = int(mtime[i])
+        self.client.delete_container('container', until=until)
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.curr_acc_usage - sum(self.l[:i]))
+
+        self.client.delete_object('container', 'object')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.curr_acc_usage - sum(self.l[:i]))
+
+
+        self.client.delete_container('container')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+    def _test_successive_purging(self):
+        """
+            assume account usage = 0
+            scenario:
+                upload object (length=50)
+                update object (length=100)
+                update object (length=150)
+                update object (length=70)
+                update object (length=80)
+                delete earlier 2 object history versions
+                delete next earlier object history version
+                delete rest object history and current version
+                delete object (404 status)
+                delete container
+            account usage sequel: 50|150|300|370|450|400|300|150|0|0
+        """
+        if self.stop_execution:
+            return
+
+        versions = self.client.retrieve_object_versionlist(
+            'container', 'object'
+        )['versions']
+        mtime = [i[1] for i in versions]
+
+        # purge some object history
+        i = 1
+        until = int(mtime[i])
+        self.client.delete_object('container', 'object', until=until)
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.curr_acc_usage = self.curr_acc_usage - sum(self.l[:i])
+        self.assertEqual(self.usage, self.curr_acc_usage)
+
+        # purge some container history
+        j = 2
+        until = int(mtime[j])
+        self.client.delete_container('container', until=until)
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.curr_acc_usage = self.curr_acc_usage - sum(self.l[i:j])
+        self.assertEqual(self.usage, self.curr_acc_usage)
+
+        # purge some more object history
+        k = 3
+        until = int(mtime[k])
+        self.client.delete_object('container', 'object', until=until)
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.curr_acc_usage = self.curr_acc_usage - sum(self.l[j:k])
+        self.assertEqual(self.usage, self.curr_acc_usage)
+
+        # purge some object history and current
+        t = datetime.datetime.utcnow()
+        now = int(_time.mktime(t.timetuple()))
+        self.client.delete_object('container', 'object', until=now)
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+        # try to delete object and assert object is not found
+        self.assert_raises_fault(
+            404, self.client.delete_object, 'container', 'object'
+        )
+
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+        self.client.delete_container('container')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+    def _test_delete_object_empty_container_content(self):
+        """
+            assume account usage = 0
+            scenario:
+                upload object (length=50)
+                update object (length=100)
+                update object (length=150)
+                update object (length=70)
+                update object (length=80)
+                delete object
+                delete container contents
+                delete container
+            account usage sequel: 50|150|300|370|450|450|450|0
+        """
+        if self.stop_execution:
+            return
+
+        self.client.delete_object('container', 'object')
+
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.curr_acc_usage)
+
+        self.client.delete_container('container', delimiter='/')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.curr_acc_usage)
+
+        self.client.delete_container('container')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+    def _test_delete_container_content(self):
+        """
+            assume account usage = 0
+            scenario:
+                upload object (length=50)
+                update object (length=100)
+                update object (length=150)
+                update object (length=70)
+                update object (length=80)
+                delete container contents
+                delete container
+            account usage sequel: 50|150|300|370|450|450|0
+        """
+        if self.stop_execution:
+            return
+
+        self.client.delete_container('container', delimiter='/')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.curr_acc_usage)
+
+        self.client.delete_container('container')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+class TestUsageDebitVersioningNoneContainerPolicy(BaseTestCase):
+    """ Challenge debit version accounting
+       in a container with none versioning policy
+
+       In case of unknown server version accounting policy or
+       free version accounting policy
+       enforce all test cases to return immediately
+    """
+    def setUp(self):
+        BaseTestCase.setUp(self)
+
+        self.stop_execution = False
+        try:
+            from pithos.api.settings import BACKEND_FREE_VERSIONING
+        except ImportError:
+            print 'Unable to execute the test: unknown version accounting policy'
+            self.stop_execution = True
+            return
+        else:
+            if BACKEND_FREE_VERSIONING:
+                print 'Unable to execute the test: free version accounting policy'
+                self.stop_execution = True
+                return
+
+        self.create_container('container')
+        meta = self.client.retrieve_account_metadata()
+        self.initial_usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.initial_usage
+
+        l =  (50, 100, 150, 70, 80)
+        self.curr_acc_usage = self.initial_usage
+        for i, length in list(enumerate(l)):
+            self.upload_random_data('container', 'object', length=length)
+            meta = self.client.retrieve_account_metadata()
+            self.usage = int(meta['x-account-bytes-used'])
+            print 'Current account usage: %d' % self.usage
+            self.curr_acc_usage = self.initial_usage + length
+            self.assertEqual(self.usage, self.curr_acc_usage)
+            _time.sleep(1)
+
+        versions = self.client.retrieve_object_versionlist(
+            'container', 'object'
+        )['versions']
+        self.mtime = [int(i[1]) for i in versions]
+
+    def create_container(self, cname):
+        self.client.create_container(cname,
+                                     policies={'versioning':'none'})
+
+    def _test_delete_object_container(self):
+        """
+            assume account usage = 0
+            scenario:
+                upload object (length=50)
+                update object (length=100)
+                update object (length=150)
+                update object (length=70)
+                update object (length=80)
+                delete object
+                delete container
+            account usage sequel: 50|100|150|70|80|0|0
+        """
+        if self.stop_execution:
+            return
+
+        self.client.delete_object('container', 'object')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+        self.client.delete_container('container')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+    def _test_purge_delete_object(self):
+        """
+            assume account usage = 0
+            scenario:
+                upload object (length=50)
+                update object (length=100)
+                update object (length=150)
+                update object (length=70)
+                update object (length=80)
+                delete object history
+                delete object
+                delete container
+            account usage sequel: 50|100|150|70|80|80|0|0
+        """
+        if self.stop_execution:
+            return
+
+        # purge some object history
+        self.client.delete_object('container', 'object', until=self.mtime[0])
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.curr_acc_usage)
+
+        self.client.delete_object('container', 'object')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+        self.client.delete_container('container')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+    def _test_delete_object_purge_container_history(self):
+        """
+            assume account usage = 0
+            scenario:
+                upload object (length=50)
+                update object (length=100)
+                update object (length=150)
+                update object (length=70)
+                update object (length=80)
+                delete object
+                delete container history
+                delete container
+            account usage sequel: 50|100|150|70|80|0|0|0
+        """
+        if self.stop_execution:
+            return
+
+        self.client.delete_object('container', 'object')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+        # purge some container history
+        self.client.delete_container('container', until=self.mtime[0])
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+        self.client.delete_container('container')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+    def _test_purge_container_delete_object(self):
+        """
+            assume account usage = 0
+            scenario:
+                upload object (length=50)
+                update object (length=100)
+                update object (length=150)
+                update object (length=70)
+                update object (length=80)
+                delete container history
+                delete object
+                delete container
+            account usage sequel: 50|100|150|70|80|80|0|0
+        """
+        if self.stop_execution:
+            return
+
+        # purge some container history
+        self.client.delete_container('container', until=self.mtime[0])
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.curr_acc_usage)
+
+        self.client.delete_object('container', 'object')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+        self.client.delete_container('container')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+    def _test_successive_purging(self):
+        """
+            assume account usage = 0
+            scenario:
+                upload object (length=50)
+                update object (length=100)
+                update object (length=150)
+                update object (length=70)
+                update object (length=80)
+                delete earlier 2 object history versions
+                delete next earlier object history version
+                delete rest object history and current version
+                delete object (404 status)
+                delete container
+            account usage sequel: 50|100|150|70|80|80|80|80|0|0|0
+        """
+        if self.stop_execution:
+            return
+
+        # purge some object history
+        i = random.randrange(len(self.mtime))
+        self.client.delete_object('container', 'object', until=self.mtime[i])
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.curr_acc_usage)
+
+        # purge some object history and current
+        t = datetime.datetime.utcnow()
+        now = int(_time.mktime(t.timetuple()))
+        self.client.delete_object('container', 'object', until=now)
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+        # try to delete object and assert object is not found
+        self.assert_raises_fault(
+            404, self.client.delete_object, 'container', 'object'
+        )
+
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+        self.client.delete_container('container')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+    def _test_delete_object_empty_container_content(self):
+        """
+            assume account usage = 0
+            scenario:
+                upload object (length=50)
+                update object (length=100)
+                update object (length=150)
+                update object (length=70)
+                update object (length=80)
+                delete object
+                delete container contents
+                delete container
+            account usage sequel: 50|100|150|70|80|0|0|0
+        """
+        if self.stop_execution:
+            return
+
+        self.client.delete_object('container', 'object')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+        self.client.delete_container('container', delimiter='/')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+        self.client.delete_container('container')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+    def _test_delete_container_content(self):
+        """
+            assume account usage = 0
+            scenario:
+                upload object (length=50)
+                update object (length=100)
+                update object (length=150)
+                update object (length=70)
+                update object (length=80)
+                delete container contents
+                delete container
+            account usage sequel: 50|100|150|70|80|0|0
+        """
+        if self.stop_execution:
+            return
+
+        self.client.delete_container('container', delimiter='/')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
+
+        self.client.delete_container('container')
+        meta = self.client.retrieve_account_metadata()
+        self.usage = int(meta['x-account-bytes-used'])
+        print 'Current account usage: %d' % self.usage
+        self.assertEqual(self.usage, self.initial_usage)
 
 class AssertUUidInvariant(object):
     def __init__(self, callable, *args, **kwargs):

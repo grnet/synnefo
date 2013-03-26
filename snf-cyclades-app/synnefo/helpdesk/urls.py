@@ -7,7 +7,7 @@ urlpatterns = patterns('',
     url(r'^suspend_release/(?P<vm_id>[0-9]+)$',
         'synnefo.helpdesk.views.suspend_vm_release',
         name='helpdesk-suspend-vm-release'),
-    url(r'^(?P<account_or_ip>.*)$', 'synnefo.helpdesk.views.account',
+    url(r'^(?P<search_query>.*)$', 'synnefo.helpdesk.views.account',
         name='helpdesk-details'),
 )
 

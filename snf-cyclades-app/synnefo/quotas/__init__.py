@@ -138,15 +138,23 @@ def uses_commission(func):
         try:
             serials = []
             ret = func(serials, *args, **kwargs)
+        except:
+            log.exception("Unexpected error")
+            try:
+                if serials:
+                    reject_commission(serials=serials)
+            except:
+                log.exception("Exception while rejecting serials %s", serials)
+                raise
+            raise
+
+        # func has completed successfully. accept serials
+        try:
             if serials:
                 accept_commission(serials)
             return ret
-        except CallError:
-            log.exception("Unexpected error")
-            raise
         except:
-            if serials:
-                reject_commission(serials=serials)
+            log.exception("Exception while accepting serials %s", serials)
             raise
     return wrapper
 

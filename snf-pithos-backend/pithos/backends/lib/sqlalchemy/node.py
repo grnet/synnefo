@@ -309,7 +309,7 @@ class Node(DBWorker):
     def node_purge_children(self, parent, before=inf, cluster=0):
         """Delete all versions with the specified
            parent and cluster, and return
-           the hashes and size of versions deleted.
+           the hashes, the total size and the serials of versions deleted.
            Clears out nodes with no remaining versions.
         """
         #update statistics
@@ -317,20 +317,21 @@ class Node(DBWorker):
                     self.nodes.c.parent == parent)
         where_clause = and_(self.versions.c.node.in_(c1),
                             self.versions.c.cluster == cluster)
+        if before != inf:
+            where_clause = and_(where_clause,
+                                self.versions.c.mtime <= before)
         s = select([func.count(self.versions.c.serial),
                     func.sum(self.versions.c.size)])
         s = s.where(where_clause)
-        if before != inf:
-            s = s.where(self.versions.c.mtime <= before)
         r = self.conn.execute(s)
         row = r.fetchone()
         r.close()
         if not row:
             return (), 0, ()
-        nr, size = row[0], -row[1] if row[1] else 0
+        nr, size = row[0], row[1] if row[1] else 0
         mtime = time()
-        self.statistics_update(parent, -nr, size, mtime, cluster)
-        self.statistics_update_ancestors(parent, -nr, size, mtime, cluster)
+        self.statistics_update(parent, -nr, -size, mtime, cluster)
+        self.statistics_update_ancestors(parent, -nr, -size, mtime, cluster)
 
         s = select([self.versions.c.hash, self.versions.c.serial])
         s = s.where(where_clause)
@@ -373,9 +374,10 @@ class Node(DBWorker):
                     func.sum(self.versions.c.size)])
         where_clause = and_(self.versions.c.node == node,
                             self.versions.c.cluster == cluster)
-        s = s.where(where_clause)
         if before != inf:
-            s = s.where(self.versions.c.mtime <= before)
+            where_clause = and_(where_clause,
+                                self.versions.c.mtime <= before)
+        s = s.where(where_clause)
         r = self.conn.execute(s)
         row = r.fetchone()
         nr, size = row[0], row[1]
@@ -405,9 +407,9 @@ class Node(DBWorker):
                    and_(self.nodes.c.node == node,
                         select([func.count(self.versions.c.serial)],
                                self.versions.c.node == self.nodes.c.node).as_scalar() == 0))
-        r = self.conn.execute(s)
-        nodes = r.fetchall()
-        r.close()
+        rp= self.conn.execute(s)
+        nodes = [r[0] for r in rp.fetchall()]
+        rp.close()
         if nodes:
             s = self.nodes.delete().where(self.nodes.c.node.in_(nodes))
             self.conn.execute(s).close()
@@ -866,11 +868,13 @@ class Node(DBWorker):
                           'key': k, 'value': v}
                 self.conn.execute(s, values).close()
 
-    def latest_attribute_keys(self, parent, domain, before=inf, except_cluster=0, pathq=[]):
+    def latest_attribute_keys(self, parent, domain, before=inf, except_cluster=0, pathq=None):
         """Return a list with all keys pairs defined
            for all latest versions under parent that
            do not belong to the cluster.
         """
+
+        pathq = pathq or []
 
         # TODO: Use another table to store before=inf results.
         a = self.attributes.alias('a')

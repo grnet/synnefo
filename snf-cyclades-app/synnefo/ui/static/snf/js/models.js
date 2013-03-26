@@ -272,7 +272,7 @@
 
         owned_by: function(user) {
           if (!user) { user = synnefo.user }
-          return user.username == this.get('owner_uuid');
+          return user.get_username() == this.get('owner_uuid');
         },
 
         display_owner: function() {
@@ -615,6 +615,7 @@
 
                 var _success = _.bind(function() {
                     if (success) { success() };
+                    snf.ui.main.load_user_quotas();
                 }, this);
                 var _error = _.bind(function() {
                     this.set({state: previous_state, status: previous_status})
@@ -1439,7 +1440,9 @@
                                          function() {
                                              // set state after successful call
                                              self.state('DESTROY');
-                                             success.apply(this, arguments)
+                                             success.apply(this, arguments);
+                                             snf.ui.main.load_user_quotas();
+
                                          },  
                                          error, 'destroy', params);
                     break;
@@ -1688,7 +1691,11 @@
                 params.network.dhcp = false;
             }
             
-            return this.api_call(this.path, "create", params, callback);
+            var cb = function() {
+              callback();
+              snf.ui.main.load_user_quotas();
+            }
+            return this.api_call(this.path, "create", params, cb);
         },
 
         get_public: function(){
@@ -1905,7 +1912,7 @@
 
                 var ram_available = quotas['ram'];
                 var ram_size = el.get_ram_size();
-                if (index.ram.indexOf(disk_size) == -1) {
+                if (index.ram.indexOf(ram_size) == -1) {
                   var ram = el.ram_to_bytes();
                   if (ram > ram_available) {
                     index.ram.push(el.get('ram'))
@@ -2117,8 +2124,26 @@
             
             opts = {name: name, imageRef: image.id, flavorRef: flavor.id, metadata:meta}
             opts = _.extend(opts, extra);
+            
+            var cb = function() {
+              snf.ui.main.load_user_quotas();
+              callback();
+            }
 
-            this.api_call(this.path, "create", {'server': opts}, undefined, undefined, callback, {critical: true});
+            this.api_call(this.path, "create", {'server': opts}, undefined, undefined, cb, {critical: true});
+        },
+
+        load_missing_images: function(callback) {
+          var missing_ids = [];
+          this.each(function(el) {
+            var imgid = el.get("imageRef");
+            var existing = synnefo.storage.images.get(imgid);
+            if (!existing && missing_ids.indexOf(imgid) == -1) {
+                missing_ids.push(imgid);
+                synnefo.storage.images.update_unknown_id(imgid, function(){});
+            }
+          });
+          callback(missing_ids);
         }
 
     })

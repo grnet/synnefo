@@ -351,10 +351,11 @@ class ModularBackend(BaseBackend):
         self._put_policy(node, policy, replace)
 
     @backend_method
-    def put_account(self, user, account, policy={}):
+    def put_account(self, user, account, policy=None):
         """Create a new account with the given name."""
 
         logger.debug("put_account: %s %s %s", user, account, policy)
+        policy = policy or {}
         if user != account:
             raise NotAllowedError
         node = self.node.node_lookup(account)
@@ -502,11 +503,12 @@ class ModularBackend(BaseBackend):
         self._put_policy(node, policy, replace)
 
     @backend_method
-    def put_container(self, user, account, container, policy={}):
+    def put_container(self, user, account, container, policy=None):
         """Create a new container with the given name."""
 
         logger.debug(
             "put_container: %s %s %s %s", user, account, container, policy)
+        policy = policy or {}
         if user != account:
             raise NotAllowedError
         try:
@@ -538,9 +540,14 @@ class ModularBackend(BaseBackend):
             for h in hashes:
                 self.store.map_delete(h)
             self.node.node_purge_children(node, until, CLUSTER_DELETED)
-            self._report_size_change(user, account, -size,
-                                     {'action':'container purge', 'path': path,
-                                      'versions': ','.join(str(i) for i in serials)})
+            if not self.free_versioning:
+                self._report_size_change(
+                    user, account, -size, {
+                        'action':'container purge',
+                        'path': path,
+                        'versions': ','.join(str(i) for i in serials)
+                    }
+                )
             return
 
         if not delimiter:
@@ -552,10 +559,14 @@ class ModularBackend(BaseBackend):
                 self.store.map_delete(h)
             self.node.node_purge_children(node, inf, CLUSTER_DELETED)
             self.node.node_remove(node)
-            self._report_size_change(user, account, -size,
-                                     {'action': 'container delete',
-                                      'path': path,
-                                      'versions': ','.join(str(i) for i in serials)})
+            if not self.free_versioning:
+                self._report_size_change(
+                    user, account, -size, {
+                        'action':'container purge',
+                        'path': path,
+                        'versions': ','.join(str(i) for i in serials)
+                    }
+                )
         else:
             # remove only contents
             src_names = self._list_objects_no_limit(user, account, container, prefix='', delimiter=None, virtual=False, domain=None, keys=[], shared=False, until=None, size_range=None, all_props=True, public=False)
@@ -660,17 +671,19 @@ class ModularBackend(BaseBackend):
         return allowed
 
     @backend_method
-    def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=[], shared=False, until=None, size_range=None, public=False):
+    def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=None, shared=False, until=None, size_range=None, public=False):
         """Return a list of object (name, version_id) tuples existing under a container."""
 
         logger.debug("list_objects: %s %s %s %s %s %s %s %s %s %s %s %s %s %s", user, account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range, public)
+        keys = keys or []
         return self._list_objects(user, account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range, False, public)
 
     @backend_method
-    def list_object_meta(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=[], shared=False, until=None, size_range=None, public=False):
+    def list_object_meta(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=None, shared=False, until=None, size_range=None, public=False):
         """Return a list of object metadata dicts existing under a container."""
 
         logger.debug("list_object_meta: %s %s %s %s %s %s %s %s %s %s %s %s %s %s", user, account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range, public)
+        keys = keys or []
         props = self._list_objects(user, account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range, True, public)
         objects = []
         for p in props:
@@ -884,11 +897,12 @@ class ModularBackend(BaseBackend):
         return dest_version_id
 
     @backend_method
-    def update_object_hashmap(self, user, account, container, name, size, type, hashmap, checksum, domain, meta={}, replace_meta=False, permissions=None):
+    def update_object_hashmap(self, user, account, container, name, size, type, hashmap, checksum, domain, meta=None, replace_meta=False, permissions=None):
         """Create/update an object with the specified size and partial hashes."""
 
         logger.debug("update_object_hashmap: %s %s %s %s %s %s %s %s", user,
                      account, container, name, size, type, hashmap, checksum)
+        meta = meta or {}
         if size == 0:  # No such thing as an empty hashmap.
             hashmap = [self.put_block('')]
         map = HashMap(self.block_size, self.hash_algorithm)
@@ -920,7 +934,8 @@ class ModularBackend(BaseBackend):
                 self.node.version_put_property(
                     x[self.SERIAL], 'checksum', checksum)
 
-    def _copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, dest_domain=None, dest_meta={}, replace_meta=False, permissions=None, src_version=None, is_move=False, delimiter=None):
+    def _copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, dest_domain=None, dest_meta=None, replace_meta=False, permissions=None, src_version=None, is_move=False, delimiter=None):
+        dest_meta = dest_meta or {}
         dest_version_ids = []
         self._can_read(user, src_account, src_container, src_name)
         path, node = self._lookup_object(src_account, src_container, src_name)
@@ -960,18 +975,20 @@ class ModularBackend(BaseBackend):
         return dest_version_ids[0] if len(dest_version_ids) == 1 else dest_version_ids
 
     @backend_method
-    def copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta={}, replace_meta=False, permissions=None, src_version=None, delimiter=None):
+    def copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta=None, replace_meta=False, permissions=None, src_version=None, delimiter=None):
         """Copy an object's data and metadata."""
 
         logger.debug("copy_object: %s %s %s %s %s %s %s %s %s %s %s %s %s %s", user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta, replace_meta, permissions, src_version, delimiter)
+        meta = meta or {}
         dest_version_id = self._copy_object(user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta, replace_meta, permissions, src_version, False, delimiter)
         return dest_version_id
 
     @backend_method
-    def move_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta={}, replace_meta=False, permissions=None, delimiter=None):
+    def move_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta=None, replace_meta=False, permissions=None, delimiter=None):
         """Move an object's data and metadata."""
 
         logger.debug("move_object: %s %s %s %s %s %s %s %s %s %s %s %s %s", user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta, replace_meta, permissions, delimiter)
+        meta = meta or {}
         if user != src_account:
             raise NotAllowedError
         dest_version_id = self._copy_object(user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta, replace_meta, permissions, None, True, delimiter)
@@ -995,7 +1012,8 @@ class ModularBackend(BaseBackend):
             serials += v
             h, s, v = self.node.node_purge(node, until, CLUSTER_HISTORY)
             hashes += h
-            size += s
+            if not self.free_versioning:
+                size += s
             serials += v
             for h in hashes:
                 self.store.map_delete(h)
@@ -1004,9 +1022,13 @@ class ModularBackend(BaseBackend):
                 props = self._get_version(node)
             except NameError:
                 self.permissions.access_clear(path)
-            self._report_size_change(user, account, -size,
-                                    {'action': 'object purge', 'path': path,
-                                     'versions': ','.join(str(i) for i in serials)})
+            self._report_size_change(
+                user, account, -size, {
+                    'action': 'object purge',
+                    'path': path,
+                    'versions': ','.join(str(i) for i in serials)
+                }
+            )
             return
 
         path, node = self._lookup_object(account, container, name)
@@ -1267,7 +1289,9 @@ class ModularBackend(BaseBackend):
             limit = 10000
         return start, limit
 
-    def _list_object_properties(self, parent, path, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=[], until=None, size_range=None, allowed=[], all_props=False):
+    def _list_object_properties(self, parent, path, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=None, until=None, size_range=None, allowed=None, all_props=False):
+        keys = keys or []
+        allowed = allowed or []
         cont_prefix = path + '/'
         prefix = cont_prefix + prefix
         start = cont_prefix + marker if marker else None
@@ -1283,7 +1307,9 @@ class ModularBackend(BaseBackend):
 
     # Reporting functions.
 
-    def _report_size_change(self, user, account, size, details={}):
+    def _report_size_change(self, user, account, size, details=None):
+        details = details or {}
+
         if size == 0:
             return
 
@@ -1314,16 +1340,18 @@ class ModularBackend(BaseBackend):
         else:
             self.serials.append(serial)
 
-    def _report_object_change(self, user, account, path, details={}):
+    def _report_object_change(self, user, account, path, details=None):
+        details = details or {}
         details.update({'user': user})
         logger.debug("_report_object_change: %s %s %s %s", user,
                      account, path, details)
         self.messages.append((QUEUE_MESSAGE_KEY_PREFIX % ('object',),
                               account, QUEUE_INSTANCE_ID, 'object', path, details))
 
-    def _report_sharing_change(self, user, account, path, details={}):
+    def _report_sharing_change(self, user, account, path, details=None):
         logger.debug("_report_permissions_change: %s %s %s %s",
                      user, account, path, details)
+        details = details or {}
         details.update({'user': user})
         self.messages.append((QUEUE_MESSAGE_KEY_PREFIX % ('sharing',),
                               account, QUEUE_INSTANCE_ID, 'sharing', path, details))

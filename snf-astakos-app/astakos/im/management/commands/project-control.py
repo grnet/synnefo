@@ -109,14 +109,14 @@ class Command(BaseCommand):
         if options['terminate_expired']:
             self.expire(execute=True)
 
-    @cmd_project_transaction_context(sync=True)
-    def run_command(self, func, id, ctx=None):
-        try:
-            func(id)
-        except BaseException as e:
-            if ctx:
-                ctx.mark_rollback()
-            raise CommandError(e)
+    def run_command(self, func, *args):
+        with cmd_project_transaction_context(sync=True) as ctx:
+            try:
+                func(*args)
+            except BaseException as e:
+                if ctx:
+                    ctx.mark_rollback()
+                raise CommandError(e)
 
     def print_expired(self, projects, execute):
         length = len(projects)

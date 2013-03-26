@@ -84,7 +84,7 @@ PROFILE_MESSAGES = getattr(settings, 'ASTAKOS_PROFILE_MESSAGES', [])
 GLOBAL_MESSAGES = getattr(settings, 'ASTAKOS_GLOBAL_MESSAGES', [])
 
 # messages to display as extra actions in account forms
-# e.g. {'https://cms.okeanos.grnet.gr/': 'Back to ~okeanos'}
+# e.g. {'https://www.myhomepage.com': 'Back to <service_name>'}
 PROFILE_EXTRA_LINKS = getattr(settings, 'ASTAKOS_PROFILE_EXTRA_LINKS', {})
 
 # The number of unsuccessful login requests per minute allowed for a specific user

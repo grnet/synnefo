@@ -1,9 +1,10 @@
+{% load branding_tags %}
 <!doctype html>
 <html>
 
 {% load i18n %}
 <head>
-    <title>~okeanos</title>
+    <title>{{ BRANDING_SERVICE_NAME }}</title>
     
     <!--<meta http-equiv="X-UA-Compatible" content="IE=7">-->
     <meta http-equiv="content-type" content="text/html; charset=UTF-8">
@@ -11,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css?family=Ubuntu&subset=latin,greek" rel="stylesheet" type="text/css" >
     <link href='https://fonts.googleapis.com/css?family=Open+Sans&subset=latin,greek' rel='stylesheet' type='text/css'>
 
-    <link rel="shortcut icon" href="{{ SYNNEFO_IMAGES_URL }}favicon.ico" />
+    <link rel="shortcut icon" href="{{ BRANDING_FAVICON_URL }}" />
 
     {% comment %}
     <script type="text/javascript" src="{% url javascript_catalog %}"></script> 
@@ -106,7 +107,7 @@
         var FEEDBACK_URL = "{% url ui_feedback %}";
         var FEEDBACK_TITLE = "{% trans "Send feedback" %}";
         var API_OVERLAY_TITLE = "{% trans "API access" %}";
-        var API_OVERLAY_SUBCONTENT = "{% trans "The API key provides full access to your <em>~okeanos</em> account, so always keep it private." %}";
+        var API_OVERLAY_SUBCONTENT = "{% blocktrans %}The API key provides full access to your <em>{{ BRANDING_SERVICE_NAME}}</em> account, so always keep it private.{% endblocktrans %}";
 
         STATE_TEXTS = {
             'UNKNOWN': '{% trans "Unknown" %}',
@@ -193,7 +194,6 @@
 </head>
 
 <body id="app">
-    <!--<img id="okeanos-image" src="{{ SYNNEFO_IMAGES_URL }}body-bg2.png" />-->
     <div id="container">
         <div id="header">
             <div id="user">
@@ -222,7 +222,7 @@
             </div>
             <div class="header-logo">
                 <a href="/">
-                    <img src="{{ SYNNEFO_IMAGES_URL }}okeanos-logo-alpha.png" alt="okeanos (alpha)"/>
+                     <img src="{{ BRANDING_COMPUTE_LOGO_URL }}" alt="{{ BRANDING_SERVICE_NAME }}"/>  
                 </a>
             </div>
         </div>
@@ -260,8 +260,7 @@
                     <div class="confirm_multiple clearfix" id="multiple_actions_container">
                         <div class="confirm_multiple_actions confirm-all-cont global hidden confirm_multiple_cont clearfix">
                             <div class="confirm-all msg">
-                                <p>You requested multiple actions to execute (<span
-                                    class="show">show all</span>)</p>
+                                <p>You requested multiple actions to execute (<span class="show">show all</span>)</p>
                                 <button class="yes">Confirm all</button>
                                 <button class="no">Cancel all</button>
                             </div>
@@ -444,7 +443,7 @@
     <div id="feedback-overlay-content" class="hidden overlay-content feedback-form">
         <div class="description">
             <p>
-                {% blocktrans %}~okeanos is currently in alpha test and we would appreciate any kind of feedback.
+                {% blocktrans %}{{ BRANDING_SERVICE_NAME }} is currently in alpha test and we would appreciate any kind of feedback.
                 We welcome any suggestions, questions and bug reports you may have.{% endblocktrans %}
             </p>
         </div>
@@ -478,7 +477,7 @@
         <div class="popup-body-inner">
           <div class="form-container">
             <p class="feedback-intro">
-            {% blocktrans %}~okeanos is currently in alpha test and we would appreciate any kind of feedback.
+            {% blocktrans %}Synnefo is currently in alpha test and we would appreciate any kind of feedback.
             We welcome any suggestions, questions and bug reports you may have.{% endblocktrans %}</p>
             <form id="feedback-form">
               <label for="feedback-msg">{% trans "Please describe your problem here, provide as many details as possible" %}</label>
@@ -529,7 +528,7 @@
         </div>
         <div class="description subinfo">
             <p>
-            {% trans "The API key provides full access to your <em>~okeanos</em> account, so always keep it private." %}
+            {% blocktrans %} The API key provides full access to your <em>{{ BRANDING_SERVICE_NAME }}</em> account, so always keep it private.{% endblocktrans %}
             </p>
         </div>
     </div>
@@ -558,7 +557,7 @@
     
     <div id="loading-view" class="hidden">
         <img src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" />
-        <div class="header">Loading <span>~okeanos</span></div>
+        <div class="header">Loading <span>{{ BRANDING_SERVICE_NAME  }}</span></div>
         <div class="info hidden"></div>
     </div>
     <div id="user_public_keys" class="overlay-content overlay-content hidden">

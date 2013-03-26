@@ -1,7 +1,9 @@
+{% load branding_tags %}
+
 <!doctype html>
 <html> 
 <head> 
-    <title>~okeanos</title> 
+    <title>{{ BRANDING_SERVICE_NAME  }}</title> 
     <link rel="stylesheet" type="text/css" href="/static/snf/css/main.css"/> 
     <!--[if lte IE 7]><style type="text/css" media="all">@import url(/static/snf/css/ie.css);</style><![endif]--> 
 </head>
@@ -10,7 +12,7 @@
         <div id='header'> 
             <div class="header-logo"> 
                 <a href="/">
-                    <img src="/static/snf/images/okeanos-logo-alpha.png" alt="~okeanos"/> 
+                    <img src="{{ BRANDING_COMPUTE_LOGO_URL }}" alt="{{ BRANDING_SERVICE_NAME }}"/>  
                 </a> 
             </div> 
         </div> 

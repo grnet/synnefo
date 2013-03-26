@@ -48,7 +48,7 @@ FEEDBACK_CONTACTS = (
 )
 
 # Email from which the feedback emails will be sent from
-FEEDBACK_EMAIL_FROM = "~okeanos <no-reply@grnet.gr>"
+FEEDBACK_EMAIL_FROM = "synnefo <no-reply@grnet.gr>"
 
 # URL to redirect not authenticated users
 UI_LOGIN_URL = "/im/login"

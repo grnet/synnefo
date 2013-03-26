@@ -206,4 +206,3 @@ def provider_login_url(context, provider, from_login=False):
         joinchar = "&"
 
     return "%s%s%s" % (provider.add_url, joinchar, urllib.urlencode(attrs))
-

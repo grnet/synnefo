@@ -75,7 +75,8 @@ INSTALL_REQUIRES = [
     'lockfile>=0.8, <0.9',
     'ipaddr',
     'setproctitle>=1.0.1',
-    'bitarray>=0.8'
+    'bitarray>=0.8',
+    'snf-branding'
 ]
 
 EXTRAS_REQUIRES = {

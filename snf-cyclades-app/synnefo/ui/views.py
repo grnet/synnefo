@@ -46,6 +46,7 @@ from django.core.urlresolvers import reverse
 from django.core.mail import send_mail
 from django.http import Http404
 from django.template import RequestContext
+from synnefo_branding import settings as snf_settings
 
 from synnefo.util.version import get_component_version
 
@@ -126,8 +127,7 @@ UI_SYNNEFO_JS_WEB_URL = getattr(settings,
 # extensions
 ENABLE_GLANCE = getattr(settings, 'UI_ENABLE_GLANCE', True)
 GLANCE_API_URL = getattr(settings, 'UI_GLANCE_API_URL', '/glance')
-FEEDBACK_CONTACTS = getattr(settings, "FEEDBACK_CONTACTS", [])
-FEEDBACK_EMAIL_FROM = settings.FEEDBACK_EMAIL_FROM
+FEEDBACK_CONTACTS = getattr(settings, "FEEDBACK_CONTACTS", []) 
 DIAGNOSTICS_UPDATE_INTERVAL = getattr(settings,
                 'UI_DIAGNOSTICS_UPDATE_INTERVAL', 2000)
 
@@ -413,8 +413,8 @@ def machines_connect(request):
             connect_message = CONNECT_PROMPT_MESSAGES[host_os][operating_system][0]
             subinfo = CONNECT_PROMPT_MESSAGES[host_os][operating_system][1]
         except KeyError:
-            connect_message = _("You are trying to connect from a %s "
-                                "machine to a %s machine") % (host_os, operating_system)
+            connect_message = _("You are trying to connect from a %(host_os)s "
+                                "machine to a %(os)s machine") % dict(host_os=host_os, os=operating_system)
             subinfo = ""
 
         response_object = {
@@ -447,8 +447,10 @@ def feedback_submit(request):
     # default to True (calls from error pages)
     allow_data_send = request.POST.get("feedback-submit-data", True)
 
-    mail_subject = unicode(_("Feedback from synnefo application"))
-
+    mail_subject_txt = 'Feedback from '
+    + snf_settings.BRANDING_SERVICE_NAME +' application'
+    mail_subject = unicode(_mail_subject_txt) 
+    
     mail_context = {'message': message, 'data': data, 'email': email,
                     'allow_data_send': allow_data_send, 'request': request}
     mail_content = render_to_string("feedback_mail.txt", mail_context)

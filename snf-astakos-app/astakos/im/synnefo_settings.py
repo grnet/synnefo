@@ -44,6 +44,7 @@ installed_apps = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django_tables2',
+    'synnefo_branding',
 #    'debug_toolbar',
 ]
 
@@ -60,7 +61,7 @@ context_processors = [
     'astakos.im.context_processors.menu',
     'astakos.im.context_processors.custom_messages',
     'astakos.im.context_processors.last_login_method',
-    'astakos.im.context_processors.membership_policies',
+    'astakos.im.context_processors.membership_policies', 
     'synnefo.lib.context_processors.cloudbar'
 ]
 

@@ -15,7 +15,7 @@
 
 {% if not show_form %}
 <p>These are the specifications of the Project you want to create. If you hit the "Submit" button
-this form will be officially sent to GRNET for review. Please make sure the following reflect
+this form will be officially sent to {{ BRANDING_COMPANY_NAME }} for review. Please make sure the following reflect
 exactly your request.</p>
 {% endif %}
 
@@ -29,7 +29,7 @@ exactly your request.</p>
 		    	<em>more info</em>
                 <span> To create a new Project, first enter the following
                     required fields.  The information you enter, except
-                    <i>Comments for review</i>, will be visible to all ~okeanos
+                    <i>Comments for review</i>, will be visible to all {{ BRANDING_SERVICE_NAME }}
                     users. </span>
 	    	</span>    		
     	</legend>

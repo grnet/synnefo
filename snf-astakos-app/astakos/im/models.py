@@ -1606,6 +1606,7 @@ class ProjectApplication(models.Model):
     comments                =   models.TextField(null=True, blank=True)
     issue_date              =   models.DateTimeField(auto_now_add=True)
     response_date           =   models.DateTimeField(null=True, blank=True)
+    response                =   models.TextField(null=True, blank=True)
 
     objects                 =   ProjectApplicationManager()
 
@@ -1775,7 +1776,7 @@ class ProjectApplication(models.Model):
     def can_deny(self):
         return self.state == self.PENDING
 
-    def deny(self):
+    def deny(self, reason):
         if not self.can_deny():
             m = _("cannot deny: application '%s' in state '%s'") % (
                     self.id, self.state)
@@ -1783,6 +1784,7 @@ class ProjectApplication(models.Model):
 
         self.state = self.DENIED
         self.response_date = datetime.now()
+        self.response = reason
         self.save()
 
     def can_approve(self):

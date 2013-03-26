@@ -1055,7 +1055,7 @@ def project_add(request):
 
     user = request.user
     reached, limit = reached_pending_application_limit(user.id)
-    if reached:
+    if not user.is_project_admin() and reached:
         m = _(astakos_messages.PENDING_APPLICATION_LIMIT_ADD) % limit
         messages.error(request, m)
         next = reverse('astakos.im.views.project_list')
@@ -1174,8 +1174,9 @@ def project_modify(request, application_id):
         m = _(astakos_messages.NOT_ALLOWED)
         raise PermissionDenied(m)
 
-    reached, limit = reached_pending_application_limit(user.id, app)
-    if reached:
+    owner_id = app.owner_id
+    reached, limit = reached_pending_application_limit(owner_id, app)
+    if not user.is_project_admin() and reached:
         m = _(astakos_messages.PENDING_APPLICATION_LIMIT_MODIFY) % limit
         messages.error(request, m)
         next = reverse('astakos.im.views.project_list')

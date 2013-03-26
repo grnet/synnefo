@@ -692,8 +692,9 @@ def submit_application(kw, request_user=None):
             m = _(astakos_messages.NOT_ALLOWED)
             raise PermissionDenied(m)
 
-    reached, limit = reached_pending_application_limit(request_user.id, precursor)
-    if reached:
+    owner = kw['owner']
+    reached, limit = reached_pending_application_limit(owner.id, precursor)
+    if not request_user.is_project_admin() and reached:
         m = _(astakos_messages.REACHED_PENDING_APPLICATION_LIMIT) % limit
         raise PermissionDenied(m)
 
@@ -860,7 +861,7 @@ def _reached_pending_application_limit(user_id):
 
     PENDING = ProjectApplication.PENDING
     pending = ProjectApplication.objects.filter(
-        applicant__id=user_id, state=PENDING).count()
+        owner__id=user_id, state=PENDING).count()
 
     return pending >= limit, limit
 

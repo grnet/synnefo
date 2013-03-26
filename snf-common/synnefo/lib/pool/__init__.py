@@ -196,12 +196,32 @@ class ObjectPool(object):
         log.debug("PUT-AFTER: finished putting object %r back to pool %r",
                   obj, self)
 
+    def pool_create_free(self):
+        """Create a free new object that is not put into the pool.
+
+        Just for convenience, let the users create objects with
+        the exact same configuration as those that are used with the pool
+
+        """
+        obj = self._pool_create_free()
+        return obj
+
+    def _pool_create_free(self):
+        """Create a free new object that is not put into the pool.
+
+        This should be overriden by pool classes.
+        Otherwise, it just calls _pool_create().
+
+        """
+        return self._pool_create()
+
     def _pool_create(self):
         """Create a new object to be used with this pool.
 
         Create a new object to be used with this pool,
         should be overriden in subclasses.
         Must be thread-safe.
+
         """
         raise NotImplementedError
 
@@ -226,3 +246,222 @@ class ObjectPool(object):
 
         """
         raise NotImplementedError
+
+
+class PooledObject(object):
+    """Generic Object Pool context manager and pooled object proxy.
+
+    The PooledObject instance acts as a context manager to
+    be used in a with statement:
+
+        with PooledObject(...) as obj:
+            use(obj)
+
+    The with block above is roughly equivalent to:
+
+        pooled = PooledObject(...):
+        try:
+            obj = pooled.acquire()
+            assert(obj is pooled.obj)
+            use(obj)
+        finally:
+            pooled.release()
+
+    After exiting the with block, or releasing,
+    the code MUST not use the obj again in any way.
+
+    """
+
+    # NOTE: We need all definitions at class-level
+    # to avoid infinite __gettatr__() recursion.
+    # This is also true for subclasses.
+
+    # NOTE: Typically you will only need to override
+    #       __init__() and get_pool
+
+    # Initialization. Do not customize.
+    _pool_settings = None
+    _pool_get_settings = None
+    _pool_kwargs = None
+    _pool = None
+    obj = None
+
+    #####################################################
+    ### Subclass attribute customization begins here. ###
+
+    _pool_log_prefix = "POOL"
+    _pool_class = ObjectPool
+
+    # default keyword args to pass to pool initialization
+    _pool_default_settings = (
+            ('size', 25),
+        )
+
+    # keyword args to pass to pool_get
+    _pool_default_get_settings = (
+            ('blocking', True),
+            #('timeout', None),
+            ('create', True),
+            ('verify', True),
+        )
+
+    # behavior settings
+    _pool_attach_context = False
+    _pool_disable_after_release = True
+    _pool_ignore_double_release = False
+
+    ###  Subclass attribute customization ends here.  ###
+    #####################################################
+
+    def __init__(self, pool_settings=None,
+                       get_settings=None,
+                       attach_context=None,
+                       disable_after_release=None,
+                       ignore_double_release=None,
+                       **kwargs):
+        """Initialize a PooledObject instance.
+
+        Accept only keyword arguments.
+        Some of them are filtered for this instance's configuration,
+        and the rest are saved in ._pool_kwargs for later use.
+
+        The filtered keywords are:
+
+        pool_settings:  keyword args forwarded to pool instance initialization
+                        in get_pool(), on top of the class defaults.
+                        If not given, the remaining keyword args are
+                        forwarded instead.
+
+        get_settings:   keyword args forwarded to the pool's .pool_get() on top
+                        of the class defaults.
+
+        attach_context: boolean overriding the class default.
+                        If True, after getting an object from the pool,
+                        attach self onto it before returning it,
+                        so that the context manager caller can have
+                        access to the manager object within the with: block.
+
+        disable_after_release:
+                        boolean overriding the class default.
+                        If True, the PooledObject will not allow a second
+                        acquisition after the first release. For example,
+                        the second with will raise an AssertionError:
+                        manager = PooledObject()
+                        with manager as c:
+                            pass
+                        with manager as c:
+                            pass
+
+        ignore_double_release:
+                        boolean overriding the class default.
+                        If True, the PooledObject will allow consecutive
+                        calls to release the underlying pooled object.
+                        Only the first one has an effect.
+                        If False, an AssertionError is raised.
+
+        """
+        self._pool_kwargs = kwargs
+        self._pool = None
+        self.obj = None
+
+        _get_settings = dict(self._pool_default_get_settings)
+        if get_settings is not None:
+            _get_settings.update(get_settings)
+        self._pool_get_settings = _get_settings
+
+        if attach_context is not None:
+            self._pool_attach_context = attach_context
+
+        if pool_settings is None:
+            pool_settings = kwargs
+
+        _pool_settings = dict(self._pool_default_settings)
+        _pool_settings.update(**pool_settings)
+        self._pool_settings = _pool_settings
+
+    def get_pool(self):
+        """Return a suitable pool object to work with.
+
+        Called within .acquire(), it is meant to be
+        overriden by sublasses, to create a new pool,
+        or retrieve an existing one, based on the PooledObject
+        initialization keywords stored in self._pool_kwargs.
+
+        """
+        pool = self._pool_class(**self._pool_settings)
+        return pool
+
+    ### Maybe overriding get_pool() and __init__() above is enough ###
+
+    def __repr__(self):
+        return ("<object %s of class %s: "
+                "proxy for object (%r) in pool (%r)>" % (
+                id(self), self.__class__.__name__,
+                self.obj, self._pool))
+
+    __str__ = __repr__
+
+    ## Proxy the real object. Disabled until needed.
+    ##
+    ##def __getattr__(self, name):
+    ##    return getattr(self.obj, name)
+
+    ##def __setattr__(self, name, value):
+    ##    if hasattr(self, name):
+    ##        _setattr = super(PooledObject, self).__setattr__
+    ##        _setattr(name, value)
+    ##    else:
+    ##        setattr(self.obj, name, value)
+
+    ##def __delattr_(self, name):
+    ##    _delattr = super(PooledObject, self).__delattr__
+    ##    if hasattr(self, name):
+    ##        _delattr(self, name)
+    ##    else:
+    ##        delattr(self.obj, name)
+
+    def __enter__(self):
+        return self.acquire()
+
+    def __exit__(self, exc_type, exc_value, trace):
+        return self.release()
+
+    def acquire(self):
+        log.debug("%s Acquiring (context: %r)", self._pool_log_prefix, self)
+        pool = self._pool
+        if pool is False:
+            m = "%r: has been released. No further pool access allowed." % (
+                self,)
+            raise AssertionError(m)
+        if pool is not None:
+            m = "Double acquire in %r" % self
+            raise AssertionError(m)
+
+        pool = self.get_pool()
+        self._pool = pool
+
+        obj = pool.pool_get(**self._pool_get_settings)
+        if self._pool_attach_context:
+            obj._pool_context = self
+        self.obj = obj
+        log.debug("%s Acquired %r", self._pool_log_prefix, obj)
+        return obj
+
+    def release(self):
+        log.debug("%s Releasing (context: %r)", self._pool_log_prefix, self)
+        pool = self._pool
+        if pool is None:
+            m = "%r: no pool" % (self,)
+            raise AssertionError(m)
+
+        obj = self.obj
+        if obj is None:
+            if self._pool_ignore_double_release:
+                return
+            m = "%r: no object. Double release?" % (self,)
+            raise AssertionError(m)
+
+        pool.pool_put(obj)
+        self.obj = None
+        if self._pool_disable_after_release:
+            self._pool = False

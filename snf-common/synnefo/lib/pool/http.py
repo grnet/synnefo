@@ -31,7 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from synnefo.lib.pool import ObjectPool
+from synnefo.lib.pool import ObjectPool, PooledObject
 from select import select
 
 from httplib import (
@@ -40,33 +40,22 @@ from httplib import (
     ResponseNotReady,
 )
 
-from new import instancemethod
+from threading import Lock
 
 import logging
 
 log = logging.getLogger(__name__)
 
 _pools = {}
-pool_size = 8
+_pools_mutex = Lock()
 
-
+default_pool_size = 100
 USAGE_LIMIT = 1000
 
 
 def init_http_pooling(size):
-    global pool_size
-    pool_size = size
-
-
-def put_http_connection(conn):
-    pool = conn._pool
-    log.debug("HTTP-PUT-BEFORE: putting connection %r back to pool %r",
-              conn, pool)
-    if pool is None:
-        log.debug("HTTP-PUT: connection %r does not have a pool", conn)
-        return
-    conn._pool = None
-    pool.pool_put(conn)
+    global default_pool_size
+    default_pool_size = size
 
 
 class HTTPConnectionPool(ObjectPool):
@@ -93,23 +82,13 @@ class HTTPConnectionPool(ObjectPool):
     def _pool_create(self):
         log.debug("CREATE-HTTP-BEFORE from pool %r", self)
         conn = self.connection_class(self.netloc)
-        conn._use_counter = USAGE_LIMIT
-        conn._pool = self
-        conn._real_close = conn.close
-        conn.close = instancemethod(put_http_connection, conn, type(conn))
+        conn._pool_use_counter = USAGE_LIMIT
         return conn
 
     def _pool_verify(self, conn):
         log.debug("VERIFY-HTTP")
-        # _pool verify is called at every pool_get().
-        # Make sure this connection obj is associated with the proper pool.
-        # The association is broken by put_http_connection(), to prevent
-        # a connection object from being returned to the pool twice,
-        # on duplicate invocations of conn.close().
         if conn is None:
             return False
-        if not conn._pool:
-            conn._pool = self
         sock = conn.sock
         if sock is None:
             return True
@@ -120,10 +99,11 @@ class HTTPConnectionPool(ObjectPool):
     def _pool_cleanup(self, conn):
         log.debug("CLEANUP-HTTP")
         # every connection can be used a finite number of times
-        conn._use_counter -= 1
+        conn._pool_use_counter -= 1
 
         # see httplib source for connection states documentation
-        if conn._use_counter > 0 and conn._HTTPConnection__state == 'Idle':
+        if (conn._pool_use_counter > 0 and
+            conn._HTTPConnection__state == 'Idle'):
             try:
                 conn.getresponse()
             except ResponseNotReady:
@@ -131,23 +111,39 @@ class HTTPConnectionPool(ObjectPool):
                 return False
 
         log.debug("CLEANUP-HTTP: Closing connection. Will not reuse.")
-        conn._real_close()
+        conn.close()
         return True
 
 
-def get_http_connection(netloc=None, scheme='http', pool_size=pool_size):
-    log.debug("HTTP-GET: Getting HTTP connection")
-    if netloc is None:
-        m = "netloc cannot be None"
-        raise ValueError(m)
-    # does the pool need to be created?
-    # ensure distinct pools are created for every (scheme, netloc) combination
-    key = (scheme, netloc)
-    if key not in _pools:
-        log.debug("HTTP-GET: Creating pool for key %s", key)
-        pool = HTTPConnectionPool(scheme, netloc, size=pool_size)
-        _pools[key] = pool
+class PooledHTTPConnection(PooledObject):
 
-    obj = _pools[key].pool_get()
-    log.debug("HTTP-GET: Returning object %r", obj)
-    return obj
+    _pool_log_prefix = "HTTP"
+    _pool_class = HTTPConnectionPool
+
+    def __init__(self, netloc, scheme='http', pool=None, **kw):
+        kw['netloc'] = netloc
+        kw['scheme'] = scheme
+        kw['pool'] = pool
+        super(PooledHTTPConnection, self).__init__(**kw)
+
+    def get_pool(self):
+        kwargs = self._pool_kwargs
+        pool = kwargs.pop('pool', None)
+        if pool is not None:
+            return pool
+
+        # pool was not given, find one from the global registry
+        scheme = kwargs['scheme']
+        netloc = kwargs['netloc']
+        size = kwargs.get('size', default_pool_size)
+        # ensure distinct pools for every (scheme, netloc) combination
+        key = (scheme, netloc)
+        with _pools_mutex:
+            if key not in _pools:
+                log.debug("HTTP-GET: Creating pool for key %s", key)
+                pool = HTTPConnectionPool(scheme, netloc, size=size)
+                _pools[key] = pool
+            else:
+                pool = _pools[key]
+
+        return pool

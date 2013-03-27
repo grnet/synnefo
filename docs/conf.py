@@ -53,6 +53,7 @@ SYNNEFO_PROJECTS = {
     'snf-webproject': 'dev',
     'snf-common': 'dev',
     'snf-image': 'dev',
+    'snf-astakos-client': 'dev',
     'snf-cyclades-app': 'dev'
 }
 

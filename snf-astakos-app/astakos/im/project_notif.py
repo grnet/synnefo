@@ -16,7 +16,7 @@ MEM_ENROLL_NOTIF = {
     }
 
 SENDER = settings.SERVER_EMAIL
-ADMINS = settings.ADMINS
+NOTIFY_RECIPIENTS = [e[1] for e in settings.MANAGERS + settings.HELPDESK]
 
 def membership_change_notify(project, user, action):
     try:
@@ -69,8 +69,7 @@ def membership_leave_request_notify(project, requested_user):
 def application_submit_notify(application):
     try:
         notification = build_notification(
-            SENDER,
-            [i[1] for i in ADMINS],
+            SENDER, NOTIFY_RECIPIENTS,
             _(settings.PROJECT_CREATION_SUBJECT) % application.__dict__,
             template='im/projects/project_creation_notification.txt',
             dictionary={'object':application})

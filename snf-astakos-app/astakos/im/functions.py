@@ -56,7 +56,7 @@ from functools import wraps
 
 import astakos.im.settings as astakos_settings
 from astakos.im.settings import (
-    DEFAULT_CONTACT_EMAIL, SITENAME, BASEURL, LOGGING_LEVEL,
+    CONTACT_EMAIL, SITENAME, BASEURL, LOGGING_LEVEL,
     VERIFICATION_EMAIL_SUBJECT, ACCOUNT_CREATION_SUBJECT,
     GROUP_CREATION_SUBJECT, HELPDESK_NOTIFICATION_EMAIL_SUBJECT,
     INVITATION_EMAIL_SUBJECT, GREETING_EMAIL_SUBJECT, FEEDBACK_EMAIL_SUBJECT,
@@ -64,7 +64,8 @@ from astakos.im.settings import (
     PROJECT_CREATION_SUBJECT, PROJECT_APPROVED_SUBJECT,
     PROJECT_TERMINATION_SUBJECT, PROJECT_SUSPENSION_SUBJECT,
     PROJECT_MEMBERSHIP_CHANGE_SUBJECT,
-    PROJECT_MEMBER_JOIN_POLICIES, PROJECT_MEMBER_LEAVE_POLICIES)
+    PROJECT_MEMBER_JOIN_POLICIES, PROJECT_MEMBER_LEAVE_POLICIES, HELPDESK,
+    ADMINS, MANAGERS)
 from astakos.im.notifications import build_notification, NotificationError
 from astakos.im.models import (
     AstakosUser, Invitation, ProjectMembership, ProjectApplication, Project,
@@ -115,7 +116,7 @@ def send_verification(user, template_name='im/activation_email.txt'):
                                'url': url,
                                'baseurl': BASEURL,
                                'site_name': SITENAME,
-                               'support': DEFAULT_CONTACT_EMAIL})
+                               'support': CONTACT_EMAIL})
     sender = settings.SERVER_EMAIL
     try:
         send_mail(_(VERIFICATION_EMAIL_SUBJECT), message, sender, [user.email],
@@ -139,17 +140,16 @@ def _send_admin_notification(template_name,
                              dictionary=None,
                              subject='alpha2 testing notification',):
     """
-    Send notification email to settings.ADMINS.
+    Send notification email to settings.HELPDESK + settings.MANAGERS.
 
     Raises SendNotificationError
     """
-    if not settings.ADMINS:
-        return
     dictionary = dictionary or {}
     message = render_to_string(template_name, dictionary)
     sender = settings.SERVER_EMAIL
+    recipient_list = [e[1] for e in HELPDESK + MANAGERS]
     try:
-        send_mail(subject, message, sender, [i[1] for i in settings.ADMINS],
+        send_mail(subject, message, sender, recipient_list,
                   connection=get_connection())
     except (SMTPException, socket.error) as e:
         logger.exception(e)
@@ -168,21 +168,19 @@ def send_account_creation_notification(template_name, dictionary=None):
 
 def send_helpdesk_notification(user, template_name='im/helpdesk_notification.txt'):
     """
-    Send email to DEFAULT_CONTACT_EMAIL to notify for a new user activation.
+    Send email to settings.HELPDESK list to notify for a new user activation.
 
     Raises SendNotificationError
     """
-    if not DEFAULT_CONTACT_EMAIL:
-        return
     message = render_to_string(
         template_name,
         {'user': user}
     )
     sender = settings.SERVER_EMAIL
+    recipient_list = [e[1] for e in HELPDESK + MANAGERS]
     try:
         send_mail(_(HELPDESK_NOTIFICATION_EMAIL_SUBJECT) % {'user': user.email},
-                  message, sender, [DEFAULT_CONTACT_EMAIL],
-                  connection=get_connection())
+                  message, sender, recipient_list, connection=get_connection())
     except (SMTPException, socket.error) as e:
         logger.exception(e)
         raise SendNotificationError()
@@ -204,7 +202,7 @@ def send_invitation(invitation, template_name='im/invitation.txt'):
                                'url': url,
                                'baseurl': BASEURL,
                                'site_name': SITENAME,
-                               'support': DEFAULT_CONTACT_EMAIL})
+                               'support': CONTACT_EMAIL})
     sender = settings.SERVER_EMAIL
     try:
         send_mail(subject, message, sender, [invitation.username],
@@ -232,7 +230,7 @@ def send_greeting(user, email_template_name='im/welcome_email.txt'):
                                'url': urljoin(BASEURL, reverse('index')),
                                'baseurl': BASEURL,
                                'site_name': SITENAME,
-                               'support': DEFAULT_CONTACT_EMAIL})
+                               'support': CONTACT_EMAIL})
     sender = settings.SERVER_EMAIL
     try:
         send_mail(subject, message, sender, [user.email],
@@ -248,7 +246,7 @@ def send_greeting(user, email_template_name='im/welcome_email.txt'):
 def send_feedback(msg, data, user, email_template_name='im/feedback_mail.txt'):
     subject = _(FEEDBACK_EMAIL_SUBJECT)
     from_email = settings.SERVER_EMAIL
-    recipient_list = [DEFAULT_CONTACT_EMAIL]
+    recipient_list = [e[1] for e in HELPDESK]
     content = render_to_string(email_template_name, {
         'message': msg,
         'data': data,
@@ -271,7 +269,7 @@ def send_change_email(
         url = request.build_absolute_uri(url)
         t = loader.get_template(email_template_name)
         c = {'url': url, 'site_name': SITENAME,
-             'support': DEFAULT_CONTACT_EMAIL, 'ec': ec}
+             'support': CONTACT_EMAIL, 'ec': ec}
         from_email = settings.SERVER_EMAIL
         send_mail(_(EMAIL_CHANGE_EMAIL_SUBJECT), t.render(Context(c)),
                   from_email, [ec.new_email_address],

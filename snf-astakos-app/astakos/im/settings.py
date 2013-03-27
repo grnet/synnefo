@@ -14,12 +14,12 @@ INVITATIONS_PER_LEVEL = getattr(settings, 'ASTAKOS_INVITATIONS_PER_LEVEL', {
     4: 0
 })
 
-# Address to use for outgoing emails
-DEFAULT_CONTACT_EMAIL = getattr(
-    settings, 'ASTAKOS_DEFAULT_CONTACT_EMAIL', 'support@example.synnefo.org')
+ADMINS = getattr(settings, 'ADMINS', ())
+MANAGERS = getattr(settings, 'MANAGERS', ADMINS)
+HELPDESK = getattr(settings, 'HELPDESK', ADMINS)
 
-SERVER_EMAIL = getattr(settings, 'SERVER_EMAIL', None)
-ADMINS = getattr(settings, 'ADMINS', None)
+CONTACT_EMAIL = settings.CONTACT_EMAIL
+SERVER_EMAIL = settings.SERVER_EMAIL
 
 # Identity Management enabled modules
 # Supported modules are: 'local', 'twitter' and 'shibboleth'

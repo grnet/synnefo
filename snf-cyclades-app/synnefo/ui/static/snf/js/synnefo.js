@@ -445,6 +445,7 @@ function set_machine_os_image(machine, machines_view, state, os, skip_reset_stat
     var size = sizes_map[machines_view];
     var img_selector = views_map[machines_view];
     var cls = states_map[state];
+    if (os === "unknown") { os = synnefo.config.unknown_os }
  
     var new_img = 'url("' + synnefo.config.machines_icons_url + size + '/' + os + '-sprite.png")';
 

@@ -86,6 +86,7 @@ IMAGE_DELETED_SIZE_TITLE = getattr(settings, 'UI_IMAGE_DELETED_SIZE_TITLE',
 
 SUPPORT_SSH_OS_LIST = getattr(settings, "UI_SUPPORT_SSH_OS_LIST",)
 OS_CREATED_USERS = getattr(settings, "UI_OS_DEFAULT_USER_MAP")
+UNKNOWN_OS = getattr(settings, "UI_UNKNOWN_OS", "unknown")
 LOGOUT_URL = getattr(settings, "UI_LOGOUT_URL", '/im/authenticate')
 LOGIN_URL = getattr(settings, "UI_LOGIN_URL", '/im/login')
 AUTH_COOKIE_NAME = getattr(settings, "UI_AUTH_COOKIE_NAME", 'synnefo_user')
@@ -99,7 +100,7 @@ SKIP_TIMEOUTS = getattr(settings, "UI_SKIP_TIMEOUTS", 1)
 # Additional settings
 VM_NAME_TEMPLATE = getattr(settings, "VM_CREATE_NAME_TPL", "My {0} server")
 VM_HOSTNAME_FORMAT = getattr(settings, "UI_VM_HOSTNAME_FORMAT",
-                                    'snf-%(id)s.vm.okeanos.grnet.gr')
+                                    'snf-%(id)s.vm.synnefo.org')
 
 if isinstance(VM_HOSTNAME_FORMAT, basestring):
   VM_HOSTNAME_FORMAT =  VM_HOSTNAME_FORMAT % {'id':'{0}'}
@@ -127,7 +128,7 @@ UI_SYNNEFO_JS_WEB_URL = getattr(settings,
 # extensions
 ENABLE_GLANCE = getattr(settings, 'UI_ENABLE_GLANCE', True)
 GLANCE_API_URL = getattr(settings, 'UI_GLANCE_API_URL', '/glance')
-FEEDBACK_CONTACTS = getattr(settings, "FEEDBACK_CONTACTS", []) 
+FEEDBACK_CONTACTS = getattr(settings, "FEEDBACK_CONTACTS", [])
 DIAGNOSTICS_UPDATE_INTERVAL = getattr(settings,
                 'UI_DIAGNOSTICS_UPDATE_INTERVAL', 2000)
 
@@ -203,6 +204,7 @@ def home(request):
                'flavors_disk_templates_info': json.dumps(FLAVORS_DISK_TEMPLATES_INFO),
                'support_ssh_os_list': json.dumps(SUPPORT_SSH_OS_LIST),
                'os_created_users': json.dumps(OS_CREATED_USERS),
+               'unknown_os': json.dumps(UNKNOWN_OS),
                'userdata_keys_limit': json.dumps(MAX_SSH_KEYS_PER_USER),
                'use_glance': json.dumps(ENABLE_GLANCE),
                'glance_api_url': json.dumps(GLANCE_API_URL),
@@ -449,8 +451,8 @@ def feedback_submit(request):
 
     mail_subject_txt = 'Feedback from '
     + snf_settings.BRANDING_SERVICE_NAME +' application'
-    mail_subject = unicode(_mail_subject_txt) 
-    
+    mail_subject = unicode(_mail_subject_txt)
+
     mail_context = {'message': message, 'data': data, 'email': email,
                     'allow_data_send': allow_data_send, 'request': request}
     mail_content = render_to_string("feedback_mail.txt", mail_context)

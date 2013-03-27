@@ -298,7 +298,7 @@ RESOURCES_PRESENTATION_DATA = getattr(
                 'is_abbreviation':False,
                 'report_desc':'Private Networks',
                 'placeholder':'eg. 1',
-                'verbose_name':'private network'
+                'verbose_name':'Private Network'
             }
 
         },

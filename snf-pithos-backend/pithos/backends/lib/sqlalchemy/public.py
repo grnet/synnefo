@@ -37,6 +37,7 @@ from sqlalchemy.sql import and_, select
 from sqlalchemy.schema import Index
 from sqlalchemy.exc import NoSuchTableError
 
+from pithos.backends.random_word import get_word
 
 def create_tables(engine):
     metadata = MetaData()
@@ -44,10 +45,13 @@ def create_tables(engine):
     columns.append(Column('public_id', Integer, primary_key=True))
     columns.append(Column('path', String(2048), nullable=False))
     columns.append(Column('active', Boolean, nullable=False, default=True))
+    columns.append(Column('url', String(2048), nullable=True))
     public = Table('public', metadata, *columns, mysql_engine='InnoDB',
                    sqlite_autoincrement=True)
     # place an index on path
     Index('idx_public_path', public.c.path, unique=True)
+    # place an index on url
+    Index('idx_public_url', public.c.url, unique=True)
     metadata.create_all(engine)
     return metadata.sorted_tables
 
@@ -64,39 +68,49 @@ class Public(DBWorker):
             tables = create_tables(self.engine)
             map(lambda t: self.__setattr__(t.name, t), tables)
 
-    def public_set(self, path):
+    def get_unique_url(self, serial, public_url_min_length, public_url_alphabet):
+        l = public_url_min_length
+        while 1:
+            candidate = get_word(serial, length=l, alphabet=public_url_alphabet)
+            if self.public_path(candidate) is None:
+                return candidate
+            l +=1
+
+    def public_set(self, path, public_url_min_length, public_url_alphabet):
         s = select([self.public.c.public_id])
         s = s.where(self.public.c.path == path)
         r = self.conn.execute(s)
         row = r.fetchone()
         r.close()
-        if row:
-            s = self.public.update().where(self.public.c.public_id == row[0])
-            s = s.values(active=True)
-        else:
+
+        if not row:
             s = self.public.insert()
             s = s.values(path=path, active=True)
-        r = self.conn.execute(s)
-        r.close()
+            r = self.conn.execute(s)
+            serial = r.inserted_primary_key[0]
+            r.close()
+
+            url = self.get_unique_url(
+                serial, public_url_min_length, public_url_alphabet
+            )
+            s = self.public.update().where(self.public.c.public_id == serial)
+            s = s.values(url=url)
+            self.conn.execute(s).close()
 
     def public_unset(self, path):
-        s = self.public.update()
+        s = self.public.delete()
         s = s.where(self.public.c.path == path)
-        s = s.values(active=False)
-        r = self.conn.execute(s)
-        r.close()
+        self.conn.execute(s).close()
 
     def public_unset_bulk(self, paths):
         if not paths:
             return
-        s = self.public.update()
+        s = self.public.delete()
         s = s.where(self.public.c.path.in_(paths))
-        s = s.values(active=False)
-        r = self.conn.execute(s)
-        r.close()
+        self.conn.execute(s).close()
 
     def public_get(self, path):
-        s = select([self.public.c.public_id])
+        s = select([self.public.c.url])
         s = s.where(and_(self.public.c.path == path,
                          self.public.c.active == True))
         r = self.conn.execute(s)
@@ -107,7 +121,7 @@ class Public(DBWorker):
         return None
 
     def public_list(self, prefix):
-        s = select([self.public.c.path, self.public.c.public_id])
+        s = select([self.public.c.path, self.public.c.url])
         s = s.where(self.public.c.path.like(
             self.escape_like(prefix) + '%', escape='\\'))
         s = s.where(self.public.c.active == True)
@@ -118,7 +132,7 @@ class Public(DBWorker):
 
     def public_path(self, public):
         s = select([self.public.c.path])
-        s = s.where(and_(self.public.c.public_id == public,
+        s = s.where(and_(self.public.c.url == public,
                          self.public.c.active == True))
         r = self.conn.execute(s)
         row = r.fetchone()

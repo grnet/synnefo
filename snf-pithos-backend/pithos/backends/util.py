@@ -48,7 +48,9 @@ class PithosBackendPool(ObjectPool):
                  quotaholder_enabled=True,
                  quotaholder_url=None, quotaholder_token=None,
                  quotaholder_client_poolsize=None,
-                 block_params=None):
+                 block_params=None,
+                 public_url_min_length=None,
+                 public_url_alphabet=None):
         super(PithosBackendPool, self).__init__(size=size)
         self.db_module = db_module
         self.db_connection = db_connection
@@ -64,6 +66,8 @@ class PithosBackendPool(ObjectPool):
         self.quotaholder_token = quotaholder_token
         self.quotaholder_client_poolsize = quotaholder_client_poolsize
         self.free_versioning = free_versioning
+        self.public_url_min_length=public_url_min_length
+        self.public_url_alphabet=public_url_alphabet
 
     def _pool_create(self):
         backend = connect_backend(
@@ -80,7 +84,9 @@ class PithosBackendPool(ObjectPool):
                 quotaholder_url=self.quotaholder_url,
                 quotaholder_token=self.quotaholder_token,
                 quotaholder_client_poolsize=self.quotaholder_client_poolsize,
-                free_versioning=self.free_versioning)
+                free_versioning=self.free_versioning,
+                public_url_min_length=self.public_url_min_length,
+                public_url_alphabet=self.public_url_alphabet)
 
         backend._real_close = backend.close
         backend.close = instancemethod(_pooled_backend_close, backend,

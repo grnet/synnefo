@@ -194,7 +194,11 @@ class SwissArmy():
         if public:
             # set destination object public
             fullpath = '/'.join([dest_account, dest_container, dest_name])
-            self.backend.permissions.public_set(fullpath)
+            self.backend.permissions.public_set(
+                fullpath,
+                self.backend.public_url_min_length,
+                self.backend.public_url_alphabet
+            )
 
     def _merge_account(self, src_account, dest_account, delete_src=False):
             # TODO: handle exceptions

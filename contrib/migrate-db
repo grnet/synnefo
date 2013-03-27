@@ -166,7 +166,11 @@ class ObjectMigration(Migration):
             self.create_tags(headerid, nodeid, vserials)
             #set object's publicity
             if public:
-                self.backend.permissions.public_set(object)
+                self.backend.permissions.public_set(
+                    object,
+                    self.backend.public_url_min_length,
+                    self.backend.public_url_alphabet
+                )
             #set object's permissions
             self.create_permissions(headerid, object, username, is_folder=False)
     

@@ -256,6 +256,7 @@ def __send_feedback(request, email_template_name='im/feedback_mail.txt', user=No
 
     form = FeedbackForm(request.POST)
     if not form.is_valid():
+        logger.error("Invalid feedback request: %r", form.errors)
         raise BadRequest('Invalid data')
 
     msg = form.cleaned_data['feedback_msg']

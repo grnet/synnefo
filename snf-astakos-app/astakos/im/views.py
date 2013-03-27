@@ -547,7 +547,6 @@ def signup(request, template_name='im/signup.html', on_success='index', extra_co
                 return HttpResponseRedirect(reverse(on_success))
 
             except SendMailError, e:
-                logger.exception(e)
                 status = messages.ERROR
                 message = e.message
                 messages.error(request, message)
@@ -610,6 +609,7 @@ def feedback(request, template_name='im/feedback.html', email_template_name='im/
             try:
                 send_feedback(msg, data, request.user, email_template_name)
             except SendMailError, e:
+                message = e.message
                 messages.error(request, message)
             else:
                 message = _(astakos_messages.FEEDBACK_SENT)

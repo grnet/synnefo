@@ -1584,10 +1584,11 @@ def project_app_dismiss(request, application_id, ctx=None):
 
 
 def landing(request):
+    services = get_services_dict()
     return render_response(
         'im/landing.html',
+        services = services,
         context_instance=get_context(request))
-
 
 def api_access(request):
     return render_response(

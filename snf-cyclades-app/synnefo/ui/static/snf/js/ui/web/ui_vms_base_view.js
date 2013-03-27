@@ -675,9 +675,9 @@
     // OS icon helpers
     var os_icon = uihelpers.os_icon = function(os) {
         var icons = window.os_icons;
-        if (!icons) { return "okeanos" }
+        if (!icons) { return "unknown" }
         if (icons.indexOf(os) == -1) {
-            os = "okeanos";
+            os = "unknown";
         }
         return os;
     }

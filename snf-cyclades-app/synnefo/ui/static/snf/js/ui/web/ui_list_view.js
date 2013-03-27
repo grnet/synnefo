@@ -484,7 +484,7 @@
             var os = vm.get_os();
             var icons = window.os_icons || views.ListView.VM_OS_ICONS;
             if (icons.indexOf(os) == -1) {
-                os = "okeanos";
+                os = "unknown";
             }
             return os;
         },
@@ -495,7 +495,7 @@
             var icons = window.os_icons || views.ListView.VM_OS_ICONS;
 
             if (icons.indexOf(os) == -1) {
-                os = "okeanos";
+                os = "unknown";
             }
             
             var st = "off";

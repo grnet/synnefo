@@ -1954,7 +1954,7 @@
 
             // OS attribute
             if (this.has_meta(data)) {
-                data['OS'] = data.metadata.values.OS || "okeanos";
+                data['OS'] = data.metadata.values.OS || "unknown";
             }
             
             if (!data.diagnostics) {

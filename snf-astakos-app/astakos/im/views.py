@@ -1546,6 +1546,10 @@ def project_app_approve(request, application_id, ctx=None):
 @project_transaction_context()
 def project_app_deny(request, application_id, ctx=None):
 
+    reason = request.POST.get('reason', None)
+    if not reason:
+        reason = None
+
     if not request.user.is_project_admin():
         m = _(astakos_messages.NOT_ALLOWED)
         raise PermissionDenied(m)
@@ -1555,7 +1559,7 @@ def project_app_deny(request, application_id, ctx=None):
     except ProjectApplication.DoesNotExist:
         raise Http404
 
-    deny_application(application_id)
+    deny_application(application_id, reason=reason)
     return redirect(reverse('project_list'))
 
 @require_http_methods(["POST"])

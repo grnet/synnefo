@@ -6,41 +6,159 @@ Plankton API Guide
 Introduction
 ------------
 
-LA LA LA
+Plankton is an image service implemented by `GRNET <http://www.grnet.gr>`_ as part of the `Synnefo <http://www.synnefo.org>`_ cloud software, and implements an extension of the `OpenStack Image API <http://docs.openstack.org/api/openstack-image-service/1.1/content/>`_. To take full advantage of the Plankton infrastructure, client software should be aware of the extensions that differentiate Plankton from OOSs `Glance <http://docs.openstack.org/developer/glance/glanceapi.html>`_.
 
-Image API overview
-------------------
+This document's goals are:
 
-+--------------------------------------+-------+-------------------------------------------------+-------+---------+
-|URI                                   |Method |Description                                      |Glance |Plankton |
-+--------------------------------------+-------+-------------------------------------------------+-------+---------+
-|``/images``                           |GET    |`List Images <#id2>`_                            |YES    |NO       |
-+--------------------------------------+-------+-------------------------------------------------+-------+---------+
-|``/images``                           |POST   |`Add a New Image <#id3>`_                        |YES    |YES      |
-+--------------------------------------+-------+-------------------------------------------------+-------+---------+
-|``/images``                           |PUT    |`Update an Image <#id4>`_                        |YES    |YES      |
-+--------------------------------------+-------+-------------------------------------------------+-------+---------+
-|``/images/detail``                    |GET    |`List Available Images in Detail <#id5>`_        |YES    |YES      |
-+--------------------------------------+-------+-------------------------------------------------+-------+---------+
-|``/images/<img-id>``                  |HEAD   |`Retrieve Image Metadata <#id6>`_                |YES    |YES      |
-+--------------------------------------+-------+-------------------------------------------------+-------+---------+
-|``/images/<img-id>``                  |GET    |`Retrieve Raw Image Data <#id7>`_                |YES    |NOT IMP  |
-+--------------------------------------+-------+-------------------------------------------------+-------+---------+
-|``/images/<img-id>/members``          |GET    |`List Image Memberships <#id8>`_                 |YES    |YES      |
-+--------------------------------------+-------+-------------------------------------------------+-------+---------+
-|``/images/<img-id>/members``          |PUT    |`Replace a Membership List for an Image <#id9>`_ |YES    |YES      |
-+--------------------------------------+-------+-------------------------------------------------+-------+---------+
-|``/images/<img-id>/members/<member>`` |PUT    |`Add a Member to an Image <#id10>`_              |YES    |YES      |
-+--------------------------------------+-------+-------------------------------------------------+-------+---------+
-|``/images/<img-id>/members/<member>`` |DELETE |`Remove a Member from an Image <#id11>`_         |YES    |YES      |
-+--------------------------------------+-------+-------------------------------------------------+-------+---------+
-|``/shared-images/<member>``           |GET    |`List Shared Images <#id12>`_                    |YES    |YES      |
-+--------------------------------------+-------+-------------------------------------------------+-------+---------+
+* Define the Plankton ReST API
+* Clarify the differences between Plankton and Glance
+* Specify metadata semantics and user interface guidelines for a common experience across client software implementations
 
-List Images
------------
+Image ReST API
+--------------
 
-Lala
+===================================== ====== ================================================ ======== ======
+URI                                   Method Description                                      Plankton Glance
+===================================== ====== ================================================ ======== ======
+``/images``                           GET    `List Available Images <#id2>`_                  ✔        ✔
+``/images``                           POST   `Add a New Image <#id3>`_                        ✔        ✔
+``/images``                           PUT    `Update an Image <#id4>`_                        ✔        ✔
+``/images/detail``                    GET    `List Available Images in Detail <#id5>`_        ✔        ✔
+``/images/<img-id>``                  HEAD   `Retrieve Image Metadata <#id6>`_                ✔        ✔
+``/images/<img-id>``                  GET    `Retrieve Raw Image Data <#id7>`_                **✘**    ✔
+``/images/<img-id>/members``          GET    `List Image Memberships <#id8>`_                 ✔        ✔
+``/images/<img-id>/members``          PUT    `Replace a Membership List for an Image <#id9>`_ ✔        ✔
+``/images/<img-id>/members/<member>`` PUT    `Add a Member to an Image <#id10>`_              ✔        ✔
+``/images/<img-id>/members/<member>`` DELETE `Remove a Member from an Image <#id11>`_         ✔        ✔
+``/shared-images/<member>``           GET    `List Shared Images <#id12>`_                    ✔        ✔
+===================================== ====== ================================================ ======== ======
+
+Authentication
+--------------
+
+**Plankton** depends on Astakos to handle authentication of clients. An authentication token must be obtained from the identity manager which should be send along with each API requests through the *X-Auth-Token* header. Plankton handles the communication with Astakos to verify the token validity and obtain identity credentials.
+
+**Glance** handles authentication in a `similar manner <http://docs.openstack.org/developer/glance/glanceapi.html#authentication>`_, with the only difference being the suggested identity manager.
+
+List Available Images
+---------------------
+
+===================================== ====== ===================== ======== ======
+URI                                   Method Description           Plankton Glance
+===================================== ====== ===================== ======== ======
+``/images``                           GET    List Available Images ✔        ✔
+===================================== ====== ===================== ======== ======
+
+|
+
+====================== ======================================= ======== ======
+Request Parameter Name Value                                   Plankton Glance
+====================== ======================================= ======== ======
+name                   Return images of given name             ✔        ✔
+container_format       Return images of given container format ✔        ✔
+disk_format            Return images of given disk format      ✔        ✔
+status                 Return images of given status           ✔        ✔
+size_min               Return images of size >= to given value ✔        ✔
+size_max               Return images of size >= to given value ✔        ✔
+sort_key               Sort images against given key           ✔        ✔
+sort_dir               Sort images in given direction          ✔        ✔
+====================== ======================================= ======== ======
+
+**container_format**
+
+===== ================================= ======== ======
+Value Description                       Plankton Glance
+===== ================================= ======== ======
+aki   Amazon kernel image               ✔        ✔
+ari   Amazon ramdisk image              ✔        ✔
+ami   Amazon machine image              ✔        ✔
+bare  no container or metadata envelope default  default
+ovf   Open Virtualization Format        ✔        ✔
+===== ================================= ======== ======
+
+**disk_format**
+
+======== ================================= ======== ======
+Value    Description                       Plankton Glance
+======== ================================= ======== ======
+diskdump Any disk image dump               default  **✘**
+extdump  EXT3 image                        ✔        **✘**
+ntfsdump NTFS image                        ✔        **✘**
+raw      Unstructured disk image           **✘**    ✔
+vhd      (VMWare,Xen,MS,VirtualBox, a.o.)  **✘**    ✔
+vmdk     Another common disk format        **✘**    ✔
+vdi      (VirtualBox, QEMU)                **✘**    ✔
+iso      optical disc (e.g. CDROM)         **✘**    ✔
+qcow2    (QEMU)                            **✘**    ✔
+aki      Amazon kernel image               **✘**    ✔
+ari      Amazon ramdisk image              **✘**    ✔
+ami      Amazon machine image              **✘**    ✔
+======== ================================= ======== ======
+
+**sort_key** values: id,name,status,size,disk_format, container_format,created_at,updated_at
+
+**sort_dir**
+
+===== ================================= ======== =======
+Value Description                       Plankton Glance
+===== ================================= ======== =======
+asc   Ascending order                   default  default
+desc  Descending order                  ✔        ✔
+===== ================================= ======== =======
+
+|
+
+====================  ========================= ======== ======
+Request Header Name   Value                     Plankton Glance
+====================  ========================= ======== ======
+X-Auth-Token          User authentication token ✔        ✔
+====================  ========================= ======== ======
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    The request succeeded
+400 (Bad Request)           Raised in case of invalid values for
+\                           *sort_key*, *sort_dir*, *size_max* or *size_min*
+401 (Unauthorized)          Missing or expired user token
+500 (Internal Server Error) The request cannot be completed because of an internal error
+=========================== =====================
+
+The response data is a list of images in a json format containing the fields presented bellow
+
+================ ===================== ======== ======
+Name             Description           Plankton Glance
+================ ===================== ======== ======
+id               A unique image id      ✔        **✘**
+uri              Unique id in URI form **✘**    ✔
+name             The name of the image ✔        ✔
+status           ???The VM status???   ✔        **✘**
+disk_format      The disc format       ✔        ✔
+container_format The container format  ✔        ✔
+size             Image size in bytes   ✔        ✔
+================ ===================== ======== ======
+
+Example Plankton response:
+
+::
+
+    [{
+        "status": "available", 
+        "name": "ubuntu", 
+        "disk_format": "diskdump", 
+        "container_format": "bare", 
+        "id": "5583ffe1-5273-4c84-9e32-2fbe476bd7b7", 
+        "size": 2622562304
+    }, {
+        "status": "available", 
+        "name": "Ubuntu-10.04", 
+        "disk_format": "diskdump", 
+        "container_format": "bare", 
+        "id": "907ef618-c03a-4473-9914-9348e12890c1", 
+        "size": 761368576
+    }]
 
 Add a New image
 ---------------

@@ -87,7 +87,7 @@ DEFAULT_BLOCK_PARAMS = { 'mappool': None, 'blockpool': None }
 DEFAULT_PUBLIC_URL_ALPHABET = ('0123456789'
                                'abcdefghijklmnopqrstuvwxyz'
                                'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
-DEFAULT_PUBLIC_URL_SECURITY = 8
+DEFAULT_PUBLIC_URL_SECURITY = 16
 
 QUEUE_MESSAGE_KEY_PREFIX = 'pithos.%s'
 QUEUE_CLIENT_ID = 'pithos'

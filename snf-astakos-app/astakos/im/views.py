@@ -1127,7 +1127,7 @@ def project_list(request):
         })
 
 
-@require_http_methods(["GET", "POST"])
+@require_http_methods(["POST"])
 @signed_terms_required
 @login_required
 @project_transaction_context()
@@ -1521,7 +1521,7 @@ def project_reject_member(request, chain_id, user_id, ctx=None):
         messages.success(request, msg)
     return redirect(reverse('project_detail', args=(chain_id,)))
 
-@require_http_methods(["POST", "GET"])
+@require_http_methods(["POST"])
 @signed_terms_required
 @login_required
 @project_transaction_context(sync=True)
@@ -1540,7 +1540,7 @@ def project_app_approve(request, application_id, ctx=None):
     chain_id = get_related_project_id(application_id)
     return redirect(reverse('project_detail', args=(chain_id,)))
 
-@require_http_methods(["POST", "GET"])
+@require_http_methods(["POST"])
 @signed_terms_required
 @login_required
 @project_transaction_context()
@@ -1558,7 +1558,7 @@ def project_app_deny(request, application_id, ctx=None):
     deny_application(application_id)
     return redirect(reverse('project_list'))
 
-@require_http_methods(["POST", "GET"])
+@require_http_methods(["POST"])
 @signed_terms_required
 @login_required
 @project_transaction_context()

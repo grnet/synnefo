@@ -1,4 +1,5 @@
 from django.conf import settings
+from synnefo.util.version import get_component_version
 import datetime
 
 IMAGE_MEDIA_URL = settings.MEDIA_URL+'branding/images/'
@@ -15,6 +16,13 @@ copyright_message = 'Copyright (c) %s %s' % (COPYRIGHT_PERIOD,
 											 COMPANY_NAME_FORMAL)
 COPYRIGHT_MESSAGE = getattr(settings, 'BRANDING_COPYRIGHT_MESSAGE', 
 						    copyright_message)
+
+# if True, copyright message is visible to footer
+SHOW_COPYRIGHT = True
+
+# if True, about, support and feeback links are displayed to Compute footer
+EXTRA_FOOTER_LINKS = False
+
 
 COMPANY_URL = getattr(settings, 'BRANDING_COMPANY_URL', 
 						    'http://www.coolcompany.com')
@@ -42,3 +50,5 @@ SERVICE_CONTACT_URL = getattr(settings, 'BRANDING_SERVICE_CONTACT_URL',
 							 'https://accounts.okeanos.grnet.gr/im/feedback ')
 SERVICE_SUPPORT_URL = getattr(settings, 'BRANDING_SERVICE_SUPPORT_URL', 
 							 'https://okeanos.grnet.gr/support/general/ ')
+ 
+SYNNEFO_JS_LIB_VERSION = get_component_version('app')

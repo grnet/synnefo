@@ -1,7 +1,11 @@
 {% block footer_content %}
  
 <p class="termslink" style="float:right"><a href="{% url latest_terms %}">Terms of service</a></p>
-<p>Copyright {{ BRANDING_COPYRIGHT_PERIOD }} <a href="{{  BRANDING_COMPANY_URL }}" target="_blank" title="{{  BRANDING_COMPANY_NAME }}">{{  BRANDING_COMPANY_NAME_FORMAL }}</a> All rights reserved.</p>
+{% if BRANDING_SHOW_COPYRIGHT%}
+<p><a href="{{ BRANDING_COMPANY_URL }}" target="_blank" title="{{ BRANDING_COMPANY_NAME }}">{{  BRANDING_COPYRIGHT_MESSAGE }}</a> All rights reserved.</p>
+{% endif %}
+
+ <div class="software">Powered by <a href="http://www.synnefo.org/">synnefo</a> <span class="version">v{{ BRANDING_SYNNEFO_JS_LIB_VERSION }}</span></div>
  
 {% endblock %}
  

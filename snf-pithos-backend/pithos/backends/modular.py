@@ -84,10 +84,10 @@ DEFAULT_BLOCK_UMASK = 0o022
 DEFAULT_BLOCK_PARAMS = { 'mappool': None, 'blockpool': None }
 #DEFAULT_QUEUE_HOSTS = '[amqp://guest:guest@localhost:5672]'
 #DEFAULT_QUEUE_EXCHANGE = 'pithos'
-DEFAULT_ALPHABET = ('0123456789'
-                    'abcdefghijklmnopqrstuvwxyz'
-                    'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
-DEFAULT_MIN_LENGTH = 8
+DEFAULT_PUBLIC_URL_ALPHABET = ('0123456789'
+                               'abcdefghijklmnopqrstuvwxyz'
+                               'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+DEFAULT_PUBLIC_URL_SECURITY = 8
 
 QUEUE_MESSAGE_KEY_PREFIX = 'pithos.%s'
 QUEUE_CLIENT_ID = 'pithos'
@@ -153,7 +153,7 @@ class ModularBackend(BaseBackend):
                  quotaholder_url=None, quotaholder_token=None,
                  quotaholder_client_poolsize=None,
                  free_versioning=True, block_params=None,
-                 public_url_min_length=None,
+                 public_url_security=None,
                  public_url_alphabet=None):
         db_module = db_module or DEFAULT_DB_MODULE
         db_connection = db_connection or DEFAULT_DB_CONNECTION
@@ -167,8 +167,8 @@ class ModularBackend(BaseBackend):
         #queue_hosts = queue_hosts or DEFAULT_QUEUE_HOSTS
         #queue_exchange = queue_exchange or DEFAULT_QUEUE_EXCHANGE
 
-        self.public_url_min_length = public_url_min_length or DEFAULT_MIN_LENGTH
-        self.public_url_alphabet = public_url_alphabet or DEFAULT_ALPHABET
+        self.public_url_security = public_url_security or DEFAULT_PUBLIC_URL_SECURITY
+        self.public_url_alphabet = public_url_alphabet or DEFAULT_PUBLIC_URL_ALPHABET
 
         self.hash_algorithm = 'sha256'
         self.block_size = 4 * 1024 * 1024  # 4MB
@@ -838,7 +838,7 @@ class ModularBackend(BaseBackend):
             self.permissions.public_unset(path)
         else:
             self.permissions.public_set(
-                path, self.public_url_min_length, self.public_url_alphabet
+                path, self.public_url_security, self.public_url_alphabet
             )
 
     @backend_method

@@ -57,8 +57,8 @@ PITHOS_USER_LOGIN_URL            \https://<astakos.host>/login/                 
 PITHOS_USE_QUOTAHOLDER           True                                                               Enable quotaholder
 PITHOS_QUOTAHOLDER_URL           ''                                                                 Quotaholder URL
 PITHOS_QUOTAHOLDER_TOKEN         ''                                                                 Quotaholder token
-PITHOS_PUBLIC_URL_MIN_LENGTH     8                                                                  Public URL minimun length
-PITHOS_PUBLIC_URL_ALPHABET       '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'   Public URL alphabet
+PITHOS_PUBLIC_URL_SECURITY       16                                                                 How many random bytes to use for constructing the URL of Pithos public files
+PITHOS_PUBLIC_URL_ALPHABET       '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'   The alphabet to use for constructing the URL of Pithos public files
 ===============================  ================================================================   ============================================================
 
 To update checksums asynchronously, enable the queue, install snf-pithos-tools and use ``pithos-dispatcher``::

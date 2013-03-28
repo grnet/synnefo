@@ -33,7 +33,11 @@
 
 from dbworker import DBWorker
 
-from pithos.backends.random_word import get_word
+from pithos.backends.random_word import get_random_word
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Public(DBWorker):
     """Paths can be marked as public."""
@@ -52,35 +56,35 @@ class Public(DBWorker):
         execute(""" create unique index if not exists idx_public_url
                     on public(url) """)
 
-    def get_unique_url(self, serial, public_url_min_length, public_url_alphabet):
-        l = public_url_min_length
+    def get_unique_url(self, public_url_security, public_url_alphabet):
+        l = public_url_security
         while 1:
-            candidate = get_word(serial, length=l, alphabet=public_url_alphabet)
+            candidate = get_random_word(length=l, alphabet=public_url_alphabet)
             if self.public_path(candidate) is None:
                 return candidate
             l +=1
 
-    def public_set(self, path, public_url_min_length, public_url_alphabet):
+    def public_set(self, path, public_url_security, public_url_alphabet):
         q = "select public_id from public where path = ?"
         self.execute(q, (path,))
         row = self.fetchone()
 
         if not row:
-            q = "insert into public(path, active) values(?, ?)"
-            serial = self.execute(q, (path, active)).lastrowid
             url = self.get_unique_url(
-                serial, public_url_min_length, public_url_alphabet
+                public_url_security, public_url_alphabet
             )
-            q = "update public set url=url where public_id = ?"
-            self.execute(q, (serial,))
+            q = "insert into public(path, active, url) values(?, 1, ?)"
+            self.execute(q, (path, url))
+            logger.info('Public url: %s set for path: %s' % (url, path))
 
     def public_unset(self, path):
         q = "delete from public where path = ?"
         self.execute(q, (path,))
+        logger.info('Public url unset for path: %s' % (path))
 
     def public_unset_bulk(self, paths):
         placeholders = ','.join('?' for path in paths)
-        q = "delete from public where path in (%s)"
+        q = "delete from public where path in (%s)" % placeholders
         self.execute(q, paths)
 
     def public_get(self, path):

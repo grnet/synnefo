@@ -77,7 +77,7 @@ class TestPublic(unittest.TestCase):
             account, account, container, object
         )
         self.assertTrue(public != None)
-        self.assertTrue(len(public) >= settings.PUBLIC_URL_MIN_LENGTH)
+        self.assertTrue(len(public) >= settings.PUBLIC_URL_SECURITY)
         self.assertTrue(set(public) <= set(settings.PUBLIC_URL_ALPHABET))
         self.assertEqual(
             self.backend.get_public('$$account$$', public),
@@ -103,7 +103,7 @@ class TestPublic(unittest.TestCase):
 
         self.backend.permissions.public_set(
             'account/container/object',
-            self.backend.public_url_min_length,
+            self.backend.public_url_security,
             self.backend.public_url_alphabet
         )
         self.assert_public_object('account', 'container', 'object')
@@ -120,14 +120,14 @@ class TestPublic(unittest.TestCase):
         )
         self.backend.permissions.public_set(
             'account/container/object',
-            self.backend.public_url_min_length,
+            self.backend.public_url_security,
             self.backend.public_url_alphabet
         )
         public = self.assert_public_object('account', 'container', 'object')
 
         self.backend.permissions.public_set(
             'account/container/object',
-            self.backend.public_url_min_length,
+            self.backend.public_url_security,
             self.backend.public_url_alphabet
         )
         public2 = self.assert_public_object('account', 'container', 'object')
@@ -146,7 +146,7 @@ class TestPublic(unittest.TestCase):
         )
         self.backend.permissions.public_set(
             'account/container/object',
-            self.backend.public_url_min_length,
+            self.backend.public_url_security,
             self.backend.public_url_alphabet
         )
         public = self.assert_public_object('account', 'container', 'object')
@@ -156,7 +156,7 @@ class TestPublic(unittest.TestCase):
 
         self.backend.permissions.public_set(
             'account/container/object',
-            self.backend.public_url_min_length,
+            self.backend.public_url_security,
             self.backend.public_url_alphabet
         )
         public3 = self.assert_public_object('account', 'container', 'object')
@@ -225,7 +225,7 @@ class TestPublic(unittest.TestCase):
 
         self.backend.permissions.public_set(
             'account/container/object',
-            self.backend.public_url_min_length,
+            self.backend.public_url_security,
             self.backend.public_url_alphabet
         )
         self.assert_public_object('account', 'container', 'object')
@@ -253,7 +253,7 @@ class TestPublic(unittest.TestCase):
 
         self.backend.permissions.public_set(
             'account/container/object',
-            self.backend.public_url_min_length,
+            self.backend.public_url_security,
             self.backend.public_url_alphabet
         )
         public = self.assert_public_object('account', 'container', 'object')

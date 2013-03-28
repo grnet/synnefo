@@ -31,33 +31,27 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-DEFAULT_ALPHABET = ('0123456789'
-                    'abcdefghijklmnopqrstuvwxyz'
-                    'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
-DEFAULT_MIN_LENGTH = 8
+import random
 
-from  random import randrange
-from math import log
+getrandbits = random.SystemRandom().getrandbits
 
-def get_random_word(length=DEFAULT_MIN_LENGTH, alphabet=DEFAULT_ALPHABET):
-    alphabet_length = len(alphabet)
-    word = ''.join(alphabet[randrange(alphabet_length)]
-        for _ in xrange(length))
-    return word
+DEFAULT_ALPHABET = ("0123456789"
+                    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                    "abcdefghijklmnopqrstuvwxyz")
 
-def encode_serial(serial, alphabet=DEFAULT_ALPHABET):
-    i = 0
+def get_random_word(length, alphabet=DEFAULT_ALPHABET):
+    remainder = getrandbits(length * 8)
+    return encode_word(remainder, alphabet=alphabet)
+
+def encode_word(number, alphabet=DEFAULT_ALPHABET):
     base = len(alphabet)
-    quotient = int(serial)
     digits = []
     append = digits.append
-    while quotient > 0:
+    quotient = number
+    while True:
         quotient, remainder = divmod(quotient, base)
         append(alphabet[remainder])
-    word = ''.join(reversed(digits))
-    return word
+        if quotient <= 0:
+            break
 
-def get_word(serial, length=DEFAULT_MIN_LENGTH, alphabet=DEFAULT_ALPHABET):
-    word = encode_serial(serial, alphabet)
-    word += get_random_word(length, alphabet)
-    return word
+    return ''.join(digits)

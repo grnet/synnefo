@@ -68,7 +68,7 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  COOKIE_NAME, USER_CATALOG_URL,
                                  RADOS_STORAGE, RADOS_POOL_BLOCKS,
                                  RADOS_POOL_MAPS, TRANSLATE_UUIDS,
-                                 PUBLIC_URL_MIN_LENGTH,
+                                 PUBLIC_URL_SECURITY,
                                  PUBLIC_URL_ALPHABET)
 from pithos.backends import connect_backend
 from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
@@ -985,7 +985,7 @@ _pithos_backend_pool = PithosBackendPool(
         quotaholder_client_poolsize=QUOTAHOLDER_POOLSIZE,
         free_versioning=BACKEND_FREE_VERSIONING,
         block_params=BLOCK_PARAMS,
-        public_url_min_length=PUBLIC_URL_MIN_LENGTH,
+        public_url_security=PUBLIC_URL_SECURITY,
         public_url_alphabet=PUBLIC_URL_ALPHABET)
 
 def get_backend():

@@ -196,7 +196,7 @@ class SwissArmy():
             fullpath = '/'.join([dest_account, dest_container, dest_name])
             self.backend.permissions.public_set(
                 fullpath,
-                self.backend.public_url_min_length,
+                self.backend.public_url_security,
                 self.backend.public_url_alphabet
             )
 

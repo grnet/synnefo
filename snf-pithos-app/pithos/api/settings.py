@@ -66,8 +66,9 @@ QUOTAHOLDER_URL = getattr(settings, 'PITHOS_QUOTAHOLDER_URL', '')
 QUOTAHOLDER_TOKEN = getattr(settings, 'PITHOS_QUOTAHOLDER_TOKEN', '')
 QUOTAHOLDER_POOLSIZE = getattr(settings, 'PITHOS_QUOTAHOLDER_POOLSIZE', 200)
 
-# Set public url length and alphabet
-PUBLIC_URL_MIN_LENGTH =  getattr(settings, 'PITHOS_PUBLIC_URL_MIN_LENGTH', 8)
+# Set how many random bytes to use for constructing the URL of Pithos public files
+PUBLIC_URL_SECURITY =  getattr(settings, 'PITHOS_PUBLIC_URL_SECURITY', 16)
+# Set the alphabet to use for constructing the URL of Pithos public files
 PUBLIC_URL_ALPHABET =  getattr(
     settings,
     'PITHOS_PUBLIC_URL_ALPHABET',

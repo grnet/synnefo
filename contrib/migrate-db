@@ -168,7 +168,7 @@ class ObjectMigration(Migration):
             if public:
                 self.backend.permissions.public_set(
                     object,
-                    self.backend.public_url_min_length,
+                    self.backend.public_url_security,
                     self.backend.public_url_alphabet
                 )
             #set object's permissions

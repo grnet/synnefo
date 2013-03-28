@@ -2125,9 +2125,9 @@
             opts = {name: name, imageRef: image.id, flavorRef: flavor.id, metadata:meta}
             opts = _.extend(opts, extra);
             
-            var cb = function() {
+            var cb = function(data) {
               snf.ui.main.load_user_quotas();
-              callback();
+              callback(data);
             }
 
             this.api_call(this.path, "create", {'server': opts}, undefined, undefined, cb, {critical: true});

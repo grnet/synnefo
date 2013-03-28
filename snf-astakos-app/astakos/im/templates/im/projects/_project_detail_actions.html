@@ -41,10 +41,10 @@
 {% endif %}
 
 {% if can_join_request %}
-<a class="user-action" href="{% url astakos.im.views.project_join project.pk %}">JOIN</a>
+{% confirm_link "JOIN" "project_join" "project_join" project.pk %}
 {% endif %}
 
 {% if can_leave_request %}
-<a class="user-action" href="{% url astakos.im.views.project_leave project.pk %}">LEAVE</a>
+{% confirm_link "LEAVE" "project_leave" "project_leave" project.pk %}
 {% endif %}
 </div>

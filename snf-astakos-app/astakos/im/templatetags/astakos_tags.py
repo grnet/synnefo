@@ -226,12 +226,12 @@ CONFIRM_LINK_PROMPT_MAP = {
     'project_app_deny': _('Are you sure you want to deny this project ? '
                           '<br /><br />You '
                           'may optionally provide denial reason in the '
-                          'following field: <br /><br /><textarea class="deny_reason" '
-                          'name="reason"></textarea>'),
+                          'following field: <br /><br /><textarea '
+                          'class="deny_reason" name="reason"></textarea>'),
     'project_app_dismiss': _('Are you sure you want to dismiss this '
                              'project ?'),
-    'project_app_join': _('Are you sure you want to join this project ?'),
-    'project_app_leave': _('Are you sure you want to leave this project ?'),
+    'project_join': _('Are you sure you want to join this project ?'),
+    'project_leave': _('Are you sure you want to leave from the project ?'),
 }
 
 

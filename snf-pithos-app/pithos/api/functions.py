@@ -375,7 +375,7 @@ def container_list(request, v_account):
     if 'shared' in request.GET:
         shared = True
     public = False
-    if 'public' in request.GET:
+    if request.user_uniq == v_account and 'public' in request.GET:
         public = True
 
     try:
@@ -647,7 +647,7 @@ def object_list(request, v_account, v_container):
     if 'shared' in request.GET:
         shared = True
     public = False
-    if 'public' in request.GET:
+    if request.user_uniq == v_account and 'public' in request.GET:
         public = True
 
     if request.serialization == 'text':
@@ -730,7 +730,7 @@ def object_list(request, v_account, v_container):
                 update_sharing_meta(request, permissions, v_account,
                                     v_container, meta['name'], meta)
             public = object_public.get(meta['name'], None)
-            if public:
+            if public and request.user_uniq == v_account:
                 update_public_meta(public, meta)
             object_meta.append(printable_header_dict(meta))
 
@@ -776,7 +776,8 @@ def object_meta(request, v_account, v_container, v_object):
     update_manifest_meta(request, v_account, meta)
     update_sharing_meta(
         request, permissions, v_account, v_container, v_object, meta)
-    update_public_meta(public, meta)
+    if request.user_uniq == v_account:
+        update_public_meta(public, meta)
 
     # Evaluate conditions.
     validate_modification_preconditions(request, meta)
@@ -851,7 +852,8 @@ def object_read(request, v_account, v_container, v_object):
     update_manifest_meta(request, v_account, meta)
     update_sharing_meta(
         request, permissions, v_account, v_container, v_object, meta)
-    update_public_meta(public, meta)
+    if request.user_uniq == v_account:
+        update_public_meta(public, meta)
 
     # Evaluate conditions.
     validate_modification_preconditions(request, meta)

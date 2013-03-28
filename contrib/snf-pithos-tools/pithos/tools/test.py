@@ -565,14 +565,33 @@ class ContainerGet(BaseTestCase):
         self.assertEqual(objs, ['folder', 'folder/object'])
 
     def test_list_public(self):
+        token = OTHER_ACCOUNTS.keys()[0]
+        account = OTHER_ACCOUNTS[token]
+        cl = Pithos_Client(get_url(), token, account)
+
         self.client.publish_object(self.container[0], self.obj[0]['name'])
         objs = self.client.list_objects(self.container[0], public=True)
         self.assertEqual(objs, [self.obj[0]['name']])
+        self.assert_raises_fault(
+            403, cl.list_objects, self.container[0], public=True,
+            account=get_user()
+        )
+        self.client.share_object(
+            self.container[0], self.obj[1]['name'], [account]
+        )
+        objs = cl.list_objects(
+            self.container[0], public=True, account=get_user()
+        )
+        self.assertTrue(self.obj[0]['name'] not in objs)
 
         # create child object
         self.upload_random_data(self.container[0], strnextling(self.obj[0]['name']))
         objs = self.client.list_objects(self.container[0], public=True)
         self.assertEqual(objs, [self.obj[0]['name']])
+        objs = cl.list_objects(
+            self.container[0], public=True, account=get_user()
+        )
+        self.assertTrue(self.obj[0]['name'] not in objs)
 
         # test inheritance
         self.client.create_folder(self.container[1], 'folder')
@@ -580,18 +599,35 @@ class ContainerGet(BaseTestCase):
         self.upload_random_data(self.container[1], 'folder/object')
         objs = self.client.list_objects(self.container[1], public=True)
         self.assertEqual(objs, ['folder'])
+        self.assert_raises_fault(
+            403, cl.list_objects, self.container[1], public=True,
+            account=get_user()
+        )
+
 
     def test_list_shared_public(self):
+        token = OTHER_ACCOUNTS.keys()[0]
+        account = OTHER_ACCOUNTS[token]
+        cl = Pithos_Client(get_url(), token, account)
+
         self.client.share_object(self.container[0], self.obj[0]['name'], ('*',))
         self.client.publish_object(self.container[0], self.obj[1]['name'])
         objs = self.client.list_objects(self.container[0], shared=True, public=True)
         self.assertEqual(objs, [self.obj[0]['name'], self.obj[1]['name']])
+        objs = cl.list_objects(
+            self.container[0], shared=True, public=True, account=get_user()
+        )
+        self.assertEqual(objs, [self.obj[0]['name']])
 
         # create child object
         self.upload_random_data(self.container[0], strnextling(self.obj[0]['name']))
         self.upload_random_data(self.container[0], strnextling(self.obj[1]['name']))
         objs = self.client.list_objects(self.container[0], shared=True, public=True)
         self.assertEqual(objs, [self.obj[0]['name'], self.obj[1]['name']])
+        objs = cl.list_objects(
+            self.container[0], shared=True, public=True, account=get_user()
+        )
+        self.assertEqual(objs, [self.obj[0]['name']])
 
         # test inheritance
         self.client.create_folder(self.container[1], 'folder1')
@@ -602,6 +638,10 @@ class ContainerGet(BaseTestCase):
         o = self.upload_random_data(self.container[1], 'folder2/object')
         objs = self.client.list_objects(self.container[1], shared=True, public=True)
         self.assertEqual(objs, ['folder1', 'folder1/object', 'folder2'])
+        objs = cl.list_objects(
+            self.container[1], shared=True, public=True, account=get_user()
+        )
+        self.assertEqual(objs, ['folder1', 'folder1/object'])
 
     def test_list_objects(self):
         objects = self.client.list_objects(self.container[0])
@@ -2356,6 +2396,14 @@ class TestPublish(BaseTestCase):
         length = resp.getheader('content-length', None)
         data = resp.read(length)
         self.assertEqual(o_data, data)
+
+        token = OTHER_ACCOUNTS.keys()[0]
+        account = OTHER_ACCOUNTS[token]
+        cl = Pithos_Client(get_url(), token, account)
+
+        self.client.share_object('c', 'o', (account,))
+        meta = cl.retrieve_object_metadata('c', 'o', account=get_user())
+        self.assertTrue('x-object-public' not in meta)
 
 class TestPolicies(BaseTestCase):
     def test_none_versioning(self):

@@ -294,16 +294,16 @@ class PooledObject(object):
 
     # default keyword args to pass to pool initialization
     _pool_default_settings = (
-            ('size', 25),
-        )
+        ('size', 25),
+    )
 
     # keyword args to pass to pool_get
     _pool_default_get_settings = (
-            ('blocking', True),
-            #('timeout', None),
-            ('create', True),
-            ('verify', True),
-        )
+        ('blocking', True),
+        #('timeout', None),
+        ('create', True),
+        ('verify', True),
+    )
 
     # behavior settings
     _pool_attach_context = False
@@ -313,12 +313,9 @@ class PooledObject(object):
     ###  Subclass attribute customization ends here.  ###
     #####################################################
 
-    def __init__(self, pool_settings=None,
-                       get_settings=None,
-                       attach_context=None,
-                       disable_after_release=None,
-                       ignore_double_release=None,
-                       **kwargs):
+    def __init__(self, pool_settings=None, get_settings=None,
+                 attach_context=None, disable_after_release=None,
+                 ignore_double_release=None, **kwargs):
         """Initialize a PooledObject instance.
 
         Accept only keyword arguments.

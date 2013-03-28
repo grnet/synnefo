@@ -102,8 +102,8 @@ class HTTPConnectionPool(ObjectPool):
         conn._pool_use_counter -= 1
 
         # see httplib source for connection states documentation
-        if (conn._pool_use_counter > 0 and
-            conn._HTTPConnection__state == 'Idle'):
+        conn_state = conn._HTTPConnection__state
+        if (conn._pool_use_counter > 0 and conn_state == "Idle"):
             try:
                 conn.getresponse()
             except ResponseNotReady:

@@ -34,7 +34,4 @@
 from synnefo_branding import utils
 
 def branding(request):
-	dct = {}
-	for key, value in utils.get_branding_dict().iteritems():
-		dct['BRANDING_%s' % key.upper()] = value
-	return dct
+	return utils.get_branding_dict("BRANDING")

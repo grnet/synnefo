@@ -646,9 +646,9 @@ def object_list(request, v_account, v_container):
     shared = False
     if 'shared' in request.GET:
         shared = True
-    public = False
-    if request.user_uniq == v_account and 'public' in request.GET:
-        public = True
+
+    public_requested = 'public' in request.GET
+    public_granted = public_requested and request.user_uniq == v_account
 
     if request.serialization == 'text':
         try:
@@ -656,7 +656,7 @@ def object_list(request, v_account, v_container):
                 request.user_uniq, v_account,
                 v_container, prefix, delimiter, marker,
                 limit, virtual, 'pithos', keys, shared,
-                until, None, public)
+                until, None, public_granted)
         except NotAllowedError:
             raise Forbidden('Not allowed')
         except ItemNotExists:
@@ -674,7 +674,7 @@ def object_list(request, v_account, v_container):
         objects = request.backend.list_object_meta(
             request.user_uniq, v_account,
             v_container, prefix, delimiter, marker,
-            limit, virtual, 'pithos', keys, shared, until, None, public)
+            limit, virtual, 'pithos', keys, shared, until, None, public_granted)
         object_permissions = {}
         object_public = {}
         if until is None:
@@ -690,9 +690,12 @@ def object_list(request, v_account, v_container):
                 object = x[name_idx:]
                 object_permissions[object] = request.backend.get_object_permissions(
                     request.user_uniq, v_account, v_container, object)
-            for k, v in request.backend.list_object_public(request.user_uniq,
-                                                           v_account, v_container, prefix).iteritems():
-                object_public[k[name_idx:]] = v
+
+            if public_granted:
+                for k, v in request.backend.list_object_public(
+                        request.user_uniq, v_account,
+                        v_container, prefix).iteritems():
+                    object_public[k[name_idx:]] = v
     except NotAllowedError:
         raise Forbidden('Not allowed')
     except ItemNotExists:
@@ -729,9 +732,9 @@ def object_list(request, v_account, v_container):
             if permissions:
                 update_sharing_meta(request, permissions, v_account,
                                     v_container, meta['name'], meta)
-            public = object_public.get(meta['name'], None)
-            if public and request.user_uniq == v_account:
-                update_public_meta(public, meta)
+            public_url = object_public.get(meta['name'], None)
+            if public_granted:
+                update_public_meta(public_url, meta)
             object_meta.append(printable_header_dict(meta))
 
     if request.serialization == 'xml':

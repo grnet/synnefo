@@ -309,7 +309,78 @@ Glance manages image updates by compining *PUT* with semantics similar to *POST*
 List Available Images in Detail
 -------------------------------
 
-Lulu
+This request returns the same list of images as in `List Available Images <#id2>`_, but the results are reacher in metadata.
+
+=============================== ================== ====== ======== ======
+Description                     URI                Method Plankton Glance
+=============================== ================== ====== ======== ======
+List Available Images in Detail ``/images/detail`` GET    ✔        ✔
+=============================== ================== ====== ======== ======
+
+**Request parameters** and **headers** as well as **response headers** and **error codes** are exactly the same as in `List Available Images <#id2>`_, both syntactically and semantically.
+
+
+The response data is a list of images in json format containing the fields presented bellow
+
+================ ===================== ======== ======
+Name             Description           Plankton Glance
+================ ===================== ======== ======
+id               A unique image id     ✔        **✘**
+uri              Unique id in URI form **✘**    ✔
+location         Pithos+ file location ✔        **✘**
+name             The name of the image ✔        ✔
+status           ???The VM status???   ✔        **✘**
+disk_format      The disc format       ✔        ✔
+container_format The container format  ✔        ✔
+size             Image size in bytes   ✔        ✔
+checksum         file MD5 checksum     ✔        ✔
+created_at       Timestamp of creation ✔        ✔
+updated_at       Timestamp of update   ✔        ✔
+deleted_at       Timestamp of deletion ✔        ✔
+is_public        True if img is public ✔        ✔
+min_ram          Minimum ram required  **✘**    ✔
+min_disk         Maximum ram required  **✘**    ✔
+owner            Image owner           ✔        ✔
+properties       Custom properties     ✔        ✔
+================ ===================== ======== ======
+
+|
+
+Example Plankton response::
+
+    [{
+        "status": "available", 
+        "location": "pithos://u53r-1d/images/my/path/example_image_build.diskdump"
+        "name": "ubuntu", 
+        "disk_format": "diskdump", 
+        "container_format": "bare", 
+        "created_at": "2013-03-29 14:14:34",
+        "deleted_at": "",
+        "id": "5583ffe1-5273-4c84-9e32-2fbe476bd7b7",
+        "size": 2622562304,
+        "is_public": "True",
+        "checksum": "a387aaaae583bc65daacf12d6be502bd7cfbbb254dcd452f92ca31f4c06a9208",
+        "properties": {
+            "partition_table": "msdos", 
+            "kernel": "3.8.3", 
+            "osfamily": "linux", 
+            "users": "root user", 
+            "gui": "GNOME 3.4.2", 
+            "sortorder": "5", 
+            "os": "fedora", 
+            "root_partition": "1", 
+            "description": "Fedora release 17 (Beefy Miracle)"}
+    }, {
+        "location": "pithos://0th3r-u53r-1d/images/ubuntu_10_04.diskdump"
+        "status": "available", 
+        "name": "Ubuntu-10.04", 
+        "disk_format": "diskdump", 
+        "container_format": "bare", 
+        "id": "907ef618-c03a-4473-9914-9348e12890c1", 
+        "size": 761368576
+        "created_at": "2013-03-29 14:14:34",
+        "deleted_at": ""
+    }]
 
 Retrieve Image Metadata
 -----------------------

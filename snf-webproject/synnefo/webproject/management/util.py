@@ -32,6 +32,8 @@
 # or implied, of GRNET S.A.
 
 import json
+import csv
+import functools
 from datetime import datetime
 from django.utils.timesince import timesince, timeuntil
 
@@ -134,23 +136,25 @@ def pprint_table(out, table, headers=None, output_format='pretty',
         else:
             return str(obj)
 
-    headers = map(stringnify, headers)
+    if headers:
+        headers = map(stringnify, headers)
     table = [map(stringnify, row) for row in table]
 
     if output_format == "json":
+        assert(headers is not None), "json output format requires headers"
         table = [dict(zip(headers, row)) for row in table]
         out.write(json.dumps(table, indent=4))
         out.write("\n")
     elif output_format == "csv":
+        cw = csv.writer(out)
         if headers:
-            line = ",".join("\"%s\"" % uenc(v) for v in headers)
-            out.write(line + "\n")
-            for row in table:
-                line = ",".join("\"%s\"" % uenc(v) for v in row)
-                out.write(line + "\n")
+            table.insert(0, headers)
+        table = map(functools.partial(map, uenc), table)
+        cw.writerows(table)
     elif output_format == "pretty":
         # Find out the max width of each column
-        widths = [max(map(len, col)) for col in zip(*([headers] + table))]
+        columns = [headers] + table if headers else table
+        widths = [max(map(len, col)) for col in zip(*(columns))]
 
         t_length = sum(widths) + len(sep) * (len(widths) - 1)
         if headers:

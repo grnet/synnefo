@@ -268,7 +268,8 @@ class ListCommand(BaseCommand):
 
         # Print output
         output_format = options["output_format"]
-        headers = headers if options["headers"] else None
+        if output_format != "json" and not options["headers"]:
+            headers = None
         util.pprint_table(self.stdout, table, headers, output_format)
 
     def handle_args(self, *args, **kwargs):

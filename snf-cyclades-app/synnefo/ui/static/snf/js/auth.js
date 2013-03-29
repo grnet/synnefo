@@ -155,7 +155,7 @@
         this.redirect_to_login();
       }
       this.current_username = newusername;
-      return this.current_token;
+      return this.current_username;
     }
     
 })(this);

@@ -533,6 +533,8 @@ def accept_membership(project_id, user, request_user=None):
         raise PermissionDenied(m)
 
     membership.accept()
+    logger.info("User %s has been accepted in %s." %
+                (membership.person.log_display, project))
 
     membership_change_notify(project, membership.person, 'accepted')
 
@@ -551,6 +553,8 @@ def reject_membership(project_id, user, request_user=None):
         raise PermissionDenied(m)
 
     membership.reject()
+    logger.info("Request of user %s for %s has been rejected." %
+                (membership.person.log_display, project))
 
     membership_change_notify(project, membership.person, 'rejected')
 
@@ -568,6 +572,8 @@ def cancel_membership(project_id, user_id):
         raise PermissionDenied(m)
 
     membership.cancel()
+    logger.info("Request of user %s for %s has been cancelled." %
+                (membership.person.log_display, project))
 
 def remove_membership_checks(project, request_user=None):
     checkAllowed(project, request_user)
@@ -586,6 +592,8 @@ def remove_membership(project_id, user, request_user=None):
         raise PermissionDenied(m)
 
     membership.remove()
+    logger.info("User %s has been removed from %s." %
+                (membership.person.log_display, project))
 
     membership_change_notify(project, membership.person, 'removed')
 
@@ -601,6 +609,8 @@ def enroll_member(project_id, user, request_user=None):
         raise PermissionDenied(m)
 
     membership.accept()
+    logger.info("User %s has been enrolled in %s." %
+                (membership.person.log_display, project))
     membership_enroll_notify(project, membership.person)
 
     return membership
@@ -635,9 +645,13 @@ def leave_project(project_id, user_id):
     leave_policy = project.application.member_leave_policy
     if leave_policy == AUTO_ACCEPT_POLICY:
         membership.remove()
+        logger.info("User %s has left %s." %
+                    (membership.person.log_display, project))
         auto_accepted = True
     else:
         membership.leave_request()
+        logger.info("User %s requested to leave %s." %
+                    (membership.person.log_display, project))
         membership_leave_request_notify(project, membership.person)
     return auto_accepted
 
@@ -667,9 +681,13 @@ def join_project(project_id, user_id):
     if (join_policy == AUTO_ACCEPT_POLICY and
         not project.violates_members_limit(adding=1)):
         membership.accept()
+        logger.info("User %s joined %s." %
+                    (membership.person.log_display, project))
         auto_accepted = True
     else:
         membership_request_notify(project, membership.person)
+        logger.info("User %s requested to join %s." %
+                    (membership.person.log_display, project))
 
     return auto_accepted
 
@@ -692,8 +710,9 @@ def submit_application(kw, request_user=None):
             m = _(astakos_messages.NOT_ALLOWED)
             raise PermissionDenied(m)
 
-    reached, limit = reached_pending_application_limit(request_user.id, precursor)
-    if reached:
+    owner = kw['owner']
+    reached, limit = reached_pending_application_limit(owner.id, precursor)
+    if not request_user.is_project_admin() and reached:
         m = _(astakos_messages.REACHED_PENDING_APPLICATION_LIMIT) % limit
         raise PermissionDenied(m)
 
@@ -713,6 +732,8 @@ def submit_application(kw, request_user=None):
 
     application.save()
     application.resource_policies = resource_policies
+    logger.info("User %s submitted %s." %
+                (request_user.log_display, application.log_display))
     application_submit_notify(application)
     return application
 
@@ -726,6 +747,7 @@ def cancel_application(application_id, request_user=None):
         raise PermissionDenied(m)
 
     application.cancel()
+    logger.info("%s has been cancelled." % (application.log_display))
 
 def dismiss_application(application_id, request_user=None):
     application = get_application_for_update(application_id)
@@ -737,8 +759,9 @@ def dismiss_application(application_id, request_user=None):
         raise PermissionDenied(m)
 
     application.dismiss()
+    logger.info("%s has been dismissed." % (application.log_display))
 
-def deny_application(application_id):
+def deny_application(application_id, reason=None):
     application = get_application_for_update(application_id)
 
     if not application.can_deny():
@@ -746,7 +769,11 @@ def deny_application(application_id):
                 application.id, application.state_display()))
         raise PermissionDenied(m)
 
-    application.deny()
+    if reason is None:
+        reason = ""
+    application.deny(reason)
+    logger.info("%s has been denied with reason \"%s\"." %
+                (application.log_display, reason))
     application_deny_notify(application)
 
 def approve_application(app_id):
@@ -764,6 +791,7 @@ def approve_application(app_id):
         raise PermissionDenied(m)
 
     application.approve()
+    logger.info("%s has been approved." % (application.log_display))
     application_approve_notify(application)
 
 def check_expiration(execute=False):
@@ -780,7 +808,7 @@ def terminate(project_id):
     checkAlive(project)
 
     project.terminate()
-
+    logger.info("%s has been terminated." % (project))
     project_termination_notify(project)
 
 def suspend(project_id):
@@ -788,7 +816,7 @@ def suspend(project_id):
     checkAlive(project)
 
     project.suspend()
-
+    logger.info("%s has been suspended." % (project))
     project_suspension_notify(project)
 
 def resume(project_id):
@@ -799,6 +827,7 @@ def resume(project_id):
         raise PermissionDenied(m)
 
     project.resume()
+    logger.info("%s has been unsuspended." % (project))
 
 def get_by_chain_or_404(chain_id):
     try:
@@ -858,7 +887,7 @@ def _reached_pending_application_limit(user_id):
 
     PENDING = ProjectApplication.PENDING
     pending = ProjectApplication.objects.filter(
-        applicant__id=user_id, state=PENDING).count()
+        owner__id=user_id, state=PENDING).count()
 
     return pending >= limit, limit
 

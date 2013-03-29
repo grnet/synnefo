@@ -81,4 +81,16 @@ def network_nics(network, account, show_deleted=False):
         nics = nics.filter(machine__deleted=False).distinct()
     return nics
 
-network_nics.is_safe = True
+@register.filter(name="backend_info")
+def backend_info(vm):
+    content = ""
+    backend = vm.backend
+    excluded = ['password_hash', 'hash', 'username']
+    for field in vm.backend._meta.fields:
+        if field.name in excluded:
+            continue
+        content += '<dt>Backend ' + field.name + '</dt><dd>' + \
+                   str(getattr(backend, field.name)) + '</dd>'
+    return content
+
+backend_info.is_safe = True

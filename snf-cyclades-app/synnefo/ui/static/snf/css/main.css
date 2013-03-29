@@ -4833,10 +4833,34 @@ table.list-machines .wave {
 }
 
 #loading-view {
-    width: 600px;
+    width: 400px;
     margin: 0 auto;
     padding: 20px 0;
     font-size: 0.8em;
+}
+
+#loading-view .header.off {
+    color: #829096;
+}
+
+#loading-view .header.on {
+    color: #fff;
+    background-image: url("../images/icons/indicators/small/progress.gif");
+}
+
+#loading-view .header.done {
+    color: #2B6681;
+    background-image: url("../images/check.png");
+}
+
+#loading-view .header {
+    font-size: 0.9em;
+    text-align: left;
+    border-bottom: 1px solid #578BA3;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    background-repeat: no-repeat;
+    background-position: 380px 0px;
 }
 
 #loading-view .header span {

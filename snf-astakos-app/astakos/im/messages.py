@@ -132,7 +132,7 @@ VERIFICATION_SEND_ERR                   =   EMAIL_SEND_ERR % 'verification'
 INVITATION_SEND_ERR                     =   EMAIL_SEND_ERR % 'invitation'
 GREETING_SEND_ERR                       =   EMAIL_SEND_ERR % 'greeting'
 FEEDBACK_SEND_ERR                       =   EMAIL_SEND_ERR % 'feedback'
-CHANGE_EMAIL_SEND_ERR                   =   EMAIL_SEND_ERR % 'feedback'
+CHANGE_EMAIL_SEND_ERR                   =   EMAIL_SEND_ERR % 'email change'
 NOTIFICATION_SEND_ERR                   =   EMAIL_SEND_ERR % 'notification'
 DETAILED_NOTIFICATION_SEND_ERR          =   'Failed to send %(subject)s notification to %(recipients)s.'
 

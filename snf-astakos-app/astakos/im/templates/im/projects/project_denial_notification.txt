@@ -5,3 +5,6 @@
 --
 
 Your project application request ({{object.name}}) has been denied.
+
+Comment:
+{{object.response}}

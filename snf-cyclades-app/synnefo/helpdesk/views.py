@@ -51,8 +51,8 @@ logger = logging.getLogger(__name__)
 
 IP_SEARCH_REGEX = re.compile('([0-9]+)(?:\.[0-9]+){3}')
 UUID_SEARCH_REGEX = re.compile('([0-9a-z]{8}-([0-9a-z]{4}-){3}[0-9a-z]{12})')
+VM_SEARCH_REGEX = re.compile('vm(-){0,}(?P<vmid>[0-9]+)')
 
-USER_CATALOG_URL = settings.CYCLADES_USER_CATALOG_URL
 
 
 def get_token_from_cookie(request, cookiename):
@@ -77,6 +77,11 @@ AUTH_COOKIE_NAME = getattr(settings, 'HELPDESK_AUTH_COOKIE_NAME',
 PERMITTED_GROUPS = getattr(settings, 'HELPDESK_PERMITTED_GROUPS', ['helpdesk'])
 SHOW_DELETED_VMS = getattr(settings, 'HELPDESK_SHOW_DELETED_VMS', False)
 
+# guess cyclades setting too
+USER_CATALOG_URL = getattr(settings, 'CYCLADES_USER_CATALOG_URL', None)
+USER_CATALOG_URL = getattr(settings, 'HELPDESK_USER_CATALOG_URL',
+                           USER_CATALOG_URL)
+
 
 def token_check(func):
     """
@@ -87,7 +92,7 @@ def token_check(func):
             raise PermissionDenied
 
         token = request.POST.get('token', None)
-        if token and token != request.user.get('auth_token', None):
+        if token and token == request.user.get('auth_token', None):
             return func(request, *args, **kwargs)
 
         raise PermissionDenied
@@ -111,6 +116,8 @@ def helpdesk_user_required(func, permitted_groups=PERMITTED_GROUPS):
             groups = request.user.get('groups', [])
 
             if not groups:
+                logger.error("Failed to access helpdesk view %r",
+                             request.user_uniq)
                 raise PermissionDenied
 
             has_perm = False
@@ -119,11 +126,17 @@ def helpdesk_user_required(func, permitted_groups=PERMITTED_GROUPS):
                     has_perm = True
 
             if not has_perm:
+                logger.error("Failed to access helpdesk view %r. No valid "
+                             "helpdesk group (%r) matches user groups (%r)",
+                             request.user_uniq, permitted_groups, groups)
                 raise PermissionDenied
         else:
+            logger.error("Failed to access helpdesk view %r. No authenticated "
+                         "user found.")
             raise PermissionDenied
 
-        logging.debug("User %s accessed helpdesk view" % (request.user_uniq))
+        logging.info("User %s accessed helpdesk view (%s)", request.user_uniq,
+                     request.path)
         return func(request, *args, **kwargs)
 
     return wrapper
@@ -134,49 +147,66 @@ def index(request):
     """
     Helpdesk index view.
     """
-
     # if form submitted redirect to details
     account = request.GET.get('account', None)
     if account:
         return redirect('synnefo.helpdesk.views.account',
-                        account_or_ip=account)
+                        search_query=account)
 
     # show index template
     return direct_to_template(request, "helpdesk/index.html")
 
 
 @helpdesk_user_required
-def account(request, account_or_ip):
+def account(request, search_query):
     """
     Account details view.
     """
 
+    logging.info("Helpdesk search by %s: %s", request.user_uniq, search_query)
     show_deleted = bool(int(request.GET.get('deleted', SHOW_DELETED_VMS)))
 
     account_exists = True
     vms = []
     networks = []
-    is_ip = IP_SEARCH_REGEX.match(account_or_ip)
-    is_uuid = UUID_SEARCH_REGEX.match(account_or_ip)
-    account_name = account_or_ip
+    is_ip = IP_SEARCH_REGEX.match(search_query)
+    is_uuid = UUID_SEARCH_REGEX.match(search_query)
+    is_vm = VM_SEARCH_REGEX.match(search_query)
+    account_name = search_query
     auth_token = request.user.get('auth_token')
 
     if is_ip:
         try:
-            nic = NetworkInterface.objects.get(ipv4=account_or_ip)
-            account_or_ip = nic.machine.userid
+            nic = NetworkInterface.objects.get(ipv4=search_query)
+            search_query = nic.machine.userid
             is_uuid = True
         except NetworkInterface.DoesNotExist:
             account_exists = False
+            account = None
+
+    if is_vm:
+        vmid = is_vm.groupdict().get('vmid')
+        try:
+            vm = VirtualMachine.objects.get(pk=int(vmid))
+            search_query = vm.userid
+            is_uuid = True
+        except VirtualMachine.DoesNotExist:
+            account_exists = False
+            account = None
+            search_query = vmid
 
     if is_uuid:
-        account = account_or_ip
+        account = search_query
         account_name = astakos.get_displayname(auth_token, account,
                                                USER_CATALOG_URL)
-    else:
-        account_name = account_or_ip
+
+    if account_exists and not is_uuid:
+        account_name = search_query
         account = astakos.get_user_uuid(auth_token, account_name,
                                         USER_CATALOG_URL)
+
+    if not account:
+        account_exists = False
 
     filter_extra = {}
     if not show_deleted:
@@ -200,7 +230,10 @@ def account(request, account_or_ip):
     user_context = {
         'account_exists': account_exists,
         'is_ip': is_ip,
+        'is_vm': is_vm,
+        'is_uuid': is_uuid,
         'account': account,
+        'search_query': search_query,
         'vms': vms,
         'show_deleted': show_deleted,
         'account_name': account_name,
@@ -219,6 +252,7 @@ def suspend_vm(request, vm_id):
     vm = VirtualMachine.objects.get(pk=vm_id)
     vm.suspended = True
     vm.save()
+    logging.info("VM %s suspended by %s", vm_id, request.user_uniq)
     account = vm.userid
     return HttpResponseRedirect(reverse('helpdesk-details', args=(account,)))
 
@@ -229,5 +263,6 @@ def suspend_vm_release(request, vm_id):
     vm = VirtualMachine.objects.get(pk=vm_id)
     vm.suspended = False
     vm.save()
+    logging.info("VM %s unsuspended by %s", vm_id, request.user_uniq)
     account = vm.userid
     return HttpResponseRedirect(reverse('helpdesk-details', args=(account,)))

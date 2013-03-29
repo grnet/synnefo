@@ -9,10 +9,3 @@ synnefo_middlewares = [
     'synnefo.lib.middleware.LoggingConfigMiddleware',
     'synnefo.lib.middleware.SecureMiddleware'
 ]
-
-loggers = {
-    'pithos': {
-        'handlers': ['console'],
-        'level': 'INFO'
-    },
-}

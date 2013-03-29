@@ -72,8 +72,8 @@ class NetworkAPITest(BaseAPITest):
 
     def test_create_network_1(self, mrapi):
         request = {
-            'network': {'name': 'foo'}
-            }
+            'network': {'name': 'foo', "type": "MAC_FILTERED"}
+        }
         response = self.post('/api/v1.1/networks/', 'user1',
                              json.dumps(request), 'json')
         self.assertEqual(response.status_code, 202)
@@ -96,10 +96,12 @@ class NetworkAPITest(BaseAPITest):
         self.assertEqual(len(Network.objects.filter(userid='user1')), 0)
 
     def test_invalid_data_2(self, mrapi):
-        """Test invalid subnet"""
+        """Test invalid data/subnet"""
         request = {
-            'network': {'name': 'foo', 'cidr': '10.0.0.0/8'}
-            }
+            'network': {'name': 'foo',
+                        'cidr': '10.0.0.0/8', "type":
+                        "MAC_FILTERED"}
+        }
         response = self.post('/api/v1.1/networks/', 'user1',
                              json.dumps(request), 'json')
         self.assertFault(response, 413, "overLimit")
@@ -107,7 +109,9 @@ class NetworkAPITest(BaseAPITest):
     def test_invalid_data_3(self, mrapi):
         """Test unauthorized to create public network"""
         request = {
-                'network': {'name': 'foo', 'public': True}
+                'network': {'name': 'foo',
+                            "public": "True",
+                            "type": "MAC_FILTERED"}
             }
         response = self.post('/api/v1.1/networks/', 'user1',
                              json.dumps(request), 'json')
@@ -125,8 +129,10 @@ class NetworkAPITest(BaseAPITest):
     def test_invalid_subnet(self, mrapi):
         """Test invalid subnet"""
         request = {
-            'network': {'name': 'foo', 'cidr': '10.0.0.10/27'}
-            }
+            'network': {'name': 'foo',
+                        'cidr': '10.0.0.10/27',
+                        "type": "MAC_FILTERED"}
+        }
         response = self.post('/api/v1.1/networks/', 'user1',
                              json.dumps(request), 'json')
         self.assertBadRequest(response)

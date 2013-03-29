@@ -63,3 +63,17 @@ class NotFound(AstakosClientException):
     def __init__(self, message):
         """404 Not Found"""
         super(NotFound, self).__init__(message, 404)
+
+
+class NoUserName(AstakosClientException):
+    def __init__(self, uuid):
+        """No display name for the given uuid"""
+        message = "No display name for the given uuid: %s" % uuid
+        super(NoUserName, self).__init__(message)
+
+
+class NoUUID(AstakosClientException):
+    def __init__(self, display_name):
+        """No uuid for the given display name"""
+        message = "No uuid for the given display name: %s" % display_name
+        super(NoUUID, self).__init__(message)

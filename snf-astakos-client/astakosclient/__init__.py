@@ -40,13 +40,14 @@ from copy import copy
 import simplejson
 from astakosclient.utils import retry, scheme_to_class
 from astakosclient.errors import \
-    AstakosClientException, Unauthorized, BadRequest, NotFound, Forbidden
+    AstakosClientException, Unauthorized, BadRequest, NotFound, Forbidden, \
+    NoUserName, NoUUID
 
 
 # --------------------------------------------------------------------
 # Astakos Client Class
 
-def getTokenFromCookie(request, cookie_name):
+def get_token_from_cookie(request, cookie_name):
     """Extract token from the cookie name provided
 
     Cookie should be in the same form as astakos
@@ -107,8 +108,8 @@ class AstakosClient():
 
     # ----------------------------------
     @retry
-    def _callAstakos(self, token, request_path,
-                     headers=None, body=None, method="GET"):
+    def _call_astakos(self, token, request_path,
+                      headers=None, body=None, method="GET"):
         """Make the actual call to Astakos Service"""
         hashed_token = hashlib.sha1()
         hashed_token.update(token)
@@ -145,7 +146,7 @@ class AstakosClient():
 
         # Send request
         try:
-            (data, status) = _doRequest(conn, method, request_path, **kwargs)
+            (data, status) = _do_request(conn, method, request_path, **kwargs)
         except Exception as err:
             self.logger.error("Failed to send request: %s" % repr(err))
             raise AstakosClientException(str(err))
@@ -167,8 +168,8 @@ class AstakosClient():
         return simplejson.loads(unicode(data))
 
     # ------------------------
-    def authenticate(self, token, usage=False):
-        """Check if user is authenticated Astakos user
+    def get_user_info(self, token, usage=False):
+        """Authenticate user and get user's info as a dictionary
 
         Keyword arguments:
         token   -- user's token (string)
@@ -182,18 +183,23 @@ class AstakosClient():
         auth_path = "/im/authenticate"
         if usage:
             auth_path += "?usage=1"
-        return self._callAstakos(token, auth_path)
+        return self._call_astakos(token, auth_path)
 
     # ----------------------------------
-    def _uuidCatalog(self, token, uuids, req_path):
+    def _uuid_catalog(self, token, uuids, req_path):
         req_headers = {'content-type': 'application/json'}
         req_body = simplejson.dumps({'uuids': uuids})
-        data = self._callAstakos(
+        data = self._call_astakos(
             token, req_path, req_headers, req_body, "POST")
-        # XXX: check if exists
-        return data.get("uuid_catalog")
+        if "uuid_catalog" in data:
+            return data.get("uuid_catalog")
+        else:
+            m = "_uuid_catalog request returned %s. No uuid_catalog found" \
+                % data
+            self.logger.error(m)
+            raise AstakosClientException(m)
 
-    def getDisplayNames(self, token, uuids):
+    def get_usernames(self, token, uuids):
         """Return a uuid_catalog dictionary for the given uuids
 
         Keyword arguments:
@@ -205,43 +211,52 @@ class AstakosClient():
 
         """
         req_path = "/user_catalogs"
-        return self._uuidCatalog(token, uuids, req_path)
+        return self._uuid_catalog(token, uuids, req_path)
 
-    def getDisplayName(self, token, uuid):
-        """Return the displayName of a uuid (see getDisplayNames)"""
+    def get_username(self, token, uuid):
+        """Return the user name of a uuid (see get_usernames)"""
         if not uuid:
             m = "No uuid was given"
             self.logger.error(m)
             raise ValueError(m)
-        uuid_dict = self.getDisplayNames(token, [uuid])
-        # XXX: check if exists
-        return uuid_dict.get(uuid)
+        uuid_dict = self.get_usernames(token, [uuid])
+        if uuid in uuid_dict:
+            return uuid_dict.get(uuid)
+        else:
+            raise NoUserName(uuid)
 
-    def getServiceDisplayNames(self, token, uuids):
+    def service_get_usernames(self, token, uuids):
         """Return a uuid_catalog dict using a service's token"""
         req_path = "/service/api/user_catalogs"
-        return self._uuidCatalog(token, uuids, req_path)
+        return self._uuid_catalog(token, uuids, req_path)
 
-    def getServiceDisplayName(self, token, uuid):
+    def service_get_username(self, token, uuid):
         """Return the displayName of a uuid using a service's token"""
         if not uuid:
             m = "No uuid was given"
             self.logger.error(m)
             raise ValueError(m)
-        uuid_dict = self.getServiceDisplayNames(token, [uuid])
-        # XXX: check if exists
-        return uuid_dict.get(uuid)
+        uuid_dict = self.service_get_usernames(token, [uuid])
+        if uuid in uuid_dict:
+            return uuid_dict.get(uuid)
+        else:
+            raise NoUserName(uuid)
 
     # ----------------------------------
-    def _displayNameCatalog(self, token, display_names, req_path):
+    def _displayname_catalog(self, token, display_names, req_path):
         req_headers = {'content-type': 'application/json'}
         req_body = simplejson.dumps({'displaynames': display_names})
-        data = self._callAstakos(
+        data = self._call_astakos(
             token, req_path, req_headers, req_body, "POST")
-        # XXX: check if exists
-        return data.get("displayname_catalog")
+        if "displayname_catalog" in data:
+            return data.get("displayname_catalog")
+        else:
+            m = "_displayname_catalog request returned %s. " \
+                "No displayname_catalog found" % data
+            self.logger.error(m)
+            raise AstakosClientException(m)
 
-    def getUUIDs(self, token, display_names):
+    def get_uuids(self, token, display_names):
         """Return a displayname_catalog for the given names
 
         Keyword arguments:
@@ -253,44 +268,48 @@ class AstakosClient():
 
         """
         req_path = "/user_catalogs"
-        return self._displayNameCatalog(token, display_names, req_path)
+        return self._displayname_catalog(token, display_names, req_path)
 
-    def getUUID(self, token, display_name):
+    def get_uuid(self, token, display_name):
         """Return the uuid of a name (see getUUIDs)"""
         if not display_name:
             m = "No display_name was given"
             self.logger.error(m)
             raise ValueError(m)
-        name_dict = self.getUUIDs(token, [display_name])
-        # XXX: check if exists
-        return name_dict.get(display_name)
+        name_dict = self.get_uuids(token, [display_name])
+        if display_name in name_dict:
+            return name_dict.get(display_name)
+        else:
+            raise NoUUID(display_name)
 
-    def getServiceUUIDs(self, token, display_names):
+    def service_get_uuids(self, token, display_names):
         """Return a display_name catalog using a service's token"""
         req_path = "/service/api/user_catalogs"
-        return self._displayNameCatalog(token, display_names, req_path)
+        return self._displayname_catalog(token, display_names, req_path)
 
-    def getServiceUUID(self, token, display_name):
+    def service_get_uuid(self, token, display_name):
         """Return the uuid of a name using a service's token"""
         if not display_name:
             m = "No display_name was given"
             self.logger.error(m)
             raise ValueError(m)
-        name_dict = self.getServiceUUIDs(token, [display_name])
-        # XXX: check if exists
-        return name_dict.get(display_name)
+        name_dict = self.service_get_uuids(token, [display_name])
+        if display_name in name_dict:
+            return name_dict.get(display_name)
+        else:
+            raise NoUUID(display_name)
 
     # ----------------------------------
-    def getServices(self):
+    def get_services(self):
         """Return a list of dicts with the registered services"""
-        return self._callAstakos("dummy token", "/im/get_services")
+        return self._call_astakos("dummy token", "/im/get_services")
 
 
 # --------------------------------------------------------------------
 # Private functions
 # We want _doRequest to be a distinct function
 # so that we can replace it during unit tests.
-def _doRequest(conn, method, url, **kwargs):
+def _do_request(conn, method, url, **kwargs):
     """The actual request. This function can easily be mocked"""
     conn.request(method, url, **kwargs)
     response = conn.getresponse()

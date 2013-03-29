@@ -58,22 +58,21 @@ ami      Amazon machine image              **✘**    ✔
 
 Image ReST API
 --------------
-
-===================================== ====== ================================================ ======== ======
-URI                                   Method Description                                      Plankton Glance
-===================================== ====== ================================================ ======== ======
-``/images``                           GET    `List Available Images <#id2>`_                  ✔        ✔
-``/images``                           POST   `Add or update an Image <#id3>`_                 ✔        ✔
-``/images``                           PUT    `Update an Image <#id4>`_                        ✔        ✔
-``/images/detail``                    GET    `List Available Images in Detail <#id5>`_        ✔        ✔
-``/images/<img-id>``                  HEAD   `Retrieve Image Metadata <#id6>`_                ✔        ✔
-``/images/<img-id>``                  GET    `Retrieve Raw Image Data <#id7>`_                **✘**    ✔
-``/images/<img-id>/members``          GET    `List Image Memberships <#id8>`_                 ✔        ✔
-``/images/<img-id>/members``          PUT    `Replace a Membership List for an Image <#id9>`_ ✔        ✔
-``/images/<img-id>/members/<member>`` PUT    `Add a Member to an Image <#id10>`_              ✔        ✔
-``/images/<img-id>/members/<member>`` DELETE `Remove a Member from an Image <#id11>`_         ✔        ✔
-``/shared-images/<member>``           GET    `List Shared Images <#id12>`_                    ✔        ✔
-===================================== ====== ================================================ ======== ======
+================================================ ===================================== ====== ======== ======
+Description                                      URI                                   Method Plankton Glance
+================================================ ===================================== ====== ======== ======
+`List Available Images <#id2>`_                  ``/images``                           GET    ✔        ✔
+`Add or update an Image <#id3>`_                 ``/images``                           POST   ✔        ✔
+`Update an Image <#id5>`_                        ``/images``                           PUT    ✔        **✘**
+`List Available Images in Detail <#id6>`_        ``/images/detail``                    GET    ✔        ✔
+`Retrieve Image Metadata <#id7>`_                ``/images/<img-id>``                  HEAD   ✔        ✔
+`Retrieve Raw Image Data <#id8>`_                ``/images/<img-id>``                  GET    **✘**    ✔
+`List Image Memberships <#id9>`_                 ``/images/<img-id>/members``          GET    ✔        ✔
+`Replace a Membership List of an Image <#id10>`_ ``/images/<img-id>/members``          PUT    ✔        ✔
+`Add a Member to an Image <#id11>`_              ``/images/<img-id>/members/<member>`` PUT    ✔        ✔
+`Remove a Member from an Image <#id12>`_         ``/images/<img-id>/members/<member>`` DELETE ✔        ✔
+`List Shared Images <#id13>`_                    ``/shared-images/<member>``           GET    ✔        ✔
+================================================ ===================================== ====== ======== ======
 
 Authentication
 --------------
@@ -92,11 +91,11 @@ This request returns a list of all images accessible by the user. In specific, t
 * shared to  user by others
 * public
 
-===================================== ====== ===================== ======== ======
-URI                                   Method Description           Plankton Glance
-===================================== ====== ===================== ======== ======
-``/images``                           GET    List Available Images ✔        ✔
-===================================== ====== ===================== ======== ======
+===================== =========== ====== ======== ======
+Description           URI         Method Plankton Glance
+===================== =========== ====== ======== ======
+List Available Images ``/images`` GET    ✔        ✔
+===================== =========== ====== ======== ======
 
 |
 
@@ -193,11 +192,11 @@ The physical image file must be uploaded on a `Pithos+ <pithos.html>`_ server, a
 
 According to the OpenStack approach, this request performs the first two functionalities by uploading the the image data and metadata to Glance. In Glance, the update mechanism is not implemented with this specific request.
 
-===================================== ====== ===================== ======== ======
-URI                                   Method Description           Plankton Glance
-===================================== ====== ===================== ======== ======
-``/images``                           POST   Add / Update an image ✔        ✔
-===================================== ====== ===================== ======== ======
+===================== =========== ====== ======== ======
+Description           URI         Method Plankton Glance
+===================== =========== ====== ======== ======
+Add / update an image ``/images`` POST   ✔        ✔
+===================== =========== ====== ======== ======
 
 |
 
@@ -228,6 +227,8 @@ X-Image-Meta-Property-*       Property prefix           ✔         ✔
     pithos://<unique-user-id>/<container>/<object-path>
 
 The terms unique-user-id (uuid), container and object-path are used as defined in `Pithos <pithos.html>`_ context.
+
+|
 
 ======================= ========  ======
 X-Image-Meta-Id         Plankton  Glance
@@ -260,6 +261,8 @@ swift                   **✘**     ✔
     X-Image-Meta-Property-OS: Debian Linux
     X-Image-Meta-Property-Users: Root
 
+|
+
 =========================== =====================
 Return Code                 Description
 =========================== =====================
@@ -273,6 +276,8 @@ Return Code                 Description
 500 (Internal Server Error) The request cannot be completed because of an internal error
 501 (Not Implemented)       Location header is empty or omitted
 =========================== =====================
+
+|
 
 The following is used when the response code is 200:
 
@@ -297,7 +302,9 @@ X-Image-Meta-Property-*       Custom img properties ✔        **✘**
 Update an Image
 ---------------
 
-Lili
+In Plankton, the ReST API desctiption details above not only cover addition of new images, but also updating an existing one. An image is identified by its location at the Pithos server (X-Image-Meta-Location). For example, to alter the name of an image, add an image with the same X-Image-Meta-Location header but a different X-Image-Meta-Name header. An update overwrites the old values. An omission of a header option is equivalent to the removal of the corresponding property or metadata from the image, provided it is allowed for an image to exist without this specific metadatum.
+
+Glance manages image updates by compining *PUT* with semantics similar to *POST* for the same URI. Check the `Glance documentation <http://docs.openstack.org/developer/glance/glanceapi.html#update-an-image>`_ for more details on Glance implementation.
 
 List Available Images in Detail
 -------------------------------

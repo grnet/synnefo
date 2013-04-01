@@ -25,7 +25,7 @@ Description                                      URI                            
 `List Available Images in Detail <#id7>`_        ``/images/detail``                    GET    ✔        ✔
 `Retrieve Image Metadata <#id10>`_               ``/images/<img-id>``                  HEAD   ✔        ✔
 `Retrieve Raw Image Data <#id12>`_               ``/images/<img-id>``                  GET    **✘**    ✔
-`List Image Memberships <#id9>`_                 ``/images/<img-id>/members``          GET    ✔        ✔
+`List Image Memberships <#id14>`_                ``/images/<img-id>/members``          GET    ✔        ✔
 `Replace a Membership List of an Image <#id10>`_ ``/images/<img-id>/members``          PUT    ✔        ✔
 `Add a Member to an Image <#id11>`_              ``/images/<img-id>/members/<member>`` PUT    ✔        ✔
 `Remove a Member from an Image <#id12>`_         ``/images/<img-id>/members/<member>`` DELETE ✔        ✔
@@ -49,11 +49,11 @@ This request returns a list of all images accessible by the user. In specific, t
 * shared to  user by others
 * public
 
-===================== =========== ====== ======== ======
-Description           URI         Method Plankton Glance
-===================== =========== ====== ======== ======
-List Available Images ``/images`` GET    ✔        ✔
-===================== =========== ====== ======== ======
+=========== ====== ======== ======
+URI         Method Plankton Glance
+=========== ====== ======== ======
+``/images`` GET    ✔        ✔
+=========== ====== ======== ======
 
 |
 
@@ -150,11 +150,11 @@ The physical image file must be uploaded on a `Pithos+ <pithos.html>`_ server, a
 
 According to the OpenStack approach, this request performs the first two functionalities by uploading the the image data and metadata to Glance. In Glance, the update mechanism is not implemented with this specific request.
 
-===================== =========== ====== ======== ======
-Description           URI         Method Plankton Glance
-===================== =========== ====== ======== ======
-Add / update an image ``/images`` POST   ✔        ✔
-===================== =========== ====== ======== ======
+=========== ====== ======== ======
+URI         Method Plankton Glance
+=========== ====== ======== ======
+``/images`` POST   ✔        ✔
+=========== ====== ======== ======
 
 |
 
@@ -249,11 +249,11 @@ List Available Images in Detail
 
 This request returns the same list of images as in `List Available Images <#id2>`_, but the results are reacher in metadata.
 
-=============================== ================== ====== ======== ======
-Description                     URI                Method Plankton Glance
-=============================== ================== ====== ======== ======
-List Available Images in Detail ``/images/detail`` GET    ✔        ✔
-=============================== ================== ====== ======== ======
+================== ====== ======== ======
+URI                Method Plankton Glance
+================== ====== ======== ======
+``/images/detail`` GET    ✔        ✔
+================== ====== ======== ======
 
 **Request parameters** and **headers** as well as **response headers** and **error codes** are exactly the same as in `List Available Images <#id2>`_, both syntactically and semantically.
 
@@ -327,11 +327,11 @@ This request returns the metadata of an image. Images are identified by their un
 
 In a typical scenario, client applications would query the server to `List Available Images <#id2>`_ for them and then choose one of the image ids returned.
 
-===================== ====================== ====== ======== ======
-Description           URI                    Method Plankton Glance
-===================== ====================== ====== ======== ======
-List Available Images ``/images/<image-id>`` HEAD   ✔        ✔
-===================== ====================== ====== ======== ======
+====================== ====== ======== ======
+URI                    Method Plankton Glance
+====================== ====== ======== ======
+``/images/<image-id>`` HEAD   ✔        ✔
+====================== ====== ======== ======
 
 |
 
@@ -431,6 +431,55 @@ In **Glance**, the raw image can be downloaded with a GET request on ``/images/<
 
 List Image Memberships
 ----------------------
+
+This request returns the list of users who can access an image. Plankton returns an empty list if the image is publicly accessible.
+
+============================== ====== ======== ======
+URI                            Method Plankton Glance
+============================== ====== ======== ======
+``/images/<image-id>/members`` GET    ✔        ✔
+============================== ====== ======== ======
+
+|
+
+====================  ========================= ======== =========
+Request Header Name   Value                     Plankton Glance
+====================  ========================= ======== =========
+X-Auth-Token          User authentication token required  required
+====================  ========================= ======== =========
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    The request succeeded
+401 (Unauthorized)          Missing or expired user token
+404 (Not Found)             Image not found
+405 (Not Allowed)           Access to that image is not allowed
+500 (Internal Server Error) The request cannot be completed because of an internal error
+=========================== =====================
+
+|
+
+The response data is a list of users (members) who can access this image
+
+================ ===================== ======== ======
+Name             Description           Plankton Glance
+================ ===================== ======== ======
+member_id        User                  ✔        ✔
+can_share        Member can share img  false    ✔
+================ ===================== ======== ======
+
+**can_share** in Plankton is always false and is returned for compatibility reasons.
+
+Example Plankton response::
+
+    {'members': [
+        {'member_id': '<uuid-1>',
+        'can_share': false},
+        ...
+    ]}
 
 Replace a Membership List for an Image
 --------------------------------------

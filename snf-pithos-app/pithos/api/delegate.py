@@ -67,11 +67,13 @@ def delegate_to_login_service(request):
     return HttpResponseRedirect(uri)
 
 
-def proxy(request, url, headers={}, body=None):
+def proxy(request, url, headers=None, body=None):
     p = urlparse(url)
 
     kwargs = {}
-    kwargs['headers'] = headers
+    if headers is None:
+        headers = {}
+    kwargs["headers"] = headers
     kwargs['headers'].update(request.META)
     kwargs['body'] = body
     kwargs['headers'].setdefault('content-type', 'application/json')

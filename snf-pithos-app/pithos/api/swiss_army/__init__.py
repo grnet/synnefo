@@ -303,7 +303,9 @@ class SwissArmy():
         return self.backend._lookup_account(account, create=True)
 
     def create_update_object(self, account, container, name, content_type,
-                             data, meta={}, permissions={}, request_user=None):
+                             data, meta=None, permissions=None, request_user=None):
+        meta = meta or {}
+        permissions = permissions or {}
         md5 = hashlib.md5()
         size = 0
         hashmap = []

@@ -64,11 +64,13 @@ def retry(howmany):
     return execute
 
 
-def call(token, url, headers={}, body=None, method='GET'):
+def call(token, url, headers=None, body=None, method='GET'):
     p = urlparse(url)
 
     kwargs = {}
-    kwargs['headers'] = headers
+    if headers is None:
+        headers = {}
+    kwargs["headers"] = headers
     kwargs['headers']['X-Auth-Token'] = token
     if body:
         kwargs['body'] = body

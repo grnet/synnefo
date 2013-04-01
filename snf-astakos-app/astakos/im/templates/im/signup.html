@@ -24,7 +24,7 @@
  
 <div class="extralogin">
 {% for provider_obj in auth_providers %}
-	{% if provider_obj.is_available_for_create %}
+	{% if provider_obj.get_create_policy %}
 		{% if provider_obj.module == 'local' %}
 			<a href="#" class="submit standalone" id="signup-classic">CLASSIC</a>
             {% if "local" in im_modules %}
@@ -34,8 +34,8 @@
 			{% if provider_obj.module == 'shibboleth' %}
 				<a href="{% provider_login_url provider_obj %}" class="submit standalone">ACADEMIC</a>
 			{% else %}
-			<a href="{% provider_login_url provider_obj %}" title="{{ provider_obj.get_title_display }}" class="icons">
-				<img src=" {{ provider_obj.get_icon_url_display }}" alt="{{ provider_obj.get_title_display }}">
+			<a href="{% provider_login_url provider_obj %}" title="{{ provider_obj.get_title_msg }}" class="icons">
+				<img src=" {{ provider_obj.get_module_icon }}" alt="{{ provider_obj.get_title_msg }}">
 			</a>
 			{% endif %}
 		{% endif %}
@@ -44,9 +44,11 @@
 </div>
 {% else %}
 
-<p>Hello, it seems this is the first time you try to <br>access the service.
-Please provide us with the<br> following information to complete your
+{% if third_party_token %}
+<p>Hello, it seems this is the first time you try to access the service.
+Please provide us with the following information to complete your
 registration process. <br><br></p>
+{% endif %}
 
 {% include "im/auth/signup_form.html" %}
 {% endif %}

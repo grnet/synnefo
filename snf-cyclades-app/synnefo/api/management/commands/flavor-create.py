@@ -84,3 +84,8 @@ class Command(BaseCommand):
                 else:
                     self.stdout.write("Flavor '%s' already exists\n"
                                       % flavor.name)
+                    if flavor.deleted:
+                        msg = "Flavor '%s' is marked as deleted. Use"\
+                        " 'snf-manage flavor-modify' to restore this flavor\n"\
+                        % flavor.name
+                        self.stdout.write(msg)

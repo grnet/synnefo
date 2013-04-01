@@ -76,11 +76,11 @@ from astakos.im.endpoints.qh import (
     register_services, register_resources, qh_add_quota, QuotaLimits,
     qh_query_serials, qh_ack_serials,
     QuotaValues, add_quota_values)
-from astakos.im import auth_providers
+from astakos.im import auth_providers as auth
 
 import astakos.im.messages as astakos_messages
 from astakos.im.lock import with_lock
-from .managers import ForUpdateManager
+from synnefo.lib.db.managers import ForUpdateManager
 
 from synnefo.lib.quotaholder.api import QH_PRACTICALLY_INFINITE
 from synnefo.lib.db.intdecimalfield import intDecimalField
@@ -361,16 +361,16 @@ class AstakosUser(User):
     invitations = models.IntegerField(
         _('Invitations left'), default=INVITATIONS_PER_LEVEL.get(user_level, 0))
 
-    auth_token = models.CharField(_('Authentication Token'), 
+    auth_token = models.CharField(_('Authentication Token'),
                                   max_length=32,
-                                  null=True, 
-                                  blank=True, 
+                                  null=True,
+                                  blank=True,
                                   help_text = _('Renew your authentication '
                                                 'token. Make sure to set the new '
                                                 'token in any client you may be '
                                                 'using, to preserve its '
                                                 'functionality.'))
-    auth_token_created = models.DateTimeField(_('Token creation date'), 
+    auth_token_created = models.DateTimeField(_('Token creation date'),
                                               null=True)
     auth_token_expires = models.DateTimeField(
         _('Token expiration date'), null=True)
@@ -416,7 +416,7 @@ class AstakosUser(User):
         Should be used in all logger.* calls that refer to a user so that
         user display is consistent across log entries.
         """
-        return '%s (%s)' % (self.uuid, self.email)
+        return '%s::%s' % (self.uuid, self.email)
 
     @realname.setter
     def realname(self, value):
@@ -596,119 +596,101 @@ class AstakosUser(User):
         self.level = level
         self.invitations = INVITATIONS_PER_LEVEL.get(level, 0)
 
-    def can_login_with_auth_provider(self, provider):
-        if not self.has_auth_provider(provider):
-            return False
-        else:
-            return auth_providers.get_provider(provider).is_available_for_login()
-
-    def can_add_auth_provider(self, provider, include_unverified=False, **kwargs):
-        provider_settings = auth_providers.get_provider(provider)
-
-        if not provider_settings.is_available_for_add():
-            return False
-
-        if self.has_auth_provider(provider) and \
-           provider_settings.one_per_user:
-            return False
-
-        if 'provider_info' in kwargs:
-            kwargs.pop('provider_info')
-
-        if 'identifier' in kwargs:
-            try:
-                # provider with specified params already exist
-                if not include_unverified:
-                    kwargs['user__email_verified'] = True
-                existing_user = AstakosUser.objects.get_auth_provider_user(provider,
-                                                                   **kwargs)
-            except AstakosUser.DoesNotExist:
-                return True
-            else:
-                return False
-
-        return True
-
-    def can_remove_auth_provider(self, module):
-        provider = auth_providers.get_provider(module)
-        existing = self.get_active_auth_providers()
-        existing_for_provider = self.get_active_auth_providers(module=module)
-
-        if len(existing) <= 1:
-            return False
-
-        if len(existing_for_provider) == 1 and provider.is_required():
-            return False
-
-        return provider.is_available_for_remove()
-
     def can_change_password(self):
         return self.has_auth_provider('local', auth_backend='astakos')
 
     def can_change_email(self):
-        non_astakos_local = self.get_auth_providers().filter(module='local')
-        non_astakos_local = non_astakos_local.exclude(auth_backend='astakos')
-        return non_astakos_local.count() == 0
+        if not self.has_auth_provider('local'):
+            return True
 
-    def has_required_auth_providers(self):
-        required = auth_providers.REQUIRED_PROVIDERS
-        for provider in required:
-            if not self.has_auth_provider(provider):
-                return False
-        return True
+        local = self.get_auth_provider('local')._instance
+        return local.auth_backend == 'astakos'
+
+    # Auth providers related methods
+    def get_auth_provider(self, module=None, identifier=None, **filters):
+        if not module:
+            return self.auth_providers.active()[0].settings
+
+        params = {'module': module}
+        if identifier:
+            params['identifier'] = identifier
+        params.update(filters)
+        return self.auth_providers.active().get(**params).settings
 
     def has_auth_provider(self, provider, **kwargs):
-        return bool(self.get_auth_providers().filter(module=provider,
-                                               **kwargs).count())
+        return bool(self.auth_providers.active().filter(module=provider,
+                                                        **kwargs).count())
 
-    def add_auth_provider(self, provider, **kwargs):
-        info_data = ''
-        if 'provider_info' in kwargs:
-            info_data = kwargs.pop('provider_info')
-            if isinstance(info_data, dict):
-                info_data = json.dumps(info_data)
+    def get_required_providers(self, **kwargs):
+        return auth.REQUIRED_PROVIDERS.keys()
 
-        if self.can_add_auth_provider(provider, **kwargs):
-            if 'identifier' in kwargs:
-                # clean up third party pending for activation users of the same
-                # identifier
-                AstakosUserAuthProvider.objects.remove_unverified_providers(provider,
-                                                                **kwargs)
-            self.auth_providers.create(module=provider, active=True,
-                                       info_data=info_data,
-                                       **kwargs)
-        else:
-            raise Exception('Cannot add provider')
+    def missing_required_providers(self):
+        required = self.get_required_providers()
+        missing = []
+        for provider in required:
+            if not self.has_auth_provider(provider):
+                missing.append(auth.get_provider(provider, self))
+        return missing
 
-    def add_pending_auth_provider(self, pending):
+    def get_available_auth_providers(self, **filters):
         """
-        Convert PendingThirdPartyUser object to AstakosUserAuthProvider entry for
-        the current user.
+        Returns a list of providers available for add by the user.
         """
-        if not isinstance(pending, PendingThirdPartyUser):
-            pending = PendingThirdPartyUser.objects.get(token=pending)
+        modules = astakos_settings.IM_MODULES
+        providers = []
+        for p in modules:
+            providers.append(auth.get_provider(p, self))
+        available = []
 
-        provider = self.add_auth_provider(pending.provider,
-                               identifier=pending.third_party_identifier,
-                                affiliation=pending.affiliation,
-                                          provider_info=pending.info)
+        for p in providers:
+            if p.get_add_policy:
+                available.append(p)
+        return available
 
-        if email_re.match(pending.email or '') and pending.email != self.email:
-            self.additionalmail_set.get_or_create(email=pending.email)
+    def get_disabled_auth_providers(self, **filters):
+        providers = self.get_auth_providers(**filters)
+        disabled = []
+        for p in providers:
+            if not p.get_login_policy:
+                disabled.append(p)
+        return disabled
 
-        pending.delete()
-        return provider
+    def get_enabled_auth_providers(self, **filters):
+        providers = self.get_auth_providers(**filters)
+        enabled = []
+        for p in providers:
+            if p.get_login_policy:
+                enabled.append(p)
+        return enabled
 
-    def remove_auth_provider(self, provider, **kwargs):
-        self.get_auth_providers().get(module=provider, **kwargs).delete()
+    def get_auth_providers(self, **filters):
+        providers = []
+        for provider in self.auth_providers.active(**filters):
+            if provider.settings.module_enabled:
+                providers.append(provider.settings)
 
-    # user urls
+        modules = astakos_settings.IM_MODULES
+
+        def key(p):
+            if not p.module in modules:
+                return 100
+            return modules.index(p.module)
+
+        providers = sorted(providers, key=key)
+        return providers
+
+    # URL methods
+    @property
+    def auth_providers_display(self):
+        return ",".join(["%s:%s" % (p.module, p.get_username_msg) for p in
+                         self.get_enabled_auth_providers()])
+
+    def add_auth_provider(self, module='local', identifier=None, **params):
+        provider = auth.get_provider(module, self, identifier, **params)
+        provider.add_to_user()
+
     def get_resend_activation_url(self):
         return reverse('send_activation', kwargs={'user_id': self.pk})
-
-    def get_provider_remove_url(self, module, **kwargs):
-        return reverse('remove_auth_provider', kwargs={
-            'pk': self.get_auth_providers().get(module=module, **kwargs).pk})
 
     def get_activation_url(self, nxt=False):
         url = "%s?auth=%s" % (reverse('astakos.im.views.activate'),
@@ -722,71 +704,36 @@ class AstakosUser(User):
                           kwargs={'uidb36':int_to_base36(self.id),
                                   'token':token_generator.make_token(self)})
 
-    def get_primary_auth_provider(self):
-        return self.get_auth_providers().filter()[0]
+    def get_inactive_message(self, provider_module, identifier=None):
+        provider = self.get_auth_provider(provider_module, identifier)
 
-    def get_auth_providers(self):
-        return self.auth_providers
-
-    def get_available_auth_providers(self):
-        """
-        Returns a list of providers available for user to connect to.
-        """
-        providers = []
-        for module, provider_settings in auth_providers.PROVIDERS.iteritems():
-            if self.can_add_auth_provider(module):
-                providers.append(provider_settings(self))
-
-        modules = astakos_settings.IM_MODULES
-        def key(p):
-            if not p.module in modules:
-                return 100
-            return modules.index(p.module)
-        providers = sorted(providers, key=key)
-        return providers
-
-    def get_active_auth_providers(self, **filters):
-        providers = []
-        for provider in self.get_auth_providers().active(**filters):
-            if auth_providers.get_provider(provider.module).is_available_for_login():
-                providers.append(provider)
-
-        modules = astakos_settings.IM_MODULES
-        def key(p):
-            if not p.module in modules:
-                return 100
-            return modules.index(p.module)
-        providers = sorted(providers, key=key)
-        return providers
-
-    @property
-    def auth_providers_display(self):
-        return ",".join(map(lambda x:unicode(x), self.get_auth_providers().active()))
-
-    def get_inactive_message(self):
         msg_extra = ''
         message = ''
+
+        msg_inactive = provider.get_account_inactive_msg
+        msg_pending = provider.get_pending_activation_msg
+        msg_pending_help = _(astakos_messages.ACCOUNT_PENDING_ACTIVATION_HELP)
+        #msg_resend_prompt = _(astakos_messages.ACCOUNT_RESEND_ACTIVATION)
+        msg_pending_mod = provider.get_pending_moderation_msg
+        msg_resend = _(astakos_messages.ACCOUNT_RESEND_ACTIVATION)
+
         if self.activation_sent:
             if self.email_verified:
-                message = _(astakos_messages.ACCOUNT_INACTIVE)
+                message = msg_inactive
             else:
-                message = _(astakos_messages.ACCOUNT_PENDING_ACTIVATION)
-                if astakos_settings.MODERATION_ENABLED:
-                    msg_extra = _(astakos_messages.ACCOUNT_PENDING_ACTIVATION_HELP)
-                else:
-                    url = self.get_resend_activation_url()
-                    msg_extra = mark_safe(_(astakos_messages.ACCOUNT_PENDING_ACTIVATION_HELP) + \
-                                u' ' + \
-                                _('<a href="%s">%s?</a>') % (url,
-                                _(astakos_messages.ACCOUNT_RESEND_ACTIVATION_PROMPT)))
+                message = msg_pending
+                url = self.get_resend_activation_url()
+                msg_extra = msg_pending_help + \
+                            u' ' + \
+                            '<a href="%s">%s?</a>' % (url, msg_resend)
         else:
             if astakos_settings.MODERATION_ENABLED:
-                message = _(astakos_messages.ACCOUNT_PENDING_MODERATION)
+                message = msg_pending_mod
             else:
-                message = astakos_messages.ACCOUNT_PENDING_ACTIVATION
+                message = msg_pending
                 url = self.get_resend_activation_url()
-                msg_extra = mark_safe(_('<a href="%s">%s?</a>') % (url,
-                            _(astakos_messages.ACCOUNT_RESEND_ACTIVATION_PROMPT)))
+                msg_extra = '<a href="%s">%s?</a>' % (url, \
+                                msg_resend)
 
         return mark_safe(message + u' '+ msg_extra)
 
@@ -903,12 +850,111 @@ class AstakosUserAuthProviderManager(models.Manager):
 
     def remove_unverified_providers(self, provider, **filters):
         try:
-            existing = self.filter(module=provider, user__email_verified=False, **filters)
+            existing = self.filter(module=provider, user__email_verified=False,
+                                   **filters)
             for p in existing:
                 p.user.delete()
         except:
             pass
 
+    def unverified(self, provider, **filters):
+        try:
+            return self.get(module=provider, user__email_verified=False,
+                            **filters).settings
+        except AstakosUserAuthProvider.DoesNotExist:
+            return None
+
+    def verified(self, provider, **filters):
+        try:
+            return self.get(module=provider, user__email_verified=True,
+                            **filters).settings
+        except AstakosUserAuthProvider.DoesNotExist:
+            return None
+
+
+class AuthProviderPolicyProfileManager(models.Manager):
+
+    def active(self):
+        return self.filter(active=True)
+
+    def for_user(self, user, provider):
+        policies = {}
+        exclusive_q1 = Q(provider=provider) & Q(is_exclusive=False)
+        exclusive_q2 = ~Q(provider=provider) & Q(is_exclusive=True)
+        exclusive_q = exclusive_q1 | exclusive_q2
+
+        for profile in user.authpolicy_profiles.active().filter(exclusive_q):
+            policies.update(profile.policies)
+
+        user_groups = user.groups.all().values('pk')
+        for profile in self.active().filter(groups__in=user_groups).filter(
+                exclusive_q):
+            policies.update(profile.policies)
+        return policies
+
+    def add_policy(self, name, provider, group_or_user, exclusive=False,
+                   **policies):
+        is_group = isinstance(group_or_user, Group)
+        profile, created = self.get_or_create(name=name, provider=provider,
+                                              is_exclusive=exclusive)
+        profile.is_exclusive = exclusive
+        profile.save()
+        if is_group:
+            profile.groups.add(group_or_user)
+        else:
+            profile.users.add(group_or_user)
+        profile.set_policies(policies)
+        profile.save()
+        return profile
+
+
+class AuthProviderPolicyProfile(models.Model):
+    name = models.CharField(_('Name'), max_length=255, blank=False,
+                            null=False, db_index=True)
+    provider = models.CharField(_('Provider'), max_length=255, blank=False,
+                                null=False)
+
+    # apply policies to all providers excluding the one set in provider field
+    is_exclusive = models.BooleanField(default=False)
+
+    policy_add = models.NullBooleanField(null=True, default=None)
+    policy_remove = models.NullBooleanField(null=True, default=None)
+    policy_create = models.NullBooleanField(null=True, default=None)
+    policy_login = models.NullBooleanField(null=True, default=None)
+    policy_limit = models.IntegerField(null=True, default=None)
+    policy_required = models.NullBooleanField(null=True, default=None)
+    policy_automoderate = models.NullBooleanField(null=True, default=None)
+    policy_switch = models.NullBooleanField(null=True, default=None)
+
+    POLICY_FIELDS = ('add', 'remove', 'create', 'login', 'limit', 'required',
+                     'automoderate')
+
+    priority = models.IntegerField(null=False, default=1)
+    groups = models.ManyToManyField(Group, related_name='authpolicy_profiles')
+    users = models.ManyToManyField(AstakosUser,
+                                   related_name='authpolicy_profiles')
+    active = models.BooleanField(default=True)
+
+    objects = AuthProviderPolicyProfileManager()
+
+    class Meta:
+        ordering = ['priority']
+
+    @property
+    def policies(self):
+        policies = {}
+        for pkey in self.POLICY_FIELDS:
+            value = getattr(self, 'policy_%s' % pkey, None)
+            if value is None:
+                continue
+            policies[pkey] = value
+        return policies
+
+    def set_policies(self, policies_dict):
+        for key, value in policies_dict.iteritems():
+            if key in self.POLICY_FIELDS:
+                setattr(self, 'policy_%s' % key, value)
+        return self.policies
 
 
 class AstakosUserAuthProvider(models.Model):
@@ -947,42 +993,22 @@ class AstakosUserAuthProvider(models.Model):
         for key,value in self.info.iteritems():
             setattr(self, 'info_%s' % key, value)
 
-
     @property
     def settings(self):
-        return auth_providers.get_provider(self.module)
+        extra_data = {}
 
-    @property
-    def details_display(self):
-        try:
-            params = self.user.__dict__
-            params.update(self.__dict__)
-            return self.settings.get_details_tpl_display % params
-        except:
-            return ''
+        info_data = {}
+        if self.info_data:
+            info_data = json.loads(self.info_data)
 
-    @property
-    def title_display(self):
-        title_tpl = self.settings.get_title_display
-        try:
-            if self.settings.get_user_title_display:
-                title_tpl = self.settings.get_user_title_display
-        except Exception, e:
-            pass
-        try:
-          return title_tpl % self.__dict__
-        except:
-          return self.settings.get_title_display % self.__dict__
+        extra_data['info'] = info_data
 
-    def can_remove(self):
-        return self.user.can_remove_auth_provider(self.module)
+        for key in ['active', 'auth_backend', 'created', 'pk', 'affiliation']:
+            extra_data[key] = getattr(self, key)
 
-    def delete(self, *args, **kwargs):
-        ret = super(AstakosUserAuthProvider, self).delete(*args, **kwargs)
-        if self.module == 'local':
-            self.user.set_unusable_password()
-            self.user.save()
-        return ret
+        extra_data['instance'] = self
+        return auth.get_provider(self.module, self.user,
+                                           self.identifier, **extra_data)
 
     def __repr__(self):
         return '<AstakosUserAuthProvider %s:%s>' % (self.module, self.identifier)
@@ -1125,8 +1151,9 @@ class EmailChangeManager(models.Manager):
             user.email = email_change.new_email_address
             user.save()
             email_change.delete()
-            msg = "User %d changed email from %s to %s" % (user.pk, old_email,
-                                                          user.email)
+            msg = "User %s changed email from %s to %s" % (user.log_display,
+                                                           old_email,
+                                                           user.email)
             logger.log(LOGGING_LEVEL, msg)
             return user
         except EmailChange.DoesNotExist:
@@ -1182,6 +1209,7 @@ def get_latest_terms():
         pass
     return None
 
+
 class PendingThirdPartyUser(models.Model):
     """
     Model for registring successful third party user authentications
@@ -1195,7 +1223,7 @@ class PendingThirdPartyUser(models.Model):
                                  null=True)
     affiliation = models.CharField('Affiliation', max_length=255, blank=True,
                                    null=True)
-    username = models.CharField(_('username'), max_length=30, unique=True,  
+    username = models.CharField(_('username'), max_length=30, unique=True,
                                 help_text=_("Required. 30 characters or fewer. Letters, numbers and @/./+/-/_ characters"))
     token = models.CharField(_('Token'), max_length=255, null=True, blank=True)
     created = models.DateTimeField(auto_now_add=True, null=True, blank=True)
@@ -1247,6 +1275,14 @@ class PendingThirdPartyUser(models.Model):
     def existing_user(self):
         return AstakosUser.objects.filter(auth_providers__module=self.provider,
                                          auth_providers__identifier=self.third_party_identifier)
+
+    def get_provider(self, user):
+        params = {
+            'info_data': self.info,
+            'affiliation': self.affiliation
+        }
+        return auth.get_provider(self.provider, user,
+                                 self.third_party_identifier, **params)
 
 class SessionCatalog(models.Model):
     session_key = models.CharField(_('session key'), max_length=40)
@@ -1606,6 +1642,7 @@ class ProjectApplication(models.Model):
     comments                =   models.TextField(null=True, blank=True)
     issue_date              =   models.DateTimeField(auto_now_add=True)
     response_date           =   models.DateTimeField(null=True, blank=True)
+    response                =   models.TextField(null=True, blank=True)
 
     objects                 =   ProjectApplicationManager()
 
@@ -1775,7 +1812,7 @@ class ProjectApplication(models.Model):
     def can_deny(self):
         return self.state == self.PENDING
 
-    def deny(self):
+    def deny(self, reason):
         if not self.can_deny():
             m = _("cannot deny: application '%s' in state '%s'") % (
                     self.id, self.state)
@@ -1783,6 +1820,7 @@ class ProjectApplication(models.Model):
 
         self.state = self.DENIED
         self.response_date = datetime.now()
+        self.response = reason
         self.save()
 
     def can_approve(self):
@@ -2750,13 +2788,19 @@ def sync_users(users, sync=True, retries=3, retry_wait=1.0):
         astakos_initial = initial_quotas(users)
         astakos_quotas = users_quotas(users, astakos_initial)
 
+        diff_quotas = {}
+        for holder, local in astakos_quotas.iteritems():
+            registered = qh_limits.get(holder, None)
+            if local != registered:
+                diff_quotas[holder] = dict(local)
+
         if sync:
             r = register_users(nonexisting)
-            r = send_quotas(astakos_quotas)
+            r = send_quotas(diff_quotas)
 
         return (existing, nonexisting,
                 qh_limits, qh_counters,
-                astakos_initial, astakos_quotas, info)
+                astakos_initial, diff_quotas, info)
     return _sync_users(users, sync)
 
 

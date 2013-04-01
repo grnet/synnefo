@@ -55,6 +55,7 @@
     
     <script src="{{ SYNNEFO_JS_URL }}utils.js"></script>
     <script src="{{ SYNNEFO_JS_URL }}auth.js"></script>
+    <script src="{{ SYNNEFO_JS_URL }}quota.js"></script>
     <script src="{{ SYNNEFO_JS_URL }}sync.js"></script>
     <script src="{{ SYNNEFO_JS_URL }}models.js"></script>
     <script src="{{ SYNNEFO_JS_URL }}glance_models.js"></script>
@@ -85,7 +86,7 @@
             cookie_name: '{{ auth_cookie_name }}',
             login_url: '{{ login_redirect }}'
         });
-        if (!tmp_auth_client.get_user()) { tmp_auth_client.redirect_to_login(); }
+        if (!tmp_auth_client.get_token()) { tmp_auth_client.redirect_to_login(); }
     </script>
     {{ CLOUDBAR_CODE }}
     
@@ -556,10 +557,12 @@
         </div>
     </div>
     
-    <div id="loading-view" class="hidden">
-        <img src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" />
-        <div class="header">Loading <span>~okeanos</span></div>
-        <div class="info hidden"></div>
+    <div id="loading-view" class="hidden clearfix">
+        <div class="header clearfix images off">Loading images...<span></span></div>
+        <div class="header clearfix flavors off">Loading flavors...<span></span></div>
+        <div class="header clearfix vms off">Loading machines...<span></span></div>
+        <div class="header clearfix networks off">Loading networks...<span></span></div>
+        <div class="header clearfix layout off">Rendering layout...<span></span></div>
     </div>
     <div id="user_public_keys" class="overlay-content overlay-content hidden">
         {% include "userdata/public_keys_view.html" %}
@@ -662,8 +665,10 @@
             });
 
             // user config
-            synnefo.user = synnefo.auth_client.get_user();
-            if (!synnefo.user) { synnefo.auth_client.redirect_to_login(); }
+            synnefo.user = synnefo.auth_client;
+            if (!synnefo.user.get_token()) { 
+              synnefo.auth_client.redirect_to_login(); 
+            }
 
             $(".usermenu .username").text("options");
 

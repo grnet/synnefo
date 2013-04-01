@@ -67,19 +67,19 @@ import oauth2 as oauth
 import cgi
 import urllib
 
-consumer = oauth.Consumer(settings.TWITTER_TOKEN, settings.TWITTER_SECRET)
-client = oauth.Client(consumer)
-
 request_token_url = 'http://twitter.com/oauth/request_token'
 access_token_url = 'http://twitter.com/oauth/access_token'
 authenticate_url = 'http://twitter.com/oauth/authenticate'
 
-@requires_auth_provider('twitter', login=True)
+@requires_auth_provider('twitter')
 @require_http_methods(["GET", "POST"])
 def login(request):
     init_third_party_session(request)
     force_login = request.GET.get('force_login',
                                   settings.TWITTER_AUTH_FORCE_LOGIN)
+    consumer = oauth.Consumer(settings.TWITTER_TOKEN,
+                              settings.TWITTER_SECRET)
+    client = oauth.Client(consumer)
     resp, content = client.request(request_token_url, "GET")
     if resp['status'] != '200':
         messages.error(request, 'Invalid Twitter response')
@@ -108,6 +108,10 @@ def authenticated(
     request,
     template='im/third_party_check_local.html',
     extra_context={}):
+
+    consumer = oauth.Consumer(settings.TWITTER_TOKEN,
+                              settings.TWITTER_SECRET)
+    client = oauth.Client(consumer)
 
     if request.GET.get('denied'):
         return HttpResponseRedirect(reverse('edit_profile'))

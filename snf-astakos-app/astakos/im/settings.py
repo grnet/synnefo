@@ -37,7 +37,8 @@ COOKIE_SECURE = getattr(settings, 'ASTAKOS_COOKIE_SECURE', True)
 
 IM_STATIC_URL = getattr(settings, 'ASTAKOS_IM_STATIC_URL', '/static/im/')
 
-# If set to False and invitations not enabled newly created user will be automatically accepted
+# If set to False and invitations not enabled newly created user
+# will be automatically accepted
 MODERATION_ENABLED = getattr(settings, 'ASTAKOS_MODERATION_ENABLED', True)
 
 # Set baseurl

@@ -3,7 +3,7 @@
         "model": "db.VirtualMachine",
         "pk": 1001,
         "fields": {
-            "userid": "testuser@test.com",
+            "userid": "5edcb5aa-1111-4146-a8ed-2b6287824353",
             "name": "user1 vm",
             "created": "2011-02-06 00:00:00",
             "updated": "2011-02-06 00:00:00",
@@ -17,7 +17,7 @@
         "model": "db.VirtualMachine",
         "pk": 1002,
         "fields": {
-            "userid": "testuser2@test.com",
+            "userid": "5edcb5aa-2222-4146-a8ed-2b6287824353",
             "name": "user2 vm1",
             "created": "2011-02-10 00:00:00",
             "updated": "2011-02-10 00:00:00",
@@ -31,7 +31,7 @@
         "model": "db.VirtualMachine",
         "pk": 1003,
         "fields": {
-            "userid": "testuser2@test.com",
+            "userid": "5edcb5aa-2222-4146-a8ed-2b6287824353",
             "name": "user2 vm2",
             "created": "2011-02-10 00:00:00",
             "updated": "2011-02-10 00:00:00",
@@ -75,6 +75,7 @@
         "model": "db.NetworkInterface",
         "pk": 2,
         "fields": {
+            "index": 0,
             "ipv4": "195.251.222.211",
             "network": 2,
             "machine": 1002
@@ -90,7 +91,7 @@
             "state": "ACTIVE",
             "public": 0,
             "link": 1,
-            "userid": "testuser@test.com"
+            "userid": "5edcb5aa-1111-4146-a8ed-2b6287824353"
         }
     },
     {

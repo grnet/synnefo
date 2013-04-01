@@ -234,10 +234,10 @@ def put_object_headers(response, meta, restricted=False, token=None):
     if not restricted:
         response['X-Object-Hash'] = meta['hash']
         response['X-Object-UUID'] = meta['uuid']
-        modified_by = retrieve_displayname(token, meta['modified_by'])
         if TRANSLATE_UUIDS:
-            response['X-Object-Modified-By'] = smart_str(
-                    modified_by, strings_only=True)
+            meta['modified_by'] = retrieve_displayname(token, meta['modified_by'])
+        response['X-Object-Modified-By'] = smart_str(
+            meta['modified_by'], strings_only=True)
         response['X-Object-Version'] = meta['version']
         response['X-Object-Version-Timestamp'] = http_date(
             int(meta['version_timestamp']))
@@ -1124,7 +1124,7 @@ def api_method(http_method=None, format_allowed=False, user_required=True,
                 return render_fault(request, fault)
             except BaseException, e:
                 logger.exception('Unexpected error: %s' % e)
-                fault = InternalServerError('Unexpected error: %s' % e)
+                fault = InternalServerError('Unexpected error')
                 return render_fault(request, fault)
             finally:
                 if getattr(request, 'backend', None) is not None:

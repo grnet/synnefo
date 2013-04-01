@@ -59,8 +59,9 @@ class SwissArmyTests(unittest.TestCase):
             self.utils._delete_account(i)
         self.utils.cleanup()
 
-    def _verify_object(self, account, container, object, expected={},
+    def _verify_object(self, account, container, object, expected=None,
                        strict=True):
+        expected = expected or {}
         self._verify_object_metadata(account, container, object,
                                      expected.get('meta'))
         self._verify_object_history(account, container, object,

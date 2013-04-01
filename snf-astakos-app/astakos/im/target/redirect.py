@@ -73,8 +73,9 @@ def login(request):
         return HttpResponseForbidden(_(astakos_messages.NOT_ALLOWED_NEXT_PARAM))
     force = request.GET.get('force', None)
     response = HttpResponse()
-    if force == '':
+    if force == '' and request.user.is_authenticated():
         logout(request)
+
     if request.user.is_authenticated():
         # if user has not signed the approval terms
         # redirect to approval terms with next the request path

@@ -14,48 +14,6 @@ This document's goals are:
 * Clarify the differences between Plankton and Glance
 * Specify metadata semantics and user interface guidelines for a common experience across client software implementations
 
-Cross-method variables
-----------------------
-
-The following variables affect the behavior of many requests.
-
-.. _container-format-ref:
-
-Container format
-^^^^^^^^^^^^^^^^
-
-===== ================================= ======== ======
-Value Description                       Plankton Glance
-===== ================================= ======== ======
-aki   Amazon kernel image               ✔        ✔
-ari   Amazon ramdisk image              ✔        ✔
-ami   Amazon machine image              ✔        ✔
-bare  no container or metadata envelope default  default
-ovf   Open Virtualization Format        ✔        ✔
-===== ================================= ======== ======
-
-.. _disk-format-ref:
-
-Disk format
-^^^^^^^^^^^
-
-======== ================================= ======== ======
-Value    Description                       Plankton Glance
-======== ================================= ======== ======
-diskdump Any disk image dump               default  **✘**
-extdump  EXT3 image                        ✔        **✘**
-ntfsdump NTFS image                        ✔        **✘**
-raw      Unstructured disk image           **✘**    ✔
-vhd      (VMWare,Xen,MS,VirtualBox, a.o.)  **✘**    ✔
-vmdk     Another common disk format        **✘**    ✔
-vdi      (VirtualBox, QEMU)                **✘**    ✔
-iso      optical disc (e.g. CDROM)         **✘**    ✔
-qcow2    (QEMU)                            **✘**    ✔
-aki      Amazon kernel image               **✘**    ✔
-ari      Amazon ramdisk image              **✘**    ✔
-ami      Amazon machine image              **✘**    ✔
-======== ================================= ======== ======
-
 Image ReST API
 --------------
 ================================================ ===================================== ====== ======== ======
@@ -63,9 +21,9 @@ Description                                      URI                            
 ================================================ ===================================== ====== ======== ======
 `List Available Images <#id2>`_                  ``/images``                           GET    ✔        ✔
 `Add or update an Image <#id3>`_                 ``/images``                           POST   ✔        ✔
-`Update an Image <#id5>`_                        ``/images``                           PUT    ✔        **✘**
-`List Available Images in Detail <#id6>`_        ``/images/detail``                    GET    ✔        ✔
-`Retrieve Image Metadata <#id7>`_                ``/images/<img-id>``                  HEAD   ✔        ✔
+`Update an Image <#id6>`_                        ``/images``                           PUT    **✘**    ✔
+`List Available Images in Detail <#id7>`_        ``/images/detail``                    GET    ✔        ✔
+`Retrieve Image Metadata <#id10>`_               ``/images/<img-id>``                  HEAD   ✔        ✔
 `Retrieve Raw Image Data <#id8>`_                ``/images/<img-id>``                  GET    **✘**    ✔
 `List Image Memberships <#id9>`_                 ``/images/<img-id>/members``          GET    ✔        ✔
 `Replace a Membership List of an Image <#id10>`_ ``/images/<img-id>/members``          PUT    ✔        ✔
@@ -222,35 +180,15 @@ X-Image-Meta-Owner            Image owner               ✔         ✔
 X-Image-Meta-Property-*       Property prefix           ✔         ✔         
 ============================= ========================= ========  ========
 
-**X-Meta-Location** format::
+**X-Meta-Location** format is described at :ref:`location-ref`
 
-    pithos://<unique-user-id>/<container>/<object-path>
+**X-Image-Meta-Id** is explained at :ref:`id-ref`
 
-The terms unique-user-id (uuid), container and object-path are used as defined in `Pithos <pithos.html>`_ context.
+**X-Image-Meta-Store** values are listed at :ref:`store-ref`
 
-|
+**X-Image-Meta-Disk-Format** values are listed at :ref:`disk-format-ref`
 
-======================= ========  ======
-X-Image-Meta-Id         Plankton  Glance
-======================= ========  ======
-Automatically generated ✔         **✘**
-Can be provided by used **✘**     ✔
-======================= ========  ======
-
-|
-
-======================= ========  ======
-X-Image-Meta-Store      Plankton  Glance
-======================= ========  ======
-pithos                  ✔         **✘**
-file                    **✘**     ✔
-s3                      **✘**     ✔
-swift                   **✘**     ✔
-======================= ========  ======
-
-**X-Meta-Disk-Format** values are listed at :ref:`disk-format-ref`
-
-**X-Meta-Container-Format** values are listed at :ref:`container-format-ref`
+**X-Image-Meta-Container-Format** values are listed at :ref:`container-format-ref`
 
 **X-Image-Meta-Size** is optional, but should much the actual image file size.
 
@@ -284,15 +222,15 @@ The following is used when the response code is 200:
 ============================= ===================== ======== ======
 Response Header               Description           Plankton Glance
 ============================= ===================== ======== ======
-X-Image-Meta-Id               Auto-generated img id ✔        **✘**
-X-Meta-Image-Name             Img name              ✔        **✘**
-X-Meta-image-Disk-Format      Disk format           ✔        **✘**
-X-Meta-Image-Container-Format Container format      ✔        **✘**
+X-Image-Meta-Id               Unique img id         ✔        **✘**
+X-Image-Meta-Name             Img name              ✔        **✘**
+X-Image-Meta-Disk-Format      Disk format           ✔        **✘**
+X-Image-Meta-Container-Format Container format      ✔        **✘**
 X-Image-Meta-Size             Img file size         ✔        **✘**
 X-Image-Meta-Checksum         Img file MD5 checksum ✔        **✘**
 X-Image-Meta-Location         Pithos+ file location ✔        **✘**
-X-Image-Meta-Created_at       Date of img creation  ✔        **✘**
-X-Image-Meta-Deleted_at       Date of img deletion  ✔        **✘**
+X-Image-Meta-Created-At       Date of img creation  ✔        **✘**
+X-Image-Meta-Deleted-At       Date of img deletion  ✔        **✘*
 X-Image-Meta-Status           Img status            ✔        **✘**
 X-Image-Meta-Is-Public        True if img is public ✔        **✘**
 X-Image-Meta-Owner            Img owner or tentant  ✔        **✘**
@@ -385,6 +323,105 @@ Example Plankton response::
 Retrieve Image Metadata
 -----------------------
 
+This request returns the metadata of an image. Images are identified by their unique image id.
+
+In a typical scenario, client applications would query the server to `List Available Images <#id2>`_ for them and then choose one of the image ids returned.
+
+===================== ====================== ====== ======== ======
+Description           URI                    Method Plankton Glance
+===================== ====================== ====== ======== ======
+List Available Images ``/images/<image-id>`` HEAD   ✔        ✔
+===================== ====================== ====== ======== ======
+
+|
+
+====================  ========================= ======== =========
+Request Header Name   Value                     Plankton Glance
+====================  ========================= ======== =========
+X-Auth-Token          User authentication token required  required
+====================  ========================= ======== =========
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    The request succeeded
+401 (Unauthorized)          Missing or expired user token
+404 (Not Found)             Image not found
+405 (Not Allowed)           Access to that image is not allowed
+500 (Internal Server Error) The request cannot be completed because of an internal error
+=========================== =====================
+
+|
+
+============================= ===================== ======== ======
+Response Header               Description           Plankton Glance
+============================= ===================== ======== ======
+X-Image-Meta-Id               Unique img id         ✔        ✔
+X-Image-Meta-Location         Pithos+ file location ✔        **✘**
+X-Image-Meta-URI              URI of image file     **✘**    ✔
+X-Image-Meta-Name             Img name              ✔        ✔
+X-Image-Meta-Disk-Format      Disk format           ✔        **✘**
+X-Image-Meta-Disk_format      Disk format           **✘**    ✔
+X-Image-Meta-Container-Format Container format      ✔        **✘**
+X-Image-Meta-Container_format Container format      **✘**    ✔
+X-Image-Meta-Size             Img file size         ✔        ✔
+X-Image-Meta-Checksum         Img file MD5 checksum ✔        ✔
+X-Image-Meta-Created-At       Date of img creation  ✔        **✘**
+X-Image-Meta-Created_At       Date of img creation  **✘**    ✔
+X-Image-Meta-Updated-At       Last modification     ✔        **✘**
+X-Image-Meta-Updated_At       Last modification     **✘**    ✔
+X-Image-Meta-Deleted-At       Date of img deletion  ✔        **✘**
+X-Image-Meta-Deleted_At       Date of img deletion  **✘**    ✔
+X-Image-Meta-Status           Img status            ✔        ✔
+X-Image-Meta-Is-Public        True if img is public ✔        ✔
+X-Image-Meta-Min-Ram          Minimum image RAM     **✘**    ✔
+X-Image-Meta-Min-Disk         Minimum disk size     **✘**    ✔
+X-Image-Meta-Owner            Img owner or tentant  ✔        ✔
+X-Image-Meta-Property-*       Custom img properties ✔        ✔
+============================= ===================== ======== ======
+
+**X-Image-Created-At** is the (immutable) date of initial registration, while **X-Image-Meta-Updated-At** indicates the date of last modification of the image (if any).
+
+**X-Image-Meta-Store** values are listed at :ref:`store-ref`
+
+**X-Image-Meta-Disk-Format** values are listed at :ref:`disk-format-ref`
+
+**X-Image-Meta-Container-Format** values are listed at :ref:`container-format-ref`
+
+**X-Image-Meta-Is-Public** values are true or false (case insensitive)
+
+**X-Image-Meta-Property-*** is used as a prefix to set custom, free-form key:value properties on an image, e.g.::
+
+    X-Image-Meta-Property-OS: Debian Linux
+    X-Image-Meta-Property-Users: Root
+
+Example Plankton Headers response::
+
+    x-image-meta-id: 940509eb-eb4f-496c-8443-22ffd24912e9
+    x-image-meta-location: pithos://25cced7-bd53-4145-91ee-cf4737e9fb2/images/some-image.diskdump
+    x-image-meta-name: Debian Desktop
+    x-image-meta-disk-format: diskdump
+    x-image-meta-container-format: bare
+    x-image-meta-size: 3399127040
+    x-image-meta-checksum: d0f28e4d72927c90eadf30917d94d0156781fe1351ed16402b538316d404
+    x-image-meta-created-at: 2013-02-26 12:04:31
+    x-image-meta-updated-at: 2013-02-26 12:05:28
+    x-image-meta-deleted-at: 
+    x-image-meta-status: available
+    x-image-meta-is-public: True
+    x-image-meta-owner: 25cced7-bd53-4145-91ee-cf4737e9fb2
+    x-image-meta-property-partition-table: msdos
+    x-image-meta-property-osfamily: linux
+    x-image-meta-property-sortorder: 2
+    x-image-meta-property-description: Debian 6.0.7 (Squeeze) Desktop
+    x-image-meta-property-os: debian
+    x-image-meta-property-users: root user
+    x-image-meta-property-kernel: 2.6.32
+    x-image-meta-property-root-partition: 1
+    x-image-meta-property-gui: GNOME 2.30.2
+
 Retrieve Raw Image Data
 -----------------------
 
@@ -402,3 +439,84 @@ Remove a Member from an Image
 
 List Shared Images
 ------------------
+
+Index of cross-method variables
+-------------------------------
+
+The following variables affect the behavior of many requests.
+
+.. _id-ref:
+
+Image ID
+^^^^^^^^
+
+The image id is a unique identifier for an image stored in Plankton or Glance.
+
+======================= ========  ======
+Image-Id                Plankton  Glance
+======================= ========  ======
+Automatically generated ✔         **✘**
+Can be provided by user **✘**     ✔
+======================= ========  ======
+
+.. _location-ref:
+
+Image File Location at a Pithos+ Server
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To refer to a pithos location file, use the following format::
+
+    pithos://<unique-user-id>/<container>/<object-path>
+
+The terms unique-user-id (uuid), container and object-path are used as defined in `Pithos <pithos.html>`_ context.
+
+.. _container-format-ref:
+
+Container format
+^^^^^^^^^^^^^^^^
+
+===== ================================= ======== ======
+Value Description                       Plankton Glance
+===== ================================= ======== ======
+aki   Amazon kernel image               ✔        ✔
+ari   Amazon ramdisk image              ✔        ✔
+ami   Amazon machine image              ✔        ✔
+bare  no container or metadata envelope default  default
+ovf   Open Virtualization Format        ✔        ✔
+===== ================================= ======== ======
+
+.. _disk-format-ref:
+
+Disk format
+^^^^^^^^^^^
+
+======== ================================= ======== ======
+Value    Description                       Plankton Glance
+======== ================================= ======== ======
+diskdump Any disk image dump               default  **✘**
+extdump  EXT3 image                        ✔        **✘**
+ntfsdump NTFS image                        ✔        **✘**
+raw      Unstructured disk image           **✘**    ✔
+vhd      (VMWare,Xen,MS,VirtualBox, a.o.)  **✘**    ✔
+vmdk     Another common disk format        **✘**    ✔
+vdi      (VirtualBox, QEMU)                **✘**    ✔
+iso      optical disc (e.g. CDROM)         **✘**    ✔
+qcow2    (QEMU)                            **✘**    ✔
+aki      Amazon kernel image               **✘**    ✔
+ari      Amazon ramdisk image              **✘**    ✔
+ami      Amazon machine image              **✘**    ✔
+======== ================================= ======== ======
+
+.. _store-ref:
+
+Store types
+^^^^^^^^^^^
+
+======================= ========  ======
+X-Image-Meta-Store      Plankton  Glance
+======================= ========  ======
+pithos                  ✔         **✘**
+file                    **✘**     ✔
+s3                      **✘**     ✔
+swift                   **✘**     ✔
+======================= ========  ======

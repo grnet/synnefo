@@ -55,7 +55,7 @@ from .models import (Holding,
 class QuotaholderDjangoDBCallpoint(object):
 
     def _init_holding(self,
-                      holder, resource, capacity,
+                      holder, resource, limit,
                       imported_min, imported_max,
                       flags):
         try:
@@ -64,7 +64,7 @@ class QuotaholderDjangoDBCallpoint(object):
         except Holding.DoesNotExist:
             h = Holding(holder=holder, resource=resource)
 
-        h.capacity = capacity
+        h.limit = limit
         h.flags = flags
         h.imported_min = imported_min
         h.imported_max = imported_max
@@ -75,11 +75,11 @@ class QuotaholderDjangoDBCallpoint(object):
         append = rejected.append
 
         for idx, sfh in enumerate(init_holding):
-            (holder, resource, capacity,
+            (holder, resource, limit,
              imported_min, imported_max,
              flags) = sfh
 
-            self._init_holding(holder, resource, capacity,
+            self._init_holding(holder, resource, limit,
                                imported_min, imported_max,
                                flags)
         if rejected:
@@ -181,7 +181,7 @@ class QuotaholderDjangoDBCallpoint(object):
             except:
                 continue
 
-            append((h.holder, h.source, h.resource, h.capacity,
+            append((h.holder, h.source, h.resource, h.limit,
                     h.imported_min, h.imported_max,
                     h.flags))
 
@@ -202,7 +202,7 @@ class QuotaholderDjangoDBCallpoint(object):
             holdings[(h.holder, h.source, h.resource)] = h
 
         for (holder, source, resource,
-             capacity,
+             limit,
              flags) in set_quota:
 
             try:
@@ -214,7 +214,7 @@ class QuotaholderDjangoDBCallpoint(object):
                             resource=resource,
                             flags=flags)
 
-            h.capacity = capacity
+            h.limit = limit
             h.save()
             holdings[(holder, source, resource)] = h
 
@@ -241,24 +241,24 @@ class QuotaholderDjangoDBCallpoint(object):
 
         for removing, source in [(True, sub_quota), (False, add_quota)]:
             for (holder, resource,
-                 capacity,
+                 limit,
                  ) in source:
 
                 try:
                     h = holdings[(holder, resource)]
-                    current_capacity = h.capacity
+                    current_limit = h.limit
                 except KeyError:
                     if removing:
                         append((holder, resource))
                         continue
 
                     h = Holding(holder=holder, resource=resource, flags=0)
-                    current_capacity = 0
+                    current_limit = 0
 
-                h.capacity = (current_capacity - capacity if removing else
-                              current_capacity + capacity)
+                h.limit = (current_limit - limit if removing else
+                           current_limit + limit)
 
-                if h.capacity < 0:
+                if h.limit < 0:
                     append((holder, resource))
                     continue
 
@@ -343,7 +343,7 @@ class QuotaholderDjangoDBCallpoint(object):
             'holder':              holding.holder,
             'source':              holding.source,
             'resource':            holding.resource,
-            'capacity':            holding.capacity,
+            'limit':               holding.limit,
             'imported_min':        holding.imported_min,
             'imported_max':        holding.imported_max,
             'delta_quantity':      provision.quantity,

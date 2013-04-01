@@ -77,8 +77,8 @@ class Import(Operation):
         imported_max = holding.imported_max
         new_imported_max = imported_max + quantity
 
-        capacity = holding.capacity
-        if check and new_imported_max > capacity:
+        limit = holding.limit
+        if check and new_imported_max > limit:
             holder = holding.holder
             resource = holding.resource
             m = ("%s has not enough capacity of %s." % (holder, resource))
@@ -87,7 +87,7 @@ class Import(Operation):
                                   resource=resource,
                                   requested=quantity,
                                   current=imported_max,
-                                  limit=capacity)
+                                  limit=limit)
 
         holding.imported_max = new_imported_max
         holding.save()

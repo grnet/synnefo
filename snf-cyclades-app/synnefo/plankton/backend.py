@@ -297,7 +297,12 @@ class ImageBackend(object):
         self.backend.close()
 
     @handle_backend_exceptions
-    def delete(self, image_id):
+    def _delete(self, image_id):
+        """Delete an Image.
+
+        This method will delete the Image from the Storage backend.
+
+        """
         image = self.get_image(image_id)
         account, container, object = split_location(image['location'])
         self.backend.delete_object(self.user, account, container, object)
@@ -511,3 +516,17 @@ class ImageBackend(object):
 
         self._update_meta(location, meta)
         return self.get_image(image_id)
+
+    @handle_backend_exceptions
+    def unregister(self, image_id):
+        """Unregister an image."""
+        image = self.get_image(image_id)
+        assert image, "Image not found"
+
+        location = image["location"]
+        # Unregister the image by removing all metadata from domain
+        # 'PLANKTON_DOMAIN'
+        meta = self._get_meta(location)
+        for k in meta.keys():
+            meta[k] = ""
+        self._update_meta(location, meta, False)

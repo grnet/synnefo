@@ -291,3 +291,10 @@ class PlanktonTest(BaseAPITest):
     def test_get_image(self, backend):
         response = self.get("/plankton/images/123")
         self.assertEqual(response.status_code, 501)
+
+    @assert_backend_closed
+    def test_delete_image(self, backend):
+        response = self.delete("/plankton/images/123")
+        self.assertEqual(response.status_code, 204)
+        backend.return_value.unregister.assert_called_once_with('123')
+        backend.return_value._delete.assert_not_called()

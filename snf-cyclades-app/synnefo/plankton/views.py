@@ -155,6 +155,25 @@ def add_image(request):
     return _create_image_response(image)
 
 
+@plankton_method("DELETE")
+def delete_image(request, image_id):
+    """Delete an Image.
+
+    This API call is not described in the Openstack Glance API.
+
+    Implementation notes:
+      * The implementation does not delete the Image from the storage
+        backend. Instead it unregisters the image by removing all the
+        metadata from the plankton metadata domain.
+
+    """
+    log.info("delete_image '%s'" % image_id)
+    userid = request.user_uniq
+    request.backend.unregister(image_id)
+    log.info("User '%s' deleted image '%s'" % (userid, image_id))
+    return HttpResponse(status=204)
+
+
 @plankton_method('PUT')
 def add_image_member(request, image_id, member):
     """Add a member to an image

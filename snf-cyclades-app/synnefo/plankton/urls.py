@@ -47,14 +47,16 @@ def demux(request):
 
 
 def demux_image(request, image_id):
-    if request.method == 'GET':
+    if request.method == "GET":
         return views.get_image(request, image_id)
-    elif request.method == 'HEAD':
+    elif request.method == "HEAD":
         return views.get_image_meta(request, image_id)
-    elif request.method == 'PUT':
+    elif request.method == "PUT":
         return views.update_image(request, image_id)
+    elif request.method == "DELETE":
+        return views.delete_image(request, image_id)
     else:
-        return HttpResponseNotAllowed(['GET', 'HEAD', 'PUT'])
+        return HttpResponseNotAllowed(["GET", "HEAD", "PUT", "DELETE"])
 
 
 def demux_image_members(request, image_id):

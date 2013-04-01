@@ -27,7 +27,7 @@ Description                               URI                                   
 `Retrieve Image Metadata <#id10>`_        ``/images/<img-id>``                  HEAD   ✔        ✔
 `Retrieve Raw Image Data <#id12>`_        ``/images/<img-id>``                  GET    **✘**    ✔
 `List Image Memberships <#id14>`_         ``/images/<img-id>/members``          GET    ✔        ✔
-`Replace a Membership List <#id10>`_      ``/images/<img-id>/members``          PUT    ✔        ✔
+`Replace a Membership List <#id15>`_      ``/images/<img-id>/members``          PUT    ✔        ✔
 `Add a Member to an Image <#id11>`_       ``/images/<img-id>/members/<member>`` PUT    ✔        ✔
 `Remove a Member from an Image <#id12>`_  ``/images/<img-id>/members/<member>`` DELETE ✔        ✔
 `List Shared Images <#id13>`_             ``/shared-images/<member>``           GET    ✔        ✔
@@ -412,6 +412,8 @@ URI                    Method Plankton Glance
 ``/images/<image-id>`` HEAD   ✔        ✔
 ====================== ====== ======== ======
 
+**image-id** is explained at :ref:`id-ref`
+
 |
 
 ====================  ========================= ======== =========
@@ -519,6 +521,8 @@ URI                            Method Plankton Glance
 ``/images/<image-id>/members`` GET    ✔        ✔
 ============================== ====== ======== ======
 
+**image-id** is explained at :ref:`id-ref`
+
 |
 
 ====================  ========================= ======== =========
@@ -562,6 +566,58 @@ Example Plankton response::
 
 Replace a Membership List
 -------------------------
+
+This request replaces the list of users who can access a registered image. The term "replace" means that the old permission list of the image is abandoned (old permission settings are lost).
+
+============================== ====== ======== ======
+URI                            Method Plankton Glance
+============================== ====== ======== ======
+``/images/<image-id>/members`` PUT    ✔        ✔
+============================== ====== ======== ======
+
+**image-id** is explained at :ref:`id-ref`
+
+|
+
+====================  ========================= ======== =========
+Request Header Name   Value                     Plankton Glance
+====================  ========================= ======== =========
+X-Auth-Token          User authentication token required  required
+====================  ========================= ======== =========
+|
+
+Request data should be json-formated. It must consist of a *memberships* field which is a list of members with the following fields:
+
+================ ===================== ======== ======
+Name             Description           Plankton Glance
+================ ===================== ======== ======
+member_id        uuid (user id)        ✔        ✔
+can_share        Member can share img  ignored  ✔
+================ ===================== ======== ======
+
+**can_share** is optional and ignored in Plankton.
+
+A request data example::
+
+    {'memberships': [
+        {'member_id': 'uuid-1',
+        'can_share': false},
+        {'member_id': 'uuid-2'},
+        ...
+    ]}
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    The request succeeded
+400 (Bad Request)           Invalid format for request data
+401 (Unauthorized)          Missing or expired user token
+404 (Not Found)             Image not found
+405 (Not Allowed)           Access to that image is not allowed
+500 (Internal Server Error) The request cannot be completed because of an internal error
+=========================== =====================
 
 Add a Member to an Image
 ------------------------

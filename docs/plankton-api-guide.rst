@@ -24,7 +24,7 @@ Description                                      URI                            
 `Update an Image <#id6>`_                        ``/images``                           PUT    **✘**    ✔
 `List Available Images in Detail <#id7>`_        ``/images/detail``                    GET    ✔        ✔
 `Retrieve Image Metadata <#id10>`_               ``/images/<img-id>``                  HEAD   ✔        ✔
-`Retrieve Raw Image Data <#id8>`_                ``/images/<img-id>``                  GET    **✘**    ✔
+`Retrieve Raw Image Data <#id12>`_               ``/images/<img-id>``                  GET    **✘**    ✔
 `List Image Memberships <#id9>`_                 ``/images/<img-id>/members``          GET    ✔        ✔
 `Replace a Membership List of an Image <#id10>`_ ``/images/<img-id>/members``          PUT    ✔        ✔
 `Add a Member to an Image <#id11>`_              ``/images/<img-id>/members/<member>`` PUT    ✔        ✔
@@ -425,6 +425,10 @@ Example Plankton Headers response::
 Retrieve Raw Image Data
 -----------------------
 
+In **Plankton**, the raw image data is stored at a `Pithos <pithos.html>`_ server and it can be downloaded from the Pithos web UI, with a `client <https://okeanos.grnet.gr/services/pithos/>`_ or with `kamaki <http://www.synnefo.org/docs/kamaki/latest/index.html>`_. The location of an image file can be retrieved from the *X-Image-Meta-Location* header field (see `Retrieve Image Meta <#id10>`_)
+
+In **Glance**, the raw image can be downloaded with a GET request on ``/images/<image-id>``.
+
 List Image Memberships
 ----------------------
 
@@ -440,8 +444,8 @@ Remove a Member from an Image
 List Shared Images
 ------------------
 
-Index of cross-method variables
--------------------------------
+Index of variables
+------------------
 
 The following variables affect the behavior of many requests.
 

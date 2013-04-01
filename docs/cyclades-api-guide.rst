@@ -8,7 +8,7 @@ API Guide
 This is the guide to the REST API of the synnefo Compute Service.
 It is meant for users wishing to make calls to the REST API directly.
 
-The :ref:`kamaki <http://docs.dev.grnet.gr/kamaki>` command-line client
+The `kamaki <http://docs.dev.grnet.gr/kamaki>`_ command-line client
 and associated python library can be used instead of making direct calls to
 :ref:`cyclades <cyclades>`.
 

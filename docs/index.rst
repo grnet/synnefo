@@ -10,7 +10,7 @@ Welcome to Synnefo's documentation
 
 | You can see Synnefo in action, powering GRNET's
   `~okeanos public cloud service <http://okeanos.io>`_.
-| It is a collection of components (snf-*), most of them written in python, that
+| It is a collection of components (``snf-*``), most of them written in python, that
   are used as the building bricks to provide the following services:
 
 .. toctree::

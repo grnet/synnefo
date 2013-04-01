@@ -307,7 +307,7 @@ X-Image-Meta-Size             Img file size         ✔        **✘**
 X-Image-Meta-Checksum         Img file MD5 checksum ✔        **✘**
 X-Image-Meta-Location         Pithos+ file location ✔        **✘**
 X-Image-Meta-Created-At       Date of img creation  ✔        **✘**
-X-Image-Meta-Deleted-At       Date of img deletion  ✔        **✘*
+X-Image-Meta-Deleted-At       Date of img deletion  ✔        **✘**
 X-Image-Meta-Status           Img status            ✔        **✘**
 X-Image-Meta-Is-Public        True if img is public ✔        **✘**
 X-Image-Meta-Owner            Img owner or tentant  ✔        **✘**
@@ -584,6 +584,7 @@ Request Header Name   Value                     Plankton Glance
 ====================  ========================= ======== =========
 X-Auth-Token          User authentication token required  required
 ====================  ========================= ======== =========
+
 |
 
 Request data should be json-formated. It must consist of a *memberships* field which is a list of members with the following fields:
@@ -641,6 +642,7 @@ Request Header Name   Value                     Plankton Glance
 ====================  ========================= ======== =========
 X-Auth-Token          User authentication token required  required
 ====================  ========================= ======== =========
+
 |
 
 =========================== =====================
@@ -675,6 +677,7 @@ Request Header Name   Value                     Plankton Glance
 ====================  ========================= ======== =========
 X-Auth-Token          User authentication token required  required
 ====================  ========================= ======== =========
+
 |
 
 =========================== =====================
@@ -707,6 +710,7 @@ Request Header Name   Value                     Plankton Glance
 ====================  ========================= ======== =========
 X-Auth-Token          User authentication token required  required
 ====================  ========================= ======== =========
+
 |
 
 =========================== =====================

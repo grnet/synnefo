@@ -29,8 +29,8 @@ Description                               URI                                   
 `List Image Memberships <#id14>`_         ``/images/<img-id>/members``          GET    ✔        ✔
 `Replace a Membership List <#id15>`_      ``/images/<img-id>/members``          PUT    ✔        ✔
 `Add a Member to an Image <#id16>`_       ``/images/<img-id>/members/<member>`` PUT    ✔        ✔
-`Remove a Member from an Image <#id12>`_  ``/images/<img-id>/members/<member>`` DELETE ✔        ✔
-`List Shared Images <#id13>`_             ``/shared-images/<member>``           GET    ✔        ✔
+`Remove a Member from an Image <#id17>`_  ``/images/<img-id>/members/<member>`` DELETE ✔        ✔
+`List Shared Images <#id19>`_             ``/shared-images/<member>``           GET    ✔        ✔
 ========================================= ===================================== ====== ======== ======
 
 Authentication
@@ -656,8 +656,87 @@ Return Code                 Description
 Remove a Member from an Image
 -----------------------------
 
+This request ensures that, after a successful call, the user with the given uuid will not have access to that image.
+
+===================================== ====== ======== ======
+URI                                   Method Plankton Glance
+===================================== ====== ======== ======
+``/images/<image-id>/members/<uuid>`` DELETE ✔        ✔
+===================================== ====== ======== ======
+
+**image-id** is explained at :ref:`id-ref`
+
+**uuid** is the unique user id of the user (see `Astakos API <astakos-api-guide.html>`_ on how to handle it)
+
+|
+
+====================  ========================= ======== =========
+Request Header Name   Value                     Plankton Glance
+====================  ========================= ======== =========
+X-Auth-Token          User authentication token required  required
+====================  ========================= ======== =========
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+204 (No Content)            The request succeeded
+401 (Unauthorized)          Missing or expired user token
+404 (Not Found)             Image not found
+405 (Not Allowed)           Access to that image is not allowed
+500 (Internal Server Error) The request cannot be completed because of an internal error
+=========================== =====================
+
 List Shared Images
 ------------------
+
+This request returns a list of the images that are shared with a given user.
+
+========================= ====== ======== ======
+URI                       Method Plankton Glance
+========================= ====== ======== ======
+``/shared-images/<uuid>`` DELETE ✔        ✔
+========================= ====== ======== ======
+
+**uuid** is the unique user id of the user (see `Astakos API <astakos-api-guide.html>`_ on how to handle it)
+
+|
+
+====================  ========================= ======== =========
+Request Header Name   Value                     Plankton Glance
+====================  ========================= ======== =========
+X-Auth-Token          User authentication token required  required
+====================  ========================= ======== =========
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    The request succeeded
+401 (Unauthorized)          Missing or expired user token
+404 (Not Found)             Image not found
+405 (Not Allowed)           Access to that image is not allowed
+500 (Internal Server Error) The request cannot be completed because of an internal error
+=========================== =====================
+
+In case of a 200 response, the response data is json-formated list of images that are shared with given user
+
+================ ===================== ======== ======
+Name             Description           Plankton Glance
+================ ===================== ======== ======
+image_id         The Image ID          ✔        ✔
+can_share        Member can share img  false    ✔
+================ ===================== ======== ======
+
+**can_share** in Plankton is always false and is returned for compatibility reasons.
+
+Example Plankton response::
+
+    {'shared_images': [
+        {'image_id': 'th3-r3qu3573d-1m4g3-1d',
+        'can_share': false},
+        ...
+    ]}
 
 Index of variables
 ------------------

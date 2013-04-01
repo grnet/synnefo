@@ -16,21 +16,22 @@ This document's goals are:
 
 Image ReST API
 --------------
-================================================ ===================================== ====== ======== ======
-Description                                      URI                                   Method Plankton Glance
-================================================ ===================================== ====== ======== ======
-`List Available Images <#id2>`_                  ``/images``                           GET    ✔        ✔
-`Add or update an Image <#id3>`_                 ``/images``                           POST   ✔        ✔
-`Update an Image <#id6>`_                        ``/images``                           PUT    **✘**    ✔
-`List Available Images in Detail <#id7>`_        ``/images/detail``                    GET    ✔        ✔
-`Retrieve Image Metadata <#id10>`_               ``/images/<img-id>``                  HEAD   ✔        ✔
-`Retrieve Raw Image Data <#id12>`_               ``/images/<img-id>``                  GET    **✘**    ✔
-`List Image Memberships <#id14>`_                ``/images/<img-id>/members``          GET    ✔        ✔
-`Replace a Membership List of an Image <#id10>`_ ``/images/<img-id>/members``          PUT    ✔        ✔
-`Add a Member to an Image <#id11>`_              ``/images/<img-id>/members/<member>`` PUT    ✔        ✔
-`Remove a Member from an Image <#id12>`_         ``/images/<img-id>/members/<member>`` DELETE ✔        ✔
-`List Shared Images <#id13>`_                    ``/shared-images/<member>``           GET    ✔        ✔
-================================================ ===================================== ====== ======== ======
+========================================= ===================================== ====== ======== ======
+Description                               URI                                   Method Plankton Glance
+========================================= ===================================== ====== ======== ======
+`List Available Images <#id2>`_           ``/images``                           GET    ✔        ✔
+`List Available Images in Detail <#id3>`_ ``/images/detail``                    GET    ✔        ✔
+`Add or update an Image <#id6>`_          ``/images``                           POST   ✔        ✔
+`Update an Image <#id9>`_                 ``/images``                           PUT    **✘**    ✔
+\                                         ``/images/<img-id>``                  PUT    ✔        **✘**
+`Retrieve Image Metadata <#id10>`_        ``/images/<img-id>``                  HEAD   ✔        ✔
+`Retrieve Raw Image Data <#id12>`_        ``/images/<img-id>``                  GET    **✘**    ✔
+`List Image Memberships <#id14>`_         ``/images/<img-id>/members``          GET    ✔        ✔
+`Replace a Membership List <#id10>`_      ``/images/<img-id>/members``          PUT    ✔        ✔
+`Add a Member to an Image <#id11>`_       ``/images/<img-id>/members/<member>`` PUT    ✔        ✔
+`Remove a Member from an Image <#id12>`_  ``/images/<img-id>/members/<member>`` DELETE ✔        ✔
+`List Shared Images <#id13>`_             ``/shared-images/<member>``           GET    ✔        ✔
+========================================= ===================================== ====== ======== ======
 
 Authentication
 --------------
@@ -137,6 +138,82 @@ Example Plankton response:
         "size": 761368576
     }]
 
+List Available Images in Detail
+-------------------------------
+
+This request returns the same list of images as in `List Available Images <#id2>`_, but the results are reacher in metadata.
+
+================== ====== ======== ======
+URI                Method Plankton Glance
+================== ====== ======== ======
+``/images/detail`` GET    ✔        ✔
+================== ====== ======== ======
+
+**Request parameters** and **headers** as well as **response headers** and **error codes** are exactly the same as in `List Available Images <#id2>`_, both syntactically and semantically.
+
+
+The response data is a list of images in json format containing the fields presented bellow
+
+================ ===================== ======== ======
+Name             Description           Plankton Glance
+================ ===================== ======== ======
+id               A unique image id     ✔        **✘**
+uri              Unique id in URI form **✘**    ✔
+location         Pithos+ file location ✔        **✘**
+name             The name of the image ✔        ✔
+status           ???The VM status???   ✔        **✘**
+disk_format      The disc format       ✔        ✔
+container_format The container format  ✔        ✔
+size             Image size in bytes   ✔        ✔
+checksum         file MD5 checksum     ✔        ✔
+created_at       Timestamp of creation ✔        ✔
+updated_at       Timestamp of update   ✔        ✔
+deleted_at       Timestamp of deletion ✔        ✔
+is_public        True if img is public ✔        ✔
+min_ram          Minimum ram required  **✘**    ✔
+min_disk         Maximum ram required  **✘**    ✔
+owner            Image owner           ✔        ✔
+properties       Custom properties     ✔        ✔
+================ ===================== ======== ======
+
+|
+
+Example Plankton response::
+
+    [{
+        "status": "available", 
+        "location": "pithos://u53r-1d/images/my/path/example_image_build.diskdump"
+        "name": "ubuntu", 
+        "disk_format": "diskdump", 
+        "container_format": "bare", 
+        "created_at": "2013-03-29 14:14:34",
+        "deleted_at": "",
+        "id": "5583ffe1-5273-4c84-9e32-2fbe476bd7b7",
+        "size": 2622562304,
+        "is_public": "True",
+        "checksum": "a387aaaae583bc65daacf12d6be502bd7cfbbb254dcd452f92ca31f4c06a9208",
+        "properties": {
+            "partition_table": "msdos", 
+            "kernel": "3.8.3", 
+            "osfamily": "linux", 
+            "users": "root user", 
+            "gui": "GNOME 3.4.2", 
+            "sortorder": "5", 
+            "os": "fedora", 
+            "root_partition": "1", 
+            "description": "Fedora release 17 (Beefy Miracle)"}
+    }, {
+        "location": "pithos://0th3r-u53r-1d/images/ubuntu_10_04.diskdump"
+        "status": "available", 
+        "name": "Ubuntu-10.04", 
+        "disk_format": "diskdump", 
+        "container_format": "bare", 
+        "id": "907ef618-c03a-4473-9914-9348e12890c1", 
+        "size": 761368576
+        "created_at": "2013-03-29 14:14:34",
+        "deleted_at": ""
+    }]
+
 Add or update an image
 ----------------------
 
@@ -240,85 +317,87 @@ X-Image-Meta-Property-*       Custom img properties ✔        **✘**
 Update an Image
 ---------------
 
-In Plankton, the ReST API desctiption details above not only cover addition of new images, but also updating an existing one. An image is identified by its location at the Pithos server (X-Image-Meta-Location). For example, to alter the name of an image, add an image with the same X-Image-Meta-Location header but a different X-Image-Meta-Name header. An update overwrites the old values. An omission of a header option is equivalent to the removal of the corresponding property or metadata from the image, provided it is allowed for an image to exist without this specific metadatum.
+In Plankton, an image can be updated either by re-registering with different metadata, or by using the request described in the present subsection.
 
-Glance manages image updates by compining *PUT* with semantics similar to *POST* for the same URI. Check the `Glance documentation <http://docs.openstack.org/developer/glance/glanceapi.html#update-an-image>`_ for more details on Glance implementation.
+In Glance, an update is implemented as a *PUT* request on ``/images`` URI. The method described bellow is not part of the Glance API.
 
-List Available Images in Detail
--------------------------------
+====================== ====== ======== ======
+URI                    Method Plankton Glance
+====================== ====== ======== ======
+``/images``            PUT    **✘**    ✔
+``/images/<image-id>`` PUT    ✔        **✘**
+====================== ====== ======== ======
 
-This request returns the same list of images as in `List Available Images <#id2>`_, but the results are reacher in metadata.
+The following refers only to the Plankton implementation.
 
-================== ====== ======== ======
-URI                Method Plankton Glance
-================== ====== ======== ======
-``/images/detail`` GET    ✔        ✔
-================== ====== ======== ======
-
-**Request parameters** and **headers** as well as **response headers** and **error codes** are exactly the same as in `List Available Images <#id2>`_, both syntactically and semantically.
-
-
-The response data is a list of images in json format containing the fields presented bellow
-
-================ ===================== ======== ======
-Name             Description           Plankton Glance
-================ ===================== ======== ======
-id               A unique image id     ✔        **✘**
-uri              Unique id in URI form **✘**    ✔
-location         Pithos+ file location ✔        **✘**
-name             The name of the image ✔        ✔
-status           ???The VM status???   ✔        **✘**
-disk_format      The disc format       ✔        ✔
-container_format The container format  ✔        ✔
-size             Image size in bytes   ✔        ✔
-checksum         file MD5 checksum     ✔        ✔
-created_at       Timestamp of creation ✔        ✔
-updated_at       Timestamp of update   ✔        ✔
-deleted_at       Timestamp of deletion ✔        ✔
-is_public        True if img is public ✔        ✔
-min_ram          Minimum ram required  **✘**    ✔
-min_disk         Maximum ram required  **✘**    ✔
-owner            Image owner           ✔        ✔
-properties       Custom properties     ✔        ✔
-================ ===================== ======== ======
+**image-id** is explained at :ref:`id-ref`
 
 |
 
-Example Plankton response::
+============================= =========================
+Request Header Name           Value                    
+============================= =========================
+X-Auth-Token                  User authentication token
+X-Image-Meta-Name             New image name           
+X-Image-Meta-Disk-Format      New disk format          
+X-Image-Meta-Container-Format New container format     
+X-Image-Meta-Status           New image status         
+X-Image-Meta-Is-Public        (un)publish the image    
+X-Image-Meta-Owner            Set an owner             
+X-Image-Meta-Property-*       Add / modify properties  
+============================= =========================
 
-    [{
-        "status": "available", 
-        "location": "pithos://u53r-1d/images/my/path/example_image_build.diskdump"
-        "name": "ubuntu", 
-        "disk_format": "diskdump", 
-        "container_format": "bare", 
-        "created_at": "2013-03-29 14:14:34",
-        "deleted_at": "",
-        "id": "5583ffe1-5273-4c84-9e32-2fbe476bd7b7",
-        "size": 2622562304,
-        "is_public": "True",
-        "checksum": "a387aaaae583bc65daacf12d6be502bd7cfbbb254dcd452f92ca31f4c06a9208",
-        "properties": {
-            "partition_table": "msdos", 
-            "kernel": "3.8.3", 
-            "osfamily": "linux", 
-            "users": "root user", 
-            "gui": "GNOME 3.4.2", 
-            "sortorder": "5", 
-            "os": "fedora", 
-            "root_partition": "1", 
-            "description": "Fedora release 17 (Beefy Miracle)"}
-    }, {
-        "location": "pithos://0th3r-u53r-1d/images/ubuntu_10_04.diskdump"
-        "status": "available", 
-        "name": "Ubuntu-10.04", 
-        "disk_format": "diskdump", 
-        "container_format": "bare", 
-        "id": "907ef618-c03a-4473-9914-9348e12890c1", 
-        "size": 761368576
-        "created_at": "2013-03-29 14:14:34",
-        "deleted_at": ""
-    }]
+**X-Image-Meta-Disk-Format** values are listed at :ref:`disk-format-ref`
+
+**X-Image-Meta-Container-Format** values are listed at :ref:`container-format-ref`
+
+**X-Image-Meta-Size** is optional, but should much the actual image file size.
+
+**X-Image-Meta-Is-Public** values are true or false (case insensitive)
+
+**X-Image-Meta-Property-*** is used as a prefix to update image property values, or set some extra proeperties. If a registered image already contains some custom properties that are not addressed in the update request, these properties will remain untouched. For example::
+
+    X-Image-Meta-Property-OS: Debian Linux
+    X-Image-Meta-Property-Users: Root
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    The request succeeded
+400 (Bad Request)           
+\                           Illegal header value
+\                           Invalid size or checksum
+401 (Unauthorized)          Missing or expired user token
+404 (Not found)             Image not found
+405 (Not allowed)           Current user does not have permission to change the image
+500 (Internal Server Error) The request cannot be completed because of an internal error
+=========================== =====================
+
+|
+
+The following is received when the response code is 200:
+
+============================= =====================
+Response Header               Description          
+============================= =====================
+X-Image-Meta-Id               Unique img id        
+X-Image-Meta-Name             Img name             
+X-Image-Meta-Disk-Format      Disk format          
+X-Image-Meta-Container-Format Container format     
+X-Image-Meta-Size             Img file size        
+X-Image-Meta-Checksum         Img file MD5 checksum
+X-Image-Meta-Location         Pithos+ file location
+X-Image-Meta-Created-At       Date of img creation 
+X-Image-Meta-Deleted-At       Date of img deletion 
+X-Image-Meta-Status           Img status           
+X-Image-Meta-Is-Public        True if img is public
+X-Image-Meta-Owner            Img owner or tentant 
+X-Image-Meta-Property-*       Custom img properties
+============================= =====================
+
+.. hint:: In Plankton, use POST to completely reset all image properties and metadata, but use PUT to update a few values without affecting the rest.
 
 Retrieve Image Metadata
 -----------------------
@@ -467,7 +546,7 @@ The response data is a list of users (members) who can access this image
 ================ ===================== ======== ======
 Name             Description           Plankton Glance
 ================ ===================== ======== ======
-member_id        User                  ✔        ✔
+member_id        uuid (user id)        ✔        ✔
 can_share        Member can share img  false    ✔
 ================ ===================== ======== ======
 
@@ -476,13 +555,13 @@ can_share        Member can share img  false    ✔
 Example Plankton response::
 
     {'members': [
-        {'member_id': '<uuid-1>',
+        {'member_id': 'th15-4-u53r-1d-fr0m-p1th05',
         'can_share': false},
         ...
     ]}
 
-Replace a Membership List for an Image
---------------------------------------
+Replace a Membership List
+-------------------------
 
 Add a Member to an Image
 ------------------------

@@ -121,6 +121,7 @@ They are also available from our apt repository: ``apt.okeanos.grnet.gr``
  * `snf-pithos-webclient <http://docs.dev.grnet.gr/pithos-webclient/latest/index.html>`_
  * `snf-cyclades-app <http://docs.dev.grnet.gr/snf-cyclades-app/latest/index.html>`_
  * `snf-cyclades-gtools <http://docs.dev.grnet.gr/snf-cyclades-gtools/latest/index.html>`_
+ * `snf-astakos-client <http://docs.dev.grnet.gr/snf-astakos-client/latest/index.html>`_
  * `snf-vncauthproxy <https://code.grnet.gr/projects/vncauthproxy>`_
  * `snf-image <https://code.grnet.gr/projects/snf-image/wiki/>`_ 
  * `snf-image-creator <http://docs.dev.grnet.gr/snf-image-creator/latest/index.html>`_

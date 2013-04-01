@@ -56,6 +56,7 @@ import warnings
 from operator import itemgetter
 from time import gmtime, strftime
 from functools import wraps, partial
+from synnefo.api import faults
 
 from django.conf import settings
 
@@ -284,7 +285,8 @@ class ImageBackend(object):
     @handle_backend_exceptions
     def add_user(self, image_id, user):
         image = self.get_image(image_id)
-        assert image, "Image not found"
+        if not image:
+            raise faults.ItemNotFound
 
         location = image['location']
         permissions = self._get_permissions(location)
@@ -394,7 +396,8 @@ class ImageBackend(object):
 
     def list_users(self, image_id):
         image = self.get_image(image_id)
-        assert image, "Image not found"
+        if not image:
+            raise faults.ItemNotFound
 
         permissions = self._get_permissions(image['location'])
         return [user for user in permissions.get('read', []) if user != '*']
@@ -471,7 +474,8 @@ class ImageBackend(object):
     @handle_backend_exceptions
     def remove_user(self, image_id, user):
         image = self.get_image(image_id)
-        assert image, "Image not found"
+        if not image:
+            raise faults.ItemNotFound
 
         location = image['location']
         permissions = self._get_permissions(location)
@@ -484,7 +488,8 @@ class ImageBackend(object):
     @handle_backend_exceptions
     def replace_users(self, image_id, users):
         image = self.get_image(image_id)
-        assert image, "Image not found"
+        if not image:
+            raise faults.ItemNotFound
 
         location = image['location']
         permissions = self._get_permissions(location)
@@ -497,6 +502,8 @@ class ImageBackend(object):
     def update(self, image_id, params):
         image = self.get_image(image_id)
         assert image, "Image not found"
+        if not image:
+            raise faults.ItemNotFound
 
         location = image['location']
         is_public = params.pop('is_public', None)
@@ -521,7 +528,8 @@ class ImageBackend(object):
     def unregister(self, image_id):
         """Unregister an image."""
         image = self.get_image(image_id)
-        assert image, "Image not found"
+        if not image:
+            raise faults.ItemNotFound
 
         location = image["location"]
         # Unregister the image by removing all metadata from domain

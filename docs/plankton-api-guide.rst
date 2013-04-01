@@ -28,7 +28,7 @@ Description                               URI                                   
 `Retrieve Raw Image Data <#id12>`_        ``/images/<img-id>``                  GET    **✘**    ✔
 `List Image Memberships <#id14>`_         ``/images/<img-id>/members``          GET    ✔        ✔
 `Replace a Membership List <#id15>`_      ``/images/<img-id>/members``          PUT    ✔        ✔
-`Add a Member to an Image <#id11>`_       ``/images/<img-id>/members/<member>`` PUT    ✔        ✔
+`Add a Member to an Image <#id16>`_       ``/images/<img-id>/members/<member>`` PUT    ✔        ✔
 `Remove a Member from an Image <#id12>`_  ``/images/<img-id>/members/<member>`` DELETE ✔        ✔
 `List Shared Images <#id13>`_             ``/shared-images/<member>``           GET    ✔        ✔
 ========================================= ===================================== ====== ======== ======
@@ -611,7 +611,7 @@ A request data example::
 =========================== =====================
 Return Code                 Description
 =========================== =====================
-200 (OK)                    The request succeeded
+204 (No Content)            The request succeeded
 400 (Bad Request)           Invalid format for request data
 401 (Unauthorized)          Missing or expired user token
 404 (Not Found)             Image not found
@@ -621,6 +621,37 @@ Return Code                 Description
 
 Add a Member to an Image
 ------------------------
+
+This request appends a user id to the list of users who can access a registered image.
+
+===================================== ====== ======== ======
+URI                                   Method Plankton Glance
+===================================== ====== ======== ======
+``/images/<image-id>/members/<uuid>`` PUT    ✔        ✔
+===================================== ====== ======== ======
+
+**image-id** is explained at :ref:`id-ref`
+
+**uuid** is the unique user id of the user (see `Astakos API <astakos-api-guide.html>`_ on how to handle it)
+
+|
+
+====================  ========================= ======== =========
+Request Header Name   Value                     Plankton Glance
+====================  ========================= ======== =========
+X-Auth-Token          User authentication token required  required
+====================  ========================= ======== =========
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+204 (No Content)            The request succeeded
+401 (Unauthorized)          Missing or expired user token
+404 (Not Found)             Image not found
+405 (Not Allowed)           Access to that image is not allowed
+500 (Internal Server Error) The request cannot be completed because of an internal error
+=========================== =====================
 
 Remove a Member from an Image
 -----------------------------

@@ -1,4 +1,5 @@
 from django.conf import settings
+from synnefo_branding import settings as synnefo_settings
 
 # Set the expiration time of newly created auth tokens
 # to be this many hours after their creation time.
@@ -45,7 +46,7 @@ MODERATION_ENABLED = getattr(settings, 'ASTAKOS_MODERATION_ENABLED', True)
 BASEURL = getattr(settings, 'ASTAKOS_BASEURL', 'https://accounts.example.synnefo.org')
 
 # Set service name
-SITENAME = getattr(settings, 'ASTAKOS_SITENAME', 'Synnefo Cloud')
+SITENAME = getattr(settings, 'ASTAKOS_SITENAME', synnefo_settings.SERVICE_NAME)
 
 # Set recaptcha keys
 RECAPTCHA_PUBLIC_KEY = getattr(settings, 'ASTAKOS_RECAPTCHA_PUBLIC_KEY', '')
@@ -59,8 +60,8 @@ RECAPTCHA_ENABLED = getattr(settings, 'ASTAKOS_RECAPTCHA_ENABLED', False)
 BILLING_FIELDS = getattr(settings, 'ASTAKOS_BILLING_FIELDS', ['is_active'])
 
 # Queue for billing.
-QUEUE_CONNECTION = getattr(settings, 'ASTAKOS_QUEUE_CONNECTION', None)  # Example: 'rabbitmq://guest:guest@localhost:5672/astakos'
-
+# Example: 'rabbitmq://guest:guest@localhost:5672/astakos'
+QUEUE_CONNECTION = getattr(settings, 'ASTAKOS_QUEUE_CONNECTION', None)  
 # Set where the user should be redirected after logout
 LOGOUT_NEXT = getattr(settings, 'ASTAKOS_LOGOUT_NEXT', '')
 
@@ -106,56 +107,56 @@ LOGGING_LEVEL = getattr(settings, 'ASTAKOS_LOGGING_LEVEL', INFO)
 # Configurable email subjects
 INVITATION_EMAIL_SUBJECT = getattr(
     settings, 'ASTAKOS_INVITATION_EMAIL_SUBJECT',
-    'Invitation to %s alpha2 testing' % SITENAME)
+    'Invitation to %s' % SITENAME)
 GREETING_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_GREETING_EMAIL_SUBJECT',
-                                 'Welcome to %s alpha2 testing' % SITENAME)
+                                 'Welcome to %s' % SITENAME)
 FEEDBACK_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_FEEDBACK_EMAIL_SUBJECT',
-                                 'Feedback from %s alpha2 testing' % SITENAME)
+                                 'Feedback from %s' % SITENAME)
 VERIFICATION_EMAIL_SUBJECT = getattr(
     settings, 'ASTAKOS_VERIFICATION_EMAIL_SUBJECT',
-    '%s alpha2 testing account activation is needed' % SITENAME)
+    '%s account activation is needed' % SITENAME)
 ACCOUNT_CREATION_SUBJECT = getattr(
     settings, 'ASTAKOS_ACCOUNT_CREATION_SUBJECT',
-    '%s alpha2 testing account created (%%(user)s)' % SITENAME)
+    '%s account created (%%(user)s)' % SITENAME)
 GROUP_CREATION_SUBJECT = getattr(
     settings, 'ASTAKOS_GROUP_CREATION_SUBJECT',
-    '%s alpha2 testing group created (%%(group)s)' % SITENAME)
+    '%s group created (%%(group)s)' % SITENAME)
 HELPDESK_NOTIFICATION_EMAIL_SUBJECT = getattr(
     settings, 'ASTAKOS_HELPDESK_NOTIFICATION_EMAIL_SUBJECT',
-    '%s alpha2 testing account activated (%%(user)s)' % SITENAME)
+    '%s account activated (%%(user)s)' % SITENAME)
 EMAIL_CHANGE_EMAIL_SUBJECT = getattr(
     settings, 'ASTAKOS_EMAIL_CHANGE_EMAIL_SUBJECT',
-    'Email change on %s alpha2 testing' % SITENAME)
+    'Email change on %s ' % SITENAME)
 PASSWORD_RESET_EMAIL_SUBJECT = getattr(
     settings, 'ASTAKOS_PASSWORD_RESET_EMAIL_SUBJECT',
-    'Password reset on %s alpha2 testing' % SITENAME)
+    'Password reset on %s ' % SITENAME)
 PROJECT_CREATION_SUBJECT = getattr(
     settings, 'ASTAKOS_PROJECT_CREATION_SUBJECT',
-    '%s alpha2 testing project application created (%%(name)s)' % SITENAME)
+    '%s project application created (%%(name)s)' % SITENAME)
 PROJECT_APPROVED_SUBJECT = getattr(
     settings, 'ASTAKOS_PROJECT_APPROVED_SUBJECT',
-    '%s alpha2 testing project application approved (%%(name)s)' % SITENAME)
+    '%s project application approved (%%(name)s)' % SITENAME)
 PROJECT_DENIED_SUBJECT = getattr(
     settings, 'ASTAKOS_PROJECT_DENIED_SUBJECT',
-    '%s alpha2 testing project application denied (%%(name)s)' % SITENAME)
+    '%s project application denied (%%(name)s)' % SITENAME)
 PROJECT_TERMINATION_SUBJECT = getattr(
     settings, 'ASTAKOS_PROJECT_TERMINATION_SUBJECT',
-    '%s alpha2 testing project terminated (%%(name)s)' % SITENAME)
+    '%s project terminated (%%(name)s)' % SITENAME)
 PROJECT_SUSPENSION_SUBJECT = getattr(
     settings, 'ASTAKOS_PROJECT_SUSPENSION_SUBJECT',
-    '%s alpha2 testing project suspended (%%(name)s)' % SITENAME)
+    '%s testing project suspended (%%(name)s)' % SITENAME)
 PROJECT_MEMBERSHIP_CHANGE_SUBJECT = getattr(
     settings, 'ASTAKOS_PROJECT_MEMBERSHIP_CHANGE_SUBJECT',
-    '%s alpha2 testing project membership changed (%%(name)s)' % SITENAME)
+    '%s testing project membership changed (%%(name)s)' % SITENAME)
 PROJECT_MEMBERSHIP_ENROLL_SUBJECT = getattr(
     settings, 'ASTAKOS_PROJECT_MEMBERSHIP_ENROLL_SUBJECT',
-    '%s alpha2 testing project enrollment (%%(name)s)' % SITENAME)
+    '%s testing project enrollment (%%(name)s)' % SITENAME)
 PROJECT_MEMBERSHIP_REQUEST_SUBJECT = getattr(
     settings, 'ASTAKOS_PROJECT_MEMBERSHIP_REQUEST_SUBJECT',
-    '%s alpha2 testing project membership request (%%(name)s)' % SITENAME)
+    '%s testing project membership request (%%(name)s)' % SITENAME)
 PROJECT_MEMBERSHIP_LEAVE_REQUEST_SUBJECT = getattr(
     settings, 'ASTAKOS_PROJECT_MEMBERSHIP_LEAVE_REQUEST_SUBJECT',
-    '%s alpha2 testing project membership leave request (%%(name)s)' % SITENAME)
+    '%s testing project membership leave request (%%(name)s)' % SITENAME)
 
 # Set the quota holder component URI
 QUOTAHOLDER_URL = getattr(settings, 'ASTAKOS_QUOTAHOLDER_URL', '')

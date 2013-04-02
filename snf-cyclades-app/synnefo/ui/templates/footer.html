@@ -2,11 +2,13 @@
 <div id="footer-container">
     <div id='footer'>
         <div id='footer-text'>
+            {% if BRANDING_EXTRA_FOOTER_LINKS %}
             <a href="{{ BRANDING_SERVICE_ABOUT_URL }}">{% trans "About" %}</a>
                 &nbsp;|&nbsp;
             <a href="{{ BRANDING_SERVICE_CONTACT_URL }}">{% trans "Contact" %}</a>
                 &nbsp;|&nbsp;
             <a href="{{ BRANDING_SERVICE_SUPPORT_URL }}">{% trans "Support" %}</a>
+            {% endif %}
             {% comment %}
                 &nbsp;|&nbsp;
             <a href="#">{% trans "Terms" %}</a>
@@ -14,10 +16,12 @@
             <a href="#">{% trans "Privacy" %}</a>
             {% endcomment %}
             <br/>
+            {% if BRANDING_SHOW_COPYRIGHT %}
             <div class='grnet-sign'><a href="{{ BRANDING_COMPANY_URL }}" target="_blank" title="{{ BRANDING_COMPANY_NAME }}">{{  BRANDING_COPYRIGHT_MESSAGE }}</a></div>
+            {% endif %}
         </div>
         <div id="footer-bg">
         </div>
-        <div class="software">powered by <a href="http://www.synnefo.org/">synnefo</a> <span class="version">v{{ synnefo_version }}</span></div>
+        <div class="software">Powered by <a href="http://www.synnefo.org/">synnefo</a> <span class="version">v{{ synnefo_version }}</span></div>
     </div>
 </div>

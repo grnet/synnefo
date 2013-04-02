@@ -103,6 +103,7 @@ for a single user from the command line
                 raise CommandError("Cannot combine option `--from-file' with "
                                    "`--set-capacity'.")
             self.import_from_file(from_file)
+            return
 
         if set_capacity is not None:
             user, resource, capacity = set_capacity

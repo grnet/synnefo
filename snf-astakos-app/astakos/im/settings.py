@@ -299,7 +299,7 @@ RESOURCES_PRESENTATION_DATA = getattr(
                 'is_abbreviation':False,
                 'report_desc':'Private Networks',
                 'placeholder':'eg. 1',
-                'verbose_name':'private network'
+                'verbose_name':'Private Network'
             }
 
         },
@@ -347,7 +347,7 @@ PROJECT_ADMINS = getattr(settings, 'ASTAKOS_PROJECT_ADMINS', set())
 # This is to reduce the volume of applications
 # in case users abuse the mechanism.
 PENDING_APPLICATION_LIMIT = getattr(settings,
-                                    'ASTAKOS_PENDING_APPLICATION_LIMIT', 1)
+                                    'ASTAKOS_PENDING_APPLICATION_LIMIT', 0)
 
 # OAuth2 Twitter credentials.
 TWITTER_TOKEN = getattr(settings, 'ASTAKOS_TWITTER_TOKEN', '')

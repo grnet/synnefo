@@ -1,4 +1,4 @@
-# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright 2011-2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -30,64 +30,28 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
-#
 
-import distribute_setup
-distribute_setup.use_setuptools()
+import random
 
-import os
+getrandbits = random.SystemRandom().getrandbits
 
-from setuptools import setup, find_packages
+DEFAULT_ALPHABET = ("0123456789"
+                    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                    "abcdefghijklmnopqrstuvwxyz")
 
-HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
+def get_random_word(length, alphabet=DEFAULT_ALPHABET):
+    remainder = getrandbits(length * 8)
+    return encode_word(remainder, alphabet=alphabet)
 
-from synnefo.versions.common import __version__
+def encode_word(number, alphabet=DEFAULT_ALPHABET):
+    base = len(alphabet)
+    digits = []
+    append = digits.append
+    quotient = number
+    while True:
+        quotient, remainder = divmod(quotient, base)
+        append(alphabet[remainder])
+        if quotient <= 0:
+            break
 
-# Package info
-VERSION = __version__
-README = open(os.path.join(HERE, 'README')).read()
-CHANGES = open(os.path.join(HERE, 'Changelog')).read()
-SHORT_DESCRIPTION = 'Common infrastructure for all Synnefo components'
-
-PACKAGES_ROOT = '.'
-PACKAGES = find_packages(PACKAGES_ROOT)
-
-# Package meta
-CLASSIFIERS = []
-
-# Package requirements
-INSTALL_REQUIRES = [
-]
-
-EXTRAS_REQUIRES = {
-}
-
-TESTS_REQUIRES = [
-]
-
-setup(
-    name='snf-common',
-    version=VERSION,
-    license='BSD',
-    url='http://www.synnefo.org/',
-    description=SHORT_DESCRIPTION,
-    long_description=README + '\n\n' + CHANGES,
-    classifiers=CLASSIFIERS,
-
-    author='Synnefo development team',
-    author_email='synnefo-devel@googlegroups.com',
-    maintainer='Synnefo development team',
-    maintainer_email='synnefo-devel@googlegroups.com',
-
-    namespace_packages=['synnefo', 'synnefo.versions'],
-    packages=PACKAGES,
-    package_dir={'': PACKAGES_ROOT},
-    include_package_data=True,
-    zip_safe=False,
-
-    install_requires=INSTALL_REQUIRES,
-    extras_require=EXTRAS_REQUIRES,
-    tests_require=TESTS_REQUIRES,
-
-    dependency_links=['http://www.synnefo.org/packages/pypi']
-)
+    return ''.join(digits)

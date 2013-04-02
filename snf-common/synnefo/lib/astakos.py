@@ -37,7 +37,7 @@ from urlparse import urlparse
 from urllib import unquote
 from django.utils import simplejson as json
 
-from synnefo.lib.pool.http import get_http_connection
+from synnefo.lib.pool.http import PooledHTTPConnection
 
 logger = logging.getLogger(__name__)
 
@@ -64,11 +64,13 @@ def retry(howmany):
     return execute
 
 
-def call(token, url, headers={}, body=None, method='GET'):
+def call(token, url, headers=None, body=None, method='GET'):
     p = urlparse(url)
 
     kwargs = {}
-    kwargs['headers'] = headers
+    if headers is None:
+        headers = {}
+    kwargs["headers"] = headers
     kwargs['headers']['X-Auth-Token'] = token
     if body:
         kwargs['body'] = body
@@ -76,8 +78,7 @@ def call(token, url, headers={}, body=None, method='GET'):
                                      'application/octet-stream')
     kwargs['headers'].setdefault('content-length', len(body) if body else 0)
 
-    conn = get_http_connection(p.netloc, p.scheme)
-    try:
+    with PooledHTTPConnection(p.netloc, p.scheme) as conn:
         conn.request(method, p.path + '?' + p.query, **kwargs)
         response = conn.getresponse()
         headers = response.getheaders()
@@ -85,8 +86,6 @@ def call(token, url, headers={}, body=None, method='GET'):
         length = response.getheader('content-length', None)
         data = response.read(length)
         status = int(response.status)
-    finally:
-        conn.close()
 
     if status < 200 or status >= 300:
         raise Exception(data, status)
@@ -239,3 +238,58 @@ def get_token_from_cookie(request, cookiename):
         pass
 
     return None
+
+
+class UserCache(object):
+    """uuid<->displayname user 'cache'"""
+
+    def __init__(self, astakos_url, astakos_token, split=100):
+        self.astakos_token = astakos_token
+        self.astakos_url = astakos_url
+        self.user_catalog_url = astakos_url.replace("im/authenticate",
+                                               "service/api/user_catalogs")
+        self.users = {}
+
+        self.split = split
+        assert(self.split > 0), "split must be positive"
+
+    def fetch_names(self, uuid_list):
+        total = len(uuid_list)
+        split = self.split
+
+        for start in range(0, total, split):
+            end = start + split
+            try:
+                names = get_displaynames(token=self.astakos_token,
+                                         url=self.user_catalog_url,
+                                         uuids=uuid_list[start:end])
+                self.users.update(names)
+            except Exception as e:
+                logger.error("Failed to fetch names: %s",  e)
+
+    def get_uuid(self, name):
+        if not name in self.users:
+            try:
+                self.users[name] = get_user_uuid(token=self.astakos_token,
+                                                 url=self.user_catalog_url,
+                                                 displayname=name)
+            except Exception as e:
+                logger.error("Can not get uuid for name %s: %s", name, e)
+                self.users[name] = name
+
+        return self.users[name]
+
+    def get_name(self, uuid):
+        """Do the uuid-to-email resolving"""
+
+        if not uuid in self.users:
+            try:
+                self.users[uuid] = get_displayname(token=self.astakos_token,
+                                                   url=self.user_catalog_url,
+                                                   uuid=uuid)
+            except Exception as e:
+                logging.error("Can not get display name for uuid %s: %s",
+                              uuid, e)
+                self.users[uuid] = "-"
+
+        return self.users[uuid]

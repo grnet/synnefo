@@ -131,3 +131,6 @@ CYCLADES_USER_CATALOG_URL = 'https://<astakos domain>/user_catalogs'
 # endpoints. Set this to False if you deploy cyclades-app/astakos-app on the
 # same machine.
 CYCLADES_PROXY_USER_SERVICES = True
+
+# Astakos user_catalogs endpoint
+CYCLADES_USER_FEEDBACK_URL = 'https://accounts.example.synnefo.org/feedback'

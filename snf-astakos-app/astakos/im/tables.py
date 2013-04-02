@@ -278,7 +278,7 @@ class UserProjectApplicationsTable(UserTable):
 
 
     def render_membership_status(self, record, *args, **kwargs):
-        if self.user.owns_application(record):
+        if self.user.owns_application(record) or self.user.is_project_admin():
             return record.project_state_display()
         else:
             try:

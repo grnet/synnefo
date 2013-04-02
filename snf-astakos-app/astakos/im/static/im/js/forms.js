@@ -84,7 +84,7 @@
         // error list
         var el = $('<div class="form-error" />');
         errors.find("li").each(function(){
-            el.html(el.html() + $(this).text() + "<br />");
+            el.html(el.html() + $(this).html() + "<br />");
         })
         
         var formel = $this.find("input, select");

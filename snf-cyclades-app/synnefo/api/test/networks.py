@@ -206,6 +206,17 @@ class NetworkAPITest(BaseAPITest):
             self.assertNetworksEqual(Network.objects.get(id=net_id), api_net,
                                      detail=True)
 
+    def test_get_network_building_nics(self, mrapi):
+        net = mfactory.NetworkFactory()
+        machine = mfactory.VirtualMachineFactory(userid=net.userid)
+        mfactory.NetworkInterfaceFactory(network=net, machine=machine,
+                                         state="BUILDING")
+        response = self.get('/api/v1.1/networks/%d' % net.id,
+                            net.userid)
+        self.assertSuccess(response)
+        api_net = json.loads(response.content)["network"]
+        self.assertEqual(len(api_net["attachments"]["values"]), 0)
+
     def test_network_details_1(self, mrapi):
         """Test that expected details for a network are returned"""
         response = self.get('/api/v1.1/networks/%d' % self.net1.id,

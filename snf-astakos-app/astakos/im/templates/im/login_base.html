@@ -1,4 +1,5 @@
 {% extends 'im/base_two_cols.html'%}
+{% load i18n %}
 
 {% block signup_class %}hidden{% endblock %}
 {% block page.title %}Login{% endblock %}
@@ -12,17 +13,15 @@
     <div class="login-section">
 
       <h2 class="clearfix"><span class="title">LOGIN</span> <span class="header-actions">
-              <a href="{% url signup %}">Sign up</a></span>
+        <a href="{% url signup %}">{% trans "Sign up" %}</a></span>
       </h2>
       <div class="main-login-method">
-        {% include master_auth_provider.login_template %}
+        {% include master_auth_provider.get_login_template %}
       </div>
-
       <div class="extralogin">
       {% for provider in auth_providers %}
-      
         {% if not provider == master_auth_provider %}
-            {% include provider.login_prompt_template %}
+          {% include provider.get_login_prompt_template %}
         {% endif %}
       {% endfor %}
     </div>

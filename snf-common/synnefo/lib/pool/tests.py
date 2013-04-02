@@ -57,8 +57,10 @@ import time
 import threading
 from collections import defaultdict
 
+from socket import socket, AF_INET, SOCK_STREAM, IPPROTO_TCP, SHUT_RDWR
+
 from synnefo.lib.pool import ObjectPool, PoolLimitError, PoolVerificationError
-from synnefo.lib.pool.http import get_http_connection
+from synnefo.lib.pool.http import PooledHTTPConnection, HTTPConnectionPool
 from synnefo.lib.pool.http import _pools as _http_pools
 
 # Use backported unittest functionality if Python < 2.7
@@ -291,25 +293,115 @@ class ThreadSafetyTestCase(unittest.TestCase):
 
 
 class TestHTTPConnectionTestCase(unittest.TestCase):
-    def test_double_close(self):
-        conn = get_http_connection("127.0.0.1", "http")
-        self.assertEqual(conn._pool, _http_pools[("http", "127.0.0.1")])
-        conn.close()
-        self.assertIsNone(conn._pool)
-        # This call does nothing, because conn._pool is already None
-        conn.close()
-        self.assertIsNone(conn._pool)
+    def setUp(self):
+        #netloc = "127.0.0.1:9999"
+        #scheme='http'
+        #self.pool = HTTPConnectionPool(
+        #                netloc=netloc,
+        #                scheme=scheme,
+        #                pool_size=1)
+        #key = (scheme, netloc)
+        #_http_pools[key] = pool
+
+        _http_pools.clear()
+
+        self.host = "127.0.0.1"
+        self.port = 9999
+        self.netloc = "%s:%s" % (self.host, self.port)
+        self.scheme = "http"
+        self.key = (self.scheme, self.netloc)
+
+        sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)
+        sock.bind((self.host, self.port))
+        sock.listen(1)
+        self.sock = sock
+
+    def tearDown(self):
+        sock = self.sock
+        sock.shutdown(SHUT_RDWR)
+        sock.close()
+
+    def test_double_release(self):
+        pooled = PooledHTTPConnection(self.netloc, self.scheme)
+        pooled.acquire()
+        pool = pooled._pool
+        self.assertTrue(pooled._pool is _http_pools[(self.scheme, self.netloc)])
+        pooled.release()
+
+        poolsize = len(pool._set)
+
+        if PooledHTTPConnection._pool_disable_after_release:
+            self.assertTrue(pooled._pool is False)
+
+        if not PooledHTTPConnection._pool_ignore_double_release:
+            with self.assertRaises(AssertionError):
+                pooled.release()
+        else:
+            pooled.release()
+
+        self.assertEqual(poolsize, len(pool._set))
 
     def test_distinct_pools_per_scheme(self):
-        conn = get_http_connection("127.0.0.1", "http")
-        pool = conn._pool
-        self.assertTrue(pool is _http_pools[("http", "127.0.0.1")])
-        conn.close()
-        conn2 = get_http_connection("127.0.0.1", "https")
-        self.assertTrue(conn is not conn2)
-        self.assertNotEqual(pool, conn2._pool)
-        self.assertTrue(conn2._pool is _http_pools[("https", "127.0.0.1")])
-        conn2.close()
+        with PooledHTTPConnection("127.0.0.1", "http",
+                                  attach_context=True) as conn:
+            pool = conn._pool_context._pool
+            self.assertTrue(pool is _http_pools[("http", "127.0.0.1")])
+
+        with PooledHTTPConnection("127.0.0.1", "https",
+                                  attach_context=True) as conn2:
+            pool2 = conn2._pool_context._pool
+            self.assertTrue(conn is not conn2)
+            self.assertNotEqual(pool, pool2)
+            self.assertTrue(pool2 is _http_pools[("https", "127.0.0.1")])
+
+    def test_clean_connection(self):
+        pool = None
+        pooled = PooledHTTPConnection(self.netloc, self.scheme)
+        conn = pooled.acquire()
+        pool = pooled._pool
+        self.assertTrue(pool is not None)
+        pooled.release()
+        self.assertTrue(pooled._pool is False)
+        poolset = pool._set
+        self.assertEqual(len(poolset), 1)
+        pooled_conn = list(poolset)[0]
+        self.assertTrue(pooled_conn is conn)
+
+    def test_dirty_connection(self):
+        pooled = PooledHTTPConnection(self.netloc, self.scheme)
+        conn = pooled.acquire()
+        pool = pooled._pool
+        conn.request("GET", "/")
+        serversock, addr = self.sock.accept()
+        serversock.send("HTTP/1.1 200 OK\n"
+                        "Content-Length: 6\n"
+                        "\n"
+                        "HELLO\n")
+        time.sleep(0.3)
+        # We would read this message like this
+        #resp = conn.getresponse()
+        # but we won't so the connection is dirty
+        pooled.release()
+
+        poolset = pool._set
+        self.assertEqual(len(poolset), 0)
+
+    def test_context_manager_exception_safety(self):
+        class TestError(Exception):
+            pass
+
+        for i in xrange(10):
+            pool = None
+            try:
+                with PooledHTTPConnection(
+                        self.netloc, self.scheme,
+                        size=1, attach_context=True) as conn:
+                    pool = conn._pool_context._pool
+                    raise TestError()
+            except TestError:
+                self.assertTrue(pool is not None)
+                self.assertEqual(pool._semaphore._Semaphore__value, 1)
+
 
 if __name__ == '__main__':
     unittest.main()

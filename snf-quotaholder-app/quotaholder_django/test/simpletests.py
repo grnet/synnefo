@@ -36,8 +36,8 @@ from config import run_test_case
 from config import rand_string
 from config import printf
 
-from kamaki.clients.commissioning import CallError
-from kamaki.clients.quotaholder.api import (
+from synnefo.lib.commissioning import CallError
+from synnefo.lib.quotaholder import (
                             QH_PRACTICALLY_INFINITE,
                             InvalidDataError,
                             InvalidKeyError, NoEntityError,
@@ -63,10 +63,10 @@ class QHAPITest(QHTestCase):
         self.client = self.rand_entity()
 
     @classmethod
-    def rand_name(self, exclude=[]):
+    def rand_name(self, exclude=None):
         for i in range(1,100):
             r = Name().random()
-            if r not in exclude:
+            if exclude is not None and r not in exclude:
                 exclude.append(r)
                 return r
         else:

@@ -66,15 +66,13 @@ logger = logging.getLogger(__name__)
 import oauth2 as oauth
 import cgi
 
-consumer = oauth.Consumer(settings.LINKEDIN_TOKEN, settings.LINKEDIN_SECRET)
-client = oauth.Client(consumer)
 
 request_token_url      = 'https://api.linkedin.com/uas/oauth/requestToken?scope=r_basicprofile+r_emailaddress'
 access_token_url       = 'https://api.linkedin.com/uas/oauth/accessToken'
 authenticate_url       = 'https://www.linkedin.com/uas/oauth/authorize'
 
 
-@requires_auth_provider('linkedin', login=True)
+@requires_auth_provider('linkedin')
 @require_http_methods(["GET", "POST"])
 def login(request):
     init_third_party_session(request)
@@ -104,6 +102,10 @@ def authenticated(
     template='im/third_party_check_local.html',
     extra_context={}
 ):
+
+    consumer = oauth.Consumer(settings.LINKEDIN_TOKEN,
+                              settings.LINKEDIN_SECRET)
+    client = oauth.Client(consumer)
 
     if request.GET.get('denied'):
         return HttpResponseRedirect(reverse('edit_profile'))

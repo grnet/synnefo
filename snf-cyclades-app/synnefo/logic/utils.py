@@ -102,8 +102,10 @@ def get_rsapi_state(vm):
     if vm.deleted:
         return "DELETED"
     # A machine is in REBOOT if an OP_INSTANCE_REBOOT request is in progress
-    if r == 'ACTIVE' and vm.backendopcode == 'OP_INSTANCE_REBOOT' and \
-        vm.backendjobstatus in ('queued', 'waiting', 'running'):
+    in_reboot = (r == 'ACTIVE') and\
+                (vm.backendopcode == "OP_INSTANCE_REBOOT") and\
+                (vm.backendjobstatus in ('queued', 'waiting', 'running'))
+    if in_reboot:
         return "REBOOT"
     return r
 

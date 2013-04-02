@@ -27,6 +27,8 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
+0.13 (Mar 27, 2013)        Restrict public object listing only to the owner.
+                           Do not propagate public URL information in shared objects.
 0.13 (Jan 21, 2013)        Proxy identity management services
 \                          UUID to displayname translation
 0.9 (Feb 17, 2012)         Change permissions model.
@@ -367,7 +369,7 @@ limit                   The amount of results requested (default is 10000)
 marker                  Return containers with name lexicographically after marker
 format                  Optional extended reply type (can be ``json`` or ``xml``)
 shared                  Show only shared containers (no value parameter)
-public                  Show only public containers (no value parameter)
+public                  Show only public containers (no value parameter / avalaible only for owner requests)
 until                   Optional timestamp
 ======================  =========================
 
@@ -542,8 +544,8 @@ delimiter               Return objects up to the delimiter (discussion follows)
 path                    Assume ``prefix=path`` and ``delimiter=/``
 format                  Optional extended reply type (can be ``json`` or ``xml``)
 meta                    Return objects that satisfy the key queries in the specified comma separated list (use ``<key>``, ``!<key>`` for existence queries, ``<key><op><value>`` for value queries, where ``<op>`` can be one of ``=``, ``!=``, ``<=``, ``>=``, ``<``, ``>``)
-shared                  Show only shared objects (no value parameter)
-public                  Show only public containers (no value parameter)
+shared                  Show only objects (no value parameter)
+public                  Show only public objects (no value parameter / avalaible only for owner reqeusts)
 until                   Optional timestamp
 ======================  ===================================
 
@@ -1135,6 +1137,8 @@ Sharing and Public Objects
 Read and write control in Pithos is managed by setting appropriate permissions with the ``X-Object-Sharing`` header. The permissions are applied using directory-based inheritance. A directory is an object with the corresponding content type. The default delimiter is ``/``. Thus, each set of authorization directives is applied to all objects in the directory object where the corresponding ``X-Object-Sharing`` header is defined. If there are nested/overlapping permissions, the closest to the object is applied. When retrieving an object, the ``X-Object-Shared-By`` header reports where it gets its permissions from. If not present, the object is the actual source of authorization directives.
 
 A user may ``GET`` another account or container. The result will include a limited reply, containing only the allowed containers or objects respectively. A top-level request with an authentication token, will return a list of allowed accounts, so the user can easily find out which other users share objects. The ``X-Object-Allowed-To`` header lists the actions allowed on an object, if it does not belong to the requesting user.
+
+Shared objects that are also public do not expose the ``X-Object-Public`` meta information.
 
 Objects that are marked as public, via the ``X-Object-Public`` meta, are also available at the corresponding URI returned for ``HEAD`` or ``GET``. Requests for public objects do not need to include an ``X-Auth-Token``. Pithos will ignore request parameters and only include the following headers in the reply (all ``X-Object-*`` meta is hidden):
 

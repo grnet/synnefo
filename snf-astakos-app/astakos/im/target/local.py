@@ -51,7 +51,7 @@ from astakos.im.settings import (RATELIMIT_RETRIES_ALLOWED,
 import astakos.im.messages as astakos_messages
 from astakos.im.views import requires_auth_provider
 from astakos.im import settings
-from astakos.im import auth_providers
+from astakos.im import auth_providers as auth
 
 from ratelimit.decorators import ratelimit
 
@@ -59,7 +59,7 @@ retries = RATELIMIT_RETRIES_ALLOWED - 1
 rate = str(retries) + '/m'
 
 
-@requires_auth_provider('local', login=True)
+@requires_auth_provider('local')
 @require_http_methods(["GET", "POST"])
 @csrf_exempt
 @requires_anonymous
@@ -74,10 +74,11 @@ def login(request, on_failure='im/login.html'):
                      request=request)
     next = get_query(request).get('next', '')
     third_party_token = get_query(request).get('key', False)
+    provider = auth.get_provider('local')
 
     if not form.is_valid():
         if third_party_token:
-            messages.info(request, astakos_messages.AUTH_PROVIDER_LOGIN_TO_ADD)
+            messages.info(request, astakos_messages.get_login_to_add_msg)
 
         return render_to_response(
             on_failure,
@@ -88,17 +89,23 @@ def login(request, on_failure='im/login.html'):
 
     # get the user from the cache
     user = form.user_cache
+    provider = auth.get_provider('local', user)
+
+    if not provider.get_login_policy:
+        message = provider.get_login_disabled_msg
+        messages.error(request, message)
+        return HttpResponseRedirect(reverse('login'))
 
     message = None
     if not user:
-        message = _(astakos_messages.ACCOUNT_AUTHENTICATION_FAILED)
+        message = provider.get_authentication_failed_msg
     elif not user.is_active:
-        message = user.get_inactive_message()
+        message = user.get_inactive_message('local')
 
-    elif not user.can_login_with_auth_provider('local'):
+    elif not user.has_auth_provider('local'):
         # valid user logged in with no auth providers set, add local provider
         # and let him log in
-        if user.auth_providers.count() == 0:
+        if not user.get_available_auth_providers():
             user.add_auth_provider('local')
         else:
             message = _(astakos_messages.NO_LOCAL_AUTH)
@@ -116,10 +123,11 @@ def login(request, on_failure='im/login.html'):
         try:
             request.user.add_pending_auth_provider(third_party_token)
         except PendingThirdPartyUser.DoesNotExist:
-            messages.error(request, _(astakos_messages.AUTH_PROVIDER_ADD_FAILED))
+            provider = auth.get_provider('local', request.user)
+            messages.error(request, provider.get_add_failed_msg)
 
-    provider = auth_providers.get_provider('local')
-    messages.success(request, _(astakos_messages.LOCAL_LOGIN_SUCCESS))
+    provider = user.get_auth_provider('local')
+    messages.success(request, provider.get_login_success_msg)
     response.set_cookie('astakos_last_login_method', 'local')
     return response
 
@@ -145,8 +153,14 @@ def password_change(request, template_name='registration/password_change_form.ht
 
     create_password = False
 
+    provider = auth.get_provider('local', request.user)
+
     # no local backend user wants to create a password
     if not request.user.has_auth_provider('local'):
+        if not provider.get_add_policy:
+            messages.error(request, provider.get_add_disabled_msg)
+            return HttpResponseRedirect(reverse('edit_profile'))
+
         create_password = True
         password_change_form = ExtendedSetPasswordForm
 
@@ -165,9 +179,8 @@ def password_change(request, template_name='registration/password_change_form.ht
         if form.is_valid():
             form.save()
             if create_password:
-                provider = auth_providers.get_provider('local')
-                message = _(astakos_messages.AUTH_PROVIDER_ADDED) % provider.get_method_prompt_display
-                messages.success(request, message)
+                provider = auth.get_provider('local', request.user)
+                messages.success(request, provider.get_added_msg)
             else:
                 messages.success(request,
                                  astakos_messages.PASSWORD_RESET_CONFIRM_DONE)

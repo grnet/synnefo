@@ -43,10 +43,11 @@ from astakos.im.settings import (
     QUOTAHOLDER_URL, QUOTAHOLDER_TOKEN, LOGGING_LEVEL)
 
 if QUOTAHOLDER_URL:
-    from kamaki.clients.quotaholder import QuotaholderClient
-    from kamaki.clients.quotaholder import QH_PRACTICALLY_INFINITE
+    from synnefo.lib.quotaholder import (
+            QuotaholderClient, QH_PRACTICALLY_INFINITE)
 
 from synnefo.util.number import strbigdec
+from astakos.im.settings import QUOTAHOLDER_POOLSIZE
 
 ENTITY_KEY = '1'
 
@@ -66,7 +67,8 @@ def get_client():
         return _client
     if not QUOTAHOLDER_URL:
         return
-    _client = QuotaholderClient(QUOTAHOLDER_URL, token=QUOTAHOLDER_TOKEN)
+    _client = QuotaholderClient(QUOTAHOLDER_URL, token=QUOTAHOLDER_TOKEN,
+                                poolsize=QUOTAHOLDER_POOLSIZE)
     return _client
 
 
@@ -507,7 +509,8 @@ def timeline_charge(entity, resource, after, before, details, charge_type):
         m = 'charge type %s not supported' % charge_type
         raise ValueError(m)
 
-    quotaholder = QuotaholderClient(QUOTAHOLDER_URL, token=QUOTAHOLDER_TOKEN)
+    quotaholder = QuotaholderClient(QUOTAHOLDER_URL, token=QUOTAHOLDER_TOKEN,
+                                    poolsize=QUOTAHOLDER_POOLSIZE)
     timeline = quotaholder.get_timeline(
         context={},
         after=after,

@@ -140,7 +140,7 @@ class ActivationBackend(object):
             else:
                 send_account_creation_notification(
                     template_name=admin_email_template_name,
-                    dictionary={'user': user.__dict__, 'group_creation': True}
+                    dictionary={'user': user, 'group_creation': True}
                 )
                 return NotificationSent()
         except BaseException, e:
@@ -222,9 +222,8 @@ class SimpleBackend(ActivationBackend):
     def _is_preaccepted(self, user):
         if super(SimpleBackend, self)._is_preaccepted(user):
             return True
-        if astakos_settings.MODERATION_ENABLED:
-            return False
-        return True
+
+        return user.get_auth_provider().get_automoderate_policy
 
 
 class ActivationResult(object):

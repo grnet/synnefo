@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -47,7 +47,7 @@ from quotaholder_django.version import __version__
 VERSION = __version__
 README = open(os.path.join(HERE, 'README')).read()
 CHANGES = open(os.path.join(HERE, 'Changelog')).read()
-SHORT_DESCRIPTION = 'snf-quotaholder django app'
+SHORT_DESCRIPTION = 'Synnefo Quota Holder component'
 
 PACKAGES_ROOT = '.'
 PACKAGES = find_packages(PACKAGES_ROOT, exclude=('test',))
@@ -64,7 +64,7 @@ setup(
     name='snf-quotaholder-app',
     version=VERSION,
     license='BSD',
-    url='https://code.grnet.gr/projects/synnefo',
+    url='http://www.synnefo.org/',
     description=SHORT_DESCRIPTION,
     long_description=README + '\n\n' + CHANGES,
     classifiers=CLASSIFIERS,
@@ -84,7 +84,7 @@ setup(
     #],
     zip_safe=False,
     install_requires=INSTALL_REQUIRES,
-    dependency_links=['http://docs.dev.grnet.gr/pypi'],
+    dependency_links=['http://www.synnefo.org/packages/pypi'],
     entry_points={
      'synnefo': [
          'web_apps = quotaholder_django.synnefo_settings:apps',

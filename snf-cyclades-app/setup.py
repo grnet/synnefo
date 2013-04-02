@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -49,7 +49,7 @@ from synnefo.versions.app import __version__
 VERSION = __version__
 README = open(os.path.join(HERE, 'README')).read()
 CHANGES = open(os.path.join(HERE, 'Changelog')).read()
-SHORT_DESCRIPTION = 'Package short description'
+SHORT_DESCRIPTION = 'Synnefo Compute, Network and Image component'
 
 PACKAGES_ROOT = '.'
 PACKAGES = find_packages(PACKAGES_ROOT)
@@ -205,7 +205,7 @@ setup(
     extras_require = EXTRAS_REQUIRES,
     tests_require = TESTS_REQUIRES,
 
-    dependency_links = ['http://docs.dev.grnet.gr/pypi'],
+    dependency_links = ['http://www.synnefo.org/packages/pypi'],
 
     entry_points = {
      'console_scripts': [

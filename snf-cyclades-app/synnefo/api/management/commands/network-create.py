@@ -35,6 +35,7 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 from synnefo.management.common import validate_network_info, get_backend
+from synnefo.webproject.management.util import pprint_table
 
 from synnefo.db.models import Network
 from synnefo.logic.backend import create_network
@@ -50,71 +51,92 @@ class Command(BaseCommand):
     help = "Create a new network"
 
     option_list = BaseCommand.option_list + (
-        make_option('--name',
+        make_option(
+            "-n",
+            "--dry-run",
+            dest="dry_run",
+            default=False,
+            action="store_true"),
+        make_option(
+            '--name',
             dest='name',
             help="Name of network"),
-        make_option('--owner',
+        make_option(
+            '--owner',
             dest='owner',
             help="The owner of the network"),
-        make_option('--subnet',
+        make_option(
+            '--subnet',
             dest='subnet',
             default=None,
             # required=True,
             help='Subnet of the network'),
-        make_option('--gateway',
+        make_option(
+            '--gateway',
             dest='gateway',
             default=None,
             help='Gateway of the network'),
-        make_option('--subnet6',
+        make_option(
+            '--subnet6',
             dest='subnet6',
             default=None,
             help='IPv6 subnet of the network'),
-        make_option('--gateway6',
+        make_option(
+            '--gateway6',
             dest='gateway6',
             default=None,
             help='IPv6 gateway of the network'),
-        make_option('--dhcp',
+        make_option(
+            '--dhcp',
             dest='dhcp',
             action='store_true',
             default=False,
             help='Automatically assign IPs'),
-        make_option('--public',
+        make_option(
+            '--public',
             dest='public',
             action='store_true',
             default=False,
             help='Network is public'),
-        make_option('--flavor',
+        make_option(
+            '--flavor',
             dest='flavor',
             default=None,
             choices=NETWORK_FLAVORS,
             help='Network flavor. Choices: ' + ', '.join(NETWORK_FLAVORS)),
-        make_option('--mode',
+        make_option(
+            '--mode',
             dest='mode',
             default=None,
             help="Overwrite flavor connectivity mode."),
-        make_option('--link',
+        make_option(
+            '--link',
             dest='link',
             default=None,
             help="Overwrite flavor connectivity link."),
-        make_option('--mac-prefix',
+        make_option(
+            '--mac-prefix',
             dest='mac_prefix',
             default=None,
             help="Overwrite flavor connectivity MAC prefix"),
-        make_option('--tags',
+        make_option(
+            '--tags',
             dest='tags',
             default=None,
             help='The tags of the Network (comma separated strings)'),
-        make_option('--backend-id',
+        make_option(
+            '--backend-id',
             dest='backend_id',
             default=None,
             help='ID of the backend that the network will be created. Only for'
                  ' public networks'),
-        )
+    )
 
     def handle(self, *args, **options):
         if args:
             raise CommandError("Command doesn't accept any arguments")
 
+        dry_run = options["dry_run"]
         name = options['name']
         subnet = options['subnet']
         backend_id = options['backend_id']
@@ -154,23 +176,30 @@ class Command(BaseCommand):
         subnet, gateway, subnet6, gateway6 = validate_network_info(options)
 
         if not link or not mode:
-            raise CommandError("Can not create network. No connectivity link or mode")
+            raise CommandError("Can not create network."
+                               " No connectivity link or mode")
+        netinfo = {
+           "name": name,
+           "userid": options["owner"],
+           "subnet": subnet,
+           "gateway": gateway,
+           "gateway6": gateway6,
+           "subnet6": subnet6,
+           "dhcp": options["dhcp"],
+           "flavor": flavor,
+           "public": public,
+           "mode": mode,
+           "link": link,
+           "mac_prefix": mac_prefix,
+           "tags": tags,
+           "state": "PENDING"}
 
-        network = Network.objects.create(
-                name=name,
-                userid=options['owner'],
-                subnet=subnet,
-                gateway=gateway,
-                gateway6=gateway6,
-                subnet6=subnet6,
-                dhcp=options['dhcp'],
-                flavor=flavor,
-                public=public,
-                mode=mode,
-                link=link,
-                mac_prefix=mac_prefix,
-                tags=tags,
-                state='PENDING')
+        if dry_run:
+            self.stdout.write("Creating network:\n")
+            pprint_table(self.stdout, tuple(netinfo.items()))
+            return
+
+        network = Network.objects.create(**netinfo)
 
         if public:
             # Create BackendNetwork only to the specified Backend

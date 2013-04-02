@@ -39,6 +39,11 @@ from django import template
 from django.core.urlresolvers import resolve
 from django.conf import settings
 from django.template import TemplateSyntaxError, Variable
+from django.utils.translation import ugettext as _
+from django.template.loader import render_to_string
+from django.template import RequestContext
+from django.core.urlresolvers import reverse
+from django.utils.safestring import mark_safe
 
 register = template.Library()
 
@@ -199,10 +204,69 @@ def provider_login_url(context, provider, from_login=False):
     if from_login:
         attrs['from_login'] = 1
 
-    url = provider.add_url
+    url = provider.urls.get('login')
 
     joinchar = "?"
     if "?" in url:
         joinchar = "&"
 
     return "%s%s%s" % (provider.add_url, joinchar, urllib.urlencode(attrs))
+
+
+EXTRA_CONTENT_MAP = {
+    'confirm_text': '<textarea name="reason"></textarea>'
+}
+
+CONFIRM_LINK_PROMPT_MAP = {
+    'project_modification_cancel': _('Are you sure you want to dismiss this '
+                                     'project ?'),
+    'project_app_cancel': _('Are you sure you want to cancel this project ?'),
+    'project_app_approve': _('Are you sure you want to approve this '
+                             'project ?'),
+    'project_app_deny': _('Are you sure you want to deny this project ? '
+                          '<br /><br />You '
+                          'may optionally provide denial reason in the '
+                          'following field: <br /><br /><textarea '
+                          'class="deny_reason" name="reason"></textarea>'),
+    'project_app_dismiss': _('Are you sure you want to dismiss this '
+                             'project ?'),
+    'project_join': _('Are you sure you want to join this project ?'),
+    'project_leave': _('Are you sure you want to leave from the project ?'),
+}
+
+
+@register.tag(name="confirm_link")
+@basictag(takes_context=True)
+def confirm_link(context, title, prompt='', url=None, urlarg=None,
+                 extracontent='',
+                 confirm_prompt=None,
+                 inline=True,
+                 template="im/table_rich_link_column.html"):
+
+    urlargs = None
+    if urlarg:
+        urlargs = (urlarg,)
+
+    if CONFIRM_LINK_PROMPT_MAP.get(prompt, None):
+        prompt = mark_safe(CONFIRM_LINK_PROMPT_MAP.get(prompt))
+
+    url = reverse(url, args=urlargs)
+    title = _(title)
+    tpl_context = RequestContext(context.get('request'))
+    tpl_context.update({
+        'col': {
+            'method': 'POST',
+            'cancel_prompt': 'CANCEL',
+            'confirm_prompt': confirm_prompt or title
+        },
+        'inline': inline,
+        'url': url,
+        'action': title,
+        'prompt': prompt,
+        'extra_form_content': EXTRA_CONTENT_MAP.get(extracontent, ''),
+        'confirm': True
+    })
+
+    content = render_to_string(template, tpl_context)
+    return content
+

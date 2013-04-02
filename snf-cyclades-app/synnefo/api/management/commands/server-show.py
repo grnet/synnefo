@@ -32,9 +32,12 @@
 # or implied, of GRNET S.A.
 
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import (format_bool, format_date,
-                                       format_vm_state, get_vm,
-                                       get_image, UserCache)
+from synnefo.webproject.management.util import format_bool, format_date
+from synnefo.management.common import (format_vm_state, get_vm,
+                                       get_image)
+from synnefo.lib.astakos import UserCache
+from synnefo.settings import (CYCLADES_ASTAKOS_SERVICE_TOKEN as ASTAKOS_TOKEN,
+                              ASTAKOS_URL)
 
 
 class Command(BaseCommand):
@@ -61,7 +64,7 @@ class Command(BaseCommand):
             'id': server.id,
             'name': server.name,
             'owner_uuid': userid,
-            'owner_name': UserCache().get_name(userid),
+            'owner_name': UserCache(ASTAKOS_URL, ASTAKOS_TOKEN).get_name(userid),
             'created': format_date(server.created),
             'updated': format_date(server.updated),
             'image': image,

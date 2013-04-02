@@ -65,28 +65,38 @@ class Command(BaseCommand):
     output_transaction = True
 
     option_list = BaseCommand.option_list + (
-            make_option("--backend-id", dest="backend_id",
-                        help="Unique identifier of the Ganeti backend that"
-                             " hosts the VM. Use snf-manage backend-list to"
-                             " find out available backends."),
-            make_option("--user-id", dest="user_id",
-                        help="Unique identifier of the owner of the server"),
-            make_option("--image-id", dest="image_id",
-                        default=None,
-                        help="Unique identifier of the image."
-                             " Use snf-manage image-list to find out"
-                             " available images."),
-            make_option("--flavor-id", dest="flavor_id",
-                        help="Unique identifier of the flavor"
-                             " Use snf-manage flavor-list to find out"
-                             " available flavors."),
-            make_option("--new-nics", dest='new_nics',
-                        default=False,
-                        action="store_true",
-                        help="Remove old NICs of instance, and create"
-                             " a new NIC connected to a public network of"
-                             " Synnefo.")
-        )
+        make_option(
+            "--backend-id",
+            dest="backend_id",
+            help="Unique identifier of the Ganeti backend that"
+                 " hosts the VM. Use snf-manage backend-list to"
+                 " find out available backends."),
+        make_option(
+            "--user-id",
+            dest="user_id",
+            help="Unique identifier of the owner of the server"),
+        make_option(
+            "--image-id",
+            dest="image_id",
+            default=None,
+            help="Unique identifier of the image."
+                 " Use snf-manage image-list to find out"
+                 " available images."),
+        make_option(
+            "--flavor-id",
+            dest="flavor_id",
+            help="Unique identifier of the flavor"
+                 " Use snf-manage flavor-list to find out"
+                 " available flavors."),
+        make_option(
+            "--new-nics",
+            dest='new_nics',
+            default=False,
+            action="store_true",
+            help="Remove old NICs of instance, and create"
+                 " a new NIC connected to a public network of"
+                 " Synnefo.")
+    )
 
     REQUIRED = ("user-id", "backend-id", "image-id", "flavor-id")
 
@@ -127,8 +137,8 @@ def import_server(instance_name, backend_id, flavor_id, image_id, user_id,
         instance = backend_client.GetInstance(instance_name)
     except GanetiApiError as e:
         if e.code == 404:
-            raise CommandError("Instance %s does not exist in backend %s"\
-                              % (instance_name, backend))
+            raise CommandError("Instance %s does not exist in backend %s"
+                               % (instance_name, backend))
         else:
             raise CommandError("Unexpected error" + str(e))
 
@@ -137,7 +147,7 @@ def import_server(instance_name, backend_id, flavor_id, image_id, user_id,
                              stream=stream)
         (network, address) = allocate_public_address(backend)
         if address is None:
-            raise CommandError("Can not allocate a public address."\
+            raise CommandError("Can not allocate a public address."
                                " No available public network.")
         nic = {'ip': address, 'network': network.backend_id}
         add_public_nic(instance_name, nic, backend_client,
@@ -187,10 +197,10 @@ def check_instance_nics(instance):
         networks = map(id_from_network_name, networks)
     except Network.InvalidBackendIdError:
         raise CommandError("Instance %s has NICs that do not belong to a"
-                          " network belonging to synnefo. Either manually"
-                          " modify the instance NICs or specify --new-nics"
-                          " to clear the old NICs and create a new NIC to"
-                          " a public network of synnefo." % instance_name)
+                           " network belonging to synnefo. Either manually"
+                           " modify the instance NICs or specify --new-nics"
+                           " to clear the old NICs and create a new NIC to"
+                           " a public network of synnefo." % instance_name)
 
 
 def remove_instance_nics(instance, backend_client, stream=sys.stdout):
@@ -218,7 +228,7 @@ def shutdown_instance(instance, backend_client, stream=sys.stdout):
     instance_name = instance['name']
     if instance['status'] != 'ADMIN_down':
         stream.write("Instance is not down. Shutting down"
-                          " instance\n")
+                     " instance\n")
         jobid = backend_client.ShutdownInstance(instance_name)
         (status, error) = wait_for_job(backend_client, jobid)
         if status != 'success':
@@ -229,7 +239,7 @@ def rename_instance(old_name, new_name, backend_client, stream=sys.stdout):
     stream.write("Renaming instance to %s\n" % new_name)
 
     jobid = backend_client.RenameInstance(old_name, new_name,
-                                         ip_check=False, name_check=False)
+                                          ip_check=False, name_check=False)
     (status, error) = wait_for_job(backend_client, jobid)
     if status != 'success':
         raise CommandError("Can not rename instance: %s" % error)

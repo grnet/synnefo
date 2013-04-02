@@ -32,6 +32,8 @@
 # or implied, of GRNET S.A.
 #
 
+import mock
+
 from django.test import TestCase, Client
 from django.conf import settings
 from django.core.urlresolvers import reverse
@@ -46,6 +48,8 @@ USERS_UUIDS[USER2] = {'displayname': 'testuser2@test.com'}
 
 USERS_DISPLAYNAMES = dict(map(lambda k: (k[1]['displayname'], {'uuid': k[0]}),
                           USERS_UUIDS.iteritems()))
+
+from synnefo.db import models_factory as mfactory
 
 class AuthClient(Client):
 
@@ -242,3 +246,34 @@ class HelpdeskTests(TestCase):
         vms = r.context['vms']
         self.assertEqual(r.context['account_exists'], False)
         self.assertEqual(vms.count(), 0)
+
+    def test_start_shutdown(self):
+        from synnefo.logic import backend
+
+        self.vm1 = mfactory.VirtualMachineFactory(userid=USER1)
+        pk = self.vm1.pk
+
+        r = self.client.post(reverse('helpdesk-vm-shutdown', args=(pk,)))
+        self.assertEqual(r.status_code, 403)
+
+        r = self.client.post(reverse('helpdesk-vm-shutdown', args=(pk,)),
+                             data={'token': '0001'})
+        self.assertEqual(r.status_code, 403)
+
+        backend.shutdown_instance = shutdown = mock.Mock()
+        self.vm1.operstate = 'STARTED'
+        self.vm1.save()
+        r = self.client.post(reverse('helpdesk-vm-shutdown', args=(pk,)),
+                             data={'token': '0001'}, user_token='0001')
+        self.assertEqual(r.status_code, 302)
+        self.assertTrue(shutdown.called)
+        self.assertEqual(len(shutdown.mock_calls), 1)
+
+        backend.startup_instance = startup = mock.Mock()
+        self.vm1.operstate = 'STOPPED'
+        self.vm1.save()
+        r = self.client.post(reverse('helpdesk-vm-start', args=(pk,)),
+                             data={'token': '0001'}, user_token='0001')
+        self.assertEqual(r.status_code, 302)
+        self.assertTrue(startup.called)
+        self.assertEqual(len(startup.mock_calls), 1)

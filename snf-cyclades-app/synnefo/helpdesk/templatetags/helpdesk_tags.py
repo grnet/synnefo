@@ -86,6 +86,10 @@ def backend_info(vm):
     content = ""
     backend = vm.backend
     excluded = ['password_hash', 'hash', 'username']
+    if not vm.backend:
+        content = "No backend"
+        return content
+
     for field in vm.backend._meta.fields:
         if field.name in excluded:
             continue

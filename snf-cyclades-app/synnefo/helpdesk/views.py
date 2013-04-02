@@ -127,9 +127,8 @@ def helpdesk_user_required(func, permitted_groups=PERMITTED_GROUPS):
 
             if not has_perm:
                 logger.error("Failed to access helpdesk view %r. No valid "
-                             "helpdesk group (%r) matches user groups (%r)"
-                             "valid helpdesk group", request.user_uniq,
-                             permitted_groups, groups)
+                             "helpdesk group (%r) matches user groups (%r)",
+                             request.user_uniq, permitted_groups, groups)
                 raise PermissionDenied
         else:
             logger.error("Failed to access helpdesk view %r. No authenticated "

@@ -104,8 +104,6 @@
         var SKIP_TIMEOUTS = {{ skip_timeouts }};
         var UPDATE_INTERVAL = {{ update_interval }};
         var APP_DEBUG = {% if DEBUG %}true{% else %}false{% endif %};
-        var FEEDBACK_URL = "{% url ui_feedback %}";
-        var FEEDBACK_TITLE = "{% trans "Send feedback" %}";
         var API_OVERLAY_TITLE = "{% trans "API access" %}";
         var API_OVERLAY_SUBCONTENT = "{% trans "The API key provides full access to your <em>~okeanos</em> account, so always keep it private." %}";
 
@@ -633,6 +631,7 @@
             synnefo.config.machines_icons_url = '{{ SYNNEFO_IMAGES_URL }}icons/machines/';
             synnefo.config.support_ssh_os_list = {{ support_ssh_os_list|safe }};
             synnefo.config.os_created_users = {{ os_created_users|safe }};
+            synnefo.config.feedback_post_url = {{ feedback_post_url|safe }};
             
             synnefo.config.logout_redirect = '{{ logout_redirect }}';
             synnefo.config.login_redirect = '{{ login_redirect }}';
@@ -676,6 +675,8 @@
             synnefo.config.system_images_owners = {{ system_images_owners|safe }};
             synnefo.ui.init();
             synnefo.ui.main.bind("ready", function(){
+
+              synnefo.ui.trigger_error("test123");
             });
 
         })

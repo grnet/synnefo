@@ -1667,6 +1667,11 @@ class ProjectApplication(models.Model):
         CANCELLED: _('Cancelled')
     }
 
+    @property
+    def log_display(self):
+        return "application %s (%s) for project %s" % (
+            self.id, self.name, self.chain)
+
     def get_project(self):
         try:
             project = Project.objects.get(id=self.chain, state=Project.APPROVED)

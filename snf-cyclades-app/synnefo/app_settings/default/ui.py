@@ -42,14 +42,6 @@ UI_CHANGES_SINCE_ALIGNMENT = 0
 # How often to check for user usage changes
 UI_QUOTAS_UPDATE_INTERVAL = 10000
 
-# List of emails used for sending the feedback messages to (following the ADMINS format)
-FEEDBACK_CONTACTS = (
-    # ('Contact Name', 'contact_email@domain.com'),
-)
-
-# Email from which the feedback emails will be sent from
-FEEDBACK_EMAIL_FROM = "~okeanos <no-reply@grnet.gr>"
-
 # URL to redirect not authenticated users
 UI_LOGIN_URL = "/im/login"
 
@@ -211,3 +203,5 @@ UI_SYSTEM_IMAGES_OWNERS = {
     'images@synnefo.gr': 'system'
 }
 
+# Astakos feedback endpoint. UI uses this setting to post error feedbacks
+CYCLADES_USER_FEEDBACK_URL = 'https://accounts.synnefo.org/feedback'

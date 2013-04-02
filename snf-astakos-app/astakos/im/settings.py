@@ -14,12 +14,12 @@ INVITATIONS_PER_LEVEL = getattr(settings, 'ASTAKOS_INVITATIONS_PER_LEVEL', {
     4: 0
 })
 
-# Address to use for outgoing emails
-DEFAULT_CONTACT_EMAIL = getattr(
-    settings, 'ASTAKOS_DEFAULT_CONTACT_EMAIL', 'support@example.synnefo.org')
+ADMINS = getattr(settings, 'ADMINS', ())
+MANAGERS = getattr(settings, 'MANAGERS', ADMINS)
+HELPDESK = getattr(settings, 'HELPDESK', ADMINS)
 
-SERVER_EMAIL = getattr(settings, 'SERVER_EMAIL', None)
-ADMINS = getattr(settings, 'ADMINS', None)
+CONTACT_EMAIL = settings.CONTACT_EMAIL
+SERVER_EMAIL = settings.SERVER_EMAIL
 
 # Identity Management enabled modules
 # Supported modules are: 'local', 'twitter' and 'shibboleth'
@@ -335,6 +335,7 @@ ACTIVATION_REDIRECT_URL = getattr(settings,
                                   'ASTAKOS_ACTIVATION_REDIRECT_URL',
                                   "/im/landing")
 
+
 # If true, this enables a ui compatibility layer for the introduction of UUIDs
 # in identity management. WARNING: Setting to True will break your installation.
 TRANSLATE_UUIDS = getattr(settings, 'ASTAKOS_TRANSLATE_UUIDS', False)
@@ -362,7 +363,9 @@ GOOGLE_SECRET = getattr(settings, 'ASTAKOS_GOOGLE_SECRET', '')
 LINKEDIN_TOKEN = getattr(settings, 'ASTAKOS_LINKEDIN_TOKEN', '')
 LINKEDIN_SECRET = getattr(settings, 'ASTAKOS_LINKEDIN_SECRET', '')
 
-# Where to redirect the user after successful login when no next parameter is
-# set
+# URL to redirect the user after successful login when no next parameter is set
 LOGIN_SUCCESS_URL = getattr(settings, 'ASTAKOS_LOGIN_SUCCESS_URL',
                             '/im/landing')
+
+# Whether or not to display projects in astakos menu
+PROJECTS_VISIBLE = getattr(settings, 'ASTAKOS_PROJECTS_VISIBLE', False)

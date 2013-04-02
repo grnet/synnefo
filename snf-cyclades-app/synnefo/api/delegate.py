@@ -71,6 +71,7 @@ def proxy(request, url, headers={}, body=None):
 
 @csrf_exempt
 def delegate_to_feedback_service(request):
+    logger.debug("Delegate feedback request to %s" % USER_FEEDBACK_URL)
     token = request.META.get('HTTP_X_AUTH_TOKEN')
     headers = {'X-Auth-Token': token}
     return proxy(request, USER_FEEDBACK_URL, headers=headers,

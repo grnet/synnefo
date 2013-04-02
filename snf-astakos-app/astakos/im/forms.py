@@ -61,7 +61,7 @@ from astakos.im.models import (
     ProjectApplication, Project)
 from astakos.im.settings import (
     INVITATIONS_PER_LEVEL, BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY,
-    RECAPTCHA_ENABLED, DEFAULT_CONTACT_EMAIL, LOGGING_LEVEL,
+    RECAPTCHA_ENABLED, CONTACT_EMAIL, LOGGING_LEVEL,
     PASSWORD_RESET_EMAIL_SUBJECT, NEWPASSWD_INVALIDATE_TOKEN,
     MODERATION_ENABLED, PROJECT_MEMBER_JOIN_POLICIES,
     PROJECT_MEMBER_LEAVE_POLICIES, EMAILCHANGE_ENABLED,
@@ -546,7 +546,7 @@ class ExtendedPasswordResetForm(PasswordResetForm):
                 'site_name': SITENAME,
                 'user': user,
                 'baseurl': BASEURL,
-                'support': DEFAULT_CONTACT_EMAIL
+                'support': CONTACT_EMAIL
             }
             from_email = settings.SERVER_EMAIL
             send_mail(_(PASSWORD_RESET_EMAIL_SUBJECT),
@@ -885,7 +885,8 @@ class ProjectApplicationForm(forms.ModelForm):
     def save(self, commit=True):
         data = dict(self.cleaned_data)
         data['precursor_application'] = self.instance.id
-        data['owner'] = self.user
+        is_new = self.instance.id is None
+        data['owner'] = self.user if is_new else self.instance.owner
         data['resource_policies'] = self.resource_policies
         submit_application(data, request_user=self.user)
 

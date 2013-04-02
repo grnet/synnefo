@@ -56,7 +56,7 @@ from functools import wraps
 
 import astakos.im.settings as astakos_settings
 from astakos.im.settings import (
-    DEFAULT_CONTACT_EMAIL, SITENAME, BASEURL, LOGGING_LEVEL,
+    CONTACT_EMAIL, SITENAME, BASEURL, LOGGING_LEVEL,
     VERIFICATION_EMAIL_SUBJECT, ACCOUNT_CREATION_SUBJECT,
     GROUP_CREATION_SUBJECT, HELPDESK_NOTIFICATION_EMAIL_SUBJECT,
     INVITATION_EMAIL_SUBJECT, GREETING_EMAIL_SUBJECT, FEEDBACK_EMAIL_SUBJECT,
@@ -64,7 +64,8 @@ from astakos.im.settings import (
     PROJECT_CREATION_SUBJECT, PROJECT_APPROVED_SUBJECT,
     PROJECT_TERMINATION_SUBJECT, PROJECT_SUSPENSION_SUBJECT,
     PROJECT_MEMBERSHIP_CHANGE_SUBJECT,
-    PROJECT_MEMBER_JOIN_POLICIES, PROJECT_MEMBER_LEAVE_POLICIES)
+    PROJECT_MEMBER_JOIN_POLICIES, PROJECT_MEMBER_LEAVE_POLICIES, HELPDESK,
+    ADMINS, MANAGERS)
 from astakos.im.notifications import build_notification, NotificationError
 from astakos.im.models import (
     AstakosUser, Invitation, ProjectMembership, ProjectApplication, Project,
@@ -115,7 +116,7 @@ def send_verification(user, template_name='im/activation_email.txt'):
                                'url': url,
                                'baseurl': BASEURL,
                                'site_name': SITENAME,
-                               'support': DEFAULT_CONTACT_EMAIL})
+                               'support': CONTACT_EMAIL})
     sender = settings.SERVER_EMAIL
     try:
         send_mail(_(VERIFICATION_EMAIL_SUBJECT), message, sender, [user.email],
@@ -139,17 +140,16 @@ def _send_admin_notification(template_name,
                              dictionary=None,
                              subject='alpha2 testing notification',):
     """
-    Send notification email to settings.ADMINS.
+    Send notification email to settings.HELPDESK + settings.MANAGERS.
 
     Raises SendNotificationError
     """
-    if not settings.ADMINS:
-        return
     dictionary = dictionary or {}
     message = render_to_string(template_name, dictionary)
     sender = settings.SERVER_EMAIL
+    recipient_list = [e[1] for e in HELPDESK + MANAGERS]
     try:
-        send_mail(subject, message, sender, [i[1] for i in settings.ADMINS],
+        send_mail(subject, message, sender, recipient_list,
                   connection=get_connection())
     except (SMTPException, socket.error) as e:
         logger.exception(e)
@@ -168,21 +168,19 @@ def send_account_creation_notification(template_name, dictionary=None):
 
 def send_helpdesk_notification(user, template_name='im/helpdesk_notification.txt'):
     """
-    Send email to DEFAULT_CONTACT_EMAIL to notify for a new user activation.
+    Send email to settings.HELPDESK list to notify for a new user activation.
 
     Raises SendNotificationError
     """
-    if not DEFAULT_CONTACT_EMAIL:
-        return
     message = render_to_string(
         template_name,
         {'user': user}
     )
     sender = settings.SERVER_EMAIL
+    recipient_list = [e[1] for e in HELPDESK + MANAGERS]
     try:
         send_mail(_(HELPDESK_NOTIFICATION_EMAIL_SUBJECT) % {'user': user.email},
-                  message, sender, [DEFAULT_CONTACT_EMAIL],
-                  connection=get_connection())
+                  message, sender, recipient_list, connection=get_connection())
     except (SMTPException, socket.error) as e:
         logger.exception(e)
         raise SendNotificationError()
@@ -204,7 +202,7 @@ def send_invitation(invitation, template_name='im/invitation.txt'):
                                'url': url,
                                'baseurl': BASEURL,
                                'site_name': SITENAME,
-                               'support': DEFAULT_CONTACT_EMAIL})
+                               'support': CONTACT_EMAIL})
     sender = settings.SERVER_EMAIL
     try:
         send_mail(subject, message, sender, [invitation.username],
@@ -232,7 +230,7 @@ def send_greeting(user, email_template_name='im/welcome_email.txt'):
                                'url': urljoin(BASEURL, reverse('index')),
                                'baseurl': BASEURL,
                                'site_name': SITENAME,
-                               'support': DEFAULT_CONTACT_EMAIL})
+                               'support': CONTACT_EMAIL})
     sender = settings.SERVER_EMAIL
     try:
         send_mail(subject, message, sender, [user.email],
@@ -248,7 +246,7 @@ def send_greeting(user, email_template_name='im/welcome_email.txt'):
 def send_feedback(msg, data, user, email_template_name='im/feedback_mail.txt'):
     subject = _(FEEDBACK_EMAIL_SUBJECT)
     from_email = settings.SERVER_EMAIL
-    recipient_list = [DEFAULT_CONTACT_EMAIL]
+    recipient_list = [e[1] for e in HELPDESK]
     content = render_to_string(email_template_name, {
         'message': msg,
         'data': data,
@@ -271,7 +269,7 @@ def send_change_email(
         url = request.build_absolute_uri(url)
         t = loader.get_template(email_template_name)
         c = {'url': url, 'site_name': SITENAME,
-             'support': DEFAULT_CONTACT_EMAIL, 'ec': ec}
+             'support': CONTACT_EMAIL, 'ec': ec}
         from_email = settings.SERVER_EMAIL
         send_mail(_(EMAIL_CHANGE_EMAIL_SUBJECT), t.render(Context(c)),
                   from_email, [ec.new_email_address],
@@ -533,6 +531,8 @@ def accept_membership(project_id, user, request_user=None):
         raise PermissionDenied(m)
 
     membership.accept()
+    logger.info("User %s has been accepted in %s." %
+                (membership.person.log_display, project))
 
     membership_change_notify(project, membership.person, 'accepted')
 
@@ -551,6 +551,8 @@ def reject_membership(project_id, user, request_user=None):
         raise PermissionDenied(m)
 
     membership.reject()
+    logger.info("Request of user %s for %s has been rejected." %
+                (membership.person.log_display, project))
 
     membership_change_notify(project, membership.person, 'rejected')
 
@@ -568,6 +570,8 @@ def cancel_membership(project_id, user_id):
         raise PermissionDenied(m)
 
     membership.cancel()
+    logger.info("Request of user %s for %s has been cancelled." %
+                (membership.person.log_display, project))
 
 def remove_membership_checks(project, request_user=None):
     checkAllowed(project, request_user)
@@ -586,6 +590,8 @@ def remove_membership(project_id, user, request_user=None):
         raise PermissionDenied(m)
 
     membership.remove()
+    logger.info("User %s has been removed from %s." %
+                (membership.person.log_display, project))
 
     membership_change_notify(project, membership.person, 'removed')
 
@@ -601,6 +607,8 @@ def enroll_member(project_id, user, request_user=None):
         raise PermissionDenied(m)
 
     membership.accept()
+    logger.info("User %s has been enrolled in %s." %
+                (membership.person.log_display, project))
     membership_enroll_notify(project, membership.person)
 
     return membership
@@ -635,9 +643,13 @@ def leave_project(project_id, user_id):
     leave_policy = project.application.member_leave_policy
     if leave_policy == AUTO_ACCEPT_POLICY:
         membership.remove()
+        logger.info("User %s has left %s." %
+                    (membership.person.log_display, project))
         auto_accepted = True
     else:
         membership.leave_request()
+        logger.info("User %s requested to leave %s." %
+                    (membership.person.log_display, project))
         membership_leave_request_notify(project, membership.person)
     return auto_accepted
 
@@ -667,9 +679,13 @@ def join_project(project_id, user_id):
     if (join_policy == AUTO_ACCEPT_POLICY and
         not project.violates_members_limit(adding=1)):
         membership.accept()
+        logger.info("User %s joined %s." %
+                    (membership.person.log_display, project))
         auto_accepted = True
     else:
         membership_request_notify(project, membership.person)
+        logger.info("User %s requested to join %s." %
+                    (membership.person.log_display, project))
 
     return auto_accepted
 
@@ -692,8 +708,9 @@ def submit_application(kw, request_user=None):
             m = _(astakos_messages.NOT_ALLOWED)
             raise PermissionDenied(m)
 
-    reached, limit = reached_pending_application_limit(request_user.id, precursor)
-    if reached:
+    owner = kw['owner']
+    reached, limit = reached_pending_application_limit(owner.id, precursor)
+    if not request_user.is_project_admin() and reached:
         m = _(astakos_messages.REACHED_PENDING_APPLICATION_LIMIT) % limit
         raise PermissionDenied(m)
 
@@ -713,6 +730,8 @@ def submit_application(kw, request_user=None):
 
     application.save()
     application.resource_policies = resource_policies
+    logger.info("User %s submitted %s." %
+                (request_user.log_display, application.log_display))
     application_submit_notify(application)
     return application
 
@@ -726,6 +745,7 @@ def cancel_application(application_id, request_user=None):
         raise PermissionDenied(m)
 
     application.cancel()
+    logger.info("%s has been cancelled." % (application.log_display))
 
 def dismiss_application(application_id, request_user=None):
     application = get_application_for_update(application_id)
@@ -737,6 +757,7 @@ def dismiss_application(application_id, request_user=None):
         raise PermissionDenied(m)
 
     application.dismiss()
+    logger.info("%s has been dismissed." % (application.log_display))
 
 def deny_application(application_id, reason=None):
     application = get_application_for_update(application_id)
@@ -749,6 +770,8 @@ def deny_application(application_id, reason=None):
     if reason is None:
         reason = ""
     application.deny(reason)
+    logger.info("%s has been denied with reason \"%s\"." %
+                (application.log_display, reason))
     application_deny_notify(application)
 
 def approve_application(app_id):
@@ -766,6 +789,7 @@ def approve_application(app_id):
         raise PermissionDenied(m)
 
     application.approve()
+    logger.info("%s has been approved." % (application.log_display))
     application_approve_notify(application)
 
 def check_expiration(execute=False):
@@ -782,7 +806,7 @@ def terminate(project_id):
     checkAlive(project)
 
     project.terminate()
-
+    logger.info("%s has been terminated." % (project))
     project_termination_notify(project)
 
 def suspend(project_id):
@@ -790,7 +814,7 @@ def suspend(project_id):
     checkAlive(project)
 
     project.suspend()
-
+    logger.info("%s has been suspended." % (project))
     project_suspension_notify(project)
 
 def resume(project_id):
@@ -801,6 +825,7 @@ def resume(project_id):
         raise PermissionDenied(m)
 
     project.resume()
+    logger.info("%s has been unsuspended." % (project))
 
 def get_by_chain_or_404(chain_id):
     try:
@@ -860,7 +885,7 @@ def _reached_pending_application_limit(user_id):
 
     PENDING = ProjectApplication.PENDING
     pending = ProjectApplication.objects.filter(
-        applicant__id=user_id, state=PENDING).count()
+        owner__id=user_id, state=PENDING).count()
 
     return pending >= limit, limit
 

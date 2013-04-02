@@ -530,7 +530,9 @@ class TestLocal(TestCase):
         form = forms.LocalUserCreationForm(data)
         self.assertFalse(form.is_valid())
 
+    @with_settings(settings, HELPDESK=(('support','support@synnefo.org'),))
     def test_local_provider(self):
+        self.helpdesk_email = astakos_settings.HELPDESK[0][1]
         # enable moderation
         astakos_settings.MODERATION_ENABLED = True
 
@@ -553,7 +555,8 @@ class TestLocal(TestCase):
         self.assertFalse(user.activation_sent)  # activation automatically sent
 
         # admin gets notified and activates the user from the command line
-        self.assertEqual(len(get_mailbox('support@cloud.grnet.gr')), 1)
+
+        self.assertEqual(len(get_mailbox(self.helpdesk_email)), 1)
         r = self.client.post('/im/local', {'username': 'kpap@grnet.gr',
                                            'password': 'password'})
         self.assertContains(r, messages.NOTIFICATION_SENT)

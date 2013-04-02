@@ -33,7 +33,7 @@
 
 from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.webproject.management.util import parse_bool
+from synnefo.webproject.management.utils import parse_bool
 from synnefo.management.common import (get_backend, check_backend_credentials)
 
 

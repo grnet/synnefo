@@ -32,6 +32,8 @@
 # or implied, of GRNET S.A.
 
 from time import time
+from operator import itemgetter
+from itertools import groupby
 
 from dbworker import DBWorker
 
@@ -180,6 +182,8 @@ class Node(DBWorker):
                             references versions(serial)
                             on update cascade
                             on delete cascade ) """)
+        execute(""" create index if not exists idx_attributes_domain
+                    on attributes(domain) """)
 
         wrapper = self.wrapper
         wrapper.execute()
@@ -284,7 +288,7 @@ class Node(DBWorker):
         self.statistics_update(parent, -nr, -size, mtime, cluster)
         self.statistics_update_ancestors(parent, -nr, -size, mtime, cluster)
 
-        q = ("select hash from versions "
+        q = ("select hash, serial from versions "
              "where node in (select node "
              "from nodes "
              "where parent = ?) "
@@ -333,7 +337,7 @@ class Node(DBWorker):
         mtime = time()
         self.statistics_update_ancestors(node, -nr, -size, mtime, cluster)
 
-        q = ("select hash from versions "
+        q = ("select hash, serial from versions "
              "where node = ? "
              "and cluster = ? "
              "and mtime <= ?")
@@ -343,7 +347,7 @@ class Node(DBWorker):
         for r in self.fetchall():
             hashes += [r[0]]
             serials += [r[1]]
-        
+
         q = ("delete from versions "
              "where node = ? "
              "and cluster = ? "
@@ -1001,3 +1005,30 @@ class Node(DBWorker):
              "and n.node = v.node") % cluster_where
         self.execute(q, args)
         return self.fetchone()
+
+    def domain_object_list(self, domain, cluster=None):
+        """Return a list of (path, property list, attribute dictionary)
+           for the objects in the specific domain and cluster.
+        """
+
+        q = ("select n.path, v.serial, v.node, v.hash, "
+             "v.size, v.type, v.source, v.mtime, v.muser, "
+             "v.uuid, v.checksum, v.cluster, a.key, a.value "
+             "from nodes n, versions v, attributes a "
+             "where n.node = v.node and "
+             "n.latest_version = v.serial and "
+             "v.serial = a.serial and "
+             "a.domain = ? ")
+        args = [domain]
+        if cluster != None:
+            q += "and v.cluster = ?"
+            args += [cluster]
+
+        self.execute(q, args)
+        rows = self.fetchall()
+
+        group_by = itemgetter(slice(12))
+        rows.sort(key = group_by)
+        groups = groupby(rows, group_by)
+        return [(k[0], k[1:], dict([i[12:] for i in data])) \
+            for (k, data) in groups]

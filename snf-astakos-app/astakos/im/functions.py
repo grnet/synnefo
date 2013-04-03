@@ -71,7 +71,7 @@ from astakos.im.models import (
     AstakosUser, Invitation, ProjectMembership, ProjectApplication, Project,
     UserSetting,
     get_resource_names, new_chain)
-from astakos.im.quotas import users_quotas
+from astakos.im.quotas import users_quotas, set_user_quota
 from astakos.im.project_notif import (
     membership_change_notify, membership_enroll_notify,
     membership_request_notify, membership_leave_request_notify,
@@ -297,7 +297,7 @@ def activate(
     if not user.activation_sent:
         user.activation_sent = datetime.now()
     user.save()
-    register_user_quotas(user)
+    qh_sync([user.id])
     send_helpdesk_notification(user, helpdesk_email_template_name)
     send_greeting(user, email_template_name)
 
@@ -373,11 +373,6 @@ class SendNotificationError(SendMailError):
     def __init__(self):
         self.message = _(astakos_messages.NOTIFICATION_SEND_ERR)
         super(SendNotificationError, self).__init__()
-
-
-def register_user_quotas(user):
-    quotas = users_quotas([user])
-    register_quotas(quotas)
 
 
 def get_quota(users):
@@ -527,7 +522,7 @@ def accept_membership(project_id, user, request_user=None):
         raise PermissionDenied(m)
 
     membership.accept()
-    qh_sync([membership])
+    qh_sync([user])
     logger.info("User %s has been accepted in %s." %
                 (membership.person.log_display, project))
 
@@ -587,7 +582,7 @@ def remove_membership(project_id, user, request_user=None):
         raise PermissionDenied(m)
 
     membership.remove()
-    qh_sync([membership])
+    qh_sync([user])
     logger.info("User %s has been removed from %s." %
                 (membership.person.log_display, project))
 
@@ -605,7 +600,7 @@ def enroll_member(project_id, user, request_user=None):
         raise PermissionDenied(m)
 
     membership.accept()
-    qh_sync([membership])
+    qh_sync([user])
     logger.info("User %s has been enrolled in %s." %
                 (membership.person.log_display, project))
 
@@ -643,7 +638,7 @@ def leave_project(project_id, user_id):
     leave_policy = project.application.member_leave_policy
     if leave_policy == AUTO_ACCEPT_POLICY:
         membership.remove()
-        qh_sync([membership])
+        qh_sync([user_id])
         logger.info("User %s has left %s." %
                     (membership.person.log_display, project))
         auto_accepted = True
@@ -680,7 +675,7 @@ def join_project(project_id, user_id):
     if (join_policy == AUTO_ACCEPT_POLICY and
         not project.violates_members_limit(adding=1)):
         membership.accept()
-        qh_sync([membership])
+        qh_sync([user_id])
         logger.info("User %s joined %s." %
                     (membership.person.log_display, project))
         auto_accepted = True
@@ -916,23 +911,14 @@ def reached_pending_application_limit(user_id, precursor=None):
 
 
 def qh_sync_projects(projects):
-    memberships = []
-    append = memberships.append
-    for project in projects:
-        ms = project.projectmembership_set.all().select_for_update()
-        memberships += list(ms)
 
-    qh_sync(memberships)
+    memberships = ProjectMembership.objects.filter(project__in=projects)
+    user_ids = set(m.person_id for m in memberships)
+
+    qh_sync(user_ids)
 
 
-def qh_sync(memberships):
-    sub_quota, add_quota = [], []
-    for membership in memberships:
-        pending_application = membership.get_pending_application()
-        membership.get_diff_quotas(sub_quota, add_quota, pending_application)
-        if membership.state == membership.REMOVED:
-            membership.delete()
-        else:
-            membership.application = pending_application
-            membership.save()
-    qh_add_quota(sub_quota, add_quota)
+def qh_sync(user_ids):
+    users = AstakosUser.forupdate.filter(id__in=user_ids).select_for_update()
+    astakos_quotas = users_quotas(users)
+    set_user_quota(astakos_quotas)

@@ -380,6 +380,8 @@ class AstakosUser(User):
 
     objects = AstakosUserManager()
 
+    forupdate = ForUpdateManager()
+
     def __init__(self, *args, **kwargs):
         super(AstakosUser, self).__init__(*args, **kwargs)
         self.__has_signed_terms = self.has_signed_terms
@@ -2153,8 +2155,7 @@ class ProjectMembership(models.Model):
             raise AssertionError(m)
 
         self._set_history_item(reason='REMOVE')
-        self.state = self.REMOVED
-        self.save()
+        self.delete()
 
     def can_reject(self):
         return self.state == self.REQUESTED
@@ -2181,47 +2182,6 @@ class ProjectMembership(models.Model):
         # because they were never effected
         self._set_history_item(reason='CANCEL')
         self.delete()
-
-    def get_diff_quotas(self, sub_list=None, add_list=None,
-                        pending_application=None):
-        if sub_list is None:
-            sub_list = []
-
-        if add_list is None:
-            add_list = []
-
-        sub_append = sub_list.append
-        add_append = add_list.append
-        holder = self.person.uuid
-
-        synced_application = self.application
-        if synced_application is not None:
-            cur_grants = synced_application.projectresourcegrant_set.all()
-            for grant in cur_grants:
-                sub_append(QuotaLimits(
-                               holder       = holder,
-                               resource     = str(grant.resource),
-                               capacity     = grant.member_capacity,
-                               ))
-
-        if pending_application is not None:
-            new_grants = pending_application.projectresourcegrant_set.all()
-            for new_grant in new_grants:
-                add_append(QuotaLimits(
-                               holder       = holder,
-                               resource     = str(new_grant.resource),
-                               capacity     = new_grant.member_capacity,
-                               ))
-
-        return (sub_list, add_list)
-
-    def get_pending_application(self):
-        project = self.project
-        if project.is_deactivated():
-            return None
-        if self.state not in self.ACTUALLY_ACCEPTED:
-            return None
-        return project.application
 
 
 class Serial(models.Model):

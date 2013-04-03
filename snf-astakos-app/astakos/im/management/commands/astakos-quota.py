@@ -80,13 +80,13 @@ class Command(BaseCommand):
         else:
             log = self.run(sync)
 
-        qh_l, qh_c, astakos_i, diff_q, info = log
+        qh_limits, qh_quotas, astakos_i, diff_q, info = log
 
         if list_only:
-            self.list_quotas(qh_l, qh_c, astakos_i, info)
+            self.list_quotas(qh_quotas, astakos_i, info)
         else:
             if verify:
-                self.print_verify(qh_l, diff_q)
+                self.print_verify(qh_limits, diff_q)
             if sync:
                 self.print_sync(diff_q)
 
@@ -125,32 +125,33 @@ class Command(BaseCommand):
             logger.exception(e)
             raise CommandError("Syncing failed.")
 
-    def list_quotas(self, qh_limits, qh_counters, astakos_initial, info):
-        labels = ('uuid', 'email', 'resource', 'initial', 'total', 'usage')
-        columns = (36, 30, 24, 12, 12, 12)
+    def list_quotas(self, qh_quotas, astakos_initial, info):
+        labels = ('uuid', 'email', 'source', 'resource', 'initial', 'total', 'usage')
+        columns = (36, 30, 20, 24, 12, 12, 12)
 
         line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
         self.stdout.write(line + '\n')
         sep = '-' * len(line)
         self.stdout.write(sep + '\n')
 
-        for holder, resources in qh_limits.iteritems():
-            h_counters = qh_counters[holder]
+        for holder, holder_quotas in qh_quotas.iteritems():
             h_initial = astakos_initial[holder]
             email = info[holder]
-            for resource, limits in resources.iteritems():
-                initial = str(h_initial[resource])
-                capacity = str(limits)
-                used = str(h_counters[resource])
+            for source, source_quotas in holder_quotas.iteritems():
+                s_initial = h_initial[source]
+                for resource, values in source_quotas.iteritems():
+                    initial = str(s_initial[resource])
+                    capacity = str(values['limit'])
+                    used = str(values['used'])
 
-                fields = holder, email, resource, initial, capacity, used
-                output = []
-                for field, width in zip(fields, columns):
-                    s = field.rjust(width)
-                    output.append(s)
+                    fields = holder, email, source, resource, initial, capacity, used
+                    output = []
+                    for field, width in zip(fields, columns):
+                        s = field.rjust(width)
+                        output.append(s)
 
-                line = ' '.join(output)
-                self.stdout.write(line + '\n')
+                    line = ' '.join(output)
+                    self.stdout.write(line + '\n')
 
     def print_sync(self, diff_quotas):
         size = len(diff_quotas)

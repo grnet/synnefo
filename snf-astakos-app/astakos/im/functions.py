@@ -70,7 +70,8 @@ from astakos.im.notifications import build_notification, NotificationError
 from astakos.im.models import (
     AstakosUser, Invitation, ProjectMembership, ProjectApplication, Project,
     UserSetting,
-    get_resource_names, new_chain, users_quotas)
+    get_resource_names, new_chain)
+from astakos.im.quotas import users_quotas
 from astakos.im.project_notif import (
     membership_change_notify, membership_enroll_notify,
     membership_request_notify, membership_leave_request_notify,

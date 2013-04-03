@@ -34,7 +34,8 @@
 from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 
-from astakos.im.models import sync_all_users, sync_users, AstakosUser
+from astakos.im.models import AstakosUser
+from astakos.im.quotas import sync_all_users, sync_users
 from astakos.im.functions import get_user_by_uuid
 from astakos.im.management.commands._common import is_uuid, is_email
 from synnefo.lib.db.transaction import commit_on_success_strict

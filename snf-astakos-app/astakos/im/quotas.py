@@ -31,6 +31,9 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from astakos.im.models import (
+    Resource, AstakosUserQuota, AstakosUser,
+    Project, ProjectMembership, ProjectResourceGrant, ProjectApplication)
 from astakos.quotaholder.callpoint import QuotaholderDjangoDBCallpoint
 
 qh = QuotaholderDjangoDBCallpoint()
@@ -94,3 +97,126 @@ def get_user_quotas(user, resources=None, sources=None):
 
 def set_user_quota(quotas):
     qh.set_holder_quota(quotas)
+
+
+def get_default_quota():
+    _DEFAULT_QUOTA = {}
+    resources = Resource.objects.select_related('service').all()
+    for resource in resources:
+        capacity = resource.uplimit
+        _DEFAULT_QUOTA[resource.full_name()] = capacity
+
+    return _DEFAULT_QUOTA
+
+
+SYSTEM = 'system'
+
+
+def initial_quotas(users):
+    initial = {}
+    default_quotas = get_default_quota()
+
+    for user in users:
+        uuid = user.uuid
+        source_quota = {SYSTEM: dict(default_quotas)}
+        initial[uuid] = source_quota
+
+    objs = AstakosUserQuota.objects.select_related()
+    orig_quotas = objs.filter(user__in=users)
+    for user_quota in orig_quotas:
+        uuid = user_quota.user.uuid
+        user_init = initial.get(uuid, {})
+        resource = user_quota.resource.full_name()
+        user_init[resource] = user_quota.capacity
+        initial[uuid] = user_init
+
+    return initial
+
+
+def get_grant_source(grant):
+    return SYSTEM
+
+
+def users_quotas(users, initial=None):
+    if initial is None:
+        quotas = initial_quotas(users)
+    else:
+        quotas = copy.deepcopy(initial)
+
+    ACTUALLY_ACCEPTED = ProjectMembership.ACTUALLY_ACCEPTED
+    objs = ProjectMembership.objects.select_related('project', 'person')
+    memberships = objs.filter(person__in=users,
+                              state__in=ACTUALLY_ACCEPTED,
+                              project__state=Project.APPROVED)
+
+    project_ids = set(m.project_id for m in memberships)
+    objs = ProjectApplication.objects.select_related('project')
+    apps = objs.filter(project__in=project_ids)
+
+    project_dict = {}
+    for app in apps:
+        project_dict[app.project] = app
+
+    objs = ProjectResourceGrant.objects.select_related()
+    grants = objs.filter(project_application__in=apps)
+
+    for membership in memberships:
+        uuid = membership.person.uuid
+        userquotas = quotas.get(uuid, {})
+
+        application = project_dict[membership.project]
+
+        for grant in grants:
+            if grant.project_application_id != application.id:
+                continue
+
+            source = get_grant_source(grant)
+            source_quotas = userquotas.get(source, {})
+
+            resource = grant.resource.full_name()
+            prev = source_quotas.get(resource, 0)
+            new = prev + grant.member_capacity
+            source_quotas[resource] = new
+            userquotas[source] = source_quotas
+        quotas[uuid] = userquotas
+
+    return quotas
+
+
+def user_quotas(user):
+    quotas = users_quotas([user])
+    try:
+        return quotas[user.uuid]
+    except KeyError:
+        raise ValueError("could not compute quotas")
+
+
+def sync_users(users, sync=True):
+    def _sync_users(users, sync):
+
+        info = {}
+        for user in users:
+            info[user.uuid] = user.email
+
+        qh_quotas, qh_limits = get_users_quotas_and_limits(users)
+        astakos_initial = initial_quotas(users)
+        astakos_quotas = users_quotas(users)
+
+        diff_quotas = {}
+        for holder, local in astakos_quotas.iteritems():
+            registered = qh_limits.get(holder, None)
+            if local != registered:
+                diff_quotas[holder] = dict(local)
+
+        if sync:
+            r = set_user_quota(diff_quotas)
+
+        return (qh_limits, qh_quotas,
+                astakos_initial, diff_quotas, info)
+
+    return _sync_users(users, sync)
+
+
+def sync_all_users(sync=True):
+    users = AstakosUser.objects.verified()
+    return sync_users(users, sync)

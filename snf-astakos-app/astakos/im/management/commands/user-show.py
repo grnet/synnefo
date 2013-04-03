@@ -34,6 +34,7 @@
 from django.core.management.base import BaseCommand, CommandError
 
 from astakos.im.models import AstakosUser, get_latest_terms
+from astakos.im.quotas import user_quotas
 from astakos.im.util import model_to_dict
 from synnefo.lib.ordereddict import OrderedDict
 
@@ -66,7 +67,7 @@ class Command(BaseCommand):
             raise CommandError(msg)
 
         for user in users:
-            quotas = user.all_quotas()
+            quotas = user_quotas(user)
 
             settings_dict = {}
             settings = user.settings()

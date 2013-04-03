@@ -165,6 +165,23 @@ class QuotaholderDjangoDBCallpoint(object):
 
         return holdings_list, rejected
 
+    def get_holder_quota(self, holders=None, sources=None, resources=None):
+        holdings = Holding.objects.filter(holder__in=holders)
+
+        if sources is not None:
+            holdings = holdings.filter(source__in=sources)
+
+        if resources is not None:
+            holdings = holdings.filter(resource__in=resources)
+
+        quotas = {}
+        for holding in holdings:
+            key = (holding.holder, holding.source, holding.resource)
+            value = (holding.limit, holding.imported_min, holding.imported_max)
+            quotas[key] = value
+
+        return quotas
+
     def get_quota(self, context=None, get_quota=[]):
         quotas = []
         append = quotas.append
@@ -186,6 +203,26 @@ class QuotaholderDjangoDBCallpoint(object):
                     h.flags))
 
         return quotas
+
+    def set_holder_quota(self, quotas):
+        holders = quotas.keys()
+        hs = Holding.objects.filter(holder__in=holders).select_for_update()
+        holdings = {}
+        for h in hs:
+            holdings[(h.holder, h.source, h.resource)] = h
+
+        for holder, holder_quota in quotas.iteritems():
+            for source, source_quota in holder_quota.iteritems():
+                for resource, limit in source_quota.iteritems():
+                    try:
+                        h = holdings[(holder, source, resource)]
+                    except KeyError:
+                        h = Holding(holder=holder,
+                                    source=source,
+                                    resource=resource)
+
+                    h.limit = limit
+                    h.save()
 
     def set_quota(self, context=None, set_quota=[]):
         rejected = []

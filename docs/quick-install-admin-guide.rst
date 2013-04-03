@@ -1393,6 +1393,7 @@ Assuming ``eth0`` on both hosts is the public interface (directly connected
 to the router), run on every node:
 
 .. code-block:: console
+
    # apt-get install vlan
    # brctl addbr br0
    # ip link set br0 up

@@ -36,6 +36,7 @@ from django.conf.urls.defaults import patterns, url
 urlpatterns = patterns(
     'astakos.api.quotas',
     url(r'^quotas/?$', 'quotas'),
+    url(r'^resources/?$', 'resources'),
     url(r'^commissions/?$', 'commissions'),
     url(r'^commissions/action/?$', 'resolve_pending_commissions'),
     url(r'^commissions/(?P<serial>\d+)/?$', 'get_commission'),

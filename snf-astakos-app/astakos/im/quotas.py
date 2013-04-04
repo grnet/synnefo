@@ -99,6 +99,22 @@ def set_user_quota(quotas):
     qh.set_holder_quota(quotas)
 
 
+def get_resources(resources=None, services=None):
+    if resources is None:
+        rs = Resource.objects.all()
+    else:
+        rs = Resource.objects.filter(name__in=resources)
+
+    if services is not None:
+        rs = rs.filter(service__in=services)
+
+    resource_dict = {}
+    for r in rs:
+        resource_dict[r.full_name()] = r.get_info()
+
+    return resource_dict
+
+
 def get_default_quota():
     _DEFAULT_QUOTA = {}
     resources = Resource.objects.select_related('service').all()

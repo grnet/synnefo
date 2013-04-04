@@ -177,6 +177,12 @@ class Resource(models.Model):
     def full_name(self):
         return str(self)
 
+    def get_info(self):
+        return {'service': str(self.service),
+                'description': self.desc,
+                'unit': self.unit,
+                }
+
     @property
     def help_text(self):
         return get_presentation(str(self)).get('help_text', '')

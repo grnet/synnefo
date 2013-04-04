@@ -37,10 +37,11 @@ from django.http import HttpResponse
 
 from synnefo.lib.db.transaction import commit_on_success_strict
 from astakos.api.util import json_response
+from astakos.im.api import api_method as generic_api_method
 from astakos.im.api.user import api_method as user_api_method
 from astakos.im.api.service import api_method as service_api_method
 from astakos.im.api.faults import BadRequest, InternalServerError
-from astakos.im.quotas import get_user_quotas
+from astakos.im.quotas import get_user_quotas, get_resources
 
 import astakos.quotaholder.exception as qh_exception
 from astakos.quotaholder.callpoint import QuotaholderDjangoDBCallpoint
@@ -50,6 +51,12 @@ qh = QuotaholderDjangoDBCallpoint()
 @user_api_method(http_method='GET', token_required=True)
 def quotas(request, user=None):
     result = get_user_quotas(user)
+    return json_response(result)
+
+
+@generic_api_method(http_method='GET')
+def resources(request):
+    result = get_resources()
     return json_response(result)
 
 

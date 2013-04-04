@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,12 +31,16 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import include, patterns
+from django.http import HttpResponse
+from django.utils import simplejson as json
 
-urlpatterns = patterns('',
-                       (r'^im/', include('astakos.im.urls')),
-                       (r'^astakos/api/', include('astakos.api.urls')),
-                       (r'^login/?$', 'astakos.im.target.redirect.login'),
-                       (r'^feedback/?$', 'astakos.im.api.user.send_feedback'),
-                       (r'^user_catalogs/?$', 'astakos.im.api.user.get_uuid_displayname_catalogs'),
-                       (r'^service/api/user_catalogs/?$', 'astakos.im.api.service.get_uuid_displayname_catalogs'))
+
+def json_response(content, status_code=None):
+    response = HttpResponse()
+    if status_code is not None:
+        response.status_code = status_code
+
+    response.content = json.dumps(content)
+    response['Content-Type'] = 'application/json; charset=UTF-8'
+    response['Content-Length'] = len(response.content)
+    return response

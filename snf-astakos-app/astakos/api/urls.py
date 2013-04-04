@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,12 +31,13 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import include, patterns
+from django.conf.urls.defaults import patterns, url
 
-urlpatterns = patterns('',
-                       (r'^im/', include('astakos.im.urls')),
-                       (r'^astakos/api/', include('astakos.api.urls')),
-                       (r'^login/?$', 'astakos.im.target.redirect.login'),
-                       (r'^feedback/?$', 'astakos.im.api.user.send_feedback'),
-                       (r'^user_catalogs/?$', 'astakos.im.api.user.get_uuid_displayname_catalogs'),
-                       (r'^service/api/user_catalogs/?$', 'astakos.im.api.service.get_uuid_displayname_catalogs'))
+urlpatterns = patterns(
+    'astakos.api.quotas',
+    url(r'^quotas/?$', 'quotas'),
+    url(r'^commissions/?$', 'commissions'),
+    url(r'^commissions/action/?$', 'resolve_pending_commissions'),
+    url(r'^commissions/(?P<serial>\d+)/?$', 'get_commission'),
+    url(r'^commissions/(?P<serial>\d+)/action/?$', 'serial_action'),
+)

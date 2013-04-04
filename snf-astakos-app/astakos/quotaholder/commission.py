@@ -31,15 +31,13 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from astakos.quotaholder.exception import (
-    NoCapacityError, NonImportedError)
+from astakos.quotaholder.exception import NoCapacityError, NoQuantityError
 
 
 class Operation(object):
 
     @staticmethod
     def assertions(holding):
-        assert(0 <= holding.imported_min)
         assert(holding.imported_min <= holding.imported_max)
 
     @classmethod
@@ -49,7 +47,7 @@ class Operation(object):
     @classmethod
     def prepare(cls, holding, quantity, check=True):
         cls.assertions(holding)
-        cls._prepare(holding, quantity, check=True)
+        cls._prepare(holding, quantity, check)
 
     @classmethod
     def _finalize(cls, holding, quantity):
@@ -69,6 +67,14 @@ class Operation(object):
         # Assertions do not hold when reverting
         cls._prepare(holding, -quantity, check=False)
 
+    @classmethod
+    def provision(cls, holding, quantity, importing=True):
+        return {'holder': holding.holder,
+                'source': holding.source,
+                'resource': holding.resource,
+                'quantity': quantity if importing else -quantity,
+                }
+
 
 class Import(Operation):
 
@@ -82,12 +88,10 @@ class Import(Operation):
             holder = holding.holder
             resource = holding.resource
             m = ("%s has not enough capacity of %s." % (holder, resource))
+            provision = cls.provision(holding, quantity, importing=True)
             raise NoCapacityError(m,
-                                  holder=holder,
-                                  resource=resource,
-                                  requested=quantity,
-                                  current=imported_max,
-                                  limit=limit)
+                                  provision=provision,
+                                  available=limit-imported_max)
 
         holding.imported_max = new_imported_max
         holding.save()
@@ -110,11 +114,10 @@ class Release(Operation):
             resource = holding.resource
             m = ("%s attempts to release more %s than it contains." %
                  (holder, resource))
-            raise NonImportedError(m,
-                                   holder=holder,
-                                   resource=resource,
-                                   requested=quantity,
-                                   limit=imported_min)
+            provision = cls.provision(holding, quantity, importing=False)
+            raise NoQuantityError(m,
+                                  provision=provision,
+                                  available=imported_min)
 
         holding.imported_min = new_imported_min
         holding.save()
@@ -129,8 +132,9 @@ class Operations(object):
     def __init__(self):
         self.operations = []
 
-    def prepare(self, operation, holding, quantity):
-        operation.prepare(holding, quantity)
+    def prepare(self, operation, holding, quantity, force):
+        check = not force
+        operation.prepare(holding, quantity, check)
         self.operations.append((operation, holding, quantity))
 
     def finalize(self, operation, holding, quantity):

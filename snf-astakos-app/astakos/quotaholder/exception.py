@@ -36,6 +36,10 @@ class QuotaholderError(Exception):
     pass
 
 
+class NoCommissionError(QuotaholderError):
+    pass
+
+
 class CorruptedError(QuotaholderError):
     pass
 
@@ -45,25 +49,37 @@ class InvalidDataError(QuotaholderError):
 
 
 class CommissionException(QuotaholderError):
-    pass
+    data = {}
 
-
-class CommissionValueException(CommissionException):
     def __init__(self, *args, **kwargs):
+        self.data['name'] = self.__class__.__name__
 
-        self.holder    = kwargs.pop('holder', None)
-        self.resource  = kwargs.pop('resource', None)
-        self.requested = kwargs.pop('requested', None)
-        self.current   = kwargs.pop('current', None)
-        self.limit     = kwargs.pop('limit', None)
+        provision = kwargs.pop('provision', None)
+        if provision is not None:
+            self.data['provision'] = provision
+
+        QuotaholderError.__init__(self, *args, **kwargs)
+
+
+class NoCapacityError(CommissionException):
+    def __init__(self, *args, **kwargs):
+        available = kwargs.pop('available', None)
+        if available is not None:
+            self.data['available'] = available
+
         CommissionException.__init__(self, *args, **kwargs)
 
 
-class NoCapacityError(CommissionValueException):
-    pass
+class NoQuantityError(CommissionException):
+    def __init__(self, *args, **kwargs):
+        available = kwargs.pop('available', None)
+        if available is not None:
+            self.data['available'] = available
+
+        CommissionException.__init__(self, *args, **kwargs)
 
 
-class NonImportedError(CommissionValueException):
+class NoHoldingError(CommissionException):
     pass
 
 

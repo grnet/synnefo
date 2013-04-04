@@ -31,10 +31,13 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from functools import partial
+
 from astakos.quotaholder.exception import (
     QuotaholderError,
+    NoCommissionError,
     CorruptedError, InvalidDataError,
-    NoCapacityError,
+    NoHoldingError,
     DuplicateError)
 
 from astakos.quotaholder.commission import (
@@ -311,6 +314,7 @@ class QuotaholderDjangoDBCallpoint(object):
                          context=None,
                          clientkey=None,
                          name=None,
+                         force=False,
                          provisions=()):
 
         if name is None:
@@ -323,17 +327,26 @@ class QuotaholderDjangoDBCallpoint(object):
 
         try:
             checked = []
-            for holder, source, resource, quantity in provisions:
+            for provision in provisions:
+                try:
+                    holder = provision['holder']
+                    source = provision['source']
+                    resource = provision['resource']
+                    quantity = provision['quantity']
+                except KeyError:
+                    raise InvalidDataError("Malformed provision")
 
-                if holder == source:
-                    m = ("Cannot issue commission from a holder "
-                         "to itself (%s)" % (holder,))
-                    raise InvalidDataError(m)
+                if not isinstance(quantity, (int, long)):
+                    raise InvalidDataError("Malformed provision")
 
                 ent_res = holder, resource
                 if ent_res in checked:
                     m = "Duplicate provision for %s.%s" % ent_res
-                    raise DuplicateError(m)
+                    details = {'message': m,
+                               }
+                    raise DuplicateError(m,
+                                         provision=provision,
+                                         details=details)
                 checked.append(ent_res)
 
                 # Target
@@ -343,21 +356,17 @@ class QuotaholderDjangoDBCallpoint(object):
                                         source=source,
                                         for_update=True)
                 except Holding.DoesNotExist:
-                    m = ("There is no capacity "
-                         "to allocate into in %s.%s" % (holder, resource))
-                    raise NoCapacityError(m,
-                                          holder=holder,
-                                          resource=resource,
-                                          requested=quantity,
-                                          current=0,
-                                          limit=0)
+                    m = ("There is no such holding %s.%s"
+                         % (holder, resource))
+                    raise NoHoldingError(m,
+                                         provision=provision)
 
                 if quantity >= 0:
-                    operations.prepare(Import, th, quantity)
+                    operations.prepare(Import, th, quantity, force)
 
                 else: # release
                     abs_quantity = -quantity
-                    operations.prepare(Release, th, abs_quantity)
+                    operations.prepare(Release, th, abs_quantity, force)
 
                 Provision.objects.create(serial=commission,
                                          holding=th,
@@ -393,106 +402,127 @@ class QuotaholderDjangoDBCallpoint(object):
 
     def accept_commission(self,
                           context=None, clientkey=None,
-                          serials=[], reason=''):
+                          serial=None, reason=''):
         log_time = now()
 
-        for serial in serials:
+        try:
+            c = db_get_commission(clientkey=clientkey, serial=serial,
+                                  for_update=True)
+        except Commission.DoesNotExist:
+            return False
+
+        operations = Operations()
+
+        provisions = db_filter_provision(serial=serial, for_update=True)
+        for pv in provisions:
             try:
-                c = db_get_commission(clientkey=clientkey, serial=serial,
-                                      for_update=True)
-            except Commission.DoesNotExist:
-                return
+                th = db_get_holding(id=pv.holding_id,
+                                    for_update=True)
+            except Holding.DoesNotExist:
+                m = "Corrupted provision"
+                raise CorruptedError(m)
 
-            operations = Operations()
+            quantity = pv.quantity
 
-            provisions = db_filter_provision(serial=serial, for_update=True)
-            for pv in provisions:
-                try:
-                    th = db_get_holding(id=pv.holding_id,
-                                        for_update=True)
-                except Holding.DoesNotExist:
-                    m = "Corrupted provision"
-                    raise CorruptedError(m)
+            if quantity >= 0:
+                operations.finalize(Import, th, quantity)
+            else: # release
+                abs_quantity = -quantity
+                operations.finalize(Release, th, abs_quantity)
 
-                quantity = pv.quantity
-
-                if quantity >= 0:
-                    operations.finalize(Import, th, quantity)
-                else: # release
-                    abs_quantity = -quantity
-                    operations.finalize(Release, th, abs_quantity)
-
-                reason = 'ACCEPT:' + reason[-121:]
-                self._log_provision(c, pv, log_time, reason)
-                pv.delete()
-            c.delete()
-
-        return
+            reason = 'ACCEPT:' + reason[-121:]
+            self._log_provision(c, pv, log_time, reason)
+            pv.delete()
+        c.delete()
+        return True
 
     def reject_commission(self,
                           context=None, clientkey=None,
-                          serials=[], reason=''):
+                          serial=None, reason=''):
         log_time = now()
 
-        for serial in serials:
+        try:
+            c = db_get_commission(clientkey=clientkey, serial=serial,
+                                  for_update=True)
+        except Commission.DoesNotExist:
+            return False
+
+        operations = Operations()
+
+        provisions = db_filter_provision(serial=serial, for_update=True)
+        for pv in provisions:
             try:
-                c = db_get_commission(clientkey=clientkey, serial=serial,
-                                      for_update=True)
-            except Commission.DoesNotExist:
-                return
+                th = db_get_holding(id=pv.holding_id,
+                                    for_update=True)
+            except Holding.DoesNotExist:
+                m = "Corrupted provision"
+                raise CorruptedError(m)
 
-            operations = Operations()
+            quantity = pv.quantity
 
-            provisions = db_filter_provision(serial=serial, for_update=True)
-            for pv in provisions:
-                try:
-                    th = db_get_holding(id=pv.holding_id,
-                                        for_update=True)
-                except Holding.DoesNotExist:
-                    m = "Corrupted provision"
-                    raise CorruptedError(m)
+            if quantity >= 0:
+                operations.undo(Import, th, quantity)
+            else: # release
+                abs_quantity = -quantity
+                operations.undo(Release, th, abs_quantity)
 
-                quantity = pv.quantity
-
-                if quantity >= 0:
-                    operations.undo(Import, th, quantity)
-                else: # release
-                    abs_quantity = -quantity
-                    operations.undo(Release, th, abs_quantity)
-
-                reason = 'REJECT:' + reason[-121:]
-                self._log_provision(c, pv, log_time, reason)
-                pv.delete()
-            c.delete()
-
-        return
+            reason = 'REJECT:' + reason[-121:]
+            self._log_provision(c, pv, log_time, reason)
+            pv.delete()
+        c.delete()
+        return True
 
     def get_pending_commissions(self, context=None, clientkey=None):
         pending = Commission.objects.filter(clientkey=clientkey)
         pending_list = pending.values_list('serial', flat=True)
-        return pending_list
+        return list(pending_list)
+
+    def get_commission(self, clientkey=None, serial=None):
+        try:
+            commission = Commission.objects.get(clientkey=clientkey,
+                                                serial=serial)
+        except Commission.DoesNotExist:
+            raise NoCommissionError(serial)
+
+        objs = Provision.objects.select_related('holding')
+        provisions = objs.filter(serial=commission)
+
+        ps = [p.todict() for p in provisions]
+
+        response = {'serial':     serial,
+                    'provisions': ps,
+                    'issue_time': commission.issue_time,
+                    }
+        return response
+
+    def _resolve(self, include, exclude, operation):
+        done = []
+        failed = []
+        for serial in include:
+            if serial in exclude:
+                failed.append((serial, 'CONFLICT'))
+            else:
+                response = operation(serial=serial)
+                if response:
+                    done.append(serial)
+                else:
+                    failed.append((serial, 'NOTFOUND'))
+        return done, failed
 
     def resolve_pending_commissions(self,
                                     context=None, clientkey=None,
-                                    max_serial=None, accept_set=[]):
+                                    accept_set=[], reject_set=[]):
         accept_set = set(accept_set)
-        pending = self.get_pending_commissions(context=context,
-                                               clientkey=clientkey)
-        pending = sorted(pending)
+        reject_set = set(reject_set)
 
-        accept = self.accept_commission
-        reject = self.reject_commission
+        accept = partial(self.accept_commission, clientkey=clientkey)
+        reject = partial(self.reject_commission, clientkey=clientkey)
 
-        for serial in pending:
-            if serial > max_serial:
-                break
+        accepted, failed_ac = self._resolve(accept_set, reject_set, accept)
+        rejected, failed_re = self._resolve(reject_set, accept_set, reject)
 
-            if serial in accept_set:
-                accept(context=context, clientkey=clientkey, serials=[serial])
-            else:
-                reject(context=context, clientkey=clientkey, serials=[serial])
-
-        return
+        failed = list(set(failed_ac + failed_re))
+        return accepted, rejected, failed
 
     def get_timeline(self, context=None, after="", before="Z", get_timeline=[]):
         holder_set = set()

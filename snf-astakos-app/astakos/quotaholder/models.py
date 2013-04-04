@@ -83,6 +83,14 @@ class Provision(Model):
 
     objects     =   ForUpdateManager()
 
+    def todict(self):
+        return {'holder':   self.holding.holder,
+                'source':   self.holding.source,
+                'resource': self.holding.resource,
+                'quantity': self.quantity,
+                }
+
+
 class ProvisionLog(Model):
 
     serial              =   BigIntegerField()

@@ -253,7 +253,6 @@ def load_service_resources():
                 import traceback; traceback.print_exc()
                 continue
 
-    register_resources(rs)
 
 def get_resource_names():
     _RESOURCE_NAMES = []

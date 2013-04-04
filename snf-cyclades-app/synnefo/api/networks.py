@@ -282,7 +282,7 @@ def update_network_name(request, network_id):
     if net.public:
         raise faults.Forbidden('Can not rename the public network.')
     if net.deleted:
-        raise Network.DeletedError
+        raise faults.BadRequest("Network has been deleted.")
     net.name = name
     net.save()
     return HttpResponse(status=204)
@@ -305,7 +305,7 @@ def delete_network(request, network_id):
         raise faults.Forbidden('Can not delete the public network.')
 
     if net.deleted:
-        raise Network.DeletedError
+        raise faults.BadRequest("Network has been deleted.")
 
     if net.machines.all():  # Nics attached on network
         raise faults.NetworkInUse('Machines are connected to network.')
@@ -328,7 +328,7 @@ def network_action(request, network_id):
     if net.public:
         raise faults.Forbidden('Can not modify the public network.')
     if net.deleted:
-        raise Network.DeletedError
+        raise faults.BadRequest("Network has been deleted.")
 
     try:
         key = req.keys()[0]

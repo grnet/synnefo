@@ -470,15 +470,6 @@ def api_method(http_method=None, atom_allowed=False):
                 resp = func(request, *args, **kwargs)
                 update_response_headers(request, resp)
                 return resp
-            except VirtualMachine.DeletedError:
-                fault = faults.BadRequest('Server has been deleted.')
-                return render_fault(request, fault)
-            except Network.DeletedError:
-                fault = faults.BadRequest('Network has been deleted.')
-                return render_fault(request, fault)
-            except VirtualMachine.BuildingError:
-                fault = faults.BuildInProgress('Server is being built.')
-                return render_fault(request, fault)
             except NotAllowedError:
                 # Image Backend Unathorized
                 fault = faults.Forbidden('Request not allowed.')

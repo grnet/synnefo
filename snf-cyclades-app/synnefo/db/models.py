@@ -395,12 +395,6 @@ class VirtualMachine(models.Model):
         def __str__(self):
             return repr(str(self._action))
 
-    class DeletedError(Exception):
-        pass
-
-    class BuildingError(Exception):
-        pass
-
 
 class VirtualMachineMetadata(models.Model):
     meta_key = models.CharField(max_length=50)
@@ -577,12 +571,6 @@ class Network(models.Model):
 
         def __str__(self):
             return repr(str(self._action))
-
-    class DeletedError(Exception):
-        pass
-
-    class BuildingError(Exception):
-        pass
 
 
 class BackendNetwork(models.Model):

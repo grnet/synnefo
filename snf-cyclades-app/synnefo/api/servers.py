@@ -513,11 +513,11 @@ def start_action(vm, action):
 
     # No actions to deleted VMs
     if vm.deleted:
-        raise VirtualMachine.DeletedError
+        raise faults.BadRequest("VirtualMachine has been deleted.")
 
     # No actions to machines being built. They may be destroyed, however.
     if vm.operstate == 'BUILD' and action != 'DESTROY':
-        raise VirtualMachine.BuildingError
+        raise faults.BuildInProgress("Server is being build.")
 
     vm.action = action
     vm.backendjobid = None

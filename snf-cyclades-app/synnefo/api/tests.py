@@ -50,13 +50,11 @@ def astakos_user(user):
         .... make api calls ....
 
     """
-    def dummy_get_user(request, *args, **kwargs):
-        request.user = {'username': user, 'groups': []}
-        request.user_uniq = user
-
-    with patch('synnefo.api.util.get_user') as m:
-        m.side_effect = dummy_get_user
-        yield
+    with patch("snf_django.lib.api.get_token") as get_token:
+        get_token.return_value = "DummyToken"
+        with patch('astakosclient.AstakosClient.get_user_info') as m:
+            m.return_value = {"uuid": user}
+            yield
 
 
 class BaseAPITest(TestCase):

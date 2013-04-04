@@ -63,7 +63,7 @@ from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
 from synnefo.db.pools import EmptyPool
 
 from synnefo.lib.astakos import get_user
-from synnefo.plankton.backend import ImageBackend, NotAllowedError
+from synnefo.plankton.utils import image_backend
 from synnefo.settings import MAX_CIDR_BLOCK
 
 
@@ -189,14 +189,11 @@ def get_vm_meta(vm, key):
 def get_image(image_id, user_id):
     """Return an Image instance or raise ItemNotFound."""
 
-    backend = ImageBackend(user_id)
-    try:
+    with image_backend(user_id) as backend:
         image = backend.get_image(image_id)
         if not image:
             raise faults.ItemNotFound('Image not found.')
         return image
-    finally:
-        backend.close()
 
 
 def get_image_dict(image_id, user_id):

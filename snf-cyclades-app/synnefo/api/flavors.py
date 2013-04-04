@@ -38,6 +38,7 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
+from snf_django.lib import api
 from synnefo.api import util
 from synnefo.db.models import Flavor
 
@@ -63,7 +64,7 @@ def flavor_to_dict(flavor, detail=True):
     return d
 
 
-@util.api_method('GET')
+@api.api_method(http_method='GET', user_required=True, logger=log)
 def list_flavors(request, detail=False):
     # Normal Response Codes: 200, 203
     # Error Response Codes: computeFault (400, 500),
@@ -87,7 +88,7 @@ def list_flavors(request, detail=False):
     return HttpResponse(data, status=200)
 
 
-@util.api_method('GET')
+@api.api_method(http_method='GET', user_required=True, logger=log)
 def get_flavor_details(request, flavor_id):
     # Normal Response Codes: 200, 203
     # Error Response Codes: computeFault (400, 500),

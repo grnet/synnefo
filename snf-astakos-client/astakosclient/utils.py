@@ -31,9 +31,10 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import httplib
+from httplib import HTTPConnection, HTTPSConnection
+from contextlib import closing
 
-import objpool.http
+from objpool.http import PooledHTTPConnection
 from astakosclient.errors import AstakosClientException
 
 
@@ -59,18 +60,24 @@ def retry(func):
 def scheme_to_class(scheme, use_pool, pool_size):
     """Return the appropriate conn class for given scheme"""
     def _objpool(netloc):
-        return objpool.http.get_http_connection(
+        return PooledHTTPConnection(
             netloc=netloc, scheme=scheme, pool_size=pool_size)
+
+    def _http_connection(netloc):
+        return closing(HTTPConnection(netloc))
+
+    def _https_connection(netloc):
+        return closing(HTTPSConnection(netloc))
 
     if scheme == "http":
         if use_pool:
             return _objpool
         else:
-            return httplib.HTTPConnection
+            return _http_connection
     elif scheme == "https":
         if use_pool:
             return _objpool
         else:
-            return httplib.HTTPSConnection
+            return _https_connection
     else:
         return None

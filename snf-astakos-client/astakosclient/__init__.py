@@ -141,17 +141,15 @@ class AstakosClient():
         kwargs['headers'].setdefault('content-length',
                                      len(body) if body else 0)
 
-        # Get the connection object
-        conn = self.conn_class(self.netloc)
-
-        # Send request
         try:
-            (data, status) = _do_request(conn, method, request_path, **kwargs)
+            # Get the connection object
+            with self.conn_class(self.netloc) as conn:
+                # Send request
+                (data, status) = \
+                    _do_request(conn, method, request_path, **kwargs)
         except Exception as err:
             self.logger.error("Failed to send request: %s" % repr(err))
             raise AstakosClientException(str(err))
-        finally:
-            conn.close()
 
         # Return
         self.logger.debug("Request returned with status %s" % status)

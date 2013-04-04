@@ -60,7 +60,7 @@ from snf_django.lib.api import faults
 
 from django.conf import settings
 
-from pithos.backends.base import NotAllowedError as PithosNotAllowedError
+from pithos.backends.base import NotAllowedError
 
 import synnefo.lib.astakos as lib_astakos
 import logging
@@ -113,10 +113,6 @@ class BackendException(Exception):
     pass
 
 
-class NotAllowedError(BackendException):
-    pass
-
-
 from pithos.backends.util import PithosBackendPool
 POOL_SIZE = 8
 _pithos_backend_pool = \
@@ -139,8 +135,8 @@ def handle_backend_exceptions(func):
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
-        except PithosNotAllowedError:
-            raise NotAllowedError()
+        except NotAllowedError:
+            raise faults.Forbidden("Request not allowed")
     return wrapper
 
 

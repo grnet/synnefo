@@ -470,10 +470,6 @@ def api_method(http_method=None, atom_allowed=False):
                 resp = func(request, *args, **kwargs)
                 update_response_headers(request, resp)
                 return resp
-            except NotAllowedError:
-                # Image Backend Unathorized
-                fault = faults.Forbidden('Request not allowed.')
-                return render_fault(request, fault)
             except faults.Fault, fault:
                 if fault.code >= 500:
                     log.exception('API fault')

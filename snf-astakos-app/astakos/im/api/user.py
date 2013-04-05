@@ -31,8 +31,6 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import logging
-
 from functools import wraps
 from time import time, mktime
 
@@ -40,8 +38,9 @@ from django.http import HttpResponse
 from django.utils import simplejson as json
 from django.views.decorators.csrf import csrf_exempt
 
+from snf_django.lib import api
 from snf_django.lib.api import faults
-from . import render_fault, __get_uuid_displayname_catalogs, __send_feedback
+from . import  __get_uuid_displayname_catalogs, __send_feedback
 
 from astakos.im.models import AstakosUser
 from astakos.im.util import epoch
@@ -49,45 +48,34 @@ from astakos.im.util import epoch
 from astakos.im.api.callpoint import AstakosCallpoint
 callpoint = AstakosCallpoint()
 
+import logging
 logger = logging.getLogger(__name__)
 format = ('%a, %d %b %Y %H:%M:%S GMT')
 
 
-def api_method(http_method=None, token_required=False, perms=None):
-    """Decorator function for views that implement an API method."""
-    if not perms:
-        perms = []
+def user_from_token(func):
+    @wraps(func)
+    def wrapper(request, *args, **kwargs):
+        try:
+            token = request.x_auth_token
+        except AttributeError:
+            raise faults.Unauthorized("No authentication token")
 
-    def decorator(func):
-        @wraps(func)
-        def wrapper(request, *args, **kwargs):
-            try:
-                if http_method and request.method != http_method:
-                    raise faults.BadRequest('Method not allowed.')
-                x_auth_token = request.META.get('HTTP_X_AUTH_TOKEN')
-                if token_required:
-                    if not x_auth_token:
-                        raise faults.Unauthorized('Access denied')
-                    try:
-                        user = AstakosUser.objects.get(auth_token=x_auth_token)
-                        if not user.has_perms(perms):
-                            raise faults.Forbidden('Unauthorized request')
-                    except AstakosUser.DoesNotExist, e:
-                        raise faults.Unauthorized('Invalid X-Auth-Token')
-                    kwargs['user'] = user
-                response = func(request, *args, **kwargs)
-                return response
-            except faults.Fault, fault:
-                return render_fault(request, fault)
-            except BaseException, e:
-                logger.exception('Unexpected error: %s' % e)
-                fault = faults.InternalServerError('Unexpected error')
-                return render_fault(request, fault)
-        return wrapper
-    return decorator
+        if not token:
+            raise faults.Unauthorized("Invalid X-Auth-Token")
+
+        try:
+            user = AstakosUser.objects.get(auth_token=token)
+        except AstakosUser.DoesNotExist:
+            raise faults.Unauthorized('Invalid X-Auth-Token')
+
+        return func(request, user, *args, **kwargs)
+    return wrapper
 
 
-@api_method(http_method='GET', token_required=True)
+@api.api_method(http_method="GET", token_required=True, user_required=False,
+                  logger=logger)
+@user_from_token  # Authenticate user!!
 def authenticate(request, user=None):
     # Normal Response Codes: 200
     # Error Response Codes: internalServerError (500)
@@ -136,7 +124,9 @@ def authenticate(request, user=None):
 
 
 @csrf_exempt
-@api_method(http_method='POST', token_required=True)
+@api.api_method(http_method="POST", token_required=True, user_required=False,
+                  logger=logger)
+@user_from_token  # Authenticate user!!
 def get_uuid_displayname_catalogs(request, user=None):
     # Normal Response Codes: 200
     # Error Response Codes: internalServerError (500)
@@ -147,7 +137,9 @@ def get_uuid_displayname_catalogs(request, user=None):
 
 
 @csrf_exempt
-@api_method(http_method='POST', token_required=True)
+@api.api_method(http_method="POST", token_required=True, user_required=False,
+                  logger=logger)
+@user_from_token  # Authenticate user!!
 def send_feedback(request, email_template_name='im/feedback_mail.txt',
                   user=None):
     # Normal Response Codes: 200

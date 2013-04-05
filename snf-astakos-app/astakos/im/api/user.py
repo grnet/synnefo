@@ -90,7 +90,7 @@ def api_method(http_method=None, token_required=False, perms=None):
 
 @api_method(http_method='GET', token_required=True)
 def authenticate(request, user=None):
-    # Normal Response Codes: 204
+    # Normal Response Codes: 200
     # Error Response Codes: internalServerError (500)
     #                       badRequest (400)
     #                       unauthorised (401)
@@ -109,7 +109,6 @@ def authenticate(request, user=None):
         raise Unauthorized('Pending approval terms')
 
     response = HttpResponse()
-    response.status = 204
     user_info = {
         'id': user.id,
         'username': user.username,

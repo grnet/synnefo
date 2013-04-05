@@ -237,7 +237,6 @@ def __get_uuid_displayname_catalogs(request, user_call=True):
               'displayname_catalog':AstakosUser.objects.displayname_catalog(displaynames)}
 
         response = HttpResponse()
-        response.status = 200
         response.content = json.dumps(d)
         response['Content-Type'] = 'application/json; charset=UTF-8'
         response['Content-Length'] = len(response.content)

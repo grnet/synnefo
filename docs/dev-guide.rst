@@ -16,6 +16,14 @@ This is the Identity Management API:
 
    IM API <astakos-api-guide>
 
+Resource and Quota API (Astakos)
+================================
+
+.. toctree::
+    :maxdepth: 2
+
+    Resource and Quota API <quota-api-guide.rst>
+
 Compute API (Cyclades)
 ======================
 

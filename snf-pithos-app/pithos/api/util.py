@@ -50,11 +50,8 @@ from django.core.files.uploadedfile import UploadedFile
 
 from synnefo.lib.parsedate import parse_http_date_safe, parse_http_date
 from synnefo.lib.astakos import get_user
+from snf_django.lib.api import faults
 
-from pithos.api.faults import (
-    Fault, NotModified, BadRequest, Unauthorized, Forbidden, ItemNotFound,
-    Conflict, LengthRequired, PreconditionFailed, RequestEntityTooLarge,
-    RangeNotSatisfiable, InternalServerError, NotImplemented)
 from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_BLOCK_MODULE, BACKEND_BLOCK_PATH,
                                  BACKEND_BLOCK_UMASK,
@@ -143,12 +140,12 @@ def get_header_prefix(request, prefix):
 
 def check_meta_headers(meta):
     if len(meta) > 90:
-        raise BadRequest('Too many headers.')
+        raise faults.BadRequest('Too many headers.')
     for k, v in meta.iteritems():
         if len(k) > 128:
-            raise BadRequest('Header name too large.')
+            raise faults.BadRequest('Header name too large.')
         if len(v) > 256:
-            raise BadRequest('Header value too large.')
+            raise faults.BadRequest('Header value too large.')
 
 
 def get_account_headers(request):
@@ -158,7 +155,7 @@ def get_account_headers(request):
     for k, v in get_header_prefix(request, 'X-Account-Group-').iteritems():
         n = k[16:].lower()
         if '-' in n or '_' in n:
-            raise BadRequest('Bad characters in group name')
+            raise faults.BadRequest('Bad characters in group name')
         groups[n] = v.replace(' ', '').split(',')
         while '' in groups[n]:
             groups[n].remove('')
@@ -401,13 +398,13 @@ def validate_modification_preconditions(request, meta):
     if if_modified_since is not None:
         if_modified_since = parse_http_date_safe(if_modified_since)
     if if_modified_since is not None and int(meta['modified']) <= if_modified_since:
-        raise NotModified('Resource has not been modified')
+        raise faults.NotModified('Resource has not been modified')
 
     if_unmodified_since = request.META.get('HTTP_IF_UNMODIFIED_SINCE')
     if if_unmodified_since is not None:
         if_unmodified_since = parse_http_date_safe(if_unmodified_since)
     if if_unmodified_since is not None and int(meta['modified']) > if_unmodified_since:
-        raise PreconditionFailed('Resource has been modified')
+        raise faults.PreconditionFailed('Resource has been modified')
 
 
 def validate_matching_preconditions(request, meta):
@@ -420,9 +417,9 @@ def validate_matching_preconditions(request, meta):
     if_match = request.META.get('HTTP_IF_MATCH')
     if if_match is not None:
         if etag is None:
-            raise PreconditionFailed('Resource does not exist')
+            raise faults.PreconditionFailed('Resource does not exist')
         if if_match != '*' and etag not in [x.lower() for x in parse_etags(if_match)]:
-            raise PreconditionFailed('Resource ETag does not match')
+            raise faults.PreconditionFailed('Resource ETag does not match')
 
     if_none_match = request.META.get('HTTP_IF_NONE_MATCH')
     if if_none_match is not None:
@@ -431,8 +428,8 @@ def validate_matching_preconditions(request, meta):
             if if_none_match == '*' or etag in [x.lower() for x in parse_etags(if_none_match)]:
                 # TODO: Continue if an If-Modified-Since header is present.
                 if request.method in ('HEAD', 'GET'):
-                    raise NotModified('Resource ETag matches')
-                raise PreconditionFailed('Resource exists or ETag matches')
+                    raise faults.NotModified('Resource ETag matches')
+                raise faults.PreconditionFailed('Resource exists or ETag matches')
 
 
 def split_container_object_string(s):
@@ -464,20 +461,20 @@ def copy_or_move_object(request, src_account, src_container, src_name, dest_acco
                 dest_account, dest_container, dest_name,
                 content_type, 'pithos', meta, False, permissions, src_version, delimiter)
     except NotAllowedError:
-        raise Forbidden('Not allowed')
+        raise faults.Forbidden('Not allowed')
     except (ItemNotExists, VersionNotExists):
-        raise ItemNotFound('Container or object does not exist')
+        raise faults.ItemNotFound('Container or object does not exist')
     except ValueError:
-        raise BadRequest('Invalid sharing header')
+        raise faults.BadRequest('Invalid sharing header')
     except QuotaError, e:
-        raise RequestEntityTooLarge('Quota error: %s' % e)
+        raise faults.RequestEntityTooLarge('Quota error: %s' % e)
     if public is not None:
         try:
             request.backend.update_object_public(request.user_uniq, dest_account, dest_container, dest_name, public)
         except NotAllowedError:
-            raise Forbidden('Not allowed')
+            raise faults.Forbidden('Not allowed')
         except ItemNotExists:
-            raise ItemNotFound('Object does not exist')
+            raise faults.ItemNotFound('Object does not exist')
     return version_id
 
 
@@ -495,7 +492,7 @@ def get_int_parameter(p):
 def get_content_length(request):
     content_length = get_int_parameter(request.META.get('CONTENT_LENGTH'))
     if content_length is None:
-        raise LengthRequired('Missing or invalid Content-Length header')
+        raise faults.LengthRequired('Missing or invalid Content-Length header')
     return content_length
 
 
@@ -604,7 +601,7 @@ def get_sharing(request):
             if '*' in ret['read']:
                 ret['read'] = ['*']
             if len(ret['read']) == 0:
-                raise BadRequest(
+                raise faults.BadRequest(
                     'Bad X-Object-Sharing header value: invalid length')
         elif perm.startswith('write='):
             ret['write'] = list(set(
@@ -614,10 +611,10 @@ def get_sharing(request):
             if '*' in ret['write']:
                 ret['write'] = ['*']
             if len(ret['write']) == 0:
-                raise BadRequest(
+                raise faults.BadRequest(
                     'Bad X-Object-Sharing header value: invalid length')
         else:
-            raise BadRequest(
+            raise faults.BadRequest(
                 'Bad X-Object-Sharing header value: missing prefix')
 
     # replace displayname with uuid
@@ -630,7 +627,7 @@ def get_sharing(request):
                     getattr(request, 'token', None), x) \
                         for x in ret.get('write', [])]
         except ItemNotExists, e:
-            raise BadRequest(
+            raise faults.BadRequest(
                 'Bad X-Object-Sharing header value: unknown account: %s' % e)
 
     # Keep duplicates only in write list.
@@ -660,7 +657,7 @@ def get_public(request):
         return True
     elif public == 'false' or public == '':
         return False
-    raise BadRequest('Bad X-Object-Public header value')
+    raise faults.BadRequest('Bad X-Object-Public header value')
 
 
 def raw_input_socket(request):
@@ -692,7 +689,7 @@ def socket_read_iterator(request, length=0, blocksize=4096):
                 if data == '':
                     return
                 yield data
-            raise BadRequest('Maximum size is reached')
+            raise faults.BadRequest('Maximum size is reached')
 
         # Long version (do the dechunking).
         data = ''
@@ -710,8 +707,8 @@ def socket_read_iterator(request, length=0, blocksize=4096):
                 chunk_length = chunk_length[:pos]
             try:
                 chunk_length = int(chunk_length, 16)
-            except Exception, e:
-                raise BadRequest('Bad chunk size')
+            except Exception:
+                raise faults.BadRequest('Bad chunk size')
                                  # TODO: Change to something more appropriate.
             # Check if done.
             if chunk_length == 0:
@@ -730,14 +727,14 @@ def socket_read_iterator(request, length=0, blocksize=4096):
                     data = data[blocksize:]
                     yield ret
             sock.read(2)  # CRLF
-        raise BadRequest('Maximum size is reached')
+        raise faults.BadRequest('Maximum size is reached')
     else:
         if length > MAX_UPLOAD_SIZE:
-            raise BadRequest('Maximum size is reached')
+            raise faults.BadRequest('Maximum size is reached')
         while length > 0:
             data = sock.read(min(length, blocksize))
             if not data:
-                raise BadRequest()
+                raise faults.BadRequest()
             length -= len(data)
             yield data
 
@@ -820,7 +817,7 @@ class ObjectWrapper(object):
                 try:
                     self.block = self.backend.get_block(self.block_hash)
                 except ItemNotExists:
-                    raise ItemNotFound('Block does not exist')
+                    raise faults.ItemNotFound('Block does not exist')
 
             # Get the data from the block.
             bo = self.offset % self.backend.block_size
@@ -884,7 +881,7 @@ def object_data_response(request, sizes, hashmaps, meta, public=False):
                  offset < 0 or offset >= size or
                  offset + length > size]
         if len(check) > 0:
-            raise RangeNotSatisfiable('Requested range exceeds object limits')
+            raise faults.RangeNotSatisfiable('Requested range exceeds object limits')
         ret = 206
         if_range = request.META.get('HTTP_IF_RANGE')
         if if_range:
@@ -1005,7 +1002,7 @@ def update_request_headers(request):
             k.decode('ascii')
             v.decode('ascii')
         except UnicodeDecodeError:
-            raise BadRequest('Bad character in headers.')
+            raise faults.BadRequest('Bad character in headers.')
         if '%' in k or '%' in v:
             del(request.META[k])
             request.META[unquote(k)] = smart_unicode(unquote(
@@ -1035,7 +1032,7 @@ def update_response_headers(request, response):
 
 
 def render_fault(request, fault):
-    if isinstance(fault, InternalServerError) and settings.DEBUG:
+    if isinstance(fault, faults.InternalServerError) and settings.DEBUG:
         fault.details = format_exc(fault)
 
     request.serialization = 'text'
@@ -1085,7 +1082,7 @@ def api_method(http_method=None, format_allowed=False, user_required=True,
         def wrapper(request, *args, **kwargs):
             try:
                 if http_method and request.method != http_method:
-                    raise BadRequest('Method not allowed.')
+                    raise faults.BadRequest('Method not allowed.')
 
                 if user_required:
                     token = None
@@ -1099,16 +1096,16 @@ def api_method(http_method=None, format_allowed=False, user_required=True,
                              token,
                              request_usage)
                     if  getattr(request, 'user', None) is None:
-                        raise Unauthorized('Access denied')
+                        raise faults.Unauthorized('Access denied')
                     assert getattr(request, 'user_uniq', None) != None
                     request.user_usage = get_pithos_usage(request.user.get('usage', []))
                     request.token = request.GET.get('X-Auth-Token', request.META.get('HTTP_X_AUTH_TOKEN', token))
 
                 # The args variable may contain up to (account, container, object).
                 if len(args) > 1 and len(args[1]) > 256:
-                    raise BadRequest('Container name too large.')
+                    raise faults.BadRequest('Container name too large.')
                 if len(args) > 2 and len(args[2]) > 1024:
-                    raise BadRequest('Object name too large.')
+                    raise faults.BadRequest('Object name too large.')
 
                 # Format and check headers.
                 update_request_headers(request)
@@ -1121,13 +1118,13 @@ def api_method(http_method=None, format_allowed=False, user_required=True,
                 response = func(request, *args, **kwargs)
                 update_response_headers(request, response)
                 return response
-            except Fault, fault:
+            except faults.Fault, fault:
                 if fault.code >= 500:
                     logger.exception("API Fault")
                 return render_fault(request, fault)
             except BaseException, e:
                 logger.exception('Unexpected error: %s' % e)
-                fault = InternalServerError('Unexpected error')
+                fault = faults.InternalServerError('Unexpected error')
                 return render_fault(request, fault)
             finally:
                 if getattr(request, 'backend', None) is not None:

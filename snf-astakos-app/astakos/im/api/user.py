@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -40,8 +40,7 @@ from django.http import HttpResponse
 from django.utils import simplejson as json
 from django.views.decorators.csrf import csrf_exempt
 
-from .faults import (
-    Fault, Unauthorized, InternalServerError, BadRequest, Forbidden)
+from snf_django.lib.api import faults
 from . import render_fault, __get_uuid_displayname_catalogs, __send_feedback
 
 from astakos.im.models import AstakosUser
@@ -64,25 +63,25 @@ def api_method(http_method=None, token_required=False, perms=None):
         def wrapper(request, *args, **kwargs):
             try:
                 if http_method and request.method != http_method:
-                    raise BadRequest('Method not allowed.')
+                    raise faults.BadRequest('Method not allowed.')
                 x_auth_token = request.META.get('HTTP_X_AUTH_TOKEN')
                 if token_required:
                     if not x_auth_token:
-                        raise Unauthorized('Access denied')
+                        raise faults.Unauthorized('Access denied')
                     try:
                         user = AstakosUser.objects.get(auth_token=x_auth_token)
                         if not user.has_perms(perms):
-                            raise Forbidden('Unauthorized request')
+                            raise faults.Forbidden('Unauthorized request')
                     except AstakosUser.DoesNotExist, e:
-                        raise Unauthorized('Invalid X-Auth-Token')
+                        raise faults.Unauthorized('Invalid X-Auth-Token')
                     kwargs['user'] = user
                 response = func(request, *args, **kwargs)
                 return response
-            except Fault, fault:
+            except faults.Fault, fault:
                 return render_fault(request, fault)
             except BaseException, e:
                 logger.exception('Unexpected error: %s' % e)
-                fault = InternalServerError('Unexpected error')
+                fault = faults.InternalServerError('Unexpected error')
                 return render_fault(request, fault)
         return wrapper
     return decorator
@@ -95,18 +94,18 @@ def authenticate(request, user=None):
     #                       badRequest (400)
     #                       unauthorised (401)
     if not user:
-        raise BadRequest('No user')
+        raise faults.BadRequest('No user')
 
     # Check if the is active.
     if not user.is_active:
-        raise Unauthorized('User inactive')
+        raise faults.Unauthorized('User inactive')
 
     # Check if the token has expired.
     if (time() - mktime(user.auth_token_expires.timetuple())) > 0:
-        raise Unauthorized('Authentication expired')
+        raise faults.Unauthorized('Authentication expired')
 
     if not user.signed_terms:
-        raise Unauthorized('Pending approval terms')
+        raise faults.Unauthorized('Pending approval terms')
 
     response = HttpResponse()
     user_info = {
@@ -135,6 +134,7 @@ def authenticate(request, user=None):
     response['Content-Length'] = len(response.content)
     return response
 
+
 @csrf_exempt
 @api_method(http_method='POST', token_required=True)
 def get_uuid_displayname_catalogs(request, user=None):
@@ -145,9 +145,11 @@ def get_uuid_displayname_catalogs(request, user=None):
 
     return __get_uuid_displayname_catalogs(request)
 
+
 @csrf_exempt
 @api_method(http_method='POST', token_required=True)
-def send_feedback(request, email_template_name='im/feedback_mail.txt', user=None):
+def send_feedback(request, email_template_name='im/feedback_mail.txt',
+                  user=None):
     # Normal Response Codes: 200
     # Error Response Codes: internalServerError (500)
     #                       badRequest (400)

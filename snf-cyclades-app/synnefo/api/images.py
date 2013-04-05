@@ -42,9 +42,9 @@ from django.utils import simplejson as json
 
 from contextlib import contextmanager
 
+from snf_django.lib.api import faults
 from synnefo.api import util
 from synnefo.api.common import method_not_allowed
-from synnefo.api.faults import BadRequest, ItemNotFound, ServiceUnavailable
 from synnefo.api.util import api_method, isoformat, isoparse
 from synnefo.plankton.backend import ImageBackend
 
@@ -170,7 +170,7 @@ def create_image(request):
     #                       backupOrResizeInProgress (409),
     #                       overLimit (413)
 
-    raise ServiceUnavailable('Not supported.')
+    raise faults.NotImplemented('Not supported.')
 
 
 @api_method('GET')
@@ -244,7 +244,7 @@ def update_metadata(request, image_id):
         metadata = req['metadata']
         assert isinstance(metadata, dict)
     except (KeyError, AssertionError):
-        raise BadRequest('Malformed request.')
+        raise faults.BadRequest('Malformed request.')
 
     properties = image['properties']
     properties.update(metadata)
@@ -269,7 +269,7 @@ def get_metadata_item(request, image_id, key):
     image = util.get_image(image_id, request.user_uniq)
     val = image['properties'].get(key)
     if val is None:
-        raise ItemNotFound('Metadata key not found.')
+        raise faults.ItemNotFound('Metadata key not found.')
     return util.render_meta(request, {key: val}, status=200)
 
 
@@ -293,7 +293,7 @@ def create_metadata_item(request, image_id, key):
         assert len(metadict) == 1
         assert key in metadict
     except (KeyError, AssertionError):
-        raise BadRequest('Malformed request.')
+        raise faults.BadRequest('Malformed request.')
 
     val = metadict[key]
     image = util.get_image(image_id, request.user_uniq)

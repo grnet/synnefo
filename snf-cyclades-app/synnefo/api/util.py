@@ -56,9 +56,7 @@ from django.utils import simplejson as json
 from django.utils.cache import add_never_cache_headers
 from django.db.models import Q
 
-from synnefo.api.faults import (Fault, BadRequest, BuildInProgress,
-                                ItemNotFound, ServiceUnavailable, Unauthorized,
-                                BadMediaType, Forbidden, OverLimit)
+from snf_django.lib.api import faults
 from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
                                Network, BackendNetwork, NetworkInterface,
                                BridgePoolTable, MacPrefixPoolTable)
@@ -99,14 +97,14 @@ def isoparse(s):
         since = dateutil.parser.parse(s)
         utc_since = since.astimezone(UTC()).replace(tzinfo=None)
     except ValueError:
-        raise BadRequest('Invalid changes-since parameter.')
+        raise faults.BadRequest('Invalid changes-since parameter.')
 
     now = datetime.datetime.now()
     if utc_since > now:
-        raise BadRequest('changes-since value set in the future.')
+        raise faults.BadRequest('changes-since value set in the future.')
 
     if now - utc_since > timedelta(seconds=settings.POLL_LIMIT):
-        raise BadRequest('Too old changes-since value.')
+        raise faults.BadRequest('Too old changes-since value.')
 
     return utc_since
 
@@ -171,12 +169,12 @@ def get_vm(server_id, user_id, for_update=False, non_deleted=False,
         if non_deleted and vm.deleted:
             raise VirtualMachine.DeletedError
         if non_suspended and vm.suspended:
-            raise Forbidden("Administratively Suspended VM")
+            raise faults.Forbidden("Administratively Suspended VM")
         return vm
     except ValueError:
-        raise BadRequest('Invalid server ID.')
+        raise faults.BadRequest('Invalid server ID.')
     except VirtualMachine.DoesNotExist:
-        raise ItemNotFound('Server not found.')
+        raise faults.ItemNotFound('Server not found.')
 
 
 def get_vm_meta(vm, key):
@@ -185,7 +183,7 @@ def get_vm_meta(vm, key):
     try:
         return VirtualMachineMetadata.objects.get(meta_key=key, vm=vm)
     except VirtualMachineMetadata.DoesNotExist:
-        raise ItemNotFound('Metadata key not found.')
+        raise faults.ItemNotFound('Metadata key not found.')
 
 
 def get_image(image_id, user_id):
@@ -195,7 +193,7 @@ def get_image(image_id, user_id):
     try:
         image = backend.get_image(image_id)
         if not image:
-            raise ItemNotFound('Image not found.')
+            raise faults.ItemNotFound('Image not found.')
         return image
     finally:
         backend.close()
@@ -224,7 +222,7 @@ def get_flavor(flavor_id, include_deleted=False):
         else:
             return Flavor.objects.get(id=flavor_id, deleted=include_deleted)
     except (ValueError, Flavor.DoesNotExist):
-        raise ItemNotFound('Flavor not found.')
+        raise faults.ItemNotFound('Flavor not found.')
 
 
 def get_network(network_id, user_id, for_update=False):
@@ -237,7 +235,7 @@ def get_network(network_id, user_id, for_update=False):
             objects = objects.select_for_update()
         return objects.get(Q(userid=user_id) | Q(public=True), id=network_id)
     except (ValueError, Network.DoesNotExist):
-        raise ItemNotFound('Network not found.')
+        raise faults.ItemNotFound('Network not found.')
 
 
 def validate_network_params(subnet, gateway=None, subnet6=None, gateway6=None):
@@ -245,11 +243,11 @@ def validate_network_params(subnet, gateway=None, subnet6=None, gateway6=None):
         # Use strict option to not all subnets with host bits set
         network = ipaddr.IPv4Network(subnet, strict=True)
     except ValueError:
-        raise BadRequest("Invalid network IPv4 subnet")
+        raise faults.BadRequest("Invalid network IPv4 subnet")
 
     # Check that network size is allowed!
     if not validate_network_size(network.prefixlen):
-        raise OverLimit(message="Unsupported network size",
+        raise faults.OverLimit(message="Unsupported network size",
                         details="Network mask must be in range (%s, 29]" %
                                 MAX_CIDR_BLOCK)
 
@@ -258,23 +256,23 @@ def validate_network_params(subnet, gateway=None, subnet6=None, gateway6=None):
         try:
             gateway = ipaddr.IPv4Address(gateway)
         except ValueError:
-            raise BadRequest("Invalid network IPv4 gateway")
+            raise faults.BadRequest("Invalid network IPv4 gateway")
         if not gateway in network:
-            raise BadRequest("Invalid network IPv4 gateway")
+            raise faults.BadRequest("Invalid network IPv4 gateway")
 
     if subnet6:
         try:
             # Use strict option to not all subnets with host bits set
             network6 = ipaddr.IPv6Network(subnet6, strict=True)
         except ValueError:
-            raise BadRequest("Invalid network IPv6 subnet")
+            raise faults.BadRequest("Invalid network IPv6 subnet")
         if gateway6:
             try:
                 gateway6 = ipaddr.IPv6Address(gateway6)
             except ValueError:
-                raise BadRequest("Invalid network IPv6 gateway")
+                raise faults.BadRequest("Invalid network IPv6 gateway")
             if not gateway6 in network6:
-                raise BadRequest("Invalid network IPv6 gateway")
+                raise faults.BadRequest("Invalid network IPv6 gateway")
 
 
 def validate_network_size(cidr_block):
@@ -311,7 +309,7 @@ def get_public_ip(backend):
                 break
     if address is None:
         log.error("Public networks of backend %s are full", backend)
-        raise OverLimit("Can not allocate IP for new machine."
+        raise faults.OverLimit("Can not allocate IP for new machine."
                         " Public networks are full.")
     return (network, address)
 
@@ -346,7 +344,7 @@ def get_nic(machine, network):
     try:
         return NetworkInterface.objects.get(machine=machine, network=network)
     except NetworkInterface.DoesNotExist:
-        raise ItemNotFound('Server not connected to this network.')
+        raise faults.ItemNotFound('Server not connected to this network.')
 
 
 def get_nic_from_index(vm, nic_index):
@@ -356,9 +354,9 @@ def get_nic_from_index(vm, nic_index):
     matching_nics = vm.nics.filter(index=nic_index)
     matching_nics_len = len(matching_nics)
     if matching_nics_len < 1:
-        raise ItemNotFound('NIC not found on VM')
+        raise faults.ItemNotFound('NIC not found on VM')
     elif matching_nics_len > 1:
-        raise BadMediaType('NIC index conflict on VM')
+        raise faults.BadMediaType('NIC index conflict on VM')
     nic = matching_nics[0]
     return nic
 
@@ -371,9 +369,9 @@ def get_request_dict(request):
         try:
             return json.loads(data)
         except ValueError:
-            raise BadRequest('Invalid JSON data.')
+            raise faults.BadRequest('Invalid JSON data.')
     else:
-        raise BadRequest('Unsupported Content-Type.')
+        raise faults.BadRequest('Unsupported Content-Type.')
 
 
 def update_response_headers(request, response):
@@ -465,33 +463,33 @@ def api_method(http_method=None, atom_allowed=False):
                                                               atom_allowed)
                 get_user(request, settings.ASTAKOS_URL)
                 if not request.user_uniq:
-                    raise Unauthorized('No user found.')
+                    raise faults.Unauthorized('No user found.')
                 if http_method and request.method != http_method:
-                    raise BadRequest('Method not allowed.')
+                    raise faults.BadRequest('Method not allowed.')
 
                 resp = func(request, *args, **kwargs)
                 update_response_headers(request, resp)
                 return resp
             except VirtualMachine.DeletedError:
-                fault = BadRequest('Server has been deleted.')
+                fault = faults.BadRequest('Server has been deleted.')
                 return render_fault(request, fault)
             except Network.DeletedError:
-                fault = BadRequest('Network has been deleted.')
+                fault = faults.BadRequest('Network has been deleted.')
                 return render_fault(request, fault)
             except VirtualMachine.BuildingError:
-                fault = BuildInProgress('Server is being built.')
+                fault = faults.BuildInProgress('Server is being built.')
                 return render_fault(request, fault)
             except NotAllowedError:
                 # Image Backend Unathorized
-                fault = Forbidden('Request not allowed.')
+                fault = faults.Forbidden('Request not allowed.')
                 return render_fault(request, fault)
-            except Fault, fault:
+            except faults.Fault, fault:
                 if fault.code >= 500:
                     log.exception('API fault')
                 return render_fault(request, fault)
             except BaseException:
                 log.exception('Unexpected error')
-                fault = ServiceUnavailable('Unexpected error.')
+                fault = faults.ServiceUnavailable('Unexpected error.')
                 return render_fault(request, fault)
         return wrapper
     return decorator
@@ -504,7 +502,7 @@ def construct_nic_id(nic):
 def verify_personality(personality):
     """Verify that a a list of personalities is well formed"""
     if len(personality) > settings.MAX_PERSONALITY:
-        raise OverLimit("Maximum number of personalities"
+        raise faults.OverLimit("Maximum number of personalities"
                         " exceeded")
     for p in personality:
         # Verify that personalities are well-formed
@@ -516,11 +514,11 @@ def verify_personality(personality):
             contents = p['contents']
             if len(contents) > settings.MAX_PERSONALITY_SIZE:
                 # No need to decode if contents already exceed limit
-                raise OverLimit("Maximum size of personality exceeded")
+                raise faults.OverLimit("Maximum size of personality exceeded")
             if len(b64decode(contents)) > settings.MAX_PERSONALITY_SIZE:
-                raise OverLimit("Maximum size of personality exceeded")
+                raise faults.OverLimit("Maximum size of personality exceeded")
         except AssertionError:
-            raise BadRequest("Malformed personality in request")
+            raise faults.BadRequest("Malformed personality in request")
 
 
 def get_flavor_provider(flavor):
@@ -548,7 +546,7 @@ def values_from_flavor(flavor):
     try:
         flavor = Network.FLAVORS[flavor]
     except KeyError:
-        raise BadRequest("Unknown network flavor")
+        raise faults.BadRequest("Unknown network flavor")
 
     mode = flavor.get("mode")
 

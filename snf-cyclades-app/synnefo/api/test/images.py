@@ -33,8 +33,8 @@
 
 import json
 
+from snf_django.lib.api import faults
 from synnefo.api.tests import BaseAPITest
-from synnefo.api.faults import ItemNotFound
 
 from mock import patch
 from functools import wraps
@@ -58,7 +58,7 @@ class ImageAPITest(BaseAPITest):
         """Test that create image is not implemented"""
         response = self.post('/api/v1.1/images/', 'user', json.dumps(''),
                              'json')
-        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.status_code, 501)
 
     @assert_backend_closed
     def test_list_images(self, mimage):
@@ -180,7 +180,7 @@ class ImageAPITest(BaseAPITest):
     @assert_backend_closed
     def test_invalid_image(self, mimage):
         with patch('synnefo.api.util.get_image') as m:
-            m.side_effect = ItemNotFound('Image not found')
+            m.side_effect = faults.ItemNotFound('Image not found')
             response = self.get('/api/v1.1/images/42', 'user')
         self.assertItemNotFound(response)
 

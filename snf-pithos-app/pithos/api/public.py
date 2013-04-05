@@ -37,8 +37,8 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
 from synnefo.lib.astakos import get_user
+from snf_django.lib.api import faults
 
-from pithos.api.faults import (Fault, BadRequest, ItemNotFound, NotModified)
 from pithos.api.util import (put_object_headers, update_manifest_meta,
                              validate_modification_preconditions,
                              validate_matching_preconditions,
@@ -78,10 +78,10 @@ def public_meta(request, v_public):
             request.user_uniq, v_account,
             v_container, v_object)
     except:
-        raise ItemNotFound('Object does not exist')
+        raise faults.ItemNotFound('Object does not exist')
 
     if not public:
-        raise ItemNotFound('Object does not exist')
+        raise faults.ItemNotFound('Object does not exist')
     update_manifest_meta(request, v_account, meta)
 
     response = HttpResponse(status=200)
@@ -109,17 +109,17 @@ def public_read(request, v_public):
             request.user_uniq, v_account,
             v_container, v_object)
     except:
-        raise ItemNotFound('Object does not exist')
+        raise faults.ItemNotFound('Object does not exist')
 
     if not public:
-        raise ItemNotFound('Object does not exist')
+        raise faults.ItemNotFound('Object does not exist')
     update_manifest_meta(request, v_account, meta)
 
     # Evaluate conditions.
     validate_modification_preconditions(request, meta)
     try:
         validate_matching_preconditions(request, meta)
-    except NotModified:
+    except faults.NotModified:
         response = HttpResponse(status=304)
         response['ETag'] = meta['ETag']
         return response
@@ -134,7 +134,7 @@ def public_read(request, v_public):
                 request.user_uniq, v_account,
                 src_container, prefix=src_name, virtual=False)
         except:
-            raise ItemNotFound('Object does not exist')
+            raise faults.ItemNotFound('Object does not exist')
 
         try:
             for x in objects:
@@ -143,7 +143,7 @@ def public_read(request, v_public):
                 sizes.append(s)
                 hashmaps.append(h)
         except:
-            raise ItemNotFound('Object does not exist')
+            raise faults.ItemNotFound('Object does not exist')
     else:
         try:
             s, h = request.backend.get_object_hashmap(
@@ -152,7 +152,7 @@ def public_read(request, v_public):
             sizes.append(s)
             hashmaps.append(h)
         except:
-            raise ItemNotFound('Object does not exist')
+            raise faults.ItemNotFound('Object does not exist')
 
     if 'Content-Disposition' not in meta:
         name = v_object.rstrip('/').split('/')[-1]
@@ -165,4 +165,4 @@ def public_read(request, v_public):
 
 @api_method(user_required=False)
 def method_not_allowed(request, **v_args):
-    raise ItemNotFound('Object does not exist')
+    raise faults.ItemNotFound('Object does not exist')

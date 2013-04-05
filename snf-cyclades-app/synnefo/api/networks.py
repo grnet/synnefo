@@ -41,11 +41,10 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
+from snf_django.lib.api import faults
 from synnefo.api import util
 from synnefo.api.actions import network_actions
 from synnefo.api.common import method_not_allowed
-from synnefo.api.faults import (ServiceUnavailable, BadRequest, Forbidden,
-                                NetworkInUse, OverLimit)
 from synnefo import quotas
 from synnefo.db.models import Network
 from synnefo.db.pools import EmptyPool
@@ -169,21 +168,21 @@ def create_network(serials, request):
             d = req['network']
             name = d['name']
         except KeyError:
-            raise BadRequest("Malformed request")
+            raise faults.BadRequest("Malformed request")
 
         # Get and validate flavor. Flavors are still exposed as 'type' in the
         # API.
         flavor = d.get("type", None)
         if flavor is None:
-            raise BadRequest("Missing request parameter 'type'")
+            raise faults.BadRequest("Missing request parameter 'type'")
         elif flavor not in Network.FLAVORS.keys():
-            raise BadRequest("Invalid network type '%s'" % flavor)
+            raise faults.BadRequest("Invalid network type '%s'" % flavor)
         elif flavor not in settings.API_ENABLED_NETWORK_FLAVORS:
-            raise Forbidden("Can not create network of type '%s'" % flavor)
+            raise faults.Forbidden("Can not create network of type '%s'" % flavor)
 
         public = d.get("public", False)
         if public:
-            raise Forbidden("Can not create a public network.")
+            raise faults.Forbidden("Can not create a public network.")
 
         dhcp = d.get('dhcp', True)
 
@@ -224,7 +223,7 @@ def create_network(serials, request):
         except EmptyPool:
             log.error("Failed to allocate resources for network of type: %s",
                       flavor)
-            raise ServiceUnavailable("Failed to allocate network resources")
+            raise faults.ServiceUnavailable("Failed to allocate network resources")
 
         # Create BackendNetwork entries for each Backend
         network.create_backend_network()
@@ -277,11 +276,11 @@ def update_network_name(request, network_id):
     try:
         name = req['network']['name']
     except (TypeError, KeyError):
-        raise BadRequest('Malformed request.')
+        raise faults.BadRequest('Malformed request.')
 
     net = util.get_network(network_id, request.user_uniq)
     if net.public:
-        raise Forbidden('Can not rename the public network.')
+        raise faults.Forbidden('Can not rename the public network.')
     if net.deleted:
         raise Network.DeletedError
     net.name = name
@@ -303,13 +302,13 @@ def delete_network(request, network_id):
     log.info('delete_network %s', network_id)
     net = util.get_network(network_id, request.user_uniq, for_update=True)
     if net.public:
-        raise Forbidden('Can not delete the public network.')
+        raise faults.Forbidden('Can not delete the public network.')
 
     if net.deleted:
         raise Network.DeletedError
 
     if net.machines.all():  # Nics attached on network
-        raise NetworkInUse('Machines are connected to network.')
+        raise faults.NetworkInUse('Machines are connected to network.')
 
     net.action = 'DESTROY'
     net.save()
@@ -323,11 +322,11 @@ def network_action(request, network_id):
     req = util.get_request_dict(request)
     log.debug('network_action %s %s', network_id, req)
     if len(req) != 1:
-        raise BadRequest('Malformed request.')
+        raise faults.BadRequest('Malformed request.')
 
     net = util.get_network(network_id, request.user_uniq)
     if net.public:
-        raise Forbidden('Can not modify the public network.')
+        raise faults.Forbidden('Can not modify the public network.')
     if net.deleted:
         raise Network.DeletedError
 
@@ -337,6 +336,6 @@ def network_action(request, network_id):
         assert isinstance(val, dict)
         return network_actions[key](request, net, req[key])
     except KeyError:
-        raise BadRequest('Unknown action.')
+        raise faults.BadRequest('Unknown action.')
     except AssertionError:
-        raise BadRequest('Invalid argument.')
+        raise faults.BadRequest('Invalid argument.')

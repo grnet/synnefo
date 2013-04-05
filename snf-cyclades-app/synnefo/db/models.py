@@ -36,7 +36,7 @@ from django.db import IntegrityError
 import utils
 from contextlib import contextmanager
 from hashlib import sha1
-from synnefo.api.faults import ServiceUnavailable
+from snf_django.lib.api import faults
 from synnefo import settings as snf_settings
 from aes_encrypt import encrypt_db_charfield, decrypt_db_charfield
 
@@ -115,7 +115,7 @@ class Backend(models.Model):
     def get_client(self):
         """Get or create a client. """
         if self.offline:
-            raise ServiceUnavailable
+            raise faults.ServiceUnavailable
         return get_rapi_client(self.id, self.hash,
                                self.clustername,
                                self.port,
@@ -326,7 +326,7 @@ class VirtualMachine(models.Model):
         if self.backend:
             return self.backend.get_client()
         else:
-            raise ServiceUnavailable
+            raise faults.ServiceUnavailable
 
     def get_last_diagnostic(self, **filters):
         try:
@@ -733,7 +733,7 @@ def pooled_rapi_client(obj):
             backend = obj
 
         if backend.offline:
-            raise ServiceUnavailable
+            raise faults.ServiceUnavailable
 
         b = backend
         client = get_rapi_client(b.id, b.hash, b.clustername, b.port,

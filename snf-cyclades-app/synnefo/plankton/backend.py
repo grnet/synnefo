@@ -56,11 +56,12 @@ import warnings
 from operator import itemgetter
 from time import gmtime, strftime
 from functools import wraps, partial
-from synnefo.api import faults
+from snf_django.lib.api import faults
 
 from django.conf import settings
 
 from pithos.backends.base import NotAllowedError as PithosNotAllowedError
+
 import synnefo.lib.astakos as lib_astakos
 import logging
 

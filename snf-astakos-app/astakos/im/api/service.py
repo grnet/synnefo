@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -36,13 +36,10 @@ import logging
 from functools import wraps
 from time import time, mktime
 
-from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.utils import simplejson as json
 
 from . import render_fault, __get_uuid_displayname_catalogs, __send_feedback
-from .faults import (
-    Fault, Unauthorized, InternalServerError, BadRequest, ItemNotFound)
+from snf_django.lib.api import faults
 from astakos.im.models import Service
 
 logger = logging.getLogger(__name__)
@@ -55,30 +52,31 @@ def api_method(http_method=None, token_required=False):
         def wrapper(request, *args, **kwargs):
             try:
                 if http_method and request.method != http_method:
-                    raise BadRequest('Method not allowed.')
+                    raise faults.BadRequest('Method not allowed.')
                 x_auth_token = request.META.get('HTTP_X_AUTH_TOKEN')
                 if token_required:
                     if not x_auth_token:
-                        raise Unauthorized('Access denied')
+                        raise faults.Unauthorized('Access denied')
                     try:
                         service = Service.objects.get(auth_token=x_auth_token)
 
                         # Check if the token has expired.
                         if service.auth_token_expires:
                             if (time() - mktime(service.auth_token_expires.timetuple())) > 0:
-                                raise Unauthorized('Authentication expired')
+                                raise faults.Unauthorized('Authentication expired')
                     except Service.DoesNotExist, e:
-                        raise Unauthorized('Invalid X-Auth-Token')
+                        raise faults.Unauthorized('Invalid X-Auth-Token')
                 response = func(request, *args, **kwargs)
                 return response
-            except Fault, fault:
+            except faults.Fault, fault:
                 return render_fault(request, fault)
             except BaseException, e:
                 logger.exception('Unexpected error: %s' % e)
-                fault = InternalServerError('Unexpected error')
+                fault = faults.InternalServerError('Unexpected error')
                 return render_fault(request, fault)
         return wrapper
     return decorator
+
 
 @csrf_exempt
 @api_method(http_method='POST', token_required=True)
@@ -89,6 +87,7 @@ def get_uuid_displayname_catalogs(request):
     #                       unauthorised (401)
 
     return __get_uuid_displayname_catalogs(request, user_call=False)
+
 
 @csrf_exempt
 @api_method(http_method='POST', token_required=True)

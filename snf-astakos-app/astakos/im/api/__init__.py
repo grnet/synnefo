@@ -43,8 +43,7 @@ from django.utils.translation import ugettext as _
 from django.contrib import messages
 
 from astakos.im.models import AstakosUser, Service, Resource
-from astakos.im.api.faults import (
-    Fault, ItemNotFound, InternalServerError, BadRequest)
+from snf_django.lib.api import faults
 from astakos.im.settings import (
     INVITATIONS_ENABLED, COOKIE_NAME, EMAILCHANGE_ENABLED, QUOTAHOLDER_URL,
     PROJECTS_VISIBLE)
@@ -60,7 +59,7 @@ absolute = lambda request, url: request.build_absolute_uri(url)
 
 
 def render_fault(request, fault):
-    if isinstance(fault, InternalServerError) and settings.DEBUG:
+    if isinstance(fault, faults.InternalServerError) and settings.DEBUG:
         fault.details = format_exc(fault)
 
     request.serialization = 'text'
@@ -79,14 +78,14 @@ def api_method(http_method=None):
         def wrapper(request, *args, **kwargs):
             try:
                 if http_method and request.method != http_method:
-                    raise BadRequest('Method not allowed.')
+                    raise faults.BadRequest('Method not allowed.')
                 response = func(request, *args, **kwargs)
                 return response
-            except Fault, fault:
+            except faults.Fault, fault:
                 return render_fault(request, fault)
             except BaseException, e:
                 logger.exception('Unexpected error: %s' % e)
-                fault = InternalServerError('Unexpected error')
+                fault = faults.InternalServerError('Unexpected error')
                 return render_fault(request, fault)
         return wrapper
     return decorator
@@ -220,12 +219,12 @@ class MenuItem(dict):
 
 def __get_uuid_displayname_catalogs(request, user_call=True):
     # Normal Response Codes: 200
-    # Error Response Codes: badRequest (400)
+    # Error Response Codes: BadRequest (400)
 
     try:
         input_data = json.loads(request.raw_post_data)
     except:
-        raise BadRequest('Request body should be json formatted.')
+        raise faults.BadRequest('Request body should be json formatted.')
     else:
         uuids = input_data.get('uuids', [])
         if uuids == None and user_call:
@@ -246,17 +245,17 @@ def __send_feedback(request, email_template_name='im/feedback_mail.txt', user=No
     if not user:
         auth_token = request.POST.get('auth', '')
         if not auth_token:
-            raise BadRequest('Missing user authentication')
+            raise faults.BadRequest('Missing user authentication')
 
         try:
             user = AstakosUser.objects.get(auth_token=auth_token)
         except AstakosUser.DoesNotExist:
-            raise BadRequest('Invalid user authentication')
+            raise faults.BadRequest('Invalid user authentication')
 
     form = FeedbackForm(request.POST)
     if not form.is_valid():
         logger.error("Invalid feedback request: %r", form.errors)
-        raise BadRequest('Invalid data')
+        raise faults.BadRequest('Invalid data')
 
     msg = form.cleaned_data['feedback_msg']
     data = form.cleaned_data['feedback_data']

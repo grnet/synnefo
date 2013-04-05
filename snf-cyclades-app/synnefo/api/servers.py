@@ -41,7 +41,8 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
-from synnefo.api import faults, util
+from snf_django.lib.api import faults
+from synnefo.api import util
 from synnefo.api.actions import server_actions
 from synnefo.api.common import method_not_allowed
 from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata,

@@ -31,15 +31,16 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 
 from astakos.im.models import Invitation
+from synnefo.webproject.management.commands import SynnefoCommand
 
-from ._common import format
+from synnefo.webproject.management import utils
 
 
-class Command(BaseCommand):
-    args = "<invitation ID>"
+class Command(SynnefoCommand):
+    args = "<invitation ID or code>"
     help = "Show invitation info"
 
     def handle(self, *args, **options):
@@ -49,7 +50,10 @@ class Command(BaseCommand):
         try:
             invitation = Invitation.objects.get(id=int(args[0]))
         except Invitation.DoesNotExist:
-            raise CommandError("Unknown invitation id '%s'" % (args[0],))
+            try:
+                invitation = Invitation.objects.get(code=args[0])
+            except Invitation.DoesNotExist:
+                raise CommandError("Unknown invitation id '%s'" % (args[0],))
 
         kv = {
             'id': invitation.id,
@@ -63,6 +67,5 @@ class Command(BaseCommand):
             'invitater email': invitation.inviter.email,
         }
 
-        for key, val in sorted(kv.items()):
-            line = '%s: %s\n' % (key.rjust(18), format(val))
-            self.stdout.write(line)
+        utils.pprint_table(self.stdout, [kv.values()], kv.keys(),
+                           options["output_format"], vertical=True)

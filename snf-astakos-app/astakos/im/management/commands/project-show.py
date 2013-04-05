@@ -32,15 +32,15 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 
 from synnefo.lib.ordereddict import OrderedDict
+from synnefo.webproject.management.commands import SynnefoCommand
+from synnefo.webproject.management import utils
 from astakos.im.models import Chain, ProjectApplication
 
-from ._common import format
 
-
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     args = "<id or name>"
     help = """
     Show project details.
@@ -52,7 +52,7 @@ class Command(BaseCommand):
                              contains the given string
 """
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option('--app',
                     action='store_true',
                     dest='app',
@@ -63,17 +63,17 @@ class Command(BaseCommand):
                     action='store_true',
                     dest='pending',
                     default=False,
-                    help=("For a given project, show also pending modifications "
+                    help=("For a given project, show also pending modifications"
                           "(applications), if any")
                     ),
-        )
+    )
 
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide project ID or name")
 
         show_pending = bool(options['pending'])
-        search_apps  = options['app']
+        search_apps = options['app']
 
         name_or_id = args[0]
         is_id = name_or_id.isdigit()
@@ -93,13 +93,8 @@ class Command(BaseCommand):
             raise CommandError(msg)
 
         for info in infolist:
-            self.show_info(info)
-
-    def show_info(self, info):
-        for key, val in info.items():
-            line = '%s: %s\n' % (key.rjust(22), format(val))
-            self.stdout.write(line)
-        self.stdout.write('\n')
+            utils.pprint_table(self.stdout, [info.values()], info.keys(),
+                               options["output_format"], vertical=True)
 
 
 def app_info(name_or_id, is_id):
@@ -111,6 +106,7 @@ def app_info(name_or_id, is_id):
     except ProjectApplication.DoesNotExist:
             return []
 
+
 def get_chains(name_or_id, is_id):
     if is_id:
         try:
@@ -120,6 +116,7 @@ def get_chains(name_or_id, is_id):
     else:
         return Chain.objects.search_by_name(name_or_id)
 
+
 def collect_info(chains, pending):
     states = [chain.full_state() for chain in chains]
 
@@ -127,6 +124,7 @@ def collect_info(chains, pending):
     for state in states:
         infolist += (chain_fields(state, pending))
     return infolist
+
 
 def chain_fields((s, project, app), request=False):
     l = []
@@ -138,28 +136,29 @@ def chain_fields((s, project, app), request=False):
         l = [app_fields(app)]
     return l
 
+
 def app_fields(app):
     mem_limit = app.limit_on_members_number
     mem_limit_show = mem_limit if mem_limit is not None else "unlimited"
 
     d = OrderedDict([
-            ('project id', app.chain),
-            ('application id', app.id),
-            ('name', app.name),
-            ('status', app.state_display()),
-            ('owner', app.owner),
-            ('applicant', app.applicant),
-            ('homepage', app.homepage),
-            ('description', app.description),
-            ('comments for review', app.comments),
-            ('request issue date', app.issue_date),
-            ('request start date', app.start_date),
-            ('request end date', app.end_date),
-            ('resources', app.resource_policies),
-            ('join policy', app.member_join_policy_display),
-            ('leave policy', app.member_leave_policy_display),
-            ('max members', mem_limit_show),
-            ])
+        ('project id', app.chain),
+        ('application id', app.id),
+        ('name', app.name),
+        ('status', app.state_display()),
+        ('owner', app.owner),
+        ('applicant', app.applicant),
+        ('homepage', app.homepage),
+        ('description', app.description),
+        ('comments for review', app.comments),
+        ('request issue date', app.issue_date),
+        ('request start date', app.start_date),
+        ('request end date', app.end_date),
+        ('resources', app.resource_policies),
+        ('join policy', app.member_join_policy_display),
+        ('leave policy', app.member_leave_policy_display),
+        ('max members', mem_limit_show),
+    ])
 
     return d
 
@@ -168,11 +167,11 @@ def project_fields(s, project, last_app):
     app = project.application
 
     d = OrderedDict([
-            ('project id', project.id),
-            ('application id', app.id),
-            ('name', app.name),
-            ('status', Chain.state_display(s)),
-            ])
+        ('project id', project.id),
+        ('application id', app.id),
+        ('name', app.name),
+        ('status', Chain.state_display(s)),
+    ])
     if s in Chain.PENDING_STATES:
         d.update([('pending application', last_app.id)])
 
@@ -200,10 +199,10 @@ def project_fields(s, project, last_app):
             ('leave policy', app.member_leave_policy_display),
             ('max members', mem_limit_show),
             ('total members', project.members_count()),
-            ])
+    ])
 
     memberships = project.projectmembership_set
-    accepted  = [str(m.person) for m in memberships.any_accepted()]
+    accepted = [str(m.person) for m in memberships.any_accepted()]
     requested = [str(m.person) for m in memberships.requested()]
     suspended = [str(m.person) for m in memberships.suspended()]
 

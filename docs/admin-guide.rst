@@ -1221,13 +1221,20 @@ Node10:
 All sections: :ref:`Scale out Guide <i-synnefo>`
 
 
-Synnefo Upgrade Notes
-=====================
+Upgrade Notes
+=============
 
 .. toctree::
    :maxdepth: 1
 
    v0.12 -> v0.13 <upgrade/upgrade-0.13>
+
+
+Changelog, News
+===============
+
+* v0.13 :ref:`Changelog <Changelog-0.13>`, :ref:`NEWS <NEWS-0.13>`
+
 
 Older Cyclades Upgrade Notes
 ============================
@@ -1236,6 +1243,3 @@ Older Cyclades Upgrade Notes
    :maxdepth: 2
 
    Upgrade <upgrade/cyclades-upgrade>
-
-Changelog
-=========

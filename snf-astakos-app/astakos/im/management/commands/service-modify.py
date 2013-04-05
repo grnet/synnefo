@@ -32,13 +32,10 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
-from datetime import datetime
 
 from django.core.management.base import BaseCommand, CommandError
-from django.core.exceptions import ValidationError
 
 from astakos.im.models import Service
-from ._common import remove_user_permission, add_user_permission
 
 
 class Command(BaseCommand):
@@ -63,11 +60,11 @@ class Command(BaseCommand):
                     dest='icon',
                     default=None,
                     help="Set service icon (displayed by cloudbar)"),
-        make_option('--auth-token',
+        make_option('--token',
                     dest='auth_token',
                     default=None,
                     help="Set a custom service auth token"),
-        make_option('--renew-auth-token',
+        make_option('--renew-token',
                     action='store_true',
                     dest='renew_token',
                     default=False,
@@ -91,7 +88,7 @@ class Command(BaseCommand):
         auth_token = options.get('auth_token')
         renew_token = options.get('renew_token')
 
-        if order != None:
+        if order is not None:
             service.order = order
 
         if name:
@@ -111,3 +108,7 @@ class Command(BaseCommand):
 
         service.save()
 
+        if renew_token:
+            self.stdout.write(
+                'Service\'s new token: %s\n' % service.auth_token
+            )

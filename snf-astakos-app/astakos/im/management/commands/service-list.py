@@ -31,45 +31,21 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
-
-from django.core.management.base import NoArgsCommand
-
 from astakos.im.models import Service
+from synnefo.webproject.management.commands import ListCommand
 
-
-class Command(NoArgsCommand):
+class Command(ListCommand):
     help = "List services"
 
-    option_list = NoArgsCommand.option_list + (
-        make_option('-c',
-                    action='store_true',
-                    dest='csv',
-                    default=False,
-                    help="Use pipes to separate values"),
-    )
+    object_class = Service
 
-    def handle_noargs(self, **options):
-        services = Service.objects.all().order_by('id')
+    FIELDS = {
+        "id": ("id", "The ID of the service"),
+        "order": ("order", "The order of the service"),
+        "name": ("name", "The name of the service"),
+        "url": ("url", "The url of the service"),
+        "auth_token": ("auth_token", "The authentication token of the service"),
+        "icon": ("icon", "The image location of the service"),
+    }
 
-        labels = ('id', 'order', 'name', 'url', 'auth_token', 'icon')
-        columns = (3, 3, 12, 40, 20, 20)
-
-        if not options['csv']:
-            line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
-            self.stdout.write(line + '\n')
-            sep = '-' * len(line)
-            self.stdout.write(sep + '\n')
-
-        for service in services:
-            fields = (str(service.id), str(service.order), service.name,
-                      service.url,
-                      service.auth_token or '',
-                      service.icon)
-
-            if options['csv']:
-                line = '|'.join(fields)
-            else:
-                line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
-
-            self.stdout.write(line + '\n')
+    fields = ["id", "order", "name", "url", "auth_token", "icon"]

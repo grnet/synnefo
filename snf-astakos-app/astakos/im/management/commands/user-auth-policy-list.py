@@ -31,53 +31,28 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
-
-from django.core.management.base import NoArgsCommand
-
 from astakos.im.models import AuthProviderPolicyProfile
+from synnefo.webproject.management.commands import ListCommand
 
-from ._common import format
 
-
-class Command(NoArgsCommand):
+class Command(ListCommand):
     help = "List existing authentication provider policy profiles"
 
-    option_list = NoArgsCommand.option_list + (
-        make_option('-c',
-                    action='store_true',
-                    dest='csv',
-                    default=False,
-                    help="Use pipes to separate values"),
-    )
+    object_class = AuthProviderPolicyProfile
 
-    def handle_noargs(self, **options):
-        profiles = AuthProviderPolicyProfile.objects.all()
+    def get_groups(profile):
+        return ','.join(profile.groups.values_list('name', flat=True))
 
-        labels = ['id', 'name', 'provider', 'exclusive', 'groups', 'users']
-        columns = [3, 20, 13, 7, 50, 50]
+    def get_users(profile):
+        return ','.join(profile.users.values_list('email', flat=True))
 
-        if not options['csv']:
-            line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
-            self.stdout.write(line + '\n')
-            sep = '-' * len(line)
-            self.stdout.write(sep + '\n')
+    FIELDS = {
+        'id': ('pk', 'The id of the profile'),
+        'name': ('name', 'The name of the profile'),
+        'provider': ('provider', 'The provider of the profile'),
+        'exclusive': ('is_exclusive', 'Whether the profile is exclusive or not'),
+        'groups': (get_groups, 'The groups of the profile'),
+        'users': (get_users, 'The users of the profile'),
+    }
 
-        for profile in profiles:
-            id = str(profile.pk)
-            name = profile.name
-            provider = profile.provider
-            exclusive = str(profile.is_exclusive)
-            groups = ",".join([g.name for g in profile.groups.all()])
-            users = ",".join([u.email for u in profile.users.all()])
-
-            field_values = [id, name, provider, exclusive, groups, users]
-            fields = (format(elem) for elem in field_values)
-
-            if options['csv']:
-                line = '|'.join(fields)
-            else:
-                line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
-
-            self.stdout.write(line + '\n')
-
+    fields = ['id', 'name', 'provider', 'exclusive', 'groups', 'users']

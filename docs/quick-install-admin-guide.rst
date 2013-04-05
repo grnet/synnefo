@@ -975,6 +975,35 @@ like this:
      ),
     }
 
+Stamp Database Revision
+-----------------------
+
+Pithos uses the alembic_ database migrations tool.
+
+.. _alembic: http://alembic.readthedocs.org
+
+After a sucessful installation, we should stamp it with the most recent
+revision, in order to be able in the future to define the migrations should run
+in subsequent upgrades.
+
+In order to find the most recent revision, we check the migration history:
+
+.. code-block:: console
+
+    root@node2:~ # pithos-migrate history
+    2a309a9a3438 -> 27381099d477 (head), alter public add column url
+    165ba3fbfe53 -> 2a309a9a3438, fix statistics negative population
+    3dd56e750a3 -> 165ba3fbfe53, update account in paths
+    230f8ce9c90f -> 3dd56e750a3, Fix latest_version
+    8320b1c62d9 -> 230f8ce9c90f, alter nodes add column latest version
+    None -> 8320b1c62d9, create index nodes.parent
+
+Finally, we stamp it with the one found in the previous step:
+
+.. code-block:: console
+
+    root@node2:~ # pithos-migrate stamp 27381099d477
+
 Servers Initialization
 ----------------------
 

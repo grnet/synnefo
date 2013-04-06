@@ -32,9 +32,7 @@
 # or implied, of GRNET S.A.
 
 from xml.dom import minidom
-from urllib import unquote
 
-from django.conf import settings
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
@@ -44,6 +42,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from synnefo.lib.astakos import get_user, get_uuids as _get_uuids
 
+from snf_django.lib import api
 from snf_django.lib.api import faults
 
 from pithos.api.util import (
@@ -57,7 +56,8 @@ from pithos.api.util import (
     get_content_range, socket_read_iterator, SaveToBackendHandler,
     object_data_response, put_object_block, hashmap_md5, simple_list_response,
     api_method, is_uuid,
-    retrieve_uuid, retrieve_displayname, retrieve_uuids, retrieve_displaynames
+    retrieve_uuid, retrieve_displayname, retrieve_uuids, retrieve_displaynames,
+    get_pithos_usage
 )
 
 from pithos.api.settings import (UPDATE_MD5, TRANSLATE_UUIDS,
@@ -70,9 +70,9 @@ from pithos.backends.base import (
 
 from pithos.backends.filter import parse_filters
 
-import logging
 import hashlib
 
+import logging
 logger = logging.getLogger(__name__)
 
 
@@ -102,7 +102,7 @@ def top_demux(request):
                 return authenticate(request)
         return account_list(request)
     else:
-        return method_not_allowed(request)
+        return api.method_not_allowed(request)
 
 
 @csrf_exempt
@@ -121,7 +121,7 @@ def account_demux(request, v_account):
     elif request.method == 'GET':
         return container_list(request, v_account)
     else:
-        return method_not_allowed(request)
+        return api.method_not_allowed(request)
 
 
 @csrf_exempt
@@ -144,7 +144,7 @@ def container_demux(request, v_account, v_container):
     elif request.method == 'GET':
         return object_list(request, v_account, v_container)
     else:
-        return method_not_allowed(request)
+        return api.method_not_allowed(request)
 
 
 @csrf_exempt
@@ -174,10 +174,10 @@ def object_demux(request, v_account, v_container, v_object):
     elif request.method == 'DELETE':
         return object_delete(request, v_account, v_container, v_object)
     else:
-        return method_not_allowed(request)
+        return api.method_not_allowed(request)
 
 
-@api_method('GET', user_required=False)
+@api_method('GET', user_required=False, logger=logger)
 def authenticate(request):
     # Normal Response Codes: 204
     # Error Response Codes: internalServerError (500),
@@ -200,7 +200,7 @@ def authenticate(request):
     return response
 
 
-@api_method('GET', format_allowed=True, request_usage=True)
+@api_method('GET', format_allowed=True, user_required=True, logger=logger)
 def account_list(request):
     # Normal Response Codes: 200, 204
     # Error Response Codes: internalServerError (500),
@@ -230,10 +230,11 @@ def account_list(request):
     for x in accounts:
         if x == request.user_uniq:
             continue
+        usage = get_pithos_usage(request.x_auth_token)
         try:
             meta = request.backend.get_account_meta(
                 request.user_uniq, x, 'pithos', include_user_defined=False,
-                external_quota=request.user_usage)
+                external_quota=usage)
             groups = request.backend.get_account_groups(request.user_uniq, x)
         except NotAllowedError:
             raise faults.Forbidden('Not allowed')
@@ -262,7 +263,7 @@ def account_list(request):
     return response
 
 
-@api_method('HEAD', request_usage=True)
+@api_method('HEAD', user_required=True, logger=logger)
 def account_meta(request, v_account):
     # Normal Response Codes: 204
     # Error Response Codes: internalServerError (500),
@@ -270,10 +271,11 @@ def account_meta(request, v_account):
     #                       badRequest (400)
 
     until = get_int_parameter(request.GET.get('until'))
+    usage = get_pithos_usage(request.x_auth_token)
     try:
         meta = request.backend.get_account_meta(
             request.user_uniq, v_account, 'pithos', until,
-            external_quota=request.user_usage)
+            external_quota=usage)
         groups = request.backend.get_account_groups(
             request.user_uniq, v_account)
 
@@ -282,7 +284,7 @@ def account_meta(request, v_account):
                 groups[k] = retrieve_displaynames(
                         getattr(request, 'token', None), groups[k])
         policy = request.backend.get_account_policy(
-            request.user_uniq, v_account, external_quota=request.user_usage)
+            request.user_uniq, v_account, external_quota=usage)
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
 
@@ -293,7 +295,7 @@ def account_meta(request, v_account):
     return response
 
 
-@api_method('POST')
+@api_method('POST', user_required=True, logger=logger)
 def account_update(request, v_account):
     # Normal Response Codes: 202
     # Error Response Codes: internalServerError (500),
@@ -340,7 +342,7 @@ def account_update(request, v_account):
     return HttpResponse(status=202)
 
 
-@api_method('GET', format_allowed=True, request_usage=True)
+@api_method('GET', format_allowed=True, user_required=True, logger=logger)
 def container_list(request, v_account):
     # Normal Response Codes: 200, 204
     # Error Response Codes: internalServerError (500),
@@ -349,14 +351,15 @@ def container_list(request, v_account):
     #                       badRequest (400)
 
     until = get_int_parameter(request.GET.get('until'))
+    usage = get_pithos_usage(request.x_auth_token)
     try:
         meta = request.backend.get_account_meta(
             request.user_uniq, v_account, 'pithos', until,
-            external_quota=request.user_usage)
+            external_quota=usage)
         groups = request.backend.get_account_groups(
             request.user_uniq, v_account)
         policy = request.backend.get_account_policy(
-            request.user_uniq, v_account, external_quota=request.user_usage)
+            request.user_uniq, v_account, external_quota=usage)
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
 
@@ -425,7 +428,7 @@ def container_list(request, v_account):
     return response
 
 
-@api_method('HEAD')
+@api_method('HEAD', user_required=True, logger=logger)
 def container_meta(request, v_account, v_container):
     # Normal Response Codes: 204
     # Error Response Codes: internalServerError (500),
@@ -454,7 +457,7 @@ def container_meta(request, v_account, v_container):
     return response
 
 
-@api_method('PUT')
+@api_method('PUT', user_required=True, logger=logger)
 def container_create(request, v_account, v_container):
     # Normal Response Codes: 201, 202
     # Error Response Codes: internalServerError (500),
@@ -498,7 +501,7 @@ def container_create(request, v_account, v_container):
     return HttpResponse(status=ret)
 
 
-@api_method('POST', format_allowed=True)
+@api_method('POST', format_allowed=True, user_required=True, logger=logger)
 def container_update(request, v_account, v_container):
     # Normal Response Codes: 202
     # Error Response Codes: internalServerError (500),
@@ -549,7 +552,7 @@ def container_update(request, v_account, v_container):
     return response
 
 
-@api_method('DELETE')
+@api_method('DELETE', user_required=True, logger=logger)
 def container_delete(request, v_account, v_container):
     # Normal Response Codes: 204
     # Error Response Codes: internalServerError (500),
@@ -578,7 +581,7 @@ def container_delete(request, v_account, v_container):
     return HttpResponse(status=204)
 
 
-@api_method('GET', format_allowed=True)
+@api_method('GET', format_allowed=True, user_required=True, logger=logger)
 def object_list(request, v_account, v_container):
     # Normal Response Codes: 200, 204
     # Error Response Codes: internalServerError (500),
@@ -746,7 +749,7 @@ def object_list(request, v_account, v_container):
     return response
 
 
-@api_method('HEAD')
+@api_method('HEAD', user_required=True, logger=logger)
 def object_meta(request, v_account, v_container, v_object):
     # Normal Response Codes: 204
     # Error Response Codes: internalServerError (500),
@@ -795,7 +798,7 @@ def object_meta(request, v_account, v_container, v_object):
     return response
 
 
-@api_method('GET', format_allowed=True)
+@api_method('GET', format_allowed=True, user_required=True, logger=logger)
 def object_read(request, v_account, v_container, v_object):
     # Normal Response Codes: 200, 206
     # Error Response Codes: internalServerError (500),
@@ -937,7 +940,7 @@ def object_read(request, v_account, v_container, v_object):
     return object_data_response(request, sizes, hashmaps, meta)
 
 
-@api_method('PUT', format_allowed=True)
+@api_method('PUT', format_allowed=True, user_required=True, logger=logger)
 def object_write(request, v_account, v_container, v_object):
     # Normal Response Codes: 201
     # Error Response Codes: internalServerError (500),
@@ -1096,7 +1099,7 @@ def object_write(request, v_account, v_container, v_object):
     return response
 
 
-@api_method('POST')
+@api_method('POST', user_required=True, logger=logger)
 def object_write_form(request, v_account, v_container, v_object):
     # Normal Response Codes: 201
     # Error Response Codes: internalServerError (500),
@@ -1129,7 +1132,7 @@ def object_write_form(request, v_account, v_container, v_object):
     return response
 
 
-@api_method('COPY', format_allowed=True)
+@api_method('COPY', format_allowed=True, user_required=True, logger=logger)
 def object_copy(request, v_account, v_container, v_object):
     # Normal Response Codes: 201
     # Error Response Codes: internalServerError (500),
@@ -1171,7 +1174,7 @@ def object_copy(request, v_account, v_container, v_object):
     return response
 
 
-@api_method('MOVE', format_allowed=True)
+@api_method('MOVE', format_allowed=True, user_required=True, logger=logger)
 def object_move(request, v_account, v_container, v_object):
     # Normal Response Codes: 201
     # Error Response Codes: internalServerError (500),
@@ -1212,7 +1215,7 @@ def object_move(request, v_account, v_container, v_object):
     return response
 
 
-@api_method('POST', format_allowed=True)
+@api_method('POST', format_allowed=True, user_required=True, logger=logger)
 def object_update(request, v_account, v_container, v_object):
     # Normal Response Codes: 202, 204
     # Error Response Codes: internalServerError (500),
@@ -1423,7 +1426,7 @@ def object_update(request, v_account, v_container, v_object):
     return response
 
 
-@api_method('DELETE')
+@api_method('DELETE', user_required=True, logger=logger)
 def object_delete(request, v_account, v_container, v_object):
     # Normal Response Codes: 204
     # Error Response Codes: internalServerError (500),
@@ -1446,8 +1449,3 @@ def object_delete(request, v_account, v_container, v_object):
     except QuotaError, e:
         raise faults.RequestEntityTooLarge('Quota error: %s' % e)
     return HttpResponse(status=204)
-
-
-@api_method()
-def method_not_allowed(request):
-    raise faults.BadRequest('Method not allowed')

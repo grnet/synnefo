@@ -35,7 +35,6 @@ from functools import wraps
 from synnefo.plankton.backend import ImageBackend
 from contextlib import contextmanager
 
-
 def plankton_method(func):
     """Decorator function for API methods using ImageBackend.
 

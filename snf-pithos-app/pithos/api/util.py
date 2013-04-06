@@ -32,11 +32,8 @@
 # or implied, of GRNET S.A.
 
 from functools import wraps
-from time import time
 from traceback import format_exc
-from wsgiref.handlers import format_date_time
-from binascii import hexlify, unhexlify
-from datetime import datetime, tzinfo, timedelta
+from datetime import datetime
 from urllib import quote, unquote
 
 from django.conf import settings
@@ -49,8 +46,9 @@ from django.core.files.uploadhandler import FileUploadHandler
 from django.core.files.uploadedfile import UploadedFile
 
 from synnefo.lib.parsedate import parse_http_date_safe, parse_http_date
-from synnefo.lib.astakos import get_user
-from snf_django.lib.api import faults
+from synnefo.lib.astakos import user_for_token
+from snf_django.lib import api
+from snf_django.lib.api import faults, utils
 
 from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_BLOCK_MODULE, BACKEND_BLOCK_PATH,
@@ -67,7 +65,6 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  RADOS_POOL_MAPS, TRANSLATE_UUIDS,
                                  PUBLIC_URL_SECURITY,
                                  PUBLIC_URL_ALPHABET)
-from pithos.backends import connect_backend
 from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
                                   VersionNotExists)
 from synnefo.lib.astakos import (get_user_uuid, get_displayname,
@@ -82,27 +79,10 @@ import decimal
 logger = logging.getLogger(__name__)
 
 
-class UTC(tzinfo):
-    def utcoffset(self, dt):
-        return timedelta(0)
-
-    def tzname(self, dt):
-        return 'UTC'
-
-    def dst(self, dt):
-        return timedelta(0)
-
-
 def json_encode_decimal(obj):
     if isinstance(obj, decimal.Decimal):
         return str(obj)
     raise TypeError(repr(obj) + " is not JSON serializable")
-
-
-def isoformat(d):
-    """Return an ISO8601 date string that includes a timezone."""
-
-    return d.replace(tzinfo=UTC()).isoformat()
 
 
 def rename_meta_key(d, old, new):
@@ -120,7 +100,7 @@ def printable_header_dict(d):
     """
 
     if 'last_modified' in d and d['last_modified']:
-        d['last_modified'] = isoformat(
+        d['last_modified'] = utils.isoformat(
             datetime.fromtimestamp(d['last_modified']))
     return dict([(k.lower().replace('-', '_'), v) for k, v in d.iteritems()])
 
@@ -985,6 +965,7 @@ _pithos_backend_pool = PithosBackendPool(
         public_url_security=PUBLIC_URL_SECURITY,
         public_url_alphabet=PUBLIC_URL_ALPHABET)
 
+
 def get_backend():
     backend = _pithos_backend_pool.pool_get()
     backend.default_policy['quota'] = BACKEND_QUOTA
@@ -1010,13 +991,6 @@ def update_request_headers(request):
 
 
 def update_response_headers(request, response):
-    if request.serialization == 'xml':
-        response['Content-Type'] = 'application/xml; charset=UTF-8'
-    elif request.serialization == 'json':
-        response['Content-Type'] = 'application/json; charset=UTF-8'
-    elif not response['Content-Type']:
-        response['Content-Type'] = 'text/plain; charset=UTF-8'
-
     if (not response.has_header('Content-Length') and
         not (response.has_header('Content-Type') and
              response['Content-Type'].startswith('multipart/byteranges'))):
@@ -1031,103 +1005,41 @@ def update_response_headers(request, response):
             response[quote(k)] = quote(v, safe='/=,:@; ')
 
 
-def render_fault(request, fault):
-    if isinstance(fault, faults.InternalServerError) and settings.DEBUG:
-        fault.details = format_exc(fault)
-
-    request.serialization = 'text'
-    data = fault.message + '\n'
-    if fault.details:
-        data += '\n' + fault.details
-    response = HttpResponse(data, status=fault.code)
-    update_response_headers(request, response)
-    return response
-
-
-def request_serialization(request, format_allowed=False):
-    """Return the serialization format requested.
-
-    Valid formats are 'text' and 'json', 'xml' if 'format_allowed' is True.
-    """
-
-    if not format_allowed:
-        return 'text'
-
-    format = request.GET.get('format')
-    if format == 'json':
-        return 'json'
-    elif format == 'xml':
-        return 'xml'
-
-    for item in request.META.get('HTTP_ACCEPT', '').split(','):
-        accept, sep, rest = item.strip().partition(';')
-        if accept == 'application/json':
-            return 'json'
-        elif accept == 'application/xml' or accept == 'text/xml':
-            return 'xml'
-
-    return 'text'
-
-def get_pithos_usage(usage):
+def get_pithos_usage(token):
+    """Get Pithos Usage from astakos."""
+    user_info = user_for_token(token, AUTHENTICATION_URL, AUTHENTICATION_USERS,
+                               usage=True)
+    usage = user_info.get("usage", [])
     for u in usage:
         if u.get('name') == 'pithos+.diskspace':
             return u
 
-def api_method(http_method=None, format_allowed=False, user_required=True,
-        request_usage=False):
-    """Decorator function for views that implement an API method."""
 
+def api_method(http_method=None, user_required=True, logger=None,
+               format_allowed=False):
     def decorator(func):
+        @api.api_method(http_method=http_method, user_required=user_required,
+                          logger=logger, format_allowed=format_allowed)
         @wraps(func)
         def wrapper(request, *args, **kwargs):
+            # The args variable may contain up to (account, container, object).
+            if len(args) > 1 and len(args[1]) > 256:
+                raise faults.BadRequest("Container name too large")
+            if len(args) > 2 and len(args[2]) > 1024:
+                raise faults.BadRequest('Object name too large.')
+
             try:
-                if http_method and request.method != http_method:
-                    raise faults.BadRequest('Method not allowed.')
-
-                if user_required:
-                    token = None
-                    if request.method in ('HEAD', 'GET') and COOKIE_NAME in request.COOKIES:
-                        cookie_value = unquote(
-                            request.COOKIES.get(COOKIE_NAME, ''))
-                        account, sep, token = cookie_value.partition('|')
-                    get_user(request,
-                             AUTHENTICATION_URL,
-                             AUTHENTICATION_USERS,
-                             token,
-                             request_usage)
-                    if  getattr(request, 'user', None) is None:
-                        raise faults.Unauthorized('Access denied')
-                    assert getattr(request, 'user_uniq', None) != None
-                    request.user_usage = get_pithos_usage(request.user.get('usage', []))
-                    request.token = request.GET.get('X-Auth-Token', request.META.get('HTTP_X_AUTH_TOKEN', token))
-
-                # The args variable may contain up to (account, container, object).
-                if len(args) > 1 and len(args[1]) > 256:
-                    raise faults.BadRequest('Container name too large.')
-                if len(args) > 2 and len(args[2]) > 1024:
-                    raise faults.BadRequest('Object name too large.')
-
-                # Format and check headers.
-                update_request_headers(request)
-
-                # Fill in custom request variables.
-                request.serialization = request_serialization(
-                    request, format_allowed)
+                # Add a PithosBackend as attribute of the request object
                 request.backend = get_backend()
-
+                # Many API method expect thet X-Auth-Token in request,token
+                request.token = request.x_auth_token
+                update_request_headers(request)
                 response = func(request, *args, **kwargs)
                 update_response_headers(request, response)
                 return response
-            except faults.Fault, fault:
-                if fault.code >= 500:
-                    logger.exception("API Fault")
-                return render_fault(request, fault)
-            except BaseException, e:
-                logger.exception('Unexpected error: %s' % e)
-                fault = faults.InternalServerError('Unexpected error')
-                return render_fault(request, fault)
             finally:
-                if getattr(request, 'backend', None) is not None:
+                # Always close PithosBackend connection
+                if getattr(request, "backend", None) is not None:
                     request.backend.close()
         return wrapper
     return decorator

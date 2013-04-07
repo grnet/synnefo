@@ -70,45 +70,6 @@ from synnefo.settings import MAX_CIDR_BLOCK
 log = getLogger('synnefo.api')
 
 
-class UTC(tzinfo):
-    def utcoffset(self, dt):
-        return timedelta(0)
-
-    def tzname(self, dt):
-        return 'UTC'
-
-    def dst(self, dt):
-        return timedelta(0)
-
-
-def isoformat(d):
-    """Return an ISO8601 date string that includes a timezone."""
-
-    return d.replace(tzinfo=UTC()).isoformat()
-
-
-def isoparse(s):
-    """Parse an ISO8601 date string into a datetime object."""
-
-    if not s:
-        return None
-
-    try:
-        since = dateutil.parser.parse(s)
-        utc_since = since.astimezone(UTC()).replace(tzinfo=None)
-    except ValueError:
-        raise faults.BadRequest('Invalid changes-since parameter.')
-
-    now = datetime.datetime.now()
-    if utc_since > now:
-        raise faults.BadRequest('changes-since value set in the future.')
-
-    if now - utc_since > timedelta(seconds=settings.POLL_LIMIT):
-        raise faults.BadRequest('Too old changes-since value.')
-
-    return utc_since
-
-
 def random_password():
     """Generates a random password
 
@@ -220,6 +181,21 @@ def get_flavor(flavor_id, include_deleted=False):
             return Flavor.objects.get(id=flavor_id, deleted=include_deleted)
     except (ValueError, Flavor.DoesNotExist):
         raise faults.ItemNotFound('Flavor not found.')
+
+
+def get_flavor_provider(flavor):
+    """Extract provider from disk template.
+
+    Provider for `ext` disk_template is encoded in the disk template
+    name, which is formed `ext_<provider_name>`. Provider is None
+    for all other disk templates.
+
+    """
+    disk_template = flavor.disk_template
+    provider = None
+    if disk_template.startswith("ext"):
+        disk_template, provider = disk_template.split("_", 1)
+    return disk_template, provider
 
 
 def get_network(network_id, user_id, for_update=False):
@@ -358,33 +334,6 @@ def get_nic_from_index(vm, nic_index):
     return nic
 
 
-def get_request_dict(request):
-    """Returns data sent by the client as a python dict."""
-
-    data = request.raw_post_data
-    if request.META.get('CONTENT_TYPE').startswith('application/json'):
-        try:
-            return json.loads(data)
-        except ValueError:
-            raise faults.BadRequest('Invalid JSON data.')
-    else:
-        raise faults.BadRequest('Unsupported Content-Type.')
-
-
-def update_response_headers(request, response):
-    if request.serialization == 'xml':
-        response['Content-Type'] = 'application/xml'
-    elif request.serialization == 'atom':
-        response['Content-Type'] = 'application/atom+xml'
-    else:
-        response['Content-Type'] = 'application/json'
-
-    if settings.TEST:
-        response['Date'] = format_date_time(time())
-
-    add_never_cache_headers(response)
-
-
 def render_metadata(request, metadata, use_values=False, status=200):
     if request.serialization == 'xml':
         data = render_to_string('metadata.xml', {'metadata': metadata})
@@ -403,80 +352,6 @@ def render_meta(request, meta, status=200):
     else:
         data = json.dumps(dict(meta=meta))
     return HttpResponse(data, status=status)
-
-
-def render_fault(request, fault):
-    if settings.DEBUG or settings.TEST:
-        fault.details = format_exc(fault)
-
-    if request.serialization == 'xml':
-        data = render_to_string('fault.xml', {'fault': fault})
-    else:
-        d = {fault.name: {'code': fault.code,
-                          'message': fault.message,
-                          'details': fault.details}}
-        data = json.dumps(d)
-
-    resp = HttpResponse(data, status=fault.code)
-    update_response_headers(request, resp)
-    return resp
-
-
-def request_serialization(request, atom_allowed=False):
-    """Return the serialization format requested.
-
-    Valid formats are 'json', 'xml' and 'atom' if `atom_allowed` is True.
-    """
-
-    path = request.path
-
-    if path.endswith('.json'):
-        return 'json'
-    elif path.endswith('.xml'):
-        return 'xml'
-    elif atom_allowed and path.endswith('.atom'):
-        return 'atom'
-
-    for item in request.META.get('HTTP_ACCEPT', '').split(','):
-        accept, sep, rest = item.strip().partition(';')
-        if accept == 'application/json':
-            return 'json'
-        elif accept == 'application/xml':
-            return 'xml'
-        elif atom_allowed and accept == 'application/atom+xml':
-            return 'atom'
-
-    return 'json'
-
-
-def api_method(http_method=None, atom_allowed=False):
-    """Decorator function for views that implement an API method."""
-
-    def decorator(func):
-        @wraps(func)
-        def wrapper(request, *args, **kwargs):
-            try:
-                request.serialization = request_serialization(request,
-                                                              atom_allowed)
-                get_user(request, settings.ASTAKOS_URL)
-                if not request.user_uniq:
-                    raise faults.Unauthorized('No user found.')
-                if http_method and request.method != http_method:
-                    raise faults.BadRequest('Method not allowed.')
-
-                resp = func(request, *args, **kwargs)
-                update_response_headers(request, resp)
-                return resp
-            except faults.Fault, fault:
-                if fault.code >= 500:
-                    log.exception('API fault')
-                return render_fault(request, fault)
-            except BaseException:
-                log.exception('Unexpected error')
-                fault = faults.ServiceUnavailable('Unexpected error.')
-                return render_fault(request, fault)
-        return wrapper
-    return decorator
 
 
 def construct_nic_id(nic):
@@ -503,21 +378,6 @@ def verify_personality(personality):
                 raise faults.OverLimit("Maximum size of personality exceeded")
         except AssertionError:
             raise faults.BadRequest("Malformed personality in request")
-
-
-def get_flavor_provider(flavor):
-    """Extract provider from disk template.
-
-    Provider for `ext` disk_template is encoded in the disk template
-    name, which is formed `ext_<provider_name>`. Provider is None
-    for all other disk templates.
-
-    """
-    disk_template = flavor.disk_template
-    provider = None
-    if disk_template.startswith("ext"):
-        disk_template, provider = disk_template.split("_", 1)
-    return disk_template, provider
 
 
 def values_from_flavor(flavor):

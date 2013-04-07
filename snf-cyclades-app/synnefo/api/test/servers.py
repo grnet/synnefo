@@ -33,7 +33,7 @@
 
 import json
 
-from synnefo.api.tests import  BaseAPITest
+from snf_django.utils.testing import BaseAPITest
 from synnefo.db.models import VirtualMachine, VirtualMachineMetadata
 from synnefo.db import models_factory as mfactory
 from synnefo.logic.utils import get_rsapi_state

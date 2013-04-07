@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,9 +31,16 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-# Import TestCases
-from synnefo.api.test.servers import *
-from synnefo.api.test.networks import *
-from synnefo.api.test.flavors import *
-from synnefo.api.test.images import *
-from synnefo.api.test.versions import *
+from django.utils import simplejson as json
+from django.test import TestCase
+from snf_django.utils.testing import astakos_user
+
+class APITest(TestCase):
+    def test_api_version(self):
+        """Check API version."""
+        with astakos_user('user'):
+            response = self.client.get('/api/v1.1/')
+        self.assertEqual(response.status_code, 200)
+        api_version = json.loads(response.content)['version']
+        self.assertEqual(api_version['id'], 'v1.1')
+        self.assertEqual(api_version['status'], 'CURRENT')

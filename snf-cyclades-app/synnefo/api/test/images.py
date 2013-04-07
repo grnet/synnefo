@@ -34,7 +34,7 @@
 import json
 
 from snf_django.lib.api import faults
-from synnefo.api.tests import BaseAPITest
+from snf_django.utils.testing import BaseAPITest
 
 from mock import patch
 from functools import wraps

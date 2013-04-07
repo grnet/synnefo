@@ -38,10 +38,10 @@ from string import punctuation
 from urllib import unquote
 
 from django.conf import settings
-from django.http import (HttpResponse, HttpResponseNotFound,
-                         HttpResponseBadRequest)
+from django.http import HttpResponse
 
 from snf_django.lib import api
+from snf_django.lib.api import faults
 from synnefo.plankton.utils import plankton_method
 
 
@@ -233,7 +233,7 @@ def get_image_meta(request, image_id):
 
     image = request.backend.get_image(image_id)
     if not image:
-        return HttpResponseNotFound()
+        raise faults.ItemNotFound()
     return _create_image_response(image)
 
 
@@ -285,13 +285,13 @@ def list_images(request, detail=False):
         try:
             filters['size_max'] = int(filters['size_max'])
         except ValueError:
-            return HttpResponseBadRequest('400 Bad Request')
+            raise faults.BadRequest("Malformed request.")
 
     if 'size_min' in filters:
         try:
             filters['size_min'] = int(filters['size_min'])
         except ValueError:
-            return HttpResponseBadRequest('400 Bad Request')
+            raise faults.BadRequest("Malformed request.")
 
     images = request.backend.list(filters, params)
 

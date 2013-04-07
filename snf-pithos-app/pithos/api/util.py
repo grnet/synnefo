@@ -45,7 +45,7 @@ from django.utils.encoding import smart_unicode, smart_str
 from django.core.files.uploadhandler import FileUploadHandler
 from django.core.files.uploadedfile import UploadedFile
 
-from synnefo.lib.parsedate import parse_http_date_safe, parse_http_date
+from snf_django.lib.api.parsedate import parse_http_date_safe, parse_http_date
 from synnefo.lib.astakos import user_for_token
 from snf_django.lib import api
 from snf_django.lib.api import faults, utils

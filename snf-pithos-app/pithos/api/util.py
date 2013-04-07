@@ -59,7 +59,7 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  QUOTAHOLDER_POOLSIZE,
                                  BACKEND_QUOTA, BACKEND_VERSIONING,
                                  BACKEND_FREE_VERSIONING,
-                                 AUTHENTICATION_URL, AUTHENTICATION_USERS,
+                                 AUTHENTICATION_URL,
                                  COOKIE_NAME, USER_CATALOG_URL,
                                  RADOS_STORAGE, RADOS_POOL_BLOCKS,
                                  RADOS_POOL_MAPS, TRANSLATE_UUIDS,
@@ -274,8 +274,7 @@ def is_uuid(str):
 ##########################
 
 def retrieve_displayname(token, uuid, fail_silently=True):
-    displayname = get_displayname(
-            token, uuid, USER_CATALOG_URL, AUTHENTICATION_USERS)
+    displayname = get_displayname(token, uuid, USER_CATALOG_URL)
     if not displayname and not fail_silently:
         raise ItemNotExists(uuid)
     elif not displayname:
@@ -284,8 +283,7 @@ def retrieve_displayname(token, uuid, fail_silently=True):
     return displayname
 
 def retrieve_displaynames(token, uuids, return_dict=False, fail_silently=True):
-    catalog =  get_displaynames(
-            token, uuids, USER_CATALOG_URL, AUTHENTICATION_USERS) or {}
+    catalog =  get_displaynames(token, uuids, USER_CATALOG_URL) or {}
     missing = list(set(uuids) - set(catalog))
     if missing and not fail_silently:
         raise ItemNotExists('Unknown displaynames: %s' % ', '.join(missing))
@@ -295,15 +293,13 @@ def retrieve_uuid(token, displayname):
     if is_uuid(displayname):
         return displayname
 
-    uuid = get_user_uuid(
-        token, displayname, USER_CATALOG_URL, AUTHENTICATION_USERS)
+    uuid = get_user_uuid(token, displayname, USER_CATALOG_URL)
     if not uuid:
         raise ItemNotExists(displayname)
     return uuid
 
 def retrieve_uuids(token, displaynames, return_dict=False, fail_silently=True):
-    catalog = get_uuids(
-            token, displaynames, USER_CATALOG_URL, AUTHENTICATION_USERS) or {}
+    catalog = get_uuids(token, displaynames, USER_CATALOG_URL) or {}
     missing = list(set(displaynames) - set(catalog))
     if missing and not fail_silently:
         raise ItemNotExists('Unknown uuids: %s' % ', '.join(missing))
@@ -1007,8 +1003,7 @@ def update_response_headers(request, response):
 
 def get_pithos_usage(token):
     """Get Pithos Usage from astakos."""
-    user_info = user_for_token(token, AUTHENTICATION_URL, AUTHENTICATION_USERS,
-                               usage=True)
+    user_info = user_for_token(token, AUTHENTICATION_URL, usage=True)
     usage = user_info.get("usage", [])
     for u in usage:
         if u.get('name') == 'pithos+.diskspace':

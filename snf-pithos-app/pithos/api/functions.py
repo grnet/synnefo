@@ -61,8 +61,7 @@ from pithos.api.util import (
 )
 
 from pithos.api.settings import (UPDATE_MD5, TRANSLATE_UUIDS,
-                                 SERVICE_TOKEN, AUTHENTICATION_URL,
-                                 AUTHENTICATION_USERS)
+                                 SERVICE_TOKEN, AUTHENTICATION_URL)
 
 from pithos.backends.base import (
     NotAllowedError, QuotaError, ContainerNotEmpty, ItemNotExists,
@@ -81,8 +80,7 @@ def get_uuids(names):
         uuids = _get_uuids(SERVICE_TOKEN, names,
                            url=AUTHENTICATION_URL.replace(
                                             'im/authenticate',
-                                            'service/api/user_catalogs'),
-                           override_users=AUTHENTICATION_USERS)
+                                            'service/api/user_catalogs'))
     except Exception, e:
         logger.exception(e)
         return {}

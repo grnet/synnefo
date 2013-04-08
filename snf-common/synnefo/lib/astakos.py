@@ -37,7 +37,7 @@ from urlparse import urlparse
 from urllib import unquote
 from django.utils import simplejson as json
 
-from synnefo.lib.pool.http import PooledHTTPConnection
+from objpool.http import PooledHTTPConnection
 
 logger = logging.getLogger(__name__)
 

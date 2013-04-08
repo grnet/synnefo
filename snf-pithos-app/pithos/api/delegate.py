@@ -46,7 +46,7 @@ from django.views.decorators.csrf import csrf_exempt
 from pithos.api.settings import (USER_LOGIN_URL, USER_FEEDBACK_URL,
                                  USER_CATALOG_URL)
 
-from synnefo.lib.pool.http import PooledHTTPConnection
+from objpool.http import PooledHTTPConnection
 
 logger = logging.getLogger(__name__)
 

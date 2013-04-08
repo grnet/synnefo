@@ -53,7 +53,7 @@ PASSWORD_CHANGED                        =   'Your new password was set successfu
 ACCOUNT_RESEND_ACTIVATION_PROMPT        =   'Resend activation email'
 ACCOUNT_USER_ACTIVATION_PENDING         =   'You have not followed the activation link'
 
-ACCOUNT_UNKNOWN                         =   'It seems there is no account with those .'
+ACCOUNT_UNKNOWN                         =   'There is no such account.'
 TOKEN_UNKNOWN                           =   'There is no user matching this authentication token.'
 TOKEN_UPDATED                           =   'Your authentication token has been updated successfully.'
 

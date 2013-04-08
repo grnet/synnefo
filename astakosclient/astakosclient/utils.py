@@ -61,7 +61,7 @@ def scheme_to_class(scheme, use_pool, pool_size):
     """Return the appropriate conn class for given scheme"""
     def _objpool(netloc):
         return PooledHTTPConnection(
-            netloc=netloc, scheme=scheme, pool_size=pool_size)
+            netloc=netloc, scheme=scheme, size=pool_size)
 
     def _http_connection(netloc):
         return closing(HTTPConnection(netloc))

@@ -121,3 +121,20 @@ Suggests: gunicorn, collectd, python-gevent (>=0.13)
 XB-Python-Version: ${python:Versions}
 Description: Synnefo Stats
  Synnefo Stats
+
+Package: python-astakosclient
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}
+Provides: ${python:Provides}
+XB-Python-Version: ${python:Versions}
+Description: Synnefo Astakos Client
+ Python client for Astakos, the Synnefo identity management service.
+
+Package: snf-django-lib
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}, snf-common
+Provides: ${python:Provides}
+Recommends: snf-webproject
+XB-Python-Version: ${python:Versions}
+Description: Synnefo Django library
+ Synnefo Django library

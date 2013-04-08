@@ -78,8 +78,6 @@ from astakos.im.project_notif import (
     application_submit_notify, application_approve_notify,
     application_deny_notify,
     project_termination_notify, project_suspension_notify)
-from astakos.im.endpoints.qh import (
-    register_quotas, qh_get_quota, qh_add_quota)
 
 import astakos.im.messages as astakos_messages
 
@@ -376,8 +374,7 @@ class SendNotificationError(SendMailError):
 
 
 def get_quota(users):
-    resources = get_resource_names()
-    return qh_get_quota(users, resources)
+    pass
 
 
 ### PROJECT VIEWS ###

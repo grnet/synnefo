@@ -71,10 +71,6 @@ from astakos.im.settings import (
     SITENAME, SERVICES, MODERATION_ENABLED, RESOURCES_PRESENTATION_DATA,
     PROJECT_MEMBER_JOIN_POLICIES, PROJECT_MEMBER_LEAVE_POLICIES, PROJECT_ADMINS)
 from astakos.im import settings as astakos_settings
-from astakos.im.endpoints.qh import (
-    send_quotas, qh_get_quotas,
-    register_resources, qh_add_quota, QuotaLimits,
-    )
 from astakos.im import auth_providers as auth
 
 import astakos.im.messages as astakos_messages

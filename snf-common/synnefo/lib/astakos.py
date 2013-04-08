@@ -169,15 +169,9 @@ def get_displayname(
     return uuid_dict.get(uuid)
 
 
-def user_for_token(token, authentication_url, override_users, usage=False):
+def user_for_token(token, authentication_url, usage=False):
     if not token:
         return None
-
-    if override_users:
-        try:
-            return {'uuid': override_users[token].decode('utf8')}
-        except:
-            return None
 
     try:
         return authenticate(token, authentication_url, usage=usage)
@@ -191,7 +185,6 @@ def user_for_token(token, authentication_url, override_users, usage=False):
 def get_user(
         request,
         authentication_url='http://127.0.0.1:8000/im/authenticate',
-        override_users={},
         fallback_token=None,
         usage=False):
     request.user = None
@@ -199,18 +192,15 @@ def get_user(
 
     # Try to find token in a parameter or in a request header.
     user = user_for_token(
-        request.GET.get('X-Auth-Token'), authentication_url, override_users,
+        request.GET.get('X-Auth-Token'), authentication_url,
         usage=usage)
     if not user:
         user = user_for_token(
             request.META.get('HTTP_X_AUTH_TOKEN'),
             authentication_url,
-            override_users,
             usage=usage)
     if not user:
-        user = user_for_token(
-            fallback_token, authentication_url, override_users,
-            usage=usage)
+        user = user_for_token(fallback_token, authentication_url, usage=usage)
     if not user:
         logger.warning("Cannot retrieve user details from %s",
                        authentication_url)

@@ -47,7 +47,7 @@ def assert_backend_closed(func):
         result = func(self, backend)
         if backend.called is True:
             num = len(backend.mock_calls) / 2
-            assert(len(backend.return_value.close.mock_calls), num)
+            assert(len(backend.return_value.close.mock_calls) == num)
         return result
     return wrapper
 

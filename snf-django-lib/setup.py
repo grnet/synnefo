@@ -62,7 +62,7 @@ CLASSIFIERS = []
 INSTALL_REQUIRES = [
     'Django >=1.2, <1.3',
     'simplejson>=2.1.1',
-    'astakosclient'
+    'astakosclient',
     'snf-common',
 ]
 

@@ -123,7 +123,6 @@ Status  Description
 .. code-block:: javascript
 
   {
-      "client_key": "cyclades",
       "force": false,
       "auto_accept": false,
       "provisions": [
@@ -182,12 +181,6 @@ Request Header Name   Value
 X-Auth-Token          Service authentication token
 ====================  ============================
 
-======================  ======================
-Request Parameter Name  Value
-======================  ======================
-client_key              Quotaholder client key
-======================  ======================
-
 **Normal Response Code**: 200
 
 **Error Response Codes**:
@@ -215,12 +208,6 @@ Request Header Name   Value
 ====================  ============================
 X-Auth-Token          Service authentication token
 ====================  ============================
-
-======================  ======================
-Request Parameter Name  Value
-======================  ======================
-client_key              Quotaholder client key
-======================  ======================
 
 **Normal Response Code**: 200
 
@@ -285,12 +272,10 @@ Status  Description
 .. code-block:: javascript
 
   {
-      "client_key": "cyclades",
       "accept": ""
   }
 
   {
-      "client_key": "cyclades",
       "reject": ""
   }
 
@@ -321,7 +306,6 @@ Status  Description
 .. code-block:: javascript
 
   {
-      "client_key": "cyclades",
       "accept": [56, 57],
       "reject": [56, 58, 59]
   }
@@ -349,4 +333,3 @@ Status  Description
         ]
     ]
   }
-

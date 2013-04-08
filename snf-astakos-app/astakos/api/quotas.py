@@ -74,7 +74,7 @@ def commissions(request):
 @service_api_method(http_method='GET', token_required=True)
 def get_pending_commissions(request):
     data = request.GET
-    client_key = data['client_key']
+    client_key = str(request.service_instance)
 
     result = qh.get_pending_commissions(clientkey=client_key)
     return json_response(result)
@@ -86,7 +86,7 @@ def issue_commission(request):
     data = request.raw_post_data
     input_data = json.loads(data)
 
-    client_key = input_data['client_key']
+    client_key = str(request.service_instance)
     provisions = input_data['provisions']
     force = input_data.get('force', False)
     auto_accept = input_data.get('auto_accept', False)
@@ -159,7 +159,7 @@ def resolve_pending_commissions(request):
     data = request.raw_post_data
     input_data = json.loads(data)
 
-    client_key = input_data['client_key']
+    client_key = str(request.service_instance)
     accept = input_data.get('accept', [])
     reject = input_data.get('reject', [])
 
@@ -179,7 +179,7 @@ def resolve_pending_commissions(request):
 @service_api_method(http_method='GET', token_required=True)
 def get_commission(request, serial):
     data = request.GET
-    client_key = data['client_key']
+    client_key = str(request.service_instance)
     serial = int(serial)
 
     try:
@@ -199,7 +199,7 @@ def serial_action(request, serial):
     input_data = json.loads(data)
     serial = int(serial)
 
-    client_key = input_data['client_key']
+    client_key = str(request.service_instance)
 
     accept = 'accept' in input_data
     reject = 'reject' in input_data

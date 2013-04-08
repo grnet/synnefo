@@ -35,22 +35,24 @@ from astakos.im.models import AuthProviderPolicyProfile
 from synnefo.webproject.management.commands import ListCommand
 
 
+def get_groups(profile):
+    return ','.join(profile.groups.values_list('name', flat=True))
+
+
+def get_users(profile):
+    return ','.join(profile.users.values_list('email', flat=True))
+
+
 class Command(ListCommand):
     help = "List existing authentication provider policy profiles"
 
     object_class = AuthProviderPolicyProfile
 
-    def get_groups(profile):
-        return ','.join(profile.groups.values_list('name', flat=True))
-
-    def get_users(profile):
-        return ','.join(profile.users.values_list('email', flat=True))
-
     FIELDS = {
         'id': ('pk', 'The id of the profile'),
         'name': ('name', 'The name of the profile'),
         'provider': ('provider', 'The provider of the profile'),
-        'exclusive': ('is_exclusive', 'Whether the profile is exclusive or not'),
+        'exclusive': ('is_exclusive', 'Whether the profile is exclusive'),
         'groups': (get_groups, 'The groups of the profile'),
         'users': (get_users, 'The users of the profile'),
     }

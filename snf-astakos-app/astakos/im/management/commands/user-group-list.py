@@ -35,13 +35,14 @@ from astakos.im.models import Group
 from synnefo.webproject.management.commands import ListCommand
 
 
+def users_count(group):
+    return group.user_set.count()
+
+
 class Command(ListCommand):
     help = "List available groups"
 
     object_class = Group
-
-    def users_count(group):
-        return group.user_set.count()
 
     FIELDS = {
         'id': ('id', 'The id of the group'),

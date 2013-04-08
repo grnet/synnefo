@@ -37,18 +37,20 @@ from astakos.im.models import AstakosUser
 from synnefo.webproject.management.commands import ListCommand
 
 
+def get_providers(user):
+    return ','.join(
+        [unicode(auth) for auth in user.auth_providers.filter(active=True)]
+    )
+
+
+def get_groups(user):
+    return ','.join(user.groups.all().values_list('name', flat=True))
+
+
 class Command(ListCommand):
     help = "List users"
 
     object_class = AstakosUser
-
-    def get_providers(user):
-        return ','.join(
-            [unicode(auth) for auth in user.auth_providers.filter(active=True)]
-        )
-
-    def get_groups(user):
-        return ','.join(user.groups.all().values_list('name', flat=True))
 
     FIELDS = {
         'id': ('id', ('The id of the user')),

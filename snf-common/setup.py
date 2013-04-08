@@ -57,6 +57,7 @@ CLASSIFIERS = []
 
 # Package requirements
 INSTALL_REQUIRES = [
+    'objpool>=0.2'
 ]
 
 EXTRAS_REQUIRES = {

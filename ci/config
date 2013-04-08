@@ -1,8 +1,9 @@
 PROJECTS="\
  snf-common\
  snf-webproject\
- snf-astakos-app\
  astakosclient\
+ snf-django-lib\
+ snf-astakos-app\
  snf-pithos-backend\
  snf-cyclades-gtools\
  snf-cyclades-app\

@@ -176,7 +176,7 @@ class BaseBackend(object):
         """
         return
 
-    def put_account(self, user, account, policy={}):
+    def put_account(self, user, account, policy=None):
         """Create a new account with the given name.
 
         Raises:
@@ -289,7 +289,7 @@ class BaseBackend(object):
         """
         return
 
-    def put_container(self, user, account, container, policy={}, delimiter=None):
+    def put_container(self, user, account, container, policy=None, delimiter=None):
         """Create a new container with the given name.
 
         Parameters:
@@ -316,7 +316,7 @@ class BaseBackend(object):
         """
         return
 
-    def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=[], shared=False, until=None, size_range=None, public=False):
+    def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=None, shared=False, until=None, size_range=None, public=False):
         """Return a list of object (name, version_id) tuples existing under a container.
 
         Parameters:
@@ -355,7 +355,7 @@ class BaseBackend(object):
         """
         return []
 
-    def list_object_meta(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=[], shared=False, until=None, size_range=None):
+    def list_object_meta(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=None, shared=False, until=None, size_range=None):
         """Return a list of object metadata dicts existing under a container.
 
         Same parameters with list_objects. Returned dicts have no user-defined
@@ -497,7 +497,7 @@ class BaseBackend(object):
         """
         return 0, []
 
-    def update_object_hashmap(self, user, account, container, name, size, type, hashmap, checksum, domain, meta={}, replace_meta=False, permissions=None):
+    def update_object_hashmap(self, user, account, container, name, size, type, hashmap, checksum, domain, meta=None, replace_meta=False, permissions=None):
         """Create/update an object with the specified size and partial hashes and return the new version.
 
         Parameters:
@@ -524,7 +524,7 @@ class BaseBackend(object):
         """Update an object's checksum."""
         return
 
-    def copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta={}, replace_meta=False, permissions=None, src_version=None, delimiter=None):
+    def copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta=None, replace_meta=False, permissions=None, src_version=None, delimiter=None):
         """Copy an object's data and metadata and return the new version.
 
         Parameters:
@@ -553,7 +553,7 @@ class BaseBackend(object):
         """
         return ''
 
-    def move_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta={}, replace_meta=False, permissions=None, delimiter=None):
+    def move_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta=None, replace_meta=False, permissions=None, delimiter=None):
         """Move an object's data and metadata and return the new version.
 
         Parameters:

@@ -1,0 +1,50 @@
+{% load astakos_tags i18n %}
+
+<!-- make room for buttons -->
+{% if owner_mode or admin_mode or can_join_request or can_leave_request %}
+  <br />
+{% endif %}
+
+<div class="project-actions">
+{% if owner_mode or admin_mode %}
+<a class="owner-action" href="{% url astakos.im.views.project_modify object.pk %}">MODIFY</a>
+
+{% if owner_mode %}
+{% with object.last_pending_incl_me as last_pending %}
+{% if last_pending %}
+{% if object.project_exists %}
+- {% confirm_link "CANCEL PROJECT MODIFICATION" "project_modification_cancel" "project_app_cancel" last_pending.pk "" "OK" %}
+{% else %}
+- {% confirm_link "CANCEL PROJECT APPLICATION" "project_app_cancel" "project_app_cancel" last_pending.pk "" "OK" %}
+{% endif %}
+{% endif %}
+{% endwith %}
+{% endif %}
+
+{% if admin_mode %}
+{% if object.can_approve %}
+- {% confirm_link "APPROVE" "project_app_approve" "project_app_approve" object.pk "" "OK" %}
+- {% confirm_link "DENY" "project_app_deny" "project_app_deny" object.pk %}
+{% endif %}
+{% endif %}
+
+{% if owner_mode %}
+{% if object.can_dismiss %}
+- {% confirm_link "DISMISS" "project_app_dismiss" "project_app_dismiss" object.pk %}
+{% endif %}
+{% endif %}
+
+<!-- only one is possible, perhaps add cancel button too -->
+{% if can_join_request or can_leave_request %}
+-
+{% endif %}
+{% endif %}
+
+{% if can_join_request %}
+{% confirm_link "JOIN" "project_join" "project_join" project.pk %}
+{% endif %}
+
+{% if can_leave_request %}
+{% confirm_link "LEAVE" "project_leave" "project_leave" project.pk %}
+{% endif %}
+</div>

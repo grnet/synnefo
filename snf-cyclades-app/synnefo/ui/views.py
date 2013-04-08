@@ -242,27 +242,26 @@ def user_quota(request):
         # astakos client backwards compatibility
         get_user(request, settings.ASTAKOS_URL)
 
-    vms_limit_for_user = \
-        settings.VMS_USER_QUOTA.get(request.user_uniq,
-                settings.MAX_VMS_PER_USER)
-
-    networks_limit_for_user = \
-        settings.NETWORKS_USER_QUOTA.get(request.user_uniq,
-                settings.MAX_NETWORKS_PER_USER)
-
     if request.user and 'usage' in request.user:
-        quota = dict(zip([q['name'] for q in request.user['usage']],
-                         request.user['usage']))
+        response = json.dumps(request.user['usage'])
+    else:
+        # hmmm, old astakos ???
+        # try to mimic astakos response using cyclades quota settings
+        networks_limit_for_user = \
+            settings.NETWORKS_USER_QUOTA.get(request.user_uniq,
+                    settings.MAX_NETWORKS_PER_USER)
+        vms_limit_for_user = \
+            settings.VMS_USER_QUOTA.get(request.user_uniq,
+                    settings.MAX_NETWORKS_PER_USER)
+        usage = [{'name':'cyclades.vm',
+                  'maxValue': vms_limit_for_user
+                 },
+                 {'name':'cyclades.network.private',
+                  'maxValue': networks_limit_for_user
+                 }]
+        response = json.dumps(usage);
 
-        # TODO: is it ok to use hardcoded resource name ???
-        if 'cyclades.vm' in quota:
-            vms_limit_for_user = quota['cyclades.vm']['maxValue']
-        if 'cyclades.network.private' in quota:
-            networks_limit_for_user = quota['cyclades.network.private']['maxValue']
-
-    return HttpResponse('{"vms_quota":%d, "networks_quota":%d}' % (vms_limit_for_user,
-                                                               networks_limit_for_user),
-                        mimetype="application/json")
+    return HttpResponse(response, mimetype="application/json")
 
 def js_tests(request):
     return template('tests', request, {})
@@ -439,18 +438,21 @@ def feedback_submit(request):
 
     message = request.POST.get("feedback-msg")
     data = request.POST.get("feedback-data")
+    if isinstance(request.user.get('email'), list):
+        email = request.user.get('email')[0]
+    else:
+        email = request.user.get('email')
 
     # default to True (calls from error pages)
     allow_data_send = request.POST.get("feedback-submit-data", True)
 
     mail_subject = unicode(_("Feedback from synnefo application"))
 
-    mail_context = {'message': message, 'data': data,
+    mail_context = {'message': message, 'data': data, 'email': email,
                     'allow_data_send': allow_data_send, 'request': request}
     mail_content = render_to_string("feedback_mail.txt", mail_context)
 
     send_mail(mail_subject, mail_content, FEEDBACK_EMAIL_FROM,
-            dict(FEEDBACK_CONTACTS).values(), fail_silently=False)
+              dict(FEEDBACK_CONTACTS).values(), fail_silently=False)
 
-    return HttpResponse('{"status":"send"}');
-
+    return HttpResponse('{"status":"send"}')

@@ -55,19 +55,21 @@ from pithos.api.faults import (
     Fault, NotModified, BadRequest, Unauthorized, Forbidden, ItemNotFound,
     Conflict, LengthRequired, PreconditionFailed, RequestEntityTooLarge,
     RangeNotSatisfiable, InternalServerError, NotImplemented)
-from pithos.api.short_url import encode_url
 from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_BLOCK_MODULE, BACKEND_BLOCK_PATH,
                                  BACKEND_BLOCK_UMASK,
                                  BACKEND_QUEUE_MODULE, BACKEND_QUEUE_HOSTS,
                                  BACKEND_QUEUE_EXCHANGE, USE_QUOTAHOLDER,
                                  QUOTAHOLDER_URL, QUOTAHOLDER_TOKEN,
+                                 QUOTAHOLDER_POOLSIZE,
                                  BACKEND_QUOTA, BACKEND_VERSIONING,
                                  BACKEND_FREE_VERSIONING,
                                  AUTHENTICATION_URL, AUTHENTICATION_USERS,
                                  COOKIE_NAME, USER_CATALOG_URL,
                                  RADOS_STORAGE, RADOS_POOL_BLOCKS,
-                                 RADOS_POOL_MAPS, TRANSLATE_UUIDS)
+                                 RADOS_POOL_MAPS, TRANSLATE_UUIDS,
+                                 PUBLIC_URL_SECURITY,
+                                 PUBLIC_URL_ALPHABET)
 from pithos.backends import connect_backend
 from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
                                   VersionNotExists)
@@ -233,10 +235,10 @@ def put_object_headers(response, meta, restricted=False, token=None):
     if not restricted:
         response['X-Object-Hash'] = meta['hash']
         response['X-Object-UUID'] = meta['uuid']
-        modified_by = retrieve_displayname(token, meta['modified_by'])
         if TRANSLATE_UUIDS:
-            response['X-Object-Modified-By'] = smart_str(
-                    modified_by, strings_only=True)
+            meta['modified_by'] = retrieve_displayname(token, meta['modified_by'])
+        response['X-Object-Modified-By'] = smart_str(
+            meta['modified_by'], strings_only=True)
         response['X-Object-Version'] = meta['version']
         response['X-Object-Version-Timestamp'] = http_date(
             int(meta['version_timestamp']))
@@ -386,7 +388,7 @@ def update_sharing_meta(request, permissions, v_account, v_container, v_object, 
 def update_public_meta(public, meta):
     if not public:
         return
-    meta['X-Object-Public'] = '/public/' + encode_url(public)
+    meta['X-Object-Public'] = '/public/' + public
 
 
 def validate_modification_preconditions(request, meta):
@@ -967,20 +969,24 @@ else:
                    }
 
 
-_pithos_backend_pool = PithosBackendPool(size=POOL_SIZE,
-                                         db_module=BACKEND_DB_MODULE,
-                                         db_connection=BACKEND_DB_CONNECTION,
-                                         block_module=BACKEND_BLOCK_MODULE,
-                                         block_path=BACKEND_BLOCK_PATH,
-                                         block_umask=BACKEND_BLOCK_UMASK,
-                                         queue_module=BACKEND_QUEUE_MODULE,
-                                         queue_hosts=BACKEND_QUEUE_HOSTS,
-                                         queue_exchange=BACKEND_QUEUE_EXCHANGE,
-                                         quotaholder_enabled=USE_QUOTAHOLDER,
-                                         quotaholder_url=QUOTAHOLDER_URL,
-                                         quotaholder_token=QUOTAHOLDER_TOKEN,
-                                         free_versioning=BACKEND_FREE_VERSIONING,
-                                         block_params=BLOCK_PARAMS)
+_pithos_backend_pool = PithosBackendPool(
+        size=POOL_SIZE,
+        db_module=BACKEND_DB_MODULE,
+        db_connection=BACKEND_DB_CONNECTION,
+        block_module=BACKEND_BLOCK_MODULE,
+        block_path=BACKEND_BLOCK_PATH,
+        block_umask=BACKEND_BLOCK_UMASK,
+        queue_module=BACKEND_QUEUE_MODULE,
+        queue_hosts=BACKEND_QUEUE_HOSTS,
+        queue_exchange=BACKEND_QUEUE_EXCHANGE,
+        quotaholder_enabled=USE_QUOTAHOLDER,
+        quotaholder_url=QUOTAHOLDER_URL,
+        quotaholder_token=QUOTAHOLDER_TOKEN,
+        quotaholder_client_poolsize=QUOTAHOLDER_POOLSIZE,
+        free_versioning=BACKEND_FREE_VERSIONING,
+        block_params=BLOCK_PARAMS,
+        public_url_security=PUBLIC_URL_SECURITY,
+        public_url_alphabet=PUBLIC_URL_ALPHABET)
 
 def get_backend():
     backend = _pithos_backend_pool.pool_get()
@@ -1121,7 +1127,7 @@ def api_method(http_method=None, format_allowed=False, user_required=True,
                 return render_fault(request, fault)
             except BaseException, e:
                 logger.exception('Unexpected error: %s' % e)
-                fault = InternalServerError('Unexpected error: %s' % e)
+                fault = InternalServerError('Unexpected error')
                 return render_fault(request, fault)
             finally:
                 if getattr(request, 'backend', None) is not None:

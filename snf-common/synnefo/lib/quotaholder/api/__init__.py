@@ -32,10 +32,11 @@
 # or implied, of GRNET S.A.
 
 from .quotaholder import QuotaholderAPI, QH_PRACTICALLY_INFINITE
-from .exception import ( InvalidKeyError, NoEntityError,
-                         NoQuantityError, NoCapacityError,
-                         ExportLimitError, ImportLimitError,
-                         CorruptedError, InvalidDataError,
-                         DuplicateError)
+from .exception import (CallError,
+                        InvalidKeyError, NoEntityError,
+                        NoQuantityError, NoCapacityError,
+                        ExportLimitError, ImportLimitError,
+                        CorruptedError, InvalidDataError,
+                        DuplicateError)
 
 API_Spec = QuotaholderAPI

@@ -13,11 +13,12 @@ class Migration(DataMigration):
 
     def forwards(self, orm):
         # valid activation_sent/email_verified
-        for user in orm.AstakosUser.objects.filter(is_active=True):
-            if not user.activation_sent:
-                user.activation_sent = datetime.datetime.now()
-                user.email_verified = True
-                user.save()
+        for user in orm.AstakosUser.objects.all():
+            if user.is_active:
+                if not user.activation_sent:
+                    user.activation_sent = datetime.datetime.now()
+                    user.email_verified = True
+                    user.save()
 
             while not user.uuid:
                 uuid_val =  str(uuid.uuid4())
@@ -95,6 +96,7 @@ class Migration(DataMigration):
         # reset usernames
         for u in orm.AstakosUser.objects.all():
             u.uuid = None
+            u.auth_providers.all().delete()
             if email_re.match(u.username):
                 username = None
                 while not username:

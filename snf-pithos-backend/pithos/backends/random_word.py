@@ -31,29 +31,27 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import os
+import random
 
-DEFAULT_URL = 'https://pithos.okeanos.grnet.gr/v1'
-DEFAULT_USER = 'test'
-DEFAULT_TOKEN = '0000'
+getrandbits = random.SystemRandom().getrandbits
 
+DEFAULT_ALPHABET = ("0123456789"
+                    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                    "abcdefghijklmnopqrstuvwxyz")
 
-def get_user():
-    try:
-        return os.environ['PITHOS_USER']
-    except KeyError:
-        return DEFAULT_USER
+def get_random_word(length, alphabet=DEFAULT_ALPHABET):
+    remainder = getrandbits(length * 8)
+    return encode_word(remainder, alphabet=alphabet)
 
+def encode_word(number, alphabet=DEFAULT_ALPHABET):
+    base = len(alphabet)
+    digits = []
+    append = digits.append
+    quotient = number
+    while True:
+        quotient, remainder = divmod(quotient, base)
+        append(alphabet[remainder])
+        if quotient <= 0:
+            break
 
-def get_auth():
-    try:
-        return os.environ['PITHOS_TOKEN']
-    except KeyError:
-        return DEFAULT_TOKEN
-
-
-def get_url():
-    try:
-        return os.environ['PITHOS_URL'].rstrip('/')
-    except KeyError:
-        return DEFAULT_URL
+    return ''.join(digits)

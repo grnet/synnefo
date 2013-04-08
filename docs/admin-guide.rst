@@ -137,6 +137,67 @@ Automatic activation
 
 FIXME: Describe Regex activation method
 
+Setting quota limits
+~~~~~~~~~~~~~~~~~~~~
+
+Set default quotas
+``````````````````
+
+In 20-snf-astakos-app-settings.conf, 
+uncomment the default setting ``ASTAKOS_SERVICES``
+and customize the ``'uplimit'`` values.
+These are the default base quotas for all users.
+
+To apply your configuration run::
+
+    # snf-manage astakos-init --load-service-resources
+    # snf-manage astakos-quota --sync
+
+Set base quotas for individual users
+````````````````````````````````````
+
+For individual users that need different quotas than the default
+you can set it for each resource like this::
+
+    # use this to display quotas / uuid
+    # snf-manage user-show 'uuid or email'
+
+    # snf-manage user-set-initial-quota --set-capacity 'user-uuid' 'cyclades.vm' 10
+
+    # this applies the configuration
+    # snf-manage astakos-quota --sync --user 'user-uuid'
+
+
+Enable the Projects feature
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you want to enable the projects feature so that users may apply
+on their own for resources by creating and joining projects,
+in ``20-snf-astakos-app-settings.conf`` set::
+
+    # this will allow at most one pending project application per user
+    ASTAKOS_PENDING_APPLICATION_LIMIT = 1
+    # this will make the 'projects' page visible in the dashboard
+    ASTAKOS_PROJECTS_VISIBLE = True
+
+When users apply for projects they are not automatically granted
+the resources. They must first be approved by the administrator.
+
+To list pending project applications in astakos::
+
+    # snf-manage project-list --pending
+
+Note the last column, the application id. To approve it::
+
+    # <app id> from the last column of project-list
+    # snf-manage project-control --approve <app id>
+
+To deny an application::
+
+    # snf-manage project-control --deny <app id>
+
+
+
 Astakos advanced operations
 ---------------------------
 
@@ -960,6 +1021,8 @@ By default, the Django webapp and snf-manage logs to syslog, while
 `snf-dispatcher` logs to `/var/log/synnefo/dispatcher.log`.
 
 
+.. _scale-up:
+
 Scaling up to multiple nodes
 ============================
 
@@ -984,6 +1047,8 @@ The above graph is actually the same with the one at the beginning of this
 Synnefo roles of each physical node. These roles are described in the
 following section.
 
+.. _physical-node-roles:
+
 Physical Node roles
 -------------------
 
@@ -1004,7 +1069,7 @@ multiple physical nodes that have the following roles:
 You will probably also have:
 
 * **CMS**: The CMS used as a frotend portal for the Synnefo services
-* **NS**: A nameserver serving all other nodes
+* **NS**: A nameserver serving all other Synnefo nodes and resolving Synnefo FQDNs
 * **CLIENT**: A machine that runs the Synnefo clients (e.g.: kamaki, Web UI),
               most of the times, the end user's local machine
 
@@ -1156,21 +1221,25 @@ Node10:
 All sections: :ref:`Scale out Guide <i-synnefo>`
 
 
-Synnefo Upgrade Notes
-=====================
+Upgrade Notes
+=============
 
 .. toctree::
    :maxdepth: 1
 
-   upgrade-0.13
+   v0.12 -> v0.13 <upgrade/upgrade-0.13>
 
-Older Cyclades upgrade notes
+
+Changelog, News
+===============
+
+* v0.13 :ref:`Changelog <Changelog-0.13>`, :ref:`NEWS <NEWS-0.13>`
+
+
+Older Cyclades Upgrade Notes
 ============================
 
 .. toctree::
    :maxdepth: 2
 
-   cyclades-upgrade
-
-Changelog
-=========
+   Upgrade <upgrade/cyclades-upgrade>

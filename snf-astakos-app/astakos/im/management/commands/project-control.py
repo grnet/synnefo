@@ -73,9 +73,16 @@ class Command(BaseCommand):
                     dest='terminate_expired',
                     default=False,
                     help="Terminate all expired projects"),
+        make_option('--message', '-m',
+                    dest='message',
+                    metavar='<msg>',
+                    help=("Specify reason of action, "
+                          "e.g. when denying a project")),
     )
 
     def handle(self, *args, **options):
+
+        message = options['message']
 
         pid = options['terminate']
         if pid is not None:
@@ -99,7 +106,7 @@ class Command(BaseCommand):
 
         appid = options['deny']
         if appid is not None:
-            self.run_command(deny_application, appid)
+            self.run_command(deny_application, appid, message)
             return
 
         if options['check_expired']:
@@ -109,14 +116,14 @@ class Command(BaseCommand):
         if options['terminate_expired']:
             self.expire(execute=True)
 
-    @cmd_project_transaction_context(sync=True)
-    def run_command(self, func, id, ctx=None):
-        try:
-            func(id)
-        except BaseException as e:
-            if ctx:
-                ctx.mark_rollback()
-            raise CommandError(e)
+    def run_command(self, func, *args):
+        with cmd_project_transaction_context(sync=True) as ctx:
+            try:
+                func(*args)
+            except BaseException as e:
+                if ctx:
+                    ctx.mark_rollback()
+                raise CommandError(e)
 
     def print_expired(self, projects, execute):
         length = len(projects)

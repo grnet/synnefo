@@ -88,6 +88,15 @@ def login(
     tokens = request.META
     third_party_key = get_pending_key(request)
 
+    shibboleth_headers = {}
+    for token in dir(Tokens):
+        if token == token.upper():
+            shibboleth_headers[token] = request.META.get(token, 'NOT_SET')
+
+    # log shibboleth headers
+    # TODO: info -> debug
+    logger.info("shibboleth request: %r" % shibboleth_headers)
+
     try:
         eppn = tokens.get(Tokens.SHIB_EPPN)
         if not eppn:
@@ -114,9 +123,9 @@ def login(
 
     affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, 'Shibboleth')
     email = tokens.get(Tokens.SHIB_MAIL, '')
-    #eppn, email, realname, affiliation = 'test@grnet-hq.admin.grnet.gr', 'test@grnet.gr', 'sff', None
     provider_info = {'eppn': eppn, 'email': email, 'name': realname}
     userid = eppn
+
 
     try:
         return handle_third_party_login(request, 'shibboleth',

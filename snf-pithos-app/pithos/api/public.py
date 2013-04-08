@@ -38,11 +38,12 @@ from django.views.decorators.csrf import csrf_exempt
 
 from synnefo.lib.astakos import get_user
 
-from pithos.api.faults import (Fault, BadRequest, ItemNotFound)
+from pithos.api.faults import (Fault, BadRequest, ItemNotFound, NotModified)
 from pithos.api.util import (put_object_headers, update_manifest_meta,
-                             validate_modification_preconditions, validate_matching_preconditions,
-                             object_data_response, api_method)
-from pithos.api.short_url import decode_url
+                             validate_modification_preconditions,
+                             validate_matching_preconditions,
+                             object_data_response, api_method,
+                             split_container_object_string)
 from pithos.api.settings import AUTHENTICATION_URL, AUTHENTICATION_USERS
 
 
@@ -70,7 +71,7 @@ def public_meta(request, v_public):
     try:
         v_account, v_container, v_object = request.backend.get_public(
             request.user_uniq,
-            decode_url(v_public))
+            v_public)
         meta = request.backend.get_object_meta(request.user_uniq, v_account,
                                                v_container, v_object, 'pithos')
         public = request.backend.get_object_public(
@@ -97,10 +98,11 @@ def public_read(request, v_public):
     #                       itemNotFound (404),
     #                       badRequest (400),
     #                       notModified (304)
+
     try:
         v_account, v_container, v_object = request.backend.get_public(
             request.user_uniq,
-            decode_url(v_public))
+            v_public)
         meta = request.backend.get_object_meta(request.user_uniq, v_account,
                                                v_container, v_object, 'pithos')
         public = request.backend.get_object_public(

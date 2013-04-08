@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 from itertools import product
+from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 
@@ -40,12 +41,16 @@ from synnefo.db.models import Flavor
 
 class Command(BaseCommand):
     output_transaction = True
+
+    option_list = BaseCommand.option_list + (
+        make_option("-n", "--dry-run", dest="dry_run", action="store_true"),
+    )
     args = "<cpu>[,<cpu>,...] " \
            "<ram>[,<ram>,...] " \
            "<disk>[,<disk>,...] " \
            "<disk template>[,<disk template>,...]"
-    help = "Create one or more flavors.\n\nThe flavors that will be created are"\
-           " those belonging to the cartesian product of the arguments"\
+    help = "Create one or more flavors.\n\nThe flavors that will be created"\
+           " are those belonging to the cartesian product of the arguments"
 
     def handle(self, *args, **options):
         if len(args) != 4:
@@ -64,6 +69,21 @@ class Command(BaseCommand):
                 raise CommandError("Invalid values")
 
         for cpu, ram, disk, template in flavors:
-            flavor = Flavor.objects.create(cpu=cpu, ram=ram, disk=disk,
-                                           disk_template=template)
-            self.stdout.write("Created flavor %s\n" % (flavor.name,))
+            if options["dry_run"]:
+                flavor = Flavor(cpu=cpu, ram=ram, disk=disk,
+                                disk_template=template)
+                self.stdout.write("Creating flavor '%s'\n" % (flavor.name,))
+            else:
+                flavor, created = \
+                    Flavor.objects.get_or_create(cpu=cpu, ram=ram, disk=disk,
+                                                 disk_template=template)
+                if created:
+                    self.stdout.write("Created flavor '%s'\n" % (flavor.name,))
+                else:
+                    self.stdout.write("Flavor '%s' already exists\n"
+                                      % flavor.name)
+                    if flavor.deleted:
+                        msg = "Flavor '%s' is marked as deleted. Use"\
+                        " 'snf-manage flavor-modify' to restore this flavor\n"\
+                        % flavor.name
+                        self.stdout.write(msg)

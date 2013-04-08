@@ -259,7 +259,7 @@ class Node(DBWorker):
     def node_purge_children(self, parent, before=inf, cluster=0):
         """Delete all versions with the specified
            parent and cluster, and return
-           the hashes and size of versions deleted.
+           the hashes, the size and the serials of versions deleted.
            Clears out nodes with no remaining versions.
         """
 
@@ -311,7 +311,7 @@ class Node(DBWorker):
     def node_purge(self, node, before=inf, cluster=0):
         """Delete all versions with the specified
            node and cluster, and return
-           the hashes and size of versions deleted.
+           the hashes, the size and the serials of versions deleted.
            Clears out the node if it has no remaining versions.
         """
 
@@ -804,11 +804,13 @@ class Node(DBWorker):
             args += [before]
         return q % where_cond, args
 
-    def latest_attribute_keys(self, parent, domain, before=inf, except_cluster=0, pathq=[]):
+    def latest_attribute_keys(self, parent, domain, before=inf, except_cluster=0, pathq=None):
         """Return a list with all keys pairs defined
            for all latest versions under parent that
            do not belong to the cluster.
         """
+
+        pathq = pathq or []
 
         # TODO: Use another table to store before=inf results.
         q = ("select distinct a.key "
@@ -972,14 +974,25 @@ class Node(DBWorker):
 
         return matches, prefixes
 
-    def latest_uuid(self, uuid):
-        """Return a (path, serial) tuple, for the latest version of the given uuid."""
+    def latest_uuid(self, uuid, cluster):
+        """Return the latest version of the given uuid and cluster.
+
+        Return a (path, serial) tuple.
+        If cluster is None, all clusters are considered.
+
+        """
+        if cluster is not None:
+            cluster_where = "and cluster = ?"
+            args = (uuid, int(cluster))
+        else:
+            cluster_where = ""
+            args = (uuid,)
 
         q = ("select n.path, v.serial "
              "from versions v, nodes n "
              "where v.serial = (select max(serial) "
              "from versions "
-             "where uuid = ?) "
-             "and n.node = v.node")
-        self.execute(q, (uuid,))
+             "where uuid = ? %s) "
+             "and n.node = v.node") % cluster_where
+        self.execute(q, args)
         return self.fetchone()

@@ -8,7 +8,7 @@ In summary, the migration process has 3 steps:
    while the OLD code is running, and BEFORE any changes are made.
 
 2. Bring down services, upgrade packages, configure services, and perform
-   django database migrations.  These migrations do not need any interaction
+   django database migrations. These migrations do not need any interaction
    between services.
 
 3. Initialize the Astakos quota system and bring the Astakos service up, since
@@ -25,7 +25,11 @@ In summary, the migration process has 3 steps:
 ============================================
 
 1. All web services must be brought down so that the database maintains a
-   predictable and consistent state during the migration process.
+   predictable and consistent state during the migration process::
+
+    # service gunicorn stop
+    # service snf-dispatcher stop
+    # etc.
 
 2. Backup databases for recovery to a pre-migration state.
 
@@ -148,40 +152,40 @@ discarding data from all but one.
 ::
 
     astakos.host$ apt-get install \
+                            kamaki \
                             snf-common \
                             snf-webproject \
                             snf-quotaholder-app \
                             snf-astakos-app \
-                            kamaki \
 
 
     cyclades.host$ apt-get install \
+                            kamaki \
                             snf-common \
                             snf-webproject
                             snf-pithos-backend \
                             snf-cyclades-app \
-                            kamaki \
 
                            
     pithos.host$ apt-get install \
+                            kamaki \
                             snf-common \
                             snf-webproject
                             snf-pithos-backend \
                             snf-pithos-app \
                             snf-pithos-webclient \
-                            kamaki \
 
 
     ganeti.node$ apt-get install \
+                            kamaki \
+                            snf-common \
                             snf-cyclades-gtools \
                             snf-pithos-backend \
-                            kamaki \
 
 .. note::
 
-  If you get questioned about stale content types during the
-  migration process, answer ``no`` and let the migration finish.
-
+    Installing the packages will cause services to start. Make sure you bring
+    them down again (at least ``gunicorn``, ``snf-dispatcher``)
 
 3.2 Sync and migrate Django DB
 ------------------------------
@@ -217,18 +221,19 @@ Generally:
 ::
 
     # Service       Setting                       Value
+    # quotaholder:  QUOTAHOLDER_URL            = https://quotaholder.host/quotaholder/v
     # quotaholder:  QUOTAHOLDER_TOKEN          = <random string>
 
     # astakos:      ASTAKOS_QUOTAHOLDER_TOKEN  = <the same random string>
     # astakos:      ASTAKOS_QUOTAHOLDER_URL    = https://quotaholder.host/quotaholder/v
 
     # cyclades:     CYCLADES_QUOTAHOLDER_TOKEN = <the same random string>
-    # cyclades:     CYCLADES_QUOTAHOLDER_URL   = http://quotaholder.host/quotaholder/v
+    # cyclades:     CYCLADES_QUOTAHOLDER_URL   = https://quotaholder.host/quotaholder/v
     # cyclades:     CYCLADES_USE_QUOTAHOLDER   = True
 
 
     # pithos:       PITHOS_QUOTAHOLDER_TOKEN   = <the same random string>
-    # pithos:       PITHOS_QUOTAHOLDER_URL     = http://quotaholder.host/quotaholder/v
+    # pithos:       PITHOS_QUOTAHOLDER_URL     = https://quotaholder.host/quotaholder/v
     # pithos:       PITHOS_USE_QUOTAHOLDER     = True
     # All services must match the quotaholder token and url configured for quotaholder.
 
@@ -238,25 +243,40 @@ On the Astakos host, edit ``/etc/synnefo/20-snf-astakos-app-settings.conf``:
 
 ::
 
+    QUOTAHOLDER_URL = 'https://accounts.example.synnefo.org/quotaholder/v'
     QUOTAHOLDER_TOKEN = 'aExampleTokenJbFm12w'
     ASTAKOS_QUOTAHOLDER_TOKEN = 'aExampleTokenJbFm12w'
-    ASTAKOS_QUOTAHOLDER_URL = 'https://accounts.synnefo.local/quotaholder/v'
+    ASTAKOS_QUOTAHOLDER_URL = 'https://accounts.example.synnefo.org/quotaholder/v'
 
 On the Cyclades host, edit ``/etc/synnefo/20-snf-cyclades-app-quotas.conf``:
 
 ::
 
     CYCLADES_USE_QUOTAHOLDER = True
-    CYCLADES_QUOTAHOLDER_URL = 'https://accounts.synnefo.local/quotaholder/v'
+    CYCLADES_QUOTAHOLDER_URL = 'https://accounts.example.synnefo.org/quotaholder/v'
     CYCLADES_QUOTAHOLDER_TOKEN = 'aExampleTokenJbFm12w'
+
+    # Set to False if astakos & cyclades are on the same host
+    #CYCLADES_PROXY_USER_SERVICES = True
+
+.. note::
+
+    If Cylcades and Astakos are installed on the same server,
+    set ``CYCLADES_PROXY_USER_SERVICES = False``
+
 
 On the Pithos host, edit ``/etc/synnefo/20-snf-pithos-app-settings.conf``:
 
 ::
 
-    PITHOS_QUOTAHOLDER_URL = 'https://accounts.synnefo.local/quotaholder/v'
+    PITHOS_QUOTAHOLDER_URL = 'https://accounts.example.synnefo.org/quotaholder/v'
     PITHOS_QUOTAHOLDER_TOKEN = 'aExampleTokenJbFm12w'
-    PITHOS_USE_QUOTAHOLDER = True
+    PITHOS_USE_QUOTAHOLDER = False # will set to True after migration
+
+.. note::
+
+    During the migration it must be set, ``PITHOS_USE_QUOTAHOLDER = False``.
+    Set to ``True`` once the migration is over.
 
 3.4 Setup astakos
 -----------------
@@ -272,6 +292,32 @@ On the Pithos host, edit ``/etc/synnefo/20-snf-pithos-app-settings.conf``:
 
     ASTAKOS_EMAILCHANGE_ENABLED = True
 
+- Rename the following (Astakos-specific) setting::
+
+    ASTAKOS_DEFAULT_FROM_EMAIL
+  
+  to this (Django-specific) name::
+
+    SERVER_EMAIL
+
+- Instead of using the following (Astakos-specific) setting::
+
+    ASTAKOS_DEFAULT_ADMIN_EMAIL
+
+  include one or more entries in this (Django-specific) setting::
+
+    ADMINS = (
+        ('Joe Doe', 'doe@example.net'),
+        ('Mary Jean', 'mary@example.net'),
+    ) 
+
+.. note::
+
+    The ``SERVER_EMAIL`` and ``ADMINS`` settings are Django-specific.
+    As such they will be the shared for any two (or more) services that happen
+    to be collocated within the same application server (e.g. astakos &
+    cyclades within the same gunicorn)
+
 3.5 Setup Cyclades
 ------------------
 
@@ -279,7 +325,8 @@ On the Pithos host, edit ``/etc/synnefo/20-snf-pithos-app-settings.conf``:
 
     # snf-manage service-list
 
-- Set the Cyclades service token in ``/etc/synnefo/20-snf-cyclades-app-api.conf`` ::
+- Set the Cyclades service token in
+  ``/etc/synnefo/20-snf-cyclades-app-api.conf`` ::
 
     CYCLADES_ASTAKOS_SERVICE_TOKEN = 'asfasdf_CycladesServiceToken_iknl'
 
@@ -305,7 +352,7 @@ On the Pithos host, edit ``/etc/synnefo/20-snf-pithos-app-settings.conf``:
   Cyclades, again in ``/etc/synnefo/20-snf-cyclades-app-vmapi.conf``. Make sure
   the domain is exaclty the same, so that no re-directs happen ::
 
-    VMAPI_BASE_URL = "https://cyclades.synnefo.local"
+    VMAPI_BASE_URL = "https://cyclades.example.synnefo.org"
 
   .. note::
 
@@ -325,23 +372,30 @@ On the Pithos host, edit ``/etc/synnefo/20-snf-pithos-app-settings.conf``:
   access them for uuid-displayname translations. Edit on the Pithos host
   ``/etc/synnefo/20-snf-pithos-app-settings.conf`` ::
 
-    PITHOS_USER_CATALOG_URL    = https://accounts.synnefo.local/user_catalogs/
-    PITHOS_USER_FEEDBACK_URL   = https://accounts.synnefo.local/feedback/
-    PITHOS_USER_LOGIN_URL      = https://accounts.synnefo.local/login/
-    #PITHOS_PROXY_USER_SERVICES = True # Set False if astakos & pithos are on the same host
+    PITHOS_USER_CATALOG_URL    = https://accounts.example.synnefo.org/user_catalogs/
+    PITHOS_USER_FEEDBACK_URL   = https://accounts.example.synnefo.org/feedback/
+    PITHOS_USER_LOGIN_URL      = https://accounts.example.synnefo.org/login/
 
+    # Set to False if astakos & pithos are on the same host
+    #PITHOS_PROXY_USER_SERVICES = True
+
+.. note::
+
+    If Pithos and Astakos are installed on the same server,
+    set ``PITHOS_PROXY_USER_SERVICES = False``
 
 4. Start astakos and quota services
 ===================================
-Start the webserver and gunicorn on the Astakos host. E.g.::
-
-    # service apache2 start
-    # service gunicorn start
-
 .. warning::
 
     To ensure consistency, prevent public access to astakos during migrations.
     This can be done via firewall or webserver access control.
+
+Start (or restart, if running) the webserver and gunicorn on the Astakos host.
+E.g.::
+
+    # service apache2 start
+    # service gunicorn start
 
 .. _astakos-load-resources:
 
@@ -356,7 +410,7 @@ First, set the corresponding values on the following dict in
         'cyclades': {
     #        # Specifying the key 'url' will overwrite it.
     #        # Use this to (re)set service URL.
-    #        'url': 'https://cyclades.synnefo.local/ui/',
+    #        'url': 'https://cyclades.example.synnefo.org/ui/',
     #        # order services in listings, cloudbar, etc.
     #        'order' : 1
             'resources': [{
@@ -391,7 +445,7 @@ First, set the corresponding values on the following dict in
         },
         'pithos+': {
     #        # Use this to (re)set service URL.
-    #        'url': 'https://pithos.synnefo.local/ui/',
+    #        'url': 'https://pithos.example.synnefo.org/ui/',
     #        # order services in listings, cloudbar, etc.
     #        'order' : 2
             'resources':[{
@@ -404,6 +458,15 @@ First, set the corresponding values on the following dict in
         }
     }
 
+.. note::
+
+    The name of the Pithos service is ``pithos+``.
+    If you have named your pithos service ``pithos``, without ``+``,
+    then you must rename it::
+
+        $ snf-manage service-list | grep pithos # find service id
+        $ snf-manage service-update --name='pithos+' <service id> 
+
 Then, configure and load the available resources per service
 and associated default limits into Astakos. On the Astakos host run ::
 
@@ -413,7 +476,8 @@ and associated default limits into Astakos. On the Astakos host run ::
 .. note::
 
     Before v0.13, only `cyclades.vm`, `cyclades.network.private`,
-    and `pithos+.diskspace` existed (not with this names, of course).
+    and `pithos+.diskspace` existed (not with these names,
+    there were per-service settings).
     However, limits to the new resources must also be set.
 
     If the intetion is to keep a resource unlimited, (counting on that VM
@@ -507,9 +571,14 @@ Check if alembic has not been initialized ::
 
     pithos.host$ pithos-migrate stamp 3dd56e750a3
 
-Finally, migrate pithos account name to uuid::
+Then, migrate pithos account name to uuid::
 
     pithos.host$ pithos-migrate upgrade head
+
+Finally, set this setting to ``True``::
+
+    PITHOS_USE_QUOTAHOLDER = True
+
 
 7. Migrate old quota limits
 ===========================
@@ -521,7 +590,7 @@ Migrate from pithos native to astakos/quotaholder.
 This requires a file to be transfered from Cyclades to Astakos::
 
     pithos.host$ snf-manage pithos-export-quota --location=pithos-quota.txt
-    pithos.host$ rsync -avP pithos-quota.txt astakos.host:
+    pithos.host$ scp pithos-quota.txt astakos.host:
     astakos.host$ snf-manage user-set-initial-quota pithos-quota.txt
 
 .. _export-quota-note:
@@ -542,7 +611,7 @@ This requires a file to be transfered from Cyclades to Astakos::
 ::
 
     cyclades.host$ snf-manage cyclades-export-quota --location=cyclades-quota.txt
-    cyclades.host$ rsync -avP cyclades-quota.txt astakos.host:
+    cyclades.host$ scp cyclades-quota.txt astakos.host:
     astakos.host$ snf-manage user-set-initial-quota cyclades-quota.txt
 
 `cyclades-export-quota` will only export quotas that are not equal to the defaults.
@@ -595,3 +664,14 @@ A list of expired projects can be extracted with::
 
     astakos.host$ snf-manage project-control --list-expired
 
+
+11. Restart all services
+========================
+
+Start (or restart, if running) all Synnefo services on all hosts.
+
+::
+
+    # service gunicorn restart
+    # service snf-dispatcher restart
+    # etc.

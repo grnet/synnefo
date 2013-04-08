@@ -253,6 +253,7 @@ dl.alt-style dd									{ overflow:hidden; }
 .projects h3									{ font-size:1.154em; }
 .projects .submit-rt							{ margin:0; text-align:right; }
 .projects +.buttons-list.fixpos					{ left:0; right:auto; }
+.project-actions a { font-size: 0.7em }
 
 /* new faq-userguide styles */
 
@@ -513,10 +514,17 @@ form input[type="text"]:-ms-input-placeholder,
 .projects .editable form textarea				{ width:70%; height:50px; max-width:70%; width:270px; height:120px;}
 
 
-table .msg-wrap									{ position:relative; display:inline-block; }
-table .msg-wrap .dialog							{ position:absolute; border:1px dashed #ccc;  padding:15px; width:200px; bottom:30px; right:0; background:#fff; display:none; }
-table .msg-wrap .dialog .submit					{ min-width:30px; padding:5px 22px; }
-table .msg-wrap .dialog .no.submit				{ float:right; }
+h2 .msg-wrap { font-size: 0.7em }
+.msg-wrap									{ position:relative; display:inline-block; }
+.msg-wrap .dialog							{ position:absolute; display: none;}
+.msg-wrap .dialog-content           		{ border:1px dashed #ccc;  padding:15px; width:200px; bottom:30px; right:0; background:#fff;}
+.msg-wrap .dialog .submit					{ min-width:30px; padding:5px 22px; }
+.msg-wrap .dialog .no.submit				{ float:right; }
+.msg-wrap.inline form.link-like { float: none !important; padding:0 !important; margin: 0 !important}
+.msg-wrap.inline { display: inline; }
+
+.msg-wrap textarea { width: 90%; height: 100px; padding:4%; font-size: 1.1em;}
+
 table.alt-style .centered						{ text-align:center; }
 table.alt-style form.link-like					{ float:none}
 table.alt-style .project_action div:first-child form	{ margin:0; }

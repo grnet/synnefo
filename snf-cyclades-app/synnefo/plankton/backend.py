@@ -63,6 +63,11 @@ from pithos.backends.base import NotAllowedError as PithosNotAllowedError
 import synnefo.lib.astakos as lib_astakos
 import logging
 
+from synnefo.settings import (CYCLADES_USE_QUOTAHOLDER,
+                              CYCLADES_QUOTAHOLDER_URL,
+                              CYCLADES_QUOTAHOLDER_TOKEN,
+                              CYCLADES_QUOTAHOLDER_POOLSIZE)
+
 logger = logging.getLogger(__name__)
 
 
@@ -74,6 +79,7 @@ PLANKTON_META = ('container_format', 'disk_format', 'name', 'properties',
                  'status')
 
 TRANSLATE_UUIDS = getattr(settings, 'TRANSLATE_UUIDS', False)
+
 
 def get_displaynames(names):
     try:
@@ -112,9 +118,14 @@ class NotAllowedError(BackendException):
 from pithos.backends.util import PithosBackendPool
 POOL_SIZE = 8
 _pithos_backend_pool = \
-    PithosBackendPool(POOL_SIZE,
-                      db_connection=settings.BACKEND_DB_CONNECTION,
-                      block_path=settings.BACKEND_BLOCK_PATH)
+    PithosBackendPool(
+        POOL_SIZE,
+        quotaholder_enabled=CYCLADES_USE_QUOTAHOLDER,
+        quotaholder_url=CYCLADES_QUOTAHOLDER_URL,
+        quotaholder_token=CYCLADES_QUOTAHOLDER_TOKEN,
+        quotaholder_client_poolsize=CYCLADES_QUOTAHOLDER_POOLSIZE,
+        db_connection=settings.BACKEND_DB_CONNECTION,
+        block_path=settings.BACKEND_BLOCK_PATH)
 
 
 def get_pithos_backend():
@@ -331,6 +342,7 @@ class ImageBackend(object):
             # To get shared images, we connect as shared_from member and
             # get the list shared by us
             user = shared_from
+            accounts = [self.user]
         else:
             user = None if public else self.user
             accounts = backend.list_accounts(user)

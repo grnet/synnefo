@@ -229,9 +229,27 @@ $(document).ready(function() {
 		});
 	
  
-	$("input.leave, input.join").click(function () {
-		$('dialog').hide();
+	$("input.leave, input.join").click(function (e) {
+        e.preventDefault();
+        var form = $(this).parents('form');
+        var dialog = $(this).parents('.msg-wrap').find('.dialog');
+
+		$('.dialog').hide();
 		$(this).parents('.msg-wrap').find('.dialog').show();
+        var offset = dialog.offset();
+
+        if (offset.left <= 10) {
+          dialog.css({'left': '10px'})
+        }
+        if (offset.top <= 10) {
+          dialog.css({'top': '10px'})
+        }
+
+        if (dialog.find('textarea').length > 0) {
+          dialog.find('textarea').val('');
+          dialog.find('textarea').focus();
+        }
+
 		return false;      
 		
     });
@@ -243,7 +261,20 @@ $(document).ready(function() {
     
     $('.msg-wrap .yes').click( function(e){
 		e.preventDefault();
-		$(this).parents('.dialog').siblings('form').submit();
+        var dialog = $(this).parents('.msg-wrap').find('.dialog');
+        var form = $(this).parents('.msg-wrap').find('form');
+        var fields = dialog.find('input, textarea')
+        
+        var toremove = [];
+        fields.each(function(){
+          var f = $(this).clone();
+          f.hide();
+          form.append(f);
+          f.val($(this).val());
+          toremove.push(f);
+        });
+        
+        form.submit();
 	})
     
     $('.hidden-submit input[readonly!="True"]').focus(function () {

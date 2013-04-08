@@ -36,6 +36,7 @@ import uuid
 import logging
 import json
 import math
+import copy
 
 from time import asctime
 from datetime import datetime, timedelta
@@ -54,7 +55,7 @@ from django.db.models.signals import (
 from django.contrib.contenttypes.models import ContentType
 
 from django.dispatch import Signal
-from django.db.models import Q
+from django.db.models import Q, Max
 from django.core.urlresolvers import reverse
 from django.utils.http import int_to_base36
 from django.contrib.auth.tokens import default_token_generator
@@ -79,7 +80,7 @@ from astakos.im import auth_providers
 
 import astakos.im.messages as astakos_messages
 from astakos.im.lock import with_lock
-from .managers import ForUpdateManager
+from synnefo.lib.db.managers import ForUpdateManager
 
 from synnefo.lib.quotaholder.api import QH_PRACTICALLY_INFINITE
 from synnefo.lib.db.intdecimalfield import intDecimalField
@@ -266,7 +267,7 @@ def _quota_values(capacity):
 
 def get_default_quota():
     _DEFAULT_QUOTA = {}
-    resources = Resource.objects.all()
+    resources = Resource.objects.select_related('service').all()
     for resource in resources:
         capacity = resource.uplimit
         limits = _quota_values(capacity)
@@ -276,7 +277,7 @@ def get_default_quota():
 
 def get_resource_names():
     _RESOURCE_NAMES = []
-    resources = Resource.objects.all()
+    resources = Resource.objects.select_related('service').all()
     _RESOURCE_NAMES = [resource.full_name() for resource in resources]
     return _RESOURCE_NAMES
 
@@ -364,7 +365,11 @@ class AstakosUser(User):
                                   max_length=32,
                                   null=True, 
                                   blank=True, 
-                                  help_text = _( 'test' ))
+                                  help_text = _('Renew your authentication '
+                                                'token. Make sure to set the new '
+                                                'token in any client you may be '
+                                                'using, to preserve its '
+                                                'functionality.'))
     auth_token_created = models.DateTimeField(_('Token creation date'), 
                                               null=True)
     auth_token_expires = models.DateTimeField(
@@ -405,6 +410,14 @@ class AstakosUser(User):
     def realname(self):
         return '%s %s' % (self.first_name, self.last_name)
 
+    @property
+    def log_display(self):
+        """
+        Should be used in all logger.* calls that refer to a user so that
+        user display is consistent across log entries.
+        """
+        return '%s (%s)' % (self.uuid, self.email)
+
     @realname.setter
     def realname(self, value):
         parts = value.split(' ')
@@ -440,36 +453,6 @@ class AstakosUser(User):
         except Invitation.DoesNotExist:
             return None
 
-    def initial_quotas(self):
-        quotas = dict(get_default_quota())
-        for user_quota in self.policies:
-            resource = user_quota.resource.full_name()
-            quotas[resource] = user_quota.quota_values()
-        return quotas
-
-    def all_quotas(self, initial=None):
-        if initial is None:
-            quotas = self.initial_quotas()
-        else:
-            quotas = dict(initial)
-
-        objects = self.projectmembership_set.select_related()
-        memberships = objects.filter(is_active=True)
-        for membership in memberships:
-            application = membership.application
-            if application is None:
-                m = _("missing application for active membership %s"
-                      % (membership,))
-                raise AssertionError(m)
-
-            grants = application.projectresourcegrant_set.all()
-            for grant in grants:
-                resource = grant.resource.full_name()
-                prev = quotas.get(resource, 0)
-                new = add_quota_values(prev, grant.member_quota_values())
-                quotas[resource] = new
-        return quotas
-
     @property
     def policies(self):
         return self.astakosuserquota_set.select_related().all()
@@ -503,6 +486,16 @@ class AstakosUser(User):
             q.create(
                 resource=resource, capacity=capacity, quanity=quantity,
                 import_limit=import_limit, export_limit=export_limit)
+
+    def get_resource_policy(self, resource):
+        s, sep, r = resource.partition(RESOURCE_SEPARATOR)
+        resource = Resource.objects.get(service__name=s, name=r)
+        default_capacity = resource.uplimit
+        try:
+            policy = AstakosUserQuota.objects.get(user=self, resource=resource)
+            return policy, default_capacity
+        except AstakosUserQuota.DoesNotExist:
+            return None, default_capacity
 
     def remove_resource_policy(self, service, resource):
         """Raises ObjectDoesNotExist, IntegrityError"""
@@ -836,6 +829,71 @@ class AstakosUser(User):
         if project.is_deactivated():
             return False
         return True
+
+    def settings(self):
+        return UserSetting.objects.filter(user=self)
+
+    def all_quotas(self):
+        quotas = users_quotas([self])
+        try:
+            return quotas[self.uuid]
+        except:
+            raise ValueError("could not compute quotas")
+
+
+def initial_quotas(users):
+    initial = {}
+    default_quotas = get_default_quota()
+
+    for user in users:
+        uuid = user.uuid
+        initial[uuid] = dict(default_quotas)
+
+    objs = AstakosUserQuota.objects.select_related()
+    orig_quotas = objs.filter(user__in=users)
+    for user_quota in orig_quotas:
+        uuid = user_quota.user.uuid
+        user_init = initial.get(uuid, {})
+        resource = user_quota.resource.full_name()
+        user_init[resource] = user_quota.quota_values()
+        initial[uuid] = user_init
+
+    return initial
+
+
+def users_quotas(users, initial=None):
+    if initial is None:
+        quotas = initial_quotas(users)
+    else:
+        quotas = copy.deepcopy(initial)
+
+    objs = ProjectMembership.objects.select_related('application', 'person')
+    memberships = objs.filter(person__in=users, is_active=True)
+
+    apps = set(m.application for m in memberships if m.application is not None)
+    objs = ProjectResourceGrant.objects.select_related()
+    grants = objs.filter(project_application__in=apps)
+
+    for membership in memberships:
+        uuid = membership.person.uuid
+        userquotas = quotas.get(uuid, {})
+
+        application = membership.application
+        if application is None:
+            m = _("missing application for active membership %s"
+                  % (membership,))
+            raise AssertionError(m)
+
+        for grant in grants:
+            if grant.project_application_id != application.id:
+                continue
+            resource = grant.resource.full_name()
+            prev = userquotas.get(resource, 0)
+            new = add_quota_values(prev, grant.member_quota_values())
+            userquotas[resource] = new
+        quotas[uuid] = userquotas
+
+    return quotas
 
 
 class AstakosUserAuthProviderManager(models.Manager):
@@ -1195,6 +1253,17 @@ class SessionCatalog(models.Model):
     user = models.ForeignKey(AstakosUser, related_name='sessions', null=True)
 
 
+class UserSetting(models.Model):
+    user = models.ForeignKey(AstakosUser)
+    setting = models.CharField(max_length=255)
+    value = models.IntegerField()
+
+    objects = ForUpdateManager()
+
+    class Meta:
+        unique_together = ("user", "setting")
+
+
 ### PROJECTS ###
 ################
 
@@ -1321,10 +1390,23 @@ class ChainManager(ForUpdateManager):
         return chains + app_chains
 
     def all_full_state(self):
-        d = {}
         chains = self.all()
+        cids = [c.chain for c in chains]
+        projects = Project.objects.select_related('application').in_bulk(cids)
+
+        objs = Chain.objects.annotate(latest=Max('chained_apps__id'))
+        chain_latest = dict(objs.values_list('chain', 'latest'))
+
+        objs = ProjectApplication.objects.select_related('applicant')
+        apps = objs.in_bulk(chain_latest.values())
+
+        d = {}
         for chain in chains:
-            d[chain.pk] = chain.full_state()
+            pk = chain.pk
+            project = projects.get(pk, None)
+            app = apps[chain_latest[pk]]
+            d[chain.pk] = chain.get_state(project, app)
+
         return d
 
     def of_project(self, project):
@@ -1426,10 +1508,14 @@ class Chain(models.Model):
         app = self.last_application()
         return project, app
 
-    def full_state(self):
-        project, app = self.get_elements()
+    def get_state(self, project, app):
         s = self.chain_state(project, app)
         return s, project, app
+
+    def full_state(self):
+        project, app = self.get_elements()
+        return self.get_state(project, app)
+
 
 def new_chain():
     c = Chain.objects.create()
@@ -1520,6 +1606,7 @@ class ProjectApplication(models.Model):
     comments                =   models.TextField(null=True, blank=True)
     issue_date              =   models.DateTimeField(auto_now_add=True)
     response_date           =   models.DateTimeField(null=True, blank=True)
+    response                =   models.TextField(null=True, blank=True)
 
     objects                 =   ProjectApplicationManager()
 
@@ -1543,6 +1630,11 @@ class ProjectApplication(models.Model):
         DISMISSED: _('Dismissed'),
         CANCELLED: _('Cancelled')
     }
+
+    @property
+    def log_display(self):
+        return "application %s (%s) for project %s" % (
+            self.id, self.name, self.chain)
 
     def get_project(self):
         try:
@@ -1689,7 +1781,7 @@ class ProjectApplication(models.Model):
     def can_deny(self):
         return self.state == self.PENDING
 
-    def deny(self):
+    def deny(self, reason):
         if not self.can_deny():
             m = _("cannot deny: application '%s' in state '%s'") % (
                     self.id, self.state)
@@ -1697,6 +1789,7 @@ class ProjectApplication(models.Model):
 
         self.state = self.DENIED
         self.response_date = datetime.now()
+        self.response = reason
         self.save()
 
     def can_approve(self):
@@ -2647,36 +2740,38 @@ def sync_projects(sync=True, retries=3, retry_wait=1.0):
         return (pending, projects_log)
     return _sync_projects(sync)
 
-def all_users_quotas(users):
-    initial = {}
-    quotas = {}
-    info = {}
-    for user in users:
-        uuid = user.uuid
-        info[uuid] = user.email
-        init = user.initial_quotas()
-        initial[uuid] = init
-        quotas[user.uuid] = user.all_quotas(initial=init)
-    return initial, quotas, info
+
 
 def sync_users(users, sync=True, retries=3, retry_wait=1.0):
     @with_lock(retries, retry_wait)
     def _sync_users(users, sync):
         sync_finish_serials()
 
+        info = {}
+        for user in users:
+            info[user.uuid] = user.email
+
         existing, nonexisting = qh_check_users(users)
         resources = get_resource_names()
         qh_limits, qh_counters = qh_get_quotas(existing, resources)
-        astakos_initial, astakos_quotas, info = all_users_quotas(users)
+        astakos_initial = initial_quotas(users)
+        astakos_quotas = users_quotas(users, astakos_initial)
+
+        diff_quotas = {}
+        for holder, local in astakos_quotas.iteritems():
+            registered = qh_limits.get(holder, None)
+            if local != registered:
+                diff_quotas[holder] = dict(local)
 
         if sync:
             r = register_users(nonexisting)
-            r = send_quotas(astakos_quotas)
+            r = send_quotas(diff_quotas)
 
         return (existing, nonexisting,
                 qh_limits, qh_counters,
-                astakos_initial, astakos_quotas, info)
+                astakos_initial, diff_quotas, info)
     return _sync_users(users, sync)
+
 
 def sync_all_users(sync=True, retries=3, retry_wait=1.0):
     users = AstakosUser.objects.verified()

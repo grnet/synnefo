@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011-2013 GRNET S.A. All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -35,5 +35,5 @@ from django.conf.urls.defaults import patterns
 from synnefo_stats.grapher import grapher
 
 urlpatterns = patterns('',
-    (r'^(?P<hostname>\S+)/(?P<graph_type>\S+)/$', grapher),
+    (r'^stats/(?P<hostname>\S+)/(?P<graph_type>\S+)/$', grapher),
 )

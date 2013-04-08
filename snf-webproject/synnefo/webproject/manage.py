@@ -252,7 +252,7 @@ class SynnefoManagementUtility(ManagementUtility):
 
         # Encode stdout. This check is required because of the way python
         # checks if something is tty: https://bugzilla.redhat.com/show_bug.cgi?id=841152
-        if not 'shell' in subcommand:
+        if not subcommand in ['test'] and not 'shell' in subcommand:
             sys.stdout = EncodedStdOut(sys.stdout)
 
         if subcommand == 'help':

@@ -79,20 +79,21 @@ def get_quotaholder_holdings(users=[]):
     If the entity for the user does not exist in quotaholder, no holding
     is returned.
     """
+    users = filter(lambda u: not u is None, users)
     holdings = {}
     with get_quota_holder() as qh:
-        for user in users:
-            try:
-                (qh_holdings, _) = \
-                    qh.list_holdings(context={}, list_holdings=[(user, "1")])
-                if not qh_holdings:
-                    continue
-                qh_holdings = qh_holdings[0]
-                qh_holdings = filter(lambda x: x[1].startswith("cyclades."),
-                                     qh_holdings)
-                holdings[user] = dict(map(decode_holding, qh_holdings))
-            except NoEntityError:
-                pass
+        list_holdings = [(user, "1") for user in users]
+        (qh_holdings, rejected) = qh.list_holdings(context={},
+                                                   list_holdings=list_holdings)
+        found_users = filter(lambda u: not u in rejected, users)
+    for user, user_holdings in zip(found_users, qh_holdings):
+        if not user_holdings:
+            continue
+        for h in user_holdings:
+            assert(h[0] == user)
+        user_holdings = filter(lambda x: x[1].startswith("cyclades."),
+                               user_holdings)
+        holdings[user] = dict(map(decode_holding, user_holdings))
     return holdings
 
 

@@ -16,7 +16,7 @@ INVITATIONS_PER_LEVEL = getattr(settings, 'ASTAKOS_INVITATIONS_PER_LEVEL', {
 
 # Address to use for outgoing emails
 DEFAULT_CONTACT_EMAIL = getattr(
-    settings, 'ASTAKOS_DEFAULT_CONTACT_EMAIL', 'support@synnefo.local')
+    settings, 'ASTAKOS_DEFAULT_CONTACT_EMAIL', 'support@example.synnefo.org')
 
 SERVER_EMAIL = getattr(settings, 'SERVER_EMAIL', None)
 ADMINS = getattr(settings, 'ADMINS', None)
@@ -41,7 +41,7 @@ IM_STATIC_URL = getattr(settings, 'ASTAKOS_IM_STATIC_URL', '/static/im/')
 MODERATION_ENABLED = getattr(settings, 'ASTAKOS_MODERATION_ENABLED', True)
 
 # Set baseurl
-BASEURL = getattr(settings, 'ASTAKOS_BASEURL', 'https://accounts.synnefo.local')
+BASEURL = getattr(settings, 'ASTAKOS_BASEURL', 'https://accounts.example.synnefo.org')
 
 # Set service name
 SITENAME = getattr(settings, 'ASTAKOS_SITENAME', 'Synnefo Cloud')
@@ -159,13 +159,14 @@ PROJECT_MEMBERSHIP_LEAVE_REQUEST_SUBJECT = getattr(
 # Set the quota holder component URI
 QUOTAHOLDER_URL = getattr(settings, 'ASTAKOS_QUOTAHOLDER_URL', '')
 QUOTAHOLDER_TOKEN = getattr(settings, 'ASTAKOS_QUOTAHOLDER_TOKEN', '')
+QUOTAHOLDER_POOLSIZE = getattr(settings, 'ASTAKOS_QUOTAHOLDER_POOLSIZE', 50)
 
 # Set the cloud service properties
 SERVICES = getattr(settings, 'ASTAKOS_SERVICES', {
     'cyclades': {
 #        # Specifying the key 'url' will overwrite it.
 #        # Use this to (re)set service URL.
-#        'url': 'https://cyclades.synnefo.local/ui/',
+#        'url': 'https://cyclades.example.synnefo.org/ui/',
 #        # order services in listings, cloudbar, etc.
 #        'order' : 1
         'resources': [{
@@ -200,7 +201,7 @@ SERVICES = getattr(settings, 'ASTAKOS_SERVICES', {
     },
     'pithos+': {
 #        # Use this to (re)set service URL.
-#        'url': 'https://pithos.synnefo.local/ui/',
+#        'url': 'https://pithos.example.synnefo.org/ui/',
 #        # order services in listings, cloudbar, etc.
 #        'order' : 2
         'resources':[{
@@ -244,7 +245,7 @@ RESOURCES_PRESENTATION_DATA = getattr(
                  'verbose_name':'storage',
             },
             'network': {
-                'help_text':' Network resources (amount of Private Networks)  ',
+                'help_text':' Network resources (number of Private Networks)  ',
                 'is_abbreviation':False,
                 'report_desc':'',
                 'verbose_name':'network',
@@ -297,7 +298,7 @@ RESOURCES_PRESENTATION_DATA = getattr(
                 'is_abbreviation':False,
                 'report_desc':'Private Networks',
                 'placeholder':'eg. 1',
-                'verbose_name':'private network'
+                'verbose_name':'Private Network'
             }
 
         },
@@ -333,12 +334,19 @@ ACTIVATION_REDIRECT_URL = getattr(settings,
                                   'ASTAKOS_ACTIVATION_REDIRECT_URL',
                                   "/im/landing")
 
+
 # If true, this enables a ui compatibility layer for the introduction of UUIDs
 # in identity management. WARNING: Setting to True will break your installation.
 TRANSLATE_UUIDS = getattr(settings, 'ASTAKOS_TRANSLATE_UUIDS', False)
 
 # Users that can approve or deny project applications from the web.
 PROJECT_ADMINS = getattr(settings, 'ASTAKOS_PROJECT_ADMINS', set())
+
+# Maximum pending project applications per applicant.
+# This is to reduce the volume of applications
+# in case users abuse the mechanism.
+PENDING_APPLICATION_LIMIT = getattr(settings,
+                                    'ASTAKOS_PENDING_APPLICATION_LIMIT', 0)
 
 # OAuth2 Twitter credentials.
 TWITTER_TOKEN = getattr(settings, 'ASTAKOS_TWITTER_TOKEN', '')
@@ -353,3 +361,10 @@ GOOGLE_SECRET = getattr(settings, 'ASTAKOS_GOOGLE_SECRET', '')
 # OAuth2 LinkedIn credentials.
 LINKEDIN_TOKEN = getattr(settings, 'ASTAKOS_LINKEDIN_TOKEN', '')
 LINKEDIN_SECRET = getattr(settings, 'ASTAKOS_LINKEDIN_SECRET', '')
+
+# URL to redirect the user after successful login when no next parameter is set
+LOGIN_SUCCESS_URL = getattr(settings, 'ASTAKOS_LOGIN_SUCCESS_URL',
+                            '/im/landing')
+
+# Whether or not to display projects in astakos menu
+PROJECTS_VISIBLE = getattr(settings, 'ASTAKOS_PROJECTS_VISIBLE', False)

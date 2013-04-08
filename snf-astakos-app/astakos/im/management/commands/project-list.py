@@ -79,7 +79,7 @@ class Command(NoArgsCommand):
                     action='store_true',
                     dest='new',
                     default=False,
-                    help="List only new project requests"),
+                    help="List only new project applications"),
         make_option('--modified',
                     action='store_true',
                     dest='modified',
@@ -133,7 +133,7 @@ class Command(NoArgsCommand):
         self.show(csv, allow_shorten, chain_dict)
 
     def show(self, csv, allow_shorten, chain_dict):
-        labels = ('ProjID', 'Name', 'Applicant', 'Email', 'Status', 'AppID')
+        labels = ('ProjID', 'Name', 'Owner', 'Email', 'Status', 'AppID')
         columns = (7, 23, 20, 20, 17, 7)
 
         if not csv:
@@ -147,7 +147,7 @@ class Command(NoArgsCommand):
             fields = [
                 (info['projectid'], False),
                 (info['name'], True),
-                (info['applicant'], True),
+                (info['owner'], True),
                 (info['email'], True),
                 (info['status'], False),
                 (info['appid'], False),
@@ -190,8 +190,8 @@ def chain_info(chain_dict):
         d = {
             'projectid': str(chain),
             'name': project.application.name if project else app.name,
-            'applicant': app.applicant.realname,
-            'email': app.applicant.email,
+            'owner': app.owner.realname,
+            'email': app.owner.email,
             'status': status,
             'appid': appid,
         }

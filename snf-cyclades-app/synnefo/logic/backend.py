@@ -265,11 +265,15 @@ def update_network_state(serials, network):
                 release_resource(res_type="bridge", value=network.link)
 
         # Issue commission
-        serial = quotas.issue_network_commission(network.userid, delete=True)
-        serials.append(serial)
-        network.serial = serial
-        serial.accepted = True
-        serial.save()
+        if network.userid:
+            serial = quotas.issue_network_commission(network.userid,
+                                                     delete=True)
+            serials.append(serial)
+            network.serial = serial
+            serial.accepted = True
+            serial.save()
+        elif not network.public:
+            log.warning("Network %s does not have an owner!", network.id)
     network.save()
 
 

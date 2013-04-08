@@ -132,7 +132,7 @@ VERIFICATION_SEND_ERR                   =   EMAIL_SEND_ERR % 'verification'
 INVITATION_SEND_ERR                     =   EMAIL_SEND_ERR % 'invitation'
 GREETING_SEND_ERR                       =   EMAIL_SEND_ERR % 'greeting'
 FEEDBACK_SEND_ERR                       =   EMAIL_SEND_ERR % 'feedback'
-CHANGE_EMAIL_SEND_ERR                   =   EMAIL_SEND_ERR % 'feedback'
+CHANGE_EMAIL_SEND_ERR                   =   EMAIL_SEND_ERR % 'email change'
 NOTIFICATION_SEND_ERR                   =   EMAIL_SEND_ERR % 'notification'
 DETAILED_NOTIFICATION_SEND_ERR          =   'Failed to send %(subject)s notification to %(recipients)s.'
 
@@ -192,8 +192,22 @@ APPLICATION_CANNOT_APPROVE              =   "Cannot approve application %s in st
 APPLICATION_CANNOT_DENY                 =   "Cannot deny application %s in state '%s'"
 APPLICATION_CANNOT_DISMISS              =   "Cannot dismiss application %s in state '%s'"
 APPLICATION_CANNOT_CANCEL               =   "Cannot cancel application %s in state '%s'"
-APPLICATION_CANCELLED                   =   "Your project request has been cancelled."
+APPLICATION_CANCELLED                   =   "Your project application has been cancelled."
 
+REACHED_PENDING_APPLICATION_LIMIT = ("You have reached the maximum number "
+                                     "of pending project applications: %s.")
+
+PENDING_APPLICATION_LIMIT_ADD = \
+    ("You are not allowed to create a new project "
+     "because you have reached the maximum [%s] for "
+     "pending project applications. "
+     "Consider cancelling any unnecessary ones.")
+
+PENDING_APPLICATION_LIMIT_MODIFY = \
+    ("You are not allowed to modify this project "
+     "because you have reached the maximum [%s] for "
+     "pending project applications. "
+     "Consider cancelling any unnecessary ones.")
 
 # Auth providers messages
 AUTH_PROVIDER_NOT_ACTIVE                     =   "'%(provider)s' is disabled."

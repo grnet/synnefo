@@ -17,7 +17,7 @@ ROOT_URLCONF = 'synnefo.webproject.urls'
 
 # Additional template dirs.
 TEMPLATE_DIRS = (
-    '/usr/share/synnefo/templates/'
+    '/etc/synnefo/templates/'
 )
 
 LANGUAGES = (

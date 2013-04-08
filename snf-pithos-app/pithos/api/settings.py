@@ -2,7 +2,7 @@
 from django.conf import settings
 
 AUTHENTICATION_URL = getattr(settings, 'PITHOS_AUTHENTICATION_URL',
-                             'https://accounts.synnefo.local/im/authenticate/')
+                             'https://accounts.example.synnefo.org/im/authenticate/')
 AUTHENTICATION_USERS = getattr(settings, 'PITHOS_AUTHENTICATION_USERS', {})
 
 COOKIE_NAME = getattr(settings, 'PITHOS_ASTAKOS_COOKIE_NAME', '_pithos2_a')
@@ -54,13 +54,23 @@ TRANSLATE_UUIDS = getattr(settings, 'PITHOS_TRANSLATE_UUIDS', False)
 PROXY_USER_SERVICES = getattr(settings, 'PITHOS_PROXY_USER_SERVICES', True)
 
 USER_CATALOG_URL = getattr(settings, 'PITHOS_USER_CATALOG_URL',
-                           'https://accounts.synnefo.local/user_catalogs/')
+                           'https://accounts.example.synnefo.org/user_catalogs/')
 USER_FEEDBACK_URL = getattr(settings, 'PITHOS_USER_FEEDBACK_URL',
-                            'https://accounts.synnefo.local/feedback/')
+                            'https://accounts.example.synnefo.org/feedback/')
 USER_LOGIN_URL = getattr(settings, 'PITHOS_USER_LOGIN_URL',
-                         'https://accounts.synnefo.local/login/')
+                         'https://accounts.example.synnefo.org/login/')
 
 # Set the quota holder component URI
 USE_QUOTAHOLDER = getattr(settings, 'PITHOS_USE_QUOTAHOLDER', False)
 QUOTAHOLDER_URL = getattr(settings, 'PITHOS_QUOTAHOLDER_URL', '')
 QUOTAHOLDER_TOKEN = getattr(settings, 'PITHOS_QUOTAHOLDER_TOKEN', '')
+QUOTAHOLDER_POOLSIZE = getattr(settings, 'PITHOS_QUOTAHOLDER_POOLSIZE', 200)
+
+# Set how many random bytes to use for constructing the URL of Pithos public files
+PUBLIC_URL_SECURITY =  getattr(settings, 'PITHOS_PUBLIC_URL_SECURITY', 16)
+# Set the alphabet to use for constructing the URL of Pithos public files
+PUBLIC_URL_ALPHABET =  getattr(
+    settings,
+    'PITHOS_PUBLIC_URL_ALPHABET',
+    '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+)

@@ -46,7 +46,7 @@ from django.views.decorators.csrf import csrf_exempt
 from pithos.api.settings import (
     AUTHENTICATION_USERS, USER_LOGIN_URL, USER_FEEDBACK_URL, USER_CATALOG_URL)
 
-from synnefo.lib.pool.http import get_http_connection
+from synnefo.lib.pool.http import PooledHTTPConnection
 
 logger = logging.getLogger(__name__)
 
@@ -67,26 +67,25 @@ def delegate_to_login_service(request):
     return HttpResponseRedirect(uri)
 
 
-def proxy(request, url, headers={}, body=None):
+def proxy(request, url, headers=None, body=None):
     p = urlparse(url)
 
     kwargs = {}
-    kwargs['headers'] = headers
+    if headers is None:
+        headers = {}
+    kwargs["headers"] = headers
     kwargs['headers'].update(request.META)
     kwargs['body'] = body
     kwargs['headers'].setdefault('content-type', 'application/json')
     kwargs['headers'].setdefault('content-length', len(body) if body else 0)
 
-    conn = get_http_connection(p.netloc, p.scheme)
-    try:
+    with PooledHTTPConnection(p.netloc, p.scheme) as conn:
         conn.request(request.method, p.path + '?' + p.query, **kwargs)
         response = conn.getresponse()
         length = response.getheader('content-length', None)
         data = response.read(length)
         status = int(response.status)
         return HttpResponse(data, status=status)
-    finally:
-        conn.close()
 
 @csrf_exempt
 def delegate_to_feedback_service(request):

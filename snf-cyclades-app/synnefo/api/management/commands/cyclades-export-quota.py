@@ -59,13 +59,14 @@ class Command(NoArgsCommand):
         except IOError as e:
             raise CommandError(e)
 
+        INF = str(10**30)
         for user, value in vms_per_user.items():
-            f.write(' '.join([user, "cyclades.vm", "%s" % value, '0', '0',
-                              '0']))
+            f.write(' '.join([user, "cyclades.vm", "%s" % value, '0', INF,
+                              INF]))
             f.write('\n')
         for user, value in nets_per_user.items():
             f.write(' '.join([user, "cyclades.network.private", "%s" % value,
-                            '0', '0', '0']))
+                              '0', INF, INF]))
             f.write('\n')
 
         f.close()

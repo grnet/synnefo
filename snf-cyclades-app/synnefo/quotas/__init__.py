@@ -37,15 +37,15 @@ from synnefo.settings import CYCLADES_USE_QUOTAHOLDER
 
 if CYCLADES_USE_QUOTAHOLDER:
     from synnefo.settings import (CYCLADES_QUOTAHOLDER_URL,
-                                  CYCLADES_QUOTAHOLDER_TOKEN)
-    from kamaki.clients.quotaholder import QuotaholderClient
+                                  CYCLADES_QUOTAHOLDER_TOKEN,
+                                  CYCLADES_QUOTAHOLDER_POOLSIZE)
+    from synnefo.lib.quotaholder import QuotaholderClient
 else:
     from synnefo.settings import (VMS_USER_QUOTA, MAX_VMS_PER_USER,
                                   NETWORKS_USER_QUOTA, MAX_NETWORKS_PER_USER)
 
-from kamaki.clients.quotaholder.api import (NoCapacityError, NoQuantityError,
-                                            NoEntityError)
-from kamaki.clients.commissioning import CallError
+from synnefo.lib.quotaholder.api import (NoCapacityError, NoQuantityError,
+                                         NoEntityError, CallError)
 
 import logging
 log = logging.getLogger(__name__)
@@ -110,7 +110,8 @@ def get_quota_holder():
     """Context manager for using a QuotaHolder."""
     if CYCLADES_USE_QUOTAHOLDER:
         quotaholder = QuotaholderClient(CYCLADES_QUOTAHOLDER_URL,
-                                        token=CYCLADES_QUOTAHOLDER_TOKEN)
+                                        token=CYCLADES_QUOTAHOLDER_TOKEN,
+                                        poolsize=CYCLADES_QUOTAHOLDER_POOLSIZE)
     else:
         quotaholder = DummyQuotaholderClient()
 
@@ -137,15 +138,23 @@ def uses_commission(func):
         try:
             serials = []
             ret = func(serials, *args, **kwargs)
+        except:
+            log.exception("Unexpected error")
+            try:
+                if serials:
+                    reject_commission(serials=serials)
+            except:
+                log.exception("Exception while rejecting serials %s", serials)
+                raise
+            raise
+
+        # func has completed successfully. accept serials
+        try:
             if serials:
                 accept_commission(serials)
             return ret
-        except CallError:
-            log.exception("Unexpected error")
-            raise
         except:
-            if serials:
-                reject_commission(serials=serials)
+            log.exception("Exception while accepting serials %s", serials)
             raise
     return wrapper
 

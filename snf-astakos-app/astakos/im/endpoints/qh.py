@@ -43,10 +43,11 @@ from astakos.im.settings import (
     QUOTAHOLDER_URL, QUOTAHOLDER_TOKEN, LOGGING_LEVEL)
 
 if QUOTAHOLDER_URL:
-    from kamaki.clients.quotaholder import QuotaholderClient
-    from kamaki.clients.quotaholder import QH_PRACTICALLY_INFINITE
+    from synnefo.lib.quotaholder import (
+            QuotaholderClient, QH_PRACTICALLY_INFINITE)
 
 from synnefo.util.number import strbigdec
+from astakos.im.settings import QUOTAHOLDER_POOLSIZE
 
 ENTITY_KEY = '1'
 
@@ -66,7 +67,8 @@ def get_client():
         return _client
     if not QUOTAHOLDER_URL:
         return
-    _client = QuotaholderClient(QUOTAHOLDER_URL, token=QUOTAHOLDER_TOKEN)
+    _client = QuotaholderClient(QUOTAHOLDER_URL, token=QUOTAHOLDER_TOKEN,
+                                poolsize=QUOTAHOLDER_POOLSIZE)
     return _client
 
 
@@ -74,6 +76,8 @@ def set_quota(payload):
     c = get_client()
     if not c:
         return
+    if payload == []:
+        return []
     result = c.set_quota(context={}, clientkey=clientkey, set_quota=payload)
     logger.debug('set_quota: %s rejected: %s' % (payload, result))
     return result
@@ -83,6 +87,8 @@ def get_entity(payload):
     c = get_client()
     if not c:
         return
+    if payload == []:
+        return []
     result = c.get_entity(context={}, get_entity=payload)
     logger.debug('get_entity: %s reply: %s' % (payload, result))
     return result
@@ -92,6 +98,8 @@ def get_holding(payload):
     c = get_client()
     if not c:
         return
+    if payload == []:
+        return []
     result = c.get_holding(context={}, get_holding=payload)
     logger.debug('get_holding: %s reply: %s' % (payload, result))
     return result
@@ -143,6 +151,8 @@ def qh_get_quota(users, resources):
         for resource in resources:
             append((user.uuid, resource, ENTITY_KEY),)
 
+    if payload == []:
+        return []
     result = c.get_quota(context={}, clientkey=clientkey, get_quota=payload)
     logger.debug('get_quota: %s rejected: %s' % (payload, result))
     return result
@@ -162,6 +172,8 @@ def create_entity(payload):
     c = get_client()
     if not c:
         return
+    if payload == []:
+        return []
     result = c.create_entity(
         context={}, clientkey=clientkey, create_entity=payload)
     logger.debug('create_entity: %s rejected: %s' % (payload, result))
@@ -218,16 +230,6 @@ def add_quota_values(q1, q2):
         export_limit = q1.export_limit + q2.export_limit)
 
 
-def qh_register_user_with_quotas(user):
-    return register_users_with_quotas([user])
-
-
-def register_users_with_quotas(users):
-    rejected = register_users(users)
-    if not rejected:
-        register_quotas(users)
-
-
 def register_users(users):
     if not users:
         return
@@ -240,16 +242,16 @@ def register_users(users):
     return create_entity(payload)
 
 
-def register_quotas(users):
-    if not users:
+def register_quotas(quotas):
+    if not quotas:
         return
 
     payload = []
     append = payload.append
-    for u in users:
-        for resource, q in u.all_quotas().iteritems():
+    for uuid, userquotas in quotas.iteritems():
+        for resource, q in userquotas.iteritems():
             append(SetQuotaPayload(
-                    holder=u.uuid,
+                    holder=uuid,
                     resource=resource,
                     key=ENTITY_KEY,
                     quantity=q.quantity,
@@ -507,7 +509,8 @@ def timeline_charge(entity, resource, after, before, details, charge_type):
         m = 'charge type %s not supported' % charge_type
         raise ValueError(m)
 
-    quotaholder = QuotaholderClient(QUOTAHOLDER_URL, token=QUOTAHOLDER_TOKEN)
+    quotaholder = QuotaholderClient(QUOTAHOLDER_URL, token=QUOTAHOLDER_TOKEN,
+                                    poolsize=QUOTAHOLDER_POOLSIZE)
     timeline = quotaholder.get_timeline(
         context={},
         after=after,

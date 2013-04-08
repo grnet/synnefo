@@ -74,7 +74,6 @@ class Command(BaseCommand):
         user_ident = options['user']
         list_only = not sync and not verify
 
-
         if user_ident is not None:
             log = self.run_sync_user(user_ident, sync)
         else:

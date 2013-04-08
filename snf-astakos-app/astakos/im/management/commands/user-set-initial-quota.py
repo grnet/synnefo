@@ -31,24 +31,24 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import os
-import uuid
 import string
 
 from optparse import make_option
 from collections import namedtuple
 
 from django.core.management.base import BaseCommand, CommandError
-from django.core.validators import validate_email
 from synnefo.lib.quotaholder.api import QH_PRACTICALLY_INFINITE
 
 from astakos.im.models import AstakosUser, AstakosUserQuota, Resource
+
+from ._common import is_uuid, is_email
 
 AddResourceArgs = namedtuple('AddQuotaArgs', ('resource',
                                               'capacity',
                                               'quantity',
                                               'import_limit',
                                               'export_limit'))
+
 
 class Command(BaseCommand):
     help = """Import user quota limits from file or set quota
@@ -165,9 +165,9 @@ for a single user from the command line
             try:
                 service, sep, name = resource.partition('.')
                 q = AstakosUserQuota.objects.get(
-                        user=user,
-                        resource__service__name=service,
-                        resource__name=name)
+                    user=user,
+                    resource__service__name=service,
+                    resource__name=name)
                 q.delete()
             except Exception as e:
                 import traceback
@@ -197,7 +197,9 @@ for a single user from the command line
                 try:
                     user = AstakosUser.objects.get(uuid=user)
                 except AstakosUser.DoesNotExist:
-                    self.stdout.write('Not found user having uuid: %s\n' % user)
+                    self.stdout.write(
+                        'Not found user having uuid: %s\n' % user
+                    )
                     continue
                 else:
                     try:
@@ -207,25 +209,3 @@ for a single user from the command line
                         continue
             finally:
                 f.close()
-
-
-def is_uuid(s):
-    if s is None:
-        return False
-    try:
-        uuid.UUID(s)
-    except ValueError:
-        return False
-    else:
-        return True
-
-
-def is_email(s):
-    if s is None:
-        return False
-    try:
-        validate_email(s)
-    except:
-        return False
-    else:
-        return True

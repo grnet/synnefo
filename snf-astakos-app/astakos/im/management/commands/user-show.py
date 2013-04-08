@@ -34,6 +34,7 @@
 from django.core.management.base import CommandError
 
 from astakos.im.models import AstakosUser, get_latest_terms
+
 from synnefo.lib.ordereddict import OrderedDict
 from synnefo.webproject.management.commands import SynnefoCommand
 from synnefo.webproject.management import utils
@@ -95,12 +96,12 @@ class Command(SynnefoCommand):
                     ('invitation level', user.level),
                     ('providers', user.auth_providers_display),
                     ('verified', user.is_verified),
-                    ('has_credits', format(user.has_credits)),
+                    ('has credits', format(user.has_credits)),
                     ('groups', [elem.name for elem in user.groups.all()]),
                     ('permissions', [elem.codename
                                      for elem in user.user_permissions.all()]),
-                    ('group_permissions', user.get_group_permissions()),
-                    ('email_verified', user.email_verified),
+                    ('group permissions', user.get_group_permissions()),
+                    ('email verified', user.email_verified),
                     ('username', user.username),
                     ('activation_sent_date', user.activation_sent),
                 ])

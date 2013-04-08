@@ -32,6 +32,9 @@ BACKEND_QUOTA = getattr(
 BACKEND_VERSIONING = getattr(settings, 'PITHOS_BACKEND_VERSIONING', 'auto')
 BACKEND_FREE_VERSIONING = getattr(settings, 'PITHOS_BACKEND_FREE_VERSIONING', True)
 
+# Default backend pool size
+BACKEND_POOL_SIZE = getattr(settings, 'PITHOS_BACKEND_POOL_SIZE', 5)
+
 # Update object checksums when using hashmaps.
 UPDATE_MD5 = getattr(settings, 'PITHOS_UPDATE_MD5', True)
 

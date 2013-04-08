@@ -63,7 +63,7 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  QUOTAHOLDER_URL, QUOTAHOLDER_TOKEN,
                                  QUOTAHOLDER_POOLSIZE,
                                  BACKEND_QUOTA, BACKEND_VERSIONING,
-                                 BACKEND_FREE_VERSIONING,
+                                 BACKEND_FREE_VERSIONING, BACKEND_POOL_SIZE,
                                  AUTHENTICATION_URL, AUTHENTICATION_USERS,
                                  COOKIE_NAME, USER_CATALOG_URL,
                                  RADOS_STORAGE, RADOS_POOL_BLOCKS,
@@ -958,7 +958,7 @@ def simple_list_response(request, l):
 
 
 from pithos.backends.util import PithosBackendPool
-POOL_SIZE = 5
+
 if RADOS_STORAGE:
     BLOCK_PARAMS = { 'mappool': RADOS_POOL_MAPS,
                      'blockpool': RADOS_POOL_BLOCKS,
@@ -970,7 +970,7 @@ else:
 
 
 _pithos_backend_pool = PithosBackendPool(
-        size=POOL_SIZE,
+        size=BACKEND_POOL_SIZE,
         db_module=BACKEND_DB_MODULE,
         db_connection=BACKEND_DB_CONNECTION,
         block_module=BACKEND_BLOCK_MODULE,

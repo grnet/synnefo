@@ -920,5 +920,5 @@ def qh_sync_projects(projects):
 
 def qh_sync(user_ids):
     users = AstakosUser.forupdate.filter(id__in=user_ids).select_for_update()
-    astakos_quotas = users_quotas(users)
+    astakos_quotas = users_quotas(list(users))
     set_user_quota(astakos_quotas)

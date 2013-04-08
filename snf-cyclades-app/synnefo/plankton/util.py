@@ -40,7 +40,7 @@ from django.http import (HttpResponse, HttpResponseBadRequest,
                          HttpResponseServerError, HttpResponseForbidden)
 
 from snf_django.lib.api import faults
-from synnefo.lib.astakos import get_user
+from snf_django.lib.astakos import get_user
 from synnefo.plankton.backend import (ImageBackend, BackendException,
                                       NotAllowedError)
 

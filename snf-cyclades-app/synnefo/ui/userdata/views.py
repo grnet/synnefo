@@ -40,7 +40,7 @@ from django.conf import settings
 from synnefo.ui.userdata import rest
 from synnefo.ui.userdata.models import PublicKeyPair
 from synnefo.ui.userdata.util import exportKey
-from synnefo.lib.astakos import get_user
+from snf_django.lib.astakos import get_user
 
 SUPPORT_GENERATE_KEYS = True
 try:

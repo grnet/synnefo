@@ -62,7 +62,7 @@ from django.conf import settings
 
 from pithos.backends.base import NotAllowedError
 
-import synnefo.lib.astakos as lib_astakos
+import snf_django.lib.astakos as lib_astakos
 import logging
 
 from synnefo.settings import (CYCLADES_USE_QUOTAHOLDER,

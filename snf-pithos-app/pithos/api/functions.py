@@ -40,7 +40,7 @@ from django.utils.http import parse_etags
 from django.utils.encoding import smart_str
 from django.views.decorators.csrf import csrf_exempt
 
-from synnefo.lib.astakos import get_user, get_uuids as _get_uuids
+from snf_django.lib.astakos import get_user, get_uuids as _get_uuids
 
 from snf_django.lib import api
 from snf_django.lib.api import faults

@@ -36,7 +36,7 @@ from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 
 from synnefo.lib.utils import merge_time
-from synnefo.lib.astakos import UserCache
+from snf_django.lib.astakos import UserCache
 from synnefo.logic.rapi import GanetiApiError
 from synnefo.management.common import Omit
 from synnefo.management import common

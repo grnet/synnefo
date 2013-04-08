@@ -43,9 +43,9 @@ from django.core.urlresolvers import reverse
 
 from urllib import unquote
 
-from synnefo.lib.astakos import get_user
+from snf_django.lib.astakos import get_user
 from synnefo.db.models import VirtualMachine, NetworkInterface, Network
-from synnefo.lib import astakos
+from snf_django.lib import astakos
 
 # server actions specific imports
 from synnefo.api import servers

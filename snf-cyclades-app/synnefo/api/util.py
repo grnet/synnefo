@@ -62,7 +62,7 @@ from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
                                BridgePoolTable, MacPrefixPoolTable)
 from synnefo.db.pools import EmptyPool
 
-from synnefo.lib.astakos import get_user
+from snf_django.lib.astakos import get_user
 from synnefo.plankton.utils import image_backend
 from synnefo.settings import MAX_CIDR_BLOCK
 

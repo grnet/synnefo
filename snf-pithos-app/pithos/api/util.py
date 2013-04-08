@@ -46,7 +46,7 @@ from django.core.files.uploadhandler import FileUploadHandler
 from django.core.files.uploadedfile import UploadedFile
 
 from snf_django.lib.api.parsedate import parse_http_date_safe, parse_http_date
-from synnefo.lib.astakos import user_for_token
+from snf_django.lib.astakos import user_for_token
 from snf_django.lib import api
 from snf_django.lib.api import faults, utils
 
@@ -67,7 +67,7 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  PUBLIC_URL_ALPHABET)
 from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
                                   VersionNotExists)
-from synnefo.lib.astakos import (get_user_uuid, get_displayname,
+from snf_django.lib.astakos import (get_user_uuid, get_displayname,
                                  get_uuids, get_displaynames)
 
 import logging

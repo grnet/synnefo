@@ -13,7 +13,7 @@ down_revision = '3dd56e750a3'
 from alembic import op
 from sqlalchemy.sql import table, column, literal, and_
 
-from synnefo.lib.astakos import get_user_uuid, get_displayname as get_user_displayname
+from snf_django.lib.astakos import get_user_uuid, get_displayname as get_user_displayname
 from pithos.api.settings import (
     SERVICE_TOKEN, USER_CATALOG_URL, AUTHENTICATION_USERS)
 

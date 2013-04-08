@@ -32,7 +32,6 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
-from datetime import datetime
 
 from django.utils.translation import ugettext as _
 from django.core.management.base import BaseCommand, CommandError
@@ -43,7 +42,7 @@ from astakos.im.models import AstakosUser
 from astakos.im.functions import (activate, deactivate,
                                   set_pending_application_limit,
                                   unset_pending_application_limit)
-from ._common import remove_user_permission, add_user_permission
+from ._common import remove_user_permission, add_user_permission, is_uuid
 
 
 class Command(BaseCommand):
@@ -123,13 +122,19 @@ class Command(BaseCommand):
             raise CommandError("Please provide a user ID")
 
         if args[0].isdigit():
-            user_id = int(args[0])
-            user = AstakosUser.objects.get(id=user_id)
+            try:
+                user = AstakosUser.objects.get(id=int(args[0]))
+            except AstakosUser.DoesNotExist:
+                raise CommandError("Invalid user ID")
+        elif is_uuid(args[0]):
+            try:
+                user = AstakosUser.objects.get(uuid=args[0])
+            except AstakosUser.DoesNotExist:
+                raise CommandError("Invalid user UUID")
         else:
-            raise CommandError("Invalid ID")
-
-        if not user:
-            raise CommandError("Unknown user")
+            raise CommandError(("Invalid user identification: "
+                                "you should provide a valid user ID "
+                                "or a valid user UUID"))
 
         if options.get('admin'):
             user.is_superuser = True
@@ -226,8 +231,8 @@ class Command(BaseCommand):
                 m = _("Expected integer argument")
                 raise CommandError(m)
             else:
-                set_pending_application_limit(user_id, pending)
+                set_pending_application_limit(user.id, pending)
 
         unset_pending = options.get('unset_pending')
         if unset_pending:
-            unset_pending_application_limit(user_id)
+            unset_pending_application_limit(user.id)

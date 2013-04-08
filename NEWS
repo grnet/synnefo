@@ -1,4 +1,36 @@
-.. _NEWS-0.13:
+.. _NEWS:
 
 Unified NEWS file for Synnefo versions >= 0.13
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Since v0.13 all Synnefo components have been merged into a single repository.
+
+.. _NEWS-0.13:
+
+v0.13
+=====
+
+Release Date: UNRELEASED
+
+Astakos
+-------
+
+* Example entry 1
+* Example entry 2
+
+Cyclades
+--------
+
+* Example entry 3
+* Example entry 4
+
+Pithos
+------
+
+* Example entry 5
+* Example entry 6
+
+Other
+-----
+
+* Example entry 7

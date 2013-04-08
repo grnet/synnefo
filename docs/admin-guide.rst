@@ -1253,4 +1253,4 @@ Older Cyclades Upgrade Notes
 .. toctree::
    :maxdepth: 2
 
-   Upgrade <upgrade/cyclades-upgrade>
+   Upgrade <older/cyclades-upgrade>

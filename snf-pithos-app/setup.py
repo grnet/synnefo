@@ -48,7 +48,6 @@ from pithos.api.version import __version__
 # Package info
 VERSION = __version__
 README = open(os.path.join(HERE, 'README')).read()
-CHANGES = open(os.path.join(HERE, 'Changelog')).read()
 SHORT_DESCRIPTION = 'Synnefo File/Object Storage component'
 
 PACKAGES_ROOT = '.'
@@ -170,7 +169,7 @@ setup(
     license='BSD',
     url='http://www.synnefo.org/',
     description=SHORT_DESCRIPTION,
-    long_description=README + '\n\n' + CHANGES,
+    long_description=README,
     classifiers=CLASSIFIERS,
 
     author='Synnefo development team',

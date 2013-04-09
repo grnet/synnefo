@@ -982,11 +982,11 @@ Pithos uses the alembic_ database migrations tool.
 
 .. _alembic: http://alembic.readthedocs.org
 
-After a sucessful installation, we should stamp it with the most recent
-revision, in order to be able in the future to define the migrations should run
-in subsequent upgrades.
+After a sucessful installation, we should stamp it at the most recent
+revision, so that future migrations know where to start upgrading in
+the migration history.
 
-In order to find the most recent revision, we check the migration history:
+First, find the most recent revision in the migration history:
 
 .. code-block:: console
 

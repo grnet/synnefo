@@ -1,6 +1,10 @@
 Changelog
 =========
 
+v0.14.0
+------
+* settings *PITHOS_BACKEND_POOL_SIZE*
+
 v0.13.0
 ------
 * settings *PITHOS_PROXY_USER_SERVICES*, *PITHOS_USER_CATALOG_URL*, *PITHOS_USER_FEEDBACK_URL*,

@@ -25,6 +25,10 @@ Synnefo-wide
   * with automatic version generation
 * Overhauling of Synnefo settings: renames and refactoring, for increased
   uniformity (in progress)
+* Deployment: Standardize on gunicorn, with gevent-based workers
+  and use of Green threads throughout Synnefo
+* Documentation: New scale-out guide, with distinct node roles,
+  for mass Synnefo deployments
 
 Astakos
 -------

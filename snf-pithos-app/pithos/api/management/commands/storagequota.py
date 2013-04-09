@@ -35,9 +35,8 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 
-from pithos.api.settings import (BACKEND_QUOTA, BACKEND_VERSIONING)
-
 from pithos.api.util import get_backend
+
 
 class Command(BaseCommand):
     args = "<user>"
@@ -63,8 +62,6 @@ class Command(BaseCommand):
                 raise CommandError("Invalid quota")
 
         backend = get_backend()
-        backend.default_policy['quota'] = BACKEND_QUOTA
-        backend.default_policy['versioning'] = BACKEND_VERSIONING
 
         if backend.using_external_quotaholder:
             raise CommandError("The system uses an extrenal quota holder.")

@@ -1,10 +1,7 @@
-from pithos.api.settings import (BACKEND_QUOTA, BACKEND_VERSIONING)
-
 #from pithos.backends import connect_backend
 from pithos.api.util import hashmap_md5, get_backend
 
 from django.core.mail import send_mail
-from django.utils.translation import ugettext as _
 
 from astakos.im.settings import DEFAULT_FROM_EMAIL
 
@@ -17,8 +14,6 @@ def update_md5(m):
         return
 
     backend = get_backend()
-    backend.default_policy['quota'] = BACKEND_QUOTA
-    backend.default_policy['versioning'] = BACKEND_VERSIONING
 
     path = m['value']
     account, container, name = path.split('/', 2)

@@ -64,7 +64,7 @@ In `/etc/synnefo/pithos.conf` add:
 
     PITHOS_BACKEND_DB_CONNECTION = 'postgresql://synnefo:example_passw0rd@db.example.com:5432/snf_pithos'
     PITHOS_BACKEND_BLOCK_PATH = '/srv/pithos/data'
-    PITHOS_BACKEND_QUOTA = 20 * 1024 * 1024 * 1024
+    PITHOS_BACKEND_ACCOUNT_QUOTA = 20 * 1024 * 1024 * 1024
     PITHOS_UPDATE_MD5 = False
     PITHOS_SERVICE_TOKEN = 'XXXXXXXXXXX'
 

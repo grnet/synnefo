@@ -32,8 +32,6 @@
 # or implied, of GRNET S.A.
 
 import sys
-import os
-import time
 import uuid as uuidlib
 import logging
 import hashlib
@@ -41,8 +39,10 @@ import binascii
 
 from synnefo.lib.quotaholder import QuotaholderClient
 
-from base import DEFAULT_QUOTA, DEFAULT_VERSIONING, NotAllowedError, QuotaError, BaseBackend, \
-    AccountExists, ContainerExists, AccountNotEmpty, ContainerNotEmpty, ItemNotExists, VersionNotExists
+from base import (DEFAULT_ACCOUNT_QUOTA, DEFAULT_CONTAINER_QUOTA,
+                  DEFAULT_CONTAINER_VERSIONING, NotAllowedError, QuotaError,
+                  BaseBackend, AccountExists, ContainerExists, AccountNotEmpty,
+                  ContainerNotEmpty, ItemNotExists, VersionNotExists)
 
 # Stripped-down version of the HashMap class found in tools.
 
@@ -155,7 +155,10 @@ class ModularBackend(BaseBackend):
                  quotaholder_client_poolsize=None,
                  free_versioning=True, block_params=None,
                  public_url_security=None,
-                 public_url_alphabet=None):
+                 public_url_alphabet=None,
+                 account_quota_policy=None,
+                 container_quota_policy=None,
+                 container_versioning_policy=None):
         db_module = db_module or DEFAULT_DB_MODULE
         db_connection = db_connection or DEFAULT_DB_CONNECTION
         block_module = block_module or DEFAULT_BLOCK_MODULE
@@ -163,8 +166,17 @@ class ModularBackend(BaseBackend):
         block_umask = block_umask or DEFAULT_BLOCK_UMASK
         block_params = block_params or DEFAULT_BLOCK_PARAMS
         #queue_module = queue_module or DEFAULT_QUEUE_MODULE
+        account_quota_policy = account_quota_policy or DEFAULT_ACCOUNT_QUOTA
+        container_quota_policy = container_quota_policy \
+            or DEFAULT_CONTAINER_QUOTA
+        container_versioning_policy = container_versioning_policy \
+            or DEFAULT_CONTAINER_VERSIONING
 
-        self.default_policy = {'quota': DEFAULT_QUOTA, 'versioning': DEFAULT_VERSIONING}
+        self.default_account_policy = {'quota': account_quota_policy}
+        self.default_container_policy = {
+            'quota': container_quota_policy,
+            'versioning': container_versioning_policy
+        }
         #queue_hosts = queue_hosts or DEFAULT_QUEUE_HOSTS
         #queue_exchange = queue_exchange or DEFAULT_QUEUE_EXCHANGE
 
@@ -174,9 +186,6 @@ class ModularBackend(BaseBackend):
         self.hash_algorithm = 'sha256'
         self.block_size = 4 * 1024 * 1024  # 4MB
         self.free_versioning = free_versioning
-
-        self.default_policy = {'quota': DEFAULT_QUOTA,
-                               'versioning': DEFAULT_VERSIONING}
 
         def load_module(m):
             __import__(m)
@@ -342,7 +351,7 @@ class ModularBackend(BaseBackend):
                 raise NotAllowedError
             return {}
         path, node = self._lookup_account(account, True)
-        policy = self._get_policy(node)
+        policy = self._get_policy(node, is_account_policy=True)
         if self.using_external_quotaholder:
             external_quota = external_quota or {}
             policy['quota'] = external_quota.get('maxValue', 0)
@@ -357,8 +366,8 @@ class ModularBackend(BaseBackend):
         if user != account:
             raise NotAllowedError
         path, node = self._lookup_account(account, True)
-        self._check_policy(policy)
-        self._put_policy(node, policy, replace)
+        self._check_policy(policy, is_account_policy=True)
+        self._put_policy(node, policy, replace, is_account_policy=True)
 
     @backend_method
     def put_account(self, user, account, policy=None):
@@ -372,9 +381,9 @@ class ModularBackend(BaseBackend):
         if node is not None:
             raise AccountExists('Account already exists')
         if policy:
-            self._check_policy(policy)
+            self._check_policy(policy, is_account_policy=True)
         node = self._put_path(user, self.ROOTNODE, account)
-        self._put_policy(node, policy, True)
+        self._put_policy(node, policy, True, is_account_policy=True)
 
     @backend_method
     def delete_account(self, user, account):
@@ -483,7 +492,8 @@ class ModularBackend(BaseBackend):
         src_version_id, dest_version_id = self._put_metadata(
             user, node, domain, meta, replace)
         if src_version_id is not None:
-            versioning = self._get_policy(node)['versioning']
+            versioning = self._get_policy(
+                node, is_account_policy=False)['versioning']
             if versioning != 'auto':
                 self.node.version_remove(src_version_id)
 
@@ -498,7 +508,7 @@ class ModularBackend(BaseBackend):
                 raise NotAllowedError
             return {}
         path, node = self._lookup_container(account, container)
-        return self._get_policy(node)
+        return self._get_policy(node, is_account_policy=False)
 
     @backend_method
     def update_container_policy(self, user, account, container, policy, replace=False):
@@ -509,8 +519,8 @@ class ModularBackend(BaseBackend):
         if user != account:
             raise NotAllowedError
         path, node = self._lookup_container(account, container)
-        self._check_policy(policy)
-        self._put_policy(node, policy, replace)
+        self._check_policy(policy, is_account_policy=False)
+        self._put_policy(node, policy, replace, is_account_policy=False)
 
     @backend_method
     def put_container(self, user, account, container, policy=None):
@@ -528,11 +538,11 @@ class ModularBackend(BaseBackend):
         else:
             raise ContainerExists('Container already exists')
         if policy:
-            self._check_policy(policy)
+            self._check_policy(policy, is_account_policy=False)
         path = '/'.join((account, container))
         node = self._put_path(
             user, self._lookup_account(account, True)[1], path)
-        self._put_policy(node, policy, True)
+        self._put_policy(node, policy, True, is_account_policy=False)
 
     @backend_method
     def delete_container(self, user, account, container, until=None, prefix='', delimiter=None):
@@ -879,7 +889,10 @@ class ModularBackend(BaseBackend):
         size_delta = size - del_size
         if not self.using_external_quotaholder: # Check account quota.
             if size_delta > 0:
-                account_quota = long(self._get_policy(account_node)['quota'])
+                account_quota = long(
+                    self._get_policy(account_node, is_account_policy=True
+                    )['quota']
+                )
                 account_usage = self._get_statistics(account_node)[1] + size_delta
                 if (account_quota > 0 and account_usage > account_quota):
                     raise QuotaError('account quota exceeded: limit: %s, usage: %s' % (
@@ -887,7 +900,10 @@ class ModularBackend(BaseBackend):
                     ))
 
         # Check container quota.
-        container_quota = long(self._get_policy(container_node)['quota'])
+        container_quota = long(
+            self._get_policy(container_node, is_account_policy=False
+            )['quota']
+        )
         container_usage = self._get_statistics(container_node)[1] + size_delta
         if (container_quota > 0 and container_usage > container_quota):
             # This must be executed in a transaction, so the version is
@@ -1366,10 +1382,12 @@ class ModularBackend(BaseBackend):
 
     # Policy functions.
 
-    def _check_policy(self, policy):
+    def _check_policy(self, policy, is_account_policy=True):
+        default_policy = self.default_account_policy \
+            if is_account_policy else self.default_container_policy
         for k in policy.keys():
             if policy[k] == '':
-                policy[k] = self.default_policy.get(k)
+                policy[k] = default_policy.get(k)
         for k, v in policy.iteritems():
             if k == 'quota':
                 q = int(v)  # May raise ValueError.
@@ -1381,15 +1399,19 @@ class ModularBackend(BaseBackend):
             else:
                 raise ValueError
 
-    def _put_policy(self, node, policy, replace):
+    def _put_policy(self, node, policy, replace, is_account_policy=True):
+        default_policy = self.default_account_policy \
+            if is_account_policy else self.default_container_policy
         if replace:
-            for k, v in self.default_policy.iteritems():
+            for k, v in default_policy.iteritems():
                 if k not in policy:
                     policy[k] = v
         self.node.policy_set(node, policy)
 
-    def _get_policy(self, node):
-        policy = self.default_policy.copy()
+    def _get_policy(self, node, is_account_policy=True):
+        default_policy = self.default_account_policy \
+            if is_account_policy else self.default_container_policy
+        policy = default_policy.copy()
         policy.update(self.node.policy_get(node))
         return policy
 
@@ -1401,7 +1423,8 @@ class ModularBackend(BaseBackend):
         if version_id is None:
             return 0
         path, node = self._lookup_container(account, container)
-        versioning = self._get_policy(node)['versioning']
+        versioning = self._get_policy(
+            node, is_account_policy=False)['versioning']
         if versioning != 'auto':
             hash, size = self.node.version_remove(version_id)
             self.store.map_delete(hash)

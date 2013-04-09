@@ -91,7 +91,31 @@ Pithos
 ------
 
 * Support storage of blocks on a RADOS backend, for Archipelago
+
+  * new settings:
+    PITHOS_RADOS_STORAGE, PITHOS_RADOS_POOL_BLOCKS, PITHOS_RADOS_POOL_MAPS
+
 * Rewritten support for public URLs, with admin-selectable length
+
+  * new settings:
+    PITHOS_PUBLIC_URL_SECURITY, PITHOS_PUBLIC_URL_ALPHABET
+
+* Enable pithos backend to use external quotaholder component
+
+  * new settings:
+    PITHOS_USE_QUOTAHOLDER, PITHOS_QUOTAHOLDER_URL, PITHOS_QUOTAHOLDER_TOKEN,
+    PITHOS_QUOTAHOLDER_POOLSIZE
+
+* Moderated version debiting mechanism
+
+  * new setting:
+    PITHOS_BACKEND_FREE_VERSIONING
+
+* Proxy Astakos user-visible services
+
+  * new settings:
+    PITHOS_PROXY_USER_SERVICES, PITHOS_USER_CATALOG_URL,
+    PITHOS_USER_FEEDBACK_URL, PITHOS_USER_LOGIN_URL
 
 Tools
 -----

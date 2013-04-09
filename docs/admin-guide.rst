@@ -1241,16 +1241,7 @@ Upgrade Notes
    v0.12 -> v0.13 <upgrade/upgrade-0.13>
 
 
-Changelog, News
+Changelog, NEWS
 ===============
 
 * v0.13 :ref:`Changelog <Changelog-0.13>`, :ref:`NEWS <NEWS-0.13>`
-
-
-Older Cyclades Upgrade Notes
-============================
-
-.. toctree::
-   :maxdepth: 2
-
-   Upgrade <older/cyclades-upgrade>

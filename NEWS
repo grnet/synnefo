@@ -13,16 +13,22 @@ v0.13
 Release Date: UNRELEASED
 
 Synnefo-wide
--------------
+------------
 
 * Support for pooling throughout Synnefo
+
   * Pooled Django DB connections, Pithos backend connections, HTTP
     connections using single `objpool` package
+
 * Improved management commands
+
   * Unified codebase for output of tables in JSON, CSV
+
 * Bring most of Synnefo code inside a single, unified repository
+
   * support automatic Python and Debian package builds for individual commits
   * with automatic version generation
+
 * Overhauling of Synnefo settings: renames and refactoring, for increased
   uniformity (in progress)
 * Deployment: Standardize on gunicorn, with gevent-based workers
@@ -34,17 +40,24 @@ Astakos
 -------
 
 * Support multiple authentication methods
+
   * Classic (username/password), Shibboleth, LDAP/Active Directory,
     Google, Twitter, LinkedIn
   * Users can enable/disable auth methods, and switch between them
+
 * Introduce a UUID as a global identifier for users, throughout Synnefo
+
   * The UUID remains constant as the user enables/disables login methods
+
 * Allow users to modify their email address freely
 * Per-user, per-resource accounting mechanism (quotaholder)
 * Full quota support, with per-user, per-resource quotas, based on quotaholder
 * Projects: Users can create and join Projects
+
   * Projects grant extra resources to their members
+
 * UI Enhancements for quotas and projects
+
   * distinct Usage tab, showing usage of individual resources
   * Project management UI
   * New Overview page
@@ -57,12 +70,14 @@ Cyclades
 * Support for the ExtStorage disk template in Ganeti
 * Query and report quotas in the UI
 * Pass VM configuration parameters over a VM-side API (`vmapi`)
+
   * Do not pass sensitive data as Ganeti OS parameters
   * Keep sensitive data in memory caches (memcached) and
     never allow them to hit the disk
+
 * Display additional backend information in helpdesk machines list
 * Allow helpdesk users to search for an account using a known machine id
-* Helpdesk actions are now logged using the synnefo's common loggin 
+* Helpdesk actions are now logged using the synnefo's common login
   infrastructure
 
 Pithos

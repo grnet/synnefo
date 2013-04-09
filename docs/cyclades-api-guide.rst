@@ -3,14 +3,14 @@
 API Guide
 *********
 
-.. todo:: Document the relation of the API to the OpenStack API v1.1.
+`Cyclades <cyclades.html>`_ is the compute service developed by `GRNET <http://www.grnet.gr>`_ as part of the `synnefo <http://www.synnefo.org>`_ software, that implements an extension of the `OpenStack Compute API <http://docs.openstack.org/api/openstack-compute/2/content>`_.
 
-This is the guide to the REST API of the synnefo Compute Service.
-It is meant for users wishing to make calls to the REST API directly.
+This document's goals are:
 
-The `kamaki <http://docs.dev.grnet.gr/kamaki>`_ command-line client
-and associated python library can be used instead of making direct calls to
-:ref:`cyclades <cyclades>`.
+* Define the Cyclades/Compute ReST API
+* Clarify the differences between Cyclades and OOS Compute
+
+Users and developers who wish to access a synnefo Cyclades service through its ReST API are adviced to use the `kamaki <http://docs.dev.grnet.gr/kamaki>`_ command-line client and associated python library, instead of making direct calls.
 
 Overview
 ========
@@ -92,7 +92,7 @@ Versions
 * Version MIME type support is missing.
 * Versionless requests are not supported.
 * We hardcode the ``updated`` field in versions list
-* Deployment note: The Atom metadata need to be fixed
+* Deployment note: The Atom metadata needs to be fixed
 
 
 Extensions
@@ -121,10 +121,108 @@ Servers
 List Servers
 ............
 
-* **List Servers** returns just ``id`` and ``name`` if details are not
-  requested.
-* **List Servers** can return 304 (even though not explicitly stated) when
-  ``changes-since`` is given.
+=================== ====== ======== ==========
+URI                 Method Cyclades OS Compute
+=================== ====== ======== ==========
+``/servers``        GET    ✔        ✔
+``/servers/detail``
+=================== ====== ======== ==========
+
+* Both requests return a list of servers. The first returns just ``id`` and ``name``, while the second returns the full set of server attributes.
+
+================= =================================== ======== ==========
+Request Parameter Value                               Cyclades OS Compute
+================= =================================== ======== ==========
+changes-since     Servers delete since that timestamp ✔        ✔
+image             Image reference                     **✘**    ✔
+flavor            VM flavor reference                 **✘**    ✔
+server            Server flavor reference             **✘**    ✔
+status            Server status                       **✘**    ✔
+marker            Last list last ID                   **✘**    ✔
+limit             Page size                           **✘**    ✔
+================= =================================== ======== ==========
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded
+304 (No servers since date) Can be returned if ``changes-since`` is given
+400 (Bad Request)           Invalid or malformed ``changes-since`` parameter
+401 (Unauthorized)          Missing or expired user token
+403 (Unauthorized)          User is not allowed to perform this operation
+500 (Internal Server Error) The request cannot be completed because of an internal error
+503 (Service Unavailable)   The server is not currently available
+=========================== =====================
+
+
+The response data format is a list of servers, under the ``servers`` label. A server may have the fields presented bellow (only *id* and *name* if not a detail request)
+
+================ ====================== ======== ==========
+Name             Description            Cyclades OS Compute
+================ ====================== ======== ==========
+id               The server id          ✔        ✔
+name             The server name        ✔        ✔
+hostId           Server playground      empty    ✔
+created          Creation date          ✔        ✔
+updated          Creation date          ✔        ✔
+flavorRef        The flavor id          ✔        **✘**
+flavor           The flavor id          **✘**    ✔
+imageRef         The image id           ✔        **✘**
+image            The image id           **✘**    ✔
+progress         Build progress         ✔        ✔
+status           Server status          ✔        ✔
+attachments      Network interfaces     ✔        **✘**
+addresses        Network interfaces     **✘**    ✔
+metadata         Server custom metadata ✔        ✔
+================ ====================== ======== ==========
+
+* **hostId** is not used in Cyclades, but is returned as an empty string for compatibility
+
+
+* **progress** is changing while the server is building up and has values between 0 and 100. When it reaches 100 the server is built.
+
+
+* **status** referes to the status of the server
+
+============= ==================== ======== ==========
+Status        Description          Cyclades OS Compute
+============= ==================== ======== ==========
+BUILD         Building             ✔        ✔
+ACTIVE        Up and running       ✔        ✔
+STOPPED       Shut down            ✔        **✘**
+REBOOT        Rebooting            ✔        ✔
+DELETED       Removed              ✔        ✔
+UNKNOWN       Unexpected error     ✔        ✔
+ERROR         In error             ✔        ✔
+HARD_REBOOT   Hard rebooting       **✘**    ✔
+PASSWORD      Resetting password   **✘**    ✔
+REBUILD       Rebuilding server    **✘**    ✔
+RESCUE        In rescue mode       **✘**    ✔
+RESIZE        Resizing             **✘**    ✔
+REVERT_RESIZE Failed to resize     **✘**    ✔
+SHUTOFF       Shut down by user    **✘**    ✔
+SUSPENDED     Suspended            **✘**    ✔
+VERIFY_RESIZE Waiting confirmation **✘**    ✔
+============= ==================== ======== ==========
+
+|
+
+* **metadata** are custom key:value pairs used to specify various attributes of the VM (e.g. OS, super user, etc.)
+
+
+* **attachments** in Cyclades are lists of network interfaces (nics). Each server can handle various nics. Each nic connects the current server with a network. **Attachments** are different to OS Compute's **addresses** the former is a list of the server's network interfaces (network reference + mac address) while the later is a just list of networks. For example, a Cyclades server may be connected to the same network through more than one distinct network interfaces (e.g. server 43 is connected to network 101 with nic-43-1 and nic-43-2 in the example bellow).
+
+* **Network Interfaces (NICs)** contain information about a server's connection to a network. Each nic is identified by an id of the form nic-<server-id>-<ordinal-number> and may contain a ``network_id``, a ``mac_address``, ``ipv4`` and ``ipv6`` addresses and the ``firewallProfile`` of the connection.
 
 **Example List Servers: JSON**
 
@@ -134,18 +232,20 @@ List Servers
       'servers':
           {'values': [
               {
-                  'addresses': {'values': [
+                  'attachments': {'values': [
                           {
-                              'id': 'public',
-                              'mac': 'aa:00:00:49:2e:7e',
-                              'name': 'public',
-                              'values': [ {'addr': '192.168.32.6', 'version': 4} ]
+                              'id': 'nic-42-0',
+                              'network_id': '101',
+                              'mac_address': 'aa:00:00:49:2e:7e',
+                              'firewallProfile': DISABLED,
+                              'ipv4': '192.168.4.5',
+                              'ipv6': '2001:648:2ffc:1222:a800:ff:fef5:3f5b'
                           }
                   ]},
                   'created': '2011-04-19T10:18:52.085737+00:00',
                   'flavorRef': 1,
                   'hostId': '',
-                  'id': 1,
+                  'id': 42,
                   'imageRef': 3,
                   'metadata': {'values': {'foo': 'bar'}},
                   'name': 'My Server',
@@ -153,25 +253,37 @@ List Servers
                   'updated': u'2011-05-29T14:07:07.037602+00:00'
               },
               {
-                  'addresses': {'values': [
+                  'attachments': {'values': [
                           {
-                              'id': 'public',
+                              'id': 'nic-43-0',
                               'mac': 'aa:00:00:91:2f:df',
-                              'name': 'public',
-                              'values': [ {'addr': '192.168.32.7', 'version': 4} ]
+                              'network_id': '1',
+                              'ipv4': '192.168.32.2'
                           },
                           {
-                              'id': '2',
-                              'mac': 'aa:00:00:c3:69:6f',
-                              'name': 'private'
+                              'id': 'nic-43-1',
+                              'network_id': '101',
+                              'mac_address': 'aa:00:00:49:2g:7f',
+                              'firewallProfile': DISABLED,
+                              'ipv4': '192.168.32.6',
+                              'ipv6': '2001:648:2ffc:1222:a800:ff:fef5:3f5c'
                           },
+                          {
+                              'id': 'nic-43-2',
+                              'network_id': '101',
+                              'mac_address': 'aa:00:00:51:2h:7f',
+                              'firewallProfile': DISABLED,
+                              'ipv4': '192.168.32.7',
+                              'ipv6': '2001:638:2eec:1222:a800:ff:fef5:3f5c'
+                          }
                   ]},
                   'created': '2011-05-02T20:51:08.527759+00:00',
                   'flavorRef': 1,
                   'hostId': '',
-                  'id': 2,
+                  'id': 43,
                   'imageRef': 3,
                   'name': 'Other Server',
+                  'description': 'A sample server to showcase server requests',
                   'progress': 0,
                   'status': 'ACTIVE',
                   'updated': '2011-05-29T14:59:11.267087+00:00'

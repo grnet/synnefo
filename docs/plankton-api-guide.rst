@@ -12,7 +12,6 @@ This document's goals are:
 
 * Define the Plankton ReST API
 * Clarify the differences between Plankton and Glance
-* Specify metadata semantics and user interface guidelines for a common experience across client software implementations
 
 Image ReST API
 --------------
@@ -89,7 +88,7 @@ desc     Descending order ✔        ✔
 ====================  ========================= ======== =========
 Request Header Name   Value                     Plankton Glance
 ====================  ========================= ======== =========
-X-Auth-Token          User authentication token required  required
+X-Auth-Token          User authentication token required required
 ====================  ========================= ======== =========
 
 |

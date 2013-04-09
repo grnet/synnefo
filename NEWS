@@ -20,6 +20,11 @@ Synnefo-wide
     connections using single `objpool` package
 * Improved management commands
   * Unified codebase for output of tables in JSON, CSV
+* Bring most of Synnefo code inside a single, unified repository
+  * support automatic Python and Debian package builds for individual commits
+  * with automatic version generation
+* Overhauling of Synnefo settings: renames and refactoring, for increased
+  uniformity (in progress)
 
 Astakos
 -------
@@ -44,15 +49,21 @@ Cyclades
 --------
 
 * Commission resources on quotaholder/Astakos
+* Support mass creation of flavors
+* Support for the ExtStorage disk template in Ganeti
+* Query and report quotas in the UI
+* Pass VM configuration parameters over a VM-side API (`vmapi`)
+  * Do not pass sensitive data as Ganeti OS parameters
+  * Keep sensitive data in memory caches (memcached) and
+    never allow them to hit the disk
 
 Pithos
------
+------
 
-* Support storage of blocks on a RADOS backend
+* Support storage of blocks on a RADOS backend, for Archipelago
 * Rewritten support for public URLs, with admin-selectable length
 
 Tools
 -----
 
 * Extend snf-burnin to include testing of Pithos functionality
-

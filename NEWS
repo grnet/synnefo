@@ -60,6 +60,10 @@ Cyclades
   * Do not pass sensitive data as Ganeti OS parameters
   * Keep sensitive data in memory caches (memcached) and
     never allow them to hit the disk
+* Display additional backend information in helpdesk machines list
+* Allow helpdesk users to search for an account using a known machine id
+* Helpdesk actions are now logged using the synnefo's common loggin 
+  infrastructure
 
 Pithos
 ------

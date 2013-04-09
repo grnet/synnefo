@@ -35,8 +35,8 @@ BACKEND_FREE_VERSIONING = getattr(settings, 'PITHOS_BACKEND_FREE_VERSIONING', Tr
 # Default backend pool size
 BACKEND_POOL_SIZE = getattr(settings, 'PITHOS_BACKEND_POOL_SIZE', 5)
 
-# Update object checksums when using hashmaps.
-UPDATE_MD5 = getattr(settings, 'PITHOS_UPDATE_MD5', True)
+# Update object checksums.
+UPDATE_MD5 = getattr(settings, 'PITHOS_UPDATE_MD5', False)
 
 # Service Token acquired by identity provider.
 SERVICE_TOKEN = getattr(settings, 'PITHOS_SERVICE_TOKEN', '')

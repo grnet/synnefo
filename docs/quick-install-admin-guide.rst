@@ -906,6 +906,11 @@ you are not logged in. The ``PITHOS_UI_FEEDBACK_URL`` option points at the
 pithos+ feedback form. Astakos already provides a generic feedback form for all
 services, so we use this one.
 
+The ``PITHOS_UPDATE_MD5`` option by default disables the computation of the
+object checksums. This results to improved performance during object uploading.
+However, if compatibility with the OpenStack Object Storage API is important
+then it should be changed to ``True``.
+
 Then edit ``/etc/synnefo/20-snf-pithos-webclient-cloudbar.conf``, to connect the
 pithos+ web UI with the astakos web UI (through the top cloudbar):
 

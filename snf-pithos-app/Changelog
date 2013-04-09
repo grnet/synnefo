@@ -4,6 +4,7 @@ Changelog
 v0.14.0
 ------
 * settings *PITHOS_BACKEND_POOL_SIZE*
+* setting *PITHOS_UPDATE_MD5* is set to False by default
 
 v0.13.0
 ------

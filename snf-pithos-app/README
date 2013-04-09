@@ -45,7 +45,7 @@ PITHOS_BACKEND_QUOTA             50 GB (50 * 1024 ** 3)                         
 PITHOS_BACKEND_VERSIONING        auto                                                               Default versioning policy for containers
 PITHOS_BACKEND_FREE_VERSIONING   True                                                               Default versioning debit policy (default free)
 PITHOS_BACKEND_POOL_SIZE         5                                                                  Default backend pool size
-PITHOS_UPDATE_MD5                True                                                               Update object checksums when using hashmaps
+PITHOS_UPDATE_MD5                False                                                               Update object checksums
 PITHOS_SERVICE_TOKEN             ''                                                                 Service token acquired by the identity provider (astakos)
 PITHOS_RADOS_STORAGE             False                                                              Enables or disables secondary Pithos storage on RADOS
 PITHOS_RADOS_POOL_BLOCKS         None                                                               RADOS pool to be used for block storage

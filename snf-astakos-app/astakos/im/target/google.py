@@ -73,9 +73,6 @@ signature_method = oauth.SignatureMethod_HMAC_SHA1()
 OAUTH_CONSUMER_KEY = settings.GOOGLE_CLIENT_ID
 OAUTH_CONSUMER_SECRET = settings.GOOGLE_SECRET
 
-consumer = oauth.Consumer(key=OAUTH_CONSUMER_KEY, secret=OAUTH_CONSUMER_SECRET)
-client = oauth.Client(consumer)
-
 token_scope = 'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email'
 authenticate_url = 'https://accounts.google.com/o/oauth2/auth'
 access_token_url = 'https://www.googleapis.com/oauth2/v1/tokeninfo'
@@ -84,9 +81,10 @@ request_token_url = 'https://accounts.google.com/o/oauth2/token'
 
 def get_redirect_uri():
     return "%s%s" % (settings.BASEURL,
-                   reverse('astakos.im.target.google.authenticated'))
+                     reverse('astakos.im.target.google.authenticated'))
 
-@requires_auth_provider('google', login=True)
+
+@requires_auth_provider('google')
 @require_http_methods(["GET", "POST"])
 def login(request):
     init_third_party_session(request)
@@ -96,7 +94,8 @@ def login(request):
         'redirect_uri': get_redirect_uri(),
         'client_id': settings.GOOGLE_CLIENT_ID
     }
-    force_login = request.GET.get('force_login', False)
+    force_login = request.GET.get('force_login', request.GET.get('from_login',
+                                                                 True))
     if force_login:
         params['approval_prompt'] = 'force'
 
@@ -110,7 +109,7 @@ def login(request):
     return HttpResponseRedirect(url)
 
 
-@requires_auth_provider('google', login=True)
+@requires_auth_provider('google')
 @require_http_methods(["GET", "POST"])
 def authenticated(
     request,
@@ -123,6 +122,10 @@ def authenticated(
 
     # TODO: Handle errors, e.g. error=access_denied
     try:
+        consumer = oauth.Consumer(key=OAUTH_CONSUMER_KEY,
+                                  secret=OAUTH_CONSUMER_SECRET)
+        client = oauth.Client(consumer)
+
         code = request.GET.get('code', None)
         params = {
             'code': code,
@@ -136,26 +139,27 @@ def authenticated(
                                        body=urllib.urlencode(params))
         token = json.loads(content).get('access_token', None)
 
-        resp, content = client.request("%s?access_token=%s" % (access_token_url,
-                                                               token) , "GET")
+        resp, content = client.request("%s?access_token=%s" %
+                                       (access_token_url, token), "GET")
         access_token_data = json.loads(content)
-    except Exception, e:
-        messages.error(request, 'Invalid Google response. Please contact support')
+    except Exception:
+        messages.error(request, _('Invalid Google response. Please '
+                                  'contact support'))
         return HttpResponseRedirect(reverse('edit_profile'))
 
     if not access_token_data.get('user_id', None):
-        messages.error(request, 'Invalid Google response. Please contact support')
+        messages.error(request, _('Invalid Google response. Please contact '
+                                  ' support'))
         return HttpResponseRedirect(reverse('edit_profile'))
 
     userid = access_token_data['user_id']
-    username = access_token_data.get('email', None)
     provider_info = access_token_data
     affiliation = 'Google.com'
 
     try:
         return handle_third_party_login(request, 'google', userid,
                                         provider_info, affiliation)
-    except AstakosUser.DoesNotExist, e:
+    except AstakosUser.DoesNotExist:
         third_party_key = get_pending_key(request)
         user_info = {'affiliation': affiliation}
         return handle_third_party_signup(request, userid, 'google',
@@ -164,4 +168,3 @@ def authenticated(
                                          user_info,
                                          template,
                                          extra_context)
-

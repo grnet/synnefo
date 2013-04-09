@@ -37,7 +37,7 @@ from urlparse import urlparse
 from urllib import unquote
 from django.utils import simplejson as json
 
-from synnefo.lib.pool.http import get_http_connection
+from synnefo.lib.pool.http import PooledHTTPConnection
 
 logger = logging.getLogger(__name__)
 
@@ -64,11 +64,13 @@ def retry(howmany):
     return execute
 
 
-def call(token, url, headers={}, body=None, method='GET'):
+def call(token, url, headers=None, body=None, method='GET'):
     p = urlparse(url)
 
     kwargs = {}
-    kwargs['headers'] = headers
+    if headers is None:
+        headers = {}
+    kwargs["headers"] = headers
     kwargs['headers']['X-Auth-Token'] = token
     if body:
         kwargs['body'] = body
@@ -76,8 +78,7 @@ def call(token, url, headers={}, body=None, method='GET'):
                                      'application/octet-stream')
     kwargs['headers'].setdefault('content-length', len(body) if body else 0)
 
-    conn = get_http_connection(p.netloc, p.scheme)
-    try:
+    with PooledHTTPConnection(p.netloc, p.scheme) as conn:
         conn.request(method, p.path + '?' + p.query, **kwargs)
         response = conn.getresponse()
         headers = response.getheaders()
@@ -85,8 +86,6 @@ def call(token, url, headers={}, body=None, method='GET'):
         length = response.getheader('content-length', None)
         data = response.read(length)
         status = int(response.status)
-    finally:
-        conn.close()
 
     if status < 200 or status >= 300:
         raise Exception(data, status)

@@ -57,6 +57,9 @@
           <dt>Build backendjobstatus</dt><dd>{{ vm.backendjobstatus }}</dd>
           <dt>Build percentage</dt><dd>{{ vm.buildpercentage }}</dd>
         </dl>
+        <dl class="dl-horizontal well">
+          {{ vm|backend_info|safe }}
+        </dl>
       </div>
       <div class="tab-pane" id="network{{ vm.pk }}">
         <table class="table well">
@@ -94,7 +97,7 @@
       </div>
     </div>        
   </div>
-  <div class="vm-suspend-form {% if vm.suspended %}suspended{% endif %}">
-    {% include "helpdesk/_suspend.html" %}
+  <div class="vm-actions clearfix">
+    {% include "helpdesk/_vm_actions.html" %}
   </div>
 </div>

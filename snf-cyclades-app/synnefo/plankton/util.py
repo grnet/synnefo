@@ -42,6 +42,7 @@ from django.http import (HttpResponse, HttpResponseBadRequest,
 from synnefo.lib.astakos import get_user
 from synnefo.plankton.backend import (ImageBackend, BackendException,
                                       NotAllowedError)
+from synnefo.api import faults
 
 log = getLogger('synnefo.plankton')
 
@@ -63,6 +64,8 @@ def plankton_method(method):
                 return HttpResponseBadRequest(message)
             except NotAllowedError:
                 return HttpResponseForbidden()
+            except faults.Fault, fault:
+                return HttpResponse(status=fault.code)
             except Exception as e:
                 if settings.DEBUG:
                     message = format_exc(e)

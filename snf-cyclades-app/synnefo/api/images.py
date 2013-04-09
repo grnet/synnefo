@@ -206,7 +206,7 @@ def delete_image(request, image_id):
 
     log.info('delete_image %s', image_id)
     with image_backend(request.user_uniq) as backend:
-        backend.delete(image_id)
+        backend.unregister(image_id)
     log.info('User %s deleted image %s', request.user_uniq, image_id)
     return HttpResponse(status=204)
 

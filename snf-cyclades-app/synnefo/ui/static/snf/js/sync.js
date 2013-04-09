@@ -183,7 +183,8 @@
             }
 
             if (handler_type == "beforeSend") {
-                arguments[0].setRequestHeader('X-Auth-Token', synnefo.user.token);
+                arguments[0].setRequestHeader('X-Auth-Token', 
+                                              synnefo.user.get_token());
             }
 
             // error with status code 0 in opera

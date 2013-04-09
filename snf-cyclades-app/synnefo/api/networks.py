@@ -164,33 +164,38 @@ def create_network(serials, request):
         req = util.get_request_dict(request)
         log.info('create_network %s', req)
 
+        user_id = request.user_uniq
         try:
             d = req['network']
             name = d['name']
-            # TODO: Fix this temp values:
-            subnet = d.get('cidr', '192.168.1.0/24')
-            subnet6 = d.get('cidr6', None)
-            gateway = d.get('gateway', None)
-            gateway6 = d.get('gateway6', None)
-            flavor = d.get('type', 'MAC_FILTERED')
-            public = d.get('public', False)
-            dhcp = d.get('dhcp', True)
-        except (KeyError, ValueError):
-            raise BadRequest('Malformed request.')
+        except KeyError:
+            raise BadRequest("Malformed request")
 
+        # Get and validate flavor. Flavors are still exposed as 'type' in the
+        # API.
+        flavor = d.get("type", None)
+        if flavor is None:
+            raise BadRequest("Missing request parameter 'type'")
+        elif flavor not in Network.FLAVORS.keys():
+            raise BadRequest("Invalid network type '%s'" % flavor)
+        elif flavor not in settings.API_ENABLED_NETWORK_FLAVORS:
+            raise Forbidden("Can not create network of type '%s'" % flavor)
+
+        public = d.get("public", False)
         if public:
-            raise Forbidden('Can not create a public network.')
+            raise Forbidden("Can not create a public network.")
 
-        if flavor not in Network.FLAVORS.keys():
-            raise BadRequest("Invalid network flavors %s" % flavor)
+        dhcp = d.get('dhcp', True)
 
-        if flavor not in settings.API_ENABLED_NETWORK_FLAVORS:
-            raise Forbidden("Can not create %s network" % flavor)
-
+        # Get and validate network parameters
+        subnet = d.get('cidr', '192.168.1.0/24')
+        subnet6 = d.get('cidr6', None)
+        gateway = d.get('gateway', None)
+        gateway6 = d.get('gateway6', None)
         # Check that user provided a valid subnet
         util.validate_network_params(subnet, gateway, subnet6, gateway6)
 
-        user_id = request.user_uniq
+        # Issue commission
         serial = quotas.issue_network_commission(user_id)
         serials.append(serial)
         # Make the commission accepted, since in the end of this

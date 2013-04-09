@@ -32,6 +32,8 @@
 # or implied, of GRNET S.A.
 
 import json
+import csv
+import functools
 from datetime import datetime
 from django.utils.timesince import timesince, timeuntil
 
@@ -115,7 +117,7 @@ def parse_filters(filter_by):
 
 
 def pprint_table(out, table, headers=None, output_format='pretty',
-                 separator=None):
+                 separator=None, vertical=False):
     """Print a pretty, aligned string representation of table.
 
     Works by finding out the max width of each column and padding to data
@@ -134,34 +136,48 @@ def pprint_table(out, table, headers=None, output_format='pretty',
         else:
             return str(obj)
 
-    headers = map(stringnify, headers)
+    if headers:
+        headers = map(stringnify, headers)
     table = [map(stringnify, row) for row in table]
 
     if output_format == "json":
+        assert(headers is not None), "json output format requires headers"
         table = [dict(zip(headers, row)) for row in table]
         out.write(json.dumps(table, indent=4))
         out.write("\n")
     elif output_format == "csv":
+        cw = csv.writer(out)
         if headers:
-            line = ",".join("\"%s\"" % uenc(v) for v in headers)
-            out.write(line + "\n")
-            for row in table:
-                line = ",".join("\"%s\"" % uenc(v) for v in row)
-                out.write(line + "\n")
+            table.insert(0, headers)
+        table = map(functools.partial(map, uenc), table)
+        cw.writerows(table)
     elif output_format == "pretty":
-        # Find out the max width of each column
-        widths = [max(map(len, col)) for col in zip(*([headers] + table))]
+        if vertical:
+            assert(len(table) == 1)
+            row = table[0]
+            max_key = max(map(len, headers))
+            max_val = max(map(len, row))
+            for row in table:
+                for (k, v) in zip(headers, row):
+                    k = uenc(k.ljust(max_key))
+                    v = uenc(v.ljust(max_val))
+                    out.write("%s: %s\n" % (k, v))
+        else:
+            # Find out the max width of each column
+            columns = [headers] + table if headers else table
+            widths = [max(map(len, col)) for col in zip(*(columns))]
 
-        t_length = sum(widths) + len(sep) * (len(widths) - 1)
-        if headers:
-            # pretty print the headers
-            line = sep.join(uenc(v.rjust(w)) for v, w in zip(headers, widths))
-            out.write(line + "\n")
-            out.write("-" * t_length + "\n")
+            t_length = sum(widths) + len(sep) * (len(widths) - 1)
+            if headers:
+                # pretty print the headers
+                line = sep.join(uenc(v.rjust(w))\
+                                for v, w in zip(headers, widths))
+                out.write(line + "\n")
+                out.write("-" * t_length + "\n")
 
-        # print the rest table
-        for row in table:
-            line = sep.join(uenc(v.rjust(w)) for v, w in zip(row, widths))
-            out.write(line + "\n")
+            # print the rest table
+            for row in table:
+                line = sep.join(uenc(v.rjust(w)) for v, w in zip(row, widths))
+                out.write(line + "\n")
     else:
         raise ValueError("Unknown output format '%s'" % output_format)

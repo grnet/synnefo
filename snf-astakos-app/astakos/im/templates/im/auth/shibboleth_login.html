@@ -1,6 +1,6 @@
 {% load astakos_tags %}
 <p>
-{{ master_auth_provider.get_primary_login_prompt_display }}
+{{ master_auth_provider.get_login_description_msg }}
 </p>
 <br />
 <a class="submit" href="{% provider_login_url master_auth_provider %}">ACADEMIC LOGIN</a>

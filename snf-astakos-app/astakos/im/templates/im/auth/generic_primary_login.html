@@ -1,0 +1,9 @@
+{% load astakos_tags %}
+<h2>
+{% if provider.get_login_description_msg %}
+<p>{{ provider.get_login_description_msg }}</p>
+<br />
+{% endif %}
+<a href="{% provider_login_url provider 1 %}">
+{{ provider.get_primary_login_prompt_msg|safe }}
+</a></h2>

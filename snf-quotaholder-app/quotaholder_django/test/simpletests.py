@@ -63,10 +63,10 @@ class QHAPITest(QHTestCase):
         self.client = self.rand_entity()
 
     @classmethod
-    def rand_name(self, exclude=[]):
+    def rand_name(self, exclude=None):
         for i in range(1,100):
             r = Name().random()
-            if r not in exclude:
+            if exclude is not None and r not in exclude:
                 exclude.append(r)
                 return r
         else:

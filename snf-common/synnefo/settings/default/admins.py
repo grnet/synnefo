@@ -3,10 +3,17 @@
 # Admin names and email addresses
 ##################################
 
+# List of people who receive application notifications, such as code error
+# tracebacks. It is recommended to have at least one entry in this list.
 ADMINS = (
     # ('Your Name', 'your_email@domain.com'),
 )
 
+# List of people to receive user feedback notifications.
+HELPDESK = ADMINS
+
+# A list of people to receive email notifications on some application events
+# (e.g. account creation/activation).
 MANAGERS = ADMINS
 
 # Email configuration
@@ -18,3 +25,6 @@ DEFAULT_CHARSET = 'utf-8'
 
 # Address to use for outgoing emails
 DEFAULT_FROM_EMAIL = "~okeanos <no-reply@grnet.gr>"
+
+# Email where users can contact for support
+CONTACT_EMAIL = "support@synnefo.org"

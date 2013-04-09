@@ -194,7 +194,11 @@ class SwissArmy():
         if public:
             # set destination object public
             fullpath = '/'.join([dest_account, dest_container, dest_name])
-            self.backend.permissions.public_set(fullpath)
+            self.backend.permissions.public_set(
+                fullpath,
+                self.backend.public_url_security,
+                self.backend.public_url_alphabet
+            )
 
     def _merge_account(self, src_account, dest_account, delete_src=False):
             # TODO: handle exceptions
@@ -303,7 +307,9 @@ class SwissArmy():
         return self.backend._lookup_account(account, create=True)
 
     def create_update_object(self, account, container, name, content_type,
-                             data, meta={}, permissions={}, request_user=None):
+                             data, meta=None, permissions=None, request_user=None):
+        meta = meta or {}
+        permissions = permissions or {}
         md5 = hashlib.md5()
         size = 0
         hashmap = []

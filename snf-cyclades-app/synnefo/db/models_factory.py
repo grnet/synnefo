@@ -192,3 +192,7 @@ class MacPrefixPoolTableFactory(factory.Factory):
     FACTORY_FOR = models.MacPrefixPoolTable
     size = 100
     base = 'aa:00:0'
+
+
+class QuotaHolderSerialFactory(factory.Factory):
+    FACTORY_FOR = models.QuotaHolderSerial

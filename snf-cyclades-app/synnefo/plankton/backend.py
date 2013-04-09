@@ -56,6 +56,7 @@ import warnings
 from operator import itemgetter
 from time import gmtime, strftime
 from functools import wraps, partial
+from synnefo.api import faults
 
 from django.conf import settings
 
@@ -284,7 +285,8 @@ class ImageBackend(object):
     @handle_backend_exceptions
     def add_user(self, image_id, user):
         image = self.get_image(image_id)
-        assert image, "Image not found"
+        if not image:
+            raise faults.ItemNotFound
 
         location = image['location']
         permissions = self._get_permissions(location)
@@ -297,7 +299,12 @@ class ImageBackend(object):
         self.backend.close()
 
     @handle_backend_exceptions
-    def delete(self, image_id):
+    def _delete(self, image_id):
+        """Delete an Image.
+
+        This method will delete the Image from the Storage backend.
+
+        """
         image = self.get_image(image_id)
         account, container, object = split_location(image['location'])
         self.backend.delete_object(self.user, account, container, object)
@@ -342,6 +349,7 @@ class ImageBackend(object):
             # To get shared images, we connect as shared_from member and
             # get the list shared by us
             user = shared_from
+            accounts = [self.user]
         else:
             user = None if public else self.user
             accounts = backend.list_accounts(user)
@@ -388,7 +396,8 @@ class ImageBackend(object):
 
     def list_users(self, image_id):
         image = self.get_image(image_id)
-        assert image, "Image not found"
+        if not image:
+            raise faults.ItemNotFound
 
         permissions = self._get_permissions(image['location'])
         return [user for user in permissions.get('read', []) if user != '*']
@@ -465,7 +474,8 @@ class ImageBackend(object):
     @handle_backend_exceptions
     def remove_user(self, image_id, user):
         image = self.get_image(image_id)
-        assert image, "Image not found"
+        if not image:
+            raise faults.ItemNotFound
 
         location = image['location']
         permissions = self._get_permissions(location)
@@ -478,7 +488,8 @@ class ImageBackend(object):
     @handle_backend_exceptions
     def replace_users(self, image_id, users):
         image = self.get_image(image_id)
-        assert image, "Image not found"
+        if not image:
+            raise faults.ItemNotFound
 
         location = image['location']
         permissions = self._get_permissions(location)
@@ -491,6 +502,8 @@ class ImageBackend(object):
     def update(self, image_id, params):
         image = self.get_image(image_id)
         assert image, "Image not found"
+        if not image:
+            raise faults.ItemNotFound
 
         location = image['location']
         is_public = params.pop('is_public', None)
@@ -510,3 +523,18 @@ class ImageBackend(object):
 
         self._update_meta(location, meta)
         return self.get_image(image_id)
+
+    @handle_backend_exceptions
+    def unregister(self, image_id):
+        """Unregister an image."""
+        image = self.get_image(image_id)
+        if not image:
+            raise faults.ItemNotFound
+
+        location = image["location"]
+        # Unregister the image by removing all metadata from domain
+        # 'PLANKTON_DOMAIN'
+        meta = self._get_meta(location)
+        for k in meta.keys():
+            meta[k] = ""
+        self._update_meta(location, meta, False)

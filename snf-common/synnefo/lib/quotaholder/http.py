@@ -32,7 +32,7 @@
 # or implied, of GRNET S.A.
 
 from synnefo.lib.commissioning import Callpoint, CallError
-from synnefo.lib.pool.http import get_http_connection
+from synnefo.lib.pool.http import PooledHTTPConnection
 from .api import QuotaholderAPI
 
 from json import loads as json_loads, dumps as json_dumps
@@ -70,17 +70,14 @@ class QuotaholderClient(Callpoint):
 
         logger.debug("%s %s\n%s\n<<<\n", method, path, json_data[:128])
         headers = {'X-Auth-Token': self._token}
-        conn = get_http_connection(scheme=self._scheme, netloc=self._netloc,
-                                   pool_size=self._poolsize)
-        try:
+        with PooledHTTPConnection(scheme=self._scheme,
+                                  netloc=self._netloc,
+                                  size=self._poolsize) as conn:
             conn.request(method, path, body=json_data, headers=headers)
             resp = conn.getresponse()
-        finally:
-            conn.close()
+            body = resp.read()
 
         logger.debug(">>>\nStatus: %s", resp.status)
-
-        body = resp.read()
         logger.debug("\n%s\n<<<\n", body[:128] if body else None)
 
         status = int(resp.status)

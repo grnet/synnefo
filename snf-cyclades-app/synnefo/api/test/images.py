@@ -187,7 +187,8 @@ class ImageAPITest(BaseAPITest):
     def test_delete_image(self, mimage):
         response = self.delete("/api/v1.1/images/42", "user")
         self.assertEqual(response.status_code, 204)
-        mimage.return_value.delete.assert_called_once_with('42')
+        mimage.return_value.unregister.assert_called_once_with('42')
+        mimage.return_value._delete.assert_not_called('42')
 
 
 @patch('synnefo.api.util.ImageBackend')

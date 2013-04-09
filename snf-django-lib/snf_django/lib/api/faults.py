@@ -35,7 +35,7 @@
 """Common API faults."""
 
 
-def camelCase(s):
+def camel_case(s):
     return s[0].lower() + s[1:]
 
 
@@ -44,7 +44,7 @@ class Fault(Exception):
         Exception.__init__(self, message, details, name)
         self.message = message
         self.details = details
-        self.name = name or camelCase(self.__class__.__name__)
+        self.name = name or camel_case(self.__class__.__name__)
 
 
 # 2xx
@@ -59,10 +59,6 @@ class BadRequest(Fault):
 
 class Unauthorized(Fault):
     code = 401
-
-
-class ResizeNotAllowed(Fault):
-    code = 403
 
 
 class Forbidden(Fault):

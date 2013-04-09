@@ -12,25 +12,47 @@ v0.13
 
 Release Date: UNRELEASED
 
+Synnefo-wide
+-------------
+
+* Support for pooling throughout Synnefo
+  * Pooled Django DB connections, Pithos backend connections, HTTP
+    connections using single `objpool` package
+* Improved management commands
+  * Unified codebase for output of tables in JSON, CSV
+
 Astakos
 -------
 
-* Example entry 1
-* Example entry 2
+* Support multiple authentication methods
+  * Classic (username/password), Shibboleth, LDAP/Active Directory,
+    Google, Twitter, LinkedIn
+  * Users can enable/disable auth methods, and switch between them
+* Introduce a UUID as a global identifier for users, throughout Synnefo
+  * The UUID remains constant as the user enables/disables login methods
+* Allow users to modify their email address freely
+* Per-user, per-resource accounting mechanism (quotaholder)
+* Full quota support, with per-user, per-resource quotas, based on quotaholder
+* Projects: Users can create and join Projects
+  * Projects grant extra resources to their members
+* UI Enhancements for quotas and projects
+  * distinct Usage tab, showing usage of individual resources
+  * Project management UI
+  * New Overview page
 
 Cyclades
 --------
 
-* Example entry 3
-* Example entry 4
+* Commission resources on quotaholder/Astakos
 
 Pithos
-------
-
-* Example entry 5
-* Example entry 6
-
-Other
 -----
 
-* Example entry 7
+* Support storage of blocks on a RADOS backend
+* Rewritten support for public URLs, with admin-selectable length
+
+Tools
+-----
+
+* Extend snf-burnin to include testing of Pithos functionality
+

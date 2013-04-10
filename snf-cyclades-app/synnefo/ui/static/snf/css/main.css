@@ -20,7 +20,7 @@ body {
     background: url("../images/body-bg.png") repeat-x #FFFFFF;
     text-align:center;
     font-size: 16px;
-    background-position: 0px 35px; 
+    background-position: 0px 34px; 
     overflow-y: scroll;
 }
 
@@ -32,6 +32,9 @@ pre {
     font-family: monospace;
 }
 
+h4.error .title {
+  color: red !important;
+}
 #okeanos-image {
     position: absolute;
     bottom: -0px;
@@ -4550,6 +4553,10 @@ table.list-machines .wave {
     width: 600px;
 }
 
+.overlay.overlay-createvm {
+    width: 640px;
+}
+
 .overlay a {
     color: #387693;
 }
@@ -4826,10 +4833,34 @@ table.list-machines .wave {
 }
 
 #loading-view {
-    width: 600px;
+    width: 400px;
     margin: 0 auto;
     padding: 20px 0;
     font-size: 0.8em;
+}
+
+#loading-view .header.off {
+    color: #829096;
+}
+
+#loading-view .header.on {
+    color: #fff;
+    background-image: url("../images/icons/indicators/small/progress.gif");
+}
+
+#loading-view .header.done {
+    color: #2B6681;
+    background-image: url("../images/check.png");
+}
+
+#loading-view .header {
+    font-size: 0.9em;
+    text-align: left;
+    border-bottom: 1px solid #578BA3;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    background-repeat: no-repeat;
+    background-position: 380px 0px;
 }
 
 #loading-view .header span {
@@ -5110,7 +5141,7 @@ table.list-machines .wave {
 }
 
 .overlay-createvm .container {
-    width: 584px !important;
+    width: 624px !important;
 }
 
 .create-vm .header-step.current {
@@ -5312,7 +5343,7 @@ table.list-machines .wave {
 .create-vm .create-step-cont {
     min-height: 250px;
     float: left;
-    width: 584px;
+    width: 624px;
 }
 
 .create-vm .create-controls {
@@ -5460,6 +5491,11 @@ table.list-machines .wave {
     filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#D1E7F0', endColorstr='#E8F4FA', GradientType=0);
 }
 
+.create-vm .flavor-opts-list.compact li {
+    padding: 7px 9px;
+    margin-right: 7px;
+}
+
 .create-vm .flavor-options-cont .flavor-options {
     margin-bottom: 2px;
 }
@@ -5468,6 +5504,12 @@ table.list-machines .wave {
 .create-vm .flavor-options .metric {
     font-size: 0.8em;
     margin-left: 2px;
+}
+
+.create-vm .flavor-options span.available {
+  font-size: 0.8em;
+  font-weight: normal;
+  margin-left: 5px;
 }
 
 .create-vm .flavor-options span.title {
@@ -5672,6 +5714,7 @@ table.list-machines .wave {
     font-size: 0.8em;
 }
 
+
 .create-vm .select-image.wide .images-info-cont .image-detail {
 }
 
@@ -5679,6 +5722,13 @@ table.list-machines .wave {
     height: 310px;
     overflow-y: scroll;
     padding-right: 3%;
+}
+
+.flavors-predefined-cont {
+
+}
+
+.flavor-options-cont {
 }
 
 .create-vm .select-image.wide .images-info-cont {
@@ -5802,7 +5852,7 @@ table.list-machines .wave {
 }
 
 #createvm-overlay-content {
-    width: 584px;
+    width: 624px;
     overflow: hidden;
 }
 
@@ -5864,7 +5914,7 @@ table.list-machines .wave {
 .create-vm .steps-history .steps-history-cont.current {
     background-color: #A1C8DB;
     color: #fff;
-    width: 428px;
+    width: 468px;
 }
 
 .create-vm .steps-history-step {

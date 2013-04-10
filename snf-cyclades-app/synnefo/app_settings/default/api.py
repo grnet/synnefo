@@ -24,24 +24,9 @@ POLL_LIMIT = 3600
 # Maximum allowed network size for private networks.
 MAX_CIDR_BLOCK = 22
 
-# The first mac prefix to use
-MAC_POOL_BASE = 'aa:00:0'
-MAC_POOL_LIMIT = 65536
-
-ENABLED_NETWORKS = ['PUBLIC_ROUTED',
-                    'PRIVATE_MAC_FILTERED',
-                    'PRIVATE_PHYSICAL_VLAN']
-                    # CUSTOM_ROUTED,
-                    # CUSTOM_BRIDGED,
-
-# Settings for PUBLIC_ROUTED network:
-# -----------------------------------
-# In this case VMCs act as routers that forward the traffic to/from VMs, based
-# on the defined routing table($PUBLIC_ROUTED_ROUTING_TABLE) and ip rules, that
-# exist in every node, implenting an IP-less routed and proxy-arp setup.
-# (This value is also hardcoded in fixture db/fixtures/initial_data.json)
-PUBLIC_ROUTED_ROUTING_TABLE = 'snf_public'
-PUBLIC_ROUTED_TAGS = ['ip-less-routed']
+# Default settings used by network flavors
+DEFAULT_MAC_PREFIX = 'aa:00:0'
+DEFAULT_BRIDGE = 'br0'
 
 # Boolean value indicating whether synnefo would hold a Pool and allocate IP
 # addresses. If this setting is set to False, IP pool management will be
@@ -49,37 +34,23 @@ PUBLIC_ROUTED_TAGS = ['ip-less-routed']
 # you must run network reconciliation after turning it to True.
 PUBLIC_USE_POOL = True
 
-# Settings for PRIVATE_MAC_FILTERED network:
+# Network flavors that users are allowed to create through API requests
+API_ENABLED_NETWORK_FLAVORS = ['MAC_FILTERED']
+
+# Settings for IP_LESS_ROUTED network:
+# -----------------------------------
+# In this case VMCs act as routers that forward the traffic to/from VMs, based
+# on the defined routing table($DEFAULT_ROUTING_TABLE) and ip rules, that
+# exist in every node, implenting an IP-less routed and proxy-arp setup.
+DEFAULT_ROUTING_TABLE = 'snf_public'
+
+# Settings for MAC_FILTERED network:
 # ------------------------------------------
 # All networks of this type are bridged to the same bridge. Isolation between
 # networks is achieved by assigning a unique MAC-prefix to each network and
 # filtering packets via ebtables.
-PRIVATE_MAC_FILTERED_BRIDGE = 'br0'
-PRIVATE_MAC_FILTERED_TAGS = ['private-filtered']
+DEFAULT_MAC_FILTERED_BRIDGE = 'prv0'
 
-# Settings for PRIVATE_PHSICAL_VLAN network:
-# ------------------------------------------
-# Each network of this type is mapped to an isolated physical VLAN, which must
-# be preconfigured in the backend. Each vlan corresponds to a bridge named
-# $PRIVATE_PHYSICAL_VLAN_PREFIX{1..$PRIVATE_PHYSICAL_VLAN_MAX_NUMBER} (e.g. prv5)
-# VirtualMachine's taps are eventually bridged to the corresponding bridge.
-PRIVATE_PHYSICAL_VLAN_BRIDGE_PREFIX = 'prv'
-# The max limit of physical vlan pool
-PRIVATE_PHYSICAL_VLAN_MAX_NUMBER = 100
-PRIVATE_PHYSICAL_VLAN_TAGS = ['physical-vlan']
-
-
-# Settings for CUSTOM_ROUTED:
-# ---------------------------
-# Same as PUBLIC_ROUTED but with custom values
-CUSTOM_ROUTED_ROUTING_TABLE = 'custom_routing_table'
-CUSTOM_ROUTED_TAGS = []
-
-# Settings for CUSTOM_BRIDGED:
-# ---------------------------
-# Same as PRIVATE_BRIDGED but with custom values
-CUSTOM_BRIDGED_BRIDGE = 'custom_bridge'
-CUSTOM_BRIDGED_TAGS = []
 
 # Firewalling
 GANETI_FIREWALL_ENABLED_TAG = 'synnefo:network:0:protected'
@@ -92,18 +63,14 @@ DEFAULT_FIREWALL_PROFILE = 'DISABLED'
 # our REST API would prefer to be explicit about trailing slashes
 APPEND_SLASH = False
 
-# Ignore disk size specified by flavor, always build the
-# machine with a 4GB (in the case of Windows: 14GB) disk.
-# This setting is helpful in development setups.
-#
-IGNORE_FLAVOR_DISK_SIZES = False
-
 # Fixed mapping of user VMs to a specific backend.
 # e.g. BACKEND_PER_USER = {'example@okeanos.grnet.gr': 2}
 BACKEND_PER_USER = {}
 
+# List of backend IDs used *only* for archipelago.
+ARCHIPELAGO_BACKENDS = []
+
 # Quota
-#
 # Maximum number of VMs a user is allowed to have.
 MAX_VMS_PER_USER = 3
 
@@ -151,3 +118,16 @@ ASTAKOS_URL = 'https://astakos.okeanos.grnet.gr/im/authenticate'
 # SECRET_ENCRYPTION_KEY may up to 32 bytes. Keys bigger than 32 bytes are not
 # supported.
 SECRET_ENCRYPTION_KEY= "Password Encryption Key"
+
+# Astakos service token
+# The token used for astakos service api calls (e.g. api to retrieve user email
+# using a user uuid)
+CYCLADES_ASTAKOS_SERVICE_TOKEN = ''
+
+# Astakos user_catalogs endpoint
+CYCLADES_USER_CATALOG_URL = 'https://<astakos domain>/user_catalogs'
+
+# Let cyclades proxy user specific api calls to astakos, via self served
+# endpoints. Set this to False if you deploy cyclades-app/astakos-app on the
+# same machine.
+CYCLADES_PROXY_USER_SERVICES = True

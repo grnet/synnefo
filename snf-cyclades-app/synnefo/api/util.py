@@ -32,8 +32,9 @@
 # or implied, of GRNET S.A.
 
 import datetime
+import ipaddr
 
-from base64 import b64encode
+from base64 import b64encode, b64decode
 from datetime import timedelta, tzinfo
 from functools import wraps
 from hashlib import sha256
@@ -57,14 +58,14 @@ from django.db.models import Q
 
 from synnefo.api.faults import (Fault, BadRequest, BuildInProgress,
                                 ItemNotFound, ServiceUnavailable, Unauthorized,
-                                BadMediaType, Forbidden)
+                                BadMediaType, Forbidden, OverLimit)
 from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
                                Network, BackendNetwork, NetworkInterface,
                                BridgePoolTable, MacPrefixPoolTable)
 from synnefo.db.pools import EmptyPool
 
 from synnefo.lib.astakos import get_user
-from synnefo.plankton.backend import ImageBackend
+from synnefo.plankton.backend import ImageBackend, NotAllowedError
 from synnefo.settings import MAX_CIDR_BLOCK
 
 
@@ -200,6 +201,19 @@ def get_image(image_id, user_id):
         backend.close()
 
 
+def get_image_dict(image_id, user_id):
+    image = {}
+    img = get_image(image_id, user_id)
+    properties = img.get('properties', {})
+    image['backend_id'] = img['location']
+    image['format'] = img['disk_format']
+    image['metadata'] = dict((key.upper(), val)
+                             for key, val in properties.items())
+    image['checksum'] = img['checksum']
+
+    return image
+
+
 def get_flavor(flavor_id, include_deleted=False):
     """Return a Flavor instance or raise ItemNotFound."""
 
@@ -226,6 +240,43 @@ def get_network(network_id, user_id, for_update=False):
         raise ItemNotFound('Network not found.')
 
 
+def validate_network_params(subnet, gateway=None, subnet6=None, gateway6=None):
+    try:
+        # Use strict option to not all subnets with host bits set
+        network = ipaddr.IPv4Network(subnet, strict=True)
+    except ValueError:
+        raise BadRequest("Invalid network IPv4 subnet")
+
+    # Check that network size is allowed!
+    if not validate_network_size(network.prefixlen):
+        raise OverLimit(message="Unsupported network size",
+                        details="Network mask must be in range (%s, 29]" %
+                                MAX_CIDR_BLOCK)
+
+    # Check that gateway belongs to network
+    if gateway:
+        try:
+            gateway = ipaddr.IPv4Address(gateway)
+        except ValueError:
+            raise BadRequest("Invalid network IPv4 gateway")
+        if not gateway in network:
+            raise BadRequest("Invalid network IPv4 gateway")
+
+    if subnet6:
+        try:
+            # Use strict option to not all subnets with host bits set
+            network6 = ipaddr.IPv6Network(subnet6, strict=True)
+        except ValueError:
+            raise BadRequest("Invalid network IPv6 subnet")
+        if gateway6:
+            try:
+                gateway6 = ipaddr.IPv6Address(gateway6)
+            except ValueError:
+                raise BadRequest("Invalid network IPv6 gateway")
+            if not gateway6 in network6:
+                raise BadRequest("Invalid network IPv6 gateway")
+
+
 def validate_network_size(cidr_block):
     """Return True if network size is allowed."""
     return cidr_block <= 29 and cidr_block > MAX_CIDR_BLOCK
@@ -240,6 +291,29 @@ def allocate_public_address(backend):
         except EmptyPool:
             pass
     return (None, None)
+
+
+def get_public_ip(backend):
+    """Reserve an IP from a public network.
+
+    This method should run inside a transaction.
+
+    """
+    address = None
+    if settings.PUBLIC_USE_POOL:
+        (network, address) = allocate_public_address(backend)
+    else:
+        for net in list(backend_public_networks(backend)):
+            pool = net.get_pool()
+            if not pool.empty():
+                address = 'pool'
+                network = net
+                break
+    if address is None:
+        log.error("Public networks of backend %s are full", backend)
+        raise OverLimit("Can not allocate IP for new machine."
+                        " Public networks are full.")
+    return (network, address)
 
 
 def backend_public_networks(backend):
@@ -282,7 +356,7 @@ def get_nic_from_index(vm, nic_index):
     matching_nics = vm.nics.filter(index=nic_index)
     matching_nics_len = len(matching_nics)
     if matching_nics_len < 1:
-        raise  ItemNotFound('NIC not found on VM')
+        raise ItemNotFound('NIC not found on VM')
     elif matching_nics_len > 1:
         raise BadMediaType('NIC index conflict on VM')
     nic = matching_nics[0]
@@ -343,10 +417,9 @@ def render_fault(request, fault):
     if request.serialization == 'xml':
         data = render_to_string('fault.xml', {'fault': fault})
     else:
-        d = {fault.name: {
-                'code': fault.code,
-                'message': fault.message,
-                'details': fault.details}}
+        d = {fault.name: {'code': fault.code,
+                          'message': fault.message,
+                          'details': fault.details}}
         data = json.dumps(d)
 
     resp = HttpResponse(data, status=fault.code)
@@ -408,6 +481,10 @@ def api_method(http_method=None, atom_allowed=False):
             except VirtualMachine.BuildingError:
                 fault = BuildInProgress('Server is being built.')
                 return render_fault(request, fault)
+            except NotAllowedError:
+                # Image Backend Unathorized
+                fault = Forbidden('Request not allowed.')
+                return render_fault(request, fault)
             except Fault, fault:
                 if fault.code >= 500:
                     log.exception('API fault')
@@ -424,24 +501,108 @@ def construct_nic_id(nic):
     return "-".join(["nic", unicode(nic.machine.id), unicode(nic.index)])
 
 
-def net_resources(net_type):
-    mac_prefix = settings.MAC_POOL_BASE
-    if net_type == 'PRIVATE_MAC_FILTERED':
-        link = settings.PRIVATE_MAC_FILTERED_BRIDGE
-        mac_pool = MacPrefixPoolTable.get_pool()
-        mac_prefix = mac_pool.get()
-        mac_pool.save()
-    elif net_type == 'PRIVATE_PHYSICAL_VLAN':
-        pool = BridgePoolTable.get_pool()
-        link = pool.get()
-        pool.save()
-    elif net_type == 'CUSTOM_ROUTED':
-        link = settings.CUSTOM_ROUTED_ROUTING_TABLE
-    elif net_type == 'CUSTOM_BRIDGED':
-        link = settings.CUSTOM_BRIDGED_BRIDGE
-    elif net_type == 'PUBLIC_ROUTED':
-        link = settings.PUBLIC_ROUTED_ROUTING_TABLE
-    else:
-        raise BadRequest('Unknown network type')
+def verify_personality(personality):
+    """Verify that a a list of personalities is well formed"""
+    if len(personality) > settings.MAX_PERSONALITY:
+        raise OverLimit("Maximum number of personalities"
+                        " exceeded")
+    for p in personality:
+        # Verify that personalities are well-formed
+        try:
+            assert isinstance(p, dict)
+            keys = set(p.keys())
+            allowed = set(['contents', 'group', 'mode', 'owner', 'path'])
+            assert keys.issubset(allowed)
+            contents = p['contents']
+            if len(contents) > settings.MAX_PERSONALITY_SIZE:
+                # No need to decode if contents already exceed limit
+                raise OverLimit("Maximum size of personality exceeded")
+            if len(b64decode(contents)) > settings.MAX_PERSONALITY_SIZE:
+                raise OverLimit("Maximum size of personality exceeded")
+        except AssertionError:
+            raise BadRequest("Malformed personality in request")
 
-    return link, mac_prefix
+
+def get_flavor_provider(flavor):
+    """Extract provider from disk template.
+
+    Provider for `ext` disk_template is encoded in the disk template
+    name, which is formed `ext_<provider_name>`. Provider is None
+    for all other disk templates.
+
+    """
+    disk_template = flavor.disk_template
+    provider = None
+    if disk_template.startswith("ext"):
+        disk_template, provider = disk_template.split("_", 1)
+    return disk_template, provider
+
+
+def values_from_flavor(flavor):
+    """Get Ganeti connectivity info from flavor type.
+
+    If link or mac_prefix equals to "pool", then the resources
+    are allocated from the corresponding Pools.
+
+    """
+    try:
+        flavor = Network.FLAVORS[flavor]
+    except KeyError:
+        raise BadRequest("Unknown network flavor")
+
+    mode = flavor.get("mode")
+
+    link = flavor.get("link")
+    if link == "pool":
+        link = allocate_resource("bridge")
+
+    mac_prefix = flavor.get("mac_prefix")
+    if mac_prefix == "pool":
+        mac_prefix = allocate_resource("mac_prefix")
+
+    tags = flavor.get("tags")
+
+    return mode, link, mac_prefix, tags
+
+
+def allocate_resource(res_type):
+    table = get_pool_table(res_type)
+    pool = table.get_pool()
+    value = pool.get()
+    pool.save()
+    return value
+
+
+def release_resource(res_type, value):
+    table = get_pool_table(res_type)
+    pool = table.get_pool()
+    pool.put(value)
+    pool.save()
+
+
+def get_pool_table(res_type):
+    if res_type == "bridge":
+        return BridgePoolTable
+    elif res_type == "mac_prefix":
+        return MacPrefixPoolTable
+    else:
+        raise Exception("Unknown resource type")
+
+
+def get_existing_users():
+    """
+    Retrieve user ids stored in cyclades user agnostic models.
+    """
+    # also check PublicKeys a user with no servers/networks exist
+    from synnefo.ui.userdata.models import PublicKeyPair
+    from synnefo.db.models import VirtualMachine, Network
+
+    keypairusernames = PublicKeyPair.objects.filter().values_list('user',
+                                                                  flat=True)
+    serverusernames = VirtualMachine.objects.filter().values_list('userid',
+                                                                  flat=True)
+    networkusernames = Network.objects.filter().values_list('userid',
+                                                            flat=True)
+
+    return set(list(keypairusernames) + list(serverusernames) +
+               list(networkusernames))

@@ -229,7 +229,7 @@
     // Image model
     models.Image = models.Model.extend({
         path: 'images',
-
+        
         get_size: function() {
             return parseInt(this.get('metadata') ? this.get('metadata').values.size : -1)
         },
@@ -261,6 +261,10 @@
             return this.get('owner') || _.keys(synnefo.config.system_images_owners)[0];
         },
 
+        get_owner_uuid: function() {
+            return this.get('owner_uuid');
+        },
+
         is_system_image: function() {
           var owner = this.get_owner();
           return _.include(_.keys(synnefo.config.system_images_owners), owner)
@@ -268,7 +272,7 @@
 
         owned_by: function(user) {
           if (!user) { user = synnefo.user }
-          return user.username == this.get_owner();
+          return user.get_username() == this.get('owner_uuid');
         },
 
         display_owner: function() {
@@ -315,7 +319,7 @@
         },
 
         is_public: function() {
-            return this.get('is_public') || true;
+            return this.get('is_public') == undefined ? true : this.get('is_public');
         },
 
         is_deleted: function() {
@@ -381,13 +385,25 @@
             return parseInt(this.get("disk") * 1000)
         },
 
+        get_ram_size: function() {
+            return parseInt(this.get("ram"))
+        },
+
         get_disk_template_info: function() {
             var info = snf.config.flavors_disk_templates_info[this.get("disk_template")];
             if (!info) {
                 info = { name: this.get("disk_template"), description:'' };
             }
             return info
-        }
+        },
+
+        disk_to_bytes: function() {
+            return parseInt(this.get("disk")) * 1024 * 1024 * 1024;
+        },
+
+        ram_to_bytes: function() {
+            return parseInt(this.get("ram")) * 1024 * 1024;
+        },
 
     });
     
@@ -599,6 +615,7 @@
 
                 var _success = _.bind(function() {
                     if (success) { success() };
+                    snf.ui.main.load_user_quotas();
                 }, this);
                 var _error = _.bind(function() {
                     this.set({state: previous_state, status: previous_status})
@@ -1423,7 +1440,9 @@
                                          function() {
                                              // set state after successful call
                                              self.state('DESTROY');
-                                             success.apply(this, arguments)
+                                             success.apply(this, arguments);
+                                             snf.ui.main.load_user_quotas();
+
                                          },  
                                          error, 'destroy', params);
                     break;
@@ -1672,7 +1691,11 @@
                 params.network.dhcp = false;
             }
             
-            return this.api_call(this.path, "create", params, callback);
+            var cb = function() {
+              callback();
+              snf.ui.main.load_user_quotas();
+            }
+            return this.api_call(this.path, "create", params, cb);
         },
 
         get_public: function(){
@@ -1740,8 +1763,48 @@
         },
 
         parse: function (resp, xhr) {
-            var data = _.map(resp.images.values, _.bind(this.parse_meta, this));
-            return resp.images.values;
+            var parsed = _.map(resp.images.values, _.bind(this.parse_meta, this));
+            parsed = this.fill_owners(parsed);
+            return parsed;
+        },
+
+        fill_owners: function(images) {
+            // do translate uuid->displayname if needed
+            // store display name in owner attribute for compatibility
+            var uuids = [];
+
+            var images = _.map(images, function(img, index) {
+                if (synnefo.config.translate_uuids) {
+                    uuids.push(img['owner']);
+                }
+                img['owner_uuid'] = img['owner'];
+                return img;
+            });
+            
+            if (uuids.length > 0) {
+                var handle_results = function(data) {
+                    _.each(images, function (img) {
+                        img['owner'] = data.uuid_catalog[img['owner_uuid']];
+                    });
+                }
+                // notice the async false
+                var uuid_map = this.translate_uuids(uuids, false, 
+                                                    handle_results)
+            }
+            return images;
+        },
+
+        translate_uuids: function(uuids, async, cb) {
+            var url = synnefo.config.user_catalog_url;
+            var data = JSON.stringify({'uuids': uuids});
+          
+            // post to user_catalogs api
+            snf.api.sync('create', undefined, {
+                url: url,
+                data: data,
+                async: async,
+                success:  cb
+            });
         },
 
         get_meta_key: function(img, key) {
@@ -1830,6 +1893,41 @@
 
         comparator: function(flv) {
             return flv.get("disk") * flv.get("cpu") * flv.get("ram");
+        },
+
+        unavailable_values_for_quotas: function(quotas, flavors) {
+            var flavors = flavors || this.active();
+            var index = {cpu:[], disk:[], ram:[]};
+            
+            _.each(flavors, function(el) {
+
+                var disk_available = quotas['disk'];
+                var disk_size = el.get_disk_size();
+                if (index.disk.indexOf(disk_size) == -1) {
+                  var disk = el.disk_to_bytes();
+                  if (disk > disk_available) {
+                    index.disk.push(disk_size);
+                  }
+                }
+
+                var ram_available = quotas['ram'];
+                var ram_size = el.get_ram_size();
+                if (index.ram.indexOf(ram_size) == -1) {
+                  var ram = el.ram_to_bytes();
+                  if (ram > ram_available) {
+                    index.ram.push(el.get('ram'))
+                  }
+                }
+
+                var cpu = el.get('cpu');
+                var cpu_available = quotas['cpu'];
+                if (index.ram.indexOf(cpu) == -1) {
+                  if (cpu > cpu_available) {
+                    index.cpu.push(el.get('cpu'))
+                  }
+                }
+            });
+            return index;
         },
 
         unavailable_values_for_image: function(img, flavors) {
@@ -2026,8 +2124,26 @@
             
             opts = {name: name, imageRef: image.id, flavorRef: flavor.id, metadata:meta}
             opts = _.extend(opts, extra);
+            
+            var cb = function(data) {
+              snf.ui.main.load_user_quotas();
+              callback(data);
+            }
 
-            this.api_call(this.path, "create", {'server': opts}, undefined, undefined, callback, {critical: true});
+            this.api_call(this.path, "create", {'server': opts}, undefined, undefined, cb, {critical: true});
+        },
+
+        load_missing_images: function(callback) {
+          var missing_ids = [];
+          this.each(function(el) {
+            var imgid = el.get("imageRef");
+            var existing = synnefo.storage.images.get(imgid);
+            if (!existing && missing_ids.indexOf(imgid) == -1) {
+                missing_ids.push(imgid);
+                synnefo.storage.images.update_unknown_id(imgid, function(){});
+            }
+          });
+          callback(missing_ids);
         }
 
     })

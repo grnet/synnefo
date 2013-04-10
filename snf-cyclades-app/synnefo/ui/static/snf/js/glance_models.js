@@ -38,6 +38,11 @@
             return val;
         },
 
+        get_owner: function() {
+            return this.get('owner') || 'Unknown';
+        },
+
+
         display_size: function() {
             return this.get_readable_size();
         },
@@ -122,7 +127,7 @@
 
         get_personal_images: function() {
             return _.filter(this.active(), function(i) { 
-                return i.get_owner() == snf.user.username 
+                return i.get_owner_uuid() == snf.user.get_username();
             });
         },
 
@@ -134,7 +139,7 @@
             return _.filter(this.active(), function(i){ 
                 return !_.include(_.keys(snf.config.system_images_owners), 
                                   i.get_owner()) && 
-                               i.get_owner() != snf.user.username &&
+                               i.get_owner_uuid() != snf.user.get_username() &&
                                !i.is_public();
             });
         }

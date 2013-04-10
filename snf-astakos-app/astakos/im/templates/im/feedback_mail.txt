@@ -1,0 +1,10 @@
+Feedback message:
+{{ message }}
+
+User info:
+UUID: {{ user.uuid }}
+Email: {{ user.email }}
+
+User application data:
+{{ data }}
+

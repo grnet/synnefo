@@ -1,0 +1,179 @@
+{% extends "im/account_base.html" %}
+
+{% load astakos_tags filters django_tables2 %}
+
+{% block page.body %}
+{% with object.project as project %}
+<div class="projects">
+  <h2>
+    <em>
+      {% if owner_mode or admin_mode %}
+        {% if project_view %}
+           PROJECT {{ object.project_state_display|upper }}
+          {% if object.has_pending_modifications %} -
+             <a href="{% url astakos.im.views.project_app object.last_pending.pk %}">
+               MODIFICATION PENDING</a>
+          {% else %}
+             <!-- note that pending modifications have priority -->
+             {% if object.has_denied_modifications %} -
+             <a href="{% url astakos.im.views.project_app object.last_denied.pk %}">
+               MODIFICATION DENIED</a>
+             {% endif %}
+          {% endif %}
+        {% else %}
+          <!-- application view -->
+           PROJECT {% if object.is_modification %} MODIFICATION {% endif %}
+          {{ object.state_display|upper }} 
+        {% endif %}
+
+      {% else %}
+        <!-- third user -->
+        <!-- assert in project view -->
+        <!-- there is always a project, may be deactivated -->
+        
+        {% if project.is_deactivated %}
+        PROJECT {{ project.state_display|upper }} -
+        {% endif %}
+        {{ mem_display|upper }} 
+      {% endif %}
+    </em>
+
+    <span>
+      {% if not project_view %}
+        <!-- owner mode only assumed -->
+        {% if object.is_modification %}
+          <span class="extratitle">MODIFICATION OF </span>
+        {% endif %}
+      {% endif %}
+      {{ object.name|upper }}
+    </span>
+    
+    {% block project.actions %}
+    {% include "im/projects/_project_detail_actions.html" %}
+    {% endblock %}
+  </h2>
+
+  <div class="full-dotted">
+    <h3>PROJECT DETAILS</h3>
+    <dl class="alt-style">
+      <dt>Name</dt>
+      <dd>{{ object.name }}&nbsp;</dd>
+      <dt>Homepage url</dt>
+      <dd>
+        {% if object.homepage%}
+        <a href="{{ object.homepage }}">{{ object.homepage }}</a>
+        {% else %}
+        Not set yet
+        {% endif %}
+      </dd>
+      <dt>Description</dt>
+      <dd>{{ object.description }}&nbsp;</dd>
+
+      {% if owner_mode %}
+        <dt>Application date</dt>
+        <dd>{{object.issue_date|date:"d/m/Y"}}&nbsp;</dd>
+      {% endif %}
+
+      <dt>Start date</dt>
+      <dd>{{object.start_date|date:"d/m/Y"}}&nbsp;</dd>
+      <dt>End Date</dt>
+      <dd>{{object.end_date|date:"d/m/Y"}}&nbsp;</dd>
+
+      {% if owner_mode %}
+        <dt>Comments</dt>
+        <dd>{{ object.comments }}&nbsp;</dd>
+      {% endif %}
+
+      <dt>Owner</dt>
+      <dd>
+        {% if owner_mode %}
+        Me
+        {% else %}
+        {{object.owner.realname}} {% if admin_mode or user.is_superuser %}({{object.owner.email}}){% endif %}
+        {% endif %}
+        &nbsp;
+      </dd>
+    </dl>
+  </div>
+
+  <div class="full-dotted">
+    <h3>MEMBERSHIP OPTIONS</h3>
+    <dl class="alt-style">
+      <dt>Max participants</dt>
+      <dd>
+        {% if object.limit_on_members_number %}
+        {{object.limit_on_members_number}}
+        {% else %}&nbsp;{% endif %}
+      </dd>
+      <dt>Member join policy</dt>
+      <dd>
+        {{ object.member_join_policy_display|title }}
+      </dd>
+      <dt>Member leave policy</dt>
+      <dd>
+        {{ object.member_leave_policy_display|title }}
+      </dd>
+    </dl>
+  </div>
+
+  <div class="full-dotted">
+    <h3>RESOURCES</h3>
+    {% if object.projectresourcegrant_set.all %}
+    <dl class="alt-style">
+      {% for rp in object.projectresourcegrant_set.all %}
+      <dt>{{rp.resource.pluralized_display_name}} per user</dt>
+      <dd>{{rp.display_member_capacity}}</dd>
+      {% empty %}
+      No resources
+      {% endfor %}
+    </dl>
+    {% else %}
+    <p>No resources</p>
+    {% endif %}
+  </div>
+
+  {% if owner_mode and project_view %}
+    {% if object.project.is_alive %}
+      <div class="full-dotted">
+        <h3>MEMBERS</h3>
+        {% if members_table %}
+        {% render_table members_table %}
+        {% endif %}
+      </div>
+
+      {% if not project.is_deactivated %}
+        <div class="full-dotted">
+          <form action="{% url project_detail object.chain %}#members-table"
+                method="post" class="withlabels" >
+            {% csrf_token %}
+            <h2>Enroll more members</h2>
+            {% with addmembers_form as form %}
+            {% include "im/form_render.html" %}
+            {% endwith %}
+            <div class="form-row submit">
+              <input type="submit" class="submit altcol" value="ADD MEMBERS" />
+            </div>
+          </form>
+        </div>
+      {% endif %}
+    {% endif %}
+
+    {% comment %}
+      {% if modifications_table %}
+      <div class="full-dotted">
+        <h3>MODIFICATION REQUESTS</h3>
+        {% render_table modifications_table %}
+      </div>
+      {% endif %}
+    {% endcomment %}
+
+  {% endif %}
+
+  <div class="full-dotted">
+    <p>
+      <a href="{% url project_list %}">&lt; Back to Projects</a>
+    </p>
+  </div>
+
+{% endwith %}
+{% endblock %}

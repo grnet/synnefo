@@ -33,6 +33,7 @@
 
 from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
+from synnefo.management.common import pprint_table
 
 from synnefo.db.models import Backend
 
@@ -42,11 +43,11 @@ class Command(BaseCommand):
 
     option_list = BaseCommand.option_list + (
         make_option('-c',
-            action='store_true',
-            dest='csv',
-            default=False,
-            help="Use pipes to separate values"),
-        )
+                    action='store_true',
+                    dest='csv',
+                    default=False,
+                    help="Use pipes to separate values"),
+    )
 
     def handle(self, *args, **options):
         if args:
@@ -54,27 +55,16 @@ class Command(BaseCommand):
 
         backends = Backend.objects.order_by('id')
 
-        labels = ('id', 'clustername', 'port', 'username', "VMs", 'drained',
-                  'offline')
-        columns = (3, 50, 5, 10, 4, 6, 6)
-
-        if not options['csv']:
-            line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
-            sep = '-' * len(line)
-            self.stdout.write(sep + '\n')
-            self.stdout.write(line + '\n')
-            self.stdout.write(sep + '\n')
-
+        headers = ('id', 'clustername', 'port', 'username', "VMs", 'drained',
+                   'offline')
+        table = []
         for backend in backends:
             id = str(backend.id)
             vms = str(backend.virtual_machines.filter(deleted=False).count())
             fields = (id, backend.clustername, str(backend.port),
                       backend.username, vms, str(backend.drained),
                       str(backend.offline))
+            table.append(fields)
 
-            if options['csv']:
-                line = '|'.join(fields)
-            else:
-                line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
-
-            self.stdout.write(line.encode('utf8') + '\n')
+        separator = " | " if options['csv'] else None
+        pprint_table(self.stdout, table, headers, separator)

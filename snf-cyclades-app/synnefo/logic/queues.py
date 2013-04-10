@@ -63,11 +63,11 @@ KEY_PROGRESS = 'ganeti.%s.event.progress' % prefix
 
 # BINDINGS:
 BINDINGS = (
-# Queue             # Exchange          # RouteKey    # Handler
-(QUEUE_OP,          EXCHANGE_GANETI,    KEY_OP,       'update_db'),
-(QUEUE_NETWORK,     EXCHANGE_GANETI,    KEY_NETWORK,  'update_network'),
-(QUEUE_NET,         EXCHANGE_GANETI,    KEY_NET,      'update_net'),
-(QUEUE_PROGRESS,    EXCHANGE_GANETI,    KEY_PROGRESS, 'update_build_progress'),
+    # Queue           # Exchange        # RouteKey    # Handler
+    (QUEUE_OP,        EXCHANGE_GANETI,  KEY_OP,       'update_db'),
+    (QUEUE_NETWORK,   EXCHANGE_GANETI,  KEY_NETWORK,  'update_network'),
+    (QUEUE_NET,       EXCHANGE_GANETI,  KEY_NET,      'update_net'),
+    (QUEUE_PROGRESS,  EXCHANGE_GANETI,  KEY_PROGRESS, 'update_build_progress'),
 )
 
 

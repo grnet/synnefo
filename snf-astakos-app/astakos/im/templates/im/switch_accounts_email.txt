@@ -1,0 +1,26 @@
+{% extends "im/email.txt" %}
+
+{% block gr_content %}
+Αγαπητέ/η {{ user.realname }},
+
+Λάβαμε ένα αίτημα σας για να συσχετίσετε τη συγκεκριμένη ηλεκτρονική διεύθυνση με τον shibboleth λογαριασμό σας στην υπηρεσία {{ site_name }} της ΕΔΕΤ κατά την alpha2 (δεύτερη δοκιμαστική) φάση λειτουργίας της.
+Ωστόσο το συγκεκριμένο email έχει συσχετισθεί με έναν τοπικό λογαρισμό.
+Για να μετατρέψετε τον ήδη υπάρχοντα λογαρισμό σε shibboleth λογαρισμό, χρησιμοποιήστε το σύνδεσμο: {{ url }}.
+Διαφορετικά αγνοήστε το παρόν email.
+
+{% endblock %}
+
+{% block gr_note %} {% endblock%}
+
+
+{% block en_content %}
+Dear {{ user.realname }},
+
+We received a request for associating the specific email address with a shibboleth account for GRNET's {{ site_name }} service for its alpha2 testing phase.
+However this email is already associated with another local account.
+In order to switch the existing account to a shibboleth one, use the link: {{ url }}.
+Otherwise, just ignore this email.
+
+{% endblock %}
+
+{% block en_note %} {% endblock%}

@@ -1,0 +1,13 @@
+Create the database:
+CREATE DATABASE astakos_test WITH ENCODING 'UTF8' LC_COLLATE='C' LC_CTYPE='C' TEMPLATE=template0;
+CREATE USER tester WITH PASSWORD 'test';
+GRANT ALL PRIVILEGES ON DATABASE astakos_test TO tester;
+
+Setup the database:
+./setup.sh
+
+Start server:
+./launch.sh
+
+Run test:
+./stress.py

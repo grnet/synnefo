@@ -33,7 +33,8 @@
 
 from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import get_backend, check_backend_credentials
+from synnefo.management.common import (get_backend, check_backend_credentials,
+                                       parse_bool)
 
 
 class Command(BaseCommand):
@@ -43,34 +44,30 @@ class Command(BaseCommand):
 
     option_list = BaseCommand.option_list + (
         make_option('--clustername',
-            dest='clustername',
-            help="Set backend's clustername"),
+                    dest='clustername',
+                    help="Set backend's clustername"),
         make_option('--port',
-            dest='port',
-            help="Set backend's port"),
+                    dest='port',
+                    help="Set backend's port"),
         make_option('--username',
-            dest='username',
-            help="Set backend'username"),
+                    dest='username',
+                    help="Set backend'username"),
         make_option('--password',
-            dest='password',
-            help="Set backend's password"),
+                    dest='password',
+                    help="Set backend's password"),
         make_option('--drained',
-            dest='drained',
-            action='store_true',
-            help="Set the backend as drained to exclude from allocation "\
-                 "operations"),
-        make_option('--no-drained',
-            dest='drained',
-            action='store_false'),
+                    dest='drained',
+                    choices=["True", "False"],
+                    metavar="True|False",
+                    help="Set the backend as drained to exclude from"
+                         " allocation operations"),
         make_option('--offline',
-            dest='offline',
-            action='store_true',
-            help="Set the backend as offline to not communicate in order "\
-                 "to avoid delays"),
-        make_option('--no-offline',
-            dest='offline',
-            action='store_false')
-        )
+                    dest='offline',
+                    choices=["True", "False"],
+                    metavar="True|False",
+                    help="Set the backend as offline to not communicate in"
+                         " order to avoid delays"),
+    )
 
     def handle(self, *args, **options):
         if len(args) != 1:
@@ -79,19 +76,21 @@ class Command(BaseCommand):
         backend = get_backend(args[0])
 
         # Ensure fields correspondence with options and Backend model
-        fields = ('clustername', 'port', 'username', 'password', 'drained',
-                  'offline')
+        credentials_changed = False
+        fields = ('clustername', 'port', 'username', 'password')
         for field in fields:
             value = options.get(field)
             if value is not None:
                 backend.__setattr__(field, value)
+                credentials_changed = True
 
-        credentials = ('clustername', 'port', 'username', 'password')
-        for field in credentials:
-            if options.get(field):
+        if credentials_changed:
                 # check credentials, if any of them changed!
                 check_backend_credentials(backend.clustername, backend.port,
                                           backend.username, backend.password)
-                return
+        if options['drained']:
+            backend.drained = parse_bool(options['drained'])
+        if options['offline']:
+            backend.offline = parse_bool(options['offline'])
 
         backend.save()

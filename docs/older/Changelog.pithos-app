@@ -1,0 +1,45 @@
+Changelog
+=========
+
+v0.13.0
+------
+* settings *PITHOS_PROXY_USER_SERVICES*, *PITHOS_USER_CATALOG_URL*, *PITHOS_USER_FEEDBACK_URL*,
+*PITHOS_USER_LOGIN_URL* should be set
+
+v0.10.0
+------
+* improve sql queries
+* support for bulk operations (MOVE/COPY/DELETE)
+* fix feedback response in case of URLError
+* propagate actual astakos response error codes instead of 401 (Unauthorized)
+* change backend to raise custom exceptions
+
+v0.9.7
+------
+* Delegate feedback post request to Identity Provider (astakos)
+  New setting *PITHOS_SERVICE_TOKEN* is required to be set for feedback to
+  work.
+* Change API calls to include public objects in shared by me
+
+v0.9.6
+------
+* Backend umask support
+
+v0.9.5
+------
+* Calculate the length of the last block properly.
+
+v0.9.4
+------
+* Solve OOS API compatibility problems.
+* add missing imports
+* Send sharing notifications.
+* Different queue message types use different keys.
+* Add dispatcher function for updating object checksums asynchronously.
+* Make checksum updates optional.
+
+v0.9.3
+------
+* Use cookie to get token when retrieving objects.
+* Typo fixes.
+

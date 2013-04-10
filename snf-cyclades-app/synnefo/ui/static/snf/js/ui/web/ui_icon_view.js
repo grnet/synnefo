@@ -559,9 +559,9 @@
 
             if (period == 'weekly' && type != 'bar') {
                 if (images.cpu)
-                    images.cpu = images.cpu.replace('.png', '-w.png')
+                    images.cpu = images.cpu.replace('cpu-ts', 'cpu-ts-w')
                 if (images.net)
-                    images.net = images.net.replace('.png', '-w.png')
+                    images.net = images.net.replace('net-ts', 'net-ts-w')
             }
             return images
         },

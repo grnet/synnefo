@@ -721,7 +721,12 @@
 
     snf.ui = _.extend(snf.ui, bb.Events);
     snf.ui.trigger_error = function(code, msg, error, extra) {
-        snf.ui.trigger("error", { code:code, msg:msg, error:error, extra:extra || {} })
+        if (msg.match(/Script error/i)) {
+          // No usefull information to display in this case. Plus it's an
+          // exception that probably doesn't affect our app.
+          return 0;
+        }
+        snf.ui.trigger("error", { code:code, msg:msg, error:error, extra:extra || {} });
     };
 
 })(this);

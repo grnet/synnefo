@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -43,20 +43,12 @@ from setuptools import setup, find_packages
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 
-try:
-    # try to update the version file
-    from synnefo.util.version import update_version
-    update_version('synnefo.versions', 'app', HERE)
-except ImportError:
-    pass
-
 from synnefo.versions.app import __version__
 
 # Package info
 VERSION = __version__
 README = open(os.path.join(HERE, 'README')).read()
-CHANGES = open(os.path.join(HERE, 'Changelog')).read()
-SHORT_DESCRIPTION = 'Package short description'
+SHORT_DESCRIPTION = 'Synnefo Compute, Network and Image component'
 
 PACKAGES_ROOT = '.'
 PACKAGES = find_packages(PACKAGES_ROOT)
@@ -75,10 +67,10 @@ INSTALL_REQUIRES = [
     'pycrypto>=2.1.0',
     'puka',
     'python-daemon>=1.5.5, <1.6',
-    'snf-common>0.11',
+    'snf-common',
     'vncauthproxy>=1.2',
     'south>=0.7, <=0.7.3',
-    'snf-pithos-backend>=0.11',
+    'snf-pithos-backend',
     'lockfile>=0.8, <0.9',
     'ipaddr',
     'setproctitle>=1.0.1',
@@ -92,6 +84,7 @@ EXTRAS_REQUIRES = {
 }
 
 TESTS_REQUIRES = [
+    'factory_boy'
 ]
 
 
@@ -189,15 +182,15 @@ setup(
     name = 'snf-cyclades-app',
     version = VERSION,
     license = 'BSD',
-    url = 'http://code.grnet.gr/',
+    url = 'http://www.synnefo.org/',
     description = SHORT_DESCRIPTION,
-    long_description=README + '\n\n' +  CHANGES,
+    long_description=README,
     classifiers = CLASSIFIERS,
 
-    author = 'Package author',
-    author_email = 'author@grnet.gr',
-    maintainer = 'Package maintainer',
-    maintainer_email = 'maintainer@grnet.gr',
+    author='Synnefo development team',
+    author_email='synnefo-devel@googlegroups.com',
+    maintainer='Synnefo development team',
+    maintainer_email='synnefo-devel@googlegroups.com',
 
     namespace_packages = ['synnefo', 'synnefo.versions'],
     packages = PACKAGES,
@@ -210,13 +203,11 @@ setup(
     extras_require = EXTRAS_REQUIRES,
     tests_require = TESTS_REQUIRES,
 
-    dependency_links = ['http://docs.dev.grnet.gr/pypi'],
+    dependency_links = ['http://www.synnefo.org/packages/pypi'],
 
     entry_points = {
      'console_scripts': [
          'snf-dispatcher = synnefo.logic.dispatcher:main',
-         'snf-admin = synnefo.tools.admin:main',
-         'snf-cloud = synnefo.tools.cloud:main',
          ],
      'synnefo': [
          'default_settings = synnefo.app_settings.default',
@@ -228,4 +219,3 @@ setup(
          ]
       },
 )
-

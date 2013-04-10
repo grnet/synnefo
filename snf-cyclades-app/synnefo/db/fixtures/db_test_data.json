@@ -1,5 +1,15 @@
 [
     {
+        "model": "db.Backend",
+        "pk": 30000,
+        "fields": {
+            "clustername": "test",
+            "port": 5080,
+            "drained": false,
+            "index": 3
+        }
+    },
+    {
         "model": "db.Flavor",
         "pk": 30000,
         "fields": {
@@ -18,6 +28,17 @@
         }
     },
     {
+       "model": "db.Network",
+       "pk": 30000,
+       "fields": {
+          "subnet": "10.0.0.0/24",
+          "gateway": "10.0.0.1",
+          "flavor": "IP_LESS_ROUTED",
+          "public": true,
+          "mac_prefix": "aa:00:0"
+       }
+    },
+    {
         "model": "db.VirtualMachine",
         "pk": 30000,
         "fields": {
@@ -27,7 +48,8 @@
             "imageid": "30000",
             "hostid": "HAL-9000",
             "flavor": 30000,
-            "operstate": "STARTED"
+            "operstate": "STARTED",
+            "backend": 30000
         }
     },
     {
@@ -40,7 +62,8 @@
             "imageid": "30000",
             "hostid": "HAL-9000",
             "flavor": 30000,
-            "operstate": "STOPPED"
+            "operstate": "STOPPED",
+            "backend": 30000
         }
     },
     {
@@ -53,7 +76,8 @@
             "imageid": "30000",
             "hostid": "HAL-9000",
             "flavor": 30000,
-            "operstate": "BUILD"
+            "operstate": "BUILD",
+            "backend": 30000
         }
     }
 ]

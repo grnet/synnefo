@@ -32,7 +32,7 @@ import datetime
 from django.utils import importlib
 
 from synnefo.settings import (BACKEND_ALLOCATOR_MODULE, BACKEND_REFRESH_MIN,
-                              BACKEND_PER_USER)
+                              BACKEND_PER_USER, ARCHIPELAGO_BACKENDS)
 from synnefo.db.models import Backend
 from synnefo.logic.backend import update_resources
 from synnefo.api.util import backend_public_networks
@@ -73,6 +73,9 @@ class BackendAllocator():
         # Get available backends
         available_backends = get_available_backends()
 
+        # Temporary fix for distinquishing archipelagos capable backends
+        available_backends = filter_archipelagos_backends(available_backends,
+                                                          flavor.disk_template)
         # Refresh backends, if needed
         refresh_backends_stats(available_backends)
 
@@ -101,11 +104,22 @@ def get_available_backends():
     return filter(lambda x: has_free_ip(x), backends)
 
 
+def filter_archipelagos_backends(available_backends, disk_template):
+    if disk_template.startswith("ext_"):
+        available_backends = filter(lambda x: x.id in ARCHIPELAGO_BACKENDS,
+                                    available_backends)
+    else:
+        available_backends = filter(lambda x: x.id not in ARCHIPELAGO_BACKENDS,
+                                    available_backends)
+    return available_backends
+
+
 def has_free_ip(backend):
     """Find if Backend has any free public IP."""
     for network in backend_public_networks(backend):
         if not network.get_pool().empty():
             return True
+    log.warning("No available network in backend %r", backend)
     return False
 
 

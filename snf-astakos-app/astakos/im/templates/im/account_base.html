@@ -1,0 +1,52 @@
+{% extends "im/base.html" %}
+
+{% load filters %}
+
+{% block page.title %}Profile{% endblock %}
+{% block page.nav.classes %}{% endblock %}
+
+{% block page.quicknav.items %}
+        <li class="{% block signup_class %}{% endblock %}">
+            <a href="{% url logout %}">LOGOUT</a>
+        </li>
+{% endblock %}
+
+{% block page.nav.items %}
+    {% for item in menu%}
+        <li {% if item|lookup:"is_active" %}class="active"{% endif %}>
+            <a href="{{ item|lookup:"url" }}">{{ item|lookup:"name" }}</a>
+        </li>
+    {% endfor %}
+{% endblock %}
+
+{% block page.subnav %}
+    {% for item in menu%}
+        {% if item|lookup:"is_active" %}
+            {% with item|lookup:"submenu" as submenu %}
+                {% for item in submenu %}
+                    <li {% if item|lookup:"is_active" %}class="active"{% endif %}>
+                        <a href="{{ item|lookup:"url" }}">{{ item|lookup:"name" }}</a>
+                    </li>
+                {% endfor %}
+            {% endwith %}
+        {% endif %}
+    {% endfor %}
+{%endblock %}
+
+{% block page.body %}
+<div class="{% block innerpage.class %}full{% endblock %}">
+{% block body %}{% endblock %}
+
+    {% if PROFILE_EXTRA_LINKS %}
+    <div class="buttons-list fixpos">
+        {% for href, name in PROFILE_EXTRA_LINKS.items %}
+            <a class="button back right" href="{{ href }}">{{ name }}</a>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+
+</div>
+
+{% endblock %}
+ 

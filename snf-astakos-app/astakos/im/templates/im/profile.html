@@ -1,0 +1,29 @@
+{% extends "im/account_base.html" %}
+
+{% block headjs %}
+	{{ block.super }}	 
+	<script src="{{ IM_STATIC_URL }}js/auth_methods.js"></script>	
+{% endblock %}	
+{% block body %}
+
+<h2>GENERAL INFO</h2>
+<form action={%url edit_profile %} method="post" class="withlabels hidden-submit">{% csrf_token %}
+    
+    {% with profile_form as form %}
+	{% include "im/form_render.html" %}
+    {% endwith %}
+
+    <div class="form-row submit">
+        <input type="hidden" name="next" value="{{ next }}">
+        <input type="hidden" name="auth" value="{{ user.auth_token }}">
+        <input type="submit" class="submit altcol" value="UPDATE" />
+    </div>
+</form>
+ 
+
+<div class="full-dotted">
+    {% include "im/profile_auth_methods.html" %}
+</div>
+
+ 
+{% endblock body %}

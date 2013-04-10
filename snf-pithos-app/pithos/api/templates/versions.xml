@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<object name="{{ object }}">
+  {% for version, version_timestamp in versions %}
+  <version timestamp="{{ version_timestamp }}">{{ version }}</version>
+  {% endfor %}
+</object>

@@ -1,4 +1,4 @@
-.. _cyclades-api-guide:
+.. _plankton-api-guide:
 
 Plankton API Guide
 ^^^^^^^^^^^^^^^^^^

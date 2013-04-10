@@ -55,6 +55,7 @@
     
     <script src="{{ SYNNEFO_JS_URL }}utils.js"></script>
     <script src="{{ SYNNEFO_JS_URL }}auth.js"></script>
+    <script src="{{ SYNNEFO_JS_URL }}quota.js"></script>
     <script src="{{ SYNNEFO_JS_URL }}sync.js"></script>
     <script src="{{ SYNNEFO_JS_URL }}models.js"></script>
     <script src="{{ SYNNEFO_JS_URL }}glance_models.js"></script>
@@ -85,7 +86,7 @@
             cookie_name: '{{ auth_cookie_name }}',
             login_url: '{{ login_redirect }}'
         });
-        if (!tmp_auth_client.get_user()) { tmp_auth_client.redirect_to_login(); }
+        if (!tmp_auth_client.get_token()) { tmp_auth_client.redirect_to_login(); }
     </script>
     {{ CLOUDBAR_CODE }}
     
@@ -335,45 +336,53 @@
         function positionBottomMessages() {
             var el = $("#multiple_actions_container");
         }
+        
+        
+        $(document).ready(function() {
+          // Footer position handlers
+          var footerHeight = 0;
+          var footerTop = 0;
+          var $footer = $("#footer-container");
+          function _positionFooter() {
 
-        $(window).bind("load", function() { 
-               var footerHeight = 0;
-               var footerTop = 0;
-               var $footer = $("#footer-container");
+              footerHeight = 80;
+              footerTop = ($(window).scrollTop()+$(window).height()-footerHeight)+"px";
+              if (($(document.body).height()+footerHeight) < $(window).height()) {
 
-               positionFooter();
-               function positionFooter() {
-                   footerHeight = 80;
-                   footerTop = ($(window).scrollTop()+$(window).height()-footerHeight)+"px";
-                   if (($(document.body).height()+footerHeight) < $(window).height()) {
-
-                       $footer.css({
-                            position: "absolute"
-                       }).css({
-                            top: footerTop
-                       })
-                    } else {
-                    
-                       if ($footer.css("position") == "static") {
-                           if ($(document.body).height() < $(window).height()) {    
-                               $footer.css({
-                                    position: "absolute"
-                               }).css({
-                                    top: footerTop
-                                })
-                            }
-                        } else {
-
-                           $footer.css({
-                               position: "static"
+                  $footer.css({
+                       position: "absolute"
+                  }).css({
+                       top: footerTop
+                  })
+               } else {
+               
+                  if ($footer.css("position") == "static") {
+                      if ($(document.body).height() < $(window).height()) {    
+                          $footer.css({
+                               position: "absolute"
+                          }).css({
+                               top: footerTop
                            })
                        }
-                   }
+                   } else {
 
-                   }
-               window.positionFooter = _.throttle(positionFooter, 100);
-               $(window).scroll(positionFooter).resize(positionFooter)
-        });
+                      $footer.css({
+                          position: "static"
+                      })
+                  }
+              }
+
+          }
+          _positionFooter();
+          window.positionFooter = _.throttle(_positionFooter, 100);
+          window.forcePositionFooter = _positionFooter;
+          $(window).scroll(window.positionFooter).resize(window.positionFooter)
+
+          $(window).bind("load", function() { 
+            _positionFooter();
+          });
+        
+        })
     </script>
 
     <!-- base notification for error/success reporting -->
@@ -548,10 +557,12 @@
         </div>
     </div>
     
-    <div id="loading-view" class="hidden">
-        <img src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" />
-        <div class="header">Loading <span>~okeanos</span></div>
-        <div class="info hidden"></div>
+    <div id="loading-view" class="hidden clearfix">
+        <div class="header clearfix images off">Loading images...<span></span></div>
+        <div class="header clearfix flavors off">Loading flavors...<span></span></div>
+        <div class="header clearfix vms off">Loading machines...<span></span></div>
+        <div class="header clearfix networks off">Loading networks...<span></span></div>
+        <div class="header clearfix layout off">Rendering layout...<span></span></div>
     </div>
     <div id="user_public_keys" class="overlay-content overlay-content hidden">
         {% include "userdata/public_keys_view.html" %}
@@ -627,6 +638,9 @@
             synnefo.config.login_redirect = '{{ login_redirect }}';
             synnefo.config.auth_cookie_name = '{{ auth_cookie_name }}';
 
+            synnefo.config.translate_uuids = {{ translate_uuids|safe }};
+            synnefo.config.user_catalog_url = {{ user_catalog_url|safe }};
+
             synnefo.config.network_suggested_subnets = {{ network_suggested_subnets|safe }};
             synnefo.config.network_available_types = {{ network_available_types|safe }};
             synnefo.config.network_allow_duplicate_vm_nics = {{ network_allow_duplicate_vm_nics }};
@@ -638,6 +652,7 @@
             synnefo.config.automatic_network_range_format = {{ automatic_network_range_format|safe }};
             synnefo.config.quota_url = '{% url synnefo.ui.views.user_quota %}';
             synnefo.config.custom_image_help_url = '{{ custom_image_help_url|safe }}';
+            synnefo.config.quotas_update_interval = {{ quotas_update_interval }};
             
             synnefo.auth_client = new synnefo.auth.AstakosClient({
                 login_url: synnefo.config.login_redirect,
@@ -650,8 +665,10 @@
             });
 
             // user config
-            synnefo.user = synnefo.auth_client.get_user();
-            if (!synnefo.user) { synnefo.auth_client.redirect_to_login(); }
+            synnefo.user = synnefo.auth_client;
+            if (!synnefo.user.get_token()) { 
+              synnefo.auth_client.redirect_to_login(); 
+            }
 
             $(".usermenu .username").text("options");
 

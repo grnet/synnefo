@@ -29,6 +29,7 @@
 #
 
 from django.core.management.base import BaseCommand, CommandError
+from optparse import make_option
 
 from synnefo.plankton.backend import ImageBackend
 from pprint import pprint
@@ -37,6 +38,12 @@ from pprint import pprint
 class Command(BaseCommand):
     args = "<image_id>"
     help = "Display available information about an image"
+    option_list = BaseCommand.option_list + (
+        make_option(
+            '--user-id',
+            dest='userid',
+            help="The ID of the owner of the Image."),
+    )
 
     def handle(self, *args, **options):
 
@@ -44,7 +51,8 @@ class Command(BaseCommand):
             raise CommandError("Please provide an image ID")
         image_id = args[0]
 
-        c = ImageBackend("")
+        userid = options['userid']
+        c = ImageBackend(userid) if userid else ImageBackend("")
 
         image = c.get_image(image_id)
         if not image:

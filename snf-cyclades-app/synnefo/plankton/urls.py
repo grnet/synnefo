@@ -39,11 +39,12 @@ from synnefo.plankton import views
 
 def demux(request):
     if request.method == 'GET':
-        return views.list_public_images(request)
+        return views.list_images(request)
     elif request.method == 'POST':
         return views.add_image(request)
     else:
         return HttpResponseNotAllowed(['GET', 'POST'])
+
 
 def demux_image(request, image_id):
     if request.method == 'GET':
@@ -55,6 +56,7 @@ def demux_image(request, image_id):
     else:
         return HttpResponseNotAllowed(['GET', 'HEAD', 'PUT'])
 
+
 def demux_image_members(request, image_id):
     if request.method == 'GET':
         return views.list_image_members(request, image_id)
@@ -62,6 +64,7 @@ def demux_image_members(request, image_id):
         return views.update_image_members(request, image_id)
     else:
         return HttpResponseNotAllowed(['GET', 'PUT'])
+
 
 def demux_members(request, image_id, member):
     if request.method == 'DELETE':
@@ -72,11 +75,12 @@ def demux_members(request, image_id, member):
         return HttpResponseNotAllowed(['DELETE', 'PUT'])
 
 
-urlpatterns = patterns('',
+urlpatterns = patterns(
+    '',
     (r'^images/$', demux),
-    (r'^images/detail$', views.list_public_images, {'detail': True}),
+    (r'^images/detail$', views.list_images, {'detail': True}),
     (r'^images/([\w-]+)$', demux_image),
     (r'^images/([\w-]+)/members$', demux_image_members),
-    (r'^images/([\w-]+)/members/(\w+)$', demux_members),
-    (r'^shared-images/(\w+)$', views.list_shared_images)
+    (r'^images/([\w-]+)/members/([\w@._-]+)$', demux_members),
+    (r'^shared-images/([\w@._-]+)$', views.list_shared_images)
 )

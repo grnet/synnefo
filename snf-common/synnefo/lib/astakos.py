@@ -31,74 +31,197 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from time import time, mktime
-from urlparse import urlparse
-from urllib import quote, unquote
+import logging
 
-from django.conf import settings
+from urlparse import urlparse
+from urllib import unquote
 from django.utils import simplejson as json
 
-from synnefo.lib.pool.http import get_http_connection
+from synnefo.lib.pool.http import PooledHTTPConnection
+
+logger = logging.getLogger(__name__)
 
 
-def authenticate(token, authentication_url='http://127.0.0.1:8000/im/authenticate'):
-    p = urlparse(authentication_url)
+def retry(howmany):
+    def execute(func):
+        def f(*args, **kwargs):
+            attempts = 0
+            while True:
+                try:
+                    return func(*args, **kwargs)
+                except Exception, e:
+                    is_last_attempt = attempts == howmany - 1
+                    if is_last_attempt:
+                        raise e
+                    if e.args:
+                        status = e.args[-1]
+                        # In case of Unauthorized response
+                        # or Not Found return directly
+                        if status == 401 or status == 404:
+                            raise e
+                    attempts += 1
+        return f
+    return execute
+
+
+def call(token, url, headers=None, body=None, method='GET'):
+    p = urlparse(url)
 
     kwargs = {}
-    kwargs['headers'] = {}
+    if headers is None:
+        headers = {}
+    kwargs["headers"] = headers
     kwargs['headers']['X-Auth-Token'] = token
-    kwargs['headers']['Content-Length'] = 0
+    if body:
+        kwargs['body'] = body
+        kwargs['headers'].setdefault('content-type',
+                                     'application/octet-stream')
+    kwargs['headers'].setdefault('content-length', len(body) if body else 0)
 
-    conn = get_http_connection(p.netloc, p.scheme)
-    try:
-        conn.request('GET', p.path, **kwargs)
+    with PooledHTTPConnection(p.netloc, p.scheme) as conn:
+        conn.request(method, p.path + '?' + p.query, **kwargs)
         response = conn.getresponse()
         headers = response.getheaders()
-        headers = dict((unquote(h), unquote(v)) for h,v in headers)
+        headers = dict((unquote(h), unquote(v)) for h, v in headers)
         length = response.getheader('content-length', None)
         data = response.read(length)
         status = int(response.status)
-    finally:
-        conn.close()
 
     if status < 200 or status >= 300:
         raise Exception(data, status)
-    
+
     return json.loads(data)
 
-def user_for_token(token, authentication_url, override_users):
+
+def authenticate(
+        token, authentication_url='http://127.0.0.1:8000/im/authenticate',
+        usage=False):
+
+    if usage:
+        authentication_url += "?usage=1"
+
+    return call(token, authentication_url)
+
+
+@retry(3)
+def get_displaynames(
+        token,
+        uuids,
+        url='http://127.0.0.1:8000/user_catalogs',
+        override_users={}):
+
+    if override_users:
+        return dict((u, u) for u in uuids)
+
+    try:
+        data = call(
+            token, url,  headers={'content-type': 'application/json'},
+            body=json.dumps({'uuids': uuids}), method='POST')
+    except:
+        raise
+    else:
+        return data.get('uuid_catalog')
+
+
+@retry(3)
+def get_uuids(
+        token,
+        displaynames,
+        url='http://127.0.0.1:8000/user_catalogs',
+        override_users={}):
+
+    if override_users:
+        return dict((u, u) for u in displaynames)
+
+    try:
+        data = call(
+            token, url, headers={'content-type': 'application/json'},
+            body=json.dumps({'displaynames': displaynames}), method='POST')
+    except:
+        raise
+    else:
+        return data.get('displayname_catalog')
+
+
+def get_user_uuid(
+        token,
+        displayname,
+        url='http://127.0.0.1:8000/user_catalogs',
+        override_users={}):
+
+    if not displayname:
+        return
+
+    displayname_dict = get_uuids(token, [displayname], url, override_users)
+    return displayname_dict.get(displayname)
+
+
+def get_displayname(
+        token,
+        uuid,
+        url='http://127.0.0.1:8000/user_catalogs',
+        override_users={}):
+
+    if not uuid:
+        return
+
+    uuid_dict = get_displaynames(token, [uuid], url, override_users)
+    return uuid_dict.get(uuid)
+
+
+def user_for_token(token, authentication_url, override_users, usage=False):
     if not token:
         return None
 
     if override_users:
         try:
-            return {'uniq': override_users[token].decode('utf8')}
+            return {'uuid': override_users[token].decode('utf8')}
         except:
             return None
 
     try:
-        return authenticate(token, authentication_url)
+        return authenticate(token, authentication_url, usage=usage)
     except Exception, e:
         # In case of Unauthorized response return None
         if e.args and e.args[-1] == 401:
             return None
         raise e
 
-def get_user(request, authentication_url='http://127.0.0.1:8000/im/authenticate', override_users={}, fallback_token=None):
+
+def get_user(
+        request,
+        authentication_url='http://127.0.0.1:8000/im/authenticate',
+        override_users={},
+        fallback_token=None,
+        usage=False):
     request.user = None
     request.user_uniq = None
 
     # Try to find token in a parameter or in a request header.
-    user = user_for_token(request.GET.get('X-Auth-Token'), authentication_url, override_users)
+    user = user_for_token(
+        request.GET.get('X-Auth-Token'), authentication_url, override_users,
+        usage=usage)
     if not user:
-        user = user_for_token(request.META.get('HTTP_X_AUTH_TOKEN'), authentication_url, override_users)
+        user = user_for_token(
+            request.META.get('HTTP_X_AUTH_TOKEN'),
+            authentication_url,
+            override_users,
+            usage=usage)
     if not user:
-        user = user_for_token(fallback_token, authentication_url, override_users)
+        user = user_for_token(
+            fallback_token, authentication_url, override_users,
+            usage=usage)
     if not user:
-        return
+        logger.warning("Cannot retrieve user details from %s",
+                       authentication_url)
+        return None
 
+    # use user uuid, instead of email, keep email/displayname reference
+    # to user_id
+    request.user_uniq = user['uuid']
     request.user = user
-    request.user_uniq = user['uniq']
+    request.user_id = user.get('displayname')
+    return user
 
 
 def get_token_from_cookie(request, cookiename):

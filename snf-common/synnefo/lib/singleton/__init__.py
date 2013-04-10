@@ -59,7 +59,7 @@ class ArgBasedSingletonMeta(type):
         ret = cls._singles[distinct]
 
         return ret
-        
+
 
 class ArgBasedSingleton(object):
     __metaclass__ = ArgBasedSingletonMeta

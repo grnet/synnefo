@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<object name="{{ object }}" bytes="{{ bytes }}" block_size="{{ block_size }}" block_hash="{{ block_hash }}">
+  {% for hash in hashes %}
+  <hash>{{ hash }}</hash>
+  {% endfor %}
+</object>

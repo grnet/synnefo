@@ -66,6 +66,7 @@ UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT = getattr(settings,
                                 3)
 UPDATE_INTERVAL_FAST = getattr(settings, "UI_UPDATE_INTERVAL_FAST", 2500)
 UPDATE_INTERVAL_MAX = getattr(settings, "UI_UPDATE_INTERVAL_MAX", 10000)
+QUOTAS_UPDATE_INTERVAL = getattr(settings, "UI_QUOTAS_UPDATE_INTERVAL", 10000)
 
 # predefined values settings
 VM_IMAGE_COMMON_METADATA = getattr(settings, "UI_VM_IMAGE_COMMON_METADATA", ["OS", "users"])
@@ -131,7 +132,7 @@ DIAGNOSTICS_UPDATE_INTERVAL = getattr(settings,
                 'UI_DIAGNOSTICS_UPDATE_INTERVAL', 2000)
 
 # network settings
-DEFAULT_NETWORK_TYPES = {'PRIVATE_MAC_FILTERED': 'mac-filtering'}
+DEFAULT_NETWORK_TYPES = {'MAC_FILTERED': 'mac-filtering', 'PHYSICAL_VLAN': 'physical-vlan'}
 NETWORK_TYPES = getattr(settings,
                     'UI_NETWORK_AVAILABLE_NETWORK_TYPES', DEFAULT_NETWORK_TYPES)
 DEFAULT_NETWORK_SUBNETS = ['10.0.0.0/24', '192.168.1.1/24']
@@ -148,6 +149,9 @@ AUTOMATIC_NETWORK_RANGE_FORMAT = getattr(settings,
                                         "192.168.%d.0/24").replace("%d", "{0}")
 GROUP_PUBLIC_NETWORKS = getattr(settings, 'UI_GROUP_PUBLIC_NETWORKS', True)
 GROUPED_PUBLIC_NETWORK_NAME = getattr(settings, 'UI_GROUPED_PUBLIC_NETWORK_NAME', 'Internet')
+
+USER_CATALOG_URL = getattr(settings, 'UI_USER_CATALOG_URL', '/user_catalogs')
+TRANSLATE_UUIDS = not getattr(settings, 'TRANSLATE_UUIDS', False)
 
 def template(name, request, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
@@ -172,6 +176,8 @@ def home(request):
                'request': request,
                'current_lang': get_language() or 'en',
                'compute_api_url': json.dumps(COMPUTE_API_URL),
+               'user_catalog_url': json.dumps(USER_CATALOG_URL),
+               'translate_uuids': json.dumps(TRANSLATE_UUIDS),
                 # update interval settings
                'update_interval': UPDATE_INTERVAL,
                'update_interval_increase': UPDATE_INTERVAL_INCREASE,
@@ -179,6 +185,7 @@ def home(request):
                'update_interval_fast': UPDATE_INTERVAL_FAST,
                'update_interval_max': UPDATE_INTERVAL_MAX,
                'changes_since_alignment': CHANGES_SINCE_ALIGNMENT,
+               'quotas_update_interval': QUOTAS_UPDATE_INTERVAL,
                 # additional settings
                'image_icons': IMAGE_ICONS,
                'logout_redirect': LOGOUT_URL,
@@ -229,17 +236,32 @@ def machines_console(request):
     return template('machines_console', request, context)
 
 def user_quota(request):
-    get_user(request, settings.ASTAKOS_URL)
-    vms_limit_for_user = \
-        settings.VMS_USER_QUOTA.get(request.user_uniq,
-                settings.MAX_VMS_PER_USER)
+    try:
+        get_user(request, settings.ASTAKOS_URL, usage=True)
+    except TypeError:
+        # astakos client backwards compatibility
+        get_user(request, settings.ASTAKOS_URL)
 
-    networks_limit_for_user = \
-        settings.NETWORKS_USER_QUOTA.get(request.user_uniq,
-                settings.MAX_NETWORKS_PER_USER)
-    return HttpResponse('{"vms_quota":%d, "networks_quota":%d}' % (vms_limit_for_user,
-                                                               networks_limit_for_user),
-                        mimetype="application/json")
+    if request.user and 'usage' in request.user:
+        response = json.dumps(request.user['usage'])
+    else:
+        # hmmm, old astakos ???
+        # try to mimic astakos response using cyclades quota settings
+        networks_limit_for_user = \
+            settings.NETWORKS_USER_QUOTA.get(request.user_uniq,
+                    settings.MAX_NETWORKS_PER_USER)
+        vms_limit_for_user = \
+            settings.VMS_USER_QUOTA.get(request.user_uniq,
+                    settings.MAX_NETWORKS_PER_USER)
+        usage = [{'name':'cyclades.vm',
+                  'maxValue': vms_limit_for_user
+                 },
+                 {'name':'cyclades.network.private',
+                  'maxValue': networks_limit_for_user
+                 }]
+        response = json.dumps(usage);
+
+    return HttpResponse(response, mimetype="application/json")
 
 def js_tests(request):
     return template('tests', request, {})
@@ -416,18 +438,21 @@ def feedback_submit(request):
 
     message = request.POST.get("feedback-msg")
     data = request.POST.get("feedback-data")
+    if isinstance(request.user.get('email'), list):
+        email = request.user.get('email')[0]
+    else:
+        email = request.user.get('email')
 
     # default to True (calls from error pages)
     allow_data_send = request.POST.get("feedback-submit-data", True)
 
     mail_subject = unicode(_("Feedback from synnefo application"))
 
-    mail_context = {'message': message, 'data': data,
+    mail_context = {'message': message, 'data': data, 'email': email,
                     'allow_data_send': allow_data_send, 'request': request}
     mail_content = render_to_string("feedback_mail.txt", mail_context)
 
     send_mail(mail_subject, mail_content, FEEDBACK_EMAIL_FROM,
-            dict(FEEDBACK_CONTACTS).values(), fail_silently=False)
+              dict(FEEDBACK_CONTACTS).values(), fail_silently=False)
 
-    return HttpResponse('{"status":"send"}');
-
+    return HttpResponse('{"status":"send"}')

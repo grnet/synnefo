@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -39,35 +38,32 @@ from setuptools import setup
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 
-try:
-    # try to update the version file
-    from synnefo.util.version import update_version
-    update_version('synnefo.versions', 'ganeti', HERE)
-except ImportError:
-    pass
-
 from synnefo.versions.ganeti import __version__
 
 setup(
     name="snf-cyclades-gtools",
     version=__version__,
-    description="Synnefo Ganeti supplementary tools",
-    author="Synnefo Development Team",
-    author_email="synnefo@lists.grnet.gr",
+    description="Synnefo tools for interaction with Ganeti",
+
+    url="http://www.synnefo.org/",
+    author='Synnefo development team',
+    author_email='synnefo-devel@googlegroups.com',
+    maintainer='Synnefo development team',
+    maintainer_email='synnefo-devel@googlegroups.com',
+
     license="BSD",
-    url="http://code.grnet.gr/projects/synnefo",
     namespace_packages=["synnefo", "synnefo.versions"],
     packages=["synnefo", "synnefo.ganeti", "synnefo.versions"],
-    dependency_links = ['http://docs.dev.grnet.gr/pypi'],
+    dependency_links=['http://www.synnefo.org/packages/pypi'],
     install_requires=[
-        'snf-common>0.9.14',
+        'snf-common',
         'python-daemon>=1.5.5',
         'pyinotify>=0.8.9',
         'puka',
         'python-prctl>=1.1.1',
         'setproctitle>=1.0.1'
     ],
-    entry_points = {
+    entry_points={
      'console_scripts': [
          'snf-ganeti-eventd = synnefo.ganeti.eventd:main',
          'snf-ganeti-hook = synnefo.ganeti.hook:main',

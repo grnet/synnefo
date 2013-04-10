@@ -47,15 +47,15 @@ class Command(BaseCommand):
                                # an SQL transaction
     option_list = BaseCommand.option_list + (
         make_option('--backend-id', dest='backend_id',
-                   help="Update statistics of only this backend"),
+                    help="Update statistics of only this backend"),
         make_option('--older-than', dest='older_than', metavar="MINUTES",
-                   help="Update only backends that have not been updated for\
-                   MINUTES. Set to 0 to force update."),
+                    help="Update only backends that have not been updated for\
+                    MINUTES. Set to 0 to force update."),
         make_option('--include-drained', dest='drained',
                     default=False,
                     action='store_true',
                     help="Also update statistics of drained backends")
-        )
+    )
 
     def handle(self, **options):
 

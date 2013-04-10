@@ -1,0 +1,23 @@
+.two-cols  .rt 									{ float:none; width:auto; margin-bottom:10px;}
+.two-cols  .lt									{ float:none; width:auto; }
+.container .navigation 							{ height:auto; margin-bottom:30px; } 
+.bg-wrap										{ background-position:-9999px -9999px; }
+.buttons-list.fixpos 							{ position:static;  }
+.buttons-list .button 							{ margin-left:0; }
+.container .lt-div								{ float:none; width:auto; }
+.container ul.options 							{ margin-bottom:30px; }
+.documentation .wrap							{ width:auto; }
+.documentation img								{ max-width:100%; }
+/* forms */
+form input.submit, form input[type="submit"] 	{ margin:0; }
+form .form-row .extra-link 						{ padding-top:0; }
+.faq .two-cols .rt								{ width:auto; }
+.faq .two-cols .lt								{ width:auto; }
+dl.alt-style									{ width:auto; }
+
+.stats ul li									{ background-image:url(../images/dots.jpg); padding-bottom:2em; }
+.stats .img-wrap								{ margin:0 auto;float:none;}
+.landing-page .dotted							{ background:url(../images/dots.jpg) repeat-x center bottom ; }
+#token-confirm									{ position:relative; top:8px; left:auto; }
+
+form.submit-inline .form-row.submit				{ position:static; margin-top:20px; }

@@ -1,0 +1,105 @@
+#!/usr/bin/env python
+
+# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# 
+# Redistribution and use in source and binary forms, with or
+# without modification, are permitted provided that the following
+# conditions are met:
+# 
+#   1. Redistributions of source code must retain the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer.
+# 
+#   2. Redistributions in binary form must reproduce the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer in the documentation and/or other materials
+#      provided with the distribution.
+# 
+# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
+# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# 
+# The views and conclusions contained in the software and
+# documentation are those of the authors and should not be
+# interpreted as representing official policies, either expressed
+# or implied, of GRNET S.A.
+
+from sqlalchemy import Table
+from sqlalchemy.sql import select
+
+from pithos.im.models import User
+
+from migrate import Migration
+
+import base64
+
+class UserMigration(Migration):
+    def __init__(self, db):
+        Migration.__init__(self, db)
+        self.gss_users = Table('gss_user', self.metadata, autoload=True)
+    
+    def execute(self):
+        for u in self.retrieve_users():
+            user = User()
+            user.pk = u['id']
+            user.uniq = u['username']
+            user.realname = u['name']
+            user.affiliation = u['homeorganization'] if u['homeorganization'] else ''
+            user.auth_token = base64.b64encode(u['authtoken'])
+            user.auth_token_created = u['creationdate']
+            user.auth_token_expires = u['authtokenexpirydate']
+            user.created = u['creationdate']
+            user.updated = u['modificationdate']
+            user.email = u['email']
+            user.active = 'ACTIVE' if u['active'] else 'SUSPENDED'
+            print '#', user
+            user.save(update_timestamps=False)
+            
+            #create user groups
+            for (owner, group, members) in self.retrieve_groups(u['username']):
+                self.backend.permissions.group_addmany(owner, group, members)
+    
+    
+    def retrieve_users(self):
+        s = self.gss_users.select()
+        rp = self.conn.execute(s)
+        user = rp.fetchone()
+        while user:
+            yield user
+            user = rp.fetchone()
+        rp.close()
+    
+    def retrieve_groups(self, owner):
+        gss_group = Table('gss_group', self.metadata, autoload=True)
+        gss_user = Table('gss_user', self.metadata, autoload=True)
+        group_user = Table('gss_group_gss_user', self.metadata, autoload=True)
+        j1 = gss_group.join(gss_user, gss_group.c.owner_id == gss_user.c.id)
+        j2 = group_user.join(gss_user, group_user.c.members_id == gss_user.c.id)
+        s = select([gss_group.c.id, gss_group.c.name, gss_user.c.username], from_obj=j1)
+        s = s.where(gss_user.c.username == owner)
+        rp = self.conn.execute(s)
+        gr = rp.fetchone()
+        while gr:
+            id, group, owner = gr
+            s = select([gss_user.c.username], from_obj=j2)
+            s = s.where(group_user.c.groupsmember_id == id)
+            rp2 = self.conn.execute(s)
+            members = rp2.fetchall()
+            rp2.close()
+            yield owner, group, (m[0] for m in members)
+            gr = rp.fetchone()
+        rp.close()
+
+if __name__ == "__main__":
+    db = ''
+    m = UserMigration(db)
+    m.execute()

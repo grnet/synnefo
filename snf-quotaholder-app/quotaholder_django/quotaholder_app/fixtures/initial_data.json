@@ -1,0 +1,10 @@
+[
+    {
+        "model": "quotaholder_app.entity",
+        "pk": "system",
+        "fields": {
+            "owner": "system",
+            "key": ""
+        }
+    }
+]

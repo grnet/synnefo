@@ -38,6 +38,8 @@ from optparse import make_option
 from sqlalchemy import func
 from sqlalchemy.sql import select, and_, or_
 
+from synnefo.util.number import strbigdec
+
 from pithos.api.util import get_backend
 from pithos.backends.modular import (
     CLUSTER_NORMAL, CLUSTER_HISTORY, CLUSTER_DELETED
@@ -46,9 +48,15 @@ clusters = (CLUSTER_NORMAL, CLUSTER_HISTORY, CLUSTER_DELETED)
 
 Statistics = namedtuple('Statistics', ('node', 'path', 'size', 'cluster'))
 
-ResetHoldingPayload = namedtuple('ResetHoldingPayload', (
-                'entity', 'resource', 'key',
-                'imported', 'exported', 'returned', 'released'))
+class ResetHoldingPayload(namedtuple('ResetHoldingPayload', (
+    'entity', 'resource', 'key', 'imported', 'exported', 'returned', 'released'
+))):
+    __slots__ = ()
+
+    def __str__(self):
+        return '%s: %s' % (self.entity, self.imported)
+
+
 ENTITY_KEY = '1'
 
 backend = get_backend()
@@ -59,6 +67,13 @@ table['statistics'] = backend.node.statistics
 table['policy'] = backend.node.policy
 conn = backend.node.conn
 
+def _retrieve_user_nodes(users=()):
+    s = select([table['nodes'].c.path, table['nodes'].c.node])
+    s = s.where(and_(table['nodes'].c.node != 0,
+                     table['nodes'].c.parent == 0))
+    if users:
+        s = s.where(table['nodes'].c.path.in_(users))
+    return conn.execute(s).fetchall()
 
 def _compute_statistics(nodes):
     statistics = []
@@ -90,7 +105,7 @@ def _compute_statistics(nodes):
 
 
 def _get_verified_usage(statistics):
-    """Verify statistics and set quotaholder account usage"""
+    """Verify statistics and set quotaholder user usage"""
     reset_holding = []
     append = reset_holding.append
     for item in statistics:
@@ -120,60 +135,63 @@ def _get_verified_usage(statistics):
 
 
 class Command(NoArgsCommand):
-    help = "Set quotaholder account usage"
+    help = "List and reset pithos usage"
 
     option_list = NoArgsCommand.option_list + (
-        make_option('-a',
-                    dest='accounts',
+        make_option('--list',
+                    dest='list',
+                    action="store_true",
+                    default=True,
+                    help="List usage for all or specified user"),
+        make_option('--reset',
+                    dest='reset',
+                    action="store_true",
+                    default=False,
+                    help="Reset usage for all or specified users"),
+        make_option('--user',
+                    dest='users',
                     action='append',
-                    help="Account to reset quota"),
+                    metavar='USER_UUID',
+                    help="Specify which users --list or --reset applies. This option can be repeated several times. If no user is specified --list or --reset will be applied globally."),
     )
 
     def handle_noargs(self, **options):
         try:
-            if not backend.quotaholder_enabled:
-                raise CommandError('Quotaholder component is not enabled')
+            if options['list']:
+                user_nodes = _retrieve_user_nodes(options['users'])
+                if not user_nodes:
+                    raise CommandError('No users found.')
+                statistics = _compute_statistics(user_nodes)
+                reset_holding = _get_verified_usage(statistics)
+                print '\n'.join([str(i) for i in reset_holding])
 
-            if not backend.quotaholder_url:
-                raise CommandError('Quotaholder component url is not set')
+            if options['reset']:
+                if not backend.quotaholder_enabled:
+                    raise CommandError('Quotaholder component is not enabled')
 
-            if not backend.quotaholder_token:
-                raise CommandError('Quotaholder component token is not set')
+                if not backend.quotaholder_url:
+                    raise CommandError('Quotaholder url is not set')
 
-            # retrieve account nodes
-            s = select([table['nodes'].c.path, table['nodes'].c.node])
-            s = s.where(and_(table['nodes'].c.node != 0,
-                             table['nodes'].c.parent == 0))
-            if options['accounts']:
-                s = s.where(table['nodes'].c.path.in_(options['accounts']))
-            account_nodes = conn.execute(s).fetchall()
+                if not backend.quotaholder_token:
+                    raise CommandError('Quotaholder token is not set')
 
-            if not account_nodes:
-                raise CommandError('No accounts found.')
+                while True:
+                    result = backend.quotaholder.reset_holding(
+                        context={},
+                        clientkey='pithos',
+                        reset_holding=reset_holding)
 
-            # compute account statistics
-            statistics = _compute_statistics(account_nodes)
+                    if not result:
+                        break
 
-            # verify and send usage
-            reset_holding = _get_verified_usage(statistics)
-
-            while True:
-                result = backend.quotaholder.reset_holding(
-                    context={},
-                    clientkey='pithos',
-                    reset_holding=reset_holding)
-
-                if not result:
-                    break
-
-                missing_entities = [reset_holding[x].entity for x in result]
-                self.stdout.write(
-                        'Unknown quotaholder accounts: %s\n' %
-                        ', '.join(missing_entities))
-                m = 'Retrying sending quota usage for the rest...\n'
-                self.stdout.write(m)
-                missing_indexes = set(result)
-                reset_holding = [x for i, x in enumerate(reset_holding)
-                                 if i not in missing_indexes]
+                    missing_entities = [reset_holding[x].entity for x in result]
+                    self.stdout.write(
+                            'Unknown quotaholder users: %s\n' %
+                            ', '.join(missing_entities))
+                    m = 'Retrying sending quota usage for the rest...\n'
+                    self.stdout.write(m)
+                    missing_indexes = set(result)
+                    reset_holding = [x for i, x in enumerate(reset_holding)
+                                     if i not in missing_indexes]
         finally:
             backend.close()

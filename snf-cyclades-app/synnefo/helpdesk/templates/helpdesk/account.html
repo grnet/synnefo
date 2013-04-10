@@ -75,6 +75,7 @@
 </div>
 {% else %}
 
-<p>{% if is_ip %}User with IP {% else %}Account {% endif %}<em>{{ account }}</em> does not exist in cyclades database</p>
+<p>{% if is_ip %}User with IP {% else %}{% if is_vm %}User with Virtual Machine
+{% else %}Account {% endif %}{% endif %}<em>{{ search_query }}</em> does not exist in cyclades database</p>
 {% endif %}
 {% endblock %}

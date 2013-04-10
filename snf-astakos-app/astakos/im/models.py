@@ -80,7 +80,7 @@ from astakos.im import auth_providers
 
 import astakos.im.messages as astakos_messages
 from astakos.im.lock import with_lock
-from .managers import ForUpdateManager
+from synnefo.lib.db.managers import ForUpdateManager
 
 from synnefo.lib.quotaholder.api import QH_PRACTICALLY_INFINITE
 from synnefo.lib.db.intdecimalfield import intDecimalField
@@ -1606,6 +1606,7 @@ class ProjectApplication(models.Model):
     comments                =   models.TextField(null=True, blank=True)
     issue_date              =   models.DateTimeField(auto_now_add=True)
     response_date           =   models.DateTimeField(null=True, blank=True)
+    response                =   models.TextField(null=True, blank=True)
 
     objects                 =   ProjectApplicationManager()
 
@@ -1629,6 +1630,11 @@ class ProjectApplication(models.Model):
         DISMISSED: _('Dismissed'),
         CANCELLED: _('Cancelled')
     }
+
+    @property
+    def log_display(self):
+        return "application %s (%s) for project %s" % (
+            self.id, self.name, self.chain)
 
     def get_project(self):
         try:
@@ -1775,7 +1781,7 @@ class ProjectApplication(models.Model):
     def can_deny(self):
         return self.state == self.PENDING
 
-    def deny(self):
+    def deny(self, reason):
         if not self.can_deny():
             m = _("cannot deny: application '%s' in state '%s'") % (
                     self.id, self.state)
@@ -1783,6 +1789,7 @@ class ProjectApplication(models.Model):
 
         self.state = self.DENIED
         self.response_date = datetime.now()
+        self.response = reason
         self.save()
 
     def can_approve(self):
@@ -2750,13 +2757,19 @@ def sync_users(users, sync=True, retries=3, retry_wait=1.0):
         astakos_initial = initial_quotas(users)
         astakos_quotas = users_quotas(users, astakos_initial)
 
+        diff_quotas = {}
+        for holder, local in astakos_quotas.iteritems():
+            registered = qh_limits.get(holder, None)
+            if local != registered:
+                diff_quotas[holder] = dict(local)
+
         if sync:
             r = register_users(nonexisting)
-            r = send_quotas(astakos_quotas)
+            r = send_quotas(diff_quotas)
 
         return (existing, nonexisting,
                 qh_limits, qh_counters,
-                astakos_initial, astakos_quotas, info)
+                astakos_initial, diff_quotas, info)
     return _sync_users(users, sync)
 
 

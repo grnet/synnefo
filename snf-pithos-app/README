@@ -27,37 +27,39 @@ Settings
 
 Configure in ``settings.py`` or a ``.conf`` file in ``/etc/synnefo`` if using snf-webproject.
 
-===============================  =================================================  ============================================================
-Name                             Default value                                      Description
-===============================  =================================================  ============================================================
-PITHOS_AUTHENTICATION_URL        \https://<astakos.host>/im/authenticate/           Astakos Authentication URL
-PITHOS_AUTHENTICATION_USERS      A dictionary of sample users (token to username)   Set to empty or None to disable
-PITHOS_ASTAKOS_COOKIE_NAME       _pithos2_a                                         Cookie name to retrieve fallback token
+===============================  ================================================================   ============================================================
+Name                             Default value                                                      Description
+===============================  ================================================================   ============================================================
+PITHOS_AUTHENTICATION_URL        \https://<astakos.host>/im/authenticate/                           Astakos Authentication URL
+PITHOS_AUTHENTICATION_USERS      A dictionary of sample users (token to username)                   Set to empty or None to disable
+PITHOS_ASTAKOS_COOKIE_NAME       _pithos2_a                                                         Cookie name to retrieve fallback token
 PITHOS_BACKEND_DB_MODULE         pithos.backends.lib.sqlalchemy
-PITHOS_BACKEND_DB_CONNECTION     sqlite:////tmp/pithos-backend.db                   SQLAlchemy database connection string
-PITHOS_BACKEND_BLOCK_MODULE      pithos.backends.lib.hashfiler
-PITHOS_BACKEND_BLOCK_PATH        /tmp/pithos-data/                                  Map and block storage path
-PITHOS_BACKEND_BLOCK_UMASK       0o022                                              Map and block storage umask
-PITHOS_BACKEND_QUEUE_MODULE      None                                               Use ``pithos.backends.lib.rabbitmq`` to enable
-PITHOS_BACKEND_QUEUE_HOSTS       None                                               Format like [``amqp://guest:guest@localhost:5672``
+PITHOS_BACKEND_DB_CONNECTION     sqlite:////tmp/pithos-backend.db                                   SQLAlchemy database connection string
+PITHOS_BACKEND_BLOCK_MODULE      pithos.backends.lib.hashfile
+PITHOS_BACKEND_BLOCK_PATH        /tmp/pithos-data/                                                  Map and block storage path
+PITHOS_BACKEND_BLOCK_UMASK       0o022                                                              Map and block storage umask
+PITHOS_BACKEND_QUEUE_MODULE      None                                                               Use ``pithos.backends.lib.rabbitmq`` to enable
+PITHOS_BACKEND_QUEUE_HOSTS       None                                                               Format like [``amqp://guest:guest@localhost:5672``
 PITHOS_BACKEND_QUEUE_EXCHANGE    pithos
-PITHOS_BACKEND_QUOTA             50 GB (50 * 1024 ** 3)                             Default user quota
-PITHOS_BACKEND_VERSIONING        auto                                               Default versioning policy for containers
-PITHOS_BACKEND_FREE_VERSIONING   True                                               Default versioning debit policy (default free)
-PITHOS_UPDATE_MD5                True                                               Update object checksums when using hashmaps
-PITHOS_SERVICE_TOKEN             ''                                                 Service token acquired by the identity provider (astakos)
-PITHOS_RADOS_STORAGE             False                                              Enables or disables secondary Pithos storage on RADOS
-PITHOS_RADOS_POOL_BLOCKS         None                                               RADOS pool to be used for block storage
-PITHOS_RADOS_POOL_MAPS           None                                               RADOS pool to be used for maps storage
-PITHOS_TRANSLATE_UUIDS           False                                              Enables a ui compatibility layer for the introduction of UUIDs in identity management.
-PITHOS_PROXY_USER_SERVICES       True                                               Whether to proxy user feedback and catalog services
-PITHOS_USER_CATALOG_URL          \https://<astakos.host>/user_catalogs/             Astakos User Catalog URL
-PITHOS_USER_FEEDBACK_URL         \https://<astakos.host>/feedback/                  Astakos User Feedback URL
-PITHOS_USER_LOGIN_URL            \https://<astakos.host>/login/                     Astakos User Login URL
-PITHOS_USE_QUOTAHOLDER           True                                               Enable quotaholder
-PITHOS_QUOTAHOLDER_URL           ''                                                 Quotaholder URL
-PITHOS_QUOTAHOLDER_TOKEN         ''                                                 Quotaholder token
-===============================  =================================================  ============================================================
+PITHOS_BACKEND_QUOTA             50 GB (50 * 1024 ** 3)                                             Default user quota
+PITHOS_BACKEND_VERSIONING        auto                                                               Default versioning policy for containers
+PITHOS_BACKEND_FREE_VERSIONING   True                                                               Default versioning debit policy (default free)
+PITHOS_UPDATE_MD5                True                                                               Update object checksums when using hashmaps
+PITHOS_SERVICE_TOKEN             ''                                                                 Service token acquired by the identity provider (astakos)
+PITHOS_RADOS_STORAGE             False                                                              Enables or disables secondary Pithos storage on RADOS
+PITHOS_RADOS_POOL_BLOCKS         None                                                               RADOS pool to be used for block storage
+PITHOS_RADOS_POOL_MAPS           None                                                               RADOS pool to be used for maps storage
+PITHOS_TRANSLATE_UUIDS           False                                                              Enables a ui compatibility layer for the introduction of UUIDs in identity management.
+PITHOS_PROXY_USER_SERVICES       True                                                               Whether to proxy user feedback and catalog services
+PITHOS_USER_CATALOG_URL          \https://<astakos.host>/user_catalogs/                             Astakos User Catalog URL
+PITHOS_USER_FEEDBACK_URL         \https://<astakos.host>/feedback/                                  Astakos User Feedback URL
+PITHOS_USER_LOGIN_URL            \https://<astakos.host>/login/                                     Astakos User Login URL
+PITHOS_USE_QUOTAHOLDER           True                                                               Enable quotaholder
+PITHOS_QUOTAHOLDER_URL           ''                                                                 Quotaholder URL
+PITHOS_QUOTAHOLDER_TOKEN         ''                                                                 Quotaholder token
+PITHOS_PUBLIC_URL_SECURITY       16                                                                 How many random bytes to use for constructing the URL of Pithos public files
+PITHOS_PUBLIC_URL_ALPHABET       '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'   The alphabet to use for constructing the URL of Pithos public files
+===============================  ================================================================   ============================================================
 
 To update checksums asynchronously, enable the queue, install snf-pithos-tools and use ``pithos-dispatcher``::
 

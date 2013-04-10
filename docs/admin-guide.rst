@@ -1166,15 +1166,15 @@ Synnefo Upgrade Notes
 .. toctree::
    :maxdepth: 1
 
-   upgrade-0.13
+   v0.12 -> v0.13 <upgrade/upgrade-0.13>
 
-Older Cyclades upgrade notes
+Older Cyclades Upgrade Notes
 ============================
 
 .. toctree::
    :maxdepth: 2
 
-   cyclades-upgrade
+   upgrade/cyclades-upgrade
 
 Changelog
 =========

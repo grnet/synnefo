@@ -46,7 +46,8 @@ from astakos.im.models import AstakosUser, Service, Resource
 from astakos.im.api.faults import (
     Fault, ItemNotFound, InternalServerError, BadRequest)
 from astakos.im.settings import (
-    INVITATIONS_ENABLED, COOKIE_NAME, EMAILCHANGE_ENABLED, QUOTAHOLDER_URL)
+    INVITATIONS_ENABLED, COOKIE_NAME, EMAILCHANGE_ENABLED, QUOTAHOLDER_URL,
+    PROJECTS_VISIBLE)
 from astakos.im.forms import FeedbackForm
 from astakos.im.functions import send_feedback as send_feedback_func
 
@@ -156,7 +157,7 @@ def get_menu(request, with_extra_links=False, with_signout=True):
             append(item(
                    url=absolute(request, reverse('resource_usage')),
                    name="Usage"))
-            if QUOTAHOLDER_URL:
+            if QUOTAHOLDER_URL and PROJECTS_VISIBLE:
                 append(item(
                        url=absolute(request, reverse('project_list')),
                        name="Projects"))

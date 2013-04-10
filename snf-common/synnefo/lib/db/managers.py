@@ -29,8 +29,8 @@
 
 from django.db import connections
 from django.db.models import Manager
-from django.db.models.query import QuerySet
-
+from django.db.models.query import QuerySet, EmptyQuerySet
+from django.db.models.sql.datastructures import EmptyResultSet
 
 class ForUpdateManager(Manager):
     """ Model manager implementing SELECT .. FOR UPDATE statement
@@ -82,6 +82,9 @@ def for_update(query):
     if 'sqlite' in connections[query.db].settings_dict['ENGINE'].lower():
         # SQLite  does not support FOR UPDATE
         return query
-    sql, params = query.query.get_compiler(query.db).as_sql()
+    try:
+        sql, params = query.query.get_compiler(query.db).as_sql()
+    except EmptyResultSet:
+        return EmptyQuerySet()
     return query.model._default_manager.raw(sql.rstrip() + ' FOR UPDATE',
                                             params)

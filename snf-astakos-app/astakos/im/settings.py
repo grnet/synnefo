@@ -298,7 +298,7 @@ RESOURCES_PRESENTATION_DATA = getattr(
                 'is_abbreviation':False,
                 'report_desc':'Private Networks',
                 'placeholder':'eg. 1',
-                'verbose_name':'private network'
+                'verbose_name':'Private Network'
             }
 
         },
@@ -334,6 +334,7 @@ ACTIVATION_REDIRECT_URL = getattr(settings,
                                   'ASTAKOS_ACTIVATION_REDIRECT_URL',
                                   "/im/landing")
 
+
 # If true, this enables a ui compatibility layer for the introduction of UUIDs
 # in identity management. WARNING: Setting to True will break your installation.
 TRANSLATE_UUIDS = getattr(settings, 'ASTAKOS_TRANSLATE_UUIDS', False)
@@ -345,7 +346,7 @@ PROJECT_ADMINS = getattr(settings, 'ASTAKOS_PROJECT_ADMINS', set())
 # This is to reduce the volume of applications
 # in case users abuse the mechanism.
 PENDING_APPLICATION_LIMIT = getattr(settings,
-                                    'ASTAKOS_PENDING_APPLICATION_LIMIT', 1)
+                                    'ASTAKOS_PENDING_APPLICATION_LIMIT', 0)
 
 # OAuth2 Twitter credentials.
 TWITTER_TOKEN = getattr(settings, 'ASTAKOS_TWITTER_TOKEN', '')
@@ -361,7 +362,9 @@ GOOGLE_SECRET = getattr(settings, 'ASTAKOS_GOOGLE_SECRET', '')
 LINKEDIN_TOKEN = getattr(settings, 'ASTAKOS_LINKEDIN_TOKEN', '')
 LINKEDIN_SECRET = getattr(settings, 'ASTAKOS_LINKEDIN_SECRET', '')
 
-# Where to redirect the user after successful login when no next parameter is
-# set
+# URL to redirect the user after successful login when no next parameter is set
 LOGIN_SUCCESS_URL = getattr(settings, 'ASTAKOS_LOGIN_SUCCESS_URL',
                             '/im/landing')
+
+# Whether or not to display projects in astakos menu
+PROJECTS_VISIBLE = getattr(settings, 'ASTAKOS_PROJECTS_VISIBLE', False)

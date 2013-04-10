@@ -33,6 +33,11 @@
 
 from dbworker import DBWorker
 
+from pithos.backends.random_word import get_random_word
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Public(DBWorker):
     """Paths can be marked as public."""
@@ -44,27 +49,46 @@ class Public(DBWorker):
         execute(""" create table if not exists public
                           ( public_id integer primary key autoincrement,
                             path      text not null,
-                            active    boolean not null default 1 ) """)
+                            active    boolean not null default 1,
+                            url       text) """)
         execute(""" create unique index if not exists idx_public_path
                     on public(path) """)
+        execute(""" create unique index if not exists idx_public_url
+                    on public(url) """)
 
-    def public_set(self, path):
-        q = "insert or ignore into public (path) values (?)"
+    def get_unique_url(self, public_url_security, public_url_alphabet):
+        l = public_url_security
+        while 1:
+            candidate = get_random_word(length=l, alphabet=public_url_alphabet)
+            if self.public_path(candidate) is None:
+                return candidate
+            l +=1
+
+    def public_set(self, path, public_url_security, public_url_alphabet):
+        q = "select public_id from public where path = ?"
         self.execute(q, (path,))
-        q = "update public set active = 1 where path = ?"
-        self.execute(q, (path,))
+        row = self.fetchone()
+
+        if not row:
+            url = self.get_unique_url(
+                public_url_security, public_url_alphabet
+            )
+            q = "insert into public(path, active, url) values(?, 1, ?)"
+            self.execute(q, (path, url))
+            logger.info('Public url: %s set for path: %s' % (url, path))
 
     def public_unset(self, path):
-        q = "update public set active = 0 where path = ?"
+        q = "delete from public where path = ?"
         self.execute(q, (path,))
+        logger.info('Public url unset for path: %s' % (path))
 
     def public_unset_bulk(self, paths):
         placeholders = ','.join('?' for path in paths)
-        q = "update public set active = 0 where path in (%s)" % placeholders
+        q = "delete from public where path in (%s)" % placeholders
         self.execute(q, paths)
 
     def public_get(self, path):
-        q = "select public_id from public where path = ? and active = 1"
+        q = "select url from public where path = ? and active = 1"
         self.execute(q, (path,))
         row = self.fetchone()
         if row:
@@ -72,12 +96,12 @@ class Public(DBWorker):
         return None
 
     def public_list(self, prefix):
-        q = "select path, public_id from public where path like ? escape '\\' and active = 1"
+        q = "select path, url from public where path like ? escape '\\' and active = 1"
         self.execute(q, (self.escape_like(prefix) + '%',))
         return self.fetchall()
 
     def public_path(self, public):
-        q = "select path from public where public_id = ? and active = 1"
+        q = "select path from public where url = ? and active = 1"
         self.execute(q, (public,))
         row = self.fetchone()
         if row:

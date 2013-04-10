@@ -547,7 +547,6 @@ def signup(request, template_name='im/signup.html', on_success='index', extra_co
                 return HttpResponseRedirect(reverse(on_success))
 
             except SendMailError, e:
-                logger.exception(e)
                 status = messages.ERROR
                 message = e.message
                 messages.error(request, message)
@@ -610,6 +609,7 @@ def feedback(request, template_name='im/feedback.html', email_template_name='im/
             try:
                 send_feedback(msg, data, request.user, email_template_name)
             except SendMailError, e:
+                message = e.message
                 messages.error(request, message)
             else:
                 message = _(astakos_messages.FEEDBACK_SENT)
@@ -1055,7 +1055,7 @@ def project_add(request):
 
     user = request.user
     reached, limit = reached_pending_application_limit(user.id)
-    if reached:
+    if not user.is_project_admin() and reached:
         m = _(astakos_messages.PENDING_APPLICATION_LIMIT_ADD) % limit
         messages.error(request, m)
         next = reverse('astakos.im.views.project_list')
@@ -1127,7 +1127,7 @@ def project_list(request):
         })
 
 
-@require_http_methods(["GET", "POST"])
+@require_http_methods(["POST"])
 @signed_terms_required
 @login_required
 @project_transaction_context()
@@ -1174,8 +1174,9 @@ def project_modify(request, application_id):
         m = _(astakos_messages.NOT_ALLOWED)
         raise PermissionDenied(m)
 
-    reached, limit = reached_pending_application_limit(user.id, app)
-    if reached:
+    owner_id = app.owner_id
+    reached, limit = reached_pending_application_limit(owner_id, app)
+    if not user.is_project_admin() and reached:
         m = _(astakos_messages.PENDING_APPLICATION_LIMIT_MODIFY) % limit
         messages.error(request, m)
         next = reverse('astakos.im.views.project_list')
@@ -1364,7 +1365,7 @@ def project_search(request):
           'table': table
         })
 
-@require_http_methods(["POST", "GET"])
+@require_http_methods(["POST"])
 @signed_terms_required
 @login_required
 @project_transaction_context(sync=True)
@@ -1392,7 +1393,7 @@ def project_join(request, chain_id, ctx=None):
     next = restrict_next(next, domain=COOKIE_DOMAIN)
     return redirect(next)
 
-@require_http_methods(["POST", "GET"])
+@require_http_methods(["POST"])
 @signed_terms_required
 @login_required
 @project_transaction_context(sync=True)
@@ -1520,7 +1521,7 @@ def project_reject_member(request, chain_id, user_id, ctx=None):
         messages.success(request, msg)
     return redirect(reverse('project_detail', args=(chain_id,)))
 
-@require_http_methods(["POST", "GET"])
+@require_http_methods(["POST"])
 @signed_terms_required
 @login_required
 @project_transaction_context(sync=True)
@@ -1539,11 +1540,15 @@ def project_app_approve(request, application_id, ctx=None):
     chain_id = get_related_project_id(application_id)
     return redirect(reverse('project_detail', args=(chain_id,)))
 
-@require_http_methods(["POST", "GET"])
+@require_http_methods(["POST"])
 @signed_terms_required
 @login_required
 @project_transaction_context()
 def project_app_deny(request, application_id, ctx=None):
+
+    reason = request.POST.get('reason', None)
+    if not reason:
+        reason = None
 
     if not request.user.is_project_admin():
         m = _(astakos_messages.NOT_ALLOWED)
@@ -1554,10 +1559,10 @@ def project_app_deny(request, application_id, ctx=None):
     except ProjectApplication.DoesNotExist:
         raise Http404
 
-    deny_application(application_id)
+    deny_application(application_id, reason=reason)
     return redirect(reverse('project_list'))
 
-@require_http_methods(["POST", "GET"])
+@require_http_methods(["POST"])
 @signed_terms_required
 @login_required
 @project_transaction_context()

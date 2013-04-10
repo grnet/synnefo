@@ -84,7 +84,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         return call_fn(**data)
 
-    def create_entity(self, context={}, create_entity=()):
+    def create_entity(self, context=None, create_entity=()):
         rejected = []
         append = rejected.append
 
@@ -107,7 +107,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             raise ReturnButFail(rejected)
         return rejected
 
-    def set_entity_key(self, context={}, set_entity_key=()):
+    def set_entity_key(self, context=None, set_entity_key=()):
         rejected = []
         append = rejected.append
 
@@ -125,7 +125,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             raise ReturnButFail(rejected)
         return rejected
 
-    def list_entities(self, context={}, entity=None, key=None):
+    def list_entities(self, context=None, entity=None, key=None):
         try:
             e = Entity.objects.get(entity=entity, key=key)
         except Entity.DoesNotExist:
@@ -136,7 +136,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         entities = [e.entity for e in children]
         return entities
 
-    def get_entity(self, context={}, get_entity=()):
+    def get_entity(self, context=None, get_entity=()):
         entities = []
         append = entities.append
 
@@ -154,7 +154,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         return entities
 
-    def get_limits(self, context={}, get_limits=()):
+    def get_limits(self, context=None, get_limits=()):
         limits = []
         append = limits.append
 
@@ -169,7 +169,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         return limits
 
-    def set_limits(self, context={}, set_limits=()):
+    def set_limits(self, context=None, set_limits=()):
 
         for (policy, quantity, capacity,
              import_limit, export_limit) in set_limits:
@@ -191,7 +191,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         return ()
 
-    def get_holding(self, context={}, get_holding=()):
+    def get_holding(self, context=None, get_holding=()):
         holdings = []
         append = holdings.append
 
@@ -222,7 +222,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                                        policy=p, flags=flags)
         return h
 
-    def set_holding(self, context={}, set_holding=()):
+    def set_holding(self, context=None, set_holding=()):
         rejected = []
         append = rejected.append
 
@@ -279,7 +279,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         h.releasing = released
         h.save()
 
-    def init_holding(self, context={}, init_holding=()):
+    def init_holding(self, context=None, init_holding=()):
         rejected = []
         append = rejected.append
 
@@ -311,7 +311,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             raise ReturnButFail(rejected)
         return rejected
 
-    def reset_holding(self, context={}, reset_holding=()):
+    def reset_holding(self, context=None, reset_holding=()):
         rejected = []
         append = rejected.append
 
@@ -377,7 +377,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         h.imported += amount
         h.save()
 
-    def release_holding(self, context={}, release_holding=()):
+    def release_holding(self, context=None, release_holding=()):
         rejected = []
         append = rejected.append
 
@@ -408,7 +408,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             raise ReturnButFail(rejected)
         return rejected
 
-    def list_resources(self, context={}, entity=None, key=None):
+    def list_resources(self, context=None, entity=None, key=None):
         try:
             e = Entity.objects.get(entity=entity)
         except Entity.DoesNotExist:
@@ -423,7 +423,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         resources = [h.resource for h in holdings]
         return resources
 
-    def list_holdings(self, context={}, list_holdings=()):
+    def list_holdings(self, context=None, list_holdings=()):
         rejected = []
         reject = rejected.append
         holdings_list = []
@@ -445,7 +445,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         return holdings_list, rejected
 
-    def get_quota(self, context={}, get_quota=()):
+    def get_quota(self, context=None, get_quota=()):
         quotas = []
         append = quotas.append
 
@@ -474,18 +474,16 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         return quotas
 
-    def set_quota(self, context={}, set_quota=()):
+    def set_quota(self, context=None, set_quota=()):
         rejected = []
         append = rejected.append
 
         q_holdings = Q()
         entities = []
         for (entity, resource, key, _, _, _, _, _) in set_quota:
-
-            q_holdings |= Q(entity=entity, resource=resource)
             entities.append(entity)
 
-        hs = Holding.objects.filter(q_holdings).select_for_update()
+        hs = Holding.objects.filter(entity__in=entities).select_for_update()
         holdings = {}
         for h in hs:
             holdings[(h.entity_id, h.resource)] = h
@@ -534,7 +532,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         return rejected
 
     def add_quota(self,
-                  context={}, clientkey=None, serial=None,
+                  context=None, clientkey=None, serial=None,
                   sub_quota=(), add_quota=()):
         rejected = []
         append = rejected.append
@@ -554,11 +552,9 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         q_holdings = Q()
         entities = []
         for (entity, resource, key, _, _, _, _) in sources:
-
-            q_holdings |= Q(entity=entity, resource=resource)
             entities.append(entity)
 
-        hs = Holding.objects.filter(q_holdings).select_for_update()
+        hs = Holding.objects.filter(entity__in=entities).select_for_update()
         holdings = {}
         for h in hs:
             holdings[(h.entity_id, h.resource)] = h
@@ -632,7 +628,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             CallSerial.objects.create(serial=serial, clientkey=clientkey)
         return rejected
 
-    def ack_serials(self, context={}, clientkey=None, serials=()):
+    def ack_serials(self, context=None, clientkey=None, serials=()):
         if clientkey is None:
             return
 
@@ -646,7 +642,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
                 pass
         return
 
-    def query_serials(self, context={}, clientkey=None, serials=()):
+    def query_serials(self, context=None, clientkey=None, serials=()):
         result = []
         append = result.append
 
@@ -667,7 +663,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         return result
 
     def issue_commission(self,
-                         context={},
+                         context=None,
                          clientkey=None,
                          target=None,
                          key=None,
@@ -884,7 +880,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         ProvisionLog.objects.create(**kwargs)
 
     def accept_commission(self,
-                          context={}, clientkey=None,
+                          context=None, clientkey=None,
                           serials=(), reason=''):
         log_time = now()
 
@@ -930,7 +926,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
         return
 
     def reject_commission(self,
-                          context={}, clientkey=None,
+                          context=None, clientkey=None,
                           serials=(), reason=''):
         log_time = now()
 
@@ -975,13 +971,13 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         return
 
-    def get_pending_commissions(self, context={}, clientkey=None):
+    def get_pending_commissions(self, context=None, clientkey=None):
         pending = Commission.objects.filter(clientkey=clientkey)
         pending_list = pending.values_list('serial', flat=True)
         return pending_list
 
     def resolve_pending_commissions(self,
-                                    context={}, clientkey=None,
+                                    context=None, clientkey=None,
                                     max_serial=None, accept_set=()):
         accept_set = set(accept_set)
         pending = self.get_pending_commissions(context=context,
@@ -1002,7 +998,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
 
         return
 
-    def release_entity(self, context={}, release_entity=()):
+    def release_entity(self, context=None, release_entity=()):
         rejected = []
         append = rejected.append
         for entity, key in release_entity:
@@ -1026,7 +1022,7 @@ class QuotaholderDjangoDBCallpoint(Callpoint):
             raise ReturnButFail(rejected)
         return rejected
 
-    def get_timeline(self, context={}, after="", before="Z", get_timeline=()):
+    def get_timeline(self, context=None, after="", before="Z", get_timeline=()):
         entity_set = set()
         e_add = entity_set.add
         resource_set = set()

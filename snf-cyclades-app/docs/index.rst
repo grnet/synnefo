@@ -103,6 +103,3 @@ settings, as managed by :ref:`snf-common <snf-common>`:
 
 .. todo:: make sure the file headers are included properly in documentation.
           If not change the :lines setting accordingly.
-
-
-.. include:: ../Changelog

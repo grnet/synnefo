@@ -43,6 +43,7 @@ from django.utils import simplejson as json
 from django.template.loader import render_to_string
 
 from astakosclient import AstakosClient
+from astakosclient.errors import AstakosClientException
 from django.conf import settings
 from snf_django.lib.api import faults
 
@@ -88,10 +89,15 @@ def api_method(http_method=None, token_required=True, user_required=True,
                 # Authenticate
                 if user_required:
                     assert(token_required), "Can not get user without token"
-                    astakos = AstakosClient(settings.ASTAKOS_URL,
-                                            use_pool=True,
-                                            logger=logger)
-                    user_info = astakos.get_user_info(token)
+                    try:
+                        astakos = AstakosClient(settings.ASTAKOS_URL,
+                                                use_pool=True,
+                                                logger=logger)
+                        user_info = astakos.get_user_info(token)
+                    except AstakosClientException as err:
+                        raise faults.Fault(message=err.message,
+                                           details=err.details,
+                                           code=err.status)
                     request.user_uniq = user_info["uuid"]
                     request.user = user_info
 

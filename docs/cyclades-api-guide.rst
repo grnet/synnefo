@@ -133,6 +133,8 @@ URI                 Method Cyclades OS Compute
 ================= =================================== ======== ==========
 Request Parameter Value                               Cyclades OS Compute
 ================= =================================== ======== ==========
+json              Respond in json                     default  **✘**
+xml               Respond in xml                      ✔        **✘**
 changes-since     Servers delete since that timestamp ✔        ✔
 image             Image reference                     **✘**    ✔
 flavor            VM flavor reference                 **✘**    ✔
@@ -141,6 +143,10 @@ status            Server status                       **✘**    ✔
 marker            Last list last ID                   **✘**    ✔
 limit             Page size                           **✘**    ✔
 ================= =================================== ======== ==========
+
+* **json** and **xml** parameters are mutually exclusive. If none supported, the response will be formated in json.
+
+* **changes-since** must be an ISO8601 date string
 
 |
 
@@ -159,7 +165,7 @@ Return Code                 Description
 304 (No servers since date) Can be returned if ``changes-since`` is given
 400 (Bad Request)           Invalid or malformed ``changes-since`` parameter
 401 (Unauthorized)          Missing or expired user token
-403 (Unauthorized)          User is not allowed to perform this operation
+403 (Forbidden)             User is not allowed to perform this operation
 500 (Internal Server Error) The request cannot be completed because of an internal error
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
@@ -167,24 +173,24 @@ Return Code                 Description
 
 The response data format is a list of servers, under the ``servers`` label. A server may have the fields presented bellow (only *id* and *name* if not a detail request)
 
-================ ====================== ======== ==========
-Name             Description            Cyclades OS Compute
-================ ====================== ======== ==========
-id               The server id          ✔        ✔
-name             The server name        ✔        ✔
-hostId           Server playground      empty    ✔
-created          Creation date          ✔        ✔
-updated          Creation date          ✔        ✔
-flavorRef        The flavor id          ✔        **✘**
-flavor           The flavor id          **✘**    ✔
-imageRef         The image id           ✔        **✘**
-image            The image id           **✘**    ✔
-progress         Build progress         ✔        ✔
-status           Server status          ✔        ✔
-attachments      Network interfaces     ✔        **✘**
-addresses        Network interfaces     **✘**    ✔
-metadata         Server custom metadata ✔        ✔
-================ ====================== ======== ==========
+================== ====================== ======== ==========
+Response Parameter Description            Cyclades OS Compute
+================== ====================== ======== ==========
+id                 The server id          ✔        ✔
+name               The server name        ✔        ✔
+hostId             Server playground      empty    ✔
+created            Creation date          ✔        ✔
+updated            Creation date          ✔        ✔
+flavorRef          The flavor id          ✔        **✘**
+flavor             The flavor id          **✘**    ✔
+imageRef           The image id           ✔        **✘**
+image              The image id           **✘**    ✔
+progress           Build progress         ✔        ✔
+status             Server status          ✔        ✔
+attachments        Network interfaces     ✔        **✘**
+addresses          Network interfaces     **✘**    ✔
+metadata           Server custom metadata ✔        ✔
+================== ====================== ======== ==========
 
 * **hostId** is not used in Cyclades, but is returned as an empty string for compatibility
 
@@ -296,18 +302,63 @@ VERIFY_RESIZE Waiting confirmation **✘**    ✔
 Get Server Stats
 ................
 
-**GET** /servers/*id*/stats
-
-**Normal Response Code**: 200
-
-**Error Response Codes**: computeFault (400, 500), serviceUnavailable (503),
-unauthorized (401), badRequest (400), itemNotFound (404), overLimit (413)
-
 This operation returns URLs to graphs showing CPU and Network statistics. A
 ``refresh`` attribute is returned as well that is the recommended refresh rate
-of the stats for the clients.
+of the stats for the clients. This operation is no longer documented in OS Compute v2.
 
-This operation does not require a request body.
+============================== ====== ======== ==========
+URI                            Method Cyclades OS Compute
+============================== ====== ======== ==========
+``/servers/<server-id>/stats`` GET    ✔        **✘**
+============================== ====== ======== ==========
+
+* **server-id** is the identifier of the virtual server
+
+|
+
+==============  =========================
+Request Header  Value                    
+==============  =========================
+X-Auth-Token    User authentication token
+==============  =========================
+
+|
+
+================= ===============
+Request Parameter Value          
+================= ===============
+json              Respond in json
+xml               Respond in xml 
+================= ===============
+
+* **json** and **xml** parameters are mutually exclusive. If none supported, the response will be formated in json.
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded
+400 (Bad Request)           Invalid server ID or Server deleted
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Administratively suspended server
+404 (Not Found)             Server not found
+500 (Internal Server Error) The request cannot be completed because of an internal error
+503 (Service Unavailable)   The server is not currently available
+=========================== =====================
+
+|
+
+================== ======================
+Response Parameter Description           
+================== ======================
+serverRef          Server ID
+refresh            Refresh frequency
+cpuBar             Latest CPU load graph URL
+cpuTimeSeries      CPU load / time graph URL
+netBar             Latest Network load graph URL
+netTimeSeries      Network load / time graph URL
+================== ======================
 
 **Example Get Server Stats Response: JSON**:
 

@@ -237,7 +237,7 @@ class UserCache(object):
         self.astakos_token = astakos_token
         self.astakos_url = astakos_url
         self.user_catalog_url = astakos_url.replace("im/authenticate",
-                                               "service/api/user_catalogs")
+                                                    "service/api/user_catalogs")
         self.users = {}
 
         self.split = split

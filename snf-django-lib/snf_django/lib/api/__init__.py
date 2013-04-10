@@ -197,8 +197,7 @@ def render_fault(request, fault):
     else:
         d = {fault.name: {"code": fault.code,
                           "message": fault.message,
-                          "details": fault.details}
-            }
+                          "details": fault.details}}
         data = json.dumps(d)
 
     response = HttpResponse(data, status=fault.code)

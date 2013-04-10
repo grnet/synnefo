@@ -33,36 +33,29 @@
 
 
 class AstakosClientException(Exception):
-    def __init__(self, message, status=0):
+    def __init__(self, message='', details='', status=None):
         self.message = message
-        self.status = status
-
-    def __str__(self):
-        return repr(self.message)
+        self.details = details
+        if not hasattr(self, 'status'):
+            self.status = status
+        super(AstakosClientException,
+              self).__init__(self.message, self.details, self.status)
 
 
 class BadRequest(AstakosClientException):
-    def __init__(self, message):
-        """400 Bad Request"""
-        super(BadRequest, self).__init__(message, 400)
+    status = 400
 
 
 class Unauthorized(AstakosClientException):
-    def __init__(self, message):
-        """401 Invalid X-Auth-Token"""
-        super(Unauthorized, self).__init__(message, 401)
+    status = 401
 
 
 class Forbidden(AstakosClientException):
-    def __init__(self, message):
-        """403 Forbidden"""
-        super(Forbidden, self).__init__(message, 403)
+    status = 403
 
 
 class NotFound(AstakosClientException):
-    def __init__(self, message):
-        """404 Not Found"""
-        super(NotFound, self).__init__(message, 404)
+    status = 404
 
 
 class NoUserName(AstakosClientException):

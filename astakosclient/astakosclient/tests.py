@@ -71,35 +71,39 @@ def _request_offline(conn, method, url, **kwargs):
 
 def _request_status_302(conn, method, url, **kwargs):
     """This request returns 302"""
+    message = "FOUND"
     status = 302
     data = '<html>\r\n<head><title>302 Found</title></head>\r\n' \
         '<body bgcolor="white">\r\n<center><h1>302 Found</h1></center>\r\n' \
         '<hr><center>nginx/0.7.67</center>\r\n</body>\r\n</html>\r\n'
-    return (data, status)
+    return (message, data, status)
 
 
 def _request_status_404(conn, method, url, **kwargs):
     """This request returns 404"""
+    message = "Not Found"
     status = 404
     data = '<html><head><title>404 Not Found</title></head>' \
         '<body><h1>Not Found</h1><p>The requested URL /foo was ' \
         'not found on this server.</p><hr><address>Apache Server ' \
         'at example.com Port 80</address></body></html>'
-    return (data, status)
+    return (message, data, status)
 
 
 def _request_status_401(conn, method, url, **kwargs):
     """This request returns 401"""
+    message = "UNAUTHORIZED"
     status = 401
     data = "Invalid X-Auth-Token\n"
-    return (data, status)
+    return (message, data, status)
 
 
 def _request_status_400(conn, method, url, **kwargs):
     """This request returns 400"""
+    message = "BAD REQUEST"
     status = 400
     data = "Method not allowed.\n"
-    return (data, status)
+    return (message, data, status)
 
 
 def _request_ok(conn, method, url, **kwargs):
@@ -136,7 +140,7 @@ def _req_authenticate(conn, method, url, **kwargs):
     if "usage=1" not in url:
         # Strip `usage' key from `user'
         del user['usage']
-    return (simplejson.dumps(user), 200)
+    return ("", simplejson.dumps(user), 200)
 
 
 def _req_catalogs(conn, method, url, **kwargs):
@@ -176,7 +180,7 @@ def _req_catalogs(conn, method, url, **kwargs):
         return_catalog = {"displayname_catalog": catalogs, "uuid_catalog": {}}
     else:
         return_catalog = {"displayname_catalog": {}, "uuid_catalog": {}}
-    return (simplejson.dumps(return_catalog), 200)
+    return ("", simplejson.dumps(return_catalog), 200)
 
 
 # ----------------------------

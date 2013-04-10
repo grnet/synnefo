@@ -1,4 +1,5 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011-2013 GRNET S.A. All rights reserved.
+
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -52,23 +53,15 @@ The Plankton attributes are the following:
 
 import json
 import warnings
-
-from operator import itemgetter
+import logging
 from time import gmtime, strftime
-from functools import wraps, partial
-from snf_django.lib.api import faults
+from functools import wraps
+from operator import itemgetter
+
 
 from django.conf import settings
-
-from pithos.backends.base import NotAllowedError
-
+from pithos.backends.base import NotAllowedError, VersionNotExists
 import snf_django.lib.astakos as lib_astakos
-import logging
-
-from synnefo.settings import (CYCLADES_USE_QUOTAHOLDER,
-                              CYCLADES_QUOTAHOLDER_URL,
-                              CYCLADES_QUOTAHOLDER_TOKEN,
-                              CYCLADES_QUOTAHOLDER_POOLSIZE)
 
 logger = logging.getLogger(__name__)
 
@@ -89,8 +82,7 @@ def get_displaynames(names):
         url = auth_url.replace('im/authenticate', 'service/api/user_catalogs')
         token = settings.CYCLADES_ASTAKOS_SERVICE_TOKEN
         uuids = lib_astakos.get_displaynames(token, names, url=url)
-    except Exception, e:
-        logger.exception(e)
+    except Exception:
         return {}
 
     return uuids
@@ -109,19 +101,15 @@ def split_location(location):
     return t[2:5]
 
 
-class BackendException(Exception):
-    pass
-
-
 from pithos.backends.util import PithosBackendPool
 POOL_SIZE = 8
 _pithos_backend_pool = \
     PithosBackendPool(
         POOL_SIZE,
-        quotaholder_enabled=CYCLADES_USE_QUOTAHOLDER,
-        quotaholder_url=CYCLADES_QUOTAHOLDER_URL,
-        quotaholder_token=CYCLADES_QUOTAHOLDER_TOKEN,
-        quotaholder_client_poolsize=CYCLADES_QUOTAHOLDER_POOLSIZE,
+        quotaholder_enabled=settings.CYCLADES_USE_QUOTAHOLDER,
+        quotaholder_url=settings.CYCLADES_QUOTAHOLDER_URL,
+        quotaholder_token=settings.CYCLADES_QUOTAHOLDER_TOKEN,
+        quotaholder_client_poolsize=settings.CYCLADES_QUOTAHOLDER_POOLSIZE,
         db_connection=settings.BACKEND_DB_CONNECTION,
         block_path=settings.BACKEND_BLOCK_PATH)
 
@@ -130,13 +118,34 @@ def get_pithos_backend():
     return _pithos_backend_pool.pool_get()
 
 
+def create_url(account, container, name):
+    assert "/" not in account, "Invalid account"
+    assert "/" not in container, "Invalid container"
+    return "pithos://%s/%s/%s" % (account, container, name)
+
+
+def split_url(url):
+    """Returns (accout, container, object) from a url string"""
+    t = url.split('/', 4)
+    assert len(t) == 5, "Invalid url"
+    return t[2:5]
+
+
+def format_timestamp(t):
+    return strftime('%Y-%m-%d %H:%M:%S', gmtime(t))
+
+
 def handle_backend_exceptions(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         except NotAllowedError:
-            raise faults.Forbidden("Request not allowed")
+            raise Forbidden
+        except NameError:
+            raise ImageNotFound
+        except VersionNotExists:
+            raise ImageNotFound
     return wrapper
 
 
@@ -151,40 +160,55 @@ class ImageBackend(object):
         self.backend = get_pithos_backend()
         warnings.filters = original_filters     # Restore warnings
 
+    def close(self):
+        """Close PithosBackend(return to pool)"""
+        self.backend.close()
+
     @handle_backend_exceptions
-    def _get_image(self, location):
-        def format_timestamp(t):
-            return strftime('%Y-%m-%d %H:%M:%S', gmtime(t))
+    def get_image(self, image_uuid):
+        """Retrieve information about an image."""
+        image_url = self._get_image_url(image_uuid)
+        return self._get_image(image_url)
 
-        account, container, object = split_location(location)
+    def _get_image_url(self, image_uuid):
+        """Get the Pithos url that corresponds to an image UUID."""
+        account, container, name = self.backend.get_uuid(self.user, image_uuid)
+        return create_url(account, container, name)
 
-        try:
-            versions = self.backend.list_versions(self.user, account,
-                                                  container, object)
-        except NameError:
-            return None
+    def _get_image(self, image_url):
+        """Get information about an Image.
+
+        Get all available information about an Image.
+        """
+        account, container, name = split_url(image_url)
+        versions = self.backend.list_versions(self.user, account, container,
+                                              name)
+
+        if not versions:
+            raise Exception("Image without versions %s" % image_url)
 
         image = {}
 
-        meta = self._get_meta(location)
-        if meta:
-            image['deleted_at'] = ''
-        else:
+        try:
+            meta = self._get_meta(image_url)
+            image["deleted_at"] = ""
+        except NameError:
             # Object was deleted, use the latest version
             version, timestamp = versions[-1]
-            meta = self._get_meta(location, version)
-            image['deleted_at'] = format_timestamp(timestamp)
+            meta = self._get_meta(image_url, version)
+            image["deleted_at"] = format_timestamp(timestamp)
 
         if PLANKTON_PREFIX + 'name' not in meta:
-            return None     # Not a Plankton image
+            raise ImageNotFound("'%s' is not a Plankton image" % image_url)
 
-        permissions = self._get_permissions(location)
+        image["id"] = meta["uuid"]
+        image["location"] = image_url
+        image["checksum"] = meta["hash"]
+        image["created_at"] = format_timestamp(versions[0][1])
+        image["updated_at"] = format_timestamp(meta["modified"])
+        image["size"] = meta["bytes"]
+        image["store"] = "pithos"
 
-        image['checksum'] = meta['hash']
-        image['created_at'] = format_timestamp(versions[0][1])
-        image['id'] = meta['uuid']
-        image['is_public'] = '*' in permissions.get('read', [])
-        image['location'] = location
         if TRANSLATE_UUIDS:
             displaynames = get_displaynames([account])
             if account in displaynames:
@@ -194,139 +218,219 @@ class ImageBackend(object):
             image['owner'] = display_account
         else:
             image['owner'] = account
-        image['size'] = meta['bytes']
-        image['store'] = 'pithos'
-        image['updated_at'] = format_timestamp(meta['modified'])
-        image['properties'] = {}
+
+        # Permissions
+        permissions = self._get_permissions(image_url)
+        image["is_public"] = "*" in permissions.get('read', [])
 
         for key, val in meta.items():
-            if not key.startswith(PLANKTON_PREFIX):
-                continue
-            key = key[len(PLANKTON_PREFIX):]
-            if key == 'properties':
-                val = json.loads(val)
-            if key in PLANKTON_META:
-                image[key] = val
+            # Get plankton properties
+            if key.startswith(PLANKTON_PREFIX):
+                # Remove plankton prefix
+                key = key.replace(PLANKTON_PREFIX, "")
+                # Keep only those in plankton meta
+                if key in PLANKTON_META:
+                    if key == "properties":
+                        val = json.loads(val)
+                    image[key] = val
 
         return image
 
-    @handle_backend_exceptions
-    def _get_meta(self, location, version=None):
-        account, container, object = split_location(location)
-        try:
-            return self.backend.get_object_meta(self.user, account, container,
-                                                object, PLANKTON_DOMAIN,
-                                                version)
-        except NameError:
-            return None
+    def _get_meta(self, image_url, version=None):
+        """Get object's metadata."""
+        account, container, name = split_url(image_url)
+        return self.backend.get_object_meta(self.user, account, container,
+                                            name, PLANKTON_DOMAIN, version)
 
-    @handle_backend_exceptions
-    def _get_permissions(self, location):
-        account, container, object = split_location(location)
-        _a, _p, permissions = self.backend.get_object_permissions(self.user,
-                                                                  account,
-                                                                  container,
-                                                                  object)
-        return permissions
-
-    @handle_backend_exceptions
-    def _store(self, f, size=None):
-        """Breaks data into blocks and stores them in the backend"""
-
-        bytes = 0
-        hashmap = []
-        backend = self.backend
-        blocksize = backend.block_size
-
-        data = f.read(blocksize)
-        while data:
-            hash = backend.put_block(data)
-            hashmap.append(hash)
-            bytes += len(data)
-            data = f.read(blocksize)
-
-        if size and size != bytes:
-            raise BackendException("Invalid size")
-
-        return hashmap, bytes
-
-    @handle_backend_exceptions
-    def _update(self, location, size, hashmap, meta, permissions):
-        account, container, object = split_location(location)
-        self.backend.update_object_hashmap(self.user, account, container,
-                                           object, size, hashmap, '',
-                                           PLANKTON_DOMAIN,
-                                           permissions=permissions)
-        self._update_meta(location, meta, replace=True)
-
-    @handle_backend_exceptions
-    def _update_meta(self, location, meta, replace=False):
-        account, container, object = split_location(location)
+    def _update_meta(self, image_url, meta, replace=False):
+        """Update object's metadata."""
+        account, container, name = split_url(image_url)
 
         prefixed = {}
         for key, val in meta.items():
-            if key == 'properties':
-                val = json.dumps(val)
             if key in PLANKTON_META:
+                if key == "properties":
+                    val = json.dumps(val)
                 prefixed[PLANKTON_PREFIX + key] = val
 
-        self.backend.update_object_meta(self.user, account, container, object,
+        self.backend.update_object_meta(self.user, account, container, name,
                                         PLANKTON_DOMAIN, prefixed, replace)
 
-    @handle_backend_exceptions
-    def _update_permissions(self, location, permissions):
-        account, container, object = split_location(location)
+    def _get_permissions(self, image_url):
+        """Get object's permissions."""
+        account, container, name = split_url(image_url)
+        _a, path, permissions = \
+            self.backend.get_object_permissions(self.user, account, container,
+                                                name)
+
+        if path is None:
+            logger.warning("Image '%s' got permissions from None path",
+                           image_url)
+
+        return permissions
+
+    def _update_permissions(self, image_url, permissions):
+        """Update object's permissions."""
+        account, container, name = split_url(image_url)
         self.backend.update_object_permissions(self.user, account, container,
-                                               object, permissions)
+                                               name, permissions)
 
     @handle_backend_exceptions
-    def add_user(self, image_id, user):
-        image = self.get_image(image_id)
-        if not image:
-            raise faults.ItemNotFound
+    def unregister(self, image_uuid):
+        """Unregister an image.
 
-        location = image['location']
-        permissions = self._get_permissions(location)
-        read = set(permissions.get('read', []))
-        read.add(user)
-        permissions['read'] = list(read)
-        self._update_permissions(location, permissions)
-
-    def close(self):
-        self.backend.close()
-
-    @handle_backend_exceptions
-    def _delete(self, image_id):
-        """Delete an Image.
-
-        This method will delete the Image from the Storage backend.
+        Unregister an image, by removing all metadata from the Pithos
+        file that exist in the PLANKTON_DOMAIN.
 
         """
-        image = self.get_image(image_id)
-        account, container, object = split_location(image['location'])
-        self.backend.delete_object(self.user, account, container, object)
+        image_url = self._get_image_url(image_uuid)
+        self._get_image(image_url)  # Assert that it is an image
+        # Unregister the image by removing all metadata from domain
+        # 'PLANKTON_DOMAIN'
+        meta = self._get_meta(image_url)
+        for k in meta.keys():
+            meta[k] = ""
+        self._update_meta(image_url, meta, False)
 
     @handle_backend_exceptions
-    def get_data(self, location):
-        account, container, object = split_location(location)
-        size, hashmap = self.backend.get_object_hashmap(self.user, account,
-                                                        container, object)
-        data = ''.join(self.backend.get_block(hash) for hash in hashmap)
-        assert len(data) == size
-        return data
+    def add_user(self, image_uuid, add_user):
+        """Add a user as an image member.
+
+        Update read permissions of Pithos file, to include the specified user.
+
+        """
+        image_url = self._get_image_url(image_uuid)
+        self._get_image(image_url)  # Assert that it is an image
+        permissions = self._get_permissions(image_url)
+        read = set(permissions.get("read", []))
+        assert(isinstance(add_user, (str, unicode)))
+        read.add(add_user)
+        permissions["read"] = list(read)
+        self._update_permissions(image_url, permissions)
 
     @handle_backend_exceptions
-    def get_image(self, image_id):
+    def remove_user(self, image_uuid, remove_user):
+        """Remove the user from image members.
+
+        Remove the specified user from the read permissions of the Pithos file.
+
+        """
+        image_url = self._get_image_url(image_uuid)
+        self._get_image(image_url)  # Assert that it is an image
+        permissions = self._get_permissions(image_url)
+        read = set(permissions.get("read", []))
+        assert(isinstance(remove_user, (str, unicode)))
         try:
-            account, container, object = self.backend.get_uuid(self.user,
-                                                               image_id)
-        except NameError:
-            return None
-
-        location = get_location(account, container, object)
-        return self._get_image(location)
+            read.remove(remove_user)
+        except ValueError:
+            return  # TODO: User did not have access
+        permissions["read"] = list(read)
+        self._update_permissions(image_url, permissions)
 
     @handle_backend_exceptions
+    def replace_users(self, image_uuid, replace_users):
+        """Replace image members.
+
+        Replace the read permissions of the Pithos files with the specified
+        users. If image is specified as public, we must preserve * permission.
+
+        """
+        image_url = self._get_image_url(image_uuid)
+        image = self._get_image(image_url)
+        permissions = self._get_permissions(image_url)
+        assert(isinstance(replace_users, list))
+        permissions["read"] = replace_users
+        if image.get("is_public", False):
+            permissions["read"].append("*")
+        self._update_permissions(image_url, permissions)
+
+    @handle_backend_exceptions
+    def list_users(self, image_uuid):
+        """List the image members.
+
+        List the image members, by listing all users that have read permission
+        to the corresponding Pithos file.
+
+        """
+        image_url = self._get_image_url(image_uuid)
+        self._get_image(image_url)  # Assert that it is an image
+        permissions = self._get_permissions(image_url)
+        return [user for user in permissions.get('read', []) if user != '*']
+
+    @handle_backend_exceptions
+    def update_metadata(self, image_uuid, metadata):
+        """Update Image metadata."""
+        image_url = self._get_image_url(image_uuid)
+        self._get_image(image_url)  # Assert that it is an image
+
+        is_public = metadata.pop("is_public", None)
+        if is_public is not None:
+            permissions = self._get_permissions(image_url)
+            read = set(permissions.get("read", []))
+            if is_public:
+                read.add("*")
+            else:
+                read.discard("*")
+            permissions["read"] = list(read)
+            self._update_permissions(image_url, permissions)
+        meta = {}
+        meta["properties"] = metadata.pop("properties", {})
+        meta.update(**metadata)
+
+        self._update_meta(image_url, meta)
+        return self.get_image(image_uuid)
+
+    @handle_backend_exceptions
+    def register(self, name, image_url, metadata):
+        # Validate that metadata are allowed
+        if "id" in metadata:
+            raise ValueError("Passing an ID is not supported")
+        store = metadata.pop("store", "pithos")
+        if store != "pithos":
+            raise ValueError("Invalid store '%s'. Only 'pithos' store is"
+                             "supported" % store)
+        disk_format = metadata.setdefault("disk_format",
+                                          settings.DEFAULT_DISK_FORMAT)
+        if disk_format not in settings.ALLOWED_DISK_FORMATS:
+            raise ValueError("Invalid disk format '%s'" % disk_format)
+        container_format =\
+            metadata.setdefault("container_format",
+                                settings.DEFAULT_CONTAINER_FORMAT)
+        if container_format not in settings.ALLOWED_CONTAINER_FORMATS:
+            raise ValueError("Invalid container format '%s'" %
+                             container_format)
+
+        # Validate that 'size' and 'checksum' are valid
+        account, container, object = split_url(image_url)
+
+        meta = self._get_meta(image_url)
+
+        size = int(metadata.pop('size', meta['bytes']))
+        if size != meta['bytes']:
+            raise ValueError("Invalid size")
+
+        checksum = metadata.pop('checksum', meta['hash'])
+        if checksum != meta['hash']:
+            raise ValueError("Invalid checksum")
+
+        # Fix permissions
+        is_public = metadata.pop('is_public', False)
+        if is_public:
+            permissions = {'read': ['*']}
+        else:
+            permissions = {'read': [self.user]}
+
+        # Update rest metadata
+        meta = {}
+        meta['properties'] = metadata.pop('properties', {})
+        meta.update(name=name, status='available', **metadata)
+
+        # Do the actualy update in the Pithos backend
+        self._update_meta(image_url, meta)
+        self._update_permissions(image_url, permissions)
+        return self._get_image(image_url)
+
+    # TODO: Fix all these
     def _iter(self, public=False, filters=None, shared_from=None):
         filters = filters or {}
 
@@ -363,18 +467,22 @@ class ImageBackend(object):
                     if image:
                         yield image
 
+    @handle_backend_exceptions
     def iter(self, filters=None):
         """Iter over all images available to the user"""
         return self._iter(filters=filters)
 
+    @handle_backend_exceptions
     def iter_public(self, filters=None):
         """Iter over public images"""
         return self._iter(public=True, filters=filters)
 
+    @handle_backend_exceptions
     def iter_shared(self, filters=None, member=None):
         """Iter over images shared to member"""
         return self._iter(filters=filters, shared_from=member)
 
+    @handle_backend_exceptions
     def list(self, filters=None, params={}):
         """Return all images available to the user"""
         images = list(self.iter(filters))
@@ -383,6 +491,7 @@ class ImageBackend(object):
         images.sort(key=key, reverse=reverse)
         return images
 
+    @handle_backend_exceptions
     def list_public(self, filters, params={}):
         """Return public images"""
         images = list(self.iter_public(filters))
@@ -391,147 +500,14 @@ class ImageBackend(object):
         images.sort(key=key, reverse=reverse)
         return images
 
-    def list_users(self, image_id):
-        image = self.get_image(image_id)
-        if not image:
-            raise faults.ItemNotFound
 
-        permissions = self._get_permissions(image['location'])
-        return [user for user in permissions.get('read', []) if user != '*']
+class ImageBackendError(Exception):
+    pass
 
-    @handle_backend_exceptions
-    def put(self, name, f, params):
-        assert 'checksum' not in params, "Passing a checksum is not supported"
-        assert 'id' not in params, "Passing an ID is not supported"
-        assert params.pop('store', 'pithos') == 'pithos', "Invalid store"
-        disk_format = params.setdefault('disk_format',
-                                        settings.DEFAULT_DISK_FORMAT)
-        assert disk_format in settings.ALLOWED_DISK_FORMATS,\
-            "Invalid disk_format"
-        assert params.setdefault('container_format',
-                settings.DEFAULT_CONTAINER_FORMAT) in \
-                settings.ALLOWED_CONTAINER_FORMATS, "Invalid container_format"
 
-        container = settings.DEFAULT_PLANKTON_CONTAINER
-        filename = params.pop('filename', name)
-        location = 'pithos://%s/%s/%s' % (self.user, container, filename)
-        is_public = params.pop('is_public', False)
-        permissions = {'read': ['*']} if is_public else {}
-        size = params.pop('size', None)
+class ImageNotFound(ImageBackendError):
+    pass
 
-        hashmap, size = self._store(f, size)
 
-        meta = {}
-        meta['properties'] = params.pop('properties', {})
-        meta.update(name=name, status='available', **params)
-
-        self._update(location, size, hashmap, meta, permissions)
-        return self._get_image(location)
-
-    @handle_backend_exceptions
-    def register(self, name, location, params):
-        assert 'id' not in params, "Passing an ID is not supported"
-        assert location.startswith('pithos://'), "Invalid location"
-        assert params.pop('store', 'pithos') == 'pithos', "Invalid store"
-        assert params.setdefault('disk_format',
-                settings.DEFAULT_DISK_FORMAT) in \
-                settings.ALLOWED_DISK_FORMATS, "Invalid disk_format"
-        assert params.setdefault('container_format',
-                settings.DEFAULT_CONTAINER_FORMAT) in \
-                settings.ALLOWED_CONTAINER_FORMATS, "Invalid container_format"
-
-        # user = self.user
-        account, container, object = split_location(location)
-
-        meta = self._get_meta(location)
-        assert meta, "File not found"
-
-        size = int(params.pop('size', meta['bytes']))
-        if size != meta['bytes']:
-            raise BackendException("Invalid size")
-
-        checksum = params.pop('checksum', meta['hash'])
-        if checksum != meta['hash']:
-            raise BackendException("Invalid checksum")
-
-        is_public = params.pop('is_public', False)
-        if is_public:
-            permissions = {'read': ['*']}
-        else:
-            permissions = {'read': [self.user]}
-
-        meta = {}
-        meta['properties'] = params.pop('properties', {})
-        meta.update(name=name, status='available', **params)
-
-        self._update_meta(location, meta)
-        self._update_permissions(location, permissions)
-        return self._get_image(location)
-
-    @handle_backend_exceptions
-    def remove_user(self, image_id, user):
-        image = self.get_image(image_id)
-        if not image:
-            raise faults.ItemNotFound
-
-        location = image['location']
-        permissions = self._get_permissions(location)
-        try:
-            permissions.get('read', []).remove(user)
-        except ValueError:
-            return      # User did not have access anyway
-        self._update_permissions(location, permissions)
-
-    @handle_backend_exceptions
-    def replace_users(self, image_id, users):
-        image = self.get_image(image_id)
-        if not image:
-            raise faults.ItemNotFound
-
-        location = image['location']
-        permissions = self._get_permissions(location)
-        permissions['read'] = users
-        if image.get('is_public', False):
-            permissions['read'].append('*')
-        self._update_permissions(location, permissions)
-
-    @handle_backend_exceptions
-    def update(self, image_id, params):
-        image = self.get_image(image_id)
-        assert image, "Image not found"
-        if not image:
-            raise faults.ItemNotFound
-
-        location = image['location']
-        is_public = params.pop('is_public', None)
-        if is_public is not None:
-            permissions = self._get_permissions(location)
-            read = set(permissions.get('read', []))
-            if is_public:
-                read.add('*')
-            else:
-                read.discard('*')
-            permissions['read'] = list(read)
-            self.backend._update_permissions(location, permissions)
-
-        meta = {}
-        meta['properties'] = params.pop('properties', {})
-        meta.update(**params)
-
-        self._update_meta(location, meta)
-        return self.get_image(image_id)
-
-    @handle_backend_exceptions
-    def unregister(self, image_id):
-        """Unregister an image."""
-        image = self.get_image(image_id)
-        if not image:
-            raise faults.ItemNotFound
-
-        location = image["location"]
-        # Unregister the image by removing all metadata from domain
-        # 'PLANKTON_DOMAIN'
-        meta = self._get_meta(location)
-        for k in meta.keys():
-            meta[k] = ""
-        self._update_meta(location, meta, False)
+class Forbidden(ImageBackendError):
+    pass

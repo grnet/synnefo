@@ -46,13 +46,12 @@ def assert_backend_closed(func):
     def wrapper(self, backend):
         result = func(self, backend)
         if backend.called is True:
-            num = len(backend.mock_calls) / 2
-            assert(len(backend.return_value.close.mock_calls) == num)
+            backend.return_value.close.assert_called_once_with()
         return result
     return wrapper
 
 
-@patch('synnefo.plankton.utils.ImageBackend')
+@patch('synnefo.plankton.backend.ImageBackend')
 class ImageAPITest(BaseAPITest):
     @assert_backend_closed
     def test_create_image(self, mimage):
@@ -171,20 +170,19 @@ class ImageAPITest(BaseAPITest):
                    'created': '2012-11-26T11:52:54+00:00',
                    'updated': '2012-12-26T11:52:54+00:00',
                    'metadata': {'values': {'foo': 'bar'}}}
-        with patch('synnefo.api.util.get_image') as m:
-            m.return_value = image
-            response = self.get('/api/v1.1/images/42', 'user')
+        mimage.return_value.get_image.return_value = image
+        response = self.get('/api/v1.1/images/42', 'user')
         self.assertSuccess(response)
         api_image = json.loads(response.content)['image']
         self.assertEqual(api_image, result_image)
 
     @assert_backend_closed
     def test_invalid_image(self, mimage):
-        with patch('synnefo.api.util.get_image') as m:
-            m.side_effect = faults.ItemNotFound('Image not found')
-            response = self.get('/api/v1.1/images/42', 'user')
+        mimage.return_value.get_image.side_effect = faults.ItemNotFound('Image not found')
+        response = self.get('/api/v1.1/images/42', 'user')
         self.assertItemNotFound(response)
 
+    @assert_backend_closed
     def test_delete_image(self, mimage):
         response = self.delete("/api/v1.1/images/42", "user")
         self.assertEqual(response.status_code, 204)
@@ -192,7 +190,7 @@ class ImageAPITest(BaseAPITest):
         mimage.return_value._delete.assert_not_called('42')
 
 
-@patch('synnefo.plankton.utils.ImageBackend')
+@patch('synnefo.plankton.backend.ImageBackend')
 class ImageMetadataAPITest(BaseAPITest):
     def setUp(self):
         self.image = {'id': 42,

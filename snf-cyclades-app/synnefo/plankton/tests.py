@@ -33,13 +33,10 @@
 
 import json
 
-from django.test import TestCase
-
-from contextlib import contextmanager
 from mock import patch
 from functools import wraps
 from copy import deepcopy
-from snf_django.utils.testing import astakos_user, BaseAPITest
+from snf_django.utils.testing import BaseAPITest
 
 
 FILTERS = ('name', 'container_format', 'disk_format', 'status', 'size_min',
@@ -130,7 +127,7 @@ def assert_backend_closed(func):
     return wrapper
 
 
-@patch("synnefo.plankton.utils.ImageBackend")
+@patch("synnefo.plankton.backend.ImageBackend")
 class PlanktonTest(BaseAPITest):
     @assert_backend_closed
     def test_list_images(self, backend):

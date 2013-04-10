@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,29 +31,26 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from functools import wraps
-from synnefo.plankton.backend import ImageBackend
 from contextlib import contextmanager
-
-def plankton_method(func):
-    """Decorator function for API methods using ImageBackend.
-
-    Decorator function that creates and closes an ImageBackend, needed
-    by all API methods that handle images.
-    """
-    @wraps(func)
-    def wrapper(request, *args, **kwargs):
-        with image_backend(request.user_uniq) as backend:
-            request.backend = backend
-            return func(request, *args, **kwargs)
-    return wrapper
+from synnefo.plankton import backend
+from snf_django.lib.api import faults
 
 
 @contextmanager
 def image_backend(user_id):
-    """Context manager for ImageBackend"""
-    backend = ImageBackend(user_id)
+    """Context manager for ImageBackend.
+
+    Context manager for using ImageBackend in API methods. Handles
+    opening and closing a connection to Pithos and converting backend
+    erros to cloud faults.
+
+    """
+    image_backend = backend.ImageBackend(user_id)
     try:
-        yield backend
+        yield image_backend
+    except backend.Forbidden:
+        raise faults.Forbidden
+    except backend.ImageNotFound:
+        raise faults.ItemNotFound
     finally:
-        backend.close()
+        image_backend.close()

@@ -392,9 +392,9 @@ def create_server(serials, request):
     server['status'] = 'BUILD'
     server['adminPass'] = password
 
-    respsone = render_server(request, server, status=202)
+    response = render_server(request, server, status=202)
 
-    return respsone
+    return response
 
 
 @util.api_method('GET')

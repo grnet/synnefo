@@ -171,26 +171,26 @@ Return Code                 Description
 =========================== =====================
 
 
-The response data format is a list of servers, under the ``servers`` label. A server may have the fields presented bellow (only *id* and *name* if not a detail request)
+The response data format is a list of servers under the ``servers`` label. A server may have the fields presented bellow:
 
-================== ====================== ======== ==========
-Response Parameter Description            Cyclades OS Compute
-================== ====================== ======== ==========
-id                 The server id          ✔        ✔
-name               The server name        ✔        ✔
-hostId             Server playground      empty    ✔
-created            Creation date          ✔        ✔
-updated            Creation date          ✔        ✔
-flavorRef          The flavor id          ✔        **✘**
-flavor             The flavor id          **✘**    ✔
-imageRef           The image id           ✔        **✘**
-image              The image id           **✘**    ✔
-progress           Build progress         ✔        ✔
-status             Server status          ✔        ✔
-attachments        Network interfaces     ✔        **✘**
-addresses          Network interfaces     **✘**    ✔
-metadata           Server custom metadata ✔        ✔
-================== ====================== ======== ==========
+================= ====================== ======== ==========
+Server Attributes Description            Cyclades OS Compute
+================= ====================== ======== ==========
+id                The server id          ✔        ✔
+name              The server name        ✔        ✔
+hostId            Server playground      empty    ✔
+created           Creation date          ✔        ✔
+updated           Creation date          ✔        ✔
+flavorRef         The flavor id          ✔        **✘**
+flavor            The flavor id          **✘**    ✔
+imageRef          The image id           ✔        **✘**
+image             The image id           **✘**    ✔
+progress          Build progress         ✔        ✔
+status            Server status          ✔        ✔
+attachments       Network interfaces     ✔        **✘**
+addresses         Network interfaces     **✘**    ✔
+metadata          Server custom metadata ✔        ✔
+================= ====================== ======== ==========
 
 * **hostId** is not used in Cyclades, but is returned as an empty string for compatibility
 
@@ -198,30 +198,7 @@ metadata           Server custom metadata ✔        ✔
 * **progress** is changing while the server is building up and has values between 0 and 100. When it reaches 100 the server is built.
 
 
-* **status** referes to the status of the server
-
-============= ==================== ======== ==========
-Status        Description          Cyclades OS Compute
-============= ==================== ======== ==========
-BUILD         Building             ✔        ✔
-ACTIVE        Up and running       ✔        ✔
-STOPPED       Shut down            ✔        **✘**
-REBOOT        Rebooting            ✔        ✔
-DELETED       Removed              ✔        ✔
-UNKNOWN       Unexpected error     ✔        ✔
-ERROR         In error             ✔        ✔
-HARD_REBOOT   Hard rebooting       **✘**    ✔
-PASSWORD      Resetting password   **✘**    ✔
-REBUILD       Rebuilding server    **✘**    ✔
-RESCUE        In rescue mode       **✘**    ✔
-RESIZE        Resizing             **✘**    ✔
-REVERT_RESIZE Failed to resize     **✘**    ✔
-SHUTOFF       Shut down by user    **✘**    ✔
-SUSPENDED     Suspended            **✘**    ✔
-VERIFY_RESIZE Waiting confirmation **✘**    ✔
-============= ==================== ======== ==========
-
-|
+* **status** refers to `the status <#status_ref>`_ of the server
 
 * **metadata** are custom key:value pairs used to specify various attributes of the VM (e.g. OS, super user, etc.)
 
@@ -298,6 +275,98 @@ VERIFY_RESIZE Waiting confirmation **✘**    ✔
       }
   }
 
+
+Create Server
+.............
+
+=================== ====== ======== ==========
+URI                 Method Cyclades OS Compute
+=================== ====== ======== ==========
+``/servers``        POST   ✔        ✔
+=================== ====== ======== ==========
+
+|
+
+================= ===============
+Request Parameter Value          
+================= ===============
+json              Respond in json
+xml               Respond in xml 
+================= ===============
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
+
+The request body is json formated. It consists of a ``server`` tag over the following attributes:
+
+=========== ==================== ======== ==========
+Name        Description          Cyclades OS Compute
+=========== ==================== ======== ==========
+name        The server name      ✔        ✔
+imageRef    Image id             ✔        ✔
+flavorRef   Resources flavor     ✔        ✔
+personality Personality contents ✔        ✔
+metadata    Custom metadata      ✔        ✔
+=========== ==================== ======== ==========
+
+* **name** can be any string
+
+* **imageRed** and **flavorRed** should refer to existing images and hardware flavors accessible by the user
+
+* **metadata** are key:value pairs of custom server-specific metadata. There are no semantic limitations.
+
+* **personality** (optional) is a list of personality injections. A personality injection is a small set of changes to a virtual server. Each change modifies a file on the virtual server, by injecting some data in it. The injected data (``content``) should exceed 10240 *bytes* in size and must be base64 encoded. A personality injection contains the following attributes:
+
+======== =================== ======== ==========
+Name     Description         Cyclades OS Compute
+======== =================== ======== ==========
+path     File path on server ✔        ✔
+contents Data to inject      ✔        ✔
+group    User group          ✔        **✘**
+mode     File access mode    ✔        **✘**
+owner    File owner          ✔        **✘**
+======== =================== ======== ==========
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded
+400 (Bad Request)           Malformed request data
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             User is not allowed to perform this operation
+404 (Not Found)             Image or Flavor not found
+413 (Over Limit)            Exceeded some resource limit (#VMs, personality size, etc.) 
+415 (Bad Media Type)        
+500 (Internal Server Error) The request cannot be completed because of an internal error
+503 (Service Unavailable)   No available backends or service currently unavailable
+=========================== =====================
+
+|
+
+In case of a 200 return code, the Response Data are json-formated and consist of a `list of attributes <#server-ref>`_ under the ``server`` tag:
+
+For example::
+
+  {"server": {
+    "id": 28130
+    "status": "BUILD",
+    "updated": "2013-04-10T13:52:18.140686+00:00",
+    "hostId": "",
+    "name": "My Server Name: Example Name",
+    "imageRef": "da7a211f-1db5-444a-938b-f901ce81a3e6",
+    "created": "2013-04-10T13:52:17.085402+00:00",
+    "flavorRef": 289,
+    "adminPass": "fKCqlZe2at",
+    "suspended": false,
+    "progress": 0,
+  }}
 
 Get Server Stats
 ................
@@ -807,3 +876,78 @@ This operation removes a server from the specified network.
   }
 
 This operation does not contain a response body.
+
+Index of details
+----------------
+
+.. _server-ref:
+
+Server Attributes
+.................
+
+================ ========================== ======== ==========
+Server attribute Description                Cyclades OS Compute
+================ ========================== ======== ==========
+id               Server ID                  ✔        ✔
+name             Server Name                ✔        ✔
+status           Server Status              ✔        ✔
+updated          Date of last modification  ✔        ✔
+created          Date of creation           ✔        ✔
+hostId           Physical host              empty    ✔
+imageRef         Image ID                   ✔        **✘**
+image            A full image descreption   **✘**    ✔
+flavorRef        Flavor ID                  ✔        **✘**
+flavor           A full flavor description  **✘**    ✔
+adminPass        Superuser Password         ✔        ✔
+suspended        If server is suspended     ✔        ✔
+progress         Build progress             ✔        ✔
+metadata         Custom server metadata     ✔        ✔
+user_id          Server owner               **✘**    ✔
+tenant_id        Server tenant              **✘**    ✔
+accessIPv4       Server IPV4 net address    **✘**    ✔
+accessIPv6       Server IPV4 net address    **✘**    ✔
+addresses        Nets connected on server   **✘**    ✔
+links            Server links               **✘**    ✔
+================ ========================== ======== ==========
+
+* **status** values are described `here <status-ref>`_
+
+* **updated** and **created** are date-formated
+
+* **hostId** is always empty in Cyclades and is returned for compatibility reasons
+
+* **imageRef** and **flavorRef** always refer to existing Image and Flavor specifications. Cyclades improved the OpenStack approach by using references to Image and Flavor attributes, instead of listing their full properties
+
+* **adminPass** in Cyclades it is generated automatically during creation. For safety, it is not stored anywhere in the system and it cannot be recovered with a query request
+
+* **suspended** is True only of the server is suspended by the cloud administrations or policy
+
+* **progress** is a number between 0 and 100 and reflects the server building status
+
+* **metadata** are custom key:value pairs refering to the VM. In Cyclades, the ``OS`` and ``users`` metadata are automatically retrieved from the servers image during creation
+
+.. _status-ref:
+
+Server Status
+.............
+
+============= ==================== ======== ==========
+Status        Description          Cyclades OS Compute
+============= ==================== ======== ==========
+BUILD         Building             ✔        ✔
+ACTIVE        Up and running       ✔        ✔
+STOPPED       Shut down            ✔        **✘**
+REBOOT        Rebooting            ✔        ✔
+DELETED       Removed              ✔        ✔
+UNKNOWN       Unexpected error     ✔        ✔
+ERROR         In error             ✔        ✔
+HARD_REBOOT   Hard rebooting       **✘**    ✔
+PASSWORD      Resetting password   **✘**    ✔
+REBUILD       Rebuilding server    **✘**    ✔
+RESCUE        In rescue mode       **✘**    ✔
+RESIZE        Resizing             **✘**    ✔
+REVERT_RESIZE Failed to resize     **✘**    ✔
+SHUTOFF       Shut down by user    **✘**    ✔
+SUSPENDED     Suspended            **✘**    ✔
+VERIFY_RESIZE Waiting confirmation **✘**    ✔
+============= ==================== ======== ==========

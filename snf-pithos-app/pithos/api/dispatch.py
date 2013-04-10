@@ -3,7 +3,7 @@ from pithos.api.util import hashmap_md5, get_backend
 
 from django.core.mail import send_mail
 
-from astakos.im.settings import DEFAULT_FROM_EMAIL
+from django.conf import settings
 
 import socket
 from smtplib import SMTPException
@@ -45,9 +45,11 @@ def send_sharing_notification(m):
     account, container, name = path.split('/', 2)
 
     subject = 'Invitation to a Pithos+ shared object'
-    from_email = DEFAULT_FROM_EMAIL
+    from_email = settings.SERVER_EMAIL
     recipient_list = members
-    message = 'User %s has invited you to a Pithos+ shared object. You can view it under "Shared to me" at "%s".' % (user, path)
+    message = ("User %s has invited you to a Pithos+ shared object."
+               "You can view it under \"Shared to me\" at \"%s\".")
+    message = message % (user, path)
     try:
         send_mail(subject, message, from_email, recipient_list)
         print 'INFO: Sharing notification sent for path "%s" to %s' % (

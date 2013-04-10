@@ -11,7 +11,7 @@ repository and have aligned versions.
 v0.13
 =====
 
-Release Date: UNRELEASED
+Released: Wed Apr 10 18:52:50 EEST 2013
 
 In v0.13 the code was very heavily refactored for increased uniformity since
 most of the Synnefo components have been merged into a single repository. Thus,

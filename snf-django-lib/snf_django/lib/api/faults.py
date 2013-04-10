@@ -40,11 +40,13 @@ def camel_case(s):
 
 
 class Fault(Exception):
-    def __init__(self, message='', details='', name=''):
-        Exception.__init__(self, message, details, name)
+    def __init__(self, message='', details='', name='', code=None):
         self.message = message
         self.details = details
+        if not hasattr(self, 'code'):
+            self.code = code
         self.name = name or camel_case(self.__class__.__name__)
+        Exception.__init__(self, message, details, self.name, self.code)
 
 
 # 2xx

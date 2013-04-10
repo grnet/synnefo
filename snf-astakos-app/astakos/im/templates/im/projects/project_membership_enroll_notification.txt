@@ -1,0 +1,6 @@
+--- A translation in English follows ---
+
+Έχετε εγγραφεί στο project {{object.name}}.
+--
+
+You have been enrolled in project {{object.name}}.

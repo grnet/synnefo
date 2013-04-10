@@ -1,6 +1,7 @@
 *.db
 *.pyc
 *~
+*.*.swp
 bin/
 share/
 build/
@@ -20,7 +21,16 @@ settings.d/*-local.conf
 dist
 _build
 
+# pithos temp files
+pithos/data
+
 # version modules created automatically from setup.py
 */synnefo/versions/*.py
+*/pithos/*/version.py
 !*/synnefo/versions/__init__.py
+snf-astakos-app/astakos/version.py
 snf-tools/synnefo_tools/version.py
+snf-quotaholder-app/quotaholder_django/version.py
+*.iml
+*.graffle
+snf-stats-app/synnefo_stats/version.py

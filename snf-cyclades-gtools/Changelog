@@ -1,6 +1,10 @@
 Changelog
 ---------
 
+v0.11.0
+*******
+  * Remove setting PUBLIC_IPV6_PREFIX(obsolete)
+
 v0.10.0
 *******
 

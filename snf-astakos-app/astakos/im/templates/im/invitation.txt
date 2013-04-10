@@ -1,0 +1,29 @@
+{% extends "im/email.txt" %}
+
+{% block gr_content %}
+Αγαπητέ/η {{ invitation.realname }},
+
+Ο/Η {{ invitation.inviter.realname }} ({{ invitation.inviter.email}}) σας έχει προσκαλέσει να χρησιμοποιήσετε την υπηρεσία {{ site_name }} της ΕΔΕΤ κατά την alpha2 (δεύτερη δοκιμαστική) φάση λειτουργίας της.
+
+Για να αποκτήσετε πρόσβαση, χρησιμοποιήστε το σύνδεσμο: {{ url }}
+{% endblock %}
+
+{% block gr_note %}
+Σημείωση:
+
+Ο {{ site_name }} είναι η υπηρεσία cloud του ΕΔΕΤ. Περιλαμβάνει τον pithos+, μέσω του οποίου έχετε 50GB αποθηκευτικό χώρο για τα αρχεία σας στο cloud, και τις cyclades, που παρέχουν εικονικές μηχανές (VMs) με διάφορα λειτουργικά συστήματα (OS images).
+{% endblock%}
+
+{% block en_content %}
+Dear {{ invitation.realname }},
+
+{{ invitation.inviter.realname }} has invited you to use GRNET's {{ site_name }} service during its alpha2 testing phase.
+
+To access the service, please use the link: {{ url }}
+{% endblock %}
+
+{% block en_note %}
+Please note:
+
+{{ site_name }} is GRNET's cloud service. It includes pithos+, which offers 50GB of storage space for your files in the cloud and, cyclades, that offer virtual machines (VMs) with various operating systems (OS images).
+{% endblock%}

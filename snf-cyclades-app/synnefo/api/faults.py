@@ -1,18 +1,18 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
-# 
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
+#
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
 # conditions are met:
-# 
+#
 #   1. Redistributions of source code must retain the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer.
-# 
+#
 #   2. Redistributions in binary form must reproduce the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer in the documentation and/or other materials
 #      provided with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
 # OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -25,11 +25,12 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-# 
+#
 # The views and conclusions contained in the software and
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
+
 
 def camelCase(s):
     return s[0].lower() + s[1:]
@@ -42,23 +43,42 @@ class Fault(Exception):
         self.details = details
         self.name = name or camelCase(self.__class__.__name__)
 
+
 class BadRequest(Fault):
     code = 400
+
 
 class Unauthorized(Fault):
     code = 401
 
+
 class ResizeNotAllowed(Fault):
     code = 403
+
+
+class Forbidden(Fault):
+    code = 403
+
 
 class ItemNotFound(Fault):
     code = 404
 
+
 class BuildInProgress(Fault):
     code = 409
 
+
 class OverLimit(Fault):
     code = 413
+
+
+class BadMediaType(Fault):
+    code = 415
+
+
+class NetworkInUse(Fault):
+    code = 421
+
 
 class ServiceUnavailable(Fault):
     code = 503

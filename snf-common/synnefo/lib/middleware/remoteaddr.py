@@ -6,5 +6,6 @@ class RemoteAddrMiddleware(object):
     key.
     """
     def process_request(self, request):
-        if not request.META.has_key('REMOTE_ADDR'):
-            request.META['REMOTE_ADDR'] = request.META.get('HTTP_X_REAL_IP', None)
+        if 'REMOTE_ADDR' in request.META:
+            request.META['REMOTE_ADDR'] = request.META.get('HTTP_X_REAL_IP',
+                                                           None)

@@ -1,0 +1,44 @@
+Changelog
+=========
+
+v0.10.1
+-------
+
+* Proper migration for latest_version field.
+
+v0.10.0
+-------
+
+* New migration tool added, `pithos-migrate`.
+  
+  To upgrade your database from v0.9.7 run::
+	
+	$ pithos-migrate upgrade head
+  
+  To initialize the database and then::
+  	
+	$ pithos-migrate initdb
+
+
+v0.9.7
+------
+* Minor fixes
+
+v0.9.6
+------
+* Use umask parameter in ModularBackend 
+
+v0.9.4
+------
+* Overwrite permissions every time.
+* Send sharing notifications.
+* Include instance in queue messages.
+* Different queue message types use different keys.
+* Report object changes to the queue.
+
+v0.9.3
+------
+* Fixes for non-automatic container versioning policy.
+* Open files in backend as read-only if such is the filesystem.
+* Check Content-Type up to semicolon.
+

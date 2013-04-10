@@ -27,11 +27,44 @@
     <div class="create-form">
         <p class="info"></p>
         <form>
+          <div class="col-fields bordered clearfix">
             <div class="form-field">
-                <label for="">Network name:</label>
-                <input type="text" class="network-create-name" />
+                <label for="network-create-name">Network name:</label>
+                <input type="text" class="network-create-name" name="network-create-name" id="network-create-name" />
             </div>
-
+            <div class="form-field right-field">
+                <label for="network-create-type">Network type:</label>
+              <select id="network-create-type">
+              </select>
+            </div>
+          </div>
+          <div class="col-fields clearfix bordered">
+            <div class="form-field fixpos">
+                <label for="network-create-dhcp">Automatically assign ips:</label>
+                <input type="checkbox" class="use-dhcp" name="network-create-dhcp"
+                  id="network-create-dhcp" checked />
+                  <p class="description noborder fields-desc">
+                  {% blocktrans %}If you enable DHCP on the private network,
+                  connected virtual machines will automatically be assigned with 
+                  an IP address based on the given subnet. You may disable this option
+                  if you want to manually assign IP addresses on the connected
+                  virtual machines. {% endblocktrans %}
+            </p>
+            </div>
+            <div id="network-create-dhcp-fields">
+              <div class="form-field fixpos">
+                <label for="network-type">Network subnet:</label>
+                <select id="network-create-subnet">
+                  <option selected class="auto" value="auto">Auto</option>
+                  <option value="custom" class="manual">Manual...</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label class="hidden" for="network-custom-subnet">Custom subnet:</label>
+                <input type="text" id="network-create-subnet-custom"/>
+              </div>
+            </div>
+          </div>
             <div class="form-actions plain clearfix">
                 <span class="form-action create">{% trans "create network" %}</span>
             </div>
@@ -45,7 +78,7 @@
 <div id="networks-container" class="clearfix">
     <!-- spinner while loading list -->
     
-    <div class="templates">
+    <div class="templates hidden">
     <!-- public network template -->
     <div class="network" id="public-template">
         <img class="network-logos" src="{{ SYNNEFO_IMAGES_URL }}internet.png" />
@@ -102,7 +135,7 @@
     </div>
 
     <!-- template for machines in public network -->
-    <div class="network-machine" id="public-machine-template">
+    <div class="network-machine" id="public-nic-template">
         <div class="machine-actions vm-actions">
             <a href="#" class="action-details">{% trans "Details" %}</a>
         </div>
@@ -200,7 +233,9 @@
                         <span class="cancel"></span>
                     </div>
                 </h5>
-            </div>
+              </div>
+              <div class="cidr">
+              </div>
             <div class="network-machines">
                 <div class="cont-toggler list-toggle">
                     <span class="label machines-label">{% trans "machines" %}
@@ -222,7 +257,7 @@
     </div>
 
     <!-- template for machines in private network -->
-    <div class="network-machine" id="private-machine-template">
+    <div class="network-machine" id="private-nic-template">
         <div class="machine-actions vm-actions net-vm-actions">
             <div class="action-destroy">
                 <a href="#" class="action-disconnect">{% trans "Disconnect" %}</a>
@@ -244,10 +279,22 @@
         <div href="#" class="machine-name-div">
             <h5 class="namecontainer editable">
                 <span class="name vm-name">my desktop1</span>
-            </h5>
+              </h5>
+        </div>
+        <div class="ips">
+            <div class="ip4-container status">
+                {% trans "IPv4" %}:
+                <span class="ip4 ipv4-text">192.94.73.15</span>
+            </div>
+            <div class="ip6-container status">
+                {% trans "IPv6" %}:
+                <span class="ip6 ipv6-text"></span>
+            </div>
         </div>
         <h5 class='machine-connect'>
+          <span class="content">
             <span>{% trans "Connect" %}</span> {% trans "to manage private IPs" %}
+          </span>
         </h5>
     </div>
     </div>

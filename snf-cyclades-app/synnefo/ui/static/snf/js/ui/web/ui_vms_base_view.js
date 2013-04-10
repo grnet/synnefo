@@ -75,6 +75,74 @@
             this.connect_overlay = new views.VMConnectView();
         },
 
+        // display vm diagnostics detail overlay view, update based on
+        // diagnostics_update_interval config value.
+        show_build_details_for_vm: function(vm) {
+            var cont = null;
+            var success = function(data) {
+                var message = "";
+                var title = vm.get('name');
+                var info = '<em>Status log messages:</em>';
+
+                var list_el = $('<div class="diagnostics-list">');
+                list_el.append('<div class="empty">No data available</div>');
+
+                cont = list_el;
+                var messages = _.clone(data);
+
+                update_overlay_diagnostics(data, cont);
+                synnefo.ui.main.details_view.show(title, info, cont);
+            }
+
+            var update_overlay_diagnostics = function(data) {
+                var existing = cont.find(".msg-log-entry");
+                var messages = _.clone(data);
+                
+                var to_append = messages.slice(0, messages.length - existing.length);
+                to_append.reverse();
+
+                var appending = to_append.length != messages.length;
+                
+                if (to_append.length) { cont.find(".empty").hide() } else {
+                    if (!messages.length) { cont.find(".empty").show() }
+                }
+                _.each(to_append, function(msg){
+                    var el = $('<div class="clearfix msg-log-entry ' + msg.level.toLowerCase() + '">');
+                    if (msg.details) {
+                      el.addClass("with-details");
+                    }
+                    var display_source_date = synnefo.config.diagnostics_display_source_date;
+                    var source_date = "";
+                    if (display_source_date) {
+                        source_date = '('+synnefo.util.formatDate(new Date(msg.source_date))+')';
+                    }
+
+                    el.append('<span class="date">' + synnefo.util.formatDate(new Date(msg.created)) + source_date + '</span>');
+                    el.append('<span class="src">' + _.escape(msg.source) + '</span>');
+                    el.append('<span class="msg">' + _.escape(msg.message) + '</span>');
+                    if (msg.details) {
+                        el.append('<pre class="details">' + _.escape(msg.details) + '</pre>');
+                    }
+                    if (appending) { el.hide(0); el.css({'display':'none'})}
+                    cont.prepend(el);
+                    el.click(function(el) {
+                        $(this).find(".details").slideToggle();
+                        $(this).toggleClass("expanded");
+                    });
+
+                    if (appending) { el.fadeIn(800); }
+                });
+                
+                window.setTimeout(function(){
+                    if (cont.is(":visible")) {
+                        vm.get_diagnostics(update_overlay_diagnostics);
+                    }
+                }, synnefo.config.diagnostics_update_interval);
+            }
+
+            vm.get_diagnostics(success);
+        },
+
         // Helpers
         //
         // get element based on this.selectors key/value pairs
@@ -140,6 +208,9 @@
 
             // initialize vm specific event handlers 
             this.__set_vm_handlers(vm);
+            vm_view.find(".suspended-notice").click(function(){
+              synnefo.ui.main.suspended_view.show(vm);
+            })
             return vm_view;
         },
         
@@ -166,9 +237,26 @@
                 var el = this.create_vm(vm);
                 el.show();
                 this.post_add(vm);
+                this.init_vm_view_handlers(vm);
             }
 
             return this.vm(vm);
+        },
+
+        init_vm_view_handlers: function(vm) {
+            var self = this;
+            var el = this.vm(vm);
+
+            // hidden feature, double click on indicators to display 
+            // vm diagnostics.
+            el.find(".indicators").bind("dblclick", function(){
+                self.show_build_details_for_vm(vm);
+            });
+
+            // this button gets visible if vm creation failed.
+            el.find("div.build-progress .btn").click(function(){
+                self.show_build_details_for_vm(vm);
+            });
         },
         
         // helpers for VMListView descendants
@@ -237,6 +325,13 @@
                 this.action_views[vm.id].update_layout();
             }
             
+            var el = this.vm(vm);
+            if (vm.get('suspended')) {
+              el.addClass("suspended");
+            } else {
+              el.removeClass("suspended");
+            }
+
             try {
                 this.post_update_vm(vm);
             } catch (err) {};
@@ -246,7 +341,6 @@
         // container (e.g. some views might have different
         // containers for terminated or running machines
         check_vm_container: function(vm){
-            if (vm.state() == "DESTROY") { return };
             var el = this.vm(vm);
             if (!el.length) { return };
             var self = this;
@@ -281,7 +375,7 @@
         
         // is vm in transition ??? show the progress spinner
         update_transition_state: function(vm) {
-            if (vm.in_transition() && !vm.pending_action){
+            if (vm.in_transition() && !vm.has_pending_action()){
                 this.sel('vm_spinner', vm.id).show();
             } else {
                 this.sel('vm_spinner', vm.id).hide();
@@ -330,7 +424,7 @@
 
             vm.call("console", function(console_data) {
                 var url = vm.get_console_url(console_data);
-                snf.util.open_window(url, "VM_" + vm.get("id") + "_CONSOLE", {});
+                snf.util.open_window(url, "VM_" + vm.get("id") + "_CONSOLE", {'scrollbars': 1, 'fullscreen': 0});
             }, undefined, {async: use_async});
         }
 
@@ -627,7 +721,12 @@
 
     snf.ui = _.extend(snf.ui, bb.Events);
     snf.ui.trigger_error = function(code, msg, error, extra) {
-        snf.ui.trigger("error", { code:code, msg:msg, error:error, extra:extra || {} })
+        if (msg.match(/Script error/i)) {
+          // No usefull information to display in this case. Plus it's an
+          // exception that probably doesn't affect our app.
+          return 0;
+        }
+        snf.ui.trigger("error", { code:code, msg:msg, error:error, extra:extra || {} });
     };
 
 })(this);

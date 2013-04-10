@@ -132,6 +132,24 @@
     
     // Util namespace
     synnefo.util = synnefo.util || {};
+    
+    synnefo.util.FormatDigits = function(num, length) {
+        var r = "" + num;
+        while (r.length < length) {
+            r = "0" + r;
+        }
+        return r;
+    }
+
+    synnefo.util.formatDate = function(d) {
+        var dt = synnefo.util.FormatDigits(d.getDate()) + '/';
+        dt += synnefo.util.FormatDigits(d.getMonth(), 2);
+        dt += '/' + d.getFullYear();
+        dt += ' ' + synnefo.util.FormatDigits(d.getHours(), 2) + ':';
+        dt += synnefo.util.FormatDigits(d.getMinutes(), 2) + ':';
+        dt += synnefo.util.FormatDigits(d.getSeconds(), 2);
+        return dt;
+    },
 
     // Extensions and Utility functions
     synnefo.util.ISODateString = function(d){
@@ -218,12 +236,16 @@
         return string.substring(0, len) + append;
     }
 
-    synnefo.util.readablizeBytes = function(bytes) {
+    synnefo.util.readablizeBytes = function(bytes, fix) {
+        if (fix === undefined) { fix = 2; }
         var s = ['bytes', 'kb', 'MB', 'GB', 'TB', 'PB'];
         var e = Math.floor(Math.log(bytes)/Math.log(1024));
-        return (bytes/Math.pow(1024, Math.floor(e))).toFixed(2)+" "+s[e];
+        return (bytes/Math.pow(1024, Math.floor(e))).toFixed(fix)+" "+s[e];
     }
     
+
+    synnefo.util.IP_REGEX = /(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\/([0-9]|[1-2][0-9]|3[0-2]?)$/
+
     synnefo.i18n.API_ERROR_MESSAGES = {
         'timeout': {
             'message': 'TIMEOUT', 
@@ -262,10 +284,9 @@
         return {del: removed, add: added};
     }
 
-    synnefo.util.open_window = function(url, name, specs) {
+    synnefo.util.open_window = function(url, name, opts) {
         // default specs
-        var opts = _.extend({
-            scrollbars: 'no',
+        opts = _.extend({
             menubar: 'no',
             toolbar: 'no',
             status: 'no',
@@ -279,7 +300,8 @@
             top: 0
         }, opts)
         
-        window.open(url, name, opts);
+        var specs = _.map(opts, function(v,k) {return k + "=" + v}).join(",");
+        window.open(url, name, specs);
     }
     
     synnefo.util.readFileContents = function(f, cb) {

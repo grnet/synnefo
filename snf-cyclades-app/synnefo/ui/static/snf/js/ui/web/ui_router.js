@@ -64,9 +64,17 @@
             "machines/single/":                 "vms_single_view",
 
             // network views
-            "networks/":                        "networks_view"
+            "networks/":                        "networks_view",
+            // network views
+            "disks/":                        	"disks_view",
+            ":hash":                            "fallback"
         },
-        
+          
+        fallback: function() {
+            this.navigate("machines/icon/");
+            this.index();
+        },
+
         show_welcome: function() {
             if (snf.storage.vms.length == 0) {
                 ui.main.show_empty();
@@ -123,6 +131,11 @@
         networks_view: function() {
             this.navigate("networks/");
             ui.main.show_view("networks");
+        },
+
+        disks_view: function() {
+            this.navigate("disks/");
+            ui.main.show_view("disks");
         }
 
     });

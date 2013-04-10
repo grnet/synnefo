@@ -96,7 +96,9 @@
         var path = snf.util.parseUri(url).path;
         var d = api_history[path + "_" + method];
         if (d) {
-            url = url + "?changes-since=" + snf.util.ISODateString(d)
+            // subtract threshold
+            d = new Date(d - synnefo.config.changes_since_alignment);
+            url = url + "?changes-since=" + snf.util.ISODateString(d);
         }
         return url;
     }
@@ -181,7 +183,8 @@
             }
 
             if (handler_type == "beforeSend") {
-                arguments[0].setRequestHeader('X-Auth-Token', synnefo.user.token);
+                arguments[0].setRequestHeader('X-Auth-Token', 
+                                              synnefo.user.get_token());
             }
 
             // error with status code 0 in opera

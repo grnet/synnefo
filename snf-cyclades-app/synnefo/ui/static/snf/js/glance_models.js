@@ -27,16 +27,30 @@
             return this.get('size') > 0 ? util.readablizeBytes(this.get('size')) : unknown_title;
         },
 
+        get_meta: function(key) {
+            // check for lowercase keys too since glance image meta are set 
+            // via http headers
+            var val = models.GlanceImage.__super__.get_meta.call(this, key)
+            if (val == null) {
+                val = models.GlanceImage.__super__.get_meta.call(this, 
+                                                                 key.toLowerCase())
+            }
+            return val;
+        },
+
+        get_owner: function() {
+            return this.get('owner') || 'Unknown';
+        },
+
+
         display_size: function() {
             return this.get_readable_size();
         },
 
-        get_os: function() {
-            return this.get_meta('os');
-        },
-
-        get_gui: function() {
-            return this.get_meta('gui');
+        display_users: function() {
+            try {
+              return this.get_meta('users').split(' ').join(", ");
+            } catch(err) { console.log(err); return ''}
         }
         
     })
@@ -49,8 +63,10 @@
                           'shared': 'Shared with me', 
                           'public': 'Public'},
         type_selections_order: ['system', 'personal', 'shared', 'public'],
-        display_metadata: ['created_at', 'updated_at', 'filename', 'format', 
-                            'size', 'status'],
+        display_metadata: ['size', 'users', 'osfamily', 'status', 'created_at', 'updated_at', 
+            'filename', 'format', 'root_partition'],
+        meta_labels: {'OS':'OS', 'osfamily':'OS Family', 'GUI':'GUI'},
+        display_extra_metadata: true,
         read_method: 'head',
 
         // custom glance api parser
@@ -111,7 +127,7 @@
 
         get_personal_images: function() {
             return _.filter(this.active(), function(i) { 
-                return i.get_owner() == snf.user.username 
+                return i.get_owner_uuid() == snf.user.username;
             });
         },
 
@@ -123,7 +139,7 @@
             return _.filter(this.active(), function(i){ 
                 return !_.include(_.keys(snf.config.system_images_owners), 
                                   i.get_owner()) && 
-                               i.get_owner() != snf.user.username &&
+                               i.get_owner_uuid() != snf.user.username &&
                                !i.is_public();
             });
         }

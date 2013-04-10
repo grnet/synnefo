@@ -4,6 +4,7 @@
         <div class="machine clearfix" id="machine-template">
             
             <div class="machine-data-cont clearfix">
+            <div class="suspended-notice">SUSPENDED</div>
             <div class="machine-data clearfix">
             <div class="machine-info clearfix">
                 <div class="machine-connect">
@@ -26,7 +27,10 @@
                             <span class="ip-version-label">IPv4</span> <span class="public ipv4-text"></span>
                             <span class="ip-version-label">IPv6</span> <span class="public ipv6-text"></span>
                         </div>
-                        <div class="build-progress subtitle"></div>
+                        <div class="build-progress subtitle">
+                          <span class="message"></span>
+                          <span class="btn">details</span>
+                        </div>
                         <div class="info">
                             <span class="info-header cont-toggler toggler">
                                 <span class="label">{% trans "info" %}</span>

@@ -32,5 +32,3 @@
 # or implied, of GRNET S.A.
 
 from synnefo.settings.default.admins import *
-from synnefo.settings.default.logging import *
-

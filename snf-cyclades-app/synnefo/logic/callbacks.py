@@ -33,18 +33,94 @@
 import logging
 import json
 from functools import wraps
-from datetime import datetime
 
-from synnefo.db.models import VirtualMachine
+from synnefo.db.models import Backend, VirtualMachine, Network, BackendNetwork
 from synnefo.logic import utils, backend
 
 from synnefo.lib.utils import merge_time
 
+log = logging.getLogger(__name__)
 
-log = logging.getLogger()
+
+def handle_message_delivery(func):
+    """ Generic decorator for handling messages.
+
+    This decorator is responsible for converting the message into json format,
+    handling of common exceptions and acknowledment of message if needed.
+
+    """
+    @wraps(func)
+    def wrapper(client, message, *args, **kwargs):
+        try:
+            msg = None
+            msg = json.loads(message['body'])
+            func(msg)
+            client.basic_ack(message)
+        except ValueError as e:
+            log.error("Incoming message not in JSON format %s: %s", e, message)
+            client.basic_nack(message)
+        except KeyError as e:
+            log.error("Malformed incoming JSON, missing attribute %s: %s",
+                      e, message)
+            client.basic_nack(message)
+        except Exception as e:
+            if msg:
+                log.exception("Unexpected error: %s, msg: %s", e, msg)
+            else:
+                log.exception("Unexpected error: %s", e)
+            client.basic_reject(message)
+
+    return wrapper
 
 
-def is_update_required(func):
+def instance_from_msg(func):
+    """ Decorator for getting the VirtualMachine object of the msg.
+
+    """
+    @handle_message_delivery
+    @wraps(func)
+    def wrapper(msg):
+        try:
+            vm_id = utils.id_from_instance_name(msg["instance"])
+            vm = VirtualMachine.objects.select_for_update().get(id=vm_id)
+            func(vm, msg)
+        except VirtualMachine.InvalidBackendIdError:
+            log.debug("Ignoring msg for unknown instance %s.", msg['instance'])
+        except VirtualMachine.DoesNotExist:
+            log.error("VM for instance %s with id %d not found in DB.",
+                      msg['instance'], vm_id)
+        except Network.InvalidBackendIdError, Network.DoesNotExist:
+            log.error("Invalid message", msg)
+    return wrapper
+
+
+def network_from_msg(func):
+    """ Decorator for getting the BackendNetwork object of the msg.
+
+    """
+    @handle_message_delivery
+    @wraps(func)
+    def wrapper(msg):
+        try:
+            network_id = utils.id_from_network_name(msg["network"])
+            network = Network.objects.select_for_update().get(id=network_id)
+            backend = Backend.objects.get(clustername=msg['cluster'])
+            backend_network = BackendNetwork.objects.get(network=network,
+                                                         backend=backend)
+            func(backend_network, msg)
+        except Network.InvalidBackendIdError:
+            log.debug("Ignoring msg for unknown network %s.", msg['network'])
+        except Network.DoesNotExist:
+            log.error("Network %s not found in DB.", msg['network'])
+        except Backend.DoesNotExist:
+            log.error("Backend %s not found in DB.", msg['cluster'])
+        except BackendNetwork.DoesNotExist:
+            log.error("Network %s on backend %s not found in DB.",
+                      msg['network'], msg['cluster'])
+    return wrapper
+
+
+def if_update_required(func):
     """
     Decorator for checking if an incoming message needs to update the db.
 
@@ -52,61 +128,39 @@ def is_update_required(func):
     - The message has been redelivered and the action has already been
       completed. In this case the event_time will be equal with the one
       in the database.
-    - The message describes a previous state in the ganeti, from the one that is
-      described in the db. In this case the event_time will be smaller from the
-      one in the database.
-
-    This decorator is also acknowledging the messages to the AMQP broker.
+    - The message describes a previous state in the ganeti, from the one that
+      is described in the db. In this case the event_time will be smaller from
+      the one in the database.
 
     """
     @wraps(func)
-    def wrapper(client, message, *args, **kwargs):
+    def wrapper(target, msg):
         try:
-            msg = json.loads(message['body'])
-
             event_time = merge_time(msg['event_time'])
+        except:
+            log.error("Received message with malformed time: %s",
+                      msg['event_time'])
+            raise KeyError
 
-            vm_id = utils.id_from_instance_name(msg["instance"])
-            vm = VirtualMachine.objects.get(id=vm_id)
+        db_time = target.backendtime
 
-            db_time = vm.backendtime
-            if event_time <= db_time:
-                format_ = "%d/%m/%y %H:%M:%S:%f"
-                log.debug("Ignoring message %s.\nevent_timestamp: %s db_timestamp: %s",
-                          message,
-                          event_time.strftime(format_),
-                          db_time.strftime(format_))
-                client.basic_ack(message)
-                return
-
-            # New message. Update the database!
-            func(vm, msg)
-
-        except ValueError:
-            log.error("Incoming message not in JSON format: %s", message)
-            client.basic_ack(message)
-        except KeyError:
-            log.error("Malformed incoming JSON, missing attributes: %s",
-                      message)
-            client.basic_ack(message)
-        except VirtualMachine.InvalidBackendIdError:
-            log.debug("Ignoring msg for unknown instance %s.", msg['instance'])
-            client.basic_ack(message)
-        except VirtualMachine.DoesNotExist:
-            log.error("VM for instance %s with id %d not found in DB.",
-                      msg['instance'], vm_id)
-            client.basic_ack(message)
-        except Exception as e:
-            log.exception("Unexpected error: %s, msg: %s", e, msg)
-        else:
-            # Acknowledge the message
-            client.basic_ack(message)
+        if db_time and event_time <= db_time:
+            format_ = "%d/%m/%y %H:%M:%S:%f"
+            log.debug("Ignoring message %s.\nevent_timestamp: %s"
+                      " db_timestamp: %s",
+                      msg,
+                      event_time.strftime(format_),
+                      db_time.strftime(format_))
+            return
+        # New message. Update the database!
+        func(target, msg, event_time)
 
     return wrapper
 
 
-@is_update_required
-def update_db(vm, msg):
+@instance_from_msg
+@if_update_required
+def update_db(vm, msg, event_time):
     """Process a notification of type 'ganeti-op-status'"""
     log.debug("Processing ganeti-op-status msg: %s", msg)
 
@@ -114,7 +168,6 @@ def update_db(vm, msg):
         log.error("Message is of unknown type %s.", msg['type'])
         return
 
-    event_time = merge_time(msg['event_time'])
     backend.process_op_status(vm, event_time, msg['jobId'], msg['operation'],
                               msg['status'], msg['logmsg'])
 
@@ -122,8 +175,9 @@ def update_db(vm, msg):
               msg['instance'])
 
 
-@is_update_required
-def update_net(vm, msg):
+@instance_from_msg
+@if_update_required
+def update_net(vm, msg, event_time):
     """Process a notification of type 'ganeti-net-status'"""
     log.debug("Processing ganeti-net-status msg: %s", msg)
 
@@ -131,32 +185,103 @@ def update_net(vm, msg):
         log.error("Message is of unknown type %s", msg['type'])
         return
 
-    event_time = merge_time(msg['event_time'])
     backend.process_net_status(vm, event_time, msg['nics'])
 
     log.debug("Done processing ganeti-net-status msg for vm %s.",
               msg["instance"])
 
 
-@is_update_required
-def update_build_progress(vm, msg):
-    """Process a create progress message"""
+@network_from_msg
+@if_update_required
+def update_network(network, msg, event_time):
+    """Process a notification of type 'ganeti-network-status'"""
+    log.debug("Processing ganeti-network-status msg: %s", msg)
+
+    if msg['type'] != "ganeti-network-status":
+        log.error("Message is of unknown type %s.", msg['type'])
+        return
+
+    opcode = msg['operation']
+    status = msg['status']
+    jobid = msg['jobId']
+
+    if opcode == "OP_NETWORK_SET_PARAMS":
+        backend.process_network_modify(network, event_time, jobid, opcode,
+                                       status, msg['add_reserved_ips'],
+                                       msg['remove_reserved_ips'])
+    else:
+        backend.process_network_status(network, event_time, jobid, opcode,
+                                       status, msg['logmsg'])
+
+    log.debug("Done processing ganeti-network-status msg for network %s.",
+              msg['network'])
+
+
+@instance_from_msg
+@if_update_required
+def update_build_progress(vm, msg, event_time):
+    """
+    Process a create progress message. Update build progress, or create
+    appropriate diagnostic entries for the virtual machine instance.
+    """
     log.debug("Processing ganeti-create-progress msg: %s", msg)
 
-    if msg['type'] != "ganeti-create-progress":
+    if msg['type'] not in ('image-copy-progress', 'image-error', 'image-info',
+                           'image-warning', 'image-helper'):
         log.error("Message is of unknown type %s", msg['type'])
         return
 
-    event_time = merge_time(msg['event_time'])
-    backend.process_create_progress(vm, event_time, msg['rprogress'], None)
+    if msg['type'] == 'image-copy-progress':
+        backend.process_create_progress(vm, event_time, msg['progress'])
+        # we do not add diagnostic messages for copy-progress messages
+        return
+
+    # default diagnostic fields
+    source = msg['type']
+    level = 'DEBUG'
+    message = msg.get('messages', '')
+    if isinstance(message, list):
+        message = " ".join(message)
+
+    details = msg.get('stderr', None)
+
+    if msg['type'] == 'image-helper':
+        # for helper task events join subtype to diagnostic source and
+        # set task name as diagnostic message
+        if msg.get('subtype', None):
+            if msg.get('subtype') in ['task-start', 'task-end']:
+                message = msg.get('task', message)
+                source = "%s-%s" % (source, msg.get('subtype'))
+
+        if msg.get('subtype', None) == 'warning':
+            level = 'WARNING'
+
+        if msg.get('subtype', None) == 'error':
+            level = 'ERROR'
+
+        if msg.get('subtype', None) == 'info':
+            level = 'INFO'
+
+    if msg['type'] == 'image-error':
+        level = 'ERROR'
+
+    if msg['type'] == 'image-warning':
+        level = 'WARNING'
+
+    if not message.strip():
+        message = " ".join(source.split("-")).capitalize()
+
+    # create the diagnostic entry
+    backend.create_instance_diagnostic(vm, message, source, level, event_time,
+                                       details=details)
 
     log.debug("Done processing ganeti-create-progress msg for vm %s.",
               msg['instance'])
 
 
-def dummy_proc(client, message):
+def dummy_proc(client, message, *args, **kwargs):
     try:
         log.debug("Msg: %s", message['body'])
         client.basic_ack(message)
     except Exception as e:
-        log.exception("Could not receive message")
+        log.exception("Could not receive message %s" % e)

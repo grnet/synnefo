@@ -1,0 +1,199 @@
+{% extends "im/account_base.html" %}
+
+{% load filters %}
+{% load astakos_tags %}
+{% block headjs %}
+	{{ block.super }}	 
+	<script src="{{ IM_STATIC_URL }}js/quotas.js"></script>	
+{% endblock %}	
+
+{% block page.body %}
+<h2>
+    {% if update_form %}REQUEST PROJECT MODIFICATION{% else %}REQUEST PROJECT{% endif %}
+     
+</h2>
+
+{% if not show_form %}
+<p>These are the specifications of the Project you want to create. If you hit the "Submit" button
+this form will be officially sent to GRNET for review. Please make sure the following reflect
+exactly your request.</p>
+{% endif %}
+
+{% if show_form %}
+<form action="?verify=1" method="post" class="withlabels quotas-form" id="group_create_form">{% csrf_token %}
+
+    <fieldset class="with-info" id="top">
+    	<legend>
+    		1. PROJECT DETAILS
+			<span class="info"> 
+		    	<em>more info</em>
+                <span> To create a new Project, first enter the following
+                    required fields.  The information you enter, except
+                    <i>Comments for review</i>, will be visible to all ~okeanos
+                    users. </span>
+	    	</span>    		
+    	</legend>
+        {% for key, err in form.errors.items %}
+        {% if key == "__all__" %}
+        <div class="form-error">{{ err }}</div>
+        {% endif %}
+        {% endfor %}
+
+        {% for field in form %}
+        {% if  field.name in details_fields %}
+            <div class="form-row {% if field.errors|length %}with-errors
+        {% endif %}
+        {% if field.is_hidden %}with-hidden{% endif %}">
+                {{ field.errors }}
+                 <p class="clearfix {% if field.blank %}required{% endif %}">
+                    {{ field.label_tag }}
+                    {{ field|safe }}
+                    <span class="extra-img">&nbsp;</span>
+                    {%  if field.help_text %}
+                        <span class="info">
+                            <em>more info</em>
+                            <span>{{ field.help_text|safe }}</span>
+                        </span>
+                    {% endif %}
+                 </p>
+            </div>
+        {% endif %}
+        {% endfor %}
+		
+		
+		
+        
+        {% for g, resources in resource_catalog %}
+	    	{% for r in resources %}
+                {% with r.str_repr as rname %}
+	    	    {% with object|resource_grants|lookup:rname as value %}
+	    	        <input type="hidden" id="{{'id_'|add:rname|add:'_uplimit'}}" name="{{rname|add:'_uplimit'}}"  {% if value %}value="{{value}}"{% endif %} />
+                {% endwith %}
+                {% endwith %}
+            {% endfor %}
+        {% endfor %}
+    </fieldset>
+    <fieldset class="with-info">
+    	<legend>
+    		2. MEMBERSHIP OPTIONS
+			<span class="info"> 
+		    	<em>more info</em>
+		    	<span> Membership options </span>
+	    	</span>    		
+    	</legend>
+    	{% for field in form %}
+    	 
+    	{% if  field.name in membership_fields %}
+	        <div class="form-row {% if field.errors|length %}with-errors{% endif %}  {% if field.is_hidden %}with-hidden{% endif %}">
+		        {{ field.errors }}
+			     <p class="clearfix {% if field.blank %}required{% endif %}">
+			        {{ field.label_tag }}
+			        {{ field|safe }}
+			        <span class="extra-img">&nbsp;</span>
+			        {%  if field.help_text %}
+			        	<span class="info"> 
+						    <em>more info</em>
+						    <span>{{ field.help_text|safe }}</span>
+					    </span>
+			        {% endif %}
+			     </p>
+			</div>
+		{% endif %}
+		{% endfor %}
+
+        
+    </fieldset>
+    
+    <fieldset id="icons">
+    	<legend>
+    		3. RESOURCES
+    		<span class="info"> 
+		    	<em>more info</em>
+		    	<span>Here you add resources to your Project. Each resource you specify here, will be granted to *EACH* user of this Project. So the total resources will be: &lt;Total number of members&gt; * &lt;amount_of_resource&gt; for each resource. </span>
+	    	</span>    
+    	</legend>
+    	<ul class="clearfix">
+    	    {% with object|resource_groups as groups %}
+            {% for g, group_info in resource_groups.items %}
+                {% if g %}
+	    		<li>
+	    		    <a href="#{{ g }}" id="{{'group_'|add:g}}" {% if g in groups %}class="selected"{% endif %}><img src="/static/im/images/create-{{ g }}.png" alt="vm"/></a>
+	    			<input type="hidden" name="proxy_{{ 'is_selected_'|add:g }}"  id="proxy_{{ 'id_is_selected_'|add:g }}" {% if g in groups %}value="1"{% else %}value="0"{% endif %}>
+	    			<input type="hidden" name="{{ 'is_selected_'|add:g }}"  id="{{ 'id_is_selected_'|add:g }}" {% if g in groups %}value="1"{% else %}value="0"{% endif %}>
+	                <p class="msg">{{ group_info.help_text }}</p>
+	    		</li>
+	    		{% endif %}
+            {% endfor %}
+            {% endwith %}
+    	</ul>
+    	
+    </fieldset>
+    <div class="visible">&nbsp;</div>
+    <div class="not-visible">
+    	{% for gname, resources in resource_catalog %}
+     	    <div class="group {{'group_'|add:gname}}" id="{{ gname }}">
+	    		<a href="#icons" class="delete">X remove resource</a>	
+	    		{% for rdata in resources %}
+                {% with rdata.str_repr as rname %}
+	    		<fieldset class="quota">
+			    	
+			    	<legend>
+			    		{% if rdata.is_abbreviation %}
+			    			{{ rdata.verbose_name|upper }}
+			    		{% else %}
+			    			{{ rdata.verbose_name|capfirst }}
+			    		{% endif %}
+			    		<span class="info"> 
+					    	<em>more info</em>
+					    	<span>{{ rdata.help_text }}</span>
+				    	</span>  
+			    	</legend>
+			    	<div class="form-row">
+			    		<p class="clearfix">
+			    			<label for="{{'id_'|add:rname|add:'_uplimit'}}_proxy" >
+                                Total {{rdata.pluralized_display_name}} per user
+							</label>
+			    			<input 	type="text" 
+			       						id="{{'id_'|add:rname|add:'_uplimit'}}_proxy" 
+			       						name="{{rname|add:'_uplimit'}}_proxy" 
+			       						placeholder="{{ rdata.placeholder}} " 
+			       						{% if rdata.unit == 'bytes' %} 
+										 	class="dehumanize"
+										{% endif  %}
+										{% if request.POST %}
+											{% with rname|add:'_uplimit' as input_value %}
+											value = "{{ request.POST|lookup:input_value }}"
+											{% endwith %}
+										{% else %}
+											value = "{% get_grant_value rname form %}"
+										{% endif %}
+			       						autocomplete="off"			
+							> 
+			       			<span class="extra-img">&nbsp;</span>
+			         		<span class="info"><em>more info</em><span>{{ rdata.help_text_input_each }}</span></span>
+			    		</p>
+			    		<p class="error-msg">Invalid format</p>
+			    		<p class="msg"></p>
+			    	</div>
+				</fieldset>	
+                {% endwith %}
+				{% endfor %}
+	    	</div>
+	    	 
+	    {% endfor %}
+    </div>
+    
+	<input type="hidden" name="user"  id="id_user" value="{{user.id}}">  
+	<div class="form-row submit">
+   		<input type="submit" value="CONTINUE" class="submit altcol" >
+	</div>
+</form>
+{% else %}
+    {% include "im/projects/projectapplication_form_summary.html" %}
+{% endif %}
+
+<script>
+	
+</script>	 
+
+{% endblock %}

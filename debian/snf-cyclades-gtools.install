@@ -1,0 +1,6 @@
+snf-cyclades-gtools/conf/* etc/synnefo
+
+snf-cyclades-gtools/collectd/plugins/ganeti-stats.py usr/lib/snf-cyclades-gtools/collectd
+snf-cyclades-gtools/collectd/conf/ganeti-stats.conf etc/collectd
+snf-cyclades-gtools/collectd/examples/ganeti-stats-collectd.conf usr/share/doc/snf-cyclades-gtools/examples
+snf-cyclades-gtools/collectd/README.collectd usr/share/doc/snf-cyclades-gtools/

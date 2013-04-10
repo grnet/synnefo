@@ -37,16 +37,16 @@
 #
 #
 
-"""Unit Tests for the Singleton classes in synnefo.common.singleton
+"""Unit Tests for the Singleton classes in synnefo.lib.singleton
 
 Provides unit tests for the code implementing Singleton
-classes in the synnefo.common.singleton module.
+classes in the synnefo.lib.singleton module.
 
 """
 
 import unittest
 
-from synnefo.lib.singleton import ArgBasedSingleton
+from synnefo.lib.singleton import ArgBasedSingleton, ArgBasedSingletonMeta
 
 
 class SubClassOne(ArgBasedSingleton):
@@ -102,6 +102,7 @@ class MyMeta(ArgBasedSingletonMeta):
 
 class BaseClass(object):
     __metaclass__ = MyMeta
+
     def ret5(self):
         return 5
 

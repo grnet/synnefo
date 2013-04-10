@@ -49,6 +49,68 @@
     var bb = root.Backbone;
     var util = snf.util;
     
+    // generic details overlay view.
+    views.DetailsView = views.Overlay.extend({
+        view_id: "details_view",
+        
+        content_selector: "#details-overlay",
+        css_class: 'overlay-api-info overlay-info',
+        overlay_id: "overlay-details",
+
+        subtitle: "",
+        title: "Details",
+        
+        show: function(title, msg, content) {
+            this.title = title;
+            this.msg = msg;
+            this.content = content;
+            views.DetailsView.__super__.show.apply(this);
+        },
+
+        beforeOpen: function() {
+            this.set_title(this.title);
+            if (!this.msg) { 
+                this.$(".description.intro").hide() 
+            } else {
+                this.$(".description.intro").html(this.msg).show();
+            }
+
+            if (!this.content) { 
+                this.$(".description.subinfo").hide() 
+            } else {
+                this.$(".description.subinfo").html(this.content).show(); 
+            };
+        }
+
+    });
+
+    views.SuspendedVMView = views.FeedbackView.extend({
+        view_id: "suspended_info_view",
+        
+        css_class: 'overlay-api-info overlay-error non-critical',
+        overlay_id: "overlay-api-info",
+
+        subtitle: "",
+        title: "VM Suspended",
+
+        beforeOpen: function() {
+            views.SuspendedVMView.__super__.beforeOpen.apply(this);
+            $(this.$(".description p")[0]).html($("#suspended-vm-overlay .description").html())
+        },
+
+        show: function(vm, data, collect_data, extra_data, cb) {
+            this.vm = vm;
+            data = "Suspended VM Details";
+            data += "\n====================";
+            data += "\nID: " + vm.id;
+            data += "\nName: " + vm.get('name');
+            data += "\nPublic IP: " + vm.get_public_nic().get('ipv4');
+            data += "\n\n";
+            views.SuspendedVMView.__super__.show.call(this, data, collect_data, extra_data, cb);
+        }
+
+    });
+
     views.ApiInfoView = views.Overlay.extend({
         view_id: "api_info_view",
         
@@ -61,7 +123,7 @@
 
         beforeOpen: function() {
             var cont = this.$(".copy-content p");
-            var token = snf.user.token;
+            var token = snf.user.get_token();
 
             cont.html("");
             cont.text(token);
@@ -388,10 +450,10 @@
 
         // views classes registry
         views_classes: {'icon': views.IconView, 'single': views.SingleView, 
-            'list': views.ListView, 'networks': views.NetworksView},
+            'list': views.ListView, 'networks': views.NetworksView, 'disks': views.DisksView},
 
         // view ids
-        views_ids: {'icon':0, 'single':2, 'list':1, 'networks':3},
+        views_ids: {'icon':0, 'single':2, 'list':1, 'networks':3, 'disks':4},
 
         // on which pane id each view exists
         // machine views (icon,single,list) are all on first pane
@@ -506,6 +568,7 @@
             var msg = data.msg, code = data.code, err_obj = data.error;
             error = msg + "<br /><br />" + snf.util.stacktrace().replace("at", "<br /><br />at");
             params = { title: "UI error", extra_details: data.extra };
+            delete data.extra.allow_close;
             params.allow_close = data.extra.allow_close === undefined ? true : data.extra.allow_close;
             this.error_view.show_error("UI", -1, msg, "JS Exception", error, params);
         },
@@ -513,6 +576,8 @@
         init_overlays: function() {
             this.create_vm_view = new views.CreateVMView();
             this.api_info_view = new views.ApiInfoView();
+            this.details_view = new views.DetailsView();
+            this.suspended_view = new views.SuspendedVMView();
             //this.notice_view = new views.NoticeView();
         },
         
@@ -535,27 +600,33 @@
             if (this.completed_items == 2) {
                 this.load_nets_and_vms();
             }
-
             if (this.completed_items == this.items_to_load) {
-                this.update_status("Rendering layout...");
+                this.update_status("layout", 1);
                 var self = this;
                 window.setTimeout(function(){
                     self.after_load();
                 }, 10)
             }
         },
+            
+        load_missing_images: function(cb) {
+            synnefo.storage.vms.load_missing_images(cb);
+        },
 
         load_nets_and_vms: function() {
             var self = this;
-            this.update_status("Loading vms...");
+            this.update_status("vms", 0);
             storage.vms.fetch({refresh:true, update:false, success: function(){
-                self.update_status("VMS Loaded.");
-                self.check_status();
+                self.load_missing_images(function(){
+                    self.update_status("vms", 1);
+                    self.update_status("layout", 0);
+                    self.check_status();
+                });
             }});
 
-            this.update_status("Loading networks...");
+            this.update_status("networks", 0);
             storage.networks.fetch({refresh:true, update:false, success: function(){
-                self.update_status("Networks loaded.");
+                self.update_status("networks", 1);
                 self.check_status();
             }});
         },  
@@ -599,10 +670,9 @@
 
         after_load: function() {
             var self = this;
-            this.update_status("Setting vms update interval...");
             this.init_intervals();
             this.update_intervals();
-            this.update_status("Showing initial view...");
+            this.update_status("layout", 0);
             
             // bypass update_hidden_views in initial view
             // rendering to force all views to get render
@@ -613,7 +683,7 @@
             snf.config.update_hidden_views = uhv;
 
             window.setTimeout(function() {
-                self.update_status("Initializing overlays...");
+                self.update_status("layout", 0);
                 self.load_initialize_overlays();
             }, 20);
         },
@@ -652,21 +722,26 @@
             // display loading message
             this.show_loading_view();
             // sync load initial data
-            this.update_status("Loading images...");
+            this.update_status("images", 0);
             storage.images.fetch({refresh:true, update:false, success: function(){
+                self.update_status("images", 1);
                 self.check_status()
             }});
-            this.update_status("Loading flavors...");
+            this.update_status("flavors", 0);
             storage.flavors.fetch({refresh:true, update:false, success:function(){
+                self.update_status("flavors", 1);
                 self.check_status()
             }});
         },
 
-        update_status: function(msg) {
-            this.log.debug(msg)
-            this.status = msg;
-            $("#loading-view .info").removeClass("hidden")
-            $("#loading-view .info").text(this.status);
+        update_status: function(ns, state) {
+            var el = $("#loading-view .header."+ns);
+            if (state == 0) {
+                el.removeClass("off").addClass("on");
+            }
+            if (state == 1) {
+                el.removeClass("on").addClass("done");
+            }
         },
 
         initialize_views: function() {
@@ -679,6 +754,7 @@
             this.add_view("list");
             this.add_view("single");
             this.add_view("networks");
+            this.add_view("disks");
 
             this.init_menu();
         },
@@ -703,9 +779,68 @@
             }
         },
         
+        quota_handlers_initialized: false,
+
+        load_user_quotas: function(repeat) {
+          var main_view = this;
+          if (!snf.user.quota) {
+            snf.user.quota = new snf.quota.Quota("cyclades");
+            main_view.init_quotas_handlers();
+      
+          }
+
+          snf.api.sync('read', undefined, {
+            url: synnefo.config.quota_url, 
+            success: function(d) {
+              snf.user.quota.load(d);
+            },
+            complete: function() {
+                if (repeat) {
+                  setTimeout(function(){
+                      main_view.load_user_quotas(1);
+                  }, synnefo.config.quotas_update_interval || 10000);
+                }
+            }
+          });
+        },
+        
+        check_quotas: function(type) {
+          var storage = synnefo.storage[type];
+          var consumed = storage.length;
+          var quotakey = {
+            'networks': 'cyclades.network.private',
+            'vms': 'cyclades.vm'
+          }
+          if (type == "networks") {
+            consumed = storage.filter(function(net){
+              return !net.is_public() && !net.is_deleted();
+            }).length;
+          }
+          
+          var limit = snf.user.quota.get_limit(quotakey[type]);
+          if (snf.user.quota && snf.user.quota.data && consumed >= limit) {
+            storage.trigger("quota_reached");
+          } else {
+            storage.trigger("quota_free");
+          }
+        },
+
+        init_quotas_handlers: function() {
+          var self = this, event;
+          snf.user.quota.bind("cyclades.vm.quota.changed", function() {
+            this.check_quotas("vms");
+          }, this);
+
+          var event = "cyclades.network.private.quota.changed";
+          snf.user.quota.bind(event, function() {
+            this.check_quotas("networks");
+          }, this);
+        },
+
         // initial view based on user cookie
         show_initial_view: function() {
           this.set_vm_view_handlers();
+          this.load_user_quotas(1);
           this.hide_loading_view();
           
           bb.history.start();
@@ -714,15 +849,29 @@
         },
 
         show_vm_details: function(vm) {
-            this.router.vm_details_view(vm.id);
+            if (vm) {
+              this.router.vm_details_view(vm.id);
+            }
         },
 
         set_vm_view_handlers: function() {
             var self = this;
             $("#createcontainer #create").click(function(e){
                 e.preventDefault();
+                if ($(this).hasClass("disabled")) { return }
                 self.router.vm_create_view();
-            })
+            });
+
+            synnefo.storage.vms.bind("quota_reached", function(){
+              $("#createcontainer #create").addClass("disabled");
+              $("#createcontainer #create").attr("title", "Machines limit reached");
+            });
+
+            synnefo.storage.vms.bind("quota_free", function(){
+              $("#createcontainer #create").removeClass("disabled");
+              $("#createcontainer #create").attr("title", "");
+            });
+
         },
 
         check_empty: function() {
@@ -784,7 +933,7 @@
                 if (this.skip_errors) {
                     this.views[view_id] = new cls();
                     $(this.views[view_id]).bind("resize", _.bind(function() {
-                        window.positionFooter();
+                        window.forcePositionFooter();
                         this.multiple_actions_view.fix_position();
                     }, this));
                 } else {
@@ -955,7 +1104,7 @@
     snf.ui.init = function() {
         if (snf.config.handle_window_exceptions) {
             window.onerror = function(msg, file, line) {
-                snf.ui.trigger_error("CRITICAL", msg, {}, { file:file + ":" + line, allow_close: false });
+                snf.ui.trigger_error("CRITICAL", msg, {}, { file:file + ":" + line, allow_close: true });
             };
         }
         snf.ui.main.load();

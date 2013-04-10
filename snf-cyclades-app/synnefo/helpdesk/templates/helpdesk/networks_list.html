@@ -1,0 +1,69 @@
+{% load helpdesk_tags %}
+<div class="object-anchor" id="network-{{network.pk}}"></div>
+<div class="network-details object-details {{ rowcls }}">
+    <h4><i class="icon-random"></i>{{ network.name }} <span class="badge">&nbsp;</span></h4>
+    {{ network|network_deleted_badge|safe }}
+     
+    <span class="badge badge-info">ID: {{ network.pk }}</span>
+    {{ network|object_status_badge|safe }}
+    
+    <div class="network-details-content object-details-content">
+        <ul class="nav nav-tabs">
+		    <li class="active"><a href="#details{{ network.pk }}" data-toggle="tab">Details</a></li>
+		    <li><a href="#vms{{ network.pk }}" data-toggle="tab">VMs</a></li>
+	    </ul>	
+         <div class="tab-content">
+			<div class="tab-pane active" id="details{{ network.pk }}">
+				<dl class="dl-horizontal well">
+		            <dt>ID</dt><dd>{{ network.pk }}</dd>
+		            <dt>Name</dt><dd>{{ network.name }}</dd>
+		            <dt>Public</dt><dd>{{ network.public }}</dd>
+		            <dt>User ID</dt><dd>{{ network.userid }}</dd>
+		            <dt>Created</dt><dd>{{ network.created }} ({{ network.created|timesince }} <strong>ago</strong>)</dd>
+		            <dt>Updated</dt><dd>{{ network.updated }} ({{ network.created|timesince }} <strong>ago</strong>)</dd>
+		            <dt>State</dt><dd>{{ network.get_state_display }} ({{ network.state }})</dd>
+		        </dl>
+			</div>
+			<div class="tab-pane" id="vms{{ network.pk }}">
+				 
+		 		<table class="table well">
+		            <thead>
+		                <td>ID</td>
+		                <td>VM (ID)</td>
+		                <td>Created</td>
+		                <td>Updated</td>
+		                <td>Index</td>
+		                <td>MAC</td>
+		                <td>IPv4</td>
+		                <td>IPv6</td>
+		                <td>Firewall</td>
+		            </thead>
+		            <tbody>
+		                {% for nic in network|network_nics:account %}
+		                <tr>
+		                    <td>{{ nic.pk }}</td>
+		                    <td>{{ nic.machine }} ({{ nic.machine.pk }})</td>
+		                    <td>{{ nic.created }}</td>
+		                    <td>{{ nic.updated }}</td>
+		                    <td>{{ nic.index }}</td>
+		                    <td>{{ nic.mac }}</td>
+		                    <td>{{ nic.ipv4 }}</td>
+		                    <td>{{ nic.ipv6 }}</td>
+		                    <td>{{ nic.get_firewall_profile_display }} ({{nic.firewall_profile}})</td>
+		                </tr>
+		                {% empty %}
+		                <tr>
+		                    <td colspan=9>No network interface available</td>
+		                </tr>
+		                {% endfor %}
+		            </tbody>
+		        </table>
+				 	
+				 	 
+				 
+			</div>
+		</div>
+		 
+    </div>
+</div>
+

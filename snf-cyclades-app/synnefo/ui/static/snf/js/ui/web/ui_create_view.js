@@ -212,6 +212,11 @@
                 } else {
                 }
             })
+
+            $(".image-warning .confirm").bind('click', function(){
+                $(".image-warning").hide();
+                $(".create-controls").show();
+            })
         },
 
         update_images: function(images) {
@@ -278,6 +283,11 @@
             this.reset_images();
             this.select_image(this.selected_image);
             this.hide_list_loading();
+            $(".custom-image-help").hide();
+            if (this.selected_type == 'personal' && !images.length) {
+                $(".custom-image-help").show();
+            }
+
         },
 
         select_type: function(type) {
@@ -289,6 +299,7 @@
                 _.bind(this.show_loading_view, this), 
                 _.bind(this.hide_loading_view, this)
             );
+
             this.update_layout_for_type(type);
         },
 
@@ -308,6 +319,16 @@
         hide_list_loading: function() {
             this.$(".images-list-cont").removeClass("loading");
         },
+        
+        display_warning_for_image: function(image) {
+          if (image && !image.is_system_image() && !image.owned_by(synnefo.user)) {
+            $(".create-vm .image-warning").show();
+            $(".create-controls").hide();
+          } else {
+            $(".create-vm .image-warning").hide();
+            $(".create-controls").show();
+          }
+        },
 
         select_image: function(image) {
             if (image && image.get('id') && !_.include(this.images_ids, image.get('id'))) {
@@ -326,6 +347,7 @@
             
             if ((!this.selected_image && image) || (this.selected_image != image))
                 this.trigger("change", image);
+                this.display_warning_for_image(image);
 
             this.selected_image = image;
                 
@@ -343,8 +365,8 @@
 
         update_image_details: function(image) {
             this.image_details_desc.hide().parent().hide();
-            if (image.escape("description")) {
-                this.image_details_desc.text(image.get("description")).show().parent().show();
+            if (image.get_description()) {
+                this.image_details_desc.html(image.get_description(false)).show().parent().show();
             }
             var img = snf.ui.helpers.os_icon_tag(image.escape("OS"))
             if (image.get("name")) {
@@ -354,15 +376,17 @@
             var extra_details = this.image_details.find(".extra-details");
             // clean prevously added extra details
             extra_details.find(".image-detail").remove();
-
+            
+            var skip_keys = ['description', 'sortorder']
             var meta_keys = ['owner', 'OS', 'kernel', 'GUI'];
             var detail_tpl = ('<div class="clearfix image-detail {2}">' +
-                             '<span class="title">{0}</span>' +
+                             '<span class="title clearfix">{0}' +
+                             '<span class="custom">custom</span></span>' +
                              '<p class="value">{1}</p>' + 
                              '</div>');
             meta_keys = _.union(meta_keys, this.images_storage.display_metadata || []);
-
-            _.each(meta_keys, function(key) {
+            
+            var append_metadata_row = function(key, is_extra) {
                 var value;
                 var method = 'get_' + key.toLowerCase();
                 var display_method = 'display_' + key.toLowerCase();
@@ -378,12 +402,32 @@
                         value = image.get_meta(key);
                     }
                 }
-
+                    
                 if (!value) { return; }
-                
-                var label = _(key.replace(/_/g," ")).capitalize();
-                extra_details.append(detail_tpl.format(_.escape(label), _.escape(value), key.toLowerCase()));
-            })
+                 
+                var label = this.images_storage.meta_labels[key];
+                if (!label) {
+                    var label = _(key.replace(/_/g," ")).capitalize();
+                }
+                var row_cls = key.toLowerCase();
+                if (is_extra) { row_cls += " extra-meta" };
+                extra_details.append(detail_tpl.format(_.escape(label), value, row_cls));
+            }
+
+            _.each(meta_keys, function(key) {
+                append_metadata_row.apply(this, [key]);
+            }, this);
+            
+            if (synnefo.storage.images.display_extra_metadata) {
+                _.each(image.get('metadata').values, function(value, key) {
+                    if (!_.contains(meta_keys, key) && 
+                        !_.contains(meta_keys, key.toLowerCase()) &&
+                        !_.contains(meta_keys, key.toUpperCase()) &&
+                        !_.contains(skip_keys, key)) {
+                            append_metadata_row.apply(this, [key, true]);
+                    }
+                }, this);
+            }
         },
 
         reset_images: function() {
@@ -427,7 +471,7 @@
                                                   img.id, 
                                                   snf.ui.helpers.os_icon_tag(img.escape("OS")),
                                                   _.escape(img.get_readable_size()),
-                                                  util.truncate(img.escape("description"), 35),
+                                                  util.truncate(img.get_description(false), 35),
                                                   _.escape(img.display_owner())));
             image.data("image", img);
             image.data("image_id", img.id);
@@ -487,7 +531,6 @@
             }, this));
 
             this.predefined = this.$(".predefined-list");
-            this.update_predefined_flavors();
         },
 
         handle_image_change: function(data) {
@@ -495,6 +538,7 @@
             this.update_valid_predefined();
             this.current_flavor = undefined;
             this.update_flavors_data();
+            this.update_predefined_flavors();
             this.reset_flavors();
             this.update_layout();
         },
@@ -534,6 +578,18 @@
         select_valid_flavor: function() {
             var found = false;
             var self = this;
+
+            _.each(["cpu", "mem", "disk"], function(t) {
+              var el = $(".flavor-options."+t);
+              var all = el.find(".flavor-opts-list li").length;
+              var disabled = el.find(".flavor-opts-list li.disabled").length;
+              if (disabled >= all) {
+                el.find("h4").addClass("error");
+              } else {
+                el.find("h4").removeClass("error");
+              }
+            })
+
             _.each(this.flavors, function(flv) {
                 if (self.flavor_is_valid(flv)) {
                     found = flv;
@@ -613,10 +669,36 @@
         },
 
         update_unavailable_values: function() {
-            if (!this.current_image) { this.unavailable_values = {disk:[], ram:[], cpu:[]}; return };
-            this.unavailable_values = storage.flavors.unavailable_values_for_image(this.current_image);
+            
+            var unavailable = {disk:[], ram:[], cpu:[]}
+            var user_excluded = {disk:[], ram:[], cpu:[]}
+            var image_excluded = {disk:[], ram:[], cpu:[]}
+
+            if (this.current_image) {
+              image_excluded = storage.flavors.unavailable_values_for_image(this.current_image);
+            }
+
+            if (snf.user.quota) {
+              quotas = this.get_vm_params_quotas();
+              user_excluded = storage.flavors.unavailable_values_for_quotas(quotas);
+            }
+
+            unavailable.disk = user_excluded.disk.concat(image_excluded.disk);
+            unavailable.ram = user_excluded.ram.concat(image_excluded.ram);
+            unavailable.cpu = user_excluded.cpu.concat(image_excluded.cpu);
+            
+            this.unavailable_values = unavailable;
         },
         
+        get_vm_params_quotas: function() {
+          var quota = {
+            'ram': snf.user.quota.get_available('cyclades.ram'),
+            'cpu': snf.user.quota.get_available('cyclades.cpu'),
+            'disk': snf.user.quota.get_available('cyclades.disk')
+          }
+          return quota;
+        },
+
         flavor_is_valid: function(flv) {
             if (!flv) { return false };
 
@@ -624,6 +706,12 @@
             if (!existing) { return false };
             
             if (this.unavailable_values && (this.unavailable_values.disk.indexOf(parseInt(flv.get("disk")) * 1000) > -1)) {
+                return false;
+            }
+            if (this.unavailable_values && (this.unavailable_values.ram.indexOf(parseInt(flv.get("ram"))) > -1)) {
+                return false;
+            }
+            if (this.unavailable_values && (this.unavailable_values.cpu.indexOf(parseInt(flv.get("cpu"))) > -1)) {
                 return false;
             }
             return true;
@@ -677,6 +765,23 @@
                 var el_value = $(el).data("value") * 1000;
                 if (this.unavailable_values.disk.indexOf(el_value) > -1) {
                     $(el).addClass("disabled");
+                    $(el).removeClass("selected");
+                };
+            }, this));
+
+            this.$("#create-vm-flavor-options .flavor-options.ram li").each(_.bind(function(i, el){
+                var el_value = $(el).data("value");
+                if (this.unavailable_values.ram.indexOf(el_value) > -1) {
+                    $(el).addClass("disabled");
+                    $(el).removeClass("selected");
+                };
+            }, this));
+
+            this.$("#create-vm-flavor-options .flavor-options.cpu li").each(_.bind(function(i, el){
+                var el_value = $(el).data("value");
+                if (this.unavailable_values.cpu.indexOf(el_value) > -1) {
+                    $(el).addClass("disabled");
+                    $(el).removeClass("selected");
                 };
             }, this));
         },
@@ -703,22 +808,21 @@
 
                 el.parent().find(".option").removeClass("selected");
                 el.addClass("selected");
-                
+
                 if (el.hasClass("mem")) { self.last_choice = ["ram", $(this).data("value")] }
                 if (el.hasClass("cpu")) { self.last_choice = ["cpu", $(this).data("value")] }
                 if (el.hasClass("disk")) { self.last_choice = ["disk", $(this).data("value")] }
                 if (el.hasClass("disk_template")) { self.last_choice = ["disk_template", $(this).data("value")] }
 
                 self.update_selected_from_ui();
-            })
+            });
 
-            //this.$(".flavor-options li.disk_template.option").mouseover(function(){
-                //$(this).parent().find(".description").hide();
-                //$(this).find(".description").show();
-            //}).mouseout(function(){
-                //$(this).parent().find(".description").hide();
-                //$(this).parent().find(".selected .description").show();
-            //});
+            $(".flavor-opts-list").each(function(){
+              var el = $(this);
+              if (el.find(".option").length > 6) {
+                el.addClass("compact");
+              }
+            });
         },
 
         sort_flavors: function(els) {
@@ -739,7 +843,7 @@
                 this.$(".option.disk.selected").data("value"),
                 this.$(".option.disk_template.selected").data("value"),
             this.flavors];
-
+            
             var flv = storage.flavors.get_flavor.apply(storage.flavors, args);
             return flv;
         },
@@ -783,10 +887,14 @@
             }
 
             if (this.__added_flavors.ram.indexOf(values.mem) == -1) {
-                var mem = $(('<li class="option mem value-{0}">' + 
+                var mem_value = parseInt(_.escape(values.mem))*1024*1024;
+                var displayvalue = synnefo.util.readablizeBytes(mem_value, 
+                                                               0).split(" ");
+                var mem = $(('<li class="option mem value-{2}">' + 
                              '<span class="value">{0}</span>' + 
-                             '<span class="metric">MB</span></li>').format(
-                            _.escape(values.mem))).data('value', values.mem);
+                             '<span class="metric">{1}</span></li>').format(
+                          displayvalue[0], displayvalue[1], values.mem)).data(
+                          'value', values.mem);
                 this.mems.append(mem);
                 this.__added_flavors.ram.push(values.mem);
             }
@@ -829,6 +937,26 @@
             this.update_disabled_flavors();
             this.validate();
             this.validate_selected_flavor();
+            this.update_quota_display();
+        },
+        
+        update_quota_display: function() {
+          if (!snf.user.quota || !snf.user.quota.data) { return };
+
+          _.each(["disk", "ram", "cpu"], function(type) {
+            var available_dsp = snf.user.quota.get_available_readable(type);
+            var available = snf.user.quota.get_available(type);
+            var content = "({0} left)".format(available_dsp);
+            if (available <= 0) { content = "(None left)" }
+            
+            if (type == "ram") { type = "mem" }
+            $(".flavor-options."+type+" h4 .available").text(content);
+            if (available <= 0) {
+              $(".flavor-options."+type+" h4 .available").addClass("error");
+            } else {
+              $(".flavor-options."+type+" h4 .available").removeClass("error");
+            }
+          })
         },
 
         reset: function() {
@@ -1083,7 +1211,7 @@
                 this.$(".confirm-cont.image .image-" + sel + " .value").text(val)
             }
             
-            set_detail("description");
+            set_detail("description", image.get_description());
             set_detail("name");
             set_detail("os", _(image.get_os()).capitalize());
             set_detail("gui", image.get_gui());
@@ -1248,7 +1376,7 @@
                 }
 
                 if (personality.length) {
-                    extra['personality'] = personality;
+                    extra['personality'] = _.flatten(personality);
                 }
 
                 storage.vms.create(data.name, data.image, data.flavor, meta, extra, _.bind(function(data){

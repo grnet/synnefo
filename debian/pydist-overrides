@@ -1,0 +1,12 @@
+Django python-django
+httplib2 python-httplib2
+south python-django-south
+ganeti ganeti2
+daemon python-daemon
+prctl python-prctl
+snf-common snf-common
+vncauthproxy snf-vncauthproxy
+snf-pithos-backend snf-pithos-backend
+IPy python-ipy
+kamaki kamaki
+unittest2 python-unittest2

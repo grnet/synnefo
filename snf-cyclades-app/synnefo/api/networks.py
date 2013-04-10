@@ -36,22 +36,26 @@ from logging import getLogger
 from django.conf.urls.defaults import patterns
 from django.conf import settings
 from django.db.models import Q
+from django.db import transaction
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
-from synnefo.api import faults, util
+from synnefo.api import util
 from synnefo.api.actions import network_actions
 from synnefo.api.common import method_not_allowed
-from synnefo.api.faults import BadRequest, OverLimit, Unauthorized
-from synnefo.db.models import Network, NetworkLink
+from synnefo.api.faults import (ServiceUnavailable, BadRequest, Forbidden,
+                                NetworkInUse, OverLimit)
+from synnefo import quotas
+from synnefo.db.models import Network
+from synnefo.db.pools import EmptyPool
 from synnefo.logic import backend
 
 
 log = getLogger('synnefo.api')
 
-
-urlpatterns = patterns('synnefo.api.networks',
+urlpatterns = patterns(
+    'synnefo.api.networks',
     (r'^(?:/|.json|.xml)?$', 'demux'),
     (r'^/detail(?:.json|.xml)?$', 'list_networks', {'detail': True}),
     (r'^/(\w+)(?:.json|.xml)?$', 'network_demux'),
@@ -80,14 +84,23 @@ def network_demux(request, network_id):
 
 
 def network_to_dict(network, user_id, detail=True):
-    network_id = str(network.id) if not network.public else 'public'
-    d = {'id': network_id, 'name': network.name}
+    d = {'id': str(network.id), 'name': network.name}
     if detail:
+        d['cidr'] = network.subnet
+        d['cidr6'] = network.subnet6
+        d['gateway'] = network.gateway
+        d['gateway6'] = network.gateway6
+        d['dhcp'] = network.dhcp
+        d['type'] = network.flavor
         d['updated'] = util.isoformat(network.updated)
         d['created'] = util.isoformat(network.created)
         d['status'] = network.state
-        servers = [vm.id for vm in network.machines.filter(userid=user_id)]
-        d['servers'] = {'values': servers}
+        d['public'] = network.public
+
+        attachments = [util.construct_nic_id(nic)
+                       for nic in network.nics.filter(machine__userid=user_id)
+                                              .order_by('machine')]
+        d['attachments'] = {'values': attachments}
     return d
 
 
@@ -110,18 +123,18 @@ def list_networks(request, detail=False):
 
     log.debug('list_networks detail=%s', detail)
     since = util.isoparse(request.GET.get('changes-since'))
-    user_networks = Network.objects.filter(
-                                Q(userid=request.user_uniq) | Q(public=True))
+    user_networks = Network.objects.filter(Q(userid=request.user_uniq) |
+                                           Q(public=True))
 
     if since:
         user_networks = user_networks.filter(updated__gte=since)
         if not user_networks:
             return HttpResponse(status=304)
     else:
-        user_networks = user_networks.filter(state='ACTIVE')
+        user_networks = user_networks.filter(deleted=False)
 
     networks = [network_to_dict(network, request.user_uniq, detail)
-                for network in user_networks]
+                for network in user_networks.order_by('id')]
 
     if request.serialization == 'xml':
         data = render_to_string('list_networks.xml', {
@@ -134,42 +147,94 @@ def list_networks(request, detail=False):
 
 
 @util.api_method('POST')
-def create_network(request):
+@quotas.uses_commission
+@transaction.commit_manually
+def create_network(serials, request):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
     #                       serviceUnavailable (503),
     #                       unauthorized (401),
     #                       badMediaType(415),
     #                       badRequest (400),
+    #                       forbidden (403)
     #                       overLimit (413)
 
-    req = util.get_request_dict(request)
-    log.debug('create_network %s', req)
-
     try:
-        d = req['network']
-        name = d['name']
-    except (KeyError, ValueError):
-        raise BadRequest('Malformed request.')
+        req = util.get_request_dict(request)
+        log.info('create_network %s', req)
 
-    count = Network.objects.filter(userid=request.user_uniq,
-                                          state='ACTIVE').count()
+        try:
+            d = req['network']
+            name = d['name']
+            # TODO: Fix this temp values:
+            subnet = d.get('cidr', '192.168.1.0/24')
+            subnet6 = d.get('cidr6', None)
+            gateway = d.get('gateway', None)
+            gateway6 = d.get('gateway6', None)
+            flavor = d.get('type', 'MAC_FILTERED')
+            public = d.get('public', False)
+            dhcp = d.get('dhcp', True)
+        except (KeyError, ValueError):
+            raise BadRequest('Malformed request.')
 
-    # get user limit
-    networks_limit_for_user = \
-        settings.NETWORKS_USER_QUOTA.get(request.user_uniq,
-                settings.MAX_NETWORKS_PER_USER)
+        if public:
+            raise Forbidden('Can not create a public network.')
 
-    if count >= networks_limit_for_user:
-        raise faults.OverLimit("Network count limit exceeded for your account.")
+        if flavor not in Network.FLAVORS.keys():
+            raise BadRequest("Invalid network flavors %s" % flavor)
 
-    try:
-        network = backend.create_network(name, request.user_uniq)
-    except NetworkLink.NotAvailable:
-        raise faults.OverLimit('No networks available.')
+        if flavor not in settings.API_ENABLED_NETWORK_FLAVORS:
+            raise Forbidden("Can not create %s network" % flavor)
+
+        # Check that user provided a valid subnet
+        util.validate_network_params(subnet, gateway, subnet6, gateway6)
+
+        user_id = request.user_uniq
+        serial = quotas.issue_network_commission(user_id)
+        serials.append(serial)
+        # Make the commission accepted, since in the end of this
+        # transaction the Network will have been created in the DB.
+        serial.accepted = True
+        serial.save()
+
+        try:
+            mode, link, mac_prefix, tags = util.values_from_flavor(flavor)
+            network = Network.objects.create(
+                name=name,
+                userid=user_id,
+                subnet=subnet,
+                subnet6=subnet6,
+                gateway=gateway,
+                gateway6=gateway6,
+                dhcp=dhcp,
+                flavor=flavor,
+                mode=mode,
+                link=link,
+                mac_prefix=mac_prefix,
+                tags=tags,
+                action='CREATE',
+                state='PENDING',
+                serial=serial)
+        except EmptyPool:
+            log.error("Failed to allocate resources for network of type: %s",
+                      flavor)
+            raise ServiceUnavailable("Failed to allocate network resources")
+
+        # Create BackendNetwork entries for each Backend
+        network.create_backend_network()
+    except:
+        transaction.rollback()
+        raise
+    else:
+        transaction.commit()
+
+    # Create the network in the actual backends
+    backend.create_network(network)
 
     networkdict = network_to_dict(network, request.user_uniq)
-    return render_network(request, networkdict, status=202)
+    response = render_network(request, networkdict, status=202)
+
+    return response
 
 
 @util.api_method('GET')
@@ -195,12 +260,13 @@ def update_network_name(request, network_id):
     #                       serviceUnavailable (503),
     #                       unauthorized (401),
     #                       badRequest (400),
+    #                       forbidden (403)
     #                       badMediaType(415),
     #                       itemNotFound (404),
     #                       overLimit (413)
 
     req = util.get_request_dict(request)
-    log.debug('update_network_name %s', network_id)
+    log.info('update_network_name %s', network_id)
 
     try:
         name = req['network']['name']
@@ -209,26 +275,39 @@ def update_network_name(request, network_id):
 
     net = util.get_network(network_id, request.user_uniq)
     if net.public:
-        raise Unauthorized('Can not rename the public network.')
+        raise Forbidden('Can not rename the public network.')
+    if net.deleted:
+        raise Network.DeletedError
     net.name = name
     net.save()
     return HttpResponse(status=204)
 
 
 @util.api_method('DELETE')
+@transaction.commit_on_success
 def delete_network(request, network_id):
     # Normal Response Code: 204
     # Error Response Codes: computeFault (400, 500),
     #                       serviceUnavailable (503),
     #                       unauthorized (401),
+    #                       forbidden (403)
     #                       itemNotFound (404),
-    #                       unauthorized (401),
     #                       overLimit (413)
 
-    log.debug('delete_network %s', network_id)
-    net = util.get_network(network_id, request.user_uniq)
+    log.info('delete_network %s', network_id)
+    net = util.get_network(network_id, request.user_uniq, for_update=True)
     if net.public:
-        raise Unauthorized('Can not delete the public network.')
+        raise Forbidden('Can not delete the public network.')
+
+    if net.deleted:
+        raise Network.DeletedError
+
+    if net.machines.all():  # Nics attached on network
+        raise NetworkInUse('Machines are connected to network.')
+
+    net.action = 'DESTROY'
+    net.save()
+
     backend.delete_network(net)
     return HttpResponse(status=204)
 
@@ -242,12 +321,13 @@ def network_action(request, network_id):
 
     net = util.get_network(network_id, request.user_uniq)
     if net.public:
-        raise Unauthorized('Can not modify the public network.')
-
-    key = req.keys()[0]
-    val = req[key]
+        raise Forbidden('Can not modify the public network.')
+    if net.deleted:
+        raise Network.DeletedError
 
     try:
+        key = req.keys()[0]
+        val = req[key]
         assert isinstance(val, dict)
         return network_actions[key](request, net, req[key])
     except KeyError:

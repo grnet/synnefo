@@ -56,12 +56,15 @@ from django.core import management
 from django.utils.importlib import import_module
 from optparse import Option, make_option
 from synnefo.util.version import get_component_version
+from synnefo.lib.dictconfig import dictConfig
 
 import sys
+import locale
 import os
 import imp
 
 _commands = None
+
 
 def find_modules(name, path=None):
     """Find all modules with name 'name'
@@ -247,6 +250,11 @@ class SynnefoManagementUtility(ManagementUtility):
         except IndexError:
             subcommand = 'help' # Display help if no arguments were given.
 
+        # Encode stdout. This check is required because of the way python
+        # checks if something is tty: https://bugzilla.redhat.com/show_bug.cgi?id=841152
+        if not subcommand in ['test'] and not 'shell' in subcommand:
+            sys.stdout = EncodedStdOut(sys.stdout)
+
         if subcommand == 'help':
             if len(args) > 2:
                 self.fetch_command(args[2]).print_help(self.prog_name, args[2])
@@ -296,11 +304,42 @@ class SynnefoManagementUtility(ManagementUtility):
             klass = load_command_class(app_name, subcommand)
         return klass
 
+
+def configure_logging():
+    try:
+        from synnefo.settings import SNF_MANAGE_LOGGING_SETUP
+        dictConfig(SNF_MANAGE_LOGGING_SETUP)
+    except ImportError:
+        import logging
+        logging.basicConfig()
+        log = logging.getLogger()
+        log.warning("SNF_MANAGE_LOGGING_SETUP setting missing.")
+
+
+class EncodedStdOut(object):
+    def __init__(self, stdout):
+        try:
+            std_encoding = stdout.encoding
+        except AttributeError:
+            std_encoding = None
+        self.encoding = std_encoding or locale.getpreferredencoding()
+        self.original_stdout = stdout
+
+    def write(self, string):
+        if isinstance(string, unicode):
+            string = string.encode(self.encoding)
+        self.original_stdout.write(string)
+
+    def __getattr__(self, name):
+        return getattr(self.original_stdout, name)
+
+
 def main():
     # no need to run setup_environ
     # we already know our project
     os.environ['DJANGO_SETTINGS_MODULE'] = os.environ.get('DJANGO_SETTINGS_MODULE',
                                                           'synnefo.settings')
+    configure_logging()
     mu = SynnefoManagementUtility(sys.argv)
     mu.execute()
 

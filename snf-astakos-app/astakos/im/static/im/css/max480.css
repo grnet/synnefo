@@ -1,0 +1,11 @@
+.container .navigation ul li 					{ display:block; }
+.two-cols-blog .rt 								{ width:auto; padding-right:0; margin-left:0; float:none;}
+.resources .categories ul li					{ display:block; float:none;}
+.container .navigation ul+ul					{ margin-top:20px}
+
+/* forms */
+form .form-row .extra-link						{   float:none; position:static; margin-left:15px;}
+.stats .bar div									{ width:250px; }
+.auth_methods h3								{ float:none; }
+.widjets li										{ width:100%; }
+.widjets li div									{ background:none; margin:0; }

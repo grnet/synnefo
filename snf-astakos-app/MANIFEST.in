@@ -1,0 +1,9 @@
+include README Changelog
+include distribute_setup.py
+global-include */templates/* */fixtures/* */static/*
+global-exclude */.DS_Store
+include astakos/settings.d/*
+recursive-include astakos/im/templates/ *.html *.txt
+recursive-include astakos/im/static/ *.js *.css *.less *.html *.txt *.png *.htc
+prune docs
+prune other

@@ -5,50 +5,120 @@ Synnefo Administrator's Guide
 
 This is the complete Synnefo Administrator's Guide.
 
-Quick Installation
-==================
-
-The quick installation guide describes how to install the whole synnefo stack
-in just two physical nodes, for testing purposes. This guide is useful to those
-interested in deploying synnefo in large scale, as a starting point that will
-help them get familiar with the synnefo components and overall architecture, as
-well as the interconnection between different services. Such an installation,
-also provides a quick preview of the basic synnefo features, although we would
-like to think that synnefo unveils its real power while scaling.
-
-| :ref:`Administrator's quick installation guide <quick-install-admin-guide>`
-| This guide will walk you through a complete installation using debian packages.
-
-Common administrative tasks
-===========================
-
-If you installed Synnefo successfully and have a working deployment, here are
-some common administrative tasks that you may find useful.
 
 
-.. _user_activation:
+General Synnefo Architecture
+============================
 
-User activation
----------------
+The following graph shows the whole Synnefo architecture and how it interacts
+with multiple Ganeti clusters. We hope that after reading the Administrator's
+Guide you will be able to understand every component and all the interactions
+between them. It is a good idea to first go through the Quick Administrator's
+Guide before proceeding.
+
+.. image:: images/synnefo-arch2.png
+   :width: 100%
+   :target: _images/synnefo-arch2.png
+
+
+
+Identity Service (Astakos)
+==========================
+
+
+Overview
+--------
+
+Authentication methods
+~~~~~~~~~~~~~~~~~~~~~~
+
+Local Authentication
+````````````````````
+
+LDAP Authentication
+```````````````````
+
+.. _shibboleth-auth:
+
+Shibboleth Authentication
+`````````````````````````
+
+Astakos can delegate user authentication to a Shibboleth federation.
+
+To setup shibboleth, install package::
+
+  apt-get install libapache2-mod-shib2
+
+Change appropriately the configuration files in ``/etc/shibboleth``.
+
+Add in ``/etc/apache2/sites-available/synnefo-ssl``::
+
+  ShibConfig /etc/shibboleth/shibboleth2.xml
+  Alias      /shibboleth-sp /usr/share/shibboleth
+
+  <Location /im/login/shibboleth>
+    AuthType shibboleth
+    ShibRequireSession On
+    ShibUseHeaders On
+    require valid-user
+  </Location>
+
+and before the line containing::
+
+  ProxyPass        / http://localhost:8080/ retry=0
+
+add::
+
+  ProxyPass /Shibboleth.sso !
+
+Then, enable the shibboleth module::
+
+  a2enmod shib2
+
+After passing through the apache module, the following tokens should be
+available at the destination::
+
+  eppn # eduPersonPrincipalName
+  Shib-InetOrgPerson-givenName
+  Shib-Person-surname
+  Shib-Person-commonName
+  Shib-InetOrgPerson-displayName
+  Shib-EP-Affiliation
+  Shib-Session-ID
+
+Finally, add 'shibboleth' in ``ASTAKOS_IM_MODULES`` list. The variable resides
+inside the file ``/etc/synnefo/20-snf-astakos-app-settings.conf``
+
+Architecture
+------------
+
+Prereqs
+-------
+
+Installation
+------------
+
+Configuration
+-------------
+
+Working with Astakos
+--------------------
+
+User activation methods
+~~~~~~~~~~~~~~~~~~~~~~~
 
 When a new user signs up, he/she is not marked as active. You can see his/her
 state by running (on the machine that runs the Astakos app):
 
 .. code-block:: console
 
-   $ snf-manage listusers
+   $ snf-manage user-list
 
 There are two different ways to activate a new user. Both need access to a
-running mail server. Your mail server should be defined in the
-``/etc/synnefo/00-snf-common-admins.conf`` related constants. At least:
-
-.. code-block:: console
-
-   EMAIL_HOST = "my_mail_server.example.com"
-   EMAIL_PORT = "25"
+running :ref:`mail server <mail-server>`.
 
 Manual activation
-~~~~~~~~~~~~~~~~~
+`````````````````
 
 You can manually activate a new user that has already signed up, by sending
 him/her an activation email. The email will contain an approriate activation
@@ -57,17 +127,636 @@ email by running:
 
 .. code-block:: console
 
-   $ snf-manage sendactivation <user ID or email>
+   $ snf-manage user-activation-send <user ID or email>
 
-Be sure to have already setup your mail server and defined it in your synnefo
+Be sure to have already setup your mail server and defined it in your Synnefo
 settings, before running the command.
 
 Automatic activation
-~~~~~~~~~~~~~~~~~~~~
+````````````````````
+
+FIXME: Describe Regex activation method
+
+Astakos advanced operations
+---------------------------
+
+Adding "Terms of Use"
+~~~~~~~~~~~~~~~~~~~~~
+
+Astakos supports versioned terms-of-use. First of all you need to create an
+html file that will contain your terms. For example, create the file
+``/usr/share/synnefo/sample-terms.html``, which contains the following:
+
+.. code-block:: console
+
+   <h1>~okeanos terms</h1>
+
+   These are the example terms for ~okeanos
+
+Then, add those terms-of-use with the snf-manage command:
+
+.. code-block:: console
+
+   $ snf-manage term-add /usr/share/synnefo/sample-terms.html
+
+Your terms have been successfully added and you will see the corresponding link
+appearing in the Astakos web pages' footer.
+
+Enabling reCAPTCHA
+~~~~~~~~~~~~~~~~~~
+
+Astakos supports the `reCAPTCHA <http://www.google.com/recaptcha>`_ feature.
+If enabled, it protects the Astakos forms from bots. To enable the feature, go
+to https://www.google.com/recaptcha/admin/create and create your own reCAPTCHA
+key pair. Then edit ``/etc/synnefo/20-snf-astakos-app-settings.conf`` and set
+the corresponding variables to reflect your newly created key pair. Finally, set
+the ``ASTAKOS_RECAPTCHA_ENABLED`` variable to ``True``:
+
+.. code-block:: console
+
+   ASTAKOS_RECAPTCHA_PUBLIC_KEY = 'example_recaptcha_public_key!@#$%^&*('
+   ASTAKOS_RECAPTCHA_PRIVATE_KEY = 'example_recaptcha_private_key!@#$%^&*('
+
+   ASTAKOS_RECAPTCHA_ENABLED = True
+
+Restart the service on the Astakos node(s) and you are ready:
+
+.. code-block:: console
+
+   # /etc/init.d/gunicorn restart
+
+Checkout your new Sign up page. If you see the reCAPTCHA box, you have setup
+everything correctly.
+
+
+
+File Storage Service (Pithos)
+=============================
+
+Overview
+--------
+
+Architecture
+------------
+
+Prereqs
+-------
+
+Installation
+------------
+
+Configuration
+-------------
+
+Working with Pithos
+-------------------
+
+Pithos advanced operations
+--------------------------
+
+
+
+Compute/Network/Image Service (Cyclades)
+========================================
+
+Compute Overview
+----------------
+
+Network Overview
+----------------
+
+Image Overview
+--------------
+
+Architecture
+------------
+
+Asynchronous communication with Ganeti backends
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Synnefo uses Google Ganeti backends for VM cluster management. In order for
+Cyclades to be able to handle thousands of user requests, Cyclades and Ganeti
+communicate asynchronously. Briefly, requests are submitted to Ganeti through
+Ganeti's RAPI/HTTP interface, and then asynchronous notifications about the
+progress of Ganeti jobs are being created and pushed upwards to Cyclades. The
+architecture and communication with a Ganeti backend is shown in the graph
+below:
+
+.. image:: images/cyclades-ganeti-communication.png
+   :width: 50%
+   :target: _images/cyclades-ganeti-communication.png
+
+The Cyclades API server is responsible for handling user requests. Read-only
+requests are directly served by looking up the Cyclades DB. If the request
+needs an action in the Ganeti backend, Cyclades submit jobs to the Ganeti
+master using the `Ganeti RAPI interface
+<http://docs.ganeti.org/ganeti/2.2/html/rapi.html>`_.
+
+While Ganeti executes the job, `snf-ganeti-eventd`, `snf-ganeti-hook` and
+`snf-progress-monitor` are monitoring the progress of the job and send
+corresponding messages to the RabbitMQ servers. These components are part
+of `snf-cyclades-gtools` and must be installed on all Ganeti nodes. Specially:
+
+* *snf-ganeti-eventd* sends messages about operations affecting the operating
+  state of instances and networks. Works by monitoring the Ganeti job queue.
+* *snf-ganeti_hook* sends messages about the NICs of instances. It includes a
+  number of `Ganeti hooks <http://docs.ganeti.org/ganeti/2.2/html/hooks.html>`_
+  for customisation of operations.
+* *snf-progress_monitor* sends messages about the progress of the Image deployment
+  phase which is done by the Ganeti OS Definition `snf-image`.
+
+Finally, `snf-dispatcher` consumes messages from the RabbitMQ queues, processes
+these messages and properly updates the state of the Cyclades DB. Subsequent
+requests to the Cyclades API, will retrieve the updated state from the DB.
+
+
+Prereqs
+-------
+
+Work in progress. Please refer to :ref:`quick administrator quide <quick-install-admin-guide>`.
+
+Installation
+------------
+
+Work in progress. Please refer to :ref:`quick administrator quide <quick-install-admin-guide>`.
+
+Configuration
+-------------
+
+Work in progress. Please refer to :ref:`quick administrator quide <quick-install-admin-guide>`.
+
+Working with Cyclades
+---------------------
+
+Managing Ganeti Backends
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Since v0.11, Synnefo is able to manage multiple Ganeti clusters (backends)
+making it capable to scale linearly to tens of thousands of VMs. Backends
+can be dynamically added or removed via `snf-manage` commands.
+
+Each newly created VM is allocated to a Ganeti backend by the Cyclades backend
+allocator. The VM is "pinned" to this backend, and can not change through its
+lifetime. The backend allocator decides in which backend to spawn the VM based
+on the available resources of each backend, trying to balance the load between
+them.
+
+Handling of Networks, as far as backends are concerned, is based on whether the
+network is public or not. Public networks are created through the `snf-manage
+network-create` command, and are only created on one backend. Private networks
+are created on all backends, in order to ensure that VMs residing on different
+backends can be connected to the same private network.
+
+Listing existing backends
+`````````````````````````
+To list all the Ganeti backends known to Synnefo, we run:
+
+.. code-block:: console
+
+   $ snf-manage backend-list
+
+Adding a new Ganeti backend
+```````````````````````````
+Backends are dynamically added under the control of Synnefo with `snf-manage
+backend-add` command. In this section it is assumed that a Ganeti cluster,
+named ``cluster.example.com`` is already up and running and configured to be
+able to host Synnefo VMs.
+
+To add this Ganeti cluster, we run:
+
+.. code-block:: console
+
+   $ snf-manage backend-add --clustername=cluster.example.com --user="synnefo_user" --pass="synnefo_pass"
+
+where ``clustername`` is the Cluster hostname of the Ganeti cluster, and
+``user`` and ``pass`` are the credentials for the `Ganeti RAPI user
+<http://docs.ganeti.org/ganeti/2.2/html/rapi.html#users-and-passwords>`_.  All
+backend attributes can be also changed dynamically using the `snf-manage
+backend-modify` command.
+
+``snf-manage backend-add`` will also create all existing private networks to
+the new backend. You can verify that the backend is added, by running
+`snf-manage backend-list`.
+
+Note that no VMs will be spawned to this backend, since by default it is in a
+``drained`` state after addition and also it has no public network assigned to
+it.
+
+So, first you need to create its public network, make sure everything works as
+expected and finally make it active by un-setting the ``drained`` flag. You can
+do this by running:
+
+.. code-block:: console
+
+   $ snf-manage backend-modify --drained=False <backend_id>
+
+Removing an existing Ganeti backend
+```````````````````````````````````
+In order to remove an existing backend from Synnefo, we run:
+
+.. code-block:: console
+
+   # snf-manage backend-remove <backend_id>
+
+This command will fail if there are active VMs on the backend. Also, the
+backend is not cleaned before removal, so all the Synnefo private networks
+will be left on the Ganeti nodes. You need to remove them manually.
+
+Allocation of VMs in Ganeti backends
+````````````````````````````````````
+As already mentioned, the Cyclades backend allocator is responsible for
+allocating new VMs to backends. This allocator does not choose the exact Ganeti
+node that will host the VM but just the Ganeti backend. The exact node is
+chosen by the Ganeti cluster's allocator (hail).
+
+The decision about which backend will host a VM is based on the available
+resources. The allocator computes a score for each backend, that shows its load
+factor, and the one with the minimum score is chosen. The admin can exclude
+backends from the allocation phase by marking them as ``drained`` by running:
+
+.. code-block:: console
+
+   $ snf-manage backend-modify --drained=True <backend_id>
+
+The backend resources are periodically updated, at a period defined by
+the ``BACKEND_REFRESH_MIN`` setting, or by running `snf-manage backend-update-status`
+command. It is advised to have a cron job running this command at a smaller
+interval than ``BACKEND_REFRESH_MIN`` in order to remove the load of refreshing
+the backends stats from the VM creation phase.
+
+Finally, the admin can decide to have a user's VMs being allocated to a
+specific backend, with the ``BACKEND_PER_USER`` setting. This is a mapping
+between users and backends. If the user is found in ``BACKEND_PER_USER``, then
+Synnefo allocates all his/hers VMs to the specific backend in the variable,
+even if is marked as drained (useful for testing).
+
+
+Managing Virtual Machines
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+As mentioned, Cyclades uses Ganeti for management of VMs. The administrator can
+handle Cyclades VMs just like any other Ganeti instance, via `gnt-instance`
+commands. All Ganeti instances that belong to Synnefo, are separated from
+others, by a prefix in their names. This prefix is defined in
+``BACKEND_PREFIX_ID`` setting in
+``/etc/synnefo/20-snf-cyclades-app-backend.conf``.
+
+Apart from handling instances directly in the Ganeti level, a number of `snf-manage`
+commands are available:
+
+* ``snf-manage server-list``: List servers
+* ``snf-manage server-show``: Show information about a server in the Cyclades DB
+* ``snf-manage server-inspect``: Inspect the state of a server both in DB and Ganeti
+* ``snf-manage server-modify``: Modify the state of a server in the Cycldes DB
+* ``snf-manage server-create``: Create a new server
+* ``snf-manage server-import``: Import an existing Ganeti instance to Cyclades
+
+
+Managing Virtual Networks
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Cyclades is able to create and manage Virtual Networks. Networking is
+desployment specific and must be customized based on the specific needs of the
+system administrator. For better understanding of networking please refer to
+the :ref:`Network <networks>` section.
+
+Exactly as Cyclades VMs can be handled like Ganeti instances, Cyclades Networks
+can also by handled as Ganeti networks, via `gnt-network commands`. All Ganeti
+networks that belong to Synnefo are named with the prefix
+`${BACKEND_PREFIX_ID}-net-`.
+
+There are also the following `snf-manage` commands for managing networks:
+
+* ``snf-manage network-list``: List networks
+* ``snf-manage network-show``: Show information about a network in the Cyclades DB
+* ``snf-manage network-inspect``: Inspect the state of the network in DB and Ganeti backends
+* ``snf-manage network-modify``: Modify the state of a network in the Cycldes DB
+* ``snf-manage network-create``: Create a new network
+* ``snf-manage network-remove``: Remove an existing network
+
+Managing Network Resources
+``````````````````````````
+
+Proper operation of the Cyclades Network Service depends on the unique
+assignment of specific resources to each type of virtual network. Specifically,
+these resources are:
+
+* IP addresses. Cyclades creates a Pool of IPs for each Network, and assigns a
+  unique IP address to each VM, thus connecting it to this Network. You can see
+  the IP pool of each network by running `snf-manage network-inspect
+  <network_ID>`. IP pools are automatically created and managed by Cyclades,
+  depending on the subnet of the Network.
+* Bridges corresponding to physical VLANs, which are required for networks of
+  type `PRIVATE_PHYSICAL_VLAN`.
+* One Bridge corresponding to one physical VLAN which is required for networks of
+  type `PRIVATE_MAC_PREFIX`.
+
+Cyclades allocates those resources from pools that are created by the
+administrator with the `snf-manage pool-create` management command.
+
+Pool Creation
+`````````````
+Pools are created using the `snf-manage pool-create` command:
+
+.. code-block:: console
+
+   # snf-manage pool-create --type=bridge --base=prv --size=20
+
+will create a pool of bridges, containing bridges prv1, prv2,..prv21.
+
+You can verify the creation of the pool, and check its contents by running:
+
+.. code-block:: console
+
+   # snf-manage pool-list
+   # snf-manage pool-show --type=bridge 1
+
+With the same commands you can handle a pool of MAC prefixes. For example:
+
+.. code-block:: console
+
+   # snf-manage pool-create --type=mac-prefix --base=aa:00:0 --size=65536
+
+will create a pool of MAC prefixes from ``aa:00:1`` to ``b9:ff:f``. The MAC
+prefix pool is responsible for providing only unicast and locally administered
+MAC addresses, so many of these prefixes will be externally reserved, to
+exclude from allocation.
+
+Cyclades advanced operations
+----------------------------
+
+Reconciliation mechanism
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+On certain occasions, such as a Ganeti or RabbitMQ failure, the state of
+Cyclades database may differ from the real state of VMs and networks in the
+Ganeti backends. The reconciliation process is designed to synchronize
+the state of the Cyclades DB with Ganeti. There are two management commands
+for reconciling VMs and Networks
+
+Reconciling Virtual Machines
+````````````````````````````
+
+Reconciliation of VMs detects the following conditions:
+
+ * Stale DB servers without corresponding Ganeti instances
+ * Orphan Ganeti instances, without corresponding DB entries
+ * Out-of-sync state for DB entries wrt to Ganeti instances
+
+To detect all inconsistencies you can just run:
+
+.. code-block:: console
+
+  $ snf-manage reconcile-servers
+
+Adding the `--fix-all` option, will do the actual synchronization:
+
+.. code-block:: console
+
+  $ snf-manage reconcile --fix-all
+
+Please see ``snf-manage reconcile --help`` for all the details.
+
+
+Reconciling Networks
+````````````````````
+
+Reconciliation of Networks detects the following conditions:
+
+  * Stale DB networks without corresponding Ganeti networks
+  * Orphan Ganeti networks, without corresponding DB entries
+  * Private networks that are not created to all Ganeti backends
+  * Unsynchronized IP pools
+
+To detect all inconsistencies you can just run:
+
+.. code-block:: console
+
+  $ snf-manage reconcile-networks
+
+Adding the `--fix-all` option, will do the actual synchronization:
+
+.. code-block:: console
+
+  $ snf-manage reconcile-networks --fix-all
+
+Please see ``snf-manage reconcile-networks --help`` for all the details.
+
+
+
+Block Storage Service (Archipelago)
+===================================
+
+Overview
+--------
+Archipelago offers Copy-On-Write snapshotable volumes. Pithos images can be used
+to provision a volume with Copy-On-Write semantics (i.e. a clone). Snapshots
+offer a unique deduplicated image of a volume, that reflects the volume state
+during snapshot creation and are indistinguishable from a Pithos image.
+
+Archipelago is used by Cyclades and Ganeti for fast provisioning of VMs based on
+CoW volumes. Moreover, it enables live migration of thinly-provisioned VMs with
+no physically shared storage.
+
+Archipelago Architecture
+------------------------
+
+.. image:: images/archipelago-architecture.png
+   :width: 50%
+   :target: _images/archipelago-architecture.png
+
+.. _syn+archip+rados:
+
+Overview of Synnefo + Archipelago + RADOS
+-----------------------------------------
+
+.. image:: images/synnefo-arch3.png
+   :width: 100%
+   :target: _images/synnefo-arch3.png
+
+Prereqs
+-------
+
+The administrator must initialize the storage backend where archipelago volume
+blocks will reside.
+
+In case of a files backend, the administrator must create two directories. One
+for the archipelago data blocks and one for the archipelago map blocks. These
+should probably be over shared storage to enable sharing archipelago volumes
+between multiple nodes. He or she, must also be able to supply a directory where
+the pithos data and map blocks reside.
+
+In case of a RADOS backend, the administrator must create two rados pools, one
+for data blocks, and one for the map blocks. These pools, must be the same pools
+used in pithos, in order to enable volume creation based on pithos images.
+
+Installation
+------------
+
+Archipelago consists of
+
+* ``libxseg0``: libxseg used to communicate over shared memory segments
+* ``python-xseg``: python bindings for libxseg
+* ``archipelago-kernel-dkms``: contains archipelago kernel modules to provide
+  block devices to be used as vm disks
+* ``python-archipelago``: archipelago python module. Includes archipelago and
+  vlmc functionality.
+* ``archipelago``: user space tools and peers for the archipelago management and
+  volume composition
+* ``archipelago-ganeti``: ganeti ext storage scripts, that enable ganeti to
+  provision VMs over archipelago
+
+Performing
+
+.. code-block:: console
+
+  $ apt-get install archipelago-ganeti 
+
+should fetch all the required packages and get you up 'n going with archipelago
+
+Bare in mind, that custom librados is required, which is provided in the apt
+repo of GRNet.
+
+
+For now, librados is a dependency of archipelago, even if you do not intend to
+use archipelago over RADOS.
+
+Configuration
+-------------
+Archipelago should work out of the box with a RADOS backend, but basic
+configuration can be done in ``/etc/default/archipelago`` .
+
+If you wish to change the storage backend to files, set
+
+.. code-block:: console
+
+   STORAGE="files"
+
+and provide the appropriate settings for files storage backend in the conf file.
+
+These are:
+
+* ``FILED_IMAGES``: directory for archipelago data blocks.
+* ``FILED_MAPS``: directory for archipelago map blocks.
+* ``PITHOS``: directory of pithos data blocks.
+* ``PITHOSMAPS``: directory of pithos map blocks.
+
+The settings for RADOS storage backend are:
+
+* ``RADOS_POOL_MAPS``: The pool where archipelago and pithos map blocks reside.
+* ``RADOS_POOL_BLOCKS``: The pool where archipelago and pithos data blocks
+  reside.
+
+Examples can be found in the conf file.
+
+Be aware that archipelago infrastructure doesn't provide default values for this
+settings. If they are not set in the conf file, archipelago will not be able to
+function.
+
+Archipelago also provides ``VERBOSITY`` config options to control the output
+generated by the userspace peers.
+
+The available options are:
+
+* ``VERBOSITY_BLOCKERB``
+* ``VERBOSITY_BLOCKERM``
+* ``VERBOSITY_MAPPER``
+* ``VERBOSITY_VLMC``
+
+and the available values are:
+
+* 0 : Error only logging.
+* 1 : Warning logging.
+* 2 : Info logging.
+* 3 : Debug logging. WARNING: This options produces tons of output, but the
+  logrotate daemon should take care of it.
+
+Working with Archipelago
+------------------------
+
+``archipelago`` provides basic functionality for archipelago.
+
+Usage:
+
+.. code-block:: console
+
+  $ archipelago [-u] command
+
+
+Currently it supports the following commands:
+
+* ``start [peer]``
+  Starts archipelago or the specified peer.
+* ``stop [peer]``
+  Stops archipelago or the specified peer.
+* ``restart [peer]``
+  Restarts archipelago or the specified peer.
+* ``status``
+  Show the status of archipelago.
+
+Available peers: ``blockerm``, ``blockerb``, ``mapperd``, ``vlmcd``.
+
+
+``start``, ``stop``, ``restart`` can be combined with the ``-u / --user`` option
+to affect only the userspace peers supporting archipelago.
+
+
+
+Archipelago advanced operations
+-------------------------------
+The ``vlmc`` tool provides a way to interact with archipelago volumes
+
+* ``vlmc map <volumename>``: maps the volume to a xsegbd device.
+
+* ``vlmc unmap </dev/xsegbd[1-..]>``: unmaps the specified device from the
+  system.
+
+* ``vlmc create <volumename> --snap <snapname> --size <size>``: creates a new
+  volume named <volumename> from snapshot name <snapname> with size <size>.
+  The ``--snap`` and ``--size`` are optional, but at least one of them is
+  mandatory. e.g:
+
+  ``vlmc create <volumename> --snap <snapname>`` creates a volume named
+  volumename from snapshot snapname. The size of the volume is the same as
+  the size of the snapshot.
+
+  ``vlmc create <volumename> --size <size>`` creates an empty volume of size
+  <size> named <volumename>.
+
+* ``vlmc remove <volumename>``: removes the volume and all the related
+  archipelago blocks from storage.
+
+* ``vlmc list``: provides a list of archipelago volumes. Currently only works
+  with RADOS storage backend.
+
+* ``vlmc info <volumename>``: shows volume information. Currently returns only
+  volume size.
+
+* ``vlmc open <volumename>``: opens an archipelago volume. That is, taking all
+  the necessary locks and also make the rest of the infrastructure aware of the
+  operation.
+
+  This operation succeeds if the volume is alread opened.
+
+* ``vlmc close <volumename>``: closes an archipelago volume. That is, performing
+  all the necessary functions in the insfrastrure to successfully release the
+  volume. Also releases all the acquired locks.
+
+  ``vlmc close`` should be performed after a ``vlmc open`` operation.
+
+* ``vlmc lock <volumename>``: locks a volume. This step allow the administrator
+  to lock an archipelago volume, independently from the rest of the
+  infrastrure.
+
+* ``vlmc unlock [-f] <volumename>``: unlocks a volume. This allow the
+  administrator to unlock a volume, independently from the rest of the
+  infrastructure.
+  The unlock option can be performed only by the blocker that acquired the lock
+  in the first place. To unlock a volume from another blocker, ``-f`` option
+  must be used to break the lock.
 
 
 The "kamaki" API client
------------------------
+=======================
 
 To upload, register or modify an image you will need the **kamaki** tool.
 Before proceeding make sure that it is configured properly. Verify that
@@ -143,6 +832,96 @@ To verify that the image was registered successfully use:
    $ kamaki glance list -l
 
 
+
+Miscellaneous
+=============
+
+.. RabbitMQ
+
+RabbitMQ Broker
+---------------
+
+Queue nodes run the RabbitMQ sofware, which provides AMQP functionality. To
+guarantee high-availability, more than one Queue nodes should be deployed, each
+of them belonging to the same `RabbitMQ cluster
+<http://www.rabbitmq.com/clustering.html>`_. Synnefo uses the RabbitMQ
+active/active `High Available Queues <http://www.rabbitmq.com/ha.html>`_ which
+are mirrored between two nodes within a RabbitMQ cluster.
+
+The RabbitMQ nodes that form the cluster, are declared to Synnefo through the
+`AMQP_HOSTS` setting. Each time a Synnefo component needs to connect to
+RabbitMQ, one of these nodes is chosen in a random way. The client that Synnefo
+uses to connect to RabbitMQ, handles connection failures transparently and
+tries to reconnect to a different node. As long as one of these nodes are up
+and running, functionality of Synnefo should not be downgraded by the RabbitMQ
+node failures.
+
+All the queues that are being used are declared as durable, meaning that
+messages are persistently stored to RabbitMQ, until they get successfully
+processed by a client.
+
+Currently, RabbitMQ is used by the following components:
+
+* `snf-ganeti-eventd`, `snf-ganeti-hook` and `snf-progress-monitor`:
+  These components send messages concerning the status and progress of
+  jobs in the Ganeti backend.
+* `snf-dispatcher`: This daemon, consumes the messages that are sent from
+  the above components, and updates the Cyclades DB accordingly.
+
+
+Installation
+~~~~~~~~~~~~
+
+Please check the RabbitMQ documentation which covers extensively the
+`installation of RabbitMQ server <http://www.rabbitmq.com/download.html>`_ and
+the setup of a `RabbitMQ cluster <http://www.rabbitmq.com/clustering.html>`_.
+Also, check out the `web management plugin
+<http://www.rabbitmq.com/management.html>`_ that can be useful for managing and
+monitoring RabbitMQ.
+
+For a basic installation of RabbitMQ on two nodes (node1 and node2) you can do
+the following:
+
+On both nodes, install rabbitmq-server and create a Synnefo user:
+
+.. code-block:: console
+
+  $ apt-get install rabbitmq-server
+  $ rabbitmqctl add_user synnefo "example_pass"
+  $ rabbitmqctl set_permissions synnefo  ".*" ".*" ".*"
+
+Also guarantee that both nodes share the same cookie, by running:
+
+.. code-block:: console
+
+  $ scp node1:/var/lib/rabbitmq/.erlang.cookie node2:/var/lib/rabbitmq/.erlang.cookie
+
+and restart the nodes:
+
+.. code-block:: console
+
+  $ /etc/init.d/rabbitmq-server restart
+
+
+To setup the RabbitMQ cluster run:
+
+.. code-block:: console
+
+  root@node2: rabbitmqctl stop_app
+  root@node2: rabbitmqctl reset
+  root@node2: rabbitmqctl cluster rabbit@node1 rabbit@node2
+  root@node2: rabbitmqctl start_app
+
+You can verify that the cluster is set up correctly by running:
+
+.. code-block:: console
+
+  root@node2: rabbitmqctl cluster_status
+
+
+
+
+
 Admin tool: snf-manage
 ----------------------
 
@@ -152,63 +931,11 @@ import the Django settings.
 
 Additionally, administrative tasks can be performed via the admin web interface
 located in /admin. Only users of type ADMIN can access the admin pages. To
-change the type of a user to ADMIN, snf-admin can be used:
+change the type of a user to ADMIN, snf-manage can be used:
 
 .. code-block:: console
 
-   $ snf-manage user modify 42 --type ADMIN
-
-
-Adding Astakos "Terms of Use"
------------------------------
-
-Astakos supports versioned terms-of-use. First of all you need to create an
-html file that will contain your terms. For example, create the file
-``/usr/share/synnefo/sample-terms.html``, which contains the following:
-
-.. code-block:: console
-
-   <h1>~okeanos terms</h1>
-
-   These are the example terms for ~okeanos
-
-Then, add those terms-of-use with the snf-manage command:
-
-.. code-block:: console
-
-   $ snf-manage addterms /usr/share/synnefo/sample-terms.html
-
-Your terms have been successfully added and you will see the corresponding link
-appearing in the Astakos web pages' footer.
-
-
-Reconciliation mechanism
-------------------------
-
-On certain occasions, such as a Ganeti or RabbitMQ failure, the VM state in the
-system's database may differ from that in the Ganeti installation. The
-reconciliation process is designed to bring the system's database in sync with
-what Ganeti knows about each VM, and is able to detect the following three
-conditions:
-
- * Stale DB servers without corresponding Ganeti instances
- * Orphan Ganeti instances, without corresponding DB entries
- * Out-of-sync operstate for DB entries wrt to Ganeti instances
-
-The reconciliation mechanism runs as a management command, e.g., as follows:
-[PYTHONPATH needs to contain the parent of the synnefo Django project
-directory]:
-
-.. code-block:: console
-
-   $ export PYTHONPATH=/srv:$PYTHONPATH
-   $ snf-manage reconcile --detect-all -v 2
-
-Please see ``snf-manage reconcile --help`` for all the details.
-
-The administrator can also trigger reconciliation of operating state manually,
-by issuing a Ganeti ``OP_INSTANCE_QUERY_DATA`` command on a Synnefo VM, using
-gnt-instance info.
+   $ snf-manage user-modify 42 --type ADMIN
 
 Logging
 -------
@@ -221,141 +948,233 @@ http://docs.python.org/release/2.7.1/library/logging.html#logging-config-dictsch
 Note that this is a feature of Python 2.7 that we have backported for use in
 Python 2.6.
 
-The logging configuration dictionary is defined in settings.d/00-logging.conf
-and is broken in 4 separate dictionaries:
+The logging configuration dictionary is defined in
+``/etc/synnefo/10-snf-webproject-logging.conf``
 
-  * LOGGING is the logging configuration used by the web app. By default all
-    loggers fall back to the main 'synnefo' logger. The subloggers can be
-    changed accordingly for finer logging control. e.g. To disable debug
-    messages from the API set the level of 'synnefo.api' to 'INFO'.
-  
-  * DISPATCHER_LOGGING is the logging configuration of the logic/dispatcher.py
-    command line tool.
-  
-  * SNFADMIN_LOGGING is the logging configuration of the snf-admin tool.
-    Consider using matching configuration for snf-admin and the synnefo.admin
-    logger of the web app.
+The administrator can have finer logging control by modifying the
+``LOGGING_SETUP`` dictionary, and defining subloggers with different handlers
+and log levels.  e.g. To enable debug messages only for the API set the level
+of 'synnefo.api' to ``DEBUG``
 
-Please note the following:
-
-  * As of Synnefo v0.7, by default the Django webapp logs to syslog, the
-    dispatcher logs to /var/log/synnefo/dispatcher.log and the console,
-    snf-admin logs to the console.
-  * Different handlers can be set to different logging levels:
-    for example, everything may appear to the console, but only INFO and higher
-    may actually be stored in a longer-term logfile
+By default, the Django webapp and snf-manage logs to syslog, while
+`snf-dispatcher` logs to `/var/log/synnefo/dispatcher.log`.
 
 
-.. _shibboleth-auth:
-
-Authentication using Shibboleth
-===============================
-
-Astakos can delegate user authentication to a Shibboleth federation.
-
-To setup shibboleth, install package::
-
-  apt-get install libapache2-mod-shib2
-
-Change appropriately the configuration files in ``/etc/shibboleth``.
-
-Add in ``/etc/apache2/sites-available/synnefo-ssl``::
-
-  ShibConfig /etc/shibboleth/shibboleth2.xml
-  Alias      /shibboleth-sp /usr/share/shibboleth
-
-  <Location /im/login/shibboleth>
-    AuthType shibboleth
-    ShibRequireSession On
-    ShibUseHeaders On
-    require valid-user
-  </Location>
-
-and before the line containing::
-
-  ProxyPass        / http://localhost:8080/ retry=0
-
-add::
-
-  ProxyPass /Shibboleth.sso !
-
-Then, enable the shibboleth module::
-
-  a2enmod shib2
-
-After passing through the apache module, the following tokens should be
-available at the destination::
-
-  eppn # eduPersonPrincipalName
-  Shib-InetOrgPerson-givenName
-  Shib-Person-surname
-  Shib-Person-commonName
-  Shib-InetOrgPerson-displayName
-  Shib-EP-Affiliation
-  Shib-Session-ID
-
-Finally, add 'shibboleth' in ``ASTAKOS_IM_MODULES`` list. The variable resides
-inside the file ``/etc/synnefo/20-snf-astakos-app-settings.conf``
-
+.. _scale-up:
 
 Scaling up to multiple nodes
 ============================
 
-Here we will describe how to deploy all services, interconnected with each
-other, on multiple physical nodes.
+Here we will describe how should a large scale Synnefo deployment look like. Make
+sure you are familiar with Synnefo and Ganeti before proceeding with this section.
+This means you should at least have already set up successfully a working Synnefo
+deployment as described in the :ref:`Admin's Quick Installation Guide
+<quick-install-admin-guide>` and also read the Administrator's Guide until this
+section.
 
-synnefo components
-------------------
+Graph of a scale-out Synnefo deployment
+---------------------------------------
 
-You need to install the appropriate synnefo software components on each node,
-depending on its type, see :ref:`Architecture <cyclades-architecture>`.
+Each box in the following graph corresponds to a distinct physical node:
 
-Please see the page of each synnefo software component for specific
-installation instructions, where applicable.
+.. image:: images/synnefo-arch2-roles.png
+   :width: 100%
+   :target: _images/synnefo-arch2-roles.png
 
-Install the following synnefo components:
+The above graph is actually the same with the one at the beginning of this
+:ref:`guide <admin-guide>`, with the only difference that here we show the
+Synnefo roles of each physical node. These roles are described in the
+following section.
 
-Nodes of type :ref:`APISERVER <APISERVER_NODE>`
-    Components
-    :ref:`snf-common <snf-common>`,
-    :ref:`snf-webproject <snf-webproject>`,
-    :ref:`snf-cyclades-app <snf-cyclades-app>`
-Nodes of type :ref:`GANETI-MASTER <GANETI_MASTER>` and :ref:`GANETI-NODE <GANETI_NODE>`
-    Components
-    :ref:`snf-common <snf-common>`,
-    :ref:`snf-cyclades-gtools <snf-cyclades-gtools>`
-Nodes of type :ref:`LOGIC <LOGIC_NODE>`
-    Components
-    :ref:`snf-common <snf-common>`,
-    :ref:`snf-webproject <snf-webproject>`,
-    :ref:`snf-cyclades-app <snf-cyclades-app>`.
+.. _physical-node-roles:
 
-RabbitMQ
---------
+Physical Node roles
+-------------------
 
-RabbitMQ is used as a generic message broker for Cyclades. It should be
-installed on two seperate :ref:`QUEUE <QUEUE_NODE>` nodes in a high
-availability configuration as described here:
+As appears in the previous graph, a scale-out Synnefo deployment consists of
+multiple physical nodes that have the following roles:
 
-    http://www.rabbitmq.com/pacemaker.html
+* **WEBSERVER**: A web server running in front of gunicorn (e.g.: Apache, nginx)
+* **ASTAKOS**: The Astakos application (gunicorn)
+* **ASTAKOS_DB**: The Astakos database (postgresql)
+* **PITHOS**: The Pithos application (gunicorn)
+* **PITHOS_DB**: The Pithos database (postgresql)
+* **CYCLADES**: The Cyclades application (gunicorn)
+* **CYCLADES_DB**: The Cyclades database (postgresql)
+* **MQ**: The message queue (RabbitMQ)
+* **GANETI_MASTER**: The Ganeti master of a Ganeti cluster
+* **GANETI_NODE** : A VM-capable Ganeti node of a Ganeti cluster
 
-The values set for the user and password must be mirrored in the ``RABBIT_*``
-variables in your settings, as managed by :ref:`snf-common <snf-common>`.
+You will probably also have:
 
-.. todo:: Document an active-active configuration based on the latest version
-   of RabbitMQ.
+* **CMS**: The CMS used as a frotend portal for the Synnefo services
+* **NS**: A nameserver serving all other Synnefo nodes and resolving Synnefo FQDNs
+* **CLIENT**: A machine that runs the Synnefo clients (e.g.: kamaki, Web UI),
+              most of the times, the end user's local machine
+
+From this point we will also refer to the following groups of roles:
+
+* **SYNNEFO**: [ **ASTAKOS**, **ASTAKOS_DB**, **PITHOS**, **PITHOS_DB**, **CYCLADES**, **CYCLADES_DB**, **MQ**, **CMS**]
+* **G_BACKEND**: [**GANETI_MASTER**, **GANETI_NODE**]
+
+Of course, when deploying Synnefo you can combine multiple of the above roles on a
+single physical node, but if you are trying to scale out, the above separation
+gives you significant advantages.
+
+So, in the next section we will take a look on what components you will have to
+install on each physical node depending on its Synnefo role. We assume the graph's
+architecture.
+
+Components for each role
+------------------------
+
+When deploying Synnefo in large scale, you need to install different Synnefo
+or/and third party components on different physical nodes according to their
+Synnefo role, as stated in the previous section.
+
+Specifically:
+
+Role **WEBSERVER**
+    * Synnefo components: `None`
+    * 3rd party components: Apache
+Role **ASTAKOS**
+    * Synnefo components: `snf-webproject`, `snf-astakos-app`
+    * 3rd party components: Django, Gunicorn
+Role **ASTAKOS_DB**
+    * Synnefo components: `None`
+    * 3rd party components: PostgreSQL
+Role **PITHOS**
+    * Synnefo components: `snf-webproject`, `snf-pithos-app`, `snf-pithos-webclient`
+    * 3rd party components: Django, Gunicorn
+Role **PITHOS_DB**
+    * Synnefo components: `None`
+    * 3rd party components: PostgreSQL
+Role **CYCLADES**
+    * Synnefo components: `snf-webproject`, `snf-cyclades-app`, `snf-vncauthproxy`
+    * 3rd party components: Django Gunicorn
+Role **CYCLADES_DB**
+    * Synnefo components: `None`
+    * 3rd party components: PostgreSQL
+Role **MQ**
+    * Synnefo components: `None`
+    * 3rd party components: RabbitMQ
+Role **GANETI_MASTER**
+    * Synnefo components: `snf-cyclades-gtools`
+    * 3rd party components: Ganeti
+Role **GANETI_NODE**
+    * Synnefo components: `snf-cyclades-gtools`, `snf-network`, `snf-image`, `nfdhcpd`
+    * 3rd party components: Ganeti
+Role **CMS**
+    * Synnefo components: `snf-webproject`, `snf-cloudcms`
+    * 3rd party components: Django, Gunicorn
+Role **NS**
+    * Synnefo components: `None`
+    * 3rd party components: BIND
+Role **CLIENT**
+    * Synnefo components: `kamaki`, `snf-image-creator`
+    * 3rd party components: `None`
+
+Example scale out installation
+------------------------------
+
+In this section we describe an example of a medium scale installation which
+combines multiple roles on 10 different physical nodes. We also provide a
+:ref:`guide <i-synnefo>` to help with such an install.
+
+We assume that we have the following 10 physical nodes with the corresponding
+roles:
+
+Node1:
+    **WEBSERVER**, **ASTAKOS**
+      Guide sections:
+        * :ref:`apt <i-apt>`
+        * :ref:`gunicorn <i-gunicorn>`
+        * :ref:`apache <i-apache>`
+        * :ref:`snf-webproject <i-webproject>`
+        * :ref:`snf-astakos-app <i-astakos>`
+Node2:
+    **WEBSERVER**, **PITHOS**
+      Guide sections:
+        * :ref:`apt <i-apt>`
+        * :ref:`gunicorn <i-gunicorn>`
+        * :ref:`apache <i-apache>`
+        * :ref:`snf-webproject <i-webproject>`
+        * :ref:`snf-pithos-app <i-pithos>`
+        * :ref:`snf-pithos-webclient <i-pithos>`
+Node3:
+    **WEBSERVER**, **CYCLADES**
+      Guide sections:
+        * :ref:`apt <i-apt>`
+        * :ref:`gunicorn <i-gunicorn>`
+        * :ref:`apache <i-apache>`
+        * :ref:`snf-webproject <i-webproject>`
+        * :ref:`snf-cyclades-app <i-cyclades>`
+        * :ref:`snf-vncauthproxy <i-cyclades>`
+Node4:
+    **WEBSERVER**, **CMS**
+      Guide sections:
+        * :ref:`apt <i-apt>`
+        * :ref:`gunicorn <i-gunicorn>`
+        * :ref:`apache <i-apache>`
+        * :ref:`snf-webproject <i-webproject>`
+        * :ref:`snf-cloudcms <i-cms>`
+Node5:
+    **ASTAKOS_DB**, **PITHOS_DB**, **CYCLADES_DB**
+      Guide sections:
+        * :ref:`apt <i-apt>`
+        * :ref:`postgresql <i-db>`
+Node6:
+    **MQ**
+      Guide sections:
+        * :ref:`apt <i-apt>`
+        * :ref:`rabbitmq <i-mq>`
+Node7:
+    **GANETI_MASTER**, **GANETI_NODE**
+      Guide sections:
+        * :ref:`apt <i-apt>`
+        * :ref:`general <i-backends>`
+        * :ref:`ganeti <i-ganeti>`
+        * :ref:`snf-cyclades-gtools <i-gtools>`
+        * :ref:`snf-network <i-network>`
+        * :ref:`snf-image <i-image>`
+        * :ref:`nfdhcpd <i-network>`
+Node8:
+    **GANETI_NODE**
+      Guide sections:
+        * :ref:`apt <i-apt>`
+        * :ref:`general <i-backends>`
+        * :ref:`ganeti <i-ganeti>`
+        * :ref:`snf-cyclades-gtools <i-gtools>`
+        * :ref:`snf-network <i-network>`
+        * :ref:`snf-image <i-image>`
+        * :ref:`nfdhcpd <i-network>`
+Node9:
+    **GANETI_NODE**
+      Guide sections:
+        `Same as Node8`
+Node10:
+    **GANETI_NODE**
+      Guide sections:
+        `Same as Node8`
+
+All sections: :ref:`Scale out Guide <i-synnefo>`
 
 
-Upgrade Notes
-=============
+Synnefo Upgrade Notes
+=====================
 
-Cyclades upgrade notes
-----------------------
+.. toctree::
+   :maxdepth: 1
+
+   v0.12 -> v0.13 <upgrade/upgrade-0.13>
+
+Older Cyclades Upgrade Notes
+============================
 
 .. toctree::
    :maxdepth: 2
 
-   cyclades-upgrade
+   upgrade/cyclades-upgrade
 
 Changelog
 =========

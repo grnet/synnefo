@@ -20,7 +20,8 @@ body {
     background: url("../images/body-bg.png") repeat-x #FFFFFF;
     text-align:center;
     font-size: 16px;
-    background-position: 0px 35px; 
+    background-position: 0px 34px; 
+    overflow-y: scroll;
 }
 
 a, a:hover, a:active, a:focus, div:focus, span:focus, li:focus {
@@ -31,6 +32,9 @@ pre {
     font-family: monospace;
 }
 
+h4.error .title {
+  color: red !important;
+}
 #okeanos-image {
     position: absolute;
     bottom: -0px;
@@ -314,7 +318,7 @@ div.css-panes {
 }
 
 #console-header {
-    height: 67px;
+    height: 79px;
     margin-bottom:15px;
     background: url("../images/header-bg.png") repeat-x scroll 0 0 #FFFFFF;
 }
@@ -598,9 +602,51 @@ div#footer-text{
     width: 140px;
 }
 
-.overlay-networks-create .form-actions {
-    float: right;
-    margin-top: -26px !important;
+.overlay-networks-create .form-action {
+  float: left;
+}
+
+.overlay-networks-create .fixpos {
+  margin-top: 3px;
+}
+
+.overlay-networks-create .col-fields.bordered {
+  border-bottom: 1px solid #CCC;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+}
+
+.overlay-networks-create .col-fields {
+  margin-bottom: 10px;
+}
+
+form .fields-desc {
+  font-size: 0.8em !important; 
+  margin: 5px 0;
+  padding-bottom: 0 !important;
+}
+
+.overlay-networks-create form select {
+  padding: 1px;
+}
+
+.overlay-networks-create #network-create-subnet-custom {
+  width: 125px;
+}
+
+.overlay-networks-create .col-fields .form-field {
+  float: left;
+  margin-right: 20px;
+}
+
+.overlay-networks-create .col-fields .right-field {
+  float: right;
+  width: 210px;
+  margin-right: 0px;
+}
+
+.overlay-networks-create .use-dhcp {
+  width: auto;
 }
 
 #wizard #start:hover, #networks-wizard .create:hover {
@@ -782,6 +828,30 @@ div.image-container {
 
 .icon .machine-container .building-progress {
     vertical-align: top;
+}
+
+.icon .build-progress {
+    margin-left: -3px;
+}
+
+#machinesview .build-progress .message {
+  padding: 3px;
+}
+
+#machinesview .build-progress .btn:hover {
+  background-color: #387693;
+}
+
+#machinesview .column1 .build-progress .btn {
+    margin-top: 5px;
+    display: inline-block;
+}
+
+#machinesview .build-progress .btn {
+    cursor: pointer;
+    background-color: #5e1616;
+    color: #FFF;
+    padding: 3px;
 }
 
 .ip-version-label {
@@ -1063,9 +1133,15 @@ div.connect-border:hover {
     font-size: 75%;
 }
 
+.icon div.indicators {
+    float: right;
+}
+
 div.indicators {
     margin-right: 2px !important;
+    cursor: pointer;
 }
+
 div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
     background-color: #63cf1c;
     width:10px;
@@ -1095,7 +1171,7 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
 }
 
 .error-state .indicator1, .error-state .indicator2, .error-state .indicator3, .error-state .indicator4 {
-    background-color: #ff0000;
+    background-color: #ff0000 !important;
 }
 
 .terminated-state .indicator1, .terminated-state .indicator2, .terminated-state .indicator3, .terminated-state .indicator4 {
@@ -2191,7 +2267,7 @@ div#user .langmenu .sep {
 }
 
 .network-machine h5 {
-    margin-bottom: 26px;
+    margin-bottom: 20px;
     margin-top:0px;
 }
 
@@ -2506,6 +2582,13 @@ div.actions a.selected, div.actions a.selected:hover, div.machine-actions a.sele
     margin-left: -15px;
 }
 
+.createbutton.disabled, #networkscreate.disabled {
+  background-color: #888 !important;
+  border-left-color: #aaa !important;
+  cursor: help !important;
+  color: #ccc !important;
+}
+
 #networkscreate:hover {
     background-color: #FF9955;
 }
@@ -2550,6 +2633,18 @@ div.actions a.selected, div.actions a.selected:hover, div.machine-actions a.sele
 
 #public-template, #private-template, #public-machine-template, #private-machine-template {
     display:none;
+}
+
+div.network-cont.disable-destroy .actions .destroy {
+    display: none !important;
+}
+
+div.network-cont.pending .actions .action-add {
+    display: none;
+}
+
+div.network-cont.in-error .actions .action-add {
+    display: none;
 }
 
 div.network a.action-network-add {
@@ -2752,6 +2847,10 @@ div.network .net-vm-actions .confirm_single {
     position: absolute !important;
     top: 7px;
     right:0;
+}
+
+div.network .nic-ip {
+  font-size: 0.8em;
 }
 
 div.network div.display a {
@@ -3030,6 +3129,7 @@ div.network-add-machine {
 h5.machine-connect {
     font-size: 75%;
     margin-bottom: 3px;
+    height: 23px;
 }
 
 .machine-connect span {
@@ -3695,24 +3795,25 @@ div.single div.column3 div.server-name:hover {
     background: transparent;
     margin-bottom: 10px;
     overflow: visible;
+    overflow: hidden;
     width: 700px;
     background: #EFF7FA repeat scroll 0 0;
 }
 
 /* console css */
 .console-header-logo {
-    padding-top: 17px;
+    padding-top: 16px;
     margin-left: 30px;
     position: fixed;
 }
 
 #console-header div.help-text {
-    font-size: 75%;
+    font-size: 70%;
     font-weight:bold;
     color:#FFFFFF;
-    float:left;
     position: absolute;
-    margin: 45px 0 0 2px;
+    height: 20px;
+    top: 79px;
 }
 
 div.console-container {
@@ -3727,8 +3828,7 @@ div.console-container {
 .console-info {
     font-size:80%;
     color: white;
-    float:left;
-    position:relative;
+    position:absolute;
     margin: 15px 0 0 480px;
 }
 
@@ -4453,11 +4553,22 @@ table.list-machines .wave {
     width: 600px;
 }
 
+.overlay.overlay-createvm {
+    width: 640px;
+}
+
 .overlay a {
     color: #387693;
 }
 
-.overlay .overlay-content .description.subinfo {
+.overlay .diagnostics-list {
+    height: 400px;
+    overflow: scroll;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+.overlay .overlay-content .description.subinfo, .overlay .extra-info {
     margin-bottom:0;
     border-bottom: none;
     padding-bottom:0;
@@ -4472,6 +4583,11 @@ table.list-machines .wave {
     color: #800000;
 }
 
+.overlay .overlay-content .description.noborder {
+  margin-bottom:0;
+  border:0;
+}
+
 .overlay .overlay-content .description {
     color: #444;
     border-bottom: 1px solid #64a6c4;
@@ -4480,6 +4596,7 @@ table.list-machines .wave {
     font-size: 0.9em;
     line-height: 1.6em;
 }
+
 .overlay .overlay-content .empty-message {
     margin-bottom: 5px;
 }
@@ -4643,6 +4760,60 @@ table.list-machines .wave {
     margin-bottom: 2px;
 }
 
+.overlay-info .msg-log-entry .src {
+    color: #4085A5;
+    float: right;
+    font-size: 0.9em;
+}
+
+.overlay-info .msg-log-entry .date {
+    font-style: italic;
+}
+
+.overlay-info .msg-log-entry pre {
+    color: #333;
+    width: 100%;
+    display: none;
+    margin: 10px 0;
+}
+
+.msg-log-entry.warning {
+    color: #E57F01;
+}
+
+.overlay-info .msg-log-entry.with-details .src {
+    margin-right: 15px;
+}
+
+.overlay-info .msg-log-entry.with-details {
+    cursor: pointer;
+}
+
+.overlay-info .msg-log-entry.with-details {
+    background-image: url("../images/plus-8-dark.png");
+    background-repeat: no-repeat;
+    background-position: 99% 9px;
+}
+
+.overlay-info .msg-log-entry.with-details.expanded {
+    background-image: url("../images/minus-8-dark.png");
+}
+
+.overlay-info .msg-log-entry .msg {
+    display: inline-block;
+    margin-left: 10px;
+}
+
+.overlay-info .msg-log-entry {
+    border-bottom: 1px solid #aaa;
+    padding: 5px;
+}
+
+.overlay-info .description.subinfo {
+    border: none !important;
+    padding-top: 0 !important;
+}
+
 .overlay-info .content {
     background-repeat: no-repeat;
     background-position: 110% 110%;
@@ -4662,10 +4833,34 @@ table.list-machines .wave {
 }
 
 #loading-view {
-    width: 600px;
+    width: 400px;
     margin: 0 auto;
     padding: 20px 0;
     font-size: 0.8em;
+}
+
+#loading-view .header.off {
+    color: #829096;
+}
+
+#loading-view .header.on {
+    color: #fff;
+    background-image: url("../images/icons/indicators/small/progress.gif");
+}
+
+#loading-view .header.done {
+    color: #2B6681;
+    background-image: url("../images/check.png");
+}
+
+#loading-view .header {
+    font-size: 0.9em;
+    text-align: left;
+    border-bottom: 1px solid #578BA3;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    background-repeat: no-repeat;
+    background-position: 380px 0px;
 }
 
 #loading-view .header span {
@@ -4946,7 +5141,7 @@ table.list-machines .wave {
 }
 
 .overlay-createvm .container {
-    width: 584px !important;
+    width: 624px !important;
 }
 
 .create-vm .header-step.current {
@@ -5148,7 +5343,7 @@ table.list-machines .wave {
 .create-vm .create-step-cont {
     min-height: 250px;
     float: left;
-    width: 584px;
+    width: 624px;
 }
 
 .create-vm .create-controls {
@@ -5296,6 +5491,11 @@ table.list-machines .wave {
     filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#D1E7F0', endColorstr='#E8F4FA', GradientType=0);
 }
 
+.create-vm .flavor-opts-list.compact li {
+    padding: 7px 9px;
+    margin-right: 7px;
+}
+
 .create-vm .flavor-options-cont .flavor-options {
     margin-bottom: 2px;
 }
@@ -5304,6 +5504,12 @@ table.list-machines .wave {
 .create-vm .flavor-options .metric {
     font-size: 0.8em;
     margin-left: 2px;
+}
+
+.create-vm .flavor-options span.available {
+  font-size: 0.8em;
+  font-weight: normal;
+  margin-left: 5px;
 }
 
 .create-vm .flavor-options span.title {
@@ -5461,6 +5667,23 @@ table.list-machines .wave {
     padding-right: 15px;
 }
 
+.create-vm .select-image.wide .images-info-cont .extra-details .image-detail.extra-meta .title .custom {
+    display: inline-block;
+}
+
+.create-vm .select-image.wide .images-info-cont .extra-details .image-detail.extra-meta .title {
+    background-color: #999 !important;
+    border-color: #888 !important;
+}
+.create-vm .select-image.wide .images-info-cont .extra-details .image-detail .custom {
+    float: right;
+    display: none;
+    font-size: 0.8em;
+    margin-left: 10px;
+    color: #DDD;
+    margin-top: 2px;
+}
+
 .create-vm .select-image.wide .images-info-cont .extra-details .image-detail {
     padding: 0px;
     background-color: transparent;
@@ -5491,6 +5714,7 @@ table.list-machines .wave {
     font-size: 0.8em;
 }
 
+
 .create-vm .select-image.wide .images-info-cont .image-detail {
 }
 
@@ -5498,6 +5722,13 @@ table.list-machines .wave {
     height: 310px;
     overflow-y: scroll;
     padding-right: 3%;
+}
+
+.flavors-predefined-cont {
+
+}
+
+.flavor-options-cont {
 }
 
 .create-vm .select-image.wide .images-info-cont {
@@ -5621,7 +5852,7 @@ table.list-machines .wave {
 }
 
 #createvm-overlay-content {
-    width: 584px;
+    width: 624px;
     overflow: hidden;
 }
 
@@ -5683,7 +5914,7 @@ table.list-machines .wave {
 .create-vm .steps-history .steps-history-cont.current {
     background-color: #A1C8DB;
     color: #fff;
-    width: 428px;
+    width: 468px;
 }
 
 .create-vm .steps-history-step {
@@ -5842,12 +6073,44 @@ table.list-machines .wave {
 }
 
 .create-vm .personalize-cont .confirm-params {
-    max-height: 190px;
+    max-height: 160px;
+    margin-right: 10px;
 }
 
 .create-vm .personalize-cont,
 .create-vm .confirm-cont {
     height: 250px;
+}
+
+.create-vm .image-warning p {
+  width: 80%;
+  float: left;
+}
+
+.create-vm .image-warning .untrusted-image-confirm:hover {
+  background-color: #7D674E;
+}
+
+.create-vm .image-warning .untrusted-image-confirm {
+  display: inline-block;
+  padding: 5px;
+  background-color: #5C4D39;
+  color: #FFF;
+  width: 10%;
+  float: right;
+  margin-top: 4px;
+  margin-right: 2px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.create-vm .image-warning {
+  display: none;
+  background-color: #987249;
+  color: #fff;
+  padding: 10px 15px;
+  font-size: 0.9em;
+  border-top: 1px solid #AAA;
 }
 
 .create-vm .create-step-cont .rename input.rename-field {
@@ -6786,4 +7049,35 @@ input.has-errors {
     background-color: transparent;
     border: none;
     color: #800;
+}
+
+.single .suspended-notice {
+  right: 180px;
+  top: 0px;
+  padding: 7px;
+  padding-bottom: 6px;
+}
+
+.icon .suspended-notice {
+  right: 192px;
+  top: 50px;
+}
+
+.suspended-notice {
+  display: inline-block;
+  padding: 4px;
+  background-color: #8f1915;
+  cursor: pointer;
+  position: absolute;
+  color: #fff;
+  font-size: 0.6em;
+  display: none;
+}
+
+.suspended .suspended-notice {
+  display: block;
+}
+
+.suspended .action-indicator {
+  display: none !important;
 }

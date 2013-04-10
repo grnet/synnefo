@@ -1,6 +1,97 @@
 Changelog
 ---------
 
+v0.13.0
+*******
+  * Remove 'snf-admin' and 'snf-cloud' tools
+
+v0.12.0
+*******
+
+FIXES:
+  UI:
+	* Fix unclosed DIV's and other minor html fixes.
+	* Fix multiple network actions #2298
+	* Handle multiple image users #2297
+	* Fix double escaping of image details in vm creation view
+	* Set ownership information for authorized_keys personality files
+
+
+NEW FEATURES:
+  UI:
+	* Optionally group public network interfaces in one network view in ui 
+	  Configurable by the UI_GROUP_PUBLIC_NETWORKS setting (defaults to True).
+	* New setting UI_CHANGES_SINCE_ALIGMENT to allow aligment of the date used
+	  by ui in api calls that support changes-since parameter.
+	* New setting UI_AUTOMATIC_NETWORK_RANGE_FORMAT which is used by ui so
+	  that automatic private network subnet does not conflict with exising 
+	  user network subnets.
+	* New settings added to allow fine grain of vm connection information:
+		- UI_VM_HOSTNAME_FORMAT
+		- UI_CONNECT_PROMPT_MESSAGES 
+		- UI_EXTRA_RDP_CONTENT
+	* New setting UI_CUSTOM_IMAGE_HELP_URL added. URL that links to a custom
+	  image creation guide.
+	* UI is now quota agnostic. Prevent user from creating network/vms that
+	  would exceed the users available quotas.
+	* Warn user against untrustworthy image owners #3012
+	  
+
+  HELPDESK:
+  	* New helpdesk view (accessible from /helpdesk url) added. View is only 
+	  accessible from users that belong to `helpdesk` group in astakos. 
+	  Helpdesk view provides all available vms/networks information that is 
+	  stored in cyclades database for a specific user id.
+	  
+
+  PLANKTON:
+	* Pool connections to Pithos backend.
+	* Add snf-manage image-{list, show} management commands
+
+  LOGIC:
+    * Support for suspended VMs
+	* Add snf-manage queue-retry management command
+	* Support for RabbitMQ dead-letter-exchange in dispatcher
+	* Support for rejecting messages from rejecting messages from dispatcher
+	* Process Ganeti messages about network reserved_ips
+
+
+v0.11.0
+*******
+
+FIXES:
+  LOGIC:
+	* Fix bugs concerning reconcilliation of building vms (#2288, #2289)
+	* Fix bug in dispatcher default file
+  UI:
+        * Fixed default UI settings importing synnefo settings:
+	  Admin must set FEEDBACK_EMAIL_FROM explicitly.
+
+NEW FEATURES:
+  LOGIC:
+	* Support multiple Ganeti backends and correlated management commands:
+	  snf-manage [backend-add, backend-list, backend-modify, backend-remove]
+	* Support for different types of networks (public routed, physical vlan,
+	  MAC filtered)
+	* IP Pool management
+	* Enhance reconcile management command, to reconcile instance NICS
+	* Management commands for reconciliation of networks and pools:
+	  snf-manage [reconcile-networks, reconcile-pools]
+	* New management commands for inspecting the state of network and server in
+	  DB and all backends: snf-manage [network-inspect, server-inspect]
+	* New management command for creating a network: snf-manage
+	  network-create
+	* New synnefo.db schema and data migrations
+	* New settings for MAC-prefix pool: MAC_POOL_BASE, MAC_POOL_LIMIT
+	* Replaced GANETI_NULL_LINK with PUBLIC_ROUTED_ROUTING_TABLE
+	* Replaced GANETI_LINK_PREFIX with PRIVATE_PHYSICAL_VLAN_BRIDGE_PREFIX
+	* Replaced GANETI_MAX_LINK_NUMBER with PRIVATE_PHYSICAL_VLAN_MAX_NUMBER
+	* Replaced PRIVATE_MAC_FILTERED_BRIDGE
+	* Add setting ENABLED_NETWORKS
+	* Add setting SECRET_ENCRYPTION_KEY
+	* Add settings for configuring each network type
+
+
 v0.10.0
 *******
 

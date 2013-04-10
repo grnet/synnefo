@@ -1,0 +1,184 @@
+Changelog
+---------
+next
+^^^^
+
+- Setting ASTAKOS_DEFAULT_ADMIN_EMAIL has been deprecated. Use ADMINS django setting instead.
+- Setting ASTAKOS_DEFAULT_FROM_EMAIL has been deprecated. Use SERVER_EMAIL django setting instead.
+
+v0.7.5
+^^^^^^
+- Include user email in registered/activated notification mails subject
+
+v0.7.4
+^^^^^^
+- Configurable subjects for all emails send by astakos app. Introduced settings
+	* ASTAKOS_INVITATION_EMAIL_SUBJECT
+	* ASTAKOS_GREETING_EMAIL_SUBJECT
+	* ASTAKOS_FEEDBACK_EMAIL_SUBJECT
+	* ASTAKOS_VERIFICATION_EMAIL_SUBJECT
+	* ASTAKOS_ADMIN_NOTIFICATION_EMAIL_SUBJECT
+	* ASTAKOS_HELPDESK_NOTIFICATION_EMAIL_SUBJECT
+	* ASTAKOS_EMAIL_CHANGE_EMAIL_SUBJECT
+	* ASTAKOS_PASSWORD_RESET_EMAIL_SUBJECT
+
+
+v0.7.3
+^^^^^^
+- Use https for google webfonts
+- Fix anonymoususer logout
+
+v0.7.1
+^^^^^^
+- ASTAKOS_*_MESSAGES settings changed from dict to tuple lists
+- Theme changes (new colors, new font)
+
+v0.7.0
+^^^^^^
+- Rename management commands
+- Optionally renew token on password change
+- Preserve local password for users switched to shibboleth
+- Send notification to ASTAKOS_DEFAULT_CONTACT_EMAIL on account activation
+- Fix unusable password issue
+- Extend user_update command by enabling provider modification and password renewal
+- Check for email absence before querying the database for retrieving the user in get menu call
+- Set is_verified in profile view even if the user do not post the form
+- New html/css theme
+- Database updated.
+  Use::
+  	
+	$ snf-manage syncdb
+	$ snf-manage migrate
+
+  to migrate your database.
+
+v0.6.2
+^^^^^^
+- fixed signup/profile/global user notifications display
+
+
+v0.6.1
+^^^^^^
+- skip csrf on login requests
+
+
+v0.6
+^^^^
+- Fixed default values in cloudbar sample conf file
+- Split api in admin (accessed by superuser and privileged users) and service 
+  (accessed by services)
+- Dynamically register/unregister services 
+  
+  Setting ``ASTAKOS_CLOUD_SERVICES`` is no longer used. You should remove
+  it from astakos configuration file and migrate the old services configuration
+  using ``snf-manage registerservice`` commands::
+
+  	$ snf-manage registerservice "grnet cloud" https://okeanos.grnet.gr/ home-icon.png
+  	$ snf-manage registerservice "cyclades" https://cyclades.okeanos.grnet.gr/ui/
+  	$ snf-manage registerservice "pithos" https://pithos.okeanos.grnet.gr/
+
+- New management tools for assigning groups and permissions to users
+- New feedback api call
+- Save the date user activation sent
+- Save email returned by shibboleth
+- Add logging for main astakos functionality.
+  Logging level controlled by ASTAKOS_LOGGING_LEVEL setting.
+- Email change mechanism
+  Enabled using ASTAKOS_EMAILCHANGE_ENABLED setting (disabled by default)
+- Additional user notification settings
+  ASTAKOS_SIGNUP_MESSAGES, ASTAKOS_PROFILE_MESSAGES, ASTAKOS_GLOBAL_MESSAGES
+
+
+v0.5.1
+^^^^^^
+- Change next parameter to index page in activate url.
+- Fix shibboleth login link.
+
+
+v0.5.0
+^^^^^^
+- Improvements and fixes in shibboleth integration.
+- Minor code refactoring (removed unsed classes/functions).
+- Rate limit integration (requires django-ratelimit).
+- New setting added, ASTAKOS_RATELIMIT_RETRIES_ALLOWED
+- get_menu api call checks the ASTAKOS_COOKIE_NAME instead of the sessionid cookie.
+- Management commands improvements/fixes
+- Altered blank/null parameters for some AstakosUser fields (db migration
+  required, ``snf-manage migrate``)
+- Added user group functionality (initial group data can be loaded using
+  ``snf-manage loaddata groups``)
+
+v0.4.0
+^^^^^^
+- User terms.
+- Styling fixes/improvements.
+- Configurable recpatcha form field.
+
+
+v0.3.9
+^^^^^^
+- Show user email in feedback email content
+
+
+v0.3.8
+^^^^^^
+- New ASTAKOS_PROFILE_EXTRA_LINKS setting to display additional buttons on
+  account pages.
+
+
+v0.3.7
+^^^^^^
+- New ASTAKOS_LOGIN_MESSAGES setting to display messages on the login page
+  header
+- login_base.html to make it easy override the login.html template
+
+
+v0.3.5
+^^^^^^
+- New grnet styles
+- New setting for recaptcha to use SSL
+- New menu texts
+- Improvements in get_menu view
+
+
+v0.3.4
+^^^^^^
+- Updated mail contents
+- Cloudbar improvements
+
+
+v0.3.3
+^^^^^^
+- Updated grnet styles
+- Several styling fixes
+- Display page menu
+- Minor improvements in cloudbar js and styles
+- Use synnefo.lib.context_processors.cloudbar to display the cloudbar
+  You should set the CLOUDBAR_* settings to point to your astakos urls
+  (see sample conf file in snf-astakos-app/conf/20-snf-astakos-app-cloudbar.conf)
+- Updated snf-common dependency to >=0.9.0
+- New ASTAKOS_RE_USER_EMAIL_PATTERNS setting
+- Support for multiple accounts authentication 
+- New ^^set-active and ^^set-inactive in modifyuser command
+- Fixed circular redirects when visiting login page from the logout one
+- Removed im.context_processors.cloudbar (now using snf-common processor)
+
+
+v0.3.2
+^^^^^^
+- improved styles of sign up button
+- do not send admin notification email if ASTAKOS_DEFAULT_ADMIN_EMAIL is not 
+  set 
+- updated cloudbar styles
+
+
+v0.3.1
+^^^^^^
+- bug fixes
+- administrator email notification on sign up 
+  (configurable from ASTAKOS_DEFAULT_ADMIN_EMAIL setting)
+- recaptcha integration on sign up form
+  (requires ASTAKOS_RECAPTCHA_PUBLIC_KEY, ASTAKOS_RECAPTCHA_PRIVATE_KEY
+   settings)
+- cloudbar jsonp responses
+

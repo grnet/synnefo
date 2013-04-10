@@ -3,11 +3,6 @@
 # Ganeti backend configuration
 ###################################
 
-# The RAPI endpoint and associated credentials to use
-# for talking to the Ganeti backend.
-GANETI_MASTER_IP = "10.0.0.1"
-GANETI_CLUSTER_INFO = (GANETI_MASTER_IP, 5080, "username", "password")
-
 # This prefix gets used when determining the instance names
 # of Synnefo VMs at the Ganeti backend.
 # The dash must always appear in the name!
@@ -33,3 +28,12 @@ GANETI_CREATEINSTANCE_KWARGS = {
     'os': 'snf-image+default',
     'hvparams': {'serial_console': False},
     'wait_for_sync': False}
+
+# If True, qemu-kvm will hotplug a NIC when connecting a vm to
+# a network. This requires qemu-kvm=1.0.
+GANETI_USE_HOTPLUG = False
+
+# This module implements the strategy for allocating a vm to a backend
+BACKEND_ALLOCATOR_MODULE = "synnefo.logic.allocators.default_allocator"
+# Refresh backend statistics timeout, in minutes, used in backend allocation
+BACKEND_REFRESH_MIN = 15

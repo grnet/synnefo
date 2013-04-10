@@ -1,0 +1,123 @@
+Source: synnefo
+Section: python
+Priority: optional
+Maintainer: Synnefo development team <synnefo-devel@googlegroups.com>
+Build-Depends: debhelper (>= 8), python-all (>= 2.5)
+Standards-Version: 3.9.2
+XS-Python-Version: >= 2.6
+Homepage: http://www.synnefo.org
+Vcs-Browser: https://code.grnet.gr/git/synnefo
+
+Package: synnefo
+Section: python
+Priority: optional
+Architecture: all
+Depends: snf-common, snf-cyclades-app, snf-cyclades-gtools, snf-webproject,
+ snf-astakos-app, snf-pithos-app, snf-pithos-backend
+Description: Synnefo meta package
+
+Package: snf-common
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}, python-setuptools
+Provides: ${python:Provides}
+XB-Python-Version: ${python:Versions}
+Description: Synnefo common package
+ This package contains common functionality, used by all other Synnefo
+ components
+
+Package: snf-webproject
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}, snf-common, python-django-south (>= 0.7)
+Provides: ${python:Provides}
+XB-Python-Version: ${python:Versions}
+Description: Synnefo webproject package (common settings mechanism)
+
+Package: snf-cyclades-app
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}, snf-common,
+ python-django-south (>= 0.7)
+Provides: ${python:Provides}
+Replaces: snf-network
+Recommends: snf-webproject
+XB-Python-Version: ${python:Versions}
+Description: Synnefo Compute/Network/Image package
+ This package provides the Synnefo Compute, Network and Image functionality.
+ It installs multiple Django apps to provide the above services.
+
+Package: snf-cyclades-gtools
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}, ganeti2, snf-common, snf-network
+Provides: ${python:Provides}
+Suggests: collectd
+XB-Python-Version: ${python:Versions}
+Description: Synnefo tools to interact with Ganeti
+ This package contains the supplementary tools that allow Ganeti to
+ interact with Synnefo. It should be installed on all Ganeti nodes.
+ .
+ It includes:
+  * snf-ganeti-hook, a Ganeti hook that notifies the Synnefo queue
+  * snf-ganeti-eventd, a daemon who watches the Ganeti job queue
+  * snf-progress-monitor, a utility to monitor image deployment and
+    produce notifications to the Synnefo queue
+
+Package: snf-astakos-app
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}
+Provides: ${python:Provides}
+Recommends: snf-webproject
+XB-Python-Version: ${python:Versions}
+Description: Synnefo Identity management package
+ This package provides the Synnefo Identity management functionality.
+ It is a Django app that handles users and groups for all the other
+ Synnefo services: Cyclades, Pithos, etc.
+
+Package: snf-pithos-app
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}, snf-pithos-backend, snf-common
+Recommends: snf-webproject
+Provides: ${python:Provides}
+XB-Python-Version: ${python:Versions}
+Description: Synnefo File/Object Storage package
+ This package provides the Synnefo File/Object Storage functionality.
+ It is a Django app for the frontend of the Storage service. The
+ backend of the service is handled by the 'snf-pithos-backend' package.
+
+Package: snf-pithos-backend
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}, snf-common,
+    python-argparse
+Replaces: snf-pithos-lib
+Provides: ${python:Provides}
+Recommends: python-ceph
+XB-Python-Version: ${python:Versions}
+Description: Synnefo File/Object Storage backend library
+ This package handles the low level management for the Synnefo
+ File/Object Storage service. This means handling of the DB, object
+ hashing, object mapping and also handling of different underlying
+ storage backend technologies, such as NFS and/or RADOS.
+
+Package: snf-tools
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}
+Provides: ${python:Provides}
+XB-Python-Version: ${python:Versions}
+Description: Synnefo generic additional tools (burnin)
+ This package contains additional tools that supplement a Synnefo
+ installation. Currently, this package contains only the burnin tool.
+
+Package: snf-quotaholder-app
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}
+Provides: ${python:Provides}
+XB-Python-Version: ${python:Versions}
+Description: Synnefo quota enforcement service
+
+Package: snf-stats-app
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}, snf-common
+Provides: ${python:Provides}
+Recommends: snf-webproject
+Suggests: gunicorn, collectd, python-gevent (>=0.13)
+XB-Python-Version: ${python:Versions}
+Description: Synnefo Stats
+ Synnefo Stats

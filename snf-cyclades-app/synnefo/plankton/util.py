@@ -31,19 +31,17 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import datetime
-
 from functools import wraps
 from logging import getLogger
 from traceback import format_exc
 
 from django.conf import settings
 from django.http import (HttpResponse, HttpResponseBadRequest,
-                         HttpResponseServerError)
+                         HttpResponseServerError, HttpResponseForbidden)
 
 from synnefo.lib.astakos import get_user
-from synnefo.plankton.backend import ImageBackend, BackendException
-
+from synnefo.plankton.backend import (ImageBackend, BackendException,
+                                      NotAllowedError)
 
 log = getLogger('synnefo.plankton')
 
@@ -63,6 +61,8 @@ def plankton_method(method):
             except (AssertionError, BackendException) as e:
                 message = e.args[0] if e.args else ''
                 return HttpResponseBadRequest(message)
+            except NotAllowedError:
+                return HttpResponseForbidden()
             except Exception as e:
                 if settings.DEBUG:
                     message = format_exc(e)

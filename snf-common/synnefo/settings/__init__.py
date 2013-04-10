@@ -33,8 +33,6 @@
 
 import os
 import sys
-import glob
-import pkg_resources
 
 from synnefo.util.entry_points import extend_settings
 
@@ -50,16 +48,23 @@ extend_settings(__name__, 'synnefo')
 
 # extend default settings with settings provided within *.conf user files
 # located in directory specified in the SYNNEFO_SETTINGS_DIR
-# environmental variable
+# environment variable
 SYNNEFO_SETTINGS_DIR = os.environ.get('SYNNEFO_SETTINGS_DIR', "/etc/synnefo/")
 if os.path.exists(SYNNEFO_SETTINGS_DIR):
-    conffiles = glob.glob(os.path.join(SYNNEFO_SETTINGS_DIR, '*.conf'))
+    try:
+        entries = [os.path.join(SYNNEFO_SETTINGS_DIR, x) for x in
+                   os.listdir(SYNNEFO_SETTINGS_DIR)]
+        conffiles = [f for f in entries if os.path.isfile(f) and
+                     f.endswith(".conf")]
+    except Exception as e:
+        print >>sys.stderr, "Failed to list *.conf files under %s" % \
+                            SYNNEFO_SETTINGS_DIR
+        raise SystemExit(1)
     conffiles.sort()
     for f in conffiles:
         try:
             execfile(os.path.abspath(f))
         except Exception as e:
-            print >>sys.stderr, "Failed to read settings file: %s [%s]" % \
+            print >>sys.stderr, "Failed to read settings file: %s [%r]" % \
                                 (os.path.abspath(f), e)
-
-
+            raise SystemExit(1)

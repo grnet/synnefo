@@ -21,21 +21,37 @@ POLL_LIMIT = 3600
 # Network Configuration
 #
 
-# Name of the public network in Ganeti. An IP pool should be associated with
-# this network by the Ganeti administrator.
-GANETI_PUBLIC_NETWORK = 'snf_public'
-# This link id is assigned to NICs that should be isolated from anything else
-# (e.g., right before the NIC gets deleted).
-# This value is also hardcoded in a fixture in db/fixtures/initial_data.json.
-GANETI_NULL_LINK = 'snf_null'
+# Maximum allowed network size for private networks.
+MAX_CIDR_BLOCK = 22
 
-# The pool of private network links to use is
-# $GANETI_LINK_PREFIX{1..$GANETI_MAX_LINK_NUMBER}.
-#
-# The prefix to use for private network links.
-GANETI_LINK_PREFIX = 'prv'
-# The number of private network links to use.
-GANETI_MAX_LINK_NUMBER = 100
+# Default settings used by network flavors
+DEFAULT_MAC_PREFIX = 'aa:00:0'
+DEFAULT_BRIDGE = 'br0'
+
+# Boolean value indicating whether synnefo would hold a Pool and allocate IP
+# addresses. If this setting is set to False, IP pool management will be
+# delegated to Ganeti. If machines have been created with this option as False,
+# you must run network reconciliation after turning it to True.
+PUBLIC_USE_POOL = True
+
+# Network flavors that users are allowed to create through API requests
+API_ENABLED_NETWORK_FLAVORS = ['MAC_FILTERED']
+
+# Settings for IP_LESS_ROUTED network:
+# -----------------------------------
+# In this case VMCs act as routers that forward the traffic to/from VMs, based
+# on the defined routing table($DEFAULT_ROUTING_TABLE) and ip rules, that
+# exist in every node, implenting an IP-less routed and proxy-arp setup.
+DEFAULT_ROUTING_TABLE = 'snf_public'
+
+# Settings for MAC_FILTERED network:
+# ------------------------------------------
+# All networks of this type are bridged to the same bridge. Isolation between
+# networks is achieved by assigning a unique MAC-prefix to each network and
+# filtering packets via ebtables.
+DEFAULT_MAC_FILTERED_BRIDGE = 'prv0'
+
+
 # Firewalling
 GANETI_FIREWALL_ENABLED_TAG = 'synnefo:network:0:protected'
 GANETI_FIREWALL_DISABLED_TAG = 'synnefo:network:0:unprotected'
@@ -47,14 +63,14 @@ DEFAULT_FIREWALL_PROFILE = 'DISABLED'
 # our REST API would prefer to be explicit about trailing slashes
 APPEND_SLASH = False
 
-# Ignore disk size specified by flavor, always build the
-# machine with a 4GB (in the case of Windows: 14GB) disk.
-# This setting is helpful in development setups.
-#
-IGNORE_FLAVOR_DISK_SIZES = False
+# Fixed mapping of user VMs to a specific backend.
+# e.g. BACKEND_PER_USER = {'example@okeanos.grnet.gr': 2}
+BACKEND_PER_USER = {}
+
+# List of backend IDs used *only* for archipelago.
+ARCHIPELAGO_BACKENDS = []
 
 # Quota
-#
 # Maximum number of VMs a user is allowed to have.
 MAX_VMS_PER_USER = 3
 
@@ -88,9 +104,30 @@ MAX_PERSONALITY = 5
 MAX_PERSONALITY_SIZE = 10240
 
 # Available storage types to be used as disk templates
+# Use ext_<provider_name> to map specific provider for `ext` disk template.
 GANETI_DISK_TEMPLATES = ('blockdev', 'diskless', 'drbd', 'file', 'plain',
                          'rbd',  'sharedfile')
 DEFAULT_GANETI_DISK_TEMPLATE = 'drbd'
 
 # The URL of an astakos instance that will be used for user authentication
 ASTAKOS_URL = 'https://astakos.okeanos.grnet.gr/im/authenticate'
+
+# Key for password encryption-decryption. After changing this setting, synnefo
+# will be unable to decrypt all existing Backend passwords. You will need to
+# store again the new password by using 'snf-manage backend-modify'.
+# SECRET_ENCRYPTION_KEY may up to 32 bytes. Keys bigger than 32 bytes are not
+# supported.
+SECRET_ENCRYPTION_KEY= "Password Encryption Key"
+
+# Astakos service token
+# The token used for astakos service api calls (e.g. api to retrieve user email
+# using a user uuid)
+CYCLADES_ASTAKOS_SERVICE_TOKEN = ''
+
+# Astakos user_catalogs endpoint
+CYCLADES_USER_CATALOG_URL = 'https://<astakos domain>/user_catalogs'
+
+# Let cyclades proxy user specific api calls to astakos, via self served
+# endpoints. Set this to False if you deploy cyclades-app/astakos-app on the
+# same machine.
+CYCLADES_PROXY_USER_SERVICES = True

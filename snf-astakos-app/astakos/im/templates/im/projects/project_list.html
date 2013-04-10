@@ -1,0 +1,19 @@
+{% extends "im/account_base.html" %}
+{% load astakos_tags filters django_tables2 %}
+
+{% block page.body %} 
+<div class="maincol {% block innerpage.class %}{% endblock %}">
+    <div class="projects">
+	    <h2>PROJECTS</h2>
+	    {% if form %}
+	        {% include "im/projects/search_form.html" %}
+	    {% else %}
+	        {% include "im/projects/intro.html" %}
+		</div>
+        {% endif %}
+        {% if table %}
+            {% render_table table %}
+        {% endif %}
+</div>
+</div>  
+{% endblock %}

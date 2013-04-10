@@ -46,7 +46,7 @@ class Command(BaseCommand):
                     default=True, help="Do not requeue the messages"),
         make_option('-i', '--interactive', action='store_true', default=False,
                     dest='interactive', help="Interactive mode")
-        )
+    )
 
     def handle(self, *args, **options):
         if len(args) != 1:

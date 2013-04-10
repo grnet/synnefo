@@ -111,3 +111,30 @@ class Receipt(object):
     
     def format(self):
         return self.__dict__
+
+class UserEvent(object):
+    def __init__(self, client, user, is_active, eventType, details=None):
+        self.eventVersion = '1'
+        self.occurredMillis = int(time() * 1000)
+        self.receivedMillis = self.occurredMillis
+        self.clientID = client
+        self.userID = user
+        self.isActive = is_active
+        self.role = 'default'
+        self.eventType = eventType
+        self.details = details or {}
+        hash = sha1()
+        hash.update(json.dumps([client,
+                self.userID,
+                self.isActive,
+                self.role,
+                self.eventType,
+                self.details,
+                self.occurredMillis
+                ]
+            )
+        )
+        self.id = hash.hexdigest()
+    
+    def format(self):
+        return self.__dict__

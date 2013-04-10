@@ -1,0 +1,15 @@
+#!/bin/sh
+#
+# This file is a shell script to be sourced by the appropriate 
+# init.d script
+#
+
+VERBOSE=yes
+
+# Run as a daemon? true/false
+SNF_DSPTCH_ENABLE=false
+
+# User to run the dispatcher as
+SNF_USER="www-data"
+
+SNF_DSPTCH_OPTS="--workers=2"

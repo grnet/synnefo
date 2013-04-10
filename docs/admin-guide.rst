@@ -180,6 +180,11 @@ in ``20-snf-astakos-app-settings.conf`` set::
     # this will make the 'projects' page visible in the dashboard
     ASTAKOS_PROJECTS_VISIBLE = True
 
+You can specify a user-specific limit on pending project applications
+with::
+
+    # snf-manage user-update <user id> --max-pending-projects=2
+
 When users apply for projects they are not automatically granted
 the resources. They must first be approved by the administrator.
 
@@ -196,6 +201,12 @@ To deny an application::
 
     # snf-manage project-control --deny <app id>
 
+Users designated as *project admins* can approve, deny, or modify
+an application through the web interface. In
+``20-snf-astakos-app-settings.conf`` set::
+
+    # UUIDs of users that can approve or deny project applications from the web.
+    ASTAKOS_PROJECT_ADMINS = [<uuid>, ...]
 
 
 Astakos advanced operations
@@ -1221,21 +1232,16 @@ Node10:
 All sections: :ref:`Scale out Guide <i-synnefo>`
 
 
-Synnefo Upgrade Notes
-=====================
+Upgrade Notes
+=============
 
 .. toctree::
    :maxdepth: 1
 
    v0.12 -> v0.13 <upgrade/upgrade-0.13>
 
-Older Cyclades Upgrade Notes
-============================
 
-.. toctree::
-   :maxdepth: 2
+Changelog, NEWS
+===============
 
-   Upgrade <upgrade/cyclades-upgrade>
-
-Changelog
-=========
+* v0.13 :ref:`Changelog <Changelog-0.13>`, :ref:`NEWS <NEWS-0.13>`

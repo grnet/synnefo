@@ -141,7 +141,7 @@ def get_menu(request, with_extra_links=False, with_signout=True):
                 name="Overview"))
         if with_signout:
             append(item(
-                   url=absolute(request, reverse('edit_profile')),
+                   url=absolute(request, reverse('landing')),
                    name="Dashboard"))
         if with_extra_links:
             append(item(url=absolute(request, reverse('edit_profile')),

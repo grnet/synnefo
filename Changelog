@@ -16,6 +16,8 @@ Released: UNRELEASED
 
 Synnefo-wide
 ------------
+* Create 'snf_django' Python package to hold common code for all Synnefo
+  components.
 
 Astakos
 -------
@@ -25,6 +27,8 @@ Cyclades
 
 Pithos
 ------
+* Remove PITHOS_AUTHENTICATION_USERS setting, which was used to override
+  astakos users.
 
 Tools
 -----

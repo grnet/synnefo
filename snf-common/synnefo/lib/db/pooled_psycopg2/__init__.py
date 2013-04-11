@@ -33,7 +33,7 @@
 #
 
 import psycopg2
-from synnefo.lib.pool import ObjectPool
+from objpool import ObjectPool
 
 from select import select
 import logging
@@ -81,7 +81,7 @@ class PooledConnection(object):
 
 
 class Psycopg2ConnectionPool(ObjectPool):
-    """A synnefo.lib.pool.ObjectPool of psycopg2 connections.
+    """A objpool.ObjectPool of psycopg2 connections.
 
     Every connection knows how to return itself to the pool
     when it gets close()d.

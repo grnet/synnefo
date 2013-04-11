@@ -31,7 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from synnefo.lib.pool import ObjectPool
+from objpool import ObjectPool
 from synnefo.logic.rapi import GanetiRapiClient
 
 from logging import getLogger

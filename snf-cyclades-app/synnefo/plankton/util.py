@@ -39,10 +39,10 @@ from django.conf import settings
 from django.http import (HttpResponse, HttpResponseBadRequest,
                          HttpResponseServerError, HttpResponseForbidden)
 
-from synnefo.lib.astakos import get_user
+from snf_django.lib.api import faults
+from snf_django.lib.astakos import get_user
 from synnefo.plankton.backend import (ImageBackend, BackendException,
                                       NotAllowedError)
-from synnefo.api import faults
 
 log = getLogger('synnefo.plankton')
 

@@ -1,6 +1,13 @@
 Changelog
 =========
 
+v0.14.0
+------
+(* Unreleased *)
+* settings *PITHOS_BACKEND_POOL_SIZE*
+* setting *PITHOS_UPDATE_MD5* is set to False by default
+ * Remove PITHOS_AUTHENTICATION_USERS setting
+
 v0.13.0
 ------
 * settings *PITHOS_PROXY_USER_SERVICES*, *PITHOS_USER_CATALOG_URL*, *PITHOS_USER_FEEDBACK_URL*,

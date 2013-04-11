@@ -36,7 +36,7 @@ import copy
 import datetime
 import functools
 
-from synnefo.util.testing import with_settings, override_settings
+from snf_django.utils.testing import with_settings, override_settings
 
 from django.test import TestCase, Client
 from django.core import mail

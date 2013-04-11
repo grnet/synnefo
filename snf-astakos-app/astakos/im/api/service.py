@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,72 +31,72 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import logging
-
-from functools import wraps
 from time import time, mktime
-
-from django.http import HttpResponse
+from functools import wraps
 from django.views.decorators.csrf import csrf_exempt
-from django.utils import simplejson as json
 
-from . import render_fault, __get_uuid_displayname_catalogs, __send_feedback
-from .faults import (
-    Fault, Unauthorized, InternalServerError, BadRequest, ItemNotFound)
+from . import  __get_uuid_displayname_catalogs, __send_feedback
+from snf_django.lib import api
+from snf_django.lib.api import faults
 from astakos.im.models import Service
 
+import logging
 logger = logging.getLogger(__name__)
 
 
-def api_method(http_method=None, token_required=False):
-    """Decorator function for views that implement an API method."""
-    def decorator(func):
-        @wraps(func)
-        def wrapper(request, *args, **kwargs):
-            try:
-                if http_method and request.method != http_method:
-                    raise BadRequest('Method not allowed.')
-                x_auth_token = request.META.get('HTTP_X_AUTH_TOKEN')
-                if token_required:
-                    if not x_auth_token:
-                        raise Unauthorized('Access denied')
-                    try:
-                        service = Service.objects.get(auth_token=x_auth_token)
+def service_from_token(func):
+    """Decorator for authenticating service by it's token.
 
-                        # Check if the token has expired.
-                        if service.auth_token_expires:
-                            if (time() - mktime(service.auth_token_expires.timetuple())) > 0:
-                                raise Unauthorized('Authentication expired')
-                        request.service_instance = service
-                    except Service.DoesNotExist, e:
-                        raise Unauthorized('Invalid X-Auth-Token')
-                response = func(request, *args, **kwargs)
-                return response
-            except Fault, fault:
-                return render_fault(request, fault)
-            except BaseException, e:
-                logger.exception('Unexpected error: %s' % e)
-                fault = InternalServerError('Unexpected error')
-                return render_fault(request, fault)
-        return wrapper
-    return decorator
+    Check that a service with the corresponding token exists. Also,
+    if service's token has an expiration token, check that it has not
+    expired.
+
+    """
+    @wraps(func)
+    def wrapper(request, *args, **kwargs):
+        try:
+            token = request.x_auth_token
+        except AttributeError:
+            raise faults.Unauthorized("No authentication token")
+
+        if not token:
+            raise faults.Unauthorized("Invalid X-Auth-Token")
+        try:
+            service = Service.objects.get(auth_token=token)
+        except Service.DoesNotExist:
+            raise faults.Unauthorized("Invalid X-Auth-Token")
+
+        # Check if the token has expired
+        expiration_date = service.auth_token_expires
+        if expiration_date:
+            expires_at = mktime(expiration_date.timetuple())
+            if time() > expires_at:
+                raise faults.Unauthorized("Authentication expired")
+
+        request.service_instance = service
+        return func(request, *args, **kwargs)
+    return wrapper
+
 
 @csrf_exempt
-@api_method(http_method='POST', token_required=True)
+@api.api_method(http_method='POST', token_required=True, user_required=False,
+            logger=logger)
+@service_from_token  # Authenticate service !!
 def get_uuid_displayname_catalogs(request):
     # Normal Response Codes: 200
     # Error Response Codes: internalServerError (500)
     #                       badRequest (400)
     #                       unauthorised (401)
-
     return __get_uuid_displayname_catalogs(request, user_call=False)
 
+
 @csrf_exempt
-@api_method(http_method='POST', token_required=True)
+@api.api_method(http_method='POST', token_required=True, user_required=False,
+            logger=logger)
+@service_from_token  # Authenticate service !!
 def send_feedback(request, email_template_name='im/feedback_mail.txt'):
     # Normal Response Codes: 200
     # Error Response Codes: internalServerError (500)
     #                       badRequest (400)
     #                       unauthorised (401)
-
     return __send_feedback(request, email_template_name)

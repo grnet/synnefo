@@ -56,12 +56,13 @@ import warnings
 from operator import itemgetter
 from time import gmtime, strftime
 from functools import wraps, partial
-from synnefo.api import faults
+from snf_django.lib.api import faults
 
 from django.conf import settings
 
-from pithos.backends.base import NotAllowedError as PithosNotAllowedError
-import synnefo.lib.astakos as lib_astakos
+from pithos.backends.base import NotAllowedError
+
+import snf_django.lib.astakos as lib_astakos
 import logging
 
 from synnefo.settings import (CYCLADES_USE_QUOTAHOLDER,
@@ -112,10 +113,6 @@ class BackendException(Exception):
     pass
 
 
-class NotAllowedError(BackendException):
-    pass
-
-
 from pithos.backends.util import PithosBackendPool
 POOL_SIZE = 8
 _pithos_backend_pool = \
@@ -138,8 +135,8 @@ def handle_backend_exceptions(func):
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
-        except PithosNotAllowedError:
-            raise NotAllowedError()
+        except NotAllowedError:
+            raise faults.Forbidden("Request not allowed")
     return wrapper
 
 

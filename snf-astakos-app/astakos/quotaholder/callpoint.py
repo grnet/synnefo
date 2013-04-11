@@ -72,25 +72,68 @@ class QuotaholderDjangoDBCallpoint(object):
 
         return quotas
 
-    def set_holder_quota(self, quotas):
-        holders = quotas.keys()
-        hs = Holding.objects.filter(holder__in=holders).select_for_update()
+    def _get_holdings_for_update(self, holding_keys):
+        holding_keys = sorted(holding_keys)
         holdings = {}
-        for h in hs:
-            holdings[(h.holder, h.source, h.resource)] = h
+        for (holder, source, resource) in holding_keys:
+            try:
+                h = Holding.objects.get_for_update(
+                    holder=holder, source=source, resource=resource)
+                holdings[(holder, source, resource)] = h
+            except Holding.DoesNotExist:
+                pass
+        return holdings
 
+    def _provisions_to_list(self, provisions):
+        lst = []
+        for provision in provisions:
+            try:
+                holder = provision['holder']
+                source = provision['source']
+                resource = provision['resource']
+                quantity = provision['quantity']
+                key = (holder, source, resource)
+                lst.append((key, quantity))
+            except KeyError:
+                raise InvalidDataError("Malformed provision")
+        return lst
+
+    def _mkProvision(self, key, quantity):
+        holder, source, resource = key
+        return {'holder': holder,
+                'source': source,
+                'resource': resource,
+                'quantity': quantity,
+                }
+
+    def set_holder_quota(self, quotas):
+        q = self._level_quota_dict(quotas)
+        self.set_quota(q)
+
+    def _level_quota_dict(self, quotas):
+        lst = []
         for holder, holder_quota in quotas.iteritems():
             for source, source_quota in holder_quota.iteritems():
                 for resource, limit in source_quota.iteritems():
-                    try:
-                        h = holdings[(holder, source, resource)]
-                    except KeyError:
-                        h = Holding(holder=holder,
-                                    source=source,
-                                    resource=resource)
+                    key = (holder, source, resource)
+                    lst.append((key, limit))
+        return lst
 
-                    h.limit = limit
-                    h.save()
+    def set_quota(self, quotas):
+        holding_keys = [key for (key, limit) in quotas]
+        holdings = self._get_holdings_for_update(holding_keys)
+
+        for key, limit in quotas:
+            try:
+                h = holdings[key]
+            except KeyError:
+                holder, source, resource = key
+                h = Holding(holder=holder,
+                            source=source,
+                            resource=resource)
+            h.limit = limit
+            h.save()
+            holdings[key] = h
 
     def issue_commission(self,
                          context=None,
@@ -107,39 +150,28 @@ class QuotaholderDjangoDBCallpoint(object):
 
         operations = Operations()
 
+        provisions = self._provisions_to_list(provisions)
+        keys = [key for (key, value) in provisions]
+        holdings = self._get_holdings_for_update(keys)
         try:
             checked = []
-            for provision in provisions:
-                try:
-                    holder = provision['holder']
-                    source = provision['source']
-                    resource = provision['resource']
-                    quantity = provision['quantity']
-                except KeyError:
-                    raise InvalidDataError("Malformed provision")
-
+            for key, quantity in provisions:
                 if not isinstance(quantity, (int, long)):
                     raise InvalidDataError("Malformed provision")
 
-                ent_res = holder, resource
-                if ent_res in checked:
-                    m = "Duplicate provision for %s.%s" % ent_res
-                    details = {'message': m,
-                               }
+                if key in checked:
+                    m = "Duplicate provision for %s" % str(key)
+                    provision = self._mkProvision(key, quantity)
                     raise DuplicateError(m,
-                                         provision=provision,
-                                         details=details)
-                checked.append(ent_res)
+                                         provision=provision)
+                checked.append(key)
 
                 # Target
                 try:
-                    th = db_get_holding(holder=holder,
-                                        resource=resource,
-                                        source=source,
-                                        for_update=True)
-                except Holding.DoesNotExist:
-                    m = ("There is no such holding %s.%s"
-                         % (holder, resource))
+                    th = holdings[key]
+                except KeyError:
+                    m = ("There is no such holding %s" % key)
+                    provision = self._mkProvision(key, quantity)
                     raise NoHoldingError(m,
                                          provision=provision)
 
@@ -150,6 +182,7 @@ class QuotaholderDjangoDBCallpoint(object):
                     abs_quantity = -quantity
                     operations.prepare(Release, th, abs_quantity, force)
 
+                holdings[key] = th
                 Provision.objects.create(serial=commission,
                                          holding=th,
                                          quantity=quantity)

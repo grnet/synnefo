@@ -1,4 +1,4 @@
-# Copyright (C) 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright 2012-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,49 +31,16 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from django.utils import simplejson as json
+from django.test import TestCase
+from snf_django.utils.testing import astakos_user
 
-class AstakosClientException(Exception):
-    def __init__(self, message, status=0):
-        self.message = message
-        self.status = status
-
-    def __str__(self):
-        return repr(self.message)
-
-
-class BadRequest(AstakosClientException):
-    def __init__(self, message):
-        """400 Bad Request"""
-        super(BadRequest, self).__init__(message, 400)
-
-
-class Unauthorized(AstakosClientException):
-    def __init__(self, message):
-        """401 Invalid X-Auth-Token"""
-        super(Unauthorized, self).__init__(message, 401)
-
-
-class Forbidden(AstakosClientException):
-    def __init__(self, message):
-        """403 Forbidden"""
-        super(Forbidden, self).__init__(message, 403)
-
-
-class NotFound(AstakosClientException):
-    def __init__(self, message):
-        """404 Not Found"""
-        super(NotFound, self).__init__(message, 404)
-
-
-class NoUserName(AstakosClientException):
-    def __init__(self, uuid):
-        """No display name for the given uuid"""
-        message = "No display name for the given uuid: %s" % uuid
-        super(NoUserName, self).__init__(message)
-
-
-class NoUUID(AstakosClientException):
-    def __init__(self, display_name):
-        """No uuid for the given display name"""
-        message = "No uuid for the given display name: %s" % display_name
-        super(NoUUID, self).__init__(message)
+class APITest(TestCase):
+    def test_api_version(self):
+        """Check API version."""
+        with astakos_user('user'):
+            response = self.client.get('/api/v1.1/')
+        self.assertEqual(response.status_code, 200)
+        api_version = json.loads(response.content)['version']
+        self.assertEqual(api_version['id'], 'v1.1')
+        self.assertEqual(api_version['status'], 'CURRENT')

@@ -1,4 +1,4 @@
-include README Changelog
+include README
 include distribute_setup.py
 global-include */templates/* */fixtures/* */static/*
 global-exclude */.DS_Store

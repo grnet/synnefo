@@ -31,53 +31,42 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from httplib import HTTPConnection, HTTPSConnection
-from contextlib import closing
 
-from objpool.http import PooledHTTPConnection
-from astakosclient.errors import AstakosClientException
-
-
-def retry(func):
-    def decorator(self, *args, **kwargs):
-        attemps = 0
-        while True:
-            try:
-                return func(self, *args, **kwargs)
-            except AstakosClientException as err:
-                is_last_attempt = attemps == self.retry
-                if is_last_attempt:
-                    raise err
-                if err.status == 401 or err.status == 404:
-                    # In case of Unauthorized response
-                    # or Not Found return immediately
-                    raise err
-                self.logger.info("AstakosClient request failed..retrying")
-                attemps += 1
-    return decorator
+class AstakosClientException(Exception):
+    def __init__(self, message='', details='', status=None):
+        self.message = message
+        self.details = details
+        if not hasattr(self, 'status'):
+            self.status = status
+        super(AstakosClientException,
+              self).__init__(self.message, self.details, self.status)
 
 
-def scheme_to_class(scheme, use_pool, pool_size):
-    """Return the appropriate conn class for given scheme"""
-    def _objpool(netloc):
-        return PooledHTTPConnection(
-            netloc=netloc, scheme=scheme, pool_size=pool_size)
+class BadRequest(AstakosClientException):
+    status = 400
 
-    def _http_connection(netloc):
-        return closing(HTTPConnection(netloc))
 
-    def _https_connection(netloc):
-        return closing(HTTPSConnection(netloc))
+class Unauthorized(AstakosClientException):
+    status = 401
 
-    if scheme == "http":
-        if use_pool:
-            return _objpool
-        else:
-            return _http_connection
-    elif scheme == "https":
-        if use_pool:
-            return _objpool
-        else:
-            return _https_connection
-    else:
-        return None
+
+class Forbidden(AstakosClientException):
+    status = 403
+
+
+class NotFound(AstakosClientException):
+    status = 404
+
+
+class NoUserName(AstakosClientException):
+    def __init__(self, uuid):
+        """No display name for the given uuid"""
+        message = "No display name for the given uuid: %s" % uuid
+        super(NoUserName, self).__init__(message)
+
+
+class NoUUID(AstakosClientException):
+    def __init__(self, display_name):
+        """No uuid for the given display name"""
+        message = "No uuid for the given display name: %s" % display_name
+        super(NoUUID, self).__init__(message)

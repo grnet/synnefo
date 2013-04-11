@@ -39,6 +39,7 @@ from contextlib import contextmanager
 from mock import patch
 from functools import wraps
 from copy import deepcopy
+from snf_django.utils.testing import astakos_user, BaseAPITest
 
 
 FILTERS = ('name', 'container_format', 'disk_format', 'status', 'size_min',
@@ -56,67 +57,6 @@ ADD_FIELDS = ('name', 'id', 'store', 'disk_format', 'container_format', 'size',
               'checksum', 'is_public', 'owner', 'properties', 'location')
 UPDATE_FIELDS = ('name', 'disk_format', 'container_format', 'is_public',
                  'owner', 'properties', 'status')
-
-
-@contextmanager
-def astakos_user(user):
-    """
-    Context manager to mock astakos response.
-
-    usage:
-    with astakos_user("user@user.com"):
-        .... make api calls ....
-
-    """
-    def dummy_get_user(request, *args, **kwargs):
-        request.user = {'username': user, 'groups': []}
-        request.user_uniq = user
-
-    with patch('synnefo.plankton.util.get_user') as m:
-        m.side_effect = dummy_get_user
-        yield
-
-
-class BaseAPITest(TestCase):
-    def get(self, url, user='user', *args, **kwargs):
-        with astakos_user(user):
-            response = self.client.get(url, *args, **kwargs)
-        return response
-
-    def delete(self, url, user='user'):
-        with astakos_user(user):
-            response = self.client.delete(url)
-        return response
-
-    def post(self, url, user='user', params={}, ctype='json', *args, **kwargs):
-        if ctype == 'json':
-            content_type = 'application/json'
-        with astakos_user(user):
-            response = self.client.post(url, params, content_type=content_type,
-                                        *args, **kwargs)
-        return response
-
-    def put(self, url, user='user', params={}, ctype='json', *args, **kwargs):
-        if ctype == 'json':
-            content_type = 'application/json'
-        with astakos_user(user):
-            response = self.client.put(url, params, content_type=content_type,
-                                       *args, **kwargs)
-        return response
-
-    def assertSuccess(self, response):
-        self.assertTrue(response.status_code in [200, 203, 204])
-
-    def assertFault(self, response, status_code, name):
-        self.assertEqual(response.status_code, status_code)
-        fault = response.content
-        self.assertEqual(fault, name)
-
-    def assertBadRequest(self, response):
-        self.assertFault(response, 400, '400 Bad Request')
-
-    def assertItemNotFound(self, response):
-        self.assertFault(response, 404, 'itemNotFound')
 
 
 DummyImages = {
@@ -190,7 +130,7 @@ def assert_backend_closed(func):
     return wrapper
 
 
-@patch("synnefo.plankton.util.ImageBackend")
+@patch("synnefo.plankton.utils.ImageBackend")
 class PlanktonTest(BaseAPITest):
     @assert_backend_closed
     def test_list_images(self, backend):

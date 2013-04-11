@@ -37,10 +37,14 @@ from django.http import HttpResponse
 
 from synnefo.lib.db.transaction import commit_on_success_strict
 from astakos.api.util import json_response
+
+from snf_django.lib import api
+from snf_django.lib.api.faults import BadRequest, InternalServerError
+
 from astakos.im.api import api_method as generic_api_method
-from astakos.im.api.user import api_method as user_api_method
-from astakos.im.api.service import api_method as service_api_method
-from astakos.im.api.faults import BadRequest, InternalServerError
+from astakos.im.api.user import user_from_token
+from astakos.im.api.service import service_from_token
+
 from astakos.im.quotas import get_user_quotas, get_resources
 
 import astakos.quotaholder.exception as qh_exception
@@ -48,13 +52,14 @@ from astakos.quotaholder.callpoint import QuotaholderDjangoDBCallpoint
 qh = QuotaholderDjangoDBCallpoint()
 
 
-@user_api_method(http_method='GET', token_required=True)
+@api.api_method(http_method='GET', token_required=True, user_required=False)
+@user_from_token
 def quotas(request, user=None):
     result = get_user_quotas(user)
     return json_response(result)
 
 
-@generic_api_method(http_method='GET')
+@api.api_method(http_method='GET', token_required=False, user_required=False)
 def resources(request):
     result = get_resources()
     return json_response(result)
@@ -71,7 +76,8 @@ def commissions(request):
         raise BadRequest('Method not allowed.')
 
 
-@service_api_method(http_method='GET', token_required=True)
+@api.api_method(http_method='GET', token_required=True, user_required=False)
+@service_from_token
 def get_pending_commissions(request):
     data = request.GET
     client_key = str(request.service_instance)
@@ -81,7 +87,8 @@ def get_pending_commissions(request):
 
 
 @csrf_exempt
-@service_api_method(http_method='POST', token_required=True)
+@api.api_method(http_method='POST', token_required=True, user_required=False)
+@service_from_token
 def issue_commission(request):
     data = request.raw_post_data
     input_data = json.loads(data)
@@ -153,7 +160,8 @@ def failed_to_cloudfault(failed):
 
 
 @csrf_exempt
-@service_api_method(http_method='POST', token_required=True)
+@api.api_method(http_method='POST', token_required=True, user_required=False)
+@service_from_token
 @commit_on_success_strict()
 def resolve_pending_commissions(request):
     data = request.raw_post_data
@@ -176,7 +184,8 @@ def resolve_pending_commissions(request):
     return json_response(data)
 
 
-@service_api_method(http_method='GET', token_required=True)
+@api.api_method(http_method='GET', token_required=True, user_required=False)
+@service_from_token
 def get_commission(request, serial):
     data = request.GET
     client_key = str(request.service_instance)
@@ -192,7 +201,8 @@ def get_commission(request, serial):
 
 
 @csrf_exempt
-@service_api_method(http_method='POST', token_required=True)
+@api.api_method(http_method='POST', token_required=True, user_required=False)
+@service_from_token
 @commit_on_success_strict()
 def serial_action(request, serial):
     data = request.raw_post_data

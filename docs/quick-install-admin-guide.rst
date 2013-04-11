@@ -906,6 +906,11 @@ you are not logged in. The ``PITHOS_UI_FEEDBACK_URL`` option points at the
 pithos+ feedback form. Astakos already provides a generic feedback form for all
 services, so we use this one.
 
+The ``PITHOS_UPDATE_MD5`` option by default disables the computation of the
+object checksums. This results to improved performance during object uploading.
+However, if compatibility with the OpenStack Object Storage API is important
+then it should be changed to ``True``.
+
 Then edit ``/etc/synnefo/20-snf-pithos-webclient-cloudbar.conf``, to connect the
 pithos+ web UI with the astakos web UI (through the top cloudbar):
 
@@ -982,11 +987,11 @@ Pithos uses the alembic_ database migrations tool.
 
 .. _alembic: http://alembic.readthedocs.org
 
-After a sucessful installation, we should stamp it with the most recent
-revision, in order to be able in the future to define the migrations should run
-in subsequent upgrades.
+After a sucessful installation, we should stamp it at the most recent
+revision, so that future migrations know where to start upgrading in
+the migration history.
 
-In order to find the most recent revision, we check the migration history:
+First, find the most recent revision in the migration history:
 
 .. code-block:: console
 

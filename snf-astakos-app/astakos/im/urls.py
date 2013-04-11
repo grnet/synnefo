@@ -134,7 +134,7 @@ if 'twitter' in IM_MODULES:
 if 'google' in IM_MODULES:
     urlpatterns += patterns(
         'astakos.im.target',
-        url(r'^login/goggle/?$', 'google.login'),
+        url(r'^login/google/?$', 'google.login'),
         url(r'^login/google/authenticated/?$',
             'google.authenticated'))
 

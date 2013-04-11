@@ -92,7 +92,7 @@ class HelpdeskTests(TestCase):
                 return None
 
         # mock the astakos authentication function
-        from synnefo.lib import astakos
+        from snf_django.lib import astakos
         astakos.get_user = get_user_mock
         astakos.get_displayname = get_displayname_mock
         astakos.get_user_uuid = get_uuid_mock

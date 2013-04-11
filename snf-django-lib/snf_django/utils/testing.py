@@ -33,6 +33,9 @@
 
 
 from contextlib import contextmanager
+from django.test import TestCase
+from django.utils import simplejson as json
+from mock import patch
 
 
 @contextmanager
@@ -112,3 +115,62 @@ def with_settings(settings, prefix='', **override):
             return ret
         return inner
     return wrapper
+
+
+@contextmanager
+def astakos_user(user):
+    """
+    Context manager to mock astakos response.
+
+    usage:
+    with astakos_user("user@user.com"):
+        .... make api calls ....
+
+    """
+    with patch("snf_django.lib.api.get_token") as get_token:
+        get_token.return_value = "DummyToken"
+        with patch('astakosclient.AstakosClient.get_user_info') as m:
+            m.return_value = {"uuid": user}
+            yield
+
+
+class BaseAPITest(TestCase):
+    def get(self, url, user='user', *args, **kwargs):
+        with astakos_user(user):
+            response = self.client.get(url, *args, **kwargs)
+        return response
+
+    def delete(self, url, user='user'):
+        with astakos_user(user):
+            response = self.client.delete(url)
+        return response
+
+    def post(self, url, user='user', params={}, ctype='json', *args, **kwargs):
+        if ctype == 'json':
+            content_type = 'application/json'
+        with astakos_user(user):
+            response = self.client.post(url, params, content_type=content_type,
+                                        *args, **kwargs)
+        return response
+
+    def put(self, url, user='user', params={}, ctype='json', *args, **kwargs):
+        if ctype == 'json':
+            content_type = 'application/json'
+        with astakos_user(user):
+            response = self.client.put(url, params, content_type=content_type,
+                                       *args, **kwargs)
+        return response
+
+    def assertSuccess(self, response):
+        self.assertTrue(response.status_code in [200, 203, 204])
+
+    def assertFault(self, response, status_code, name):
+        self.assertEqual(response.status_code, status_code)
+        fault = json.loads(response.content)
+        self.assertEqual(fault.keys(), [name])
+
+    def assertBadRequest(self, response):
+        self.assertFault(response, 400, 'badRequest')
+
+    def assertItemNotFound(self, response):
+        self.assertFault(response, 404, 'itemNotFound')

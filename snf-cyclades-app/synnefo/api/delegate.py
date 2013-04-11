@@ -42,7 +42,7 @@ from django.conf import settings
 USER_CATALOG_URL = getattr(settings, 'CYCLADES_USER_CATALOG_URL', None)
 USER_FEEDBACK_URL = getattr(settings, 'CYCLADES_USER_FEEDBACK_URL', None)
 
-from synnefo.lib.pool.http import PooledHTTPConnection
+from objpool.http import PooledHTTPConnection
 
 logger = logging.getLogger(__name__)
 

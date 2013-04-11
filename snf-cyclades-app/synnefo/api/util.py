@@ -56,59 +56,18 @@ from django.utils import simplejson as json
 from django.utils.cache import add_never_cache_headers
 from django.db.models import Q
 
-from synnefo.api.faults import (Fault, BadRequest, BuildInProgress,
-                                ItemNotFound, ServiceUnavailable, Unauthorized,
-                                BadMediaType, Forbidden, OverLimit)
+from snf_django.lib.api import faults
 from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
                                Network, BackendNetwork, NetworkInterface,
                                BridgePoolTable, MacPrefixPoolTable)
 from synnefo.db.pools import EmptyPool
 
-from synnefo.lib.astakos import get_user
-from synnefo.plankton.backend import ImageBackend, NotAllowedError
+from snf_django.lib.astakos import get_user
+from synnefo.plankton.utils import image_backend
 from synnefo.settings import MAX_CIDR_BLOCK
 
 
 log = getLogger('synnefo.api')
-
-
-class UTC(tzinfo):
-    def utcoffset(self, dt):
-        return timedelta(0)
-
-    def tzname(self, dt):
-        return 'UTC'
-
-    def dst(self, dt):
-        return timedelta(0)
-
-
-def isoformat(d):
-    """Return an ISO8601 date string that includes a timezone."""
-
-    return d.replace(tzinfo=UTC()).isoformat()
-
-
-def isoparse(s):
-    """Parse an ISO8601 date string into a datetime object."""
-
-    if not s:
-        return None
-
-    try:
-        since = dateutil.parser.parse(s)
-        utc_since = since.astimezone(UTC()).replace(tzinfo=None)
-    except ValueError:
-        raise BadRequest('Invalid changes-since parameter.')
-
-    now = datetime.datetime.now()
-    if utc_since > now:
-        raise BadRequest('changes-since value set in the future.')
-
-    if now - utc_since > timedelta(seconds=settings.POLL_LIMIT):
-        raise BadRequest('Too old changes-since value.')
-
-    return utc_since
 
 
 def random_password():
@@ -171,12 +130,12 @@ def get_vm(server_id, user_id, for_update=False, non_deleted=False,
         if non_deleted and vm.deleted:
             raise VirtualMachine.DeletedError
         if non_suspended and vm.suspended:
-            raise Forbidden("Administratively Suspended VM")
+            raise faults.Forbidden("Administratively Suspended VM")
         return vm
     except ValueError:
-        raise BadRequest('Invalid server ID.')
+        raise faults.BadRequest('Invalid server ID.')
     except VirtualMachine.DoesNotExist:
-        raise ItemNotFound('Server not found.')
+        raise faults.ItemNotFound('Server not found.')
 
 
 def get_vm_meta(vm, key):
@@ -185,20 +144,17 @@ def get_vm_meta(vm, key):
     try:
         return VirtualMachineMetadata.objects.get(meta_key=key, vm=vm)
     except VirtualMachineMetadata.DoesNotExist:
-        raise ItemNotFound('Metadata key not found.')
+        raise faults.ItemNotFound('Metadata key not found.')
 
 
 def get_image(image_id, user_id):
     """Return an Image instance or raise ItemNotFound."""
 
-    backend = ImageBackend(user_id)
-    try:
+    with image_backend(user_id) as backend:
         image = backend.get_image(image_id)
         if not image:
-            raise ItemNotFound('Image not found.')
+            raise faults.ItemNotFound('Image not found.')
         return image
-    finally:
-        backend.close()
 
 
 def get_image_dict(image_id, user_id):
@@ -224,7 +180,22 @@ def get_flavor(flavor_id, include_deleted=False):
         else:
             return Flavor.objects.get(id=flavor_id, deleted=include_deleted)
     except (ValueError, Flavor.DoesNotExist):
-        raise ItemNotFound('Flavor not found.')
+        raise faults.ItemNotFound('Flavor not found.')
+
+
+def get_flavor_provider(flavor):
+    """Extract provider from disk template.
+
+    Provider for `ext` disk_template is encoded in the disk template
+    name, which is formed `ext_<provider_name>`. Provider is None
+    for all other disk templates.
+
+    """
+    disk_template = flavor.disk_template
+    provider = None
+    if disk_template.startswith("ext"):
+        disk_template, provider = disk_template.split("_", 1)
+    return disk_template, provider
 
 
 def get_network(network_id, user_id, for_update=False):
@@ -237,7 +208,7 @@ def get_network(network_id, user_id, for_update=False):
             objects = objects.select_for_update()
         return objects.get(Q(userid=user_id) | Q(public=True), id=network_id)
     except (ValueError, Network.DoesNotExist):
-        raise ItemNotFound('Network not found.')
+        raise faults.ItemNotFound('Network not found.')
 
 
 def validate_network_params(subnet, gateway=None, subnet6=None, gateway6=None):
@@ -245,11 +216,11 @@ def validate_network_params(subnet, gateway=None, subnet6=None, gateway6=None):
         # Use strict option to not all subnets with host bits set
         network = ipaddr.IPv4Network(subnet, strict=True)
     except ValueError:
-        raise BadRequest("Invalid network IPv4 subnet")
+        raise faults.BadRequest("Invalid network IPv4 subnet")
 
     # Check that network size is allowed!
     if not validate_network_size(network.prefixlen):
-        raise OverLimit(message="Unsupported network size",
+        raise faults.OverLimit(message="Unsupported network size",
                         details="Network mask must be in range (%s, 29]" %
                                 MAX_CIDR_BLOCK)
 
@@ -258,23 +229,23 @@ def validate_network_params(subnet, gateway=None, subnet6=None, gateway6=None):
         try:
             gateway = ipaddr.IPv4Address(gateway)
         except ValueError:
-            raise BadRequest("Invalid network IPv4 gateway")
+            raise faults.BadRequest("Invalid network IPv4 gateway")
         if not gateway in network:
-            raise BadRequest("Invalid network IPv4 gateway")
+            raise faults.BadRequest("Invalid network IPv4 gateway")
 
     if subnet6:
         try:
             # Use strict option to not all subnets with host bits set
             network6 = ipaddr.IPv6Network(subnet6, strict=True)
         except ValueError:
-            raise BadRequest("Invalid network IPv6 subnet")
+            raise faults.BadRequest("Invalid network IPv6 subnet")
         if gateway6:
             try:
                 gateway6 = ipaddr.IPv6Address(gateway6)
             except ValueError:
-                raise BadRequest("Invalid network IPv6 gateway")
+                raise faults.BadRequest("Invalid network IPv6 gateway")
             if not gateway6 in network6:
-                raise BadRequest("Invalid network IPv6 gateway")
+                raise faults.BadRequest("Invalid network IPv6 gateway")
 
 
 def validate_network_size(cidr_block):
@@ -311,7 +282,7 @@ def get_public_ip(backend):
                 break
     if address is None:
         log.error("Public networks of backend %s are full", backend)
-        raise OverLimit("Can not allocate IP for new machine."
+        raise faults.OverLimit("Can not allocate IP for new machine."
                         " Public networks are full.")
     return (network, address)
 
@@ -346,7 +317,7 @@ def get_nic(machine, network):
     try:
         return NetworkInterface.objects.get(machine=machine, network=network)
     except NetworkInterface.DoesNotExist:
-        raise ItemNotFound('Server not connected to this network.')
+        raise faults.ItemNotFound('Server not connected to this network.')
 
 
 def get_nic_from_index(vm, nic_index):
@@ -356,38 +327,11 @@ def get_nic_from_index(vm, nic_index):
     matching_nics = vm.nics.filter(index=nic_index)
     matching_nics_len = len(matching_nics)
     if matching_nics_len < 1:
-        raise ItemNotFound('NIC not found on VM')
+        raise faults.ItemNotFound('NIC not found on VM')
     elif matching_nics_len > 1:
-        raise BadMediaType('NIC index conflict on VM')
+        raise faults.BadMediaType('NIC index conflict on VM')
     nic = matching_nics[0]
     return nic
-
-
-def get_request_dict(request):
-    """Returns data sent by the client as a python dict."""
-
-    data = request.raw_post_data
-    if request.META.get('CONTENT_TYPE').startswith('application/json'):
-        try:
-            return json.loads(data)
-        except ValueError:
-            raise BadRequest('Invalid JSON data.')
-    else:
-        raise BadRequest('Unsupported Content-Type.')
-
-
-def update_response_headers(request, response):
-    if request.serialization == 'xml':
-        response['Content-Type'] = 'application/xml'
-    elif request.serialization == 'atom':
-        response['Content-Type'] = 'application/atom+xml'
-    else:
-        response['Content-Type'] = 'application/json'
-
-    if settings.TEST:
-        response['Date'] = format_date_time(time())
-
-    add_never_cache_headers(response)
 
 
 def render_metadata(request, metadata, use_values=False, status=200):
@@ -410,93 +354,6 @@ def render_meta(request, meta, status=200):
     return HttpResponse(data, status=status)
 
 
-def render_fault(request, fault):
-    if settings.DEBUG or settings.TEST:
-        fault.details = format_exc(fault)
-
-    if request.serialization == 'xml':
-        data = render_to_string('fault.xml', {'fault': fault})
-    else:
-        d = {fault.name: {'code': fault.code,
-                          'message': fault.message,
-                          'details': fault.details}}
-        data = json.dumps(d)
-
-    resp = HttpResponse(data, status=fault.code)
-    update_response_headers(request, resp)
-    return resp
-
-
-def request_serialization(request, atom_allowed=False):
-    """Return the serialization format requested.
-
-    Valid formats are 'json', 'xml' and 'atom' if `atom_allowed` is True.
-    """
-
-    path = request.path
-
-    if path.endswith('.json'):
-        return 'json'
-    elif path.endswith('.xml'):
-        return 'xml'
-    elif atom_allowed and path.endswith('.atom'):
-        return 'atom'
-
-    for item in request.META.get('HTTP_ACCEPT', '').split(','):
-        accept, sep, rest = item.strip().partition(';')
-        if accept == 'application/json':
-            return 'json'
-        elif accept == 'application/xml':
-            return 'xml'
-        elif atom_allowed and accept == 'application/atom+xml':
-            return 'atom'
-
-    return 'json'
-
-
-def api_method(http_method=None, atom_allowed=False):
-    """Decorator function for views that implement an API method."""
-
-    def decorator(func):
-        @wraps(func)
-        def wrapper(request, *args, **kwargs):
-            try:
-                request.serialization = request_serialization(request,
-                                                              atom_allowed)
-                get_user(request, settings.ASTAKOS_URL)
-                if not request.user_uniq:
-                    raise Unauthorized('No user found.')
-                if http_method and request.method != http_method:
-                    raise BadRequest('Method not allowed.')
-
-                resp = func(request, *args, **kwargs)
-                update_response_headers(request, resp)
-                return resp
-            except VirtualMachine.DeletedError:
-                fault = BadRequest('Server has been deleted.')
-                return render_fault(request, fault)
-            except Network.DeletedError:
-                fault = BadRequest('Network has been deleted.')
-                return render_fault(request, fault)
-            except VirtualMachine.BuildingError:
-                fault = BuildInProgress('Server is being built.')
-                return render_fault(request, fault)
-            except NotAllowedError:
-                # Image Backend Unathorized
-                fault = Forbidden('Request not allowed.')
-                return render_fault(request, fault)
-            except Fault, fault:
-                if fault.code >= 500:
-                    log.exception('API fault')
-                return render_fault(request, fault)
-            except BaseException:
-                log.exception('Unexpected error')
-                fault = ServiceUnavailable('Unexpected error.')
-                return render_fault(request, fault)
-        return wrapper
-    return decorator
-
-
 def construct_nic_id(nic):
     return "-".join(["nic", unicode(nic.machine.id), unicode(nic.index)])
 
@@ -504,7 +361,7 @@ def construct_nic_id(nic):
 def verify_personality(personality):
     """Verify that a a list of personalities is well formed"""
     if len(personality) > settings.MAX_PERSONALITY:
-        raise OverLimit("Maximum number of personalities"
+        raise faults.OverLimit("Maximum number of personalities"
                         " exceeded")
     for p in personality:
         # Verify that personalities are well-formed
@@ -516,26 +373,11 @@ def verify_personality(personality):
             contents = p['contents']
             if len(contents) > settings.MAX_PERSONALITY_SIZE:
                 # No need to decode if contents already exceed limit
-                raise OverLimit("Maximum size of personality exceeded")
+                raise faults.OverLimit("Maximum size of personality exceeded")
             if len(b64decode(contents)) > settings.MAX_PERSONALITY_SIZE:
-                raise OverLimit("Maximum size of personality exceeded")
+                raise faults.OverLimit("Maximum size of personality exceeded")
         except AssertionError:
-            raise BadRequest("Malformed personality in request")
-
-
-def get_flavor_provider(flavor):
-    """Extract provider from disk template.
-
-    Provider for `ext` disk_template is encoded in the disk template
-    name, which is formed `ext_<provider_name>`. Provider is None
-    for all other disk templates.
-
-    """
-    disk_template = flavor.disk_template
-    provider = None
-    if disk_template.startswith("ext"):
-        disk_template, provider = disk_template.split("_", 1)
-    return disk_template, provider
+            raise faults.BadRequest("Malformed personality in request")
 
 
 def values_from_flavor(flavor):
@@ -548,7 +390,7 @@ def values_from_flavor(flavor):
     try:
         flavor = Network.FLAVORS[flavor]
     except KeyError:
-        raise BadRequest("Unknown network flavor")
+        raise faults.BadRequest("Unknown network flavor")
 
     mode = flavor.get("mode")
 

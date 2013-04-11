@@ -41,7 +41,8 @@ from stat import S_IFDIR, S_IFREG
 from sys import argv
 from time import time
 
-from synnefo.lib.parsedate import parse_http_date
+
+from snf_django.lib.api.parsedate import parse_http_date
 
 from pithos.tools.lib.client import OOS_Client, Fault
 from pithos.tools.lib.fuse import FUSE, FuseOSError, Operations

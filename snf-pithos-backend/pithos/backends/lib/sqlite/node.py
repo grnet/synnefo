@@ -181,8 +181,13 @@ class Node(DBWorker):
                             on update cascade
                             on delete cascade ) """)
 
-        q = "insert or ignore into nodes(node, parent) values (?, ?)"
-        execute(q, (ROOTNODE, ROOTNODE))
+        wrapper = self.wrapper
+        wrapper.execute()
+        try:
+            q = "insert or ignore into nodes(node, parent) values (?, ?)"
+            execute(q, (ROOTNODE, ROOTNODE))
+        finally:
+            wrapper.commit()
 
     def node_create(self, parent, path):
         """Create a new node from the given properties.

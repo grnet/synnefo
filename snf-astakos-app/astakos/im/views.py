@@ -96,7 +96,7 @@ from astakos.im.functions import (
     send_feedback, SendMailError,
     logout as auth_logout,
     activate as activate_func,
-    invite,
+    invite as invite_func,
     send_activation as send_activation_func,
     SendNotificationError,
     reached_pending_application_limit,
@@ -114,7 +114,7 @@ from astakos.im.settings import (
 from astakos.im.api import get_services_dict
 from astakos.im import settings as astakos_settings
 from astakos.im.api.callpoint import AstakosCallpoint
-from astakos.im import auth_providers
+from astakos.im import auth_providers as auth
 from astakos.im.project_xctx import project_transaction_context
 from astakos.im.retry_xctx import RetryException
 
@@ -142,17 +142,16 @@ def requires_auth_provider(provider_id, **perms):
     def decorator(func, *args, **kwargs):
         @wraps(func)
         def wrapper(request, *args, **kwargs):
-            provider = auth_providers.get_provider(provider_id)
+            provider = auth.get_provider(provider_id)
 
             if not provider or not provider.is_active():
                 raise PermissionDenied
 
-            if provider:
-                for pkey, value in perms.iteritems():
-                    attr = 'is_available_for_%s' % pkey.lower()
-                    if getattr(provider, attr)() != value:
-                        #TODO: add session message
-                        return HttpResponseRedirect(reverse('login'))
+            for pkey, value in perms.iteritems():
+                attr = 'get_%s_policy' % pkey.lower()
+                if getattr(provider, attr) != value:
+                    #TODO: add session message
+                    return HttpResponseRedirect(reverse('login'))
             return func(request, *args)
         return wrapper
     return decorator
@@ -189,29 +188,23 @@ def signed_terms_required(func):
     return wrapper
 
 
-def required_auth_methods_assigned(only_warn=False):
+def required_auth_methods_assigned(allow_access=False):
     """
     Decorator that checks whether the request.user has all required auth providers
     assigned.
     """
-    required_providers = auth_providers.REQUIRED_PROVIDERS.keys()
 
     def decorator(func):
-        if not required_providers:
-            return func
-
         @wraps(func)
         def wrapper(request, *args, **kwargs):
             if request.user.is_authenticated():
-                for required in required_providers:
-                    if not request.user.has_auth_provider(required):
-                        provider = auth_providers.get_provider(required)
-                        if only_warn:
-                            messages.error(request,
-                                           _(astakos_messages.AUTH_PROVIDER_REQUIRED  % {
-                                               'provider': provider.get_title_display}))
-                        else:
-                            return HttpResponseRedirect(reverse('edit_profile'))
+                missing = request.user.missing_required_providers()
+                if missing:
+                    for provider in missing:
+                        messages.error(request,
+                                       provider.get_required_msg)
+                    if not allow_access:
+                        return HttpResponseRedirect(reverse('edit_profile'))
             return func(request, *args, **kwargs)
         return wrapper
     return decorator
@@ -322,7 +315,7 @@ def invite(request, template_name='im/invitations.html', extra_context=None):
                 try:
                     email = form.cleaned_data.get('username')
                     realname = form.cleaned_data.get('realname')
-                    invite(inviter, email, realname)
+                    invite_func(inviter, email, realname)
                     message = _(astakos_messages.INVITATION_SENT) % locals()
                     messages.success(request, message)
                 except SendMailError, e:
@@ -353,7 +346,7 @@ def invite(request, template_name='im/invitations.html', extra_context=None):
 
 
 @require_http_methods(["GET", "POST"])
-@required_auth_methods_assigned(only_warn=True)
+@required_auth_methods_assigned(allow_access=True)
 @login_required
 @signed_terms_required
 def edit_profile(request, template_name='im/profile.html', extra_context=None):
@@ -426,7 +419,8 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
         request.user.save()
 
     # existing providers
-    user_providers = request.user.get_active_auth_providers()
+    user_providers = request.user.get_enabled_auth_providers()
+    user_disabled_providers = request.user.get_disabled_auth_providers()
 
     # providers that user can add
     user_available_providers = request.user.get_available_auth_providers()
@@ -435,6 +429,7 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
     return render_response(template_name,
                            profile_form = form,
                            user_providers = user_providers,
+                           user_disabled_providers = user_disabled_providers,
                            user_available_providers = user_available_providers,
                            context_instance = get_context(request,
                                                           extra_context))
@@ -480,7 +475,7 @@ def signup(request, template_name='im/signup.html', on_success='index', extra_co
         return HttpResponseRedirect(reverse('edit_profile'))
 
     provider = get_query(request).get('provider', 'local')
-    if not auth_providers.get_provider(provider).is_available_for_create():
+    if not auth.get_provider(provider).get_create_policy:
         raise PermissionDenied
 
     id = get_query(request).get('id')
@@ -489,20 +484,26 @@ def signup(request, template_name='im/signup.html', on_success='index', extra_co
     except AstakosUser.DoesNotExist:
         instance = None
 
-    pending_user = None
     third_party_token = request.REQUEST.get('third_party_token', None)
+    unverified = None
     if third_party_token:
         pending = get_object_or_404(PendingThirdPartyUser,
                                     token=third_party_token)
+
         provider = pending.provider
         instance = pending.get_user_instance()
-        if pending.existing_user().count() > 0:
-            pending_user = pending.existing_user().get()
-            if request.method == "GET":
-                messages.warning(request, pending_user.get_inactive_message())
+        get_unverified = AstakosUserAuthProvider.objects.unverified
+        unverified = get_unverified(pending.provider,
+                                    identifier=pending.third_party_identifier)
 
-
-    extra_context['pending_user_exists'] = pending_user
+        if unverified and request.method == 'GET':
+            messages.warning(request, unverified.get_pending_registration_msg)
+            if unverified.user.activation_sent:
+                messages.warning(request,
+                                 unverified.get_pending_resend_activation_msg)
+            else:
+                messages.warning(request,
+                                 unverified.get_pending_moderation_msg)
 
     try:
         if not backend:
@@ -511,6 +512,7 @@ def signup(request, template_name='im/signup.html', on_success='index', extra_co
     except Exception, e:
         form = SimpleBackend(request).get_signup_form(provider)
         messages.error(request, e)
+
     if request.method == 'POST':
         if form.is_valid():
             user = form.save(commit=False)
@@ -520,11 +522,11 @@ def signup(request, template_name='im/signup.html', on_success='index', extra_co
                 AstakosUser.objects.get_by_identifier(user.email).delete()
 
             try:
+                form.store_user(user, request)
+
                 result = backend.handle_activation(user)
                 status = messages.SUCCESS
                 message = result.message
-
-                form.store_user(user, request)
 
                 if 'additional_email' in form.cleaned_data:
                     additional_email = form.cleaned_data['additional_email']
@@ -566,7 +568,7 @@ def signup(request, template_name='im/signup.html', on_success='index', extra_co
 
 
 @require_http_methods(["GET", "POST"])
-@required_auth_methods_assigned(only_warn=True)
+@required_auth_methods_assigned(allow_access=True)
 @login_required
 @signed_terms_required
 def feedback(request, template_name='im/feedback.html', email_template_name='im/feedback_mail.txt', extra_context=None):
@@ -648,13 +650,12 @@ def logout(request, template='registration/logged_out.html', extra_context=None)
         response['Location'] = LOGOUT_NEXT
         response.status_code = 301
     else:
-        message = _(astakos_messages.LOGOUT_SUCCESS)
-        last_provider = request.COOKIES.get('astakos_last_login_method', None)
-        if last_provider:
-            provider = auth_providers.get_provider(last_provider)
-            extra_message = provider.get_logout_message_display
-            if extra_message:
-                message += '<br />' + extra_message
+        last_provider = request.COOKIES.get('astakos_last_login_method', 'local')
+        provider = auth.get_provider(last_provider)
+        message = provider.get_logout_success_msg
+        extra = provider.get_logout_success_extra_msg
+        if extra:
+            message += "<br />"  + extra
         messages.success(request, message)
         response['Location'] = reverse('index')
         response.status_code = 301
@@ -681,6 +682,12 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
 
     if user.is_active or user.email_verified:
         message = _(astakos_messages.ACCOUNT_ALREADY_ACTIVE)
+        messages.error(request, message)
+        return HttpResponseRedirect(reverse('index'))
+
+    if not user.activation_sent:
+        provider = user.get_auth_provider()
+        message = user.get_inactive_message(provider.module)
         messages.error(request, message)
         return HttpResponseRedirect(reverse('index'))
 
@@ -807,7 +814,7 @@ def change_email(request, activation_key=None,
     form = EmailChangeForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         try:
-            ec = form.save(email_template_name, request)
+            ec = form.save(request, email_template_name, request)
         except SendMailError, e:
             msg = e
             messages.error(request, msg)
@@ -834,16 +841,14 @@ def send_activation(request, user_id, template_name='im/login.html', extra_conte
     if request.user.is_authenticated():
         return HttpResponseRedirect(reverse('edit_profile'))
 
-    # TODO: check if moderation is only enabled for local login
-    if astakos_settings.MODERATION_ENABLED:
-        raise PermissionDenied
-
     extra_context = extra_context or {}
     try:
         u = AstakosUser.objects.get(id=user_id)
     except AstakosUser.DoesNotExist:
         messages.error(request, _(astakos_messages.ACCOUNT_UNKNOWN))
     else:
+        if not u.activation_sent and astakos_settings.MODERATION_ENABLED:
+            raise PermissionDenied
         try:
             send_activation_func(u)
             msg = _(astakos_messages.ACTIVATION_SENT)
@@ -906,24 +911,16 @@ def resource_usage(request):
 
 # TODO: action only on POST and user should confirm the removal
 @require_http_methods(["GET", "POST"])
-@login_required
-@signed_terms_required
+@valid_astakos_user_required
 def remove_auth_provider(request, pk):
     try:
-        provider = request.user.auth_providers.get(pk=pk)
+        provider = request.user.auth_providers.get(pk=int(pk)).settings
     except AstakosUserAuthProvider.DoesNotExist:
         raise Http404
 
-    if provider.can_remove():
-        provider.delete()
-        message = astakos_messages.AUTH_PROVIDER_REMOVED % \
-                            provider.settings.get_method_prompt_display
-        user = request.user
-        logger.info("%s deleted %s provider (%d): %r" % (user.log_display,
-                                                         provider.module,
-                                                         int(pk),
-                                                         provider.info))
-        messages.success(request, message)
+    if provider.get_remove_policy:
+        messages.success(request, provider.get_removed_msg)
+        provider.remove_from_user()
         return HttpResponseRedirect(reverse('edit_profile'))
     else:
         raise PermissionDenied
@@ -1049,8 +1046,7 @@ def _update_object(request, model=None, object_id=None, slug=None,
         return response
 
 @require_http_methods(["GET", "POST"])
-@signed_terms_required
-@login_required
+@valid_astakos_user_required
 def project_add(request):
 
     user = request.user
@@ -1109,8 +1105,7 @@ def project_add(request):
 
 
 @require_http_methods(["GET"])
-@signed_terms_required
-@login_required
+@valid_astakos_user_required
 def project_list(request):
     projects = ProjectApplication.objects.user_accessible_projects(request.user).select_related()
     table = tables.UserProjectApplicationsTable(projects, user=request.user,
@@ -1128,8 +1123,7 @@ def project_list(request):
 
 
 @require_http_methods(["POST"])
-@signed_terms_required
-@login_required
+@valid_astakos_user_required
 @project_transaction_context()
 def project_app_cancel(request, application_id, ctx=None):
     chain_id = None
@@ -1160,8 +1154,7 @@ def project_app_cancel(request, application_id, ctx=None):
 
 
 @require_http_methods(["GET", "POST"])
-@signed_terms_required
-@login_required
+@valid_astakos_user_required
 def project_modify(request, application_id):
 
     try:
@@ -1217,14 +1210,12 @@ def project_modify(request, application_id):
 
 
 @require_http_methods(["GET", "POST"])
-@signed_terms_required
-@login_required
+@valid_astakos_user_required
 def project_app(request, application_id):
     return common_detail(request, application_id, project_view=False)
 
 @require_http_methods(["GET", "POST"])
-@signed_terms_required
-@login_required
+@valid_astakos_user_required
 def project_detail(request, chain_id):
     return common_detail(request, chain_id)
 
@@ -1322,8 +1313,7 @@ def common_detail(request, chain_or_app_id, project_view=True):
             })
 
 @require_http_methods(["GET", "POST"])
-@signed_terms_required
-@login_required
+@valid_astakos_user_required
 def project_search(request):
     q = request.GET.get('q', '')
     form = ProjectSearchForm()
@@ -1366,8 +1356,7 @@ def project_search(request):
         })
 
 @require_http_methods(["POST"])
-@signed_terms_required
-@login_required
+@valid_astakos_user_required
 @project_transaction_context(sync=True)
 def project_join(request, chain_id, ctx=None):
     next = request.GET.get('next')
@@ -1394,8 +1383,7 @@ def project_join(request, chain_id, ctx=None):
     return redirect(next)
 
 @require_http_methods(["POST"])
-@signed_terms_required
-@login_required
+@valid_astakos_user_required
 @project_transaction_context(sync=True)
 def project_leave(request, chain_id, ctx=None):
     next = request.GET.get('next')
@@ -1423,8 +1411,7 @@ def project_leave(request, chain_id, ctx=None):
     return redirect(next)
 
 @require_http_methods(["POST"])
-@signed_terms_required
-@login_required
+@valid_astakos_user_required
 @project_transaction_context()
 def project_cancel(request, chain_id, ctx=None):
     next = request.GET.get('next')
@@ -1450,8 +1437,7 @@ def project_cancel(request, chain_id, ctx=None):
     return redirect(next)
 
 @require_http_methods(["POST"])
-@signed_terms_required
-@login_required
+@valid_astakos_user_required
 @project_transaction_context(sync=True)
 def project_accept_member(request, chain_id, user_id, ctx=None):
     try:
@@ -1474,8 +1460,7 @@ def project_accept_member(request, chain_id, user_id, ctx=None):
     return redirect(reverse('project_detail', args=(chain_id,)))
 
 @require_http_methods(["POST"])
-@signed_terms_required
-@login_required
+@valid_astakos_user_required
 @project_transaction_context(sync=True)
 def project_remove_member(request, chain_id, user_id, ctx=None):
     try:
@@ -1498,8 +1483,7 @@ def project_remove_member(request, chain_id, user_id, ctx=None):
     return redirect(reverse('project_detail', args=(chain_id,)))
 
 @require_http_methods(["POST"])
-@signed_terms_required
-@login_required
+@valid_astakos_user_required
 @project_transaction_context()
 def project_reject_member(request, chain_id, user_id, ctx=None):
     try:
@@ -1587,7 +1571,10 @@ def project_app_dismiss(request, application_id, ctx=None):
         next = reverse('project_list')
     return redirect(next)
 
-
+@require_http_methods(["GET"])
+@required_auth_methods_assigned(allow_access=True)
+@login_required
+@signed_terms_required
 def landing(request):
     return render_response(
         'im/landing.html',

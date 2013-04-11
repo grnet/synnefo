@@ -30,13 +30,20 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
+from contextlib import contextmanager
 
+import copy
 import datetime
+import functools
+
+from snf_django.utils.testing import with_settings, override_settings
 
 from django.test import TestCase, Client
-from django.conf import settings
 from django.core import mail
+from django.http import SimpleCookie, HttpRequest, QueryDict
+from django.utils.importlib import import_module
 
+from astakos.im.activation_backends import *
 from astakos.im.target.shibboleth import Tokens as ShibbolethTokens
 from astakos.im.models import *
 from astakos.im import functions
@@ -46,15 +53,38 @@ from astakos.im import forms
 from urllib import quote
 
 from astakos.im import messages
+from astakos.im import auth_providers
+from django.conf import settings
 
 
+# set some common settings
 astakos_settings.EMAILCHANGE_ENABLED = True
+astakos_settings.RECAPTCHA_ENABLED = False
 
-class ShibbolethClient(Client):
+settings.LOGGING_SETUP['disable_existing_loggers'] = False
+
+
+prefixes = {'im': 'ASTAKOS_', 'providers': 'ASTAKOS_AUTH_PROVIDER_',
+            'shibboleth': 'ASTAKOS_AUTH_PROVIDER_SHIBBOLETH_',
+            'local': 'ASTAKOS_AUTH_PROVIDER_LOCAL_'}
+im_settings = functools.partial(with_settings, settings, prefix=prefixes['im'])
+provider_settings = functools.partial(with_settings, settings,
+                                      prefix=prefixes['providers'])
+shibboleth_settings = functools.partial(with_settings,
+                                        settings,
+                                        prefix=prefixes['shibboleth'])
+localauth_settings = functools.partial(with_settings, settings,
+                                       prefix=prefixes['local'])
+
+class AstakosTestClient(Client):
+    pass
+
+class ShibbolethClient(AstakosTestClient):
     """
     A shibboleth agnostic client.
     """
-    VALID_TOKENS = filter(lambda x: not x.startswith("_"), dir(ShibbolethTokens))
+    VALID_TOKENS = filter(lambda x: not x.startswith("_"),
+                          dir(ShibbolethTokens))
 
     def __init__(self, *args, **kwargs):
         self.tokens = kwargs.pop('tokens', {})
@@ -140,8 +170,8 @@ class ShibbolethTests(TestCase):
 
     def setUp(self):
         self.client = ShibbolethClient()
-        settings.ASTAKOS_IM_MODULES = ['local', 'shibboleth']
-        settings.ASTAKOS_MODERATION_ENABLED = True
+        astakos_settings.IM_MODULES = ['local', 'shibboleth']
+        astakos_settings.MODERATION_ENABLED = True
 
     def test_create_account(self):
 
@@ -152,7 +182,7 @@ class ShibbolethTests(TestCase):
         r = client.get('/im/login/shibboleth?', follow=True)
         self.assertContains(r, messages.SHIBBOLETH_MISSING_EPPN % {
             'domain': astakos_settings.BASEURL,
-            'contact_email': astakos_settings.DEFAULT_CONTACT_EMAIL
+            'contact_email': settings.CONTACT_EMAIL
         })
         client.set_tokens(eppn="kpapeppn")
 
@@ -167,10 +197,9 @@ class ShibbolethTests(TestCase):
                           cn="Kostas Papadimitriou",
                           ep_affiliation="Test Affiliation")
         r = client.get('/im/login/shibboleth?', follow=True)
+        token = PendingThirdPartyUser.objects.get().token
+        self.assertRedirects(r, '/im/signup?third_party_token=%s' % token)
         self.assertEqual(r.status_code, 200)
-
-        # astakos asks if we want to add shibboleth
-        self.assertContains(r, "Already have an account?")
 
         # a new pending user created
         pending_user = PendingThirdPartyUser.objects.get(
@@ -185,15 +214,15 @@ class ShibbolethTests(TestCase):
         r = client.get('/im/shibboleth/signup/%s' % pending_user.username)
         self.assertEqual(r.status_code, 404)
 
-        # this is the signup unique url associated with the pending user created
+        # this is the signup unique url associated with the pending user
+        # created
         r = client.get('/im/signup/?third_party_token=%s' % token)
-        form = r.context['form']
-        post_data = {'third_party_identifier': pending_user.third_party_identifier,
+        identifier = pending_user.third_party_identifier
+        post_data = {'third_party_identifier': identifier,
                      'first_name': 'Kostas',
                      'third_party_token': token,
                      'last_name': 'Mitroglou',
-                     'provider': 'shibboleth'
-                    }
+                     'provider': 'shibboleth'}
 
         # invlid email
         post_data['email'] = 'kpap'
@@ -228,7 +257,7 @@ class ShibbolethTests(TestCase):
         client.set_tokens(mail="kpap@grnet.gr", eppn="kpapeppn",
                           cn="Kostas Papadimitriou", )
         r = client.get("/im/login/shibboleth?", follow=True)
-        self.assertContains(r, messages.ACCOUNT_PENDING_MODERATION)
+        self.assertContains(r, 'is pending moderation')
         r = client.get("/im/profile", follow=True)
         self.assertRedirects(r, 'http://testserver/im/?next=/im/profile')
 
@@ -239,7 +268,7 @@ class ShibbolethTests(TestCase):
 
         # we see our profile
         r = client.get("/im/login/shibboleth?", follow=True)
-        self.assertRedirects(r, '/im/profile')
+        self.assertRedirects(r, '/im/landing')
         self.assertEqual(r.status_code, 200)
 
     def test_existing(self):
@@ -249,45 +278,71 @@ class ShibbolethTests(TestCase):
 
         # this is our existing user
         existing_user = get_local_user('kpap@grnet.gr')
+        existing_inactive = get_local_user('kpap-inactive@grnet.gr')
+        existing_inactive.is_active = False
+        existing_inactive.save()
+
+        existing_unverified = get_local_user('kpap-unverified@grnet.gr')
+        existing_unverified.is_active = False
+        existing_unverified.activation_sent = None
+        existing_unverified.email_verified = False
+        existing_unverified.is_verified = False
+        existing_unverified.save()
 
         client = ShibbolethClient()
         # shibboleth logged us in, notice that we use different email
         client.set_tokens(mail="kpap@shibboleth.gr", eppn="kpapeppn",
                           cn="Kostas Papadimitriou", )
-        r = client.get("/im/login/shibboleth?")
-
-        # astakos asks if we want to switch a local account to shibboleth
-        self.assertContains(r, "Already have an account?")
+        r = client.get("/im/login/shibboleth?", follow=True)
 
         # a new pending user created
         pending_user = PendingThirdPartyUser.objects.get()
+        token = pending_user.token
         self.assertEqual(PendingThirdPartyUser.objects.count(), 1)
         pending_key = pending_user.token
         client.reset_tokens()
+        self.assertRedirects(r, "/im/signup?third_party_token=%s" % token)
 
-        # we choose to add shibboleth to an our existing account
-        # we get redirected to login page with the pending token set
-        r = client.get('/im/login?key=%s' % pending_key)
+        form = r.context['form']
+        signupdata = copy.copy(form.initial)
+        signupdata['email'] = 'kpap@grnet.gr'
+        signupdata['third_party_token'] = token
+        signupdata['provider'] = 'shibboleth'
+        del signupdata['id']
+
+        # the email exists to another user
+        r = client.post("/im/signup", signupdata)
+        self.assertContains(r, "There is already an account with this email "
+                               "address")
+        # change the case, still cannot create
+        signupdata['email'] = 'KPAP@grnet.GR'
+        r = client.post("/im/signup", signupdata)
+        self.assertContains(r, "There is already an account with this email "
+                               "address")
+        # inactive user
+        signupdata['email'] = 'KPAP-inactive@grnet.GR'
+        r = client.post("/im/signup", signupdata)
+        self.assertContains(r, "There is already an account with this email "
+                               "address")
+
+        # unverified user, this should pass, old entry will be deleted
+        signupdata['email'] = 'KAPAP-unverified@grnet.GR'
+        r = client.post("/im/signup", signupdata)
+
         post_data = {'password': 'password',
-                     'username': 'kpap@grnet.gr',
-                     'key': pending_key}
+                     'username': 'kpap@grnet.gr'}
         r = client.post('/im/local', post_data, follow=True)
-        self.assertRedirects(r, "/im/profile")
-        self.assertContains(r, messages.AUTH_PROVIDER_ADDED)
+        self.assertTrue(r.context['request'].user.is_authenticated())
+        client.set_tokens(mail="kpap@shibboleth.gr", eppn="kpapeppn",
+                          cn="Kostas Papadimitriou", )
+        r = client.get("/im/login/shibboleth?", follow=True)
+        self.assertContains(r, "enabled for this account")
+        client.reset_tokens()
 
-        self.assertTrue(existing_user.has_auth_provider('shibboleth'))
-        self.assertTrue(existing_user.has_auth_provider('local',
-                                                        auth_backend='astakos'))
-        client.logout()
-
-        # check that we cannot assign same third party provide twice
-        r = client.get('/im/login?key=%s' % pending_key)
-        post_data = {'password': 'password',
-                     'username': 'kpap@grnet.gr',
-                     'key': pending_key}
-        r = self.client.post('/im/local', post_data, follow=True)
-        self.assertContains(r, messages.AUTH_PROVIDER_ADD_FAILED)
-        self.client.logout()
+        user = existing_user
+        self.assertTrue(user.has_auth_provider('shibboleth'))
+        self.assertTrue(user.has_auth_provider('local',
+                                               auth_backend='astakos'))
         client.logout()
 
         # look Ma, i can login with both my shibboleth and local account
@@ -296,7 +351,7 @@ class ShibbolethTests(TestCase):
         r = client.get("/im/login/shibboleth?", follow=True)
         self.assertTrue(r.context['request'].user.is_authenticated())
         self.assertTrue(r.context['request'].user.email == "kpap@grnet.gr")
-        self.assertRedirects(r, '/im/profile')
+        self.assertRedirects(r, '/im/landing')
         self.assertEqual(r.status_code, 200)
         client.logout()
         client.reset_tokens()
@@ -311,26 +366,26 @@ class ShibbolethTests(TestCase):
         r = self.client.post('/im/local', post_data, follow=True)
         self.assertTrue(r.context['request'].user.is_authenticated())
         self.assertTrue(r.context['request'].user.email == "kpap@grnet.gr")
-        self.assertRedirects(r, '/im/profile')
+        self.assertRedirects(r, '/im/landing')
         self.assertEqual(r.status_code, 200)
 
         # cannot add the same eppn
         client.set_tokens(mail="secondary@shibboleth.gr", eppn="kpapeppn",
                           cn="Kostas Papadimitriou", )
         r = client.get("/im/login/shibboleth?", follow=True)
-        self.assertRedirects(r, '/im/profile')
+        self.assertRedirects(r, '/im/landing')
         self.assertTrue(r.status_code, 200)
         self.assertEquals(existing_user.auth_providers.count(), 2)
 
-        # but can add additional eppn
+        # only one allowed by default
         client.set_tokens(mail="secondary@shibboleth.gr", eppn="kpapeppn2",
                           cn="Kostas Papadimitriou", ep_affiliation="affil2")
+        prov = auth_providers.get_provider('shibboleth')
         r = client.get("/im/login/shibboleth?", follow=True)
-        new_provider = existing_user.auth_providers.get(identifier="kpapeppn2")
+        self.assertContains(r, "Failed to add")
         self.assertRedirects(r, '/im/profile')
         self.assertTrue(r.status_code, 200)
-        self.assertEquals(existing_user.auth_providers.count(), 3)
-        self.assertEqual(new_provider.affiliation, 'affil2')
+        self.assertEquals(existing_user.auth_providers.count(), 2)
         client.logout()
         client.reset_tokens()
 
@@ -340,14 +395,14 @@ class ShibbolethTests(TestCase):
         r = client.get("/im/login/shibboleth?", follow=True)
         self.assertFalse(r.context['request'].user.is_authenticated())
 
+        # cannot
+
         # lets remove local password
         user = AstakosUser.objects.get(username="kpap@grnet.gr",
                                        email="kpap@grnet.gr")
-        remove_local_url = user.get_provider_remove_url('local')
-        remove_shibbo_url = user.get_provider_remove_url('shibboleth',
-                                                         identifier='kpapeppn')
-        remove_shibbo2_url = user.get_provider_remove_url('shibboleth',
-                                                         identifier='kpapeppn2')
+        remove_local_url = user.get_auth_provider('local').get_remove_url
+        remove_shibbo_url = user.get_auth_provider('shibboleth',
+                                                   'kpapeppn').get_remove_url
         client.set_tokens(mail="kpap@shibboleth.gr", eppn="kpapeppn",
                           cn="Kostas Papadimtriou")
         r = client.get("/im/login/shibboleth?", follow=True)
@@ -356,9 +411,6 @@ class ShibbolethTests(TestCase):
         # TODO: this view should use POST
         r = client.get(remove_local_url)
         # 2 providers left
-        self.assertEqual(user.auth_providers.count(), 2)
-        r = client.get(remove_shibbo2_url)
-        # 1 provider left
         self.assertEqual(user.auth_providers.count(), 1)
         # cannot remove last provider
         r = client.get(remove_shibbo_url)
@@ -399,21 +451,24 @@ class ShibbolethTests(TestCase):
                           cn="Kostas Papadimitriou")
         r = client.get("/im/login/shibboleth?", follow=True)
         # try to assign existing shibboleth identifier of another user
-        client.set_tokens(mail="kpap_second@shibboleth.gr", eppn="existingeppn",
-                          cn="Kostas Papadimitriou")
+        client.set_tokens(mail="kpap_second@shibboleth.gr",
+                          eppn="existingeppn", cn="Kostas Papadimitriou")
         r = client.get("/im/login/shibboleth?", follow=True)
-        self.assertContains(r, messages.AUTH_PROVIDER_ADD_FAILED)
-        self.assertContains(r, messages.AUTH_PROVIDER_ADD_EXISTS)
+        self.assertContains(r, "this account is already assigned")
 
 
-class LocalUserTests(TestCase):
+class TestLocal(TestCase):
 
     fixtures = ['groups']
 
     def setUp(self):
-        from django.conf import settings
         settings.ADMINS = (('admin', 'support@cloud.grnet.gr'),)
         settings.SERVER_EMAIL = 'no-reply@grnet.gr'
+        self._orig_moderation = astakos_settings.MODERATION_ENABLED
+        settings.ASTAKOS_MODERATION_ENABLED = True
+
+    def tearDown(self):
+        settings.ASTAKOS_MODERATION_ENABLED = self._orig_moderation
 
     def test_no_moderation(self):
         # disable moderation
@@ -422,8 +477,8 @@ class LocalUserTests(TestCase):
         # create a new user
         r = self.client.get("/im/signup")
         self.assertEqual(r.status_code, 200)
-        data = {'email':'kpap@grnet.gr', 'password1':'password',
-                'password2':'password', 'first_name': 'Kostas',
+        data = {'email': 'kpap@grnet.gr', 'password1': 'password',
+                'password2': 'password', 'first_name': 'Kostas',
                 'last_name': 'Mitroglou', 'provider': 'local'}
         r = self.client.post("/im/signup", data)
 
@@ -442,9 +497,9 @@ class LocalUserTests(TestCase):
 
     def test_email_case(self):
         data = {
-          'email': 'kPap@grnet.gr',
-          'password1': '1234',
-          'password2': '1234'
+            'email': 'kPap@grnet.gr',
+            'password1': '1234',
+            'password2': '1234'
         }
 
         form = forms.LocalUserCreationForm(data)
@@ -452,7 +507,7 @@ class LocalUserTests(TestCase):
         user = form.save()
         form.store_user(user, {})
 
-        u = AstakosUser.objects.get(pk=1)
+        u = AstakosUser.objects.get()
         self.assertEqual(u.email, 'kPap@grnet.gr')
         self.assertEqual(u.username, 'kpap@grnet.gr')
         u.is_active = True
@@ -468,22 +523,24 @@ class LocalUserTests(TestCase):
         self.assertTrue(login.is_valid())
 
         data = {
-          'email': 'kpap@grnet.gr',
-          'password1': '1234',
-          'password2': '1234'
+            'email': 'kpap@grnet.gr',
+            'password1': '1234',
+            'password2': '1234'
         }
         form = forms.LocalUserCreationForm(data)
         self.assertFalse(form.is_valid())
 
+    @with_settings(settings, HELPDESK=(('support','support@synnefo.org'),))
     def test_local_provider(self):
+        self.helpdesk_email = astakos_settings.HELPDESK[0][1]
         # enable moderation
         astakos_settings.MODERATION_ENABLED = True
 
         # create a user
         r = self.client.get("/im/signup")
         self.assertEqual(r.status_code, 200)
-        data = {'email':'kpap@grnet.gr', 'password1':'password',
-                'password2':'password', 'first_name': 'Kostas',
+        data = {'email': 'kpap@grnet.gr', 'password1': 'password',
+                'password2': 'password', 'first_name': 'Kostas',
                 'last_name': 'Mitroglou', 'provider': 'local'}
         r = self.client.post("/im/signup", data)
 
@@ -493,15 +550,16 @@ class LocalUserTests(TestCase):
                                        email="kpap@grnet.gr")
         self.assertEqual(user.username, 'kpap@grnet.gr')
         self.assertEqual(user.has_auth_provider('local'), True)
-        self.assertFalse(user.is_active) # not activated
-        self.assertFalse(user.email_verified) # not verified
-        self.assertFalse(user.activation_sent) # activation automatically sent
+        self.assertFalse(user.is_active)  # not activated
+        self.assertFalse(user.email_verified)  # not verified
+        self.assertFalse(user.activation_sent)  # activation automatically sent
 
         # admin gets notified and activates the user from the command line
-        self.assertEqual(len(get_mailbox('support@cloud.grnet.gr')), 1)
+
+        self.assertEqual(len(get_mailbox(self.helpdesk_email)), 1)
         r = self.client.post('/im/local', {'username': 'kpap@grnet.gr',
-                                                 'password': 'password'})
-        self.assertContains(r, messages.ACCOUNT_PENDING_MODERATION)
+                                           'password': 'password'})
+        self.assertContains(r, messages.NOTIFICATION_SENT)
         functions.send_activation(user)
 
         # user activation fields updated and user gets notified via email
@@ -513,88 +571,82 @@ class LocalUserTests(TestCase):
 
         # user forgot she got registered and tries to submit registration
         # form. Notice the upper case in email
-        data = {'email':'KPAP@grnet.gr', 'password1':'password',
-                'password2':'password', 'first_name': 'Kostas',
+        data = {'email': 'KPAP@grnet.gr', 'password1': 'password',
+                'password2': 'password', 'first_name': 'Kostas',
                 'last_name': 'Mitroglou', 'provider': 'local'}
         r = self.client.post("/im/signup", data, follow=True)
         self.assertRedirects(r, reverse('index'))
         self.assertContains(r, messages.NOTIFICATION_SENT)
 
+        user = AstakosUser.objects.get()
+        functions.send_activation(user)
+
         # previous user replaced
-        user = AstakosUser.objects.get(pk=user.pk)
         self.assertTrue(user.activation_sent)
         self.assertFalse(user.email_verified)
         self.assertFalse(user.is_active)
-        self.assertEqual(len(get_mailbox('kpap@grnet.gr')), 2)
+        self.assertEqual(len(get_mailbox('KPAP@grnet.gr')), 1)
 
         # hmmm, email exists; lets request a password change
         r = self.client.get('/im/local/password_reset')
         self.assertEqual(r.status_code, 200)
-        r = self.client.post('/im/local/password_reset', {'email':
-                                                          'kpap@grnet.gr'},
-                            follow=True)
+        data = {'email': 'kpap@grnet.gr'}
+        r = self.client.post('/im/local/password_reset', data, follow=True)
         # she can't because account is not active yet
-        self.assertContains(r, "doesn&#39;t have an associated user account")
+        self.assertContains(r, 'pending activation')
 
-        # moderation is enabled so no automatic activation can be send
-        r = self.client.get('/im/send/activation/%d' % user.pk)
-        self.assertEqual(r.status_code, 403)
-        self.assertEqual(len(get_mailbox('kpap@grnet.gr')), 1)
+        # moderation is enabled and an activation email has already been sent
+        # so user can trigger resend of the activation email
+        r = self.client.get('/im/send/activation/%d' % user.pk, follow=True)
+        self.assertContains(r, 'has been sent to your email address.')
+        self.assertEqual(len(get_mailbox('KPAP@grnet.gr')), 2)
 
         # also she cannot login
-        r = self.client.post('/im/local', {'username': 'kpap@grnet.gr',
-                                                 'password': 'password'})
-        self.assertContains(r, messages.ACCOUNT_PENDING_ACTIVATION_HELP)
-        self.assertContains(r, messages.ACCOUNT_PENDING_ACTIVATION)
-        self.assertNotContains(r, 'Resend activation')
-        self.assertFalse(r.context['request'].user.is_authenticated())
-        self.assertFalse('_pithos2_a' in self.client.cookies)
-
-        # same with disabled moderation
-        astakos_settings.MODERATION_ENABLED = False
-        r = self.client.post('/im/local/password_reset', {'email':
-                                                          'kpap@grnet.gr'})
-        self.assertContains(r, "doesn&#39;t have an associated user account")
-        r = self.client.post('/im/local', {'username': 'kpap@grnet.gr',
-                                                 'password': 'password'})
-        self.assertContains(r, messages.ACCOUNT_PENDING_ACTIVATION)
+        data = {'username': 'kpap@grnet.gr', 'password': 'password'}
+        r = self.client.post('/im/local', data, follow=True)
         self.assertContains(r, 'Resend activation')
         self.assertFalse(r.context['request'].user.is_authenticated())
         self.assertFalse('_pithos2_a' in self.client.cookies)
 
         # user sees the message and resends activation
-        r = self.client.get('/im/send/activation/%d' % user.pk)
-        self.assertEqual(len(get_mailbox('kpap@grnet.gr')), 2)
+        r = self.client.get('/im/send/activation/%d' % user.pk, follow=True)
+        self.assertEqual(len(get_mailbox('KPAP@grnet.gr')), 3)
 
         # switch back moderation setting
         astakos_settings.MODERATION_ENABLED = True
         r = self.client.get(user.get_activation_url(), follow=True)
-        self.assertRedirects(r, "/im/profile")
-        self.assertContains(r, "kpap@grnet.gr")
-        self.assertEqual(len(get_mailbox('kpap@grnet.gr')), 3)
+        self.assertRedirects(r, "/im/landing")
+        r = self.client.get('/im/profile', follow=True)
+        self.assertTrue(r.context['request'].user.is_authenticated())
+        self.assertTrue('_pithos2_a' in self.client.cookies)
+        self.assertContains(r, "KPAP@grnet.gr")
+        self.assertEqual(len(get_mailbox('KPAP@grnet.gr')), 4)
 
         user = AstakosUser.objects.get(pk=user.pk)
         # user activated and logged in, token cookie set
         self.assertTrue(r.context['request'].user.is_authenticated())
         self.assertTrue('_pithos2_a' in self.client.cookies)
         cookies = self.client.cookies
-        self.assertTrue(quote(user.auth_token) in cookies.get('_pithos2_a').value)
+        self.assertTrue(quote(user.auth_token) in
+                        cookies.get('_pithos2_a').value)
         r = self.client.get('/im/logout', follow=True)
         r = self.client.get('/im/')
         # user logged out, token cookie removed
         self.assertFalse(r.context['request'].user.is_authenticated())
         self.assertFalse(self.client.cookies.get('_pithos2_a').value)
-        # https://docs.djangoproject.com/en/dev/topics/testing/#persistent-state
+
+        #https://docs.djangoproject.com/en/dev/topics/testing/#persistent-state
         del self.client.cookies['_pithos2_a']
 
         # user can login
         r = self.client.post('/im/local', {'username': 'kpap@grnet.gr',
                                            'password': 'password'},
-                                          follow=True)
+                             follow=True)
         self.assertTrue(r.context['request'].user.is_authenticated())
         self.assertTrue('_pithos2_a' in self.client.cookies)
         cookies = self.client.cookies
-        self.assertTrue(quote(user.auth_token) in cookies.get('_pithos2_a').value)
+        self.assertTrue(quote(user.auth_token) in
+                        cookies.get('_pithos2_a').value)
         self.client.get('/im/logout', follow=True)
 
         # user forgot password
@@ -605,13 +657,13 @@ class LocalUserTests(TestCase):
                                                           'kpap@grnet.gr'})
         self.assertEqual(r.status_code, 302)
         # email sent
-        self.assertEqual(len(get_mailbox('kpap@grnet.gr')), 4)
+        self.assertEqual(len(get_mailbox('KPAP@grnet.gr')), 5)
 
         # user visits change password link
         r = self.client.get(user.get_password_reset_url())
         r = self.client.post(user.get_password_reset_url(),
-                            {'new_password1':'newpass',
-                             'new_password2':'newpass'})
+                             {'new_password1': 'newpass',
+                              'new_password2': 'newpass'})
 
         user = AstakosUser.objects.get(pk=user.pk)
         self.assertNotEqual(old_pass, user.password)
@@ -622,7 +674,7 @@ class LocalUserTests(TestCase):
         self.assertContains(r, 'Please enter a correct username and password')
         r = self.client.post('/im/local', {'username': 'kpap@grnet.gr',
                                            'password': 'newpass'},
-                                           follow=True)
+                             follow=True)
         self.assertTrue(r.context['request'].user.is_authenticated())
         self.client.logout()
 
@@ -637,13 +689,14 @@ class LocalUserTests(TestCase):
         r = self.client.post('/im/local/password_reset', {'email':
                                                           'kpap@grnet.gr'})
         # she can't because account is not active yet
-        self.assertContains(r, messages.AUTH_PROVIDER_CANNOT_CHANGE_PASSWORD)
+        self.assertContains(r, "Changing password is not")
+
 
 class UserActionsTests(TestCase):
 
     def test_email_change(self):
         # to test existing email validation
-        existing_user = get_local_user('existing@grnet.gr')
+        get_local_user('existing@grnet.gr')
 
         # local user
         user = get_local_user('kpap@grnet.gr')
@@ -704,7 +757,6 @@ class UserActionsTests(TestCase):
         self.assertEquals(user.email, 'kpap@yahoo.com')
         self.assertEquals(user.username, 'kpap@yahoo.com')
 
-
         self.client.logout()
         r = self.client.post('/im/local?next=' + change2.get_url(),
                              {'username': 'kpap@grnet.gr',
@@ -713,4 +765,422 @@ class UserActionsTests(TestCase):
                              follow=True)
         self.assertContains(r, "Please enter a correct username and password")
         self.assertEqual(user.emailchanges.count(), 0)
+
+
+class TestAuthProviderViews(TestCase):
+
+    @shibboleth_settings(CREATION_GROUPS_POLICY=['academic-login'])
+    @shibboleth_settings(AUTOMODERATE_POLICY=True)
+    @im_settings(IM_MODULES=['shibboleth', 'local'])
+    @im_settings(MODERATION_ENABLED=True)
+    def test_user(self):
+        Profile = AuthProviderPolicyProfile
+        Pending = PendingThirdPartyUser
+        User = AstakosUser
+
+        oldpendinguser = User.objects.create(email="newuser@grnet.gr")
+        olduser = get_local_user("olduser@grnet.gr")
+        cl_olduser = ShibbolethClient()
+        olduser2 = get_local_user("olduser2@grnet.gr")
+        cl_olduser2 = ShibbolethClient()
+        cl_newuser = ShibbolethClient()
+        cl_newuser2 = Client()
+
+        policy = ('only_academic', 'shibboleth')
+        academic_group, created = Group.objects.get_or_create(
+            name='academic-login')
+        academic_users = academic_group.user_set
+        assert created
+        policy_only_academic = Profile.objects.add_policy('academic_strict',
+                                                          'shibboleth',
+                                                          academic_group,
+                                                          exclusive=True,
+                                                          login=False,
+                                                          add=False)
+
+
+        # new academic user
+        self.assertFalse(academic_users.filter(email='newuser@grnet.gr'))
+        cl_newuser.set_tokens(eppn="newusereppn")
+        r = cl_newuser.get('/im/login/shibboleth?', follow=True)
+        pending = Pending.objects.get()
+        identifier = pending.third_party_identifier
+        signup_data = {'third_party_identifier': identifier,
+                       'first_name': 'Academic',
+                       'third_party_token': pending.token,
+                       'last_name': 'New User',
+                       'provider': 'shibboleth'}
+        r = cl_newuser.post('/im/signup', signup_data)
+        self.assertContains(r, "This field is required", )
+        signup_data['email'] = 'olduser@grnet.gr'
+        r = cl_newuser.post('/im/signup', signup_data)
+        self.assertContains(r, "already an account with this email", )
+        signup_data['email'] = 'newuser@grnet.gr'
+        r = cl_newuser.post('/im/signup', signup_data, follow=True)
+        r = cl_newuser.post('/im/signup', signup_data, follow=True)
+        self.assertEqual(r.status_code, 404)
+        newuser = User.objects.get(email="newuser@grnet.gr")
+        activation_link = newuser.get_activation_url()
+        self.assertTrue(academic_users.get(email='newuser@grnet.gr'))
+
+        # new non-academic user
+        signup_data = {'first_name': 'Non Academic',
+                       'last_name': 'New User',
+                       'provider': 'local',
+                       'password1': 'password',
+                       'password2': 'password'}
+        signup_data['email'] = 'olduser@grnet.gr'
+        r = cl_newuser2.post('/im/signup', signup_data)
+        self.assertContains(r, 'There is already an account with this '
+                               'email address')
+        signup_data['email'] = 'newuser@grnet.gr'
+        r = cl_newuser2.post('/im/signup/', signup_data)
+        self.assertFalse(academic_users.filter(email='newuser@grnet.gr'))
+        r = self.client.get(activation_link, follow=True)
+        self.assertEqual(r.status_code, 400)
+        newuser = User.objects.get(email="newuser@grnet.gr")
+        self.assertFalse(newuser.activation_sent)
+        r = self.client.get(newuser.get_activation_url(), follow=True)
+        self.assertContains(r, "pending moderation")
+
+        self.assertFalse(academic_users.filter(email='newuser@grnet.gr'))
+        r = cl_newuser.get('/im/login/shibboleth?', follow=True)
+        pending = Pending.objects.get()
+        identifier = pending.third_party_identifier
+        signup_data = {'third_party_identifier': identifier,
+                       'first_name': 'Academic',
+                       'third_party_token': pending.token,
+                       'last_name': 'New User',
+                       'provider': 'shibboleth'}
+        signup_data['email'] = 'newuser@grnet.gr'
+        r = cl_newuser.post('/im/signup', signup_data)
+        newuser = User.objects.get(email="newuser@grnet.gr")
+        self.assertTrue(newuser.activation_sent)
+        activation_link = newuser.get_activation_url()
+        self.assertTrue(academic_users.get(email='newuser@grnet.gr'))
+        r = cl_newuser.get(newuser.get_activation_url(), follow=True)
+        self.assertRedirects(r, '/im/landing')
+        newuser = User.objects.get(email="newuser@grnet.gr")
+        self.assertEqual(newuser.is_active, True)
+        self.assertEqual(newuser.email_verified, True)
+        cl_newuser.logout()
+
+        # cannot reactivate if suspended
+        newuser.is_active = False
+        newuser.save()
+        r = cl_newuser.get(newuser.get_activation_url())
+        newuser = User.objects.get(email="newuser@grnet.gr")
+        self.assertFalse(newuser.is_active)
+
+        # release suspension
+        newuser.is_active = True
+        newuser.save()
+
+        cl_newuser.get('/im/login/shibboleth?', follow=True)
+        local = auth.get_provider('local', newuser)
+        self.assertEqual(local.get_add_policy, False)
+        self.assertEqual(local.get_login_policy, False)
+        r = cl_newuser.get(local.get_add_url, follow=True)
+        self.assertRedirects(r, '/im/profile')
+        self.assertContains(r, 'disabled for your')
+
+        cl_olduser.login(username='olduser@grnet.gr', password="password")
+        r = cl_olduser.get('/im/profile', follow=True)
+        self.assertEqual(r.status_code, 200)
+        r = cl_olduser.get('/im/login/shibboleth?', follow=True)
+        self.assertContains(r, 'Your request is missing a unique token')
+        cl_olduser.set_tokens(eppn="newusereppn")
+        r = cl_olduser.get('/im/login/shibboleth?', follow=True)
+        self.assertContains(r, 'is already assigned to another user')
+        cl_olduser.set_tokens(eppn="oldusereppn")
+        r = cl_olduser.get('/im/login/shibboleth?', follow=True)
+        self.assertContains(r, 'Academic login enabled for this account')
+
+        user = User.objects.get(email="olduser@grnet.gr")
+        shib_provider = user.get_auth_provider('shibboleth', 'oldusereppn')
+        local_provider = user.get_auth_provider('local')
+        self.assertEqual(shib_provider.get_remove_policy, True)
+        self.assertEqual(local_provider.get_remove_policy, True)
+
+
+        policy_only_academic = Profile.objects.add_policy('academic_strict2',
+                                                          'shibboleth',
+                                                          academic_group,
+                                                          remove=False)
+        user.groups.add(academic_group)
+        shib_provider = user.get_auth_provider('shibboleth', 'oldusereppn')
+        local_provider = user.get_auth_provider('local')
+        self.assertEqual(shib_provider.get_remove_policy, False)
+        self.assertEqual(local_provider.get_remove_policy, True)
+        self.assertEqual(local_provider.get_login_policy, False)
+
+        cl_olduser.logout()
+        login_data = {'username': 'olduser@grnet.gr', 'password': 'password'}
+        r = cl_olduser.post('/im/local', login_data, follow=True)
+        self.assertContains(r, "href='/im/login/shibboleth'>Academic login")
+
+
+class TestAuthProvidersAPI(TestCase):
+    """
+    Test auth_providers module API
+    """
+
+    @im_settings(IM_MODULES=['local', 'shibboleth'])
+    def test_create(self):
+        user = AstakosUser.objects.create(email="kpap@grnet.gr")
+        user2 = AstakosUser.objects.create(email="kpap2@grnet.gr")
+
+        module = 'shibboleth'
+        identifier = 'SHIB_UUID'
+        provider_params = {
+            'affiliation': 'UNIVERSITY',
+            'info': {'age': 27}
+        }
+        provider = auth.get_provider(module, user2, identifier,
+                                     **provider_params)
+        provider.add_to_user()
+        provider = auth.get_provider(module, user, identifier,
+                                     **provider_params)
+        provider.add_to_user()
+        user.email_verified = True
+        user.save()
+        self.assertRaises(Exception, provider.add_to_user)
+        provider = user.get_auth_provider(module, identifier)
+        self.assertEqual(user.get_auth_provider(
+            module, identifier)._instance.info.get('age'), 27)
+
+        module = 'local'
+        identifier = None
+        provider_params = {'auth_backend': 'ldap', 'info':
+                          {'office': 'A1'}}
+        provider = auth.get_provider(module, user, identifier,
+                                     **provider_params)
+        provider.add_to_user()
+        self.assertFalse(provider.get_add_policy)
+        self.assertRaises(Exception, provider.add_to_user)
+
+        shib = user.get_auth_provider('shibboleth',
+                                      'SHIB_UUID')
+        self.assertTrue(shib.get_remove_policy)
+
+        local = user.get_auth_provider('local')
+        self.assertTrue(local.get_remove_policy)
+
+        local.remove_from_user()
+        self.assertFalse(shib.get_remove_policy)
+        self.assertRaises(Exception, shib.remove_from_user)
+
+        provider = user.get_auth_providers()[0]
+        self.assertRaises(Exception, provider.add_to_user)
+
+    @im_settings(IM_MODULES=['local', 'shibboleth'])
+    @shibboleth_settings(ADD_GROUPS_POLICY=['group1', 'group2'])
+    @shibboleth_settings(CREATION_GROUPS_POLICY=['group-create', 'group1',
+                                                 'group2'])
+    @localauth_settings(ADD_GROUPS_POLICY=['localgroup'])
+    @localauth_settings(CREATION_GROUPS_POLICY=['localgroup-create',
+                                                'group-create'])
+    def test_add_groups(self):
+        user = AstakosUser.objects.create(email="kpap@grnet.gr")
+        provider = auth.get_provider('shibboleth', user, 'test123')
+        provider.add_to_user()
+        user = AstakosUser.objects.get()
+        self.assertItemsEqual(user.groups.values_list('name', flat=True),
+                              [u'group1', u'group2', u'group-create'])
+
+        local = auth.get_provider('local', user)
+        local.add_to_user()
+        provider = user.get_auth_provider('shibboleth')
+        self.assertEqual(provider.get_add_groups_policy, ['group1', 'group2'])
+        provider.remove_from_user()
+        user = AstakosUser.objects.get()
+        self.assertEqual(len(user.get_auth_providers()), 1)
+        self.assertItemsEqual(user.groups.values_list('name', flat=True),
+                              [u'group-create', u'localgroup'])
+
+        local = user.get_auth_provider('local')
+        self.assertRaises(Exception, local.remove_from_user)
+        provider = auth.get_provider('shibboleth', user, 'test123')
+        provider.add_to_user()
+        user = AstakosUser.objects.get()
+        self.assertItemsEqual(user.groups.values_list('name', flat=True),
+                              [u'group-create', u'group1', u'group2',
+                               u'localgroup'])
+
+
+
+    @im_settings(IM_MODULES=['local', 'shibboleth'])
+    def test_policies(self):
+        group_old, created = Group.objects.get_or_create(name='olduser')
+
+        astakos_settings.MODERATION_ENABLED = True
+        settings.ASTAKOS_AUTH_PROVIDER_SHIBBOLETH_CREATION_GROUPS_POLICY = \
+            ['academic-user']
+        settings.ASTAKOS_AUTH_PROVIDER_GOOGLE_ADD_GROUPS_POLICY = \
+            ['google-user']
+
+        user = AstakosUser.objects.create(email="kpap@grnet.gr")
+        user.groups.add(group_old)
+        user.add_auth_provider('local')
+
+        user2 = AstakosUser.objects.create(email="kpap2@grnet.gr")
+        user2.add_auth_provider('shibboleth', identifier='shibid')
+
+        user3 = AstakosUser.objects.create(email="kpap3@grnet.gr")
+        user3.groups.add(group_old)
+        user3.add_auth_provider('local')
+        user3.add_auth_provider('shibboleth', identifier='1234')
+
+        self.assertTrue(user2.groups.get(name='academic-user'))
+        self.assertFalse(user2.groups.filter(name='olduser').count())
+
+        local = auth_providers.get_provider('local')
+        self.assertTrue(local.get_add_policy)
+
+        academic_group = Group.objects.get(name='academic-user')
+        AuthProviderPolicyProfile.objects.add_policy('academic', 'shibboleth',
+                                                     academic_group,
+                                                     exclusive=True,
+                                                     add=False,
+                                                     login=False)
+        AuthProviderPolicyProfile.objects.add_policy('academic', 'shibboleth',
+                                                     academic_group,
+                                                     exclusive=True,
+                                                     login=False,
+                                                     add=False)
+        # no duplicate entry gets created
+        self.assertEqual(academic_group.authpolicy_profiles.count(), 1)
+
+        self.assertEqual(user2.authpolicy_profiles.count(), 0)
+        AuthProviderPolicyProfile.objects.add_policy('academic', 'shibboleth',
+                                                     user2,
+                                                     remove=False)
+        self.assertEqual(user2.authpolicy_profiles.count(), 1)
+
+        local = auth_providers.get_provider('local', user2)
+        google = auth_providers.get_provider('google', user2)
+        shibboleth = auth_providers.get_provider('shibboleth', user2)
+        self.assertTrue(shibboleth.get_login_policy)
+        self.assertFalse(shibboleth.get_remove_policy)
+        self.assertFalse(local.get_add_policy)
+        self.assertFalse(local.get_add_policy)
+        self.assertFalse(google.get_add_policy)
+
+        user2.groups.remove(Group.objects.get(name='academic-user'))
+        self.assertTrue(local.get_add_policy)
+        self.assertTrue(google.get_add_policy)
+        user2.groups.add(Group.objects.get(name='academic-user'))
+
+        AuthProviderPolicyProfile.objects.add_policy('academic', 'shibboleth',
+                                                     user2,
+                                                     exclusive=True,
+                                                     add=True)
+        self.assertTrue(local.get_add_policy)
+        self.assertTrue(google.get_add_policy)
+
+        settings.ASTAKOS_AUTH_PROVIDER_SHIBBOLETH_AUTOMODERATE_POLICY = True
+        self.assertFalse(local.get_automoderate_policy)
+        self.assertFalse(google.get_automoderate_policy)
+        self.assertTrue(shibboleth.get_automoderate_policy)
+
+        for s in ['SHIBBOLETH_CREATION_GROUPS_POLICY',
+                  'GOOGLE_ADD_GROUPS_POLICY']:
+            delattr(settings, 'ASTAKOS_AUTH_PROVIDER_%s' % s)
+
+
+    @shibboleth_settings(CREATE_POLICY=True)
+    @im_settings(IM_MODULES=['local', 'shibboleth'])
+    def test_create_http(self):
+        # this should be wrapped inside a transaction
+        user = AstakosUser(email="test@test.com")
+        user.save()
+        provider = auth_providers.get_provider('shibboleth', user,
+                                               'test@academia.test')
+        provider.add_to_user()
+        user.get_auth_provider('shibboleth', 'test@academia.test')
+        provider = auth_providers.get_provider('local', user)
+        provider.add_to_user()
+        user.get_auth_provider('local')
+
+        settings.ASTAKOS_AUTH_PROVIDER_SHIBBOLETH_CREATE_POLICY = False
+        user = AstakosUser(email="test2@test.com")
+        user.save()
+        provider = auth_providers.get_provider('shibboleth', user,
+                                               'test@shibboleth.com',
+                                               **{'info': {'name':
+                                                                'User Test'}})
+        self.assertFalse(provider.get_create_policy)
+        settings.ASTAKOS_AUTH_PROVIDER_SHIBBOLETH_CREATE_POLICY = True
+        self.assertTrue(provider.get_create_policy)
+        academic = provider.add_to_user()
+
+    @im_settings(IM_MODULES=['local', 'shibboleth'])
+    @shibboleth_settings(LIMIT_POLICY=2)
+    def test_policies(self):
+        user = get_local_user('kpap@grnet.gr')
+        user.add_auth_provider('shibboleth', identifier='1234')
+        user.add_auth_provider('shibboleth', identifier='12345')
+
+        # default limit is 1
+        local = user.get_auth_provider('local')
+        self.assertEqual(local.get_add_policy, False)
+
+        settings.ASTAKOS_AUTH_PROVIDER_SHIBBOLETH_LIMIT_POLICY = 3
+        academic = user.get_auth_provider('shibboleth',
+                                          identifier='1234')
+        self.assertEqual(academic.get_add_policy, False)
+        newacademic = auth_providers.get_provider('shibboleth', user,
+                                                  identifier='123456')
+        self.assertEqual(newacademic.get_add_policy, True)
+        user.add_auth_provider('shibboleth', identifier='123456')
+        self.assertEqual(academic.get_add_policy, False)
+        settings.ASTAKOS_AUTH_PROVIDER_SHIBBOLETH_LIMIT_POLICY = 1
+
+    @im_settings(IM_MODULES=['local', 'shibboleth'])
+    @shibboleth_settings(LIMIT_POLICY=2)
+    def test_messages(self):
+        user = get_local_user('kpap@grnet.gr')
+        user.add_auth_provider('shibboleth', identifier='1234')
+        user.add_auth_provider('shibboleth', identifier='12345')
+        provider = auth_providers.get_provider('shibboleth')
+        self.assertEqual(provider.get_message('title'), 'Academic')
+        settings.ASTAKOS_AUTH_PROVIDER_SHIBBOLETH_TITLE = 'New title'
+        # regenerate messages cache
+        provider = auth_providers.get_provider('shibboleth')
+        self.assertEqual(provider.get_message('title'), 'New title')
+        self.assertEqual(provider.get_message('login_title'),
+                         'New title LOGIN')
+        self.assertEqual(provider.get_login_title_msg, 'New title LOGIN')
+        self.assertEqual(provider.get_module_icon,
+                         settings.MEDIA_URL + 'im/auth/icons/shibboleth.png')
+        self.assertEqual(provider.get_module_medium_icon,
+                         settings.MEDIA_URL +
+                         'im/auth/icons-medium/shibboleth.png')
+
+        settings.ASTAKOS_AUTH_PROVIDER_SHIBBOLETH_TITLE = None
+        provider = auth_providers.get_provider('shibboleth', user, '12345')
+        self.assertEqual(provider.get_method_details_msg,
+                         'Account: 12345')
+        provider = auth_providers.get_provider('shibboleth', user, '1234')
+        self.assertEqual(provider.get_method_details_msg,
+                         'Account: 1234')
+
+        provider = auth_providers.get_provider('shibboleth', user, '1234')
+        self.assertEqual(provider.get_not_active_msg,
+                         "'Academic login' is disabled.")
+
+    @im_settings(IM_MODULES=['local', 'shibboleth'])
+    @shibboleth_settings(LIMIT_POLICY=2)
+    def test_templates(self):
+        user = get_local_user('kpap@grnet.gr')
+        user.add_auth_provider('shibboleth', identifier='1234')
+        user.add_auth_provider('shibboleth', identifier='12345')
+
+        provider = auth_providers.get_provider('shibboleth')
+        self.assertEqual(provider.get_template('login'),
+                         'im/auth/shibboleth_login.html')
+        provider = auth_providers.get_provider('google')
+        self.assertEqual(provider.get_template('login'),
+                         'im/auth/generic_login.html')
+
 

@@ -39,7 +39,8 @@ from django.conf import settings
 from django.http import (HttpResponse, HttpResponseBadRequest,
                          HttpResponseServerError, HttpResponseForbidden)
 
-from synnefo.lib.astakos import get_user
+from snf_django.lib.api import faults
+from snf_django.lib.astakos import get_user
 from synnefo.plankton.backend import (ImageBackend, BackendException,
                                       NotAllowedError)
 
@@ -63,6 +64,8 @@ def plankton_method(method):
                 return HttpResponseBadRequest(message)
             except NotAllowedError:
                 return HttpResponseForbidden()
+            except faults.Fault, fault:
+                return HttpResponse(status=fault.code)
             except Exception as e:
                 if settings.DEBUG:
                     message = format_exc(e)

@@ -33,7 +33,7 @@
 
 import json
 
-from synnefo.api.tests import  BaseAPITest
+from snf_django.utils.testing import BaseAPITest
 from synnefo.db.models import VirtualMachine, VirtualMachineMetadata
 from synnefo.db import models_factory as mfactory
 from synnefo.logic.utils import get_rsapi_state
@@ -116,6 +116,25 @@ class ServerAPITest(BaseAPITest):
         self.assertEqual(len(metadata), 1)
         self.assertEqual(metadata[db_vm_meta.meta_key], db_vm_meta.meta_value)
         self.assertSuccess(response)
+
+    def test_server_building_nics(self):
+        db_vm = self.vm2
+        user = self.vm2.userid
+        net1 = mfactory.NetworkFactory()
+        net2 = mfactory.NetworkFactory()
+        net3 = mfactory.NetworkFactory()
+        mfactory.NetworkInterfaceFactory(machine=self.vm2, network=net1,
+                                         state="BUILDING")
+        nic2 = mfactory.NetworkInterfaceFactory(machine=self.vm2, network=net2,
+                                                state="ACTIVE")
+        mfactory.NetworkInterfaceFactory(machine=self.vm2, network=net3,
+                                         state="BUILDING")
+
+        response = self.get('/api/v1.1/servers/%d' % db_vm.id, user)
+        server = json.loads(response.content)['server']
+        nics = server["attachments"]["values"]
+        self.assertEqual(len(nics), 1)
+        self.assertEqual(nics[0]["network_id"], str(nic2.network_id))
 
     def test_noauthorized(self):
         """Test 404 for detail of other user vm"""

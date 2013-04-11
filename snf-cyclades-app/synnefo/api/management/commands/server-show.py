@@ -31,16 +31,17 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import BaseCommand, CommandError
-from synnefo.webproject.management.util import format_bool, format_date
+from django.core.management.base import CommandError
+from synnefo.webproject.management.commands import SynnefoCommand
 from synnefo.management.common import (format_vm_state, get_vm,
                                        get_image)
-from synnefo.lib.astakos import UserCache
+from snf_django.lib.astakos import UserCache
 from synnefo.settings import (CYCLADES_ASTAKOS_SERVICE_TOKEN as ASTAKOS_TOKEN,
                               ASTAKOS_URL)
+from synnefo.webproject.management import utils
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     args = "<server ID>"
     help = "Show server info"
 
@@ -61,20 +62,19 @@ class Command(BaseCommand):
         image = '%s (%s)' % (imageid, image_name)
 
         kv = {
-            'id': server.id,
-            'name': server.name,
-            'owner_uuid': userid,
-            'owner_name': UserCache(ASTAKOS_URL, ASTAKOS_TOKEN).get_name(userid),
-            'created': format_date(server.created),
-            'updated': format_date(server.updated),
-            'image': image,
-            'host id': server.hostid,
-            'flavor': flavor,
-            'deleted': format_bool(server.deleted),
-            'suspended': format_bool(server.suspended),
-            'state': format_vm_state(server),
+          'id': server.id,
+          'name': server.name,
+          'owner_uuid': userid,
+          'owner_name': UserCache(ASTAKOS_URL, ASTAKOS_TOKEN).get_name(userid),
+          'created': utils.format_date(server.created),
+          'updated': utils.format_date(server.updated),
+          'image': image,
+          'host id': server.hostid,
+          'flavor': flavor,
+          'deleted': utils.format_bool(server.deleted),
+          'suspended': utils.format_bool(server.suspended),
+          'state': format_vm_state(server),
         }
 
-        for key, val in sorted(kv.items()):
-            line = '%s: %s\n' % (key.rjust(16), val)
-            self.stdout.write(line.encode('utf8'))
+        utils.pprint_table(self.stdout, [kv.values()], kv.keys(),
+                           options["output_format"], vertical=True)

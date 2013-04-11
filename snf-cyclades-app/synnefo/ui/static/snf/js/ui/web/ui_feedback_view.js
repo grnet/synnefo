@@ -108,12 +108,12 @@
             var extra = extra || {};
 
             var data = {
-                'feedback-msg': msg,
-                'feedback-data': this.get_feedback_data() || ""
+                'feedback_msg': msg,
+                'feedback_data': this.get_feedback_data() || ""
             }
             
             var opts = {
-                'url': 'feedback',
+                'url': synnefo.config.feedback_post_url,
                 'data': $.param(data),
                 'success': this.show_success,
                 'error': this.show_error,

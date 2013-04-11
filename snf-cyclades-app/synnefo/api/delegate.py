@@ -42,7 +42,7 @@ from django.conf import settings
 USER_CATALOG_URL = getattr(settings, 'CYCLADES_USER_CATALOG_URL', None)
 USER_FEEDBACK_URL = getattr(settings, 'CYCLADES_USER_FEEDBACK_URL', None)
 
-from synnefo.lib.pool.http import PooledHTTPConnection
+from objpool.http import PooledHTTPConnection
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +68,7 @@ def proxy(request, url, headers={}, body=None):
 
 @csrf_exempt
 def delegate_to_feedback_service(request):
+    logger.debug("Delegate feedback request to %s" % USER_FEEDBACK_URL)
     token = request.META.get('HTTP_X_AUTH_TOKEN')
     headers = {'X-Auth-Token': token}
     return proxy(request, USER_FEEDBACK_URL, headers=headers,

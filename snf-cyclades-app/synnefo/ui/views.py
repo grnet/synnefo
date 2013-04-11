@@ -49,7 +49,7 @@ from django.template import RequestContext
 
 from synnefo.util.version import get_component_version
 
-from synnefo.lib.astakos import get_user
+from snf_django.lib.astakos import get_user
 
 SYNNEFO_JS_LIB_VERSION = get_component_version('app')
 
@@ -126,8 +126,6 @@ UI_SYNNEFO_JS_WEB_URL = getattr(settings,
 # extensions
 ENABLE_GLANCE = getattr(settings, 'UI_ENABLE_GLANCE', True)
 GLANCE_API_URL = getattr(settings, 'UI_GLANCE_API_URL', '/glance')
-FEEDBACK_CONTACTS = getattr(settings, "FEEDBACK_CONTACTS", [])
-FEEDBACK_EMAIL_FROM = settings.FEEDBACK_EMAIL_FROM
 DIAGNOSTICS_UPDATE_INTERVAL = getattr(settings,
                 'UI_DIAGNOSTICS_UPDATE_INTERVAL', 2000)
 
@@ -151,6 +149,7 @@ GROUP_PUBLIC_NETWORKS = getattr(settings, 'UI_GROUP_PUBLIC_NETWORKS', True)
 GROUPED_PUBLIC_NETWORK_NAME = getattr(settings, 'UI_GROUPED_PUBLIC_NETWORK_NAME', 'Internet')
 
 USER_CATALOG_URL = getattr(settings, 'UI_USER_CATALOG_URL', '/user_catalogs')
+FEEDBACK_POST_URL = getattr(settings, 'UI_FEEDBACK_POST_URL', '/feedback')
 TRANSLATE_UUIDS = not getattr(settings, 'TRANSLATE_UUIDS', False)
 
 def template(name, request, context):
@@ -177,6 +176,7 @@ def home(request):
                'current_lang': get_language() or 'en',
                'compute_api_url': json.dumps(COMPUTE_API_URL),
                'user_catalog_url': json.dumps(USER_CATALOG_URL),
+               'feedback_post_url': json.dumps(FEEDBACK_POST_URL),
                'translate_uuids': json.dumps(TRANSLATE_UUIDS),
                 # update interval settings
                'update_interval': UPDATE_INTERVAL,
@@ -186,7 +186,6 @@ def home(request):
                'update_interval_max': UPDATE_INTERVAL_MAX,
                'changes_since_alignment': CHANGES_SINCE_ALIGNMENT,
                'quotas_update_interval': QUOTAS_UPDATE_INTERVAL,
-                # additional settings
                'image_icons': IMAGE_ICONS,
                'logout_redirect': LOGOUT_URL,
                'login_redirect': LOGIN_URL,
@@ -429,30 +428,3 @@ def machines_connect(request):
 
     return response
 
-def feedback_submit(request):
-    if not request.method == "POST":
-        raise Http404
-
-    # fill request object with astakos user information
-    get_user(request, settings.ASTAKOS_URL)
-
-    message = request.POST.get("feedback-msg")
-    data = request.POST.get("feedback-data")
-    if isinstance(request.user.get('email'), list):
-        email = request.user.get('email')[0]
-    else:
-        email = request.user.get('email')
-
-    # default to True (calls from error pages)
-    allow_data_send = request.POST.get("feedback-submit-data", True)
-
-    mail_subject = unicode(_("Feedback from synnefo application"))
-
-    mail_context = {'message': message, 'data': data, 'email': email,
-                    'allow_data_send': allow_data_send, 'request': request}
-    mail_content = render_to_string("feedback_mail.txt", mail_context)
-
-    send_mail(mail_subject, mail_content, FEEDBACK_EMAIL_FROM,
-              dict(FEEDBACK_CONTACTS).values(), fail_silently=False)
-
-    return HttpResponse('{"status":"send"}')

@@ -490,7 +490,8 @@ form input[type="text"]:-ms-input-placeholder,
      
 }
 
-.stats .bar span + em							{ position: }
+.stats .bar span + em							{ position: absolute; }
+.stats .bar 									{ position: relative; }
 .stats .red .bar span							{ background:#ef4f54; }
 .stats .yellow .bar span						{ background:#f6921e; }
 .stats .green .bar span							{ background:#55b577; }
@@ -608,11 +609,12 @@ form.withlabels.hidden-submit					{ margin-bottom:4em; }
 }
 
 .stats .bar em {
-    transition: width 1s, color 0.2s;
-    -moz-transition: width 1s, color 0.2s; /* Firefox 4 */
-    -webkit-transition: width 1s, color 0.2s; /* Safari and Chrome */
-    -o-transition: width 1s, color 0.2s; /* Opera */
+    transition: left 1s, color 0.2s;
+    -moz-transition: left 1s, color 0.2s; /* Firefox 4 */
+    -webkit-transition: left 1s, color 0.2s; /* Safari and Chrome */
+    -o-transition: left 1s, color 0.2s; /* Opera */
 }
+
 
 i.tiny { font-size: 0.8em; color: #999;}
 

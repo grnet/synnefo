@@ -906,6 +906,11 @@ you are not logged in. The ``PITHOS_UI_FEEDBACK_URL`` option points at the
 pithos+ feedback form. Astakos already provides a generic feedback form for all
 services, so we use this one.
 
+The ``PITHOS_UPDATE_MD5`` option by default disables the computation of the
+object checksums. This results to improved performance during object uploading.
+However, if compatibility with the OpenStack Object Storage API is important
+then it should be changed to ``True``.
+
 Then edit ``/etc/synnefo/20-snf-pithos-webclient-cloudbar.conf``, to connect the
 pithos+ web UI with the astakos web UI (through the top cloudbar):
 
@@ -974,6 +979,35 @@ like this:
        '--timeout=43200'
      ),
     }
+
+Stamp Database Revision
+-----------------------
+
+Pithos uses the alembic_ database migrations tool.
+
+.. _alembic: http://alembic.readthedocs.org
+
+After a sucessful installation, we should stamp it at the most recent
+revision, so that future migrations know where to start upgrading in
+the migration history.
+
+First, find the most recent revision in the migration history:
+
+.. code-block:: console
+
+    root@node2:~ # pithos-migrate history
+    2a309a9a3438 -> 27381099d477 (head), alter public add column url
+    165ba3fbfe53 -> 2a309a9a3438, fix statistics negative population
+    3dd56e750a3 -> 165ba3fbfe53, update account in paths
+    230f8ce9c90f -> 3dd56e750a3, Fix latest_version
+    8320b1c62d9 -> 230f8ce9c90f, alter nodes add column latest version
+    None -> 8320b1c62d9, create index nodes.parent
+
+Finally, we stamp it with the one found in the previous step:
+
+.. code-block:: console
+
+    root@node2:~ # pithos-migrate stamp 27381099d477
 
 Servers Initialization
 ----------------------
@@ -1393,6 +1427,7 @@ Assuming ``eth0`` on both hosts is the public interface (directly connected
 to the router), run on every node:
 
 .. code-block:: console
+
    # apt-get install vlan
    # brctl addbr br0
    # ip link set br0 up

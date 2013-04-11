@@ -36,7 +36,7 @@ from django.db import IntegrityError
 import utils
 from contextlib import contextmanager
 from hashlib import sha1
-from synnefo.api.faults import ServiceUnavailable
+from snf_django.lib.api import faults
 from synnefo import settings as snf_settings
 from aes_encrypt import encrypt_db_charfield, decrypt_db_charfield
 
@@ -115,7 +115,7 @@ class Backend(models.Model):
     def get_client(self):
         """Get or create a client. """
         if self.offline:
-            raise ServiceUnavailable
+            raise faults.ServiceUnavailable
         return get_rapi_client(self.id, self.hash,
                                self.clustername,
                                self.port,
@@ -326,7 +326,7 @@ class VirtualMachine(models.Model):
         if self.backend:
             return self.backend.get_client()
         else:
-            raise ServiceUnavailable
+            raise faults.ServiceUnavailable
 
     def get_last_diagnostic(self, **filters):
         try:
@@ -394,12 +394,6 @@ class VirtualMachine(models.Model):
 
         def __str__(self):
             return repr(str(self._action))
-
-    class DeletedError(Exception):
-        pass
-
-    class BuildingError(Exception):
-        pass
 
 
 class VirtualMachineMetadata(models.Model):
@@ -578,12 +572,6 @@ class Network(models.Model):
         def __str__(self):
             return repr(str(self._action))
 
-    class DeletedError(Exception):
-        pass
-
-    class BuildingError(Exception):
-        pass
-
 
 class BackendNetwork(models.Model):
     OPER_STATES = (
@@ -663,17 +651,24 @@ class NetworkInterface(models.Model):
         ('PROTECTED', 'Protected')
     )
 
+    STATES = (
+        ("ACTIVE", "Active"),
+        ("BUILDING", "Building"),
+    )
+
     machine = models.ForeignKey(VirtualMachine, related_name='nics')
     network = models.ForeignKey(Network, related_name='nics')
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     index = models.IntegerField(null=False)
-    mac = models.CharField(max_length=32, null=False, unique=True)
+    mac = models.CharField(max_length=32, null=True, unique=True)
     ipv4 = models.CharField(max_length=15, null=True)
     ipv6 = models.CharField(max_length=100, null=True)
     firewall_profile = models.CharField(choices=FIREWALL_PROFILES,
                                         max_length=30, null=True)
     dirty = models.BooleanField(default=False)
+    state = models.CharField(max_length=32, null=False, default="ACTIVE",
+                             choices=STATES)
 
     def __unicode__(self):
         return '%s@%s' % (self.machine.name, self.network.name)
@@ -726,7 +721,7 @@ def pooled_rapi_client(obj):
             backend = obj
 
         if backend.offline:
-            raise ServiceUnavailable
+            raise faults.ServiceUnavailable
 
         b = backend
         client = get_rapi_client(b.id, b.hash, b.clustername, b.port,

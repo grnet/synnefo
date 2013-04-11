@@ -61,7 +61,7 @@ from astakos.im.models import (
     ProjectApplication, Project)
 from astakos.im.settings import (
     INVITATIONS_PER_LEVEL, BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY,
-    RECAPTCHA_ENABLED, DEFAULT_CONTACT_EMAIL, LOGGING_LEVEL,
+    RECAPTCHA_ENABLED, CONTACT_EMAIL, LOGGING_LEVEL,
     PASSWORD_RESET_EMAIL_SUBJECT, NEWPASSWD_INVALIDATE_TOKEN,
     MODERATION_ENABLED, PROJECT_MEMBER_JOIN_POLICIES,
     PROJECT_MEMBER_LEAVE_POLICIES, EMAILCHANGE_ENABLED,
@@ -271,19 +271,19 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
             terms_link_html = '<a href="%s" target="_blank">%s</a>' \
                 % (reverse('latest_terms'), _("the terms"))
             self.fields['has_signed_terms'].label = \
-                    mark_safe("I agree with %s" % terms_link_html)
+                mark_safe("I agree with %s" % terms_link_html)
 
     def clean_email(self):
         email = self.cleaned_data['email']
         if not email:
             raise forms.ValidationError(_(astakos_messages.REQUIRED_FIELD))
         if reserved_verified_email(email):
-            provider = auth_providers.get_provider(self.request.REQUEST.get('provider', 'local'))
-            extra_message = _(astakos_messages.EXISTING_EMAIL_THIRD_PARTY_NOTIFICATION) % \
-                    (provider.get_title_display, reverse('edit_profile'))
+            provider_id = self.request.REQUEST.get('provider', 'local')
+            provider = auth_providers.get_provider(provider_id)
+            extra_message = provider.get_add_to_existing_account_msg
 
-            raise forms.ValidationError(_(astakos_messages.EMAIL_USED) + ' ' + \
-                                        extra_message)
+            raise forms.ValidationError(mark_safe(_(astakos_messages.EMAIL_USED) + ' ' +
+                                        extra_message))
         return email
 
     def clean_has_signed_terms(self):
@@ -294,10 +294,12 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
 
     def post_store_user(self, user, request):
         pending = PendingThirdPartyUser.objects.get(
-                                token=request.POST.get('third_party_token'),
-                                third_party_identifier= \
-                            self.cleaned_data.get('third_party_identifier'))
-        return user.add_pending_auth_provider(pending)
+            token=request.POST.get('third_party_token'),
+            third_party_identifier=
+            self.cleaned_data.get('third_party_identifier'))
+        provider = pending.get_provider(user)
+        provider.add_to_user()
+        pending.delete()
 
     def save(self, commit=True):
         user = super(ThirdPartyUserCreationForm, self).save(commit=False)
@@ -406,9 +408,9 @@ class LoginForm(AuthenticationForm):
             try:
                 user = AstakosUser.objects.get_by_identifier(username)
                 if not user.has_auth_provider('local'):
-                    provider = auth_providers.get_provider('local')
+                    provider = auth_providers.get_provider('local', user)
                     raise forms.ValidationError(
-                        _(provider.get_message('NOT_ACTIVE_FOR_USER')))
+                        provider.get_login_disabled_msg)
             except AstakosUser.DoesNotExist:
                 pass
 
@@ -418,7 +420,8 @@ class LoginForm(AuthenticationForm):
             if self.user_cache is None:
                 raise
             if not self.user_cache.is_active:
-                raise forms.ValidationError(self.user_cache.get_inactive_message())
+                msg = self.user_cache.get_inactive_message('local')
+                raise forms.ValidationError(msg)
             if self.request:
                 if not self.request.session.test_cookie_worked():
                     raise
@@ -505,25 +508,25 @@ class ExtendedPasswordResetForm(PasswordResetForm):
     clean_email: to handle local auth provider checks
     """
     def clean_email(self):
-        email = super(ExtendedPasswordResetForm, self).clean_email()
+        # we override the default django auth clean_email to provide more
+        # detailed messages in case of inactive users
+        email = self.cleaned_data['email']
         try:
             user = AstakosUser.objects.get_by_identifier(email)
-
+            self.users_cache = [user]
             if not user.is_active:
-                raise forms.ValidationError(_(astakos_messages.ACCOUNT_INACTIVE))
+                raise forms.ValidationError(user.get_inactive_message('local'))
 
+            provider = auth_providers.get_provider('local', user)
             if not user.has_usable_password():
-                provider = auth_providers.get_provider('local')
-                available_providers = user.auth_providers.all()
-                available_providers = ",".join(p.settings.get_title_display for p in \
-                                                   available_providers)
-                message = astakos_messages.UNUSABLE_PASSWORD % \
-                    (provider.get_method_prompt_display, available_providers)
-                raise forms.ValidationError(message)
+                msg = provider.get_unusable_password_msg
+                raise forms.ValidationError(msg)
 
             if not user.can_change_password():
-                raise forms.ValidationError(_(astakos_messages.AUTH_PROVIDER_CANNOT_CHANGE_PASSWORD))
-        except AstakosUser.DoesNotExist, e:
+                msg = provider.get_cannot_change_password_msg
+                raise forms.ValidationError(msg)
+
+        except AstakosUser.DoesNotExist:
             raise forms.ValidationError(_(astakos_messages.EMAIL_UNKNOWN))
         return email
 
@@ -543,7 +546,7 @@ class ExtendedPasswordResetForm(PasswordResetForm):
                 'site_name': SITENAME,
                 'user': user,
                 'baseurl': BASEURL,
-                'support': DEFAULT_CONTACT_EMAIL
+                'support': CONTACT_EMAIL
             }
             from_email = settings.SERVER_EMAIL
             send_mail(_(PASSWORD_RESET_EMAIL_SUBJECT),
@@ -661,9 +664,10 @@ class ExtendedSetPasswordForm(SetPasswordForm):
             self.user = AstakosUser.objects.get(id=self.user.id)
             if NEWPASSWD_INVALIDATE_TOKEN or self.cleaned_data.get('renew'):
                 self.user.renew_token()
-            #self.user.flush_sessions()
-            if not self.user.has_auth_provider('local'):
-                self.user.add_auth_provider('local', auth_backend='astakos')
+
+            provider = auth_providers.get_provider('local', self.user)
+            if provider.get_add_policy:
+                provider.add_to_user()
 
         except BaseException, e:
             logger.exception(e)

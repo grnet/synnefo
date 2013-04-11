@@ -46,7 +46,6 @@ from synnefo.versions.common import __version__
 # Package info
 VERSION = __version__
 README = open(os.path.join(HERE, 'README')).read()
-CHANGES = open(os.path.join(HERE, 'Changelog')).read()
 SHORT_DESCRIPTION = 'Common infrastructure for all Synnefo components'
 
 PACKAGES_ROOT = '.'
@@ -57,6 +56,7 @@ CLASSIFIERS = []
 
 # Package requirements
 INSTALL_REQUIRES = [
+    'objpool>=0.2'
 ]
 
 EXTRAS_REQUIRES = {
@@ -71,7 +71,7 @@ setup(
     license='BSD',
     url='http://www.synnefo.org/',
     description=SHORT_DESCRIPTION,
-    long_description=README + '\n\n' + CHANGES,
+    long_description=README,
     classifiers=CLASSIFIERS,
 
     author='Synnefo development team',

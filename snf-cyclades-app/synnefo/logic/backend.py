@@ -175,7 +175,8 @@ def process_ganeti_nics(ganeti_nics):
             'mac': mac,
             'ipv4': ipv4,
             'ipv6': ipv6,
-            'firewall_profile': firewall_profile}
+            'firewall_profile': firewall_profile,
+            'state': 'ACTIVE'}
 
         new_nics.append(nic)
     return new_nics

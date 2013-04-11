@@ -33,8 +33,8 @@
 
 from django.conf.urls.defaults import include, patterns
 
+from snf_django.lib.api import not_found
 from synnefo.api import servers, flavors, images, networks
-from synnefo.api.common import not_found
 from synnefo.api.versions import versions_list, version_details
 
 

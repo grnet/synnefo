@@ -137,6 +137,78 @@ Automatic activation
 
 FIXME: Describe Regex activation method
 
+Setting quota limits
+~~~~~~~~~~~~~~~~~~~~
+
+Set default quotas
+``````````````````
+
+In 20-snf-astakos-app-settings.conf, 
+uncomment the default setting ``ASTAKOS_SERVICES``
+and customize the ``'uplimit'`` values.
+These are the default base quotas for all users.
+
+To apply your configuration run::
+
+    # snf-manage astakos-init --load-service-resources
+    # snf-manage astakos-quota --sync
+
+Set base quotas for individual users
+````````````````````````````````````
+
+For individual users that need different quotas than the default
+you can set it for each resource like this::
+
+    # use this to display quotas / uuid
+    # snf-manage user-show 'uuid or email'
+
+    # snf-manage user-set-initial-quota --set-capacity 'user-uuid' 'cyclades.vm' 10
+
+    # this applies the configuration
+    # snf-manage astakos-quota --sync --user 'user-uuid'
+
+
+Enable the Projects feature
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you want to enable the projects feature so that users may apply
+on their own for resources by creating and joining projects,
+in ``20-snf-astakos-app-settings.conf`` set::
+
+    # this will allow at most one pending project application per user
+    ASTAKOS_PENDING_APPLICATION_LIMIT = 1
+    # this will make the 'projects' page visible in the dashboard
+    ASTAKOS_PROJECTS_VISIBLE = True
+
+You can specify a user-specific limit on pending project applications
+with::
+
+    # snf-manage user-update <user id> --max-pending-projects=2
+
+When users apply for projects they are not automatically granted
+the resources. They must first be approved by the administrator.
+
+To list pending project applications in astakos::
+
+    # snf-manage project-list --pending
+
+Note the last column, the application id. To approve it::
+
+    # <app id> from the last column of project-list
+    # snf-manage project-control --approve <app id>
+
+To deny an application::
+
+    # snf-manage project-control --deny <app id>
+
+Users designated as *project admins* can approve, deny, or modify
+an application through the web interface. In
+``20-snf-astakos-app-settings.conf`` set::
+
+    # UUIDs of users that can approve or deny project applications from the web.
+    ASTAKOS_PROJECT_ADMINS = [<uuid>, ...]
+
+
 Astakos advanced operations
 ---------------------------
 
@@ -1160,21 +1232,16 @@ Node10:
 All sections: :ref:`Scale out Guide <i-synnefo>`
 
 
-Synnefo Upgrade Notes
-=====================
+Upgrade Notes
+=============
 
 .. toctree::
    :maxdepth: 1
 
    v0.12 -> v0.13 <upgrade/upgrade-0.13>
 
-Older Cyclades Upgrade Notes
-============================
 
-.. toctree::
-   :maxdepth: 2
+Changelog, NEWS
+===============
 
-   upgrade/cyclades-upgrade
-
-Changelog
-=========
+* v0.13 :ref:`Changelog <Changelog-0.13>`, :ref:`NEWS <NEWS-0.13>`

@@ -14,12 +14,12 @@ INVITATIONS_PER_LEVEL = getattr(settings, 'ASTAKOS_INVITATIONS_PER_LEVEL', {
     4: 0
 })
 
-# Address to use for outgoing emails
-DEFAULT_CONTACT_EMAIL = getattr(
-    settings, 'ASTAKOS_DEFAULT_CONTACT_EMAIL', 'support@example.synnefo.org')
+ADMINS = getattr(settings, 'ADMINS', ())
+MANAGERS = getattr(settings, 'MANAGERS', ADMINS)
+HELPDESK = getattr(settings, 'HELPDESK', ADMINS)
 
-SERVER_EMAIL = getattr(settings, 'SERVER_EMAIL', None)
-ADMINS = getattr(settings, 'ADMINS', None)
+CONTACT_EMAIL = settings.CONTACT_EMAIL
+SERVER_EMAIL = settings.SERVER_EMAIL
 
 # Identity Management enabled modules
 # Supported modules are: 'local', 'twitter' and 'shibboleth'
@@ -37,7 +37,8 @@ COOKIE_SECURE = getattr(settings, 'ASTAKOS_COOKIE_SECURE', True)
 
 IM_STATIC_URL = getattr(settings, 'ASTAKOS_IM_STATIC_URL', '/static/im/')
 
-# If set to False and invitations not enabled newly created user will be automatically accepted
+# If set to False and invitations not enabled newly created user
+# will be automatically accepted
 MODERATION_ENABLED = getattr(settings, 'ASTAKOS_MODERATION_ENABLED', True)
 
 # Set baseurl
@@ -185,7 +186,7 @@ SERVICES = getattr(settings, 'ASTAKOS_SERVICES', {
             'group': 'compute',
             'uplimit': 6*1024*1024*1024,
             'unit': 'bytes',
-            'desc': 'Virtual machines'
+            'desc': 'Virtual machine memory size'
             }, {
             'name': 'vm',
             'group': 'compute',

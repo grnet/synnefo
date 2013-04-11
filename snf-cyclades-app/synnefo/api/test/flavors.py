@@ -33,7 +33,7 @@
 
 import json
 
-from synnefo.api.tests import BaseAPITest
+from snf_django.utils.testing import BaseAPITest
 from synnefo.db.models import Flavor
 from synnefo.db.models_factory import FlavorFactory
 

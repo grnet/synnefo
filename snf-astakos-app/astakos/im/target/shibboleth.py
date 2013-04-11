@@ -33,6 +33,7 @@
 
 import json
 
+from django.conf import settings as global_settings
 from django.http import HttpResponseBadRequest
 from django.utils.translation import ugettext as _
 from django.contrib import messages
@@ -75,7 +76,7 @@ class Tokens:
     SHIB_MAIL = "HTTP_SHIB_MAIL"
 
 
-@requires_auth_provider('shibboleth', login=True)
+@requires_auth_provider('shibboleth')
 @require_http_methods(["GET", "POST"])
 def login(
     request,
@@ -99,10 +100,15 @@ def login(
 
     try:
         eppn = tokens.get(Tokens.SHIB_EPPN)
+        if global_settings.DEBUG and not eppn:
+            eppn = getattr(global_settings, 'SHIBBOLETH_TEST_EPPN', None)
+            realname = getattr(global_settings, 'SHIBBOLETH_TEST_REALNAME',
+                               None)
+
         if not eppn:
             raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_EPPN) % {
                 'domain': settings.BASEURL,
-                'contact_email': settings.DEFAULT_CONTACT_EMAIL
+                'contact_email': settings.CONTACT_EMAIL
             })
         if Tokens.SHIB_DISPLAYNAME in tokens:
             realname = tokens[Tokens.SHIB_DISPLAYNAME]

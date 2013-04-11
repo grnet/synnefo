@@ -43,9 +43,13 @@ from django.core.urlresolvers import reverse
 
 from urllib import unquote
 
-from synnefo.lib.astakos import get_user
+from snf_django.lib.astakos import get_user
 from synnefo.db.models import VirtualMachine, NetworkInterface, Network
-from synnefo.lib import astakos
+from snf_django.lib import astakos
+
+# server actions specific imports
+from synnefo.api import servers
+from synnefo.logic import backend as servers_backend
 
 logger = logging.getLogger(__name__)
 
@@ -237,7 +241,7 @@ def account(request, search_query):
         'vms': vms,
         'show_deleted': show_deleted,
         'account_name': account_name,
-        'csrf_token': request.user['auth_token'],
+        'token': request.user['auth_token'],
         'networks': networks,
         'UI_MEDIA_URL': settings.UI_MEDIA_URL
     }
@@ -248,7 +252,7 @@ def account(request, search_query):
 
 @helpdesk_user_required
 @token_check
-def suspend_vm(request, vm_id):
+def vm_suspend(request, vm_id):
     vm = VirtualMachine.objects.get(pk=vm_id)
     vm.suspended = True
     vm.save()
@@ -259,10 +263,32 @@ def suspend_vm(request, vm_id):
 
 @helpdesk_user_required
 @token_check
-def suspend_vm_release(request, vm_id):
+def vm_suspend_release(request, vm_id):
     vm = VirtualMachine.objects.get(pk=vm_id)
     vm.suspended = False
     vm.save()
     logging.info("VM %s unsuspended by %s", vm_id, request.user_uniq)
+    account = vm.userid
+    return HttpResponseRedirect(reverse('helpdesk-details', args=(account,)))
+
+
+@helpdesk_user_required
+@token_check
+def vm_shutdown(request, vm_id):
+    logging.info("VM %s shutdown by %s", vm_id, request.user_uniq)
+    vm = VirtualMachine.objects.get(pk=vm_id)
+    servers.start_action(vm, 'STOP')
+    servers_backend.shutdown_instance(vm)
+    account = vm.userid
+    return HttpResponseRedirect(reverse('helpdesk-details', args=(account,)))
+
+
+@helpdesk_user_required
+@token_check
+def vm_start(request, vm_id):
+    logging.info("VM %s start by %s", vm_id, request.user_uniq)
+    vm = VirtualMachine.objects.get(pk=vm_id)
+    servers.start_action(vm, 'START')
+    servers_backend.startup_instance(vm)
     account = vm.userid
     return HttpResponseRedirect(reverse('helpdesk-details', args=(account,)))

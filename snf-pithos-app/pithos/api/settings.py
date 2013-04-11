@@ -3,7 +3,7 @@ from django.conf import settings
 
 AUTHENTICATION_URL = getattr(settings, 'PITHOS_AUTHENTICATION_URL',
                              'https://accounts.example.synnefo.org/im/authenticate/')
-AUTHENTICATION_USERS = getattr(settings, 'PITHOS_AUTHENTICATION_USERS', {})
+ASTAKOS_URL = AUTHENTICATION_URL.replace("im/authenticate/", "")
 
 COOKIE_NAME = getattr(settings, 'PITHOS_ASTAKOS_COOKIE_NAME', '_pithos2_a')
 
@@ -32,8 +32,11 @@ BACKEND_QUOTA = getattr(
 BACKEND_VERSIONING = getattr(settings, 'PITHOS_BACKEND_VERSIONING', 'auto')
 BACKEND_FREE_VERSIONING = getattr(settings, 'PITHOS_BACKEND_FREE_VERSIONING', True)
 
-# Update object checksums when using hashmaps.
-UPDATE_MD5 = getattr(settings, 'PITHOS_UPDATE_MD5', True)
+# Default backend pool size
+BACKEND_POOL_SIZE = getattr(settings, 'PITHOS_BACKEND_POOL_SIZE', 5)
+
+# Update object checksums.
+UPDATE_MD5 = getattr(settings, 'PITHOS_UPDATE_MD5', False)
 
 # Service Token acquired by identity provider.
 SERVICE_TOKEN = getattr(settings, 'PITHOS_SERVICE_TOKEN', '')

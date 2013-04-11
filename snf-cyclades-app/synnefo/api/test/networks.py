@@ -34,7 +34,7 @@
 import json
 from mock import patch
 
-from synnefo.api.tests import BaseAPITest
+from snf_django.utils.testing import BaseAPITest
 from synnefo.db.models import Network, NetworkInterface
 from synnefo.db import models_factory as mfactory
 
@@ -72,8 +72,8 @@ class NetworkAPITest(BaseAPITest):
 
     def test_create_network_1(self, mrapi):
         request = {
-            'network': {'name': 'foo'}
-            }
+            'network': {'name': 'foo', "type": "MAC_FILTERED"}
+        }
         response = self.post('/api/v1.1/networks/', 'user1',
                              json.dumps(request), 'json')
         self.assertEqual(response.status_code, 202)
@@ -96,10 +96,12 @@ class NetworkAPITest(BaseAPITest):
         self.assertEqual(len(Network.objects.filter(userid='user1')), 0)
 
     def test_invalid_data_2(self, mrapi):
-        """Test invalid subnet"""
+        """Test invalid data/subnet"""
         request = {
-            'network': {'name': 'foo', 'cidr': '10.0.0.0/8'}
-            }
+            'network': {'name': 'foo',
+                        'cidr': '10.0.0.0/8', "type":
+                        "MAC_FILTERED"}
+        }
         response = self.post('/api/v1.1/networks/', 'user1',
                              json.dumps(request), 'json')
         self.assertFault(response, 413, "overLimit")
@@ -107,7 +109,9 @@ class NetworkAPITest(BaseAPITest):
     def test_invalid_data_3(self, mrapi):
         """Test unauthorized to create public network"""
         request = {
-                'network': {'name': 'foo', 'public': True}
+                'network': {'name': 'foo',
+                            "public": "True",
+                            "type": "MAC_FILTERED"}
             }
         response = self.post('/api/v1.1/networks/', 'user1',
                              json.dumps(request), 'json')
@@ -125,8 +129,10 @@ class NetworkAPITest(BaseAPITest):
     def test_invalid_subnet(self, mrapi):
         """Test invalid subnet"""
         request = {
-            'network': {'name': 'foo', 'cidr': '10.0.0.10/27'}
-            }
+            'network': {'name': 'foo',
+                        'cidr': '10.0.0.10/27',
+                        "type": "MAC_FILTERED"}
+        }
         response = self.post('/api/v1.1/networks/', 'user1',
                              json.dumps(request), 'json')
         self.assertBadRequest(response)
@@ -205,6 +211,17 @@ class NetworkAPITest(BaseAPITest):
             net_id = api_net['id']
             self.assertNetworksEqual(Network.objects.get(id=net_id), api_net,
                                      detail=True)
+
+    def test_get_network_building_nics(self, mrapi):
+        net = mfactory.NetworkFactory()
+        machine = mfactory.VirtualMachineFactory(userid=net.userid)
+        mfactory.NetworkInterfaceFactory(network=net, machine=machine,
+                                         state="BUILDING")
+        response = self.get('/api/v1.1/networks/%d' % net.id,
+                            net.userid)
+        self.assertSuccess(response)
+        api_net = json.loads(response.content)["network"]
+        self.assertEqual(len(api_net["attachments"]["values"]), 0)
 
     def test_network_details_1(self, mrapi):
         """Test that expected details for a network are returned"""

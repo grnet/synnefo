@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -38,9 +38,11 @@ from string import punctuation
 from urllib import unquote
 
 from django.conf import settings
-from django.http import (HttpResponse, HttpResponseNotFound,
-                         HttpResponseBadRequest)
-from synnefo.plankton.util import plankton_method
+from django.http import HttpResponse
+
+from snf_django.lib import api
+from snf_django.lib.api import faults
+from synnefo.plankton.utils import plankton_method
 
 
 FILTERS = ('name', 'container_format', 'disk_format', 'status', 'size_min',
@@ -114,7 +116,8 @@ def _get_image_headers(request):
     return headers
 
 
-@plankton_method('POST')
+@api.api_method(http_method="POST", user_required=True, logger=log)
+@plankton_method
 def add_image(request):
     """Add a new virtual machine image
 
@@ -155,7 +158,28 @@ def add_image(request):
     return _create_image_response(image)
 
 
-@plankton_method('PUT')
+@api.api_method(http_method="DELETE", user_required=True, logger=log)
+@plankton_method
+def delete_image(request, image_id):
+    """Delete an Image.
+
+    This API call is not described in the Openstack Glance API.
+
+    Implementation notes:
+      * The implementation does not delete the Image from the storage
+        backend. Instead it unregisters the image by removing all the
+        metadata from the plankton metadata domain.
+
+    """
+    log.info("delete_image '%s'" % image_id)
+    userid = request.user_uniq
+    request.backend.unregister(image_id)
+    log.info("User '%s' deleted image '%s'" % (userid, image_id))
+    return HttpResponse(status=204)
+
+
+@api.api_method(http_method="PUT", user_required=True, logger=log)
+@plankton_method
 def add_image_member(request, image_id, member):
     """Add a member to an image
 
@@ -171,7 +195,8 @@ def add_image_member(request, image_id, member):
     return HttpResponse(status=204)
 
 
-@plankton_method('GET')
+@api.api_method(http_method="GET", user_required=True, logger=log)
+@plankton_method
 def get_image(request, image_id):
     """Retrieve a virtual machine image
 
@@ -197,7 +222,8 @@ def get_image(request, image_id):
     return HttpResponse(status=501)     # Not Implemented
 
 
-@plankton_method('HEAD')
+@api.api_method(http_method="HEAD", user_required=True, logger=log)
+@plankton_method
 def get_image_meta(request, image_id):
     """Return detailed metadata on a specific image
 
@@ -207,11 +233,12 @@ def get_image_meta(request, image_id):
 
     image = request.backend.get_image(image_id)
     if not image:
-        return HttpResponseNotFound()
+        raise faults.ItemNotFound()
     return _create_image_response(image)
 
 
-@plankton_method('GET')
+@api.api_method(http_method="GET", user_required=True, logger=log)
+@plankton_method
 def list_image_members(request, image_id):
     """List image memberships
 
@@ -225,7 +252,8 @@ def list_image_members(request, image_id):
     return HttpResponse(data)
 
 
-@plankton_method('GET')
+@api.api_method(http_method="GET", user_required=True, logger=log)
+@plankton_method
 def list_images(request, detail=False):
     """Return a list of available images.
 
@@ -257,13 +285,13 @@ def list_images(request, detail=False):
         try:
             filters['size_max'] = int(filters['size_max'])
         except ValueError:
-            return HttpResponseBadRequest('400 Bad Request')
+            raise faults.BadRequest("Malformed request.")
 
     if 'size_min' in filters:
         try:
             filters['size_min'] = int(filters['size_min'])
         except ValueError:
-            return HttpResponseBadRequest('400 Bad Request')
+            raise faults.BadRequest("Malformed request.")
 
     images = request.backend.list(filters, params)
 
@@ -278,7 +306,8 @@ def list_images(request, detail=False):
     return HttpResponse(data)
 
 
-@plankton_method('GET')
+@api.api_method(http_method="GET", user_required=True, logger=log)
+@plankton_method
 def list_shared_images(request, member):
     """Request shared images
 
@@ -301,7 +330,8 @@ def list_shared_images(request, member):
     return HttpResponse(data)
 
 
-@plankton_method('DELETE')
+@api.api_method(http_method="DELETE", user_required=True, logger=log)
+@plankton_method
 def remove_image_member(request, image_id, member):
     """Remove a member from an image
 
@@ -314,7 +344,8 @@ def remove_image_member(request, image_id, member):
     return HttpResponse(status=204)
 
 
-@plankton_method('PUT')
+@api.api_method(http_method="PUT", user_required=True, logger=log)
+@plankton_method
 def update_image(request, image_id):
     """Update an image
 
@@ -336,7 +367,8 @@ def update_image(request, image_id):
     return _create_image_response(image)
 
 
-@plankton_method('PUT')
+@api.api_method(http_method="PUT", user_required=True, logger=log)
+@plankton_method
 def update_image_members(request, image_id):
     """Replace a membership list for an image
 

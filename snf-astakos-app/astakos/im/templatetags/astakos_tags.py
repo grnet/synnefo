@@ -204,13 +204,13 @@ def provider_login_url(context, provider, from_login=False):
     if from_login:
         attrs['from_login'] = 1
 
-    url = provider.add_url
+    url = provider.urls.get('login')
 
     joinchar = "?"
     if "?" in url:
         joinchar = "&"
 
-    return "%s%s%s" % (provider.add_url, joinchar, urllib.urlencode(attrs))
+    return "%s%s%s" % (url, joinchar, urllib.urlencode(attrs))
 
 
 EXTRA_CONTENT_MAP = {

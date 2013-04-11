@@ -137,14 +137,14 @@ class Operations(object):
         operation.prepare(holding, quantity, check)
         self.operations.append((operation, holding, quantity))
 
-    def finalize(self, operation, holding, quantity):
-        operation.finalize(holding, quantity)
-        self.operations.append((operation, holding, quantity))
-
-    def undo(self, operation, holding, quantity):
-        operation.undo(holding, quantity)
-        self.operations.append((operation, holding, quantity))
-
     def revert(self):
         for (operation, holding, quantity) in self.operations:
             operation.revert(holding, quantity)
+
+
+def finalize(operation, holding, quantity):
+    operation.finalize(holding, quantity)
+
+
+def undo(operation, holding, quantity):
+    operation.undo(holding, quantity)

@@ -142,21 +142,18 @@ def _issue_commission(clientkey, provisions, force, accept):
     return serial
 
 
-def failed_to_cloudfault(failed):
-    serial, reason = failed
-    if reason == 'NOTFOUND':
-        body = {"code": 404,
-                "message": "serial %s does not exist" % serial,
-                }
-        cloudfault = {"itemNotFound": body}
-    elif reason == 'CONFLICT':
-        body = {"code": 400,
-                "message": "cannot both accept and reject serial %s" % serial,
-                }
-        cloudfault = {"badRequest": body}
-    else:
-        raise InternalServerError('Unexpected error')
-    return (serial, cloudfault)
+def notFoundCF(serial):
+    body = {"code": 404,
+            "message": "serial %s does not exist" % serial,
+            }
+    return {"itemNotFound": body}
+
+
+def conflictingCF(serial):
+    body = {"code": 400,
+            "message": "cannot both accept and reject serial %s" % serial,
+            }
+    return {"badRequest": body}
 
 
 @csrf_exempt
@@ -174,8 +171,10 @@ def resolve_pending_commissions(request):
     result = qh.resolve_pending_commissions(clientkey=client_key,
                                             accept_set=accept,
                                             reject_set=reject)
-    accepted, rejected, failed = result
-    cloudfaults = [failed_to_cloudfault(f) for f in failed]
+    accepted, rejected, notFound, conflicting = result
+    notFound = [(serial, notFoundCF(serial)) for serial in notFound]
+    conflicting = [(serial, conflictingCF(serial)) for serial in conflicting]
+    cloudfaults = notFound + conflicting
     data = {'accepted': accepted,
             'rejected': rejected,
             'failed': cloudfaults
@@ -217,13 +216,9 @@ def serial_action(request, serial):
     if accept == reject:
         raise BadRequest('Specify either accept or reject action.')
 
-    if accept:
-        result = qh.accept_commission(clientkey=client_key,
-                                      serial=serial)
-    else:
-        result = qh.reject_commission(clientkey=client_key,
-                                      serial=serial)
-
+    result = qh.resolve_pending_commission(clientkey=client_key,
+                                           serial=serial,
+                                           accept=accept)
     response = HttpResponse()
     if not result:
         response.status_code = 404

@@ -77,18 +77,23 @@ class Provision(Model):
     serial      =   ForeignKey( Commission,
                                 to_field='serial',
                                 related_name='provisions'   )
-    holding     =   ForeignKey(Holding,
-                               related_name='provisions')
+    holder      =   CharField(max_length=4096, db_index=True)
+    source      =   CharField(max_length=4096, null=True)
+    resource    =   CharField(max_length=4096, null=False)
+
     quantity    =   intDecimalField()
 
     objects     =   ForUpdateManager()
 
     def todict(self):
-        return {'holder':   self.holding.holder,
-                'source':   self.holding.source,
-                'resource': self.holding.resource,
+        return {'holder':   self.holder,
+                'source':   self.source,
+                'resource': self.resource,
                 'quantity': self.quantity,
                 }
+
+    def holding_key(self):
+        return (self.holder, self.source, self.resource)
 
 
 class ProvisionLog(Model):

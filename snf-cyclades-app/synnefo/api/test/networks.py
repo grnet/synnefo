@@ -34,7 +34,7 @@
 import json
 from mock import patch
 
-from synnefo.api.tests import BaseAPITest
+from snf_django.utils.testing import BaseAPITest
 from synnefo.db.models import Network, NetworkInterface
 from synnefo.db import models_factory as mfactory
 

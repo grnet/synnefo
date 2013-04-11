@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<{{ fault.name }} code="{{ fault.code }}">
+  <message>{{ fault.message }}</message>
+  <details>{{ fault.details }}</details>
+</{{ fault.name }}>

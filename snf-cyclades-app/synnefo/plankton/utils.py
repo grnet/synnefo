@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,66 +31,29 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from functools import wraps
+from synnefo.plankton.backend import ImageBackend
+from contextlib import contextmanager
 
-def camelCase(s):
-    return s[0].lower() + s[1:]
+def plankton_method(func):
+    """Decorator function for API methods using ImageBackend.
 
-
-class Fault(Exception):
-    def __init__(self, message='', details='', name=''):
-        Exception.__init__(self, message, details, name)
-        self.message = message
-        self.details = details
-        self.name = name or camelCase(self.__class__.__name__)
-
-
-class NotModified(Fault):
-    code = 304
-
-
-class BadRequest(Fault):
-    code = 400
+    Decorator function that creates and closes an ImageBackend, needed
+    by all API methods that handle images.
+    """
+    @wraps(func)
+    def wrapper(request, *args, **kwargs):
+        with image_backend(request.user_uniq) as backend:
+            request.backend = backend
+            return func(request, *args, **kwargs)
+    return wrapper
 
 
-class Unauthorized(Fault):
-    code = 401
-
-
-class Forbidden(Fault):
-    code = 403
-
-
-class ItemNotFound(Fault):
-    code = 404
-
-
-class Conflict(Fault):
-    code = 409
-
-
-class LengthRequired(Fault):
-    code = 411
-
-
-class PreconditionFailed(Fault):
-    code = 412
-
-
-class RequestEntityTooLarge(Fault):
-    code = 413
-
-
-class RangeNotSatisfiable(Fault):
-    code = 416
-
-
-class UnprocessableEntity(Fault):
-    code = 422
-
-
-class InternalServerError(Fault):
-    code = 500
-
-
-class NotImplemented(Fault):
-    code = 501
+@contextmanager
+def image_backend(user_id):
+    """Context manager for ImageBackend"""
+    backend = ImageBackend(user_id)
+    try:
+        yield backend
+    finally:
+        backend.close()

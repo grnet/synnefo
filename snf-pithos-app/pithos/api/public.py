@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,37 +31,33 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import logging
-
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
-from synnefo.lib.astakos import get_user
+from snf_django.lib import api
+from snf_django.lib.api import faults
 
-from pithos.api.faults import (Fault, BadRequest, ItemNotFound, NotModified)
 from pithos.api.util import (put_object_headers, update_manifest_meta,
                              validate_modification_preconditions,
                              validate_matching_preconditions,
                              object_data_response, api_method,
                              split_container_object_string)
-from pithos.api.settings import AUTHENTICATION_URL, AUTHENTICATION_USERS
 
-
+import logging
 logger = logging.getLogger(__name__)
 
 
 @csrf_exempt
 def public_demux(request, v_public):
-    get_user(request, AUTHENTICATION_URL, AUTHENTICATION_USERS)
     if request.method == 'HEAD':
         return public_meta(request, v_public)
     elif request.method == 'GET':
         return public_read(request, v_public)
     else:
-        return method_not_allowed(request)
+        return api.method_not_allowed(request)
 
 
-@api_method('HEAD', user_required=False)
+@api_method(http_method="HEAD", user_required=False, logger=logger)
 def public_meta(request, v_public):
     # Normal Response Codes: 204
     # Error Response Codes: internalServerError (500),
@@ -78,10 +74,10 @@ def public_meta(request, v_public):
             request.user_uniq, v_account,
             v_container, v_object)
     except:
-        raise ItemNotFound('Object does not exist')
+        raise faults.ItemNotFound('Object does not exist')
 
     if not public:
-        raise ItemNotFound('Object does not exist')
+        raise faults.ItemNotFound('Object does not exist')
     update_manifest_meta(request, v_account, meta)
 
     response = HttpResponse(status=200)
@@ -89,7 +85,7 @@ def public_meta(request, v_public):
     return response
 
 
-@api_method('GET', user_required=False)
+@api_method(http_method="GET", user_required=False, logger=logger)
 def public_read(request, v_public):
     # Normal Response Codes: 200, 206
     # Error Response Codes: internalServerError (500),
@@ -109,17 +105,17 @@ def public_read(request, v_public):
             request.user_uniq, v_account,
             v_container, v_object)
     except:
-        raise ItemNotFound('Object does not exist')
+        raise faults.ItemNotFound('Object does not exist')
 
     if not public:
-        raise ItemNotFound('Object does not exist')
+        raise faults.ItemNotFound('Object does not exist')
     update_manifest_meta(request, v_account, meta)
 
     # Evaluate conditions.
     validate_modification_preconditions(request, meta)
     try:
         validate_matching_preconditions(request, meta)
-    except NotModified:
+    except faults.NotModified:
         response = HttpResponse(status=304)
         response['ETag'] = meta['ETag']
         return response
@@ -134,16 +130,18 @@ def public_read(request, v_public):
                 request.user_uniq, v_account,
                 src_container, prefix=src_name, virtual=False)
         except:
-            raise ItemNotFound('Object does not exist')
+            raise faults.ItemNotFound('Object does not exist')
 
         try:
             for x in objects:
                 s, h = request.backend.get_object_hashmap(request.user_uniq,
-                                                          v_account, src_container, x[0], x[1])
+                                                          v_account,
+                                                          src_container,
+                                                          x[0], x[1])
                 sizes.append(s)
                 hashmaps.append(h)
         except:
-            raise ItemNotFound('Object does not exist')
+            raise faults.ItemNotFound('Object does not exist')
     else:
         try:
             s, h = request.backend.get_object_hashmap(
@@ -152,7 +150,7 @@ def public_read(request, v_public):
             sizes.append(s)
             hashmaps.append(h)
         except:
-            raise ItemNotFound('Object does not exist')
+            raise faults.ItemNotFound('Object does not exist')
 
     if 'Content-Disposition' not in meta:
         name = v_object.rstrip('/').split('/')[-1]
@@ -161,8 +159,3 @@ def public_read(request, v_public):
         meta['Content-Disposition'] = 'attachment; filename=%s' % (name,)
 
     return object_data_response(request, sizes, hashmaps, meta, True)
-
-
-@api_method(user_required=False)
-def method_not_allowed(request, **v_args):
-    raise ItemNotFound('Object does not exist')

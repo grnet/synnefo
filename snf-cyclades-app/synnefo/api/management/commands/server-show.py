@@ -35,7 +35,7 @@ from django.core.management.base import CommandError
 from synnefo.webproject.management.commands import SynnefoCommand
 from synnefo.management.common import (format_vm_state, get_vm,
                                        get_image)
-from synnefo.lib.astakos import UserCache
+from snf_django.lib.astakos import UserCache
 from synnefo.settings import (CYCLADES_ASTAKOS_SERVICE_TOKEN as ASTAKOS_TOKEN,
                               ASTAKOS_URL)
 from synnefo.webproject.management import utils

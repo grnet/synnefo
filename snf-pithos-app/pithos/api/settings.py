@@ -3,7 +3,7 @@ from django.conf import settings
 
 AUTHENTICATION_URL = getattr(settings, 'PITHOS_AUTHENTICATION_URL',
                              'https://accounts.example.synnefo.org/im/authenticate/')
-AUTHENTICATION_USERS = getattr(settings, 'PITHOS_AUTHENTICATION_USERS', {})
+ASTAKOS_URL = AUTHENTICATION_URL.replace("im/authenticate/", "")
 
 COOKIE_NAME = getattr(settings, 'PITHOS_ASTAKOS_COOKIE_NAME', '_pithos2_a')
 

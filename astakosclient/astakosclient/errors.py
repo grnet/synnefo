@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright (C) 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -32,33 +32,41 @@
 # or implied, of GRNET S.A.
 
 
-def camelCase(s):
-    return s[0].lower() + s[1:]
-
-
-class Fault(Exception):
-    def __init__(self, message='', details='', name=''):
-        Exception.__init__(self, message, details, name)
+class AstakosClientException(Exception):
+    def __init__(self, message='', details='', status=None):
         self.message = message
         self.details = details
-        self.name = name or camelCase(self.__class__.__name__)
+        if not hasattr(self, 'status'):
+            self.status = status
+        super(AstakosClientException,
+              self).__init__(self.message, self.details, self.status)
 
 
-class BadRequest(Fault):
-    code = 400
+class BadRequest(AstakosClientException):
+    status = 400
 
 
-class Unauthorized(Fault):
-    code = 401
+class Unauthorized(AstakosClientException):
+    status = 401
 
 
-class InternalServerError(Fault):
-    code = 500
+class Forbidden(AstakosClientException):
+    status = 403
 
 
-class Forbidden(Fault):
-    code = 403
+class NotFound(AstakosClientException):
+    status = 404
 
 
-class ItemNotFound(Fault):
-    code = 404
+class NoUserName(AstakosClientException):
+    def __init__(self, uuid):
+        """No display name for the given uuid"""
+        message = "No display name for the given uuid: %s" % uuid
+        super(NoUserName, self).__init__(message)
+
+
+class NoUUID(AstakosClientException):
+    def __init__(self, display_name):
+        """No uuid for the given display name"""
+        message = "No uuid for the given display name: %s" % display_name
+        super(NoUUID, self).__init__(message)

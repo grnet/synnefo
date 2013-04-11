@@ -11,3 +11,4 @@ IPy python-ipy
 kamaki kamaki
 unittest2 python-unittest2
 alembic alembic
+snf-django-lib snf-django-lib

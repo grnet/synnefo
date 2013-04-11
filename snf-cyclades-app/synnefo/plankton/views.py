@@ -43,6 +43,7 @@ from django.http import HttpResponse
 from snf_django.lib import api
 from snf_django.lib.api import faults
 from synnefo.plankton.utils import image_backend
+from synnefo.plankton.backend import split_url
 
 
 FILTERS = ('name', 'container_format', 'disk_format', 'status', 'size_min',
@@ -143,6 +144,10 @@ def add_image(request):
 
     name = params.pop('name')
     location = params.pop('location', None)
+    try:
+        split_url(location)
+    except AssertionError:
+        raise faults.BadRequest("Invalid location '%s'" % location)
 
     if location:
         with image_backend(request.user_uniq) as backend:

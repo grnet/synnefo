@@ -97,6 +97,7 @@ def create_url(account, container, name):
 def split_url(url):
     """Returns (accout, container, object) from a url string"""
     t = url.split('/', 4)
+    assert t[0] == "pithos:", "Invalid url"
     assert len(t) == 5, "Invalid url"
     return t[2:5]
 

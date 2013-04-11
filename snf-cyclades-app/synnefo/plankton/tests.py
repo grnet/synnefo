@@ -213,15 +213,16 @@ class PlanktonTest(BaseAPITest):
 
     @assert_backend_closed
     def test_add_image(self, backend):
+        location = "pithos://uuid/container/name/"
         response = self.post("/plankton/images/",
                              json.dumps({}),
                              'json',
                              HTTP_X_IMAGE_META_NAME='dummy_name',
                              HTTP_X_IMAGE_META_OWNER='dummy_owner',
-                             HTTP_X_IMAGE_META_LOCATION='dummy_location')
+                             HTTP_X_IMAGE_META_LOCATION=location)
         self.assertSuccess(response)
         backend.return_value.register.assert_called_once_with('dummy_name',
-                                                              'dummy_location',
+                                                              location,
                                                       {'owner': 'dummy_owner'})
 
     @assert_backend_closed

@@ -74,7 +74,8 @@ INSTALL_REQUIRES = [
     'recaptcha-client>=1.0.5',
     'django-ratelimit==0.1',
     'requests',
-    'inflect'
+    'inflect',
+    'snf-django-lib',
 ]
 
 EXTRAS_REQUIRES = {

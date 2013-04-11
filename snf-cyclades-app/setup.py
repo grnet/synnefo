@@ -75,7 +75,8 @@ INSTALL_REQUIRES = [
     'ipaddr',
     'setproctitle>=1.0.1',
     'bitarray>=0.8',
-    'objpool>=0.2'
+    'objpool>=0.2',
+    'snf-django-lib'
 ]
 
 EXTRAS_REQUIRES = {

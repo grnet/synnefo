@@ -131,7 +131,7 @@ def assert_backend_closed(func):
 class PlanktonTest(BaseAPITest):
     @assert_backend_closed
     def test_list_images(self, backend):
-        backend.return_value.list.return_value =\
+        backend.return_value.list_images.return_value =\
                 deepcopy(DummyImages).values()
         response = self.get("/plankton/images/")
         self.assertSuccess(response)
@@ -143,12 +143,12 @@ class PlanktonTest(BaseAPITest):
                                 if key in LIST_FIELDS])
             self.assertEqual(api_image, pithos_image)
         backend.return_value\
-                .list.assert_called_once_with({}, {'sort_key': 'created_at',
+                .list_images.assert_called_once_with({}, {'sort_key': 'created_at',
                                                    'sort_dir': 'desc'})
 
     @assert_backend_closed
     def test_list_images_detail(self, backend):
-        backend.return_value.list.return_value =\
+        backend.return_value.list_images.return_value =\
                 deepcopy(DummyImages).values()
         response = self.get("/plankton/images/detail")
         self.assertSuccess(response)
@@ -160,19 +160,19 @@ class PlanktonTest(BaseAPITest):
                                 if key in DETAIL_FIELDS])
             self.assertEqual(api_image, pithos_image)
         backend.return_value\
-                .list.assert_called_once_with({}, {'sort_key': 'created_at',
+                .list_images.assert_called_once_with({}, {'sort_key': 'created_at',
                                                    'sort_dir': 'desc'})
 
     @assert_backend_closed
     def test_list_images_filters(self, backend):
-        backend.return_value.list.return_value =\
+        backend.return_value.list_images.return_value =\
                 deepcopy(DummyImages).values()
         response = self.get("/plankton/images/?size_max=1000")
         self.assertSuccess(response)
         backend.return_value\
-                .list.assert_called_once_with({'size_max': 1000},
-                                              {'sort_key': 'created_at',
-                                               'sort_dir': 'desc'})
+                .list_images.assert_called_once_with({'size_max': 1000},
+                                                     {'sort_key': 'created_at',
+                                                     'sort_dir': 'desc'})
 
     @assert_backend_closed
     def test_list_images_filters_error_1(self, backend):
@@ -191,8 +191,8 @@ class PlanktonTest(BaseAPITest):
                             json.dumps({}),
                             'json', HTTP_X_IMAGE_META_OWNER='user2')
         self.assertSuccess(response)
-        backend.return_value.update.assert_called_once_with(db_image['id'],
-                                                            {"owner": "user2"})
+        backend.return_value.update_metadata.assert_called_once_with(db_image['id'],
+                                                                     {"owner": "user2"})
 
     @assert_backend_closed
     def test_add_image_member(self, backend):

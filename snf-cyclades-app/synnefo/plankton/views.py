@@ -291,7 +291,7 @@ def list_images(request, detail=False):
             raise faults.BadRequest("Malformed request.")
 
     with image_backend(request.user_uniq) as backend:
-        images = backend.list(filters, params)
+        images = backend.list_images(filters, params)
 
     # Remove keys that should not be returned
     fields = DETAIL_FIELDS if detail else LIST_FIELDS
@@ -320,7 +320,7 @@ def list_shared_images(request, member):
 
     images = []
     with image_backend(request.user_uniq) as backend:
-        for image in backend.iter_shared(member=member):
+        for image in backend.list_shared_images(member=member):
             image_id = image['id']
             images.append({'image_id': image_id, 'can_share': False})
 

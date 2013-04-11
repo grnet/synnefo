@@ -58,10 +58,8 @@ from time import gmtime, strftime
 from functools import wraps
 from operator import itemgetter
 
-
 from django.conf import settings
 from pithos.backends.base import NotAllowedError, VersionNotExists
-import snf_django.lib.astakos as lib_astakos
 
 logger = logging.getLogger(__name__)
 
@@ -72,34 +70,6 @@ PROPERTY_PREFIX = 'property:'
 
 PLANKTON_META = ('container_format', 'disk_format', 'name', 'properties',
                  'status')
-
-TRANSLATE_UUIDS = getattr(settings, 'TRANSLATE_UUIDS', False)
-
-
-def get_displaynames(names):
-    try:
-        auth_url = settings.ASTAKOS_URL
-        url = auth_url.replace('im/authenticate', 'service/api/user_catalogs')
-        token = settings.CYCLADES_ASTAKOS_SERVICE_TOKEN
-        uuids = lib_astakos.get_displaynames(token, names, url=url)
-    except Exception:
-        return {}
-
-    return uuids
-
-
-def get_location(account, container, object):
-    assert '/' not in account, "Invalid account"
-    assert '/' not in container, "Invalid container"
-    return 'pithos://%s/%s/%s' % (account, container, object)
-
-
-def split_location(location):
-    """Returns (accout, container, object) from a location string"""
-    t = location.split('/', 4)
-    assert len(t) == 5, "Invalid location"
-    return t[2:5]
-
 
 from pithos.backends.util import PithosBackendPool
 POOL_SIZE = 8
@@ -183,58 +153,24 @@ class ImageBackend(object):
         account, container, name = split_url(image_url)
         versions = self.backend.list_versions(self.user, account, container,
                                               name)
-
         if not versions:
             raise Exception("Image without versions %s" % image_url)
-
-        image = {}
-
         try:
             meta = self._get_meta(image_url)
-            image["deleted_at"] = ""
+            meta["deleted"] = ""
         except NameError:
             # Object was deleted, use the latest version
             version, timestamp = versions[-1]
             meta = self._get_meta(image_url, version)
-            image["deleted_at"] = format_timestamp(timestamp)
+            meta["deleted"] = timestamp
+
+        meta["created"] = versions[0][1]
 
         if PLANKTON_PREFIX + 'name' not in meta:
             raise ImageNotFound("'%s' is not a Plankton image" % image_url)
 
-        image["id"] = meta["uuid"]
-        image["location"] = image_url
-        image["checksum"] = meta["hash"]
-        image["created_at"] = format_timestamp(versions[0][1])
-        image["updated_at"] = format_timestamp(meta["modified"])
-        image["size"] = meta["bytes"]
-        image["store"] = "pithos"
-
-        if TRANSLATE_UUIDS:
-            displaynames = get_displaynames([account])
-            if account in displaynames:
-                display_account = displaynames[account]
-            else:
-                display_account = 'unknown'
-            image['owner'] = display_account
-        else:
-            image['owner'] = account
-
-        # Permissions
         permissions = self._get_permissions(image_url)
-        image["is_public"] = "*" in permissions.get('read', [])
-
-        for key, val in meta.items():
-            # Get plankton properties
-            if key.startswith(PLANKTON_PREFIX):
-                # Remove plankton prefix
-                key = key.replace(PLANKTON_PREFIX, "")
-                # Keep only those in plankton meta
-                if key in PLANKTON_META:
-                    if key == "properties":
-                        val = json.loads(val)
-                    image[key] = val
-
-        return image
+        return image_to_dict(image_url, meta, permissions)
 
     def _get_meta(self, image_url, version=None):
         """Get object's metadata."""
@@ -430,75 +366,51 @@ class ImageBackend(object):
         self._update_permissions(image_url, permissions)
         return self._get_image(image_url)
 
-    # TODO: Fix all these
-    def _iter(self, public=False, filters=None, shared_from=None):
+    def _list_images(self, user=None, filters=None, params=None):
         filters = filters or {}
 
-        # Fix keys
-        keys = [PLANKTON_PREFIX + 'name']
-        size_range = (None, None)
-        for key, val in filters.items():
-            if key == 'size_min':
-                size_range = (val, size_range[1])
-            elif key == 'size_max':
-                size_range = (size_range[0], val)
-            else:
-                keys.append('%s = %s' % (PLANKTON_PREFIX + key, val))
+        # TODO: Use filters
+        # # Fix keys
+        # keys = [PLANKTON_PREFIX + 'name']
+        # size_range = (None, None)
+        # for key, val in filters.items():
+        #     if key == 'size_min':
+        #         size_range = (val, size_range[1])
+        #     elif key == 'size_max':
+        #         size_range = (size_range[0], val)
+        #     else:
+        #         keys.append('%s = %s' % (PLANKTON_PREFIX + key, val))
+        _images = self.backend.get_domain_objects(domain=PLANKTON_DOMAIN,
+                                                  user=user)
 
-        backend = self.backend
-        if shared_from:
-            # To get shared images, we connect as shared_from member and
-            # get the list shared by us
-            user = shared_from
-            accounts = [self.user]
-        else:
-            user = None if public else self.user
-            accounts = backend.list_accounts(user)
+        images = []
+        for (location, meta, permissions) in _images:
+            image_url = "pithos://" + location
+            meta["modified"] = meta["version_timestamp"]
+            # TODO: Create metadata when registering an Image
+            meta["created"] = meta["version_timestamp"]
+            images.append(image_to_dict(image_url, meta, permissions))
 
-        for account in accounts:
-            for container in backend.list_containers(user, account,
-                                                     shared=True):
-                for path, _ in backend.list_objects(user, account, container,
-                                                    domain=PLANKTON_DOMAIN,
-                                                    keys=keys, shared=True,
-                                                    size_range=size_range):
-                    location = get_location(account, container, path)
-                    image = self._get_image(location)
-                    if image:
-                        yield image
-
-    @handle_backend_exceptions
-    def iter(self, filters=None):
-        """Iter over all images available to the user"""
-        return self._iter(filters=filters)
-
-    @handle_backend_exceptions
-    def iter_public(self, filters=None):
-        """Iter over public images"""
-        return self._iter(public=True, filters=filters)
-
-    @handle_backend_exceptions
-    def iter_shared(self, filters=None, member=None):
-        """Iter over images shared to member"""
-        return self._iter(filters=filters, shared_from=member)
-
-    @handle_backend_exceptions
-    def list(self, filters=None, params={}):
-        """Return all images available to the user"""
-        images = list(self.iter(filters))
+        if params is None:
+            params = {}
         key = itemgetter(params.get('sort_key', 'created_at'))
         reverse = params.get('sort_dir', 'desc') == 'desc'
         images.sort(key=key, reverse=reverse)
         return images
 
-    @handle_backend_exceptions
-    def list_public(self, filters, params={}):
-        """Return public images"""
-        images = list(self.iter_public(filters))
-        key = itemgetter(params.get('sort_key', 'created_at'))
-        reverse = params.get('sort_dir', 'desc') == 'desc'
-        images.sort(key=key, reverse=reverse)
-        return images
+    def list_images(self, filters=None, params=None):
+        return self._list_images(user=self.user, filters=filters,
+                                 params=params)
+
+    def list_shared_images(self, member, filters=None, params=None):
+        images = self._list_images(user=self.user, filters=filters,
+                                   params=params)
+        is_shared = lambda img: not img["is_public"] and img["owner"] == member
+        return filter(is_shared, images)
+
+    def list_public_images(self, filters=None, params=None):
+        images = self._list_images(user=None, filters=filters, params=params)
+        return filter(lambda img: img["is_public"], images)
 
 
 class ImageBackendError(Exception):
@@ -511,3 +423,39 @@ class ImageNotFound(ImageBackendError):
 
 class Forbidden(ImageBackendError):
     pass
+
+
+def image_to_dict(image_url, meta, permissions):
+    """Render an image to a dictionary"""
+    account, container, name = split_url(image_url)
+
+    image = {}
+    if PLANKTON_PREFIX + 'name' not in meta:
+        raise ImageNotFound("'%s' is not a Plankton image" % image_url)
+
+    image["id"] = meta["uuid"]
+    image["location"] = image_url
+    image["checksum"] = meta["hash"]
+    image["created_at"] = format_timestamp(meta["created"])
+    deleted = meta.get("deleted", None)
+    image["deleted_at"] = format_timestamp(deleted) if deleted else ""
+    image["updated_at"] = format_timestamp(meta["modified"])
+    image["size"] = meta["bytes"]
+    image["store"] = "pithos"
+    image['owner'] = account
+
+    # Permissions
+    image["is_public"] = "*" in permissions.get('read', [])
+
+    for key, val in meta.items():
+        # Get plankton properties
+        if key.startswith(PLANKTON_PREFIX):
+            # Remove plankton prefix
+            key = key.replace(PLANKTON_PREFIX, "")
+            # Keep only those in plankton meta
+            if key in PLANKTON_META:
+                if key == "properties":
+                    val = json.loads(val)
+                image[key] = val
+
+    return image

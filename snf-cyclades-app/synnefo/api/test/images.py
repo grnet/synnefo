@@ -66,7 +66,7 @@ class ImageAPITest(BaseAPITest):
         images = [{'id': 1, 'name': 'image-1'},
                   {'id': 2, 'name': 'image-2'},
                   {'id': 3, 'name': 'image-3'}]
-        mimage().list.return_value = images
+        mimage().list_images.return_value = images
         response = self.get('/api/v1.1/images/', 'user')
         self.assertSuccess(response)
         api_images = json.loads(response.content)['images']['values']
@@ -115,7 +115,7 @@ class ImageAPITest(BaseAPITest):
                    'progress': 100,
                    'created': '2012-11-26T11:52:54+00:00',
                    'updated': '2012-12-26T11:52:54+00:00'}]
-        mimage().list.return_value = images
+        mimage().list_images.return_value = images
         response = self.get('/api/v1.1/images/detail', 'user')
         self.assertSuccess(response)
         api_images = json.loads(response.content)['images']['values']
@@ -146,7 +146,7 @@ class ImageAPITest(BaseAPITest):
                    'updated_at': new_time.isoformat(),
                    'deleted_at': new_time.isoformat(),
                    'properties': ''}]
-        mimage().iter.return_value = images
+        mimage().list_images.return_value = images
         response =\
             self.get('/api/v1.1/images/detail?changes-since=%sUTC' % new_time)
         self.assertSuccess(response)
@@ -235,7 +235,7 @@ class ImageMetadataAPITest(BaseAPITest):
         backend.return_value.get_image.return_value = self.image
         response = self.delete('/api/v1.1/images/42/meta/foo', 'user')
         self.assertEqual(response.status_code, 204)
-        backend.return_value.update.assert_called_once_with('42', {'properties': {'foo2':
+        backend.return_value.update_metadata.assert_called_once_with('42', {'properties': {'foo2':
                                                     'bar2'}})
 
     @assert_backend_closed
@@ -245,7 +245,7 @@ class ImageMetadataAPITest(BaseAPITest):
         response = self.put('/api/v1.1/images/42/meta/foo3', 'user',
                             json.dumps(request), 'json')
         self.assertEqual(response.status_code, 201)
-        backend.return_value.update.assert_called_once_with('42',
+        backend.return_value.update_metadata.assert_called_once_with('42',
                 {'properties':
                     {'foo': 'bar', 'foo2': 'bar2', 'foo3': 'bar3'}})
 
@@ -288,7 +288,7 @@ class ImageMetadataAPITest(BaseAPITest):
         response = self.post('/api/v1.1/images/42/meta', 'user',
                              json.dumps(request), 'json')
         self.assertEqual(response.status_code, 201)
-        backend.return_value.update.assert_called_once_with('42',
+        backend.return_value.update_metadata.assert_called_once_with('42',
                 {'properties':
                     {'foo': 'bar_new', 'foo2': 'bar2', 'foo4': 'bar4'}
                 })

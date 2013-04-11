@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 from logging import getLogger
+from itertools import ifilter
 
 from dateutil.parser import parse as date_parse
 
@@ -120,16 +121,12 @@ def list_images(request, detail=False):
     log.debug('list_images detail=%s', detail)
     since = utils.isoparse(request.GET.get('changes-since'))
     with image_backend(request.user_uniq) as backend:
+        images = backend.list_images()
         if since:
-            images = []
-            for image in backend.iter():
-                updated = date_parse(image['updated_at'])
-                if updated >= since:
-                    images.append(image)
+            updated_since = lambda img: date_parse(img["updated_at"]) >= since
+            images = ifilter(updated_since, images)
             if not images:
                 return HttpResponse(status=304)
-        else:
-            images = backend.list()
 
     images = sorted(images, key=lambda x: x['id'])
     reply = [image_to_dict(image, detail) for image in images]

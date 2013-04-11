@@ -206,13 +206,18 @@ class Node(DBWorker):
 
         s = self.nodes.select().where(and_(self.nodes.c.node == ROOTNODE,
                                            self.nodes.c.parent == ROOTNODE))
-        rp = self.conn.execute(s)
-        r = rp.fetchone()
-        rp.close()
-        if not r:
-            s = self.nodes.insert(
-            ).values(node=ROOTNODE, parent=ROOTNODE, path='')
-            self.conn.execute(s)
+        wrapper = self.wrapper
+        wrapper.execute()
+        try:
+            rp = self.conn.execute(s)
+            r = rp.fetchone()
+            rp.close()
+            if not r:
+                s = self.nodes.insert(
+                ).values(node=ROOTNODE, parent=ROOTNODE, path='')
+                self.conn.execute(s)
+        finally:
+            wrapper.commit()
 
     def node_create(self, parent, path):
         """Create a new node from the given properties.

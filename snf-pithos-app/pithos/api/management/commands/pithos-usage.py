@@ -89,39 +89,43 @@ def _compute_statistics(nodes):
         s = s.group_by(table['versions'].c.cluster)
         s = s.where(table['nodes'].c.node == table['versions'].c.node)
         s = s.where(table['nodes'].c.node.in_(select_descendants))
+        s = s.where(table['versions'].c.cluster == CLUSTER_NORMAL)
         d2 = dict(conn.execute(s).fetchall())
 
-        for cluster in clusters:
-            try:
-                size = d2[cluster]
-            except KeyError:
-                size = 0
-            append(Statistics(
-                node=node,
-                path=path,
-                size=size,
-                cluster=cluster))
+        try:
+            size = d2[CLUSTER_NORMAL]
+        except KeyError:
+            size = 0
+        append(Statistics(
+            node=node,
+            path=path,
+            size=size,
+            cluster=CLUSTER_NORMAL))
     return statistics
 
+def _verify_statistics(item):
+    """Verify statistics"""
+    s = select([table['statistics'].c.size])
+    s = s.where(table['statistics'].c.node == item.node)
+    s = s.where(table['statistics'].c.cluster == item.cluster)
+    db_item = conn.execute(s).fetchone()
+    if not db_item:
+        return
+    try:
+        assert item.size == db_item.size, \
+                '%d[%s][%d], size: %d != %d' % (
+                        item.node, item.path, item.cluster,
+                        item.size, db_item.size)
+    except AssertionError, e:
+        print e
 
-def _get_verified_usage(statistics):
+def _prepare_reset_holding(statistics, verify=False):
     """Verify statistics and set quotaholder user usage"""
     reset_holding = []
     append = reset_holding.append
     for item in statistics:
-        s = select([table['statistics'].c.size])
-        s = s.where(table['statistics'].c.node == item.node)
-        s = s.where(table['statistics'].c.cluster == item.cluster)
-        db_item = conn.execute(s).fetchone()
-        if not db_item:
-            continue
-        try:
-            assert item.size == db_item.size, \
-                    '%d[%s][%d], size: %d != %d' % (
-                            item.node, item.path, item.cluster,
-                            item.size, db_item.size)
-        except AssertionError, e:
-            print e
+        if verify:
+            _verify_statistics(item)
         if item.cluster == CLUSTER_NORMAL:
             append(ResetHoldingPayload(
                     entity=item.path,
@@ -148,6 +152,12 @@ class Command(NoArgsCommand):
                     action="store_true",
                     default=False,
                     help="Reset usage for all or specified users"),
+        make_option('--verify',
+                    dest='verify',
+                    action="store_true",
+                    default=False,
+                    help=("Verify statistics consistency for all "
+                          "or specified users")),
         make_option('--user',
                     dest='users',
                     action='append',
@@ -162,7 +172,9 @@ class Command(NoArgsCommand):
                 if not user_nodes:
                     raise CommandError('No users found.')
                 statistics = _compute_statistics(user_nodes)
-                reset_holding = _get_verified_usage(statistics)
+                reset_holding = _prepare_reset_holding(
+                        statistics, verify=options['verify']
+                )
                 print '\n'.join([str(i) for i in reset_holding])
 
             if options['reset']:

@@ -142,10 +142,6 @@ class Service(models.Model):
             self.resource_set.create(**s)
 
 
-class ResourceMetadata(models.Model):
-    key = models.CharField(_('Name'), max_length=255, unique=True, db_index=True)
-    value = models.CharField(_('Value'), max_length=255)
-
 _presentation_data = {}
 def get_presentation(resource):
     global _presentation_data
@@ -157,19 +153,15 @@ def get_presentation(resource):
     return presentation
 
 class Resource(models.Model):
-    name = models.CharField(_('Name'), max_length=255)
-    meta = models.ManyToManyField(ResourceMetadata)
+    name = models.CharField(_('Name'), max_length=255, unique=True)
     service = models.ForeignKey(Service)
     desc = models.TextField(_('Description'), null=True)
     unit = models.CharField(_('Name'), null=True, max_length=255)
     group = models.CharField(_('Group'), null=True, max_length=255)
     uplimit = intDecimalField(default=0)
 
-    class Meta:
-        unique_together = ("service", "name")
-
     def __str__(self):
-        return '%s%s%s' % (self.service, RESOURCE_SEPARATOR, self.name)
+        return self.name
 
     def full_name(self):
         return str(self)

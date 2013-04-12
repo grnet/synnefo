@@ -49,6 +49,12 @@ class BadValue(AstakosClientException):
         super(BadValue, self).__init__(message, details)
 
 
+class InvalidResponse(AstakosClientException):
+    def __init__(self, message, details):
+        """Return simplejson parse Exception as AstakosClient one"""
+        super(InvalidResponse, self).__init__(message, details)
+
+
 class BadRequest(AstakosClientException):
     status = 400
 

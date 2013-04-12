@@ -41,7 +41,7 @@ import simplejson
 from astakosclient.utils import retry, scheme_to_class
 from astakosclient.errors import \
     AstakosClientException, Unauthorized, BadRequest, NotFound, Forbidden, \
-    NoUserName, NoUUID, BadValue, QuotaLimit
+    NoUserName, NoUUID, BadValue, QuotaLimit, InvalidResponse
 
 
 # --------------------------------------------------------------------
@@ -163,7 +163,14 @@ class AstakosClient():
             raise NotFound(message, data)
         elif status < 200 or status >= 300:
             raise AstakosClientException(message, data, status)
-        return simplejson.loads(unicode(data))
+
+        try:
+            if data:
+                return simplejson.loads(unicode(data))
+            else:
+                return ""
+        except Exception as err:
+            raise InvalidResponse(str(err), data)
 
     # ------------------------
     # GET /im/authenticate

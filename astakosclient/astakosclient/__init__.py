@@ -343,7 +343,7 @@ class AstakosClient():
         """Issue a commission
 
         Keyword arguments:
-        token   -- user's token (string)
+        token   -- service's token (string)
         request -- commision request (dict)
 
         In case of success return commission's id (int).
@@ -375,7 +375,7 @@ class AstakosClient():
         """Get Pending Commissions
 
         Keyword arguments:
-        token   -- user's token (string)
+        token   -- service's token (string)
 
         In case of success return a list of pending commissions' ids
         (list of integers)
@@ -389,7 +389,7 @@ class AstakosClient():
         """Get Description of a Commission
 
         Keyword arguments:
-        token   -- user's token (string)
+        token   -- service's token (string)
         serial  -- commission's id (int)
 
         In case of success return a dict of dicts containing
@@ -410,7 +410,7 @@ class AstakosClient():
         """Perform a commission action
 
         Keyword arguments:
-        token   -- user's token (string)
+        token   -- service's token (string)
         serial  -- commission's id (int)
         action  -- action to perform, currently accept/reject (string)
 

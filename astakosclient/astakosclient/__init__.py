@@ -38,7 +38,7 @@ import hashlib
 from copy import copy
 
 import simplejson
-from astakosclient.utils import retry, scheme_to_class
+from astakosclient.utils import retry, scheme_to_class, parse_request
 from astakosclient.errors import \
     AstakosClientException, Unauthorized, BadRequest, NotFound, Forbidden, \
     NoUserName, NoUUID, BadValue, QuotaLimit, InvalidResponse
@@ -170,6 +170,8 @@ class AstakosClient():
             else:
                 return ""
         except Exception as err:
+            self.logger.error("Cannot parse response \"%s\" with simplejson: %s"
+                              % (data, str(err)))
             raise InvalidResponse(str(err), data)
 
     # ------------------------
@@ -196,7 +198,7 @@ class AstakosClient():
     #   with {'uuids': uuids}
     def _uuid_catalog(self, token, uuids, req_path):
         req_headers = {'content-type': 'application/json'}
-        req_body = simplejson.dumps({'uuids': uuids})
+        req_body = parse_request({'uuids': uuids}, self.logger)
         data = self._call_astakos(
             token, req_path, req_headers, req_body, "POST")
         if "uuid_catalog" in data:
@@ -255,7 +257,7 @@ class AstakosClient():
     #   with {'displaynames': display_names}
     def _displayname_catalog(self, token, display_names, req_path):
         req_headers = {'content-type': 'application/json'}
-        req_body = simplejson.dumps({'displaynames': display_names})
+        req_body = parse_request({'displaynames': display_names}, self.logger)
         data = self._call_astakos(
             token, req_path, req_headers, req_body, "POST")
         if "displayname_catalog" in data:
@@ -349,7 +351,7 @@ class AstakosClient():
 
         """
         req_headers = {'content-type': 'application/json'}
-        req_body = simplejson.dumps(request)
+        req_body = parse_request(request, self.logger)
         try:
             response = self._call_astakos(token, "/astakos/api/commissions",
                                           req_headers, req_body, "POST")
@@ -426,7 +428,7 @@ class AstakosClient():
 
         path = "/astakos/api/commissions/" + str(serial) + "/action"
         req_headers = {'content-type': 'application/json'}
-        req_body = simplejson.dumps({str(action): ""})
+        req_body = parse_request({str(action): ""}, self.logger)
         self._call_astakos(token, path, req_headers, req_body, "POST")
 
     def issue_commission_accept(self, token, serial):

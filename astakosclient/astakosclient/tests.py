@@ -1009,6 +1009,21 @@ class TestCommissions(unittest.TestCase):
         except Exception as err:
             self.fail("Shouldn't raise Exception %s" % err)
 
+    # ----------------------------------
+    def test_accept_commission_not_found(self):
+        """Test function call of accept_commission with wrong serial"""
+        global token_1
+        _mock_request([_request_ok])
+        try:
+            client = AstakosClient("https://example.com")
+            client.reject_commission(token_1, 20)
+        except NotFound:
+            pass
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
+        else:
+            self.fail("Should have raised NotFound")
+
 
 # ----------------------------
 # Run tests

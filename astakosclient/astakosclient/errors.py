@@ -65,6 +65,10 @@ class NotFound(AstakosClientException):
     status = 404
 
 
+class QuotaLimit(AstakosClientException):
+    status = 413
+
+
 class NoUserName(AstakosClientException):
     def __init__(self, uuid):
         """No display name for the given uuid"""

@@ -41,7 +41,7 @@ import simplejson
 from astakosclient.utils import retry, scheme_to_class
 from astakosclient.errors import \
     AstakosClientException, Unauthorized, BadRequest, NotFound, Forbidden, \
-    NoUserName, NoUUID, BadValue
+    NoUserName, NoUUID, BadValue, QuotaLimit
 
 
 # --------------------------------------------------------------------
@@ -317,8 +317,48 @@ class AstakosClient():
     # ----------------------------------
     # GET "/astakos/api/quotas"
     def get_quotas(self, token):
-        """Return a dict of dicts with user's current quotas"""
+        """Get user's quotas
+
+        Keyword arguments:
+        token   -- user's token (string)
+
+        In case of success return a dict of dicts with user's current quotas.
+        Otherwise raise an AstakosClientException
+
+        """
         return self._call_astakos(token, "/astakos/api/quotas")
+
+    # ----------------------------------
+    # POST "/astakos/api/commisions"
+    def issue_commission(self, token, request):
+        """Issue a commission
+
+        Keyword arguments:
+        token   -- user's token (string)
+        request -- commision request (dict)
+
+        In case of success return commission's id (int).
+        Otherwise raise an AstakosClientException.
+
+        """
+        req_headers = {'content-type': 'application/json'}
+        req_body = simplejson.dumps(request)
+        try:
+            response = self._call_astakos(token, "/astakos/api/commissions",
+                                          req_headers, req_body, "POST")
+        except AstakosClientException as err:
+            if err.status == 413:
+                raise QuotaLimit(err.message, err.details)
+            else:
+                raise
+
+        if "serial" in response:
+            return response['serial']
+        else:
+            m = "issue_commission_core request returned %s. No serial found" \
+                % response
+            self.logger.error(m)
+            raise AstakosClientException(m)
 
 
 # --------------------------------------------------------------------

@@ -218,25 +218,31 @@ def _req_quotas(conn, method, url, **kwargs):
 
 def _req_commission(conn, method, url, **kwargs):
     """Perform a commission for user_1"""
-    global token_1, commission_successful_response, commission_failure_response
+    global token_1, pending_commissions, \
+        commission_successful_response, commission_failure_response
 
     # Check input
     if conn.__class__.__name__ != "HTTPSConnection":
         return _request_status_302(conn, method, url, **kwargs)
-    if method != "POST":
-        return _request_status_400(conn, method, url, **kwargs)
     token = kwargs['headers'].get('X-Auth-Token')
     if token != token_1:
         return _request_status_401(conn, method, url, **kwargs)
-    if 'body' not in kwargs:
-        return _request_status_400(conn, method, url, **kwargs)
 
-    # Check if we have enough resources to give
-    body = simplejson.loads(unicode(kwargs['body']))
-    if body['provisions'][1]['quantity'] > 420000000:
-        return ("", simplejson.dumps(commission_failure_response), 413)
+    if method == "POST":
+        if 'body' not in kwargs:
+            return _request_status_400(conn, method, url, **kwargs)
+        # Issue Commission
+        body = simplejson.loads(unicode(kwargs['body']))
+        # Check if we have enough resources to give
+        if body['provisions'][1]['quantity'] > 420000000:
+            return ("", simplejson.dumps(commission_failure_response), 413)
+        else:
+            return ("", simplejson.dumps(commission_successful_response), 200)
+    elif method == "GET":
+        # Return pending commission
+        return ("", simplejson.dumps(pending_commissions), 200)
     else:
-        return ("", simplejson.dumps(commission_successful_response), 200)
+        return _request_status_400(conn, method, url, **kwargs)
 
 
 # ----------------------------
@@ -383,6 +389,8 @@ commission_failure_response = {
                 "quantity": 520000000},
             "name": "NoCapacityError",
             "available": 420000000}}}
+
+pending_commissions = [100, 200]
 
 
 # --------------------------------------------------------------------
@@ -843,7 +851,7 @@ class TestCommissions(unittest.TestCase):
     """Test cases for function issue_commision"""
 
     # ----------------------------------
-    def test_issue_commission_core(self):
+    def test_issue_commission(self):
         """Test function call of issue_commission_core"""
         global token_1, commission_request, commission_successful_reqsponse
         _mock_request([_request_ok])
@@ -855,7 +863,7 @@ class TestCommissions(unittest.TestCase):
         self.assertEqual(response, commission_successful_response['serial'])
 
     # ----------------------------------
-    def test_issue_commission_core_quota_limit(self):
+    def test_issue_commission_quota_limit(self):
         """Test function call of issue_commission_core with limit exceeded"""
         global token_1, commission_request, commission_failure_response
         _mock_request([_request_ok])
@@ -870,6 +878,18 @@ class TestCommissions(unittest.TestCase):
             self.fail("Shouldn't raise Exception %s" % err)
         else:
             self.fail("Should have raised QuotaLimit Exception")
+
+    # ----------------------------------
+    def test_get_pending_commissions(self):
+        """Test function call of get_pending_commissions"""
+        global token_1, pending_commissions
+        _mock_request([_request_ok])
+        try:
+            client = AstakosClient("https://example.com")
+            response = client.get_pending_commissions(token_1)
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
+        self.assertEqual(response, pending_commissions)
 
 
 # ----------------------------

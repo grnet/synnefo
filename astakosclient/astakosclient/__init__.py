@@ -360,6 +360,20 @@ class AstakosClient():
             self.logger.error(m)
             raise AstakosClientException(m)
 
+    # ----------------------------------
+    # GET "/astakos/api/commissions"
+    def get_pending_commissions(self, token):
+        """Get Pending Commissions
+
+        Keyword arguments:
+        token   -- user's token (string)
+
+        In case of success return a list of pending commissions' ids
+        (list of integers)
+
+        """
+        return self._call_astakos(token, "/astakos/api/commissions")
+
 
 # --------------------------------------------------------------------
 # Private functions

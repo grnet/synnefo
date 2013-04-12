@@ -338,7 +338,7 @@ def create_server(serials, request):
         # create this NIC, because if the hooks never run (e.g. building error)
         # the VM's public IP address will never be released!
         NetworkInterface.objects.create(machine=vm, network=network, index=0,
-                                        ipv4=address, state="Buidling")
+                                        ipv4=address, state="BUILDING")
 
         log.info("Created entry in DB for VM '%s'", vm)
 

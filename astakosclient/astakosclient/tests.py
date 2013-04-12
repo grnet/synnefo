@@ -239,8 +239,16 @@ def _req_commission(conn, method, url, **kwargs):
         else:
             return ("", simplejson.dumps(commission_successful_response), 200)
     elif method == "GET":
-        # Return pending commission
-        return ("", simplejson.dumps(pending_commissions), 200)
+        if url == "/astakos/api/commissions":
+            # Return pending commission
+            return ("", simplejson.dumps(pending_commissions), 200)
+        else:
+            # Return commissions's description
+            serial = url[25:]
+            if serial == str(57):
+                return ("", simplejson.dumps(commission_description), 200)
+            else:
+                return _request_status_404(conn, method, url, **kwargs)
     else:
         return _request_status_400(conn, method, url, **kwargs)
 
@@ -391,6 +399,23 @@ commission_failure_response = {
             "available": 420000000}}}
 
 pending_commissions = [100, 200]
+
+commission_description = {
+    "serial": 57,
+    "issue_time": "2013-04-08T10:19:15.0373",
+    "provisions": [
+        {
+            "holder": "c02f315b-7d84-45bc-a383-552a3f97d2ad",
+            "source": "system",
+            "resource": "cyclades.vm",
+            "quantity": 1
+        },
+        {
+            "holder": "c02f315b-7d84-45bc-a383-552a3f97d2ad",
+            "source": "system",
+            "resource": "cyclades.ram",
+            "quantity": 536870912
+        }]}
 
 
 # --------------------------------------------------------------------
@@ -890,6 +915,49 @@ class TestCommissions(unittest.TestCase):
         except Exception as err:
             self.fail("Shouldn't raise Exception %s" % err)
         self.assertEqual(response, pending_commissions)
+
+    # ----------------------------------
+    def test_get_commission_info(self):
+        """Test function call of get_commission_info"""
+        global token_1, commission_description
+        _mock_request([_request_ok])
+        try:
+            client = \
+                AstakosClient("https://example.com", use_pool=True, pool_size=2)
+            response = client.get_commission_info(token_1, 57)
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
+        self.assertEqual(response, commission_description)
+
+    # ----------------------------------
+    def test_get_commission_info_not_found(self):
+        """Test function call of get_commission_info with invalid serial"""
+        global token_1
+        _mock_request([_request_ok])
+        try:
+            client = AstakosClient("https://example.com")
+            client.get_commission_info(token_1, "57lala")
+        except NotFound:
+            pass
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
+        else:
+            self.fail("Should have raised NotFound")
+
+    # ----------------------------------
+    def test_get_commission_info_without_serial(self):
+        """Test function call of get_commission_info without serial"""
+        global token_1
+        _mock_request([_request_ok])
+        try:
+            client = AstakosClient("https://example.com")
+            client.get_commission_info(token_1, None)
+        except BadValue:
+            pass
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
+        else:
+            self.fail("Should have raise BadValue")
 
 
 # ----------------------------

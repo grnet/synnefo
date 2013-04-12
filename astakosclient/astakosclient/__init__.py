@@ -374,6 +374,27 @@ class AstakosClient():
         """
         return self._call_astakos(token, "/astakos/api/commissions")
 
+    # ----------------------------------
+    # GET "/astakos/api/commissions/<serial>
+    def get_commission_info(self, token, serial):
+        """Get Description of a Commission
+
+        Keyword arguments:
+        token   -- user's token (string)
+        serial  -- commission's id (int)
+
+        In case of success return a dict of dicts containing
+        informations (details) about the requests commission
+
+        """
+        if not serial:
+            m = "Commissions serial not given"
+            self.logger.error(m)
+            raise BadValue(m)
+
+        path = "/astakos/api/commissions/" + str(serial)
+        return self._call_astakos(token, path)
+
 
 # --------------------------------------------------------------------
 # Private functions

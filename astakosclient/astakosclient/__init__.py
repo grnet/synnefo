@@ -314,6 +314,12 @@ class AstakosClient():
         """Return a dict of dicts with the available resources"""
         return self._call_astakos(None, "/astakos/api/resources")
 
+    # ----------------------------------
+    # GET "/astakos/api/quotas"
+    def get_quotas(self, token):
+        """Return a dict of dicts with user's current quotas"""
+        return self._call_astakos(token, "/astakos/api/quotas")
+
 
 # --------------------------------------------------------------------
 # Private functions

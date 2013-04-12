@@ -114,6 +114,8 @@ def _request_ok(conn, method, url, **kwargs):
         return _req_catalogs(conn, method, url, **kwargs)
     elif url.startswith("/astakos/api/resources"):
         return _req_resources(conn, method, url, **kwargs)
+    elif url.startswith("/astakos/api/quotas"):
+        return _req_quotas(conn, method, url, **kwargs)
     else:
         return _request_status_404(conn, method, url, **kwargs)
 
@@ -127,7 +129,7 @@ def _req_authenticate(conn, method, url, **kwargs):
         return _request_status_302(conn, method, url, **kwargs)
     if method != "GET":
         return _request_status_400(conn, method, url, **kwargs)
-    token = kwargs['headers']['X-Auth-Token']
+    token = kwargs['headers'].get('X-Auth-Token')
     if token == token_1:
         user = dict(user_1)
     elif token == token_2:
@@ -152,7 +154,7 @@ def _req_catalogs(conn, method, url, **kwargs):
         return _request_status_302(conn, method, url, **kwargs)
     if method != "POST":
         return _request_status_400(conn, method, url, **kwargs)
-    token = kwargs['headers']['X-Auth-Token']
+    token = kwargs['headers'].get('X-Auth-Token')
     if token != token_1 and token != token_2:
         return _request_status_401(conn, method, url, **kwargs)
 
@@ -193,6 +195,23 @@ def _req_resources(conn, method, url, **kwargs):
 
     # Return
     return ("", simplejson.dumps(resources), 200)
+
+
+def _req_quotas(conn, method, url, **kwargs):
+    """Return quotas for user_1"""
+    global token_1, quotas
+
+    # Check input
+    if conn.__class__.__name__ != "HTTPSConnection":
+        return _request_status_302(conn, method, url, **kwargs)
+    if method != "GET":
+        return _request_status_400(conn, method, url, **kwargs)
+    token = kwargs['headers'].get('X-Auth-Token')
+    if token != token_1:
+        return _request_status_401(conn, method, url, **kwargs)
+
+    # Return
+    return ("", simplejson.dumps(quotas), 200)
 
 
 # ----------------------------
@@ -287,6 +306,26 @@ resources = {
         "unit": "bytes",
         "description": "Virtual machine memory",
         "service": "cyclades"}}
+
+quotas = {
+    "system": {
+        "cyclades.ram": {
+            "available": 536870912,
+            "limit": 1073741824,
+            "used": 536870912},
+        "cyclades.vm": {
+            "available": 0,
+            "limit": 2,
+            "used": 2}},
+    "project:1": {
+        "cyclades.ram": {
+            "available": 0,
+            "limit": 2147483648,
+            "used": 2147483648},
+        "cyclades.vm": {
+            "available": 3,
+            "limit": 5,
+            "used": 2}}}
 
 
 # --------------------------------------------------------------------
@@ -686,8 +725,8 @@ class TestResources(unittest.TestCase):
     """Test cases for function get_resources"""
 
     # ----------------------------------
-    # Test function call of get_resources
     def test_get_resources(self):
+        """Test function call of get_resources"""
         global resources
         _mock_request([_request_offline, _request_ok])
         try:
@@ -696,6 +735,50 @@ class TestResources(unittest.TestCase):
         except Exception as err:
             self.fail("Shouldn't raise Exception %s" % err)
         self.assertEqual(resources, result)
+
+
+class TestQuotas(unittest.TestCase):
+    """Test cases for function get_quotas"""
+
+    # ----------------------------------
+    def test_get_quotas(self):
+        """Test function call of get_quotas"""
+        global quotas, token_1
+        _mock_request([_request_ok])
+        try:
+            client = AstakosClient("https://example.com")
+            result = client.get_quotas(token_1)
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
+        self.assertEqual(quotas, result)
+
+    # -----------------------------------
+    def test_get_quotas_unauthorized(self):
+        """Test function call of get_quotas with wrong token"""
+        global token_2
+        _mock_request([_request_ok])
+        try:
+            client = AstakosClient("https://example.com")
+            client.get_quotas(token_2)
+        except Unauthorized:
+            pass
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
+        else:
+            self.fail("Should have raised Unauthorized Exception")
+
+    # ----------------------------------
+    def test_get_quotas_without_token(self):
+        _mock_request([_request_ok])
+        try:
+            client = AstakosClient("https://example.com")
+            client.get_quotas(None)
+        except Unauthorized:
+            pass
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
+        else:
+            self.fail("Should have raised Unauthorized Exception")
 
 
 # ----------------------------

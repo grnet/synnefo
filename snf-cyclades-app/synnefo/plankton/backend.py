@@ -192,6 +192,8 @@ class ImageBackend(object):
 
         self.backend.update_object_meta(self.user, account, container, name,
                                         PLANKTON_DOMAIN, prefixed, replace)
+        logger.debug("User '%s' updated image '%s', meta: '%s'", self.user,
+                     image_url, prefixed)
 
     def _get_permissions(self, image_url):
         """Get object's permissions."""
@@ -211,6 +213,8 @@ class ImageBackend(object):
         account, container, name = split_url(image_url)
         self.backend.update_object_permissions(self.user, account, container,
                                                name, permissions)
+        logger.debug("User '%s' updated image '%s', permissions: '%s'",
+                     self.user, image_url, permissions)
 
     @handle_backend_exceptions
     def unregister(self, image_uuid):
@@ -226,6 +230,7 @@ class ImageBackend(object):
         # 'PLANKTON_DOMAIN'
         meta = {}
         self._update_meta(image_url, meta, True)
+        logger.debug("User '%s' deleted image '%s'", self.user, image_url)
 
     @handle_backend_exceptions
     def add_user(self, image_uuid, add_user):
@@ -363,6 +368,8 @@ class ImageBackend(object):
         # Do the actualy update in the Pithos backend
         self._update_meta(image_url, meta)
         self._update_permissions(image_url, permissions)
+        logger.debug("User '%s' created image '%s'('%s')", self.user,
+                     image_url, name)
         return self._get_image(image_url)
 
     def _list_images(self, user=None, filters=None, params=None):

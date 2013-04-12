@@ -402,6 +402,41 @@ class AstakosClient():
         path = "/astakos/api/commissions/" + str(serial)
         return self._call_astakos(token, path)
 
+    # ----------------------------------
+    # POST "astakos/api/commissions/<serial>/action"
+    def issue_commission_action(self, token, serial, action):
+        """Issue a commission action
+
+        Keyword arguments:
+        token   -- user's token (string)
+        serial  -- commission's id (int)
+        action  -- action to perform, currently accept/reject (string)
+
+        In case of success return nothing.
+
+        """
+        if not serial:
+            m = "Commissions serial not given"
+            self.logger.error(m)
+            raise BadValue(m)
+        if not action:
+            m = "Action not given"
+            self.logger.error(m)
+            raise BadValue(m)
+
+        path = "/astakos/api/commissions/" + str(serial) + "/action"
+        req_headers = {'content-type': 'application/json'}
+        req_body = simplejson.dumps({str(action): ""})
+        self._call_astakos(token, path, req_headers, req_body, "POST")
+
+    def issue_commission_accept(self, token, serial):
+        """Issue a commission accept (see issue_commission_action)"""
+        self.issue_commission_action(token, serial, "accept")
+
+    def issue_commission_reject(self, token, serial):
+        """Issue a commission reject (see issue_commission_reject)"""
+        self.issue_commission_action(token, serial, "reject")
+
 
 # --------------------------------------------------------------------
 # Private functions

@@ -231,13 +231,26 @@ def _req_commission(conn, method, url, **kwargs):
     if method == "POST":
         if 'body' not in kwargs:
             return _request_status_400(conn, method, url, **kwargs)
-        # Issue Commission
         body = simplejson.loads(unicode(kwargs['body']))
-        # Check if we have enough resources to give
-        if body['provisions'][1]['quantity'] > 420000000:
-            return ("", simplejson.dumps(commission_failure_response), 413)
+        if url == "/astakos/api/commissions":
+            # Issue Commission
+            # Check if we have enough resources to give
+            if body['provisions'][1]['quantity'] > 420000000:
+                return ("", simplejson.dumps(commission_failure_response), 413)
+            else:
+                return \
+                    ("", simplejson.dumps(commission_successful_response), 200)
         else:
-            return ("", simplejson.dumps(commission_successful_response), 200)
+            # Issue commission action
+            serial = url.split('/')[4]
+            if serial != str(57):
+                return _request_status_404(conn, method, url, **kwargs)
+            if len(body) != 1:
+                return _request_status_400(conn, method, url, **kwargs)
+            if "accept" not in body.keys() and "reject" not in body.keys():
+                return _request_status_400(conn, method, url, **kwargs)
+            return ("", "", 200)
+
     elif method == "GET":
         if url == "/astakos/api/commissions":
             # Return pending commission
@@ -958,6 +971,43 @@ class TestCommissions(unittest.TestCase):
             self.fail("Shouldn't raise Exception %s" % err)
         else:
             self.fail("Should have raise BadValue")
+
+    # ----------------------------------
+    def test_issue_commision_action(self):
+        """Test function call of issue_commision_action with wrong action"""
+        global token_1
+        _mock_request([_request_ok])
+        try:
+            client = AstakosClient("https://example.com")
+            client.issue_commission_action(token_1, 57, "lala")
+        except BadRequest:
+            pass
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
+        else:
+            self.fail("Should have raised BadRequest")
+
+    # ----------------------------------
+    def test_issue_commission_accept(self):
+        """Test function call of issue_commission_accept"""
+        global token_1
+        _mock_request([_request_ok])
+        try:
+            client = AstakosClient("https://example.com")
+            client.issue_commission_accept(token_1, 57)
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
+
+    # ----------------------------------
+    def test_issue_commission_reject(self):
+        """Test function call of issue_commission_reject"""
+        global token_1
+        _mock_request([_request_ok])
+        try:
+            client = AstakosClient("https://example.com")
+            client.issue_commission_reject(token_1, 57)
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
 
 
 # ----------------------------

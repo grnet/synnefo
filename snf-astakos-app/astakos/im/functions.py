@@ -919,3 +919,10 @@ def qh_sync(user_ids):
     users = AstakosUser.forupdate.filter(id__in=user_ids).select_for_update()
     astakos_quotas = users_quotas(list(users))
     set_user_quota(astakos_quotas)
+
+
+def qh_sync_all_users():
+    users = AstakosUser.forupdate.filter(
+        email_verified=True).select_for_update()
+    astakos_quotas = users_quotas(list(users))
+    set_user_quota(astakos_quotas)

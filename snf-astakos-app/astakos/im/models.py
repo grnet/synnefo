@@ -160,6 +160,8 @@ class Resource(models.Model):
     group = models.CharField(_('Group'), null=True, max_length=255)
     uplimit = intDecimalField(default=0)
 
+    objects = ForUpdateManager()
+
     def __str__(self):
         return self.name
 

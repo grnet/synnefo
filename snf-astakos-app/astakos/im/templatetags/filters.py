@@ -42,7 +42,8 @@ from django.core.paginator import Paginator, EmptyPage
 from django.db.models.query import QuerySet
 
 
-from astakos.im.settings import PAGINATE_BY, RESOURCES_PRESENTATION_DATA
+from astakos.im.settings import PAGINATE_BY
+from astakos.im.presentation import RESOURCES_PRESENTATION_DATA
 from astakos.im.models import RESOURCE_SEPARATOR, ProjectResourceGrant
 
 register = template.Library()

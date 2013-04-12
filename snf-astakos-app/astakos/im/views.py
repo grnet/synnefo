@@ -107,9 +107,10 @@ from astakos.im.functions import (
 from astakos.im.settings import (
     COOKIE_DOMAIN, LOGOUT_NEXT,
     LOGGING_LEVEL, PAGINATE_BY,
-    RESOURCES_PRESENTATION_DATA, PAGINATE_BY_ALL,
+    PAGINATE_BY_ALL,
     ACTIVATION_REDIRECT_URL,
     MODERATION_ENABLED)
+from astakos.im.presentation import RESOURCES_PRESENTATION_DATA
 from astakos.im.api import get_services_dict
 from astakos.im import settings as astakos_settings
 from astakos.im.api.callpoint import AstakosCallpoint

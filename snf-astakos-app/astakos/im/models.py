@@ -68,7 +68,7 @@ from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from astakos.im.settings import (
     DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL,
     AUTH_TOKEN_DURATION, EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL,
-    SITENAME, SERVICES, MODERATION_ENABLED, RESOURCES_PRESENTATION_DATA,
+    SITENAME, MODERATION_ENABLED,
     PROJECT_MEMBER_JOIN_POLICIES, PROJECT_MEMBER_LEAVE_POLICIES, PROJECT_ADMINS)
 from astakos.im import settings as astakos_settings
 from astakos.im import auth_providers as auth
@@ -79,6 +79,7 @@ from synnefo.lib.db.managers import ForUpdateManager
 from astakos.quotaholder.api import QH_PRACTICALLY_INFINITE
 from synnefo.lib.db.intdecimalfield import intDecimalField
 from synnefo.util.text import uenc, udec
+from astakos.im.presentation import RESOURCES_PRESENTATION_DATA
 
 logger = logging.getLogger(__name__)
 
@@ -215,46 +216,6 @@ class Resource(models.Model):
         if not self.unit:
             return '%ss' % self.display_name
         return self.display_name
-
-def load_service_resources():
-    ss = []
-    rs = []
-    counter = 0
-    for service_name, data in sorted(SERVICES.iteritems()):
-        url = data.get('url')
-        order = data.get('order', counter)
-        counter = order + 1
-        resources = data.get('resources') or ()
-        service, created = Service.objects.get_or_create(
-            name=service_name,
-            defaults={'url': url, 'order': order}
-        )
-        if not created and url is not None:
-            service.url = url
-            service.save()
-
-        ss.append(service)
-
-        for resource in resources:
-            try:
-                resource_name = resource.pop('name', '')
-                r, created = Resource.objects.get_or_create(
-                        service=service, name=resource_name,
-                        defaults=resource)
-                if not created:
-                    r.desc = resource['desc']
-                    r.unit = resource.get('unit', None)
-                    r.group = resource['group']
-                    r.uplimit = resource['uplimit']
-                    r.save()
-
-                rs.append(r)
-
-            except Exception, e:
-                print "Cannot create resource ", resource_name
-                import traceback; traceback.print_exc()
-                continue
-
 
 def get_resource_names():
     _RESOURCE_NAMES = []

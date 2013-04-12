@@ -65,7 +65,8 @@ from astakos.im.settings import (
     PASSWORD_RESET_EMAIL_SUBJECT, NEWPASSWD_INVALIDATE_TOKEN,
     MODERATION_ENABLED, PROJECT_MEMBER_JOIN_POLICIES,
     PROJECT_MEMBER_LEAVE_POLICIES, EMAILCHANGE_ENABLED,
-    RESOURCES_PRESENTATION_DATA)
+    )
+from astakos.im.presentation import RESOURCES_PRESENTATION_DATA
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
 from astakos.im.functions import (
     send_change_email, submit_application, accept_membership_checks)

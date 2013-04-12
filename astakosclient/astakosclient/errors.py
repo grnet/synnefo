@@ -42,6 +42,13 @@ class AstakosClientException(Exception):
               self).__init__(self.message, self.details, self.status)
 
 
+class BadValue(AstakosClientException):
+    def __init__(self, details):
+        """Re-define ValueError Exception under AstakosClientException"""
+        message = "ValueError"
+        super(BadValue, self).__init__(message, details)
+
+
 class BadRequest(AstakosClientException):
     status = 400
 

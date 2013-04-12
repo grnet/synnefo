@@ -48,7 +48,7 @@ import astakosclient
 from astakosclient import AstakosClient
 from astakosclient.errors import \
     AstakosClientException, Unauthorized, BadRequest, NotFound, \
-    NoUserName, NoUUID
+    NoUserName, NoUUID, BadValue
 
 # Use backported unittest functionality if Python < 2.7
 try:
@@ -409,12 +409,12 @@ class TestCallAstakos(unittest.TestCase):
         try:
             client = AstakosClient("ftp://example.com", use_pool=pool)
             client._call_astakos(token_1, "/im/authenticate")
-        except ValueError:
+        except BadValue:
             pass
         except Exception:
-            self.fail("Should have raise ValueError Exception")
+            self.fail("Should have raise BadValue Exception")
         else:
-            self.fail("Should have raise ValueError Exception")
+            self.fail("Should have raise BadValue Exception")
 
     def test_unsupported_scheme(self):
         """Test _unsupported_scheme without pool"""

@@ -41,7 +41,7 @@ import simplejson
 from astakosclient.utils import retry, scheme_to_class
 from astakosclient.errors import \
     AstakosClientException, Unauthorized, BadRequest, NotFound, Forbidden, \
-    NoUserName, NoUUID
+    NoUserName, NoUUID, BadValue
 
 
 # --------------------------------------------------------------------
@@ -89,7 +89,7 @@ class AstakosClient():
         if not astakos_url:
             m = "Astakos url not given"
             logger.error(m)
-            raise ValueError(m)
+            raise BadValue(m)
 
         # Check for supported scheme
         p = urlparse.urlparse(astakos_url)
@@ -97,7 +97,7 @@ class AstakosClient():
         if conn_class is None:
             m = "Unsupported scheme: %s" % p.scheme
             logger.error(m)
-            raise ValueError(m)
+            raise BadValue(m)
 
         # Save astakos_url etc. in our class
         self.retry = retry
@@ -219,7 +219,7 @@ class AstakosClient():
         if not uuid:
             m = "No uuid was given"
             self.logger.error(m)
-            raise ValueError(m)
+            raise BadValue(m)
         uuid_dict = self.get_usernames(token, [uuid])
         if uuid in uuid_dict:
             return uuid_dict.get(uuid)
@@ -236,7 +236,7 @@ class AstakosClient():
         if not uuid:
             m = "No uuid was given"
             self.logger.error(m)
-            raise ValueError(m)
+            raise BadValue(m)
         uuid_dict = self.service_get_usernames(token, [uuid])
         if uuid in uuid_dict:
             return uuid_dict.get(uuid)
@@ -278,7 +278,7 @@ class AstakosClient():
         if not display_name:
             m = "No display_name was given"
             self.logger.error(m)
-            raise ValueError(m)
+            raise BadValue(m)
         name_dict = self.get_uuids(token, [display_name])
         if display_name in name_dict:
             return name_dict.get(display_name)
@@ -295,7 +295,7 @@ class AstakosClient():
         if not display_name:
             m = "No display_name was given"
             self.logger.error(m)
-            raise ValueError(m)
+            raise BadValue(m)
         name_dict = self.service_get_uuids(token, [display_name])
         if display_name in name_dict:
             return name_dict.get(display_name)

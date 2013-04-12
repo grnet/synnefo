@@ -68,7 +68,7 @@ class AstakosClient():
     # ----------------------------------
     def __init__(self, astakos_url, retry=0,
                  use_pool=False, pool_size=8, logger=None):
-        """Intialize AstakosClient Class
+        """Initialize AstakosClient Class
 
         Keyword arguments:
         astakos_url -- i.e https://accounts.example.com (string)
@@ -111,18 +111,17 @@ class AstakosClient():
     def _call_astakos(self, token, request_path,
                       headers=None, body=None, method="GET"):
         """Make the actual call to Astakos Service"""
-        hashed_token = hashlib.sha1()
-        hashed_token.update(token)
+        if token is not None:
+            hashed_token = hashlib.sha1()
+            hashed_token.update(token)
+            using_token = "using token %s" % (hashed_token.hexdigest())
+        else:
+            using_token = "without using token"
         self.logger.debug(
-            "Make a %s request to %s using token %s "
-            "with headers %s and body %s"
-            % (method, request_path, hashed_token.hexdigest(), headers, body))
+            "Make a %s request to %s %s with headers %s and body %s"
+            % (method, request_path, using_token, headers, body))
 
         # Check Input
-        if not token:
-            m = "Token not given"
-            self.logger.error(m)
-            raise ValueError(m)
         if headers is None:
             headers = {}
         if body is None:
@@ -133,7 +132,8 @@ class AstakosClient():
         # Build request's header and body
         kwargs = {}
         kwargs['headers'] = copy(headers)
-        kwargs['headers']['X-Auth-Token'] = token
+        if token is not None:
+            kwargs['headers']['X-Auth-Token'] = token
         if body:
             kwargs['body'] = copy(body)
             kwargs['headers'].setdefault(
@@ -166,6 +166,7 @@ class AstakosClient():
         return simplejson.loads(unicode(data))
 
     # ------------------------
+    # GET /im/authenticate
     def get_user_info(self, token, usage=False):
         """Authenticate user and get user's info as a dictionary
 
@@ -184,6 +185,8 @@ class AstakosClient():
         return self._call_astakos(token, auth_path)
 
     # ----------------------------------
+    # POST /user_catalogs (or /service/api/user_catalogs)
+    #   with {'uuids': uuids}
     def _uuid_catalog(self, token, uuids, req_path):
         req_headers = {'content-type': 'application/json'}
         req_body = simplejson.dumps({'uuids': uuids})
@@ -241,6 +244,8 @@ class AstakosClient():
             raise NoUserName(uuid)
 
     # ----------------------------------
+    # POST /user_catalogs (or /service/api/user_catalogs)
+    #   with {'displaynames': display_names}
     def _displayname_catalog(self, token, display_names, req_path):
         req_headers = {'content-type': 'application/json'}
         req_body = simplejson.dumps({'displaynames': display_names})
@@ -298,9 +303,16 @@ class AstakosClient():
             raise NoUUID(display_name)
 
     # ----------------------------------
+    # GET "/im/get_services"
     def get_services(self):
         """Return a list of dicts with the registered services"""
-        return self._call_astakos("dummy token", "/im/get_services")
+        return self._call_astakos(None, "/im/get_services")
+
+    # ----------------------------------
+    # GET "/astakos/api/resources"
+    def get_resources(self):
+        """Return a dict of dicts with the available resources"""
+        return self._call_astakos(None, "/astakos/api/resources")
 
 
 # --------------------------------------------------------------------

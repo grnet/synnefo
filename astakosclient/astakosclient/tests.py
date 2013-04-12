@@ -108,25 +108,25 @@ def _request_status_400(conn, method, url, **kwargs):
 
 def _request_ok(conn, method, url, **kwargs):
     """This request behaves like original Astakos does"""
-    if url[0:16] == "/im/authenticate":
+    if url.startswith("/im/authenticate"):
         return _req_authenticate(conn, method, url, **kwargs)
-    elif url[0:14] == "/user_catalogs":
+    elif url.startswith("/user_catalogs"):
         return _req_catalogs(conn, method, url, **kwargs)
+    elif url.startswith("/astakos/api/resources"):
+        return _req_resources(conn, method, url, **kwargs)
     else:
         return _request_status_404(conn, method, url, **kwargs)
 
 
 def _req_authenticate(conn, method, url, **kwargs):
     """Check if user exists and return his profile"""
-    global user_1, user_2
+    global user_1, user_2, token_1, token_2
 
     # Check input
     if conn.__class__.__name__ != "HTTPSConnection":
         return _request_status_302(conn, method, url, **kwargs)
-
     if method != "GET":
         return _request_status_400(conn, method, url, **kwargs)
-
     token = kwargs['headers']['X-Auth-Token']
     if token == token_1:
         user = dict(user_1)
@@ -150,10 +150,8 @@ def _req_catalogs(conn, method, url, **kwargs):
     # Check input
     if conn.__class__.__name__ != "HTTPSConnection":
         return _request_status_302(conn, method, url, **kwargs)
-
     if method != "POST":
         return _request_status_400(conn, method, url, **kwargs)
-
     token = kwargs['headers']['X-Auth-Token']
     if token != token_1 and token != token_2:
         return _request_status_401(conn, method, url, **kwargs)
@@ -181,6 +179,20 @@ def _req_catalogs(conn, method, url, **kwargs):
     else:
         return_catalog = {"displayname_catalog": {}, "uuid_catalog": {}}
     return ("", simplejson.dumps(return_catalog), 200)
+
+
+def _req_resources(conn, method, url, **kwargs):
+    """Return quota resources"""
+    global resources
+
+    # Check input
+    if conn.__class__.__name__ != "HTTPSConnection":
+        return _request_status_302(conn, method, url, **kwargs)
+    if method != "GET":
+        return _request_status_400(conn, method, url, **kwargs)
+
+    # Return
+    return ("", simplejson.dumps(resources), 200)
 
 
 # ----------------------------
@@ -265,6 +277,16 @@ user_2 = \
          {"currValue": 2341634510,
           "display_name": "Storage Space",
           "name": "pithos+.diskspace"}]}
+
+resources = {
+    "cyclades.vm": {
+        "unit": None,
+        "description": "Number of virtual machines",
+        "service": "cyclades"},
+    "cyclades.ram": {
+        "unit": "bytes",
+        "description": "Virtual machine memory",
+        "service": "cyclades"}}
 
 
 # --------------------------------------------------------------------
@@ -658,6 +680,22 @@ class TestGetUUIDs(unittest.TestCase):
             self.fail("Should have raised NoUUID exception")
         else:
             self.fail("Should have raised NoUUID exception")
+
+
+class TestResources(unittest.TestCase):
+    """Test cases for function get_resources"""
+
+    # ----------------------------------
+    # Test function call of get_resources
+    def test_get_resources(self):
+        global resources
+        _mock_request([_request_offline, _request_ok])
+        try:
+            client = AstakosClient("https://example.com", retry=1)
+            result = client.get_resources()
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
+        self.assertEqual(resources, result)
 
 
 # ----------------------------

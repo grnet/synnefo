@@ -406,8 +406,8 @@ class AstakosClient():
 
     # ----------------------------------
     # POST "astakos/api/commissions/<serial>/action"
-    def issue_commission_action(self, token, serial, action):
-        """Issue a commission action
+    def commission_action(self, token, serial, action):
+        """Perform a commission action
 
         Keyword arguments:
         token   -- user's token (string)
@@ -418,7 +418,7 @@ class AstakosClient():
 
         """
         if not serial:
-            m = "Commissions serial not given"
+            m = "Commission's serial not given"
             self.logger.error(m)
             raise BadValue(m)
         if not action:
@@ -431,13 +431,13 @@ class AstakosClient():
         req_body = parse_request({str(action): ""}, self.logger)
         self._call_astakos(token, path, req_headers, req_body, "POST")
 
-    def issue_commission_accept(self, token, serial):
-        """Issue a commission accept (see issue_commission_action)"""
-        self.issue_commission_action(token, serial, "accept")
+    def accept_commission(self, token, serial):
+        """Accept a commission (see commission_action)"""
+        self.commission_action(token, serial, "accept")
 
-    def issue_commission_reject(self, token, serial):
-        """Issue a commission reject (see issue_commission_reject)"""
-        self.issue_commission_action(token, serial, "reject")
+    def reject_commission(self, token, serial):
+        """Reject a commission (see commission_action)"""
+        self.commission_action(token, serial, "reject")
 
 
 # --------------------------------------------------------------------

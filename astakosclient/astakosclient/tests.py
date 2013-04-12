@@ -886,7 +886,7 @@ class TestQuotas(unittest.TestCase):
 
 
 class TestCommissions(unittest.TestCase):
-    """Test cases for function issue_commision"""
+    """Test cases for quota commissions"""
 
     # ----------------------------------
     def test_issue_commission(self):
@@ -973,13 +973,13 @@ class TestCommissions(unittest.TestCase):
             self.fail("Should have raise BadValue")
 
     # ----------------------------------
-    def test_issue_commision_action(self):
-        """Test function call of issue_commision_action with wrong action"""
+    def test_commision_action(self):
+        """Test function call of commision_action with wrong action"""
         global token_1
         _mock_request([_request_ok])
         try:
             client = AstakosClient("https://example.com")
-            client.issue_commission_action(token_1, 57, "lala")
+            client.commission_action(token_1, 57, "lala")
         except BadRequest:
             pass
         except Exception as err:
@@ -988,24 +988,24 @@ class TestCommissions(unittest.TestCase):
             self.fail("Should have raised BadRequest")
 
     # ----------------------------------
-    def test_issue_commission_accept(self):
-        """Test function call of issue_commission_accept"""
+    def test_accept_commission(self):
+        """Test function call of accept_commission"""
         global token_1
         _mock_request([_request_ok])
         try:
             client = AstakosClient("https://example.com")
-            client.issue_commission_accept(token_1, 57)
+            client.accept_commission(token_1, 57)
         except Exception as err:
             self.fail("Shouldn't raise Exception %s" % err)
 
     # ----------------------------------
-    def test_issue_commission_reject(self):
-        """Test function call of issue_commission_reject"""
+    def test_reject_commission(self):
+        """Test function call of reject_commission"""
         global token_1
         _mock_request([_request_ok])
         try:
             client = AstakosClient("https://example.com")
-            client.issue_commission_reject(token_1, 57)
+            client.reject_commission(token_1, 57)
         except Exception as err:
             self.fail("Shouldn't raise Exception %s" % err)
 

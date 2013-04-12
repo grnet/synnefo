@@ -224,10 +224,8 @@ class ImageBackend(object):
         self._get_image(image_url)  # Assert that it is an image
         # Unregister the image by removing all metadata from domain
         # 'PLANKTON_DOMAIN'
-        meta = self._get_meta(image_url)
-        for k in meta.keys():
-            meta[k] = ""
-        self._update_meta(image_url, meta, False)
+        meta = {}
+        self._update_meta(image_url, meta, True)
 
     @handle_backend_exceptions
     def add_user(self, image_uuid, add_user):

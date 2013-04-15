@@ -1,9 +1,9 @@
-.. _snf-astakos-client:
+.. _astakosclient:
 
-Component snf-astakos-client
+Component astakosclient
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The Synnefo component :ref:`snf-astakos-client <snf-astakos-client>` defines a
+The Synnefo component :ref:`astakosclient <astakosclient>` defines a
 default client for the :ref:`Astakos <astakos>` service. It is designed to be
 simple and minimal, hence easy to debug and test.
 
@@ -184,8 +184,15 @@ Exceptions and Errors
 
 *exception* **AstakosClientException**
     Raised in case of an error. It contains an error message and the
-    corresponding http status code. Other exceptions raise by astakosclient
-    module are derived from this one.
+    corresponding http status code. Other exceptions raised by
+    astakosclient module are derived from this one.
+
+*exception* **BadValue**
+    A redefinition of ValueError exception under AstakosClientException.
+
+*exception* **InvalidResponse**
+    This exception is raised whenever the server's response is not
+    valid json (cannot be parsed by simplejson library).
 
 *exception* **BadRequest**
     Raised in case of a Bad Request, with status 400.
@@ -199,6 +206,9 @@ Exceptions and Errors
 
 *exception* **NotFound**
     The server has not found anything matching the Request-URI. Status 404.
+
+*exception* **QuotaLimit**
+    Quantity fell below zero or exceeded capacity in one of the holdings.
 
 *exception* **NoUserName**
     Raised by getDisplayName and getServiceDisplayName when an invalid

@@ -417,7 +417,7 @@ class AstakosClient():
         serial  -- commission's id (int)
 
         In case of success return a dict of dicts containing
-        informations (details) about the requests commission
+        informations (details) about the requested commission
 
         """
         check_input("get_commission_info", self.logger, serial=serial)

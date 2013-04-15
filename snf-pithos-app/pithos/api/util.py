@@ -57,6 +57,7 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_QUEUE_EXCHANGE, USE_QUOTAHOLDER,
                                  QUOTAHOLDER_URL, QUOTAHOLDER_TOKEN,
                                  QUOTAHOLDER_POOLSIZE,
+                                 ASTAKOS_URL,
                                  BACKEND_QUOTA, BACKEND_VERSIONING,
                                  BACKEND_FREE_VERSIONING, BACKEND_POOL_SIZE,
                                  COOKIE_NAME, USER_CATALOG_URL,
@@ -1002,7 +1003,7 @@ def update_response_headers(request, response):
 
 def get_pithos_usage(token):
     """Get Pithos Usage from astakos."""
-    astakos_url = settings.ASTAKOS_URL + "im/authenticate"
+    astakos_url = ASTAKOS_URL + "im/authenticate"
     user_info = user_for_token(token, astakos_url, usage=True)
     usage = user_info.get("usage", [])
     for u in usage:

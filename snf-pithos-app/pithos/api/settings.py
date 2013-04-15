@@ -1,6 +1,9 @@
 #coding=utf8
 from django.conf import settings
 
+ASTAKOS_URL = getattr(settings, "ASTAKOS_URL",
+                      "https://accounts.example.synnefo.org/")
+
 COOKIE_NAME = getattr(settings, 'PITHOS_ASTAKOS_COOKIE_NAME', '_pithos2_a')
 
 # SQLAlchemy (choose SQLite/MySQL/PostgreSQL).

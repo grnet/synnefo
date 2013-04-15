@@ -38,7 +38,8 @@ import hashlib
 from copy import copy
 
 import simplejson
-from astakosclient.utils import retry, scheme_to_class, parse_request
+from astakosclient.utils import \
+    retry, scheme_to_class, parse_request, check_input
 from astakosclient.errors import \
     AstakosClientException, Unauthorized, BadRequest, NotFound, Forbidden, \
     NoUserName, NoUUID, BadValue, QuotaLimit, InvalidResponse
@@ -86,10 +87,7 @@ class AstakosClient():
         logger.debug("Intialize AstakosClient: astakos_url = %s, "
                      "use_pool = %s" % (astakos_url, use_pool))
 
-        if not astakos_url:
-            m = "Astakos url not given"
-            logger.error(m)
-            raise BadValue(m)
+        check_input("__init__", logger, astakos_url=astakos_url)
 
         # Check for supported scheme
         p = urlparse.urlparse(astakos_url)
@@ -168,7 +166,7 @@ class AstakosClient():
             if data:
                 return simplejson.loads(unicode(data))
             else:
-                return ""
+                return None
         except Exception as err:
             self.logger.error("Cannot parse response \"%s\" with simplejson: %s"
                               % (data, str(err)))
@@ -225,10 +223,7 @@ class AstakosClient():
 
     def get_username(self, token, uuid):
         """Return the user name of a uuid (see get_usernames)"""
-        if not uuid:
-            m = "No uuid was given"
-            self.logger.error(m)
-            raise BadValue(m)
+        check_input("get_username", self.logger, uuid=uuid)
         uuid_dict = self.get_usernames(token, [uuid])
         if uuid in uuid_dict:
             return uuid_dict.get(uuid)
@@ -242,10 +237,7 @@ class AstakosClient():
 
     def service_get_username(self, token, uuid):
         """Return the displayName of a uuid using a service's token"""
-        if not uuid:
-            m = "No uuid was given"
-            self.logger.error(m)
-            raise BadValue(m)
+        check_input("service_get_username", self.logger, uuid=uuid)
         uuid_dict = self.service_get_usernames(token, [uuid])
         if uuid in uuid_dict:
             return uuid_dict.get(uuid)
@@ -284,10 +276,7 @@ class AstakosClient():
 
     def get_uuid(self, token, display_name):
         """Return the uuid of a name (see getUUIDs)"""
-        if not display_name:
-            m = "No display_name was given"
-            self.logger.error(m)
-            raise BadValue(m)
+        check_input("get_uuid", self.logger, display_name=display_name)
         name_dict = self.get_uuids(token, [display_name])
         if display_name in name_dict:
             return name_dict.get(display_name)
@@ -301,10 +290,7 @@ class AstakosClient():
 
     def service_get_uuid(self, token, display_name):
         """Return the uuid of a name using a service's token"""
-        if not display_name:
-            m = "No display_name was given"
-            self.logger.error(m)
-            raise BadValue(m)
+        check_input("service_get_uuid", self.logger, display_name=display_name)
         name_dict = self.service_get_uuids(token, [display_name])
         if display_name in name_dict:
             return name_dict.get(display_name)
@@ -396,10 +382,7 @@ class AstakosClient():
         informations (details) about the requests commission
 
         """
-        if not serial:
-            m = "Commissions serial not given"
-            self.logger.error(m)
-            raise BadValue(m)
+        check_input("get_commission_info", self.logger, serial=serial)
 
         path = "/astakos/api/commissions/" + str(serial)
         return self._call_astakos(token, path)
@@ -417,14 +400,8 @@ class AstakosClient():
         In case of success return nothing.
 
         """
-        if not serial:
-            m = "Commission's serial not given"
-            self.logger.error(m)
-            raise BadValue(m)
-        if not action:
-            m = "Action not given"
-            self.logger.error(m)
-            raise BadValue(m)
+        check_input("commission_action", self.logger,
+                    serial=serial, action=action)
 
         path = "/astakos/api/commissions/" + str(serial) + "/action"
         req_headers = {'content-type': 'application/json'}
@@ -454,14 +431,9 @@ class AstakosClient():
         resolved.
 
         """
-        if not accept_serials:
-            m = "accept_serials parameter not given"
-            self.logger.error(m)
-            raise BadValue(m)
-        if not reject_serials:
-            m = "reject_serials parameter not given"
-            self.logger.error(m)
-            raise BadValue(m)
+        check_input("resolve_commissions", self.logger,
+                    accept_serials=accept_serials,
+                    reject_serials=reject_serials)
 
         path = "/astakos/api/commissions/action"
         req_headers = {'content-type': 'application/json'}

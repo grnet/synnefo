@@ -915,7 +915,7 @@ class TestCommissions(unittest.TestCase):
 
     # ----------------------------------
     def test_issue_commission(self):
-        """Test function call of issue_commission_core"""
+        """Test function call of issue_commission"""
         global token_1, commission_request, commission_successful_reqsponse
         _mock_request([_request_ok])
         try:
@@ -927,7 +927,7 @@ class TestCommissions(unittest.TestCase):
 
     # ----------------------------------
     def test_issue_commission_quota_limit(self):
-        """Test function call of issue_commission_core with limit exceeded"""
+        """Test function call of issue_commission with limit exceeded"""
         global token_1, commission_request, commission_failure_response
         _mock_request([_request_ok])
         new_request = dict(commission_request)
@@ -941,6 +941,20 @@ class TestCommissions(unittest.TestCase):
             self.fail("Shouldn't raise Exception %s" % err)
         else:
             self.fail("Should have raised QuotaLimit Exception")
+
+    # ----------------------------------
+    def test_issue_one_commission(self):
+        """Test function call of issue_one_commission"""
+        global token_1, commission_successful_response
+        _mock_request([_request_ok])
+        try:
+            client = AstakosClient("https://example.com")
+            response = client.issue_one_commission(
+                token_1, "c02f315b-7d84-45bc-a383-552a3f97d2ad",
+                "system", [("cyclades.vm", 1), ("cyclades.ram", 30000)])
+        except Exception as err:
+            self.fail("Shouldn't have raised Exception %s" % err)
+        self.assertEqual(response, commission_successful_response['serial'])
 
     # ----------------------------------
     def test_get_pending_commissions(self):

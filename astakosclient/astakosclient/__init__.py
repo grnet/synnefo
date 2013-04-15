@@ -355,6 +355,44 @@ class AstakosClient():
             self.logger.error(m)
             raise AstakosClientException(m)
 
+    def issue_one_commission(self, token, holder, source, provisions,
+                             force=False, auto_accept=False):
+        """Issue one commission (with specific holder and source)
+
+        keyword arguments:
+        token       -- service's token (string)
+        holder      -- user's id (string)
+        source      -- commission's source (ex system) (string)
+        provisions  -- resources with their quantity (list of (string, int))
+        force       -- force this commission (boolean)
+        auto_accept -- auto accept this commission (boolean)
+
+        In case of success return commission's id (int).
+        Otherwise raise an AstakosClientException.
+        (See also issue_commission)
+
+        """
+        check_input("issue_one_commission", self.logger,
+                    holder=holder, source=source,
+                    provisions=provisions)
+
+        request = {}
+        request["force"] = force
+        request["auto_accept"] = auto_accept
+        try:
+            request["provisions"] = []
+            for p in provisions:
+                resource = p[0]
+                quantity = p[1]
+                t = {"holder": holder, "source": source,
+                     "resource": resource, "quantity": quantity}
+                request["provisions"].append(t)
+        except Exception as err:
+            self.logger.error(str(err))
+            raise BadValue(str(err))
+
+        return self.issue_commission(token, request)
+
     # ----------------------------------
     # GET "/astakos/api/commissions"
     def get_pending_commissions(self, token):

@@ -48,7 +48,7 @@ import astakosclient
 from astakosclient import AstakosClient
 from astakosclient.errors import \
     AstakosClientException, Unauthorized, BadRequest, NotFound, \
-    NoUserName, NoUUID
+    NoUserName, NoUUID, BadValue, QuotaLimit
 
 # Use backported unittest functionality if Python < 2.7
 try:
@@ -108,26 +108,30 @@ def _request_status_400(conn, method, url, **kwargs):
 
 def _request_ok(conn, method, url, **kwargs):
     """This request behaves like original Astakos does"""
-    if url[0:16] == "/im/authenticate":
+    if url.startswith("/im/authenticate"):
         return _req_authenticate(conn, method, url, **kwargs)
-    elif url[0:14] == "/user_catalogs":
+    elif url.startswith("/user_catalogs"):
         return _req_catalogs(conn, method, url, **kwargs)
+    elif url.startswith("/astakos/api/resources"):
+        return _req_resources(conn, method, url, **kwargs)
+    elif url.startswith("/astakos/api/quotas"):
+        return _req_quotas(conn, method, url, **kwargs)
+    elif url.startswith("/astakos/api/commissions"):
+        return _req_commission(conn, method, url, **kwargs)
     else:
         return _request_status_404(conn, method, url, **kwargs)
 
 
 def _req_authenticate(conn, method, url, **kwargs):
     """Check if user exists and return his profile"""
-    global user_1, user_2
+    global user_1, user_2, token_1, token_2
 
     # Check input
     if conn.__class__.__name__ != "HTTPSConnection":
         return _request_status_302(conn, method, url, **kwargs)
-
     if method != "GET":
         return _request_status_400(conn, method, url, **kwargs)
-
-    token = kwargs['headers']['X-Auth-Token']
+    token = kwargs['headers'].get('X-Auth-Token')
     if token == token_1:
         user = dict(user_1)
     elif token == token_2:
@@ -150,11 +154,9 @@ def _req_catalogs(conn, method, url, **kwargs):
     # Check input
     if conn.__class__.__name__ != "HTTPSConnection":
         return _request_status_302(conn, method, url, **kwargs)
-
     if method != "POST":
         return _request_status_400(conn, method, url, **kwargs)
-
-    token = kwargs['headers']['X-Auth-Token']
+    token = kwargs['headers'].get('X-Auth-Token')
     if token != token_1 and token != token_2:
         return _request_status_401(conn, method, url, **kwargs)
 
@@ -181,6 +183,95 @@ def _req_catalogs(conn, method, url, **kwargs):
     else:
         return_catalog = {"displayname_catalog": {}, "uuid_catalog": {}}
     return ("", simplejson.dumps(return_catalog), 200)
+
+
+def _req_resources(conn, method, url, **kwargs):
+    """Return quota resources"""
+    global resources
+
+    # Check input
+    if conn.__class__.__name__ != "HTTPSConnection":
+        return _request_status_302(conn, method, url, **kwargs)
+    if method != "GET":
+        return _request_status_400(conn, method, url, **kwargs)
+
+    # Return
+    return ("", simplejson.dumps(resources), 200)
+
+
+def _req_quotas(conn, method, url, **kwargs):
+    """Return quotas for user_1"""
+    global token_1, quotas
+
+    # Check input
+    if conn.__class__.__name__ != "HTTPSConnection":
+        return _request_status_302(conn, method, url, **kwargs)
+    if method != "GET":
+        return _request_status_400(conn, method, url, **kwargs)
+    token = kwargs['headers'].get('X-Auth-Token')
+    if token != token_1:
+        return _request_status_401(conn, method, url, **kwargs)
+
+    # Return
+    return ("", simplejson.dumps(quotas), 200)
+
+
+def _req_commission(conn, method, url, **kwargs):
+    """Perform a commission for user_1"""
+    global token_1, pending_commissions, \
+        commission_successful_response, commission_failure_response
+
+    # Check input
+    if conn.__class__.__name__ != "HTTPSConnection":
+        return _request_status_302(conn, method, url, **kwargs)
+    token = kwargs['headers'].get('X-Auth-Token')
+    if token != token_1:
+        return _request_status_401(conn, method, url, **kwargs)
+
+    if method == "POST":
+        if 'body' not in kwargs:
+            return _request_status_400(conn, method, url, **kwargs)
+        body = simplejson.loads(unicode(kwargs['body']))
+        if url == "/astakos/api/commissions":
+            # Issue Commission
+            # Check if we have enough resources to give
+            if body['provisions'][1]['quantity'] > 420000000:
+                return ("", simplejson.dumps(commission_failure_response), 413)
+            else:
+                return \
+                    ("", simplejson.dumps(commission_successful_response), 200)
+        else:
+            # Issue commission action
+            serial = url.split('/')[4]
+            if serial == "action":
+                # Resolve multiple actions
+                if body == resolve_commissions_req:
+                    return ("", simplejson.dumps(resolve_commissions_rep), 200)
+                else:
+                    return _request_status_400(conn, method, url, **kwargs)
+            else:
+                # Issue action for one commission
+                if serial != str(57):
+                    return _request_status_404(conn, method, url, **kwargs)
+                if len(body) != 1:
+                    return _request_status_400(conn, method, url, **kwargs)
+                if "accept" not in body.keys() and "reject" not in body.keys():
+                    return _request_status_400(conn, method, url, **kwargs)
+                return ("", "", 200)
+
+    elif method == "GET":
+        if url == "/astakos/api/commissions":
+            # Return pending commission
+            return ("", simplejson.dumps(pending_commissions), 200)
+        else:
+            # Return commissions's description
+            serial = url[25:]
+            if serial == str(57):
+                return ("", simplejson.dumps(commission_description), 200)
+            else:
+                return _request_status_404(conn, method, url, **kwargs)
+    else:
+        return _request_status_400(conn, method, url, **kwargs)
 
 
 # ----------------------------
@@ -266,6 +357,104 @@ user_2 = \
           "display_name": "Storage Space",
           "name": "pithos+.diskspace"}]}
 
+resources = {
+    "cyclades.vm": {
+        "unit": None,
+        "description": "Number of virtual machines",
+        "service": "cyclades"},
+    "cyclades.ram": {
+        "unit": "bytes",
+        "description": "Virtual machine memory",
+        "service": "cyclades"}}
+
+quotas = {
+    "system": {
+        "cyclades.ram": {
+            "available": 536870912,
+            "limit": 1073741824,
+            "used": 536870912},
+        "cyclades.vm": {
+            "available": 0,
+            "limit": 2,
+            "used": 2}},
+    "project:1": {
+        "cyclades.ram": {
+            "available": 0,
+            "limit": 2147483648,
+            "used": 2147483648},
+        "cyclades.vm": {
+            "available": 3,
+            "limit": 5,
+            "used": 2}}}
+
+commission_request = {
+    "force": False,
+    "auto_accept": False,
+    "provisions": [
+        {
+            "holder": "c02f315b-7d84-45bc-a383-552a3f97d2ad",
+            "source": "system",
+            "resource": "cyclades.vm",
+            "quantity": 1
+        },
+        {
+            "holder": "c02f315b-7d84-45bc-a383-552a3f97d2ad",
+            "source": "system",
+            "resource": "cyclades.ram",
+            "quantity": 30000
+        }]}
+
+commission_successful_response = {"serial": 57}
+
+commission_failure_response = {
+    "overLimit": {
+        "message": "a human-readable error message",
+        "code": 413,
+        "data": {
+            "provision": {
+                "holder": "c02f315b-7d84-45bc-a383-552a3f97d2ad",
+                "source": "system",
+                "resource": "cyclades.ram",
+                "quantity": 520000000},
+            "name": "NoCapacityError",
+            "available": 420000000}}}
+
+pending_commissions = [100, 200]
+
+commission_description = {
+    "serial": 57,
+    "issue_time": "2013-04-08T10:19:15.0373",
+    "provisions": [
+        {
+            "holder": "c02f315b-7d84-45bc-a383-552a3f97d2ad",
+            "source": "system",
+            "resource": "cyclades.vm",
+            "quantity": 1
+        },
+        {
+            "holder": "c02f315b-7d84-45bc-a383-552a3f97d2ad",
+            "source": "system",
+            "resource": "cyclades.ram",
+            "quantity": 536870912
+        }]}
+
+resolve_commissions_req = {
+    "accept": [56, 57],
+    "reject": [56, 58, 59]}
+
+resolve_commissions_rep = {
+    "accepted": [57],
+    "rejected": [59],
+    "failed": [
+        [56, {
+            "badRequest": {
+                "message": "cannot both accept and reject serial 56",
+                "code": 400}}],
+        [58, {
+            "itemNotFound": {
+                "message": "serial 58 does not exist",
+                "code": 404}}]]}
+
 
 # --------------------------------------------------------------------
 # The actual tests
@@ -348,12 +537,12 @@ class TestCallAstakos(unittest.TestCase):
         try:
             client = AstakosClient("ftp://example.com", use_pool=pool)
             client._call_astakos(token_1, "/im/authenticate")
-        except ValueError:
+        except BadValue:
             pass
         except Exception:
-            self.fail("Should have raise ValueError Exception")
+            self.fail("Should have raise BadValue Exception")
         else:
-            self.fail("Should have raise ValueError Exception")
+            self.fail("Should have raise BadValue Exception")
 
     def test_unsupported_scheme(self):
         """Test _unsupported_scheme without pool"""
@@ -658,6 +847,233 @@ class TestGetUUIDs(unittest.TestCase):
             self.fail("Should have raised NoUUID exception")
         else:
             self.fail("Should have raised NoUUID exception")
+
+
+class TestResources(unittest.TestCase):
+    """Test cases for function get_resources"""
+
+    # ----------------------------------
+    def test_get_resources(self):
+        """Test function call of get_resources"""
+        global resources
+        _mock_request([_request_offline, _request_ok])
+        try:
+            client = AstakosClient("https://example.com", retry=1)
+            result = client.get_resources()
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
+        self.assertEqual(resources, result)
+
+
+class TestQuotas(unittest.TestCase):
+    """Test cases for function get_quotas"""
+
+    # ----------------------------------
+    def test_get_quotas(self):
+        """Test function call of get_quotas"""
+        global quotas, token_1
+        _mock_request([_request_ok])
+        try:
+            client = AstakosClient("https://example.com")
+            result = client.get_quotas(token_1)
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
+        self.assertEqual(quotas, result)
+
+    # -----------------------------------
+    def test_get_quotas_unauthorized(self):
+        """Test function call of get_quotas with wrong token"""
+        global token_2
+        _mock_request([_request_ok])
+        try:
+            client = AstakosClient("https://example.com")
+            client.get_quotas(token_2)
+        except Unauthorized:
+            pass
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
+        else:
+            self.fail("Should have raised Unauthorized Exception")
+
+    # ----------------------------------
+    def test_get_quotas_without_token(self):
+        """Test function call of get_quotas without token"""
+        _mock_request([_request_ok])
+        try:
+            client = AstakosClient("https://example.com")
+            client.get_quotas(None)
+        except Unauthorized:
+            pass
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
+        else:
+            self.fail("Should have raised Unauthorized Exception")
+
+
+class TestCommissions(unittest.TestCase):
+    """Test cases for quota commissions"""
+
+    # ----------------------------------
+    def test_issue_commission(self):
+        """Test function call of issue_commission"""
+        global token_1, commission_request, commission_successful_reqsponse
+        _mock_request([_request_ok])
+        try:
+            client = AstakosClient("https://example.com")
+            response = client.issue_commission(token_1, commission_request)
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
+        self.assertEqual(response, commission_successful_response['serial'])
+
+    # ----------------------------------
+    def test_issue_commission_quota_limit(self):
+        """Test function call of issue_commission with limit exceeded"""
+        global token_1, commission_request, commission_failure_response
+        _mock_request([_request_ok])
+        new_request = dict(commission_request)
+        new_request['provisions'][1]['quantity'] = 520000000
+        try:
+            client = AstakosClient("https://example.com")
+            client.issue_commission(token_1, new_request)
+        except QuotaLimit:
+            pass
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
+        else:
+            self.fail("Should have raised QuotaLimit Exception")
+
+    # ----------------------------------
+    def test_issue_one_commission(self):
+        """Test function call of issue_one_commission"""
+        global token_1, commission_successful_response
+        _mock_request([_request_ok])
+        try:
+            client = AstakosClient("https://example.com")
+            response = client.issue_one_commission(
+                token_1, "c02f315b-7d84-45bc-a383-552a3f97d2ad",
+                "system", [("cyclades.vm", 1), ("cyclades.ram", 30000)])
+        except Exception as err:
+            self.fail("Shouldn't have raised Exception %s" % err)
+        self.assertEqual(response, commission_successful_response['serial'])
+
+    # ----------------------------------
+    def test_get_pending_commissions(self):
+        """Test function call of get_pending_commissions"""
+        global token_1, pending_commissions
+        _mock_request([_request_ok])
+        try:
+            client = AstakosClient("https://example.com")
+            response = client.get_pending_commissions(token_1)
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
+        self.assertEqual(response, pending_commissions)
+
+    # ----------------------------------
+    def test_get_commission_info(self):
+        """Test function call of get_commission_info"""
+        global token_1, commission_description
+        _mock_request([_request_ok])
+        try:
+            client = \
+                AstakosClient("https://example.com", use_pool=True, pool_size=2)
+            response = client.get_commission_info(token_1, 57)
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
+        self.assertEqual(response, commission_description)
+
+    # ----------------------------------
+    def test_get_commission_info_not_found(self):
+        """Test function call of get_commission_info with invalid serial"""
+        global token_1
+        _mock_request([_request_ok])
+        try:
+            client = AstakosClient("https://example.com")
+            client.get_commission_info(token_1, "57lala")
+        except NotFound:
+            pass
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
+        else:
+            self.fail("Should have raised NotFound")
+
+    # ----------------------------------
+    def test_get_commission_info_without_serial(self):
+        """Test function call of get_commission_info without serial"""
+        global token_1
+        _mock_request([_request_ok])
+        try:
+            client = AstakosClient("https://example.com")
+            client.get_commission_info(token_1, None)
+        except BadValue:
+            pass
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
+        else:
+            self.fail("Should have raise BadValue")
+
+    # ----------------------------------
+    def test_commision_action(self):
+        """Test function call of commision_action with wrong action"""
+        global token_1
+        _mock_request([_request_ok])
+        try:
+            client = AstakosClient("https://example.com")
+            client.commission_action(token_1, 57, "lala")
+        except BadRequest:
+            pass
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
+        else:
+            self.fail("Should have raised BadRequest")
+
+    # ----------------------------------
+    def test_accept_commission(self):
+        """Test function call of accept_commission"""
+        global token_1
+        _mock_request([_request_ok])
+        try:
+            client = AstakosClient("https://example.com")
+            client.accept_commission(token_1, 57)
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
+
+    # ----------------------------------
+    def test_reject_commission(self):
+        """Test function call of reject_commission"""
+        global token_1
+        _mock_request([_request_ok])
+        try:
+            client = AstakosClient("https://example.com")
+            client.reject_commission(token_1, 57)
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
+
+    # ----------------------------------
+    def test_accept_commission_not_found(self):
+        """Test function call of accept_commission with wrong serial"""
+        global token_1
+        _mock_request([_request_ok])
+        try:
+            client = AstakosClient("https://example.com")
+            client.reject_commission(token_1, 20)
+        except NotFound:
+            pass
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
+        else:
+            self.fail("Should have raised NotFound")
+
+    # ----------------------------------
+    def test_resolve_commissions(self):
+        """Test function call of resolve_commissions"""
+        global token_1
+        _mock_request([_request_ok])
+        try:
+            client = AstakosClient("https://example.com")
+            result = client.resolve_commissions(token_1, [56, 57], [56, 58, 59])
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
+        self.assertEqual(result, resolve_commissions_rep)
 
 
 # ----------------------------

@@ -34,8 +34,9 @@
 from httplib import HTTPConnection, HTTPSConnection
 from contextlib import closing
 
+import simplejson
 from objpool.http import PooledHTTPConnection
-from astakosclient.errors import AstakosClientException
+from astakosclient.errors import AstakosClientException, BadValue
 
 
 def retry(func):
@@ -81,3 +82,23 @@ def scheme_to_class(scheme, use_pool, pool_size):
             return _https_connection
     else:
         return None
+
+
+def parse_request(request, logger):
+    """Parse request with simplejson to convert it to string"""
+    try:
+        return simplejson.dumps(request)
+    except Exception as err:
+        m = "Cannot parse request \"%s\" with simplejson: %s" \
+            % (request, str(err))
+        logger.error(m)
+        raise BadValue(m)
+
+
+def check_input(function_name, logger, **kwargs):
+    """Check if given arguments are not None"""
+    for i in kwargs:
+        if not kwargs[i]:
+            m = "in " + function_name + ": " + str(i) + " parameter not given"
+            logger.error(m)
+            raise BadValue(m)

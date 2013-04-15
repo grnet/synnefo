@@ -42,6 +42,19 @@ class AstakosClientException(Exception):
               self).__init__(self.message, self.details, self.status)
 
 
+class BadValue(AstakosClientException):
+    def __init__(self, details):
+        """Re-define ValueError Exception under AstakosClientException"""
+        message = "ValueError"
+        super(BadValue, self).__init__(message, details)
+
+
+class InvalidResponse(AstakosClientException):
+    def __init__(self, message, details):
+        """Return simplejson parse Exception as AstakosClient one"""
+        super(InvalidResponse, self).__init__(message, details)
+
+
 class BadRequest(AstakosClientException):
     status = 400
 
@@ -56,6 +69,10 @@ class Forbidden(AstakosClientException):
 
 class NotFound(AstakosClientException):
     status = 404
+
+
+class QuotaLimit(AstakosClientException):
+    status = 413
 
 
 class NoUserName(AstakosClientException):

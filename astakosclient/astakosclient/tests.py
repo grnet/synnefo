@@ -243,13 +243,21 @@ def _req_commission(conn, method, url, **kwargs):
         else:
             # Issue commission action
             serial = url.split('/')[4]
-            if serial != str(57):
-                return _request_status_404(conn, method, url, **kwargs)
-            if len(body) != 1:
-                return _request_status_400(conn, method, url, **kwargs)
-            if "accept" not in body.keys() and "reject" not in body.keys():
-                return _request_status_400(conn, method, url, **kwargs)
-            return ("", "", 200)
+            if serial == "action":
+                # Resolve multiple actions
+                if body == resolve_commissions_req:
+                    return ("", simplejson.dumps(resolve_commissions_rep), 200)
+                else:
+                    return _request_status_400(conn, method, url, **kwargs)
+            else:
+                # Issue action for one commission
+                if serial != str(57):
+                    return _request_status_404(conn, method, url, **kwargs)
+                if len(body) != 1:
+                    return _request_status_400(conn, method, url, **kwargs)
+                if "accept" not in body.keys() and "reject" not in body.keys():
+                    return _request_status_400(conn, method, url, **kwargs)
+                return ("", "", 200)
 
     elif method == "GET":
         if url == "/astakos/api/commissions":
@@ -429,6 +437,23 @@ commission_description = {
             "resource": "cyclades.ram",
             "quantity": 536870912
         }]}
+
+resolve_commissions_req = {
+    "accept": [56, 57],
+    "reject": [56, 58, 59]}
+
+resolve_commissions_rep = {
+    "accepted": [57],
+    "rejected": [59],
+    "failed": [
+        [56, {
+            "badRequest": {
+                "message": "cannot both accept and reject serial 56",
+                "code": 400}}],
+        [58, {
+            "itemNotFound": {
+                "message": "serial 58 does not exist",
+                "code": 404}}]]}
 
 
 # --------------------------------------------------------------------
@@ -1023,6 +1048,18 @@ class TestCommissions(unittest.TestCase):
             self.fail("Shouldn't raise Exception %s" % err)
         else:
             self.fail("Should have raised NotFound")
+
+    # ----------------------------------
+    def test_resolve_commissions(self):
+        """Test function call of resolve_commissions"""
+        global token_1
+        _mock_request([_request_ok])
+        try:
+            client = AstakosClient("https://example.com")
+            result = client.resolve_commissions(token_1, [56, 57], [56, 58, 59])
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
+        self.assertEqual(result, resolve_commissions_rep)
 
 
 # ----------------------------

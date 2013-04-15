@@ -405,7 +405,7 @@ class AstakosClient():
         return self._call_astakos(token, path)
 
     # ----------------------------------
-    # POST "astakos/api/commissions/<serial>/action"
+    # POST "/astakos/api/commissions/<serial>/action"
     def commission_action(self, token, serial, action):
         """Perform a commission action
 
@@ -438,6 +438,37 @@ class AstakosClient():
     def reject_commission(self, token, serial):
         """Reject a commission (see commission_action)"""
         self.commission_action(token, serial, "reject")
+
+    # ----------------------------------
+    # POST "/astakos/api/commissions/action"
+    def resolve_commissions(self, token, accept_serials, reject_serials):
+        """Resolve multiple commissions at once
+
+        Keyword arguments:
+        token           -- service's token (string)
+        accept_serials  -- commissions to accept (list of ints)
+        reject_serials  -- commissions to reject (list of ints)
+
+        In case of success return a dict of dicts describing which
+        commissions accepted, which rejected and which failed to
+        resolved.
+
+        """
+        if not accept_serials:
+            m = "accept_serials parameter not given"
+            self.logger.error(m)
+            raise BadValue(m)
+        if not reject_serials:
+            m = "reject_serials parameter not given"
+            self.logger.error(m)
+            raise BadValue(m)
+
+        path = "/astakos/api/commissions/action"
+        req_headers = {'content-type': 'application/json'}
+        req_body = parse_request({"accept": accept_serials,
+                                  "reject": reject_serials},
+                                 self.logger)
+        return self._call_astakos(token, path, req_headers, req_body, "POST")
 
 
 # --------------------------------------------------------------------

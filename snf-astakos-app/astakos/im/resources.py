@@ -33,35 +33,41 @@
 
 from astakos.im.models import Service, Resource
 from astakos.im.functions import qh_sync_all_users
+from astakos.im.quotas import qh_add_resource_limit, qh_sync_new_resource
+import logging
+
+logger = logging.getLogger(__name__)
 
 
-def add_resources(service, resources, conf):
+def add_resource(service, resource, uplimit):
     try:
         s = Service.objects.get(name=service)
     except Service.DoesNotExist:
         raise Exception("Service %s is not registered." % (service))
 
-    names = [resource['name'] for resource in resources]
-    rs = Resource.objects.filter(name__in=names).select_for_update()
-    rs = dict((r.name, r) for r in rs)
+    name = resource['name']
+    try:
+        r = Resource.objects.get_for_update(name=name)
+        old_uplimit = r.uplimit
+    except Resource.DoesNotExist:
+        r = Resource()
+        old_uplimit = None
 
-    for resource in resources:
-        name = resource['name']
-        existing = rs.get(name)
-        r = existing if existing is not None else Resource()
+    r.uplimit = uplimit
+    r.service = s
+    for key, value in resource.iteritems():
+        setattr(r, key, value)
 
-        uplimit = conf.get(name)
-        if uplimit is None:
-            raise Exception("Limit for resource %s is missing." % (name))
+    r.save()
 
-        if not isinstance(uplimit, (int, long)):
-            raise Exception("Limit for resource %s is not an integer." %
-                            (name))
+    if old_uplimit is not None:
+        logger.info("Updated resource %s with limit %s." % (name, uplimit))
+    else:
+        logger.info("Added resource %s with limit %s." % (name, uplimit))
 
-        r.uplimit = uplimit
-        r.service = s
-        for key, value in resource.iteritems():
-            setattr(r, key, value)
-
-        r.save()
-    qh_sync_all_users()
+    if old_uplimit is not None:
+        diff = uplimit - old_uplimit
+        if diff != 0:
+            qh_add_resource_limit(name, diff)
+    else:
+        qh_sync_new_resource(name, uplimit)

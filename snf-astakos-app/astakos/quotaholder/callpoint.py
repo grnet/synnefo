@@ -31,6 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from django.db.models import F
 from astakos.quotaholder.exception import (
     QuotaholderError,
     NoCommissionError,
@@ -130,6 +131,10 @@ class QuotaholderDjangoDBCallpoint(object):
             h.limit = limit
             h.save()
             holdings[key] = h
+
+    def add_resource_limit(self, source, resource, diff):
+        objs = Holding.objects.filter(source=source, resource=resource)
+        objs.update(limit=F('limit')+diff)
 
     def issue_commission(self,
                          context=None,

@@ -236,3 +236,21 @@ def sync_users(users, sync=True):
 def sync_all_users(sync=True):
     users = AstakosUser.objects.verified()
     return sync_users(users, sync)
+
+
+def qh_add_resource_limit(resource, diff):
+    users = AstakosUser.forupdate.all().select_for_update()
+    qh.add_resource_limit(SYSTEM, resource, diff)
+
+
+def qh_sync_new_resource(resource, limit):
+    users = AstakosUser.forupdate.filter(
+        email_verified=True).select_for_update()
+
+    data = []
+    for user in users:
+        uuid = user.uuid
+        key = uuid, SYSTEM, resource
+        data.append((key, limit))
+
+    qh.set_quota(data)

@@ -38,7 +38,7 @@ from django.db.utils import IntegrityError
 from django.utils import simplejson as json
 
 from synnefo.lib.db.transaction import commit_on_success_strict
-from astakos.im.resources import add_resources
+from astakos.im.resources import add_resource
 
 
 class Command(BaseCommand):
@@ -50,33 +50,66 @@ class Command(BaseCommand):
                     dest='json',
                     metavar='<json.file>',
                     help="Load resource info from a json file"),
+        make_option('--service',
+                    dest='service_id',
+                    metavar='<service_id>',
+                    help=("Automatically load resource info for a given "
+                          "service")),
         make_option('--conf',
                     dest='conf',
                     metavar='<conf.json>',
                     help="Limit configuration file"),
     )
 
-    @commit_on_success_strict()
     def handle(self, *args, **options):
 
+        config = {}
         conf_file = options['conf']
-        if not conf_file:
-            m = "Please provide a configuation file."
-            raise CommandError(m)
-
-        with open(conf_file) as file_data:
-            config = json.load(file_data)
+        if conf_file is not None:
+            with open(conf_file) as file_data:
+                config = json.load(file_data)
 
 
         json_file = options['json']
+        service_id = options['service_id']
+        if bool(json_file) == bool(service_id):
+            m = "Please provide either --service or --json option."
+            raise CommandError(m)
+
+        if service_id:
+            raise NotImplementedError()
+
         if json_file:
             with open(json_file) as file_data:
                 data = json.load(file_data)
+                service = data.get('service')
+                resources = data.get('resources')
+                if service is None or resources is None:
+                    m = "JSON file should contain service and resource data."
+                    raise CommandError(m)
 
-            service = data.get('service')
-            resources = data.get('resources')
-            if service is None or resources is None:
-                m = "JSON file should contain service and resource data."
+        self.add_resources(service, resources, config)
+
+
+    @commit_on_success_strict()
+    def add_resources(self, service, resources, config):
+        for resource in resources:
+            name = resource['name']
+            uplimit = config.get(name)
+            if uplimit is None:
+                desc = resource['desc']
+                unit = resource.get('unit')
+                self.stdout.write(
+                    "Provide default base quota for resource '%s' (%s)" %
+                    (name, desc))
+                m = (" in %s: " % unit) if unit else ": "
+                self.stdout.write(m)
+                uplimit = raw_input()
+
+            try:
+                uplimit = int(uplimit)
+            except ValueError:
+                m = "Limit for resource %s is not an integer." % (name)
                 raise CommandError(m)
 
-            add_resources(service, resources, config)
+            add_resource(service, resource, uplimit)

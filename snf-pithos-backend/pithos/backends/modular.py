@@ -1519,7 +1519,8 @@ class ModularBackend(BaseBackend):
 
     # Domain functions
 
-    def _get_domain_objects(self, domain, user=None):
+    @backend_method
+    def get_domain_objects(self, domain, user=None):
         obj_list = self.node.domain_object_list(domain, CLUSTER_NORMAL)
         if user != None:
             obj_list = [t for t in obj_list \

@@ -59,7 +59,6 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  QUOTAHOLDER_POOLSIZE,
                                  BACKEND_QUOTA, BACKEND_VERSIONING,
                                  BACKEND_FREE_VERSIONING, BACKEND_POOL_SIZE,
-                                 AUTHENTICATION_URL,
                                  COOKIE_NAME, USER_CATALOG_URL,
                                  RADOS_STORAGE, RADOS_POOL_BLOCKS,
                                  RADOS_POOL_MAPS, TRANSLATE_UUIDS,
@@ -1003,7 +1002,8 @@ def update_response_headers(request, response):
 
 def get_pithos_usage(token):
     """Get Pithos Usage from astakos."""
-    user_info = user_for_token(token, AUTHENTICATION_URL, usage=True)
+    astakos_url = settings.ASTAKOS_URL + "im/authenticate"
+    user_info = user_for_token(token, astakos_url, usage=True)
     usage = user_info.get("usage", [])
     for u in usage:
         if u.get('name') == 'pithos+.diskspace':

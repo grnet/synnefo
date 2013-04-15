@@ -184,12 +184,13 @@ def user_for_token(token, authentication_url, usage=False):
 
 def get_user(
         request,
-        authentication_url='http://127.0.0.1:8000/im/authenticate',
+        astakos_url='http://127.0.0.1:8000/im/authenticate',
         fallback_token=None,
         usage=False):
     request.user = None
     request.user_uniq = None
 
+    authentication_url = astakos_url + "im/authenticate"
     # Try to find token in a parameter or in a request header.
     user = user_for_token(
         request.GET.get('X-Auth-Token'), authentication_url,
@@ -236,8 +237,7 @@ class UserCache(object):
     def __init__(self, astakos_url, astakos_token, split=100):
         self.astakos_token = astakos_token
         self.astakos_url = astakos_url
-        self.user_catalog_url = astakos_url.replace("im/authenticate",
-                                                    "service/api/user_catalogs")
+        self.user_catalog_url = astakos_url + "service/api/user_catalogs"
         self.users = {}
 
         self.split = split

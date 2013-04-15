@@ -57,8 +57,7 @@ In `/etc/synnefo/pithos.conf` add:
 
 .. code-block:: console
 
-    PITHOS_AUTHENTICATION_URL = 'https:/accounts.example.com/im/authenticate'
-    PITHOS_AUTHENTICATION_USERS = None
+    ASTAKOS_URL = 'https:/accounts.example.com/'
     PITHOS_USER_CATALOG_URL = 'https://accounts.example.com/user_catalogs'
     PITHOS_USER_FEEDBACK_URL = 'https://accounts.example.com/feedback'
     PITHOS_USER_LOGIN_URL = 'https://accounts.example.com/login'

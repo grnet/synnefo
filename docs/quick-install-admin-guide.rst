@@ -847,12 +847,11 @@ this options:
 
 .. code-block:: console
 
-   PITHOS_BACKEND_DB_CONNECTION = 'postgresql://synnefo:example_passw0rd@node1.example.com:5432/snf_pithos'
+   ASTAKOS_URL = 'https://node1.example.com/'
 
+   PITHOS_BACKEND_DB_CONNECTION = 'postgresql://synnefo:example_passw0rd@node1.example.com:5432/snf_pithos'
    PITHOS_BACKEND_BLOCK_PATH = '/srv/pithos/data'
 
-   PITHOS_AUTHENTICATION_URL = 'https://node1.example.com/im/authenticate'
-   PITHOS_AUTHENTICATION_USERS = None
 
    PITHOS_SERVICE_TOKEN = 'pithos_service_token22w=='
    PITHOS_USER_CATALOG_URL = 'https://node1.example.com/user_catalogs'
@@ -878,9 +877,8 @@ the pithos+ backend data. Above we tell pithos+ to store its data under
 ``/srv/pithos/data``, which is visible by both nodes. We have already setup this
 directory at node1's "Pithos+ data directory setup" section.
 
-The ``PITHOS_AUTHENTICATION_URL`` option tells to the pithos+ app in which URI
-is available the astakos authentication api. If not set, pithos+ tries to
-authenticate using the ``PITHOS_AUTHENTICATION_USERS`` user pool.
+The ``ASTAKOS_URL`` option tells to the pithos+ app in which URI
+is available the astakos authentication api.
 
 The ``PITHOS_SERVICE_TOKEN`` should be the Pithos+ token returned by running on
 the Astakos node (node1 in our case):
@@ -1705,14 +1703,14 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-api.conf``:
 
 .. code-block:: console
 
-   ASTAKOS_URL = 'https://node1.example.com/im/authenticate'
+   ASTAKOS_URL = 'https://node1.example.com/'
 
    # Set to False if astakos & cyclades are on the same host
    CYCLADES_PROXY_USER_SERVICES = False
 
 The ``ASTAKOS_URL`` denotes the authentication endpoint for Cyclades and is set
 to point to Astakos (this should have the same value with Pithos+'s
-``PITHOS_AUTHENTICATION_URL``, setup :ref:`previously <conf-pithos>`).
+``ASTAKOS_URL``, setup :ref:`previously <conf-pithos>`).
 
 .. warning::
 

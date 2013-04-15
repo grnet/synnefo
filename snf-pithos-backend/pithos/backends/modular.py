@@ -123,6 +123,7 @@ def backend_method(func=None, autocommit=1):
             for m in self.messages:
                 self.queue.send(*m)
             if serials:
+                self.quotaholder_serials.insert_many(serials)
                 self.quotaholder.accept_commission(
                             context     =   {},
                             clientkey   =   'pithos',

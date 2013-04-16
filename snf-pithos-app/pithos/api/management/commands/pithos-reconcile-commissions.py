@@ -39,19 +39,23 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+CLIENTKEY = 'pithos'
+
 class Command(NoArgsCommand):
     help = "Display unresolved commissions and trigger their recovery"
 
     def handle_noargs(self, **options):
         b = get_backend()
         try:
-            pending_commissions = b.quotaholder.get_pending_commissions()
+            pending_commissions = b.quotaholder.get_pending_commissions(
+                clientkey=CLIENTKEY
+            )
 
             to_accept = b.quotaholder_serials.lookup(pending_commissions)
             self.stdout.write("Accept commissions: %s\n" %  to_accept)
             b.quotaholder.accept_commission(
                 context     =   {},
-                clientkey   =   'pithos',
+                clientkey   =   CLIENTKEY,
                 serials     =   to_accept
             )
             self.stdout.write("Delete serials: %s\n" %  to_accept)
@@ -61,7 +65,7 @@ class Command(NoArgsCommand):
             self.stdout.write("Reject commissions: %s\n" %  to_reject)
             b.quotaholder.reject_commission(
                 context     =   {},
-                clientkey   =   'pithos',
+                clientkey   =   CLIENTKEY,
                 serials     =   to_reject
             )
 

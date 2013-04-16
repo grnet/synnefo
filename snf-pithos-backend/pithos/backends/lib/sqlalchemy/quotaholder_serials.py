@@ -71,7 +71,7 @@ class QuotaholderSerial(DBWorker):
         return rows
 
     def lookup(self, serials):
-        """Return the serials."""
+        """Return the registered serials."""
 
         if not serials:
             return []

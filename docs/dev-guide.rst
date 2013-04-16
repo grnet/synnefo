@@ -3,40 +3,73 @@
 Synnefo Developer's Guide
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This is the complete Synnefo Developer's Guide. Here we document all Synnefo APIs
-to allow external developers write independent tools that interact with Synnefo.
+This is the complete Synnefo Developer's Guide. Here, we document all Synnefo
+REST APIs, to allow external developers write independent tools that interact
+with Synnefo.
 
-IM API (Astakos)
-================
+Synnefo exposes the OpenStack APIs for all its operations. Also, extensions
+have been written for advanced operations wherever needed, and minor changes
+for things that were missing or change frequently.
 
-This is the Identity Management API:
+All Synnefo services have the analogous OpenStack API:
+
+| Cyclades/Compute Service -> OpenStack Compute API
+| Cyclades/Network Service -> OpenStack Compute/Network API (not Quantum yet)
+| Cyclades/Image Service -> OpenStack Compute/Image API
+| Cyclades/Plankton/Image Service -> OpenStack Glance API
+| Pithos/Storage Service -> OpenStack Object Store API
+| Astakos/Identity Service -> Proprietary, moving to OpenStack Keystone API
+
+Below, we will describe all Synnefo APIs with conjuction to the OpenStack APIs.
+
+
+Identity Service API (Astakos)
+==============================
+
+Currently, Astakos which is the Identity Management Service of Synnefo, has a
+proprietary API, but we are moving to the OpenStack Keystone API.
+
+The current Identity Management API is:
 
 .. toctree::
    :maxdepth: 2
 
-   IM API <astakos-api-guide>
+    Identity API <astakos-api-guide>
 
-Compute API (Cyclades)
-======================
 
-This is the Cyclades Compute API:
+Compute Service API (Cyclades)
+==============================
+
+The Compute part of Cyclades exposes the OpenStack Compute API with minor
+changes wherever needed.
+
+This is the Cyclades/Compute API:
 
 .. toctree::
    :maxdepth: 2
 
    Compute API <cyclades-api-guide>
 
-Network API (Cyclades)
-======================
 
-The Network API is currently implemented inside Cyclades. Please consult the
-:ref:`Compute API <cyclades-api-guide>` for more details.
+Network Service API (Cyclades)
+==============================
+
+The Network Service is implemented inside Cyclades. It exposes the part of the
+OpenStack Compute API that has to do with Networks. The OpenStack Quantum API
+is not implemented yet.
+
+Please consult the :ref:`Cyclades/Network API <cyclades-api-guide>` for more
+details.
 
 
-Images API (Plankton)
-=====================
+Images Service API (Cyclades/Plankton)
+======================================
 
-This is the Plankton Image API:
+Plankton is the Image Service of Synnefo, currently implemented inside
+Cyclades. Plankton exposes the OpenStack Glance API with minor changes wherever
+needed.
+
+This is the Cyclades/Plankton Image API:
 
 .. toctree::
    :maxdepth: 2
@@ -44,8 +77,11 @@ This is the Plankton Image API:
    Image API <plankton-api-guide>
 
 
-Storage API (Pithos)
-=====================
+Storage Service API (Pithos)
+============================
+
+Pithos is the Storage Service of Synnefo and it exposes the OpenStack Object
+Storage API with extensions for advanced operations, e.g., syncing.
 
 This is the Pithos Object Storage API:
 
@@ -53,6 +89,7 @@ This is the Pithos Object Storage API:
    :maxdepth: 2
 
    Object Storage API <pithos-api-guide>
+
 
 Implementing new clients
 ========================
@@ -93,15 +130,15 @@ which can be represented as folders or with other related icons:
  * The ``history`` element, which allows browsing past instances of ``home``
    and - optionally - ``trash``.
 
-Objects in Pithos+ can be:
+Objects in Pithos can be:
 
  * Moved to trash and then deleted.
  * Shared with specific permissions.
- * Made public (shared with non-Pithos+ users).
+ * Made public (shared with non-Pithos users).
  * Restored from previous versions.
 
 Some of these functions are performed by the client software and some by the
-Pithos+ server.
+Pithos server.
 
 In the first version of Pithos, objects could also be assigned custom tags.
 This is no longer supported. Existing deployments can migrate tags into a
@@ -110,7 +147,7 @@ specific metadata value, i.e. ``X-Object-Meta-Tags``.
 Implementation Guidelines
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Pithos+ clients should use the ``pithos`` and ``trash`` containers for active
+Pithos clients should use the ``pithos`` and ``trash`` containers for active
 and inactive objects respectively. If any of these containers is not found, the
 client software should create it, without interrupting the user's workflow. The
 ``home`` element corresponds to ``pithos`` and the ``trash`` element to

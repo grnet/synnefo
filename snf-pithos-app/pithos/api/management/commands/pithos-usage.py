@@ -38,15 +38,14 @@ from optparse import make_option
 from sqlalchemy import func
 from sqlalchemy.sql import select, and_, or_
 
-from synnefo.util.number import strbigdec
-
 from pithos.api.util import get_backend
 from pithos.backends.modular import (
     CLUSTER_NORMAL, CLUSTER_HISTORY, CLUSTER_DELETED
 )
 clusters = (CLUSTER_NORMAL, CLUSTER_HISTORY, CLUSTER_DELETED)
 
-Statistics = namedtuple('Statistics', ('node', 'path', 'size', 'cluster'))
+Usage = namedtuple('Usage', ('node', 'path', 'size', 'cluster'))
+GetQuota = namedtuple('GetQuota', ('entity', 'resource', 'key'))
 
 class ResetHoldingPayload(namedtuple('ResetHoldingPayload', (
     'entity', 'resource', 'key', 'imported', 'exported', 'returned', 'released'
@@ -63,7 +62,6 @@ backend = get_backend()
 table = {}
 table['nodes'] = backend.node.nodes
 table['versions'] = backend.node.versions
-table['statistics'] = backend.node.statistics
 table['policy'] = backend.node.policy
 conn = backend.node.conn
 
@@ -75,9 +73,9 @@ def _retrieve_user_nodes(users=()):
         s = s.where(table['nodes'].c.path.in_(users))
     return conn.execute(s).fetchall()
 
-def _compute_statistics(nodes):
-    statistics = []
-    append = statistics.append
+def _compute_usage(nodes):
+    usage = []
+    append = usage.append
     for path, node in nodes:
         select_children = select(
             [table['nodes'].c.node]).where(table['nodes'].c.parent == node)
@@ -96,36 +94,44 @@ def _compute_statistics(nodes):
             size = d2[CLUSTER_NORMAL]
         except KeyError:
             size = 0
-        append(Statistics(
+        append(Usage(
             node=node,
             path=path,
             size=size,
             cluster=CLUSTER_NORMAL))
-    return statistics
+    return usage
 
-def _verify_statistics(item):
-    """Verify statistics"""
-    s = select([table['statistics'].c.size])
-    s = s.where(table['statistics'].c.node == item.node)
-    s = s.where(table['statistics'].c.cluster == item.cluster)
-    db_item = conn.execute(s).fetchone()
-    if not db_item:
-        return
-    try:
-        assert item.size == db_item.size, \
-                '%d[%s][%d], size: %d != %d' % (
-                        item.node, item.path, item.cluster,
-                        item.size, db_item.size)
-    except AssertionError, e:
-        print e
+def _get_quotaholder_usage(usage):
+    payload = []
+    append = payload.append
+    [append(GetQuota(
+        entity=item.path,
+        resource='pithos+.diskspace',
+        key=ENTITY_KEY
+    )) for item in usage]
 
-def _prepare_reset_holding(statistics, verify=False):
-    """Verify statistics and set quotaholder user usage"""
+    result = backend.quotaholder.get_quota(
+        context={}, clientkey='pithos', get_quota=payload
+    )
+    return dict((entity, imported - exported + returned - released) for (
+        entity, resource, quantity, capacity, import_limit, export_limit,
+        imported, exported, returned, released, flags
+    ) in result)
+
+
+def _prepare_reset_holding(usage, only_diverging=False):
+    """Verify usage and set quotaholder user usage"""
     reset_holding = []
     append = reset_holding.append
-    for item in statistics:
-        if verify:
-            _verify_statistics(item)
+
+    quotaholder_usage = {}
+    if only_diverging:
+        quotaholder_usage = _get_quotaholder_usage(usage)
+
+    for item in(usage):
+        if only_diverging and quotaholder_usage.get(item.path) == item.size:
+            continue
+
         if item.cluster == CLUSTER_NORMAL:
             append(ResetHoldingPayload(
                     entity=item.path,
@@ -152,29 +158,31 @@ class Command(NoArgsCommand):
                     action="store_true",
                     default=False,
                     help="Reset usage for all or specified users"),
-        make_option('--verify',
-                    dest='verify',
+        make_option('--diverging',
+                    dest='diverging',
                     action="store_true",
                     default=False,
-                    help=("Verify statistics consistency for all "
-                          "or specified users")),
+                    help=("List or reset diverging usages")),
         make_option('--user',
                     dest='users',
                     action='append',
                     metavar='USER_UUID',
-                    help="Specify which users --list or --reset applies. This option can be repeated several times. If no user is specified --list or --reset will be applied globally."),
+                    help=("Specify which users --list or --reset applies.",
+                          "This option can be repeated several times.",
+                          "If no user is specified --list or --reset will be applied globally.")),
     )
 
     def handle_noargs(self, **options):
         try:
+            user_nodes = _retrieve_user_nodes(options['users'])
+            if not user_nodes:
+                raise CommandError('No users found.')
+            usage = _compute_usage(user_nodes)
+            reset_holding = _prepare_reset_holding(
+                usage, only_diverging=options['diverging']
+            )
+
             if options['list']:
-                user_nodes = _retrieve_user_nodes(options['users'])
-                if not user_nodes:
-                    raise CommandError('No users found.')
-                statistics = _compute_statistics(user_nodes)
-                reset_holding = _prepare_reset_holding(
-                        statistics, verify=options['verify']
-                )
                 print '\n'.join([str(i) for i in reset_holding])
 
             if options['reset']:

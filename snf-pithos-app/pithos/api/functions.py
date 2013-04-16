@@ -1066,7 +1066,10 @@ def object_write(request, v_account, v_container, v_object):
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except IndexError, e:
-        raise faults.Conflict(simple_list_response(request, e.data))
+        missing_blocks = e.data
+        response = HttpResponse(status=409)
+        response.content = simple_list_response(request, missing_blocks)
+        return response
     except ItemNotExists:
         raise faults.ItemNotFound('Container does not exist')
     except ValueError:

@@ -167,8 +167,8 @@ class Command(NoArgsCommand):
                     dest='users',
                     action='append',
                     metavar='USER_UUID',
-                    help=("Specify which users --list or --reset applies.",
-                          "This option can be repeated several times.",
+                    help=("Specify which users --list or --reset applies."
+                          "This option can be repeated several times."
                           "If no user is specified --list or --reset will be applied globally.")),
     )
 

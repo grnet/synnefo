@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 from django.core.management.base import NoArgsCommand, CommandError
+from optparse import make_option
 
 from pithos.api.util import get_backend
 
@@ -44,6 +45,14 @@ CLIENTKEY = 'pithos'
 class Command(NoArgsCommand):
     help = "Display unresolved commissions and trigger their recovery"
 
+    option_list = NoArgsCommand.option_list + (
+        make_option('--fix',
+                    dest='fix',
+                    action="store_true",
+                    default=False,
+                    help="Fix unresolved commissions"),
+    )
+
     def handle_noargs(self, **options):
         b = get_backend()
         try:
@@ -51,24 +60,33 @@ class Command(NoArgsCommand):
                 clientkey=CLIENTKEY
             )
 
-            to_accept = b.quotaholder_serials.lookup(pending_commissions)
-            self.stdout.write("Accept commissions: %s\n" %  to_accept)
-            b.quotaholder.accept_commission(
-                context     =   {},
-                clientkey   =   CLIENTKEY,
-                serials     =   to_accept
-            )
-            self.stdout.write("Delete serials: %s\n" %  to_accept)
-            b.quotaholder_serials.delete_many(to_accept)
+            if pending_commissions:
+                self.stdout.write(
+                    "Unresolved commissions: %s\n" % pending_commissions
+                )
+            else:
+                self.stdout.write( "No unresolved commissions were found\n")
+                return
 
-            to_reject = list(set(pending_commissions) - set(to_accept))
-            self.stdout.write("Reject commissions: %s\n" %  to_reject)
-            b.quotaholder.reject_commission(
-                context     =   {},
-                clientkey   =   CLIENTKEY,
-                serials     =   to_reject
-            )
+            if options['fix']:
+                to_accept = b.quotaholder_serials.lookup(pending_commissions)
+                b.quotaholder.accept_commission(
+                    context     =   {},
+                    clientkey   =   CLIENTKEY,
+                    serials     =   to_accept
+                )
+                self.stdout.write("Accepted commissions: %s\n" %  to_accept)
 
+                b.quotaholder_serials.delete_many(to_accept)
+                self.stdout.write("Deleted serials: %s\n" %  to_accept)
+
+                to_reject = list(set(pending_commissions) - set(to_accept))
+                b.quotaholder.reject_commission(
+                    context     =   {},
+                    clientkey   =   CLIENTKEY,
+                    serials     =   to_reject
+                )
+                self.stdout.write("Rejected commissions: %s\n" %  to_reject)
         except Exception, e:
             logger.exception(e)
             raise CommandError(e)

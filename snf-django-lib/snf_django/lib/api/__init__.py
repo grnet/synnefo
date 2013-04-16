@@ -155,7 +155,7 @@ def get_serialization(request, format_allowed=True):
 
 
 def update_response_headers(request, response):
-    if not response.has_header("Content-Type"):
+    if not getattr(response, "override_serialization", False):
         serialization = request.serialization
         if serialization == "xml":
             response["Content-Type"] = "application/xml; charset=UTF-8"

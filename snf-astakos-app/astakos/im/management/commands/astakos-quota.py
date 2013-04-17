@@ -136,12 +136,13 @@ class Command(BaseCommand):
         self.stdout.write(sep + '\n')
 
         for holder, holder_quotas in qh_quotas.iteritems():
-            h_initial = astakos_initial[holder]
-            email = info[holder]
+            h_initial = astakos_initial.get(holder)
+            email = info.get(holder, "")
             for source, source_quotas in holder_quotas.iteritems():
-                s_initial = h_initial[source]
+                s_initial = h_initial.get(source) if h_initial else None
                 for resource, values in source_quotas.iteritems():
-                    initial = str(s_initial[resource])
+                    initial = s_initial.get(resource) if s_initial else None
+                    initial = str(initial)
                     capacity = str(values['limit'])
                     used = str(values['used'])
 

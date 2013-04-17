@@ -89,6 +89,61 @@ Status  Description
       }
   }
 
+Get Quotas per Service
+..........
+
+**GET** /astakos/api/service_quotas
+
+====================  ============================
+Request Header Name   Value
+====================  ============================
+X-Auth-Token          Service authentication token
+====================  ============================
+
+**Normal Response Code**: 200
+
+**Error Response Codes**:
+
+======  ============================
+Status  Description
+======  ============================
+401     Unauthorized (Missing token)
+500     Internal Server Error
+======  ============================
+
+**Example Successful Response**:
+
+.. code-block:: javascript
+
+  {
+      "1a6165d0-5020-4b6d-a4ad-83476632a584": {
+          "system": {
+              "cyclades.ram": {
+                  "available": 536870912,
+                  "limit": 1073741824,
+                  "used": 536870912
+              },
+              "cyclades.vm": {
+                  "available": 0,
+                  "limit": 2,
+                  "used": 2
+              }
+          },
+          "project:1": {
+              "cyclades.ram": {
+                  "available": 0,
+                  "limit": 2147483648,
+                  "used": 2147483648
+              },
+              "cyclades.vm": {
+                  "available": 3,
+                  "limit": 5,
+                  "used": 2
+              }
+          }
+      }
+  }
+
 Commissions
 -----------
 

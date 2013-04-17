@@ -69,6 +69,20 @@ class QuotaholderDjangoDBCallpoint(object):
 
         return quotas
 
+    def get_resource_quota(self, resources, sources=None):
+        holdings = Holding.objects.filter(resource__in=resources)
+
+        if sources is not None:
+            holdings = holdings.filter(source__in=sources)
+
+        quotas = {}
+        for holding in holdings:
+            key = (holding.holder, holding.source, holding.resource)
+            value = (holding.limit, holding.imported_min, holding.imported_max)
+            quotas[key] = value
+
+        return quotas
+
     def _get_holdings_for_update(self, holding_keys):
         holding_keys = sorted(holding_keys)
         holdings = {}

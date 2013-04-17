@@ -45,7 +45,8 @@ from astakos.im.api import api_method as generic_api_method
 from astakos.im.api.user import user_from_token
 from astakos.im.api.service import service_from_token
 
-from astakos.im.quotas import get_user_quotas, get_resources
+from astakos.im.quotas import (get_user_quotas, get_resources,
+                               get_service_quotas)
 
 import astakos.quotaholder.exception as qh_exception
 from astakos.quotaholder.callpoint import QuotaholderDjangoDBCallpoint
@@ -56,6 +57,13 @@ qh = QuotaholderDjangoDBCallpoint()
 @user_from_token
 def quotas(request, user=None):
     result = get_user_quotas(user)
+    return json_response(result)
+
+
+@api.api_method(http_method='GET', token_required=True, user_required=False)
+@service_from_token
+def service_quotas(request):
+    result = get_service_quotas(request.service_instance)
     return json_response(result)
 
 

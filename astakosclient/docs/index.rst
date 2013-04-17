@@ -143,7 +143,7 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
     **issue_one_commission(**\ token, holder, source, provisions, name="", force=False, auto_accept=False\ **)**
         Given a service's authentication token issue a commission.
         In this case we specify the holder, the source and the provisions
-        (a list of (string, int)) and astakosclient will create the
+        (a dict from string to int) and astakosclient will create the
         corresponding commission.
         In case of success return commission's id (int).
         Otherwise raise an AstakosClientException exception.

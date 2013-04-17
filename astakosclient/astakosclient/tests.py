@@ -954,7 +954,7 @@ class TestCommissions(unittest.TestCase):
             client = AstakosClient("https://example.com")
             response = client.issue_one_commission(
                 token_1, "c02f315b-7d84-45bc-a383-552a3f97d2ad",
-                "system", [("cyclades.vm", 1), ("cyclades.ram", 30000)])
+                "system", {"cyclades.vm": 1, "cyclades.ram": 30000})
         except Exception as err:
             self.fail("Shouldn't have raised Exception %s" % err)
         self.assertEqual(response, commission_successful_response['serial'])

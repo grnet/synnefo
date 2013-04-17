@@ -402,9 +402,7 @@ class AstakosClient():
         request["name"] = name
         try:
             request["provisions"] = []
-            for p in provisions:
-                resource = p[0]
-                quantity = p[1]
+            for resource, quantity in provisions.iteritems():
                 t = {"holder": holder, "source": source,
                      "resource": resource, "quantity": quantity}
                 request["provisions"].append(t)

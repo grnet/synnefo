@@ -875,6 +875,7 @@ class ModularBackend(BaseBackend):
         account_path, account_node = self._lookup_account(account, True)
         container_path, container_node = self._lookup_container(
             account, container)
+
         path, node = self._put_object_node(
             container_path, container_node, name)
         pre_version_id, dest_version_id = self._put_version_duplicate(user, node, src_node=src_node, size=size, type=type, hash=hash, checksum=checksum, is_copy=is_copy)
@@ -887,30 +888,35 @@ class ModularBackend(BaseBackend):
 
         del_size = self._apply_versioning(account, container, pre_version_id)
         size_delta = size - del_size
-        if not self.using_external_quotaholder: # Check account quota.
-            if size_delta > 0:
+        if size_delta > 0:
+            # Check account quota.
+            if not self.using_external_quotaholder:
                 account_quota = long(
                     self._get_policy(account_node, is_account_policy=True
                     )['quota']
                 )
-                account_usage = self._get_statistics(account_node)[1] + size_delta
+                account_usage = self._get_statistics(account_node)[1]
                 if (account_quota > 0 and account_usage > account_quota):
-                    raise QuotaError('account quota exceeded: limit: %s, usage: %s' % (
-                        account_quota, account_usage
-                    ))
+                    raise QuotaError(
+                        'Account quota exceeded: limit: %s, usage: %s' % (
+                            account_quota, account_usage
+                        )
+                    )
 
-        # Check container quota.
-        container_quota = long(
-            self._get_policy(container_node, is_account_policy=False
-            )['quota']
-        )
-        container_usage = self._get_statistics(container_node)[1] + size_delta
-        if (container_quota > 0 and container_usage > container_quota):
-            # This must be executed in a transaction, so the version is
-            # never created if it fails.
-            raise QuotaError('container quota exceeded: limit: %s, usage: %s' % (
-                container_quota, container_usage
-            ))
+            # Check container quota.
+            container_quota = long(
+                self._get_policy(container_node, is_account_policy=False
+                )['quota']
+            )
+            container_usage = self._get_statistics(container_node)[1]
+            if (container_quota > 0 and container_usage > container_quota):
+                # This must be executed in a transaction, so the version is
+                # never created if it fails.
+                raise QuotaError(
+                    'Container quota exceeded: limit: %s, usage: %s' % (
+                        container_quota, container_usage
+                    )
+                )
 
         self._report_size_change(user, account, size_delta,
                                  {'action': 'object update', 'path': path,

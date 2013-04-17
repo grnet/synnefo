@@ -31,55 +31,39 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from astakos.im.models import Service, Resource
-from astakos.im.functions import qh_sync_all_users
-from astakos.im.quotas import qh_add_resource_limit, qh_sync_new_resource
-import logging
+from optparse import make_option
+from django.core.management.base import BaseCommand, CommandError
 
-logger = logging.getLogger(__name__)
-
-
-def add_resource(service, resource, uplimit):
-    try:
-        s = Service.objects.get(name=service)
-    except Service.DoesNotExist:
-        raise Exception("Service %s is not registered." % (service))
-
-    name = resource['name']
-    try:
-        r = Resource.objects.get_for_update(name=name)
-        old_uplimit = r.uplimit
-    except Resource.DoesNotExist:
-        r = Resource()
-        old_uplimit = None
-
-    r.uplimit = uplimit
-    r.service = service
-    for key, value in resource.iteritems():
-        setattr(r, key, value)
-
-    r.save()
-
-    if old_uplimit is not None:
-        logger.info("Updated resource %s with limit %s." % (name, uplimit))
-    else:
-        logger.info("Added resource %s with limit %s." % (name, uplimit))
-
-    if old_uplimit is not None:
-        diff = uplimit - old_uplimit
-        if diff != 0:
-            qh_add_resource_limit(name, diff)
-    else:
-        qh_sync_new_resource(name, uplimit)
+from astakos.im.models import Resource
+from astakos.im.resources import update_resource
 
 
-def update_resource(name, uplimit):
-    r = Resource.objects.get_for_update(name=name)
-    old_uplimit = r.uplimit
-    r.uplimit = uplimit
-    r.save()
+class Command(BaseCommand):
+    args = "<resource name>"
+    help = "Modify a resource (currently only change the default base quota)"
 
-    logger.info("Updated resource %s with limit %s." % (name, uplimit))
-    diff = uplimit - old_uplimit
-    if diff != 0:
-        qh_add_resource_limit(name, diff)
+    option_list = BaseCommand.option_list + (
+        make_option('--limit',
+                    dest='limit',
+                    help="Change default base quota"),
+    )
+
+    def handle(self, *args, **options):
+        if len(args) < 1:
+            raise CommandError("Please provide a resource name.")
+
+        resource_name = args[0]
+
+        limit = options['limit']
+        if limit is None:
+            raise CommandError("Use --limit to change default base quota.")
+
+        try:
+            limit = int(limit)
+        except:
+            raise CommandError("Limit should be an integer.")
+
+        try:
+            update_resource(resource_name, limit)
+        except Resource.DoesNotExist:
+            raise CommandError("Resource %s does not exist." % resource_name)

@@ -79,7 +79,7 @@ from synnefo.lib.db.managers import ForUpdateManager
 from astakos.quotaholder.api import QH_PRACTICALLY_INFINITE
 from synnefo.lib.db.intdecimalfield import intDecimalField
 from synnefo.util.text import uenc, udec
-from astakos.im.presentation import RESOURCES_PRESENTATION_DATA
+from astakos.im import presentation
 
 logger = logging.getLogger(__name__)
 
@@ -134,12 +134,12 @@ class Service(models.Model):
 _presentation_data = {}
 def get_presentation(resource):
     global _presentation_data
-    presentation = _presentation_data.get(resource, {})
-    if not presentation:
-        resource_presentation = RESOURCES_PRESENTATION_DATA.get('resources', {})
-        presentation = resource_presentation.get(resource, {})
-        _presentation_data[resource] = presentation
-    return presentation
+    resource_presentation = _presentation_data.get(resource, {})
+    if not resource_presentation:
+        resources_presentation = presentation.RESOURCES.get('resources', {})
+        resource_presentation = resources_presentation.get(resource, {})
+        _presentation_data[resource] = resource_presentation
+    return resource_presentation
 
 class Resource(models.Model):
     name = models.CharField(_('Name'), max_length=255, unique=True)

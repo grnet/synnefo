@@ -31,7 +31,9 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-RESOURCES_PRESENTATION_DATA = {
+from astakos.im import settings
+
+RESOURCES = {
     'groups': {
         'compute': {
             'help_text': ('Compute resources '
@@ -55,7 +57,7 @@ RESOURCES_PRESENTATION_DATA = {
         },
     },
     'resources': {
-        'pithos+.diskspace': {
+        'pithos.diskspace': {
             'help_text': ('This is the space on Pithos for storing files '
                           'and VM Images. '),
             'help_text_input_each': ('This is the total amount of space on '
@@ -65,6 +67,7 @@ RESOURCES_PRESENTATION_DATA = {
             'report_desc': 'Storage Space',
             'placeholder': 'eg. 10GB',
             'verbose_name': 'Storage Space',
+            'group': 'storage'
         },
         'cyclades.disk': {
             'help_text': ('This is the System Disk that the VMs have that '
@@ -77,7 +80,8 @@ RESOURCES_PRESENTATION_DATA = {
             'is_abbreviation': False,
             'report_desc': 'System Disk',
             'placeholder': 'eg. 5GB, 2GB etc',
-            'verbose_name': 'System Disk'
+            'verbose_name': 'System Disk',
+            'group': 'compute'
         },
         'cyclades.ram': {
             'help_text': 'RAM used by VMs ',
@@ -87,7 +91,9 @@ RESOURCES_PRESENTATION_DATA = {
             'is_abbreviation': True,
             'report_desc': 'RAM',
             'placeholder': 'eg. 4GB',
-            'verbose_name': 'ram'
+            'verbose_name': 'ram',
+            'group': 'compute'
+
         },
         'cyclades.cpu': {
             'help_text': 'CPUs used by VMs ',
@@ -97,7 +103,9 @@ RESOURCES_PRESENTATION_DATA = {
             'is_abbreviation': True,
             'report_desc': 'CPUs',
             'placeholder': 'eg. 1',
-            'verbose_name': 'cpu'
+            'verbose_name': 'cpu',
+            'group': 'compute'
+
         },
         'cyclades.vm': {
             'help_text': ('These are the VMs one can create on the '
@@ -109,6 +117,8 @@ RESOURCES_PRESENTATION_DATA = {
             'report_desc': 'Virtual Machines',
             'placeholder': 'eg. 2',
             'verbose_name': 'vm',
+            'group': 'compute'
+
         },
         'cyclades.network.private': {
             'help_text': ('These are the Private Networks one can create on '
@@ -119,11 +129,13 @@ RESOURCES_PRESENTATION_DATA = {
             'is_abbreviation': False,
             'report_desc': 'Private Networks',
             'placeholder': 'eg. 1',
-            'verbose_name': 'Private Network'
+            'verbose_name': 'Private Network',
+            'group': 'network'
+
         }
     },
     'groups_order': ['storage', 'compute', 'network'],
-    'resources_order': ['pithos+.diskspace',
+    'resources_order': ['pithos.diskspace',
                         'cyclades.disk',
                         'cyclades.cpu',
                         'cyclades.ram',

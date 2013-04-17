@@ -109,7 +109,7 @@ from astakos.im.settings import (
     PAGINATE_BY_ALL,
     ACTIVATION_REDIRECT_URL,
     MODERATION_ENABLED)
-from astakos.im.presentation import RESOURCES_PRESENTATION_DATA
+from astakos.im import presentation
 from astakos.im.api import get_services_dict
 from astakos.im import settings as astakos_settings
 from astakos.im.api.callpoint import AstakosCallpoint
@@ -1042,10 +1042,74 @@ def _update_object(request, model=None, object_id=None, slug=None,
             populate_xheaders(request, response, model, getattr(obj, obj._meta.pk.attname))
         return response
 
+
+def _resources_catalog(request):
+    """
+    `resource_catalog` contains a list of tuples. Each tuple contains the group
+    key the resource is assigned to and resources list of dicts that contain
+    resource information.
+    `resource_groups` contains information about the groups
+    """
+    # presentation data
+    resource_groups = presentation.RESOURCES.get('groups', {})
+    resource_catalog = ()
+
+    # resources in database
+    result = callpoint.list_resources()
+    if not result.is_success:
+        messages.error(request, 'Unable to retrieve system resources: %s' %
+                                result.reason)
+    else:
+        # initialize resource_catalog to contain all group/resource information
+        for r in result.data:
+            if not r.get('group') in resource_groups:
+                resource_groups[r.get('group')] = {'icon': 'unknown'}
+
+        resource_keys = [r.get('str_repr') for r in result.data]
+        resource_catalog = [[g, filter(lambda r: r.get('group', '') == g,
+                                       result.data)] for g in resource_groups]
+
+    # order groups, also include unknown groups
+    groups_order = presentation.RESOURCES.get('groups_order')
+    for g in resource_groups.keys():
+        if not g in groups_order:
+            groups_order.append(g)
+
+    # order resources, also include unknown resources
+    resources_order = presentation.RESOURCES.get('resources_order')
+    for r in resource_keys:
+        if not r in resources_order:
+            resources_order.append(r)
+
+    # sort catalog groups
+    resource_catalog = sorted(resource_catalog,
+                              key=lambda g: groups_order.index(g[0]))
+
+    # sort groups
+    def groupindex(g):
+        return groups_order.index(g[0])
+    resource_groups_list = sorted([(k, v) for k, v in resource_groups.items()],
+                                  key=groupindex)
+    resource_groups = OrderedDict(resource_groups_list)
+
+    # sort resources
+    def resourceindex(r):
+        return resources_order.index(r['str_repr'])
+    for index, group in enumerate(resource_catalog):
+        resource_catalog[index][1] = sorted(resource_catalog[index][1],
+                                            key=resourceindex)
+        if len(resource_catalog[index][1]) == 0:
+            resource_catalog.pop(index)
+            for gindex, g in enumerate(resource_groups):
+                if g[0] == group[0]:
+                    resource_groups.pop(gindex)
+
+    return resource_catalog, resource_groups
+
+
 @require_http_methods(["GET", "POST"])
 @valid_astakos_user_required
 def project_add(request):
-
     user = request.user
     reached, limit = reached_pending_application_limit(user.id)
     if not user.is_project_admin() and reached:
@@ -1055,42 +1119,17 @@ def project_add(request):
         next = restrict_next(next, domain=COOKIE_DOMAIN)
         return redirect(next)
 
-    resource_groups = RESOURCES_PRESENTATION_DATA.get('groups', {})
-    resource_catalog = ()
-    result = callpoint.list_resources()
-    details_fields = [
-        "name", "homepage", "description","start_date","end_date", "comments"]
-    membership_fields =[
-        "member_join_policy", "member_leave_policy", "limit_on_members_number"]
-    if not result.is_success:
-        messages.error(
-            request,
-            'Unable to retrieve system resources: %s' % result.reason
-    )
-    else:
-        resource_catalog = [
-            [g, filter(lambda r: r.get('group', '') == g, result.data)] \
-                for g in resource_groups]
-
-    # order resources
-    groups_order = RESOURCES_PRESENTATION_DATA.get('groups_order')
-    resources_order = RESOURCES_PRESENTATION_DATA.get('resources_order')
-    resource_catalog = sorted(resource_catalog, key=lambda g:groups_order.index(g[0]))
-
-    resource_groups_list = sorted([(k,v) for k,v in resource_groups.items()],
-                                  key=lambda f:groups_order.index(f[0]))
-    resource_groups = OrderedDict(resource_groups_list)
-    for index, group in enumerate(resource_catalog):
-        resource_catalog[index][1] = sorted(resource_catalog[index][1],
-                                            key=lambda r: resources_order.index(r['str_repr']))
-
-
+    details_fields = ["name", "homepage", "description", "start_date",
+                      "end_date", "comments"]
+    membership_fields = ["member_join_policy", "member_leave_policy",
+                         "limit_on_members_number"]
+    resource_catalog, resource_groups = _resources_catalog(request)
     extra_context = {
-        'resource_catalog':resource_catalog,
-        'resource_groups':resource_groups,
-        'show_form':True,
-        'details_fields':details_fields,
-        'membership_fields':membership_fields}
+        'resource_catalog': resource_catalog,
+        'resource_groups': resource_groups,
+        'show_form': True,
+        'details_fields': details_fields,
+        'membership_fields': membership_fields}
 
     response = None
     with ExceptionHandler(request):
@@ -1186,41 +1225,31 @@ def project_modify(request, application_id):
         next = restrict_next(next, domain=COOKIE_DOMAIN)
         return redirect(next)
 
-    resource_groups = RESOURCES_PRESENTATION_DATA.get('groups', {})
-    resource_catalog = ()
-    result = callpoint.list_resources()
-    details_fields = [
-        "name", "homepage", "description","start_date","end_date", "comments"]
-    membership_fields =[
-        "member_join_policy", "member_leave_policy", "limit_on_members_number"]
-    if not result.is_success:
-        messages.error(
-            request,
-            'Unable to retrieve system resources: %s' % result.reason
-    )
-    else:
-        resource_catalog = [
-            (g, filter(lambda r: r.get('group', '') == g, result.data)) \
-                for g in resource_groups]
+    details_fields = ["name", "homepage", "description", "start_date",
+                      "end_date", "comments"]
+    membership_fields = ["member_join_policy", "member_leave_policy",
+                         "limit_on_members_number"]
+    resource_catalog, resource_groups = _resources_catalog(request)
     extra_context = {
-        'resource_catalog':resource_catalog,
-        'resource_groups':resource_groups,
-        'show_form':True,
-        'details_fields':details_fields,
+        'resource_catalog': resource_catalog,
+        'resource_groups': resource_groups,
+        'show_form': True,
+        'details_fields': details_fields,
         'update_form': True,
-        'membership_fields':membership_fields}
+        'membership_fields': membership_fields
+    }
 
     response = None
     with ExceptionHandler(request):
-        response =_update_object(
+        response = _update_object(
             request,
             object_id=application_id,
             template_name='im/projects/projectapplication_form.html',
-            extra_context=extra_context, post_save_redirect=reverse('project_list'),
+            extra_context=extra_context,
+            post_save_redirect=reverse('project_list'),
             form_class=ProjectApplicationForm,
-            msg = _("The %(verbose_name)s has been received and "
-                    "is under consideration."),
-            )
+            msg=_("The %(verbose_name)s has been received and is under "
+                  "consideration."))
 
     if response is not None:
         return response

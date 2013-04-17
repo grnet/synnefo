@@ -98,8 +98,6 @@ def get_content_type():
     _content_type = content_type
     return content_type
 
-RESOURCE_SEPARATOR = '.'
-
 inf = float('inf')
 
 class Service(models.Model):
@@ -132,15 +130,6 @@ class Service(models.Model):
     def __str__(self):
         return self.name
 
-    @property
-    def resources(self):
-        return self.resource_set.all()
-
-    @resources.setter
-    def resources(self, resources):
-        for s in resources:
-            self.resource_set.create(**s)
-
 
 _presentation_data = {}
 def get_presentation(resource):
@@ -154,10 +143,10 @@ def get_presentation(resource):
 
 class Resource(models.Model):
     name = models.CharField(_('Name'), max_length=255, unique=True)
-    service = models.ForeignKey(Service)
     desc = models.TextField(_('Description'), null=True)
-    unit = models.CharField(_('Name'), null=True, max_length=255)
-    group = models.CharField(_('Group'), null=True, max_length=255)
+    service = models.CharField(_('Service identifier'), max_length=255,
+                               null=True)
+    unit = models.CharField(_('Unit'), null=True, max_length=255)
     uplimit = intDecimalField(default=0)
 
     objects = ForUpdateManager()
@@ -175,12 +164,19 @@ class Resource(models.Model):
                 }
 
     @property
+    def group(self):
+        default = self.name
+        return get_presentation(str(self)).get('group', default)
+
+    @property
     def help_text(self):
-        return get_presentation(str(self)).get('help_text', '')
+        default = "%s resource" % self.name
+        return get_presentation(str(self)).get('help_text', default)
 
     @property
     def help_text_input_each(self):
-        return get_presentation(str(self)).get('help_text_input_each', '')
+        default = "%s resource" % self.name
+        return get_presentation(str(self)).get('help_text_input_each', default)
 
     @property
     def is_abbreviation(self):
@@ -188,15 +184,16 @@ class Resource(models.Model):
 
     @property
     def report_desc(self):
-        return get_presentation(str(self)).get('report_desc', '')
+        default = "%s resource" % self.name
+        return get_presentation(str(self)).get('report_desc', default)
 
     @property
     def placeholder(self):
-        return get_presentation(str(self)).get('placeholder', '')
+        return get_presentation(str(self)).get('placeholder', self.unit)
 
     @property
     def verbose_name(self):
-        return get_presentation(str(self)).get('verbose_name', '')
+        return get_presentation(str(self)).get('verbose_name', self.name)
 
     @property
     def display_name(self):
@@ -408,8 +405,7 @@ class AstakosUser(User):
             self, resource, capacity,
             update=True):
         """Raises ObjectDoesNotExist, IntegrityError"""
-        s, sep, r = resource.partition(RESOURCE_SEPARATOR)
-        resource = Resource.objects.get(service__name=s, name=r)
+        resource = Resource.objects.get(name=resource)
         if update:
             AstakosUserQuota.objects.update_or_create(
                 user=self, resource=resource, defaults={
@@ -422,8 +418,7 @@ class AstakosUser(User):
                 )
 
     def get_resource_policy(self, resource):
-        s, sep, r = resource.partition(RESOURCE_SEPARATOR)
-        resource = Resource.objects.get(service__name=s, name=r)
+        resource = Resource.objects.get(name=resource)
         default_capacity = resource.uplimit
         try:
             policy = AstakosUserQuota.objects.get(user=self, resource=resource)
@@ -433,7 +428,7 @@ class AstakosUser(User):
 
     def remove_resource_policy(self, service, resource):
         """Raises ObjectDoesNotExist, IntegrityError"""
-        resource = Resource.objects.get(service__name=service, name=resource)
+        resource = Resource.objects.get(name=resource)
         q = self.policies.get(resource=resource).delete()
 
     def update_uuid(self):
@@ -1445,7 +1440,7 @@ class ProjectApplication(models.Model):
     def add_resource_policy(self, service, resource, uplimit):
         """Raises ObjectDoesNotExist, IntegrityError"""
         q = self.projectresourcegrant_set
-        resource = Resource.objects.get(service__name=service, name=resource)
+        resource = Resource.objects.get(name=resource)
         q.create(resource=resource, member_capacity=uplimit)
 
     def members_count(self):
@@ -1453,8 +1448,8 @@ class ProjectApplication(models.Model):
 
     @property
     def grants(self):
-        return self.projectresourcegrant_set.values(
-            'member_capacity', 'resource__name', 'resource__service__name')
+        return self.projectresourcegrant_set.values('member_capacity',
+                                                    'resource__name')
 
     @property
     def resource_policies(self):

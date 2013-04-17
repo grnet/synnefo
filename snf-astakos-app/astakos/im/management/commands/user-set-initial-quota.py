@@ -154,10 +154,9 @@ for a single user from the command line
 
         if capacity == 'default':
             try:
-                service, sep, name = resource.partition('.')
                 q = AstakosUserQuota.objects.get(
                         user=user,
-                        resource__service__name=service,
+                        resource__name=resource,
                         resource__name=name)
                 q.delete()
             except Exception as e:

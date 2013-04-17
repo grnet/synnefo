@@ -78,8 +78,7 @@ from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im import tables
 from astakos.im.models import (
     AstakosUser, ApprovalTerms,
-    EmailChange, RESOURCE_SEPARATOR,
-    AstakosUserAuthProvider, PendingThirdPartyUser,
+    EmailChange, AstakosUserAuthProvider, PendingThirdPartyUser,
     ProjectApplication, ProjectMembership, Project)
 from astakos.im.util import (
     get_context, prepare_response, get_query, restrict_next)

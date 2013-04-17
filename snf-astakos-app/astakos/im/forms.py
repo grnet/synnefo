@@ -57,7 +57,7 @@ from django.core.exceptions import PermissionDenied
 
 from astakos.im.models import (
     AstakosUser, EmailChange, Invitation,
-    Resource, PendingThirdPartyUser, get_latest_terms, RESOURCE_SEPARATOR,
+    Resource, PendingThirdPartyUser, get_latest_terms,
     ProjectApplication, Project)
 from astakos.im.settings import (
     INVITATIONS_PER_LEVEL, BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY,
@@ -865,8 +865,7 @@ class ProjectApplicationForm(forms.ModelForm):
             if name.endswith('_uplimit'):
                 subs = name.split('_uplimit')
                 prefix, suffix = subs
-                s, sep, r = prefix.partition(RESOURCE_SEPARATOR)
-                resource = Resource.objects.get(service__name=s, name=r)
+                resource = Resource.objects.get(name=prefix)
 
                 # keep only resource limits for selected resource groups
                 if self.data.get(
@@ -874,9 +873,9 @@ class ProjectApplicationForm(forms.ModelForm):
                  ) == "1":
                     d = model_to_dict(resource)
                     if uplimit:
-                        d.update(dict(service=s, resource=r, uplimit=uplimit))
+                        d.update(dict(resource=prefix, uplimit=uplimit))
                     else:
-                        d.update(dict(service=s, resource=r, uplimit=None))
+                        d.update(dict(resource=prefix, uplimit=None))
                     append(d)
 
         ordered_keys = RESOURCES_PRESENTATION_DATA['resources_order']

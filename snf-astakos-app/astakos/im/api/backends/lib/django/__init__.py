@@ -40,8 +40,7 @@ from smtplib import SMTPException
 
 from astakos.im.models import (
     AstakosUser,
-    Resource, Service, RESOURCE_SEPARATOR,
-    Project, ProjectApplication, ProjectMembership)
+    Resource, Service, Project, ProjectApplication, ProjectMembership)
 from astakos.im.api.backends.base import (
     BaseBackend, SuccessResult, FailureResult)
 from astakos.im.api.backends.errors import (
@@ -247,9 +246,7 @@ class DjangoBackend(BaseBackend):
             t = (i if i else 0 for i in t)
             (entity, name, quantity, capacity, importLimit, exportLimit,
              imported, exported, returned, released, flags) = t
-            service, sep, resource = name.partition(RESOURCE_SEPARATOR)
-            resource = Resource.objects.select_related().get(
-                service__name=service, name=resource)
+            resource = Resource.objects.select_related().get(name=name)
             currValue=quantity + imported - released - exported + returned
             d = dict(name=name,
                      description=resource.desc,

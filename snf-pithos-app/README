@@ -40,8 +40,8 @@ PITHOS_BACKEND_BLOCK_UMASK       0o022                                          
 PITHOS_BACKEND_QUEUE_MODULE      None                                                               Use ``pithos.backends.lib.rabbitmq`` to enable
 PITHOS_BACKEND_QUEUE_HOSTS       None                                                               Format like [``amqp://guest:guest@localhost:5672``
 PITHOS_BACKEND_QUEUE_EXCHANGE    pithos
-PITHOS_BACKEND_ACCOUNT_QUOTA     50 GB (50 * 1024 ** 3)                                             Default account quota
-PITHOS_BACKEND_CONTAINER_QUOTA   50 GB (50 * 1024 ** 4)                                             Default container quota
+PITHOS_BACKEND_ACCOUNT_QUOTA     50 GB (50 * 1024 ** 3)                                             Default account quota (set to 0 to disable control)
+PITHOS_BACKEND_CONTAINER_QUOTA   0                                                                  Default container quota (set to 0 to disable control - default disabled)
 PITHOS_BACKEND_VERSIONING        auto                                                               Default versioning policy for containers
 PITHOS_BACKEND_FREE_VERSIONING   True                                                               Default versioning debit policy (default free)
 PITHOS_BACKEND_POOL_SIZE         5                                                                  Default backend pool size

@@ -36,14 +36,14 @@ from django.core.management.base import BaseCommand, CommandError
 from astakos.im.api.callpoint import AstakosCallpoint
 
 class Command(BaseCommand):
-    args = "<name> <url> [<icon>]"
+    args = "<name> <api_url>"
     help = "Register a service"
 
     def handle(self, *args, **options):
         if len(args) < 2:
             raise CommandError("Invalid number of arguments")
 
-        s = {'name':args[0], 'url':args[1]}
+        s = {'name':args[0], 'api_url':args[1]}
         if len(args) == 3:
             s['icon'] = args[2]
         try:

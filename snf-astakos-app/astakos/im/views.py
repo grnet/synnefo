@@ -79,7 +79,7 @@ from astakos.im import tables
 from astakos.im.models import (
     AstakosUser, ApprovalTerms,
     EmailChange, AstakosUserAuthProvider, PendingThirdPartyUser,
-    ProjectApplication, ProjectMembership, Project)
+    ProjectApplication, ProjectMembership, Project, Service)
 from astakos.im.util import (
     get_context, prepare_response, get_query, restrict_next)
 from astakos.im.forms import (
@@ -1053,6 +1053,7 @@ def _resources_catalog(request):
     # presentation data
     resource_groups = presentation.RESOURCES.get('groups', {})
     resource_catalog = ()
+    resource_keys = []
 
     # resources in database
     result = callpoint.list_resources()
@@ -1647,9 +1648,10 @@ def _project_app_dismiss(request, application_id):
 @login_required
 @signed_terms_required
 def landing(request):
+    context = {'services': Service.catalog(orderfor='dashboard')}
     return render_response(
         'im/landing.html',
-        context_instance=get_context(request))
+        context_instance=get_context(request), **context)
 
 
 def api_access(request):

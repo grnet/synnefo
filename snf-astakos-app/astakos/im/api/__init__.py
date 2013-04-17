@@ -65,7 +65,7 @@ api_method = partial(api.api_method, user_required=False,
 
 def get_services_dict():
     """Return dictionary with information about available Services."""
-    return list(Service.objects.values("id", "name", "url", "icon"))
+    return Service.catalog().values()
 
 
 @api_method(http_method=None)

@@ -143,3 +143,71 @@ RESOURCES = {
                         'cyclades.network.private'
                         ]
 }
+
+
+def service_defaults(service_name):
+    """
+    Metadata for unkown services
+    """
+    return {
+        'name': service_name,
+        'order': 1000,
+        'verbose_name': service_name.title(),
+        'cloudbar': {
+            'show': True,
+            'title': service_name
+        },
+        'dashboard': {
+            'show': True,
+            'order': 1000,
+            'description': '%s service' % service_name
+        }
+    }
+
+
+SERVICES = {
+    'astakos': {
+        'url': '/im/landing',
+        'order': 1,
+        'dashboard': {
+            'order': 3,
+            'show': True,
+            'description': "Access the dashboard from the top right corner "
+                           "of your screen. Here you can manage your profile, "
+                           "see the usage of your resources and manage "
+                           "projects to share virtual resources with "
+                           "colleagues."
+        },
+        'cloudbar': {
+            'show': False
+        }
+    },
+    'pithos': {
+        'url': '/pithos/ui/',
+        'order': 2,
+        'dashboard': {
+            'order': 1,
+            'show': True,
+            'description': "Pithos is the File Storage service. "
+                           "Click to start uploading and managing your "
+                           "files on the cloud."
+        },
+        'cloudbar': {
+            'show': True
+        }
+    },
+    'cyclades': {
+        'url': '/cyclades/ui/',
+        'order': 3,
+        'dashboard': {
+            'order': 2,
+            'show': True,
+            'description': "Cyclades is the Compute and Network Service. "
+                           "Click to start creating Virtual Machines and "
+                           "connect them to arbitrary Networks."
+        },
+        'cloudbar': {
+            'show': True
+        }
+    }
+}

@@ -268,4 +268,3 @@ def confirm_link(context, title, prompt='', url=None, urlarg=None,
 
     content = render_to_string(template, tpl_context)
     return content
-

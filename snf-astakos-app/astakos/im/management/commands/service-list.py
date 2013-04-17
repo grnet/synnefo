@@ -52,8 +52,8 @@ class Command(NoArgsCommand):
     def handle_noargs(self, **options):
         services = Service.objects.all().order_by('id')
 
-        labels = ('id', 'order', 'name', 'url', 'auth_token', 'icon')
-        columns = (3, 3, 12, 40, 20, 20)
+        labels = ('id', 'name', 'API url', 'auth_token')
+        columns = (3, 12, 70, 20)
 
         if not options['csv']:
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
@@ -62,10 +62,9 @@ class Command(NoArgsCommand):
             self.stdout.write(sep + '\n')
 
         for service in services:
-            fields = (str(service.id), str(service.order), service.name,
-                      service.url,
-                      service.auth_token or '',
-                      service.icon)
+            fields = (str(service.id), service.name,
+                      service.api_url,
+                      service.auth_token or '')
 
             if options['csv']:
                 line = '|'.join(fields)

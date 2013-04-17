@@ -41,6 +41,7 @@ from django import template
 from django.core.paginator import Paginator, EmptyPage
 from django.db.models.query import QuerySet
 
+from synnefo.lib.ordereddict import OrderedDict
 
 from astakos.im import settings
 from astakos.im.models import ProjectResourceGrant

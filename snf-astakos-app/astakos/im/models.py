@@ -75,6 +75,7 @@ from astakos.im import auth_providers as auth
 
 import astakos.im.messages as astakos_messages
 from synnefo.lib.db.managers import ForUpdateManager
+from synnefo.lib.ordereddict import OrderedDict
 
 from astakos.quotaholder.api import QH_PRACTICALLY_INFINITE
 from synnefo.lib.db.intdecimalfield import intDecimalField
@@ -86,13 +87,15 @@ logger = logging.getLogger(__name__)
 DEFAULT_CONTENT_TYPE = None
 _content_type = None
 
+
 def get_content_type():
     global _content_type
     if _content_type is not None:
         return _content_type
 
     try:
-        content_type = ContentType.objects.get(app_label='im', model='astakosuser')
+        content_type = ContentType.objects.get(app_label='im',
+                                               model='astakosuser')
     except:
         content_type = DEFAULT_CONTENT_TYPE
     _content_type = content_type
@@ -100,24 +103,37 @@ def get_content_type():
 
 inf = float('inf')
 
+
+def dict_merge(a, b):
+    """
+    http://www.xormedia.com/recursively-merge-dictionaries-in-python/
+    """
+    if not isinstance(b, dict):
+        return b
+    result = copy.deepcopy(a)
+    for k, v in b.iteritems():
+        if k in result and isinstance(result[k], dict):
+                result[k] = dict_merge(result[k], v)
+        else:
+            result[k] = copy.deepcopy(v)
+    return result
+
+
 class Service(models.Model):
-    name = models.CharField(_('Name'), max_length=255, unique=True, db_index=True)
-    url = models.FilePathField()
-    icon = models.FilePathField(blank=True)
+    name = models.CharField(_('Name'), max_length=255, unique=True,
+                            db_index=True)
+    api_url = models.CharField(_('Service API url'), max_length=255)
     auth_token = models.CharField(_('Authentication Token'), max_length=32,
                                   null=True, blank=True)
-    auth_token_created = models.DateTimeField(_('Token creation date'), null=True)
-    auth_token_expires = models.DateTimeField(
-        _('Token expiration date'), null=True)
-    order = models.PositiveIntegerField(default=0)
-
-    class Meta:
-        ordering = ('order', )
+    auth_token_created = models.DateTimeField(_('Token creation date'),
+                                              null=True)
+    auth_token_expires = models.DateTimeField(_('Token expiration date'),
+                                              null=True)
 
     def renew_token(self, expiration_date=None):
         md5 = hashlib.md5()
         md5.update(self.name.encode('ascii', 'ignore'))
-        md5.update(self.url.encode('ascii', 'ignore'))
+        md5.update(self.api_url.encode('ascii', 'ignore'))
         md5.update(asctime())
 
         self.auth_token = b64encode(md5.digest())
@@ -129,6 +145,40 @@ class Service(models.Model):
 
     def __str__(self):
         return self.name
+
+    @classmethod
+    def catalog(cls, orderfor=None):
+        catalog = {}
+        services = list(cls.objects.all())
+        metadata = presentation.SERVICES
+        metadata = dict_merge(presentation.SERVICES,
+                              astakos_settings.SERVICES_META)
+        for service in services:
+            if service.name in metadata:
+                d = {'api_url': service.api_url, 'name': service.name}
+                metadata[service.name].update(d)
+
+        def service_by_order(s):
+            return s[1].get('order')
+
+        def service_by_dashbaord_order(s):
+            return s[1].get('dashboard').get('order')
+
+        for service, info in metadata.iteritems():
+            default_meta = presentation.service_defaults(service)
+            base_meta = metadata.get(service, {})
+            settings_meta = astakos_settings.SERVICES_META.get(service, {})
+            service_meta = dict_merge(default_meta, base_meta)
+            meta = dict_merge(service_meta, settings_meta)
+            catalog[service] = meta
+
+        order_key = service_by_order
+        if orderfor == 'dashboard':
+            order_key = service_by_dashbaord_order
+
+        ordered_catalog = OrderedDict(sorted(catalog.iteritems(),
+                                             key=order_key))
+        return ordered_catalog
 
 
 _presentation_data = {}

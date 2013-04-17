@@ -46,23 +46,14 @@ class Command(BaseCommand):
     help = "Modify service attributes"
 
     option_list = BaseCommand.option_list + (
-        make_option('--order',
-                    dest='order',
-                    metavar='NUM',
-                    default=None,
-                    help="Set service order"),
         make_option('--name',
                     dest='name',
                     default=None,
                     help="Set service name"),
-        make_option('--url',
-                    dest='url',
+        make_option('--api-url',
+                    dest='api_url',
                     default=None,
-                    help="Set service url"),
-        make_option('--icon',
-                    dest='icon',
-                    default=None,
-                    help="Set service icon (displayed by cloudbar)"),
+                    help="Set service API url"),
         make_option('--auth-token',
                     dest='auth_token',
                     default=None,
@@ -84,24 +75,16 @@ class Command(BaseCommand):
             raise CommandError("Service does not exist. You may run snf-mange "
                                "service-list for available service IDs.")
 
-        order = options.get('order')
         name = options.get('name')
-        url = options.get('url')
-        icon = options.get('icon')
+        api_url = options.get('api_url')
         auth_token = options.get('auth_token')
         renew_token = options.get('renew_token')
-
-        if order != None:
-            service.order = order
 
         if name:
             service.name = name
 
-        if url:
-            service.url = url
-
-        if icon:
-            service.icon = icon
+        if api_url:
+            service.api_url = api_url
 
         if auth_token:
             service.auth_token = auth_token

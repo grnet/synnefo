@@ -1396,7 +1396,7 @@ def project_join(request, chain_id):
 def _project_join(request, chain_id):
     try:
         chain_id = int(chain_id)
-        auto_accepted = join_project(chain_id, request.user.id)
+        auto_accepted = join_project(chain_id, request.user)
         if auto_accepted:
             m = _(astakos_messages.USER_JOINED_PROJECT)
         else:
@@ -1424,7 +1424,7 @@ def project_leave(request, chain_id):
 def _project_leave(request, chain_id):
     try:
         chain_id = int(chain_id)
-        auto_accepted = leave_project(chain_id, request.user.id)
+        auto_accepted = leave_project(chain_id, request.user)
         if auto_accepted:
             m = _(astakos_messages.USER_LEFT_PROJECT)
         else:

@@ -106,7 +106,7 @@ class Command(BaseCommand):
 
         appid = options['deny']
         if appid is not None:
-            self.run_command(deny_application, appid, message)
+            self.run_command(deny_application, appid, reason=message)
             return
 
         if options['check_expired']:
@@ -116,11 +116,11 @@ class Command(BaseCommand):
         if options['terminate_expired']:
             self.expire(execute=True)
 
-    def run_command(self, func, *args):
+    def run_command(self, func, *args, **kwargs):
         @commit_on_success_strict()
         def inner():
             try:
-                func(*args)
+                func(*args, **kwargs)
             except BaseException as e:
                 raise CommandError(e)
         inner()

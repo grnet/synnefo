@@ -590,14 +590,17 @@ def remove_membership(project_id, user, request_user=None):
 def enroll_member(project_id, user, request_user=None):
     project = get_project_for_update(project_id)
     accept_membership_checks(project, request_user)
-    membership = create_membership(project, user)
+
+    membership, created = ProjectMembership.objects.get_or_create(
+        project=project,
+        person=user)
 
     if not membership.can_accept():
         m = _(astakos_messages.NOT_MEMBERSHIP_REQUEST)
         raise PermissionDenied(m)
 
     membership.accept()
-    qh_sync_user(user)
+    qh_sync_user(user.id)
     logger.info("User %s has been enrolled in %s." %
                 (membership.person.log_display, project))
 

@@ -447,7 +447,6 @@ class AstakosUser(User):
         for p in policies:
             p.setdefault('resource', '')
             p.setdefault('capacity', 0)
-            p.setdefault('quantity', 0)
             p.setdefault('update', True)
             self.add_resource_policy(**p)
 
@@ -464,7 +463,7 @@ class AstakosUser(User):
         else:
             q = self.astakosuserquota_set
             q.create(
-                resource=resource, capacity=capacity, quanity=quantity,
+                resource=resource, capacity=capacity,
                 )
 
     def get_resource_policy(self, resource):
@@ -975,9 +974,6 @@ class ExtendedManager(models.Manager):
 class AstakosUserQuota(models.Model):
     objects = ExtendedManager()
     capacity = intDecimalField()
-    quantity = intDecimalField(default=0)
-    export_limit = intDecimalField(default=QH_PRACTICALLY_INFINITE)
-    import_limit = intDecimalField(default=QH_PRACTICALLY_INFINITE)
     resource = models.ForeignKey(Resource)
     user = models.ForeignKey(AstakosUser)
 

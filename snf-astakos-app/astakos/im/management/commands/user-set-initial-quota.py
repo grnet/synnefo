@@ -40,7 +40,6 @@ from collections import namedtuple
 
 from django.core.management.base import BaseCommand, CommandError
 from django.core.validators import validate_email
-from synnefo.lib.quotaholder.api import QH_PRACTICALLY_INFINITE
 
 from astakos.im.models import AstakosUser, AstakosUserQuota, Resource
 
@@ -154,10 +153,8 @@ for a single user from the command line
 
         if capacity == 'default':
             try:
-                q = AstakosUserQuota.objects.get(
-                        user=user,
-                        resource__name=resource,
-                        resource__name=name)
+                q = AstakosUserQuota.objects.get(user=user,
+                                                 resource__name=resource)
                 q.delete()
             except Exception as e:
                 import traceback

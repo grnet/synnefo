@@ -58,7 +58,8 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  QUOTAHOLDER_URL, QUOTAHOLDER_TOKEN,
                                  QUOTAHOLDER_POOLSIZE,
                                  ASTAKOS_URL,
-                                 BACKEND_QUOTA, BACKEND_VERSIONING,
+                                 BACKEND_ACCOUNT_QUOTA, BACKEND_CONTAINER_QUOTA,
+                                 BACKEND_VERSIONING,
                                  BACKEND_FREE_VERSIONING, BACKEND_POOL_SIZE,
                                  COOKIE_NAME, USER_CATALOG_URL,
                                  RADOS_STORAGE, RADOS_POOL_BLOCKS,
@@ -959,13 +960,14 @@ _pithos_backend_pool = PithosBackendPool(
         free_versioning=BACKEND_FREE_VERSIONING,
         block_params=BLOCK_PARAMS,
         public_url_security=PUBLIC_URL_SECURITY,
-        public_url_alphabet=PUBLIC_URL_ALPHABET)
+        public_url_alphabet=PUBLIC_URL_ALPHABET,
+        account_quota_policy=BACKEND_ACCOUNT_QUOTA,
+        container_quota_policy=BACKEND_CONTAINER_QUOTA,
+        container_versioning_policy=BACKEND_VERSIONING)
 
 
 def get_backend():
     backend = _pithos_backend_pool.pool_get()
-    backend.default_policy['quota'] = BACKEND_QUOTA
-    backend.default_policy['versioning'] = BACKEND_VERSIONING
     backend.messages = []
     return backend
 

@@ -1669,8 +1669,6 @@ class ProjectApplication(models.Model):
         project.name = new_project_name
         project.application = self
         project.last_approval_date = now
-        if not new_project:
-            project.is_modified = True
 
         project.save()
 
@@ -1760,9 +1758,6 @@ class ProjectManager(ForUpdateManager):
         q = self.model.Q_DEACTIVATED
         return self.filter(q)
 
-    def modified_projects(self):
-        return self.filter(is_modified=True)
-
     def expired_projects(self):
         q = (~Q(state=Project.TERMINATED) &
               Q(application__end_date__lt=datetime.now()))
@@ -1805,10 +1800,6 @@ class Project(models.Model):
     SUSPENDED   = 10
     TERMINATED  = 100
 
-    is_modified                 =   models.BooleanField(default=False,
-                                                        db_index=True)
-    is_active                   =   models.BooleanField(default=True,
-                                                        db_index=True)
     state                       =   models.IntegerField(default=APPROVED,
                                                         db_index=True)
 
@@ -1876,9 +1867,6 @@ class Project(models.Model):
                  self.last_approval_date,
                  self.deactivation_date]
         return any([date > now for date in dates])
-
-    def is_active_strict(self):
-        return self.is_active and self.state == self.APPROVED
 
     def is_approved(self):
         return self.state == self.APPROVED
@@ -2024,18 +2012,6 @@ class ProjectMembership(models.Model):
 
     state               =   models.IntegerField(default=REQUESTED,
                                                 db_index=True)
-    is_pending          =   models.BooleanField(default=False, db_index=True)
-    is_active           =   models.BooleanField(default=False, db_index=True)
-    application         =   models.ForeignKey(
-                                ProjectApplication,
-                                null=True,
-                                related_name='memberships')
-    pending_application =   models.ForeignKey(
-                                ProjectApplication,
-                                null=True,
-                                related_name='pending_memberships')
-    pending_serial      =   models.BigIntegerField(null=True, db_index=True)
-
     acceptance_date     =   models.DateField(null=True, db_index=True)
     leave_request_date  =   models.DateField(null=True)
 

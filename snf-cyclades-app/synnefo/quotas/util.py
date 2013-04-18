@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -34,7 +34,7 @@
 from django.db.models import Sum, Count
 
 from synnefo.db.models import VirtualMachine, Network
-from synnefo.quotas import get_quota_holder, NoEntityError
+from synnefo.quotas import Quotaholder, ASTAKOS_TOKEN
 
 
 def get_db_holdings(users=None):
@@ -74,31 +74,22 @@ def get_db_holdings(users=None):
     return holdings
 
 
-def get_quotaholder_holdings(users=[]):
-    """Get holdings from Quotaholder.
+def get_quotaholder_holdings(user=None):
+    """Get quotas from Quotaholder for all Cyclades resources.
 
-    If the entity for the user does not exist in quotaholder, no holding
-    is returned.
+    Returns quotas for all users, unless a single user is specified.
     """
-    users = filter(lambda u: not u is None, users)
-    holdings = {}
-    with get_quota_holder() as qh:
-        list_holdings = [(user, "1") for user in users]
-        (qh_holdings, rejected) = qh.list_holdings(context={},
-                                                   list_holdings=list_holdings)
-        found_users = filter(lambda u: not u in rejected, users)
-    for user, user_holdings in zip(found_users, qh_holdings):
-        if not user_holdings:
-            continue
-        for h in user_holdings:
-            assert(h[0] == user)
-        user_holdings = filter(lambda x: x[1].startswith("cyclades."),
-                               user_holdings)
-        holdings[user] = dict(map(decode_holding, user_holdings))
-    return holdings
+    qh = Quotaholder.get()
+    return qh.get_service_quotas(ASTAKOS_TOKEN, user)
 
 
-def decode_holding(holding):
-    entity, resource, imported, exported, returned, released = holding
-    res = resource.replace("cyclades.", "")
-    return (res, imported - exported + returned - released)
+def transform_quotas(quotas):
+    d = {}
+    for resource, counters in quotas.iteritems():
+        res = resource.replace("cyclades.", "")
+        available = counters['available']
+        limit = counters['limit']
+        used = counters['used']
+        used_max = limit - available
+        d[res] = (used, used_max)
+    return d

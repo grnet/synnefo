@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -34,7 +34,9 @@
 from django.core.management.base import BaseCommand
 from optparse import make_option
 
-from synnefo.quotas.util import get_db_holdings, get_quotaholder_holdings
+from synnefo.quotas import DEFAULT_SOURCE
+from synnefo.quotas.util import (get_db_holdings, get_quotaholder_holdings,
+                                 transform_quotas)
 from synnefo.webproject.management.utils import pprint_table
 
 
@@ -61,7 +63,7 @@ class Command(BaseCommand):
         # Get info from DB
         db_holdings = get_db_holdings(users)
         users = db_holdings.keys()
-        qh_holdings = get_quotaholder_holdings(users)
+        qh_holdings = get_quotaholder_holdings(userid)
         qh_users = qh_holdings.keys()
 
         if len(qh_users) < len(users):
@@ -73,31 +75,27 @@ class Command(BaseCommand):
         unsynced = []
         for user in users:
             db = db_holdings[user]
-            qh = qh_holdings[user]
-            if not self.verify_resources(user, db.keys(), qh.keys()):
-                continue
+            qh_all = qh_holdings[user]
+            # Assuming only one source
+            qh = qh_all[DEFAULT_SOURCE]
+            qh = transform_quotas(qh)
 
-            for res in db.keys():
-                if db[res] != qh[res]:
-                    unsynced.append((user, res, str(db[res]), str(qh[res])))
+            for resource, (value, value1) in qh.iteritems:
+                db_value = db.pop(resource, None)
+                if value != value1:
+                    write("Commission pending for %s"
+                          % str((user, resource)))
+                    continue
+                if db_value is None:
+                    write("Resource %s exists in QH for %s but not in DB\n"
+                          % (resource, user))
+                elif db_value != value:
+                    data = (user, resource, str(db_value), str(value))
+                    unsynced.append(data)
+
+            for resource, db_value in db.iteritems():
+                write("Resource %s exists in DB for %s but not in QH\n"
+                      % (resource, user))
 
         if unsynced:
             pprint_table(self.stderr, unsynced, headers)
-
-    def verify_resources(self, user, db_resources, qh_resources):
-        write = self.stderr.write
-        db_res = set(db_resources)
-        qh_res = set(qh_resources)
-        if qh_res == db_res:
-            return True
-        db_extra = db_res - qh_res
-        if db_extra:
-            for res in db_extra:
-                write("Resource %s exists in DB for %s but not in QH\n"
-                      % (res, user))
-        qh_extra = qh_res - db_res
-        if qh_extra:
-            for res in qh_extra:
-                write("Resource %s exists in QH for %s but not in DB\n"
-                      % (res, user))
-        return False

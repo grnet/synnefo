@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -31,93 +31,31 @@ from functools import wraps
 from contextlib import contextmanager
 
 from snf_django.lib.api import faults
-from synnefo.db.models import QuotaHolderSerial, VirtualMachine, Network
+from synnefo.db.models import QuotaHolderSerial
 from synnefo.settings import CYCLADES_USE_QUOTAHOLDER
 
-if CYCLADES_USE_QUOTAHOLDER:
-    from synnefo.settings import (CYCLADES_QUOTAHOLDER_URL,
-                                  CYCLADES_QUOTAHOLDER_TOKEN,
-                                  CYCLADES_QUOTAHOLDER_POOLSIZE)
-    from synnefo.lib.quotaholder import QuotaholderClient
-else:
-    from synnefo.settings import (VMS_USER_QUOTA, MAX_VMS_PER_USER,
-                                  NETWORKS_USER_QUOTA, MAX_NETWORKS_PER_USER)
-
-from synnefo.lib.quotaholder.api import (NoCapacityError, NoQuantityError,
-                                         NoEntityError, CallError)
+from synnefo.settings import (CYCLADES_ASTAKOS_SERVICE_TOKEN as ASTAKOS_TOKEN,
+                              ASTAKOS_URL)
+from astakosclient import AstakosClient
+from astakosclient.errors import AstakosClientException, QuotaLimit
 
 import logging
 log = logging.getLogger(__name__)
 
-
-class DummySerial(QuotaHolderSerial):
-    accepted = True
-    rejected = True
-    pending = True
-    id = None
-
-    def save(*args, **kwargs):
-        pass
+DEFAULT_SOURCE = 'system'
 
 
-class DummyQuotaholderClient(object):
-    def issue_commission(self, **commission_info):
-        provisions = commission_info["provisions"]
-        userid = commission_info["target"]
-        for provision in provisions:
-            entity, resource, size = provision
-            if resource == "cyclades.vm" and size > 0:
-                user_vms = VirtualMachine.objects.filter(userid=userid,
-                                                         deleted=False).count()
-                user_vm_limit = VMS_USER_QUOTA.get(userid, MAX_VMS_PER_USER)
-                log.debug("Users VMs %s User Limits %s", user_vms,
-                          user_vm_limit)
-                if user_vms + size > user_vm_limit:
-                    raise NoQuantityError(source='cyclades',
-                                          target=userid,
-                                          resource=resource,
-                                          requested=size,
-                                          current=user_vms,
-                                          limit=user_vm_limit)
-            if resource == "cyclades.network.private" and size > 0:
-                user_networks = Network.objects.filter(userid=userid,
-                                                       deleted=False).count()
-                user_network_limit =\
-                    NETWORKS_USER_QUOTA.get(userid, MAX_NETWORKS_PER_USER)
-                if user_networks + size > user_network_limit:
-                    raise NoQuantityError(source='cyclades',
-                                          target=userid,
-                                          resource=resource,
-                                          requested=size,
-                                          current=user_networks,
-                                          limit=user_network_limit)
+class Quotaholder(object):
+    _object = None
 
-        return None
-
-    def accept_commission(self, *args, **kwargs):
-        pass
-
-    def reject_commission(self, *args, **kwargs):
-        pass
-
-    def get_pending_commissions(self, *args, **kwargs):
-        return []
-
-
-@contextmanager
-def get_quota_holder():
-    """Context manager for using a QuotaHolder."""
-    if CYCLADES_USE_QUOTAHOLDER:
-        quotaholder = QuotaholderClient(CYCLADES_QUOTAHOLDER_URL,
-                                        token=CYCLADES_QUOTAHOLDER_TOKEN,
-                                        poolsize=CYCLADES_QUOTAHOLDER_POOLSIZE)
-    else:
-        quotaholder = DummyQuotaholderClient()
-
-    try:
-        yield quotaholder
-    finally:
-        pass
+    @classmethod
+    def get(cls):
+        if cls._object is None:
+            cls._object = AstakosClient(
+                ASTAKOS_URL,
+                use_pool=True,
+                logger=log)
+        return cls._object
 
 
 def uses_commission(func):
@@ -171,10 +109,8 @@ def accept_commission(serials, update_db=True):
                 s.accepted = True
                 s.save()
 
-    with get_quota_holder() as qh:
-        qh.accept_commission(context={},
-                             clientkey='cyclades',
-                             serials=[s.serial for s in serials])
+    accept_serials = [s.serial for s in serials]
+    qh_resolve_commissions(accept=accept_serials)
 
 
 def reject_commission(serials, update_db=True):
@@ -189,13 +125,12 @@ def reject_commission(serials, update_db=True):
                 s.rejected = True
                 s.save()
 
-    with get_quota_holder() as qh:
-        qh.reject_commission(context={},
-                             clientkey='cyclades',
-                             serials=[s.serial for s in serials])
+    reject_serials = [s.serial for s in serials]
+    qh_resolve_commissions(reject=reject_serials)
 
 
-def issue_commission(**commission_info):
+def issue_commission(user, source, provisions,
+                     force=False, auto_accept=False):
     """Issue a new commission to the quotaholder.
 
     Issue a new commission to the quotaholder, and create the
@@ -203,20 +138,20 @@ def issue_commission(**commission_info):
 
     """
 
-    with get_quota_holder() as qh:
-        try:
-            serial = qh.issue_commission(**commission_info)
-        except (NoCapacityError, NoQuantityError) as e:
-            msg, details = render_quotaholder_exception(e)
-            raise faults.OverLimit(msg, details=details)
-        except CallError as e:
-            log.exception("Unexpected error")
-            raise
+    qh = Quotaholder.get()
+    try:
+        serial = qh.issue_one_commission(ASTAKOS_TOKEN,
+                                         user, source, provisions,
+                                         force, auto_accept)
+    except QuotaLimit as e:
+        msg, details = render_overlimit_exception(e)
+        raise faults.OverLimit(msg, details=details)
+    except AstakosClientException as e:
+        log.exception("Unexpected error")
+        raise
 
     if serial:
         return QuotaHolderSerial.objects.create(serial=serial)
-    elif not CYCLADES_USE_QUOTAHOLDER:
-        return DummySerial()
     else:
         raise Exception("No serial")
 
@@ -228,10 +163,8 @@ def issue_commission(**commission_info):
 
 
 def issue_vm_commission(user, flavor, delete=False):
-    resources = get_server_resources(flavor)
-    commission_info = create_commission(user, resources, delete)
-
-    return issue_commission(**commission_info)
+    resources = prepare(get_server_resources(flavor), delete)
+    return issue_commission(user, DEFAULT_SOURCE, resources)
 
 
 def get_server_resources(flavor):
@@ -244,33 +177,19 @@ def get_server_resources(flavor):
 
 
 def issue_network_commission(user, delete=False):
-    resources = get_network_resources()
-    commission_info = create_commission(user, resources, delete)
-
-    return issue_commission(**commission_info)
+    resources = prepare(get_network_resources(), delete)
+    return issue_commission(user, DEFAULT_SOURCE, resources)
 
 
 def get_network_resources():
     return {"network.private": 1}
 
 
-def invert_resources(resources_dict):
-    return dict((r, -s) for r, s in resources_dict.items())
-
-
-def create_commission(user, resources, delete=False):
+def prepare(resources_dict, delete):
     if delete:
-        resources = invert_resources(resources)
-    provisions = [('cyclades', 'cyclades.' + r, s)
-                  for r, s in resources.items()]
-    return {"context": {},
-            "target": user,
-            "key": "1",
-            "clientkey": "cyclades",
-            #"owner":      "",
-            #"ownerkey":   "1",
-            "name": "",
-            "provisions": provisions}
+        return dict((r, -s) for r, s in resources_dict.items())
+    return resources_dict
+
 
 ##
 ## Reconcile pending commissions
@@ -278,31 +197,26 @@ def create_commission(user, resources, delete=False):
 
 
 def accept_commissions(accepted):
-    with get_quota_holder() as qh:
-        qh.accept_commission(context={},
-                             clientkey='cyclades',
-                             serials=accepted)
+    qh_resolve_commissions(accept=accepted)
 
 
 def reject_commissions(rejected):
-    with get_quota_holder() as qh:
-            qh.reject_commission(context={},
-                                 clientkey='cyclades',
-                                 serials=rejected)
+    qh_resolve_commissions(reject=rejected)
 
 
 def fix_pending_commissions():
     (accepted, rejected) = resolve_pending_commissions()
+    qh_resolve_commissions(accepted, rejected)
 
-    with get_quota_holder() as qh:
-        if accepted:
-            qh.accept_commission(context={},
-                                 clientkey='cyclades',
-                                 serials=accepted)
-        if rejected:
-            qh.reject_commission(context={},
-                                 clientkey='cyclades',
-                                 serials=rejected)
+
+def qh_resolve_commissions(accept=None, reject=None):
+    if accept is None:
+        accept = []
+    if reject is None:
+        reject = []
+
+    qh = Quotaholder.get()
+    qh.resolve_commissions(ASTAKOS_TOKEN, accept, reject)
 
 
 def resolve_pending_commissions():
@@ -333,28 +247,30 @@ def resolve_pending_commissions():
 
 
 def get_quotaholder_pending():
-    with get_quota_holder() as qh:
-        pending_serials = qh.get_pending_commissions(context={},
-                                                     clientkey='cyclades')
+    qh = Quotaholder.get()
+    pending_serials = qh.get_pending_commissions(ASTAKOS_TOKEN)
     return pending_serials
 
 
-def render_quotaholder_exception(e):
+def render_overlimit_exception(e):
     resource_name = {"vm": "Virtual Machine",
                      "cpu": "CPU",
                      "ram": "RAM",
                      "network.private": "Private Network"}
-    res = e.resource.replace("cyclades.", "", 1)
+    details = e.details
+    data = details['overLimit']['data']
+    available = data['available']
+    provision = data['provision']
+    requested = provision['quantity']
+    resource = provision['resource']
+    res = resource.replace("cyclades.", "", 1)
     try:
         resource = resource_name[res]
     except KeyError:
         resource = res
 
-    requested = e.requested
-    current = e.current
-    limit = e.limit
     msg = "Resource Limit Exceeded for your account."
     details = "Limit for resource '%s' exceeded for your account."\
-              " Current value: %s, Limit: %s, Requested: %s"\
-              % (resource, current, limit, requested)
+              " Available: %s, Requested: %s"\
+              % (resource, available, requested)
     return msg, details

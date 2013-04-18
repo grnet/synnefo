@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -34,7 +34,7 @@
 from django.core.management.base import BaseCommand
 from optparse import make_option
 
-from synnefo.quotas import get_quota_holder
+from synnefo.quotas import Quotaholder
 from synnefo.quotas.util import get_db_holdings
 
 
@@ -58,19 +58,19 @@ class Command(BaseCommand):
         db_holdings = get_db_holdings(users)
 
         # Create commissions
-        with get_quota_holder() as qh:
-            for user, resources in db_holdings.items():
-                if not user:
-                    continue
-                reset_holding = []
-                for res, val in resources.items():
-                    reset_holding.append((user, "cyclades." + res, "1", val, 0,
-                                          0, 0))
-                if not options['dry_run']:
-                    try:
-                        qh.reset_holding(context={},
-                                         reset_holding=reset_holding)
-                    except Exception as e:
-                        self.stderr.write("Can not set up holding:%s" % e)
-                else:
-                    self.stdout.write("Reseting holding: %s\n" % reset_holding)
+        qh = Quotaholder.get()
+        for user, resources in db_holdings.items():
+            if not user:
+                continue
+            reset_holding = []
+            for res, val in resources.items():
+                reset_holding.append((user, "cyclades." + res, "1", val, 0,
+                                      0, 0))
+            if not options['dry_run']:
+                try:
+                    qh.reset_holding(context={},
+                                     reset_holding=reset_holding)
+                except Exception as e:
+                    self.stderr.write("Can not set up holding:%s" % e)
+            else:
+                self.stdout.write("Reseting holding: %s\n" % reset_holding)

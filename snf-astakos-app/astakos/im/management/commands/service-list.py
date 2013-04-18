@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,44 +31,22 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
 
-from django.core.management.base import NoArgsCommand
-
+from synnefo.webproject.management.commands import ListCommand
 from astakos.im.models import Service
 
 
-class Command(NoArgsCommand):
+class Command(ListCommand):
     help = "List services"
+    object_class = Service
 
-    option_list = NoArgsCommand.option_list + (
-        make_option('-c',
-                    action='store_true',
-                    dest='csv',
-                    default=False,
-                    help="Use pipes to separate values"),
-    )
+    FIELDS = {
+        "id": ("id", "ID"),
+        "name": ("name", "Service Name"),
+        "url": ("api_url", "Service API url"),
+        "token": ("auth_token", "Authentication token"),
+        "created": ("auth_token_created", "Token creation date"),
+        "expires": ("auth_token_expires", "Token expiration date"),
+    }
 
-    def handle_noargs(self, **options):
-        services = Service.objects.all().order_by('id')
-
-        labels = ('id', 'name', 'API url', 'auth_token')
-        columns = (3, 12, 70, 20)
-
-        if not options['csv']:
-            line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
-            self.stdout.write(line + '\n')
-            sep = '-' * len(line)
-            self.stdout.write(sep + '\n')
-
-        for service in services:
-            fields = (str(service.id), service.name,
-                      service.api_url,
-                      service.auth_token or '')
-
-            if options['csv']:
-                line = '|'.join(fields)
-            else:
-                line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
-
-            self.stdout.write(line + '\n')
+    fields = ["id", "name", "url", "token", "created", "expires"]

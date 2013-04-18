@@ -177,22 +177,6 @@ def update_db(vm, msg, event_time):
               msg['instance'])
 
 
-@instance_from_msg
-@if_update_required
-def update_net(vm, msg, event_time):
-    """Process a notification of type 'ganeti-net-status'"""
-    log.debug("Processing ganeti-net-status msg: %s", msg)
-
-    if msg['type'] != "ganeti-net-status":
-        log.error("Message is of unknown type %s", msg['type'])
-        return
-
-    backend.process_net_status(vm, event_time, msg['nics'])
-
-    log.debug("Done processing ganeti-net-status msg for vm %s.",
-              msg["instance"])
-
-
 @network_from_msg
 @if_update_required
 def update_network(network, msg, event_time):

@@ -42,13 +42,11 @@ EXCHANGES = (EXCHANGE_GANETI,)
 # QUEUES
 QUEUE_OP = "%s-events-op" % prefix
 QUEUE_NETWORK = "%s-events-network" % prefix
-QUEUE_NET = "%s-events-net" % prefix
 QUEUE_PROGRESS = "%s-events-progress" % prefix
 
 
 QUEUES = (QUEUE_OP,
           QUEUE_NETWORK,
-          QUEUE_NET,
           QUEUE_PROGRESS)
 
 # ROUTING KEYS
@@ -56,8 +54,6 @@ QUEUES = (QUEUE_OP,
 KEY_OP = 'ganeti.%s.event.op' % prefix
 # notifications of type "ganeti-network-status"
 KEY_NETWORK = 'ganeti.%s.event.network' % prefix
-# notifications of type "ganeti-net-status"
-KEY_NET = 'ganeti.%s.event.net' % prefix
 # notifications of type "ganeti-create-progress"
 KEY_PROGRESS = 'ganeti.%s.event.progress' % prefix
 
@@ -66,7 +62,6 @@ BINDINGS = (
     # Queue           # Exchange        # RouteKey    # Handler
     (QUEUE_OP,        EXCHANGE_GANETI,  KEY_OP,       'update_db'),
     (QUEUE_NETWORK,   EXCHANGE_GANETI,  KEY_NETWORK,  'update_network'),
-    (QUEUE_NET,       EXCHANGE_GANETI,  KEY_NET,      'update_net'),
     (QUEUE_PROGRESS,  EXCHANGE_GANETI,  KEY_PROGRESS, 'update_build_progress'),
 )
 

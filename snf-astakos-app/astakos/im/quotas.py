@@ -149,8 +149,10 @@ def initial_quotas(users):
     for user_quota in orig_quotas:
         uuid = user_quota.user.uuid
         user_init = initial.get(uuid, {})
+        source_quota = user_init.get(SYSTEM, {})
         resource = user_quota.resource.full_name()
-        user_init[resource] = user_quota.capacity
+        source_quota[resource] = user_quota.capacity
+        user_init[SYSTEM] = source_quota
         initial[uuid] = user_init
 
     return initial

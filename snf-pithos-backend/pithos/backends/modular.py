@@ -124,10 +124,19 @@ def backend_method(func=None, autocommit=1):
                 self.queue.send(*m)
             if serials:
                 self.quotaholder_serials.insert_many(serials)
+
+                # commit to ensure that the serials are registered
+                # even if accept commission fails
+                self.wrapper.commit()
+                self.wrapper.execute()
+
                 self.quotaholder.accept_commission(
                             context     =   {},
                             clientkey   =   'pithos',
                             serials     =   serials)
+
+                self.quotaholder_serials.delete_many(serials)
+
             self.wrapper.commit()
             return ret
         except:

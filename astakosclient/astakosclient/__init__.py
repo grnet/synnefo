@@ -324,6 +324,21 @@ class AstakosClient():
         return self._call_astakos(token, "/astakos/api/quotas")
 
     # ----------------------------------
+    # GET "/astakos/api/service_quotas"
+    def get_service_quotas(self, token):
+        """Get all quotas for resources associated with the service
+
+        Keyword arguments:
+        token   -- service's token (string)
+
+        In case of success return a dict of dicts of dicts with current quotas
+        for all users.
+        Otherwise raise an AstakosClientException
+
+        """
+        return self._call_astakos(token, "/astakos/api/service_quotas")
+
+    # ----------------------------------
     # POST "/astakos/api/commisions"
     def issue_commission(self, token, request):
         """Issue a commission

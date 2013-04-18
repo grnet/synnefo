@@ -19,6 +19,7 @@ authentication token for:
 
     * Usernames for given UUIDs
     * UUIDs for given usernames
+    * Quotas for all related resources
     * Issue commissions
     * Get pending commissions
     * Accept or reject commissions
@@ -124,6 +125,12 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
     **get_quotas(**\ token\ **)**
         Given a user's authentication token return user's
         current quotas (as dict of dicts).
+        In case of error raise an AstakosClientException exception.
+
+    **get_service_quotas(**\ token\ **)**
+        Given a service's authentication token return all users'
+        current quotas for the resources associated with the service
+        (as dict of dicts of dicts).
         In case of error raise an AstakosClientException exception.
 
     **issue_commission(**\ token, request\ **)**

@@ -237,4 +237,4 @@ LOGIN_SUCCESS_URL = getattr(settings, 'ASTAKOS_LOGIN_SUCCESS_URL',
 PROJECTS_VISIBLE = getattr(settings, 'ASTAKOS_PROJECTS_VISIBLE', False)
 
 # A way to extend the settings presentation metadata
-SERVICES_META = getattr(settings, 'ASTAKOS_SERVICES_META', False)
+SERVICES_META = getattr(settings, 'ASTAKOS_SERVICES_META', {})

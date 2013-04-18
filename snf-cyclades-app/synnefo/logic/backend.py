@@ -180,14 +180,11 @@ def nics_changed(old_nics, new_nics):
     """Return True if NICs have changed in any way."""
     if len(old_nics) != len(new_nics):
         return True
+    fields = ["ipv4", "ipv6", "mac", "firewall_profile", "index", "network"]
     for old_nic, new_nic in zip(old_nics, new_nics):
-        if not (old_nic.ipv4 == new_nic['ipv4'] and
-                old_nic.ipv6 == new_nic['ipv6'] and
-                old_nic.mac == new_nic['mac'] and
-                old_nic.firewall_profile == new_nic['firewall_profile'] and
-                old_nic.index == new_nic['index'] and
-                old_nic.network == new_nic['network']):
-            return True
+        for field in fields:
+            if getattr(old_nic, field) != new_nic[field]:
+                return True
     return False
 
 

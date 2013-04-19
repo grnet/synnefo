@@ -65,26 +65,27 @@ Status  Description
   {
       "system": {
           "cyclades.ram": {
-              "available": 536870912,
+              "usage": 536870912,
               "limit": 1073741824,
-              "used": 536870912
+              "pending": 0
+
           },
           "cyclades.vm": {
-              "available": 0,
+              "usage": 2,
               "limit": 2,
-              "used": 2
+              "pending": 0
           }
       },
       "project:1": {
           "cyclades.ram": {
-              "available": 0,
+              "usage": 2147483648,
               "limit": 2147483648,
-              "used": 2147483648
+              "pending": 0
           },
           "cyclades.vm": {
-              "available": 3,
+              "usage": 2,
               "limit": 5,
-              "used": 2
+              "pending": 1
           }
       }
   }
@@ -121,26 +122,26 @@ Status  Description
       "1a6165d0-5020-4b6d-a4ad-83476632a584": {
           "system": {
               "cyclades.ram": {
-                  "available": 536870912,
+                  "usage": 536870912,
                   "limit": 1073741824,
-                  "used": 536870912
+                  "pending": 0
               },
               "cyclades.vm": {
-                  "available": 0,
+                  "usage": 2,
                   "limit": 2,
-                  "used": 2
+                  "pending": 0
               }
           },
           "project:1": {
               "cyclades.ram": {
-                  "available": 0,
+                  "usage": 2147483648,
                   "limit": 2147483648,
-                  "used": 2147483648
+                  "pending": 0
               },
               "cyclades.vm": {
-                  "available": 3,
+                  "usage": 2,
                   "limit": 5,
-                  "used": 2
+                  "pending": 1
               }
           }
       }

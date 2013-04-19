@@ -42,8 +42,8 @@ qh = QuotaholderDjangoDBCallpoint()
 def from_holding(holding):
     limit, imported_min, imported_max = holding
     body = {'limit':       limit,
-            'used':        imported_min,
-            'available':   max(0, limit-imported_max),
+            'usage':       imported_max,
+            'pending':     imported_max-imported_min,
             }
     return body
 

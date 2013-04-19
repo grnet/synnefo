@@ -144,9 +144,10 @@ class Command(BaseCommand):
                     initial = s_initial.get(resource) if s_initial else None
                     initial = str(initial)
                     capacity = str(values['limit'])
-                    used = str(values['used'])
+                    usage = str(values['usage'])
 
-                    fields = holder, email, source, resource, initial, capacity, used
+                    fields = (holder, email, source, resource,
+                              initial, capacity, usage)
                     output = []
                     for field, width in zip(fields, columns):
                         s = field.rjust(width)

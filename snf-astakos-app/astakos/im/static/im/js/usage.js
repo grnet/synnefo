@@ -162,12 +162,12 @@ _.extend(UsageView.prototype, {
     var value, limit, percentage; 
     
     limit = resource.limit;
-    value = resource.limit - resource.available;
+    value = resource.usage;
     if (value < 0 ) { value = 0 }
   
     percentage = (value/limit) * 100;
     if (value == 0) { percentage = 0 }
-    if (resource.available <= 0) {
+    if (value > limit) {
       percentage = 100;
     }
 

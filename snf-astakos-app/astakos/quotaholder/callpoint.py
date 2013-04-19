@@ -174,7 +174,7 @@ class QuotaholderDjangoDBCallpoint(object):
                 try:
                     th = holdings[key]
                 except KeyError:
-                    m = ("There is no such holding %s" % key)
+                    m = ("There is no such holding %s" % str(key))
                     provision = self._mkProvision(key, quantity)
                     raise NoHoldingError(m,
                                          provision=provision)

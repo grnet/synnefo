@@ -33,6 +33,7 @@
 
 from django.core import exceptions
 from django.db.models import DecimalField, SubfieldBase
+from django import forms
 from django.utils.translation import ugettext_lazy as _
 from south.modelsinspector import add_introspection_rules
 import decimal
@@ -72,7 +73,7 @@ class IntDecimalField(DecimalField):
     def formfield(self, **kwargs):
         defaults = {'form_class': forms.IntegerField}
         defaults.update(kwargs)
-        return super(IntegerField, self).formfield(**defaults)
+        return super(IntDecimalField, self).formfield(**defaults)
 
 add_introspection_rules(
     [], ["^snf_django\.lib\.db\.fields\.IntDecimalField"])

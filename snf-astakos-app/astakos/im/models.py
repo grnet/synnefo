@@ -74,7 +74,7 @@ from astakos.im import settings as astakos_settings
 from astakos.im import auth_providers as auth
 
 import astakos.im.messages as astakos_messages
-from synnefo.lib.db.managers import ForUpdateManager
+from snf_django.lib.db.managers import ForUpdateManager
 from synnefo.lib.ordereddict import OrderedDict
 
 from synnefo.lib.db.intdecimalfield import intDecimalField

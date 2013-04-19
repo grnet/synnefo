@@ -37,7 +37,7 @@ from synnefo.lib.db.intdecimalfield import intDecimalField
 from django.db.models import (Model, BigIntegerField, CharField,
                               ForeignKey, AutoField)
 from django.db import transaction
-from synnefo.lib.db.managers import ForUpdateManager
+from snf_django.lib.db.managers import ForUpdateManager
 
 class Holding(Model):
 

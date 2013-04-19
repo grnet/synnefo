@@ -658,7 +658,7 @@ Server Addresses
 ----------------
 
 List Addresses
-..................
+..............
 
 List all network connections of a server
 
@@ -728,6 +728,71 @@ Each NIC connects the current server to a network. NICs are different to OS Comp
             "id": "nic-25455-1"
           },
       ]
+    }
+  }
+
+Get Server Nic by Network
+.........................
+
+Return the NIC that connects a server to a network
+
+========================================= ====== ======== ==========
+URI                                       Method Cyclades OS Compute
+========================================= ====== ======== ==========
+``/servers/<server id>/ips/<network id>`` GET    ✔        ✔
+========================================= ====== ======== ==========
+
+* **server-id** is the identifier of the virtual server
+
+* **network-id** is the identifier of the virtual server
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
+
+|
+
+================= ===============
+Request Parameter Value          
+================= ===============
+json              Respond in json
+xml               Respond in xml 
+================= ===============
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded
+400 (Bad Request)           Malformed server id or machine already deleted
+401 (Unauthorized)          Missing or expired user token
+404 (Not Found)             Server not found
+409 (Build In Progress)     Server is not ready yet
+500 (Internal Server Error) The request cannot be completed because of an internal error
+503 (Service Unavailable)   Service currently unavailable
+=========================== =====================
+
+If the return code is 200, the response body consists of a NIC under the ``network`` tag.
+
+This NIC (`network interface connections <#nic-ref>`_) connects the specified server to the specified network. NICs are only used in Cyclades API. The same operation in OS Compute API returns a list of IP addresses.
+
+**An example of a response, in JSON**
+
+.. code-block:: javascript
+
+  {
+    "network": {
+        "network_id": "7",
+        "mac_address": "aa:00:03:7a:84:bb",
+        "firewallProfile": "DISABLED",
+        "ipv4": "192.168.0.27",
+        "ipv6": "2001:646:2ffc:1222:a820:3fd:fe7a:84bb",
+        "id": "nic-25455-0"
     }
   }
 

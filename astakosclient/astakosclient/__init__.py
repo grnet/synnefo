@@ -325,18 +325,22 @@ class AstakosClient():
 
     # ----------------------------------
     # GET "/astakos/api/service_quotas"
-    def get_service_quotas(self, token):
+    def get_service_quotas(self, token, user=None):
         """Get all quotas for resources associated with the service
 
         Keyword arguments:
         token   -- service's token (string)
+        user    -- optionally, the uuid of a specific user
 
         In case of success return a dict of dicts of dicts with current quotas
-        for all users.
+        for all users, or of a specified user, if user argument is set.
         Otherwise raise an AstakosClientException
 
         """
-        return self._call_astakos(token, "/astakos/api/service_quotas")
+        query = "/astakos/api/service_quotas"
+        if user is not None:
+            query += "?user=" + user
+        return self._call_astakos(token, query)
 
     # ----------------------------------
     # POST "/astakos/api/commisions"

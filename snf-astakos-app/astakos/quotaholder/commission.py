@@ -91,7 +91,8 @@ class Import(Operation):
             provision = cls.provision(holding, quantity, importing=True)
             raise NoCapacityError(m,
                                   provision=provision,
-                                  available=limit-imported_max)
+                                  limit=limit,
+                                  usage=imported_max)
 
         holding.imported_max = new_imported_max
         holding.save()

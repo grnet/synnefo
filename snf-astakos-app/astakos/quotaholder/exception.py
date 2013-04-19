@@ -51,31 +51,28 @@ class InvalidDataError(QuotaholderError):
 class CommissionException(QuotaholderError):
     data = {}
 
+    def add_data(self, kwargs, key):
+        value = kwargs.pop(key, None)
+        if value is not None:
+            self.data[key] = value
+
     def __init__(self, *args, **kwargs):
         self.data['name'] = self.__class__.__name__
-
-        provision = kwargs.pop('provision', None)
-        if provision is not None:
-            self.data['provision'] = provision
+        self.add_data(kwargs, 'provision')
 
         QuotaholderError.__init__(self, *args, **kwargs)
 
 
 class NoCapacityError(CommissionException):
     def __init__(self, *args, **kwargs):
-        available = kwargs.pop('available', None)
-        if available is not None:
-            self.data['available'] = available
-
+        self.add_data(kwargs, 'usage')
+        self.add_data(kwargs, 'limit')
         CommissionException.__init__(self, *args, **kwargs)
 
 
 class NoQuantityError(CommissionException):
     def __init__(self, *args, **kwargs):
-        available = kwargs.pop('available', None)
-        if available is not None:
-            self.data['available'] = available
-
+        self.add_data(kwargs, 'available')
         CommissionException.__init__(self, *args, **kwargs)
 
 

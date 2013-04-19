@@ -222,7 +222,8 @@ Status  Description
                   "quantity": 1
               },
               "name": "NoCapacityError",
-              "available": 0
+              "limit": 2,
+              "usage": 2
           }
       }
   }

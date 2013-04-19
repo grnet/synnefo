@@ -417,7 +417,8 @@ commission_failure_response = {
                 "resource": "cyclades.ram",
                 "quantity": 520000000},
             "name": "NoCapacityError",
-            "available": 420000000}}}
+            "limit": 600000000,
+            "usage": 180000000}}}
 
 pending_commissions = [100, 200]
 

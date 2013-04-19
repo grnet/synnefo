@@ -3,7 +3,7 @@
 API Guide
 *********
 
-`Cyclades <cyclades.html>`_ is the compute service developed by `GRNET <http://www.grnet.gr>`_ as part of the `synnefo <http://www.synnefo.org>`_ software, that implements an extension of the `OpenStack Compute API <http://docs.openstack.org/api/openstack-compute/2/content>`_.
+`Cyclades <cyclades.html>`_ is the compute service developed by `GRNET <http://www.grnet.gr>`_ as part of the `synnefo <http://www.synnefo.org>`_ software, that implements an extension of the `OpenStack Compute API v2 <http://docs.openstack.org/api/openstack-compute/2/content>`_.
 
 This document's goals are:
 
@@ -78,12 +78,12 @@ Limits
 Efficient Polling with the Changes-Since Parameter
 --------------------------------------------------
 
-* We only support the changes-since parameter in **List Servers** and **List
+* Effectively limit support of the changes-since parameter in **List Servers** and **List
   Images**.
-* We assume that garbage collection of deleted servers will only affect servers
-  deleted ``POLL_TIME`` seconds in the past or earlier. Else we lose the
+* Assume that garbage collection of deleted servers will only affect servers
+  deleted ``POLL_TIME`` seconds in the past or earlier. Else loose the
   information of a server getting deleted.
-* Images do not support a deleted state, so we can not track deletions.
+* Images do not support a deleted state, so deletions cannot be tracked.
 
 
 Versions
@@ -203,7 +203,7 @@ metadata          Server custom metadata ✔        ✔
 * **metadata** are custom key:value pairs used to specify various attributes of the VM (e.g. OS, super user, etc.)
 
 
-* **attachments** in Cyclades are lists of network interfaces (nics). Each server can handle various nics. Each nic connects the current server with a network. **Attachments** are different to OS Compute's **addresses** the former is a list of the server's network interfaces (network reference + mac address) while the later is a just list of networks. For example, a Cyclades server may be connected to the same network through more than one distinct network interfaces (e.g. server 43 is connected to network 101 with nic-43-1 and nic-43-2 in the example bellow).
+* **attachments** in Cyclades are lists of network interfaces (nics). Each server can handle various nics. Each nic connects the current server with a network. **Attachments** are different to OS Compute's **addresses**. The former is a list of the server's network interfaces (network reference + mac address) while the later is just a list of networks. For example, a Cyclades server may be connected to the same network through more than one distinct network interfaces (e.g. server 43 is connected to network 101 with nic-43-1 and nic-43-2 in the example bellow).
 
 * **Network Interfaces (NICs)** contain information about a server's connection to a network. Each nic is identified by an id of the form nic-<server-id>-<ordinal-number> and may contain a ``network_id``, a ``mac_address``, ``ipv4`` and ``ipv6`` addresses and the ``firewallProfile`` of the connection.
 
@@ -458,6 +458,117 @@ netTimeSeries      Network load / time graph URL
       netTimeSeries="http://stats.okeanos.grnet.gr/b9a1c3ca7e3b9fce75112c43565fb9960b16048c/net-ts.png">
   </stats>
 
+Get Server Details
+..................
+
+======================== ====== ======== ==========
+URI                      Method Cyclades OS Compute
+======================== ====== ======== ==========
+``/servers/<server id>`` GET    ✔        ✔
+======================== ====== ======== ==========
+
+* **server-id** is the identifier of the virtual server
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded
+400 (Bad Request)           Malformed server id
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Administratively suspended server
+404 (Not Found)             Server not found
+500 (Internal Server Error) The request cannot be completed because of an internal error
+503 (Service Unavailable)   No available backends or service currently unavailable
+=========================== =====================
+
+|
+
+The response data format is a list of servers under the ``servers`` label. A server may have the fields presented bellow:
+
+================= ====================== ======== ==========
+Server Attributes Description            Cyclades OS Compute
+================= ====================== ======== ==========
+id                The server id          ✔        ✔
+name              The server name        ✔        ✔
+hostId            Server playground      empty    ✔
+created           Creation date          ✔        ✔
+updated           Creation date          ✔        ✔
+flavorRef         The flavor id          ✔        **✘**
+flavor            The flavor id          **✘**    ✔
+imageRef          The image id           ✔        **✘**
+image             The image id           **✘**    ✔
+progress          Build progress         ✔        ✔
+status            Server status          ✔        ✔
+suspended         ...
+attachments       Network interfaces     ✔        **✘**
+addresses         Network interfaces     **✘**    ✔
+metadata          Server custom metadata ✔        ✔
+diagnostics       ...
+================= ====================== ======== ==========
+
+|
+
+* **hostId** is not used in Cyclades, but is returned as an empty string for compatibility
+
+* **progress** is changing while the server is building up and has values between 0 and 100. When it reaches 100 the server is built.
+
+* **status** refers to `the status <#status_ref>`_ of the server
+
+* **metadata** are custom key:value pairs used to specify various attributes of the VM (e.g. OS, super user, etc.)
+
+* **attachments** in Cyclades are lists of network interfaces (nics). Each server can handle various nics. Each nic connects the current server with a network. **Attachments** are different to OS Compute's **addresses**. The former is a list of the server's network interfaces (network reference + mac address) while the later is just a list of networks. For example, a Cyclades server may be connected to the same network through more than one distinct network interfaces.
+
+* **Network Interfaces (NICs)** contain information about a server's connection to a network. Each nic is identified by an id of the form nic-<server-id>-<ordinal-number> and may contain a ``network_id``, a ``mac_address``, ``ipv4`` and ``ipv6`` addresses and the ``firewallProfile`` of the connection.
+
+**Example Details for server with id 42042, in JSON**
+
+.. code-block:: javascript
+
+  {
+    "server": {
+      "id": 42042,
+      "name": "My Example Server",
+      "status": "ACTIVE",
+      "updated": "2013-04-18T10:09:57.824266+00:00",
+      "hostId": "",
+      "imageRef": "926a1bc5-2d85-49d4-aebe-0fc127ed89b9",
+      "created": "2013-04-18T10:06:58.288273+00:00",
+      "flavorRef": 22,
+      "attachments": {
+        "values": [{
+          "network_id": "1888",
+          "mac_address": "aa:0c:f5:ad:16:41",
+          "firewallProfile": "DISABLED",
+          "ipv4": "83.212.112.56",
+          "ipv6": "2001:648:2ffc:1119:a80c:f5ff:fead:1641",
+          "id": "nic-42042-0"
+        }]
+      },
+      "suspended": false,
+      "diagnostics": [{
+        "level": "DEBUG",
+        "created": "2013-04-18T10:09:52.776920+00:00",
+        "source": "image-info",
+        "source_date": "2013-04-18T10:09:52.709791+00:00",
+        "message": "Image customization finished successfully.",
+        "details": null
+      }],
+      "progress": 100,
+      "metadata": {
+        "values": {"OS": "windows", "users": "Administrator"}
+      }
+    }
+  }
 
 Server Addresses
 ----------------

@@ -56,16 +56,12 @@ from lockfile import LockTimeout
 from signal import signal, SIGINT, SIGTERM
 import setproctitle
 
-from ganeti import utils
-from ganeti import jqueue
-from ganeti import constants
-from ganeti import serializer
+from ganeti import utils, jqueue, constants, serializer, cli
 from ganeti.ssconf import SimpleConfigReader
 
 
 from synnefo import settings
 from synnefo.lib.amqp import AMQPClient
-
 
 
 def get_time_from_status(op, job):
@@ -95,6 +91,45 @@ def get_time_from_status(op, job):
     return time and time or job.end_timestamp
 
     raise InvalidBackendStatus(status, job)
+
+
+def get_instance_nics(instance, logger):
+    """Query Ganeti to a get the instance's NICs.
+
+    @type instance: string
+    @param instance: the name of the instance
+    @rtype: List of dicts
+    @retrun: Dictionary containing the instance's NICs. Each dictionary
+             contains the following keys: 'network', 'ip', 'mac', 'mode',
+             'link' and 'firewall'
+
+    """
+    fields = ["nic.networks", "nic.ips", "nic.macs", "nic.modes", "nic.links",
+              "tags"]
+    # Get Ganeti client
+    client = cli.GetClient()
+    info = client.QueryInstances([instance], fields, use_locking=False)
+    networks, ips, macs, modes, links, tags = info[0]
+    nic_keys = ["network", "ip", "mac", "mode", "link"]
+    nics = zip(networks, ips, macs, modes, links)
+    nics = map(lambda x: dict(zip(nic_keys, x)), nics)
+    # Get firewall from instance Tags
+    # Tags are of the form synnefo:network:N:firewall_mode
+    for tag in tags:
+        t = tag.split(":")
+        if t[0:2] == ["synnefo", "network"]:
+            if len(t) != 4:
+                logger.error("Malformed synefo tag %s", tag)
+                continue
+            try:
+                index = int(t[2])
+                nics[index]['firewall'] = t[3]
+            except ValueError:
+                logger.error("Malformed synnefo tag %s", tag)
+            except IndexError:
+                logger.error("Found tag %s for non-existent NIC %d",
+                             tag, index)
+    return nics
 
 
 class InvalidBackendStatus(Exception):
@@ -191,6 +226,12 @@ class JobFileHandler(pyinotify.ProcessEvent):
                         "cluster": self.cluster_name,
                         "logmsg": logmsg,
                         "jobId": job_id})
+
+            if op_id in ["OP_INSTANCE_CREATE", "OP_INSTANCE_SET_PARAMS",
+                         "OP_INSTANCE_STARTUP"]:
+                if op.status == "success":
+                    nics = get_instance_nics(msg["instance"], self.logger)
+                    msg["nics"] = nics
 
             msg = json.dumps(msg)
             self.logger.debug("Delivering msg: %s (key=%s)", msg, routekey)

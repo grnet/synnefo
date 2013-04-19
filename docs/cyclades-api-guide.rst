@@ -621,6 +621,39 @@ Return Code                 Description
 
 In case of a 204 return code, there will be no request results according to the Cyclades API, while the new server details are returned according to OS Compute API.
 
+Delete Server
+.............
+
+======================== ====== ======== ==========
+URI                      Method Cyclades OS Compute
+======================== ====== ======== ==========
+``/servers/<server id>`` DELETE ✔        ✔
+======================== ====== ======== ==========
+
+* **server-id** is the identifier of the virtual server
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+204 (OK)                    Request succeeded
+400 (Bad Request)           Malformed server id or machine already deleted
+401 (Unauthorized)          Missing or expired user token
+404 (Not Found)             Server not found
+409 (Build In Progress)     Server is not ready yet
+500 (Internal Server Error) The request cannot be completed because of an internal error
+503 (Service Unavailable)   Action not supported or service currently unavailable
+=========================== =====================
+
 Server Addresses
 ----------------
 

@@ -50,7 +50,7 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'synnefo.settings'
 from astakos.im.api.callpoint import AstakosCallpoint
 from astakos.im.functions import get_chain_of_application_id
 from views import submit, approve, join, leave
-from synnefo.lib.db.transaction import commit_on_success_strict
+from snf_django.lib.db.transaction import commit_on_success_strict
 
 USERS = {}
 PROJECTS = {}

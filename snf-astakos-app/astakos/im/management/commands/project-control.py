@@ -36,7 +36,7 @@ from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 from astakos.im.functions import (terminate, suspend, resume, check_expiration,
                                   approve_application, deny_application)
-from synnefo.lib.db.transaction import commit_on_success_strict
+from snf_django.lib.db.transaction import commit_on_success_strict
 
 
 class Command(BaseCommand):

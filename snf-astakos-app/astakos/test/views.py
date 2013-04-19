@@ -36,7 +36,7 @@ from datetime import datetime, timedelta
 from astakos.im.models import AstakosUser
 from astakos.im.functions import (join_project, leave_project,
                                   submit_application, approve_application)
-from synnefo.lib.db.transaction import commit_on_success_strict
+from snf_django.lib.db.transaction import commit_on_success_strict
 
 @commit_on_success_strict()
 def join(proj_id, user_id, ctx=None):

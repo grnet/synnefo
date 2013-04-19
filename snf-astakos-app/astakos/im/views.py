@@ -114,7 +114,7 @@ from astakos.im.api import get_services_dict
 from astakos.im import settings as astakos_settings
 from astakos.im.api.callpoint import AstakosCallpoint
 from astakos.im import auth_providers as auth
-from synnefo.lib.db.transaction import commit_on_success_strict
+from snf_django.lib.db.transaction import commit_on_success_strict
 from astakos.im.ctx import ExceptionHandler
 
 logger = logging.getLogger(__name__)

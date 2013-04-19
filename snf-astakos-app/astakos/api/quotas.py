@@ -35,7 +35,7 @@ from django.utils import simplejson as json
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 
-from synnefo.lib.db.transaction import commit_on_success_strict
+from snf_django.lib.db.transaction import commit_on_success_strict
 from astakos.api.util import json_response
 
 from snf_django.lib import api

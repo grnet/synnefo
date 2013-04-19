@@ -148,11 +148,9 @@ class QuotaholderDjangoDBCallpoint(object):
 
         if name is None:
             name = ""
-        create = Commission.objects.create
-        commission = create(clientkey=clientkey, name=name)
-        serial = commission.serial
 
         operations = Operations()
+        provisions_to_create = []
 
         provisions = self._provisions_to_list(provisions)
         keys = [key for (key, value) in provisions]
@@ -187,17 +185,21 @@ class QuotaholderDjangoDBCallpoint(object):
                     operations.prepare(Release, th, abs_quantity, force)
 
                 holdings[key] = th
-                Provision.objects.create(serial=commission,
-                                         holder=th.holder,
-                                         source=th.source,
-                                         resource=th.resource,
-                                         quantity=quantity)
+                provisions_to_create.append((key, quantity))
 
         except QuotaholderError:
             operations.revert()
             raise
 
-        return serial
+        commission = Commission.objects.create(clientkey=clientkey, name=name)
+        for (holder, source, resource), quantity in provisions_to_create:
+            Provision.objects.create(serial=commission,
+                                     holder=holder,
+                                     source=source,
+                                     resource=resource,
+                                     quantity=quantity)
+
+        return commission.serial
 
     def _log_provision(self,
                        commission, provision, holding, log_time, reason):

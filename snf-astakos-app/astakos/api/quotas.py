@@ -63,7 +63,9 @@ def quotas(request, user=None):
 @api.api_method(http_method='GET', token_required=True, user_required=False)
 @service_from_token
 def service_quotas(request):
-    result = get_service_quotas(request.service_instance)
+    user = request.GET.get('user')
+    users = [user] if user is not None else None
+    result = get_service_quotas(request.service_instance, users=users)
     return json_response(result)
 
 

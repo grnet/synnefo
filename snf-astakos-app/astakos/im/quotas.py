@@ -68,12 +68,12 @@ def transform_data(holdings, func=None):
     return quota
 
 
-def get_counters(users,  resources=None, sources=None):
+def get_counters(users, resources=None, sources=None):
     uuids = [user.uuid for user in users]
 
-    counters = qh.get_holder_quota(holders=uuids,
-                                   resources=resources,
-                                   sources=sources)
+    counters = qh.get_quota(holders=uuids,
+                            resources=resources,
+                            sources=sources)
     return counters
 
 
@@ -95,10 +95,10 @@ def get_user_quotas(user, resources=None, sources=None):
     return quotas[user.uuid]
 
 
-def get_service_quotas(service):
+def get_service_quotas(service, users=None):
     resources = Resource.objects.filter(service=service.name)
     resource_names = [r.name for r in resources]
-    counters = qh.get_resource_quota(resource_names)
+    counters = qh.get_quota(holders=users, resources=resource_names)
     return transform_data(counters)
 
 

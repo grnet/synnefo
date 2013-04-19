@@ -52,28 +52,17 @@ from .models import (Holding,
 
 class QuotaholderDjangoDBCallpoint(object):
 
-    def get_holder_quota(self, holders=None, sources=None, resources=None):
-        holdings = Holding.objects.filter(holder__in=holders)
+    def get_quota(self, holders=None, sources=None, resources=None):
+        holdings = Holding.objects.all()
+
+        if holders is not None:
+            holdings = holdings.filter(holder__in=holders)
 
         if sources is not None:
             holdings = holdings.filter(source__in=sources)
 
         if resources is not None:
             holdings = holdings.filter(resource__in=resources)
-
-        quotas = {}
-        for holding in holdings:
-            key = (holding.holder, holding.source, holding.resource)
-            value = (holding.limit, holding.imported_min, holding.imported_max)
-            quotas[key] = value
-
-        return quotas
-
-    def get_resource_quota(self, resources, sources=None):
-        holdings = Holding.objects.filter(resource__in=resources)
-
-        if sources is not None:
-            holdings = holdings.filter(source__in=sources)
 
         quotas = {}
         for holding in holdings:

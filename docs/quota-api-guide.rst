@@ -90,7 +90,7 @@ Status  Description
   }
 
 Get Quotas per Service
-..........
+......................
 
 **GET** /astakos/api/service_quotas
 
@@ -99,6 +99,8 @@ Request Header Name   Value
 ====================  ============================
 X-Auth-Token          Service authentication token
 ====================  ============================
+
+Optional GET parameter: ?user=<uuid>
 
 **Normal Response Code**: 200
 

@@ -77,7 +77,7 @@ import astakos.im.messages as astakos_messages
 from snf_django.lib.db.managers import ForUpdateManager
 from synnefo.lib.ordereddict import OrderedDict
 
-from synnefo.lib.db.intdecimalfield import intDecimalField
+from snf_django.lib.db.fields import intDecimalField
 from synnefo.util.text import uenc, udec
 from astakos.im import presentation
 

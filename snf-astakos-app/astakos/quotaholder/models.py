@@ -32,7 +32,7 @@
 # or implied, of GRNET S.A.
 
 
-from synnefo.lib.db.intdecimalfield import intDecimalField
+from snf_django.lib.db.fields import intDecimalField
 
 from django.db.models import (Model, BigIntegerField, CharField,
                               ForeignKey, AutoField)

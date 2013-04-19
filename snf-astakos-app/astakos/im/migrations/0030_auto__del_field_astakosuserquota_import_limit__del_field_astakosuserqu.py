@@ -21,13 +21,13 @@ class Migration(SchemaMigration):
     def backwards(self, orm):
         
         # Adding field 'AstakosUserQuota.import_limit'
-        db.add_column('im_astakosuserquota', 'import_limit', self.gf('synnefo.lib.db.intdecimalfield.IntDecimalField')(default=100000000000000000000000000000000L, max_digits=38, decimal_places=0), keep_default=False)
+        db.add_column('im_astakosuserquota', 'import_limit', self.gf('snf_django.lib.db.fields.IntDecimalField')(default=100000000000000000000000000000000L, max_digits=38, decimal_places=0), keep_default=False)
 
         # Adding field 'AstakosUserQuota.export_limit'
-        db.add_column('im_astakosuserquota', 'export_limit', self.gf('synnefo.lib.db.intdecimalfield.IntDecimalField')(default=100000000000000000000000000000000L, max_digits=38, decimal_places=0), keep_default=False)
+        db.add_column('im_astakosuserquota', 'export_limit', self.gf('snf_django.lib.db.fields.IntDecimalField')(default=100000000000000000000000000000000L, max_digits=38, decimal_places=0), keep_default=False)
 
         # Adding field 'AstakosUserQuota.quantity'
-        db.add_column('im_astakosuserquota', 'quantity', self.gf('synnefo.lib.db.intdecimalfield.IntDecimalField')(default=0, max_digits=38, decimal_places=0), keep_default=False)
+        db.add_column('im_astakosuserquota', 'quantity', self.gf('snf_django.lib.db.fields.IntDecimalField')(default=0, max_digits=38, decimal_places=0), keep_default=False)
 
 
     models = {
@@ -115,7 +115,7 @@ class Migration(SchemaMigration):
         },
         'im.astakosuserquota': {
             'Meta': {'unique_together': "(('resource', 'user'),)", 'object_name': 'AstakosUserQuota'},
-            'capacity': ('synnefo.lib.db.intdecimalfield.IntDecimalField', [], {'default': '0', 'max_digits': '38', 'decimal_places': '0'}),
+            'capacity': ('snf_django.lib.db.fields.IntDecimalField', [], {'default': '0', 'max_digits': '38', 'decimal_places': '0'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'resource': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.Resource']"}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.AstakosUser']"})
@@ -232,13 +232,13 @@ class Migration(SchemaMigration):
         'im.projectresourcegrant': {
             'Meta': {'unique_together': "(('resource', 'project_application'),)", 'object_name': 'ProjectResourceGrant'},
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'member_capacity': ('synnefo.lib.db.intdecimalfield.IntDecimalField', [], {'default': '100000000000000000000000000000000L', 'max_digits': '38', 'decimal_places': '0'}),
-            'member_export_limit': ('synnefo.lib.db.intdecimalfield.IntDecimalField', [], {'default': '100000000000000000000000000000000L', 'max_digits': '38', 'decimal_places': '0'}),
-            'member_import_limit': ('synnefo.lib.db.intdecimalfield.IntDecimalField', [], {'default': '100000000000000000000000000000000L', 'max_digits': '38', 'decimal_places': '0'}),
+            'member_capacity': ('snf_django.lib.db.fields.IntDecimalField', [], {'default': '100000000000000000000000000000000L', 'max_digits': '38', 'decimal_places': '0'}),
+            'member_export_limit': ('snf_django.lib.db.fields.IntDecimalField', [], {'default': '100000000000000000000000000000000L', 'max_digits': '38', 'decimal_places': '0'}),
+            'member_import_limit': ('snf_django.lib.db.fields.IntDecimalField', [], {'default': '100000000000000000000000000000000L', 'max_digits': '38', 'decimal_places': '0'}),
             'project_application': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.ProjectApplication']", 'null': 'True'}),
-            'project_capacity': ('synnefo.lib.db.intdecimalfield.IntDecimalField', [], {'default': '100000000000000000000000000000000L', 'max_digits': '38', 'decimal_places': '0'}),
-            'project_export_limit': ('synnefo.lib.db.intdecimalfield.IntDecimalField', [], {'default': '100000000000000000000000000000000L', 'max_digits': '38', 'decimal_places': '0'}),
-            'project_import_limit': ('synnefo.lib.db.intdecimalfield.IntDecimalField', [], {'default': '100000000000000000000000000000000L', 'max_digits': '38', 'decimal_places': '0'}),
+            'project_capacity': ('snf_django.lib.db.fields.IntDecimalField', [], {'default': '100000000000000000000000000000000L', 'max_digits': '38', 'decimal_places': '0'}),
+            'project_export_limit': ('snf_django.lib.db.fields.IntDecimalField', [], {'default': '100000000000000000000000000000000L', 'max_digits': '38', 'decimal_places': '0'}),
+            'project_import_limit': ('snf_django.lib.db.fields.IntDecimalField', [], {'default': '100000000000000000000000000000000L', 'max_digits': '38', 'decimal_places': '0'}),
             'resource': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.Resource']"})
         },
         'im.resource': {
@@ -248,7 +248,7 @@ class Migration(SchemaMigration):
             'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '255'}),
             'service': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True'}),
             'unit': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True'}),
-            'uplimit': ('synnefo.lib.db.intdecimalfield.IntDecimalField', [], {'default': '0', 'max_digits': '38', 'decimal_places': '0'})
+            'uplimit': ('snf_django.lib.db.fields.IntDecimalField', [], {'default': '0', 'max_digits': '38', 'decimal_places': '0'})
         },
         'im.serial': {
             'Meta': {'object_name': 'Serial'},

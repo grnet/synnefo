@@ -121,6 +121,8 @@ def dict_merge(a, b):
 class Service(models.Model):
     name = models.CharField(_('Name'), max_length=255, unique=True,
                             db_index=True)
+    url = models.CharField(_('Service url'), max_length=255, null=True,
+                           help_text=_("URL the service is accessible from"))
     api_url = models.CharField(_('Service API url'), max_length=255, null=True)
     auth_token = models.CharField(_('Authentication Token'), max_length=32,
                                   null=True, blank=True)

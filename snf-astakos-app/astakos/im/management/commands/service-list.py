@@ -43,10 +43,11 @@ class Command(ListCommand):
     FIELDS = {
         "id": ("id", "ID"),
         "name": ("name", "Service Name"),
-        "url": ("api_url", "Service API url"),
+        "url": ("url", "Service url"),
+        "api_url": ("api_url", "Service API url"),
         "token": ("auth_token", "Authentication token"),
         "created": ("auth_token_created", "Token creation date"),
         "expires": ("auth_token_expires", "Token expiration date"),
     }
 
-    fields = ["id", "name", "url", "token", "created", "expires"]
+    fields = ["id", "name", "url", "api_url", "token", "created", "expires"]

@@ -38,7 +38,7 @@ from astakos.im.models import Service
 
 
 class Command(BaseCommand):
-    args = "<name> <endpoint URL>"
+    args = "<name> <service URL> <API URL> "
     help = "Register a service"
 
     def handle(self, *args, **options):
@@ -47,6 +47,7 @@ class Command(BaseCommand):
 
         name = args[0]
         api_url = args[1]
+        url = args[2]
 
         try:
             s = Service.objects.get(name=name)
@@ -61,7 +62,7 @@ class Command(BaseCommand):
             raise CommandError(m)
 
         try:
-            s = Service.objects.create(name=name, api_url=api_url)
+            s = Service.objects.create(name=name, api_url=api_url, url=url)
         except BaseException as e:
             raise CommandError("Failed to create service.")
         else:

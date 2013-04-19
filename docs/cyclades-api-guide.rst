@@ -509,11 +509,11 @@ imageRef          The image id           ✔        **✘**
 image             The image id           **✘**    ✔
 progress          Build progress         ✔        ✔
 status            Server status          ✔        ✔
-suspended         ...
+suspended         If server is suspended ✔        **✘**
 attachments       Network interfaces     ✔        **✘**
 addresses         Network interfaces     **✘**    ✔
 metadata          Server custom metadata ✔        ✔
-diagnostics       ...
+diagnostics       Diagnostic information ✔        **✘**
 ================= ====================== ======== ==========
 
 |
@@ -529,6 +529,8 @@ diagnostics       ...
 * **attachments** in Cyclades are lists of network interfaces (nics). Each server can handle various nics. Each nic connects the current server with a network. **Attachments** are different to OS Compute's **addresses**. The former is a list of the server's network interfaces (network reference + mac address) while the later is just a list of networks. For example, a Cyclades server may be connected to the same network through more than one distinct network interfaces.
 
 * **Network Interfaces (NICs)** contain information about a server's connection to a network. Each nic is identified by an id of the form nic-<server-id>-<ordinal-number> and may contain a ``network_id``, a ``mac_address``, ``ipv4`` and ``ipv6`` addresses and the ``firewallProfile`` of the connection.
+
+* **diagnostics** is a list of items that contain key:value information useful for diagnosing the server behavior and may be used by the administrators of deployed Synnefo setups.
 
 **Example Details for server with id 42042, in JSON**
 
@@ -569,6 +571,55 @@ diagnostics       ...
       }
     }
   }
+
+Rename Server
+.............
+
+======================== ====== ======== ==========
+URI                      Method Cyclades OS Compute
+======================== ====== ======== ==========
+``/servers/<server id>`` PUT    ✔        ✔
+======================== ====== ======== ==========
+
+* **server-id** is the identifier of the virtual server
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
+
+The request body is json formated. It consists of a ``server`` tag over the following attributes:
+
+=========== ==================== ======== ==========
+Name        Description          Cyclades OS Compute
+=========== ==================== ======== ==========
+name        The server name      ✔        ✔
+accessIPv4  IP v4 address        **✘**    ✔
+accessIPv6  IP v6 address        **✘**    ✔
+=========== ==================== ======== ==========
+
+* In Cyclades, a virtual server may use multiple network connections, instead of limit them to one.
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+204 (OK)                    Request succeeded
+400 (Bad Request)           Malformed request or malformed server id
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             User is not allowed to perform this operation
+404 (Not Found)             Server not found
+415 (Bad Media Type)
+409 (Build In Progress)     Server is not ready yet
+500 (Internal Server Error) The request cannot be completed because of an internal error
+503 (Service Unavailable)   No available backends or service currently unavailable
+=========================== =====================
+
+In case of a 204 return code, there will be no request results according to the Cyclades API, while the new server details are returned according to OS Compute API.
 
 Server Addresses
 ----------------

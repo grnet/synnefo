@@ -96,7 +96,7 @@ from astakos.im.functions import (
     send_feedback, SendMailError,
     logout as auth_logout,
     activate as activate_func,
-    invite,
+    invite as invite_func,
     send_activation as send_activation_func,
     SendNotificationError,
     reached_pending_application_limit,
@@ -315,7 +315,7 @@ def invite(request, template_name='im/invitations.html', extra_context=None):
                 try:
                     email = form.cleaned_data.get('username')
                     realname = form.cleaned_data.get('realname')
-                    invite(inviter, email, realname)
+                    invite_func(inviter, email, realname)
                     message = _(astakos_messages.INVITATION_SENT) % locals()
                     messages.success(request, message)
                 except SendMailError, e:

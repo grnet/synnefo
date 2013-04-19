@@ -1,6 +1,13 @@
 Changelog
 =========
 
+v0.14.0
+------
+* new settings *PITHOS_BACKEND_POOL_SIZE*, *PITHOS_BACKEND_ACCOUNT_QUOTA*, *PITHOS_BACKEND_CONTAINER_QUOTA*
+* setting *PITHOS_BACKEND_QUOTA* is substituted by the setting *PITHOS_BACKEND_ACCOUNT_QUOTA*
+* setting *PITHOS_UPDATE_MD5* is set to False by default
+ * Remove PITHOS_AUTHENTICATION_USERS setting
+
 v0.13.0
 ------
 * settings *PITHOS_PROXY_USER_SERVICES*, *PITHOS_USER_CATALOG_URL*, *PITHOS_USER_FEEDBACK_URL*,

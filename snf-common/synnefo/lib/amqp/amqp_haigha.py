@@ -45,11 +45,12 @@ from gevent import monkey
 from functools import wraps
 
 
-logging.basicConfig(level=logging.INFO, format="[%(levelname)s %(asctime)s] %(message)s" )
+logging.basicConfig(level=logging.INFO,
+                    format="[%(levelname)s %(asctime)s] %(message)s")
 logger = logging.getLogger('haigha')
 
 sock_opts = {
-  (socket.IPPROTO_TCP, socket.TCP_NODELAY): 1,
+    (socket.IPPROTO_TCP, socket.TCP_NODELAY): 1,
 }
 
 
@@ -87,7 +88,7 @@ class AMQPHaighaClient():
     def connect(self, retries=0):
         if retries > self.max_retries:
             logger.error("Aborting after %s retries", retries - 1)
-            raise AMQPConnectionError('Aborting after %d connection failures.'\
+            raise AMQPConnectionError('Aborting after %d connection failures.'
                                       % (retries - 1))
             return
 
@@ -100,12 +101,12 @@ class AMQPHaighaClient():
 
         try:
             self.connection = \
-                 RabbitConnection(logger=logger, debug=True,
-                      user='rabbit', password='r@bb1t',
-                      vhost='/', host=host,
-                      heartbeat=None,
-                      sock_opts=sock_opts,
-                      transport='gevent')
+                RabbitConnection(logger=logger, debug=True,
+                                 user='rabbit', password='r@bb1t',
+                                 vhost='/', host=host,
+                                 heartbeat=None,
+                                 sock_opts=sock_opts,
+                                 transport='gevent')
         except socket.error as e:
             logger.error('Cannot connect to host %s: %s', host, e)
             if retries > 2 * len(self.hosts):
@@ -272,8 +273,7 @@ class AMQPHaighaClient():
             logger.info('Successfully closed channel. Info: %s', close_info)
             self.connection.close()
         except socket.error as e:
-            logger.error('Connection closed while closing connection:%s',
-                          e)
+            logger.error('Connection closed while closing connection:%s', e)
 
     def queue_delete(self, queue, if_unused=True, if_empty=True):
         self.channel.queue.delete(queue, if_unused, if_empty)
@@ -285,5 +285,5 @@ class AMQPHaighaClient():
         pass
 
 
-class  AMQPConnectionError():
+class AMQPConnectionError():
     pass

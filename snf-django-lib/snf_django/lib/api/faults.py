@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -32,22 +32,29 @@
 # or implied, of GRNET S.A.
 
 
-def camelCase(s):
+"""Common API faults."""
+
+
+def camel_case(s):
     return s[0].lower() + s[1:]
 
 
 class Fault(Exception):
-    def __init__(self, message='', details='', name=''):
-        Exception.__init__(self, message, details, name)
+    def __init__(self, message='', details='', name='', code=None):
         self.message = message
         self.details = details
-        self.name = name or camelCase(self.__class__.__name__)
+        if not hasattr(self, 'code'):
+            self.code = code
+        self.name = name or camel_case(self.__class__.__name__)
+        Exception.__init__(self, message, details, self.name, self.code)
 
 
+# 2xx
 class NotModified(Fault):
     code = 304
 
 
+# 4xx
 class BadRequest(Fault):
     code = 400
 
@@ -60,12 +67,20 @@ class Forbidden(Fault):
     code = 403
 
 
+class ResizeNotAllowed(Forbidden):
+    pass
+
+
 class ItemNotFound(Fault):
     code = 404
 
 
 class Conflict(Fault):
     code = 409
+
+
+class BuildInProgress(Conflict):
+    pass
 
 
 class LengthRequired(Fault):
@@ -80,17 +95,34 @@ class RequestEntityTooLarge(Fault):
     code = 413
 
 
+class OverLimit(RequestEntityTooLarge):
+    pass
+
+
+class BadMediaType(Fault):
+    code = 415
+
+
 class RangeNotSatisfiable(Fault):
     code = 416
+
+
+class NetworkInUse(Fault):
+    code = 421
 
 
 class UnprocessableEntity(Fault):
     code = 422
 
 
+# 5xx
 class InternalServerError(Fault):
     code = 500
 
 
 class NotImplemented(Fault):
     code = 501
+
+
+class ServiceUnavailable(Fault):
+    code = 503

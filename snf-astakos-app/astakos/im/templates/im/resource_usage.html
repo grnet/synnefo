@@ -9,6 +9,7 @@
 
 {% block page.body %}
 <div class="maincol {% block innerpage.class %}{% endblock %}"> 
+
 	<h2>RESOURCE USAGE</h2>
 	<div class="stats clearfix">
 		<ul>
@@ -42,18 +43,11 @@
 					</div>
 					<div class="bar" data-steps="">
 						<div>
-							{% if rdata.ratio > 18 %}
-							<span style="width:{{ rdata.ratio_limited|floatformat }}%;" class="hovered">
-                                <em data-value="{{ rdata.ratio }}" class="value">{{ rdata.ratio|floatformat }}&#37; &nbsp;&nbsp;</em>	
+							
+							<span style="width:{{ rdata.ratio_limited|floatformat }}%;" {% if rdata.ratio > 22 %}class="hovered"{% endif %}>
+                               
 							</span>
-							{% else %}
-							<span style="width:{{ rdata.ratio_limited|floatformat }}%;">
-                                	&nbsp;
-							</span>
-							<em data-value="{{ rdata.ratio }}" class="value">
-                                	{{ rdata.ratio|floatformat }}&#37; &nbsp;&nbsp;
-                                </em>
-							{% endif %}
+							  <em data-value="{{ rdata.ratio }}" class="value">{{ rdata.ratio|floatformat }}&#37; &nbsp;&nbsp;</em>	
 						</div>
 					</div>
 		 		</li>

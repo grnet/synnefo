@@ -48,7 +48,6 @@ from pithos.backends.version import __version__
 # Package info
 VERSION = __version__
 README = open(os.path.join(HERE, 'README')).read()
-CHANGES = open(os.path.join(HERE, 'Changelog')).read()
 SHORT_DESCRIPTION = 'Backend library for the File/Object Storage component'
 
 PACKAGES_ROOT = '.'
@@ -62,6 +61,7 @@ INSTALL_REQUIRES = [
     'snf-common',
     'SQLAlchemy==0.6.3',
     'alembic>=0.3.4, <0.4',
+    'objpool>=0.2'
 ]
 
 EXTRAS_REQUIRES = {
@@ -170,7 +170,7 @@ setup(
     license='BSD',
     url='http://www.synnefo.org/',
     description=SHORT_DESCRIPTION,
-    long_description=README + '\n\n' + CHANGES,
+    long_description=README,
     classifiers=CLASSIFIERS,
 
     author='Synnefo development team',

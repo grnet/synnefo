@@ -32,7 +32,7 @@
 # or implied, of GRNET S.A.
 
 from synnefo.lib.commissioning import Callpoint, CallError
-from synnefo.lib.pool.http import PooledHTTPConnection
+from objpool.http import PooledHTTPConnection
 from .api import QuotaholderAPI
 
 from json import loads as json_loads, dumps as json_dumps

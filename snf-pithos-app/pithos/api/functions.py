@@ -32,9 +32,7 @@
 # or implied, of GRNET S.A.
 
 from xml.dom import minidom
-from urllib import unquote
 
-from django.conf import settings
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
@@ -42,12 +40,12 @@ from django.utils.http import parse_etags
 from django.utils.encoding import smart_str
 from django.views.decorators.csrf import csrf_exempt
 
-from synnefo.lib.astakos import get_user, get_uuids as _get_uuids
+from django.conf import settings
+from snf_django.lib.astakos import get_uuids as _get_uuids
 
-from pithos.api.faults import (
-    Fault, NotModified, BadRequest, Unauthorized, Forbidden, ItemNotFound,
-    Conflict, LengthRequired, PreconditionFailed, RequestEntityTooLarge,
-    RangeNotSatisfiable, UnprocessableEntity)
+from snf_django.lib import api
+from snf_django.lib.api import faults
+
 from pithos.api.util import (
     json_encode_decimal, rename_meta_key, format_header_key,
     printable_header_dict, get_account_headers, put_account_headers,
@@ -59,12 +57,12 @@ from pithos.api.util import (
     get_content_range, socket_read_iterator, SaveToBackendHandler,
     object_data_response, put_object_block, hashmap_md5, simple_list_response,
     api_method, is_uuid,
-    retrieve_uuid, retrieve_displayname, retrieve_uuids, retrieve_displaynames
+    retrieve_uuid, retrieve_displayname, retrieve_uuids, retrieve_displaynames,
+    get_pithos_usage
 )
 
 from pithos.api.settings import (UPDATE_MD5, TRANSLATE_UUIDS,
-                                 SERVICE_TOKEN, AUTHENTICATION_URL,
-                                 AUTHENTICATION_USERS)
+                                 SERVICE_TOKEN, ASTAKOS_URL)
 
 from pithos.backends.base import (
     NotAllowedError, QuotaError, ContainerNotEmpty, ItemNotExists,
@@ -72,18 +70,16 @@ from pithos.backends.base import (
 
 from pithos.backends.filter import parse_filters
 
-import logging
 import hashlib
 
+import logging
 logger = logging.getLogger(__name__)
+
 
 def get_uuids(names):
     try:
-        uuids = _get_uuids(SERVICE_TOKEN, names,
-                           url=AUTHENTICATION_URL.replace(
-                                            'im/authenticate',
-                                            'service/api/user_catalogs'),
-                           override_users=AUTHENTICATION_USERS)
+        url = ASTAKOS_URL + "/service/api/user_catalogs"
+        uuids = _get_uuids(SERVICE_TOKEN, names, url=url)
     except Exception, e:
         logger.exception(e)
         return {}
@@ -103,7 +99,7 @@ def top_demux(request):
                 return authenticate(request)
         return account_list(request)
     else:
-        return method_not_allowed(request)
+        return api.method_not_allowed(request)
 
 
 @csrf_exempt
@@ -122,7 +118,7 @@ def account_demux(request, v_account):
     elif request.method == 'GET':
         return container_list(request, v_account)
     else:
-        return method_not_allowed(request)
+        return api.method_not_allowed(request)
 
 
 @csrf_exempt
@@ -145,7 +141,7 @@ def container_demux(request, v_account, v_container):
     elif request.method == 'GET':
         return object_list(request, v_account, v_container)
     else:
-        return method_not_allowed(request)
+        return api.method_not_allowed(request)
 
 
 @csrf_exempt
@@ -175,10 +171,10 @@ def object_demux(request, v_account, v_container, v_object):
     elif request.method == 'DELETE':
         return object_delete(request, v_account, v_container, v_object)
     else:
-        return method_not_allowed(request)
+        return api.method_not_allowed(request)
 
 
-@api_method('GET', user_required=False)
+@api_method('GET', user_required=False, logger=logger)
 def authenticate(request):
     # Normal Response Codes: 204
     # Error Response Codes: internalServerError (500),
@@ -188,7 +184,7 @@ def authenticate(request):
     x_auth_user = request.META.get('HTTP_X_AUTH_USER')
     x_auth_key = request.META.get('HTTP_X_AUTH_KEY')
     if not x_auth_user or not x_auth_key:
-        raise BadRequest('Missing X-Auth-User or X-Auth-Key header')
+        raise faults.BadRequest('Missing X-Auth-User or X-Auth-Key header')
     response = HttpResponse(status=204)
 
     uri = request.build_absolute_uri()
@@ -201,7 +197,7 @@ def authenticate(request):
     return response
 
 
-@api_method('GET', format_allowed=True, request_usage=True)
+@api_method('GET', format_allowed=True, user_required=True, logger=logger)
 def account_list(request):
     # Normal Response Codes: 200, 204
     # Error Response Codes: internalServerError (500),
@@ -231,13 +227,14 @@ def account_list(request):
     for x in accounts:
         if x == request.user_uniq:
             continue
+        usage = get_pithos_usage(request.x_auth_token)
         try:
             meta = request.backend.get_account_meta(
                 request.user_uniq, x, 'pithos', include_user_defined=False,
-                external_quota=request.user_usage)
+                external_quota=usage)
             groups = request.backend.get_account_groups(request.user_uniq, x)
         except NotAllowedError:
-            raise Forbidden('Not allowed')
+            raise faults.Forbidden('Not allowed')
         else:
             rename_meta_key(meta, 'modified', 'last_modified')
             rename_meta_key(
@@ -263,7 +260,7 @@ def account_list(request):
     return response
 
 
-@api_method('HEAD', request_usage=True)
+@api_method('HEAD', user_required=True, logger=logger)
 def account_meta(request, v_account):
     # Normal Response Codes: 204
     # Error Response Codes: internalServerError (500),
@@ -271,10 +268,11 @@ def account_meta(request, v_account):
     #                       badRequest (400)
 
     until = get_int_parameter(request.GET.get('until'))
+    usage = get_pithos_usage(request.x_auth_token)
     try:
         meta = request.backend.get_account_meta(
             request.user_uniq, v_account, 'pithos', until,
-            external_quota=request.user_usage)
+            external_quota=usage)
         groups = request.backend.get_account_groups(
             request.user_uniq, v_account)
 
@@ -283,9 +281,9 @@ def account_meta(request, v_account):
                 groups[k] = retrieve_displaynames(
                         getattr(request, 'token', None), groups[k])
         policy = request.backend.get_account_policy(
-            request.user_uniq, v_account, external_quota=request.user_usage)
+            request.user_uniq, v_account, external_quota=usage)
     except NotAllowedError:
-        raise Forbidden('Not allowed')
+        raise faults.Forbidden('Not allowed')
 
     validate_modification_preconditions(request, meta)
 
@@ -294,7 +292,7 @@ def account_meta(request, v_account):
     return response
 
 
-@api_method('POST')
+@api_method('POST', user_required=True, logger=logger)
 def account_update(request, v_account):
     # Normal Response Codes: 202
     # Error Response Codes: internalServerError (500),
@@ -310,7 +308,7 @@ def account_update(request, v_account):
                         groups[k],
                         fail_silently=False)
             except ItemNotExists, e:
-                raise BadRequest(
+                raise faults.BadRequest(
                         'Bad X-Account-Group header value: %s' % e)
         else:
             try:
@@ -319,8 +317,8 @@ def account_update(request, v_account):
                     groups[k],
                     fail_silently=False)
             except ItemNotExists, e:
-                raise BadRequest(
-                        'Bad X-Account-Group header value: %s'  % e)
+                raise faults.BadRequest(
+                        'Bad X-Account-Group header value: %s' % e)
     replace = True
     if 'update' in request.GET:
         replace = False
@@ -329,19 +327,19 @@ def account_update(request, v_account):
             request.backend.update_account_groups(request.user_uniq, v_account,
                                                   groups, replace)
         except NotAllowedError:
-            raise Forbidden('Not allowed')
+            raise faults.Forbidden('Not allowed')
         except ValueError:
-            raise BadRequest('Invalid groups header')
+            raise faults.BadRequest('Invalid groups header')
     if meta or replace:
         try:
             request.backend.update_account_meta(request.user_uniq, v_account,
                                                 'pithos', meta, replace)
         except NotAllowedError:
-            raise Forbidden('Not allowed')
+            raise faults.Forbidden('Not allowed')
     return HttpResponse(status=202)
 
 
-@api_method('GET', format_allowed=True, request_usage=True)
+@api_method('GET', format_allowed=True, user_required=True, logger=logger)
 def container_list(request, v_account):
     # Normal Response Codes: 200, 204
     # Error Response Codes: internalServerError (500),
@@ -350,16 +348,17 @@ def container_list(request, v_account):
     #                       badRequest (400)
 
     until = get_int_parameter(request.GET.get('until'))
+    usage = get_pithos_usage(request.x_auth_token)
     try:
         meta = request.backend.get_account_meta(
             request.user_uniq, v_account, 'pithos', until,
-            external_quota=request.user_usage)
+            external_quota=usage)
         groups = request.backend.get_account_groups(
             request.user_uniq, v_account)
         policy = request.backend.get_account_policy(
-            request.user_uniq, v_account, external_quota = request.user_usage)
+            request.user_uniq, v_account, external_quota=usage)
     except NotAllowedError:
-        raise Forbidden('Not allowed')
+        raise faults.Forbidden('Not allowed')
 
     validate_modification_preconditions(request, meta)
 
@@ -383,7 +382,7 @@ def container_list(request, v_account):
             request.user_uniq, v_account,
             marker, limit, shared, until, public)
     except NotAllowedError:
-        raise Forbidden('Not allowed')
+        raise faults.Forbidden('Not allowed')
     except NameError:
         containers = []
 
@@ -405,7 +404,7 @@ def container_list(request, v_account):
             policy = request.backend.get_container_policy(request.user_uniq,
                                                           v_account, x)
         except NotAllowedError:
-            raise Forbidden('Not allowed')
+            raise faults.Forbidden('Not allowed')
         except NameError:
             pass
         else:
@@ -426,7 +425,7 @@ def container_list(request, v_account):
     return response
 
 
-@api_method('HEAD')
+@api_method('HEAD', user_required=True, logger=logger)
 def container_meta(request, v_account, v_container):
     # Normal Response Codes: 204
     # Error Response Codes: internalServerError (500),
@@ -444,9 +443,9 @@ def container_meta(request, v_account, v_container):
             request.user_uniq, v_account,
             v_container)
     except NotAllowedError:
-        raise Forbidden('Not allowed')
+        raise faults.Forbidden('Not allowed')
     except ItemNotExists:
-        raise ItemNotFound('Container does not exist')
+        raise faults.ItemNotFound('Container does not exist')
 
     validate_modification_preconditions(request, meta)
 
@@ -455,7 +454,7 @@ def container_meta(request, v_account, v_container):
     return response
 
 
-@api_method('PUT')
+@api_method('PUT', user_required=True, logger=logger)
 def container_create(request, v_account, v_container):
     # Normal Response Codes: 201, 202
     # Error Response Codes: internalServerError (500),
@@ -470,9 +469,9 @@ def container_create(request, v_account, v_container):
             request.user_uniq, v_account, v_container, policy)
         ret = 201
     except NotAllowedError:
-        raise Forbidden('Not allowed')
+        raise faults.Forbidden('Not allowed')
     except ValueError:
-        raise BadRequest('Invalid policy header')
+        raise faults.BadRequest('Invalid policy header')
     except ContainerExists:
         ret = 202
 
@@ -482,24 +481,24 @@ def container_create(request, v_account, v_container):
                 request.user_uniq, v_account,
                 v_container, policy, replace=False)
         except NotAllowedError:
-            raise Forbidden('Not allowed')
+            raise faults.Forbidden('Not allowed')
         except ItemNotExists:
-            raise ItemNotFound('Container does not exist')
+            raise faults.ItemNotFound('Container does not exist')
         except ValueError:
-            raise BadRequest('Invalid policy header')
+            raise faults.BadRequest('Invalid policy header')
     if meta:
         try:
             request.backend.update_container_meta(request.user_uniq, v_account,
                                                   v_container, 'pithos', meta, replace=False)
         except NotAllowedError:
-            raise Forbidden('Not allowed')
+            raise faults.Forbidden('Not allowed')
         except ItemNotExists:
-            raise ItemNotFound('Container does not exist')
+            raise faults.ItemNotFound('Container does not exist')
 
     return HttpResponse(status=ret)
 
 
-@api_method('POST', format_allowed=True)
+@api_method('POST', format_allowed=True, user_required=True, logger=logger)
 def container_update(request, v_account, v_container):
     # Normal Response Codes: 202
     # Error Response Codes: internalServerError (500),
@@ -517,19 +516,19 @@ def container_update(request, v_account, v_container):
                 request.user_uniq, v_account,
                 v_container, policy, replace)
         except NotAllowedError:
-            raise Forbidden('Not allowed')
+            raise faults.Forbidden('Not allowed')
         except ItemNotExists:
-            raise ItemNotFound('Container does not exist')
+            raise faults.ItemNotFound('Container does not exist')
         except ValueError:
-            raise BadRequest('Invalid policy header')
+            raise faults.BadRequest('Invalid policy header')
     if meta or replace:
         try:
             request.backend.update_container_meta(request.user_uniq, v_account,
                                                   v_container, 'pithos', meta, replace)
         except NotAllowedError:
-            raise Forbidden('Not allowed')
+            raise faults.Forbidden('Not allowed')
         except ItemNotExists:
-            raise ItemNotFound('Container does not exist')
+            raise faults.ItemNotFound('Container does not exist')
 
     content_length = -1
     if request.META.get('HTTP_TRANSFER_ENCODING') != 'chunked':
@@ -550,7 +549,7 @@ def container_update(request, v_account, v_container):
     return response
 
 
-@api_method('DELETE')
+@api_method('DELETE', user_required=True, logger=logger)
 def container_delete(request, v_account, v_container):
     # Normal Response Codes: 204
     # Error Response Codes: internalServerError (500),
@@ -569,17 +568,17 @@ def container_delete(request, v_account, v_container):
             request.user_uniq, v_account, v_container,
             until, delimiter=delimiter)
     except NotAllowedError:
-        raise Forbidden('Not allowed')
+        raise faults.Forbidden('Not allowed')
     except ItemNotExists:
-        raise ItemNotFound('Container does not exist')
+        raise faults.ItemNotFound('Container does not exist')
     except ContainerNotEmpty:
-        raise Conflict('Container is not empty')
+        raise faults.Conflict('Container is not empty')
     except QuotaError, e:
-        raise RequestEntityTooLarge('Quota error: %s' % e)
+        raise faults.RequestEntityTooLarge('Quota error: %s' % e)
     return HttpResponse(status=204)
 
 
-@api_method('GET', format_allowed=True)
+@api_method('GET', format_allowed=True, user_required=True, logger=logger)
 def object_list(request, v_account, v_container):
     # Normal Response Codes: 200, 204
     # Error Response Codes: internalServerError (500),
@@ -597,9 +596,9 @@ def object_list(request, v_account, v_container):
             request.user_uniq, v_account,
             v_container)
     except NotAllowedError:
-        raise Forbidden('Not allowed')
+        raise faults.Forbidden('Not allowed')
     except ItemNotExists:
-        raise ItemNotFound('Container does not exist')
+        raise faults.ItemNotFound('Container does not exist')
 
     validate_modification_preconditions(request, meta)
 
@@ -658,9 +657,9 @@ def object_list(request, v_account, v_container):
                 limit, virtual, 'pithos', keys, shared,
                 until, None, public_granted)
         except NotAllowedError:
-            raise Forbidden('Not allowed')
+            raise faults.Forbidden('Not allowed')
         except ItemNotExists:
-            raise ItemNotFound('Container does not exist')
+            raise faults.ItemNotFound('Container does not exist')
 
         if len(objects) == 0:
             # The cloudfiles python bindings expect 200 if json/xml.
@@ -697,9 +696,9 @@ def object_list(request, v_account, v_container):
                         v_container, prefix).iteritems():
                     object_public[k[name_idx:]] = v
     except NotAllowedError:
-        raise Forbidden('Not allowed')
+        raise faults.Forbidden('Not allowed')
     except ItemNotExists:
-        raise ItemNotFound('Container does not exist')
+        raise faults.ItemNotFound('Container does not exist')
 
     object_meta = []
     for meta in objects:
@@ -747,7 +746,7 @@ def object_list(request, v_account, v_container):
     return response
 
 
-@api_method('HEAD')
+@api_method('HEAD', user_required=True, logger=logger)
 def object_meta(request, v_account, v_container, v_object):
     # Normal Response Codes: 204
     # Error Response Codes: internalServerError (500),
@@ -770,11 +769,11 @@ def object_meta(request, v_account, v_container, v_object):
             permissions = None
             public = None
     except NotAllowedError:
-        raise Forbidden('Not allowed')
+        raise faults.Forbidden('Not allowed')
     except ItemNotExists:
-        raise ItemNotFound('Object does not exist')
+        raise faults.ItemNotFound('Object does not exist')
     except VersionNotExists:
-        raise ItemNotFound('Version does not exist')
+        raise faults.ItemNotFound('Version does not exist')
 
     update_manifest_meta(request, v_account, meta)
     update_sharing_meta(
@@ -786,7 +785,7 @@ def object_meta(request, v_account, v_container, v_object):
     validate_modification_preconditions(request, meta)
     try:
         validate_matching_preconditions(request, meta)
-    except NotModified:
+    except faults.NotModified:
         response = HttpResponse(status=304)
         response['ETag'] = meta['checksum']
         return response
@@ -796,7 +795,7 @@ def object_meta(request, v_account, v_container, v_object):
     return response
 
 
-@api_method('GET', format_allowed=True)
+@api_method('GET', format_allowed=True, user_required=True, logger=logger)
 def object_read(request, v_account, v_container, v_object):
     # Normal Response Codes: 200, 206
     # Error Response Codes: internalServerError (500),
@@ -812,15 +811,15 @@ def object_read(request, v_account, v_container, v_object):
     # Reply with the version list. Do this first, as the object may be deleted.
     if version == 'list':
         if request.serialization == 'text':
-            raise BadRequest('No format specified for version list.')
+            raise faults.BadRequest('No format specified for version list.')
 
         try:
             v = request.backend.list_versions(request.user_uniq, v_account,
                                               v_container, v_object)
         except NotAllowedError:
-            raise Forbidden('Not allowed')
+            raise faults.Forbidden('Not allowed')
         except ItemNotExists:
-            raise ItemNotFound('Object does not exist')
+            raise faults.ItemNotFound('Object does not exist')
         d = {'versions': v}
         if request.serialization == 'xml':
             d['object'] = v_object
@@ -846,11 +845,11 @@ def object_read(request, v_account, v_container, v_object):
             permissions = None
             public = None
     except NotAllowedError:
-        raise Forbidden('Not allowed')
+        raise faults.Forbidden('Not allowed')
     except ItemNotExists:
-        raise ItemNotFound('Object does not exist')
+        raise faults.ItemNotFound('Object does not exist')
     except VersionNotExists:
-        raise ItemNotFound('Version does not exist')
+        raise faults.ItemNotFound('Version does not exist')
 
     update_manifest_meta(request, v_account, meta)
     update_sharing_meta(
@@ -862,7 +861,7 @@ def object_read(request, v_account, v_container, v_object):
     validate_modification_preconditions(request, meta)
     try:
         validate_matching_preconditions(request, meta)
-    except NotModified:
+    except faults.NotModified:
         response = HttpResponse(status=304)
         response['ETag'] = meta['checksum']
         return response
@@ -881,11 +880,11 @@ def object_read(request, v_account, v_container, v_object):
                 request.user_uniq, v_account,
                 src_container, prefix=src_name, virtual=False)
         except NotAllowedError:
-            raise Forbidden('Not allowed')
+            raise faults.Forbidden('Not allowed')
         except ValueError:
-            raise BadRequest('Invalid X-Object-Manifest header')
+            raise faults.BadRequest('Invalid X-Object-Manifest header')
         except ItemNotExists:
-            raise ItemNotFound('Container does not exist')
+            raise faults.ItemNotFound('Container does not exist')
 
         try:
             for x in objects:
@@ -894,11 +893,11 @@ def object_read(request, v_account, v_container, v_object):
                 sizes.append(s)
                 hashmaps.append(h)
         except NotAllowedError:
-            raise Forbidden('Not allowed')
+            raise faults.Forbidden('Not allowed')
         except ItemNotExists:
-            raise ItemNotFound('Object does not exist')
+            raise faults.ItemNotFound('Object does not exist')
         except VersionNotExists:
-            raise ItemNotFound('Version does not exist')
+            raise faults.ItemNotFound('Version does not exist')
     else:
         try:
             s, h = request.backend.get_object_hashmap(
@@ -907,11 +906,11 @@ def object_read(request, v_account, v_container, v_object):
             sizes.append(s)
             hashmaps.append(h)
         except NotAllowedError:
-            raise Forbidden('Not allowed')
+            raise faults.Forbidden('Not allowed')
         except ItemNotExists:
-            raise ItemNotFound('Object does not exist')
+            raise faults.ItemNotFound('Object does not exist')
         except VersionNotExists:
-            raise ItemNotFound('Version does not exist')
+            raise faults.ItemNotFound('Version does not exist')
 
     # Reply with the hashmap.
     if hashmap_reply:
@@ -935,10 +934,11 @@ def object_read(request, v_account, v_container, v_object):
         return response
 
     request.serialization = 'text'  # Unset.
+    response.override_serialization = True
     return object_data_response(request, sizes, hashmaps, meta)
 
 
-@api_method('PUT', format_allowed=True)
+@api_method('PUT', format_allowed=True, user_required=True, logger=logger)
 def object_write(request, v_account, v_container, v_object):
     # Normal Response Codes: 201
     # Error Response Codes: internalServerError (500),
@@ -957,7 +957,7 @@ def object_write(request, v_account, v_container, v_object):
                 request.user_uniq, v_account,
                 v_container, v_object, 'pithos')
         except NotAllowedError:
-            raise Forbidden('Not allowed')
+            raise faults.Forbidden('Not allowed')
         except NameError:
             meta = {}
         validate_matching_preconditions(request, meta)
@@ -978,14 +978,14 @@ def object_write(request, v_account, v_container, v_object):
                     src_account = retrieve_uuid(getattr(request, 'token', None),
                                                 src_account)
                 except ItemNotExists:
-                    ItemNotFound('Invalid source account')
+                    faults.ItemNotFound('Invalid source account')
 
         if move_from:
             try:
                 src_container, src_name = split_container_object_string(
                     move_from)
             except ValueError:
-                raise BadRequest('Invalid X-Move-From header')
+                raise faults.BadRequest('Invalid X-Move-From header')
             version_id = copy_or_move_object(
                 request, src_account, src_container, src_name,
                 v_account, v_container, v_object, move=True, delimiter=delimiter)
@@ -994,7 +994,7 @@ def object_write(request, v_account, v_container, v_object):
                 src_container, src_name = split_container_object_string(
                     copy_from)
             except ValueError:
-                raise BadRequest('Invalid X-Copy-From header')
+                raise faults.BadRequest('Invalid X-Copy-From header')
             version_id = copy_or_move_object(
                 request, src_account, src_container, src_name,
                 v_account, v_container, v_object, move=False, delimiter=delimiter)
@@ -1008,11 +1008,11 @@ def object_write(request, v_account, v_container, v_object):
         content_length = get_content_length(request)
     # Should be BadRequest, but API says otherwise.
     if content_type is None:
-        raise LengthRequired('Missing Content-Type header')
+        raise faults.LengthRequired('Missing Content-Type header')
 
     if 'hashmap' in request.GET:
         if request.serialization not in ('json', 'xml'):
-            raise BadRequest('Invalid hashmap format')
+            raise faults.BadRequest('Invalid hashmap format')
 
         data = ''
         for block in socket_read_iterator(request, content_length,
@@ -1022,12 +1022,12 @@ def object_write(request, v_account, v_container, v_object):
         if request.serialization == 'json':
             d = json.loads(data)
             if not hasattr(d, '__getitem__'):
-                raise BadRequest('Invalid data formating')
+                raise faults.BadRequest('Invalid data formating')
             try:
                 hashmap = d['hashes']
                 size = int(d['bytes'])
             except:
-                raise BadRequest('Invalid data formatting')
+                raise faults.BadRequest('Invalid data formatting')
         elif request.serialization == 'xml':
             try:
                 xml = minidom.parseString(data)
@@ -1039,7 +1039,7 @@ def object_write(request, v_account, v_container, v_object):
                 for hash in hashes:
                     hashmap.append(hash.firstChild.data)
             except:
-                raise BadRequest('Invalid data formatting')
+                raise faults.BadRequest('Invalid data formatting')
 
         checksum = ''  # Do not set to None (will copy previous value).
     else:
@@ -1057,22 +1057,25 @@ def object_write(request, v_account, v_container, v_object):
         checksum = md5.hexdigest().lower()
         etag = request.META.get('HTTP_ETAG')
         if etag and parse_etags(etag)[0].lower() != checksum:
-            raise UnprocessableEntity('Object ETag does not match')
+            raise faults.UnprocessableEntity('Object ETag does not match')
 
     try:
         version_id = request.backend.update_object_hashmap(request.user_uniq,
                                                            v_account, v_container, v_object, size, content_type,
                                                            hashmap, checksum, 'pithos', meta, True, permissions)
     except NotAllowedError:
-        raise Forbidden('Not allowed')
+        raise faults.Forbidden('Not allowed')
     except IndexError, e:
-        raise Conflict(simple_list_response(request, e.data))
+        missing_blocks = e.data
+        response = HttpResponse(status=409)
+        response.content = simple_list_response(request, missing_blocks)
+        return response
     except ItemNotExists:
-        raise ItemNotFound('Container does not exist')
+        raise faults.ItemNotFound('Container does not exist')
     except ValueError:
-        raise BadRequest('Invalid sharing header')
+        raise faults.BadRequest('Invalid sharing header')
     except QuotaError, e:
-        raise RequestEntityTooLarge('Quota error: %s' % e)
+        raise faults.RequestEntityTooLarge('Quota error: %s' % e)
     if not checksum and UPDATE_MD5:
         # Update the MD5 after the hashmap, as there may be missing hashes.
         checksum = hashmap_md5(request.backend, hashmap, size)
@@ -1080,15 +1083,15 @@ def object_write(request, v_account, v_container, v_object):
             request.backend.update_object_checksum(request.user_uniq,
                                                    v_account, v_container, v_object, version_id, checksum)
         except NotAllowedError:
-            raise Forbidden('Not allowed')
+            raise faults.Forbidden('Not allowed')
     if public is not None:
         try:
             request.backend.update_object_public(request.user_uniq, v_account,
                                                  v_container, v_object, public)
         except NotAllowedError:
-            raise Forbidden('Not allowed')
+            raise faults.Forbidden('Not allowed')
         except ItemNotExists:
-            raise ItemNotFound('Object does not exist')
+            raise faults.ItemNotFound('Object does not exist')
 
     response = HttpResponse(status=201)
     if checksum:
@@ -1097,7 +1100,7 @@ def object_write(request, v_account, v_container, v_object):
     return response
 
 
-@api_method('POST')
+@api_method('POST', user_required=True, logger=logger)
 def object_write_form(request, v_account, v_container, v_object):
     # Normal Response Codes: 201
     # Error Response Codes: internalServerError (500),
@@ -1108,7 +1111,7 @@ def object_write_form(request, v_account, v_container, v_object):
 
     request.upload_handlers = [SaveToBackendHandler(request)]
     if 'X-Object-Data' not in request.FILES:
-        raise BadRequest('Missing X-Object-Data field')
+        raise faults.BadRequest('Missing X-Object-Data field')
     file = request.FILES['X-Object-Data']
 
     checksum = file.etag
@@ -1117,11 +1120,11 @@ def object_write_form(request, v_account, v_container, v_object):
                                                            v_account, v_container, v_object, file.size, file.content_type,
                                                            file.hashmap, checksum, 'pithos', {}, True)
     except NotAllowedError:
-        raise Forbidden('Not allowed')
+        raise faults.Forbidden('Not allowed')
     except ItemNotExists:
-        raise ItemNotFound('Container does not exist')
+        raise faults.ItemNotFound('Container does not exist')
     except QuotaError, e:
-        raise RequestEntityTooLarge('Quota error: %s' % e)
+        raise faults.RequestEntityTooLarge('Quota error: %s' % e)
 
     response = HttpResponse(status=201)
     response['ETag'] = checksum
@@ -1130,7 +1133,7 @@ def object_write_form(request, v_account, v_container, v_object):
     return response
 
 
-@api_method('COPY', format_allowed=True)
+@api_method('COPY', format_allowed=True, user_required=True, logger=logger)
 def object_copy(request, v_account, v_container, v_object):
     # Normal Response Codes: 201
     # Error Response Codes: internalServerError (500),
@@ -1144,11 +1147,11 @@ def object_copy(request, v_account, v_container, v_object):
         dest_account = request.user_uniq
     dest_path = request.META.get('HTTP_DESTINATION')
     if not dest_path:
-        raise BadRequest('Missing Destination header')
+        raise faults.BadRequest('Missing Destination header')
     try:
         dest_container, dest_name = split_container_object_string(dest_path)
     except ValueError:
-        raise BadRequest('Invalid Destination header')
+        raise faults.BadRequest('Invalid Destination header')
 
     # Evaluate conditions.
     if request.META.get('HTTP_IF_MATCH') or request.META.get('HTTP_IF_NONE_MATCH'):
@@ -1158,9 +1161,9 @@ def object_copy(request, v_account, v_container, v_object):
                 request.user_uniq, v_account,
                 v_container, v_object, 'pithos', src_version)
         except NotAllowedError:
-            raise Forbidden('Not allowed')
+            raise faults.Forbidden('Not allowed')
         except (ItemNotExists, VersionNotExists):
-            raise ItemNotFound('Container or object does not exist')
+            raise faults.ItemNotFound('Container or object does not exist')
         validate_matching_preconditions(request, meta)
 
     delimiter = request.GET.get('delimiter')
@@ -1172,7 +1175,7 @@ def object_copy(request, v_account, v_container, v_object):
     return response
 
 
-@api_method('MOVE', format_allowed=True)
+@api_method('MOVE', format_allowed=True, user_required=True, logger=logger)
 def object_move(request, v_account, v_container, v_object):
     # Normal Response Codes: 201
     # Error Response Codes: internalServerError (500),
@@ -1186,11 +1189,11 @@ def object_move(request, v_account, v_container, v_object):
         dest_account = request.user_uniq
     dest_path = request.META.get('HTTP_DESTINATION')
     if not dest_path:
-        raise BadRequest('Missing Destination header')
+        raise faults.BadRequest('Missing Destination header')
     try:
         dest_container, dest_name = split_container_object_string(dest_path)
     except ValueError:
-        raise BadRequest('Invalid Destination header')
+        raise faults.BadRequest('Invalid Destination header')
 
     # Evaluate conditions.
     if request.META.get('HTTP_IF_MATCH') or request.META.get('HTTP_IF_NONE_MATCH'):
@@ -1199,9 +1202,9 @@ def object_move(request, v_account, v_container, v_object):
                 request.user_uniq, v_account,
                 v_container, v_object, 'pithos')
         except NotAllowedError:
-            raise Forbidden('Not allowed')
+            raise faults.Forbidden('Not allowed')
         except ItemNotExists:
-            raise ItemNotFound('Container or object does not exist')
+            raise faults.ItemNotFound('Container or object does not exist')
         validate_matching_preconditions(request, meta)
 
     delimiter = request.GET.get('delimiter')
@@ -1213,7 +1216,7 @@ def object_move(request, v_account, v_container, v_object):
     return response
 
 
-@api_method('POST', format_allowed=True)
+@api_method('POST', format_allowed=True, user_required=True, logger=logger)
 def object_update(request, v_account, v_container, v_object):
     # Normal Response Codes: 202, 204
     # Error Response Codes: internalServerError (500),
@@ -1229,9 +1232,9 @@ def object_update(request, v_account, v_container, v_object):
             request.user_uniq, v_account,
             v_container, v_object, 'pithos')
     except NotAllowedError:
-        raise Forbidden('Not allowed')
+        raise faults.Forbidden('Not allowed')
     except ItemNotExists:
-        raise ItemNotFound('Object does not exist')
+        raise faults.ItemNotFound('Object does not exist')
 
     # Evaluate conditions.
     if request.META.get('HTTP_IF_MATCH') or request.META.get('HTTP_IF_NONE_MATCH'):
@@ -1252,29 +1255,29 @@ def object_update(request, v_account, v_container, v_object):
                 request.backend.update_object_permissions(request.user_uniq,
                                                           v_account, v_container, v_object, permissions)
             except NotAllowedError:
-                raise Forbidden('Not allowed')
+                raise faults.Forbidden('Not allowed')
             except ItemNotExists:
-                raise ItemNotFound('Object does not exist')
+                raise faults.ItemNotFound('Object does not exist')
             except ValueError:
-                raise BadRequest('Invalid sharing header')
+                raise faults.BadRequest('Invalid sharing header')
         if public is not None:
             try:
                 request.backend.update_object_public(
                     request.user_uniq, v_account,
                     v_container, v_object, public)
             except NotAllowedError:
-                raise Forbidden('Not allowed')
+                raise faults.Forbidden('Not allowed')
             except ItemNotExists:
-                raise ItemNotFound('Object does not exist')
+                raise faults.ItemNotFound('Object does not exist')
         if meta or replace:
             try:
                 version_id = request.backend.update_object_meta(
                     request.user_uniq,
                     v_account, v_container, v_object, 'pithos', meta, replace)
             except NotAllowedError:
-                raise Forbidden('Not allowed')
+                raise faults.Forbidden('Not allowed')
             except ItemNotExists:
-                raise ItemNotFound('Object does not exist')
+                raise faults.ItemNotFound('Object does not exist')
             response['X-Object-Version'] = version_id
 
         return response
@@ -1284,24 +1287,24 @@ def object_update(request, v_account, v_container, v_object):
     # (with the addition that '*' is allowed for the range - will append).
     content_range = request.META.get('HTTP_CONTENT_RANGE')
     if not content_range:
-        raise BadRequest('Missing Content-Range header')
+        raise faults.BadRequest('Missing Content-Range header')
     ranges = get_content_range(request)
     if not ranges:
-        raise RangeNotSatisfiable('Invalid Content-Range header')
+        raise faults.RangeNotSatisfiable('Invalid Content-Range header')
 
     try:
         size, hashmap = request.backend.get_object_hashmap(request.user_uniq,
                                                            v_account, v_container, v_object)
     except NotAllowedError:
-        raise Forbidden('Not allowed')
+        raise faults.Forbidden('Not allowed')
     except ItemNotExists:
-        raise ItemNotFound('Object does not exist')
+        raise faults.ItemNotFound('Object does not exist')
 
     offset, length, total = ranges
     if offset is None:
         offset = size
     elif offset > size:
-        raise RangeNotSatisfiable('Supplied offset is beyond object limits')
+        raise faults.RangeNotSatisfiable('Supplied offset is beyond object limits')
     if src_object:
         src_account = request.META.get('HTTP_X_SOURCE_ACCOUNT')
         if not src_account:
@@ -1313,14 +1316,14 @@ def object_update(request, v_account, v_container, v_object):
                 request.user_uniq,
                 src_account, src_container, src_name, src_version)
         except NotAllowedError:
-            raise Forbidden('Not allowed')
+            raise faults.Forbidden('Not allowed')
         except ItemNotExists:
-            raise ItemNotFound('Source object does not exist')
+            raise faults.ItemNotFound('Source object does not exist')
 
         if length is None:
             length = src_size
         elif length > src_size:
-            raise BadRequest('Object length is smaller than range length')
+            raise faults.BadRequest('Object length is smaller than range length')
     else:
         # Require either a Content-Length, or 'chunked' Transfer-Encoding.
         content_length = -1
@@ -1334,16 +1337,16 @@ def object_update(request, v_account, v_container, v_object):
                 # TODO: Get up to length bytes in chunks.
                 length = content_length
             elif length != content_length:
-                raise BadRequest('Content length does not match range length')
+                raise faults.BadRequest('Content length does not match range length')
     if total is not None and (total != size or offset >= size or (length > 0 and offset + length >= size)):
-        raise RangeNotSatisfiable(
+        raise faults.RangeNotSatisfiable(
             'Supplied range will change provided object limits')
 
     dest_bytes = request.META.get('HTTP_X_OBJECT_BYTES')
     if dest_bytes is not None:
         dest_bytes = get_int_parameter(dest_bytes)
         if dest_bytes is None:
-            raise BadRequest('Invalid X-Object-Bytes header')
+            raise faults.BadRequest('Invalid X-Object-Bytes header')
 
     if src_object:
         if offset % request.backend.block_size == 0:
@@ -1402,21 +1405,21 @@ def object_update(request, v_account, v_container, v_object):
                                                            'type'],
                                                            hashmap, checksum, 'pithos', meta, replace, permissions)
     except NotAllowedError:
-        raise Forbidden('Not allowed')
+        raise faults.Forbidden('Not allowed')
     except ItemNotExists:
-        raise ItemNotFound('Container does not exist')
+        raise faults.ItemNotFound('Container does not exist')
     except ValueError:
-        raise BadRequest('Invalid sharing header')
+        raise faults.BadRequest('Invalid sharing header')
     except QuotaError, e:
-        raise RequestEntityTooLarge('Quota error: %s' % e)
+        raise faults.RequestEntityTooLarge('Quota error: %s' % e)
     if public is not None:
         try:
             request.backend.update_object_public(request.user_uniq, v_account,
                                                  v_container, v_object, public)
         except NotAllowedError:
-            raise Forbidden('Not allowed')
+            raise faults.Forbidden('Not allowed')
         except ItemNotExists:
-            raise ItemNotFound('Object does not exist')
+            raise faults.ItemNotFound('Object does not exist')
 
     response = HttpResponse(status=204)
     response['ETag'] = checksum
@@ -1424,7 +1427,7 @@ def object_update(request, v_account, v_container, v_object):
     return response
 
 
-@api_method('DELETE')
+@api_method('DELETE', user_required=True, logger=logger)
 def object_delete(request, v_account, v_container, v_object):
     # Normal Response Codes: 204
     # Error Response Codes: internalServerError (500),
@@ -1441,14 +1444,9 @@ def object_delete(request, v_account, v_container, v_object):
             request.user_uniq, v_account, v_container,
             v_object, until, delimiter=delimiter)
     except NotAllowedError:
-        raise Forbidden('Not allowed')
+        raise faults.Forbidden('Not allowed')
     except ItemNotExists:
-        raise ItemNotFound('Object does not exist')
+        raise faults.ItemNotFound('Object does not exist')
     except QuotaError, e:
-        raise RequestEntityTooLarge('Quota error: %s' % e)
+        raise faults.RequestEntityTooLarge('Quota error: %s' % e)
     return HttpResponse(status=204)
-
-
-@api_method()
-def method_not_allowed(request):
-    raise BadRequest('Method not allowed')

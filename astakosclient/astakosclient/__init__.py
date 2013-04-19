@@ -141,30 +141,28 @@ class AstakosClient():
         kwargs['headers'].setdefault('content-length',
                                      len(body) if body else 0)
 
-        # Get the connection object
-        conn = self.conn_class(self.netloc)
-
-        # Send request
         try:
-            (data, status) = _do_request(conn, method, request_path, **kwargs)
+            # Get the connection object
+            with self.conn_class(self.netloc) as conn:
+                # Send request
+                (message, data, status) = \
+                    _do_request(conn, method, request_path, **kwargs)
         except Exception as err:
             self.logger.error("Failed to send request: %s" % repr(err))
             raise AstakosClientException(str(err))
-        finally:
-            conn.close()
 
         # Return
         self.logger.debug("Request returned with status %s" % status)
         if status == 400:
-            raise BadRequest(data)
+            raise BadRequest(message, data)
         elif status == 401:
-            raise Unauthorized(data)
+            raise Unauthorized(message, data)
         elif status == 403:
-            raise Forbidden(data)
+            raise Forbidden(message, data)
         elif status == 404:
-            raise NotFound(data)
+            raise NotFound(message, data)
         elif status < 200 or status >= 300:
-            raise AstakosClientException(data, status)
+            raise AstakosClientException(message, data, status)
         return simplejson.loads(unicode(data))
 
     # ------------------------
@@ -316,4 +314,5 @@ def _do_request(conn, method, url, **kwargs):
     length = response.getheader('content-length', None)
     data = response.read(length)
     status = int(response.status)
-    return (data, status)
+    message = response.reason
+    return (message, data, status)

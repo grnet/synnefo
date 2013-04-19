@@ -37,7 +37,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.core.exceptions import FieldError
 
 from synnefo.webproject.management import utils
-from synnefo.lib.astakos import UserCache
+from snf_django.lib.astakos import UserCache
 
 
 class SynnefoCommand(BaseCommand):

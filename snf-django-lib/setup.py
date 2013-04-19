@@ -1,4 +1,4 @@
-# Copyright 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,6 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 #
+
 import distribute_setup
 distribute_setup.use_setuptools()
 
@@ -43,13 +44,13 @@ from setuptools import setup, find_packages
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 
-from astakosclient.version import __version__
+from snf_django.version import __version__
 
 # Package info
 VERSION = __version__
 README = open(os.path.join(HERE, 'README')).read()
 CHANGES = open(os.path.join(HERE, 'Changelog')).read()
-SHORT_DESCRIPTION = 'A set of tools to ease versioning and use of git flow.'
+SHORT_DESCRIPTION = 'Common Synnefo library for Django'
 
 PACKAGES_ROOT = '.'
 PACKAGES = find_packages(PACKAGES_ROOT)
@@ -59,31 +60,32 @@ CLASSIFIERS = []
 
 # Package requirements
 INSTALL_REQUIRES = [
-    "objpool",
-    "simplejson"
+    'Django >=1.2, <1.3',
+    'simplejson>=2.1.1',
+    'astakosclient',
+    'snf-common',
 ]
+
 
 # Provided as an attribute, so you can append to these instead
 # of replicating them:
 standard_exclude = ["*.py", "*.pyc", "*$py.class", "*~", ".*", "*.bak"]
-standard_exclude_directories = [".*", "CVS", "_darcs", "./build", "./dist",
-                                "EGG-INFO", "*.egg-info"]
+standard_exclude_directories = [
+    ".*", "CVS", "_darcs", "./build", "./dist", "EGG-INFO", "*.egg-info", "snf-0.7"
+]
 
-
-# (c) 2005 Ian Bicking and contributors;
-#     written for Paste (http://pythonpaste.org)
-# Licensed under the MIT license:
-#     http://www.opensource.org/licenses/mit-license.php
+# (c) 2005 Ian Bicking and contributors; written for Paste (http://pythonpaste.org)
+# Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
 # Note: you may want to copy this into your setup.py file verbatim, as
 # you can't import this from another package, when you don't know if
 # that package is installed yet.
 def find_package_data(
-        where=".",
-        package="",
-        exclude=standard_exclude,
-        exclude_directories=standard_exclude_directories,
-        only_in_packages=True,
-        show_ignored=False):
+    where=".",
+    package="",
+    exclude=standard_exclude,
+    exclude_directories=standard_exclude_directories,
+    only_in_packages=True,
+    show_ignored=False):
     """
     Return a dictionary suitable for use in ``package_data``
     in a distutils ``setup.py`` file.
@@ -119,8 +121,8 @@ def find_package_data(
             if os.path.isdir(fn):
                 bad_name = False
                 for pattern in exclude_directories:
-                    if (fnmatchcase(name, pattern) or
-                            fn.lower() == pattern.lower()):
+                    if (fnmatchcase(name, pattern)
+                        or fn.lower() == pattern.lower()):
                         bad_name = True
                         if show_ignored:
                             print >> sys.stderr, (
@@ -130,21 +132,20 @@ def find_package_data(
                 if bad_name:
                     continue
                 if (os.path.isfile(os.path.join(fn, "__init__.py"))
-                        and not prefix):
+                    and not prefix):
                     if not package:
                         new_package = name
                     else:
                         new_package = package + "." + name
                     stack.append((fn, "", new_package, False))
                 else:
-                    stack.append((fn, prefix + name + "/", package,
-                                  only_in_packages))
+                    stack.append((fn, prefix + name + "/", package, only_in_packages))
             elif package or not only_in_packages:
                 # is a file
                 bad_name = False
                 for pattern in exclude:
-                    if (fnmatchcase(name, pattern) or
-                            fn.lower() == pattern.lower()):
+                    if (fnmatchcase(name, pattern)
+                        or fn.lower() == pattern.lower()):
                         bad_name = True
                         if show_ignored:
                             print >> sys.stderr, (
@@ -153,11 +154,11 @@ def find_package_data(
                         break
                 if bad_name:
                     continue
-                out.setdefault(package, []).append(prefix + name)
+                out.setdefault(package, []).append(prefix+name)
     return out
 
 setup(
-    name='astakosclient',
+    name='snf-django-lib',
     version=VERSION,
     license='BSD',
     url='http://www.synnefo.org/',
@@ -177,6 +178,6 @@ setup(
     zip_safe=False,
 
     install_requires=INSTALL_REQUIRES,
-
+    dependency_links=['http://www.synnefo.org/packages/pypi'],
     entry_points={},
 )

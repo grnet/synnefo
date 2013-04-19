@@ -110,11 +110,15 @@ UsageClient.prototype.updateEntry = function(key, data) {
 
   width = humanize.numberFormat(width, 1);
   barEl.css({'width': width + '%'});
+  width = width*342/100;
 
-  if (percentage > 18) {
-      percentageEl.addClass("hovered");
+  if (percentage > 22) {
+      percentageEl.addClass("hovered"); 
+      var left = width-percentageEl.width() -10;
+      percentageEl.css({'left': left+"px", 'color':'#fff'});
   } else {
       percentageEl.removeClass("hovered");
+      percentageEl.css({'left': width+"px", 'color':'#222'});
   }
   percentageEl.data('value', percentage);
 

@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,8 +31,6 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from base64 import b64decode
-
 from django import dispatch
 from django.conf import settings
 from django.conf.urls.defaults import patterns
@@ -41,9 +39,10 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
-from synnefo.api import faults, util
+from snf_django.lib import api
+from snf_django.lib.api import faults, utils
+from synnefo.api import util
 from synnefo.api.actions import server_actions
-from synnefo.api.common import method_not_allowed
 from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata,
                                NetworkInterface)
 from synnefo.logic.backend import create_instance, delete_instance
@@ -56,7 +55,7 @@ from synnefo import quotas
 server_created = dispatch.Signal(providing_args=["created_vm_params"])
 
 from logging import getLogger
-log = getLogger('synnefo.api')
+log = getLogger(__name__)
 
 urlpatterns = patterns(
     'synnefo.api.servers',
@@ -79,7 +78,7 @@ def demux(request):
     elif request.method == 'POST':
         return create_server(request)
     else:
-        return method_not_allowed(request)
+        return api.method_not_allowed(request)
 
 
 def server_demux(request, server_id):
@@ -90,7 +89,7 @@ def server_demux(request, server_id):
     elif request.method == 'DELETE':
         return delete_server(request, server_id)
     else:
-        return method_not_allowed(request)
+        return api.method_not_allowed(request)
 
 
 def metadata_demux(request, server_id):
@@ -99,7 +98,7 @@ def metadata_demux(request, server_id):
     elif request.method == 'POST':
         return update_metadata(request, server_id)
     else:
-        return method_not_allowed(request)
+        return api.method_not_allowed(request)
 
 
 def metadata_item_demux(request, server_id, key):
@@ -110,7 +109,7 @@ def metadata_item_demux(request, server_id, key):
     elif request.method == 'DELETE':
         return delete_metadata_item(request, server_id, key)
     else:
-        return method_not_allowed(request)
+        return api.method_not_allowed(request)
 
 
 def nic_to_dict(nic):
@@ -132,8 +131,8 @@ def vm_to_dict(vm, detail=False):
         d['progress'] = 100 if get_rsapi_state(vm) == 'ACTIVE' \
             else vm.buildpercentage
         d['hostId'] = vm.hostid
-        d['updated'] = util.isoformat(vm.updated)
-        d['created'] = util.isoformat(vm.created)
+        d['updated'] = utils.isoformat(vm.updated)
+        d['created'] = utils.isoformat(vm.created)
         d['flavorRef'] = vm.flavor.id
         d['imageRef'] = vm.imageid
         d['suspended'] = vm.suspended
@@ -165,11 +164,11 @@ def diagnostics_to_dict(diagnostics):
         # format source date if set
         formatted_source_date = None
         if diagnostic.source_date:
-            formatted_source_date = util.isoformat(diagnostic.source_date)
+            formatted_source_date = utils.isoformat(diagnostic.source_date)
 
         entry = {
             'source': diagnostic.source,
-            'created': util.isoformat(diagnostic.created),
+            'created': utils.isoformat(diagnostic.created),
             'message': diagnostic.message,
             'details': diagnostic.details,
             'level': diagnostic.level,
@@ -200,7 +199,7 @@ def render_diagnostics(request, diagnostics_dict, status=200):
     return HttpResponse(json.dumps(diagnostics_dict), status=status)
 
 
-@util.api_method('GET')
+@api.api_method(http_method='GET', user_required=True, logger=log)
 def get_server_diagnostics(request, server_id):
     """
     Virtual machine diagnostics api view.
@@ -211,7 +210,7 @@ def get_server_diagnostics(request, server_id):
     return render_diagnostics(request, diagnostics)
 
 
-@util.api_method('GET')
+@api.api_method(http_method='GET', user_required=True, logger=log)
 def list_servers(request, detail=False):
     # Normal Response Codes: 200, 203
     # Error Response Codes: computeFault (400, 500),
@@ -223,7 +222,7 @@ def list_servers(request, detail=False):
     log.debug('list_servers detail=%s', detail)
     user_vms = VirtualMachine.objects.filter(userid=request.user_uniq)
 
-    since = util.isoparse(request.GET.get('changes-since'))
+    since = utils.isoparse(request.GET.get('changes-since'))
 
     if since:
         user_vms = user_vms.filter(updated__gte=since)
@@ -245,7 +244,7 @@ def list_servers(request, detail=False):
     return HttpResponse(data, status=200)
 
 
-@util.api_method('POST')
+@api.api_method(http_method='POST', user_required=True, logger=log)
 # Use manual transactions. Backend and IP pool allocations need exclusive
 # access (SELECT..FOR UPDATE). Running create_server with commit_on_success
 # would result in backends and public networks to be locked until the job is
@@ -263,7 +262,7 @@ def create_server(serials, request):
     #                       serverCapacityUnavailable (503),
     #                       overLimit (413)
     try:
-        req = util.get_request_dict(request)
+        req = utils.get_request_dict(request)
         log.info('create_server %s', req)
         user_id = request.user_uniq
 
@@ -397,7 +396,7 @@ def create_server(serials, request):
     return response
 
 
-@util.api_method('GET')
+@api.api_method(http_method='GET', user_required=True, logger=log)
 def get_server_details(request, server_id):
     # Normal Response Codes: 200, 203
     # Error Response Codes: computeFault (400, 500),
@@ -413,7 +412,7 @@ def get_server_details(request, server_id):
     return render_server(request, server)
 
 
-@util.api_method('PUT')
+@api.api_method(http_method='PUT', user_required=True, logger=log)
 def update_server_name(request, server_id):
     # Normal Response Code: 204
     # Error Response Codes: computeFault (400, 500),
@@ -425,7 +424,7 @@ def update_server_name(request, server_id):
     #                       buildInProgress (409),
     #                       overLimit (413)
 
-    req = util.get_request_dict(request)
+    req = utils.get_request_dict(request)
     log.info('update_server_name %s %s', server_id, req)
 
     try:
@@ -441,7 +440,7 @@ def update_server_name(request, server_id):
     return HttpResponse(status=204)
 
 
-@util.api_method('DELETE')
+@api.api_method(http_method='DELETE', user_required=True, logger=log)
 @transaction.commit_on_success
 def delete_server(request, server_id):
     # Normal Response Codes: 204
@@ -465,9 +464,9 @@ def delete_server(request, server_id):
 ARBITRARY_ACTIONS = ['console', 'firewallProfile']
 
 
-@util.api_method('POST')
+@api.api_method(http_method='POST', user_required=True, logger=log)
 def server_action(request, server_id):
-    req = util.get_request_dict(request)
+    req = utils.get_request_dict(request)
     log.debug('server_action %s %s', server_id, req)
 
     if len(req) != 1:
@@ -512,11 +511,11 @@ def start_action(vm, action):
 
     # No actions to deleted VMs
     if vm.deleted:
-        raise VirtualMachine.DeletedError
+        raise faults.BadRequest("VirtualMachine has been deleted.")
 
     # No actions to machines being built. They may be destroyed, however.
     if vm.operstate == 'BUILD' and action != 'DESTROY':
-        raise VirtualMachine.BuildingError
+        raise faults.BuildInProgress("Server is being build.")
 
     vm.action = action
     vm.backendjobid = None
@@ -527,7 +526,7 @@ def start_action(vm, action):
     vm.save()
 
 
-@util.api_method('GET')
+@api.api_method(http_method='GET', user_required=True, logger=log)
 def list_addresses(request, server_id):
     # Normal Response Codes: 200, 203
     # Error Response Codes: computeFault (400, 500),
@@ -548,7 +547,7 @@ def list_addresses(request, server_id):
     return HttpResponse(data, status=200)
 
 
-@util.api_method('GET')
+@api.api_method(http_method='GET', user_required=True, logger=log)
 def list_addresses_by_network(request, server_id, network_id):
     # Normal Response Codes: 200, 203
     # Error Response Codes: computeFault (400, 500),
@@ -572,7 +571,7 @@ def list_addresses_by_network(request, server_id, network_id):
     return HttpResponse(data, status=200)
 
 
-@util.api_method('GET')
+@api.api_method(http_method='GET', user_required=True, logger=log)
 def list_metadata(request, server_id):
     # Normal Response Codes: 200, 203
     # Error Response Codes: computeFault (400, 500),
@@ -587,7 +586,7 @@ def list_metadata(request, server_id):
     return util.render_metadata(request, metadata, use_values=True, status=200)
 
 
-@util.api_method('POST')
+@api.api_method(http_method='POST', user_required=True, logger=log)
 def update_metadata(request, server_id):
     # Normal Response Code: 201
     # Error Response Codes: computeFault (400, 500),
@@ -598,7 +597,7 @@ def update_metadata(request, server_id):
     #                       badMediaType(415),
     #                       overLimit (413)
 
-    req = util.get_request_dict(request)
+    req = utils.get_request_dict(request)
     log.info('update_server_metadata %s %s', server_id, req)
     vm = util.get_vm(server_id, request.user_uniq, non_suspended=True)
     try:
@@ -617,7 +616,7 @@ def update_metadata(request, server_id):
     return util.render_metadata(request, vm_meta, status=201)
 
 
-@util.api_method('GET')
+@api.api_method(http_method='GET', user_required=True, logger=log)
 def get_metadata_item(request, server_id, key):
     # Normal Response Codes: 200, 203
     # Error Response Codes: computeFault (400, 500),
@@ -634,7 +633,7 @@ def get_metadata_item(request, server_id, key):
     return util.render_meta(request, d, status=200)
 
 
-@util.api_method('PUT')
+@api.api_method(http_method='PUT', user_required=True, logger=log)
 @transaction.commit_on_success
 def create_metadata_item(request, server_id, key):
     # Normal Response Code: 201
@@ -647,7 +646,7 @@ def create_metadata_item(request, server_id, key):
     #                       badMediaType(415),
     #                       overLimit (413)
 
-    req = util.get_request_dict(request)
+    req = utils.get_request_dict(request)
     log.info('create_server_metadata_item %s %s %s', server_id, key, req)
     vm = util.get_vm(server_id, request.user_uniq, non_suspended=True)
     try:
@@ -669,7 +668,7 @@ def create_metadata_item(request, server_id, key):
     return util.render_meta(request, d, status=201)
 
 
-@util.api_method('DELETE')
+@api.api_method(http_method='DELETE', user_required=True, logger=log)
 @transaction.commit_on_success
 def delete_metadata_item(request, server_id, key):
     # Normal Response Code: 204
@@ -690,7 +689,7 @@ def delete_metadata_item(request, server_id, key):
     return HttpResponse(status=204)
 
 
-@util.api_method('GET')
+@api.api_method(http_method='GET', user_required=True, logger=log)
 def server_stats(request, server_id):
     # Normal Response Codes: 200
     # Error Response Codes: computeFault (400, 500),

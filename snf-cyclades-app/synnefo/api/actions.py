@@ -40,8 +40,7 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
-from synnefo.api.faults import (BadRequest, ServiceUnavailable,
-                                BuildInProgress, OverLimit)
+from snf_django.lib.api import faults
 from synnefo.api.util import (random_password, get_vm, get_nic_from_index,
                               get_network_free_address)
 from synnefo.db.models import NetworkInterface
@@ -91,7 +90,7 @@ def change_password(request, vm, args):
     #                       buildInProgress (409),
     #                       overLimit (413)
 
-    raise ServiceUnavailable('Changing password is not supported.')
+    raise faults.NotImplemented('Changing password is not supported.')
 
 
 @server_action('reboot')
@@ -109,7 +108,7 @@ def reboot(request, vm, args):
     log.info("Reboot VM %s", vm)
     reboot_type = args.get('type', '')
     if reboot_type not in ('SOFT', 'HARD'):
-        raise BadRequest('Malformed Request.')
+        raise faults.BadRequest('Malformed Request.')
     backend.reboot_instance(vm, reboot_type.lower())
     return HttpResponse(status=202)
 
@@ -122,7 +121,7 @@ def start(request, vm, args):
 
     log.info("Start VM %s", vm)
     if args:
-        raise BadRequest('Malformed Request.')
+        raise faults.BadRequest('Malformed Request.')
     backend.startup_instance(vm)
     return HttpResponse(status=202)
 
@@ -135,7 +134,7 @@ def shutdown(request, vm, args):
 
     log.info("Shutdown VM %s", vm)
     if args:
-        raise BadRequest('Malformed Request.')
+        raise faults.BadRequest('Malformed Request.')
     backend.shutdown_instance(vm)
     return HttpResponse(status=202)
 
@@ -153,7 +152,7 @@ def rebuild(request, vm, args):
     #                       serverCapacityUnavailable (503),
     #                       overLimit (413)
 
-    raise ServiceUnavailable('Rebuild not supported.')
+    raise faults.NotImplemented('Rebuild not supported.')
 
 
 @server_action('resize')
@@ -170,7 +169,7 @@ def resize(request, vm, args):
     #                       overLimit (413),
     #                       resizeNotAllowed (403)
 
-    raise ServiceUnavailable('Resize not supported.')
+    raise faults.NotImplemented('Resize not supported.')
 
 
 @server_action('confirmResize')
@@ -187,7 +186,7 @@ def confirm_resize(request, vm, args):
     #                       overLimit (413),
     #                       resizeNotAllowed (403)
 
-    raise ServiceUnavailable('Resize not supported.')
+    raise faults.NotImplemented('Resize not supported.')
 
 
 @server_action('revertResize')
@@ -204,7 +203,7 @@ def revert_resize(request, vm, args):
     #                       overLimit (413),
     #                       resizeNotAllowed (403)
 
-    raise ServiceUnavailable('Resize not supported.')
+    raise faults.NotImplemented('Resize not supported.')
 
 
 @server_action('console')
@@ -233,11 +232,11 @@ def get_console(request, vm, args):
 
     console_type = args.get('type', '')
     if console_type != 'vnc':
-        raise BadRequest('Type can only be "vnc".')
+        raise faults.BadRequest('Type can only be "vnc".')
 
     # Use RAPI to get VNC console information for this instance
     if get_rsapi_state(vm) != 'ACTIVE':
-        raise BadRequest('Server not in ACTIVE state.')
+        raise faults.BadRequest('Server not in ACTIVE state.')
 
     if settings.TEST:
         console_data = {'kind': 'vnc', 'host': 'ganeti_node', 'port': 1000}
@@ -246,7 +245,7 @@ def get_console(request, vm, args):
 
     if console_data['kind'] != 'vnc':
         message = 'got console of kind %s, not "vnc"' % console_data['kind']
-        raise ServiceUnavailable(message)
+        raise faults.ServiceUnavailable(message)
 
     # Let vncauthproxy decide on the source port.
     # The alternative: static allocation, e.g.
@@ -262,12 +261,12 @@ def get_console(request, vm, args):
         fwd = request_vnc_forwarding(sport, daddr, dport, password)
 
     if fwd['status'] != "OK":
-        raise ServiceUnavailable('vncauthproxy returned error status')
+        raise faults.ServiceUnavailable('vncauthproxy returned error status')
 
     # Verify that the VNC server settings haven't changed
     if not settings.TEST:
         if console_data != backend.get_instance_console(vm):
-            raise ServiceUnavailable('VNC Server settings changed.')
+            raise faults.ServiceUnavailable('VNC Server settings changed.')
 
     console = {
         'type': 'vnc',
@@ -300,7 +299,7 @@ def set_firewall_profile(request, vm, args):
     profile = args.get('profile', '')
     log.info("Set VM %s firewall %s", vm, profile)
     if profile not in [x[0] for x in NetworkInterface.FIREWALL_PROFILES]:
-        raise BadRequest("Unsupported firewall profile")
+        raise faults.BadRequest("Unsupported firewall profile")
     backend.set_firewall_profile(vm, profile)
     return HttpResponse(status=202)
 
@@ -319,11 +318,11 @@ def add(request, net, args):
     #                       overLimit (413)
 
     if net.state != 'ACTIVE':
-        raise BuildInProgress('Network not active yet')
+        raise faults.BuildInProgress('Network not active yet')
 
     server_id = args.get('serverRef', None)
     if not server_id:
-        raise BadRequest('Malformed Request.')
+        raise faults.BadRequest('Malformed Request.')
 
     vm = get_vm(server_id, request.user_uniq, non_suspended=True)
 
@@ -333,7 +332,7 @@ def add(request, net, args):
         try:
             address = get_network_free_address(net)
         except EmptyPool:
-            raise OverLimit('Network is full')
+            raise faults.OverLimit('Network is full')
 
     log.info("Connecting VM %s to Network %s(%s)", vm, net, address)
 
@@ -357,12 +356,12 @@ def remove(request, net, args):
         server_id = args.get('attachment', None).split('-')[1]
         nic_index = args.get('attachment', None).split('-')[2]
     except AttributeError:
-        raise BadRequest("Malformed Request")
+        raise faults.BadRequest("Malformed Request")
     except IndexError:
-        raise BadRequest('Malformed Network Interface Id')
+        raise faults.BadRequest('Malformed Network Interface Id')
 
     if not server_id or not nic_index:
-        raise BadRequest('Malformed Request.')
+        raise faults.BadRequest('Malformed Request.')
 
     vm = get_vm(server_id, request.user_uniq, non_suspended=True)
     nic = get_nic_from_index(vm, nic_index)
@@ -370,7 +369,7 @@ def remove(request, net, args):
     log.info("Removing NIC %s from VM %s", str(nic.index), vm)
 
     if nic.dirty:
-        raise BuildInProgress('Machine is busy.')
+        raise faults.BuildInProgress('Machine is busy.')
     else:
         vm.nics.all().update(dirty=True)
 

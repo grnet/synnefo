@@ -49,7 +49,7 @@ from django.template import RequestContext
 
 from synnefo.util.version import get_component_version
 
-from synnefo.lib.astakos import get_user
+from snf_django.lib.astakos import get_user
 
 SYNNEFO_JS_LIB_VERSION = get_component_version('app')
 

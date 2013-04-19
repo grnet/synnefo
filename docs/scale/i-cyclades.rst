@@ -59,7 +59,7 @@ In `/etc/synnefo/cyclades.conf` add:
 
     GANETI_DISK_TEMPLATES = ('blockdev', 'diskless', 'drbd', 'file', 'plain',
                              'rbd',  'sharedfile', 'ext')
-    ASTAKOS_URL = 'https://accounts.example.com/im/authenticate'
+    ASTAKOS_URL = 'https://accounts.example.com/'
 
     SECRET_ENCRYPTION_KEY= "oEs0pt7Di1mkxA0P6FiK"
 

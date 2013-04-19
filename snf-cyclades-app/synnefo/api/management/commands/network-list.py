@@ -83,7 +83,7 @@ class Command(ListCommand):
         "subnet.ipv6": ("subnet", "The IPv6 subnet of the network"),
         "gateway.ipv6": ("gateway", "The IPv6 gateway of the network"),
         "created": ("created", "The date the network was created"),
-        "updated": ("created", "The date the network was updated"),
+        "updated": ("updated", "The date the network was updated"),
         "deleted": ("deleted", "Whether the network is deleted or not"),
         "mode": ("mode", "The mode of the network"),
         "link": ("link", "The link of the network"),

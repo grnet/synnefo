@@ -31,89 +31,9 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from __future__ import with_statement
-
-from django.utils import simplejson as json
-from django.test import TestCase
-
-from mock import patch
-from contextlib import contextmanager
-
-
-@contextmanager
-def astakos_user(user):
-    """
-    Context manager to mock astakos response.
-
-    usage:
-    with astakos_user("user@user.com"):
-        .... make api calls ....
-
-    """
-    def dummy_get_user(request, *args, **kwargs):
-        request.user = {'username': user, 'groups': []}
-        request.user_uniq = user
-
-    with patch('synnefo.api.util.get_user') as m:
-        m.side_effect = dummy_get_user
-        yield
-
-
-class BaseAPITest(TestCase):
-    def get(self, url, user='user', *args, **kwargs):
-        with astakos_user(user):
-            response = self.client.get(url, *args, **kwargs)
-        return response
-
-    def delete(self, url, user='user'):
-        with astakos_user(user):
-            response = self.client.delete(url)
-        return response
-
-    def post(self, url, user='user', params={}, ctype='json', *args, **kwargs):
-        if ctype == 'json':
-            content_type = 'application/json'
-        with astakos_user(user):
-            response = self.client.post(url, params, content_type=content_type,
-                                        *args, **kwargs)
-        return response
-
-    def put(self, url, user='user', params={}, ctype='json', *args, **kwargs):
-        if ctype == 'json':
-            content_type = 'application/json'
-        with astakos_user(user):
-            response = self.client.put(url, params, content_type=content_type,
-                                       *args, **kwargs)
-        return response
-
-    def assertSuccess(self, response):
-        self.assertTrue(response.status_code in [200, 203, 204])
-
-    def assertFault(self, response, status_code, name):
-        self.assertEqual(response.status_code, status_code)
-        fault = json.loads(response.content)
-        self.assertEqual(fault.keys(), [name])
-
-    def assertBadRequest(self, response):
-        self.assertFault(response, 400, 'badRequest')
-
-    def assertItemNotFound(self, response):
-        self.assertFault(response, 404, 'itemNotFound')
-
-
-class APITest(TestCase):
-    def test_api_version(self):
-        """Check API version."""
-        with astakos_user('user'):
-            response = self.client.get('/api/v1.1/')
-        self.assertEqual(response.status_code, 200)
-        api_version = json.loads(response.content)['version']
-        self.assertEqual(api_version['id'], 'v1.1')
-        self.assertEqual(api_version['status'], 'CURRENT')
-
-
 # Import TestCases
 from synnefo.api.test.servers import *
 from synnefo.api.test.networks import *
 from synnefo.api.test.flavors import *
 from synnefo.api.test.images import *
+from synnefo.api.test.versions import *

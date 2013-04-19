@@ -58,9 +58,8 @@ and are related to all the services (Astakos, Pithos+, Cyclades, Plankton).
 To be able to download all synnefo components you need to add the following
 lines in your ``/etc/apt/sources.list`` file:
 
-| ``deb http://apt.dev.grnet.gr squeeze main``
-| ``deb-src http://apt.dev.grnet.gr squeeze main``
-| ``deb http://apt.dev.grnet.gr squeeze-backports main``
+| ``deb http://apt2.dev.grnet.gr stable/``
+| ``deb-src http://apt2.dev.grnet.gr stable/``
 
 and import the repo's GPG key:
 
@@ -848,12 +847,11 @@ this options:
 
 .. code-block:: console
 
-   PITHOS_BACKEND_DB_CONNECTION = 'postgresql://synnefo:example_passw0rd@node1.example.com:5432/snf_pithos'
+   ASTAKOS_URL = 'https://node1.example.com/'
 
+   PITHOS_BACKEND_DB_CONNECTION = 'postgresql://synnefo:example_passw0rd@node1.example.com:5432/snf_pithos'
    PITHOS_BACKEND_BLOCK_PATH = '/srv/pithos/data'
 
-   PITHOS_AUTHENTICATION_URL = 'https://node1.example.com/im/authenticate'
-   PITHOS_AUTHENTICATION_USERS = None
 
    PITHOS_SERVICE_TOKEN = 'pithos_service_token22w=='
    PITHOS_USER_CATALOG_URL = 'https://node1.example.com/user_catalogs'
@@ -879,9 +877,8 @@ the pithos+ backend data. Above we tell pithos+ to store its data under
 ``/srv/pithos/data``, which is visible by both nodes. We have already setup this
 directory at node1's "Pithos+ data directory setup" section.
 
-The ``PITHOS_AUTHENTICATION_URL`` option tells to the pithos+ app in which URI
-is available the astakos authentication api. If not set, pithos+ tries to
-authenticate using the ``PITHOS_AUTHENTICATION_USERS`` user pool.
+The ``ASTAKOS_URL`` option tells to the pithos+ app in which URI
+is available the astakos authentication api.
 
 The ``PITHOS_SERVICE_TOKEN`` should be the Pithos+ token returned by running on
 the Astakos node (node1 in our case):
@@ -905,6 +902,11 @@ The ``PITHOS_UI_LOGIN_URL`` option tells the client where to redirect you, if
 you are not logged in. The ``PITHOS_UI_FEEDBACK_URL`` option points at the
 pithos+ feedback form. Astakos already provides a generic feedback form for all
 services, so we use this one.
+
+The ``PITHOS_UPDATE_MD5`` option by default disables the computation of the
+object checksums. This results to improved performance during object uploading.
+However, if compatibility with the OpenStack Object Storage API is important
+then it should be changed to ``True``.
 
 Then edit ``/etc/synnefo/20-snf-pithos-webclient-cloudbar.conf``, to connect the
 pithos+ web UI with the astakos web UI (through the top cloudbar):
@@ -974,6 +976,35 @@ like this:
        '--timeout=43200'
      ),
     }
+
+Stamp Database Revision
+-----------------------
+
+Pithos uses the alembic_ database migrations tool.
+
+.. _alembic: http://alembic.readthedocs.org
+
+After a sucessful installation, we should stamp it at the most recent
+revision, so that future migrations know where to start upgrading in
+the migration history.
+
+First, find the most recent revision in the migration history:
+
+.. code-block:: console
+
+    root@node2:~ # pithos-migrate history
+    2a309a9a3438 -> 27381099d477 (head), alter public add column url
+    165ba3fbfe53 -> 2a309a9a3438, fix statistics negative population
+    3dd56e750a3 -> 165ba3fbfe53, update account in paths
+    230f8ce9c90f -> 3dd56e750a3, Fix latest_version
+    8320b1c62d9 -> 230f8ce9c90f, alter nodes add column latest version
+    None -> 8320b1c62d9, create index nodes.parent
+
+Finally, we stamp it with the one found in the previous step:
+
+.. code-block:: console
+
+    root@node2:~ # pithos-migrate stamp 27381099d477
 
 Servers Initialization
 ----------------------
@@ -1393,6 +1424,7 @@ Assuming ``eth0`` on both hosts is the public interface (directly connected
 to the router), run on every node:
 
 .. code-block:: console
+
    # apt-get install vlan
    # brctl addbr br0
    # ip link set br0 up
@@ -1671,14 +1703,14 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-api.conf``:
 
 .. code-block:: console
 
-   ASTAKOS_URL = 'https://node1.example.com/im/authenticate'
+   ASTAKOS_URL = 'https://node1.example.com/'
 
    # Set to False if astakos & cyclades are on the same host
    CYCLADES_PROXY_USER_SERVICES = False
 
 The ``ASTAKOS_URL`` denotes the authentication endpoint for Cyclades and is set
 to point to Astakos (this should have the same value with Pithos+'s
-``PITHOS_AUTHENTICATION_URL``, setup :ref:`previously <conf-pithos>`).
+``ASTAKOS_URL``, setup :ref:`previously <conf-pithos>`).
 
 .. warning::
 

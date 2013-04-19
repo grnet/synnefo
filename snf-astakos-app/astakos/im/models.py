@@ -154,10 +154,15 @@ class Service(models.Model):
         metadata = presentation.SERVICES
         metadata = dict_merge(presentation.SERVICES,
                               astakos_settings.SERVICES_META)
+
         for service in services:
+            d = {'api_url': service.api_url,
+                 'url': service.url,
+                 'name': service.name}
             if service.name in metadata:
-                d = {'api_url': service.api_url, 'name': service.name}
                 metadata[service.name].update(d)
+            else:
+                metadata[service.name] = d
 
         def service_by_order(s):
             return s[1].get('order')

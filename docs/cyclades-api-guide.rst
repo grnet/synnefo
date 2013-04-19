@@ -146,6 +146,8 @@ limit             Page size                           **✘**    ✔
 
 * **json** and **xml** parameters are mutually exclusive. If none supported, the response will be formated in json.
 
+* **status** refers to the `server status <#status-ref>`_
+
 * **changes-since** must be an ISO8601 date string
 
 |
@@ -198,12 +200,12 @@ metadata          Server custom metadata ✔        ✔
 * **progress** is changing while the server is building up and has values between 0 and 100. When it reaches 100 the server is built.
 
 
-* **status** refers to `the status <#status_ref>`_ of the server
+* **status** refers to `the status <#status-ref>`_ of the server
 
 * **metadata** are custom key:value pairs used to specify various attributes of the VM (e.g. OS, super user, etc.)
 
 
-* **attachments** in Cyclades are lists of network interfaces (nics). Each server can handle various nics. Each nic connects the current server with a network. **Attachments** are different to OS Compute's **addresses**. The former is a list of the server's network interfaces (network reference + mac address) while the later is just a list of networks. For example, a Cyclades server may be connected to the same network through more than one distinct network interfaces (e.g. server 43 is connected to network 101 with nic-43-1 and nic-43-2 in the example bellow).
+* **attachments** in Cyclades are lists of network interfaces (nics). **Attachments** are different to OS Compute's **addresses**. The former is a list of the server's `network interface connections <#nic-ref>`_ while the later is just a list of networks. Thus, a Cyclades virtual server may be connected to the same network through more than one distinct network interfaces (e.g. server 43 is connected to network 101 with nic-43-1 and nic-43-2 in the example bellow).
 
 * **Network Interfaces (NICs)** contain information about a server's connection to a network. Each nic is identified by an id of the form nic-<server-id>-<ordinal-number> and may contain a ``network_id``, a ``mac_address``, ``ipv4`` and ``ipv6`` addresses and the ``firewallProfile`` of the connection.
 
@@ -526,9 +528,7 @@ diagnostics       Diagnostic information ✔        **✘**
 
 * **metadata** are custom key:value pairs used to specify various attributes of the VM (e.g. OS, super user, etc.)
 
-* **attachments** in Cyclades are lists of network interfaces (nics). Each server can handle various nics. Each nic connects the current server with a network. **Attachments** are different to OS Compute's **addresses**. The former is a list of the server's network interfaces (network reference + mac address) while the later is just a list of networks. For example, a Cyclades server may be connected to the same network through more than one distinct network interfaces.
-
-* **Network Interfaces (NICs)** contain information about a server's connection to a network. Each nic is identified by an id of the form nic-<server-id>-<ordinal-number> and may contain a ``network_id``, a ``mac_address``, ``ipv4`` and ``ipv6`` addresses and the ``firewallProfile`` of the connection.
+* **attachments** in Cyclades are lists of network interfaces (NICs). **Attachments** are different to OS Compute's **addresses**. The former is a list of the server's `network interface connections <#nic-ref>`_ while the later is just a list of networks. Thus, a Cyclades virtual server may be connected to the same network through more than one distinct network interfaces.
 
 * **diagnostics** is a list of items that contain key:value information useful for diagnosing the server behavior and may be used by the administrators of deployed Synnefo setups.
 
@@ -656,6 +656,80 @@ Return Code                 Description
 
 Server Addresses
 ----------------
+
+List Addresses
+..................
+
+List all network connections of a server
+
+============================ ====== ======== ==========
+URI                          Method Cyclades OS Compute
+============================ ====== ======== ==========
+``/servers/<server id>/ips`` GET    ✔        ✔
+============================ ====== ======== ==========
+
+* **server-id** is the identifier of the virtual server
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
+
+|
+
+================= ===============
+Request Parameter Value          
+================= ===============
+json              Respond in json
+xml               Respond in xml 
+================= ===============
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded
+400 (Bad Request)           Malformed server id or machine already deleted
+401 (Unauthorized)          Missing or expired user token
+404 (Not Found)             Server not found
+409 (Build In Progress)     Server is not ready yet
+500 (Internal Server Error) The request cannot be completed because of an internal error
+503 (Service Unavailable)   Service currently unavailable
+=========================== =====================
+
+If the return code is 200, the response body consists of a list of items under the ``addresses`` tag. Each item refers to a network interface connection (NIC).
+
+Each NIC connects the current server to a network. NICs are different to OS Compute's addresses. The formers are the server's `network interface connections <#nic-ref>`_ while the later describes a network. Cyclades API suggests this information can be acquired by the network_id, using the network part of the API. Thus, a Cyclades virtual server may be connected to the same network through more than one distinct network interfaces. The NIC mechanism allows more metadata to describe the network and its relation to the server.
+
+**An example of a response, in JSON**
+
+.. code-block:: javascript
+
+  {
+    "addresses": {
+      "values": [
+          {
+            "network_id": "1",
+            "mac_address": "aa:00:03:7a:84:bb",
+            "firewallProfile": "DISABLED",
+            "ipv4": "192.168.0.27",
+            "ipv6": "2001:646:2ffc:1222:a820:3fd:fe7a:84bb",
+            "id": "nic-25455-0"
+          }, {
+            "network_id": "7",
+            "mac_address": "aa:00:03:7a:84:cc",
+            "firewallProfile": "DISABLED",
+            "ipv4": "192.168.0.28",
+            "ipv6": "2002:646:2fec:1222:a820:3fd:fe7a:84bc",
+            "id": "nic-25455-1"
+          },
+      ]
+    }
+  }
 
 Server Actions
 --------------
@@ -1105,7 +1179,7 @@ addresses        Nets connected on server   **✘**    ✔
 links            Server links               **✘**    ✔
 ================ ========================== ======== ==========
 
-* **status** values are described `here <status-ref>`_
+* **status** values are described `here <#status-ref>`_
 
 * **updated** and **created** are date-formated
 
@@ -1146,3 +1220,40 @@ SHUTOFF       Shut down by user    **✘**    ✔
 SUSPENDED     Suspended            **✘**    ✔
 VERIFY_RESIZE Waiting confirmation **✘**    ✔
 ============= ==================== ======== ==========
+
+.. _nic-ref:
+
+Network Interface Connection (NIC)
+..................................
+
+A Network Interface Connection (NIC) represents a servers connection to a network.
+
+A NIC is identified by a server and an (obviously unique) mac address. A server can have multiple NICs, though. In practice, a NIC id is used of reference and identification.
+
+Each NIC is used to connect a specific server to a network. The network is aware of that connection for as long as it holds. If a NIC is disconnected from a network, it is destroyed.
+
+A NIC specification contains the following information:
+
+================= ====================== ======== ==========
+Server Attributes Description            Cyclades OS Compute
+================= ====================== ======== ==========
+id                The NIC id             ✔        **✘**
+mac_address       NIC's mac address      ✔        **✘**
+network_id        Network of connection  ✔        **✘**
+firewallProfile   The firewall profile   ✔        **✘**
+ipv4              IP v4 address          ✔        **✘**
+ipv6              IP v6 address          ✔        **✘**
+================= ====================== ======== ==========
+
+* **id** is the unique identified of the NIC. It consists of the server id and an ordinal number nic-<server-id>-<ordinal number> , e.g. for a server with id 42::
+  nic-42-0, nic-42-1, ...
+
+* **mac_address** is the unique mac address of the interface
+
+* **network_id** is the id of the network this nic connects to.
+
+* **firewallProfile** , if set, refers to the mode of the firewall. Valid firewall profile values::
+
+  ENABLED, DISABLED, PROTECTED
+
+* **ipv4** and **ipv6** are the IP addresses (versions 4 and 6 respectively) of the specific network connection for that machine.

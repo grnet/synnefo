@@ -41,7 +41,6 @@ humanize.numberFormat = function(number, decimals, decPoint, thousandsSep) {
 
 
 DO_LOG = false
-
 LOG = DO_LOG ? _.bind(console.log, console) : function() {};
 WARN = DO_LOG ? _.bind(console.warn, console) : function() {};
 
@@ -189,7 +188,6 @@ _.extend(UsageView.prototype, {
     qdata = {'curr': value, 'max': limit, 'perc': percentage, 'cls': cls,
              'label_left': label_left, 'label_color': label_col}
     _.extend(qdata, resource);
-    console.log(resource_name, value, resource);
     return qdata
   },
 

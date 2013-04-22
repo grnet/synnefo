@@ -106,19 +106,6 @@ class QuotaholderDjangoDBCallpoint(object):
                 'quantity': quantity,
                 }
 
-    def set_holder_quota(self, quotas):
-        q = self._level_quota_dict(quotas)
-        self.set_quota(q)
-
-    def _level_quota_dict(self, quotas):
-        lst = []
-        for holder, holder_quota in quotas.iteritems():
-            for source, source_quota in holder_quota.iteritems():
-                for resource, limit in source_quota.iteritems():
-                    key = (holder, source, resource)
-                    lst.append((key, limit))
-        return lst
-
     def set_quota(self, quotas):
         holding_keys = [key for (key, limit) in quotas]
         holdings = self._get_holdings_for_update(holding_keys)

@@ -103,8 +103,19 @@ def get_service_quotas(service, users=None):
     return transform_data(counters)
 
 
+def _level_quota_dict(quotas):
+    lst = []
+    for holder, holder_quota in quotas.iteritems():
+        for source, source_quota in holder_quota.iteritems():
+            for resource, limit in source_quota.iteritems():
+                key = (holder, source, resource)
+                lst.append((key, limit))
+    return lst
+
+
 def set_user_quota(quotas):
-    qh.set_holder_quota(quotas)
+    q = _level_quota_dict(quotas)
+    qh.set_quota(q)
 
 
 def get_default_quota():

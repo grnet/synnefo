@@ -32,7 +32,6 @@ from django.utils import simplejson as json
 
 from snf_django.lib.api import faults
 from synnefo.db.models import QuotaHolderSerial
-from synnefo.settings import CYCLADES_USE_QUOTAHOLDER
 
 from synnefo.settings import (CYCLADES_ASTAKOS_SERVICE_TOKEN as ASTAKOS_TOKEN,
                               ASTAKOS_URL)

@@ -107,10 +107,6 @@ In `/etc/synnefo/cyclades.conf` add:
     CACHE_BACKEND = 'memcached://127.0.0.1:11211/'
     VMAPI_BASE_URL = 'https://cyclades.example.com/'
 
-    CYCLADES_QUOTAHOLDER_TOKEN = '1234'
-    CYCLADES_QUOTAHOLDER_URL = 'https://qh.example.com/quotaholder/v'
-    CYCLADES_USE_QUOTAHOLDER = True
-
     CYCLADES_ASTAKOS_SERVICE_TOKEN = "XXXXXXXXXX"
 
     UI_SYSTEM_IMAGES_OWNERS = {

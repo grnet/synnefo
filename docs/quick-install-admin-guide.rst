@@ -1779,14 +1779,6 @@ if they are not logged in. We point that to Astakos.
 The ``UI_LOGOUT_URL`` option tells the Cyclades Web UI where to redirect the
 user when he/she logs out. We point that to Astakos, too.
 
-Edit ``/etc/synnefo/20-snf-cyclades-app-quotas.conf``:
-
-.. code-block:: console
-
-   CYCLADES_USE_QUOTAHOLDER = True
-   CYCLADES_QUOTAHOLDER_URL = 'https://node1.example.com/quotaholder/v'
-   CYCLADES_QUOTAHOLDER_TOKEN = 'aExampleTokenJbFm12w'
-
 Edit ``/etc/synnefo/20-snf-cyclades-app-vmapi.conf``:
 
 .. code-block:: console

@@ -129,6 +129,20 @@ def get_default_quota():
 SYSTEM = 'system'
 
 
+def resolve_pending_serial(serial, accept=True):
+    return qh.resolve_pending_commission('astakos', serial, accept)
+
+
+def register_pending_apps(user, quantity, force=False, name=None):
+    provision = (user.uuid, SYSTEM, 'astakos.pending_app'), quantity
+
+    s = qh.issue_commission(clientkey='astakos',
+                            force=force,
+                            name=name,
+                            provisions=[provision])
+    return s
+
+
 def initial_quotas(users):
     initial = {}
     default_quotas = get_default_quota()

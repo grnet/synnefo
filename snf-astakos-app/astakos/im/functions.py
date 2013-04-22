@@ -71,7 +71,8 @@ from astakos.im.models import (
     AstakosUser, Invitation, ProjectMembership, ProjectApplication, Project,
     UserSetting,
     get_resource_names, new_chain)
-from astakos.im.quotas import qh_sync_user, qh_sync_users
+from astakos.im.quotas import (qh_sync_user, qh_sync_users,
+                               register_pending_apps, resolve_pending_serial)
 from astakos.im.project_notif import (
     membership_change_notify, membership_enroll_notify,
     membership_request_notify, membership_leave_request_notify,
@@ -80,6 +81,7 @@ from astakos.im.project_notif import (
     project_termination_notify, project_suspension_notify)
 
 import astakos.im.messages as astakos_messages
+from astakos.quotaholder.exception import NoCapacityError
 
 logger = logging.getLogger(__name__)
 
@@ -727,8 +729,9 @@ def submit_application(kw, request_user=None):
             raise PermissionDenied(m)
 
     owner = kw['owner']
-    reached, limit = reached_pending_application_limit(owner.id, precursor)
-    if not request_user.is_project_admin() and reached:
+    force = request_user.is_project_admin()
+    ok, limit = qh_add_pending_app(owner, precursor, force)
+    if not ok:
         m = _(astakos_messages.REACHED_PENDING_APPLICATION_LIMIT) % limit
         raise PermissionDenied(m)
 
@@ -763,6 +766,8 @@ def cancel_application(application_id, request_user=None):
               (application.id, application.state_display()))
         raise PermissionDenied(m)
 
+    qh_release_pending_app(application.owner)
+
     application.cancel()
     logger.info("%s has been cancelled." % (application.log_display))
 
@@ -790,6 +795,8 @@ def deny_application(application_id, request_user=None, reason=None):
               (application.id, application.state_display()))
         raise PermissionDenied(m)
 
+    qh_release_pending_app(application.owner)
+
     if reason is None:
         reason = ""
     application.deny(reason)
@@ -814,6 +821,7 @@ def approve_application(app_id, request_user=None):
               (application.id, application.state_display()))
         raise PermissionDenied(m)
 
+    qh_release_pending_app(application.owner)
     project = application.approve()
     qh_sync_projects([project])
     logger.info("%s has been approved." % (application.log_display))
@@ -903,49 +911,31 @@ def unset_user_setting(user_id, key):
     UserSetting.objects.filter(user=user_id, setting=key).delete()
 
 
-PENDING_APPLICATION_LIMIT_SETTING = 'PENDING_APPLICATION_LIMIT'
-
-
-def get_pending_application_limit(user_id):
-    key = PENDING_APPLICATION_LIMIT_SETTING
-    return get_user_setting(user_id, key)
-
-
-def set_pending_application_limit(user_id, value):
-    key = PENDING_APPLICATION_LIMIT_SETTING
-    return set_user_setting(user_id, key, value)
-
-
-def unset_pending_application_limit(user_id):
-    key = PENDING_APPLICATION_LIMIT_SETTING
-    return unset_user_setting(user_id, key)
-
-
-def _reached_pending_application_limit(user_id):
-    limit = get_pending_application_limit(user_id)
-
-    PENDING = ProjectApplication.PENDING
-    pending = ProjectApplication.objects.filter(
-        owner__id=user_id, state=PENDING).count()
-
-    return pending >= limit, limit
-
-
-def reached_pending_application_limit(user_id, precursor=None):
-    reached, limit = _reached_pending_application_limit(user_id)
-
+def qh_add_pending_app(user, precursor=None, force=False, dry_run=False):
     if precursor is None:
-        return reached, limit
+        diff = 1
+    else:
+        chain = precursor.chain
+        objs = ProjectApplication.objects
+        q = objs.filter(chain=chain, state=ProjectApplication.PENDING)
+        count = q.count()
+        diff = 1 - count
 
-    chain = precursor.chain
-    objs = ProjectApplication.objects
-    q = objs.filter(chain=chain, state=ProjectApplication.PENDING)
-    has_pending = q.exists()
+    try:
+        name = "DRYRUN" if dry_run else ""
+        serial = register_pending_apps(user, diff, force, name=name)
+    except NoCapacityError as e:
+        limit = e.data['limit']
+        return False, limit
+    else:
+        accept = not dry_run
+        resolve_pending_serial(serial, accept=accept)
+        return True, None
 
-    if not has_pending:
-        return reached, limit
 
-    return False, limit
+def qh_release_pending_app(user):
+    serial = register_pending_apps(user, -1)
+    resolve_pending_serial(serial)
 
 
 def qh_sync_projects(projects):

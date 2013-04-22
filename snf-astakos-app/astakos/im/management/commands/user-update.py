@@ -40,9 +40,7 @@ from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 
 from astakos.im.models import AstakosUser
-from astakos.im.functions import (activate, deactivate,
-                                  set_pending_application_limit,
-                                  unset_pending_application_limit)
+from astakos.im.functions import (activate, deactivate)
 from ._common import remove_user_permission, add_user_permission
 from snf_django.lib.db.transaction import commit_on_success_strict
 
@@ -106,17 +104,6 @@ class Command(BaseCommand):
         make_option('--delete-permission',
                     dest='delete-permission',
                     help="Delete user permission"),
-        make_option('--max-pending-projects',
-                    dest='pending',
-                    metavar='INT',
-                    help=("Set limit on user's maximum pending "
-                          "project applications")),
-        make_option('--reset-max-pending-projects',
-                    dest='unset_pending',
-                    action='store_true',
-                    default=False,
-                    help=("Restore default limit of user's maximum pending "
-                          "project applications")),
     )
 
     @commit_on_success_strict()
@@ -219,17 +206,3 @@ class Command(BaseCommand):
 
         if password:
             self.stdout.write('User\'s new password: %s\n' % password)
-
-        pending = options.get('pending')
-        if pending:
-            try:
-                pending = int(pending)
-            except ValueError as e:
-                m = _("Expected integer argument")
-                raise CommandError(m)
-            else:
-                set_pending_application_limit(user_id, pending)
-
-        unset_pending = options.get('unset_pending')
-        if unset_pending:
-            unset_pending_application_limit(user_id)

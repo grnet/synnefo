@@ -97,7 +97,7 @@ from astakos.im.functions import (
     invite as invite_func,
     send_activation as send_activation_func,
     SendNotificationError,
-    reached_pending_application_limit,
+    qh_add_pending_app,
     accept_membership, reject_membership, remove_membership, cancel_membership,
     leave_project, join_project, enroll_member, can_join_request, can_leave_request,
     get_related_project_id, get_by_chain_or_404,
@@ -1085,13 +1085,14 @@ def _resources_catalog(request):
 @valid_astakos_user_required
 def project_add(request):
     user = request.user
-    reached, limit = reached_pending_application_limit(user.id)
-    if not user.is_project_admin() and reached:
-        m = _(astakos_messages.PENDING_APPLICATION_LIMIT_ADD) % limit
-        messages.error(request, m)
-        next = reverse('astakos.im.views.project_list')
-        next = restrict_next(next, domain=COOKIE_DOMAIN)
-        return redirect(next)
+    if not user.is_project_admin():
+        ok, limit = qh_add_pending_app(user, dry_run=True)
+        if not ok:
+            m = _(astakos_messages.PENDING_APPLICATION_LIMIT_ADD) % limit
+            messages.error(request, m)
+            next = reverse('astakos.im.views.project_list')
+            next = restrict_next(next, domain=COOKIE_DOMAIN)
+            return redirect(next)
 
     details_fields = ["name", "homepage", "description", "start_date",
                       "end_date", "comments"]
@@ -1190,14 +1191,15 @@ def project_modify(request, application_id):
         m = _(astakos_messages.NOT_ALLOWED)
         raise PermissionDenied(m)
 
-    owner_id = app.owner_id
-    reached, limit = reached_pending_application_limit(owner_id, app)
-    if not user.is_project_admin() and reached:
-        m = _(astakos_messages.PENDING_APPLICATION_LIMIT_MODIFY) % limit
-        messages.error(request, m)
-        next = reverse('astakos.im.views.project_list')
-        next = restrict_next(next, domain=COOKIE_DOMAIN)
-        return redirect(next)
+    if not user.is_project_admin():
+        owner = app.owner
+        ok, limit = qh_add_pending_app(owner, precursor=app, dry_run=True)
+        if not ok:
+            m = _(astakos_messages.PENDING_APPLICATION_LIMIT_MODIFY) % limit
+            messages.error(request, m)
+            next = reverse('astakos.im.views.project_list')
+            next = restrict_next(next, domain=COOKIE_DOMAIN)
+            return redirect(next)
 
     details_fields = ["name", "homepage", "description", "start_date",
                       "end_date", "comments"]

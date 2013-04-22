@@ -2004,7 +2004,7 @@ Apply Quotas
    node1 # snf-manage astakos-quota --verify
    node1 # snf-manage astakos-quota --sync
    node2 # snf-manage pithos-reset-usage
-   node1 # snf-manage cyclades-reset-usage
+   node1 # snf-manage reconcile-resources-cyclades --fix
 
 If all the above return successfully, then you have finished with the Cyclades
 and Plankton installation and setup.

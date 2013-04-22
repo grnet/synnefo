@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -38,7 +38,7 @@ from synnefo import quotas
 
 
 class Command(BaseCommand):
-    help = "Reconcile quotas with Quotaholder"
+    help = "Detect and resolve pending commissions to Quotaholder"
     output_transaction = True
     option_list = BaseCommand.option_list + (
         make_option("--fix", dest="fix",

@@ -43,9 +43,9 @@ from synnefo.settings import CYCLADES_ASTAKOS_SERVICE_TOKEN as ASTAKOS_TOKEN
 
 
 class Command(BaseCommand):
-    help = """Reconcile quotas of Astakos with Cyclades DB.
+    help = """Reconcile resource usage of Astakos with Cyclades DB.
 
-    Detect unsynchronized quotas between Astakos and Cyclades DB and
+    Detect unsynchronized usage between Astakos and Cyclades DB resources and
     synchronize them if specified so.
 
     """

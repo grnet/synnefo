@@ -27,6 +27,12 @@ Cyclades
 * Remove 'CYCLADES_USER_CATALOG_URL' and 'CYCLADES_USER_FEEDBACK_URL' settings
 * Remove CYCLADES_USE_QUOTAHOLDER, CYCLADES_QUOTAHOLDER_TOKEN,
   CYCLADES_QUOTAHOLDER_URL, CYCLADES_QUOTAHOLDER_POOLSIZE settings
+* Rename 'cyclades-usage-verify' management command to
+  'reconcile-resources-cyclades'. Also, remove 'cyclades-usage-reset' command,
+  which is equivalent to 'reconcile-resources-cyclades --fix'.
+* Rename 'cyclades-reconcile-commissions' management command to
+  'reconcile-commissions-cyclades'.
+
 
 Pithos
 ------

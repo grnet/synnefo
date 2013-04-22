@@ -254,8 +254,8 @@ class JobFileHandler(pyinotify.ProcessEvent):
             instances = get_field(input, 'instances')
             if not instances or len(instances) > 1:
                 # Do not publish messages for jobs with no or multiple
-                # instances.
-                # Currently snf-dispatcher can not normally handle these messages
+                # instances.  Currently snf-dispatcher can not normally handle
+                # these messages
                 return None, None
             else:
                 instances = instances[0]
@@ -296,11 +296,9 @@ class JobFileHandler(pyinotify.ProcessEvent):
                'group_name':   get_field(input, 'group_name')}
 
         if op_id == "OP_NETWORK_SET_PARAMS":
-            msg.update(
-                {'add_reserved_ips':    get_field(input, 'add_reserved_ips'),
-                 'remove_reserved_ips': get_field(input, 'remove_reserved_ips')
-                })
-
+            msg["add_reserved_ips"] = get_field(input, "add_reserved_ips")
+            msg["remove_reserved_ips"] = get_field(input,
+                                                   "remove_reserved_ips")
         routekey = "ganeti.%s.event.network" % prefix_from_name(network_name)
 
         return msg, routekey
@@ -311,7 +309,6 @@ class JobFileHandler(pyinotify.ProcessEvent):
 
     #     """
     #     return None, None
-
 
 
 def find_cluster_name():
@@ -325,13 +322,17 @@ def find_cluster_name():
 
     return name
 
+
 handler_logger = None
+
+
 def fatal_signal_handler(signum, frame):
     global handler_logger
 
     handler_logger.info("Caught fatal signal %d, will raise SystemExit",
                         signum)
     raise SystemExit
+
 
 def parse_arguments(args):
     from optparse import OptionParser
@@ -343,20 +344,20 @@ def parse_arguments(args):
                       default="/var/log/snf-ganeti-eventd.log",
                       metavar="FILE",
                       help="Write log to FILE instead of %s" %
-                          "/var/log/snf-ganeti-eventd.log")
+                           "/var/log/snf-ganeti-eventd.log")
     parser.add_option('--pid-file', dest="pid_file",
                       default="/var/run/snf-ganeti-eventd.pid",
                       metavar='PIDFILE',
                       help="Save PID to file (default: %s)" %
-                          "/var/run/snf-ganeti-eventd.pid")
+                           "/var/run/snf-ganeti-eventd.pid")
 
     return parser.parse_args(args)
+
 
 def main():
     global handler_logger
 
     (opts, args) = parse_arguments(sys.argv[1:])
-
 
     # Initialize logger
     lvl = logging.DEBUG if opts.debug else logging.INFO
@@ -389,11 +390,11 @@ def main():
     # early errors in the daemonization process [e.g., pidfile creation]
     # which will otherwise go to /dev/null.
     daemon_context = daemon.DaemonContext(
-            pidfile=pidf,
-            umask=022,
-            stdout=handler.stream,
-            stderr=handler.stream,
-            files_preserve=[handler.stream])
+        pidfile=pidf,
+        umask=022,
+        stdout=handler.stream,
+        stderr=handler.stream,
+        files_preserve=[handler.stream])
     try:
         daemon_context.open()
     except (daemon.pidlockfile.AlreadyLocked, LockTimeout):
@@ -409,8 +410,8 @@ def main():
 
     # Monitor the Ganeti job queue, create and push notifications
     wm = pyinotify.WatchManager()
-    mask = pyinotify.EventsCodes.ALL_FLAGS["IN_MOVED_TO"] | \
-           pyinotify.EventsCodes.ALL_FLAGS["IN_CLOSE_WRITE"]
+    mask = (pyinotify.EventsCodes.ALL_FLAGS["IN_MOVED_TO"] |
+            pyinotify.EventsCodes.ALL_FLAGS["IN_CLOSE_WRITE"])
 
     cluster_name = find_cluster_name()
 
@@ -423,8 +424,8 @@ def main():
         if res[constants.QUEUE_DIR] < 0:
             raise Exception("pyinotify add_watch returned negative descriptor")
 
-        logger.info("Now watching %s of %s" % (constants.QUEUE_DIR,
-                cluster_name))
+        logger.info("Now watching %s of %s" %
+                    (constants.QUEUE_DIR, cluster_name))
 
         while True:    # loop forever
             # process the queue of events as explained above

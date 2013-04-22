@@ -148,7 +148,7 @@ def issue_commission(user, source, provisions,
     try:
         serial = qh.issue_one_commission(ASTAKOS_TOKEN,
                                          user, source, provisions,
-                                         force, auto_accept)
+                                         force=force, auto_accept=auto_accept)
     except QuotaLimit as e:
         msg, details = render_overlimit_exception(e)
         raise faults.OverLimit(msg, details=details)

@@ -34,68 +34,85 @@
 from django.core.management.base import BaseCommand
 from optparse import make_option
 
-from synnefo.quotas import DEFAULT_SOURCE
+
+from synnefo import quotas
 from synnefo.quotas.util import (get_db_holdings, get_quotaholder_holdings,
                                  transform_quotas)
 from synnefo.webproject.management.utils import pprint_table
+from synnefo.settings import CYCLADES_ASTAKOS_SERVICE_TOKEN as ASTAKOS_TOKEN
 
 
 class Command(BaseCommand):
-    help = """
-    Verify that cyclades.* resource usage.
+    help = """Reconcile quotas of Astakos with Cyclades DB.
 
-    Verify that usage calculated from Cyclades DB agrees with the usage
-    recorded in the effective quota database (Quotaholder)
+    Detect unsynchronized quotas between Astakos and Cyclades DB and
+    synchronize them if specified so.
 
     """
-    output_transaction = True
     option_list = BaseCommand.option_list + (
         make_option("--userid", dest="userid",
                     default=None,
-                    help="Verify usage only for this user"),
+                    help="Reconcile resources only for this user"),
+        make_option("--fix", dest="fix",
+                    default=False,
+                    action="store_true",
+                    help="Synchronize Astakos quotas with Cyclades DB."),
+        make_option("--force",
+                    default=False,
+                    action="store_true",
+                    help="Override Astakos quotas. Force Astakos to impose"
+                         " the Cyclades quota, independently of their value.")
     )
 
     def handle(self, *args, **options):
         write = self.stdout.write
         userid = options['userid']
 
-        users = [userid] if userid else None
-        # Get info from DB
-        db_holdings = get_db_holdings(users)
-        users = db_holdings.keys()
+        # Get holdings from Cyclades DB
+        db_holdings = get_db_holdings(userid)
+        # Get holdings from QuotaHolder
         qh_holdings = get_quotaholder_holdings(userid)
-        qh_users = qh_holdings.keys()
 
-        if len(qh_users) < len(users):
-            for u in set(users) - set(qh_users):
-                write("Unknown entity: %s\n" % u)
-                users = qh_users
+        users = set(db_holdings.keys())
+        users.update(qh_holdings.keys())
+        # Remove 'None' user
+        users.discard(None)
 
-        headers = ("User", "Resource", "Database", "Quotaholder")
         unsynced = []
         for user in users:
-            db = db_holdings[user]
-            qh_all = qh_holdings[user]
+            db = db_holdings.get(user, {})
+            qh_all = qh_holdings.get(user, {})
             # Assuming only one source
-            qh = qh_all[DEFAULT_SOURCE]
+            qh = qh_all.get(quotas.DEFAULT_SOURCE, {})
             qh = transform_quotas(qh)
-
-            for resource, (value, value1) in qh.iteritems:
-                db_value = db.pop(resource, None)
-                if value != value1:
-                    write("Commission pending for %s"
-                          % str((user, resource)))
+            for resource in quotas.RESOURCES:
+                db_value = db.pop(resource, 0)
+                qh_value, _, qh_pending = qh.pop(resource, (0, 0))
+                if qh_pending:
+                    write("Pending commission. User '%s', resource '%s'.\n" %
+                          (user, resource))
                     continue
-                if db_value is None:
-                    write("Resource %s exists in QH for %s but not in DB\n"
-                          % (resource, user))
-                elif db_value != value:
-                    data = (user, resource, str(db_value), str(value))
+                if db_value != qh_value:
+                    data = (user, resource, db_value, qh_value)
                     unsynced.append(data)
 
-            for resource, db_value in db.iteritems():
-                write("Resource %s exists in DB for %s but not in QH\n"
-                      % (resource, user))
-
+        headers = ("User", "Resource", "Database", "Quotaholder")
         if unsynced:
             pprint_table(self.stderr, unsynced, headers)
+            if options["fix"]:
+                qh = quotas.Quotaholder.get()
+                request = {}
+                request["force"] = options["force"]
+                request["auto_accept"] = True
+                request["provisions"] = map(create_provision, unsynced)
+                qh.issue_commission(ASTAKOS_TOKEN, request)
+        else:
+            write("Everything in sync.\n")
+
+
+def create_provision(provision_info):
+    user, resource, db_value, qh_value = provision_info
+    return {"holder": user,
+            "source": quotas.DEFAULT_SOURCE,
+            "resource": resource,
+            "quantity": db_value - qh_value}

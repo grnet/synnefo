@@ -41,7 +41,9 @@ from collections import namedtuple
 from django.core.management.base import BaseCommand, CommandError
 from django.core.validators import validate_email
 
+from snf_django.lib.db.transaction import commit_on_success_strict
 from astakos.im.models import AstakosUser, AstakosUserQuota, Resource
+from astakos.im.functions import qh_sync
 
 AddResourceArgs = namedtuple('AddQuotaArgs', ('resource',
                                               'capacity',
@@ -86,6 +88,7 @@ for a single user from the command line
                     help="Do not ask for confirmation"),
     )
 
+    @commit_on_success_strict()
     def handle(self, *args, **options):
         from_file = options['from_file']
         set_capacity = options['set_capacity']
@@ -165,6 +168,7 @@ for a single user from the command line
                 user.add_resource_policy(*args)
             except Exception as e:
                 raise CommandError("Failed to add policy: %s" % e)
+        qh_sync([user.id])
 
     def import_from_file(self, location):
         try:

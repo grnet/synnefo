@@ -32,7 +32,7 @@ from django.core.management.base import BaseCommand
 from optparse import make_option
 
 from synnefo.webproject.management.utils import pprint_table
-from synnefo.plankton.backend import ImageBackend
+from synnefo.plankton.utils import image_backend
 
 
 class Command(BaseCommand):
@@ -41,17 +41,18 @@ class Command(BaseCommand):
         make_option(
             '--user-id',
             dest='userid',
+            default=None,
             help="List all images available to that user."
                  " If no user is specified, only public images"
                  " are displayed."),
     )
 
     def handle(self, **options):
-        userid = options['userid']
+        user = options['userid']
 
-        c = ImageBackend(userid) if userid else ImageBackend("")
-        images = c.list()
-        images.sort(key=lambda x: x['created_at'], reverse=True)
+        with image_backend(user) as backend:
+            images = backend._list_images(user)
+            images.sort(key=lambda x: x['created_at'], reverse=True)
 
         headers = ("id", "name", "owner", "public")
         table = []

@@ -151,10 +151,7 @@ def get_image(image_id, user_id):
     """Return an Image instance or raise ItemNotFound."""
 
     with image_backend(user_id) as backend:
-        image = backend.get_image(image_id)
-        if not image:
-            raise faults.ItemNotFound('Image not found.')
-        return image
+        return backend.get_image(image_id)
 
 
 def get_image_dict(image_id, user_id):

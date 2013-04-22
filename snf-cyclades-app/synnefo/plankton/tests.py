@@ -33,13 +33,10 @@
 
 import json
 
-from django.test import TestCase
-
-from contextlib import contextmanager
 from mock import patch
 from functools import wraps
 from copy import deepcopy
-from snf_django.utils.testing import astakos_user, BaseAPITest
+from snf_django.utils.testing import BaseAPITest
 
 
 FILTERS = ('name', 'container_format', 'disk_format', 'status', 'size_min',
@@ -130,11 +127,11 @@ def assert_backend_closed(func):
     return wrapper
 
 
-@patch("synnefo.plankton.utils.ImageBackend")
+@patch("synnefo.plankton.backend.ImageBackend")
 class PlanktonTest(BaseAPITest):
     @assert_backend_closed
     def test_list_images(self, backend):
-        backend.return_value.list.return_value =\
+        backend.return_value.list_images.return_value =\
                 deepcopy(DummyImages).values()
         response = self.get("/plankton/images/")
         self.assertSuccess(response)
@@ -146,12 +143,12 @@ class PlanktonTest(BaseAPITest):
                                 if key in LIST_FIELDS])
             self.assertEqual(api_image, pithos_image)
         backend.return_value\
-                .list.assert_called_once_with({}, {'sort_key': 'created_at',
+                .list_images.assert_called_once_with({}, {'sort_key': 'created_at',
                                                    'sort_dir': 'desc'})
 
     @assert_backend_closed
     def test_list_images_detail(self, backend):
-        backend.return_value.list.return_value =\
+        backend.return_value.list_images.return_value =\
                 deepcopy(DummyImages).values()
         response = self.get("/plankton/images/detail")
         self.assertSuccess(response)
@@ -163,19 +160,19 @@ class PlanktonTest(BaseAPITest):
                                 if key in DETAIL_FIELDS])
             self.assertEqual(api_image, pithos_image)
         backend.return_value\
-                .list.assert_called_once_with({}, {'sort_key': 'created_at',
+                .list_images.assert_called_once_with({}, {'sort_key': 'created_at',
                                                    'sort_dir': 'desc'})
 
     @assert_backend_closed
     def test_list_images_filters(self, backend):
-        backend.return_value.list.return_value =\
+        backend.return_value.list_images.return_value =\
                 deepcopy(DummyImages).values()
         response = self.get("/plankton/images/?size_max=1000")
         self.assertSuccess(response)
         backend.return_value\
-                .list.assert_called_once_with({'size_max': 1000},
-                                              {'sort_key': 'created_at',
-                                               'sort_dir': 'desc'})
+                .list_images.assert_called_once_with({'size_max': 1000},
+                                                     {'sort_key': 'created_at',
+                                                     'sort_dir': 'desc'})
 
     @assert_backend_closed
     def test_list_images_filters_error_1(self, backend):
@@ -194,8 +191,8 @@ class PlanktonTest(BaseAPITest):
                             json.dumps({}),
                             'json', HTTP_X_IMAGE_META_OWNER='user2')
         self.assertSuccess(response)
-        backend.return_value.update.assert_called_once_with(db_image['id'],
-                                                            {"owner": "user2"})
+        backend.return_value.update_metadata.assert_called_once_with(db_image['id'],
+                                                                     {"owner": "user2"})
 
     @assert_backend_closed
     def test_add_image_member(self, backend):
@@ -216,15 +213,16 @@ class PlanktonTest(BaseAPITest):
 
     @assert_backend_closed
     def test_add_image(self, backend):
+        location = "pithos://uuid/container/name/"
         response = self.post("/plankton/images/",
                              json.dumps({}),
                              'json',
                              HTTP_X_IMAGE_META_NAME='dummy_name',
                              HTTP_X_IMAGE_META_OWNER='dummy_owner',
-                             HTTP_X_IMAGE_META_LOCATION='dummy_location')
+                             HTTP_X_IMAGE_META_LOCATION=location)
         self.assertSuccess(response)
         backend.return_value.register.assert_called_once_with('dummy_name',
-                                                              'dummy_location',
+                                                              location,
                                                       {'owner': 'dummy_owner'})
 
     @assert_backend_closed

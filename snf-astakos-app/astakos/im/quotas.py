@@ -217,35 +217,19 @@ def user_quotas(user):
         raise ValueError("could not compute quotas")
 
 
-def sync_users(users, sync=True):
-    def _sync_users(users, sync):
+def list_user_quotas(users):
+    qh_quotas, qh_limits = get_users_quotas_and_limits(users)
+    astakos_initial = initial_quotas(users)
+    astakos_quotas = users_quotas(users)
 
-        info = {}
-        for user in users:
-            info[user.uuid] = user.email
+    diff_quotas = {}
+    for holder, local in astakos_quotas.iteritems():
+        registered = qh_limits.get(holder, None)
+        if local != registered:
+            diff_quotas[holder] = dict(local)
 
-        qh_quotas, qh_limits = get_users_quotas_and_limits(users)
-        astakos_initial = initial_quotas(users)
-        astakos_quotas = users_quotas(users)
-
-        diff_quotas = {}
-        for holder, local in astakos_quotas.iteritems():
-            registered = qh_limits.get(holder, None)
-            if local != registered:
-                diff_quotas[holder] = dict(local)
-
-        if sync:
-            r = set_user_quota(diff_quotas)
-
-        return (qh_limits, qh_quotas,
-                astakos_initial, diff_quotas, info)
-
-    return _sync_users(users, sync)
-
-
-def sync_all_users(sync=True):
-    users = AstakosUser.objects.verified()
-    return sync_users(users, sync)
+    return (qh_limits, qh_quotas,
+            astakos_initial, diff_quotas)
 
 
 def qh_add_resource_limit(resource, diff):

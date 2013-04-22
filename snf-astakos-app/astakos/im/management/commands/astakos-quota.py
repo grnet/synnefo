@@ -35,7 +35,7 @@ from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 
 from astakos.im.models import AstakosUser
-from astakos.im.quotas import sync_all_users, sync_users
+from astakos.im.quotas import set_user_quota, list_user_quotas
 from astakos.im.functions import get_user_by_uuid
 from astakos.im.management.commands._common import is_uuid, is_email
 from snf_django.lib.db.transaction import commit_on_success_strict
@@ -69,6 +69,7 @@ class Command(BaseCommand):
                     help="List quotas for a specified user"),
     )
 
+    @commit_on_success_strict()
     def handle(self, *args, **options):
         sync = options['sync']
         verify = options['verify']
@@ -77,11 +78,19 @@ class Command(BaseCommand):
 
 
         if user_ident is not None:
-            log = self.run_sync_user(user_ident, sync)
+            users = [self.get_user(user_ident)]
         else:
-            log = self.run(sync)
+            users = AstakosUser.objects.verified()
 
-        qh_limits, qh_quotas, astakos_i, diff_q, info = log
+        try:
+            qh_limits, qh_quotas, astakos_i, diff_q = list_user_quotas(users)
+        except BaseException as e:
+            logger.exception(e)
+            raise CommandError("Failed to compute quotas.")
+
+        info = {}
+        for user in users:
+            info[user.uuid] = user.email
 
         if list_only:
             self.list_quotas(qh_quotas, astakos_i, info)
@@ -89,10 +98,14 @@ class Command(BaseCommand):
             if verify:
                 self.print_verify(qh_limits, diff_q)
             if sync:
+                try:
+                    set_user_quota(diff_q)
+                except BaseException as e:
+                    logger.exception(e)
+                    raise CommandError("Failed to sync quotas.")
                 self.print_sync(diff_q)
 
-    @commit_on_success_strict()
-    def run_sync_user(self, user_ident, sync):
+    def get_user(self, user_ident):
         if is_uuid(user_ident):
             try:
                 user = AstakosUser.objects.get(uuid=user_ident)
@@ -111,20 +124,7 @@ class Command(BaseCommand):
         if not user.email_verified and sync:
             raise CommandError('User %s is not verified.' % user.uuid)
 
-        try:
-            return sync_users([user], sync=sync)
-        except BaseException, e:
-            logger.exception(e)
-            raise CommandError("Failed to compute quotas.")
-
-    @commit_on_success_strict()
-    def run(self, sync):
-        try:
-            self.stderr.write("Calculating all quotas...\n")
-            return sync_all_users(sync=sync)
-        except BaseException, e:
-            logger.exception(e)
-            raise CommandError("Syncing failed.")
+        return user
 
     def list_quotas(self, qh_quotas, astakos_initial, info):
         labels = ('uuid', 'email', 'source', 'resource', 'initial', 'total', 'usage')

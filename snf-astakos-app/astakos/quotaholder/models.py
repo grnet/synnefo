@@ -31,7 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-
+from datetime import datetime
 from snf_django.lib.db.fields import intDecimalField
 
 from django.db.models import (Model, BigIntegerField, CharField,
@@ -39,25 +39,24 @@ from django.db.models import (Model, BigIntegerField, CharField,
 from django.db import transaction
 from snf_django.lib.db.managers import ForUpdateManager
 
+
 class Holding(Model):
 
-    holder      =   CharField(max_length=4096, db_index=True)
-    source      =   CharField(max_length=4096, null=True)
-    resource    =   CharField(max_length=4096, null=False)
+    holder = CharField(max_length=4096, db_index=True)
+    source = CharField(max_length=4096, null=True)
+    resource = CharField(max_length=4096, null=False)
 
-    limit       =   intDecimalField()
-    flags       =   BigIntegerField(null=False, default=0)
+    limit = intDecimalField()
+    flags = BigIntegerField(null=False, default=0)
 
-    imported_min    =   intDecimalField(default=0)
-    imported_max    =   intDecimalField(default=0)
+    imported_min = intDecimalField(default=0)
+    imported_max = intDecimalField(default=0)
 
-    objects     =   ForUpdateManager()
+    objects = ForUpdateManager()
 
     class Meta:
         unique_together = (('holder', 'source', 'resource'),)
 
-
-from datetime import datetime
 
 def now():
     return datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')[:24]
@@ -65,25 +64,26 @@ def now():
 
 class Commission(Model):
 
-    serial      =   AutoField(primary_key=True)
-    name        =   CharField(max_length=4096, null=True)
-    clientkey   =   CharField(max_length=4096, null=False)
-    issue_time  =   CharField(max_length=24, default=now)
+    serial = AutoField(primary_key=True)
+    name = CharField(max_length=4096, null=True)
+    clientkey = CharField(max_length=4096, null=False)
+    issue_time = CharField(max_length=24, default=now)
 
-    objects     =   ForUpdateManager()
+    objects = ForUpdateManager()
+
 
 class Provision(Model):
 
-    serial      =   ForeignKey( Commission,
-                                to_field='serial',
-                                related_name='provisions'   )
-    holder      =   CharField(max_length=4096, db_index=True)
-    source      =   CharField(max_length=4096, null=True)
-    resource    =   CharField(max_length=4096, null=False)
+    serial = ForeignKey(Commission,
+                        to_field='serial',
+                        related_name='provisions')
+    holder = CharField(max_length=4096, db_index=True)
+    source = CharField(max_length=4096, null=True)
+    resource = CharField(max_length=4096, null=False)
 
-    quantity    =   intDecimalField()
+    quantity = intDecimalField()
 
-    objects     =   ForUpdateManager()
+    objects = ForUpdateManager()
 
     def todict(self):
         return {'holder':   self.holder,
@@ -98,20 +98,20 @@ class Provision(Model):
 
 class ProvisionLog(Model):
 
-    serial              =   BigIntegerField()
-    name                =   CharField(max_length=4096, null=True)
-    issue_time          =   CharField(max_length=4096)
-    log_time            =   CharField(max_length=4096)
-    holder              =   CharField(max_length=4096)
-    source              =   CharField(max_length=4096, null=True)
-    resource            =   CharField(max_length=4096)
-    limit               =   intDecimalField()
-    imported_min        =   intDecimalField()
-    imported_max        =   intDecimalField()
-    delta_quantity      =   intDecimalField()
-    reason              =   CharField(max_length=4096)
+    serial = BigIntegerField()
+    name = CharField(max_length=4096, null=True)
+    issue_time = CharField(max_length=4096)
+    log_time = CharField(max_length=4096)
+    holder = CharField(max_length=4096)
+    source = CharField(max_length=4096, null=True)
+    resource = CharField(max_length=4096)
+    limit = intDecimalField()
+    imported_min = intDecimalField()
+    imported_max = intDecimalField()
+    delta_quantity = intDecimalField()
+    reason = CharField(max_length=4096)
 
-    objects     =   ForUpdateManager()
+    objects = ForUpdateManager()
 
 
 def _get(*args, **kwargs):
@@ -138,8 +138,10 @@ def _filter(*args, **kwargs):
 def db_get_holding(*args, **kwargs):
     return _get(Holding, *args, **kwargs)
 
+
 def db_get_commission(*args, **kwargs):
     return _get(Commission, *args, **kwargs)
+
 
 def db_filter_provision(*args, **kwargs):
     return _filter(Provision, *args, **kwargs)

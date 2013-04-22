@@ -98,7 +98,7 @@ def parse_request(request, logger):
 def check_input(function_name, logger, **kwargs):
     """Check if given arguments are not None"""
     for i in kwargs:
-        if not kwargs[i]:
+        if kwargs[i] is None:
             m = "in " + function_name + ": " + str(i) + " parameter not given"
             logger.error(m)
             raise BadValue(m)

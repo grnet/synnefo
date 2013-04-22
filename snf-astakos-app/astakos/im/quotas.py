@@ -34,10 +34,8 @@
 from astakos.im.models import (
     Resource, AstakosUserQuota, AstakosUser,
     Project, ProjectMembership, ProjectResourceGrant, ProjectApplication)
-from astakos.quotaholder.callpoint import QuotaholderDjangoDBCallpoint
+import astakos.quotaholder.callpoint as qh
 from django.db.models import Q
-
-qh = QuotaholderDjangoDBCallpoint()
 
 
 def from_holding(holding):

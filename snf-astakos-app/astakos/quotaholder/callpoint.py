@@ -50,281 +50,285 @@ from .models import (Holding,
                      now)
 
 
-class QuotaholderDjangoDBCallpoint(object):
+def get_quota(holders=None, sources=None, resources=None):
+    holdings = Holding.objects.all()
 
-    def get_quota(self, holders=None, sources=None, resources=None):
-        holdings = Holding.objects.all()
+    if holders is not None:
+        holdings = holdings.filter(holder__in=holders)
 
-        if holders is not None:
-            holdings = holdings.filter(holder__in=holders)
+    if sources is not None:
+        holdings = holdings.filter(source__in=sources)
 
-        if sources is not None:
-            holdings = holdings.filter(source__in=sources)
+    if resources is not None:
+        holdings = holdings.filter(resource__in=resources)
 
-        if resources is not None:
-            holdings = holdings.filter(resource__in=resources)
+    quotas = {}
+    for holding in holdings:
+        key = (holding.holder, holding.source, holding.resource)
+        value = (holding.limit, holding.imported_min, holding.imported_max)
+        quotas[key] = value
 
-        quotas = {}
-        for holding in holdings:
-            key = (holding.holder, holding.source, holding.resource)
-            value = (holding.limit, holding.imported_min, holding.imported_max)
-            quotas[key] = value
+    return quotas
 
-        return quotas
 
-    def _get_holdings_for_update(self, holding_keys):
-        holding_keys = sorted(holding_keys)
-        holdings = {}
-        for (holder, source, resource) in holding_keys:
-            try:
-                h = Holding.objects.get_for_update(
-                    holder=holder, source=source, resource=resource)
-                holdings[(holder, source, resource)] = h
-            except Holding.DoesNotExist:
-                pass
-        return holdings
+def _get_holdings_for_update(holding_keys):
+    holding_keys = sorted(holding_keys)
+    holdings = {}
+    for (holder, source, resource) in holding_keys:
+        try:
+            h = Holding.objects.get_for_update(
+                holder=holder, source=source, resource=resource)
+            holdings[(holder, source, resource)] = h
+        except Holding.DoesNotExist:
+            pass
+    return holdings
 
-    def _provisions_to_list(self, provisions):
-        lst = []
-        for provision in provisions:
-            try:
-                holder = provision['holder']
-                source = provision['source']
-                resource = provision['resource']
-                quantity = provision['quantity']
-                key = (holder, source, resource)
-                lst.append((key, quantity))
-            except KeyError:
+
+def _provisions_to_list(provisions):
+    lst = []
+    for provision in provisions:
+        try:
+            holder = provision['holder']
+            source = provision['source']
+            resource = provision['resource']
+            quantity = provision['quantity']
+            key = (holder, source, resource)
+            lst.append((key, quantity))
+        except KeyError:
+            raise InvalidDataError("Malformed provision")
+    return lst
+
+
+def _mkProvision(key, quantity):
+    holder, source, resource = key
+    return {'holder': holder,
+            'source': source,
+            'resource': resource,
+            'quantity': quantity,
+            }
+
+
+def set_quota(quotas):
+    holding_keys = [key for (key, limit) in quotas]
+    holdings = _get_holdings_for_update(holding_keys)
+
+    for key, limit in quotas:
+        try:
+            h = holdings[key]
+        except KeyError:
+            holder, source, resource = key
+            h = Holding(holder=holder,
+                        source=source,
+                        resource=resource)
+        h.limit = limit
+        h.save()
+        holdings[key] = h
+
+
+def add_resource_limit(holders=None, sources=None, resources=None, diff=0):
+    holdings = Holding.objects.all()
+
+    if holders is not None:
+        holdings = holdings.filter(holder__in=holders)
+
+    if sources is not None:
+        holdings = holdings.filter(source__in=sources)
+
+    if resources is not None:
+        holdings = holdings.filter(resource__in=resources)
+
+    holdings.update(limit=F('limit')+diff)
+
+
+def issue_commission(context=None,
+                     clientkey=None,
+                     name=None,
+                     force=False,
+                     provisions=()):
+
+    if name is None:
+        name = ""
+
+    operations = Operations()
+    provisions_to_create = []
+
+    provisions = _provisions_to_list(provisions)
+    keys = [key for (key, value) in provisions]
+    holdings = _get_holdings_for_update(keys)
+    try:
+        checked = []
+        for key, quantity in provisions:
+            if not isinstance(quantity, (int, long)):
                 raise InvalidDataError("Malformed provision")
-        return lst
 
-    def _mkProvision(self, key, quantity):
-        holder, source, resource = key
-        return {'holder': holder,
-                'source': source,
-                'resource': resource,
-                'quantity': quantity,
-                }
+            if key in checked:
+                m = "Duplicate provision for %s" % str(key)
+                provision = _mkProvision(key, quantity)
+                raise DuplicateError(m,
+                                     provision=provision)
+            checked.append(key)
 
-    def set_quota(self, quotas):
-        holding_keys = [key for (key, limit) in quotas]
-        holdings = self._get_holdings_for_update(holding_keys)
-
-        for key, limit in quotas:
+            # Target
             try:
-                h = holdings[key]
+                th = holdings[key]
             except KeyError:
-                holder, source, resource = key
-                h = Holding(holder=holder,
-                            source=source,
-                            resource=resource)
-            h.limit = limit
-            h.save()
-            holdings[key] = h
+                m = ("There is no such holding %s" % str(key))
+                provision = _mkProvision(key, quantity)
+                raise NoHoldingError(m,
+                                     provision=provision)
 
-    def add_resource_limit(self, holders=None, sources=None, resources=None,
-                           diff=0):
-        holdings = Holding.objects.all()
+            if quantity >= 0:
+                operations.prepare(Import, th, quantity, force)
 
-        if holders is not None:
-            holdings = holdings.filter(holder__in=holders)
+            else:  # release
+                abs_quantity = -quantity
+                operations.prepare(Release, th, abs_quantity, force)
 
-        if sources is not None:
-            holdings = holdings.filter(source__in=sources)
+            holdings[key] = th
+            provisions_to_create.append((key, quantity))
 
-        if resources is not None:
-            holdings = holdings.filter(resource__in=resources)
+    except QuotaholderError:
+        operations.revert()
+        raise
 
-        holdings.update(limit=F('limit')+diff)
+    commission = Commission.objects.create(clientkey=clientkey, name=name)
+    for (holder, source, resource), quantity in provisions_to_create:
+        Provision.objects.create(serial=commission,
+                                 holder=holder,
+                                 source=source,
+                                 resource=resource,
+                                 quantity=quantity)
 
-    def issue_commission(self,
-                         context=None,
-                         clientkey=None,
-                         name=None,
-                         force=False,
-                         provisions=()):
+    return commission.serial
 
-        if name is None:
-            name = ""
 
-        operations = Operations()
-        provisions_to_create = []
+def _log_provision(commission, provision, holding, log_time, reason):
 
-        provisions = self._provisions_to_list(provisions)
-        keys = [key for (key, value) in provisions]
-        holdings = self._get_holdings_for_update(keys)
-        try:
-            checked = []
-            for key, quantity in provisions:
-                if not isinstance(quantity, (int, long)):
-                    raise InvalidDataError("Malformed provision")
+    kwargs = {
+        'serial':              commission.serial,
+        'name':                commission.name,
+        'holder':              holding.holder,
+        'source':              holding.source,
+        'resource':            holding.resource,
+        'limit':               holding.limit,
+        'imported_min':        holding.imported_min,
+        'imported_max':        holding.imported_max,
+        'delta_quantity':      provision.quantity,
+        'issue_time':          commission.issue_time,
+        'log_time':            log_time,
+        'reason':              reason,
+    }
 
-                if key in checked:
-                    m = "Duplicate provision for %s" % str(key)
-                    provision = self._mkProvision(key, quantity)
-                    raise DuplicateError(m,
-                                         provision=provision)
-                checked.append(key)
+    ProvisionLog.objects.create(**kwargs)
 
-                # Target
-                try:
-                    th = holdings[key]
-                except KeyError:
-                    m = ("There is no such holding %s" % str(key))
-                    provision = self._mkProvision(key, quantity)
-                    raise NoHoldingError(m,
-                                         provision=provision)
 
-                if quantity >= 0:
-                    operations.prepare(Import, th, quantity, force)
+def _get_commissions_for_update(clientkey, serials):
+    cs = Commission.objects.filter(
+        clientkey=clientkey, serial__in=serials).select_for_update()
 
-                else: # release
-                    abs_quantity = -quantity
-                    operations.prepare(Release, th, abs_quantity, force)
+    commissions = {}
+    for c in cs:
+        commissions[c.serial] = c
+    return commissions
 
-                holdings[key] = th
-                provisions_to_create.append((key, quantity))
 
-        except QuotaholderError:
-            operations.revert()
-            raise
+def _partition_by(f, l):
+    d = {}
+    for x in l:
+        group = f(x)
+        group_l = d.get(group, [])
+        group_l.append(x)
+        d[group] = group_l
+    return d
 
-        commission = Commission.objects.create(clientkey=clientkey, name=name)
-        for (holder, source, resource), quantity in provisions_to_create:
-            Provision.objects.create(serial=commission,
-                                     holder=holder,
-                                     source=source,
-                                     resource=resource,
-                                     quantity=quantity)
 
-        return commission.serial
-
-    def _log_provision(self,
-                       commission, provision, holding, log_time, reason):
-
-        kwargs = {
-            'serial':              commission.serial,
-            'name':                commission.name,
-            'holder':              holding.holder,
-            'source':              holding.source,
-            'resource':            holding.resource,
-            'limit':               holding.limit,
-            'imported_min':        holding.imported_min,
-            'imported_max':        holding.imported_max,
-            'delta_quantity':      provision.quantity,
-            'issue_time':          commission.issue_time,
-            'log_time':            log_time,
-            'reason':              reason,
-        }
-
-        ProvisionLog.objects.create(**kwargs)
-
-    def _get_commissions_for_update(self, clientkey, serials):
-        cs = Commission.objects.filter(
-            clientkey=clientkey, serial__in=serials).select_for_update()
-
-        commissions = {}
-        for c in cs:
-            commissions[c.serial] = c
-        return commissions
-
-    def _partition_by(self, f, l):
-        d = {}
-        for x in l:
-            group = f(x)
-            group_l = d.get(group, [])
-            group_l.append(x)
-            d[group] = group_l
-        return d
-
-    def resolve_pending_commissions(self,
-                                    context=None, clientkey=None,
-                                    accept_set=[], reject_set=[],
-                                    reason=''):
-        actions = dict.fromkeys(accept_set, True)
-        conflicting = set()
-        for serial in reject_set:
-            if actions.get(serial) is True:
-                actions.pop(serial)
-                conflicting.add(serial)
-            else:
-                actions[serial] = False
-
-        conflicting = list(conflicting)
-        serials = actions.keys()
-        commissions = self._get_commissions_for_update(clientkey, serials)
-        ps = Provision.objects.filter(serial__in=serials).select_for_update()
-        holding_keys = sorted(p.holding_key() for p in ps)
-        holdings = self._get_holdings_for_update(holding_keys)
-        provisions = self._partition_by(lambda p: p.serial_id, ps)
-
-        log_time = now()
-
-        accepted, rejected, notFound = [], [], []
-        for serial, accept in actions.iteritems():
-            commission = commissions.get(serial)
-            if commission is None:
-                notFound.append(serial)
-                continue
-
-            accepted.append(serial) if accept else rejected.append(serial)
-
-            ps = provisions.get(serial)
-            assert ps is not None
-            for pv in ps:
-                key = pv.holding_key()
-                h = holdings.get(key)
-                if h is None:
-                    raise CorruptedError("Corrupted provision")
-
-                quantity = pv.quantity
-                action = finalize if accept else undo
-                if quantity >= 0:
-                    action(Import, h, quantity)
-                else:  # release
-                    action(Release, h, -quantity)
-
-                prefix = 'ACCEPT:' if accept else 'REJECT:'
-                comm_reason = prefix + reason[-121:]
-                self._log_provision(commission, pv, h, log_time, comm_reason)
-                pv.delete()
-            commission.delete()
-        return accepted, rejected, notFound, conflicting
-
-    def resolve_pending_commission(self, clientkey, serial, accept=True):
-        if accept:
-            ok, notOk, notF, confl = self.resolve_pending_commissions(
-                clientkey=clientkey, accept_set=[serial])
+def resolve_pending_commissions(context=None, clientkey=None,
+                                accept_set=[], reject_set=[],
+                                reason=''):
+    actions = dict.fromkeys(accept_set, True)
+    conflicting = set()
+    for serial in reject_set:
+        if actions.get(serial) is True:
+            actions.pop(serial)
+            conflicting.add(serial)
         else:
-            notOk, ok, notF, confl = self.resolve_pending_commissions(
-                clientkey=clientkey, reject_set=[serial])
+            actions[serial] = False
 
-        assert notOk == confl == []
-        assert ok + notF == [serial]
-        return bool(ok)
+    conflicting = list(conflicting)
+    serials = actions.keys()
+    commissions = _get_commissions_for_update(clientkey, serials)
+    ps = Provision.objects.filter(serial__in=serials).select_for_update()
+    holding_keys = sorted(p.holding_key() for p in ps)
+    holdings = _get_holdings_for_update(holding_keys)
+    provisions = _partition_by(lambda p: p.serial_id, ps)
 
-    def get_pending_commissions(self, context=None, clientkey=None):
-        pending = Commission.objects.filter(clientkey=clientkey)
-        pending_list = pending.values_list('serial', flat=True)
-        return list(pending_list)
+    log_time = now()
 
-    def get_commission(self, clientkey=None, serial=None):
-        try:
-            commission = Commission.objects.get(clientkey=clientkey,
-                                                serial=serial)
-        except Commission.DoesNotExist:
-            raise NoCommissionError(serial)
+    accepted, rejected, notFound = [], [], []
+    for serial, accept in actions.iteritems():
+        commission = commissions.get(serial)
+        if commission is None:
+            notFound.append(serial)
+            continue
 
-        objs = Provision.objects.select_related('holding')
-        provisions = objs.filter(serial=commission)
+        accepted.append(serial) if accept else rejected.append(serial)
 
-        ps = [p.todict() for p in provisions]
+        ps = provisions.get(serial)
+        assert ps is not None
+        for pv in ps:
+            key = pv.holding_key()
+            h = holdings.get(key)
+            if h is None:
+                raise CorruptedError("Corrupted provision")
 
-        response = {'serial':     serial,
-                    'provisions': ps,
-                    'issue_time': commission.issue_time,
-                    }
-        return response
+            quantity = pv.quantity
+            action = finalize if accept else undo
+            if quantity >= 0:
+                action(Import, h, quantity)
+            else:  # release
+                action(Release, h, -quantity)
+
+            prefix = 'ACCEPT:' if accept else 'REJECT:'
+            comm_reason = prefix + reason[-121:]
+            _log_provision(commission, pv, h, log_time, comm_reason)
+            pv.delete()
+        commission.delete()
+    return accepted, rejected, notFound, conflicting
 
 
-API_Callpoint = QuotaholderDjangoDBCallpoint
+def resolve_pending_commission(clientkey, serial, accept=True):
+    if accept:
+        ok, notOk, notF, confl = resolve_pending_commissions(
+            clientkey=clientkey, accept_set=[serial])
+    else:
+        notOk, ok, notF, confl = resolve_pending_commissions(
+            clientkey=clientkey, reject_set=[serial])
+
+    assert notOk == confl == []
+    assert ok + notF == [serial]
+    return bool(ok)
+
+
+def get_pending_commissions(context=None, clientkey=None):
+    pending = Commission.objects.filter(clientkey=clientkey)
+    pending_list = pending.values_list('serial', flat=True)
+    return list(pending_list)
+
+
+def get_commission(clientkey=None, serial=None):
+    try:
+        commission = Commission.objects.get(clientkey=clientkey,
+                                            serial=serial)
+    except Commission.DoesNotExist:
+        raise NoCommissionError(serial)
+
+    objs = Provision.objects.select_related('holding')
+    provisions = objs.filter(serial=commission)
+
+    ps = [p.todict() for p in provisions]
+
+    response = {'serial':     serial,
+                'provisions': ps,
+                'issue_time': commission.issue_time,
+                }
+    return response

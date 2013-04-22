@@ -49,8 +49,7 @@ from astakos.im.resources import get_resources
 from astakos.im.quotas import get_user_quotas, get_service_quotas
 
 import astakos.quotaholder.exception as qh_exception
-from astakos.quotaholder.callpoint import QuotaholderDjangoDBCallpoint
-qh = QuotaholderDjangoDBCallpoint()
+import astakos.quotaholder.callpoint as qh
 
 
 @api.api_method(http_method='GET', token_required=True, user_required=False)

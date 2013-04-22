@@ -170,8 +170,9 @@ def update_db(vm, msg, event_time):
         log.error("Message is of unknown type %s.", msg['type'])
         return
 
+    nics = msg.get("nics", None)
     backend.process_op_status(vm, event_time, msg['jobId'], msg['operation'],
-                              msg['status'], msg['logmsg'])
+                              msg['status'], msg['logmsg'], nics)
 
     log.debug("Done processing ganeti-op-status msg for vm %s.",
               msg['instance'])

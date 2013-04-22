@@ -39,11 +39,11 @@ from datetime import datetime
 
 from synnefo.db.models import (Backend, VirtualMachine, Network,
                                BackendNetwork, BACKEND_STATUSES,
-                               pooled_rapi_client, BridgePoolTable,
-                               MacPrefixPoolTable, VirtualMachineDiagnostic)
+                               pooled_rapi_client, VirtualMachineDiagnostic)
 from synnefo.logic import utils
 from synnefo import quotas
 from synnefo.api.util import release_resource
+from synnefo.util.mac2eui64 import mac2eui64
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -58,7 +58,7 @@ _reverse_tags = dict((v.split(':')[3], k) for k, v in _firewall_tags.items())
 
 
 @transaction.commit_on_success
-def process_op_status(vm, etime, jobid, opcode, status, logmsg):
+def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None):
     """Process a job progress notification from the backend
 
     Process an incoming message from the backend (currently Ganeti).
@@ -80,6 +80,10 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg):
     state_for_success = VirtualMachine.OPER_STATE_FROM_OPCODE.get(opcode, None)
     if status == 'success' and state_for_success is not None:
         vm.operstate = state_for_success
+
+    # Update the NICs of the VM
+    if status == "success" and nics is not None:
+        _process_net_status(vm, etime, nics)
 
     # Special case: if OP_INSTANCE_CREATE fails --> ERROR
     if opcode == 'OP_INSTANCE_CREATE' and status in ('canceled', 'error'):
@@ -113,6 +117,11 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg):
 
 @transaction.commit_on_success
 def process_net_status(vm, etime, nics):
+    """Wrap _process_net_status inside transaction."""
+    _process_net_status(vm, etime, nics)
+
+
+def _process_net_status(vm, etime, nics):
     """Process a net status notification from the backend
 
     Process an incoming message from the Ganeti backend,
@@ -156,7 +165,10 @@ def process_ganeti_nics(ganeti_nics):
         # Get the new nic info
         mac = new_nic.get('mac', '')
         ipv4 = new_nic.get('ip', '')
-        ipv6 = new_nic.get('ipv6', '')
+        if net.subnet6:
+            ipv6 = mac2eui64(mac, net.subnet6)
+        else:
+            ipv6 = ''
 
         firewall = new_nic.get('firewall', '')
         firewall_profile = _reverse_tags.get(firewall, '')

@@ -69,7 +69,7 @@ from astakos.im.settings import (
     DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL,
     AUTH_TOKEN_DURATION, EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL,
     SITENAME, MODERATION_ENABLED,
-    PROJECT_MEMBER_JOIN_POLICIES, PROJECT_MEMBER_LEAVE_POLICIES, PROJECT_ADMINS)
+    PROJECT_MEMBER_JOIN_POLICIES, PROJECT_MEMBER_LEAVE_POLICIES)
 from astakos.im import settings as astakos_settings
 from astakos.im import auth_providers as auth
 
@@ -434,7 +434,7 @@ class AstakosUser(User):
         self.user_permissions.remove(p)
 
     def is_project_admin(self, application_id=None):
-        return self.uuid in PROJECT_ADMINS
+        return self.uuid in astakos_settings.PROJECT_ADMINS
 
     @property
     def invitation(self):

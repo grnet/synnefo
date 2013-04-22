@@ -51,9 +51,12 @@ from astakos.im import settings as astakos_settings
 from astakos.im import forms
 
 from urllib import quote
+from datetime import timedelta
 
 from astakos.im import messages
 from astakos.im import auth_providers
+from astakos.im import quotas
+
 from django.conf import settings
 
 
@@ -64,16 +67,16 @@ astakos_settings.RECAPTCHA_ENABLED = False
 settings.LOGGING_SETUP['disable_existing_loggers'] = False
 
 
-prefixes = {'im': 'ASTAKOS_', 'providers': 'ASTAKOS_AUTH_PROVIDER_',
-            'shibboleth': 'ASTAKOS_AUTH_PROVIDER_SHIBBOLETH_',
-            'local': 'ASTAKOS_AUTH_PROVIDER_LOCAL_'}
-im_settings = functools.partial(with_settings, settings, prefix=prefixes['im'])
-provider_settings = functools.partial(with_settings, settings,
+prefixes = {'im': 'ASTAKOS_', 'providers': 'AUTH_PROVIDER_',
+            'shibboleth': 'AUTH_PROVIDER_SHIBBOLETH_',
+            'local': 'AUTH_PROVIDER_LOCAL_'}
+im_settings = functools.partial(with_settings, astakos_settings)
+provider_settings = functools.partial(with_settings, astakos_settings,
                                       prefix=prefixes['providers'])
 shibboleth_settings = functools.partial(with_settings,
-                                        settings,
+                                        astakos_settings,
                                         prefix=prefixes['shibboleth'])
-localauth_settings = functools.partial(with_settings, settings,
+localauth_settings = functools.partial(with_settings, astakos_settings,
                                        prefix=prefixes['local'])
 
 class AstakosTestClient(Client):
@@ -125,6 +128,12 @@ class ShibbolethClient(AstakosTestClient):
                 del request[param]
 
         return super(ShibbolethClient, self).request(**request)
+
+
+def get_user_client(username, password="password"):
+    client = Client()
+    client.login(username=username, password=password)
+    return client
 
 
 def get_local_user(username, **kwargs):
@@ -1184,3 +1193,150 @@ class TestAuthProvidersAPI(TestCase):
                          'im/auth/generic_login.html')
 
 
+class TestProjects(TestCase):
+    """
+    Test projects.
+    """
+    def setUp(self):
+        self.service = Service.objects.create(name="service1",
+                                              api_url="http://service.api")
+        self.resource = Resource.objects.create(name="service1.resource",
+                                                uplimit=100)
+        self.admin = get_local_user("projects-admin@synnefo.org")
+        self.admin.uuid = 'uuid1'
+        self.admin.save()
+
+        self.user = get_local_user("user@synnefo.org")
+        self.member = get_local_user("member@synnefo.org")
+        self.member2 = get_local_user("member2@synnefo.org")
+
+        self.admin_client = get_user_client("projects-admin@synnefo.org")
+        self.user_client = get_user_client("user@synnefo.org")
+        self.member_client = get_user_client("member@synnefo.org")
+        self.member2_client = get_user_client("member2@synnefo.org")
+
+    @im_settings(PENDING_APPLICATION_LIMIT=0, PROJECT_ADMINS=['uuid1'])
+    def test_application_limit(self):
+        # user cannot create a project
+        r = self.user_client.get(reverse('project_add'), follow=True)
+        self.assertRedirects(r, reverse('project_list'))
+        self.assertContains(r, "You are not allowed to create a new project")
+
+        # but admin can
+        r = self.admin_client.get(reverse('project_add'), follow=True)
+        self.assertRedirects(r, reverse('project_add'))
+
+    @im_settings(PENDING_APPLICATION_LIMIT=2, PROJECT_ADMINS=['uuid1'])
+    def test_applications(self):
+        r = self.user_client.get(reverse('project_add'), follow=True)
+        self.assertRedirects(r, reverse('project_add'))
+
+        # user fills the project application form
+        post_url = reverse('project_add') + '?verify=1'
+        dfrom = datetime.now()
+        dto = datetime.now() + timedelta(days=30)
+        application_data = {
+            'name': 'project.synnefo.org',
+            'homepage': 'https://www.synnefo.org',
+            'start_date': dfrom.strftime("%Y-%m-%d"),
+            'end_date': dto.strftime("%Y-%m-%d"),
+            'member_join_policy': 2,
+            'member_leave_policy': 1,
+            'service1.resource_uplimit': 100,
+            'is_selected_service1.resource': 1,
+            'user': self.user.pk
+        }
+        r = self.user_client.post(post_url, data=application_data, follow=True)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['form'].is_valid(), True)
+
+        # confirm request
+        post_url = reverse('project_add') + '?verify=0&edit=0'
+        r = self.user_client.post(post_url, data=application_data, follow=True)
+        self.assertContains(r, "The project application has been received")
+        self.assertRedirects(r, reverse('project_list'))
+        self.assertEqual(ProjectApplication.objects.count(), 1)
+        app1_id = ProjectApplication.objects.filter().order_by('pk')[0].pk
+
+        # create another one
+        application_data['name'] = 'project2.synnefo.org'
+        r = self.user_client.post(post_url, data=application_data, follow=True)
+        app2_id = ProjectApplication.objects.filter().order_by('pk')[1].pk
+
+        # no more applications (LIMIT is 2)
+        r = self.user_client.get(reverse('project_add'), follow=True)
+        self.assertRedirects(r, reverse('project_list'))
+        self.assertContains(r, "You are not allowed to create a new project")
+
+        # login
+        self.admin_client.get(reverse("edit_profile"))
+        # admin approves
+        r = self.admin_client.post(reverse('project_app_approve',
+                                           kwargs={'application_id': app1_id}),
+                                   follow=True)
+        self.assertEqual(r.status_code, 200)
+
+        # project created
+        self.assertEqual(Project.objects.count(), 1)
+
+        # login
+        self.member_client.get(reverse("edit_profile"))
+        # cannot join app2 (not approved yet)
+        join_url = reverse("project_join", kwargs={'chain_id': app2_id})
+        r = self.member_client.post(join_url, follow=True)
+        self.assertEqual(r.status_code, 403)
+
+        # can join app1
+        self.member_client.get(reverse("edit_profile"))
+        join_url = reverse("project_join", kwargs={'chain_id': app1_id})
+        r = self.member_client.post(join_url, follow=True)
+        self.assertEqual(r.status_code, 200)
+
+        self.assertEqual(ProjectMembership.objects.count(), 1)
+
+        reject_member_url = reverse('project_reject_member',
+                                    kwargs={'chain_id': app1_id, 'user_id':
+                                            self.member.pk})
+        accept_member_url = reverse('project_accept_member',
+                                    kwargs={'chain_id': app1_id, 'user_id':
+                                            self.member.pk})
+
+        # only project owner is allowed to reject
+        r = self.member_client.post(reject_member_url, follow=True)
+        self.assertContains(r, "You do not have the permissions")
+        self.assertEqual(r.status_code, 200)
+
+        # user (owns project) rejects membership
+        r = self.user_client.post(reject_member_url, follow=True)
+        self.assertEqual(ProjectMembership.objects.count(), 0)
+
+        # user rejoins
+        self.member_client.get(reverse("edit_profile"))
+        join_url = reverse("project_join", kwargs={'chain_id': app1_id})
+        r = self.member_client.post(join_url, follow=True)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(ProjectMembership.objects.count(), 1)
+
+        # user (owns project) accepts membership
+        r = self.user_client.post(accept_member_url, follow=True)
+        self.assertEqual(ProjectMembership.objects.count(), 1)
+        membership = ProjectMembership.objects.get()
+        self.assertEqual(membership.state, ProjectMembership.ACCEPTED)
+
+        user_quotas = quotas.get_users_quotas([self.member])
+        resource = 'service1.resource'
+        newlimit = user_quotas[self.member.uuid]['system'][resource]['limit']
+        # 100 from initial uplimit + 100 from project
+        self.assertEqual(newlimit, 200)
+
+        remove_member_url = reverse('project_remove_member',
+                                    kwargs={'chain_id': app1_id, 'user_id':
+                                            self.member.pk})
+        r = self.user_client.post(remove_member_url, follow=True)
+        self.assertEqual(r.status_code, 200)
+
+        user_quotas = quotas.get_users_quotas([self.member])
+        resource = 'service1.resource'
+        newlimit = user_quotas[self.member.uuid]['system'][resource]['limit']
+        # 200 - 100 from project
+        self.assertEqual(newlimit, 100)

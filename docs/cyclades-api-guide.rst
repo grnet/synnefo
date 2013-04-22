@@ -731,7 +731,7 @@ Each NIC connects the current server to a network. NICs are different to OS Comp
     }
   }
 
-Get Server Nic by Network
+Get Server NIC by Network
 .........................
 
 Return the NIC that connects a server to a network
@@ -799,74 +799,117 @@ This NIC (`network interface connections <#nic-ref>`_) connects the specified se
 Server Actions
 --------------
 
-* **Change Password** is not supported.
-* **Rebuild Server** is not supported.
-* **Resize Server** is not supported.
-* **Confirm Resized Server** is not supported.
-* **Revert Resized Server** is not supported.
+The request described in this section exists in both Synnefo API and OS Compute API as a multi-operation request. The individual operations implemented through this request are in many cases completely different between the two APIs. Although this document focuses on Synnefo operations, differences and similarities between the APIs are also briefed in this section.
 
-We have have extended the API with the following commands:
+|
+
+============================= ======== ==========
+Operations                    Cyclades OS Compute
+============================= ======== ==========
+Start Server                  ✔        **✘**
+Shutdown Server               ✔        **✘**
+Reboot Server                 ✔        ✔
+Get Server Console            ✔        **✘**
+Set Firewall Profile          ✔        **✘**
+Change Administrator Password **✘**    ✔
+Rebuild Server                **✘**    ✔
+Resize Server                 **✘**    ✔
+Confirm Resized Server        **✘**    ✔
+Revert Resized Server         **✘**    ✔
+Create Image                  **✘**    ✔
+============================= ======== ==========
+
+|
+
+====================================== ====== ======== ==========
+URI                                    Method Cyclades OS Compute
+====================================== ====== ======== ==========
+``/servers/<server id>/action``        POST   ✔        ✔
+====================================== ====== ======== ==========
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded (for console operation)
+202 (OK)                    Request succeeded
+400 (Bad Request)           Invalid request or unknown action
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             User is not allowed to perform this operation
+500 (Internal Server Error) The request cannot be completed because of an internal error
+503 (Service Unavailable)   The server is not currently available
+=========================== =====================
+
+Start server
+................
+
+This operation transitions a server from a STOPPED to an ACTIVE state.
+
+Request body must contain a ``start`` tag on an empty directory::
+
+  { 'start': {}}
 
 
-Start Server
-............
+Reboot Server
+.............
 
-**Normal Response Code**: 202
+This operation transitions a server from ``ACTIVE`` to ``REBOOT`` and then ``ACTIVE`` again. Synnefo and OS Compute APIs offer two reboot modes: soft and hard. The only difference is that OS Compute distinguishes between the two types of intermediate states (``REBOOT`` and ``HARD_REBOOT``) while rebooting, but the expected behavior is the same in both APIs.
 
-**Error Response Codes**: serviceUnavailable (503), itemNotFound (404)
+Request body must contain a ``reboot`` tag over a ``type`` tag on the reboot type::
 
-The start function transitions a server from an ACTIVE to a STOPPED state.
+  { 'reboot' : { 'type': <reboot type>}}
 
-**Example Action Start: JSON**:
+* **reboot type** can be either ``SOFT`` or ``HARD``.
+
+** Reboot Action Request Body Example: JSON **
 
 .. code-block:: javascript
-
+  
   {
-      "start": {}
-  }
-
-This operation does not return a response body.
-
-
-Shutdown Server
-...............
-
-**Normal Response Code**: 202
-
-**Error Response Codes**: serviceUnavailable (503), itemNotFound (404)
-
-The start function transitions a server from a STOPPED to an ACTIVE state.
-
-**Example Action Shutdown: JSON**:
-
-.. code-block:: javascript
-
-  {
-      "shutdown": {}
-  }
-
-This operation does not return a response body.
-
-
-Get Server Console
-
-**Normal Response Code**: 200
-
-**Error Response Codes**: computeFault (400, 500), serviceUnavailable (503), unauthorized (401), badRequest (400), badMediaType(415), itemNotFound (404), buildInProgress (409), overLimit (413)
-
-The console function arranges for an OOB console of the specified type. Only consoles of type "vnc" are supported for now.
-    
-It uses a running instance of vncauthproxy to setup proper VNC forwarding with a random password, then returns the necessary VNC connection info to the caller.
-
-**Example Action Console: JSON**:
-
-.. code-block:: javascript
-
-  {
-      "console": {
-          "type": "vnc"
+    'reboot': {
+      'type': 'hard'
       }
   }
+
+Shutdown server
+...............
+
+This operation transitions a server from an ACTIVE to a STOPPED state.
+
+Request body must contain a ``shutdown`` tag on an empty directory::
+
+  { 'shutdown': {}}
+
+Get Server Console
+..................
+
+The console operation arranges for an OOB console of the specified type. Only consoles of type "vnc" are supported for now. Cyclades server uses a running instance of vncauthproxy to setup proper VNC forwarding with a random password, then returns the necessary VNC connection info to the caller.
+
+Request body must a contain a ``console`` tag over a ``type`` tag on a console type::
+
+  console: {type: 'vnc' }
+
+If successful, it returns a **200** code and also a json formated body with the following fields:
+
+================== ======================
+Response Parameter Description           
+================== ======================
+host               The vncprocy host
+port               vncprocy port
+password           Temporary password
+type               Connection type (only VNC)
+================== ======================
+
+|
 
 **Example Action Console Response: JSON**:
 
@@ -875,9 +918,9 @@ It uses a running instance of vncauthproxy to setup proper VNC forwarding with a
   {
       "console": {
           "type": "vnc",
-          "host": "vm42.ocean.grnet.gr",
+          "host": "vm42.example.org",
           "port": 1234,
-          "password": "IN9RNmaV"
+          "password": "513NR4PN0T"
       }
   }
 
@@ -888,25 +931,21 @@ It uses a running instance of vncauthproxy to setup proper VNC forwarding with a
   <?xml version="1.0" encoding="UTF-8"?>
   <console xmlns="http://docs.openstack.org/compute/api/v1.1" xmlns:atom="http://www.w3.org/2005/Atom"
       type="vnc"
-      host="vm42.ocean.grnet.gr"
+      host="vm42.example.org"
       port="1234"
-      password="IN9RNmaV">
+      password="513NR4PN0T">
   </console>
-
 
 Set Firewall Profile
 ....................
 
-**Normal Response Code**: 202
+The firewallProfile function sets a firewall profile for the public interface of a server.
 
-**Error Response Codes**: computeFault (400, 500), serviceUnavailable (503),
-unauthorized (401), badRequest (400), badMediaType(415), itemNotFound (404),
-buildInProgress (409), overLimit (413)
+Request body must contain a ``firewallProfile`` tag over a ``profile`` tag on the firewall type::
 
-The firewallProfile function sets a firewall profile for the public interface
-of a server.
+  firewallProfile: { profile: <firewall profile> }
 
-The allowed profiles are: **ENABLED**, **DISABLED** and **PROTECTED**.
+* **firewall profile** can be ``ENABLED``, ``DISABLED`` or ``PROTECTED``
 
 **Example Action firewallProfile: JSON**:
 
@@ -918,7 +957,16 @@ The allowed profiles are: **ENABLED**, **DISABLED** and **PROTECTED**.
       }
   }
 
-This operation does not return a response body.
+
+OS Compute API Specific
+.......................
+
+* `Change Administrator Password <http://docs.openstack.org/api/openstack-compute/2/content/Change_Password-d1e3234.html>`_
+* `Rebuild Server <http://docs.openstack.org/api/openstack-compute/2/content/Rebuild_Server-d1e3538.html>`_
+* `Resize Server <http://docs.openstack.org/api/openstack-compute/2/content/Resize_Server-d1e3707.html>`_
+* `Confirm Resized Server <http://docs.openstack.org/api/openstack-compute/2/content/Confirm_Resized_Server-d1e3868.html>`_
+* `Revert Resized Server <http://docs.openstack.org/api/openstack-compute/2/content/Revert_Resized_Server-d1e4024.html>`_
+* `Create Image <http://docs.openstack.org/api/openstack-compute/2/content/Create_Image-d1e4655.html>`_
 
 
 Flavors

@@ -37,17 +37,16 @@ from synnefo.db.models import VirtualMachine, Network
 from synnefo.quotas import Quotaholder, ASTAKOS_TOKEN
 
 
-def get_db_holdings(users=None):
+def get_db_holdings(user=None):
     """Get holdings from Cyclades DB."""
     holdings = {}
 
     vms = VirtualMachine.objects.filter(deleted=False)
     networks = Network.objects.filter(deleted=False)
 
-    if users:
-        assert(type(users) is list)
-        vms = vms.filter(userid__in=users)
-        networks = networks.filter(userid__in=users)
+    if user is not None:
+        vms = vms.filter(userid=user)
+        networks = networks.filter(userid=user)
 
     # Get resources related with VMs
     vm_resources = vms.values("userid").annotate(num=Count("id"),
@@ -56,10 +55,10 @@ def get_db_holdings(users=None):
                                                  disk=Sum("flavor__disk"))
     for vm_res in vm_resources:
         user = vm_res['userid']
-        res = {"vm": vm_res["num"],
-               "cpu": vm_res["cpu"],
-               "disk": 1073741824 * vm_res["disk"],
-               "ram": 1048576 * vm_res["ram"]}
+        res = {"cyclades.vm": vm_res["num"],
+               "cyclades.cpu": vm_res["cpu"],
+               "cyclades.disk": 1073741824 * vm_res["disk"],
+               "cyclades.ram": 1048576 * vm_res["ram"]}
         holdings[user] = res
 
     # Get resources related with networks
@@ -69,7 +68,7 @@ def get_db_holdings(users=None):
         user = net_res['userid']
         if user not in holdings:
             holdings[user] = {}
-        holdings[user]["network.private"] = net_res["num"]
+        holdings[user]["cyclades.network.private"] = net_res["num"]
 
     return holdings
 
@@ -80,16 +79,14 @@ def get_quotaholder_holdings(user=None):
     Returns quotas for all users, unless a single user is specified.
     """
     qh = Quotaholder.get()
-    return qh.get_service_quotas(ASTAKOS_TOKEN, user)
+    return qh.service_get_quotas(ASTAKOS_TOKEN, user)
 
 
 def transform_quotas(quotas):
     d = {}
     for resource, counters in quotas.iteritems():
-        res = resource.replace("cyclades.", "")
-        available = counters['available']
+        used = counters['usage']
         limit = counters['limit']
-        used = counters['used']
-        used_max = limit - available
-        d[res] = (used, used_max)
+        pending = counters['pending']
+        d[resource] = (used, limit, pending)
     return d

@@ -28,7 +28,7 @@
 # policies, either expressed or implied, of GRNET S.A.
 
 from functools import wraps
-from contextlib import contextmanager
+from django.utils import simplejson as json
 
 from snf_django.lib.api import faults
 from synnefo.db.models import QuotaHolderSerial
@@ -43,6 +43,13 @@ import logging
 log = logging.getLogger(__name__)
 
 DEFAULT_SOURCE = 'system'
+RESOURCES = [
+    "cyclades.vm",
+    "cyclades.cpu",
+    "cyclades.disk",
+    "cyclades.ram",
+    "cyclades.network.private"
+]
 
 
 class Quotaholder(object):
@@ -163,32 +170,34 @@ def issue_commission(user, source, provisions,
 
 
 def issue_vm_commission(user, flavor, delete=False):
-    resources = prepare(get_server_resources(flavor), delete)
+    resources = get_server_resources(flavor)
+    if delete:
+        resources = reverse_quantities(resources)
     return issue_commission(user, DEFAULT_SOURCE, resources)
 
 
 def get_server_resources(flavor):
-    return {'vm': 1,
-            'cpu': flavor.cpu,
-            'disk': 1073741824 * flavor.disk,  # flavor.disk is in GB
+    return {'cyclades.vm': 1,
+            'cyclades.cpu': flavor.cpu,
+            'cyclades.disk': 1073741824 * flavor.disk,  # flavor.disk is in GB
             # 'public_ip': 1,
             #'disk_template': flavor.disk_template,
-            'ram': 1048576 * flavor.ram}  # flavor.ram is in MB
+            'cyclades.ram': 1048576 * flavor.ram}  # flavor.ram is in MB
 
 
 def issue_network_commission(user, delete=False):
-    resources = prepare(get_network_resources(), delete)
+    resources = get_network_resources()
+    if delete:
+        resources = reverse_quantities(resources)
     return issue_commission(user, DEFAULT_SOURCE, resources)
 
 
 def get_network_resources():
-    return {"network.private": 1}
+    return {"cyclades.network.private": 1}
 
 
-def prepare(resources_dict, delete):
-    if delete:
-        return dict((r, -s) for r, s in resources_dict.items())
-    return resources_dict
+def reverse_quantities(resources):
+    return dict((r, -s) for r, s in resources.items())
 
 
 ##
@@ -257,9 +266,11 @@ def render_overlimit_exception(e):
                      "cpu": "CPU",
                      "ram": "RAM",
                      "network.private": "Private Network"}
-    details = e.details
+    details = json.loads(e.details)
     data = details['overLimit']['data']
-    available = data['available']
+    usage = data["usage"]
+    limit = data["limit"]
+    available = limit - usage
     provision = data['provision']
     requested = provision['quantity']
     resource = provision['resource']

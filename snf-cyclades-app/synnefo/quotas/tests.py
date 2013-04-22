@@ -46,8 +46,7 @@ from synnefo.quotas import util
 
 class GetDBHoldingsTestCase(TestCase):
     def test_no_holdings(self):
-        users = ["dummy_user1", "dummy_user2"]
-        holdings = util.get_db_holdings(users=users)
+        holdings = util.get_db_holdings(user=None)
         self.assertEqual(holdings, {})
 
     def test_vm_holdings(self):
@@ -55,11 +54,11 @@ class GetDBHoldingsTestCase(TestCase):
                                   disk_template='drbd')
         mfactory.VirtualMachineFactory()
         mfactory.VirtualMachineFactory(flavor=flavor, userid="user1")
-        user_holdings = {"user1": {"vm": 1,
-                                   "cpu": 24,
-                                   "disk": 21474836480,
-                                   "ram": 8589934592}}
-        holdings = util.get_db_holdings(users=["user1"])
+        user_holdings = {"user1": {"cyclades.vm": 1,
+                                   "cyclades.cpu": 24,
+                                   "cyclades.disk": 21474836480,
+                                   "cyclades.ram": 8589934592}}
+        holdings = util.get_db_holdings(user="user1")
         self.assertEqual(holdings, user_holdings)
         holdings = util.get_db_holdings()
         self.assertEqual(holdings["user1"], user_holdings["user1"])
@@ -67,8 +66,8 @@ class GetDBHoldingsTestCase(TestCase):
     def test_network_holdings(self):
         mfactory.NetworkFactory(userid="user1")
         mfactory.NetworkFactory(userid="user2")
-        user_holdings = {"user2": {"network.private": 1}}
-        holdings = util.get_db_holdings(users=["user2"])
+        user_holdings = {"user2": {"cyclades.network.private": 1}}
+        holdings = util.get_db_holdings(user="user2")
         self.assertEqual(holdings, user_holdings)
         holdings = util.get_db_holdings()
         self.assertEqual(holdings["user2"], user_holdings["user2"])

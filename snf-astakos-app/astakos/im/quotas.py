@@ -163,7 +163,7 @@ def get_grant_source(grant):
     return SYSTEM
 
 
-def users_quotas(users, initial=None):
+def astakos_users_quotas(users, initial=None):
     if initial is None:
         quotas = initial_quotas(users)
     else:
@@ -209,8 +209,8 @@ def users_quotas(users, initial=None):
     return quotas
 
 
-def user_quotas(user):
-    quotas = users_quotas([user])
+def astakos_user_quotas(user):
+    quotas = astakos_users_quotas([user])
     try:
         return quotas[user.uuid]
     except KeyError:
@@ -220,7 +220,7 @@ def user_quotas(user):
 def list_user_quotas(users):
     qh_quotas, qh_limits = get_users_quotas_and_limits(users)
     astakos_initial = initial_quotas(users)
-    astakos_quotas = users_quotas(users)
+    astakos_quotas = astakos_users_quotas(users)
 
     diff_quotas = {}
     for holder, local in astakos_quotas.iteritems():
@@ -257,7 +257,7 @@ def qh_sync_new_resource(resource, limit):
 
 def qh_sync_users(user_ids):
     users = AstakosUser.forupdate.filter(id__in=user_ids).select_for_update()
-    astakos_quotas = users_quotas(list(users))
+    astakos_quotas = astakos_users_quotas(list(users))
     set_user_quota(astakos_quotas)
 
 

@@ -297,16 +297,6 @@ def create_server(serials, request):
     else:
         transaction.commit()
 
-    # Allocate IP from public network
-    try:
-        (network, address) = util.get_public_ip(backend)
-        nic = {'ip': address, 'network': network.backend_id}
-    except:
-        transaction.rollback()
-        raise
-    else:
-        transaction.commit()
-
     # Fix flavor for archipelago
     password = util.random_password()
     disk_template, provider = util.get_flavor_provider(flavor)
@@ -328,6 +318,10 @@ def create_server(serials, request):
         # transaction the VM will have been created in the DB.
         serial.accepted = True
         serial.save()
+
+        # Allocate IP from public network
+        (network, address) = util.get_public_ip(backend)
+        nic = {'ip': address, 'network': network.backend_id}
 
         # We must save the VM instance now, so that it gets a valid
         # vm.backend_vm_id.

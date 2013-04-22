@@ -82,3 +82,19 @@ def update_resource(name, uplimit):
     diff = uplimit - old_uplimit
     if diff != 0:
         qh_add_resource_limit(r, diff)
+
+
+def get_resources(resources=None, services=None):
+    if resources is None:
+        rs = Resource.objects.all()
+    else:
+        rs = Resource.objects.filter(name__in=resources)
+
+    if services is not None:
+        rs = rs.filter(service__in=services)
+
+    resource_dict = {}
+    for r in rs:
+        resource_dict[r.full_name()] = r.get_info()
+
+    return resource_dict

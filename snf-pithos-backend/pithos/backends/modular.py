@@ -1217,7 +1217,7 @@ class ModularBackend(BaseBackend):
 
     def _lookup_container(self, account, container):
         path = '/'.join((account, container))
-        node = self.node.node_lookup(path)
+        node = self.node.node_lookup(path, for_update=True)
         if node is None:
             raise ItemNotExists('Container does not exist')
         return path, node

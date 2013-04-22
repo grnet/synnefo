@@ -234,14 +234,14 @@ class Node(DBWorker):
         r.close()
         return inserted_primary_key
 
-    def node_lookup(self, path):
+    def node_lookup(self, path, for_update=False):
         """Lookup the current node of the given path.
            Return None if the path is not found.
         """
 
         # Use LIKE for comparison to avoid MySQL problems with trailing spaces.
         s = select([self.nodes.c.node], self.nodes.c.path.like(
-            self.escape_like(path), escape=ESCAPE_CHAR))
+            self.escape_like(path), escape=ESCAPE_CHAR), for_update=for_update)
         r = self.conn.execute(s)
         row = r.fetchone()
         r.close()

@@ -43,7 +43,7 @@ from django.core.validators import validate_email
 
 from snf_django.lib.db.transaction import commit_on_success_strict
 from astakos.im.models import AstakosUser, AstakosUserQuota, Resource
-from astakos.im.functions import qh_sync
+from astakos.im.quotas import qh_sync_user
 
 AddResourceArgs = namedtuple('AddQuotaArgs', ('resource',
                                               'capacity',
@@ -168,7 +168,7 @@ for a single user from the command line
                 user.add_resource_policy(*args)
             except Exception as e:
                 raise CommandError("Failed to add policy: %s" % e)
-        qh_sync([user.id])
+        qh_sync_user(user.id)
 
     def import_from_file(self, location):
         try:

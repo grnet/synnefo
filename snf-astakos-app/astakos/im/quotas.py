@@ -253,3 +253,13 @@ def qh_sync_new_resource(resource, limit):
         data.append((key, limit))
 
     qh.set_quota(data)
+
+
+def qh_sync_users(user_ids):
+    users = AstakosUser.forupdate.filter(id__in=user_ids).select_for_update()
+    astakos_quotas = users_quotas(list(users))
+    set_user_quota(astakos_quotas)
+
+
+def qh_sync_user(user_id):
+    qh_sync_users([user_id])

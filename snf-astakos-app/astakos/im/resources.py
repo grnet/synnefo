@@ -32,7 +32,6 @@
 # or implied, of GRNET S.A.
 
 from astakos.im.models import Service, Resource
-from astakos.im.functions import qh_sync_all_users
 from astakos.im.quotas import qh_add_resource_limit, qh_sync_new_resource
 import logging
 

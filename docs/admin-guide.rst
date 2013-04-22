@@ -832,7 +832,7 @@ The "kamaki" API client
 
 To upload, register or modify an image you will need the **kamaki** tool.
 Before proceeding make sure that it is configured properly. Verify that
-*image_url*, *storage_url*, and *token* are set as needed:
+*image.url*, *file.url*, *user.url* and *token* are set as needed:
 
 .. code-block:: console
 
@@ -842,38 +842,49 @@ To chage a setting use ``kamaki config set``:
 
 .. code-block:: console
 
-   $ kamaki config set image_url https://cyclades.example.com/plankton
-   $ kamaki config set storage_url https://pithos.example.com/v1
+   $ kamaki config set image.url https://cyclades.example.com/plankton
+   $ kamaki config set file.url https://pithos.example.com/v1
+   $ kamaki config set user.url https://accounts.example.com
    $ kamaki config set token ...
+
+To test that everything works, try authenticating the current account with kamaki:
+
+.. code-block:: console
+
+  $ kamaki user authenticate
+
+This will output some user information. For example, *uuid* (unique user id) is quite useful.
 
 Upload Image
 ------------
 
-As a shortcut, you can configure a default account and container that will be
-used by the ``kamaki store`` commands:
+By convention, images are stored in a container called ``images``. Check if the container exists, by listing all containers in your account:
 
 .. code-block:: console
 
-   $ kamaki config set storage_account images@example.com
-   $ kamaki config set storage_container images
+   $ kamaki file list
 
-If the container does not exist, you will have to create it before uploading
-any images:
+If the container ``images`` does not exist, create it:
 
 .. code-block:: console
 
-   $ kamaki store create images
+  $ kamaki file create images
 
-You are now ready to upload an image. You can upload it with a Pithos+ client,
-or use kamaki directly:
+You are now ready to upload an image to container ``images``. You can upload it with a Pithos+ client, or use kamaki directly:
 
 .. code-block:: console
 
-   $ kamaki store upload ubuntu.iso
+   $ kamaki file upload ubuntu.iso images
 
-You can use any Pithos+ client to verify that the image was uploaded correctly.
+You can use any Pithos+ client to verify that the image was uploaded correctly, or you can list the contents of the container with kamaki:
+
+.. code-block:: console
+
+  $ kamaki file list images
+
 The full Pithos URL for the previous example will be
-``pithos://images@example.com/images/ubuntu.iso``.
+``pithos://u53r-un1qu3-1d/images/ubuntu.iso``
+where ``u53r-un1qu3-1d`` is the unique user id (uuid).
 
 
 Register Image
@@ -884,25 +895,24 @@ a public image the one from the previous example use:
 
 .. code-block:: console
 
-   $ kamaki glance register Ubuntu pithos://images@example.com/images/ubuntu.iso --public
+   $ kamaki image register Ubuntu pithos://u53r-un1qu3-1d/images/ubuntu.iso --public
 
 The ``--public`` flag is important, if missing the registered image will not
-be listed by ``kamaki glance list``.
+be listed by ``kamaki image list``.
 
-Use ``kamaki glance register`` with no arguments to see a list of available
+Use ``kamaki image register`` with no arguments to see a list of available
 options. A more complete example would be the following:
 
 .. code-block:: console
 
-   $ kamaki glance register Ubuntu pithos://images@example.com/images/ubuntu.iso \
+   $ kamaki image register Ubuntu pithos://u53r-un1qu3-1d/images/ubuntu.iso \
             --public --disk-format diskdump --property kernel=3.1.2
 
 To verify that the image was registered successfully use:
 
 .. code-block:: console
 
-   $ kamaki glance list -l
-
+   $ kamaki image list --name-like=ubuntu
 
 
 Miscellaneous

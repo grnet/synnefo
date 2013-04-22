@@ -43,7 +43,7 @@ from django.core.validators import validate_email
 
 from snf_django.lib.db.transaction import commit_on_success_strict
 from astakos.im.models import AstakosUser, AstakosUserQuota, Resource
-from astakos.im.quotas import qh_sync_user
+from astakos.im.quotas import qh_sync_user, qh_sync_users
 
 AddResourceArgs = namedtuple('AddQuotaArgs', ('resource',
                                               'capacity',
@@ -176,6 +176,7 @@ for a single user from the command line
         except IOError, e:
             raise CommandError(e)
 
+        users = set()
         for line in f.readlines():
             try:
                 t = line.rstrip('\n').split(' ')
@@ -187,6 +188,7 @@ for a single user from the command line
             else:
                 try:
                     user = AstakosUser.objects.get(uuid=user)
+                    users.add(user.id)
                 except AstakosUser.DoesNotExist:
                     self.stdout.write('Not found user having uuid: %s\n' % user)
                     continue
@@ -196,8 +198,10 @@ for a single user from the command line
                     except Exception, e:
                         self.stdout.write('Failed to policy: %s\n' % e)
                         continue
+
             finally:
                 f.close()
+        qh_sync_users(users)
 
 
 def is_uuid(s):

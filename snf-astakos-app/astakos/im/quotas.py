@@ -35,6 +35,7 @@ from astakos.im.models import (
     Resource, AstakosUserQuota, AstakosUser,
     Project, ProjectMembership, ProjectResourceGrant, ProjectApplication)
 from astakos.quotaholder.callpoint import QuotaholderDjangoDBCallpoint
+from django.db.models import Q
 
 qh = QuotaholderDjangoDBCallpoint()
 
@@ -248,18 +249,23 @@ def sync_all_users(sync=True):
 
 
 def qh_add_resource_limit(resource, diff):
-    users = AstakosUser.forupdate.all().select_for_update()
-    qh.add_resource_limit(SYSTEM, resource, diff)
+    objs = AstakosUser.forupdate.filter(Q(email_verified=True) &
+                                        ~Q(policy=resource))
+    users = objs.select_for_update()
+    uuids = [u.uuid for u in users]
+    qh.add_resource_limit(holders=uuids, sources=[SYSTEM],
+                          resources=[resource.name], diff=diff)
 
 
 def qh_sync_new_resource(resource, limit):
     users = AstakosUser.forupdate.filter(
         email_verified=True).select_for_update()
 
+    resource_name = resource.name
     data = []
     for user in users:
         uuid = user.uuid
-        key = uuid, SYSTEM, resource
+        key = uuid, SYSTEM, resource_name
         data.append((key, limit))
 
     qh.set_quota(data)

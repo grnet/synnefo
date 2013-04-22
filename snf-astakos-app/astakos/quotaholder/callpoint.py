@@ -135,9 +135,20 @@ class QuotaholderDjangoDBCallpoint(object):
             h.save()
             holdings[key] = h
 
-    def add_resource_limit(self, source, resource, diff):
-        objs = Holding.objects.filter(source=source, resource=resource)
-        objs.update(limit=F('limit')+diff)
+    def add_resource_limit(self, holders=None, sources=None, resources=None,
+                           diff=0):
+        holdings = Holding.objects.all()
+
+        if holders is not None:
+            holdings = holdings.filter(holder__in=holders)
+
+        if sources is not None:
+            holdings = holdings.filter(source__in=sources)
+
+        if resources is not None:
+            holdings = holdings.filter(resource__in=resources)
+
+        holdings.update(limit=F('limit')+diff)
 
     def issue_commission(self,
                          context=None,

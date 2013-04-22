@@ -68,9 +68,9 @@ def add_resource(service, resource, uplimit):
     if old_uplimit is not None:
         diff = uplimit - old_uplimit
         if diff != 0:
-            qh_add_resource_limit(name, diff)
+            qh_add_resource_limit(r, diff)
     else:
-        qh_sync_new_resource(name, uplimit)
+        qh_sync_new_resource(r, uplimit)
 
 
 def update_resource(name, uplimit):
@@ -82,4 +82,4 @@ def update_resource(name, uplimit):
     logger.info("Updated resource %s with limit %s." % (name, uplimit))
     diff = uplimit - old_uplimit
     if diff != 0:
-        qh_add_resource_limit(name, diff)
+        qh_add_resource_limit(r, diff)

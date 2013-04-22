@@ -49,6 +49,7 @@ AddResourceArgs = namedtuple('AddQuotaArgs', ('resource',
                                               'capacity',
                                               ))
 
+
 class Command(BaseCommand):
     help = """Import user quota limits from file or set quota
 for a single user from the command line
@@ -171,36 +172,30 @@ for a single user from the command line
         qh_sync_user(user.id)
 
     def import_from_file(self, location):
-        try:
-            f = open(location, 'r')
-        except IOError, e:
-            raise CommandError(e)
-
         users = set()
-        for line in f.readlines():
-            try:
-                t = line.rstrip('\n').split(' ')
-                user = t[0]
-                args = AddResourceArgs(*t[1:])
-            except(IndexError, TypeError):
-                self.stdout.write('Invalid line format: %s:\n' % t)
-                continue
-            else:
+        with open(location) as f:
+            for line in f.readlines():
                 try:
-                    user = AstakosUser.objects.get(uuid=user)
-                    users.add(user.id)
-                except AstakosUser.DoesNotExist:
-                    self.stdout.write('Not found user having uuid: %s\n' % user)
+                    t = line.rstrip('\n').split(' ')
+                    user = t[0]
+                    args = AddResourceArgs(*t[1:])
+                except(IndexError, TypeError):
+                    self.stdout.write('Invalid line format: %s:\n' % t)
                     continue
                 else:
                     try:
-                        user.add_resource_policy(*args)
-                    except Exception, e:
-                        self.stdout.write('Failed to policy: %s\n' % e)
+                        user = AstakosUser.objects.get(uuid=user)
+                        users.add(user.id)
+                    except AstakosUser.DoesNotExist:
+                        self.stdout.write('Not found user having uuid: %s\n'
+                                          % user)
                         continue
-
-            finally:
-                f.close()
+                    else:
+                        try:
+                            user.add_resource_policy(*args)
+                        except Exception, e:
+                            self.stdout.write('Failed to policy: %s\n' % e)
+                            continue
         qh_sync_users(users)
 
 

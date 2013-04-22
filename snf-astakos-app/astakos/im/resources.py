@@ -53,7 +53,7 @@ def add_resource(service, resource, uplimit):
         old_uplimit = None
 
     r.uplimit = uplimit
-    r.service = service
+    r.service = s
     for key, value in resource.iteritems():
         setattr(r, key, value)
 

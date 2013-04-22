@@ -200,8 +200,7 @@ def get_presentation(resource):
 class Resource(models.Model):
     name = models.CharField(_('Name'), max_length=255, unique=True)
     desc = models.TextField(_('Description'), null=True)
-    service = models.CharField(_('Service identifier'), max_length=255,
-                               null=True)
+    service = models.ForeignKey(Service)
     unit = models.CharField(_('Unit'), null=True, max_length=255)
     uplimit = intDecimalField(default=0)
 

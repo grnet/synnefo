@@ -8,6 +8,12 @@ class Migration(SchemaMigration):
 
     def forwards(self, orm):
         
+        # Removing unique constraint on 'Resource', fields ['name', 'service']
+        db.delete_unique('im_resource', ['name', 'service_id'])
+
+        # Deleting model 'ResourceMetadata'
+        db.delete_table('im_resourcemetadata')
+
         # Deleting field 'AstakosUserQuota.import_limit'
         db.delete_column('im_astakosuserquota', 'import_limit')
 
@@ -17,9 +23,77 @@ class Migration(SchemaMigration):
         # Deleting field 'AstakosUserQuota.quantity'
         db.delete_column('im_astakosuserquota', 'quantity')
 
+        # Deleting field 'Service.order'
+        db.delete_column('im_service', 'order')
+
+        # Deleting field 'Service.icon'
+        db.delete_column('im_service', 'icon')
+
+        # Adding field 'Service.api_url'
+        db.add_column('im_service', 'api_url', self.gf('django.db.models.fields.CharField')(max_length=255, null=True), keep_default=False)
+
+        # Changing field 'Service.url'
+        db.alter_column('im_service', 'url', self.gf('django.db.models.fields.CharField')(max_length=255, null=True))
+
+        # Deleting field 'Project.is_active'
+        db.delete_column('im_project', 'is_active')
+
+        # Deleting field 'Project.is_modified'
+        db.delete_column('im_project', 'is_modified')
+
+        # Deleting field 'ProjectMembership.is_active'
+        db.delete_column('im_projectmembership', 'is_active')
+
+        # Deleting field 'ProjectMembership.pending_application'
+        db.delete_column('im_projectmembership', 'pending_application_id')
+
+        # Deleting field 'ProjectMembership.pending_serial'
+        db.delete_column('im_projectmembership', 'pending_serial')
+
+        # Deleting field 'ProjectMembership.application'
+        db.delete_column('im_projectmembership', 'application_id')
+
+        # Deleting field 'ProjectMembership.is_pending'
+        db.delete_column('im_projectmembership', 'is_pending')
+
+        # Deleting field 'Resource.group'
+        db.delete_column('im_resource', 'group')
+
+        # Removing M2M table for field meta on 'Resource'
+        db.delete_table('im_resource_meta')
+
+        # Adding unique constraint on 'Resource', fields ['name']
+        db.create_unique('im_resource', ['name'])
+
+        # Deleting field 'ProjectResourceGrant.member_import_limit'
+        db.delete_column('im_projectresourcegrant', 'member_import_limit')
+
+        # Deleting field 'ProjectResourceGrant.project_export_limit'
+        db.delete_column('im_projectresourcegrant', 'project_export_limit')
+
+        # Deleting field 'ProjectResourceGrant.project_import_limit'
+        db.delete_column('im_projectresourcegrant', 'project_import_limit')
+
+        # Deleting field 'ProjectResourceGrant.member_export_limit'
+        db.delete_column('im_projectresourcegrant', 'member_export_limit')
+
+        # Changing field 'ProjectResourceGrant.project_capacity'
+        db.alter_column('im_projectresourcegrant', 'project_capacity', self.gf('snf_django.lib.db.fields.IntDecimalField')(null=True, max_digits=38, decimal_places=0))
+
 
     def backwards(self, orm):
         
+        # Removing unique constraint on 'Resource', fields ['name']
+        db.delete_unique('im_resource', ['name'])
+
+        # Adding model 'ResourceMetadata'
+        db.create_table('im_resourcemetadata', (
+            ('value', self.gf('django.db.models.fields.CharField')(max_length=255)),
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('key', self.gf('django.db.models.fields.CharField')(max_length=255, unique=True, db_index=True)),
+        ))
+        db.send_create_signal('im', ['ResourceMetadata'])
+
         # Adding field 'AstakosUserQuota.import_limit'
         db.add_column('im_astakosuserquota', 'import_limit', self.gf('snf_django.lib.db.fields.IntDecimalField')(default=100000000000000000000000000000000L, max_digits=38, decimal_places=0), keep_default=False)
 
@@ -28,6 +102,68 @@ class Migration(SchemaMigration):
 
         # Adding field 'AstakosUserQuota.quantity'
         db.add_column('im_astakosuserquota', 'quantity', self.gf('snf_django.lib.db.fields.IntDecimalField')(default=0, max_digits=38, decimal_places=0), keep_default=False)
+
+        # Adding field 'Service.order'
+        db.add_column('im_service', 'order', self.gf('django.db.models.fields.PositiveIntegerField')(default=0), keep_default=False)
+
+        # Adding field 'Service.icon'
+        db.add_column('im_service', 'icon', self.gf('django.db.models.fields.FilePathField')(default='', max_length=100, blank=True), keep_default=False)
+
+        # Deleting field 'Service.api_url'
+        db.delete_column('im_service', 'api_url')
+
+        # Changing field 'Service.url'
+        db.alter_column('im_service', 'url', self.gf('django.db.models.fields.FilePathField')(default='', max_length=100))
+
+        # Adding field 'Project.is_active'
+        db.add_column('im_project', 'is_active', self.gf('django.db.models.fields.BooleanField')(default=True, db_index=True), keep_default=False)
+
+        # Adding field 'Project.is_modified'
+        db.add_column('im_project', 'is_modified', self.gf('django.db.models.fields.BooleanField')(default=False, db_index=True), keep_default=False)
+
+        # Adding field 'ProjectMembership.is_active'
+        db.add_column('im_projectmembership', 'is_active', self.gf('django.db.models.fields.BooleanField')(default=False, db_index=True), keep_default=False)
+
+        # Adding field 'ProjectMembership.pending_application'
+        db.add_column('im_projectmembership', 'pending_application', self.gf('django.db.models.fields.related.ForeignKey')(related_name='pending_memberships', null=True, to=orm['im.ProjectApplication']), keep_default=False)
+
+        # Adding field 'ProjectMembership.pending_serial'
+        db.add_column('im_projectmembership', 'pending_serial', self.gf('django.db.models.fields.BigIntegerField')(null=True, db_index=True), keep_default=False)
+
+        # Adding field 'ProjectMembership.application'
+        db.add_column('im_projectmembership', 'application', self.gf('django.db.models.fields.related.ForeignKey')(related_name='memberships', null=True, to=orm['im.ProjectApplication']), keep_default=False)
+
+        # Adding field 'ProjectMembership.is_pending'
+        db.add_column('im_projectmembership', 'is_pending', self.gf('django.db.models.fields.BooleanField')(default=False, db_index=True), keep_default=False)
+
+        # Adding field 'Resource.group'
+        db.add_column('im_resource', 'group', self.gf('django.db.models.fields.CharField')(max_length=255, null=True), keep_default=False)
+
+        # Adding M2M table for field meta on 'Resource'
+        db.create_table('im_resource_meta', (
+            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
+            ('resource', models.ForeignKey(orm['im.resource'], null=False)),
+            ('resourcemetadata', models.ForeignKey(orm['im.resourcemetadata'], null=False))
+        ))
+        db.create_unique('im_resource_meta', ['resource_id', 'resourcemetadata_id'])
+
+        # Adding unique constraint on 'Resource', fields ['name', 'service']
+        db.create_unique('im_resource', ['name', 'service_id'])
+
+        # Adding field 'ProjectResourceGrant.member_import_limit'
+        db.add_column('im_projectresourcegrant', 'member_import_limit', self.gf('snf_django.lib.db.fields.IntDecimalField')(default=100000000000000000000000000000000L, max_digits=38, decimal_places=0), keep_default=False)
+
+        # Adding field 'ProjectResourceGrant.project_export_limit'
+        db.add_column('im_projectresourcegrant', 'project_export_limit', self.gf('snf_django.lib.db.fields.IntDecimalField')(default=100000000000000000000000000000000L, max_digits=38, decimal_places=0), keep_default=False)
+
+        # Adding field 'ProjectResourceGrant.project_import_limit'
+        db.add_column('im_projectresourcegrant', 'project_import_limit', self.gf('snf_django.lib.db.fields.IntDecimalField')(default=100000000000000000000000000000000L, max_digits=38, decimal_places=0), keep_default=False)
+
+        # Adding field 'ProjectResourceGrant.member_export_limit'
+        db.add_column('im_projectresourcegrant', 'member_export_limit', self.gf('snf_django.lib.db.fields.IntDecimalField')(default=100000000000000000000000000000000L, max_digits=38, decimal_places=0), keep_default=False)
+
+        # Changing field 'ProjectResourceGrant.project_capacity'
+        db.alter_column('im_projectresourcegrant', 'project_capacity', self.gf('snf_django.lib.db.fields.IntDecimalField')(max_digits=38, decimal_places=0))
 
 
     models = {
@@ -115,7 +251,7 @@ class Migration(SchemaMigration):
         },
         'im.astakosuserquota': {
             'Meta': {'unique_together': "(('resource', 'user'),)", 'object_name': 'AstakosUserQuota'},
-            'capacity': ('snf_django.lib.db.fields.IntDecimalField', [], {'default': '0', 'max_digits': '38', 'decimal_places': '0'}),
+            'capacity': ('snf_django.lib.db.fields.IntDecimalField', [], {'max_digits': '38', 'decimal_places': '0'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'resource': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.Resource']"}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.AstakosUser']"})
@@ -232,13 +368,9 @@ class Migration(SchemaMigration):
         'im.projectresourcegrant': {
             'Meta': {'unique_together': "(('resource', 'project_application'),)", 'object_name': 'ProjectResourceGrant'},
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'member_capacity': ('snf_django.lib.db.fields.IntDecimalField', [], {'default': '100000000000000000000000000000000L', 'max_digits': '38', 'decimal_places': '0'}),
-            'member_export_limit': ('snf_django.lib.db.fields.IntDecimalField', [], {'default': '100000000000000000000000000000000L', 'max_digits': '38', 'decimal_places': '0'}),
-            'member_import_limit': ('snf_django.lib.db.fields.IntDecimalField', [], {'default': '100000000000000000000000000000000L', 'max_digits': '38', 'decimal_places': '0'}),
+            'member_capacity': ('snf_django.lib.db.fields.IntDecimalField', [], {'default': '0', 'max_digits': '38', 'decimal_places': '0'}),
             'project_application': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.ProjectApplication']", 'null': 'True'}),
-            'project_capacity': ('snf_django.lib.db.fields.IntDecimalField', [], {'default': '100000000000000000000000000000000L', 'max_digits': '38', 'decimal_places': '0'}),
-            'project_export_limit': ('snf_django.lib.db.fields.IntDecimalField', [], {'default': '100000000000000000000000000000000L', 'max_digits': '38', 'decimal_places': '0'}),
-            'project_import_limit': ('snf_django.lib.db.fields.IntDecimalField', [], {'default': '100000000000000000000000000000000L', 'max_digits': '38', 'decimal_places': '0'}),
+            'project_capacity': ('snf_django.lib.db.fields.IntDecimalField', [], {'null': 'True', 'max_digits': '38', 'decimal_places': '0'}),
             'resource': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.Resource']"})
         },
         'im.resource': {
@@ -246,7 +378,7 @@ class Migration(SchemaMigration):
             'desc': ('django.db.models.fields.TextField', [], {'null': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '255'}),
-            'service': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True'}),
+            'service': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.Service']"}),
             'unit': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True'}),
             'uplimit': ('snf_django.lib.db.fields.IntDecimalField', [], {'default': '0', 'max_digits': '38', 'decimal_places': '0'})
         },
@@ -261,7 +393,8 @@ class Migration(SchemaMigration):
             'auth_token_created': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
             'auth_token_expires': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '255', 'db_index': 'True'})
+            'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '255', 'db_index': 'True'}),
+            'url': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True'})
         },
         'im.sessioncatalog': {
             'Meta': {'object_name': 'SessionCatalog'},

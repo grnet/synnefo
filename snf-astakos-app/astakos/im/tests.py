@@ -66,21 +66,23 @@ astakos_settings.RECAPTCHA_ENABLED = False
 
 settings.LOGGING_SETUP['disable_existing_loggers'] = False
 
-
-prefixes = {'im': 'ASTAKOS_', 'providers': 'AUTH_PROVIDER_',
-            'shibboleth': 'AUTH_PROVIDER_SHIBBOLETH_',
-            'local': 'AUTH_PROVIDER_LOCAL_'}
+# shortcut decorators to override provider settings
+# e.g. shibboleth_settings(ENABLED=True) will set
+# ASTAKOS_AUTH_PROVIDER_SHIBBOLETH_ENABLED = True in global synnefo settings
+prefixes = {'providers': 'AUTH_PROVIDER_',
+            'shibboleth': 'ASTAKOS_AUTH_PROVIDER_SHIBBOLETH_',
+            'local': 'ASTAKOS_AUTH_PROVIDER_LOCAL_'}
 im_settings = functools.partial(with_settings, astakos_settings)
-provider_settings = functools.partial(with_settings, astakos_settings,
-                                      prefix=prefixes['providers'])
 shibboleth_settings = functools.partial(with_settings,
-                                        astakos_settings,
+                                        settings,
                                         prefix=prefixes['shibboleth'])
-localauth_settings = functools.partial(with_settings, astakos_settings,
+localauth_settings = functools.partial(with_settings, settings,
                                        prefix=prefixes['local'])
+
 
 class AstakosTestClient(Client):
     pass
+
 
 class ShibbolethClient(AstakosTestClient):
     """
@@ -182,6 +184,7 @@ class ShibbolethTests(TestCase):
         astakos_settings.IM_MODULES = ['local', 'shibboleth']
         astakos_settings.MODERATION_ENABLED = True
 
+    @im_settings(FORCE_PROFILE_UPDATE=False)
     def test_create_account(self):
 
         client = ShibbolethClient()
@@ -233,21 +236,23 @@ class ShibbolethTests(TestCase):
                      'last_name': 'Mitroglou',
                      'provider': 'shibboleth'}
 
+        signup_url = reverse('signup')
+
         # invlid email
         post_data['email'] = 'kpap'
-        r = client.post('/im/signup', post_data)
+        r = client.post(signup_url, post_data)
         self.assertContains(r, token)
 
         # existing email
         existing_user = get_local_user('test@test.com')
         post_data['email'] = 'test@test.com'
-        r = client.post('/im/signup', post_data)
+        r = client.post(signup_url, post_data)
         self.assertContains(r, messages.EMAIL_USED)
         existing_user.delete()
 
         # and finally a valid signup
         post_data['email'] = 'kpap@grnet.gr'
-        r = client.post('/im/signup', post_data, follow=True)
+        r = client.post(signup_url, post_data, follow=True)
         self.assertContains(r, messages.NOTIFICATION_SENT)
 
         # everything is ok in our db
@@ -267,8 +272,6 @@ class ShibbolethTests(TestCase):
                           cn="Kostas Papadimitriou", )
         r = client.get("/im/login/shibboleth?", follow=True)
         self.assertContains(r, 'is pending moderation')
-        r = client.get("/im/profile", follow=True)
-        self.assertRedirects(r, 'http://testserver/im/?next=/im/profile')
 
         # admin activates our user
         u = AstakosUser.objects.get(username="kpap@grnet.gr")
@@ -434,7 +437,7 @@ class ShibbolethTests(TestCase):
 
         # we can reenable the local provider by setting a password
         r = client.get("/im/password_change", follow=True)
-        r = client.post("/im/password_change", {'new_password1':'111',
+        r = client.post("/im/password_change", {'new_password1': '111',
                                                 'new_password2': '111'},
                         follow=True)
         user = r.context['request'].user
@@ -539,7 +542,8 @@ class TestLocal(TestCase):
         form = forms.LocalUserCreationForm(data)
         self.assertFalse(form.is_valid())
 
-    @with_settings(settings, HELPDESK=(('support','support@synnefo.org'),))
+    @im_settings(HELPDESK=(('support', 'support@synnefo.org'),))
+    @im_settings(FORCE_PROFILE_UPDATE=False)
     def test_local_provider(self):
         self.helpdesk_email = astakos_settings.HELPDESK[0][1]
         # enable moderation
@@ -564,7 +568,6 @@ class TestLocal(TestCase):
         self.assertFalse(user.activation_sent)  # activation automatically sent
 
         # admin gets notified and activates the user from the command line
-
         self.assertEqual(len(get_mailbox(self.helpdesk_email)), 1)
         r = self.client.post('/im/local', {'username': 'kpap@grnet.gr',
                                            'password': 'password'})
@@ -782,20 +785,20 @@ class TestAuthProviderViews(TestCase):
     @shibboleth_settings(AUTOMODERATE_POLICY=True)
     @im_settings(IM_MODULES=['shibboleth', 'local'])
     @im_settings(MODERATION_ENABLED=True)
+    @im_settings(FORCE_PROFILE_UPDATE=False)
     def test_user(self):
         Profile = AuthProviderPolicyProfile
         Pending = PendingThirdPartyUser
         User = AstakosUser
 
-        oldpendinguser = User.objects.create(email="newuser@grnet.gr")
-        olduser = get_local_user("olduser@grnet.gr")
+        User.objects.create(email="newuser@grnet.gr")
+        get_local_user("olduser@grnet.gr")
         cl_olduser = ShibbolethClient()
-        olduser2 = get_local_user("olduser2@grnet.gr")
-        cl_olduser2 = ShibbolethClient()
+        get_local_user("olduser2@grnet.gr")
+        ShibbolethClient()
         cl_newuser = ShibbolethClient()
         cl_newuser2 = Client()
 
-        policy = ('only_academic', 'shibboleth')
         academic_group, created = Group.objects.get_or_create(
             name='academic-login')
         academic_users = academic_group.user_set
@@ -1201,7 +1204,8 @@ class TestProjects(TestCase):
         self.service = Service.objects.create(name="service1",
                                               api_url="http://service.api")
         self.resource = Resource.objects.create(name="service1.resource",
-                                                uplimit=100)
+                                                uplimit=100,
+                                                service=self.service)
         self.admin = get_local_user("projects-admin@synnefo.org")
         self.admin.uuid = 'uuid1'
         self.admin.save()

@@ -42,7 +42,6 @@ from django.template import Context, loader
 from django.contrib.auth import (
     login as auth_login,
     logout as auth_logout)
-from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError
@@ -54,7 +53,6 @@ from smtplib import SMTPException
 from datetime import datetime
 from functools import wraps
 
-import astakos.im.settings as astakos_settings
 from astakos.im.settings import (
     CONTACT_EMAIL, SITENAME, BASEURL, LOGGING_LEVEL,
     VERIFICATION_EMAIL_SUBJECT, ACCOUNT_CREATION_SUBJECT,
@@ -64,8 +62,7 @@ from astakos.im.settings import (
     PROJECT_CREATION_SUBJECT, PROJECT_APPROVED_SUBJECT,
     PROJECT_TERMINATION_SUBJECT, PROJECT_SUSPENSION_SUBJECT,
     PROJECT_MEMBERSHIP_CHANGE_SUBJECT,
-    PROJECT_MEMBER_JOIN_POLICIES, PROJECT_MEMBER_LEAVE_POLICIES, HELPDESK,
-    ADMINS, MANAGERS)
+    PROJECT_MEMBER_JOIN_POLICIES, PROJECT_MEMBER_LEAVE_POLICIES)
 from astakos.im.notifications import build_notification, NotificationError
 from astakos.im.models import (
     AstakosUser, Invitation, ProjectMembership, ProjectApplication, Project,
@@ -79,7 +76,7 @@ from astakos.im.project_notif import (
     application_submit_notify, application_approve_notify,
     application_deny_notify,
     project_termination_notify, project_suspension_notify)
-
+from astakos.im import settings
 import astakos.im.messages as astakos_messages
 from astakos.quotaholder.exception import NoCapacityError
 
@@ -147,7 +144,7 @@ def _send_admin_notification(template_name,
     dictionary = dictionary or {}
     message = render_to_string(template_name, dictionary)
     sender = settings.SERVER_EMAIL
-    recipient_list = [e[1] for e in HELPDESK + MANAGERS]
+    recipient_list = [e[1] for e in settings.HELPDESK + settings.MANAGERS]
     try:
         send_mail(subject, message, sender, recipient_list,
                   connection=get_connection())
@@ -177,7 +174,7 @@ def send_helpdesk_notification(user, template_name='im/helpdesk_notification.txt
         {'user': user}
     )
     sender = settings.SERVER_EMAIL
-    recipient_list = [e[1] for e in HELPDESK + MANAGERS]
+    recipient_list = [e[1] for e in settings.HELPDESK + settings.MANAGERS]
     try:
         send_mail(_(HELPDESK_NOTIFICATION_EMAIL_SUBJECT) % {'user': user.email},
                   message, sender, recipient_list, connection=get_connection())
@@ -246,7 +243,7 @@ def send_greeting(user, email_template_name='im/welcome_email.txt'):
 def send_feedback(msg, data, user, email_template_name='im/feedback_mail.txt'):
     subject = _(FEEDBACK_EMAIL_SUBJECT)
     from_email = settings.SERVER_EMAIL
-    recipient_list = [e[1] for e in HELPDESK]
+    recipient_list = [e[1] for e in settings.HELPDESK]
     content = render_to_string(email_template_name, {
         'message': msg,
         'data': data,
@@ -894,7 +891,7 @@ def get_user_setting(user_id, key):
             user=user_id, setting=key)
         return setting.value
     except UserSetting.DoesNotExist:
-        return getattr(astakos_settings, key)
+        return getattr(settings, key)
 
 
 def set_user_setting(user_id, key, value):

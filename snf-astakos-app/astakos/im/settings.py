@@ -26,7 +26,7 @@ SERVER_EMAIL = settings.SERVER_EMAIL
 IM_MODULES = getattr(settings, 'ASTAKOS_IM_MODULES', ['local'])
 
 # Force user profile verification
-FORCE_PROFILE_UPDATE = getattr(settings, 'ASTAKOS_FORCE_PROFILE_UPDATE', True)
+FORCE_PROFILE_UPDATE = getattr(settings, 'ASTAKOS_FORCE_PROFILE_UPDATE', False)
 
 #Enable invitations
 INVITATIONS_ENABLED = getattr(settings, 'ASTAKOS_INVITATIONS_ENABLED', False)

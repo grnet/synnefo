@@ -1,6 +1,9 @@
+import os
+os.environ['SYNNEFO_SETTINGS_DIR'] = '/etc/synnefo-test-settings'
+
 from synnefo.settings import *
 
-DEBUG = True
+DEBUG = False
 TEST = True
 
 DATABASES = {
@@ -12,3 +15,7 @@ DATABASES = {
 
 LOGGING_SETUP['handlers']['console']['level'] = 'WARNING'
 LOGIN_URL = 'http://host:port/'
+
+SOUTH_TESTS_MIGRATE = bool(os.environ.get('SOUTH_TESTS_MIGRATE', True))
+
+ASTAKOS_IM_MODULES = ['local', 'shibboleth']

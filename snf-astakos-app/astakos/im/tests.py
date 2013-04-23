@@ -1201,6 +1201,14 @@ class TestProjects(TestCase):
     Test projects.
     """
     def setUp(self):
+        # astakos resources
+        self.astakos_service = Service.objects.create(name="astakos",
+                                                      api_url="/astakos/api/")
+        self.resource = Resource.objects.create(name="astakos.pending_app",
+                                                uplimit=0,
+                                                service=self.astakos_service)
+
+        # custom service resources
         self.service = Service.objects.create(name="service1",
                                               api_url="http://service.api")
         self.resource = Resource.objects.create(name="service1.resource",
@@ -1219,7 +1227,9 @@ class TestProjects(TestCase):
         self.member_client = get_user_client("member@synnefo.org")
         self.member2_client = get_user_client("member2@synnefo.org")
 
-    @im_settings(PENDING_APPLICATION_LIMIT=0, PROJECT_ADMINS=['uuid1'])
+        quotas.qh_sync_users(AstakosUser.objects.all())
+
+    @im_settings(PROJECT_ADMINS=['uuid1'])
     def test_application_limit(self):
         # user cannot create a project
         r = self.user_client.get(reverse('project_add'), follow=True)
@@ -1230,8 +1240,12 @@ class TestProjects(TestCase):
         r = self.admin_client.get(reverse('project_add'), follow=True)
         self.assertRedirects(r, reverse('project_add'))
 
-    @im_settings(PENDING_APPLICATION_LIMIT=2, PROJECT_ADMINS=['uuid1'])
+    @im_settings(PROJECT_ADMINS=['uuid1'])
     def test_applications(self):
+        # let user have 2 pending applications
+        self.user.add_resource_policy('astakos.pending_app', 2)
+        quotas.qh_sync_users(AstakosUser.objects.all())
+
         r = self.user_client.get(reverse('project_add'), follow=True)
         self.assertRedirects(r, reverse('project_add'))
 

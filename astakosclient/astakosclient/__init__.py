@@ -325,7 +325,7 @@ class AstakosClient():
 
     # ----------------------------------
     # GET "/astakos/api/service_quotas"
-    def get_service_quotas(self, token, user=None):
+    def service_get_quotas(self, token, user=None):
         """Get all quotas for resources associated with the service
 
         Keyword arguments:

@@ -94,7 +94,7 @@ def get_user_quotas(user, resources=None, sources=None):
     return quotas[user.uuid]
 
 
-def get_service_quotas(service, users=None):
+def service_get_quotas(service, users=None):
     resources = Resource.objects.filter(service=service)
     resource_names = [r.name for r in resources]
     counters = qh.get_quota(holders=users, resources=resource_names)

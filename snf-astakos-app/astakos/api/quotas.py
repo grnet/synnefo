@@ -46,7 +46,7 @@ from astakos.im.api.user import user_from_token
 from astakos.im.api.service import service_from_token
 
 from astakos.im.resources import get_resources
-from astakos.im.quotas import get_user_quotas, get_service_quotas
+from astakos.im.quotas import get_user_quotas, service_get_quotas
 
 import astakos.quotaholder.exception as qh_exception
 import astakos.quotaholder.callpoint as qh
@@ -64,7 +64,7 @@ def quotas(request, user=None):
 def service_quotas(request):
     user = request.GET.get('user')
     users = [user] if user is not None else None
-    result = get_service_quotas(request.service_instance, users=users)
+    result = service_get_quotas(request.service_instance, users=users)
     return json_response(result)
 
 

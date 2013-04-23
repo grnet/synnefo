@@ -127,7 +127,7 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
         current quotas (as dict of dicts).
         In case of error raise an AstakosClientException exception.
 
-    **get_service_quotas(**\ token, user=None\ **)**
+    **service_get_quotas(**\ token, user=None\ **)**
         Given a service's authentication token return all users'
         current quotas for the resources associated with the service
         (as dict of dicts of dicts).

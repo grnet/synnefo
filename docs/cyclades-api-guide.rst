@@ -3,14 +3,20 @@
 API Guide
 *********
 
-`Cyclades <cyclades.html>`_ is the compute service developed by `GRNET <http://www.grnet.gr>`_ as part of the `synnefo <http://www.synnefo.org>`_ software, that implements an extension of the `OpenStack Compute API v2 <http://docs.openstack.org/api/openstack-compute/2/content>`_.
+`Cyclades <cyclades.html>`_ is the compute service developed by `GRNET 
+<http://www.grnet.gr>`_ as part of the `synnefo <http://www.synnefo.org>`_
+software, that implements an extension of the `OpenStack Compute API v2
+<http://docs.openstack.org/api/openstack-compute/2/content>`_.
 
 This document's goals are:
 
 * Define the Cyclades/Compute ReST API
 * Clarify the differences between Cyclades and OOS Compute
 
-Users and developers who wish to access a synnefo Cyclades service through its ReST API are adviced to use the `kamaki <http://docs.dev.grnet.gr/kamaki>`_ command-line client and associated python library, instead of making direct calls.
+Users and developers who wish to access a synnefo Cyclades service through its
+ReST API are adviced to use the `kamaki <http://docs.dev.grnet.gr/kamaki>`_
+command-line client and associated python library, instead of making direct
+calls.
 
 Overview
 ========
@@ -78,8 +84,8 @@ Limits
 Efficient Polling with the Changes-Since Parameter
 --------------------------------------------------
 
-* Effectively limit support of the changes-since parameter in **List Servers** and **List
-  Images**.
+* Effectively limit support of the changes-since parameter in **List Servers**
+and **List Images**.
 * Assume that garbage collection of deleted servers will only affect servers
   deleted ``POLL_TIME`` seconds in the past or earlier. Else loose the
   information of a server getting deleted.
@@ -128,7 +134,8 @@ URI                 Method Cyclades OS Compute
 ``/servers/detail``
 =================== ====== ======== ==========
 
-* Both requests return a list of servers. The first returns just ``id`` and ``name``, while the second returns the full set of server attributes.
+* Both requests return a list of servers. The first returns just ``id`` and
+``name``, while the second returns the full set of server attributes.
 
 ================= =================================== ======== ==========
 Request Parameter Value                               Cyclades OS Compute
@@ -144,7 +151,8 @@ marker            Last list last ID                   **✘**    ✔
 limit             Page size                           **✘**    ✔
 ================= =================================== ======== ==========
 
-* **json** and **xml** parameters are mutually exclusive. If none supported, the response will be formated in json.
+* **json** and **xml** parameters are mutually exclusive. If none supported,
+the response will be formated in json.
 
 * **status** refers to the `server status <#status-ref>`_
 
@@ -168,12 +176,14 @@ Return Code                 Description
 400 (Bad Request)           Invalid or malformed ``changes-since`` parameter
 401 (Unauthorized)          Missing or expired user token
 403 (Forbidden)             User is not allowed to perform this operation
-500 (Internal Server Error) The request cannot be completed because of an internal error
+500 (Internal Server Error) The request cannot be completed because of an
+internal error
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
 
-The response data format is a list of servers under the ``servers`` label. A server may have the fields presented bellow:
+The response data format is a list of servers under the ``servers`` label. A
+server may have the fields presented bellow:
 
 ================= ====================== ======== ==========
 Server Attributes Description            Cyclades OS Compute
@@ -197,17 +207,29 @@ metadata          Server custom metadata ✔        ✔
 * **hostId** is not used in Cyclades, but is returned as an empty string for compatibility
 
 
-* **progress** is changing while the server is building up and has values between 0 and 100. When it reaches 100 the server is built.
+* **progress** is changing while the server is building up and has values
+between 0 and 100. When it reaches 100 the server is built.
 
 
 * **status** refers to `the status <#status-ref>`_ of the server
 
-* **metadata** are custom key:value pairs used to specify various attributes of the VM (e.g. OS, super user, etc.)
+* **metadata** are custom key:value pairs used to specify various attributes of
+the VM (e.g. OS, super user, etc.)
 
 
-* **attachments** in Cyclades are lists of network interfaces (nics). **Attachments** are different to OS Compute's **addresses**. The former is a list of the server's `network interface connections <#nic-ref>`_ while the later is just a list of networks. Thus, a Cyclades virtual server may be connected to the same network through more than one distinct network interfaces (e.g. server 43 is connected to network 101 with nic-43-1 and nic-43-2 in the example bellow).
+* **attachments** in Cyclades are lists of network interfaces (nics).
+**Attachments** are different to OS Compute's **addresses**. The former is a
+list of the server's `network interface connections <#nic-ref>`_ while the
+later is just a list of networks. Thus, a Cyclades virtual server may be
+connected to the same network through more than one distinct network interfaces
+(e.g. server 43 is connected to network 101 with nic-43-1 and nic-43-2 in the
+example bellow).
 
-* **Network Interfaces (NICs)** contain information about a server's connection to a network. Each nic is identified by an id of the form nic-<server-id>-<ordinal-number> and may contain a ``network_id``, a ``mac_address``, ``ipv4`` and ``ipv6`` addresses and the ``firewallProfile`` of the connection.
+* **Network Interfaces (NICs)** contain information about a server's connection
+to a network. Each nic is identified by an id of the form
+nic-<server-id>-<ordinal-number> and may contain a ``network_id``, a
+``mac_address``, ``ipv4`` and ``ipv6`` addresses and the ``firewallProfile`` of
+the connection.
 
 **Example List Servers: JSON**
 
@@ -304,7 +326,8 @@ Request Header  Value                     Cyclades OS Compute
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
 
-The request body is json formated. It consists of a ``server`` tag over the following attributes:
+The request body is json formated. It consists of a ``server`` tag over the
+following attributes:
 
 =========== ==================== ======== ==========
 Name        Description          Cyclades OS Compute
@@ -318,11 +341,15 @@ metadata    Custom metadata      ✔        ✔
 
 * **name** can be any string
 
-* **imageRed** and **flavorRed** should refer to existing images and hardware flavors accessible by the user
+* **imageRed** and **flavorRed** should refer to existing images and hardware
+flavors accessible by the user
 
-* **metadata** are key:value pairs of custom server-specific metadata. There are no semantic limitations.
+* **metadata** are key:value pairs of custom server-specific metadata. There
+are no semantic limitations.
 
-* **personality** (optional) is a list of personality injections. A personality injection is a small set of changes to a virtual server. Each change modifies a file on the virtual server, by injecting some data in it. The injected data (``content``) should exceed 10240 *bytes* in size and must be base64 encoded. A personality injection contains the following attributes:
+* **personality** (optional) is a list of personality injections. A personality injection is a small set of changes to a virtual server. Each change modifies a
+file on the virtual server, by injecting some data in it. The injected data
+(``content``) should exceed 10240 *bytes* in size and must be base64 encoded. A personality injection contains the following attributes:
 
 ======== =================== ======== ==========
 Name     Description         Cyclades OS Compute
@@ -344,15 +371,19 @@ Return Code                 Description
 401 (Unauthorized)          Missing or expired user token
 403 (Forbidden)             User is not allowed to perform this operation
 404 (Not Found)             Image or Flavor not found
-413 (Over Limit)            Exceeded some resource limit (#VMs, personality size, etc.) 
+413 (Over Limit)            Exceeded some resource limit (#VMs, personality
+size, etc.) 
 415 (Bad Media Type)        
-500 (Internal Server Error) The request cannot be completed because of an internal error
-503 (Service Unavailable)   No available backends or service currently unavailable
+500 (Internal Server Error) The request cannot be completed because of an
+internal error
+503 (Service Unavailable)   No available backends or service currently
+unavailable
 =========================== =====================
 
 |
 
-In case of a 200 return code, the Response Data are json-formated and consist of a `list of attributes <#server-ref>`_ under the ``server`` tag:
+In case of a 200 return code, the Response Data are json-formated and consist
+of a `list of attributes <#server-ref>`_ under the ``server`` tag:
 
 For example::
 
@@ -375,7 +406,8 @@ Get Server Stats
 
 This operation returns URLs to graphs showing CPU and Network statistics. A
 ``refresh`` attribute is returned as well that is the recommended refresh rate
-of the stats for the clients. This operation is no longer documented in OS Compute v2.
+of the stats for the clients. This operation is no longer documented in OS
+Compute v2.
 
 ============================== ====== ======== ==========
 URI                            Method Cyclades OS Compute
@@ -402,7 +434,8 @@ json              Respond in json
 xml               Respond in xml 
 ================= ===============
 
-* **json** and **xml** parameters are mutually exclusive. If none supported, the response will be formated in json.
+* **json** and **xml** parameters are mutually exclusive. If none supported,
+the response will be formated in json.
 
 |
 
@@ -414,7 +447,8 @@ Return Code                 Description
 401 (Unauthorized)          Missing or expired user token
 403 (Forbidden)             Administratively suspended server
 404 (Not Found)             Server not found
-500 (Internal Server Error) The request cannot be completed because of an internal error
+500 (Internal Server Error) The request cannot be completed because of an
+internal error
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
@@ -451,13 +485,14 @@ netTimeSeries      Network load / time graph URL
 .. code-block:: xml
 
   <?xml version="1.0" encoding="UTF-8"?>
-  <stats xmlns="http://docs.openstack.org/compute/api/v1.1" xmlns:atom="http://www.w3.org/2005/Atom"
+  <stats xmlns="http://docs.openstack.org/compute/api/v1.1"\
+        xmlns:atom="http://www.w3.org/2005/Atom"
       serverRef="1"
       refresh="60"
-      cpuBar="http://stats.okeanos.grnet.gr/b9a1c3ca7e3b9fce75112c43565fb9960b16048c/cpu-bar.png"
+      cpuBar="http://stats.okeanos.grnet.gr/b9a1x0b16048c/cpu-bar.png"
       cpuTimeSeries="http://stats.okeanos.grnet.gr/b9a1c3ca7e3b9fce75112c43565fb9960b16048c/cpu-ts.png"
-      netBar="http://stats.okeanos.grnet.gr/b9a1c3ca7e3b9fce75112c43565fb9960b16048c/net-bar.png"
-      netTimeSeries="http://stats.okeanos.grnet.gr/b9a1c3ca7e3b9fce75112c43565fb9960b16048c/net-ts.png">
+      netBar="http://stats.okeanos.grnet.gr/b9a1x0b16048c/net-bar.png"
+      netTimeSeries="http://stats.okeanos.grnet.gr/b9a1x0b16048c/net-ts.png">
   </stats>
 
 Get Server Details
@@ -489,13 +524,16 @@ Return Code                 Description
 401 (Unauthorized)          Missing or expired user token
 403 (Forbidden)             Administratively suspended server
 404 (Not Found)             Server not found
-500 (Internal Server Error) The request cannot be completed because of an internal error
-503 (Service Unavailable)   No available backends or service currently unavailable
+500 (Internal Server Error) The request cannot be completed because of an
+internal error
+503 (Service Unavailable)   No available backends or service currently
+unavailable
 =========================== =====================
 
 |
 
-The response data format is a list of servers under the ``servers`` label. A server may have the fields presented bellow:
+The response data format is a list of servers under the ``servers`` label. A
+server may have the fields presented bellow:
 
 ================= ====================== ======== ==========
 Server Attributes Description            Cyclades OS Compute
@@ -522,15 +560,24 @@ diagnostics       Diagnostic information ✔        **✘**
 
 * **hostId** is not used in Cyclades, but is returned as an empty string for compatibility
 
-* **progress** is changing while the server is building up and has values between 0 and 100. When it reaches 100 the server is built.
+* **progress** is changing while the server is building up and has values
+between 0 and 100. When it reaches 100 the server is built.
 
 * **status** refers to `the status <#status_ref>`_ of the server
 
-* **metadata** are custom key:value pairs used to specify various attributes of the VM (e.g. OS, super user, etc.)
+* **metadata** are custom key:value pairs used to specify various attributes of
+the VM (e.g. OS, super user, etc.)
 
-* **attachments** in Cyclades are lists of network interfaces (NICs). **Attachments** are different to OS Compute's **addresses**. The former is a list of the server's `network interface connections <#nic-ref>`_ while the later is just a list of networks. Thus, a Cyclades virtual server may be connected to the same network through more than one distinct network interfaces.
+* **attachments** in Cyclades are lists of network interfaces (NICs).
+**Attachments** are different to OS Compute's **addresses**. The former is a
+list of the server's `network interface connections <#nic-ref>`_ while the
+later is just a list of networks. Thus, a Cyclades virtual server may be
+connected to the same network through more than one distinct network
+interfaces.
 
-* **diagnostics** is a list of items that contain key:value information useful for diagnosing the server behavior and may be used by the administrators of deployed Synnefo setups.
+* **diagnostics** is a list of items that contain key:value information useful
+for diagnosing the server behavior and may be used by the administrators of
+deployed Synnefo setups.
 
 **Example Details for server with id 42042, in JSON**
 
@@ -591,7 +638,8 @@ Request Header  Value                     Cyclades OS Compute
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
 
-The request body is json formated. It consists of a ``server`` tag over the following attributes:
+The request body is json formated. It consists of a ``server`` tag over the
+following attributes:
 
 =========== ==================== ======== ==========
 Name        Description          Cyclades OS Compute
@@ -601,7 +649,8 @@ accessIPv4  IP v4 address        **✘**    ✔
 accessIPv6  IP v6 address        **✘**    ✔
 =========== ==================== ======== ==========
 
-* In Cyclades, a virtual server may use multiple network connections, instead of limit them to one.
+* In Cyclades, a virtual server may use multiple network connections, instead
+of limit them to one.
 
 |
 
@@ -615,11 +664,15 @@ Return Code                 Description
 404 (Not Found)             Server not found
 415 (Bad Media Type)
 409 (Build In Progress)     Server is not ready yet
-500 (Internal Server Error) The request cannot be completed because of an internal error
-503 (Service Unavailable)   No available backends or service currently unavailable
+500 (Internal Server Error) The request cannot be completed because of an
+internal error
+503 (Service Unavailable)   No available backends or service currently
+unavailable
 =========================== =====================
 
-In case of a 204 return code, there will be no request results according to the Cyclades API, while the new server details are returned according to OS Compute API.
+In case of a 204 return code, there will be no request results according to the
+Cyclades API, while the new server details are returned according to OS Compute
+API.
 
 Delete Server
 .............
@@ -650,8 +703,10 @@ Return Code                 Description
 401 (Unauthorized)          Missing or expired user token
 404 (Not Found)             Server not found
 409 (Build In Progress)     Server is not ready yet
-500 (Internal Server Error) The request cannot be completed because of an internal error
-503 (Service Unavailable)   Action not supported or service currently unavailable
+500 (Internal Server Error) The request cannot be completed because of an
+internal error
+503 (Service Unavailable)   Action not supported or service currently
+unavailable
 =========================== =====================
 
 Server Addresses
@@ -697,13 +752,21 @@ Return Code                 Description
 401 (Unauthorized)          Missing or expired user token
 404 (Not Found)             Server not found
 409 (Build In Progress)     Server is not ready yet
-500 (Internal Server Error) The request cannot be completed because of an internal error
+500 (Internal Server Error) The request cannot be completed because of an
+internal error
 503 (Service Unavailable)   Service currently unavailable
 =========================== =====================
 
-If the return code is 200, the response body consists of a list of items under the ``addresses`` tag. Each item refers to a network interface connection (NIC).
+If the return code is 200, the response body consists of a list of items under
+the ``addresses`` tag. Each item refers to a network interface connection (NIC).
 
-Each NIC connects the current server to a network. NICs are different to OS Compute's addresses. The formers are the server's `network interface connections <#nic-ref>`_ while the later describes a network. Cyclades API suggests this information can be acquired by the network_id, using the network part of the API. Thus, a Cyclades virtual server may be connected to the same network through more than one distinct network interfaces. The NIC mechanism allows more metadata to describe the network and its relation to the server.
+Each NIC connects the current server to a network. NICs are different to OS
+Compute's addresses. The formers are the server's
+`network interface connections <#nic-ref>`_ while the later describes a network. Cyclades API suggests this information can be acquired by the network_id, using
+the network part of the API. Thus, a Cyclades virtual server may be connected
+to the same network through more than one distinct network interfaces. The NIC
+mechanism allows more metadata to describe the network and its relation to the
+server.
 
 **An example of a response, in JSON**
 
@@ -773,13 +836,17 @@ Return Code                 Description
 401 (Unauthorized)          Missing or expired user token
 404 (Not Found)             Server not found
 409 (Build In Progress)     Server is not ready yet
-500 (Internal Server Error) The request cannot be completed because of an internal error
+500 (Internal Server Error) The request cannot be completed because of an
+internal error
 503 (Service Unavailable)   Service currently unavailable
 =========================== =====================
 
-If the return code is 200, the response body consists of a NIC under the ``network`` tag.
+If the return code is 200, the response body consists of a NIC under the
+``network`` tag.
 
-This NIC (`network interface connections <#nic-ref>`_) connects the specified server to the specified network. NICs are only used in Cyclades API. The same operation in OS Compute API returns a list of IP addresses.
+This NIC (`network interface connections <#nic-ref>`_) connects the specified
+server to the specified network. NICs are only used in Cyclades API. The same
+operation in OS Compute API returns a list of IP addresses.
 
 **An example of a response, in JSON**
 
@@ -799,7 +866,11 @@ This NIC (`network interface connections <#nic-ref>`_) connects the specified se
 Server Actions
 --------------
 
-The request described in this section exists in both Synnefo API and OS Compute API as a multi-operation request. The individual operations implemented through this request are in many cases completely different between the two APIs. Although this document focuses on Synnefo operations, differences and similarities between the APIs are also briefed in this section.
+The request described in this section exists in both Synnefo API and OS Compute
+API as a multi-operation request. The individual operations implemented through
+this request are in many cases completely different between the two APIs.
+Although this document focuses on Synnefo operations, differences and
+similarities between the APIs are also briefed in this section.
 
 |
 
@@ -845,7 +916,8 @@ Return Code                 Description
 400 (Bad Request)           Invalid request or unknown action
 401 (Unauthorized)          Missing or expired user token
 403 (Forbidden)             User is not allowed to perform this operation
-500 (Internal Server Error) The request cannot be completed because of an internal error
+500 (Internal Server Error) The request cannot be completed because of an
+internal error
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
@@ -862,9 +934,14 @@ Request body must contain a ``start`` tag on an empty directory::
 Reboot Server
 .............
 
-This operation transitions a server from ``ACTIVE`` to ``REBOOT`` and then ``ACTIVE`` again. Synnefo and OS Compute APIs offer two reboot modes: soft and hard. The only difference is that OS Compute distinguishes between the two types of intermediate states (``REBOOT`` and ``HARD_REBOOT``) while rebooting, but the expected behavior is the same in both APIs.
+This operation transitions a server from ``ACTIVE`` to ``REBOOT`` and then
+``ACTIVE`` again. Synnefo and OS Compute APIs offer two reboot modes: soft and
+hard. The only difference is that OS Compute distinguishes between the two
+types of intermediate states (``REBOOT`` and ``HARD_REBOOT``) while rebooting,
+but the expected behavior is the same in both APIs.
 
-Request body must contain a ``reboot`` tag over a ``type`` tag on the reboot type::
+Request body must contain a ``reboot`` tag over a ``type`` tag on the reboot
+type::
 
   { 'reboot' : { 'type': <reboot type>}}
 
@@ -892,13 +969,18 @@ Request body must contain a ``shutdown`` tag on an empty directory::
 Get Server Console
 ..................
 
-The console operation arranges for an OOB console of the specified type. Only consoles of type "vnc" are supported for now. Cyclades server uses a running instance of vncauthproxy to setup proper VNC forwarding with a random password, then returns the necessary VNC connection info to the caller.
+The console operation arranges for an OOB console of the specified type. Only
+consoles of type "vnc" are supported for now. Cyclades server uses a running
+instance of vncauthproxy to setup proper VNC forwarding with a random password,
+then returns the necessary VNC connection info to the caller.
 
-Request body must a contain a ``console`` tag over a ``type`` tag on a console type::
+Request body must a contain a ``console`` tag over a ``type`` tag on a console
+type::
 
   console: {type: 'vnc' }
 
-If successful, it returns a **200** code and also a json formated body with the following fields:
+If successful, it returns a **200** code and also a json formated body with the
+following fields:
 
 ================== ======================
 Response Parameter Description           
@@ -929,7 +1011,8 @@ type               Connection type (only VNC)
 .. code-block:: xml
 
   <?xml version="1.0" encoding="UTF-8"?>
-  <console xmlns="http://docs.openstack.org/compute/api/v1.1" xmlns:atom="http://www.w3.org/2005/Atom"
+  <console xmlns="http://docs.openstack.org/compute/api/v1.1"
+      xmlns:atom="http://www.w3.org/2005/Atom"
       type="vnc"
       host="vm42.example.org"
       port="1234"
@@ -939,9 +1022,11 @@ type               Connection type (only VNC)
 Set Firewall Profile
 ....................
 
-The firewallProfile function sets a firewall profile for the public interface of a server.
+The firewallProfile function sets a firewall profile for the public interface
+of a server.
 
-Request body must contain a ``firewallProfile`` tag over a ``profile`` tag on the firewall type::
+Request body must contain a ``firewallProfile`` tag over a ``profile`` tag on
+the firewall type::
 
   firewallProfile: { profile: <firewall profile> }
 
@@ -969,6 +1054,262 @@ OS Compute API Specific
 * `Create Image <http://docs.openstack.org/api/openstack-compute/2/content/Create_Image-d1e4655.html>`_
 
 
+Server Metadata
+---------------
+
+List metadata
+.............
+
+.. note:: This operation is semantically equivalent in Cyclades and OS Compute.
+
+================================= ====== ======== ==========
+URI                               Method Cyclades OS Compute
+================================= ====== ======== ==========
+``/servers/<server-id>/meta``     GET    ✔        **✘**
+``/servers/<server-id>/metadata`` GET    **✘**    ✔
+================================= ====== ======== ==========
+
+* **server-id** is the identifier of the virtual server
+
+|
+
+==============  =========================
+Request Header  Value                    
+==============  =========================
+X-Auth-Token    User authentication token
+==============  =========================
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded
+400 (Bad Request)           Invalid server ID or Malformed request
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Administratively suspended server
+404 (Not Found)             Server not found
+500 (Internal Server Error) The request cannot be completed because of an
+internal error
+503 (Service Unavailable)   The server is not currently available
+=========================== =====================
+
+In case of a 200 response code, the response should contain a JSON encoded list
+of key:value pairs, under a 'values' tag which lies under a ``metadata`` tag,
+for example::
+
+  { 
+    'metadata': {
+      'values': {
+        'OS': 'Linux',
+        'users': 'root'
+      }
+    }
+  }
+
+.. note:: In OS Compute API  the 'values' level is missing from the response
+
+Set / Update Server Metadata
+............................
+
+In Cyclades API, setting new metadata and updating the values of existing ones
+is achieved with the same type of request (POST), while in OS Compute API there
+are two separate request types (PUT and POST for
+`setting new <http://docs.openstack.org/api/openstack-compute/2/content/Create_or_Replace_Metadata-d1e5358.html>`_
+and
+`updating existing <http://docs.openstack.org/api/openstack-compute/2/content/Update_Metadata-d1e5208.html>`_
+metadata, respectively).
+
+In Cyclades API, metadata keys not referred by the operation will
+remain intact, while metadata referred by the operation will be overwritten in
+case of success.
+
+================================= ====== ======== ==========
+URI                               Method Cyclades OS Compute
+================================= ====== ======== ==========
+``/servers/<server-id>/meta``     POST    ✔        **✘**
+``/servers/<server-id>/metadata`` PUT    **✘**    ✔
+``/servers/<server-id>/metadata`` POST    **✘**   ✔
+================================= ====== ======== ==========
+
+* **server-id** is the identifier of the virtual server
+
+|
+
+==============  =========================
+Request Header  Value                    
+==============  =========================
+X-Auth-Token    User authentication token
+==============  =========================
+
+|
+
+The request body should contain a JSON-formated set of key:value pairs, under
+the ``metadata`` tag, e.g.::
+
+  {'metadata': {'role': 'webmail', 'users': 'root,maild'}}
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+201 (OK)                    Request succeeded
+400 (Bad Request)           Invalid server ID or Malformed request
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Administratively suspended server
+404 (Not Found)             Server not found
+413 (OverLimit)             Maximum number of metadata exceeded
+500 (Internal Server Error) The request cannot be completed because of an
+internal error
+503 (Service Unavailable)   The server is not currently available
+=========================== =====================
+
+|
+
+In case of a 201 code, the response body should present the new state of
+servers metadata. E.g.::
+
+  {'metadata': {'OS': 'Linux', 'role': 'webmail', 'users': 'root,maild'}}
+
+Get Metadata Item
+.................
+
+.. note:: This operation is semantically equivalent in Cyclades and OS Compute.
+
+======================================= ====== ======== ==========
+URI                                     Method Cyclades OS Compute
+======================================= ====== ======== ==========
+``/servers/<server-id>/meta/<key>``     GET    ✔        **✘**
+``/servers/<server-id>/metadata/<key>`` GET    **✘**    ✔
+======================================= ====== ======== ==========
+
+* **server-id** is the identifier of the virtual server
+* **key** is the key of a matadatum key:value pair
+
+|
+
+==============  =========================
+Request Header  Value                    
+==============  =========================
+X-Auth-Token    User authentication token
+==============  =========================
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded
+400 (Bad Request)           Invalid server ID or Malformed request
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Administratively suspended server
+404 (Not Found)             Metadatum key not found
+500 (Internal Server Error) The request cannot be completed because of an
+internal error
+503 (Service Unavailable)   The server is not currently available
+=========================== =====================
+
+If the response code is 200, the response body contains the requested key:value
+pair under a ``metadata`` tag. For example, if key was ``role``, the response
+body would look similar to this::
+
+  {'metadata': {'role': 'webmail'}}
+
+.. note:: In OS Compute response, ``metadata`` is ``meta``
+
+Set / Update Metadatum Item
+...........................
+
+.. note:: This operation is semantically equivalent in Cyclades and OS Compute.
+
+======================================= ====== ======== ==========
+URI                                     Method Cyclades OS Compute
+======================================= ====== ======== ==========
+``/servers/<server-id>/meta/<key>``     PUT    ✔        **✘**
+``/servers/<server-id>/metadata/<key>`` PUT    **✘**    ✔
+======================================= ====== ======== ==========
+
+* **server-id** is the identifier of the virtual server
+* **key** is the key of a matadatum key:value pair
+
+|
+
+==============  =========================
+Request Header  Value                    
+==============  =========================
+X-Auth-Token    User authentication token
+==============  =========================
+
+|
+
+Request body should contain a ``key``:``value`` pair under a ``meta`` tag.
+The ``value`` is the (new) value to set. The ``key`` of the metadatum may or
+may not exist prior to the operation. For example, request with ``role`` as a
+``key`` may contain the following request body::
+
+  {'meta': {'role': 'gateway'}}
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+201 (OK)                    Request succeeded
+400 (Bad Request)           Invalid server ID or Malformed request
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Administratively suspended server
+404 (Not Found)             Metadatum key not found
+413 (OverLimit)             Maximum number of metadata exceeded
+500 (Internal Server Error) The request cannot be completed because of an
+internal error
+503 (Service Unavailable)   The server is not currently available
+=========================== =====================
+
+|
+
+If the response code is 201, the response body contains the ``key:pair``
+that has just been created or updated, under a ``meta`` tag, so that the body
+of the response is identical to the body of the request.
+
+Delete Server metadata
+......................
+
+.. note:: This operation is semantically equivalent in Cyclades and OS Compute.
+
+======================================= ====== ======== ==========
+URI                                     Method Cyclades OS Compute
+======================================= ====== ======== ==========
+``/servers/<server-id>/meta/<key>``     DELETE ✔        **✘**
+``/servers/<server-id>/metadata/<key>`` DELETE **✘**    ✔
+======================================= ====== ======== ==========
+
+* **server-id** is the identifier of the virtual server
+* **key** is the key of a matadatum key:value pair
+
+|
+
+==============  =========================
+Request Header  Value                    
+==============  =========================
+X-Auth-Token    User authentication token
+==============  =========================
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+204 (OK)                    Request succeeded
+400 (Bad Request)           Invalid server ID
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Administratively suspended server
+404 (Not Found)             Metadatum key not found
+500 (Internal Server Error) The request cannot be completed because of an
+internal error
+503 (Service Unavailable)   The server is not currently available
+=========================== =====================
+
 Flavors
 -------
 
@@ -986,12 +1327,6 @@ Images
   ``changes-since`` is given. 
 * **List Images** does not return deleted images when ``changes-since`` is given.
 
-
-Metadata
---------
-
-* **Update Server Metadata** and **Update Image Metadata** will only return the
-  metadata that were updated (some could have been skipped).
 
 
 Networks

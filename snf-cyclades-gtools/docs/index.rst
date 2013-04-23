@@ -57,7 +57,7 @@ or request a specific version as ``snf-cyclades-gtools==x.y.z``.
 
 .. code-block:: console
 
-   pip install snf-cyclades-gtools -f https://docs.dev.grnet.gr/pypi
+   pip install snf-cyclades-gtools -f https://www.synnefo.org/packages/pypi
 
 On Debian Squeeze, install the ``snf-cyclades-gtools`` Debian package.
 

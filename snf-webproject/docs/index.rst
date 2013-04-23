@@ -25,7 +25,7 @@ or request a specific version as ``snf-webproject==x.y.z``.
 
 .. code-block:: console
 
-   pip install snf-webproject -f https://docs.dev.grnet.gr/pypi
+   pip install snf-webproject -f https://www.synnefo.org/packages/pypi
 
 On Debian Squeeze, install the ``snf-webproject`` Debian package.
 

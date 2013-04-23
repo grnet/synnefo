@@ -1240,7 +1240,7 @@ a) Download the Image from the official snf-image page.
 
 b) Upload the Image to your Pithos+ installation, either using the Pithos+ Web
    UI or the command line client `kamaki
-   <http://docs.dev.grnet.gr/kamaki/latest>`_.
+   <http://www.synnefo.org/docs/kamaki/latest/index.html>`_.
 
 Once the Image is uploaded successfully, download the Image's metadata file
 from the official snf-image page. You will need it, for spawning a VM from
@@ -2060,7 +2060,7 @@ steps, even though you may already have uploaded an Image on Pithos+ from a
  * Register that Image file to Plankton
  * Spawn a new VM from that Image from the Cyclades Web UI
 
-We will use the `kamaki <http://docs.dev.grnet.gr/kamaki/latest>`_
+We will use the `kamaki <http://www.synnefo.org/docs/kamaki/latest/index.html>`_
 command line client to do the uploading and registering of the Image.
 
 Installation of `kamaki`

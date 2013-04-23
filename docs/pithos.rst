@@ -364,4 +364,4 @@ The code can also be accessed from its source repository:
 https://code.grnet.gr/git/pithos/
 
 More information and documentation is available at:
-http://docs.dev.grnet.gr/pithos/latest/index.html
+http://www.synnefo.org/docs/pithos/latest/index.html

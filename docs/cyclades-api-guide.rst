@@ -1310,6 +1310,78 @@ internal error
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
+Cyclades-specific Server Operations
+-----------------------------------
+
+The operations presented in this section are not included in OS Compute API.
+
+Get Server Statistics
+.....................
+
+This operations is used to retrieve information about performance and network
+usage of a server.
+
+============================== ====== ======== ==========
+URI                            Method Cyclades OS Compute
+============================== ====== ======== ==========
+``/servers/<server-id>/stats`` GET    ✔        **✘**
+============================== ====== ======== ==========
+
+* **server-id** is the identifier of the virtual server
+
+|
+
+==============  =========================
+Request Header  Value                    
+==============  =========================
+X-Auth-Token    User authentication token
+==============  =========================
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded
+400 (Bad Request)           Invalid server ID or Malformed request
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Administratively suspended server
+404 (Not Found)             Server not found
+500 (Internal Server Error) The request cannot be completed because of an
+internal error
+503 (Service Unavailable)   The server is not currently available
+=========================== =====================
+
+|
+
+If the response code is 200, response body should container a set of
+``key``:``value`` properties under the ``stats`` tag.
+
+================ ============
+Stats properties Description
+================ ============
+serverRef        The server id
+refresh          Refresh frequency (seconds)
+cpuBar           CPU load (last sampling)
+cpuTimeSeries    CPU load graph for an 8h window
+netBar           Network load (last sampling)
+netTimeSeries    Network load graph for an 8h window
+================ ============
+
+For example:
+
+.. code-block:: javascript
+
+  {
+    "stats": {
+      "serverRef": 42,
+      "refresh": 60,
+      "cpuBar": "https://www.example.com/stats/snf-42/cpu-bar/",
+      "netTimeSeries": "https://example.com/stats/snf-42/net-ts/",
+      "netBar": "https://example.com/stats/snf-42/net-bar/",
+      "cpuTimeSeries": "https://www.example.com/stats/snf-42/cpu-ts/"}
+  }
+
 Flavors
 -------
 

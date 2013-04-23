@@ -36,12 +36,11 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 
 from snf_django.lib.db.transaction import commit_on_success_strict
-from astakos.api.util import json_response
+from astakos.api.util import json_response, is_integer, are_integer
 
 from snf_django.lib import api
-from snf_django.lib.api.faults import BadRequest, InternalServerError
+from snf_django.lib.api.faults import BadRequest, ItemNotFound
 
-from astakos.im.api import api_method as generic_api_method
 from astakos.im.api.user import user_from_token
 from astakos.im.api.service import service_from_token
 
@@ -65,6 +64,10 @@ def service_quotas(request):
     user = request.GET.get('user')
     users = [user] if user is not None else None
     result = service_get_quotas(request.service_instance, users=users)
+
+    if user is not None and result == {}:
+        raise ItemNotFound("No such user '%s'" % user)
+
     return json_response(result)
 
 
@@ -105,8 +108,10 @@ def _provisions_to_list(provisions):
             quantity = provision['quantity']
             key = (holder, source, resource)
             lst.append((key, quantity))
-        except KeyError:
-            raise ValueError("Malformed provision")
+            if not is_integer(quantity):
+                raise ValueError()
+        except (KeyError, ValueError):
+            raise BadRequest("Malformed provision %s" % str(provision))
     return lst
 
 
@@ -118,7 +123,9 @@ def issue_commission(request):
     input_data = json.loads(data)
 
     client_key = str(request.service_instance)
-    provisions = input_data['provisions']
+    provisions = input_data.get('provisions')
+    if provisions is None:
+        raise BadRequest("Provisions are missing.")
     provisions = _provisions_to_list(provisions)
     force = input_data.get('force', False)
     auto_accept = input_data.get('auto_accept', False)
@@ -193,6 +200,9 @@ def resolve_pending_commissions(request):
     accept = input_data.get('accept', [])
     reject = input_data.get('reject', [])
 
+    if not are_integer(accept) or not are_integer(reject):
+        raise BadRequest("Serials should be integer.")
+
     result = qh.resolve_pending_commissions(clientkey=client_key,
                                             accept_set=accept,
                                             reject_set=reject)
@@ -213,7 +223,10 @@ def resolve_pending_commissions(request):
 def get_commission(request, serial):
     data = request.GET
     client_key = str(request.service_instance)
-    serial = int(serial)
+    try:
+        serial = int(serial)
+    except ValueError:
+        raise BadRequest("Serial should be an integer.")
 
     try:
         data = qh.get_commission(clientkey=client_key,
@@ -231,7 +244,10 @@ def get_commission(request, serial):
 def serial_action(request, serial):
     data = request.raw_post_data
     input_data = json.loads(data)
-    serial = int(serial)
+    try:
+        serial = int(serial)
+    except ValueError:
+        raise BadRequest("Serial should be an integer.")
 
     client_key = str(request.service_instance)
 

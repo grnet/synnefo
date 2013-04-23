@@ -44,3 +44,11 @@ def json_response(content, status_code=None):
     response['Content-Type'] = 'application/json; charset=UTF-8'
     response['Content-Length'] = len(response.content)
     return response
+
+
+def is_integer(x):
+    return isinstance(x, (int, long))
+
+
+def are_integer(lst):
+    return all(map(is_integer, lst))

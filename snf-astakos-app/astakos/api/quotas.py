@@ -95,6 +95,21 @@ def get_pending_commissions(request):
     return json_response(result)
 
 
+def _provisions_to_list(provisions):
+    lst = []
+    for provision in provisions:
+        try:
+            holder = provision['holder']
+            source = provision['source']
+            resource = provision['resource']
+            quantity = provision['quantity']
+            key = (holder, source, resource)
+            lst.append((key, quantity))
+        except KeyError:
+            raise ValueError("Malformed provision")
+    return lst
+
+
 @csrf_exempt
 @api.api_method(http_method='POST', token_required=True, user_required=False)
 @service_from_token
@@ -104,6 +119,7 @@ def issue_commission(request):
 
     client_key = str(request.service_instance)
     provisions = input_data['provisions']
+    provisions = _provisions_to_list(provisions)
     force = input_data.get('force', False)
     auto_accept = input_data.get('auto_accept', False)
 

@@ -84,21 +84,6 @@ def _get_holdings_for_update(holding_keys):
     return holdings
 
 
-def _provisions_to_list(provisions):
-    lst = []
-    for provision in provisions:
-        try:
-            holder = provision['holder']
-            source = provision['source']
-            resource = provision['resource']
-            quantity = provision['quantity']
-            key = (holder, source, resource)
-            lst.append((key, quantity))
-        except KeyError:
-            raise InvalidDataError("Malformed provision")
-    return lst
-
-
 def _mkProvision(key, quantity):
     holder, source, resource = key
     return {'holder': holder,
@@ -152,7 +137,6 @@ def issue_commission(context=None,
     operations = Operations()
     provisions_to_create = []
 
-    provisions = _provisions_to_list(provisions)
     keys = [key for (key, value) in provisions]
     holdings = _get_holdings_for_update(keys)
     try:

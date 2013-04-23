@@ -32,11 +32,9 @@
 # or implied, of GRNET S.A.
 
 from functools import wraps
-from traceback import format_exc
 from datetime import datetime
 from urllib import quote, unquote
 
-from django.conf import settings
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
@@ -61,7 +59,7 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_ACCOUNT_QUOTA, BACKEND_CONTAINER_QUOTA,
                                  BACKEND_VERSIONING,
                                  BACKEND_FREE_VERSIONING, BACKEND_POOL_SIZE,
-                                 COOKIE_NAME, USER_CATALOG_URL,
+                                 USER_CATALOG_URL,
                                  RADOS_STORAGE, RADOS_POOL_BLOCKS,
                                  RADOS_POOL_MAPS, TRANSLATE_UUIDS,
                                  PUBLIC_URL_SECURITY,
@@ -69,7 +67,7 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
 from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
                                   VersionNotExists)
 from snf_django.lib.astakos import (get_user_uuid, get_displayname,
-                                 get_uuids, get_displaynames)
+                                    get_uuids, get_displaynames)
 
 import logging
 import re
@@ -112,11 +110,14 @@ def format_header_key(k):
 
 
 def get_header_prefix(request, prefix):
-    """Get all prefix-* request headers in a dict. Reformat keys with format_header_key()."""
+    """Get all prefix-* request headers in a dict.
+       Reformat keys with format_header_key()."""
 
     prefix = 'HTTP_' + prefix.upper().replace('-', '_')
     # TODO: Document or remove '~' replacing.
-    return dict([(format_header_key(k[5:]), v.replace('~', '')) for k, v in request.META.iteritems() if k.startswith(prefix) and len(k) > len(prefix)])
+    return dict([(format_header_key(k[5:]), v.replace('~', ''))
+                for k, v in request.META.iteritems()
+                if k.startswith(prefix) and len(k) > len(prefix)])
 
 
 def check_meta_headers(meta):
@@ -161,13 +162,16 @@ def put_account_headers(response, meta, groups, policy):
         v = smart_str(','.join(v), strings_only=True)
         response[k] = v
     for k, v in policy.iteritems():
-        response[smart_str(format_header_key('X-Account-Policy-' + k), strings_only=True)] = smart_str(v, strings_only=True)
+        response[smart_str(format_header_key('X-Account-Policy-' + k),
+                 strings_only=True)] = smart_str(v, strings_only=True)
 
 
 def get_container_headers(request):
     meta = get_header_prefix(request, 'X-Container-Meta-')
     check_meta_headers(meta)
-    policy = dict([(k[19:].lower(), v.replace(' ', '')) for k, v in get_header_prefix(request, 'X-Container-Policy-').iteritems()])
+    policy = dict([(k[19:].lower(), v.replace(' ', '')) for k, v in
+                  get_header_prefix(request,
+                                    'X-Container-Policy-').iteritems()])
     return meta, policy
 
 
@@ -189,7 +193,8 @@ def put_container_headers(request, response, meta, policy):
         response['X-Container-Until-Timestamp'] = http_date(
             int(meta['until_timestamp']))
     for k, v in policy.iteritems():
-        response[smart_str(format_header_key('X-Container-Policy-' + k), strings_only=True)] = smart_str(v, strings_only=True)
+        response[smart_str(format_header_key('X-Container-Policy-' + k),
+                           strings_only=True)] = smart_str(v, strings_only=True)
 
 
 def get_object_headers(request):
@@ -214,7 +219,8 @@ def put_object_headers(response, meta, restricted=False, token=None):
         response['X-Object-Hash'] = meta['hash']
         response['X-Object-UUID'] = meta['uuid']
         if TRANSLATE_UUIDS:
-            meta['modified_by'] = retrieve_displayname(token, meta['modified_by'])
+            meta['modified_by'] = \
+                retrieve_displayname(token, meta['modified_by'])
         response['X-Object-Modified-By'] = smart_str(
             meta['modified_by'], strings_only=True)
         response['X-Object-Version'] = meta['version']
@@ -249,7 +255,9 @@ def update_manifest_meta(request, v_account, meta):
                 src_container, prefix=src_name, virtual=False)
             for x in objects:
                 src_meta = request.backend.get_object_meta(request.user_uniq,
-                                                           v_account, src_container, x[0], 'pithos', x[1])
+                                                           v_account,
+                                                           src_container,
+                                                           x[0], 'pithos', x[1])
                 etag += src_meta['checksum']
                 bytes += src_meta['bytes']
         except:
@@ -260,6 +268,7 @@ def update_manifest_meta(request, v_account, meta):
         md5.update(etag)
         meta['checksum'] = md5.hexdigest().lower()
 
+
 def is_uuid(str):
     if str is None:
         return False
@@ -268,7 +277,8 @@ def is_uuid(str):
     except ValueError:
         return False
     else:
-       return True
+        return True
+
 
 ##########################
 # USER CATALOG utilities #
@@ -283,12 +293,14 @@ def retrieve_displayname(token, uuid, fail_silently=True):
         return uuid
     return displayname
 
+
 def retrieve_displaynames(token, uuids, return_dict=False, fail_silently=True):
-    catalog =  get_displaynames(token, uuids, USER_CATALOG_URL) or {}
+    catalog = get_displaynames(token, uuids, USER_CATALOG_URL) or {}
     missing = list(set(uuids) - set(catalog))
     if missing and not fail_silently:
         raise ItemNotExists('Unknown displaynames: %s' % ', '.join(missing))
     return catalog if return_dict else [catalog.get(i) for i in uuids]
+
 
 def retrieve_uuid(token, displayname):
     if is_uuid(displayname):
@@ -299,12 +311,14 @@ def retrieve_uuid(token, displayname):
         raise ItemNotExists(displayname)
     return uuid
 
+
 def retrieve_uuids(token, displaynames, return_dict=False, fail_silently=True):
     catalog = get_uuids(token, displaynames, USER_CATALOG_URL) or {}
     missing = list(set(displaynames) - set(catalog))
     if missing and not fail_silently:
         raise ItemNotExists('Unknown uuids: %s' % ', '.join(missing))
     return catalog if return_dict else [catalog.get(i) for i in displaynames]
+
 
 def replace_permissions_displayname(token, holder):
     if holder == '*':
@@ -317,6 +331,7 @@ def replace_permissions_displayname(token, holder):
     else:
         return ':'.join([retrieve_uuid(token, account), group])
 
+
 def replace_permissions_uuid(token, holder):
     if holder == '*':
         return holder
@@ -328,7 +343,9 @@ def replace_permissions_uuid(token, holder):
     else:
         return ':'.join([retrieve_displayname(token, account), group])
 
-def update_sharing_meta(request, permissions, v_account, v_container, v_object, meta):
+
+def update_sharing_meta(request, permissions, v_account,
+                        v_container, v_object, meta):
     if permissions is None:
         return
     allowed, perm_path, perms = permissions
@@ -338,11 +355,11 @@ def update_sharing_meta(request, permissions, v_account, v_container, v_object, 
     # replace uuid with displayname
     if TRANSLATE_UUIDS:
         perms['read'] = [replace_permissions_uuid(
-                getattr(request, 'token', None), x) \
-                    for x in perms.get('read', [])]
+            getattr(request, 'token', None), x)
+            for x in perms.get('read', [])]
         perms['write'] = [replace_permissions_uuid(
-                getattr(request, 'token', None), x) \
-                    for x in perms.get('write', [])]
+            getattr(request, 'token', None), x)
+            for x in perms.get('write', [])]
 
     ret = []
 
@@ -374,13 +391,15 @@ def validate_modification_preconditions(request, meta):
     if_modified_since = request.META.get('HTTP_IF_MODIFIED_SINCE')
     if if_modified_since is not None:
         if_modified_since = parse_http_date_safe(if_modified_since)
-    if if_modified_since is not None and int(meta['modified']) <= if_modified_since:
+    if (if_modified_since is not None
+            and int(meta['modified']) <= if_modified_since):
         raise faults.NotModified('Resource has not been modified')
 
     if_unmodified_since = request.META.get('HTTP_IF_UNMODIFIED_SINCE')
     if if_unmodified_since is not None:
         if_unmodified_since = parse_http_date_safe(if_unmodified_since)
-    if if_unmodified_since is not None and int(meta['modified']) > if_unmodified_since:
+    if (if_unmodified_since is not None
+            and int(meta['modified']) > if_unmodified_since):
         raise faults.PreconditionFailed('Resource has been modified')
 
 
@@ -395,18 +414,21 @@ def validate_matching_preconditions(request, meta):
     if if_match is not None:
         if etag is None:
             raise faults.PreconditionFailed('Resource does not exist')
-        if if_match != '*' and etag not in [x.lower() for x in parse_etags(if_match)]:
+        if (if_match != '*'
+                and etag not in [x.lower() for x in parse_etags(if_match)]):
             raise faults.PreconditionFailed('Resource ETag does not match')
 
     if_none_match = request.META.get('HTTP_IF_NONE_MATCH')
     if if_none_match is not None:
         # TODO: If this passes, must ignore If-Modified-Since header.
         if etag is not None:
-            if if_none_match == '*' or etag in [x.lower() for x in parse_etags(if_none_match)]:
+            if (if_none_match == '*'
+                    or etag in [x.lower() for x in parse_etags(if_none_match)]):
                 # TODO: Continue if an If-Modified-Since header is present.
                 if request.method in ('HEAD', 'GET'):
                     raise faults.NotModified('Resource ETag matches')
-                raise faults.PreconditionFailed('Resource exists or ETag matches')
+                raise faults.PreconditionFailed(
+                    'Resource exists or ETag matches')
 
 
 def split_container_object_string(s):
@@ -419,7 +441,9 @@ def split_container_object_string(s):
     return s[:pos], s[(pos + 1):]
 
 
-def copy_or_move_object(request, src_account, src_container, src_name, dest_account, dest_container, dest_name, move=False, delimiter=None):
+def copy_or_move_object(request, src_account, src_container, src_name,
+                        dest_account, dest_container, dest_name,
+                        move=False, delimiter=None):
     """Copy or move an object."""
 
     if 'ignore_content_type' in request.GET and 'CONTENT_TYPE' in request.META:
@@ -436,7 +460,8 @@ def copy_or_move_object(request, src_account, src_container, src_name, dest_acco
             version_id = request.backend.copy_object(
                 request.user_uniq, src_account, src_container, src_name,
                 dest_account, dest_container, dest_name,
-                content_type, 'pithos', meta, False, permissions, src_version, delimiter)
+                content_type, 'pithos', meta, False, permissions,
+                src_version, delimiter)
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except (ItemNotExists, VersionNotExists):
@@ -447,7 +472,9 @@ def copy_or_move_object(request, src_account, src_container, src_name, dest_acco
         raise faults.RequestEntityTooLarge('Quota error: %s' % e)
     if public is not None:
         try:
-            request.backend.update_object_public(request.user_uniq, dest_account, dest_container, dest_name, public)
+            request.backend.update_object_public(
+                request.user_uniq, dest_account,
+                dest_container, dest_name, public)
         except NotAllowedError:
             raise faults.Forbidden('Not allowed')
         except ItemNotExists:
@@ -598,11 +625,11 @@ def get_sharing(request):
     if TRANSLATE_UUIDS:
         try:
             ret['read'] = [replace_permissions_displayname(
-                    getattr(request, 'token', None), x) \
-                        for x in ret.get('read', [])]
+                getattr(request, 'token', None), x)
+                for x in ret.get('read', [])]
             ret['write'] = [replace_permissions_displayname(
-                    getattr(request, 'token', None), x) \
-                        for x in ret.get('write', [])]
+                getattr(request, 'token', None), x)
+                for x in ret.get('write', [])]
         except ItemNotExists, e:
             raise faults.BadRequest(
                 'Bad X-Object-Sharing header value: unknown account: %s' % e)
@@ -651,7 +678,7 @@ MAX_UPLOAD_SIZE = 5 * (1024 * 1024 * 1024)  # 5GB
 
 
 def socket_read_iterator(request, length=0, blocksize=4096):
-    """Return a maximum of blocksize data read from the socket in each iteration.
+    """Return a maximum of blocksize data read from the socket in each iteration
 
     Read up to 'length'. If 'length' is negative, will attempt a chunked read.
     The maximum ammount of data read is controlled by MAX_UPLOAD_SIZE.
@@ -660,7 +687,8 @@ def socket_read_iterator(request, length=0, blocksize=4096):
     sock = raw_input_socket(request)
     if length < 0:  # Chunked transfers
         # Small version (server does the dechunking).
-        if request.environ.get('mod_wsgi.input_chunked', None) or request.META['SERVER_SOFTWARE'].startswith('gunicorn'):
+        if (request.environ.get('mod_wsgi.input_chunked', None)
+                or request.META['SERVER_SOFTWARE'].startswith('gunicorn')):
             while length < MAX_UPLOAD_SIZE:
                 data = sock.read(blocksize)
                 if data == '':
@@ -730,7 +758,8 @@ class SaveToBackendHandler(FileUploadHandler):
             self.md5.update(block)
             self.data = self.data[length:]
 
-    def new_file(self, field_name, file_name, content_type, content_length, charset=None):
+    def new_file(self, field_name, file_name, content_type,
+                 content_length, charset=None):
         self.md5 = hashlib.md5()
         self.data = ''
         self.file = UploadedFile(
@@ -755,7 +784,8 @@ class SaveToBackendHandler(FileUploadHandler):
 class ObjectWrapper(object):
     """Return the object's data block-per-block in each iteration.
 
-    Read from the object using the offset and length provided in each entry of the range list.
+    Read from the object using the offset and length provided
+    in each entry of the range list.
     """
 
     def __init__(self, backend, ranges, sizes, hashmaps, boundary):
@@ -788,7 +818,8 @@ class ObjectWrapper(object):
 
             # Get the block for the current position.
             self.block_index = int(self.offset / self.backend.block_size)
-            if self.block_hash != self.hashmaps[self.file_index][self.block_index]:
+            if self.block_hash != \
+                    self.hashmaps[self.file_index][self.block_index]:
                 self.block_hash = self.hashmaps[
                     self.file_index][self.block_index]
                 try:
@@ -858,7 +889,8 @@ def object_data_response(request, sizes, hashmaps, meta, public=False):
                  offset < 0 or offset >= size or
                  offset + length > size]
         if len(check) > 0:
-            raise faults.RangeNotSatisfiable('Requested range exceeds object limits')
+            raise faults.RangeNotSatisfiable(
+                'Requested range exceeds object limits')
         ret = 206
         if_range = request.META.get('HTTP_IF_RANGE')
         if if_range:
@@ -880,7 +912,8 @@ def object_data_response(request, sizes, hashmaps, meta, public=False):
     wrapper = ObjectWrapper(request.backend, ranges, sizes, hashmaps, boundary)
     response = HttpResponse(wrapper, status=ret)
     put_object_headers(
-            response, meta, restricted=public, token=getattr(request, 'token', None))
+        response, meta, restricted=public,
+        token=getattr(request, 'token', None))
     if ret == 206:
         if len(ranges) == 1:
             offset, length = ranges[0]
@@ -911,7 +944,8 @@ def put_object_block(request, hashmap, data, offset):
 def hashmap_md5(backend, hashmap, size):
     """Produce the MD5 sum from the data in the hashmap."""
 
-    # TODO: Search backend for the MD5 of another object with the same hashmap and size...
+    # TODO: Search backend for the MD5 of another object
+    #       with the same hashmap and size...
     md5 = hashlib.md5()
     bs = backend.block_size
     for bi, hash in enumerate(hashmap):
@@ -934,36 +968,34 @@ def simple_list_response(request, l):
 from pithos.backends.util import PithosBackendPool
 
 if RADOS_STORAGE:
-    BLOCK_PARAMS = { 'mappool': RADOS_POOL_MAPS,
-                     'blockpool': RADOS_POOL_BLOCKS,
-                   }
+    BLOCK_PARAMS = {'mappool': RADOS_POOL_MAPS,
+                    'blockpool': RADOS_POOL_BLOCKS, }
 else:
-    BLOCK_PARAMS = { 'mappool': None,
-                     'blockpool': None,
-                   }
+    BLOCK_PARAMS = {'mappool': None,
+                    'blockpool': None, }
 
 
 _pithos_backend_pool = PithosBackendPool(
-        size=BACKEND_POOL_SIZE,
-        db_module=BACKEND_DB_MODULE,
-        db_connection=BACKEND_DB_CONNECTION,
-        block_module=BACKEND_BLOCK_MODULE,
-        block_path=BACKEND_BLOCK_PATH,
-        block_umask=BACKEND_BLOCK_UMASK,
-        queue_module=BACKEND_QUEUE_MODULE,
-        queue_hosts=BACKEND_QUEUE_HOSTS,
-        queue_exchange=BACKEND_QUEUE_EXCHANGE,
-        quotaholder_enabled=USE_QUOTAHOLDER,
-        quotaholder_url=QUOTAHOLDER_URL,
-        quotaholder_token=QUOTAHOLDER_TOKEN,
-        quotaholder_client_poolsize=QUOTAHOLDER_POOLSIZE,
-        free_versioning=BACKEND_FREE_VERSIONING,
-        block_params=BLOCK_PARAMS,
-        public_url_security=PUBLIC_URL_SECURITY,
-        public_url_alphabet=PUBLIC_URL_ALPHABET,
-        account_quota_policy=BACKEND_ACCOUNT_QUOTA,
-        container_quota_policy=BACKEND_CONTAINER_QUOTA,
-        container_versioning_policy=BACKEND_VERSIONING)
+    size=BACKEND_POOL_SIZE,
+    db_module=BACKEND_DB_MODULE,
+    db_connection=BACKEND_DB_CONNECTION,
+    block_module=BACKEND_BLOCK_MODULE,
+    block_path=BACKEND_BLOCK_PATH,
+    block_umask=BACKEND_BLOCK_UMASK,
+    queue_module=BACKEND_QUEUE_MODULE,
+    queue_hosts=BACKEND_QUEUE_HOSTS,
+    queue_exchange=BACKEND_QUEUE_EXCHANGE,
+    quotaholder_enabled=USE_QUOTAHOLDER,
+    quotaholder_url=QUOTAHOLDER_URL,
+    quotaholder_token=QUOTAHOLDER_TOKEN,
+    quotaholder_client_poolsize=QUOTAHOLDER_POOLSIZE,
+    free_versioning=BACKEND_FREE_VERSIONING,
+    block_params=BLOCK_PARAMS,
+    public_url_security=PUBLIC_URL_SECURITY,
+    public_url_alphabet=PUBLIC_URL_ALPHABET,
+    account_quota_policy=BACKEND_ACCOUNT_QUOTA,
+    container_quota_policy=BACKEND_CONTAINER_QUOTA,
+    container_versioning_policy=BACKEND_VERSIONING)
 
 
 def get_backend():

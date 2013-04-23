@@ -1237,7 +1237,7 @@ a) Download the Image from the official snf-image page.
 
 b) Upload the Image to your Pithos+ installation, either using the Pithos+ Web
    UI or the command line client `kamaki
-   <http://docs.dev.grnet.gr/kamaki/latest/index.html>`_.
+   <http://www.synnefo.org/docs/kamaki/latest/index.html>`_.
 
 Once the Image is uploaded successfully, download the Image's metadata file
 from the official snf-image page. You will need it, for spawning a VM from
@@ -2057,7 +2057,7 @@ steps, even though you may already have uploaded an Image on Pithos+ from a
  * Register that Image file to Plankton
  * Spawn a new VM from that Image from the Cyclades Web UI
 
-We will use the `kamaki <http://docs.dev.grnet.gr/kamaki/latest/index.html>`_
+We will use the `kamaki <http://www.synnefo.org/docs/kamaki/latest/index.html>`_
 command line client to do the uploading and registering of the Image.
 
 Installation of `kamaki`
@@ -2082,26 +2082,30 @@ installation. We do this by running:
 
 .. code-block:: console
 
-   $ kamaki config set astakos.url "https://node1.example.com"
+   $ kamaki config set user.url "https://node1.example.com"
    $ kamaki config set compute.url "https://node1.example.com/api/v1.1"
    $ kamaki config set image.url "https://node1.example.com/plankton"
-   $ kamaki config set store.url "https://node2.example.com/v1"
-   $ kamaki config set global.account "user@example.com"
-   $ kamaki config set store.enable on
-   $ kamaki config set store.pithos_extensions on
-   $ kamaki config set store.url "https://node2.example.com/v1"
-   $ kamaki config set store.account USER_UUID
-   $ kamaki config set global.token USER_TOKEN
+   $ kamaki config set file.url "https://node2.example.com/v1"
+   $ kamaki config set token USER_TOKEN
 
-The USER_TOKEN and USER_UUID appear on the user's (``user@example.com``)
-`Profile` web page on the Astakos Web UI.
+The USER_TOKEN appears on the user's `Profile` web page on the Astakos Web UI.
 
-You can see that the new configuration options have been applied correctly, by
-running:
+You can see that the new configuration options have been applied correctly,
+either by checking the editable file ``~/.kamakirc`` or by running:
 
 .. code-block:: console
 
    $ kamaki config list
+
+A quick test to check that kamaki is configured correctly, is to try to
+authenticate a user based on his/her token (in this case the user is you):
+
+.. code-block:: console
+
+  $ kamaki user authenticate
+
+The above operation provides various user information, e.g. UUID (the unique
+user id) which might prove useful in some operations.
 
 Upload an Image file to Pithos+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2122,30 +2126,43 @@ We create the new ``images`` container by running:
 
 .. code-block:: console
 
-   $ kamaki store create images
+   $ kamaki file create images
+
+To check if the container has been created, list all containers of your
+account:
+
+.. code-block:: console
+
+  $ kamaki file list
 
 Then, we upload the Image file to that container:
 
 .. code-block:: console
 
-   $ kamaki store upload --container images \
-                         /srv/images/debian_base-6.0-7-x86_64.diskdump \
-                         debian_base-6.0-7-x86_64.diskdump
+   $ kamaki file upload /srv/images/debian_base-6.0-7-x86_64.diskdump images
 
-The first is the local path and the second is the remote path on Pithos+. If
-the new container and the file appears on the Pithos+ Web UI, then you have
-successfully created the container and uploaded the Image file.
+The first is the local path and the second is the remote container on Pithos+.
+Check if the file has been uploaded, by listing the container contents:
+
+.. code-block:: console
+
+  $ kamaki file list images
+
+Alternatively check if the new container and file appear on the Pithos+ Web UI.
 
 Register an existing Image file to Plankton
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Once the Image file has been successfully uploaded on Pithos+, then we register
+For the purposes of the following example, we assume that the user UUID is
+``u53r-un1qu3-1d``.
+
+Once the Image file has been successfully uploaded on Pithos+ then we register
 it to Plankton (so that it becomes visible to Cyclades), by running:
 
 .. code-block:: console
 
    $ kamaki image register "Debian Base" \
-                           pithos://USER_UUID/images/debian_base-6.0-7-x86_64.diskdump \
+                           pithos://u53r-un1qu3-1d/images/debian_base-6.0-7-x86_64.diskdump \
                            --public \
                            --disk-format=diskdump \
                            --property OSFAMILY=linux --property ROOT_PARTITION=1 \
@@ -2154,7 +2171,7 @@ it to Plankton (so that it becomes visible to Cyclades), by running:
                            --property sortorder=1 --property USERS=root --property OS=debian
 
 This command registers the Pithos+ file
-``pithos://user@example.com/images/debian_base-6.0-7-x86_64.diskdump`` as an
+``pithos://u53r-un1qu3-1d/images/debian_base-6.0-7-x86_64.diskdump`` as an
 Image in Plankton. This Image will be public (``--public``), so all users will
 be able to spawn VMs from it and is of type ``diskdump``. The first two
 properties (``OSFAMILY`` and ``ROOT_PARTITION``) are mandatory. All the rest

@@ -35,13 +35,11 @@
 import sys
 import os
 import subprocess
-import time
-from errno import ECONNREFUSED
-from os.path import dirname
 
 path = os.path.dirname(os.path.realpath(__file__))
 os.environ['SYNNEFO_SETTINGS_DIR'] = path + '/settings'
 os.environ['DJANGO_SETTINGS_MODULE'] = 'synnefo.settings'
+
 
 # The following import is copied from snf-tools/syneffo_tools/burnin.py
 # Thank you John Giannelos <johngian@grnet.gr>
@@ -53,20 +51,6 @@ except ImportError:
         raise Exception("The unittest2 package is required for Python < 2.7")
     import unittest
 
-from astakos.quotaholder.callpoint import QuotaholderDjangoDBCallpoint
-
-import random
-
-def printf(fmt, *args):
-    print(fmt.format(*args))
-
-
-### DEFS ###
-def new_quota_holder_client():
-    """
-    Create a new quota holder api client
-    """
-    return QuotaholderDjangoDBCallpoint()
 
 def run_test_case(test_case):
     """
@@ -74,38 +58,14 @@ def run_test_case(test_case):
     """
     # Again from snf-tools/synnefo_tools/burnin.py
     # Thank you John Giannelos <johngian@grnet.gr>
-    printf("Running {0}", test_case)
-    import sys
+    print "Running %s" % test_case
     suite = unittest.TestLoader().loadTestsFromTestCase(test_case)
     runner = unittest.TextTestRunner(stream=sys.stderr, verbosity=2,
                                      failfast=True, buffer=False)
     return runner.run(suite)
 
-def run_test_cases(test_cases):
-    for test_case in test_cases:
-        run_test_case(test_case)
 
-def rand_string():
-   alphabet = 'abcdefghijklmnopqrstuvwxyz'
-   min = 5
-   max = 15
-   string=''
-   for x in random.sample(alphabet,random.randint(min,max)):
-    string += x
-   return string
-
-HERE = dirname(__file__)
-
-### CLASSES ###
 class QHTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        subprocess.call([HERE+'/qh_init'])
-        self.qh = new_quota_holder_client()
-
-    def setUp(self):
-        print
-
-    @classmethod
-    def tearDownClass(self):
-        pass
+        subprocess.call([path+'/db_init'])

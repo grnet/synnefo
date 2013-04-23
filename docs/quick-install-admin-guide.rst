@@ -2093,19 +2093,22 @@ installation. We do this by running:
 
 The USER_TOKEN appears on the user's `Profile` web page on the Astakos Web UI.
 
-You can see that the new configuration options have been applied correctly, either by checking the editable file ``~/.kamakirc`` or by running:
+You can see that the new configuration options have been applied correctly,
+either by checking the editable file ``~/.kamakirc`` or by running:
 
 .. code-block:: console
 
    $ kamaki config list
 
-A quick test to check if kamaki is configured correctly is a user authentication based on the provided token:
+A quick test to check that kamaki is configured correctly, is to try to
+authenticate a user based on his/her token (in this case the user is you):
 
 .. code-block:: console
 
   $ kamaki user authenticate
 
-The above operation should provide various user information, e.g. UUID (the unique user id) which might prove useful in some operations.
+The above operation provides various user information, e.g. UUID (the unique
+user id) which might prove useful in some operations.
 
 Upload an Image file to Pithos+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2128,7 +2131,8 @@ We create the new ``images`` container by running:
 
    $ kamaki file create images
 
-To check if the container has been created, list all containers of your account:
+To check if the container has been created, list all containers of your
+account:
 
 .. code-block:: console
 
@@ -2140,7 +2144,8 @@ Then, we upload the Image file to that container:
 
    $ kamaki file upload /srv/images/debian_base-6.0-7-x86_64.diskdump images
 
-The first is the local path and the second is the remote container on Pithos+. Check if the file has been uploaded, by listing the container contents:
+The first is the local path and the second is the remote container on Pithos+.
+Check if the file has been uploaded, by listing the container contents:
 
 .. code-block:: console
 
@@ -2151,7 +2156,8 @@ Alternatively check if the new container and file appear on the Pithos+ Web UI.
 Register an existing Image file to Plankton
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For the purposes of the following example, we assume that the user UUID is ``u53r-un1qu3-1d``.
+For the purposes of the following example, we assume that the user UUID is
+``u53r-un1qu3-1d``.
 
 Once the Image file has been successfully uploaded on Pithos+ then we register
 it to Plankton (so that it becomes visible to Cyclades), by running:
@@ -2159,13 +2165,13 @@ it to Plankton (so that it becomes visible to Cyclades), by running:
 .. code-block:: console
 
    $ kamaki image register "Debian Base" \
-                  pithos://u53r-un1qu3-1d/images/debian_base-6.0-7-x86_64.diskdump \
-                  --public \
-                  --disk-format=diskdump \
-                  --property OSFAMILY=linux --property ROOT_PARTITION=1 \
-                  --property description="Debian Squeeze Base System" \
-                  --property size=451 --property kernel=2.6.32 --property GUI="No GUI" \
-                  --property sortorder=1 --property USERS=root --property OS=debian
+                           pithos://u53r-un1qu3-1d/images/debian_base-6.0-7-x86_64.diskdump \
+                           --public \
+                           --disk-format=diskdump \
+                           --property OSFAMILY=linux --property ROOT_PARTITION=1 \
+                           --property description="Debian Squeeze Base System" \
+                           --property size=451 --property kernel=2.6.32 --property GUI="No GUI" \
+                           --property sortorder=1 --property USERS=root --property OS=debian
 
 This command registers the Pithos+ file
 ``pithos://u53r-un1qu3-1d/images/debian_base-6.0-7-x86_64.diskdump`` as an

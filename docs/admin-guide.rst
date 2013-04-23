@@ -847,18 +847,20 @@ To chage a setting use ``kamaki config set``:
    $ kamaki config set user.url https://accounts.example.com
    $ kamaki config set token ...
 
-To test that everything works, try authenticating the current account with kamaki:
+To test that everything works, try authenticating the current account with
+kamaki:
 
 .. code-block:: console
 
   $ kamaki user authenticate
 
-This will output some user information. For example, *uuid* (unique user id) is quite useful.
+This will output user information.
 
 Upload Image
 ------------
 
-By convention, images are stored in a container called ``images``. Check if the container exists, by listing all containers in your account:
+By convention, images are stored in a container called ``images``. Check if the
+container exists, by listing all containers in your account:
 
 .. code-block:: console
 
@@ -870,22 +872,23 @@ If the container ``images`` does not exist, create it:
 
   $ kamaki file create images
 
-You are now ready to upload an image to container ``images``. You can upload it with a Pithos+ client, or use kamaki directly:
+You are now ready to upload an image to container ``images``. You can upload it
+with a Pithos+ client, or use kamaki directly:
 
 .. code-block:: console
 
    $ kamaki file upload ubuntu.iso images
 
-You can use any Pithos+ client to verify that the image was uploaded correctly, or you can list the contents of the container with kamaki:
+You can use any Pithos+ client to verify that the image was uploaded correctly,
+or you can list the contents of the container with kamaki:
 
 .. code-block:: console
 
   $ kamaki file list images
 
 The full Pithos URL for the previous example will be
-``pithos://u53r-un1qu3-1d/images/ubuntu.iso``
-where ``u53r-un1qu3-1d`` is the unique user id (uuid).
-
+``pithos://u53r-un1qu3-1d/images/ubuntu.iso`` where ``u53r-un1qu3-1d`` is the
+unique user id (uuid).
 
 Register Image
 --------------

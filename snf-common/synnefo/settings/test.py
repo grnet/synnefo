@@ -16,6 +16,6 @@ DATABASES = {
 LOGGING_SETUP['handlers']['console']['level'] = 'WARNING'
 LOGIN_URL = 'http://host:port/'
 
-SOUTH_TESTS_MIGRATE = bool(os.environ.get('SOUTH_TESTS_MIGRATE', True))
+SOUTH_TESTS_MIGRATE = bool(int(os.environ.get('SOUTH_TESTS_MIGRATE', True)))
 
 ASTAKOS_IM_MODULES = ['local', 'shibboleth']

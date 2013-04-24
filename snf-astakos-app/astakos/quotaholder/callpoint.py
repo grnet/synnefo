@@ -42,9 +42,6 @@ from astakos.quotaholder.exception import (
 from astakos.quotaholder.commission import (
     Import, Release, Operations, finalize, undo)
 
-from astakos.quotaholder.utils.newname import newname
-from astakos.quotaholder.api import QH_PRACTICALLY_INFINITE
-
 from .models import (Holding,
                      Commission, Provision, ProvisionLog,
                      now)

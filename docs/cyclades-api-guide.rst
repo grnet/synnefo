@@ -645,7 +645,7 @@ diagnostics       Diagnostic information ✔        **✘**
 * **progress** is changing while the server is building up and has values
 between 0 and 100. When it reaches 100 the server is built.
 
-* **status** refers to `the status <#status_ref>`_ of the server
+* **status** refers to `the status <#status-ref>`_ of the server
 
 * **metadata** are custom key:value pairs used to specify various attributes of
 the VM (e.g. OS, super user, etc.)
@@ -1396,9 +1396,125 @@ internal error
 Flavors
 -------
 
-* ``self`` and ``bookmark`` atom links are not returned.
-* **List Flavors** returns just ``id`` and ``name`` if details is not requested.
+A flavor is an available hardware configuration for a server. Each flavor has a
+unique combination of disk space and memory capacity.
 
+List Flavors
+............
+
+=================== ====== ======== ==========
+URI                 Method Cyclades OS Compute
+=================== ====== ======== ==========
+``/flavors``        GET    ✔        ✔
+``/flavors/detail`` GET    ✔        **✘**
+=================== ====== ======== ==========
+
+* **flavor-id** is the identifier of the flavor
+
+The detailed (``/flavors/detail``) listing in Cyclades is semantically similar
+to OS Compute regular (``/flavor``) listing. The Cyclades regular listing is
+Cyclades specific.
+
+|
+
+==============  =========================
+Request Header  Value                    
+==============  =========================
+X-Auth-Token    User authentication token
+==============  =========================
+
+|
+
+================= ===============
+Request Parameter Value          
+================= ===============
+json              Respond in json
+xml               Respond in xml 
+================= ===============
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded
+400 (Bad Request)           Malformed flavor ID
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Forbidden to use this flavor
+404 (Not Found)             Flavor id not founmd
+500 (Internal Server Error) The request cannot be completed because of an
+internal error
+503 (Service Unavailable)   The server is not currently available
+=========================== =====================
+
+|
+
+If a 200 code is returned, the response body contains a list of flavors, under
+a ``value`` tag, which lies under a ``flavors`` tag. Each item contains the
+fields described in the `flavor section <flavor-ref>`_.
+
+.. note:: In Compute OS API, the ``values`` layer is missing from the response.
+
+In Cyclades, if detail is not requested, only the ``id`` and ``name`` fields
+are returned, e.g.:
+
+.. code-block:: javascript
+
+  {
+    "flavors": {
+      "values": [
+        {
+          "id": 1,
+          "name": "C1R1024D20drbd",
+        }, {
+          "id": 3,
+          "name": "C1R1024D40drbd",
+        }
+      ]
+    }
+  }
+
+Or in XML:
+
+.. code-block:: xml
+
+  <?xml version="1.0" encoding="UTF-8"?>
+  <flavors xmlns="http://docs.openstack.org/compute/api/v1"
+    xmlns:atom="http://www.w3.org/2005/Atom">
+    <flavor id="1" name="One core"/>
+    <flavor id="3" name="Four core"/>
+  </flavors>
+
+A detailed response will contain all the flavor fields, e.g.:
+
+.. code-block:: javascript
+
+  {
+    "flavors": {
+      "values": [
+        {
+          "id": 1,
+          "name": "One core",
+          "ram": 1024,
+          "SNF:disk_template": "drbd",
+          "disk": 20,
+          "cpu": 1
+        }, {
+          "id": 3,
+          "name": "Four core",
+          "ram": 1024,
+          "SNF:disk_template": "drbd",
+          "disk": 40,
+          "cpu": 4
+        }
+      ]
+    }
+  }
+
+Get Flavor Details
+..................
+
+LALA
 
 Images
 ------
@@ -1788,3 +1904,42 @@ ipv6              IP v6 address          ✔        **✘**
   ENABLED, DISABLED, PROTECTED
 
 * **ipv4** and **ipv6** are the IP addresses (versions 4 and 6 respectively) of the specific network connection for that machine.
+
+.. _flavor-ref:
+
+Flavor
+......
+
+A flavor is a hardware configuration for a server. It contains the following
+information:
+
+================= ==================== ======== ==========
+Flavor Attributes Description          Cyclades OS Compute
+================= ==================== ======== ==========
+id                The flavor id        ✔        ✔
+name              The flavor name      ✔        ✔
+ram               Server RAM size      ✔        ✔
+SNF:disk_template Storage mechanism    ✔        **✘**
+disk              Server disk size     ✔        ✔
+cpu               # of Virtual CPUs    ✔        **✘**
+vcpus             # of Virtual CPUs    **✘**    ✔
+links rel         Atom link rel field  **✘**    ✔
+links href        Atom link href field **✘**    ✔
+================= ==================== ======== ==========
+
+* **id** is the flavor unique id (a possitive integer)
+
+* **name** is the flavor name (a string)
+
+* **ram** is the server RAM size in MB
+
+* **SNF:disk_template** is a reference to the underlying storage mechanism used
+by the Cyclades server. It is Cyclades specific.
+
+* **disk** the servers disk size in GB
+
+* **cpu** and **vcpus** are semantically equivalent terms in Cyclades and OS Compute APIs respectively and they refer to the number of virtual CPUs assigned
+to a server
+
+* **link ref** and **link href** refer to the Atom link attributes that are
+`used in OS Compute API <http://docs.openstack.org/api/openstack-compute/2/content/List_Flavors-d1e4188.html>`_.

@@ -406,8 +406,9 @@ Get Server Stats
 
 This operation returns URLs to graphs showing CPU and Network statistics. A
 ``refresh`` attribute is returned as well that is the recommended refresh rate
-of the stats for the clients. This operation is no longer documented in OS
-Compute v2.
+of the stats for the clients.
+
+.. note:: This operation is not included in OS Compute v2.
 
 ============================== ====== ======== ==========
 URI                            Method Cyclades OS Compute
@@ -486,14 +487,95 @@ netTimeSeries      Network load / time graph URL
 
   <?xml version="1.0" encoding="UTF-8"?>
   <stats xmlns="http://docs.openstack.org/compute/api/v1.1"\
-        xmlns:atom="http://www.w3.org/2005/Atom"
-      serverRef="1"
-      refresh="60"
-      cpuBar="http://stats.okeanos.grnet.gr/b9a1x0b16048c/cpu-bar.png"
-      cpuTimeSeries="http://stats.okeanos.grnet.gr/b9a1c3ca7e3b9fce75112c43565fb9960b16048c/cpu-ts.png"
-      netBar="http://stats.okeanos.grnet.gr/b9a1x0b16048c/net-bar.png"
-      netTimeSeries="http://stats.okeanos.grnet.gr/b9a1x0b16048c/net-ts.png">
+    xmlns:atom="http://www.w3.org/2005/Atom"
+    serverRef="1"
+    refresh="60"
+    cpuBar="https://www.example.com/stats/snf-42/cpu-bar/",
+    netTimeSeries="https://example.com/stats/snf-42/net-ts/",
+    netBar="https://example.com/stats/snf-42/net-bar/",
+    cpuTimeSeries="https://www.example.com/stats/snf-42/cpu-ts/"
   </stats>
+
+Get Server Diagnostics
+......................
+
+This operation returns diagnostic information for a server.
+
+.. note:: This operation is not included in OS Compute v2.
+
+==================================== ====== ======== ==========
+URI                            Method Cyclades OS Compute
+==================================== ====== ======== ==========
+``/servers/<server-id>/diagnostics`` GET    ✔        **✘**
+==================================== ====== ======== ==========
+
+* **server-id** is the identifier of the virtual server
+
+|
+
+==============  =========================
+Request Header  Value                    
+==============  =========================
+X-Auth-Token    User authentication token
+==============  =========================
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded
+400 (Bad Request)           Invalid server ID or Server deleted
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Administratively suspended server
+404 (Not Found)             Server not found
+500 (Internal Server Error) The request cannot be completed because of an
+internal error
+503 (Service Unavailable)   The server is not currently available
+=========================== =====================
+
+If a 200 code is returned, the response body contains a list of items. Each
+item is a diagnostic entry and consists of the attributes presented bellow:
+
+==================== ===========
+Diagnostic attribute Description
+==================== ===========
+level                Debug level
+created              Log entry timestamp
+source               Log source proccess
+source_date          Log source date          
+message              Log description
+details              Detailed log description
+==================== ===========
+
+For example:
+
+.. code-block:: javascript
+
+  [
+    {
+      "level": "DEBUG",
+      "created": "2013-04-09T15:25:53.965144+00:00",
+      "source": "image-helper-task-start",
+      "source_date": "2013-04-09T15:25:53.954695+00:00",
+      "message": "FixPartitionTable",
+      "details": null
+    }, {
+      "level": "DEBUG",
+      "created": "2013-04-09T15:25:46.413718+00:00",
+      "source": "image-info",
+      "source_date": "2013-04-09T15:25:46.404477+00:00",
+      "message": "Starting customization VM...",
+      "details": null
+    }, {
+      "level": "DEBUG",
+      "created": "2013-04-09T15:25:46.207038+00:00",
+      "source": "image-info",
+      "source_date": "2013-04-09T15:25:46.197183+00:00",
+      "message": "Image copy finished.",
+      "details": "All operations finished as they should. No errors reported."
+    }
+  ]
 
 Get Server Details
 ..................
@@ -1310,77 +1392,6 @@ internal error
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
-Cyclades-specific Server Operations
------------------------------------
-
-The operations presented in this section are not included in OS Compute API.
-
-Get Server Statistics
-.....................
-
-This operations is used to retrieve information about performance and network
-usage of a server.
-
-============================== ====== ======== ==========
-URI                            Method Cyclades OS Compute
-============================== ====== ======== ==========
-``/servers/<server-id>/stats`` GET    ✔        **✘**
-============================== ====== ======== ==========
-
-* **server-id** is the identifier of the virtual server
-
-|
-
-==============  =========================
-Request Header  Value                    
-==============  =========================
-X-Auth-Token    User authentication token
-==============  =========================
-
-|
-
-=========================== =====================
-Return Code                 Description
-=========================== =====================
-200 (OK)                    Request succeeded
-400 (Bad Request)           Invalid server ID or Malformed request
-401 (Unauthorized)          Missing or expired user token
-403 (Forbidden)             Administratively suspended server
-404 (Not Found)             Server not found
-500 (Internal Server Error) The request cannot be completed because of an
-internal error
-503 (Service Unavailable)   The server is not currently available
-=========================== =====================
-
-|
-
-If the response code is 200, response body should container a set of
-``key``:``value`` properties under the ``stats`` tag.
-
-================ ============
-Stats properties Description
-================ ============
-serverRef        The server id
-refresh          Refresh frequency (seconds)
-cpuBar           CPU load (last sampling)
-cpuTimeSeries    CPU load graph for an 8h window
-netBar           Network load (last sampling)
-netTimeSeries    Network load graph for an 8h window
-================ ============
-
-For example:
-
-.. code-block:: javascript
-
-  {
-    "stats": {
-      "serverRef": 42,
-      "refresh": 60,
-      "cpuBar": "https://www.example.com/stats/snf-42/cpu-bar/",
-      "netTimeSeries": "https://example.com/stats/snf-42/net-ts/",
-      "netBar": "https://example.com/stats/snf-42/net-bar/",
-      "cpuTimeSeries": "https://www.example.com/stats/snf-42/cpu-ts/"}
-  }
 
 Flavors
 -------

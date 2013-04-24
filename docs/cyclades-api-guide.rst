@@ -1409,8 +1409,6 @@ URI                 Method Cyclades OS Compute
 ``/flavors/detail`` GET    ✔        **✘**
 =================== ====== ======== ==========
 
-* **flavor-id** is the identifier of the flavor
-
 The detailed (``/flavors/detail``) listing in Cyclades is semantically similar
 to OS Compute regular (``/flavor``) listing. The Cyclades regular listing is
 Cyclades specific.
@@ -1438,10 +1436,9 @@ xml               Respond in xml
 Return Code                 Description
 =========================== =====================
 200 (OK)                    Request succeeded
-400 (Bad Request)           Malformed flavor ID
+400 (Bad Request)           Malformed request
 401 (Unauthorized)          Missing or expired user token
 403 (Forbidden)             Forbidden to use this flavor
-404 (Not Found)             Flavor id not founmd
 500 (Internal Server Error) The request cannot be completed because of an
 internal error
 503 (Service Unavailable)   The server is not currently available
@@ -1511,10 +1508,78 @@ A detailed response will contain all the flavor fields, e.g.:
     }
   }
 
+
 Get Flavor Details
 ..................
 
-LALA
+======================= ====== ======== ==========
+URI                     Method Cyclades OS Compute
+======================= ====== ======== ==========
+``/flavors/<flavor-id`` GET    ✔        ✔
+======================= ====== ======== ==========
+
+* **flavor-id** is the identifier of the flavor
+
+|
+
+==============  =========================
+Request Header  Value                    
+==============  =========================
+X-Auth-Token    User authentication token
+==============  =========================
+
+|
+
+================= ===============
+Request Parameter Value          
+================= ===============
+json              Respond in json
+xml               Respond in xml 
+================= ===============
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded
+400 (Bad Request)           Malformed flavor ID
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Forbidden to use this flavor
+404 (Not Found)             Flavor id not founmd
+500 (Internal Server Error) The request cannot be completed because of an
+internal error
+503 (Service Unavailable)   The server is not currently available
+=========================== =====================
+
+If the response code is 200, the response body should contain a flavor item,
+consisting of the `flavor attributes <flavor-ref>`_ under a ``flavor`` tag.
+
+An example response in JSON:
+
+.. code-block:: javascript
+  
+  {
+    "flavor": {
+      {
+        "id": 1,
+        "name": "One core",
+        "ram": 1024,
+        "SNF:disk_template": "drbd",
+        "disk": 20,
+        "cpu": 1
+      }
+    }
+  }
+
+or in XML:
+
+.. code-block:: xml
+
+  <?xml version="1.0" encoding="UTF-8"?>
+  <flavor xmlns="http://docs.openstack.org/compute/api/v1"
+    xmlns:atom="http://www.w3.org/2005/Atom"
+    id="1" name="One core" ram="1024" disk="20" cpu="1" />
 
 Images
 ------

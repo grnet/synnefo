@@ -110,7 +110,7 @@ def _provisions_to_list(provisions):
             lst.append((key, quantity))
             if not is_integer(quantity):
                 raise ValueError()
-        except (KeyError, ValueError):
+        except (TypeError, KeyError, ValueError):
             raise BadRequest("Malformed provision %s" % str(provision))
     return lst
 
@@ -120,12 +120,18 @@ def _provisions_to_list(provisions):
 @service_from_token
 def issue_commission(request):
     data = request.raw_post_data
-    input_data = json.loads(data)
+    try:
+        input_data = json.loads(data)
+    except json.JSONDecodeError:
+        raise BadRequest("POST data should be in json format.")
 
     client_key = str(request.service_instance)
     provisions = input_data.get('provisions')
     if provisions is None:
         raise BadRequest("Provisions are missing.")
+    if not isinstance (provisions, list):
+        raise BadRequest("Provisions should be a list.")
+
     provisions = _provisions_to_list(provisions)
     force = input_data.get('force', False)
     auto_accept = input_data.get('auto_accept', False)
@@ -194,11 +200,18 @@ def conflictingCF(serial):
 @commit_on_success_strict()
 def resolve_pending_commissions(request):
     data = request.raw_post_data
-    input_data = json.loads(data)
+    try:
+        input_data = json.loads(data)
+    except json.JSONDecodeError:
+        raise BadRequest("POST data should be in json format.")
 
     client_key = str(request.service_instance)
     accept = input_data.get('accept', [])
     reject = input_data.get('reject', [])
+
+    if not isinstance(accept, list) or not isinstance(reject, list):
+        m = '"accept" and "reject" should reference lists of serials.'
+        raise BadRequest(m)
 
     if not are_integer(accept) or not are_integer(reject):
         raise BadRequest("Serials should be integer.")
@@ -243,7 +256,11 @@ def get_commission(request, serial):
 @commit_on_success_strict()
 def serial_action(request, serial):
     data = request.raw_post_data
-    input_data = json.loads(data)
+    try:
+        input_data = json.loads(data)
+    except json.JSONDecodeError:
+        raise BadRequest("POST data should be in json format.")
+
     try:
         serial = int(serial)
     except ValueError:

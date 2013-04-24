@@ -47,8 +47,6 @@ class Holding(Model):
     resource = CharField(max_length=4096, null=False)
 
     limit = intDecimalField()
-    flags = BigIntegerField(null=False, default=0)
-
     imported_min = intDecimalField(default=0)
     imported_max = intDecimalField(default=0)
 

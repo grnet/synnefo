@@ -31,8 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from config import QHTestCase, run_test_case
-from django.db import transaction
+from django.test import TestCase
 
 import astakos.quotaholder.callpoint as qh
 from astakos.quotaholder.exception import (
@@ -44,52 +43,33 @@ from astakos.quotaholder.exception import (
     DuplicateError)
 
 
-class QHAPITest(QHTestCase):
+class QuotaholderTest(TestCase):
 
-    @classmethod
-    def setUpClass(self):
-        QHTestCase.setUpClass()
-        self.client = 'service_name'
-        self.holder = 'h0'
-        self.source = 'system'
-        self.resource1 = 'r1'
-        self.resource2 = 'r2'
-        self.limit1 = 10
-        self.limit2 = 20
-
-    @transaction.commit_on_success
-    def test_010_get_set_quota(self):
-        e = 'uuid1'
-        resource = 'r1'
-        source = 'system'
-        limit = 1
-        limit1 = 2
-        qh.set_quota([((e, source, resource), limit),
-                      ((e, source, resource), limit1)])
-
-        resource2 = 'r2'
-        r = qh.get_quota(holders=[e], sources=[source],
-                         resources=[resource, resource2])
-        self.assertEqual(r, {(e, source, resource): (limit1, 0, 0)})
-
-        r = qh.get_quota()
-        self.assertEqual(r, {(e, source, resource): (limit1, 0, 0)})
-
-    @transaction.commit_on_success
     def issue_commission(self, provisions, name=None, force=False):
         return qh.issue_commission(clientkey=self.client,
                                    name=name,
                                    force=force,
                                    provisions=provisions)
 
-    @transaction.commit_on_success
-    def test_020_commissions(self):
-        holder = self.holder
-        source = self.source
-        resource1 = self.resource1
-        resource2 = self.resource2
-        limit1 = self.limit1
-        limit2 = self.limit2
+    def test_010_qh(self):
+        holder = 'h0'
+        source = 'system'
+        resource1 = 'r1'
+        resource2 = 'r2'
+        limit1 = 10
+        limit2 = 20
+
+        qh.set_quota([((holder, source, resource1), limit1),
+                      ((holder, source, resource1), limit2)])
+
+        r = qh.get_quota(holders=[holder], sources=[source],
+                         resources=[resource1, resource2])
+        self.assertEqual(r, {(holder, source, resource1): (limit2, 0, 0)})
+
+        r = qh.get_quota()
+        self.assertEqual(r, {(holder, source, resource1): (limit2, 0, 0)})
+
+        # issueing commissions
 
         qh.set_quota([((holder, source, resource1), limit1),
                       ((holder, source, resource2), limit2)])
@@ -120,14 +100,7 @@ class QHAPITest(QHTestCase):
         with self.assertRaises(NoCommissionError):
             qh.get_commission(self.client, s1+1)
 
-    @transaction.commit_on_success
-    def test_030_commissions_exceptions(self):
-        holder = self.holder
-        source = self.source
-        resource1 = self.resource1
-        resource2 = self.resource2
-        limit1 = self.limit1
-        limit2 = self.limit2
+        # commission exceptions
 
         with self.assertRaises(NoCapacityError) as cm:
             self.issue_commission([((holder, source, resource1), 1),
@@ -185,14 +158,7 @@ class QHAPITest(QHTestCase):
                   }
         self.assertEqual(r, quotas)
 
-    @transaction.commit_on_success
-    def test_040_resolve_commission(self):
-        holder = self.holder
-        source = self.source
-        resource1 = self.resource1
-        resource2 = self.resource2
-        limit1 = self.limit1
-        limit2 = self.limit2
+        # resolve commission
 
         r = qh.get_pending_commissions(clientkey=self.client)
         self.assertEqual(len(r), 1)
@@ -210,14 +176,7 @@ class QHAPITest(QHTestCase):
                   }
         self.assertEqual(r, quotas)
 
-    @transaction.commit_on_success
-    def test_050_resolve_commissions(self):
-        holder = self.holder
-        source = self.source
-        resource1 = self.resource1
-        resource2 = self.resource2
-        limit1 = self.limit1
-        limit2 = self.limit2
+        # resolve commissions
 
         serial = self.issue_commission([((holder, source, resource1), 1),
                                         ((holder, source, resource2), -1)])
@@ -248,14 +207,7 @@ class QHAPITest(QHTestCase):
         r = qh.get_pending_commissions(clientkey=self.client)
         self.assertEqual(r, [serial2])
 
-    @transaction.commit_on_success
-    def test_060_forced_commission(self):
-        holder = self.holder
-        source = self.source
-        resource1 = self.resource1
-        resource2 = self.resource2
-        limit1 = self.limit1
-        limit2 = self.limit2
+        # forced commission
 
         r = qh.get_quota(holders=[holder])
         quotas = {
@@ -282,14 +234,7 @@ class QHAPITest(QHTestCase):
         }
         self.assertEqual(r, quotas)
 
-    @transaction.commit_on_success
-    def test_070_release_off_upper_limit(self):
-        holder = self.holder
-        source = self.source
-        resource1 = self.resource1
-        resource2 = self.resource2
-        limit1 = self.limit1
-        limit2 = self.limit2
+        # release off upper limit
 
         serial = self.issue_commission([((holder, source, resource1), -1)])
         r = qh.resolve_pending_commission(self.client, serial)
@@ -301,14 +246,7 @@ class QHAPITest(QHTestCase):
         }
         self.assertEqual(r, quotas)
 
-    @transaction.commit_on_success
-    def test_080_add_resource_limit(self):
-        holder = self.holder
-        source = self.source
-        resource1 = self.resource1
-        resource2 = self.resource2
-        limit1 = self.limit1
-        limit2 = self.limit2
+        # add resource limit
 
         qh.add_resource_limit(sources=[source], resources=[resource1], diff=1)
         r = qh.get_quota(holders=[holder])
@@ -325,7 +263,3 @@ class QHAPITest(QHTestCase):
             (holder, source, resource2): (limit2+10, limit2-2, limit2-1),
         }
         self.assertEqual(r, quotas)
-
-
-if __name__ == "__main__":
-    run_test_case(QHAPITest)

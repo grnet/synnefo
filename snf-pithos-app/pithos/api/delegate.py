@@ -34,12 +34,9 @@
 import logging
 
 from urlparse import urlparse
-import urllib
-import urllib2
 
 from django.http import (
-    HttpResponseNotFound, HttpResponseRedirect, HttpResponseBadRequest,
-    HttpResponse)
+    HttpResponseNotFound, HttpResponseRedirect, HttpResponse)
 from django.utils.http import urlencode
 from django.views.decorators.csrf import csrf_exempt
 
@@ -86,12 +83,14 @@ def proxy(request, url, headers=None, body=None):
         status = int(response.status)
         return HttpResponse(data, status=status)
 
+
 @csrf_exempt
 def delegate_to_feedback_service(request):
     token = request.META.get('HTTP_X_AUTH_TOKEN')
     headers = {'X-Auth-Token': token}
     return proxy(
         request, USER_FEEDBACK_URL, headers=headers, body=request.raw_post_data)
+
 
 @csrf_exempt
 def delegate_to_user_catalogs_service(request):

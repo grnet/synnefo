@@ -131,11 +131,11 @@ List Servers
 URI                 Method Cyclades OS Compute
 =================== ====== ======== ==========
 ``/servers``        GET    ✔        ✔
-``/servers/detail``
+``/servers/detail`` GET    ✔        ✔
 =================== ====== ======== ==========
 
 * Both requests return a list of servers. The first returns just ``id`` and
-``name``, while the second returns the full set of server attributes.
+``name``, while the second returns the full collections of server attributes.
 
 ================= =================================== ======== ==========
 Request Parameter Value                               Cyclades OS Compute
@@ -1462,10 +1462,10 @@ are returned, e.g.:
       "values": [
         {
           "id": 1,
-          "name": "C1R1024D20drbd",
+          "name": "One code",
         }, {
           "id": 3,
-          "name": "C1R1024D40drbd",
+          "name": "Four core",
         }
       ]
     }
@@ -1584,6 +1584,7 @@ or in XML:
 Images
 ------
 
+
 * ``progress`` is always returned.
 * ``self`` and ``bookmark`` atom links are not returned.
 * **List Images** returns just ``id`` and ``name`` if details are not requested.
@@ -1591,6 +1592,169 @@ Images
   ``changes-since`` is given. 
 * **List Images** does not return deleted images when ``changes-since`` is given.
 
+An image is a collection of files you use to create or rebuild a server.
+Synnefo deploymenrs usually provide pre-built OS images, but custom image
+creation is also supported.
+
+
+List Images
+...........
+
+=================== ====== ======== ==========
+URI                 Method Cyclades OS Compute
+=================== ====== ======== ==========
+``/servers``        GET    ✔        ✔
+``/servers/detail`` GET    ✔        ✔
+=================== ====== ======== ==========
+
+Both requests return a list of images. The first returns just ``id`` and
+``name``, while the second returns full collections of image attributes.
+
+|
+
+================= ======================== ======== ==========
+Request Parameter Value                    Cyclades OS Compute
+================= ======================== ======== ==========
+json              Respond in json          default  **✘**
+xml               Respond in xml           ✔        **✘**
+server            Server filter            **✘**    ✔
+name              Image name filter        **✘**    ✔
+status            Server status filter     **✘**    ✔
+changes-since     Change timestamp filter  ✔        ✔
+marker            Last list last ID filter **✘**    ✔
+limit             Page size filter         **✘**    ✔
+type              Request filter type      **✘**    ✔
+================= ======================== ======== ==========
+
+* **json** and **xml** parameters are mutually exclusive. If none supported, the response will be formated in json.
+
+* **changes-since** must be an ISO8601 date string. In Cyclades it refers to the image ``updated_at`` attribute and it should be a date in the window [- POLL_LIMIT ... now]. POLL_LIMIT default value is 3600 seconds except if it is set otherwise at server side.
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded
+304 (No images since date)  Can be returned if ``changes-since`` is given
+400 (Bad Request)           Invalid or malformed ``changes-since`` parameter
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             User is not allowed to perform this operation
+500 (Internal Server Error) The request cannot be completed because of an
+internal error
+503 (Service Unavailable)   The server is not currently available
+=========================== =====================
+
+|
+In case of a 200 code, the response body contains a list of image items under the ``images`` tag.
+
+An image item may have the fields presented bellow:
+
+================= ====================== ======== ==========
+Server Attributes Description            Cyclades OS Compute
+================= ====================== ======== ==========
+id                Image ID               ✔        ✔
+name              Image name             ✔        ✔
+updated           Last update date       ✔        ✔
+created           Image creation date    ✔        ✔
+progress          Ready status progress  ✔        **✘**
+status            Image status           **✘**    ✔
+tenant_id         Image creator          **✘**    ✔
+user_id           Image users            **✘**    ✔
+metadata          Custom metadata        ✔        ✔
+links             Atom links             **✘**    ✔
+minDisk           Minimum required disk  **✘**    ✔
+minRam            Minimum required RAM   **✘**    ✔
+================= ====================== ======== ==========
+
+* **id** is the image id and **name** is the image name. They are both strings.
+
+* **updated** and **created** are both ISO8601 date strings
+
+* **progress** varies between 0 and 100 and denotes the status of the image
+
+* **metadata** is a collection of ``key``:``value`` pairs of custom metadata,
+under the tag ``values`` which lies under the tag ``metadata``.
+
+For example, a JSON image response might like the following:
+
+.. code-block:: javascript
+
+  {
+    "images: {
+      "values": [
+        {
+          "status": "ACTIVE",
+          "updated": "2013-03-02T15:57:03+00:00",
+          "name": "edx_saas",
+          "created": "2013-03-02T12:21:00+00:00",
+          "progress": 100,
+          "id": "175716...526236",
+          "metadata": {
+            "values": {
+              "partition_table": "msdos",
+              "osfamily": "linux",
+              "users": "root saasbook",
+              "exclude_task_changepassword": "yes",
+              "os": "ubuntu",
+              "root_partition": "1",
+              "description": "Ubuntu 12.04 LTS"
+            }
+          }
+        }, {
+          "status": "ACTIVE",
+          "updated": "2013-03-02T15:57:03+00:00",
+          "name": "edx_saas",
+          "created": "2013-03-02T12:21:00+00:00",
+          "progress": 100,
+          "id": "1357163d...c526206",
+          "metadata": {
+            "values": {
+              "partition_table": "msdos",
+              "osfamily": "windows",
+              "users": "Administratior",
+              "exclude_task_changepassword": "yes",
+              "os": "WinME",
+              "root_partition": "1",
+              "description": "Rerto Windows"
+            }
+          }
+        }
+      ]
+    }
+  }
+
+
+The OS Compute API does not include any ``values`` layers in the response. More
+details can be found
+`here <http://docs.openstack.org/api/openstack-compute/2/content/List_Images-d1e4435.html>`_.
+
+
+
+
+
+LALA
+....
+
+POST images/  create_image
+
+GET images/iid   get_image_details
+DETELE images/iid  delete_image
+
+GET images/iid/meta   list_metadata
+POST images/iid/meta  update_metadata
+
+GET images/iid/meta/key   get_metadata_item
+PUT images/iid/meta/key   create_metadata_item
+DELETE images/iid/meta/key   delete_metadata_item
 
 
 Networks

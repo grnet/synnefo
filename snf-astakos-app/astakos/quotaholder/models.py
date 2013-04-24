@@ -110,36 +110,3 @@ class ProvisionLog(Model):
     reason = CharField(max_length=4096)
 
     objects = ForUpdateManager()
-
-
-def _get(*args, **kwargs):
-    model = args[0]
-    args = args[1:]
-    o = model.objects
-
-    for_update = kwargs.pop('for_update', False)
-    f = o.get_for_update if for_update else o.get
-    return f(*args, **kwargs)
-
-
-def _filter(*args, **kwargs):
-    model = args[0]
-    args = args[1:]
-    o = model.objects
-
-    for_update = kwargs.pop('for_update', False)
-    q = o.filter(*args, **kwargs)
-    q = q.select_for_update() if for_update else q
-    return q
-
-
-def db_get_holding(*args, **kwargs):
-    return _get(Holding, *args, **kwargs)
-
-
-def db_get_commission(*args, **kwargs):
-    return _get(Commission, *args, **kwargs)
-
-
-def db_filter_provision(*args, **kwargs):
-    return _filter(Provision, *args, **kwargs)

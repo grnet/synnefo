@@ -122,15 +122,7 @@ def add_resource_limit(holders=None, sources=None, resources=None, diff=0):
     holdings.update(limit=F('limit')+diff)
 
 
-def issue_commission(context=None,
-                     clientkey=None,
-                     name=None,
-                     force=False,
-                     provisions=()):
-
-    if name is None:
-        name = ""
-
+def issue_commission(clientkey, provisions, name="", force=False):
     operations = Operations()
     provisions_to_create = []
 
@@ -223,9 +215,13 @@ def _partition_by(f, l):
     return d
 
 
-def resolve_pending_commissions(context=None, clientkey=None,
-                                accept_set=[], reject_set=[],
+def resolve_pending_commissions(clientkey, accept_set=None, reject_set=None,
                                 reason=''):
+    if accept_set is None:
+        accept_set = []
+    if reject_set is None:
+        reject_set = []
+
     actions = dict.fromkeys(accept_set, True)
     conflicting = set()
     for serial in reject_set:
@@ -290,13 +286,13 @@ def resolve_pending_commission(clientkey, serial, accept=True):
     return bool(ok)
 
 
-def get_pending_commissions(context=None, clientkey=None):
+def get_pending_commissions(clientkey):
     pending = Commission.objects.filter(clientkey=clientkey)
     pending_list = pending.values_list('serial', flat=True)
     return list(pending_list)
 
 
-def get_commission(clientkey=None, serial=None):
+def get_commission(clientkey, serial):
     try:
         commission = Commission.objects.get(clientkey=clientkey,
                                             serial=serial)

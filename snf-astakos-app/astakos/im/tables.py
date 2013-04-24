@@ -289,17 +289,27 @@ class UserProjectApplicationsTable(UserTable):
 
     def render_members_count(self, record, *args, **kwargs):
         append = ""
-	application = record
+        application = record
         project = application.get_project()
         if project is None:
             append = mark_safe("<i class='tiny'>%s</i>" % (_('pending'),))
 
         c = project.count_pending_memberships()
         if c > 0:
-            append = mark_safe("<i class='tiny'> - %d %s</i>"
-                                % (c, _('pending')))
-
-        return mark_safe(str(record.members_count()) + append)
+            pending_members_url = reverse('project_pending_members', 
+                kwargs={'chain_id': application.chain})
+            pending_members = "<i class='tiny'> - %d %s</i>" % (c, _('pending'))
+            if self.user.owns_application(record) or self.user.is_project_admin():
+                pending_members = '<a href="%s">%s</a>' % (pending_members_url,
+                pending_members)
+            append = mark_safe(pending_members)
+        members_url = reverse('project_members', 
+            kwargs={'chain_id': application.chain})
+        members_count = record.members_count()
+        if self.user.owns_application(record) or self.user.is_project_admin():
+            members_count = '<a href="%s">%d</a>' % (members_url,
+                members_count)
+        return mark_safe(str(members_count) + append)
         
     class Meta:
         model = ProjectApplication

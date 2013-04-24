@@ -166,6 +166,7 @@ INVALID_PROJECT_START_DATE              =   'Project start date should be equal 
 INVALID_PROJECT_END_DATE                =   'Project end date should be equal or greater than than the current date.'
 INCONSISTENT_PROJECT_DATES              =   'Project end date should be greater than the project start date.'
 ADD_PROJECT_MEMBERS_Q_HELP              =   'Add a comma separated list of user emails, eg. user1@user.com, user2@user.com'
+ADD_PROJECT_MEMBERS_Q_PLACEHOLDER       =   'user1@user.com, user2@user.com'
 MISSING_IDENTIFIER                      =   'Missing identifier.'
 UNKNOWN_USER_ID                         =   'There is no user identified by %s.'
 UNKNOWN_PROJECT_APPLICATION_ID          =   'There is no project application identified by %s.'

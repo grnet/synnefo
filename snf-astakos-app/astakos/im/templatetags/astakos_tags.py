@@ -270,3 +270,7 @@ def confirm_link(context, title, prompt='', url=None, urlarg=None,
     content = render_to_string(template, tpl_context)
     return content
 
+
+@register.simple_tag   
+def substract(arg1, arg2):
+    return arg1-arg2

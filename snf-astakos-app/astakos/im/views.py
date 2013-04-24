@@ -1236,7 +1236,9 @@ def addmembers(request, chain_id, addmembers_form, ctx=None):
                 ctx.mark_rollback()
             messages.error(request, e)
 
-def common_detail(request, chain_or_app_id, project_view=True):
+def common_detail(request, chain_or_app_id, project_view=True, 
+                  template_name='im/projects/project_detail.html',
+                  members_status_filter=None):
     project = None
     if project_view:
         chain_id = chain_or_app_id
@@ -1250,14 +1252,21 @@ def common_detail(request, chain_or_app_id, project_view=True):
                 addmembers_form = AddProjectMembersForm()  # clear form data
         else:
             addmembers_form = AddProjectMembersForm()  # initialize form
-
+        approved_members_count = 0
+        pending_members_count = 0
+        remaining_memberships_count = 0
         project, application = get_by_chain_or_404(chain_id)
         if project:
             members = project.projectmembership_set.select_related()
+            approved_members_count = members.filter(state=1).count()
+            pending_members_count = members.filter(state=0).count()
+            if members_status_filter in (0,1):
+                members = members.filter(state=members_status_filter)
             members_table = tables.ProjectMembersTable(project,
                                                        members,
                                                        user=request.user,
                                                        prefix="members_")
+
             RequestConfig(request, paginate={"per_page": PAGINATE_BY}
                           ).configure(members_table)
 
@@ -1299,10 +1308,12 @@ def common_detail(request, chain_or_app_id, project_view=True):
         request,
         queryset=ProjectApplication.objects.select_related(),
         object_id=application.id,
-        template_name='im/projects/project_detail.html',
+        template_name= template_name,
         extra_context={
             'project_view': project_view,
             'addmembers_form':addmembers_form,
+            'approved_members_count':approved_members_count,
+            'pending_members_count':pending_members_count,
             'members_table': members_table,
             'owner_mode': is_owner,
             'admin_mode': is_project_admin,
@@ -1310,6 +1321,7 @@ def common_detail(request, chain_or_app_id, project_view=True):
             'mem_display': mem_display,
             'can_join_request': can_join_req,
             'can_leave_request': can_leave_req,
+            'members_status_filter':members_status_filter,
             })
 
 @require_http_methods(["GET", "POST"])
@@ -1585,3 +1597,12 @@ def api_access(request):
     return render_response(
         'im/api_access.html',
         context_instance=get_context(request))
+
+
+@require_http_methods(["GET", "POST"])
+@valid_astakos_user_required
+def project_members(request, chain_id, members_status_filter=None, 
+                    template_name='im/projects/project_members.html'):
+    return common_detail(request, chain_id, 
+        members_status_filter=members_status_filter, 
+        template_name=template_name) 

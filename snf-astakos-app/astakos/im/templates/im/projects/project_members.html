@@ -1,0 +1,46 @@
+{% extends "im/projects/project_detail.html" %}
+  
+ 
+{% load astakos_tags filters django_tables2 %}
+
+
+{% block inner_project %} 
+   
+  {% if owner_mode and project_view %}
+    {% if object.project.is_alive %}
+      
+      <div class="full-dotted">
+        <h3> 
+          <a href="#members-table" class="rt-action">ADD MORE MEMBERS</a>
+          MEMBERS  
+ 
+        <div class="project-actions">
+          <a href="{% url project_members object.chain %}"  {% if members_status_filter == None %}class="inactive"{% endif %}>ALL</a> -
+          <a href="{% url project_approved_members object.chain %}" {% if members_status_filter == 1 %}class="inactive"{% endif %}>APPROVED</a> -
+          <a href="{% url project_pending_members object.chain %}" {% if members_status_filter == 0 %}class="inactive"{% endif %}>PENDING</a>
+
+        </div>
+        </h3>
+        
+        {% if members_table %}
+        {% render_table members_table %}
+        {% endif %}
+        
+      </div>
+
+     
+      {% if not project.is_deactivated %}
+        <div class="full-dotted">
+          
+    {% include 'im/projects/addmembers_form.html' %}
+        </div>
+      {% endif %}
+    {% endif %}
+
+     
+     
+    
+  {% endif %}
+{% endblock inner_project %} 
+   
+ 

@@ -246,14 +246,22 @@ table.alt-style tr th.desc a					{ background:url(../images/arrow_th_bg.png) no-
 table.alt-style tr:nth-child(2n) td				{ background:#F2F2F2 } 
 dl.alt-style dt									{ width:30%; float:left; color:#3582AC; font-weight:normal;}
 dl.alt-style dt:nth-child(2n)					{ background:black; }
-dl.alt-style dd									{ overflow:hidden; }
+dl.alt-style dd									{ overflow:hidden; position:relative;}
 .projects										{ padding-bottom:30px; position:relative; }
 .projects h2 span								{ color:#3582AC;}
 .projects h2 em									{ float:right; }
 .projects h3									{ font-size:1.154em; }
+.projects h3 .rt-action 						{ float:right;}
 .projects .submit-rt							{ margin:0; text-align:right; }
 .projects +.buttons-list.fixpos					{ left:0; right:auto; }
-.project-actions a { font-size: 0.7em }
+.project-actions a 								{ font-size: 0.7em }
+.project-actions a.inactive	 					{ color:#ccc; cursor: default}
+.project-actions a.inactive:hover				{ text-decoration: none;}
+.projects dl.alt-style .faint					{ color:#ccc; font-style: italic}
+.projects dl.alt-style .dl-actions 				{ position:absolute; left:300px;}
+.projects form.members 							{ margin-top:20px;}
+.projects form.members label 					{ padding-top:0; text-transform: uppercase;}
+
 
 /* new faq-userguide styles */
 
@@ -516,7 +524,7 @@ form input[type="text"]:-ms-input-placeholder,
 
 h2 .msg-wrap { font-size: 0.7em }
 .msg-wrap									{ position:relative; display:inline-block; }
-.msg-wrap .dialog							{ position:absolute; display: none;}
+.msg-wrap .dialog							{ position:absolute; display: none;background:#fff; z-index:2;}
 .msg-wrap .dialog-content           		{ border:1px dashed #ccc;  padding:15px; width:200px; bottom:30px; right:0; background:#fff;}
 .msg-wrap .dialog .submit					{ min-width:30px; padding:5px 22px; }
 .msg-wrap .dialog .no.submit				{ float:right; }
@@ -617,6 +625,7 @@ form.withlabels.hidden-submit					{ margin-bottom:4em; }
 
 
 i.tiny { font-size: 0.8em; color: #999;}
+a i.tiny 	{ color:inherit;}
 
 h2 span.subtitle { font-size: 0.9em; color: #55B577;}
 
@@ -641,3 +650,9 @@ h2 span.subtitle { font-size: 0.9em; color: #55B577;}
 .content a:visited 		{ border:0 none; }
 
 #hand											{ position:absolute; height:79px; width:61px; background:url(../images/xeraki_hover.png) no-repeat; overflow:hidden; display:none;  top:40px;}
+
+table.cols-3 									{ width:100%; color:#222;}
+table.cols-3 td 								{ width:30%;}
+table.cols-3 td p 								{ padding:0 1em;}
+table.cols-3 tr.images td 						{ text-align: center;}
+table.cols-3 tr.links td 						{ font-size:1.154em}

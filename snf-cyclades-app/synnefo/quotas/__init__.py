@@ -27,11 +27,11 @@
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of GRNET S.A.
 
-from functools import wraps
 from django.utils import simplejson as json
+from django.db import transaction
 
 from snf_django.lib.api import faults
-from synnefo.db.models import QuotaHolderSerial
+from synnefo.db.models import QuotaHolderSerial, VirtualMachine, Network
 
 from synnefo.settings import (CYCLADES_ASTAKOS_SERVICE_TOKEN as ASTAKOS_TOKEN,
                               ASTAKOS_URL)
@@ -64,77 +64,6 @@ class Quotaholder(object):
         return cls._object
 
 
-def uses_commission(func):
-    """Decorator for wrapping functions that needs commission.
-
-    All decorated functions must take as first argument the `serials` list in
-    order to extend them with the needed serial numbers, as return by the
-    Quotaholder
-
-    On successful competition of the decorated function, all serials are
-    accepted to the quotaholder, otherwise they are rejected.
-
-    """
-
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
-            serials = []
-            ret = func(serials, *args, **kwargs)
-        except:
-            log.exception("Unexpected error")
-            try:
-                if serials:
-                    reject_commission(serials=serials)
-            except:
-                log.exception("Exception while rejecting serials %s", serials)
-                raise
-            raise
-
-        # func has completed successfully. accept serials
-        try:
-            if serials:
-                accept_commission(serials)
-            return ret
-        except:
-            log.exception("Exception while accepting serials %s", serials)
-            raise
-    return wrapper
-
-
-## FIXME: Wrap the following two functions inside transaction ?
-def accept_commission(serials, update_db=True):
-    """Accept a list of pending commissions.
-
-    @param serials: List of QuotaHolderSerial objects
-
-    """
-    if update_db:
-        for s in serials:
-            if s.pending:
-                s.accepted = True
-                s.save()
-
-    accept_serials = [s.serial for s in serials]
-    qh_resolve_commissions(accept=accept_serials)
-
-
-def reject_commission(serials, update_db=True):
-    """Reject a list of pending commissions.
-
-    @param serials: List of QuotaHolderSerial objects
-
-    """
-    if update_db:
-        for s in serials:
-            if s.pending:
-                s.rejected = True
-                s.save()
-
-    reject_serials = [s.serial for s in serials]
-    qh_resolve_commissions(reject=reject_serials)
-
-
 def issue_commission(user, source, provisions,
                      force=False, auto_accept=False):
     """Issue a new commission to the quotaholder.
@@ -162,59 +91,12 @@ def issue_commission(user, source, provisions,
         raise Exception("No serial")
 
 
-# Wrapper functions for issuing commissions for each resource type.  Each
-# functions creates the `commission_info` dictionary as expected by the
-# `issue_commision` function. Commissions for deleting a resource, are the same
-# as for creating the same resource, but with negative resource sizes.
-
-
-def issue_vm_commission(user, flavor, delete=False):
-    resources = get_server_resources(flavor)
-    if delete:
-        resources = reverse_quantities(resources)
-    return issue_commission(user, DEFAULT_SOURCE, resources)
-
-
-def get_server_resources(flavor):
-    return {'cyclades.vm': 1,
-            'cyclades.cpu': flavor.cpu,
-            'cyclades.disk': 1073741824 * flavor.disk,  # flavor.disk is in GB
-            # 'public_ip': 1,
-            #'disk_template': flavor.disk_template,
-            'cyclades.ram': 1048576 * flavor.ram}  # flavor.ram is in MB
-
-
-def issue_network_commission(user, delete=False):
-    resources = get_network_resources()
-    if delete:
-        resources = reverse_quantities(resources)
-    return issue_commission(user, DEFAULT_SOURCE, resources)
-
-
-def get_network_resources():
-    return {"cyclades.network.private": 1}
-
-
-def reverse_quantities(resources):
-    return dict((r, -s) for r, s in resources.items())
-
-
-##
-## Reconcile pending commissions
-##
-
-
 def accept_commissions(accepted):
     qh_resolve_commissions(accept=accepted)
 
 
 def reject_commissions(rejected):
     qh_resolve_commissions(reject=rejected)
-
-
-def fix_pending_commissions():
-    (accepted, rejected) = resolve_pending_commissions()
-    qh_resolve_commissions(accepted, rejected)
 
 
 def qh_resolve_commissions(accept=None, reject=None):
@@ -225,6 +107,11 @@ def qh_resolve_commissions(accept=None, reject=None):
 
     qh = Quotaholder.get()
     qh.resolve_commissions(ASTAKOS_TOKEN, accept, reject)
+
+
+def fix_pending_commissions():
+    (accepted, rejected) = resolve_pending_commissions()
+    qh_resolve_commissions(accepted, rejected)
 
 
 def resolve_pending_commissions():
@@ -246,7 +133,7 @@ def resolve_pending_commissions():
     min_ = qh_pending[0]
 
     serials = QuotaHolderSerial.objects.filter(serial__gte=min_, pending=False)
-    accepted = serials.filter(accepted=True).values_list('serial', flat=True)
+    accepted = serials.filter(accept=True).values_list('serial', flat=True)
     accepted = filter(lambda x: x in qh_pending, accepted)
 
     rejected = list(set(qh_pending) - set(accepted))
@@ -284,3 +171,89 @@ def render_overlimit_exception(e):
               " Available: %s, Requested: %s"\
               % (resource, available, requested)
     return msg, details
+
+
+@transaction.commit_manually
+def issue_and_accept_commission(resource, delete=False):
+    """Issue and accept a commission to Quotaholder.
+
+    This function implements the Commission workflow, and must be called
+    exactly after and in the same transaction that created/updated the
+    resource. The workflow that implements is the following:
+    1) Issue commission and get a serial
+    2) Store the serial in DB and mark is as one to accept
+    3) Correlate the serial with the resource
+    4) COMMIT!
+    5) Accept commission to QH (reject if failed until 5)
+    6) Mark serial as resolved
+    7) COMMIT!
+
+    """
+    try:
+        # Convert resources in the format expected by Quotaholder
+        qh_resources = prepare_qh_resources(resource)
+        if delete:
+            qh_resources = reverse_quantities(qh_resources)
+
+        # Issue commission and get the assigned serial
+        serial = issue_commission(resource.userid, DEFAULT_SOURCE,
+                                  qh_resources)
+    except:
+        transaction.rollback()
+        raise
+
+    try:
+        # Mark the serial as one to accept. This step is necessary for
+        # reconciliation
+        serial.pending = False
+        serial.accept = True
+        serial.save()
+
+        # Associate serial with the resource
+        resource.serial = serial
+        resource.save()
+
+        # Commit transaction in the DB! If this commit succeeds, then the
+        # serial is created in the DB with all the necessary information to
+        # reconcile commission
+        transaction.commit()
+    except:
+        transaction.rollback()
+        serial.pending = False
+        serial.accept = False
+        serial.save()
+        transaction.commit()
+        raise
+
+    if serial.accept:
+        # Accept commission to Quotaholder
+        accept_commissions(accepted=[serial.serial])
+    else:
+        reject_commissions(rejected=[serial.serial])
+
+    # Mark the serial as resolved, indicating that no further actions are
+    # needed for this serial
+    serial.resolved = True
+    serial.save()
+    transaction.commit()
+
+    return serial
+
+
+def prepare_qh_resources(resource):
+    if isinstance(resource, VirtualMachine):
+        flavor = resource.flavor
+        return {'cyclades.vm': 1,
+                'cyclades.cpu': flavor.cpu,
+                'cyclades.disk': 1073741824 * flavor.disk,  # flavor.disk in GB
+                # 'public_ip': 1,
+                #'disk_template': flavor.disk_template,
+                'cyclades.ram': 1048576 * flavor.ram}  # flavor.ram is in MB
+    elif isinstance(resource, Network):
+        return {"cyclades.network.private": 1}
+    else:
+        raise ValueError("Unknown Resource '%s'" % resource)
+
+
+def reverse_quantities(resources):
+    return dict((r, -s) for r, s in resources.items())

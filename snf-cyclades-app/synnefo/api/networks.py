@@ -147,9 +147,8 @@ def list_networks(request, detail=False):
 
 
 @api.api_method(http_method='POST', user_required=True, logger=log)
-@quotas.uses_commission
 @transaction.commit_manually
-def create_network(serials, request):
+def create_network(request):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
     #                       serviceUnavailable (503),
@@ -194,14 +193,6 @@ def create_network(serials, request):
         # Check that user provided a valid subnet
         util.validate_network_params(subnet, gateway, subnet6, gateway6)
 
-        # Issue commission
-        serial = quotas.issue_network_commission(user_id)
-        serials.append(serial)
-        # Make the commission accepted, since in the end of this
-        # transaction the Network will have been created in the DB.
-        serial.accepted = True
-        serial.save()
-
         try:
             mode, link, mac_prefix, tags = util.values_from_flavor(flavor)
             network = Network.objects.create(
@@ -218,8 +209,7 @@ def create_network(serials, request):
                 mac_prefix=mac_prefix,
                 tags=tags,
                 action='CREATE',
-                state='PENDING',
-                serial=serial)
+                state='PENDING')
         except EmptyPool:
             log.error("Failed to allocate resources for network of type: %s",
                       flavor)
@@ -227,6 +217,10 @@ def create_network(serials, request):
 
         # Create BackendNetwork entries for each Backend
         network.create_backend_network()
+        # Issue commission to Quotaholder and accept it since at the end of
+        # this transaction the Network object will be created in the DB.
+        # Note: the following call does a commit!
+        quotas.issue_and_accept_commission(network)
     except:
         transaction.rollback()
         raise

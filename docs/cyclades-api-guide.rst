@@ -1448,7 +1448,7 @@ internal error
 
 If a 200 code is returned, the response body contains a list of flavors, under
 a ``value`` tag, which lies under a ``flavors`` tag. Each item contains the
-fields described in the `flavor section <flavor-ref>`_.
+fields described in the `flavor section <#flavor-ref>`_.
 
 .. note:: In Compute OS API, the ``values`` layer is missing from the response.
 
@@ -1654,35 +1654,8 @@ internal error
 =========================== =====================
 
 |
-In case of a 200 code, the response body contains a list of image items under the ``images`` tag.
-
-An image item may have the fields presented bellow:
-
-================= ====================== ======== ==========
-Server Attributes Description            Cyclades OS Compute
-================= ====================== ======== ==========
-id                Image ID               ✔        ✔
-name              Image name             ✔        ✔
-updated           Last update date       ✔        ✔
-created           Image creation date    ✔        ✔
-progress          Ready status progress  ✔        **✘**
-status            Image status           **✘**    ✔
-tenant_id         Image creator          **✘**    ✔
-user_id           Image users            **✘**    ✔
-metadata          Custom metadata        ✔        ✔
-links             Atom links             **✘**    ✔
-minDisk           Minimum required disk  **✘**    ✔
-minRam            Minimum required RAM   **✘**    ✔
-================= ====================== ======== ==========
-
-* **id** is the image id and **name** is the image name. They are both strings.
-
-* **updated** and **created** are both ISO8601 date strings
-
-* **progress** varies between 0 and 100 and denotes the status of the image
-
-* **metadata** is a collection of ``key``:``value`` pairs of custom metadata,
-under the tag ``values`` which lies under the tag ``metadata``.
+In case of a 200 code, the response body contains a list of
+`image items <#image-ref>` under the ``images`` tag.
 
 For example, a JSON image response might like the following:
 
@@ -1738,15 +1711,82 @@ details can be found
 `here <http://docs.openstack.org/api/openstack-compute/2/content/List_Images-d1e4435.html>`_.
 
 
+Get Image Details
+.................
+GET images/iid   get image_details
+
+====================== ====== ======== ==========
+URI                    Method Cyclades OS Compute
+====================== ====== ======== ==========
+``/images/<image-id>`` GET    ✔        ✔
+====================== ====== ======== ==========
+
+* **image-id** is the identifier of the virtual image
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded
+400 (Bad Request)           Malformed image id
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Not allowed to use this image
+404 (Not Found)             Image not found
+500 (Internal Server Error) The request cannot be completed because of an
+internal error
+503 (Service Unavailable)   No available backends or service currently
+unavailable
+=========================== =====================
+
+|
+
+In case of a 200 response code, the response body container a collection of
+`image items <#image-ref>`_ under the ``values`` tag, lying under an ``images``
+tag.
+
+.. note:: In OS Compute API, the ``values`` layer is missing
+
+**Example Details for an image with id 6404619d-...-aef57eaff4af, in JSON**
+
+.. code-block:: javascript
+
+    {
+    "image": {
+      "id": "6404619d-...-aef57eaff4af",
+      "name": "FreeBSD",
+      "status": "ACTIVE",
+      "updated": "2013-04-24T12:06:02+00:00",
+      "created": "2013-04-24T11:52:16+00:00",
+      "progress": 100,
+      "metadata": {
+        "values": {
+          "kernel": "9.1 RELEASE",
+          "osfamily": "freebsd",
+          "users": "root",
+          "gui": "No GUI",
+          "sortorder": "9",
+          "os": "freebsd",
+          "root_partition": "2",
+          "description": "FreeBSD 9"
+        }
+      }
+    }
+  }
 
 
 
 LALA
 ....
 
-POST images/  create_image
-
-GET images/iid   get_image_details
 DETELE images/iid  delete_image
 
 GET images/iid/meta   list_metadata
@@ -1793,28 +1833,27 @@ This operation does not require a request body.
 .. code-block:: javascript
 
   {
-      "networks": {
-          "values": [
-              {
-                  "id": "public",
-                  "name": "public",
-                  "created": "2011-04-20T15:31:08.199640+00:00",
-                  "updated": "2011-05-06T12:47:05.582679+00:00",
-                  "servers": {
-                      "values": [1, 2, 3]
-                  }
-              },
-              {
-                  "id": 2,
-                  "name": "private",
-                  "created": "2011-04-20T14:32:08.199640+00:00",
-                  "updated": "2011-05-06T11:40:05.582679+00:00",
-                  "servers": {
-                      "values": [1]
-                  }
-              }
-          ]
-      }
+    "networks": {
+      "values": [
+        {
+          "id": "public",
+          "name": "public",
+          "created": "2011-04-20T15:31:08.199640+00:00",
+          "updated": "2011-05-06T12:47:05.582679+00:00",
+          "servers": {
+              "values": [1, 2, 3]
+          }
+        }, {
+          "id": 2,
+          "name": "private",
+          "created": "2011-04-20T14:32:08.199640+00:00",
+          "updated": "2011-05-06T11:40:05.582679+00:00",
+          "servers": {
+              "values": [1]
+          }
+        }
+      ]
+    }
   }
 
 **Example Networks List Response: XML (detail)**:
@@ -2172,3 +2211,40 @@ to a server
 
 * **link ref** and **link href** refer to the Atom link attributes that are
 `used in OS Compute API <http://docs.openstack.org/api/openstack-compute/2/content/List_Flavors-d1e4188.html>`_.
+
+.. _image-ref:
+
+Image
+.....
+
+An image is a collection of files you use to create or rebuild a server.
+
+An image item may have the fields presented bellow:
+
+================= ====================== ======== ==========
+Server Attributes Description            Cyclades OS Compute
+================= ====================== ======== ==========
+id                Image ID               ✔        ✔
+name              Image name             ✔        ✔
+updated           Last update date       ✔        ✔
+created           Image creation date    ✔        ✔
+progress          Ready status progress  ✔        **✘**
+status            Image status           **✘**    ✔
+tenant_id         Image creator          **✘**    ✔
+user_id           Image users            **✘**    ✔
+metadata          Custom metadata        ✔        ✔
+links             Atom links             **✘**    ✔
+minDisk           Minimum required disk  **✘**    ✔
+minRam            Minimum required RAM   **✘**    ✔
+================= ====================== ======== ==========
+
+* **id** is the image id and **name** is the image name. They are both strings.
+
+* **updated** and **created** are both ISO8601 date strings
+
+* **progress** varies between 0 and 100 and denotes the status of the image
+
+* **metadata** is a collection of ``key``:``values`` pairs of custom metadata,
+under the tag ``values`` which lies under the tag ``metadata``.
+
+.. note:: in OS Compute, the ``values`` layer is missing

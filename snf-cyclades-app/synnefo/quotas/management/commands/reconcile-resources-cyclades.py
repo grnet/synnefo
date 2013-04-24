@@ -78,16 +78,31 @@ class Command(BaseCommand):
         # Remove 'None' user
         users.discard(None)
 
+        if userid and userid not in users:
+            write("User '%s' does not exist in Quotaholder!", userid)
+            return
+
         unsynced = []
         for user in users:
             db = db_holdings.get(user, {})
-            qh_all = qh_holdings.get(user, {})
+            try:
+                qh_all = qh_holdings[user]
+            except KeyError:
+                write("User '%s' does not exist in Quotaholder!\n" %
+                      user)
+                continue
+
             # Assuming only one source
             qh = qh_all.get(quotas.DEFAULT_SOURCE, {})
             qh = transform_quotas(qh)
             for resource in quotas.RESOURCES:
                 db_value = db.pop(resource, 0)
-                qh_value, _, qh_pending = qh.pop(resource, (0, 0))
+                try:
+                    qh_value, _, qh_pending = qh[resource]
+                except KeyError:
+                    write("Resource '%s' does not exist in Quotaholder"
+                          " for user '%s'!\n" % (resource, user))
+                    continue
                 if qh_pending:
                     write("Pending commission. User '%s', resource '%s'.\n" %
                           (user, resource))

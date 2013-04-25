@@ -133,6 +133,17 @@ def astakos_user(user):
             m.return_value = {"uuid": user}
             yield
 
+serial = 0
+
+
+@contextmanager
+def mocked_quotaholder(success=True):
+    with patch("synnefo.quotas.Quotaholder") as astakos:
+        global serial
+        serial += 1
+        astakos.get.return_value.issue_one_commission.return_value = serial
+        yield
+
 
 class BaseAPITest(TestCase):
     def get(self, url, user='user', *args, **kwargs):

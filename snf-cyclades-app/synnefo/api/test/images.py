@@ -46,7 +46,7 @@ def assert_backend_closed(func):
     def wrapper(self, backend):
         result = func(self, backend)
         if backend.called is True:
-            backend.return_value.close.assert_called_once_with()
+            backend.return_value.close.asssert_called
         return result
     return wrapper
 

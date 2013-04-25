@@ -33,7 +33,7 @@
 
 import json
 
-from snf_django.utils.testing import BaseAPITest
+from snf_django.utils.testing import BaseAPITest, mocked_quotaholder
 from synnefo.db.models import VirtualMachine, VirtualMachineMetadata
 from synnefo.db import models_factory as mfactory
 from synnefo.logic.utils import get_rsapi_state
@@ -192,8 +192,9 @@ class ServerCreateAPITest(BaseAPITest):
                         "personality": []
                     }
         }
-        response = self.post('/api/v1.1/servers', 'test_user',
-                                 json.dumps(request), 'json')
+        with mocked_quotaholder():
+            response = self.post('/api/v1.1/servers', 'test_user',
+                                     json.dumps(request), 'json')
         self.assertEqual(response.status_code, 202)
         mrapi().CreateInstance.assert_called_once()
 

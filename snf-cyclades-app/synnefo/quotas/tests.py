@@ -78,10 +78,14 @@ class ResolvePendingTestCase(TestCase):
     def setUp(self):
         self.p1 = mfactory.QuotaHolderSerialFactory(serial=20, pending=True)
         self.p1 = mfactory.QuotaHolderSerialFactory(serial=30, pending=True)
-        self.a1 = mfactory.QuotaHolderSerialFactory(serial=15, accepted=True)
-        self.a2 = mfactory.QuotaHolderSerialFactory(serial=25, accepted=True)
-        self.r1 = mfactory.QuotaHolderSerialFactory(serial=18, rejected=True)
-        self.r2 = mfactory.QuotaHolderSerialFactory(serial=23, rejected=True)
+        self.a1 = mfactory.QuotaHolderSerialFactory(serial=15, pending=False,
+                                                    accept=True)
+        self.a2 = mfactory.QuotaHolderSerialFactory(serial=25, pending=False,
+                                                    accept=True)
+        self.r1 = mfactory.QuotaHolderSerialFactory(serial=18, pending=False,
+                                                    accept=False)
+        self.r2 = mfactory.QuotaHolderSerialFactory(serial=23, pending=False,
+                                                    accept=False)
 
     def test_no_pending(self, qh):
         qh.return_value = []

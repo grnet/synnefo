@@ -183,6 +183,7 @@ Status  Description
   {
       "force": false,
       "auto_accept": false,
+      "name": "an optional description",
       "provisions": [
           {
               "holder": "c02f315b-7d84-45bc-a383-552a3f97d2ad",
@@ -287,6 +288,7 @@ Status  Description
   {
       "serial": 57,
       "issue_time": "2013-04-08T10:19:15.0373",
+      "name": "an optional description",
       "provisions": [
           {
               "holder": "c02f315b-7d84-45bc-a383-552a3f97d2ad",

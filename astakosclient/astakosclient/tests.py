@@ -390,6 +390,7 @@ quotas = {
 commission_request = {
     "force": False,
     "auto_accept": False,
+    "name": "my commission",
     "provisions": [
         {
             "holder": "c02f315b-7d84-45bc-a383-552a3f97d2ad",
@@ -425,6 +426,7 @@ pending_commissions = [100, 200]
 commission_description = {
     "serial": 57,
     "issue_time": "2013-04-08T10:19:15.0373",
+    "name": "a commission",
     "provisions": [
         {
             "holder": "c02f315b-7d84-45bc-a383-552a3f97d2ad",

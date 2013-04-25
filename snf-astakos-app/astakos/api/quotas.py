@@ -129,16 +129,26 @@ def issue_commission(request):
     provisions = input_data.get('provisions')
     if provisions is None:
         raise BadRequest("Provisions are missing.")
-    if not isinstance (provisions, list):
+    if not isinstance(provisions, list):
         raise BadRequest("Provisions should be a list.")
 
     provisions = _provisions_to_list(provisions)
     force = input_data.get('force', False)
+    if not isinstance(force, bool):
+        raise BadRequest('"force" option should be a boolean.')
+
     auto_accept = input_data.get('auto_accept', False)
+    if not isinstance(auto_accept, bool):
+        raise BadRequest('"auto_accept" option should be a boolean.')
+
+    name = input_data.get('name', "")
+    if not isinstance(name, str):
+        raise BadRequest("Commission name should be a string.")
 
     try:
         result = _issue_commission(clientkey=client_key,
                                    provisions=provisions,
+                                   name=name,
                                    force=force,
                                    accept=auto_accept)
         data = {"serial": result}
@@ -169,9 +179,10 @@ def issue_commission(request):
 
 
 @commit_on_success_strict()
-def _issue_commission(clientkey, provisions, force, accept):
+def _issue_commission(clientkey, provisions, name, force, accept):
     serial = qh.issue_commission(clientkey=clientkey,
                                  provisions=provisions,
+                                 name=name,
                                  force=force)
     if accept:
         done = qh.resolve_pending_commission(clientkey=clientkey,

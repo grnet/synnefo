@@ -307,5 +307,6 @@ def get_commission(clientkey, serial):
     response = {'serial':     serial,
                 'provisions': ps,
                 'issue_time': commission.issue_time,
+                'name':       commission.name,
                 }
     return response

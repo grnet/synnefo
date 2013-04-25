@@ -375,7 +375,7 @@ class AstakosClient():
             raise AstakosClientException(m)
 
     def issue_one_commission(self, token, holder, source, provisions,
-                             force=False, auto_accept=False):
+                             name="", force=False, auto_accept=False):
         """Issue one commission (with specific holder and source)
 
         keyword arguments:
@@ -383,6 +383,7 @@ class AstakosClient():
         holder      -- user's id (string)
         source      -- commission's source (ex system) (string)
         provisions  -- resources with their quantity (list of (string, int))
+        name        -- description of the commission (string)
         force       -- force this commission (boolean)
         auto_accept -- auto accept this commission (boolean)
 
@@ -398,6 +399,7 @@ class AstakosClient():
         request = {}
         request["force"] = force
         request["auto_accept"] = auto_accept
+        request["name"] = name
         try:
             request["provisions"] = []
             for p in provisions:

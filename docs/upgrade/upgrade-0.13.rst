@@ -285,7 +285,7 @@ On the Pithos host, edit ``/etc/synnefo/20-snf-pithos-app-settings.conf``:
 
         RewriteRule ^/login(.*) /im/login/redirect$1 [PT,NE]
 
-    (see `<http://docs.dev.grnet.gr/synnefo/latest/quick-install-admin-guide.html#apache2-setup>`_)
+    (see `<http://www.synnefo.org/docs/synnefo/latest/quick-install-admin-guide.html#apache2-setup>`_)
 
 - Enable users to change their contact email. Edit
 ``/etc/synnefo/20-snf-astakos-app-settings.conf`` ::

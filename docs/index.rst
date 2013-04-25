@@ -31,9 +31,9 @@ There are also the following tools:
 .. toctree::
    :maxdepth: 1
 
-   kamaki: Command-line client <http://docs.dev.grnet.gr/kamaki/latest/index.html>
+   kamaki: Command-line client <http://www.synnefo.org/docs/kamaki/latest/index.html>
    snf-deploy: Synnefo deployment tool <snf-deploy>
-   snf-image-creator: Image bundling/uploading/registering tool <http://docs.dev.grnet.gr/snf-image-creator/latest/index.html>
+   snf-image-creator: Image bundling/uploading/registering tool <http://www.synnefo.org/docs/snf-image-creator/latest/index.html>
    snf-image: Secure image deployment tool <snf-image>
    snf-burnin: Integration testing tool for a running Synnefo deployment <snf-burnin>
 
@@ -115,20 +115,20 @@ List of all Synnefo components
 
 They are also available from our apt repository: ``apt.okeanos.grnet.gr``
 
- * `snf-common <http://docs.dev.grnet.gr/snf-common/latest/index.html>`_
- * `snf-webproject <http://docs.dev.grnet.gr/snf-webproject/latest/index.html>`_
- * `snf-astakos-app <http://docs.dev.grnet.gr/astakos/latest/index.html>`_
- * `snf-pithos-backend <http://docs.dev.grnet.gr/pithos/latest/backends.html>`_
- * `snf-pithos-app <http://docs.dev.grnet.gr/pithos/latest/index.html>`_
- * `snf-pithos-webclient <http://docs.dev.grnet.gr/pithos-webclient/latest/index.html>`_
- * `snf-cyclades-app <http://docs.dev.grnet.gr/snf-cyclades-app/latest/index.html>`_
- * `snf-cyclades-gtools <http://docs.dev.grnet.gr/snf-cyclades-gtools/latest/index.html>`_
- * `astakosclient <http://docs.dev.grnet.gr/astakosclient/latest/index.html>`_
+ * `snf-common <http://www.synnefo.org/docs/snf-common/latest/index.html>`_
+ * `snf-webproject <http://www.synnefo.org/docs/snf-webproject/latest/index.html>`_
+ * `snf-astakos-app <http://www.synnefo.org/docs/astakos/latest/index.html>`_
+ * `snf-pithos-backend <http://www.synnefo.org/docs/pithos/latest/backends.html>`_
+ * `snf-pithos-app <http://www.synnefo.org/docs/pithos/latest/index.html>`_
+ * `snf-pithos-webclient <http://www.synnefo.org/docs/pithos-webclient/latest/index.html>`_
+ * `snf-cyclades-app <http://www.synnefo.org/docs/snf-cyclades-app/latest/index.html>`_
+ * `snf-cyclades-gtools <http://www.synnefo.org/docs/snf-cyclades-gtools/latest/index.html>`_
+ * `astakosclient <http://www.synnefo.org/docs/astakosclient/latest/index.html>`_
  * `snf-vncauthproxy <https://code.grnet.gr/projects/vncauthproxy>`_
  * `snf-image <https://code.grnet.gr/projects/snf-image/wiki/>`_ 
- * `snf-image-creator <http://docs.dev.grnet.gr/snf-image-creator/latest/index.html>`_
- * `snf-occi <http://docs.dev.grnet.gr/snf-occi/latest/index.html>`_
- * `snf-cloudcms <http://docs.dev.grnet.gr/snf-cloudcms/latest/index.html>`_
+ * `snf-image-creator <http://www.synnefo.org/docs/snf-image-creator/latest/index.html>`_
+ * `snf-occi <http://www.synnefo.org/docs/snf-occi/latest/index.html>`_
+ * `snf-cloudcms <http://www.synnefo.org/docs/snf-cloudcms/latest/index.html>`_
  * `nfdhcpd <https://code.grnet.gr/projects/nfdhcpd>`_
 
 

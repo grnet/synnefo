@@ -40,7 +40,8 @@ from django.utils.http import parse_etags
 from django.utils.encoding import smart_str
 from django.views.decorators.csrf import csrf_exempt
 
-from snf_django.lib.astakos import get_user, get_uuids as _get_uuids
+from django.conf import settings
+from snf_django.lib.astakos import get_uuids as _get_uuids
 
 from snf_django.lib import api
 from snf_django.lib.api import faults
@@ -61,7 +62,7 @@ from pithos.api.util import (
 )
 
 from pithos.api.settings import (UPDATE_MD5, TRANSLATE_UUIDS,
-                                 SERVICE_TOKEN, AUTHENTICATION_URL)
+                                 SERVICE_TOKEN, ASTAKOS_URL)
 
 from pithos.backends.base import (
     NotAllowedError, QuotaError, ContainerNotEmpty, ItemNotExists,
@@ -77,10 +78,8 @@ logger = logging.getLogger(__name__)
 
 def get_uuids(names):
     try:
-        uuids = _get_uuids(SERVICE_TOKEN, names,
-                           url=AUTHENTICATION_URL.replace(
-                                            'im/authenticate',
-                                            'service/api/user_catalogs'))
+        url = ASTAKOS_URL + "/service/api/user_catalogs"
+        uuids = _get_uuids(SERVICE_TOKEN, names, url=url)
     except Exception, e:
         logger.exception(e)
         return {}
@@ -935,6 +934,7 @@ def object_read(request, v_account, v_container, v_object):
         return response
 
     request.serialization = 'text'  # Unset.
+    response.override_serialization = True
     return object_data_response(request, sizes, hashmaps, meta)
 
 
@@ -1066,7 +1066,10 @@ def object_write(request, v_account, v_container, v_object):
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except IndexError, e:
-        raise faults.Conflict(simple_list_response(request, e.data))
+        missing_blocks = e.data
+        response = HttpResponse(status=409)
+        response.content = simple_list_response(request, missing_blocks)
+        return response
     except ItemNotExists:
         raise faults.ItemNotFound('Container does not exist')
     except ValueError:

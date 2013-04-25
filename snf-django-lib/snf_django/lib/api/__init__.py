@@ -60,7 +60,7 @@ def get_token(request):
 
 
 def api_method(http_method=None, token_required=True, user_required=True,
-               logger=None, format_allowed=True):
+               logger=None, format_allowed=True, astakos_url=None):
     """Decorator function for views that implement an API method."""
     if not logger:
         logger = log
@@ -89,8 +89,9 @@ def api_method(http_method=None, token_required=True, user_required=True,
                 # Authenticate
                 if user_required:
                     assert(token_required), "Can not get user without token"
+                    astakos = astakos_url or settings.ASTAKOS_URL
                     try:
-                        astakos = AstakosClient(settings.ASTAKOS_URL,
+                        astakos = AstakosClient(astakos,
                                                 use_pool=True,
                                                 logger=logger)
                         user_info = astakos.get_user_info(token)
@@ -154,7 +155,7 @@ def get_serialization(request, format_allowed=True):
 
 
 def update_response_headers(request, response):
-    if not response.has_header("Content-Type"):
+    if not getattr(response, "override_serialization", False):
         serialization = request.serialization
         if serialization == "xml":
             response["Content-Type"] = "application/xml; charset=UTF-8"
@@ -166,7 +167,7 @@ def update_response_headers(request, response):
             raise ValueError("Unknown serialization format '%s'" %
                              serialization)
 
-    if settings.DEBUG or settings.TEST:
+    if settings.DEBUG or getattr(settings, "TEST", False):
         response["Date"] = format_date_time(time())
 
     if not response.has_header("Content-Length"):
@@ -182,7 +183,7 @@ def update_response_headers(request, response):
 def render_fault(request, fault):
     """Render an API fault to an HTTP response."""
     # If running in debug mode add exception information to fault details
-    if settings.DEBUG or settings.TEST:
+    if settings.DEBUG or getattr(settings, "TEST", False):
         fault.details = format_exc()
 
     try:

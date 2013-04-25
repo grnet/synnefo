@@ -57,9 +57,10 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_QUEUE_EXCHANGE, USE_QUOTAHOLDER,
                                  QUOTAHOLDER_URL, QUOTAHOLDER_TOKEN,
                                  QUOTAHOLDER_POOLSIZE,
-                                 BACKEND_QUOTA, BACKEND_VERSIONING,
+                                 ASTAKOS_URL,
+                                 BACKEND_ACCOUNT_QUOTA, BACKEND_CONTAINER_QUOTA,
+                                 BACKEND_VERSIONING,
                                  BACKEND_FREE_VERSIONING, BACKEND_POOL_SIZE,
-                                 AUTHENTICATION_URL,
                                  COOKIE_NAME, USER_CATALOG_URL,
                                  RADOS_STORAGE, RADOS_POOL_BLOCKS,
                                  RADOS_POOL_MAPS, TRANSLATE_UUIDS,
@@ -959,13 +960,14 @@ _pithos_backend_pool = PithosBackendPool(
         free_versioning=BACKEND_FREE_VERSIONING,
         block_params=BLOCK_PARAMS,
         public_url_security=PUBLIC_URL_SECURITY,
-        public_url_alphabet=PUBLIC_URL_ALPHABET)
+        public_url_alphabet=PUBLIC_URL_ALPHABET,
+        account_quota_policy=BACKEND_ACCOUNT_QUOTA,
+        container_quota_policy=BACKEND_CONTAINER_QUOTA,
+        container_versioning_policy=BACKEND_VERSIONING)
 
 
 def get_backend():
     backend = _pithos_backend_pool.pool_get()
-    backend.default_policy['quota'] = BACKEND_QUOTA
-    backend.default_policy['versioning'] = BACKEND_VERSIONING
     backend.messages = []
     return backend
 
@@ -1003,7 +1005,8 @@ def update_response_headers(request, response):
 
 def get_pithos_usage(token):
     """Get Pithos Usage from astakos."""
-    user_info = user_for_token(token, AUTHENTICATION_URL, usage=True)
+    astakos_url = ASTAKOS_URL + "im/authenticate"
+    user_info = user_for_token(token, astakos_url, usage=True)
     usage = user_info.get("usage", [])
     for u in usage:
         if u.get('name') == 'pithos+.diskspace':
@@ -1014,7 +1017,8 @@ def api_method(http_method=None, user_required=True, logger=None,
                format_allowed=False):
     def decorator(func):
         @api.api_method(http_method=http_method, user_required=user_required,
-                          logger=logger, format_allowed=format_allowed)
+                        logger=logger, format_allowed=format_allowed,
+                        astakos_url=ASTAKOS_URL)
         @wraps(func)
         def wrapper(request, *args, **kwargs):
             # The args variable may contain up to (account, container, object).

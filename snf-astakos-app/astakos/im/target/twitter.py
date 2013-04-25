@@ -107,7 +107,10 @@ def login(request):
 def authenticated(
     request,
     template='im/third_party_check_local.html',
-    extra_context={}):
+    extra_context=None):
+
+    if extra_context is None:
+        extra_context = {}
 
     consumer = oauth.Consumer(settings.TWITTER_TOKEN,
                               settings.TWITTER_SECRET)

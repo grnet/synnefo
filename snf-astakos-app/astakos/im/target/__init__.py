@@ -87,10 +87,19 @@ def get_pending_key(request):
 
 def handle_third_party_signup(request, userid, provider_module,
                               third_party_key,
-                              provider_info={},
-                              pending_user_params={},
+                              provider_info=None,
+                              pending_user_params=None,
                               template="im/third_party_check_local.html",
-                              extra_context={}):
+                              extra_context=None):
+
+    if provider_info is None:
+        provider_info = {}
+
+    if pending_user_params is None:
+        pending_user_params = {}
+
+    if extra_context is None:
+        extra_context = {}
 
     # build provider module object
     provider_data = {

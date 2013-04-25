@@ -82,6 +82,8 @@ class Command(BaseCommand):
             write("User '%s' does not exist in Quotaholder!", userid)
             return
 
+        pending_exists = False
+        unknown_user_exists = False
         unsynced = []
         for user in users:
             db = db_holdings.get(user, {})
@@ -90,6 +92,7 @@ class Command(BaseCommand):
             except KeyError:
                 write("User '%s' does not exist in Quotaholder!\n" %
                       user)
+                unknown_user_exists = True
                 continue
 
             # Assuming only one source
@@ -106,6 +109,7 @@ class Command(BaseCommand):
                 if qh_pending:
                     write("Pending commission. User '%s', resource '%s'.\n" %
                           (user, resource))
+                    pending_exists = True
                     continue
                 if db_value != qh_value:
                     data = (user, resource, db_value, qh_value)
@@ -121,7 +125,12 @@ class Command(BaseCommand):
                 request["auto_accept"] = True
                 request["provisions"] = map(create_provision, unsynced)
                 qh.issue_commission(ASTAKOS_TOKEN, request)
-        else:
+                write("Fixed unsynced resources\n")
+
+        if pending_exists:
+            write("Found pending commissions. Run 'snf-manage"
+                  " reconcile-commissions-cyclades'\n")
+        elif not (unsynced or unknown_user_exists):
             write("Everything in sync.\n")
 
 

@@ -256,11 +256,7 @@ def machines_console(request):
 
 
 def user_quota(request):
-    try:
-        get_user(request, settings.ASTAKOS_URL, usage=True)
-    except TypeError:
-        # astakos client backwards compatibility
-        get_user(request, settings.ASTAKOS_URL)
+    get_user(request, settings.ASTAKOS_URL, usage=True)
 
     if request.user and 'usage' in request.user:
         response = json.dumps(request.user['usage'])

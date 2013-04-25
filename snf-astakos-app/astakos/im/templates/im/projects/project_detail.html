@@ -45,7 +45,7 @@
           <span class="extratitle">MODIFICATION OF </span>
         {% endif %}
       {% endif %}
-      {{ object.name|upper }}
+      {% block project_title %}{{ object.name|upper }}{% endblock project_title %}
     </span>
     
     {% block project.actions %}

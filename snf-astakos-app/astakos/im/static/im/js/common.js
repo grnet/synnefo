@@ -89,7 +89,7 @@ $(document).ready(function() {
 	
 	 
     setContainerMinHeight('.container .wrapper');
-    tableFixedCols('my-projects', 25);
+    //tableFixedCols('my-projects', 25);
 	
     $('.show-extra').click(function(e) {
         e.preventDefault();
@@ -361,6 +361,29 @@ $(document).ready(function() {
 	$('#okeanos_recaptcha').parents('.form-row').find('.extra-img').hide();	  
      
 	 
+$('#members-table tr th.check input').click(function(e){
+  if($(this).is(":checked")){
+    $('#members-table tbody td.check input').attr('checked', 'checked');
+  } else {
+    $('#members-table tbody td.check input').removeAttr('checked');
+  } 
+});
+
+$('.projects .form-actions a').click(function(e){
+  e.preventDefault();
+  var action = $(this).data('action');
+  var usrArray=[];
+  $('#members-table tbody td.check input:checked').each(function(){
+     usrArray.push($(this).val());
+  })
+  $(this).parents('.form-actions').find('.dialog').show();
+  console.log(usrArray);
+  console.log(action)
+
+  //alert($(this).data('action'));
+})
+
+
 	    
 });
 	

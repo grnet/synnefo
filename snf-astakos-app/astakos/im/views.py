@@ -1258,9 +1258,10 @@ def common_detail(request, chain_or_app_id, project_view=True,
         project, application = get_by_chain_or_404(chain_id)
         if project:
             members = project.projectmembership_set.select_related()
-            approved_members_count = members.filter(state=1).count()
-            pending_members_count = members.filter(state=0).count()
-            if members_status_filter in (0,1):
+            approved_members_count = project.count_actually_accepted_memberships()
+            pending_members_count = project.count_pending_memberships()
+            if members_status_filter in (ProjectMembership.REQUESTED,
+                ProjectMembership.ACCEPTED) :
                 members = members.filter(state=members_status_filter)
             members_table = tables.ProjectMembersTable(project,
                                                        members,

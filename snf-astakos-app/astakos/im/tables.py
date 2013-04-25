@@ -298,10 +298,11 @@ class UserProjectApplicationsTable(UserTable):
         if c > 0:
             pending_members_url = reverse('project_pending_members', 
                 kwargs={'chain_id': application.chain})
+
             pending_members = "<i class='tiny'> - %d %s</i>" % (c, _('pending'))
             if self.user.owns_application(record) or self.user.is_project_admin():
-                pending_members = '<a href="%s">%s</a>' % (pending_members_url,
-                pending_members)
+                pending_members = "<i class='tiny'>"+" - <a href='%s'>%d %s</a></i>" % (
+                    pending_members_url,c, _('pending'))
             append = mark_safe(pending_members)
         members_url = reverse('project_members', 
             kwargs={'chain_id': application.chain})
@@ -313,7 +314,8 @@ class UserProjectApplicationsTable(UserTable):
         
     class Meta:
         model = ProjectApplication
-        fields = ('name', 'membership_status', 'issue_date', 'end_date', 'members_count')
+        fields = ('name', 'membership_status', 'issue_date', 'end_date', 
+                  'members_count')
         attrs = {'id': 'projects-list', 'class': 'my-projects alt-style'}
         template = "im/table_render.html"
         empty_text = _('No projects')
@@ -360,6 +362,8 @@ def member_action_extra_context(membership, table, col):
     return context
 
 class ProjectMembersTable(UserTable):
+    input = "<input type='checkbox' name='all-none'/>"
+    check = tables.Column(accessor="person.id",verbose_name =mark_safe(input), orderable=False)
     email = tables.Column(accessor="person.email", verbose_name=_('Email'))    
     status = tables.Column(accessor="state", verbose_name=_('Status'))
     project_action = RichLinkColumn(verbose_name=_('Action'),
@@ -373,6 +377,10 @@ class ProjectMembersTable(UserTable):
         if not self.user.owns_project(self.project):
             self.exclude = ('project_action', )
 
+    def render_check(self, value, record, *args, **kwargs):
+        checkbox = "<input type='checkbox' value='%d' name ='actions'>" % record.id
+        return  mark_safe(checkbox)
+
     def render_status(self, value, record, *args, **kwargs):
         return record.state_display()
 
@@ -380,4 +388,3 @@ class ProjectMembersTable(UserTable):
         template = "im/table_render.html"
         attrs = {'id': 'members-table', 'class': 'members-table alt-style'}
         empty_text = _('No members')
-

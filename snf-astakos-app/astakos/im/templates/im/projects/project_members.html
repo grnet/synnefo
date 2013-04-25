@@ -3,27 +3,43 @@
  
 {% load astakos_tags filters django_tables2 %}
 
-
+{% block project_title %}<a href="{% url project_detail object.chain %}" title="Back to project ">{{ object.name|upper }}</a>{% endblock project_title %}
 {% block inner_project %} 
    
   {% if owner_mode and project_view %}
     {% if object.project.is_alive %}
       
-      <div class="full-dotted">
-        <h3> 
+      <div class="full-dotted{% if members_status_filter == None %} all{% endif %}{% if members_status_filter == 1 %} approved {% endif %}{% if members_status_filter == 0 %} pending{% endif %}">
+        <h3>
           <a href="#members-table" class="rt-action">ADD MORE MEMBERS</a>
           MEMBERS  
  
-        <div class="project-actions">
-          <a href="{% url project_members object.chain %}"  {% if members_status_filter == None %}class="inactive"{% endif %}>ALL</a> -
-          <a href="{% url project_approved_members object.chain %}" {% if members_status_filter == 1 %}class="inactive"{% endif %}>APPROVED</a> -
-          <a href="{% url project_pending_members object.chain %}" {% if members_status_filter == 0 %}class="inactive"{% endif %}>PENDING</a>
+          <div class="project-actions">
+            <a href="{% url project_members object.chain %}"  {% if members_status_filter == None %}class="inactive"{% endif %}>ALL</a> -
+            <a href="{% url project_approved_members object.chain %}" {% if members_status_filter == 1 %}class="inactive"{% endif %}>APPROVED</a> -
+            <a href="{% url project_pending_members object.chain %}" {% if members_status_filter == 0 %}class="inactive"{% endif %}>PENDING</a>
 
-        </div>
+          </div>
         </h3>
         
         {% if members_table %}
+       
         {% render_table members_table %}
+        <div class="form-actions">
+          <a href="" class="button approve" data-action="approve">Approve selected</a>
+          <a href="" class="button reject" data-action="reject">Reject selected</a>
+          <a href="" class="button remove" data-action="remove">Remove selected</a>
+          <div class="msg-wrap">
+             <div class="dialog"> 
+                <div class="dialog-content">
+                Are you sure you want to perform this action?
+                <br> <br> <a href="#" class="yes submit">Yes</a>
+              &nbsp; 
+              <a href="#" class="no submit">No</a> </div> </div>
+            </div> 
+
+          </div>
+          
         {% endif %}
         
       </div>

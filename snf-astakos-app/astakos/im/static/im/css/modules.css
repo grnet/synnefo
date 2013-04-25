@@ -656,3 +656,18 @@ table.cols-3 td 								{ width:30%;}
 table.cols-3 td p 								{ padding:0 1em;}
 table.cols-3 tr.images td 						{ text-align: center;}
 table.cols-3 tr.links td 						{ font-size:1.154em}
+
+
+.members-table 									{ width:100%;}
+.members-table .check 							{ width:10%;}
+.all .members-table .check 						{ display:none;}
+.form-actions 									{ position: relative;}
+.form-actions a 								{ display: none; position: relative;top:-3em;}
+.form-actions a:hover 							{ text-decoration: none;}
+.pending .form-actions a.approve,
+.pending .form-actions a.reject					{ display: inline-block;}
+.approved .form-actions a.remove				{ display: inline-block;}
+.form-actions a.approve 						{ background-color: #55B577}
+.form-actions a.approve:hover 					{ background-color: #3582AC}
+.form-actions .msg-wrap .dialog 				{ top:0px; left:0; right:0;}
+.form-actions .msg-wrap .dialog  a 				{ top:0;}

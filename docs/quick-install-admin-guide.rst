@@ -854,9 +854,6 @@ this options:
 
 
    PITHOS_SERVICE_TOKEN = 'pithos_service_token22w=='
-   PITHOS_USER_CATALOG_URL = 'https://node1.example.com/user_catalogs'
-   PITHOS_USER_FEEDBACK_URL = 'https://node1.example.com/feedback'
-   PITHOS_USER_LOGIN_URL = 'https://node1.example.com/login'
 
    PITHOS_QUOTAHOLDER_URL = 'https://node1.example.com/quotaholder/v'
    PITHOS_QUOTAHOLDER_TOKEN = 'aExampleTokenJbFm12w'

@@ -30,6 +30,8 @@ Pithos
 ------
 * Remove PITHOS_AUTHENTICATION_USERS setting, which was used to override
   astakos users.
+* Remove 'PITHOS_USER_CATALOG_URL', 'PITHOS_USER_FEEDBACK_URL' and
+  'PITHOS_USER_LOGIN_URL' settings.
 
 Tools
 -----

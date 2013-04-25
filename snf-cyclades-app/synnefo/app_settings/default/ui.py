@@ -202,6 +202,3 @@ UI_SYSTEM_IMAGES_OWNERS = {
     'admin@synnefo.gr': 'system',
     'images@synnefo.gr': 'system'
 }
-
-# Astakos feedback endpoint. UI uses this setting to post error feedbacks
-CYCLADES_USER_FEEDBACK_URL = 'https://accounts.synnefo.org/feedback'

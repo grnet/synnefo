@@ -39,8 +39,9 @@ from django.views.decorators.csrf import csrf_exempt
 
 from django.conf import settings
 
-USER_CATALOG_URL = getattr(settings, 'CYCLADES_USER_CATALOG_URL', None)
-USER_FEEDBACK_URL = getattr(settings, 'CYCLADES_USER_FEEDBACK_URL', None)
+ASTAKOS_URL = getattr(settings, 'ASTAKOS_URL', None)
+USER_CATALOG_URL = urlparse.urljoin(ASTAKOS_URL, "user_catalogs")
+USER_FEEDBACK_URL = urlparse.urljoin(ASTAKOS_URL, "feedback")
 
 from objpool.http import PooledHTTPConnection
 

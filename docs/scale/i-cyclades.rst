@@ -113,8 +113,6 @@ In `/etc/synnefo/cyclades.conf` add:
 
     CYCLADES_ASTAKOS_SERVICE_TOKEN = "XXXXXXXXXX"
 
-    CYCLADES_USER_CATALOG_URL = 'https://accounts.example.com/user_catalogs'
-
     UI_SYSTEM_IMAGES_OWNERS = {
         'admin@synnefo.gr': 'system',
         'images@synnefo.gr': 'system'

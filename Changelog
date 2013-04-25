@@ -24,6 +24,7 @@ Astakos
 
 Cyclades
 --------
+* Remove 'CYCLADES_USER_CATALOG_URL' and 'CYCLADES_USER_FEEDBACK_URL' settings
 
 Pithos
 ------

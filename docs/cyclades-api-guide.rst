@@ -1783,6 +1783,41 @@ tag.
   }
 
 
+Delete Image
+............
+
+====================== ====== ======== =========
+URI                    Method Cyclades OS Compute
+====================== ====== ======== =========
+``/images/<image id>`` DELETE ✔        ✔
+====================== ====== ======== ==========
+
+* **image-id** is the identifier of the virtual image
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+204 (OK)                    Request succeeded
+400 (Bad Request)           Invalid request or image id
+401 (Unauthorized)          Missing or expired user token
+404 (Not Found)             Image not found
+500 (Internal Server Error) The request cannot be completed because of an
+internal error
+503 (Service Unavailable)   Action not supported or service currently
+unavailable
+=========================== =====================
+
+In case of a 204 code, image status will change from ``ACTIVE`` to ``DELETED``
 
 LALA
 ....

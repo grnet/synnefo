@@ -791,6 +791,7 @@ internal error
 unavailable
 =========================== =====================
 
+.. note:: When a server is deleted, all its connections are deleted too.
 Server Addresses
 ----------------
 
@@ -1354,8 +1355,8 @@ If the response code is 201, the response body contains the ``key:pair``
 that has just been created or updated, under a ``meta`` tag, so that the body
 of the response is identical to the body of the request.
 
-Delete Server metadata
-......................
+Delete Server Metadatum
+.......................
 
 .. note:: This operation is semantically equivalent in Cyclades and OS Compute.
 
@@ -2006,45 +2007,175 @@ If the response code is 200, the response body contains the requested
 
 .. note:: In OS Compute response, ``metadata`` is ``meta``
 
+Set / Update Metadatum Item
+...........................
 
-LALA
-....
+.. note:: This operation is semantically equivalent in Cyclades and OS Compute.
 
-GET images/iid/meta/key   get_metadata_item
-PUT images/iid/meta/key   create_metadata_item
-DELETE images/iid/meta/key   delete_metadata_item
+===================================== ====== ======== ==========
+URI                                   Method Cyclades OS Compute
+===================================== ====== ======== ==========
+``/images/<image-id>/meta/<key>``     PUT    ✔        **✘**
+``/images/<image-id>/metadata/<key>`` PUT    **✘**    ✔
+===================================== ====== ======== ==========
+
+* **image-id** is the identifier of the image
+* **key** is the key of a matadatum ``key``:``value`` pair
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
+
+|
+
+Request body should contain a ``key``:``value`` pair under a ``meta`` tag. The
+``value`` is the (new) value to set. The ``key`` of the metadatum may or may
+not exist prior to the operation. For example, request with ``os`` as a
+``key`` may contain the following request body::
+
+  {'meta': {'os': 'Kubuntu'}}
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+201 (OK)                    Request succeeded
+400 (Bad Request)           Malformed request or image id
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Not allowed to modify this image
+404 (Not Found)             Metadatum key not found
+413 (OverLimit)             Maximum number of metadata exceeded
+500 (Internal Server Error) The request cannot be completed because of an
+internal error
+503 (Service Unavailable)   The server is not currently available
+=========================== =====================
+
+|
+
+If the response code is 201, the response body contains the ``key:pair``
+that has just been created or updated, under a ``meta`` tag, so that the body
+of the response is identical to the body of the request.
+
+Delete Image Metadata
+.....................
+
+.. note:: This operation is semantically equivalent in Cyclades and OS Compute.
+
+===================================== ====== ======== ==========
+URI                                   Method Cyclades OS Compute
+===================================== ====== ======== ==========
+``/images/<image-id>/meta/<key>``     DELETE ✔        **✘**
+``/images/<image-id>/metadata/<key>`` DELETE **✘**    ✔
+===================================== ====== ======== ==========
+
+* **image-id** is the identifier of the image
+* **key** is the key of a matadatum ``key``:``value`` pair
+
+|
+
+==============  =========================
+Request Header  Value                    
+==============  =========================
+X-Auth-Token    User authentication token
+==============  =========================
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+204 (OK)                    Request succeeded
+400 (Bad Request)           Malformed image ID
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Not allowed to modify this image
+404 (Not Found)             Metadatum key not found
+500 (Internal Server Error) The request cannot be completed because of an
+internal error
+503 (Service Unavailable)   The server is not currently available
+=========================== =====================
 
 
 Networks
 --------
 
-This is an extension to the OpenStack API.
+============= ======== ==========
+BASE URI      Cyclades OS Compute
+============= ======== ==========
+``/networks`` ✔        **✘**
+============= ======== ==========
 
-A Server can connect to one or more networks identified by a numeric id. Each
-user has access only to networks created by himself. When a network is deleted,
-all connections to it are deleted. Likewise, when a server is deleted, all
-connections of that server are deleted.
+The Network part of Cyclades API is not supported by the OS Compute API,
+although it shares some similaritied with the
+`OS Quantum API <http://docs.openstack.org/api/openstack-network/1.0/content/API_Operations.html>`_.
+There are key differences in the design of the two systems, which exceed the
+scope of this document, although they affect the respective APIs.
+
+A Server can connect to one or more networks identified by a numeric id.
+Networks are accessible only by the users who created them. When a network is
+deleted, all connections to it are deleted.
 
 There is a special **public** network with the id *public* that can be accessed
 at */networks/public*. All servers are connected to **public** by default and
 this network can not be deleted or modified in any way.
 
-
 List Networks
 .............
 
-**GET** /networks
+This operation lists the networks associated with a users account
 
-**GET** /networks/detail
+==================== ======
+URI                  Method
+==================== ======
+``/networks``        GET
+``/networks/detail`` GET
+==================== ======
 
-**Normal Response Codes**: 200, 203
+|
 
-**Error Response Codes**: computeFault (400, 500), serviceUnavailable (503),
-unauthorized (401), badRequest (400), overLimit (413)
+==============  =========================
+Request Header  Value                    
+==============  =========================
+X-Auth-Token    User authentication token
+==============  =========================
 
-This operation provides a list of private networks associated with your account.
+|
 
-This operation does not require a request body.
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+204 (OK)                    Request succeeded
+304 (Not Modified)          
+400 (Bad Request)           Malformed network id
+401 (Unauthorized)          Missing or expired user token
+404 (Not Found)             Network not found
+409 (Build In Progress)     Server is not ready yet
+500 (Internal Server Error) The request cannot be completed because of an
+internal error
+503 (Service Unavailable)   Action not supported or service currently
+unavailable
+=========================== =====================
+
+The ``detail`` operation lists the `full network attributes <#network-ref>`_,
+while the regular operation returns only the ``network id`` and the
+``network name``.
+
+**Example Networks List Response: JSON (regular)**:
+
+.. code-block:: javascript
+
+  {
+    "networks": {
+      "values": [
+        {"id": "1". "name": "public"},
+        {"id": "2". "name": "my private network"}
+      ]
+    }
+  }
 
 **Example Networks List Response: JSON (detail)**:
 
@@ -2054,45 +2185,21 @@ This operation does not require a request body.
     "networks": {
       "values": [
         {
-          "id": "public",
+          "id": "1",
           "name": "public",
           "created": "2011-04-20T15:31:08.199640+00:00",
           "updated": "2011-05-06T12:47:05.582679+00:00",
-          "servers": {
-              "values": [1, 2, 3]
-          }
+          "attachments": {"values": ["nic-42-0", "nic-73-0"]}
         }, {
           "id": 2,
-          "name": "private",
+          "name": "my private network",
           "created": "2011-04-20T14:32:08.199640+00:00",
           "updated": "2011-05-06T11:40:05.582679+00:00",
-          "servers": {
-              "values": [1]
-          }
+          "attachments": {"values": ["nic-42-2", "nic-7-3"]}
         }
       ]
     }
   }
-
-**Example Networks List Response: XML (detail)**:
-
-.. code-block:: xml
-
-  <?xml version="1.0" encoding="UTF-8"?>
-  <networks xmlns="http://docs.openstack.org/compute/api/v1.1" xmlns:atom="http://www.w3.org/2005/Atom">
-    <network id="public" name="public" updated="2011-05-02T21:33:25.606672+00:00" created="2011-04-20T15:31:08.199640+00:00">
-      <servers>
-        <server id="1"></server>
-        <server id="2"></server>
-        <server id="3"></server>
-      </servers>
-    </network>
-    <network id="2" name="private" updated="2011-05-06T12:47:05.582679+00:00" created="2011-04-20T15:31:33.911299+00:00">
-      <servers>
-        <server id="1"></server>
-      </servers>
-    </network>
-  </networks>
 
 
 Create Network
@@ -2353,6 +2460,29 @@ SHUTOFF       Shut down by user    **✘**    ✔
 SUSPENDED     Suspended            **✘**    ✔
 VERIFY_RESIZE Waiting confirmation **✘**    ✔
 ============= ==================== ======== ==========
+
+.. _network-ref
+
+Network
+.......
+
+.. note:: Networks are features in Cyclades API but not in OS Compute API
+
+================== ===========
+Network Attributes Description
+================== ===========
+id
+name
+created
+updates
+attachments
+================== ===========
+
+* **id** and **name** are the network id (int) and name (string) respectively
+
+* **created** and **updated** are ISO8061 date strings
+
+* **attachments** refers to the NICs connecting servers on that network.
 
 .. _nic-ref:
 

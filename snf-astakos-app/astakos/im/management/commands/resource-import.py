@@ -39,6 +39,7 @@ from django.utils import simplejson as json
 
 from snf_django.lib.db.transaction import commit_on_success_strict
 from astakos.im.resources import add_resource
+from astakos.im.models import Service
 
 
 class Command(BaseCommand):
@@ -81,35 +82,40 @@ class Command(BaseCommand):
 
         if json_file:
             with open(json_file) as file_data:
-                data = json.load(file_data)
-                service = data.get('service')
-                resources = data.get('resources')
-                if service is None or resources is None:
-                    m = "JSON file should contain service and resource data."
+                m = ('Input should be a JSON dict containing "service" '
+                     'and "resource" keys.')
+                try:
+                    data = json.load(file_data)
+                except json.JSONDecodeError:
                     raise CommandError(m)
+                if not isinstance(data, dict):
+                    raise CommandError(m)
+                else:
+                    try:
+                        service = data['service']
+                        resources = data['resources']
+                    except KeyError:
+                        raise CommandError(m)
 
-        self.add_resources(service, resources, config)
+        self.add_resources(service, resources)
 
 
     @commit_on_success_strict()
-    def add_resources(self, service, resources, config):
+    def add_resources(self, service, resources):
+
+        try:
+            s = Service.objects.get(name=service)
+        except Service.DoesNotExist:
+            raise CommandError("Service '%s' is not registered." % (service))
+
         for resource in resources:
+            if not isinstance(resource, dict):
+                raise CommandError("Malformed resource dict.")
+            exists = add_resource(s, resource)
             name = resource['name']
-            uplimit = config.get(name)
-            if uplimit is None:
-                desc = resource['desc']
-                unit = resource.get('unit')
-                self.stdout.write(
-                    "Provide default base quota for resource '%s' (%s)" %
-                    (name, desc))
-                m = (" in %s: " % unit) if unit else ": "
-                self.stdout.write(m)
-                uplimit = raw_input()
-
-            try:
-                uplimit = int(uplimit)
-            except ValueError:
-                m = "Limit for resource %s is not an integer." % (name)
-                raise CommandError(m)
-
-            add_resource(service, resource, uplimit)
+            if exists:
+                m = "Resource '%s' updated in database.\n" % (name)
+            else:
+                m = ("Resource '%s' created in database with default "
+                     "quota limit 0.\n" % (name))
+            self.stdout.write(m)

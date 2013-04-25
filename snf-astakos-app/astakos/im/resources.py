@@ -31,57 +31,58 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from astakos.im.models import Service, Resource
+from astakos.im.models import Resource
 from astakos.im.quotas import qh_add_resource_limit, qh_sync_new_resource
 import logging
 
 logger = logging.getLogger(__name__)
 
+fields = ['name', 'desc', 'unit']
 
-def add_resource(service, resource, uplimit):
-    try:
-        s = Service.objects.get(name=service)
-    except Service.DoesNotExist:
-        raise Exception("Service %s is not registered." % (service))
 
-    name = resource['name']
+class ResourceException(Exception):
+    pass
+
+
+def add_resource(service, resource_dict):
+    name = resource_dict.get('name')
+    if not name:
+        raise ResourceException("Malformed resource dict.")
+
     try:
         r = Resource.objects.get_for_update(name=name)
-        old_uplimit = r.uplimit
+        exists = True
     except Resource.DoesNotExist:
-        r = Resource()
-        old_uplimit = None
+        r = Resource(uplimit=0)
+        exists = False
 
-    r.uplimit = uplimit
-    r.service = s
-    for key, value in resource.iteritems():
-        setattr(r, key, value)
+    r.service = service
+    for field in fields:
+        value = resource_dict.get(field)
+        if value is not None:
+            setattr(r, field, value)
 
     r.save()
+    if not exists:
+        qh_sync_new_resource(r, 0)
 
-    if old_uplimit is not None:
-        logger.info("Updated resource %s with limit %s." % (name, uplimit))
+    if exists:
+        logger.info("Updated resource %s." % (name))
     else:
-        logger.info("Added resource %s with limit %s." % (name, uplimit))
-
-    if old_uplimit is not None:
-        diff = uplimit - old_uplimit
-        if diff != 0:
-            qh_add_resource_limit(r, diff)
-    else:
-        qh_sync_new_resource(r, uplimit)
+        logger.info("Added resource %s." % (name))
+    return exists
 
 
-def update_resource(name, uplimit):
-    r = Resource.objects.get_for_update(name=name)
-    old_uplimit = r.uplimit
-    r.uplimit = uplimit
-    r.save()
+def update_resource(resource, uplimit):
+    old_uplimit = resource.uplimit
+    resource.uplimit = uplimit
+    resource.save()
 
-    logger.info("Updated resource %s with limit %s." % (name, uplimit))
+    logger.info("Updated resource %s with limit %s."
+                % (resource.name, uplimit))
     diff = uplimit - old_uplimit
     if diff != 0:
-        qh_add_resource_limit(r, diff)
+        qh_add_resource_limit(resource, diff)
 
 
 def get_resources(resources=None, services=None):

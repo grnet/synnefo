@@ -149,8 +149,7 @@ def get_local_user(username, **kwargs):
                 'email': username,
                 'is_active': True,
                 'activation_sent': datetime.now(),
-                'email_verified': True,
-                'provider': 'local'
+                'email_verified': True
             }
             user_params.update(kwargs)
             user = AstakosUser(**user_params)
@@ -544,8 +543,8 @@ class TestLocal(TestCase):
         form = forms.LocalUserCreationForm(data)
         self.assertFalse(form.is_valid())
 
-    @im_settings(HELPDESK=(('support', 'support@synnefo.org'),))
-    @im_settings(FORCE_PROFILE_UPDATE=False)
+    @im_settings(HELPDESK=(('support', 'support@synnefo.org'),),
+                 FORCE_PROFILE_UPDATE=False)
     def test_local_provider(self):
         self.helpdesk_email = astakos_settings.HELPDESK[0][1]
         # enable moderation
@@ -785,11 +784,10 @@ class UserActionsTests(TestCase):
 
 class TestAuthProviderViews(TestCase):
 
-    @shibboleth_settings(CREATION_GROUPS_POLICY=['academic-login'])
-    @shibboleth_settings(AUTOMODERATE_POLICY=True)
-    @im_settings(IM_MODULES=['shibboleth', 'local'])
-    @im_settings(MODERATION_ENABLED=True)
-    @im_settings(FORCE_PROFILE_UPDATE=False)
+    @shibboleth_settings(CREATION_GROUPS_POLICY=['academic-login'],
+                         AUTOMODERATE_POLICY=True)
+    @im_settings(IM_MODULES=['shibboleth', 'local'], MODERATION_ENABLED=True,
+                 FORCE_PROFILE_UPDATE=False)
     def test_user(self):
         Profile = AuthProviderPolicyProfile
         Pending = PendingThirdPartyUser
@@ -990,11 +988,11 @@ class TestAuthProvidersAPI(TestCase):
         self.assertRaises(Exception, provider.add_to_user)
 
     @im_settings(IM_MODULES=['local', 'shibboleth'])
-    @shibboleth_settings(ADD_GROUPS_POLICY=['group1', 'group2'])
-    @shibboleth_settings(CREATION_GROUPS_POLICY=['group-create', 'group1',
+    @shibboleth_settings(ADD_GROUPS_POLICY=['group1', 'group2'],
+                         CREATION_GROUPS_POLICY=['group-create', 'group1',
                                                  'group2'])
-    @localauth_settings(ADD_GROUPS_POLICY=['localgroup'])
-    @localauth_settings(CREATION_GROUPS_POLICY=['localgroup-create',
+    @localauth_settings(ADD_GROUPS_POLICY=['localgroup'],
+                        CREATION_GROUPS_POLICY=['localgroup-create',
                                                 'group-create'])
     def test_add_groups(self):
         user = AstakosUser.objects.create(email="kpap@grnet.gr")

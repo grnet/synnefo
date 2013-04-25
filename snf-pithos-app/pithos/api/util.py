@@ -54,9 +54,9 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_BLOCK_MODULE, BACKEND_BLOCK_PATH,
                                  BACKEND_BLOCK_UMASK,
                                  BACKEND_QUEUE_MODULE, BACKEND_QUEUE_HOSTS,
-                                 BACKEND_QUEUE_EXCHANGE, USE_QUOTAHOLDER,
-                                 QUOTAHOLDER_URL, QUOTAHOLDER_TOKEN,
+                                 BACKEND_QUEUE_EXCHANGE,
                                  QUOTAHOLDER_POOLSIZE,
+                                 SERVICE_TOKEN,
                                  ASTAKOS_URL,
                                  BACKEND_ACCOUNT_QUOTA, BACKEND_CONTAINER_QUOTA,
                                  BACKEND_VERSIONING,
@@ -953,9 +953,9 @@ _pithos_backend_pool = PithosBackendPool(
         queue_module=BACKEND_QUEUE_MODULE,
         queue_hosts=BACKEND_QUEUE_HOSTS,
         queue_exchange=BACKEND_QUEUE_EXCHANGE,
-        quotaholder_enabled=USE_QUOTAHOLDER,
-        quotaholder_url=QUOTAHOLDER_URL,
-        quotaholder_token=QUOTAHOLDER_TOKEN,
+        quotaholder_enabled=True,
+        quotaholder_url=ASTAKOS_URL,
+        quotaholder_token=SERVICE_TOKEN,
         quotaholder_client_poolsize=QUOTAHOLDER_POOLSIZE,
         free_versioning=BACKEND_FREE_VERSIONING,
         block_params=BLOCK_PARAMS,
@@ -1009,7 +1009,7 @@ def get_pithos_usage(token):
     user_info = user_for_token(token, astakos_url, usage=True)
     usage = user_info.get("usage", [])
     for u in usage:
-        if u.get('name') == 'pithos+.diskspace':
+        if u.get('name') == 'pithos.diskspace':
             return u
 
 

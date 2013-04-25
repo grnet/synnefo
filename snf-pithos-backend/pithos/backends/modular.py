@@ -37,7 +37,7 @@ import logging
 import hashlib
 import binascii
 
-from synnefo.lib.quotaholder import QuotaholderClient
+from astakosclient import AstakosClient
 
 from base import (DEFAULT_ACCOUNT_QUOTA, DEFAULT_CONTAINER_QUOTA,
                   DEFAULT_CONTAINER_VERSIONING, NotAllowedError, QuotaError,
@@ -45,7 +45,6 @@ from base import (DEFAULT_ACCOUNT_QUOTA, DEFAULT_CONTAINER_QUOTA,
                   ContainerNotEmpty, ItemNotExists, VersionNotExists)
 
 # Stripped-down version of the HashMap class found in tools.
-
 
 class HashMap(list):
 
@@ -99,6 +98,7 @@ inf = float('inf')
 
 ULTIMATE_ANSWER = 42
 
+DEFAULT_SOURCE = 'system'
 
 logger = logging.getLogger(__name__)
 
@@ -141,10 +141,10 @@ def backend_method(func=None, autocommit=1):
             return ret
         except:
             if serials:
-                self.quotaholder.reject_commission(
-                            context     =   {},
-                            clientkey   =   'pithos',
-                            serials     =   serials)
+                self.quotaholder.resolve_commissions(
+                    token=self.quotaholder_token,
+                    accept_serials=[],
+                    reject_serials=serials)
             self.wrapper.rollback()
             raise
     return fn
@@ -241,10 +241,10 @@ class ModularBackend(BaseBackend):
         if quotaholder_enabled:
             self.quotaholder_url = quotaholder_url
             self.quotaholder_token = quotaholder_token
-            self.quotaholder = QuotaholderClient(
-                                    quotaholder_url,
-                                    token=quotaholder_token,
-                                    poolsize=quotaholder_client_poolsize)
+            self.quotaholder = AstakosClient(
+                quotaholder_url,
+                use_pool=True,
+                pool_size=quotaholder_client_poolsize)
 
         self.serials = []
         self.messages = []
@@ -1365,15 +1365,14 @@ class ModularBackend(BaseBackend):
             return
 
         try:
-            serial = self.quotaholder.issue_commission(
-                    context     =   {},
-                    target      =   account,
-                    key         =   '1',
-                    clientkey   =   'pithos',
-                    ownerkey    =   '',
-                    name        =   details['path'] if 'path' in details else '',
-                    provisions  =   (('pithos+', 'pithos+.diskspace', size),)
-            )
+            name = details['path'] if 'path' in details else ''
+            serial = self.quotaholder.issue_one_commission(
+                token=self.quotaholder_token,
+                holder=account,
+                source=DEFAULT_SOURCE,
+                provisions={'pithos.diskspace': size},
+                name=name
+                )
         except BaseException, e:
             raise QuotaError(e)
         else:

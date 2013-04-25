@@ -177,7 +177,7 @@ Return Code                 Description
 401 (Unauthorized)          Missing or expired user token
 403 (Forbidden)             User is not allowed to perform this operation
 500 (Internal Server Error) The request cannot be completed because of an
-internal error
+\                           internal error
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
@@ -375,9 +375,9 @@ Return Code                 Description
 size, etc.) 
 415 (Bad Media Type)        
 500 (Internal Server Error) The request cannot be completed because of an
-internal error
+\                           internal error
 503 (Service Unavailable)   No available backends or service currently
-unavailable
+\                           unavailable
 =========================== =====================
 
 |
@@ -449,7 +449,7 @@ Return Code                 Description
 403 (Forbidden)             Administratively suspended server
 404 (Not Found)             Server not found
 500 (Internal Server Error) The request cannot be completed because of an
-internal error
+\                           internal error
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
@@ -530,7 +530,7 @@ Return Code                 Description
 403 (Forbidden)             Administratively suspended server
 404 (Not Found)             Server not found
 500 (Internal Server Error) The request cannot be completed because of an
-internal error
+\                           internal error
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
@@ -607,9 +607,9 @@ Return Code                 Description
 403 (Forbidden)             Administratively suspended server
 404 (Not Found)             Server not found
 500 (Internal Server Error) The request cannot be completed because of an
-internal error
+\                           internal error
 503 (Service Unavailable)   No available backends or service currently
-unavailable
+\                           unavailable
 =========================== =====================
 
 |
@@ -747,9 +747,9 @@ Return Code                 Description
 415 (Bad Media Type)
 409 (Build In Progress)     Server is not ready yet
 500 (Internal Server Error) The request cannot be completed because of an
-internal error
+\                           internal error
 503 (Service Unavailable)   No available backends or service currently
-unavailable
+\                           unavailable
 =========================== =====================
 
 In case of a 204 return code, there will be no request results according to the
@@ -786,9 +786,9 @@ Return Code                 Description
 404 (Not Found)             Server not found
 409 (Build In Progress)     Server is not ready yet
 500 (Internal Server Error) The request cannot be completed because of an
-internal error
+\                           internal error
 503 (Service Unavailable)   Action not supported or service currently
-unavailable
+\                           unavailable
 =========================== =====================
 
 .. note:: When a server is deleted, all its connections are deleted too.
@@ -836,7 +836,7 @@ Return Code                 Description
 404 (Not Found)             Server not found
 409 (Build In Progress)     Server is not ready yet
 500 (Internal Server Error) The request cannot be completed because of an
-internal error
+\                           internal error
 503 (Service Unavailable)   Service currently unavailable
 =========================== =====================
 
@@ -920,7 +920,7 @@ Return Code                 Description
 404 (Not Found)             Server not found
 409 (Build In Progress)     Server is not ready yet
 500 (Internal Server Error) The request cannot be completed because of an
-internal error
+\                           internal error
 503 (Service Unavailable)   Service currently unavailable
 =========================== =====================
 
@@ -1000,7 +1000,7 @@ Return Code                 Description
 401 (Unauthorized)          Missing or expired user token
 403 (Forbidden)             User is not allowed to perform this operation
 500 (Internal Server Error) The request cannot be completed because of an
-internal error
+\                           internal error
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
@@ -1173,7 +1173,7 @@ Return Code                 Description
 403 (Forbidden)             Administratively suspended server
 404 (Not Found)             Server not found
 500 (Internal Server Error) The request cannot be completed because of an
-internal error
+\                           internal error
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
@@ -1244,7 +1244,7 @@ Return Code                 Description
 404 (Not Found)             Server not found
 413 (OverLimit)             Maximum number of metadata exceeded
 500 (Internal Server Error) The request cannot be completed because of an
-internal error
+\                           internal error
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
@@ -1289,7 +1289,7 @@ Return Code                 Description
 403 (Forbidden)             Administratively suspended server
 404 (Not Found)             Metadatum key not found
 500 (Internal Server Error) The request cannot be completed because of an
-internal error
+\                           internal error
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
@@ -1345,7 +1345,7 @@ Return Code                 Description
 404 (Not Found)             Metadatum key not found
 413 (OverLimit)             Maximum number of metadata exceeded
 500 (Internal Server Error) The request cannot be completed because of an
-internal error
+\                           internal error
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
@@ -1389,7 +1389,7 @@ Return Code                 Description
 403 (Forbidden)             Administratively suspended server
 404 (Not Found)             Metadatum key not found
 500 (Internal Server Error) The request cannot be completed because of an
-internal error
+\                           internal error
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
@@ -1441,7 +1441,7 @@ Return Code                 Description
 401 (Unauthorized)          Missing or expired user token
 403 (Forbidden)             Forbidden to use this flavor
 500 (Internal Server Error) The request cannot be completed because of an
-internal error
+\                           internal error
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
@@ -1549,7 +1549,7 @@ Return Code                 Description
 403 (Forbidden)             Forbidden to use this flavor
 404 (Not Found)             Flavor id not founmd
 500 (Internal Server Error) The request cannot be completed because of an
-internal error
+\                           internal error
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
@@ -1650,7 +1650,7 @@ Return Code                 Description
 401 (Unauthorized)          Missing or expired user token
 403 (Forbidden)             User is not allowed to perform this operation
 500 (Internal Server Error) The request cannot be completed because of an
-internal error
+\                           internal error
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
@@ -1743,9 +1743,9 @@ Return Code                 Description
 403 (Forbidden)             Not allowed to use this image
 404 (Not Found)             Image not found
 500 (Internal Server Error) The request cannot be completed because of an
-internal error
+\                           internal error
 503 (Service Unavailable)   No available backends or service currently
-unavailable
+\                           unavailable
 =========================== =====================
 
 |
@@ -1813,9 +1813,9 @@ Return Code                 Description
 401 (Unauthorized)          Missing or expired user token
 404 (Not Found)             Image not found
 500 (Internal Server Error) The request cannot be completed because of an
-internal error
+\                           internal error
 503 (Service Unavailable)   Action not supported or service currently
-unavailable
+\                           unavailable
 =========================== =====================
 
 In case of a 204 code, image status will change from ``ACTIVE`` to ``DELETED``
@@ -1857,7 +1857,7 @@ Return Code                 Description
 404 (Not Found)             Server not found
 409 (Build In Progress)     The image is not ready yet
 500 (Internal Server Error) The request cannot be completed because of an
-internal error
+\                           internal error
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
@@ -1937,7 +1937,7 @@ Return Code                 Description
 404 (Not Found)             Image or metadatum key not found
 413 (OverLimit)             Maximum number of metadata exceeded
 500 (Internal Server Error) The request cannot be completed because of an
-internal error
+\                           internal error
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
@@ -1995,7 +1995,7 @@ Return Code                 Description
 403 (Forbidden)             Not allowed to access this information
 404 (Not Found)             Metadatum key not found
 500 (Internal Server Error) The request cannot be completed because of an
-internal error
+\                           internal error
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
@@ -2051,7 +2051,7 @@ Return Code                 Description
 404 (Not Found)             Metadatum key not found
 413 (OverLimit)             Maximum number of metadata exceeded
 500 (Internal Server Error) The request cannot be completed because of an
-internal error
+\                           internal error
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
@@ -2095,7 +2095,7 @@ Return Code                 Description
 403 (Forbidden)             Not allowed to modify this image
 404 (Not Found)             Metadatum key not found
 500 (Internal Server Error) The request cannot be completed because of an
-internal error
+\                           internal error
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
@@ -2155,9 +2155,9 @@ Return Code                 Description
 404 (Not Found)             Network not found
 409 (Build In Progress)     Server is not ready yet
 500 (Internal Server Error) The request cannot be completed because of an
-internal error
+\                           internal error
 503 (Service Unavailable)   Action not supported or service currently
-unavailable
+\                           unavailable
 =========================== =====================
 
 The ``detail`` operation lists the `full network attributes <#network-ref>`_,
@@ -2272,7 +2272,7 @@ Return Code                 Description
 413 (Over Limit)            Reached networks limit
 415 (Bad Media Type)        Bad network type
 500 (Internal Server Error) The request cannot be completed because of an
-internal error
+\                           internal error
 503 (Service Unavailable)   Failed to allocated network resources
 =========================== =====================
 
@@ -2332,7 +2332,7 @@ Return Code                 Description
 401 (Unauthorized)          Missing or expired user token
 404 (Not Found)             Network not found
 500 (Internal Server Error) The request cannot be completed because of an
-internal error
+\                           internal error
 503 (Service Unavailable)   The service is not currently available
 =========================== =====================
 
@@ -2366,12 +2366,10 @@ In case of a 200 code, the response body consists of a collection of
 Rename Network
 ..............
 
-**PUT** /networks/*id*
-
 ========================== ======
 URI                        Method
 ========================== ======
-``/networks/<network-id>`` GET   
+``/networks/<network-id>`` PUT   
 ========================== ======
 
 * **network-id** is the identifier of the network
@@ -2410,11 +2408,11 @@ Return Code                 Description
 400 (Bad Request)           Malformed request or network deleted
 401 (Unauthorized)          Missing or expired user token
 403 (Forbidden)             Administratively suspended server
-404 (Not Found)             Server not found
+404 (Not Found)             Network not found
 413 (Over Limit)            Network Limit Exceeded
 415 (Bad Media Type)        Bad network type
 500 (Internal Server Error) The request cannot be completed because of an
-internal error
+\                           internal error
 503 (Service Unavailable)   The service is not currently available
 =========================== =====================
 
@@ -2424,74 +2422,99 @@ new value.
 Delete Network
 ..............
 
-**DELETE** /networks/*id*
+========================== ======
+URI                        Method
+========================== ======
+``/networks/<network-id>`` DELETE   
+========================== ======
 
-**Normal Response Code**: 204
+* **network-id** is the identifier of the network
 
-**Error Response Codes**: computeFault (400, 500), serviceUnavailable (503),
-unauthorized (401), itemNotFound (404), unauthorized (401), overLimit (413) 
+|
 
-This operation deletes a network from the system.
+==============  =========================
+Request Header  Value                    
+==============  =========================
+X-Auth-Token    User authentication token
+==============  =========================
 
-This operation does not require a request or a response body.
+|
 
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+204 (OK)                    Request succeeded
+400 (Bad Request)           Malformed request or network already deleted
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Administratively suspended server
+404 (Not Found)             Network not found
+500 (Internal Server Error) The request cannot be completed because of an
+\                           internal error
+503 (Service Unavailable)   The service is not currently available
+=========================== =====================
 
-Network Actions
----------------
+Add / Remove Server
+...................
 
-Add Server
-..........
+================================= ======
+URI                               Method
+================================= ======
+``/networks/<network-id>/action`` POST
+================================= ======
 
-**POST** /networks/*id*/action
+* **network-id** is the identifier of the network
 
-**Normal Response Code**: 202
+|
 
-**Error Response Codes**: computeFault (400, 500), serviceUnavailable (503),
-unauthorized (401), badRequest (400), badMediaType(415), itemNotFound (404),
-overLimit (413)
+==============  =========================
+Request Header  Value                    
+==============  =========================
+X-Auth-Token    User authentication token
+==============  =========================
 
-This operation adds a server to the specified network.
+|
+
+The json-formated request body should be an ``add`` **or** ``remove`` tag over
+the following attribute:
+
+================== =================================
+Request Paramenter Description
+================== =================================
+serverRef          Server id to (dis)connect from/to
+================== =================================
 
 **Example Action Add: JSON**:
 
 .. code-block:: javascript
 
-  {
-      "add" : {
-          "serverRef" : 42
-      }
-  }
-
-This operation does not contain a response body.
-
-
-Remove Server
-.............
-
-**POST** /networks/*id*/action
-
-**Normal Response Code**: 202
-
-**Error Response Codes**: computeFault (400, 500), serviceUnavailable (503),
-unauthorized (401), badRequest (400), badMediaType(415), itemNotFound (404),
-overLimit (413)
-
-This operation removes a server from the specified network.
+  {"add" : {"serverRef" : 42}}
 
 **Example Action Remove: JSON**:
 
 .. code-block:: javascript
 
-  {
-      "remove" : {
-          "serverRef" : 42
-      }
-  }
+  {"remove" : {"serverRef" : 42}}
 
-This operation does not contain a response body.
+|
 
-Index of details
-----------------
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+204 (OK)                    Request succeeded
+400 (Bad Request)           Malformed request or network already deleted
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Not allowed to modify this network (e.g. public)
+404 (Not Found)             Network not found
+500 (Internal Server Error) The request cannot be completed because of an
+\                           internal error
+503 (Service Unavailable)   The service is not currently available
+=========================== =====================
+
+In case of 204 code, the server is connected to (``add``) or disconnected from
+(``remove``) the network.
+
+Index of Attributes
+-------------------
 
 .. _server-ref:
 

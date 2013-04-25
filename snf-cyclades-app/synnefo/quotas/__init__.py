@@ -180,6 +180,7 @@ def issue_and_accept_commission(resource, delete=False):
     This function implements the Commission workflow, and must be called
     exactly after and in the same transaction that created/updated the
     resource. The workflow that implements is the following:
+    0) Resolve previous unresolved commission if exists
     1) Issue commission and get a serial
     2) Store the serial in DB and mark is as one to accept
     3) Correlate the serial with the resource
@@ -189,6 +190,18 @@ def issue_and_accept_commission(resource, delete=False):
     7) COMMIT!
 
     """
+    previous_serial = resource.serial
+    if previous_serial is not None and not previous_serial.resolved:
+        if previous_serial.pending:
+            msg = "Issuing commission for resource '%s' while previous serial"\
+                  " '%s' is still pending." % (resource, previous_serial)
+            raise Exception(msg)
+        elif previous_serial.accept:
+            accept_commissions(accepted=[previous_serial.serial])
+        else:
+            reject_commissions(rejected=[previous_serial.serial])
+        previous_serial.resolved = True
+
     try:
         # Convert resources in the format expected by Quotaholder
         qh_resources = prepare_qh_resources(resource)

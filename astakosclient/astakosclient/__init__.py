@@ -382,7 +382,7 @@ class AstakosClient():
         token       -- service's token (string)
         holder      -- user's id (string)
         source      -- commission's source (ex system) (string)
-        provisions  -- resources with their quantity (list of (string, int))
+        provisions  -- resources with their quantity (dict from string to int)
         name        -- description of the commission (string)
         force       -- force this commission (boolean)
         auto_accept -- auto accept this commission (boolean)

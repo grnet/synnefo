@@ -112,7 +112,7 @@ def api_method(http_method=None, token_required=True, user_required=True,
                                      details=err.details,
                                      code=err.status)
                 if fault.code >= 500:
-                    logger.exception("API ERROR")
+                    logger.exception("Astakos ERROR")
                 return render_fault(request, fault)
             except:
                 logger.exception("Unexpected ERROR")

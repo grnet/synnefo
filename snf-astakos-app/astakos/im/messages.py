@@ -33,8 +33,14 @@
 
 from django.conf import settings
 
+LOGGED_IN_WARNING                       =   'It seems that you are already logged in.'
+ACCOUNT_ALREADY_VERIFIED                =   'This account is already verified.'
+ACCOUNT_ALREADY_MODERATED               =   'This account is already moderated.'
 ACCOUNT_ALREADY_ACTIVE                  =   'This account is already active.'
+ACCOUNT_REJECTED                        =   'This account has been rejected.'
 ACCOUNT_NOT_ACTIVE                      =   'User account is not active.'
+ACCOUNT_NOT_MODERATED                   =   'User account is not moderated.'
+ACCOUNT_NOT_VERIFIED                    =   'User account does not have a verified email address.'
 ACCOUNT_RESEND_ACTIVATION               =   'It seems that an activation email has been sent to you, but you have not followed the activation link. <a href="%(send_activation_url)s">Resend activation email.</a>'
 INACTIVE_ACCOUNT_CHANGE_EMAIL           =   ''.join([ACCOUNT_RESEND_ACTIVATION, ' Or <a href="%(signup_url)s">Send activation to a new email.</a>'])
 
@@ -42,6 +48,7 @@ ACCOUNT_PENDING_ACTIVATION_HELP         =   'An activation email has been sent t
 
 ACCOUNT_ACTIVATED                       =   'Congratulations. Your account has' + \
                                             ' been activated. You are now logged in.'
+ACCOUNT_DEACTIVATED                     =   'Your account is inactive'
 PASSWORD_RESET_DONE                     =   'An email with details on how to change your password has been sent. Please check your Inbox.'
 PASSWORD_RESET_CONFIRM_DONE             =   'Your password has changed successfully. You can now login using your new password.'
 PASSWORD_CHANGED                        =   'Your new password was set successfully.'
@@ -134,6 +141,7 @@ INVITATION_SENT                         =   'Invitation sent to %(email)s.'
 VERIFICATION_SENT                       =   'Your information has been submitted successfully. A verification email, with an activation link \
                                                has been sent to the email address you provided. Please follow the activation link on this \
                                                email to complete the registration process.'
+VERIFICATION_FAILED                     =   'Email verification process failed.'
 SWITCH_ACCOUNT_LINK_SENT                =   'This email is already associated with a local account, and a verification email has been sent \
                                              to %(email)s. To complete the association process, go back to your Inbox and follow the link \
                                              inside the verification email.'
@@ -235,7 +243,7 @@ all pending registrations will be deleted.'''
 AUTH_PROVIDER_PENDING_RESEND_ACTIVATION      =   '<a href="{resend_activation_url}">Click here to resend activation email.</a>'
 AUTH_PROVIDER_PENDING_MODERATION             =   'Your account request is pending moderation.'
 AUTH_PROVIDER_PENDING_ACTIVATION             =   'Your account request is pending activation.'
-AUTH_PROVIDER_ACCOUNT_INACTIVE                        =   'Your account is disabled.'
+AUTH_PROVIDER_ACCOUNT_INACTIVE               =   'Your account is disabled.'
 
 AUTH_PROVIDER_ADD_TO_EXISTING_ACCOUNT        =   "You can add {method_prompt} to your existing account from your " \
                                                  " <a href='{profile_url}'>profile page</a>"

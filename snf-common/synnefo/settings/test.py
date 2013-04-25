@@ -13,8 +13,11 @@ DATABASES = {
     }
 }
 
-LOGGING_SETUP['handlers']['console']['level'] = 'WARNING'
+LOGGING_SETUP['handlers']['console']['level'] = \
+    os.environ.get('SYNNEFO_TESTS_LOGGING_LEVEL', 'WARNING')
+
 LOGIN_URL = 'http://host:port/'
+
 
 SOUTH_TESTS_MIGRATE = bool(int(os.environ.get('SOUTH_TESTS_MIGRATE', True)))
 

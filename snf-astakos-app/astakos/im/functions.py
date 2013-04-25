@@ -61,15 +61,14 @@ from astakos.im.settings import (
     EMAIL_CHANGE_EMAIL_SUBJECT,
     PROJECT_CREATION_SUBJECT, PROJECT_APPROVED_SUBJECT,
     PROJECT_TERMINATION_SUBJECT, PROJECT_SUSPENSION_SUBJECT,
-    PROJECT_MEMBERSHIP_CHANGE_SUBJECT,
-    )
+    PROJECT_MEMBERSHIP_CHANGE_SUBJECT)
 from astakos.im.notifications import build_notification, NotificationError
 from astakos.im.models import (
     AstakosUser, Invitation, ProjectMembership, ProjectApplication, Project,
     UserSetting,
     get_resource_names, new_chain)
-from astakos.im.quotas import (qh_sync_user, qh_sync_project,
-                               register_pending_apps)
+from astakos.im.quotas import (qh_sync_user, qh_sync_users,
+                               register_pending_apps, qh_sync_project)
 from astakos.im.project_notif import (
     membership_change_notify, membership_enroll_notify,
     membership_request_notify, membership_leave_request_notify,
@@ -101,12 +100,8 @@ def logout(request, *args, **kwargs):
 def send_verification(user, template_name='im/activation_email.txt'):
     """
     Send email to user to verify his/her email and activate his/her account.
-
-    Raises SendVerificationError
     """
-    url = '%s?auth=%s&next=%s' % (join_urls(BASEURL, reverse('activate')),
-                                  quote(user.auth_token),
-                                  quote(join_urls(BASEURL, reverse('index'))))
+    url = join_urls(BASEURL, user.get_activation_url(nxt=reverse('index')))
     message = render_to_string(template_name, {
                                'user': user,
                                'url': url,
@@ -114,82 +109,75 @@ def send_verification(user, template_name='im/activation_email.txt'):
                                'site_name': SITENAME,
                                'support': CONTACT_EMAIL})
     sender = settings.SERVER_EMAIL
-    try:
-        send_mail(_(VERIFICATION_EMAIL_SUBJECT), message, sender, [user.email],
-                  connection=get_connection())
-
-    except (SMTPException, socket.error) as e:
-        logger.exception(e)
-        raise SendVerificationError()
-    else:
-        msg = 'Sent activation %s' % user.email
-        logger.log(LOGGING_LEVEL, msg)
-
-
-def send_activation(user, template_name='im/activation_email.txt'):
-    send_verification(user, template_name)
-    user.activation_sent = datetime.now()
-    user.save()
+    send_mail(_(VERIFICATION_EMAIL_SUBJECT), message, sender, [user.email],
+              connection=get_connection())
+    logger.info("Sent user verirfication email: %s", user.log_display)
 
 
 def _send_admin_notification(template_name,
-                             dictionary=None,
+                             context=None,
+                             user=None,
+                             msg="",
                              subject='alpha2 testing notification',):
     """
-    Send notification email to settings.HELPDESK + settings.MANAGERS.
-
-    Raises SendNotificationError
+    Send notification email to settings.HELPDESK + settings.MANAGERS +
+    settings.ADMINS.
     """
-    dictionary = dictionary or {}
-    message = render_to_string(template_name, dictionary)
+    if context is None:
+        context = {}
+    if not 'user' in context:
+        context['user'] = user
+
+    message = render_to_string(template_name, context)
     sender = settings.SERVER_EMAIL
-    recipient_list = [e[1] for e in settings.HELPDESK + settings.MANAGERS]
-    try:
-        send_mail(subject, message, sender, recipient_list,
-                  connection=get_connection())
-    except (SMTPException, socket.error) as e:
-        logger.exception(e)
-        raise SendNotificationError()
+    recipient_list = [e[1] for e in settings.HELPDESK +
+                      settings.MANAGERS + settings.ADMINS]
+    send_mail(subject, message, sender, recipient_list,
+              connection=get_connection())
+    if user:
+        msg = 'Sent admin notification (%s) for user %s' % (msg,
+                                                            user.log_display)
     else:
-        user = dictionary.get('user')
-        msg = 'Sent admin notification for user %s' % user.log_display
-        logger.log(LOGGING_LEVEL, msg)
+        msg = 'Sent admin notification (%s)' % msg
+
+    logger.log(LOGGING_LEVEL, msg)
 
 
-def send_account_creation_notification(template_name, dictionary=None):
-    user = dictionary.get('user')
-    subject = _(ACCOUNT_CREATION_SUBJECT) % {'user': user.email}
-    return _send_admin_notification(template_name, dictionary, subject=subject)
-
-
-def send_helpdesk_notification(user, template_name='im/helpdesk_notification.txt'):
+def send_account_pending_moderation_notification(
+        user,
+        template_name='im/account_pending_moderation_notification.txt'):
     """
-    Send email to settings.HELPDESK list to notify for a new user activation.
+    Notify admins that a new user has verified his email address and moderation
+    step is required to activate his account.
+    """
+    subject = _(ACCOUNT_CREATION_SUBJECT) % {'user': user.email}
+    return _send_admin_notification(template_name, {}, subject=subject,
+                                    user=user, msg="account creation")
 
-    Raises SendNotificationError
+
+def send_account_activated_notification(
+        user,
+        template_name='im/account_activated_notification.txt'):
+    """
+    Send email to settings.HELPDESK + settings.MANAGERES + settings.ADMINS
+    lists to notify that a new account has been accepted and activated.
     """
     message = render_to_string(
         template_name,
         {'user': user}
     )
     sender = settings.SERVER_EMAIL
-    recipient_list = [e[1] for e in settings.HELPDESK + settings.MANAGERS]
-    try:
-        send_mail(_(HELPDESK_NOTIFICATION_EMAIL_SUBJECT) % {'user': user.email},
-                  message, sender, recipient_list, connection=get_connection())
-    except (SMTPException, socket.error) as e:
-        logger.exception(e)
-        raise SendNotificationError()
-    else:
-        msg = 'Sent helpdesk admin notification for %s' % user.email
-        logger.log(LOGGING_LEVEL, msg)
+    recipient_list = [e[1] for e in settings.HELPDESK +
+                      settings.MANAGERS + settings.ADMINS]
+    send_mail(_(HELPDESK_NOTIFICATION_EMAIL_SUBJECT) % {'user': user.email},
+              message, sender, recipient_list, connection=get_connection())
+    msg = 'Sent helpdesk admin notification for %s' % user.email
+    logger.log(LOGGING_LEVEL, msg)
 
 
 def send_invitation(invitation, template_name='im/invitation.txt'):
     """
     Send invitation email.
-
-    Raises SendInvitationError
     """
     subject = _(INVITATION_EMAIL_SUBJECT)
     url = '%s?code=%d' % (join_urls(BASEURL, reverse('index')), invitation.code)
@@ -200,23 +188,18 @@ def send_invitation(invitation, template_name='im/invitation.txt'):
                                'site_name': SITENAME,
                                'support': CONTACT_EMAIL})
     sender = settings.SERVER_EMAIL
-    try:
-        send_mail(subject, message, sender, [invitation.username],
-                  connection=get_connection())
-    except (SMTPException, socket.error) as e:
-        logger.exception(e)
-        raise SendInvitationError()
-    else:
-        msg = 'Sent invitation %s' % invitation
-        logger.log(LOGGING_LEVEL, msg)
-        inviter_invitations = invitation.inviter.invitations
-        invitation.inviter.invitations = max(0, inviter_invitations - 1)
-        invitation.inviter.save()
+    send_mail(subject, message, sender, [invitation.username],
+              connection=get_connection())
+    msg = 'Sent invitation %s' % invitation
+    logger.log(LOGGING_LEVEL, msg)
+    inviter_invitations = invitation.inviter.invitations
+    invitation.inviter.invitations = max(0, inviter_invitations - 1)
+    invitation.inviter.save()
 
 
 def send_greeting(user, email_template_name='im/welcome_email.txt'):
     """
-    Send welcome email.
+    Send welcome email to an accepted/activated user.
 
     Raises SMTPException, socket.error
     """
@@ -228,15 +211,10 @@ def send_greeting(user, email_template_name='im/welcome_email.txt'):
                                'site_name': SITENAME,
                                'support': CONTACT_EMAIL})
     sender = settings.SERVER_EMAIL
-    try:
-        send_mail(subject, message, sender, [user.email],
-                  connection=get_connection())
-    except (SMTPException, socket.error) as e:
-        logger.exception(e)
-        raise SendGreetingError()
-    else:
-        msg = 'Sent greeting %s' % user.log_display
-        logger.log(LOGGING_LEVEL, msg)
+    send_mail(subject, message, sender, [user.email],
+              connection=get_connection())
+    msg = 'Sent greeting %s' % user.log_display
+    logger.log(LOGGING_LEVEL, msg)
 
 
 def send_feedback(msg, data, user, email_template_name='im/feedback_mail.txt'):
@@ -278,97 +256,12 @@ def send_change_email(
         logger.log(LOGGING_LEVEL, msg)
 
 
-def activate(
-    user,
-    email_template_name='im/welcome_email.txt',
-    helpdesk_email_template_name='im/helpdesk_notification.txt',
-    verify_email=False):
-    """
-    Activates the specific user and sends email.
-
-    Raises SendGreetingError, ValidationError
-    """
-    user.is_active = True
-    user.email_verified = True
-    if not user.activation_sent:
-        user.activation_sent = datetime.now()
-    user.save()
-    qh_sync_user(user)
-    send_helpdesk_notification(user, helpdesk_email_template_name)
-    send_greeting(user, email_template_name)
-
-def deactivate(user):
-    user.is_active = False
-    user.save()
-
 def invite(inviter, email, realname):
     inv = Invitation(inviter=inviter, username=email, realname=realname)
     inv.save()
     send_invitation(inv)
     inviter.invitations = max(0, inviter.invitations - 1)
     inviter.save()
-
-def switch_account_to_shibboleth(user, local_user,
-                                 greeting_template_name='im/welcome_email.txt'):
-    try:
-        provider = user.provider
-    except AttributeError:
-        return
-    else:
-        if not provider == 'shibboleth':
-            return
-        user.delete()
-        local_user.provider = 'shibboleth'
-        local_user.third_party_identifier = user.third_party_identifier
-        local_user.save()
-        send_greeting(local_user, greeting_template_name)
-        return local_user
-
-
-class SendMailError(Exception):
-    pass
-
-
-class SendAdminNotificationError(SendMailError):
-    def __init__(self):
-        self.message = _(astakos_messages.ADMIN_NOTIFICATION_SEND_ERR)
-        super(SendAdminNotificationError, self).__init__()
-
-
-class SendVerificationError(SendMailError):
-    def __init__(self):
-        self.message = _(astakos_messages.VERIFICATION_SEND_ERR)
-        super(SendVerificationError, self).__init__()
-
-
-class SendInvitationError(SendMailError):
-    def __init__(self):
-        self.message = _(astakos_messages.INVITATION_SEND_ERR)
-        super(SendInvitationError, self).__init__()
-
-
-class SendGreetingError(SendMailError):
-    def __init__(self):
-        self.message = _(astakos_messages.GREETING_SEND_ERR)
-        super(SendGreetingError, self).__init__()
-
-
-class SendFeedbackError(SendMailError):
-    def __init__(self):
-        self.message = _(astakos_messages.FEEDBACK_SEND_ERR)
-        super(SendFeedbackError, self).__init__()
-
-
-class ChangeEmailError(SendMailError):
-    def __init__(self):
-        self.message = _(astakos_messages.CHANGE_EMAIL_SEND_ERR)
-        super(ChangeEmailError, self).__init__()
-
-
-class SendNotificationError(SendMailError):
-    def __init__(self):
-        self.message = _(astakos_messages.NOTIFICATION_SEND_ERR)
-        super(SendNotificationError, self).__init__()
 
 
 ### PROJECT FUNCTIONS ###

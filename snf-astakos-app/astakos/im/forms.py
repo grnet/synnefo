@@ -87,9 +87,10 @@ DOMAIN_VALUE_REGEX = re.compile(
     r'^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,6}$',
     re.IGNORECASE)
 
+
 class StoreUserMixin(object):
 
-    def store_user(self, user, request):
+    def store_user(self, user, request=None):
         """
         WARNING: this should be wrapped inside a transactional view/method.
         """
@@ -128,9 +129,16 @@ class LocalUserCreationForm(UserCreationForm, StoreUserMixin):
         Changes the order of fields, and removes the username field.
         """
         request = kwargs.pop('request', None)
+        provider = kwargs.pop('provider', 'local')
+
+        # we only use LocalUserCreationForm for local provider
+        if not provider == 'local':
+            raise Exception('Invalid provider')
+
         if request:
             self.ip = request.META.get('REMOTE_ADDR',
-                                       request.META.get('HTTP_X_REAL_IP', None))
+                                       request.META.get('HTTP_X_REAL_IP',
+                                                        None))
 
         super(LocalUserCreationForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['email', 'first_name', 'last_name',
@@ -181,7 +189,7 @@ class LocalUserCreationForm(UserCreationForm, StoreUserMixin):
         if not check.is_valid:
             raise forms.ValidationError(_(astakos_messages.CAPTCHA_VALIDATION_ERR))
 
-    def post_store_user(self, user, request):
+    def post_store_user(self, user, request=None):
         """
         Interface method for descendant backends to be able to do stuff within
         the transaction enabled by store_user.
@@ -195,10 +203,11 @@ class LocalUserCreationForm(UserCreationForm, StoreUserMixin):
         save behavior is complete.
         """
         user = super(LocalUserCreationForm, self).save(commit=False)
+        user.date_signed_terms = datetime.now()
         user.renew_token()
         if commit:
             user.save()
-            logger.log(LOGGING_LEVEL, 'Created user %s' % user.email)
+            logger.info('Created user %s', user.log_display)
         return user
 
 
@@ -231,34 +240,32 @@ class InvitedLocalUserCreationForm(LocalUserCreationForm):
 
 
 class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
-    id = forms.CharField(
-        widget=forms.HiddenInput(),
-        label='',
-        required=False
-    )
-    third_party_identifier = forms.CharField(
-        widget=forms.HiddenInput(),
-        label=''
-    )
     email = forms.EmailField(
         label='Contact email',
-        help_text = 'This is needed for contact purposes. ' \
-        'It doesn&#39;t need to be the same with the one you ' \
+        help_text='This is needed for contact purposes. '
+        'It doesn&#39;t need to be the same with the one you '
         'provided to login previously. '
     )
 
     class Meta:
         model = AstakosUser
-        fields = ['id', 'email', 'third_party_identifier',
-                  'first_name', 'last_name', 'has_signed_terms']
+        fields = ['email', 'first_name', 'last_name', 'has_signed_terms']
 
     def __init__(self, *args, **kwargs):
         """
         Changes the order of fields, and removes the username field.
         """
-        self.request = kwargs.get('request', None)
-        if self.request:
-            kwargs.pop('request')
+
+        self.provider = kwargs.pop('provider', None)
+        if not self.provider or self.provider == 'local':
+            raise Exception('Invalid provider, %r' % self.provider)
+
+        # ThirdPartyUserCreationForm should always get instantiated with
+        # a third_party_token value
+        self.third_party_token = kwargs.pop('third_party_token', None)
+        if not self.third_party_token:
+            raise Exception('ThirdPartyUserCreationForm'
+                            ' requires third_party_token')
 
         super(ThirdPartyUserCreationForm, self).__init__(*args, **kwargs)
 
@@ -278,12 +285,12 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
         if not email:
             raise forms.ValidationError(_(astakos_messages.REQUIRED_FIELD))
         if reserved_verified_email(email):
-            provider_id = self.request.REQUEST.get('provider', 'local')
+            provider_id = self.provider
             provider = auth_providers.get_provider(provider_id)
             extra_message = provider.get_add_to_existing_account_msg
 
-            raise forms.ValidationError(mark_safe(_(astakos_messages.EMAIL_USED) + ' ' +
-                                        extra_message))
+            raise forms.ValidationError(mark_safe(
+                _(astakos_messages.EMAIL_USED) + ' ' + extra_message))
         return email
 
     def clean_has_signed_terms(self):
@@ -292,11 +299,11 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
             raise forms.ValidationError(_(astakos_messages.SIGN_TERMS))
         return has_signed_terms
 
-    def post_store_user(self, user, request):
-        pending = PendingThirdPartyUser.objects.get(
-            token=request.POST.get('third_party_token'),
-            third_party_identifier=
-            self.cleaned_data.get('third_party_identifier'))
+    def _get_pending_user(self):
+        return PendingThirdPartyUser.objects.get(token=self.third_party_token)
+
+    def post_store_user(self, user, request=None):
+        pending = self._get_pending_user()
         provider = pending.get_provider(user)
         provider.add_to_user()
         pending.delete()
@@ -305,9 +312,10 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
         user = super(ThirdPartyUserCreationForm, self).save(commit=False)
         user.set_unusable_password()
         user.renew_token()
+        user.date_signed_terms = datetime.now()
         if commit:
             user.save()
-            logger.log(LOGGING_LEVEL, 'Created user %s' % user.email)
+            logger.info('Created user %s' % user.log_display)
         return user
 
 
@@ -409,8 +417,8 @@ class LoginForm(AuthenticationForm):
                 user = AstakosUser.objects.get_by_identifier(username)
                 if not user.has_auth_provider('local'):
                     provider = auth_providers.get_provider('local', user)
-                    raise forms.ValidationError(
-                        provider.get_login_disabled_msg)
+                    msg = provider.get_login_disabled_msg
+                    raise forms.ValidationError(mark_safe(msg))
             except AstakosUser.DoesNotExist:
                 pass
 
@@ -515,16 +523,17 @@ class ExtendedPasswordResetForm(PasswordResetForm):
             user = AstakosUser.objects.get_by_identifier(email)
             self.users_cache = [user]
             if not user.is_active:
-                raise forms.ValidationError(user.get_inactive_message('local'))
+                msg = mark_safe(user.get_inactive_message('local'))
+                raise forms.ValidationError(msg)
 
             provider = auth_providers.get_provider('local', user)
             if not user.has_usable_password():
                 msg = provider.get_unusable_password_msg
-                raise forms.ValidationError(msg)
+                raise forms.ValidationError(mark_safe(msg))
 
             if not user.can_change_password():
                 msg = provider.get_cannot_change_password_msg
-                raise forms.ValidationError(msg)
+                raise forms.ValidationError(mark_safe(msg))
 
         except AstakosUser.DoesNotExist:
             raise forms.ValidationError(_(astakos_messages.EMAIL_UNKNOWN))
@@ -596,6 +605,13 @@ class SignApprovalTermsForm(forms.ModelForm):
         if not has_signed_terms:
             raise forms.ValidationError(_(astakos_messages.SIGN_TERMS))
         return has_signed_terms
+
+    def save(self, commit=True):
+        user = super(SignApprovalTermsForm, self).save(commit)
+        user.date_signed_terms = datetime.now()
+        if commit:
+            user.save()
+        return user
 
 
 class InvitationForm(forms.ModelForm):

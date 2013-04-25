@@ -33,7 +33,8 @@
 
 from django.core.management.base import BaseCommand, CommandError
 
-from astakos.im.functions import send_activation, SendMailError
+from astakos.im import activation_backends
+activation_backend = activation_backends.get_backend()
 
 from ._common import get_user
 
@@ -51,13 +52,13 @@ class Command(BaseCommand):
             if not user:
                 self.stderr.write("Unknown user '%s'\n" % (email_or_id,))
                 continue
-            if user.email_verified and user.is_active:
+            if user.email_verified:
                 self.stderr.write(
-                    "Already active user '%s'\n" % (email_or_id,))
+                    "User email already verified '%s'\n" % (user.email,))
                 continue
 
             try:
-                send_activation(user)
+                activation_backend.send_user_verification_email(user)
             except SendMailError, e:
                 raise CommandError(e.message)
 

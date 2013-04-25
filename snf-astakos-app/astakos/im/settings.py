@@ -225,3 +225,7 @@ SERVICES_META = getattr(settings, 'ASTAKOS_SERVICES_META', {})
 
 # A way to extend the resources presentation metadata
 RESOURCES_META = getattr(settings, 'ASTAKOS_RESOURCES_META', {})
+
+# Do not require email verification for new users
+SKIP_EMAIL_VERIFICATION = getattr(settings,
+                                  'ASTAKOS_SKIP_EMAIL_VERIFICATION', False)

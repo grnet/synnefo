@@ -56,6 +56,10 @@ class Command(ListCommand):
         'id': ('id', ('The id of the user')),
         'real name': ('realname', 'The name of the user'),
         'active': ('is_active', 'Whether the user is active or not'),
+        'verified':
+        ('email_verified', 'Whether the user has a verified email address'),
+        'moderated':
+        ('moderated', 'Account moderated'),
         'admin': ('is_superuser', 'Whether the user is admin or not'),
         'uuid': ('uuid', 'The uuid of the user'),
         'providers': (get_providers,
@@ -66,7 +70,8 @@ class Command(ListCommand):
         'groups': (get_groups, 'The groups of the user')
     }
 
-    fields = ['id', 'real name', 'active', 'admin', 'uuid']
+    fields = ['id', 'real name', 'active', 'verified', 'moderated', 'admin',
+              'uuid']
 
     option_list = ListCommand.option_list + (
         make_option('-p',
@@ -94,6 +99,16 @@ class Command(ListCommand):
                     dest='active',
                     default=False,
                     help="Display only active users"),
+        make_option('--pending-moderation',
+                    action='store_true',
+                    dest='pending_moderation',
+                    default=False,
+                    help="Display unmoderated users"),
+        make_option('--pending-verification',
+                    action='store_true',
+                    dest='pending_verification',
+                    default=False,
+                    help="Display unverified users"),
         make_option("--displayname",
                     dest="displayname",
                     action="store_true",
@@ -111,6 +126,13 @@ class Command(ListCommand):
 
         if options['active']:
             self.filters['is_active'] = True
+
+        if options['pending_moderation']:
+            self.filters['email_verified'] = True
+            self.filters['moderated'] = False
+
+        if options['pending_verification']:
+            self.filters['email_verified'] = False
 
         if options['auth_providers']:
             self.fields.extend(['providers'])

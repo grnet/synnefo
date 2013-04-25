@@ -31,6 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import string
+
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
@@ -38,11 +40,12 @@ from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 
 from astakos.im.models import AstakosUser
-from astakos.im.functions import (activate, deactivate)
 from astakos.im import quotas
+from astakos.im import activation_backends
 from ._common import remove_user_permission, add_user_permission, is_uuid
 from snf_django.lib.db.transaction import commit_on_success_strict
-import string
+
+activation_backend = activation_backends.get_backend()
 
 
 class Command(BaseCommand):
@@ -92,6 +95,9 @@ class Command(BaseCommand):
                     dest='inactive',
                     default=False,
                     help="Change user's state to inactive"),
+        make_option('--inactive-reason',
+                    dest='inactive_reason',
+                    help="Reason user got inactive"),
         make_option('--add-group',
                     dest='add-group',
                     help="Add user group"),
@@ -104,6 +110,17 @@ class Command(BaseCommand):
         make_option('--delete-permission',
                     dest='delete-permission',
                     help="Delete user permission"),
+        make_option('--accept',
+                    dest='accept',
+                    action='store_true',
+                    help="Accept user"),
+        make_option('--reject',
+                    dest='reject',
+                    action='store_true',
+                    help="Reject user"),
+        make_option('--reject-reason',
+                    dest='reject_reason',
+                    help="Reason user got rejected"),
         make_option('--set-base-quota',
                     dest='set_base_quota',
                     metavar='<resource> <capacity>',
@@ -140,10 +157,41 @@ class Command(BaseCommand):
         elif options.get('noadmin'):
             user.is_superuser = False
 
+        if options.get('reject'):
+            reject_reason = options.get('reject_reason', None)
+            res = activation_backend.handle_moderation(
+                user,
+                accept=False,
+                reject_reason=reject_reason)
+            activation_backend.send_result_notifications(res, user)
+            if res.is_error():
+                print "Failed to reject.", res.message
+            else:
+                print "Account rejected"
+
+        if options.get('accept'):
+            res = activation_backend.handle_moderation(user, accept=True)
+            activation_backend.send_result_notifications(res, user)
+            if res.is_error():
+                print "Failed to accept.", res.message
+            else:
+                print "Account accepted and activated"
+
         if options.get('active'):
-            activate(user)
+            res = activation_backend.activate_user(user)
+            if res.is_error():
+                print "Failed to activate.", res.message
+            else:
+                print "Account %s activated" % user.username
+
         elif options.get('inactive'):
-            deactivate(user)
+            res = activation_backend.deactivate_user(
+                user,
+                reason=options.get('inactive_reason', None))
+            if res.is_error():
+                print "Failed to deactivate,", res.message
+            else:
+                print "Account %s deactivated" % user.username
 
         invitations = options.get('invitations')
         if invitations is not None:

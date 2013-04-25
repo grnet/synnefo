@@ -14,6 +14,39 @@ class Migration(SchemaMigration):
         # Deleting field 'AstakosUser.third_party_identifier'
         db.delete_column('im_astakosuser', 'third_party_identifier')
 
+        # Adding field 'AstakosUser.deactivated_reason'
+        db.add_column('im_astakosuser', 'deactivated_reason', self.gf('django.db.models.fields.TextField')(default=None, null=True), keep_default=False)
+
+        # Adding field 'AstakosUser.deactivated_at'
+        db.add_column('im_astakosuser', 'deactivated_at', self.gf('django.db.models.fields.DateTimeField')(null=True, blank=True), keep_default=False)
+
+        # Adding field 'AstakosUser.verification_code'
+        db.add_column('im_astakosuser', 'verification_code', self.gf('django.db.models.fields.CharField')(max_length=255, unique=True, null=True), keep_default=False)
+
+        # Adding field 'AstakosUser.verified_at'
+        db.add_column('im_astakosuser', 'verified_at', self.gf('django.db.models.fields.DateTimeField')(null=True, blank=True), keep_default=False)
+
+        # Adding field 'AstakosUser.is_rejected'
+        db.add_column('im_astakosuser', 'is_rejected', self.gf('django.db.models.fields.BooleanField')(default=False), keep_default=False)
+
+        # Adding field 'AstakosUser.rejected_reason'
+        db.add_column('im_astakosuser', 'rejected_reason', self.gf('django.db.models.fields.TextField')(null=True, blank=True), keep_default=False)
+
+        # Adding field 'AstakosUser.moderated'
+        db.add_column('im_astakosuser', 'moderated', self.gf('django.db.models.fields.BooleanField')(default=False), keep_default=False)
+
+        # Adding field 'AstakosUser.moderated_at'
+        db.add_column('im_astakosuser', 'moderated_at', self.gf('django.db.models.fields.DateTimeField')(default=None, null=True, blank=True), keep_default=False)
+
+        # Adding field 'AstakosUser.moderated_data'
+        db.add_column('im_astakosuser', 'moderated_data', self.gf('django.db.models.fields.TextField')(default=None, null=True, blank=True), keep_default=False)
+
+        # Adding field 'AstakosUser.accepted_policy'
+        db.add_column('im_astakosuser', 'accepted_policy', self.gf('django.db.models.fields.CharField')(default=None, max_length=255, null=True, blank=True), keep_default=False)
+
+        # Adding field 'AstakosUser.accepted_email'
+        db.add_column('im_astakosuser', 'accepted_email', self.gf('django.db.models.fields.EmailField')(default=None, max_length=75, null=True, blank=True), keep_default=False)
+
 
     def backwards(self, orm):
         
@@ -22,6 +55,39 @@ class Migration(SchemaMigration):
 
         # Adding field 'AstakosUser.third_party_identifier'
         db.add_column('im_astakosuser', 'third_party_identifier', self.gf('django.db.models.fields.CharField')(max_length=255, null=True, blank=True), keep_default=False)
+
+        # Deleting field 'AstakosUser.deactivated_reason'
+        db.delete_column('im_astakosuser', 'deactivated_reason')
+
+        # Deleting field 'AstakosUser.deactivated_at'
+        db.delete_column('im_astakosuser', 'deactivated_at')
+
+        # Deleting field 'AstakosUser.verification_code'
+        db.delete_column('im_astakosuser', 'verification_code')
+
+        # Deleting field 'AstakosUser.verified_at'
+        db.delete_column('im_astakosuser', 'verified_at')
+
+        # Deleting field 'AstakosUser.is_rejected'
+        db.delete_column('im_astakosuser', 'is_rejected')
+
+        # Deleting field 'AstakosUser.rejected_reason'
+        db.delete_column('im_astakosuser', 'rejected_reason')
+
+        # Deleting field 'AstakosUser.moderated'
+        db.delete_column('im_astakosuser', 'moderated')
+
+        # Deleting field 'AstakosUser.moderated_at'
+        db.delete_column('im_astakosuser', 'moderated_at')
+
+        # Deleting field 'AstakosUser.moderated_data'
+        db.delete_column('im_astakosuser', 'moderated_data')
+
+        # Deleting field 'AstakosUser.accepted_policy'
+        db.delete_column('im_astakosuser', 'accepted_policy')
+
+        # Deleting field 'AstakosUser.accepted_email'
+        db.delete_column('im_astakosuser', 'accepted_email')
 
 
     models = {
@@ -75,23 +141,34 @@ class Migration(SchemaMigration):
         },
         'im.astakosuser': {
             'Meta': {'object_name': 'AstakosUser', '_ormbases': ['auth.User']},
+            'accepted_email': ('django.db.models.fields.EmailField', [], {'default': 'None', 'max_length': '75', 'null': 'True', 'blank': 'True'}),
+            'accepted_policy': ('django.db.models.fields.CharField', [], {'default': 'None', 'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'activation_sent': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
             'affiliation': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'auth_token': ('django.db.models.fields.CharField', [], {'max_length': '32', 'null': 'True', 'blank': 'True'}),
             'auth_token_created': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
             'auth_token_expires': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
             'date_signed_terms': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
+            'deactivated_at': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
+            'deactivated_reason': ('django.db.models.fields.TextField', [], {'default': 'None', 'null': 'True'}),
             'disturbed_quota': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'db_index': 'True'}),
             'email_verified': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'has_credits': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'has_signed_terms': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'invitations': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
+            'is_rejected': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'is_verified': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'level': ('django.db.models.fields.IntegerField', [], {'default': '4'}),
+            'moderated': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'moderated_at': ('django.db.models.fields.DateTimeField', [], {'default': 'None', 'null': 'True', 'blank': 'True'}),
+            'moderated_data': ('django.db.models.fields.TextField', [], {'default': 'None', 'null': 'True', 'blank': 'True'}),
             'policy': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['im.Resource']", 'null': 'True', 'through': "orm['im.AstakosUserQuota']", 'symmetrical': 'False'}),
+            'rejected_reason': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'updated': ('django.db.models.fields.DateTimeField', [], {}),
             'user_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['auth.User']", 'unique': 'True', 'primary_key': 'True'}),
-            'uuid': ('django.db.models.fields.CharField', [], {'max_length': '255', 'unique': 'True', 'null': 'True'})
+            'uuid': ('django.db.models.fields.CharField', [], {'max_length': '255', 'unique': 'True', 'null': 'True'}),
+            'verification_code': ('django.db.models.fields.CharField', [], {'max_length': '255', 'unique': 'True', 'null': 'True'}),
+            'verified_at': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'})
         },
         'im.astakosuserauthprovider': {
             'Meta': {'ordering': "('module', 'created')", 'unique_together': "(('identifier', 'module', 'user'),)", 'object_name': 'AstakosUserAuthProvider'},
@@ -204,17 +281,17 @@ class Migration(SchemaMigration):
         },
         'im.projectmembership': {
             'Meta': {'unique_together': "(('person', 'project'),)", 'object_name': 'ProjectMembership'},
-            'acceptance_date': ('django.db.models.fields.DateField', [], {'null': 'True', 'db_index': 'True'}),
+            'acceptance_date': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'db_index': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'leave_request_date': ('django.db.models.fields.DateField', [], {'null': 'True'}),
+            'leave_request_date': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
             'person': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.AstakosUser']"}),
             'project': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['im.Project']"}),
-            'request_date': ('django.db.models.fields.DateField', [], {'auto_now_add': 'True', 'blank': 'True'}),
+            'request_date': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'state': ('django.db.models.fields.IntegerField', [], {'default': '0', 'db_index': 'True'})
         },
         'im.projectmembershiphistory': {
             'Meta': {'object_name': 'ProjectMembershipHistory'},
-            'date': ('django.db.models.fields.DateField', [], {'auto_now_add': 'True', 'blank': 'True'}),
+            'date': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'person': ('django.db.models.fields.BigIntegerField', [], {}),
             'project': ('django.db.models.fields.BigIntegerField', [], {}),
@@ -231,6 +308,7 @@ class Migration(SchemaMigration):
         },
         'im.resource': {
             'Meta': {'object_name': 'Resource'},
+            'allow_in_projects': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'desc': ('django.db.models.fields.TextField', [], {'null': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '255'}),

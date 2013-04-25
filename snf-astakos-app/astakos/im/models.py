@@ -36,6 +36,7 @@ import uuid
 import logging
 import json
 import math
+import copy
 
 from time import asctime
 from datetime import datetime, timedelta
@@ -349,35 +350,73 @@ class AstakosUser(User):
         _('Token expiration date'), null=True)
 
     updated = models.DateTimeField(_('Update date'))
-    is_verified = models.BooleanField(_('Is verified?'), default=False)
 
-    email_verified = models.BooleanField(_('Email verified?'), default=False)
+    # Arbitrary text to identify the reason user got deactivated.
+    # To be used as a reference from administrators.
+    deactivated_reason = models.TextField(
+        _('Reason the user was disabled for'),
+        default=None, null=True)
+    deactivated_at = models.DateTimeField(_('User deactivated at'), null=True,
+                                          blank=True)
 
     has_credits = models.BooleanField(_('Has credits?'), default=False)
-    has_signed_terms = models.BooleanField(
-        _('I agree with the terms'), default=False)
-    date_signed_terms = models.DateTimeField(
-        _('Signed terms date'), null=True, blank=True)
 
-    activation_sent = models.DateTimeField(
-        _('Activation sent data'), null=True, blank=True)
+    # this is set to True when user profile gets updated for the first time
+    is_verified = models.BooleanField(_('Is verified?'), default=False)
+
+    # user email is verified
+    email_verified = models.BooleanField(_('Email verified?'), default=False)
+
+    # unique string used in user email verification url
+    verification_code = models.CharField(max_length=255, null=True,
+                                         blank=False, unique=True)
+
+    # date user email verified
+    verified_at = models.DateTimeField(_('User verified email at'), null=True,
+                                       blank=True)
+
+    # email verification notice was sent to the user at this time
+    activation_sent = models.DateTimeField(_('Activation sent date'),
+                                           null=True, blank=True)
+
+    # user got rejected during moderation process
+    is_rejected = models.BooleanField(_('Account rejected'),
+                                      default=False)
+    # reason user got rejected
+    rejected_reason = models.TextField(_('User rejected reason'), null=True,
+                                       blank=True)
+    # moderation status
+    moderated = models.BooleanField(_('User moderated'), default=False)
+    # date user moderated (either accepted or rejected)
+    moderated_at = models.DateTimeField(_('Date moderated'), default=None,
+                                        blank=True, null=True)
+    # a snapshot of user instance the time got moderated
+    moderated_data = models.TextField(null=True, default=None, blank=True)
+    # a string which identifies how the user got moderated
+    accepted_policy = models.CharField(_('Accepted policy'), max_length=255,
+                                       default=None, null=True, blank=True)
+    # the email used to accept the user
+    accepted_email = models.EmailField(null=True, default=None, blank=True)
+
+    has_signed_terms = models.BooleanField(_('I agree with the terms'),
+                                           default=False)
+    date_signed_terms = models.DateTimeField(_('Signed terms date'),
+                                             null=True, blank=True)
+    # permanent unique user identifier
+    uuid = models.CharField(max_length=255, null=True, blank=False,
+                            unique=True)
 
     policy = models.ManyToManyField(
         Resource, null=True, through='AstakosUserQuota')
 
-    uuid = models.CharField(max_length=255, null=True, blank=False, unique=True)
-
-    __has_signed_terms = False
     disturbed_quota = models.BooleanField(_('Needs quotaholder syncing'),
                                            default=False, db_index=True)
 
     objects = AstakosUserManager()
-
     forupdate = ForUpdateManager()
 
     def __init__(self, *args, **kwargs):
         super(AstakosUser, self).__init__(*args, **kwargs)
-        self.__has_signed_terms = self.has_signed_terms
         if not self.id:
             self.is_active = False
 
@@ -447,7 +486,7 @@ class AstakosUser(User):
 
     def update_uuid(self):
         while not self.uuid:
-            uuid_val =  str(uuid.uuid4())
+            uuid_val = str(uuid.uuid4())
             try:
                 AstakosUser.objects.get(uuid=uuid_val)
             except AstakosUser.DoesNotExist, e:
@@ -460,17 +499,16 @@ class AstakosUser(User):
                 self.date_joined = datetime.now()
             self.updated = datetime.now()
 
-        # update date_signed_terms if necessary
-        if self.__has_signed_terms != self.has_signed_terms:
-            self.date_signed_terms = datetime.now()
-
         self.update_uuid()
-
+        # username currently matches email
         if self.username != self.email.lower():
-            # set username
             self.username = self.email.lower()
 
         super(AstakosUser, self).save(**kwargs)
+
+    def renew_verification_code(self):
+        self.verification_code = str(uuid.uuid4())
+        logger.info("Verification code renewed for %s" % self.log_display)
 
     def renew_token(self, flush_sessions=False, current_key=None):
         md5 = hashlib.md5()
@@ -485,7 +523,7 @@ class AstakosUser(User):
                                   timedelta(hours=AUTH_TOKEN_DURATION)
         if flush_sessions:
             self.flush_sessions(current_key)
-        msg = 'Token renewed for %s' % self.email
+        msg = 'Token renewed for %s' % self.log_display
         logger.log(LOGGING_LEVEL, msg)
 
     def flush_sessions(self, current_key=None):
@@ -637,7 +675,7 @@ class AstakosUser(User):
 
     def get_activation_url(self, nxt=False):
         url = "%s?auth=%s" % (reverse('astakos.im.views.activate'),
-                                 quote(self.auth_token))
+                                 quote(self.verification_code))
         if nxt:
             url += "&next=%s" % quote(nxt)
         return url
@@ -658,27 +696,25 @@ class AstakosUser(User):
         msg_pending_help = _(astakos_messages.ACCOUNT_PENDING_ACTIVATION_HELP)
         #msg_resend_prompt = _(astakos_messages.ACCOUNT_RESEND_ACTIVATION)
         msg_pending_mod = provider.get_pending_moderation_msg
+        msg_rejected = _(astakos_messages.ACCOUNT_REJECTED)
         msg_resend = _(astakos_messages.ACCOUNT_RESEND_ACTIVATION)
 
-        if self.activation_sent:
-            if self.email_verified:
-                message = msg_inactive
-            else:
-                message = msg_pending
-                url = self.get_resend_activation_url()
-                msg_extra = msg_pending_help + \
-                            u' ' + \
-                            '<a href="%s">%s?</a>' % (url, msg_resend)
+        if not self.email_verified:
+            message = msg_pending
+            url = self.get_resend_activation_url()
+            msg_extra = msg_pending_help + \
+                        u' ' + \
+                        '<a href="%s">%s?</a>' % (url, msg_resend)
         else:
-            if astakos_settings.MODERATION_ENABLED:
+            if not self.moderated:
                 message = msg_pending_mod
             else:
-                message = msg_pending
-                url = self.get_resend_activation_url()
-                msg_extra = '<a href="%s">%s?</a>' % (url, \
-                                msg_resend)
+                if self.is_rejected:
+                    message = msg_rejected
+                else:
+                    message = msg_inactive
 
-        return mark_safe(message + u' '+ msg_extra)
+        return mark_safe(message + u' ' + msg_extra)
 
     def owns_application(self, application):
         return application.owner == self
@@ -1104,6 +1140,10 @@ class PendingThirdPartyUser(models.Model):
         unique_together = ("provider", "third_party_identifier")
 
     def get_user_instance(self):
+        """
+        Create a new AstakosUser instance based on details provided when user
+        initially signed up.
+        """
         d = copy.copy(self.__dict__)
         d.pop('_state', None)
         d.pop('id', None)

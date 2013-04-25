@@ -9,7 +9,9 @@ Is active:      {{user.is_active}}
 Level:          {{user.level}}
 Invitations:    {{user.invitations}}
 
-Για την ενεργοποίησή του μπορείτε να χρησιμοποιήσετε το command line εργαλείο snf-manage user-activation-send
+Για την ενεργοποίησή του μπορείτε να χρησιμοποιήσετε το command line εργαλείο 
+
+snf-manage user-modify {{ user.pk }} --accept
 --
 
 The following account has been created:
@@ -21,4 +23,6 @@ Is active:      {{user.is_active}}
 Level:          {{user.level}}
 Invitations:    {{user.invitations}}
 
-For its activation you can use the command line tool snf-manage user-activation-send
+For its activation you can use the command line tool
+
+snf-manage user-modify {{ user.pk }} --accept

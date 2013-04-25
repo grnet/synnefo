@@ -328,16 +328,6 @@ class AstakosUser(User):
     affiliation = models.CharField(_('Affiliation'), max_length=255, blank=True,
                                    null=True)
 
-    # DEPRECATED FIELDS: provider, third_party_identifier moved in
-    #                    AstakosUserProvider model.
-    provider = models.CharField(_('Provider'), max_length=255, blank=True,
-                                null=True)
-    # ex. screen_name for twitter, eppn for shibboleth
-    third_party_identifier = models.CharField(_('Third-party identifier'),
-                                              max_length=255, null=True,
-                                              blank=True)
-
-
     #for invitations
     user_level = DEFAULT_USER_LEVEL
     level = models.IntegerField(_('Inviter level'), default=user_level)
@@ -1114,12 +1104,15 @@ class PendingThirdPartyUser(models.Model):
         unique_together = ("provider", "third_party_identifier")
 
     def get_user_instance(self):
-        d = self.__dict__
+        d = copy.copy(self.__dict__)
         d.pop('_state', None)
         d.pop('id', None)
         d.pop('token', None)
         d.pop('created', None)
         d.pop('info', None)
+        d.pop('affiliation', None)
+        d.pop('provider', None)
+        d.pop('third_party_identifier', None)
         user = AstakosUser(**d)
 
         return user

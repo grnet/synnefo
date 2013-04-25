@@ -5,16 +5,16 @@ API Guide
 
 `Cyclades <cyclades.html>`_ is the compute service developed by `GRNET 
 <http://www.grnet.gr>`_ as part of the `synnefo <http://www.synnefo.org>`_
-software, that implements an extension of the `OpenStack Compute API v2
+software. Cyclades API started as an extension of the `OpenStack Compute API v2
 <http://docs.openstack.org/api/openstack-compute/2/content>`_.
 
 This document's goals are:
 
 * Define the Cyclades/Compute ReST API
-* Clarify the differences between Cyclades and OOS Compute
+* Clarify the differences between Cyclades and OS Compute
 
-Users and developers who wish to access a synnefo Cyclades service through its
-ReST API are adviced to use the `kamaki <http://docs.dev.grnet.gr/kamaki>`_
+Users and developers who wish to access a Synnefo Cyclades deployment through
+its ReST API are advised to use the `kamaki <http://docs.dev.grnet.gr/kamaki>`_
 command-line client and associated python library, instead of making direct
 calls.
 
@@ -33,82 +33,44 @@ General API Information
 Authentication
 --------------
 
-* Authentication support is missing.
-
-
-Request/Response Types
-----------------------
-
-* We only support JSON Requests and JSON/XML Responses. XML Requests are not
-  supported for now.
-
-
-Content Compression
--------------------
-
-* Optional content compression support is missing.
-
-
-Persistent Connections
-----------------------
-
-* Deployment note: "To prevent abuse, HTTP sessions have a timeout of 20
-  seconds before being closed."
-
-
-Links and References
---------------------
-
-* Full URI references support is missing.
-* Self and bookmark links support is missing.
-
-
-Paginated Collections
----------------------
-
-* Pagination support is missing.
-
-
-Caching
--------
-
-* We do not return cached responses.
-
-
-Limits
-------
-
- * Limits support is missing.
-
+All requests use the same authentication method: an ``X-Auth-Token`` header is
+passed to the servive, which is used to authenticate the user and retrieve user
+related information. No other user details are passed through HTTP.
 
 Efficient Polling with the Changes-Since Parameter
 --------------------------------------------------
 
 * Effectively limit support of the changes-since parameter in **List Servers**
-and **List Images**.
+  and **List Images**.
+
 * Assume that garbage collection of deleted servers will only affect servers
-  deleted ``POLL_TIME`` seconds in the past or earlier. Else loose the
-  information of a server getting deleted.
+  deleted ``POLL_TIME`` seconds (default: 3600) in the past or earlier. Else
+  loose the information of a server getting deleted.
+
 * Images do not support a deleted state, so deletions cannot be tracked.
 
+Limitations
+-----------
 
-Versions
---------
+* Version MIME type and vesionless requests are not currently supported.
 
-* Version MIME type support is missing.
-* Versionless requests are not supported.
-* We hardcode the ``updated`` field in versions list
-* Deployment note: The Atom metadata needs to be fixed
+* Cyclades only supports JSON Requests and JSON/XML Responses. XML Requests are
+  currently not supported.
 
+* Optional content compression support is currently not supported.
 
-Extensions
-----------
+* To prevent abuse, HTTP sessions have a timeout of 20 seconds before being
+  closed.
 
-* Extensions support is missing.
+* Full URI references and ``self`` and ``bookmark`` links are not supported.
 
+* Pagination is currently not supported.
 
-Faults
-------
+* Cached responses are currently not supported.
+
+* Limits are currently not supported.
+
+* Extensions are currently not supported.
 
 
 API Operations
@@ -116,13 +78,6 @@ API Operations
 
 Servers
 -------
-
-* ``hostId`` is always empty.
-* ``affinityId`` is not returned.
-* ``progress`` is always returned.
-* ``self`` and ``bookmark`` atom links are not returned.
-* **Get Server Details** will also return servers with a DELETED state.
-* **Create Server** does not support setting the password in the request.
 
 List Servers
 ............
@@ -135,7 +90,8 @@ URI                 Method Cyclades OS Compute
 =================== ====== ======== ==========
 
 * Both requests return a list of servers. The first returns just ``id`` and
-``name``, while the second returns the full collections of server attributes.
+  ``name``, while the second returns the full collections of server
+  attributes.
 
 ================= =================================== ======== ==========
 Request Parameter Value                               Cyclades OS Compute
@@ -204,110 +160,111 @@ addresses         Network interfaces     **✘**    ✔
 metadata          Server custom metadata ✔        ✔
 ================= ====================== ======== ==========
 
-* **hostId** is not used in Cyclades, but is returned as an empty string for compatibility
+* **hostId** is not used in Cyclades, but is returned as an empty string for
+  compatibility
 
 
 * **progress** is changing while the server is building up and has values
-between 0 and 100. When it reaches 100 the server is built.
+  between 0 and 100. When it reaches 100 the server is built.
 
 
 * **status** refers to `the status <#status-ref>`_ of the server
 
 * **metadata** are custom key:value pairs used to specify various attributes of
-the VM (e.g. OS, super user, etc.)
+  the VM (e.g. OS, super user, etc.)
 
 
 * **attachments** in Cyclades are lists of network interfaces (nics).
-**Attachments** are different to OS Compute's **addresses**. The former is a
-list of the server's `network interface connections <#nic-ref>`_ while the
-later is just a list of networks. Thus, a Cyclades virtual server may be
-connected to the same network through more than one distinct network interfaces
-(e.g. server 43 is connected to network 101 with nic-43-1 and nic-43-2 in the
-example bellow).
+  **Attachments** are different to OS Compute's **addresses**. The former is a
+  list of the server's `network interface connections <#nic-ref>`_ while the
+  later is just a list of networks. Thus, a Cyclades virtual server may be
+  connected to the same network through more than one distinct network
+  interfaces (e.g. server 43 is connected to network 101 with nic-43-1 and
+  nic-43-2 in the example bellow).
 
 * **Network Interfaces (NICs)** contain information about a server's connection
-to a network. Each nic is identified by an id of the form
-nic-<server-id>-<ordinal-number> and may contain a ``network_id``, a
-``mac_address``, ``ipv4`` and ``ipv6`` addresses and the ``firewallProfile`` of
-the connection.
+  to a network. Each NIC is identified by an id of the form
+  nic-<server-id>-<ordinal-number>. More details can be found `here
+  <#nic-ref>`_.
 
 **Example List Servers: JSON**
 
 .. code-block:: javascript
 
   {
-      'servers':
-          {'values': [
+    'servers':
+      {'values': [
+        {
+          'attachments': {
+            'values': [
               {
-                  'attachments': {'values': [
-                          {
-                              'id': 'nic-42-0',
-                              'network_id': '101',
-                              'mac_address': 'aa:00:00:49:2e:7e',
-                              'firewallProfile': DISABLED,
-                              'ipv4': '192.168.4.5',
-                              'ipv6': '2001:648:2ffc:1222:a800:ff:fef5:3f5b'
-                          }
-                  ]},
-                  'created': '2011-04-19T10:18:52.085737+00:00',
-                  'flavorRef': 1,
-                  'hostId': '',
-                  'id': 42,
-                  'imageRef': 3,
-                  'metadata': {'values': {'foo': 'bar'}},
-                  'name': 'My Server',
-                  'status': 'ACTIVE',
-                  'updated': u'2011-05-29T14:07:07.037602+00:00'
-              },
-              {
-                  'attachments': {'values': [
-                          {
-                              'id': 'nic-43-0',
-                              'mac': 'aa:00:00:91:2f:df',
-                              'network_id': '1',
-                              'ipv4': '192.168.32.2'
-                          },
-                          {
-                              'id': 'nic-43-1',
-                              'network_id': '101',
-                              'mac_address': 'aa:00:00:49:2g:7f',
-                              'firewallProfile': DISABLED,
-                              'ipv4': '192.168.32.6',
-                              'ipv6': '2001:648:2ffc:1222:a800:ff:fef5:3f5c'
-                          },
-                          {
-                              'id': 'nic-43-2',
-                              'network_id': '101',
-                              'mac_address': 'aa:00:00:51:2h:7f',
-                              'firewallProfile': DISABLED,
-                              'ipv4': '192.168.32.7',
-                              'ipv6': '2001:638:2eec:1222:a800:ff:fef5:3f5c'
-                          }
-                  ]},
-                  'created': '2011-05-02T20:51:08.527759+00:00',
-                  'flavorRef': 1,
-                  'hostId': '',
-                  'id': 43,
-                  'imageRef': 3,
-                  'name': 'Other Server',
-                  'description': 'A sample server to showcase server requests',
-                  'progress': 0,
-                  'status': 'ACTIVE',
-                  'updated': '2011-05-29T14:59:11.267087+00:00'
+                'id': 'nic-42-0',
+                'network_id': '101',
+                'mac_address': 'aa:00:00:49:2e:7e',
+                'firewallProfile': DISABLED,
+                'ipv4': '192.168.4.5',
+                'ipv6': '2001:648:2ffc:1222:a800:ff:fef5:3f5b'
               }
-          ]
-      }
+            ]
+          },
+          'created': '2011-04-19T10:18:52.085737+00:00',
+          'flavorRef': 1,
+          'hostId': '',
+          'id': 42,
+          'imageRef': 3,
+          'metadata': {'values': {'foo': 'bar'}},
+          'name': 'My Server',
+          'status': 'ACTIVE',
+          'updated': u'2011-05-29T14:07:07.037602+00:00'
+        }, {
+          'attachments': {
+            'values': [
+              {
+                'id': 'nic-43-0',
+                'mac': 'aa:00:00:91:2f:df',
+                'network_id': '1',
+                'ipv4': '192.168.32.2'
+              }, {
+                'id': 'nic-43-1',
+                'network_id': '101',
+                'mac_address': 'aa:00:00:49:2g:7f',
+                'firewallProfile': DISABLED,
+                'ipv4': '192.168.32.6',
+                'ipv6': '2001:648:2ffc:1222:a800:ff:fef5:3f5c'
+              }, {
+                'id': 'nic-43-2',
+                'network_id': '101',
+                'mac_address': 'aa:00:00:51:2h:7f',
+                'firewallProfile': DISABLED,
+                'ipv4': '192.168.32.7',
+                'ipv6': '2001:638:2eec:1222:a800:ff:fef5:3f5c'
+              }
+            ]
+          },
+          'created': '2011-05-02T20:51:08.527759+00:00',
+          'flavorRef': 1,
+          'hostId': '',
+          'id': 43,
+          'imageRef': 3,
+          'name': 'Other Server',
+          'description': 'A sample server to showcase server requests',
+          'progress': 0,
+          'status': 'ACTIVE',
+          'updated': '2011-05-29T14:59:11.267087+00:00'
+        }
+      ]
+    }
   }
 
 
 Create Server
 .............
 
-=================== ====== ======== ==========
-URI                 Method Cyclades OS Compute
-=================== ====== ======== ==========
-``/servers``        POST   ✔        ✔
-=================== ====== ======== ==========
+============ ====== ======== ==========
+URI          Method Cyclades OS Compute
+============ ====== ======== ==========
+``/servers`` POST   ✔        ✔
+============ ====== ======== ==========
 
 |
 
@@ -342,14 +299,16 @@ metadata    Custom metadata      ✔        ✔
 * **name** can be any string
 
 * **imageRed** and **flavorRed** should refer to existing images and hardware
-flavors accessible by the user
+  flavors accessible by the user
 
-* **metadata** are key:value pairs of custom server-specific metadata. There
-are no semantic limitations.
+* **metadata** are ``key``:``value`` pairs of custom server-specific metadata.
+  There are no semantic limitations.
 
-* **personality** (optional) is a list of personality injections. A personality injection is a small set of changes to a virtual server. Each change modifies a
-file on the virtual server, by injecting some data in it. The injected data
-(``content``) should exceed 10240 *bytes* in size and must be base64 encoded. A personality injection contains the following attributes:
+* **personality** (optional) is a list of personality injections. A personality
+  injection is a small set of changes to a virtual server. Each change modifies
+  a file on the virtual server, by injecting some data in it. The injected data
+  (``contents``) should exceed 10240 *bytes* in size and must be base64
+  encoded.A personality injection contains the following attributes:
 
 ======== =================== ======== ==========
 Name     Description         Cyclades OS Compute
@@ -387,19 +346,21 @@ of a `list of attributes <#server-ref>`_ under the ``server`` tag:
 
 For example::
 
-  {"server": {
-    "id": 28130
-    "status": "BUILD",
-    "updated": "2013-04-10T13:52:18.140686+00:00",
-    "hostId": "",
-    "name": "My Server Name: Example Name",
-    "imageRef": "da7a211f-1db5-444a-938b-f901ce81a3e6",
-    "created": "2013-04-10T13:52:17.085402+00:00",
-    "flavorRef": 289,
-    "adminPass": "fKCqlZe2at",
-    "suspended": false,
-    "progress": 0,
-  }}
+  {
+    "server": {
+      "id": 28130
+      "status": "BUILD",
+      "updated": "2013-04-10T13:52:18.140686+00:00",
+      "hostId": "",
+      "name": "My Server Name: Example Name",
+      "imageRef": "da7a211f-...-f901ce81a3e6",
+      "created": "2013-04-10T13:52:17.085402+00:00",
+      "flavorRef": 289,
+      "adminPass": "fKCqlZe2at",
+      "suspended": false,
+      "progress": 0,
+    }
+  }
 
 Get Server Stats
 ................
@@ -420,11 +381,11 @@ URI                            Method Cyclades OS Compute
 
 |
 
-==============  =========================
-Request Header  Value                    
-==============  =========================
-X-Auth-Token    User authentication token
-==============  =========================
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
 
 |
 
@@ -471,14 +432,14 @@ netTimeSeries      Network load / time graph URL
 .. code-block:: javascript
 
   {
-      "stats": {
-          "serverRef": 1,
-          "refresh": 60,
-          "cpuBar": "http://stats.okeanos.grnet.gr/b9a1c3ca7e3b9fce75112c43565fb9960b16048c/cpu-bar.png",
-          "cpuTimeSeries": "http://stats.okeanos.grnet.gr/b9a1c3ca7e3b9fce75112c43565fb9960b16048c/cpu-ts.png",
-          "netBar": "http://stats.okeanos.grnet.gr/b9a1c3ca7e3b9fce75112c43565fb9960b16048c/net-bar.png",
-          "netTimeSeries": "http://stats.okeanos.grnet.gr/b9a1c3ca7e3b9fce75112c43565fb9960b16048c/net-ts.png"
-      }
+    "stats": {
+      "serverRef": 1,
+      "refresh": 60,
+      "cpuBar": "http://stats.okeanos.grnet.gr/b9a...048c/cpu-bar.png",
+      "cpuTimeSeries": "http://stats.okeanos.grnet.gr/b9a...048c/cpu-ts.png",
+      "netBar": "http://stats.okeanos.grnet.gr/b9a...048c/net-bar.png",
+      "netTimeSeries": "http://stats.okeanos.grnet.gr/b9a...048c/net-ts.png"
+    }
   }
 
 **Example Get Network Details Response: XML**:
@@ -504,7 +465,7 @@ This operation returns diagnostic information for a server.
 .. note:: This operation is not included in OS Compute v2.
 
 ==================================== ====== ======== ==========
-URI                            Method Cyclades OS Compute
+URI                                  Method Cyclades OS Compute
 ==================================== ====== ======== ==========
 ``/servers/<server-id>/diagnostics`` GET    ✔        **✘**
 ==================================== ====== ======== ==========
@@ -640,26 +601,27 @@ diagnostics       Diagnostic information ✔        **✘**
 
 |
 
-* **hostId** is not used in Cyclades, but is returned as an empty string for compatibility
+* **hostId** is not used in Cyclades, but is returned as an empty string for
+  compatibility
 
 * **progress** is changing while the server is building up and has values
-between 0 and 100. When it reaches 100 the server is built.
+  between 0 and 100. When it reaches 100 the server is built.
 
 * **status** refers to `the status <#status-ref>`_ of the server
 
 * **metadata** are custom key:value pairs used to specify various attributes of
-the VM (e.g. OS, super user, etc.)
+  the VM (e.g. OS, super user, etc.)
 
 * **attachments** in Cyclades are lists of network interfaces (NICs).
-**Attachments** are different to OS Compute's **addresses**. The former is a
-list of the server's `network interface connections <#nic-ref>`_ while the
-later is just a list of networks. Thus, a Cyclades virtual server may be
-connected to the same network through more than one distinct network
-interfaces.
+  **Attachments** are different to OS Compute's **addresses**. The former is a
+  list of the server's `network interface connections <#nic-ref>`_ while the
+  later is just a list of networks. Thus, a Cyclades virtual server may be
+  connected to the same network through more than one distinct network
+  interfaces.
 
 * **diagnostics** is a list of items that contain key:value information useful
-for diagnosing the server behavior and may be used by the administrators of
-deployed Synnefo setups.
+  for diagnosing the server behavior and may be used by the administrators of
+  deployed Synnefo setups.
 
 **Example Details for server with id 42042, in JSON**
 
@@ -732,7 +694,7 @@ accessIPv6  IP v6 address        **✘**    ✔
 =========== ==================== ======== ==========
 
 * In Cyclades, a virtual server may use multiple network connections, instead
-of limit them to one.
+  of limit them to one.
 
 |
 
@@ -765,7 +727,7 @@ URI                      Method Cyclades OS Compute
 ``/servers/<server id>`` DELETE ✔        ✔
 ======================== ====== ======== ==========
 
-* **server-id** is the identifier of the virtual server
+* **server-id** is the identifier of the virtual server.
 
 |
 
@@ -792,11 +754,9 @@ Return Code                 Description
 =========================== =====================
 
 .. note:: When a server is deleted, all its connections are deleted too.
-Server Addresses
-----------------
 
-List Addresses
-..............
+List Server Addresses
+.....................
 
 List all network connections of a server
 
@@ -845,11 +805,12 @@ the ``addresses`` tag. Each item refers to a network interface connection (NIC).
 
 Each NIC connects the current server to a network. NICs are different to OS
 Compute's addresses. The formers are the server's
-`network interface connections <#nic-ref>`_ while the later describes a network. Cyclades API suggests this information can be acquired by the network_id, using
-the network part of the API. Thus, a Cyclades virtual server may be connected
-to the same network through more than one distinct network interfaces. The NIC
-mechanism allows more metadata to describe the network and its relation to the
-server.
+`network interface connections <#nic-ref>`_ while the later describes a
+network. Cyclades API suggests this information can be acquired by the
+network_id, using the network part of the API. Thus, a Cyclades virtual server
+may be connected to the same network through more than one distinct network
+interfaces. The NIC mechanism allows more metadata to describe the network and
+its relation to the server.
 
 **An example of a response, in JSON**
 
@@ -858,21 +819,21 @@ server.
   {
     "addresses": {
       "values": [
-          {
-            "network_id": "1",
-            "mac_address": "aa:00:03:7a:84:bb",
-            "firewallProfile": "DISABLED",
-            "ipv4": "192.168.0.27",
-            "ipv6": "2001:646:2ffc:1222:a820:3fd:fe7a:84bb",
-            "id": "nic-25455-0"
-          }, {
-            "network_id": "7",
-            "mac_address": "aa:00:03:7a:84:cc",
-            "firewallProfile": "DISABLED",
-            "ipv4": "192.168.0.28",
-            "ipv6": "2002:646:2fec:1222:a820:3fd:fe7a:84bc",
-            "id": "nic-25455-1"
-          },
+        {
+          "network_id": "1",
+          "mac_address": "aa:00:03:7a:84:bb",
+          "firewallProfile": "DISABLED",
+          "ipv4": "192.168.0.27",
+          "ipv6": "2001:646:2ffc:1222:a820:3fd:fe7a:84bb",
+          "id": "nic-25455-0"
+        }, {
+          "network_id": "7",
+          "mac_address": "aa:00:03:7a:84:cc",
+          "firewallProfile": "DISABLED",
+          "ipv4": "192.168.0.28",
+          "ipv6": "2002:646:2fec:1222:a820:3fd:fe7a:84bc",
+          "id": "nic-25455-1"
+        },
       ]
     }
   }
@@ -890,7 +851,7 @@ URI                                       Method Cyclades OS Compute
 
 * **server-id** is the identifier of the virtual server
 
-* **network-id** is the identifier of the virtual server
+* **network-id** is the identifier of the network
 
 |
 
@@ -937,14 +898,273 @@ operation in OS Compute API returns a list of IP addresses.
 
   {
     "network": {
-        "network_id": "7",
-        "mac_address": "aa:00:03:7a:84:bb",
-        "firewallProfile": "DISABLED",
-        "ipv4": "192.168.0.27",
-        "ipv6": "2001:646:2ffc:1222:a820:3fd:fe7a:84bb",
-        "id": "nic-25455-0"
+      "network_id": "7",
+      "mac_address": "aa:00:03:7a:84:bb",
+      "firewallProfile": "DISABLED",
+      "ipv4": "192.168.0.27",
+      "ipv6": "2001:646:2ffc:1222:a820:3fd:fe7a:84bb",
+      "id": "nic-25455-0"
     }
   }
+
+
+List Server metadata
+....................
+
+.. note:: This operation is semantically equivalent in Cyclades and OS Compute.
+
+================================= ====== ======== ==========
+URI                               Method Cyclades OS Compute
+================================= ====== ======== ==========
+``/servers/<server-id>/meta``     GET    ✔        **✘**
+``/servers/<server-id>/metadata`` GET    **✘**    ✔
+================================= ====== ======== ==========
+
+* **server-id** is the identifier of the virtual server
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded
+400 (Bad Request)           Invalid server ID or Malformed request
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Administratively suspended server
+404 (Not Found)             Server not found
+500 (Internal Server Error) The request cannot be completed because of an
+\                           internal error
+503 (Service Unavailable)   The server is not currently available
+=========================== =====================
+
+In case of a 200 response code, the response should contain a JSON encoded list
+of key:value pairs, under a ``values`` tag which lies under a ``metadata``
+tag, for example::
+
+  { 
+    ""metadata": {
+      "values": {
+        "OS": "Linux",
+        "users": "root"
+      }
+    }
+  }
+
+.. note:: In OS Compute API  the ``values`` level is missing from the response.
+
+Set / Update Server Metadata
+............................
+
+In Cyclades API, setting new metadata and updating the values of existing ones
+is achieved with the same type of request (POST), while in OS Compute API there
+are two separate request types (PUT and POST for
+`setting new <http://docs.openstack.org/api/openstack-compute/2/content/Create_or_Replace_Metadata-d1e5358.html>`_
+and
+`updating existing <http://docs.openstack.org/api/openstack-compute/2/content/Update_Metadata-d1e5208.html>`_
+metadata, respectively).
+
+In Cyclades API, metadata keys which are not referred by the operation will
+remain intact, while metadata referred by the operation will be overwritten in
+case of success.
+
+================================= ====== ======== ==========
+URI                               Method Cyclades OS Compute
+================================= ====== ======== ==========
+``/servers/<server-id>/meta``     POST    ✔       **✘**
+``/servers/<server-id>/metadata`` PUT    **✘**    ✔
+``/servers/<server-id>/metadata`` POST   **✘**   ✔
+================================= ====== ======== ==========
+
+* **server-id** is the identifier of the virtual server
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
+
+|
+
+The request body should contain a JSON-formated set of ``key``:``value`` pairs,
+under the ``metadata`` tag, e.g.::
+
+  {'metadata': {'role': 'webmail', 'users': 'root,maild'}}
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+201 (OK)                    Request succeeded
+400 (Bad Request)           Invalid server ID or Malformed request
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Administratively suspended server
+404 (Not Found)             Server not found
+413 (OverLimit)             Maximum number of metadata exceeded
+500 (Internal Server Error) The request cannot be completed because of an
+\                           internal error
+503 (Service Unavailable)   The server is not currently available
+=========================== =====================
+
+|
+
+In case of a 201 code, the response body should present the new state of
+servers metadata. E.g.::
+
+  {'metadata': {'OS': 'Linux', 'role': 'webmail', 'users': 'root,maild'}}
+
+Get Server Metadata Item
+........................
+
+.. note:: This operation is semantically equivalent in Cyclades and OS Compute.
+
+======================================= ====== ======== ==========
+URI                                     Method Cyclades OS Compute
+======================================= ====== ======== ==========
+``/servers/<server-id>/meta/<key>``     GET    ✔        **✘**
+``/servers/<server-id>/metadata/<key>`` GET    **✘**    ✔
+======================================= ====== ======== ==========
+
+* **server-id** is the identifier of the virtual server
+
+* **key** is the key of a matadatum ``key``:``value`` pair
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded
+400 (Bad Request)           Invalid server ID or Malformed request
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Administratively suspended server
+404 (Not Found)             Metadatum key not found
+500 (Internal Server Error) The request cannot be completed because of an
+\                           internal error
+503 (Service Unavailable)   The server is not currently available
+=========================== =====================
+
+If the response code is 200, the response body contains the requested
+``key``:``value`` pair under a ``metadata`` tag. For example, if key was
+``role``, the response body would look similar to this::
+
+  {'metadata': {'role': 'webmail'}}
+
+.. note:: In OS Compute response, ``metadata`` is ``meta``
+
+Set / Update Server Metadatum Item
+..................................
+
+.. note:: This operation is semantically equivalent in Cyclades and OS Compute.
+
+======================================= ====== ======== ==========
+URI                                     Method Cyclades OS Compute
+======================================= ====== ======== ==========
+``/servers/<server-id>/meta/<key>``     PUT    ✔        **✘**
+``/servers/<server-id>/metadata/<key>`` PUT    **✘**    ✔
+======================================= ====== ======== ==========
+
+* **server-id** is the identifier of the virtual server
+
+* **key** is the key of a matadatum ``key``:``value`` pair
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
+
+|
+
+Request body should contain a ``key``:``value`` pair under a ``meta`` tag.
+The ``value`` is the (new) value to set. The ``key`` of the metadatum may or
+may not exist prior to the operation. For example, request with ``role`` as a
+``key`` may contain the following request body:
+
+.. code-block:: javascript
+
+  {'meta': {'role': 'gateway'}}
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+201 (OK)                    Request succeeded
+400 (Bad Request)           Invalid server ID or Malformed request
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Administratively suspended server
+404 (Not Found)             Metadatum key not found
+413 (OverLimit)             Maximum number of metadata exceeded
+500 (Internal Server Error) The request cannot be completed because of an
+\                           internal error
+503 (Service Unavailable)   The server is not currently available
+=========================== =====================
+
+|
+
+If the response code is 201, the response body contains the ``key``:``value``
+pair that has just been created or updated, under a ``meta`` tag, so that the
+body of the response is identical to the body of the request.
+
+Delete Server Metadatum
+.......................
+
+.. note:: This operation is semantically equivalent in Cyclades and OS Compute.
+
+======================================= ====== ======== ==========
+URI                                     Method Cyclades OS Compute
+======================================= ====== ======== ==========
+``/servers/<server-id>/meta/<key>``     DELETE ✔        **✘**
+``/servers/<server-id>/metadata/<key>`` DELETE **✘**    ✔
+======================================= ====== ======== ==========
+
+* **server-id** is the identifier of the virtual server
+
+* **key** is the key of a matadatum ``key``:``value`` pair
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+204 (OK)                    Request succeeded
+400 (Bad Request)           Invalid server ID
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Administratively suspended server
+404 (Not Found)             Metadatum key not found
+500 (Internal Server Error) The request cannot be completed because of an
+\                           internal error
+503 (Service Unavailable)   The server is not currently available
+=========================== =====================
 
 Server Actions
 --------------
@@ -953,7 +1173,7 @@ The request described in this section exists in both Synnefo API and OS Compute
 API as a multi-operation request. The individual operations implemented through
 this request are in many cases completely different between the two APIs.
 Although this document focuses on Synnefo operations, differences and
-similarities between the APIs are also briefed in this section.
+similarities between the APIs are also briefed.
 
 |
 
@@ -975,11 +1195,11 @@ Create Image                  **✘**    ✔
 
 |
 
-====================================== ====== ======== ==========
-URI                                    Method Cyclades OS Compute
-====================================== ====== ======== ==========
-``/servers/<server id>/action``        POST   ✔        ✔
-====================================== ====== ======== ==========
+=============================== ====== ======== ==========
+URI                             Method Cyclades OS Compute
+=============================== ====== ======== ==========
+``/servers/<server id>/action`` POST   ✔        ✔
+=============================== ====== ======== ==========
 
 |
 
@@ -1011,7 +1231,7 @@ This operation transitions a server from a STOPPED to an ACTIVE state.
 
 Request body must contain a ``start`` tag on an empty directory::
 
-  { 'start': {}}
+  { "start": {}}
 
 
 Reboot Server
@@ -1024,9 +1244,11 @@ types of intermediate states (``REBOOT`` and ``HARD_REBOOT``) while rebooting,
 but the expected behavior is the same in both APIs.
 
 Request body must contain a ``reboot`` tag over a ``type`` tag on the reboot
-type::
+type:
 
-  { 'reboot' : { 'type': <reboot type>}}
+.. code-block:: javascript
+  
+  {"reboot" : { "type": <reboot type>}}
 
 * **reboot type** can be either ``SOFT`` or ``HARD``.
 
@@ -1034,11 +1256,7 @@ type::
 
 .. code-block:: javascript
   
-  {
-    'reboot': {
-      'type': 'hard'
-      }
-  }
+  {"reboot" : { "type": "hard"}}
 
 Shutdown server
 ...............
@@ -1047,20 +1265,22 @@ This operation transitions a server from an ACTIVE to a STOPPED state.
 
 Request body must contain a ``shutdown`` tag on an empty directory::
 
-  { 'shutdown': {}}
+  {"shutdown": {}}
 
 Get Server Console
 ..................
 
 The console operation arranges for an OOB console of the specified type. Only
-consoles of type "vnc" are supported for now. Cyclades server uses a running
+consoles of type ``vnc`` are supported for now. Cyclades server uses a running
 instance of vncauthproxy to setup proper VNC forwarding with a random password,
 then returns the necessary VNC connection info to the caller.
 
 Request body must a contain a ``console`` tag over a ``type`` tag on a console
-type::
+type:
 
-  console: {type: 'vnc' }
+.. code-block:: javascript
+
+  {"console": {"type": "vnc" }
 
 If successful, it returns a **200** code and also a json formated body with the
 following fields:
@@ -1081,12 +1301,12 @@ type               Connection type (only VNC)
 .. code-block:: javascript
 
   {
-      "console": {
-          "type": "vnc",
-          "host": "vm42.example.org",
-          "port": 1234,
-          "password": "513NR4PN0T"
-      }
+    "console": {
+      "type": "vnc",
+      "host": "vm42.example.org",
+      "port": 1234,
+      "password": "513NR14PN0T"
+    }
   }
 
 **Example Action Console Response: XML**:
@@ -1099,19 +1319,21 @@ type               Connection type (only VNC)
       type="vnc"
       host="vm42.example.org"
       port="1234"
-      password="513NR4PN0T">
+      password="513NR14PN0T">
   </console>
 
-Set Firewall Profile
-....................
+Set Server Firewall Profile
+...........................
 
 The firewallProfile function sets a firewall profile for the public interface
 of a server.
 
 Request body must contain a ``firewallProfile`` tag over a ``profile`` tag on
-the firewall type::
+the firewall type:
 
-  firewallProfile: { profile: <firewall profile> }
+.. code-block:: javascript
+
+  {"firewallProfile": { "profile": <firewall profile>}}
 
 * **firewall profile** can be ``ENABLED``, ``DISABLED`` or ``PROTECTED``
 
@@ -1119,15 +1341,13 @@ the firewall type::
 
 .. code-block:: javascript
 
-  {
-      "firewallProfile": {
-          "profile": "ENABLED"
-      }
-  }
-
+  {"firewallProfile": {"profile": "ENABLED"}}
 
 OS Compute API Specific
 .......................
+
+The following operations are meaningless or not supported in the context of
+Synnefo/Cyclades, but are parts of the OS Compute API:
 
 * `Change Administrator Password <http://docs.openstack.org/api/openstack-compute/2/content/Change_Password-d1e3234.html>`_
 * `Rebuild Server <http://docs.openstack.org/api/openstack-compute/2/content/Rebuild_Server-d1e3538.html>`_
@@ -1135,263 +1355,6 @@ OS Compute API Specific
 * `Confirm Resized Server <http://docs.openstack.org/api/openstack-compute/2/content/Confirm_Resized_Server-d1e3868.html>`_
 * `Revert Resized Server <http://docs.openstack.org/api/openstack-compute/2/content/Revert_Resized_Server-d1e4024.html>`_
 * `Create Image <http://docs.openstack.org/api/openstack-compute/2/content/Create_Image-d1e4655.html>`_
-
-
-Server Metadata
----------------
-
-List metadata
-.............
-
-.. note:: This operation is semantically equivalent in Cyclades and OS Compute.
-
-================================= ====== ======== ==========
-URI                               Method Cyclades OS Compute
-================================= ====== ======== ==========
-``/servers/<server-id>/meta``     GET    ✔        **✘**
-``/servers/<server-id>/metadata`` GET    **✘**    ✔
-================================= ====== ======== ==========
-
-* **server-id** is the identifier of the virtual server
-
-|
-
-==============  =========================
-Request Header  Value                    
-==============  =========================
-X-Auth-Token    User authentication token
-==============  =========================
-
-|
-
-=========================== =====================
-Return Code                 Description
-=========================== =====================
-200 (OK)                    Request succeeded
-400 (Bad Request)           Invalid server ID or Malformed request
-401 (Unauthorized)          Missing or expired user token
-403 (Forbidden)             Administratively suspended server
-404 (Not Found)             Server not found
-500 (Internal Server Error) The request cannot be completed because of an
-\                           internal error
-503 (Service Unavailable)   The server is not currently available
-=========================== =====================
-
-In case of a 200 response code, the response should contain a JSON encoded list
-of key:value pairs, under a 'values' tag which lies under a ``metadata`` tag,
-for example::
-
-  { 
-    'metadata': {
-      'values': {
-        'OS': 'Linux',
-        'users': 'root'
-      }
-    }
-  }
-
-.. note:: In OS Compute API  the ``values`` level is missing from the response
-
-Set / Update Server Metadata
-............................
-
-In Cyclades API, setting new metadata and updating the values of existing ones
-is achieved with the same type of request (POST), while in OS Compute API there
-are two separate request types (PUT and POST for
-`setting new <http://docs.openstack.org/api/openstack-compute/2/content/Create_or_Replace_Metadata-d1e5358.html>`_
-and
-`updating existing <http://docs.openstack.org/api/openstack-compute/2/content/Update_Metadata-d1e5208.html>`_
-metadata, respectively).
-
-In Cyclades API, metadata keys which are not referred by the operation will
-remain intact, while metadata referred by the operation will be overwritten in
-case of success.
-
-================================= ====== ======== ==========
-URI                               Method Cyclades OS Compute
-================================= ====== ======== ==========
-``/servers/<server-id>/meta``     POST    ✔       **✘**
-``/servers/<server-id>/metadata`` PUT    **✘**    ✔
-``/servers/<server-id>/metadata`` POST   **✘**   ✔
-================================= ====== ======== ==========
-
-* **server-id** is the identifier of the virtual server
-
-|
-
-==============  =========================
-Request Header  Value                    
-==============  =========================
-X-Auth-Token    User authentication token
-==============  =========================
-
-|
-
-The request body should contain a JSON-formated set of key:value pairs, under
-the ``metadata`` tag, e.g.::
-
-  {'metadata': {'role': 'webmail', 'users': 'root,maild'}}
-
-|
-
-=========================== =====================
-Return Code                 Description
-=========================== =====================
-201 (OK)                    Request succeeded
-400 (Bad Request)           Invalid server ID or Malformed request
-401 (Unauthorized)          Missing or expired user token
-403 (Forbidden)             Administratively suspended server
-404 (Not Found)             Server not found
-413 (OverLimit)             Maximum number of metadata exceeded
-500 (Internal Server Error) The request cannot be completed because of an
-\                           internal error
-503 (Service Unavailable)   The server is not currently available
-=========================== =====================
-
-|
-
-In case of a 201 code, the response body should present the new state of
-servers metadata. E.g.::
-
-  {'metadata': {'OS': 'Linux', 'role': 'webmail', 'users': 'root,maild'}}
-
-Get Metadata Item
-.................
-
-.. note:: This operation is semantically equivalent in Cyclades and OS Compute.
-
-======================================= ====== ======== ==========
-URI                                     Method Cyclades OS Compute
-======================================= ====== ======== ==========
-``/servers/<server-id>/meta/<key>``     GET    ✔        **✘**
-``/servers/<server-id>/metadata/<key>`` GET    **✘**    ✔
-======================================= ====== ======== ==========
-
-* **server-id** is the identifier of the virtual server
-* **key** is the key of a matadatum key:value pair
-
-|
-
-==============  =========================
-Request Header  Value                    
-==============  =========================
-X-Auth-Token    User authentication token
-==============  =========================
-
-|
-
-=========================== =====================
-Return Code                 Description
-=========================== =====================
-200 (OK)                    Request succeeded
-400 (Bad Request)           Invalid server ID or Malformed request
-401 (Unauthorized)          Missing or expired user token
-403 (Forbidden)             Administratively suspended server
-404 (Not Found)             Metadatum key not found
-500 (Internal Server Error) The request cannot be completed because of an
-\                           internal error
-503 (Service Unavailable)   The server is not currently available
-=========================== =====================
-
-If the response code is 200, the response body contains the requested key:value
-pair under a ``metadata`` tag. For example, if key was ``role``, the response
-body would look similar to this::
-
-  {'metadata': {'role': 'webmail'}}
-
-.. note:: In OS Compute response, ``metadata`` is ``meta``
-
-Set / Update Metadatum Item
-...........................
-
-.. note:: This operation is semantically equivalent in Cyclades and OS Compute.
-
-======================================= ====== ======== ==========
-URI                                     Method Cyclades OS Compute
-======================================= ====== ======== ==========
-``/servers/<server-id>/meta/<key>``     PUT    ✔        **✘**
-``/servers/<server-id>/metadata/<key>`` PUT    **✘**    ✔
-======================================= ====== ======== ==========
-
-* **server-id** is the identifier of the virtual server
-* **key** is the key of a matadatum key:value pair
-
-|
-
-==============  =========================
-Request Header  Value                    
-==============  =========================
-X-Auth-Token    User authentication token
-==============  =========================
-
-|
-
-Request body should contain a ``key``:``value`` pair under a ``meta`` tag.
-The ``value`` is the (new) value to set. The ``key`` of the metadatum may or
-may not exist prior to the operation. For example, request with ``role`` as a
-``key`` may contain the following request body::
-
-  {'meta': {'role': 'gateway'}}
-
-|
-
-=========================== =====================
-Return Code                 Description
-=========================== =====================
-201 (OK)                    Request succeeded
-400 (Bad Request)           Invalid server ID or Malformed request
-401 (Unauthorized)          Missing or expired user token
-403 (Forbidden)             Administratively suspended server
-404 (Not Found)             Metadatum key not found
-413 (OverLimit)             Maximum number of metadata exceeded
-500 (Internal Server Error) The request cannot be completed because of an
-\                           internal error
-503 (Service Unavailable)   The server is not currently available
-=========================== =====================
-
-|
-
-If the response code is 201, the response body contains the ``key:pair``
-that has just been created or updated, under a ``meta`` tag, so that the body
-of the response is identical to the body of the request.
-
-Delete Server Metadatum
-.......................
-
-.. note:: This operation is semantically equivalent in Cyclades and OS Compute.
-
-======================================= ====== ======== ==========
-URI                                     Method Cyclades OS Compute
-======================================= ====== ======== ==========
-``/servers/<server-id>/meta/<key>``     DELETE ✔        **✘**
-``/servers/<server-id>/metadata/<key>`` DELETE **✘**    ✔
-======================================= ====== ======== ==========
-
-* **server-id** is the identifier of the virtual server
-* **key** is the key of a matadatum key:value pair
-
-|
-
-==============  =========================
-Request Header  Value                    
-==============  =========================
-X-Auth-Token    User authentication token
-==============  =========================
-
-|
-
-=========================== =====================
-Return Code                 Description
-=========================== =====================
-204 (OK)                    Request succeeded
-400 (Bad Request)           Invalid server ID
-401 (Unauthorized)          Missing or expired user token
-403 (Forbidden)             Administratively suspended server
-404 (Not Found)             Metadatum key not found
-500 (Internal Server Error) The request cannot be completed because of an
-\                           internal error
-503 (Service Unavailable)   The server is not currently available
-=========================== =====================
 
 
 Flavors

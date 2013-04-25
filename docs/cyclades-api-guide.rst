@@ -1189,7 +1189,7 @@ for example::
     }
   }
 
-.. note:: In OS Compute API  the 'values' level is missing from the response
+.. note:: In OS Compute API  the ``values`` level is missing from the response
 
 Set / Update Server Metadata
 ............................
@@ -1202,16 +1202,16 @@ and
 `updating existing <http://docs.openstack.org/api/openstack-compute/2/content/Update_Metadata-d1e5208.html>`_
 metadata, respectively).
 
-In Cyclades API, metadata keys not referred by the operation will
+In Cyclades API, metadata keys which are not referred by the operation will
 remain intact, while metadata referred by the operation will be overwritten in
 case of success.
 
 ================================= ====== ======== ==========
 URI                               Method Cyclades OS Compute
 ================================= ====== ======== ==========
-``/servers/<server-id>/meta``     POST    ✔        **✘**
+``/servers/<server-id>/meta``     POST    ✔       **✘**
 ``/servers/<server-id>/metadata`` PUT    **✘**    ✔
-``/servers/<server-id>/metadata`` POST    **✘**   ✔
+``/servers/<server-id>/metadata`` POST   **✘**   ✔
 ================================= ====== ======== ==========
 
 * **server-id** is the identifier of the virtual server
@@ -1792,7 +1792,7 @@ URI                    Method Cyclades OS Compute
 ``/images/<image id>`` DELETE ✔        ✔
 ====================== ====== ======== ==========
 
-* **image-id** is the identifier of the virtual image
+* **image-id** is the identifier of the image
 
 |
 
@@ -1819,13 +1819,196 @@ unavailable
 
 In case of a 204 code, image status will change from ``ACTIVE`` to ``DELETED``
 
+Image Metadata
+--------------
+
+List metadata
+.............
+
+.. note:: This operation is semantically equivalent in Cyclades and OS Compute.
+
+=============================== ====== ======== ==========
+URI                             Method Cyclades OS Compute
+=============================== ====== ======== ==========
+``/images/<image-id>/meta``     GET    ✔        **✘**
+``/images/<image-id>/metadata`` GET    **✘**    ✔
+=============================== ====== ======== ==========
+
+* **image-id** is the identifier of the virtual image
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+201 (OK)                    Request succeeded
+400 (Bad Request)           Invalid image ID or Malformed request
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Administratively suspended server
+404 (Not Found)             Server not found
+409 (Build In Progress)     The image is not ready yet
+500 (Internal Server Error) The request cannot be completed because of an
+internal error
+503 (Service Unavailable)   The server is not currently available
+=========================== =====================
+
+In case of a 201 response code, the response should contain a JSON encoded list
+of ``key``:``value`` pairs, under a 'values' tag which lies under a
+``metadata`` tag, e.g.:
+
+.. code-block:: javascript
+
+  { 
+    'metadata': {
+      'values': {
+        "partition_table": "msdos",
+        "kernel": "3.2.0",
+        "osfamily": "linux",
+        "users": "user",
+        "gui": "Unity 5",
+        "sortorder": "3",
+        "os": "ubuntu",
+        "root_partition": "1",
+        "description": "Ubuntu 12 LTS"
+      }
+    }
+  }
+
+.. note:: In OS Compute API  the ``values`` level is missing from the response
+
+Set / Update Image Metadata
+...........................
+
+In Cyclades API, setting new metadata and updating the values of existing ones
+is achieved with the same type of request (POST), while in OS Compute API there
+are two separate request types (PUT and POST for
+`setting new <http://docs.openstack.org/api/openstack-compute/2/content/Create_or_Replace_Metadata-d1e5358.html>`_
+and
+`updating existing <http://docs.openstack.org/api/openstack-compute/2/content/Update_Metadata-d1e5208.html>`_
+metadata, respectively).
+
+In Cyclades API, metadata keys which are not referred by the operation will
+remain intact, while metadata referred by the operation will be overwritten in
+case of success.
+
+=============================== ====== ======== ==========
+URI                             Method Cyclades OS Compute
+=============================== ====== ======== ==========
+``/images/<image-id>/meta``     POST    ✔       **✘**
+``/images/<image-id>/metadata`` PUT    **✘**    ✔
+``/images/<image-id>/metadata`` POST   **✘**    ✔
+=============================== ====== ======== ==========
+
+* **image-id** is the identifier of the virtual image
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
+
+|
+
+The request body should contain a JSON-formated set of ``key``:``value`` pairs,
+under the ``metadata`` tag, e.g.::
+
+  {'metadata': {'XtraSoftware': 'XampleSoft', 'os': 'Xubuntu'}}
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+201 (OK)                    Request succeeded
+400 (Bad Request)           Malformed request or image id
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Not allowed to modify this image
+404 (Not Found)             Image or metadatum key not found
+413 (OverLimit)             Maximum number of metadata exceeded
+500 (Internal Server Error) The request cannot be completed because of an
+internal error
+503 (Service Unavailable)   The server is not currently available
+=========================== =====================
+
+|
+
+In case of a 201 code, the response body should present the new state of
+servers metadata. E.g.::
+
+  { 
+    'metadata': {
+      "partition_table": "msdos",
+      "kernel": "3.2.0",
+      "osfamily": "linux",
+      "users": "user",
+      "gui": "Unity 5",
+      "sortorder": "3",
+      "os": "Xubuntu",
+      "root_partition": "1",
+      "description": "Ubuntu 12 LTS",
+      "XtraSoftware": "XampleSoft"
+    }
+  }
+
+Get Metadata Item
+.................
+
+.. note:: This operation is semantically equivalent in Cyclades and OS Compute.
+
+===================================== ====== ======== ==========
+URI                                   Method Cyclades OS Compute
+===================================== ====== ======== ==========
+``/image/<image-id>/meta/<key>``      GET    ✔        **✘**
+``/images/<image-id>/metadata/<key>`` GET    **✘**    ✔
+===================================== ====== ======== ==========
+
+* **image-id** is the identifier of the virtual image
+* **key** is the key of a matadatum ``key``:``value`` pair
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded
+400 (Bad Request)           Malformed request or image id
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Not allowed to access this information
+404 (Not Found)             Metadatum key not found
+500 (Internal Server Error) The request cannot be completed because of an
+internal error
+503 (Service Unavailable)   The server is not currently available
+=========================== =====================
+
+If the response code is 200, the response body contains the requested
+``key``:``value`` pair under a ``metadata`` tag. For example, if key was
+``os``, the response body would look similar to this::
+
+  {'metadata': {'os': 'Xubuntu'}}
+
+.. note:: In OS Compute response, ``metadata`` is ``meta``
+
+
 LALA
 ....
-
-DETELE images/iid  delete_image
-
-GET images/iid/meta   list_metadata
-POST images/iid/meta  update_metadata
 
 GET images/iid/meta/key   get_metadata_item
 PUT images/iid/meta/key   create_metadata_item

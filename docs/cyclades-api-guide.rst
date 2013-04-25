@@ -2363,31 +2363,63 @@ In case of a 200 code, the response body consists of a collection of
     }
   }
 
-Update Network Name
-...................
+Rename Network
+..............
 
 **PUT** /networks/*id*
 
-**Normal Response Code**: 204
+========================== ======
+URI                        Method
+========================== ======
+``/networks/<network-id>`` GET   
+========================== ======
 
-**Error Response Codes**: computeFault (400, 500), serviceUnavailable (503),
-unauthorized (401), badRequest (400), badMediaType(415), itemNotFound (404),
-overLimit (413) 
+* **network-id** is the identifier of the network
 
-This operation changes the name of the network in the Compute system.
+|
+
+==============  =========================
+Request Header  Value                    
+==============  =========================
+X-Auth-Token    User authentication token
+==============  =========================
+
+|
+
+The request body is json-formated and contains a ``network`` tab over the
+following attribute:
+
+================== ================
+Request Parameters Description
+================== ================
+name               New network name
+================== ================
 
 **Example Update Network Name Request: JSON**:
 
 .. code-block:: javascript
 
-  {
-      "network": {
-          "name": "new_name"
-      }
-  }
+  {"network": {"name": "new_name"}}
 
-This operation does not contain a response body.
+|
 
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+204 (OK)                    Request succeeded
+400 (Bad Request)           Malformed request or network deleted
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Administratively suspended server
+404 (Not Found)             Server not found
+413 (Over Limit)            Network Limit Exceeded
+415 (Bad Media Type)        Bad network type
+500 (Internal Server Error) The request cannot be completed because of an
+internal error
+503 (Service Unavailable)   The service is not currently available
+=========================== =====================
+
+In case of a 200 response code, the ``name`` of the network is changed to the
+new value.
 
 Delete Network
 ..............

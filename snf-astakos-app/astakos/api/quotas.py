@@ -174,8 +174,8 @@ def _issue_commission(clientkey, provisions, force, accept):
                                  provisions=provisions,
                                  force=force)
     if accept:
-        done = qh.accept_commission(clientkey=clientkey,
-                                    serial=serial)
+        done = qh.resolve_pending_commission(clientkey=clientkey,
+                                             serial=serial)
 
     return serial
 

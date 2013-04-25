@@ -59,15 +59,14 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_ACCOUNT_QUOTA, BACKEND_CONTAINER_QUOTA,
                                  BACKEND_VERSIONING,
                                  BACKEND_FREE_VERSIONING, BACKEND_POOL_SIZE,
-                                 USER_CATALOG_URL,
                                  RADOS_STORAGE, RADOS_POOL_BLOCKS,
                                  RADOS_POOL_MAPS, TRANSLATE_UUIDS,
                                  PUBLIC_URL_SECURITY,
                                  PUBLIC_URL_ALPHABET)
 from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
                                   VersionNotExists)
-from snf_django.lib.astakos import (get_user_uuid, get_displayname,
-                                    get_uuids, get_displaynames)
+from astakosclient import AstakosClient
+from astakosclient.errors import NoUserName, NoUUID
 
 import logging
 import re
@@ -285,17 +284,21 @@ def is_uuid(str):
 ##########################
 
 def retrieve_displayname(token, uuid, fail_silently=True):
-    displayname = get_displayname(token, uuid, USER_CATALOG_URL)
-    if not displayname and not fail_silently:
-        raise ItemNotExists(uuid)
-    elif not displayname:
-        # just return the uuid
-        return uuid
+    astakos = AstakosClient(ASTAKOS_URL, retry=2, use_pool=True, logger=logger)
+    try:
+        displayname = astakos.get_username(token, uuid)
+    except NoUserName:
+        if not fail_silently:
+            raise ItemNotExists(uuid)
+        else:
+            # just return the uuid
+            return uuid
     return displayname
 
 
 def retrieve_displaynames(token, uuids, return_dict=False, fail_silently=True):
-    catalog = get_displaynames(token, uuids, USER_CATALOG_URL) or {}
+    astakos = AstakosClient(ASTAKOS_URL, retry=2, use_pool=True, logger=logger)
+    catalog = astakos.get_usernames(token, uuids) or {}
     missing = list(set(uuids) - set(catalog))
     if missing and not fail_silently:
         raise ItemNotExists('Unknown displaynames: %s' % ', '.join(missing))
@@ -306,14 +309,17 @@ def retrieve_uuid(token, displayname):
     if is_uuid(displayname):
         return displayname
 
-    uuid = get_user_uuid(token, displayname, USER_CATALOG_URL)
-    if not uuid:
+    astakos = AstakosClient(ASTAKOS_URL, retry=2, use_pool=True, logger=logger)
+    try:
+        uuid = astakos.get_uuid(token, displayname)
+    except NoUUID:
         raise ItemNotExists(displayname)
     return uuid
 
 
 def retrieve_uuids(token, displaynames, return_dict=False, fail_silently=True):
-    catalog = get_uuids(token, displaynames, USER_CATALOG_URL) or {}
+    astakos = AstakosClient(ASTAKOS_URL, retry=2, use_pool=True, logger=logger)
+    catalog = astakos.get_uuids(token, displaynames) or {}
     missing = list(set(displaynames) - set(catalog))
     if missing and not fail_silently:
         raise ItemNotExists('Unknown uuids: %s' % ', '.join(missing))
@@ -1037,8 +1043,8 @@ def update_response_headers(request, response):
 
 def get_pithos_usage(token):
     """Get Pithos Usage from astakos."""
-    astakos_url = ASTAKOS_URL + "im/authenticate"
-    user_info = user_for_token(token, astakos_url, usage=True)
+    astakos = AstakosClient(ASTAKOS_URL, retry=2, use_pool=True, logger=logger)
+    user_info = user_for_token(astakos, token, usage=True)
     usage = user_info.get("usage", [])
     for u in usage:
         if u.get('name') == 'pithos+.diskspace':

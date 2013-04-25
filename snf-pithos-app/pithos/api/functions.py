@@ -40,7 +40,7 @@ from django.utils.http import parse_etags
 from django.utils.encoding import smart_str
 from django.views.decorators.csrf import csrf_exempt
 
-from snf_django.lib.astakos import get_uuids as _get_uuids
+from astakosclient import AstakosClient
 
 from snf_django.lib import api
 from snf_django.lib.api import faults
@@ -77,8 +77,9 @@ logger = logging.getLogger(__name__)
 
 def get_uuids(names):
     try:
-        url = ASTAKOS_URL + "/service/api/user_catalogs"
-        uuids = _get_uuids(SERVICE_TOKEN, names, url=url)
+        astakos = AstakosClient(ASTAKOS_URL, retry=2,
+                                use_pool=True, logger=logger)
+        uuids = astakos.service_get_uuids(SERVICE_TOKEN, names)
     except Exception, e:
         logger.exception(e)
         return {}

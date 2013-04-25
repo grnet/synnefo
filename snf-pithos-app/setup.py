@@ -62,6 +62,7 @@ INSTALL_REQUIRES = [
     'snf-pithos-backend',
     'Django>=1.2, <1.3',
     'objpool>=0.2',
+    'astakosclient',
     'snf-django-lib',
 ]
 

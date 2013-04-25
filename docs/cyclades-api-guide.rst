@@ -2205,91 +2205,163 @@ while the regular operation returns only the ``network id`` and the
 Create Network
 ..............
 
-**POST** /networks
+This operation creates a new network
 
-**Normal Response Code**: 202
+==================== ======
+URI                  Method
+==================== ======
+``/networks``        POST
+==================== ======
 
-**Error Response Codes**: computeFault (400, 500), serviceUnavailable (503),
-unauthorized (401), badMediaType(415), badRequest (400), overLimit (413)
+|
 
-This operation asynchronously provisions a new private network.
+==============  =========================
+Request Header  Value                    
+==============  =========================
+X-Auth-Token    User authentication token
+==============  =========================
 
-**Example Create Network Request: JSON**:
+|
+
+The request body is json-formated and contains a collection of attributes under
+the ``network`` tag, which are presented bellow:
+
+================== ======================= ======== =======
+Request Attributes Description             Required Default
+================== ======================= ======== =======
+name               Network name            ✔        
+type               Network type            ✔
+dhcp               If use DHCP             **✘**    True
+cidr               IPv4 CIDR               **✘**    192.168.1.0/2
+cidr6              IPv6 CDIR               **✘**    null
+gateway            IPv4 gateway address    **✘**    null
+gateway6           IPv6 gateway address    **✘**    null
+public             If a public network     **✘**    False
+================== ======================= ======== =======
+
+* **name** is a string
+
+* **type** can be CUSTOM, IP_LESS_ROUTED, MAC_FILTERED, PHYSICAL_VLAN
+
+* **dhcp** and **public** are flags
+
+* **cidr**, and **gateway** are IPv4 addresses
+
+* **cidr6**, and **gateway6** are IPv6 addresses
+
+* **public** should better not be used. If True, a 403 is returned.
+
+**Example Create Network Request Body: JSON**:
 
 .. code-block:: javascript
 
   {
-      "network": {
-          "name": "private_net",
-      }
+      "network": {"name": "private_net", "type": "MAC_FILTERED"}
   }
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+202 (OK)                    Request succeeded
+400 (Bad Request)           Malformed network id or request
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Public network is forbidden
+404 (Not Found)             Network not found
+413 (Over Limit)            Reached networks limit
+415 (Bad Media Type)        Bad network type
+500 (Internal Server Error) The request cannot be completed because of an
+internal error
+503 (Service Unavailable)   Failed to allocated network resources
+=========================== =====================
+
+In case of a 202 code, the operation asynchronously provisions a new private
+network and the response body consists of a collection of 
+`network attributes <#network-red>`_.
 
 **Example Create Network Response: JSON**:
 
 .. code-block:: javascript
 
   {
-      "network": {
-          "id": 3,
-          "name": "private_net",
-          "created": "2011-04-20T15:31:08.199640+00:00",
-          "servers": {
-              "values": []
-          }
-      }
+    "network": {
+      "status": "PENDING",
+      "updated": "2013-04-25T13:31:17.165237+00:00",
+      "name": "my private network",
+      "created": "2013-04-25T13:31:17.165088+00:00",
+      "cidr6": null,
+      "id": "6567",
+      "gateway6": null,
+      "public": false,
+      "dhcp": false,
+      "cidr": "192.168.1.0/24",
+      "type": "MAC_FILTERED",
+      "gateway": null,
+      "attachments": {"values": []}
+    }
   }
-
-**Example Create Network Response: XML**:
-
-.. code-block:: xml
-
-  <?xml version="1.0" encoding="UTF-8"?>
-  <network xmlns="http://docs.openstack.org/compute/api/v1.1" xmlns:atom="http://www.w3.org/2005/Atom"
-   id="2" name="foob" created="2011-04-20T15:31:08.199640+00:00">
-    <servers>
-    </servers>
-  </network>
 
 
 Get Network Details
 ...................
 
-**GET** /networks/*id*
+========================== ======
+URI                        Method
+========================== ======
+``/networks/<network-id>`` GET   
+========================== ======
 
-**Normal Response Codes**: 200, 203
+* **network-id** is the identifier of the network
 
-**Error Response Codes**: computeFault (400, 500), serviceUnavailable (503),
-unauthorized (401), badRequest (400), itemNotFound (404), overLimit (413)
+|
 
-This operation returns the details of a specific network by its id.
+==============  =========================
+Request Header  Value                    
+==============  =========================
+X-Auth-Token    User authentication token
+==============  =========================
 
-This operation does not require a request body.
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded
+400 (Bad Request)           Malformed request or network id
+401 (Unauthorized)          Missing or expired user token
+404 (Not Found)             Network not found
+500 (Internal Server Error) The request cannot be completed because of an
+internal error
+503 (Service Unavailable)   The service is not currently available
+=========================== =====================
+
+|
+
+In case of a 200 code, the response body consists of a collection of
+`network attributes <#network-ref>`_.
 
 **Example Get Network Details Response: JSON**:
 
 .. code-block:: javascript
 
   {
-      "network": {
-          "id": 3,
-          "name": "private_net",
-          "servers": {
-              "values": [1, 7]
-          }
-      }
+    "network": {
+      "status": "PENDING",
+      "updated": "2013-04-25T13:31:17.165237+00:00",
+      "name": "my private network",
+      "created": "2013-04-25T13:31:17.165088+00:00",
+      "cidr6": null,
+      "id": "6567",
+      "gateway6": null,
+      "public": false,
+      "dhcp": false,
+      "cidr": "192.168.1.0/24",
+      "type": "MAC_FILTERED",
+      "gateway": null,
+      "attachments": {"values": []}
+    }
   }
-
-**Example Get Network Details Response: XML**::
-
-  <?xml version="1.0" encoding="UTF-8"?>
-  <network xmlns="http://docs.openstack.org/compute/api/v1.1" xmlns:atom="http://www.w3.org/2005/Atom"
-   id="2" name="foob" updated="2011-05-02T21:33:25.606672+00:00" created="2011-04-20T15:31:08.199640+00:00">
-    <servers>
-      <server id="1"></server>
-      <server id="7"></server>
-    </servers>
-  </network>
-
 
 Update Network Name
 ...................
@@ -2471,16 +2543,28 @@ Network
 ================== ===========
 Network Attributes Description
 ================== ===========
-id
-name
-created
-updates
-attachments
+id                 Network identifier
+name               Network name
+created            Date of creation
+updates            Date of last update
+cidr               IPv4 CIDR Address
+cidr6              IPv6 CIDR Address
+dhcp               IPv4 DHCP Address
+dhcp6              IPv6 DHCP Address
+gateway            IPv4 Gateway Address
+gateway6           IPv6 Gateway Address
+public             If the network is public
+status             Network status
+attachments        Network Interface Connections (NICs)
 ================== ===========
 
-* **id** and **name** are the network id (int) and name (string) respectively
+* **id** and **name** are int and string respectively
 
 * **created** and **updated** are ISO8061 date strings
+
+* **public** is a boolean flag
+
+* **status** can be PENDING, ACTIVE or DELETED
 
 * **attachments** refers to the NICs connecting servers on that network.
 

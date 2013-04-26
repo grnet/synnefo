@@ -63,8 +63,8 @@ class Command(BaseCommand):
 
         if fix and (accepted or rejected):
             self.stdout.write("Fixing pending commissions..\n")
-            quotas.accept_commissions(accepted)
-            quotas.reject_commissions(rejected)
+            quotas.resolve_commissions(accepted=accepted, rejected=rejected,
+                                       strict=False)
 
 
 def list_to_string(l):

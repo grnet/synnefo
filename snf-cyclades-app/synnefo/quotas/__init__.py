@@ -91,22 +91,30 @@ def issue_commission(user, source, provisions,
         raise Exception("No serial")
 
 
-def accept_commissions(accepted):
-    qh_resolve_commissions(accept=accepted)
+def accept_commissions(accepted, strict=True):
+    return qh_resolve_commissions(accept=accepted, strict=strict)
 
 
-def reject_commissions(rejected):
-    qh_resolve_commissions(reject=rejected)
+def reject_commissions(rejected, strict=True):
+    return qh_resolve_commissions(reject=rejected, strict=strict)
 
 
-def qh_resolve_commissions(accept=None, reject=None):
+def qh_resolve_commissions(accept=None, reject=None, strict=True):
     if accept is None:
         accept = []
     if reject is None:
         reject = []
 
     qh = Quotaholder.get()
-    qh.resolve_commissions(ASTAKOS_TOKEN, accept, reject)
+    response = qh.resolve_commissions(ASTAKOS_TOKEN, accept, reject)
+
+    if strict:
+        failed = response["failed"]
+        if failed:
+            log.error("Unexpected error while resolving commissions: %s",
+                      failed)
+
+    return response
 
 
 def fix_pending_commissions():
@@ -197,9 +205,9 @@ def issue_and_accept_commission(resource, delete=False):
                   " '%s' is still pending." % (resource, previous_serial)
             raise Exception(msg)
         elif previous_serial.accept:
-            accept_commissions(accepted=[previous_serial.serial])
+            accept_commissions(accepted=[previous_serial.serial], strict=False)
         else:
-            reject_commissions(rejected=[previous_serial.serial])
+            reject_commissions(rejected=[previous_serial.serial], strict=False)
         previous_serial.resolved = True
 
     try:

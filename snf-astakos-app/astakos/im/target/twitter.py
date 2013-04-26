@@ -128,7 +128,6 @@ def authenticated(
     parts = list(urlsplit(access_token_url))
     params = dict(parse_qsl(parts[3], keep_blank_values=True))
     oauth_verifier = request.GET.get('oauth_verifier')
-    logger.info(params)
     params['oauth_verifier'] = oauth_verifier
     parts[3] = urlencode(params)
     parameterized_url = urlunsplit(parts)

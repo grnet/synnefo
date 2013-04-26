@@ -1570,6 +1570,10 @@ A flavor is a hardware configuration for a server.
 List Flavors
 ............
 
+List the flavors that are accessible by the user
+
+.. rubric:: Request
+
 =================== ====== ======== ==========
 URI                 Method Cyclades OS/Compute
 =================== ====== ======== ==========
@@ -1577,9 +1581,9 @@ URI                 Method Cyclades OS/Compute
 ``/flavors/detail`` GET    ✔        **✘**
 =================== ====== ======== ==========
 
-The detailed (``/flavors/detail``) listing in Cyclades is semantically similar
-to OS/Compute regular (``/flavor``) listing. The Cyclades regular listing is
-Cyclades specific.
+* The detailed (``/flavors/detail``) listing in Cyclades is semantically
+  similar to OS/Compute regular (``/flavor``) listing. The Cyclades regular
+  listing semantics are Cyclades specific.
 
 |
 
@@ -1598,7 +1602,9 @@ json              Respond in json
 xml               Respond in xml 
 ================= ===============
 
-|
+.. note:: Request body should be empty
+
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
@@ -1612,16 +1618,20 @@ Return Code                 Description
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
-|
+Response code contents::
 
-If a 200 code is returned, the response body contains a list of flavors, under
-a ``value`` tag, which lies under a ``flavors`` tag. Each item contains the
-fields described in the `flavor section <#flavor-ref>`_.
+  flavors: {values[
+    {
+      <flavor attribute>: <value>,
+      ...
+    },
+    ...
+  ]}
 
-.. note:: In Compute OS API, the ``values`` layer is missing from the response.
+Flavor attributes are `listed here <#flavor-ref>`_. Regular listing contains
+only ``id`` and ``name`` attributes.
 
-In the case of a regular request, only the ``id`` and ``name`` fields are
-returned, e.g.:
+**Example List Flavors (regular): JSON**
 
 .. code-block:: javascript
 
@@ -1639,7 +1649,8 @@ returned, e.g.:
     }
   }
 
-Or in XML:
+
+**Example List Flavors (regular): XML**
 
 .. code-block:: xml
 
@@ -1650,7 +1661,7 @@ Or in XML:
     <flavor id="3" name="Four core"/>
   </flavors>
 
-A detailed response will contain all `flavor fields <#flavor-ref>`_, e.g.:
+**Example List Flavors (detail): JSON**
 
 .. code-block:: javascript
 
@@ -1676,9 +1687,14 @@ A detailed response will contain all `flavor fields <#flavor-ref>`_, e.g.:
     }
   }
 
+.. note:: In Compute OS API, the ``values`` layer is missing from the response
 
 Get Flavor Details
 ..................
+
+Get the configuration of a specific flavor
+
+.. rubric:: Request
 
 ======================= ====== ======== ==========
 URI                     Method Cyclades OS/Compute
@@ -1705,7 +1721,9 @@ json              Respond in json
 xml               Respond in xml 
 ================= ===============
 
-|
+.. note:: Request body should be empty
+
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
@@ -1720,10 +1738,16 @@ Return Code                 Description
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
-If the response code is 200, the response body should contain a flavor item,
-consisting of the `flavor attributes <flavor-ref>`_ under a ``flavor`` tag.
+Response code contents::
 
-An example response in JSON:
+  flavor: {
+    <flavor attribute>: <value>,
+    ...
+  }
+
+All flavor attributes are `listed here <flavor-ref>`_.
+
+**Example Flavor Details: JSON**
 
 .. code-block:: javascript
   
@@ -1740,7 +1764,7 @@ An example response in JSON:
     }
   }
 
-or in XML:
+**Example Flavor Details: XML**
 
 .. code-block:: xml
 
@@ -1759,40 +1783,16 @@ also supported.
 List Images
 ...........
 
+List all images accessible by the user
+
+.. rubric:: Request
+
 =================== ====== ======== ==========
 URI                 Method Cyclades OS/Compute
 =================== ====== ======== ==========
 ``/servers``        GET    ✔        ✔
 ``/servers/detail`` GET    ✔        ✔
 =================== ====== ======== ==========
-
-Both requests return a list of images. The first returns just ``id`` and
-``name``, while the second returns full collections of
-`image attributes <#image-ref>`_.
-
-|
-
-================= ======================== ======== ==========
-Request Parameter Value                    Cyclades OS/Compute
-================= ======================== ======== ==========
-json              Respond in json          default  **✘**
-xml               Respond in xml           ✔        **✘**
-server            Server filter            **✘**    ✔
-name              Image name filter        **✘**    ✔
-status            Server status filter     **✘**    ✔
-changes-since     Change timestamp filter  ✔        ✔
-marker            Last list last ID filter **✘**    ✔
-limit             Page size filter         **✘**    ✔
-type              Request filter type      **✘**    ✔
-================= ======================== ======== ==========
-
-* **json** and **xml** parameters are mutually exclusive. If none supported,
-  the response will be formated in json.
-
-* **changes-since** must be an ISO8601 date string. In Cyclades it refers to
-  the image ``updated_at`` attribute and it should be a date in the window
-  [- POLL_LIMIT ... now]. POLL_LIMIT default value is 3600 seconds except if it
-  is set otherwise at server side.
 
 |
 
@@ -1803,6 +1803,27 @@ X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
 
 |
+
+================= ======================== ======== ==========
+Request Parameter Value                    Cyclades OS/Compute
+================= ======================== ======== ==========
+server            Server filter            **✘**    ✔
+name              Image name filter        **✘**    ✔
+status            Server status filter     **✘**    ✔
+changes-since     Change timestamp filter  ✔        ✔
+marker            Last list last ID filter **✘**    ✔
+limit             Page size filter         **✘**    ✔
+type              Request filter type      **✘**    ✔
+================= ======================== ======== ==========
+
+* **changes-since** must be an ISO8601 date string. In Cyclades it refers to
+  the image ``updated_at`` attribute and it should be a date in the window
+  [- POLL_LIMIT ... now]. POLL_LIMIT default value is 3600 seconds except if it
+  is set otherwise at server side.
+
+.. note:: Request body should be empty
+
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
@@ -1817,12 +1838,24 @@ Return Code                 Description
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
-|
+Response body contents::
 
-In case of a 200 code, the response body contains a list of
-`image items <#image-ref>`_ under the ``images`` tag.
+  images: {values: [
+    {
+      <image attribute>: <value>,
+      ...
+      metadata: {values: {
+        <image metadatum key>: <value>,
+        ...
+      }},
+      ...
+    },
+    ...
+  ]}
 
-For example, a JSON image response might like the following:
+The regular response returns just ``id`` and ``name``, while the detail returns a collections of the `image attributes listed here <#image-ref>`_.
+
+**Example List Image (detail): JSON**
 
 .. code-block:: javascript
 
@@ -1870,14 +1903,14 @@ For example, a JSON image response might like the following:
     }
   }
 
-
-The OS/Compute API does not include any ``values`` layers in the response. More
-details can be found
-`here <http://docs.openstack.org/api/openstack-compute/2/content/List_Images-d1e4435.html>`_.
-
+.. note:: In Compute OS API, the ``values`` layer is missing from the response
 
 Get Image Details
 .................
+
+Get the details of a specific image
+
+.. rubric:: Request
 
 ====================== ====== ======== ==========
 URI                    Method Cyclades OS/Compute
@@ -1895,7 +1928,11 @@ Request Header  Value                     Cyclades OS/Compute
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
 
-|
+.. note:: Request parameters should be empty
+
+.. note:: Request body should be empty
+
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
@@ -1911,13 +1948,17 @@ Return Code                 Description
 \                           unavailable
 =========================== =====================
 
-|
+Response body contents::
 
-In case of a 200 response code, the response body container a collection of
-`image items <#image-ref>`_ under the ``values`` tag, lying under an ``images``
-tag.
+  image: {
+    <image attribute>: <value>,
+    ...
+    metadata: {values:{
+      <image metadatum key>: <value>
+    }}
+  }
 
-.. note:: In OS/Compute API, the ``values`` layer is missing
+Image attributes are `listed here <#image-ref>`_.
 
 **Example Details for an image with id 6404619d-...-aef57eaff4af, in JSON**
 
@@ -1946,9 +1987,15 @@ tag.
     }
   }
 
+.. note:: In OS/Compute API, the ``values`` layer is missing
+
 
 Delete Image
 ............
+
+Delete an image, by changing its status from ``ACTIVE`` to ``DELETED``.
+
+.. rubric:: Request
 
 ====================== ====== ======== =========
 URI                    Method Cyclades OS/Compute
@@ -1956,7 +2003,7 @@ URI                    Method Cyclades OS/Compute
 ``/images/<image id>`` DELETE ✔        ✔
 ====================== ====== ======== ==========
 
-* **image-id** is the identifier of the image
+* **image id** is the identifier of the image
 
 |
 
@@ -1966,7 +2013,11 @@ Request Header  Value                     Cyclades OS/Compute
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
 
-|
+.. note:: Request parameters should be empty
+
+.. note:: Request body should be empty
+
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
@@ -1981,8 +2032,7 @@ Return Code                 Description
 \                           unavailable
 =========================== =====================
 
-In case of a 204 code, image status will change from ``ACTIVE`` to ``DELETED``
-
+.. note:: In case of a 204 code, request body should be empty
 
 Image Metadata
 --------------

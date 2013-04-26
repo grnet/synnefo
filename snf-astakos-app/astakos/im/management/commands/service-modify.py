@@ -32,7 +32,6 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
-from datetime import datetime, timedelta
 
 from django.core.management.base import BaseCommand, CommandError
 
@@ -40,32 +39,67 @@ from astakos.im.models import Service
 
 
 class Command(BaseCommand):
-    args = "<name>"
-    help = "Renew service token"
+    args = "<service ID>"
+    help = "Modify service attributes"
 
     option_list = BaseCommand.option_list + (
-        make_option('--duration',
-                    dest='duration',
-                    metavar='NUM',
-                    help="In how many days token is going to expire."),)
+        make_option('--name',
+                    dest='name',
+                    default=None,
+                    help="Set service name"),
+        make_option('--url',
+                    dest='url',
+                    default=None,
+                    help="Set service url"),
+        make_option('--api-url',
+                    dest='api_url',
+                    default=None,
+                    help="Set service API url"),
+        make_option('--auth-token',
+                    dest='auth_token',
+                    default=None,
+                    help="Set a custom service auth token"),
+        make_option('--renew-token',
+                    action='store_true',
+                    dest='renew_token',
+                    default=False,
+                    help="Renew service auth token"),
+    )
 
     def handle(self, *args, **options):
         if len(args) != 1:
-            raise CommandError("Invalid number of arguments")
+            raise CommandError("Please provide a service ID")
 
         try:
-            service = Service.objects.get(name=args[0])
-            expires = None
-            if options['duration']:
-                try:
-                    duration = int(options['duration'])
-                except ValueError, e:
-                    raise CommandError('Invalid duration')
-                expires = datetime.now() + timedelta(days=duration)
-            service.renew_token(expires)
-            service.save()
-            self.stdout.write('New service token: %s\n' % service.auth_token)
+            service = Service.objects.get(id=int(args[0]))
         except Service.DoesNotExist:
-            raise CommandError("Invalid service name")
-        except Exception, e:
-            raise CommandError(e)
+            raise CommandError("Service does not exist. You may run snf-mange "
+                               "service-list for available service IDs.")
+
+        name = options.get('name')
+        api_url = options.get('api_url')
+        url = options.get('url')
+        auth_token = options.get('auth_token')
+        renew_token = options.get('renew_token')
+
+        if name:
+            service.name = name
+
+        if api_url:
+            service.api_url = api_url
+
+        if url:
+            service.url = url
+
+        if auth_token:
+            service.auth_token = auth_token
+
+        if renew_token and not auth_token:
+            service.renew_token()
+
+        service.save()
+
+        if renew_token:
+            self.stdout.write(
+                'Service\'s new token: %s\n' % service.auth_token
+            )

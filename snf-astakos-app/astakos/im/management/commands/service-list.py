@@ -31,9 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-
-from synnefo.webproject.management.commands import ListCommand
 from astakos.im.models import Service
+from synnefo.webproject.management.commands import ListCommand
 
 
 class Command(ListCommand):

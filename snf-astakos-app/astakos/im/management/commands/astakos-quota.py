@@ -76,7 +76,6 @@ class Command(BaseCommand):
         user_ident = options['user']
         list_only = not sync and not verify
 
-
         if user_ident is not None:
             users = [self.get_user(user_ident)]
         else:

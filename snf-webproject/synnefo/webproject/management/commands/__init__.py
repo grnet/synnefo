@@ -257,7 +257,8 @@ class ListCommand(BaseCommand):
                 obj.user_email = ucache.get_name(uuid)
 
         # Special handling of DB results
-        self.handle_db_objects(objects)
+        objects = list(objects)
+        self.handle_db_objects(objects, **options)
 
         headers = self.fields
         columns = [self.FIELDS[key][0] for key in headers]
@@ -288,7 +289,7 @@ class ListCommand(BaseCommand):
     def handle_args(self, *args, **kwargs):
         pass
 
-    def handle_db_objects(self, objects):
+    def handle_db_objects(self, objects, **options):
         pass
 
     def handle_output(self, table, headers):

@@ -31,23 +31,24 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import os
-import uuid
 import string
 
 from optparse import make_option
 from collections import namedtuple
 
 from django.core.management.base import BaseCommand, CommandError
-from django.core.validators import validate_email
+from synnefo.lib.quotaholder.api import QH_PRACTICALLY_INFINITE
 
 from snf_django.lib.db.transaction import commit_on_success_strict
 from astakos.im.models import AstakosUser, AstakosUserQuota, Resource
 from astakos.im.quotas import qh_sync_user, qh_sync_users
 
+from ._common import is_uuid, is_email
+
 AddResourceArgs = namedtuple('AddQuotaArgs', ('resource',
                                               'capacity',
                                               ))
+
 
 
 class Command(BaseCommand):
@@ -197,25 +198,3 @@ for a single user from the command line
                             self.stdout.write('Failed to policy: %s\n' % e)
                             continue
         qh_sync_users(users)
-
-
-def is_uuid(s):
-    if s is None:
-        return False
-    try:
-        uuid.UUID(s)
-    except ValueError:
-        return False
-    else:
-        return True
-
-
-def is_email(s):
-    if s is None:
-        return False
-    try:
-        validate_email(s)
-    except:
-        return False
-    else:
-        return True

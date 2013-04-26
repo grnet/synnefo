@@ -32,16 +32,14 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
-from datetime import datetime
 
-from django.utils.translation import ugettext as _
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 
 from astakos.im.models import AstakosUser
 from astakos.im.functions import (activate, deactivate)
-from ._common import remove_user_permission, add_user_permission
+from ._common import remove_user_permission, add_user_permission, is_uuid
 from snf_django.lib.db.transaction import commit_on_success_strict
 
 
@@ -112,13 +110,19 @@ class Command(BaseCommand):
             raise CommandError("Please provide a user ID")
 
         if args[0].isdigit():
-            user_id = int(args[0])
-            user = AstakosUser.objects.get(id=user_id)
+            try:
+                user = AstakosUser.objects.get(id=int(args[0]))
+            except AstakosUser.DoesNotExist:
+                raise CommandError("Invalid user ID")
+        elif is_uuid(args[0]):
+            try:
+                user = AstakosUser.objects.get(uuid=args[0])
+            except AstakosUser.DoesNotExist:
+                raise CommandError("Invalid user UUID")
         else:
-            raise CommandError("Invalid ID")
-
-        if not user:
-            raise CommandError("Unknown user")
+            raise CommandError(("Invalid user identification: "
+                                "you should provide a valid user ID "
+                                "or a valid user UUID"))
 
         if options.get('admin'):
             user.is_superuser = True

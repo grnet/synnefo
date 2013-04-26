@@ -228,6 +228,9 @@ $(document).ready(function() {
 			}
 		});
 	
+
+
+
  
 	$("input.leave, input.join").click(function (e) {
         e.preventDefault();
@@ -235,6 +238,9 @@ $(document).ready(function() {
         var dialog = $(this).parents('.msg-wrap').find('.dialog');
 
 		$('.dialog').hide();
+    if ($(this).parents('.form-actions').hasClass('inactive')) {
+      return false;
+    }
 		$(this).parents('.msg-wrap').find('.dialog').show();
         var offset = dialog.offset();
 
@@ -360,7 +366,29 @@ $(document).ready(function() {
 	// fix for recaptcha fields
 	$('#okeanos_recaptcha').parents('.form-row').find('.extra-img').hide();	  
      
-	 
+/* project members page js */	 
+function check_form_actions_inactive(){
+   if ( $('#members-table tbody td.check input:checked').length >0 ) {
+    $('.projects .form-actions').removeClass('inactive');
+  } else {
+    $('.projects .form-actions').addClass('inactive');
+  }
+}
+
+$('#members-table td.email').click(function(e){
+  var that = $(this).parent('tr').find('.check').find('input[type="checkbox"]')
+  if(that.is(":checked")){
+    that.removeAttr('checked');
+  } else {
+    that.attr('checked', 'checked');
+  }
+  check_form_actions_inactive();
+
+})
+
+
+
+
 $('#members-table tr th.check input').click(function(e){
   if($(this).is(":checked")){
     $('#members-table tbody td.check input').attr('checked', 'checked');
@@ -369,19 +397,13 @@ $('#members-table tr th.check input').click(function(e){
   } 
 });
 
-$('.projects .form-actions a').click(function(e){
-  e.preventDefault();
-  var action = $(this).data('action');
-  var usrArray=[];
-  $('#members-table tbody td.check input:checked').each(function(){
-     usrArray.push($(this).val());
-  })
-  $(this).parents('.form-actions').find('.dialog').show();
-  console.log(usrArray);
-  console.log(action)
+$('#members-table tr .check input').click(function(e){
+  check_form_actions_inactive()
+});
 
-  //alert($(this).data('action'));
-})
+
+/* end of project members page js */
+
 
 
 	    

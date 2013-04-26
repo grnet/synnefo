@@ -45,7 +45,7 @@
           <span class="extratitle">MODIFICATION OF </span>
         {% endif %}
       {% endif %}
-      {% block project_title %}{{ object.name|upper }}{% endblock project_title %}
+      {{ object.name|upper }} 
     </span>
     
     {% block project.actions %}
@@ -170,7 +170,7 @@
 {% endblock inner_project %}  
   <div class="full-dotted">
     <p>
-      <a href="{% url project_list %}">&lt; Back to Projects</a>
+      {% block bottom_link %}<a href="{% url project_list %}">&lt; Back to Projects</a>{% endblock bottom_link %}
     </p>
   </div>
 </div>

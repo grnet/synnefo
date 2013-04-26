@@ -1,11 +1,10 @@
 <div class="msg-wrap {% if inline %}inline{% endif %}">
-{% if url %}
 {% if confirm %}
 <form method="{{ col.method }}" 
   action="{{ url }}#{{ table.attr.id }}"
   class="link-like">
   {% csrf_token %}
-<input type="submit" value="{{ action }}" class="join_group join" />
+<input type="submit" value="{{ action }}" class="join_group join {{ cls }}" />
 </form>
 <div class="dialog" style="display: none">
   <div class="dialog-content">
@@ -19,8 +18,5 @@
 </div>
 {% else %}
 <a href="{{ url }}">{{ action }}</a>
-{% endif %}
-{% else %}
-{{ action }}
 {% endif %}
 </div>

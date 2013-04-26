@@ -222,3 +222,4 @@ form .refresh.open p:hover span.extra-img:hover		{ background-position: -33px -5
 
 
 form.withlabels.upperlabels label 					{ text-transform: uppercase;}
+form.withlabels.upperlabels textarea				{ margin-top:10px;}

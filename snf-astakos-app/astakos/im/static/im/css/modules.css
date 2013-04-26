@@ -660,14 +660,19 @@ table.cols-3 tr.links td 						{ font-size:1.154em}
 
 .members-table 									{ width:100%;}
 .members-table .check 							{ width:10%;}
+.members-table + .pagination 					{ display: none}
 .all .members-table .check 						{ display:none;}
 .form-actions 									{ position: relative;}
-.form-actions a 								{ display: none; position: relative;top:-3em;}
-.form-actions a:hover 							{ text-decoration: none;}
-.pending .form-actions a.approve,
-.pending .form-actions a.reject					{ display: inline-block;}
-.approved .form-actions a.remove				{ display: inline-block;}
+.form-actions input[type="submit"]				{ display: none; position: } 
+.pending .form-actions .reject,
+.pending .form-actions .approve					{ display: inline-block;}
+.approved .form-actions .remove					{ display: inline-block;}
 .form-actions a.approve 						{ background-color: #55B577}
-.form-actions a.approve:hover 					{ background-color: #3582AC}
-.form-actions .msg-wrap .dialog 				{ top:0px; left:0; right:0;}
-.form-actions .msg-wrap .dialog  a 				{ top:0;}
+.form-actions a.approve:hover 					{ background-color: #3582AC} 
+
+
+.form-actions form.link-like input[type="submit"]				{ margin:0; padding:0; background:#F24E53; color:#fff; cursor:pointer; height:auto; line-height: 22px; padding: 10px 22px; margin-right:10px;}
+.form-actions form.link-like input.approve[type="submit"] 		{ background:#55B577;}
+.form-actions form.link-like input[type="submit"]:hover		    { text-decoration:none; background:#3582AC; }
+.form-actions.inactive form.link-like input[type="submit"]		{ background:#e8e8e8;   cursor:default; }
+ 

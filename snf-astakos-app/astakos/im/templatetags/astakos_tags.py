@@ -241,6 +241,7 @@ def confirm_link(context, title, prompt='', url=None, urlarg=None,
                  extracontent='',
                  confirm_prompt=None,
                  inline=True,
+                 cls='',
                  template="im/table_rich_link_column.html"):
 
     urlargs = None
@@ -250,7 +251,12 @@ def confirm_link(context, title, prompt='', url=None, urlarg=None,
     if CONFIRM_LINK_PROMPT_MAP.get(prompt, None):
         prompt = mark_safe(CONFIRM_LINK_PROMPT_MAP.get(prompt))
 
-    url = reverse(url, args=urlargs)
+    if url:
+        url = reverse(url, args=urlargs)
+    else:
+        url = None
+
+
     title = _(title)
     tpl_context = RequestContext(context.get('request'))
     tpl_context.update({
@@ -262,6 +268,7 @@ def confirm_link(context, title, prompt='', url=None, urlarg=None,
         'inline': inline,
         'url': url,
         'action': title,
+        'cls': cls,
         'prompt': prompt,
         'extra_form_content': EXTRA_CONTENT_MAP.get(extracontent, ''),
         'confirm': True

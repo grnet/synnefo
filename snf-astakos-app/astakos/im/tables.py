@@ -304,7 +304,7 @@ class UserProjectApplicationsTable(UserTable):
                 pending_members = "<i class='tiny'>"+" - <a href='%s'>%d %s</a></i>" % (
                     pending_members_url,c, _('pending'))
             append = mark_safe(pending_members)
-        members_url = reverse('project_members', 
+        members_url = reverse('project_approved_members', 
             kwargs={'chain_id': application.chain})
         members_count = record.members_count()
         if self.user.owns_application(record) or self.user.is_project_admin():

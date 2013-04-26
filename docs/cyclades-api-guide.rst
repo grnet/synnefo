@@ -1987,7 +1987,7 @@ Image attributes are `listed here <#image-ref>`_.
     }
   }
 
-.. note:: In OS/Compute API, the ``values`` layer is missing
+.. note:: In OS/Compute API, the ``values`` layer is missing.
 
 
 Delete Image
@@ -1997,9 +1997,9 @@ Delete an image, by changing its status from ``ACTIVE`` to ``DELETED``.
 
 .. rubric:: Request
 
-====================== ====== ======== =========
+====================== ====== ======== ==========
 URI                    Method Cyclades OS/Compute
-====================== ====== ======== =========
+====================== ====== ======== ==========
 ``/images/<image id>`` DELETE ✔        ✔
 ====================== ====== ======== ==========
 

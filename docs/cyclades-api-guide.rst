@@ -1282,7 +1282,7 @@ type:
 
   {"console": {"type": "vnc" }
 
-If successful, it returns a **200** code and also a json formated body with the
+If successful, it returns a **200** code and also a json-formated body with the
 following fields:
 
 ================== ======================
@@ -1343,8 +1343,8 @@ the firewall type:
 
   {"firewallProfile": {"profile": "ENABLED"}}
 
-OS Compute API Specific
-.......................
+OS Compute Specific
+...................
 
 The following operations are meaningless or not supported in the context of
 Synnefo/Cyclades, but are parts of the OS Compute API:
@@ -1360,8 +1360,7 @@ Synnefo/Cyclades, but are parts of the OS Compute API:
 Flavors
 -------
 
-A flavor is an available hardware configuration for a server. Each flavor has a
-unique combination of disk space and memory capacity.
+A flavor is a hardware configuration for a server.
 
 List Flavors
 ............
@@ -1379,11 +1378,11 @@ Cyclades specific.
 
 |
 
-==============  =========================
-Request Header  Value                    
-==============  =========================
-X-Auth-Token    User authentication token
-==============  =========================
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
 
 |
 
@@ -1416,8 +1415,8 @@ fields described in the `flavor section <#flavor-ref>`_.
 
 .. note:: In Compute OS API, the ``values`` layer is missing from the response.
 
-In Cyclades, if detail is not requested, only the ``id`` and ``name`` fields
-are returned, e.g.:
+In the case of a regular request, only the ``id`` and ``name`` fields are
+returned, e.g.:
 
 .. code-block:: javascript
 
@@ -1446,7 +1445,7 @@ Or in XML:
     <flavor id="3" name="Four core"/>
   </flavors>
 
-A detailed response will contain all the flavor fields, e.g.:
+A detailed response will contain all `flavor fields <#flavor-ref>`_, e.g.:
 
 .. code-block:: javascript
 
@@ -1486,11 +1485,11 @@ URI                     Method Cyclades OS Compute
 
 |
 
-==============  =========================
-Request Header  Value                    
-==============  =========================
-X-Auth-Token    User authentication token
-==============  =========================
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
 
 |
 
@@ -1548,18 +1547,9 @@ or in XML:
 Images
 ------
 
-
-* ``progress`` is always returned.
-* ``self`` and ``bookmark`` atom links are not returned.
-* **List Images** returns just ``id`` and ``name`` if details are not requested.
-* **List Images** can return 304 (even though not explicitly stated) when
-  ``changes-since`` is given. 
-* **List Images** does not return deleted images when ``changes-since`` is given.
-
-An image is a collection of files you use to create or rebuild a server.
-Synnefo deploymenrs usually provide pre-built OS images, but custom image
-creation is also supported.
-
+An image is a collection of files used to create or rebuild a server. Synnefo
+deployments usually provide pre-built OS images, but custom image creation is
+also supported.
 
 List Images
 ...........
@@ -1572,7 +1562,8 @@ URI                 Method Cyclades OS Compute
 =================== ====== ======== ==========
 
 Both requests return a list of images. The first returns just ``id`` and
-``name``, while the second returns full collections of image attributes.
+``name``, while the second returns full collections of
+`image attributes <#image-ref>`_.
 
 |
 
@@ -1590,9 +1581,13 @@ limit             Page size filter         **✘**    ✔
 type              Request filter type      **✘**    ✔
 ================= ======================== ======== ==========
 
-* **json** and **xml** parameters are mutually exclusive. If none supported, the response will be formated in json.
+* **json** and **xml** parameters are mutually exclusive. If none supported,
+  the response will be formated in json.
 
-* **changes-since** must be an ISO8601 date string. In Cyclades it refers to the image ``updated_at`` attribute and it should be a date in the window [- POLL_LIMIT ... now]. POLL_LIMIT default value is 3600 seconds except if it is set otherwise at server side.
+* **changes-since** must be an ISO8601 date string. In Cyclades it refers to
+  the image ``updated_at`` attribute and it should be a date in the window
+  [- POLL_LIMIT ... now]. POLL_LIMIT default value is 3600 seconds except if it
+  is set otherwise at server side.
 
 |
 
@@ -1618,8 +1613,9 @@ Return Code                 Description
 =========================== =====================
 
 |
+
 In case of a 200 code, the response body contains a list of
-`image items <#image-ref>` under the ``images`` tag.
+`image items <#image-ref>`_ under the ``images`` tag.
 
 For example, a JSON image response might like the following:
 
@@ -1677,7 +1673,6 @@ details can be found
 
 Get Image Details
 .................
-GET images/iid   get image_details
 
 ====================== ====== ======== ==========
 URI                    Method Cyclades OS Compute
@@ -1783,6 +1778,7 @@ Return Code                 Description
 
 In case of a 204 code, image status will change from ``ACTIVE`` to ``DELETED``
 
+
 Image Metadata
 --------------
 
@@ -1859,9 +1855,8 @@ and
 `updating existing <http://docs.openstack.org/api/openstack-compute/2/content/Update_Metadata-d1e5208.html>`_
 metadata, respectively).
 
-In Cyclades API, metadata keys which are not referred by the operation will
-remain intact, while metadata referred by the operation will be overwritten in
-case of success.
+In Cyclades API, unmentioned metadata keys will remain intact, while metadata
+referred by the operation will be overwritten.
 
 =============================== ====== ======== ==========
 URI                             Method Cyclades OS Compute
@@ -1936,7 +1931,8 @@ URI                                   Method Cyclades OS Compute
 ``/images/<image-id>/metadata/<key>`` GET    **✘**    ✔
 ===================================== ====== ======== ==========
 
-* **image-id** is the identifier of the virtual image
+* **image-id** is the identifier of the image
+
 * **key** is the key of a matadatum ``key``:``value`` pair
 
 |
@@ -1964,11 +1960,13 @@ Return Code                 Description
 
 If the response code is 200, the response body contains the requested
 ``key``:``value`` pair under a ``metadata`` tag. For example, if key was
-``os``, the response body would look similar to this::
+``os``, the response body would look similar to this:
+
+.. code-block:: javascript
 
   {'metadata': {'os': 'Xubuntu'}}
 
-.. note:: In OS Compute response, ``metadata`` is ``meta``
+.. note:: In OS Compute, ``metadata`` is ``meta``
 
 Set / Update Metadatum Item
 ...........................
@@ -1983,6 +1981,7 @@ URI                                   Method Cyclades OS Compute
 ===================================== ====== ======== ==========
 
 * **image-id** is the identifier of the image
+
 * **key** is the key of a matadatum ``key``:``value`` pair
 
 |
@@ -1997,8 +1996,8 @@ X-Auth-Token    User authentication token required required
 
 Request body should contain a ``key``:``value`` pair under a ``meta`` tag. The
 ``value`` is the (new) value to set. The ``key`` of the metadatum may or may
-not exist prior to the operation. For example, request with ``os`` as a
-``key`` may contain the following request body::
+not exist prior to the operation. For example, request with ``os`` as a ``key``
+may contain the following request body::
 
   {'meta': {'os': 'Kubuntu'}}
 
@@ -2020,9 +2019,9 @@ Return Code                 Description
 
 |
 
-If the response code is 201, the response body contains the ``key:pair``
-that has just been created or updated, under a ``meta`` tag, so that the body
-of the response is identical to the body of the request.
+If the response code is 201, the response body contains the ``key``:``value``
+pair that has just been created or updated, under a ``meta`` tag, so that the
+body of the response is identical to the body of the request.
 
 Delete Image Metadata
 .....................
@@ -2041,11 +2040,11 @@ URI                                   Method Cyclades OS Compute
 
 |
 
-==============  =========================
-Request Header  Value                    
-==============  =========================
-X-Auth-Token    User authentication token
-==============  =========================
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
 
 |
 
@@ -2124,8 +2123,7 @@ Return Code                 Description
 =========================== =====================
 
 The ``detail`` operation lists the `full network attributes <#network-ref>`_,
-while the regular operation returns only the ``network id`` and the
-``network name``.
+while the regular operation returns only the network ``id`` and ``name``.
 
 **Example Networks List Response: JSON (regular)**:
 
@@ -2212,15 +2210,13 @@ public             If a public network     **✘**    False
 
 * **cidr6**, and **gateway6** are IPv6 addresses
 
-* **public** should better not be used. If True, a 403 is returned.
+* **public** should better not be used. If True, a 403 error is returned.
 
 **Example Create Network Request Body: JSON**:
 
 .. code-block:: javascript
 
-  {
-      "network": {"name": "private_net", "type": "MAC_FILTERED"}
-  }
+  {"network": {"name": "private_net", "type": "MAC_FILTERED"}}
 
 |
 
@@ -2446,13 +2442,13 @@ Request Paramenter Description
 serverRef          Server id to (dis)connect from/to
 ================== =================================
 
-**Example Action Add: JSON**:
+**Example Action Add (connect to): JSON**:
 
 .. code-block:: javascript
 
   {"add" : {"serverRef" : 42}}
 
-**Example Action Remove: JSON**:
+**Example Action Remove (disconnect from): JSON**:
 
 .. code-block:: javascript
 

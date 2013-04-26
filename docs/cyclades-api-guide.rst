@@ -11,7 +11,7 @@ software. Cyclades API started as an extension of the `OpenStack Compute API v2
 This document's goals are:
 
 * Define the Cyclades/Compute ReST API
-* Clarify the differences between Cyclades and OS Compute
+* Clarify the differences between Cyclades and OS/Compute
 
 Users and developers who wish to access a Synnefo Cyclades deployment through
 its ReST API are advised to use the `kamaki <http://docs.dev.grnet.gr/kamaki>`_
@@ -82,14 +82,12 @@ Servers
 List Servers
 ............
 
-.. rubric:: Semantics
-
 List all virtual servers owned by the user.
 
 .. rubric:: Request
 
 =================== ====== ======== ==========
-URI                 Method Cyclades OS Compute
+URI                 Method Cyclades OS/Compute
 =================== ====== ======== ==========
 ``/servers``        GET    ✔        ✔
 ``/servers/detail`` GET    ✔        ✔
@@ -102,7 +100,7 @@ URI                 Method Cyclades OS Compute
 |
 
 ==============  ========================= ======== ==========
-Request Header  Value                     Cyclades OS Compute
+Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
@@ -110,7 +108,7 @@ X-Auth-Token    User authentication token required required
 |
 
 ================= =================================== ======== ==========
-Request Parameter Value                               Cyclades OS Compute
+Request Parameter Value                               Cyclades OS/Compute
 ================= =================================== ======== ==========
 json              Respond in json                     default  **✘**
 xml               Respond in xml                      ✔        **✘**
@@ -154,13 +152,12 @@ Response body contents::
   servers: [
     {
       <server attribute>: <value>,
-      <server attribute>: <value>,
       ...
     }, ...
   ]
 
 ================= ====================== ======== ==========
-Server Attributes Description            Cyclades OS Compute
+Server Attributes Description            Cyclades OS/Compute
 ================= ====================== ======== ==========
 id                The server id          ✔        ✔
 name              The server name        ✔        ✔
@@ -190,7 +187,7 @@ metadata          Server custom metadata ✔        ✔
   the VM (e.g. OS, super user, etc.)
 
 * **attachments** in Cyclades are lists of network interfaces (nics).
-  **Attachments** are different to OS Compute's **addresses**. The former is a
+  **Attachments** are different to OS/Compute's **addresses**. The former is a
   list of the server's `network interface connections <#nic-ref>`_ while the
   later is just a list of networks. Thus, a Cyclades virtual server may be
   connected to the same network through more than one distinct network
@@ -207,65 +204,65 @@ metadata          Server custom metadata ✔        ✔
 .. code-block:: javascript
 
   {
-    'servers':
-      {'values': [
+    "servers":
+      {"values": [
         {
-          'attachments': {
-            'values': [
+          "attachments": {
+            "values": [
               {
-                'id': 'nic-42-0',
-                'network_id': '101',
-                'mac_address': 'aa:00:00:49:2e:7e',
-                'firewallProfile': DISABLED,
-                'ipv4': '192.168.4.5',
-                'ipv6': '2001:648:2ffc:1222:a800:ff:fef5:3f5b'
+                "id": "nic-42-0",
+                "network_id": "101",
+                "mac_address": "aa:00:00:49:2e:7e",
+                "firewallProfile": "DISABLED",
+                "ipv4": "192.168.4.5",
+                "ipv6": "2001:648:2ffc:1222:a800:ff:fef5:3f5b"
               }
             ]
           },
-          'created': '2011-04-19T10:18:52.085737+00:00',
-          'flavorRef': 1,
-          'hostId': '',
-          'id': 42,
-          'imageRef': 3,
-          'metadata': {'values': {'foo': 'bar'}},
-          'name': 'My Server',
-          'status': 'ACTIVE',
-          'updated': u'2011-05-29T14:07:07.037602+00:00'
+          "created': '2011-04-19T10:18:52.085737+00:00',
+          "flavorRef": "1",
+          "hostId": "",
+          "id": "42",
+          "imageRef": "3",
+          "metadata": {"values": {"foo": "bar"}},
+          "name": "My Server",
+          "status": "ACTIVE",
+          "updated": "2011-05-29T14:07:07.037602+00:00"
         }, {
-          'attachments': {
-            'values': [
+          "attachments": {
+            "values": [
               {
-                'id': 'nic-43-0',
-                'mac': 'aa:00:00:91:2f:df',
-                'network_id': '1',
-                'ipv4': '192.168.32.2'
+                "id": "nic-43-0",
+                "mac_address": "aa:00:00:91:2f:df",
+                "network_id": "1",
+                "ipv4": "192.168.32.2"
               }, {
-                'id': 'nic-43-1',
-                'network_id': '101',
-                'mac_address': 'aa:00:00:49:2g:7f',
-                'firewallProfile': DISABLED,
-                'ipv4': '192.168.32.6',
-                'ipv6': '2001:648:2ffc:1222:a800:ff:fef5:3f5c'
+                "id": "nic-43-1",
+                "network_id": "101",
+                "mac_address": "aa:00:00:49:2g:7f",
+                "firewallProfile": "DISABLED",
+                "ipv4": "192.168.32.6",
+                "ipv6": "2001:648:2ffc:1222:a800:ff:fef5:3f5c'
               }, {
-                'id': 'nic-43-2',
-                'network_id': '101',
-                'mac_address': 'aa:00:00:51:2h:7f',
-                'firewallProfile': DISABLED,
-                'ipv4': '192.168.32.7',
-                'ipv6': '2001:638:2eec:1222:a800:ff:fef5:3f5c'
+                "id": "nic-43-2",
+                "network_id": "101",
+                "mac_address": "aa:00:00:51:2h:7f",
+                "firewallProfile": "DISABLED",
+                "ipv4": "192.168.32.7",
+                "ipv6": "2001:638:2eec:1222:a800:ff:fef5:3f5c"
               }
             ]
           },
-          'created': '2011-05-02T20:51:08.527759+00:00',
-          'flavorRef': 1,
-          'hostId': '',
-          'id': 43,
-          'imageRef': 3,
-          'name': 'Other Server',
-          'description': 'A sample server to showcase server requests',
-          'progress': 0,
-          'status': 'ACTIVE',
-          'updated': '2011-05-29T14:59:11.267087+00:00'
+          "created": "2011-05-02T20:51:08.527759+00:00",
+          "flavorRef": "1",
+          "hostId": "",
+          "id": "43",
+          "imageRef": "3",
+          "name": "Other Server",
+          "description": "A sample server to showcase server requests",
+          "progress": "0",
+          "status": "ACTIVE",
+          "updated": "2011-05-29T14:59:11.267087+00:00"
         }
       ]
     }
@@ -275,11 +272,23 @@ metadata          Server custom metadata ✔        ✔
 Create Server
 .............
 
+Create a new virtual server
+
+.. rubric:: Request
+
 ============ ====== ======== ==========
-URI          Method Cyclades OS Compute
+URI          Method Cyclades OS/Compute
 ============ ====== ======== ==========
 ``/servers`` POST   ✔        ✔
 ============ ====== ======== ==========
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS/Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
 
 |
 
@@ -290,19 +299,23 @@ json              Respond in json
 xml               Respond in xml 
 ================= ===============
 
-|
+Request body contents::
 
-==============  ========================= ======== ==========
-Request Header  Value                     Cyclades OS Compute
-==============  ========================= ======== ==========
-X-Auth-Token    User authentication token required required
-==============  ========================= ======== ==========
-
-The request body is json formated. It consists of a ``server`` tag over the
-following attributes:
+  server: {
+      <server attribute>: <value>,
+      ...
+      personality: [
+        {
+          <personality attribute>: <value>,
+          ...
+        },
+        ...
+      ],
+      ...
+  }
 
 =========== ==================== ======== ==========
-Name        Description          Cyclades OS Compute
+Attributes  Description          Cyclades OS/Compute
 =========== ==================== ======== ==========
 name        The server name      ✔        ✔
 imageRef    Image id             ✔        ✔
@@ -325,17 +338,19 @@ metadata    Custom metadata      ✔        ✔
   (``contents``) should exceed 10240 *bytes* in size and must be base64
   encoded.A personality injection contains the following attributes:
 
-======== =================== ======== ==========
-Name     Description         Cyclades OS Compute
-======== =================== ======== ==========
-path     File path on server ✔        ✔
-contents Data to inject      ✔        ✔
-group    User group          ✔        **✘**
-mode     File access mode    ✔        **✘**
-owner    File owner          ✔        **✘**
-======== =================== ======== ==========
+====================== =================== ======== ==========
+Personality Attributes Description         Cyclades OS/Compute
+====================== =================== ======== ==========
+path                   File path on server ✔        ✔
+contents               Data to inject      ✔        ✔
+group                  User group          ✔        **✘**
+mode                   File access mode    ✔        **✘**
+owner                  File owner          ✔        **✘**
+====================== =================== ======== ==========
 
 |
+
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
@@ -356,10 +371,18 @@ size, etc.)
 
 |
 
-In case of a 200 return code, the Response Data are json-formated and consist
-of a `list of attributes <#server-ref>`_ under the ``server`` tag:
+Response body contents::
 
-For example::
+  server: {
+    <server attribute>: <value>,
+    ...
+  }
+
+Server attributes are `listed here <#server-ref>`_.
+
+**Example Create Server Response: JSON**
+
+.. code-block:: javascript
 
   {
     "server": {
@@ -373,21 +396,40 @@ For example::
       "flavorRef": 289,
       "adminPass": "fKCqlZe2at",
       "suspended": false,
-      "progress": 0,
+      "progress": 0
     }
   }
+
+**Example Create Server Response: XML**:
+
+.. code-block:: xml
+
+  <?xml version="1.0" encoding="UTF-8"?>
+  <server xmlns="http://docs.openstack.org/compute/api/v1.1"\
+    xmlns:atom="http://www.w3.org/2005/Atom"
+    id="1"
+    status="BUILD"
+    hostId="",
+    name="My Server Name: Example Name"
+    imageRef="da7a211f-...-f901ce81a3e6"
+    created="2013-04-10T13:52:17.085402+00:00"
+    flavorRef="289"
+    adminPass="fKCqlZe2at"
+    suspended="false"
+    progress="0"
+  />
 
 Get Server Stats
 ................
 
-This operation returns URLs to graphs showing CPU and Network statistics. A
-``refresh`` attribute is returned as well that is the recommended refresh rate
-of the stats for the clients.
+.. note:: This operation is not part of OS/Compute v2.
 
-.. note:: This operation is not included in OS Compute v2.
+This operation returns URLs of graphs showing CPU and Network statistics.
+
+.. rubric:: Request
 
 ============================== ====== ======== ==========
-URI                            Method Cyclades OS Compute
+URI                            Method Cyclades OS/Compute
 ============================== ====== ======== ==========
 ``/servers/<server-id>/stats`` GET    ✔        **✘**
 ============================== ====== ======== ==========
@@ -397,7 +439,7 @@ URI                            Method Cyclades OS Compute
 |
 
 ==============  ========================= ======== ==========
-Request Header  Value                     Cyclades OS Compute
+Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
@@ -414,7 +456,9 @@ xml               Respond in xml
 * **json** and **xml** parameters are mutually exclusive. If none supported,
 the response will be formated in json.
 
-|
+.. note:: Request body should be empty
+
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
@@ -431,16 +475,22 @@ Return Code                 Description
 
 |
 
-================== ======================
-Response Parameter Description           
-================== ======================
-serverRef          Server ID
-refresh            Refresh frequency
-cpuBar             Latest CPU load graph URL
-cpuTimeSeries      CPU load / time graph URL
-netBar             Latest Network load graph URL
-netTimeSeries      Network load / time graph URL
-================== ======================
+Response body contents::
+
+  stats: {<parameter>: <value> }
+
+============= ======================
+Parameter     Description           
+============= ======================
+serverRef     Server ID
+refresh       Refresh frequency
+cpuBar        Latest CPU load graph URL
+cpuTimeSeries CPU load / time graph URL
+netBar        Latest Network load graph URL
+netTimeSeries Network load / time graph URL
+============= ======================
+
+* **refresh** is the recommended sampling rate
 
 **Example Get Server Stats Response: JSON**:
 
@@ -475,12 +525,14 @@ netTimeSeries      Network load / time graph URL
 Get Server Diagnostics
 ......................
 
-This operation returns diagnostic information for a server.
+.. note:: This operation is not part of OS/Compute v2.
 
-.. note:: This operation is not included in OS Compute v2.
+This operation returns diagnostic information (logs) for a server.
+
+.. rubric:: Request
 
 ==================================== ====== ======== ==========
-URI                                  Method Cyclades OS Compute
+URI                                  Method Cyclades OS/Compute
 ==================================== ====== ======== ==========
 ``/servers/<server-id>/diagnostics`` GET    ✔        **✘**
 ==================================== ====== ======== ==========
@@ -489,13 +541,17 @@ URI                                  Method Cyclades OS Compute
 
 |
 
-==============  =========================
-Request Header  Value                    
-==============  =========================
-X-Auth-Token    User authentication token
-==============  =========================
+============================== ====== ======== ==========
+URI                            Method Cyclades OS/Compute
+============================== ====== ======== ==========
+``/servers/<server-id>/stats`` GET    ✔        **✘**
+============================== ====== ======== ==========
 
-|
+.. note:: Request parameters should be empty
+
+.. note:: Request body should be empty
+
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
@@ -510,8 +566,20 @@ Return Code                 Description
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
-If a 200 code is returned, the response body contains a list of items. Each
-item is a diagnostic entry and consists of the attributes presented bellow:
+|
+
+Response body contents::
+
+  [
+    {
+      <diagnostic attribute}: <value>,
+      ...
+    }, {
+      <diagnostic attribute}: <value>,
+      ...
+    },
+    ...
+  ]
 
 ==================== ===========
 Diagnostic attribute Description
@@ -556,8 +624,12 @@ For example:
 Get Server Details
 ..................
 
+This operation returns detailed information for a virtual server
+
+.. rubric:: Request
+
 ======================== ====== ======== ==========
-URI                      Method Cyclades OS Compute
+URI                      Method Cyclades OS/Compute
 ======================== ====== ======== ==========
 ``/servers/<server id>`` GET    ✔        ✔
 ======================== ====== ======== ==========
@@ -567,12 +639,16 @@ URI                      Method Cyclades OS Compute
 |
 
 ==============  ========================= ======== ==========
-Request Header  Value                     Cyclades OS Compute
+Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
 
-|
+.. note:: Request parameters should be empty
+
+.. note:: Request body should be empty
+
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
@@ -590,11 +666,15 @@ Return Code                 Description
 
 |
 
-The response data format is a list of servers under the ``servers`` label. A
-server may have the fields presented bellow:
+Response body contents::
+
+  server: {
+    <server attribute>: <value>,
+    ...
+  }
 
 ================= ====================== ======== ==========
-Server Attributes Description            Cyclades OS Compute
+Server Attributes Description            Cyclades OS/Compute
 ================= ====================== ======== ==========
 id                The server id          ✔        ✔
 name              The server name        ✔        ✔
@@ -614,8 +694,6 @@ metadata          Server custom metadata ✔        ✔
 diagnostics       Diagnostic information ✔        **✘**
 ================= ====================== ======== ==========
 
-|
-
 * **hostId** is not used in Cyclades, but is returned as an empty string for
   compatibility
 
@@ -628,7 +706,7 @@ diagnostics       Diagnostic information ✔        **✘**
   the VM (e.g. OS, super user, etc.)
 
 * **attachments** in Cyclades are lists of network interfaces (NICs).
-  **Attachments** are different to OS Compute's **addresses**. The former is a
+  **Attachments** are different to OS/Compute's **addresses**. The former is a
   list of the server's `network interface connections <#nic-ref>`_ while the
   later is just a list of networks. Thus, a Cyclades virtual server may be
   connected to the same network through more than one distinct network
@@ -678,11 +756,18 @@ diagnostics       Diagnostic information ✔        **✘**
     }
   }
 
+.. note:: the ``values`` layer is not featured in OS/Compute API
+
 Rename Server
 .............
 
+Modify the ``name`` attribute of a virtual server. OS/Compute API also features
+the modification of IP addresses
+
+.. rubric:: Response
+
 ======================== ====== ======== ==========
-URI                      Method Cyclades OS Compute
+URI                      Method Cyclades OS/Compute
 ======================== ====== ======== ==========
 ``/servers/<server id>`` PUT    ✔        ✔
 ======================== ====== ======== ==========
@@ -692,26 +777,32 @@ URI                      Method Cyclades OS Compute
 |
 
 ==============  ========================= ======== ==========
-Request Header  Value                     Cyclades OS Compute
+Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
 
-The request body is json formated. It consists of a ``server`` tag over the
-following attributes:
+.. note:: Request parameters should be empty
+
+Request body contents::
+
+  server: {
+    <server attribute>: <value>,
+    ...
+  }
 
 =========== ==================== ======== ==========
-Name        Description          Cyclades OS Compute
+Attribute   Description          Cyclades OS/Compute
 =========== ==================== ======== ==========
 name        The server name      ✔        ✔
 accessIPv4  IP v4 address        **✘**    ✔
 accessIPv6  IP v6 address        **✘**    ✔
 =========== ==================== ======== ==========
 
-* In Cyclades, a virtual server may use multiple network connections, instead
-  of limit them to one.
+* Cyclades support multiple network connections per virtual server, which
+  explains the above differences in request body attributes.
 
-|
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
@@ -729,15 +820,20 @@ Return Code                 Description
 \                           unavailable
 =========================== =====================
 
-In case of a 204 return code, there will be no request results according to the
-Cyclades API, while the new server details are returned according to OS Compute
-API.
+.. note:: In case of a 204 return code, there will be no request results
+  according to the Cyclades API. Compute OS API suggests that response should
+  include the new server details.
 
 Delete Server
 .............
 
+Delete a virtual server. When a server is deleted, all its connections are
+deleted as well.
+
+.. rubric:: Request
+
 ======================== ====== ======== ==========
-URI                      Method Cyclades OS Compute
+URI                      Method Cyclades OS/Compute
 ======================== ====== ======== ==========
 ``/servers/<server id>`` DELETE ✔        ✔
 ======================== ====== ======== ==========
@@ -747,12 +843,16 @@ URI                      Method Cyclades OS Compute
 |
 
 ==============  ========================= ======== ==========
-Request Header  Value                     Cyclades OS Compute
+Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
 
-|
+.. note:: Request parameters should be empty
+
+.. note:: Request body should be empty
+
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
@@ -768,15 +868,23 @@ Return Code                 Description
 \                           unavailable
 =========================== =====================
 
-.. note:: When a server is deleted, all its connections are deleted too.
+.. note:: In case of a 204 code, response body should be empty
 
 List Server Addresses
 .....................
 
-List all network connections of a server
+List all network connections of a server. In Cyclades API, connections are
+represented as Network Connection Interfaces (NICs), which describe a server -
+network relation through their respective identifiers. This mechanism ensures
+flexibility and multiple networks connecting the same virtual servers.
+
+The Synnefo/Cyclades approach in this matter differs substantially to the
+`one suggested by the OS/Compute API <http://docs.openstack.org/api/openstack-compute/2/content/List_Addresses-d1e3014.html>`_.
+
+.. rubric:: Request
 
 ============================ ====== ======== ==========
-URI                          Method Cyclades OS Compute
+URI                          Method Cyclades OS/Compute
 ============================ ====== ======== ==========
 ``/servers/<server id>/ips`` GET    ✔        ✔
 ============================ ====== ======== ==========
@@ -786,21 +894,16 @@ URI                          Method Cyclades OS Compute
 |
 
 ==============  ========================= ======== ==========
-Request Header  Value                     Cyclades OS Compute
+Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
 
-|
+.. note:: Request parameters should be empty
 
-================= ===============
-Request Parameter Value          
-================= ===============
-json              Respond in json
-xml               Respond in xml 
-================= ===============
+.. note:: Request body should be empty
 
-|
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
@@ -815,19 +918,21 @@ Return Code                 Description
 503 (Service Unavailable)   Service currently unavailable
 =========================== =====================
 
-If the return code is 200, the response body consists of a list of items under
-the ``addresses`` tag. Each item refers to a network interface connection (NIC).
+Response body contents::
 
-Each NIC connects the current server to a network. NICs are different to OS
-Compute's addresses. The formers are the server's
-`network interface connections <#nic-ref>`_ while the later describes a
-network. Cyclades API suggests this information can be acquired by the
-network_id, using the network part of the API. Thus, a Cyclades virtual server
-may be connected to the same network through more than one distinct network
-interfaces. The NIC mechanism allows more metadata to describe the network and
-its relation to the server.
+  addresses: {values: [
+    {
+      <NIC attribute>: <value>,
+      ...
+    },
+    ...
+  ]}
 
-**An example of a response, in JSON**
+A Network Interface Connection (or NIC) connects the current server to a
+network, through their respective identifiers. More information in NIC
+attributes are `enlisted here <#nic-ref>`_.
+
+**Example List Addresses: JSON**
 
 .. code-block:: javascript
 
@@ -835,57 +940,58 @@ its relation to the server.
     "addresses": {
       "values": [
         {
+          "id": "nic-25455-0"
           "network_id": "1",
           "mac_address": "aa:00:03:7a:84:bb",
           "firewallProfile": "DISABLED",
           "ipv4": "192.168.0.27",
           "ipv6": "2001:646:2ffc:1222:a820:3fd:fe7a:84bb",
-          "id": "nic-25455-0"
         }, {
+          "id": "nic-25455-1"
           "network_id": "7",
           "mac_address": "aa:00:03:7a:84:cc",
           "firewallProfile": "DISABLED",
           "ipv4": "192.168.0.28",
           "ipv6": "2002:646:2fec:1222:a820:3fd:fe7a:84bc",
-          "id": "nic-25455-1"
         },
       ]
     }
   }
 
-Get Server NIC by Network
-.........................
+Get Server NICs by Network
+..........................
 
-Return the NIC that connects a server to a network
+Return the NIC that connects a server to a network.
+
+The semantics of this operation are substantially different to the respective
+OS/Compute
+`List Addresses by Network semantics <http://docs.openstack.org/api/openstack-compute/2/content/List_Addresses_by_Network-d1e3118.html>`_.
+
+.. rubric:: Request
 
 ========================================= ====== ======== ==========
-URI                                       Method Cyclades OS Compute
+URI                                       Method Cyclades OS/Compute
 ========================================= ====== ======== ==========
 ``/servers/<server id>/ips/<network id>`` GET    ✔        ✔
 ========================================= ====== ======== ==========
 
-* **server-id** is the identifier of the virtual server
+* **server id** is the identifier of the virtual server
 
-* **network-id** is the identifier of the network
+* **network id** is the identifier of the network
 
 |
 
 ==============  ========================= ======== ==========
-Request Header  Value                     Cyclades OS Compute
+Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
 
-|
+.. note:: Request parameters should be empty
 
-================= ===============
-Request Parameter Value          
-================= ===============
-json              Respond in json
-xml               Respond in xml 
-================= ===============
+.. note:: Request body should be empty
 
-|
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
@@ -900,36 +1006,45 @@ Return Code                 Description
 503 (Service Unavailable)   Service currently unavailable
 =========================== =====================
 
-If the return code is 200, the response body consists of a NIC under the
-``network`` tag.
+|
 
-This NIC (`network interface connections <#nic-ref>`_) connects the specified
-server to the specified network. NICs are only used in Cyclades API. The same
-operation in OS Compute API returns a list of IP addresses.
+Response body contents::
 
-**An example of a response, in JSON**
+  network: {
+    <NIC attributes>: <value>,
+    ...
+  }
+
+Network Interface Connection (NIC) attributes are listed `here <#nic-ref>`_. 
+
+**List Server NICs Example with server id 25455, network id 7: JSON**
 
 .. code-block:: javascript
 
   {
     "network": {
+      "id": "nic-25455-0"
       "network_id": "7",
       "mac_address": "aa:00:03:7a:84:bb",
       "firewallProfile": "DISABLED",
       "ipv4": "192.168.0.27",
       "ipv6": "2001:646:2ffc:1222:a820:3fd:fe7a:84bb",
-      "id": "nic-25455-0"
     }
   }
 
 
-List Server metadata
+List Server Metadata
 ....................
 
-.. note:: This operation is semantically equivalent in Cyclades and OS Compute.
+List the metadata of a server
+
+.. note:: This operation is semantically equivalent in Cyclades and OS/Compute
+  besides the different URI.
+
+.. rubric:: Request
 
 ================================= ====== ======== ==========
-URI                               Method Cyclades OS Compute
+URI                               Method Cyclades OS/Compute
 ================================= ====== ======== ==========
 ``/servers/<server-id>/meta``     GET    ✔        **✘**
 ``/servers/<server-id>/metadata`` GET    **✘**    ✔
@@ -940,12 +1055,16 @@ URI                               Method Cyclades OS Compute
 |
 
 ==============  ========================= ======== ==========
-Request Header  Value                     Cyclades OS Compute
+Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
 
-|
+.. note:: Request parameters should be empty
+
+.. note:: Request body should be empty
+
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
@@ -960,9 +1079,18 @@ Return Code                 Description
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
-In case of a 200 response code, the response should contain a JSON encoded list
-of key:value pairs, under a ``values`` tag which lies under a ``metadata``
-tag, for example::
+Response body contents::
+
+  metadata: {values:
+    {
+      <metadatum key>: <value>,
+      ...
+    }
+  }
+
+**Example List Server Metadata: JSON**
+
+.. code-block:: javascript
 
   { 
     ""metadata": {
@@ -973,29 +1101,30 @@ tag, for example::
     }
   }
 
-.. note:: In OS Compute API  the ``values`` level is missing from the response.
+.. note:: In OS/Compute API  the ``values`` level is missing from the response.
 
 Set / Update Server Metadata
 ............................
 
 In Cyclades API, setting new metadata and updating the values of existing ones
-is achieved with the same type of request (POST), while in OS Compute API there
-are two separate request types (PUT and POST for
+is achieved with the same type of request (``POST``), while in OS/Compute API
+there are two separate request types (``PUT`` and ``POST`` for
 `setting new <http://docs.openstack.org/api/openstack-compute/2/content/Create_or_Replace_Metadata-d1e5358.html>`_
 and
 `updating existing <http://docs.openstack.org/api/openstack-compute/2/content/Update_Metadata-d1e5208.html>`_
 metadata, respectively).
 
 In Cyclades API, metadata keys which are not referred by the operation will
-remain intact, while metadata referred by the operation will be overwritten in
-case of success.
+remain intact, while metadata referred by the operation will be overwritten.
+
+.. rubric:: Request
 
 ================================= ====== ======== ==========
-URI                               Method Cyclades OS Compute
+URI                               Method Cyclades OS/Compute
 ================================= ====== ======== ==========
 ``/servers/<server-id>/meta``     POST    ✔       **✘**
 ``/servers/<server-id>/metadata`` PUT    **✘**    ✔
-``/servers/<server-id>/metadata`` POST   **✘**   ✔
+``/servers/<server-id>/metadata`` POST   **✘**    ✔
 ================================= ====== ======== ==========
 
 * **server-id** is the identifier of the virtual server
@@ -1003,19 +1132,27 @@ URI                               Method Cyclades OS Compute
 |
 
 ==============  ========================= ======== ==========
-Request Header  Value                     Cyclades OS Compute
+Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
 
-|
+.. note:: Request parameters should be empty
 
-The request body should contain a JSON-formated set of ``key``:``value`` pairs,
-under the ``metadata`` tag, e.g.::
+Request body contents::
 
-  {'metadata': {'role': 'webmail', 'users': 'root,maild'}}
+  metadata: {
+    <metadatum key>: <value>,
+    ...
+  }
 
-|
+**Example Request Set / Update Server Metadata: JSON**
+
+.. code-block:: javascript
+
+  {"metadata": {"role": "webmail", "users": "root,maild"}}
+
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
@@ -1031,20 +1168,31 @@ Return Code                 Description
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
-|
+Response body contents::
 
-In case of a 201 code, the response body should present the new state of
-servers metadata. E.g.::
+  metadata: {
+    <metadatum key>: <value>,
+    ...
+  }
 
-  {'metadata': {'OS': 'Linux', 'role': 'webmail', 'users': 'root,maild'}}
+**Example Response Set / Update Server Metadata: JSON**
+
+.. code-block:: javascript
+
+  {"metadata": {"OS": "Linux", "role": "webmail", "users": "root,maild"}}
 
 Get Server Metadata Item
 ........................
 
-.. note:: This operation is semantically equivalent in Cyclades and OS Compute.
+Get the value of a specific metadatum of a virtual server
+
+.. note:: This operation is semantically equivalent in Cyclades and OS/Compute
+  besides the different URI.
+
+.. rubric:: Request
 
 ======================================= ====== ======== ==========
-URI                                     Method Cyclades OS Compute
+URI                                     Method Cyclades OS/Compute
 ======================================= ====== ======== ==========
 ``/servers/<server-id>/meta/<key>``     GET    ✔        **✘**
 ``/servers/<server-id>/metadata/<key>`` GET    **✘**    ✔
@@ -1057,12 +1205,16 @@ URI                                     Method Cyclades OS Compute
 |
 
 ==============  ========================= ======== ==========
-Request Header  Value                     Cyclades OS Compute
+Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
 
-|
+.. note:: Request parameters should be empty
+
+.. note:: Request body should be empty
+
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
@@ -1077,21 +1229,30 @@ Return Code                 Description
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
-If the response code is 200, the response body contains the requested
-``key``:``value`` pair under a ``metadata`` tag. For example, if key was
-``role``, the response body would look similar to this::
+Response body content::
 
-  {'metadata': {'role': 'webmail'}}
+  metadata: {<metadatum key>: <value>}
 
-.. note:: In OS Compute response, ``metadata`` is ``meta``
+**Example Get Server Metadatum for Item 'role', JSON**
+
+.. code-block:: javascript
+
+  {"metadata": {"role": "webmail"}}
+
+.. note:: In OS/Compute, ``metadata`` is ``meta``
 
 Set / Update Server Metadatum Item
 ..................................
 
-.. note:: This operation is semantically equivalent in Cyclades and OS Compute.
+Set a new or update an existing a metadum value for a virtual server.
+
+.. note:: This operation is semantically equivalent in Cyclades and OS/Compute
+  besides the different URI.
+
+.. rubric:: Request
 
 ======================================= ====== ======== ==========
-URI                                     Method Cyclades OS Compute
+URI                                     Method Cyclades OS/Compute
 ======================================= ====== ======== ==========
 ``/servers/<server-id>/meta/<key>``     PUT    ✔        **✘**
 ``/servers/<server-id>/metadata/<key>`` PUT    **✘**    ✔
@@ -1104,23 +1265,24 @@ URI                                     Method Cyclades OS Compute
 |
 
 ==============  ========================= ======== ==========
-Request Header  Value                     Cyclades OS Compute
+Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
 
-|
+.. note:: Request parameters should be empty
 
-Request body should contain a ``key``:``value`` pair under a ``meta`` tag.
-The ``value`` is the (new) value to set. The ``key`` of the metadatum may or
-may not exist prior to the operation. For example, request with ``role`` as a
-``key`` may contain the following request body:
+Request body content::
+
+  meta: {<metadatum key>: <value>}
+
+**Example Request to Set or Update Server Metadatum "role": JSON**
 
 .. code-block:: javascript
 
-  {'meta': {'role': 'gateway'}}
+  {"meta": {"role": "gateway"}}
 
-|
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
@@ -1134,21 +1296,30 @@ Return Code                 Description
 500 (Internal Server Error) The request cannot be completed because of an
 \                           internal error
 503 (Service Unavailable)   The server is not currently available
-=========================== =====================
+=========================== ====================
 
-|
+Response body content::
 
-If the response code is 201, the response body contains the ``key``:``value``
-pair that has just been created or updated, under a ``meta`` tag, so that the
-body of the response is identical to the body of the request.
+  meta: {<metadatum key>: <value>}
+
+**Example Set or Update Server Metadatum "role":"gateway": JSON**
+
+.. code-block:: javascript
+
+  {"meta": {"role": "gateway"}}
 
 Delete Server Metadatum
 .......................
 
-.. note:: This operation is semantically equivalent in Cyclades and OS Compute.
+Delete a metadatum of a virtual server
+
+.. note:: This operation is semantically equivalent in Cyclades and OS/Compute
+  besides the different URI.
+
+.. rubric:: Request
 
 ======================================= ====== ======== ==========
-URI                                     Method Cyclades OS Compute
+URI                                     Method Cyclades OS/Compute
 ======================================= ====== ======== ==========
 ``/servers/<server-id>/meta/<key>``     DELETE ✔        **✘**
 ``/servers/<server-id>/metadata/<key>`` DELETE **✘**    ✔
@@ -1161,12 +1332,16 @@ URI                                     Method Cyclades OS Compute
 |
 
 ==============  ========================= ======== ==========
-Request Header  Value                     Cyclades OS Compute
+Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
 
-|
+.. note:: Request parameters should be empty
+
+.. note:: Request body should be empty
+
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
@@ -1181,19 +1356,19 @@ Return Code                 Description
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
+.. note:: In case of a 204 code, response body should be empty
+
 Server Actions
 --------------
 
-The request described in this section exists in both Synnefo API and OS Compute
-API as a multi-operation request. The individual operations implemented through
-this request are in many cases completely different between the two APIs.
-Although this document focuses on Synnefo operations, differences and
-similarities between the APIs are also briefed.
-
-|
+Actions are operations that are achieved through the same type of request
+(``POST``). There are differences in the implementations of some operations
+between Synnefo/Cyclades and OS/Compute. Although this document focuses on
+Synnefo/Cyclades, differences and similarities between the APIs are also
+briefed.
 
 ============================= ======== ==========
-Operations                    Cyclades OS Compute
+Operations                    Cyclades OS/Compute
 ============================= ======== ==========
 Start Server                  ✔        **✘**
 Shutdown Server               ✔        **✘**
@@ -1208,10 +1383,10 @@ Revert Resized Server         **✘**    ✔
 Create Image                  **✘**    ✔
 ============================= ======== ==========
 
-|
+.. rubric:: Request
 
 =============================== ====== ======== ==========
-URI                             Method Cyclades OS Compute
+URI                             Method Cyclades OS/Compute
 =============================== ====== ======== ==========
 ``/servers/<server id>/action`` POST   ✔        ✔
 =============================== ====== ======== ==========
@@ -1219,12 +1394,16 @@ URI                             Method Cyclades OS Compute
 |
 
 ==============  ========================= ======== ==========
-Request Header  Value                     Cyclades OS Compute
+Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
 
-|
+.. note:: Request parameters should be empty
+
+.. note:: Request body varies between operations (see bellow)
+
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
@@ -1239,77 +1418,102 @@ Return Code                 Description
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
+.. note:: Response body varies between operations (see bellow)
+
 Start server
 ................
 
 This operation transitions a server from a STOPPED to an ACTIVE state.
 
-Request body must contain a ``start`` tag on an empty directory::
+Request body contents::
 
-  { "start": {}}
+  start: {}
 
+**Example Start Server: JSON**
+
+.. code-block:: javascript
+
+  {"start": {}}
+
+.. note:: Response body should be empty
 
 Reboot Server
 .............
 
 This operation transitions a server from ``ACTIVE`` to ``REBOOT`` and then
-``ACTIVE`` again. Synnefo and OS Compute APIs offer two reboot modes: soft and
-hard. The only difference is that OS Compute distinguishes between the two
-types of intermediate states (``REBOOT`` and ``HARD_REBOOT``) while rebooting,
-but the expected behavior is the same in both APIs.
+``ACTIVE`` again.
 
-Request body must contain a ``reboot`` tag over a ``type`` tag on the reboot
-type:
+Synnefo and OS/Compute APIs offer two reboot modes: ``soft``
+and ``hard``. OS/Compute distinguishes between the two intermediate states
+(``REBOOT`` and ``HARD_REBOOT``) while rebooting, while Synnefo/Cyclades use
+the ``REBOOT`` term only. The expected behavior is the same, though.
 
-.. code-block:: javascript
-  
-  {"reboot" : { "type": <reboot type>}}
+Request body contents::
+
+  reboot: {type: <reboot type>}
 
 * **reboot type** can be either ``SOFT`` or ``HARD``.
 
-** Reboot Action Request Body Example: JSON **
+**Example (soft) Reboot Server: JSON**
 
 .. code-block:: javascript
   
-  {"reboot" : { "type": "hard"}}
+  {"reboot" : { "type": "soft"}}
+
+.. note:: Response body should be empty
 
 Shutdown server
 ...............
 
 This operation transitions a server from an ACTIVE to a STOPPED state.
 
-Request body must contain a ``shutdown`` tag on an empty directory::
+Request body contents::
+
+  shutdown: {}
+
+**Example Shutdown Server: JSON**
+
+.. code-block:: javascript
 
   {"shutdown": {}}
 
+.. note:: Response body should be empty
+
 Get Server Console
 ..................
+
+.. note:: This operation is not part of OS/Compute API
 
 The console operation arranges for an OOB console of the specified type. Only
 consoles of type ``vnc`` are supported for now. Cyclades server uses a running
 instance of vncauthproxy to setup proper VNC forwarding with a random password,
 then returns the necessary VNC connection info to the caller.
 
-Request body must a contain a ``console`` tag over a ``type`` tag on a console
-type:
+Request body contents::
+
+  console: {type: vnc}
+
+**Example Get Server Console: JSON**
 
 .. code-block:: javascript
 
   {"console": {"type": "vnc" }
 
-If successful, it returns a **200** code and also a json-formated body with the
-following fields:
+Response body contents::
 
-================== ======================
-Response Parameter Description           
-================== ======================
-host               The vncprocy host
-port               vncprocy port
-password           Temporary password
-type               Connection type (only VNC)
-================== ======================
+  console: {
+    <vnc attribute>: <value>,
+    ...
+  }
 
-|
+============== ======================
+VNC Attributes Description           
+============== ======================
+host           The vncprocy host
+port           vncprocy port
+password       Temporary password
+type           Connection type (only VNC)
+============== ======================
 
 **Example Action Console Response: JSON**:
 
@@ -1324,31 +1528,15 @@ type               Connection type (only VNC)
     }
   }
 
-**Example Action Console Response: XML**:
-
-.. code-block:: xml
-
-  <?xml version="1.0" encoding="UTF-8"?>
-  <console xmlns="http://docs.openstack.org/compute/api/v1.1"
-      xmlns:atom="http://www.w3.org/2005/Atom"
-      type="vnc"
-      host="vm42.example.org"
-      port="1234"
-      password="513NR14PN0T">
-  </console>
-
 Set Server Firewall Profile
 ...........................
 
 The firewallProfile function sets a firewall profile for the public interface
 of a server.
 
-Request body must contain a ``firewallProfile`` tag over a ``profile`` tag on
-the firewall type:
+Request body contents::
 
-.. code-block:: javascript
-
-  {"firewallProfile": { "profile": <firewall profile>}}
+  firewallProfile: { profile: <firewall profile>}
 
 * **firewall profile** can be ``ENABLED``, ``DISABLED`` or ``PROTECTED``
 
@@ -1358,11 +1546,13 @@ the firewall type:
 
   {"firewallProfile": {"profile": "ENABLED"}}
 
-OS Compute Specific
+.. note:: Response body should be empty
+
+OS/Compute Specific
 ...................
 
 The following operations are meaningless or not supported in the context of
-Synnefo/Cyclades, but are parts of the OS Compute API:
+Synnefo/Cyclades, but are parts of the OS/Compute API:
 
 * `Change Administrator Password <http://docs.openstack.org/api/openstack-compute/2/content/Change_Password-d1e3234.html>`_
 * `Rebuild Server <http://docs.openstack.org/api/openstack-compute/2/content/Rebuild_Server-d1e3538.html>`_
@@ -1381,20 +1571,20 @@ List Flavors
 ............
 
 =================== ====== ======== ==========
-URI                 Method Cyclades OS Compute
+URI                 Method Cyclades OS/Compute
 =================== ====== ======== ==========
 ``/flavors``        GET    ✔        ✔
 ``/flavors/detail`` GET    ✔        **✘**
 =================== ====== ======== ==========
 
 The detailed (``/flavors/detail``) listing in Cyclades is semantically similar
-to OS Compute regular (``/flavor``) listing. The Cyclades regular listing is
+to OS/Compute regular (``/flavor``) listing. The Cyclades regular listing is
 Cyclades specific.
 
 |
 
 ==============  ========================= ======== ==========
-Request Header  Value                     Cyclades OS Compute
+Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
@@ -1491,7 +1681,7 @@ Get Flavor Details
 ..................
 
 ======================= ====== ======== ==========
-URI                     Method Cyclades OS Compute
+URI                     Method Cyclades OS/Compute
 ======================= ====== ======== ==========
 ``/flavors/<flavor-id`` GET    ✔        ✔
 ======================= ====== ======== ==========
@@ -1501,7 +1691,7 @@ URI                     Method Cyclades OS Compute
 |
 
 ==============  ========================= ======== ==========
-Request Header  Value                     Cyclades OS Compute
+Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
@@ -1570,7 +1760,7 @@ List Images
 ...........
 
 =================== ====== ======== ==========
-URI                 Method Cyclades OS Compute
+URI                 Method Cyclades OS/Compute
 =================== ====== ======== ==========
 ``/servers``        GET    ✔        ✔
 ``/servers/detail`` GET    ✔        ✔
@@ -1583,7 +1773,7 @@ Both requests return a list of images. The first returns just ``id`` and
 |
 
 ================= ======================== ======== ==========
-Request Parameter Value                    Cyclades OS Compute
+Request Parameter Value                    Cyclades OS/Compute
 ================= ======================== ======== ==========
 json              Respond in json          default  **✘**
 xml               Respond in xml           ✔        **✘**
@@ -1607,7 +1797,7 @@ type              Request filter type      **✘**    ✔
 |
 
 ==============  ========================= ======== ==========
-Request Header  Value                     Cyclades OS Compute
+Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
@@ -1681,7 +1871,7 @@ For example, a JSON image response might like the following:
   }
 
 
-The OS Compute API does not include any ``values`` layers in the response. More
+The OS/Compute API does not include any ``values`` layers in the response. More
 details can be found
 `here <http://docs.openstack.org/api/openstack-compute/2/content/List_Images-d1e4435.html>`_.
 
@@ -1690,7 +1880,7 @@ Get Image Details
 .................
 
 ====================== ====== ======== ==========
-URI                    Method Cyclades OS Compute
+URI                    Method Cyclades OS/Compute
 ====================== ====== ======== ==========
 ``/images/<image-id>`` GET    ✔        ✔
 ====================== ====== ======== ==========
@@ -1700,7 +1890,7 @@ URI                    Method Cyclades OS Compute
 |
 
 ==============  ========================= ======== ==========
-Request Header  Value                     Cyclades OS Compute
+Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
@@ -1727,7 +1917,7 @@ In case of a 200 response code, the response body container a collection of
 `image items <#image-ref>`_ under the ``values`` tag, lying under an ``images``
 tag.
 
-.. note:: In OS Compute API, the ``values`` layer is missing
+.. note:: In OS/Compute API, the ``values`` layer is missing
 
 **Example Details for an image with id 6404619d-...-aef57eaff4af, in JSON**
 
@@ -1761,7 +1951,7 @@ Delete Image
 ............
 
 ====================== ====== ======== =========
-URI                    Method Cyclades OS Compute
+URI                    Method Cyclades OS/Compute
 ====================== ====== ======== =========
 ``/images/<image id>`` DELETE ✔        ✔
 ====================== ====== ======== ==========
@@ -1771,7 +1961,7 @@ URI                    Method Cyclades OS Compute
 |
 
 ==============  ========================= ======== ==========
-Request Header  Value                     Cyclades OS Compute
+Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
@@ -1800,10 +1990,11 @@ Image Metadata
 List metadata
 .............
 
-.. note:: This operation is semantically equivalent in Cyclades and OS Compute.
+.. note:: This operation is semantically equivalent in Cyclades and OS/Compute
+  besides the different URI.
 
 =============================== ====== ======== ==========
-URI                             Method Cyclades OS Compute
+URI                             Method Cyclades OS/Compute
 =============================== ====== ======== ==========
 ``/images/<image-id>/meta``     GET    ✔        **✘**
 ``/images/<image-id>/metadata`` GET    **✘**    ✔
@@ -1814,7 +2005,7 @@ URI                             Method Cyclades OS Compute
 |
 
 ==============  ========================= ======== ==========
-Request Header  Value                     Cyclades OS Compute
+Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
@@ -1842,8 +2033,8 @@ of ``key``:``value`` pairs, under a 'values' tag which lies under a
 .. code-block:: javascript
 
   { 
-    'metadata': {
-      'values': {
+    "metadata": {
+      "values": {
         "partition_table": "msdos",
         "kernel": "3.2.0",
         "osfamily": "linux",
@@ -1857,13 +2048,13 @@ of ``key``:``value`` pairs, under a 'values' tag which lies under a
     }
   }
 
-.. note:: In OS Compute API  the ``values`` level is missing from the response
+.. note:: In OS/Compute API  the ``values`` level is missing from the response
 
 Set / Update Image Metadata
 ...........................
 
 In Cyclades API, setting new metadata and updating the values of existing ones
-is achieved with the same type of request (POST), while in OS Compute API there
+is achieved with the same type of request (POST), while in OS/Compute API there
 are two separate request types (PUT and POST for
 `setting new <http://docs.openstack.org/api/openstack-compute/2/content/Create_or_Replace_Metadata-d1e5358.html>`_
 and
@@ -1874,7 +2065,7 @@ In Cyclades API, unmentioned metadata keys will remain intact, while metadata
 referred by the operation will be overwritten.
 
 =============================== ====== ======== ==========
-URI                             Method Cyclades OS Compute
+URI                             Method Cyclades OS/Compute
 =============================== ====== ======== ==========
 ``/images/<image-id>/meta``     POST    ✔       **✘**
 ``/images/<image-id>/metadata`` PUT    **✘**    ✔
@@ -1886,7 +2077,7 @@ URI                             Method Cyclades OS Compute
 |
 
 ==============  ========================= ======== ==========
-Request Header  Value                     Cyclades OS Compute
+Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
@@ -1937,10 +2128,11 @@ servers metadata. E.g.::
 Get Metadata Item
 .................
 
-.. note:: This operation is semantically equivalent in Cyclades and OS Compute.
+.. note:: This operation is semantically equivalent in Cyclades and OS/Compute
+  besides the different URI.
 
 ===================================== ====== ======== ==========
-URI                                   Method Cyclades OS Compute
+URI                                   Method Cyclades OS/Compute
 ===================================== ====== ======== ==========
 ``/image/<image-id>/meta/<key>``      GET    ✔        **✘**
 ``/images/<image-id>/metadata/<key>`` GET    **✘**    ✔
@@ -1953,7 +2145,7 @@ URI                                   Method Cyclades OS Compute
 |
 
 ==============  ========================= ======== ==========
-Request Header  Value                     Cyclades OS Compute
+Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
@@ -1979,17 +2171,18 @@ If the response code is 200, the response body contains the requested
 
 .. code-block:: javascript
 
-  {'metadata': {'os': 'Xubuntu'}}
+  {"metadata": {"os": "Xubuntu"}}
 
-.. note:: In OS Compute, ``metadata`` is ``meta``
+.. note:: In OS/Compute, ``metadata`` is ``meta``
 
 Set / Update Metadatum Item
 ...........................
 
-.. note:: This operation is semantically equivalent in Cyclades and OS Compute.
+.. note:: This operation is semantically equivalent in Cyclades and OS/Compute
+  besides the different URI.
 
 ===================================== ====== ======== ==========
-URI                                   Method Cyclades OS Compute
+URI                                   Method Cyclades OS/Compute
 ===================================== ====== ======== ==========
 ``/images/<image-id>/meta/<key>``     PUT    ✔        **✘**
 ``/images/<image-id>/metadata/<key>`` PUT    **✘**    ✔
@@ -2002,7 +2195,7 @@ URI                                   Method Cyclades OS Compute
 |
 
 ==============  ========================= ======== ==========
-Request Header  Value                     Cyclades OS Compute
+Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
@@ -2041,10 +2234,11 @@ body of the response is identical to the body of the request.
 Delete Image Metadata
 .....................
 
-.. note:: This operation is semantically equivalent in Cyclades and OS Compute.
+.. note:: This operation is semantically equivalent in Cyclades and OS/Compute
+  besides the different URI.
 
 ===================================== ====== ======== ==========
-URI                                   Method Cyclades OS Compute
+URI                                   Method Cyclades OS/Compute
 ===================================== ====== ======== ==========
 ``/images/<image-id>/meta/<key>``     DELETE ✔        **✘**
 ``/images/<image-id>/metadata/<key>`` DELETE **✘**    ✔
@@ -2056,7 +2250,7 @@ URI                                   Method Cyclades OS Compute
 |
 
 ==============  ========================= ======== ==========
-Request Header  Value                     Cyclades OS Compute
+Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
@@ -2081,12 +2275,12 @@ Networks
 --------
 
 ============= ======== ==========
-BASE URI      Cyclades OS Compute
+BASE URI      Cyclades OS/Compute
 ============= ======== ==========
 ``/networks`` ✔        **✘**
 ============= ======== ==========
 
-The Network part of Cyclades API is not supported by the OS Compute API,
+The Network part of Cyclades API is not supported by the OS/Compute API,
 although it shares some similaritied with the
 `OS Quantum API <http://docs.openstack.org/api/openstack-network/1.0/content/API_Operations.html>`_.
 There are key differences in the design of the two systems, which exceed the
@@ -2496,7 +2690,7 @@ Server Attributes
 .................
 
 ================ ========================== ======== ==========
-Server attribute Description                Cyclades OS Compute
+Server attribute Description                Cyclades OS/Compute
 ================ ========================== ======== ==========
 id               Server ID                  ✔        ✔
 name             Server Name                ✔        ✔
@@ -2542,7 +2736,7 @@ Server Status
 .............
 
 ============= ==================== ======== ==========
-Status        Description          Cyclades OS Compute
+Status        Description          Cyclades OS/Compute
 ============= ==================== ======== ==========
 BUILD         Building             ✔        ✔
 ACTIVE        Up and running       ✔        ✔
@@ -2567,7 +2761,7 @@ VERIFY_RESIZE Waiting confirmation **✘**    ✔
 Network
 .......
 
-.. note:: Networks are features in Cyclades API but not in OS Compute API
+.. note:: Networks are features in Cyclades API but not in OS/Compute API
 
 ================== ===========
 Network Attributes Description
@@ -2611,7 +2805,7 @@ Each NIC is used to connect a specific server to a network. The network is aware
 A NIC specification contains the following information:
 
 ================= ====================== ======== ==========
-Server Attributes Description            Cyclades OS Compute
+Server Attributes Description            Cyclades OS/Compute
 ================= ====================== ======== ==========
 id                The NIC id             ✔        **✘**
 mac_address       NIC's mac address      ✔        **✘**
@@ -2643,7 +2837,7 @@ A flavor is a hardware configuration for a server. It contains the following
 information:
 
 ================= ==================== ======== ==========
-Flavor Attributes Description          Cyclades OS Compute
+Flavor Attributes Description          Cyclades OS/Compute
 ================= ==================== ======== ==========
 id                The flavor id        ✔        ✔
 name              The flavor name      ✔        ✔
@@ -2667,11 +2861,11 @@ by the Cyclades server. It is Cyclades specific.
 
 * **disk** the servers disk size in GB
 
-* **cpu** and **vcpus** are semantically equivalent terms in Cyclades and OS Compute APIs respectively and they refer to the number of virtual CPUs assigned
+* **cpu** and **vcpus** are semantically equivalent terms in Cyclades and OS/Compute APIs respectively and they refer to the number of virtual CPUs assigned
 to a server
 
 * **link ref** and **link href** refer to the Atom link attributes that are
-`used in OS Compute API <http://docs.openstack.org/api/openstack-compute/2/content/List_Flavors-d1e4188.html>`_.
+`used in OS/Compute API <http://docs.openstack.org/api/openstack-compute/2/content/List_Flavors-d1e4188.html>`_.
 
 .. _image-ref:
 
@@ -2683,7 +2877,7 @@ An image is a collection of files you use to create or rebuild a server.
 An image item may have the fields presented bellow:
 
 ================= ====================== ======== ==========
-Server Attributes Description            Cyclades OS Compute
+Server Attributes Description            Cyclades OS/Compute
 ================= ====================== ======== ==========
 id                Image ID               ✔        ✔
 name              Image name             ✔        ✔
@@ -2708,4 +2902,4 @@ minRam            Minimum required RAM   **✘**    ✔
 * **metadata** is a collection of ``key``:``values`` pairs of custom metadata,
 under the tag ``values`` which lies under the tag ``metadata``.
 
-.. note:: in OS Compute, the ``values`` layer is missing
+.. note:: in OS/Compute, the ``values`` layer is missing

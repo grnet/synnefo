@@ -82,6 +82,12 @@ Servers
 List Servers
 ............
 
+.. rubric:: Semantics
+
+List all virtual servers owned by the user.
+
+.. rubric:: Request
+
 =================== ====== ======== ==========
 URI                 Method Cyclades OS Compute
 =================== ====== ======== ==========
@@ -92,6 +98,16 @@ URI                 Method Cyclades OS Compute
 * Both requests return a list of servers. The first returns just ``id`` and
   ``name``, while the second returns the full collections of server
   attributes.
+
+|
+
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
+
+|
 
 ================= =================================== ======== ==========
 Request Parameter Value                               Cyclades OS Compute
@@ -114,15 +130,9 @@ the response will be formated in json.
 
 * **changes-since** must be an ISO8601 date string
 
-|
+.. note:: Request body should be empty
 
-==============  ========================= ======== ==========
-Request Header  Value                     Cyclades OS Compute
-==============  ========================= ======== ==========
-X-Auth-Token    User authentication token required required
-==============  ========================= ======== ==========
-
-|
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
@@ -137,9 +147,17 @@ Return Code                 Description
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
+|
 
-The response data format is a list of servers under the ``servers`` label. A
-server may have the fields presented bellow:
+Response body contents::
+
+  servers: [
+    {
+      <server attribute>: <value>,
+      <server attribute>: <value>,
+      ...
+    }, ...
+  ]
 
 ================= ====================== ======== ==========
 Server Attributes Description            Cyclades OS Compute
@@ -163,16 +181,13 @@ metadata          Server custom metadata ✔        ✔
 * **hostId** is not used in Cyclades, but is returned as an empty string for
   compatibility
 
-
 * **progress** is changing while the server is building up and has values
   between 0 and 100. When it reaches 100 the server is built.
-
 
 * **status** refers to `the status <#status-ref>`_ of the server
 
 * **metadata** are custom key:value pairs used to specify various attributes of
   the VM (e.g. OS, super user, etc.)
-
 
 * **attachments** in Cyclades are lists of network interfaces (nics).
   **Attachments** are different to OS Compute's **addresses**. The former is a

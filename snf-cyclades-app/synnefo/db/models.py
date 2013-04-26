@@ -417,7 +417,7 @@ class VirtualMachineMetadata(models.Model):
 
 class Network(models.Model):
     OPER_STATES = (
-        ('PENDING', 'Pending'),
+        ('PENDING', 'Pending'),  # Unused because of lazy networks
         ('ACTIVE', 'Active'),
         ('DELETED', 'Deleted'),
         ('ERROR', 'Error')
@@ -649,6 +649,9 @@ class BackendNetwork(models.Model):
                                               mac_prefix)
             self.mac_prefix = mac_prefix
 
+    def __unicode__(self):
+        return '<%s@%s>' % (self.network, self.backend)
+
 
 class NetworkInterface(models.Model):
     FIREWALL_PROFILES = (
@@ -727,6 +730,7 @@ def pooled_rapi_client(obj):
             backend = obj
 
         if backend.offline:
+            log.warning("Trying to connect with offline backend: %s", backend)
             raise faults.ServiceUnavailable
 
         b = backend

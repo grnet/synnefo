@@ -108,12 +108,14 @@ def reconcile_networks(conflicting_ips=False):
         for bend in backends:
             bnet = get_backend_network(network, bend)
             if not bnet:
-                # CASE-1: Paritioned network
-                if not network.public:
-                    bnet = reconcile_parted_network(network, bend)
-                    if not fix:
-                        continue
-                else:
+                try:
+                    gnet = ganeti_networks[bend][network.id]
+                    if not network.public and network.action != "DESTROY":
+                        # Network exists in Ganeti backend, but not in DB.
+                        reconcile_parted_network(network, bend)
+                except KeyError:
+                    # Network does not exist either in DB not in Ganeti.
+                    # Nothing to reconcile..
                     continue
 
             try:
@@ -201,7 +203,7 @@ def reconcile_missing_network(network, backend):
     write("D: Missing Ganeti network %s in backend %s\n" %
           (network, backend))
     if fix:
-        backend_mod.create_network(network, [backend])
+        backend_mod.create_network(network, backend)
         write("F: Issued OP_NETWORK_CONNECT\n")
 
 
@@ -213,7 +215,8 @@ def reconcile_hanging_groups(network, backend, hanging_groups):
         for group in hanging_groups:
             write('F: Connecting network %s to nodegroup %s\n'
                   % (network, group))
-            backend_mod.connect_network(network, backend, group=group)
+            backend_mod.connect_network(network, backend, depends=[],
+                                        group=group)
 
 
 def reconcile_unsynced_network(network, backend, backend_network):
@@ -278,7 +281,7 @@ def reconcile_orphan_networks(db_networks, ganeti_networks):
                     try:
                         network = Network.objects.get(id=net_id)
                         backend_mod.delete_network(network,
-                                                   backends=[back_end])
+                                                   backend=back_end)
                     except Network.DoesNotExist:
                         write("Not entry for network %s in DB !!\n" % net_id)
 

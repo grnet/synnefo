@@ -55,7 +55,10 @@ class Command(BaseCommand):
 
         network.action = 'DESTROY'
         network.save()
+
         quotas.issue_and_accept_commission(network, delete=True)
-        delete_network(network)
+
+        for bnet in network.backend_networks.exclude(operstate="DELETED"):
+            delete_network(network, bnet.backend)
 
         self.stdout.write('Successfully removed network.\n')

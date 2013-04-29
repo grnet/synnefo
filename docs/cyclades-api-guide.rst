@@ -1896,6 +1896,27 @@ An image is a collection of files used to create or rebuild a server. Synnefo
 deployments usually provide pre-built OS images, but custom image creation is
 also supported.
 
+============================================= ===================================== ====== ======== ==========
+Description                                   URI                                   Method Cyclades OS/Compute
+============================================= ===================================== ====== ======== ==========
+`List <#list-images>`_                        ``/images``                           GET    ✔        ✔
+\                                             ``/images/detail``                    GET    ✔        ✔
+`Get details <#get-image-details>`_           ``/images/<image-id>``                GET    ✔        ✔
+`Delete <#delete-image>`_                     ``/images/<image id>``                DELETE ✔        ✔
+`List Metadata <#list-image-metadata>`_       ``/images/<image-id>/meta``           GET    ✔        **✘**
+\                                             ``/images/<image-id>/metadata``       GET    **✘**    ✔
+`Update Metadata <#update-image-metadata>`_   ``/images/<image-id>/meta``           POST    ✔       **✘**
+\                                             ``/images/<image-id>/metadata``       PUT    **✘**    ✔
+\                                             ``/images/<image-id>/metadata``       POST   **✘**    ✔
+`Get Meta Item <#get-image-metadatum>`_       ``/image/<image-id>/meta/<key>``      GET    ✔        **✘**
+\                                             ``/images/<image-id>/metadata/<key>`` GET    **✘**    ✔
+`Update Metadatum <#update-image-metadatum>`_ ``/images/<image-id>/meta/<key>``     PUT    ✔        **✘**
+\                                             ``/images/<image-id>/metadata/<key>`` PUT    **✘**    ✔
+`Delete Metadatum <#delete-image-metadatum>`_ ``/images/<image-id>/meta/<key>``     DELETE ✔        **✘**
+\                                             ``/images/<image-id>/metadata/<key>`` DELETE **✘**    ✔
+============================================= ===================================== ====== ======== ==========
+
+
 List Images
 ...........
 
@@ -2226,8 +2247,8 @@ Response body content::
 
 .. note:: In OS/Compute API  the ``values`` level is missing from the response.
 
-Set / Update Image Metadata
-...........................
+Update Image Metadata
+.....................
 
 In Cyclades API, setting new metadata and updating the values of existing ones
 is achieved using one type of request (POST), while in OS/Compute API two
@@ -2325,8 +2346,8 @@ Response body content::
     }
   }
 
-Get Image Metadatum Item
-........................
+Get Image Metadatum
+...................
 
 .. note:: This operation is semantically equivalent in Cyclades and OS/Compute
   besides the different URI.
@@ -2383,8 +2404,8 @@ Response body content::
 
 .. note:: In OS/Compute, ``metadata`` is ``meta``
 
-Set / Update Image Metadatum Item
-.................................
+Update Image Metadatum
+......................
 
 .. note:: This operation is semantically equivalent in Cyclades and OS/Compute
   besides the different URI.
@@ -2529,6 +2550,20 @@ deleted, all connections to it are deleted.
 There is a special **public** network with the id *public* that can be accessed
 at */networks/public*. All servers are connected to **public** by default and
 this network can not be deleted or modified in any way.
+
+=============================================== ================================= ======
+Description                                     URI                               Method
+=============================================== ================================= ======
+`List <#list-networks>`_                        ``/networks``                     GET
+\                                               ``/networks/detail``              GET
+`Create <#create-network>`_                     ``/networks``                     POST
+`Get details <#get-network-details>`_           ``/networks/<network-id>``        GET
+`Rename <#rename-network>`_                     ``/networks/<network-id>``        PUT
+`Delete <#delete-network>`_                     ``/networks/<network-id>``        DELETE
+`Connect <#connect-network-to-server>`_         ``/networks/<network-id>/action`` POST
+`Disconnect <#disconnect-network-from-server>`_ ``/networks/<network-id>/action`` POST
+=============================================== ================================= ======
+
 
 List Networks
 .............

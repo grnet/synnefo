@@ -33,9 +33,6 @@
 
 
 from django.db import transaction
-import logging
-
-logger = logging.getLogger(__name__)
 
 
 def commit_on_success_strict(**kwargs):
@@ -47,7 +44,6 @@ def commit_on_success_strict(**kwargs):
                 transaction.commit()
                 return result
             except BaseException as e:
-                logger.exception(e)
                 transaction.rollback()
                 raise
         return inner

@@ -65,7 +65,7 @@ class Commission(Model):
     serial = AutoField(primary_key=True)
     name = CharField(max_length=4096, default="")
     clientkey = CharField(max_length=4096, null=False)
-    issue_time = CharField(max_length=24, default=now)
+    issue_time = CharField(max_length=24)
 
     objects = ForUpdateManager()
 

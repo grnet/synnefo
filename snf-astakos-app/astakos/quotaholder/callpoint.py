@@ -164,7 +164,9 @@ def issue_commission(clientkey, provisions, name="", force=False):
         operations.revert()
         raise
 
-    commission = Commission.objects.create(clientkey=clientkey, name=name)
+    commission = Commission.objects.create(clientkey=clientkey,
+                                           name=name,
+                                           issue_time=now())
     for (holder, source, resource), quantity in provisions_to_create:
         Provision.objects.create(serial=commission,
                                  holder=holder,

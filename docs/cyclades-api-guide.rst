@@ -2034,14 +2034,13 @@ Return Code                 Description
 
 .. note:: In case of a 204 code, request body should be empty
 
-Image Metadata
---------------
-
-List metadata
-.............
+List Image Metadata
+...................
 
 .. note:: This operation is semantically equivalent in Cyclades and OS/Compute
   besides the different URI.
+
+.. rubric:: Request
 
 =============================== ====== ======== ==========
 URI                             Method Cyclades OS/Compute
@@ -2060,7 +2059,11 @@ Request Header  Value                     Cyclades OS/Compute
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
 
-|
+.. note:: Request parameters should be empty
+
+.. note:: Request body should be empty
+
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
@@ -2076,9 +2079,16 @@ Return Code                 Description
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
-In case of a 201 response code, the response should contain a JSON encoded list
-of ``key``:``value`` pairs, under a 'values' tag which lies under a
-``metadata`` tag, e.g.:
+Response body content::
+
+  metadata: {
+    values: {
+      <metadatum key>: <value>,
+    ...
+    }
+  }
+
+**Example List Image Metadata: JSON**
 
 .. code-block:: javascript
 
@@ -2098,14 +2108,14 @@ of ``key``:``value`` pairs, under a 'values' tag which lies under a
     }
   }
 
-.. note:: In OS/Compute API  the ``values`` level is missing from the response
+.. note:: In OS/Compute API  the ``values`` level is missing from the response.
 
 Set / Update Image Metadata
 ...........................
 
 In Cyclades API, setting new metadata and updating the values of existing ones
-is achieved with the same type of request (POST), while in OS/Compute API there
-are two separate request types (PUT and POST for
+is achieved using one type of request (POST), while in OS/Compute API two
+different types are used (PUT and POST for
 `setting new <http://docs.openstack.org/api/openstack-compute/2/content/Create_or_Replace_Metadata-d1e5358.html>`_
 and
 `updating existing <http://docs.openstack.org/api/openstack-compute/2/content/Update_Metadata-d1e5208.html>`_
@@ -2113,6 +2123,8 @@ metadata, respectively).
 
 In Cyclades API, unmentioned metadata keys will remain intact, while metadata
 referred by the operation will be overwritten.
+
+.. rubric:: Request
 
 =============================== ====== ======== ==========
 URI                             Method Cyclades OS/Compute
@@ -2132,14 +2144,22 @@ Request Header  Value                     Cyclades OS/Compute
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
 
-|
+.. note:: Request parameters should be empty
 
-The request body should contain a JSON-formated set of ``key``:``value`` pairs,
-under the ``metadata`` tag, e.g.::
+Request body content::
 
-  {'metadata': {'XtraSoftware': 'XampleSoft', 'os': 'Xubuntu'}}
+  metadata: {
+    <metadatum key>: <value>,
+    ...
+  }
 
-|
+**Example Update Image Metadata Request: JSON**
+
+.. code-block:: javascript
+
+  {"metadata": {"NewAttr": "NewVal", "os": "Xubuntu'}}
+
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
@@ -2155,13 +2175,19 @@ Return Code                 Description
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
-|
+Response body content::
 
-In case of a 201 code, the response body should present the new state of
-servers metadata. E.g.::
+  metadata: {
+    <metadatum key>: <value>,
+    ...
+  }
+
+**Example Update Image Response: JSON**
+
+.. code-block:: javascript
 
   { 
-    'metadata': {
+    "metadata": {
       "partition_table": "msdos",
       "kernel": "3.2.0",
       "osfamily": "linux",
@@ -2171,15 +2197,17 @@ servers metadata. E.g.::
       "os": "Xubuntu",
       "root_partition": "1",
       "description": "Ubuntu 12 LTS",
-      "XtraSoftware": "XampleSoft"
+      "NewAttr": "NewVal"
     }
   }
 
-Get Metadata Item
-.................
+Get Image Metadatum Item
+........................
 
 .. note:: This operation is semantically equivalent in Cyclades and OS/Compute
   besides the different URI.
+
+.. rubric:: Request
 
 ===================================== ====== ======== ==========
 URI                                   Method Cyclades OS/Compute
@@ -2200,7 +2228,11 @@ Request Header  Value                     Cyclades OS/Compute
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
 
-|
+.. note:: Request parameters should be empty
+
+.. note:: Request body should be empty
+
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
@@ -2215,9 +2247,11 @@ Return Code                 Description
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
-If the response code is 200, the response body contains the requested
-``key``:``value`` pair under a ``metadata`` tag. For example, if key was
-``os``, the response body would look similar to this:
+Response body content::
+
+  metadata: {<metadatum key>: <value>}
+
+**Example Get Image Metadatum Item: JSON**
 
 .. code-block:: javascript
 
@@ -2225,11 +2259,13 @@ If the response code is 200, the response body contains the requested
 
 .. note:: In OS/Compute, ``metadata`` is ``meta``
 
-Set / Update Metadatum Item
-...........................
+Set / Update Image Metadatum Item
+.................................
 
 .. note:: This operation is semantically equivalent in Cyclades and OS/Compute
   besides the different URI.
+
+.. rubric:: Request
 
 ===================================== ====== ======== ==========
 URI                                   Method Cyclades OS/Compute
@@ -2252,14 +2288,19 @@ X-Auth-Token    User authentication token required required
 
 |
 
-Request body should contain a ``key``:``value`` pair under a ``meta`` tag. The
-``value`` is the (new) value to set. The ``key`` of the metadatum may or may
-not exist prior to the operation. For example, request with ``os`` as a ``key``
-may contain the following request body::
+.. note:: Request parameters should be empty
 
-  {'meta': {'os': 'Kubuntu'}}
+Request body content::
 
-|
+  meta: {<metadatum key>: <value>}
+
+**Example Update Image Metadatum Item Request: JSON**
+
+.. code-block:: javascript
+
+  {"meta": {"os": "Kubuntu"}}
+
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
@@ -2275,17 +2316,25 @@ Return Code                 Description
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
-|
+Request body content::
 
-If the response code is 201, the response body contains the ``key``:``value``
-pair that has just been created or updated, under a ``meta`` tag, so that the
-body of the response is identical to the body of the request.
+  meta: {<metadatum key>: <value>}
 
-Delete Image Metadata
-.....................
+**Example Update Image Metadatum Item Response: JSON**
+
+.. code-block:: javascript
+
+  {"meta": {"os": "Kubuntu"}}
+
+Delete Image Metadatum
+......................
+
+Delete an image metadatum by its key.
 
 .. note:: This operation is semantically equivalent in Cyclades and OS/Compute
   besides the different URI.
+
+.. rubric:: Request
 
 ===================================== ====== ======== ==========
 URI                                   Method Cyclades OS/Compute
@@ -2305,7 +2354,11 @@ Request Header  Value                     Cyclades OS/Compute
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
 
-|
+.. note:: Request parameters should be empty
+
+.. note:: Request body should be empty
+
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
@@ -2320,6 +2373,7 @@ Return Code                 Description
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
 
+.. note:: In case of a 204 code, the response body should be empty.
 
 Networks
 --------

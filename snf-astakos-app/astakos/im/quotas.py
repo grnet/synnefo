@@ -133,7 +133,7 @@ def resolve_pending_serial(serial, accept=True):
     return qh.resolve_pending_commission('astakos', serial, accept)
 
 
-def register_pending_apps(user, quantity, force=False, name=None):
+def register_pending_apps(user, quantity, force=False, name=""):
     provision = (user.uuid, SYSTEM, 'astakos.pending_app'), quantity
 
     s = qh.issue_commission(clientkey='astakos',

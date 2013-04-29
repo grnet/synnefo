@@ -45,7 +45,7 @@ from astakos.quotaholder.exception import (
 
 class QuotaholderTest(TestCase):
 
-    def issue_commission(self, provisions, name=None, force=False):
+    def issue_commission(self, provisions, name="", force=False):
         return qh.issue_commission(clientkey=self.client,
                                    name=name,
                                    force=force,

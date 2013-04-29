@@ -63,7 +63,7 @@ def now():
 class Commission(Model):
 
     serial = AutoField(primary_key=True)
-    name = CharField(max_length=4096, null=True)
+    name = CharField(max_length=4096, default="")
     clientkey = CharField(max_length=4096, null=False)
     issue_time = CharField(max_length=24, default=now)
 
@@ -97,7 +97,7 @@ class Provision(Model):
 class ProvisionLog(Model):
 
     serial = BigIntegerField()
-    name = CharField(max_length=4096, null=True)
+    name = CharField(max_length=4096)
     issue_time = CharField(max_length=4096)
     log_time = CharField(max_length=4096)
     holder = CharField(max_length=4096)

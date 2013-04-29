@@ -69,7 +69,7 @@ from astakos.im.models import (
     UserSetting,
     get_resource_names, new_chain)
 from astakos.im.quotas import (qh_sync_user, qh_sync_users,
-                               register_pending_apps, resolve_pending_serial)
+                               register_pending_apps)
 from astakos.im.project_notif import (
     membership_change_notify, membership_enroll_notify,
     membership_request_notify, membership_leave_request_notify,
@@ -78,7 +78,6 @@ from astakos.im.project_notif import (
     project_termination_notify, project_suspension_notify)
 from astakos.im import settings
 import astakos.im.messages as astakos_messages
-from astakos.quotaholder_app.exception import NoCapacityError
 
 logger = logging.getLogger(__name__)
 
@@ -940,21 +939,11 @@ def qh_add_pending_app(user, precursor=None, force=False, dry_run=False):
         count = q.count()
         diff = 1 - count
 
-    try:
-        name = "DRYRUN" if dry_run else ""
-        serial = register_pending_apps(user, diff, force, name=name)
-    except NoCapacityError as e:
-        limit = e.data['limit']
-        return False, limit
-    else:
-        accept = not dry_run
-        resolve_pending_serial(serial, accept=accept)
-        return True, None
+    return register_pending_apps(user, diff, force, dry_run)
 
 
 def qh_release_pending_app(user):
-    serial = register_pending_apps(user, -1)
-    resolve_pending_serial(serial)
+    register_pending_apps(user, -1)
 
 
 def qh_sync_projects(projects):

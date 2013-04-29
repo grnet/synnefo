@@ -35,6 +35,7 @@ from astakos.im.models import (
     Resource, AstakosUserQuota, AstakosUser,
     Project, ProjectMembership, ProjectResourceGrant, ProjectApplication)
 import astakos.quotaholder_app.callpoint as qh
+from astakos.quotaholder_app.exception import QuotaholderError, NoCapacityError
 from django.db.models import Q
 
 
@@ -133,14 +134,22 @@ def resolve_pending_serial(serial, accept=True):
     return qh.resolve_pending_commission('astakos', serial, accept)
 
 
-def register_pending_apps(user, quantity, force=False, name=""):
+def register_pending_apps(user, quantity, force=False, dry_run=False):
     provision = (user.uuid, SYSTEM, 'astakos.pending_app'), quantity
-
-    s = qh.issue_commission(clientkey='astakos',
-                            force=force,
-                            name=name,
-                            provisions=[provision])
-    return s
+    name = "DRYRUN" if dry_run else ""
+    try:
+        s = qh.issue_commission(clientkey='astakos',
+                                force=force,
+                                name=name,
+                                provisions=[provision])
+    except NoCapacityError as e:
+        limit = e.data['limit']
+        return False, limit
+    except QuotaholderError:
+        return False, None
+    accept = not dry_run
+    qh.resolve_pending_commission('astakos', s, accept)
+    return True, None
 
 
 def initial_quotas(users):

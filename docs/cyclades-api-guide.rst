@@ -1675,6 +1675,14 @@ Flavors
 
 A flavor is a hardware configuration for a server.
 
+==================================== ======================== ====== ======== ==========
+Description                          URI                      Method Cyclades OS/Compute
+==================================== ======================== ====== ======== ==========
+`List <#list-flavors>`_              ``/flavors``             GET    ✔        ✔
+\                                    ``/flavors/detail``      GET    ✔        **✘**
+`Get details <#get-flavor-details>`_ ``/flavors/<flavor-id>`` GET    ✔        ✔
+==================================== ======================== ====== ======== ==========
+
 List Flavors
 ............
 
@@ -1898,8 +1906,8 @@ List all images accessible by the user
 =================== ====== ======== ==========
 URI                 Method Cyclades OS/Compute
 =================== ====== ======== ==========
-``/servers``        GET    ✔        ✔
-``/servers/detail`` GET    ✔        ✔
+``/images``        GET    ✔        ✔
+``/images/detail`` GET    ✔        ✔
 =================== ====== ======== ==========
 
 |

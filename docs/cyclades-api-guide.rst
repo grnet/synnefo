@@ -26,7 +26,6 @@ Overview
 * It is not defined if requests with a wrong HTTP method should return 405 or a
   Fault. We return a BadRequest Fault.
 
-
 General API Information
 =======================
 
@@ -199,7 +198,7 @@ metadata          Server custom metadata ✔        ✔
   nic-<server-id>-<ordinal-number>. More details can be found `here
   <#nic-ref>`_.
 
-**Example List Servers: JSON**
+*Example List Servers: JSON*
 
 .. code-block:: javascript
 
@@ -288,7 +287,15 @@ URI          Method Cyclades OS/Compute
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
+Content-Type    Type or request body      required required
+Content-Length  Length of request body    required required
 ==============  ========================= ======== ==========
+
+*Example Request Headers*::
+
+  X-Auth-Token:   z31uRXUn1LZy45p1r7V==
+  Content-Type:   application/json
+  Content-Length: 735
 
 |
 
@@ -336,7 +343,7 @@ metadata    Custom metadata      ✔        ✔
   injection is a small set of changes to a virtual server. Each change modifies
   a file on the virtual server, by injecting some data in it. The injected data
   (``contents``) should exceed 10240 *bytes* in size and must be base64
-  encoded.A personality injection contains the following attributes:
+  encoded. A personality injection contains the following attributes:
 
 ====================== =================== ======== ==========
 Personality Attributes Description         Cyclades OS/Compute
@@ -348,7 +355,38 @@ mode                   File access mode    ✔        **✘**
 owner                  File owner          ✔        **✘**
 ====================== =================== ======== ==========
 
-|
+*Example Create Server Request: JSON*
+
+.. code-block:: javascript
+
+  {
+    "server": {
+      "name": "My Server Name: Example Name",
+      "imageRef": "da7a211f-...-f901ce81a3e6",
+      "flavorRef": 289,
+      "personality": [
+        {
+          "path": "/Users/myusername/personlities/example1.file",
+          "contents": "some data to inject",
+          "group": "remotely-set user group",
+          "mode": "rw",
+          "owner": "ausername"
+        }, {
+          "path": "/Users/myusername/personlities/example2.file",
+          "contents": "some more data to inject",
+          "group": "",
+          "mode": "r",
+          "owner": "anotherusername"
+        }
+      ],
+      "metadata": {
+        "values": {
+          "EloquentDescription": "Example server with personality",
+          "ShortDescription": "Trying VMs"
+        }
+      }
+    }
+  }
 
 .. rubric:: Response
 
@@ -380,7 +418,7 @@ Response body contents::
 
 Server attributes are `listed here <#server-ref>`_.
 
-**Example Create Server Response: JSON**
+*Example Create Server Response: JSON*
 
 .. code-block:: javascript
 
@@ -397,10 +435,16 @@ Server attributes are `listed here <#server-ref>`_.
       "adminPass": "fKCqlZe2at",
       "suspended": false,
       "progress": 0
+      "metadata": {
+        "values": {
+          "EloquentDescription": "Example server with personality",
+          "ShortDescription": "Trying VMs"
+        }
+      }
     }
   }
 
-**Example Create Server Response: XML**:
+*Example Create Server Response: XML*
 
 .. code-block:: xml
 
@@ -492,7 +536,7 @@ netTimeSeries Network load / time graph URL
 
 * **refresh** is the recommended sampling rate
 
-**Example Get Server Stats Response: JSON**:
+*Example Get Server Stats Response: JSON*
 
 .. code-block:: javascript
 
@@ -507,7 +551,7 @@ netTimeSeries Network load / time graph URL
     }
   }
 
-**Example Get Network Details Response: XML**:
+*Example Get Network Details Response: XML*
 
 .. code-block:: xml
 
@@ -592,7 +636,7 @@ message              Log description
 details              Detailed log description
 ==================== ===========
 
-For example:
+*Example Get Server Diagnostics Response: JSON*
 
 .. code-block:: javascript
 
@@ -716,7 +760,7 @@ diagnostics       Diagnostic information ✔        **✘**
   for diagnosing the server behavior and may be used by the administrators of
   deployed Synnefo setups.
 
-**Example Details for server with id 42042, in JSON**
+*Example Details for server with id 42042: JSON*
 
 .. code-block:: javascript
 
@@ -780,7 +824,15 @@ URI                      Method Cyclades OS/Compute
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
+Content-Type    Type or request body      required required
+Content-Length  Length of request body    required required
 ==============  ========================= ======== ==========
+
+**Example Request Headers**::
+
+  X-Auth-Token:   z31uRXUn1LZy45p1r7V==
+  Content-Type:   application/json
+  Content-Length: 54
 
 .. note:: Request parameters should be empty
 
@@ -801,6 +853,12 @@ accessIPv6  IP v6 address        **✘**    ✔
 
 * Cyclades support multiple network connections per virtual server, which
   explains the above differences in request body attributes.
+
+*Example Rename Server Request: JSON*
+
+.. code-block:: javascript
+
+  {"server": {"name": "A new name for my virtual server"}}
 
 .. rubric:: Response
 
@@ -932,7 +990,7 @@ A Network Interface Connection (or NIC) connects the current server to a
 network, through their respective identifiers. More information in NIC
 attributes are `enlisted here <#nic-ref>`_.
 
-**Example List Addresses: JSON**
+*Example List Addresses: JSON*
 
 .. code-block:: javascript
 
@@ -1088,7 +1146,7 @@ Response body contents::
     }
   }
 
-**Example List Server Metadata: JSON**
+*Example List Server Metadata: JSON*
 
 .. code-block:: javascript
 
@@ -1135,7 +1193,15 @@ URI                               Method Cyclades OS/Compute
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
+Content-Type    Type or request body      required required
+Content-Length  Length of request body    required required
 ==============  ========================= ======== ==========
+
+**Example Request Headers**::
+
+  X-Auth-Token:   z31uRXUn1LZy45p1r7V==
+  Content-Type:   application/json
+  Content-Length: 56
 
 .. note:: Request parameters should be empty
 
@@ -1146,7 +1212,7 @@ Request body contents::
     ...
   }
 
-**Example Request Set / Update Server Metadata: JSON**
+*Example Request Set / Update Server Metadata: JSON*
 
 .. code-block:: javascript
 
@@ -1175,7 +1241,7 @@ Response body contents::
     ...
   }
 
-**Example Response Set / Update Server Metadata: JSON**
+*Example Response Set / Update Server Metadata: JSON*
 
 .. code-block:: javascript
 
@@ -1233,7 +1299,7 @@ Response body content::
 
   metadata: {<metadatum key>: <value>}
 
-**Example Get Server Metadatum for Item 'role', JSON**
+*Example Get Server Metadatum for Item 'role', JSON*
 
 .. code-block:: javascript
 
@@ -1268,7 +1334,15 @@ URI                                     Method Cyclades OS/Compute
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
+Content-Type    Type or request body      required required
+Content-Length  Length of request body    required required
 ==============  ========================= ======== ==========
+
+**Example Request Headers**::
+
+  X-Auth-Token:   z31uRXUn1LZy45p1r7V==
+  Content-Type:   application/json
+  Content-Length: 29
 
 .. note:: Request parameters should be empty
 
@@ -1276,7 +1350,7 @@ Request body content::
 
   meta: {<metadatum key>: <value>}
 
-**Example Request to Set or Update Server Metadatum "role": JSON**
+*Example Request to Set or Update Server Metadatum "role": JSON*
 
 .. code-block:: javascript
 
@@ -1302,7 +1376,7 @@ Response body content::
 
   meta: {<metadatum key>: <value>}
 
-**Example Set or Update Server Metadatum "role":"gateway": JSON**
+*Example Set or Update Server Metadatum "role":"gateway": JSON*
 
 .. code-block:: javascript
 
@@ -1397,7 +1471,15 @@ URI                             Method Cyclades OS/Compute
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
+Content-Type    Type or request body      required required
+Content-Length  Length of request body    required required
 ==============  ========================= ======== ==========
+
+**Example Request Headers**::
+
+  X-Auth-Token:   z31uRXUn1LZy45p1r7V==
+  Content-Type:   application/json
+  Content-Length: 32
 
 .. note:: Request parameters should be empty
 
@@ -1429,7 +1511,7 @@ Request body contents::
 
   start: {}
 
-**Example Start Server: JSON**
+*Example Start Server: JSON*
 
 .. code-block:: javascript
 
@@ -1446,7 +1528,7 @@ This operation transitions a server from ``ACTIVE`` to ``REBOOT`` and then
 Synnefo and OS/Compute APIs offer two reboot modes: ``soft``
 and ``hard``. OS/Compute distinguishes between the two intermediate states
 (``REBOOT`` and ``HARD_REBOOT``) while rebooting, while Synnefo/Cyclades use
-the ``REBOOT`` term only. The expected behavior is the same, though.
+only the ``REBOOT`` term. The expected behavior is the same, though.
 
 Request body contents::
 
@@ -1454,7 +1536,7 @@ Request body contents::
 
 * **reboot type** can be either ``SOFT`` or ``HARD``.
 
-**Example (soft) Reboot Server: JSON**
+*Example (soft) Reboot Server: JSON*
 
 .. code-block:: javascript
   
@@ -1471,7 +1553,7 @@ Request body contents::
 
   shutdown: {}
 
-**Example Shutdown Server: JSON**
+*Example Shutdown Server: JSON*
 
 .. code-block:: javascript
 
@@ -1493,7 +1575,7 @@ Request body contents::
 
   console: {type: vnc}
 
-**Example Get Server Console: JSON**
+*Example Get Server Console: JSON*
 
 .. code-block:: javascript
 
@@ -1515,7 +1597,7 @@ password       Temporary password
 type           Connection type (only VNC)
 ============== ======================
 
-**Example Action Console Response: JSON**:
+*Example Action Console Response: JSON*
 
 .. code-block:: javascript
 
@@ -1540,7 +1622,7 @@ Request body contents::
 
 * **firewall profile** can be ``ENABLED``, ``DISABLED`` or ``PROTECTED``
 
-**Example Action firewallProfile: JSON**:
+*Example Action firewallProfile: JSON**
 
 .. code-block:: javascript
 
@@ -1631,7 +1713,7 @@ Response code contents::
 Flavor attributes are `listed here <#flavor-ref>`_. Regular listing contains
 only ``id`` and ``name`` attributes.
 
-**Example List Flavors (regular): JSON**
+*Example List Flavors (regular): JSON*
 
 .. code-block:: javascript
 
@@ -1650,7 +1732,7 @@ only ``id`` and ``name`` attributes.
   }
 
 
-**Example List Flavors (regular): XML**
+*Example List Flavors (regular): XML*
 
 .. code-block:: xml
 
@@ -1661,7 +1743,7 @@ only ``id`` and ``name`` attributes.
     <flavor id="3" name="Four core"/>
   </flavors>
 
-**Example List Flavors (detail): JSON**
+*Example List Flavors (detail): JSON*
 
 .. code-block:: javascript
 
@@ -1747,7 +1829,7 @@ Response code contents::
 
 All flavor attributes are `listed here <flavor-ref>`_.
 
-**Example Flavor Details: JSON**
+*Example Flavor Details: JSON*
 
 .. code-block:: javascript
   
@@ -1764,7 +1846,7 @@ All flavor attributes are `listed here <flavor-ref>`_.
     }
   }
 
-**Example Flavor Details: XML**
+*Example Flavor Details: XML*
 
 .. code-block:: xml
 
@@ -1855,7 +1937,7 @@ Response body contents::
 
 The regular response returns just ``id`` and ``name``, while the detail returns a collections of the `image attributes listed here <#image-ref>`_.
 
-**Example List Image (detail): JSON**
+*Example List Image (detail): JSON*
 
 .. code-block:: javascript
 
@@ -1960,7 +2042,7 @@ Response body contents::
 
 Image attributes are `listed here <#image-ref>`_.
 
-**Example Details for an image with id 6404619d-...-aef57eaff4af, in JSON**
+*Example Details for an image with id 6404619d-...-aef57eaff4af, in JSON*
 
 .. code-block:: javascript
 
@@ -2088,7 +2170,7 @@ Response body content::
     }
   }
 
-**Example List Image Metadata: JSON**
+*Example List Image Metadata: JSON*
 
 .. code-block:: javascript
 
@@ -2142,7 +2224,15 @@ URI                             Method Cyclades OS/Compute
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
+Content-Type    Type or request body      required required
+Content-Length  Length of request body    required required
 ==============  ========================= ======== ==========
+
+**Example Request Headers**::
+
+  X-Auth-Token:   z31uRXUn1LZy45p1r7V==
+  Content-Type:   application/json
+  Content-Length: 52
 
 .. note:: Request parameters should be empty
 
@@ -2153,7 +2243,7 @@ Request body content::
     ...
   }
 
-**Example Update Image Metadata Request: JSON**
+*Example Update Image Metadata Request: JSON*
 
 .. code-block:: javascript
 
@@ -2182,7 +2272,7 @@ Response body content::
     ...
   }
 
-**Example Update Image Response: JSON**
+*Example Update Image Response: JSON*
 
 .. code-block:: javascript
 
@@ -2251,7 +2341,7 @@ Response body content::
 
   metadata: {<metadatum key>: <value>}
 
-**Example Get Image Metadatum Item: JSON**
+*Example Get Image Metadatum Item: JSON*
 
 .. code-block:: javascript
 
@@ -2284,7 +2374,15 @@ URI                                   Method Cyclades OS/Compute
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
+Content-Type    Type or request body      required required
+Content-Length  Length of request body    required required
 ==============  ========================= ======== ==========
+
+**Example Request Headers**::
+
+  X-Auth-Token:   z31uRXUn1LZy45p1r7V==
+  Content-Type:   application/json
+  Content-Length: 27
 
 |
 
@@ -2294,7 +2392,7 @@ Request body content::
 
   meta: {<metadatum key>: <value>}
 
-**Example Update Image Metadatum Item Request: JSON**
+*Example Update Image Metadatum Item Request: JSON*
 
 .. code-block:: javascript
 
@@ -2320,7 +2418,7 @@ Request body content::
 
   meta: {<metadatum key>: <value>}
 
-**Example Update Image Metadatum Item Response: JSON**
+*Example Update Image Metadatum Item Response: JSON*
 
 .. code-block:: javascript
 
@@ -2456,7 +2554,7 @@ Response body content::
 The ``detail`` operation lists the `full network attributes <#network-ref>`_,
 while the regular operation returns only the ``id`` and ``name`` attributes.
 
-**Example Networks List Response: JSON (regular)**:
+*Example Networks List Response: JSON (regular)*
 
 .. code-block:: javascript
 
@@ -2469,7 +2567,7 @@ while the regular operation returns only the ``id`` and ``name`` attributes.
     }
   }
 
-**Example Networks List Response: JSON (detail)**:
+*Example Networks List Response: JSON (detail)*
 
 .. code-block:: javascript
 
@@ -2513,7 +2611,15 @@ URI                  Method
 Request Header  Value                    
 ==============  =========================
 X-Auth-Token    User authentication token
+Content-Type    Type or request body     
+Content-Length  Length of request body   
 ==============  =========================
+
+**Example Request Headers**::
+
+  X-Auth-Token:   z31uRXUn1LZy45p1r7V==
+  Content-Type:   application/json
+  Content-Length: 60
 
 .. note:: Request parameters should be empty
 
@@ -2549,7 +2655,7 @@ public             If a public network     **✘**    False
 
 * **public** should better not be used. If True, a 403 error is returned.
 
-**Example Create Network Request Body: JSON**:
+*Example Create Network Request Body: JSON*
 
 .. code-block:: javascript
 
@@ -2581,7 +2687,7 @@ Response body content::
 
 A list of the valid network attributes can be found `here <#network-ref>`_.
 
-**Example Create Network Response: JSON**:
+*Example Create Network Response: JSON*
 
 .. code-block:: javascript
 
@@ -2651,7 +2757,7 @@ Response code content::
 
 A list of network attributes can be found `here <#network-ref>`_.
 
-**Example Get Network Details Response: JSON**:
+*Example Get Network Details Response: JSON*
 
 .. code-block:: javascript
 
@@ -2692,7 +2798,15 @@ URI                        Method
 Request Header  Value                    
 ==============  =========================
 X-Auth-Token    User authentication token
+Content-Type    Type or request body     
+Content-Length  Length of request body   
 ==============  =========================
+
+**Example Request Headers**::
+
+  X-Auth-Token:   z31uRXUn1LZy45p1r7V==
+  Content-Type:   application/json
+  Content-Length: 33
 
 .. note:: Request parameters should be empty
 
@@ -2700,7 +2814,7 @@ Request body content::
 
   network: {name: <new value>}
 
-**Example Update Network Name Request: JSON**
+*Example Update Network Name Request: JSON*
 
 .. code-block:: javascript
 
@@ -2787,11 +2901,21 @@ URI                               Method
 
 * **network-id** is the identifier of the network
 
+|
+
 ==============  =========================
 Request Header  Value                    
 ==============  =========================
 X-Auth-Token    User authentication token
+Content-Type    Type or request body     
+Content-Length  Length of request body   
 ==============  =========================
+
+**Example Request Headers**::
+
+  X-Auth-Token:   z31uRXUn1LZy45p1r7V==
+  Content-Type:   application/json
+  Content-Length: 28
 
 .. note:: Request parameters should be empty
 
@@ -2799,7 +2923,7 @@ Response body content (connect)::
 
   add {serverRef: <server id to connect>}
 
-**Example Action Add (connect to): JSON**:
+*Example Action Add (connect to): JSON*
 
 .. code-block:: javascript
 
@@ -2838,11 +2962,21 @@ URI                               Method
 
 * **network-id** is the identifier of the network
 
+|
+
 ==============  =========================
 Request Header  Value                    
 ==============  =========================
 X-Auth-Token    User authentication token
+Content-Type    Type or request body     
+Content-Length  Length of request body   
 ==============  =========================
+
+**Example Request Headers**::
+
+  X-Auth-Token:   z31uRXUn1LZy45p1r7V==
+  Content-Type:   application/json
+  Content-Length: 31
 
 .. note:: Request parameters should be empty
 
@@ -2850,7 +2984,7 @@ Response body content (disconnect)::
 
   remove {serverRef: <server id to disconnect>}
 
-**Example Action Remove (disconnect from): JSON**:
+*Example Action Remove (disconnect from): JSON*
 
 .. code-block:: javascript
 

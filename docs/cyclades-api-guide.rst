@@ -2385,9 +2385,9 @@ BASE URI      Cyclades OS/Compute
 ============= ======== ==========
 
 The Network part of Cyclades API is not supported by the OS/Compute API,
-although it shares some similaritied with the
+although it shares some similarities with the
 `OS Quantum API <http://docs.openstack.org/api/openstack-network/1.0/content/API_Operations.html>`_.
-There are key differences in the design of the two systems, which exceed the
+There are key design differences between the two systems but they exceed the
 scope of this document, although they affect the respective APIs.
 
 A Server can connect to one or more networks identified by a numeric id.
@@ -2402,6 +2402,8 @@ List Networks
 .............
 
 This operation lists the networks associated with a users account
+
+.. rubric:: Request
 
 ==================== ======
 URI                  Method
@@ -2418,7 +2420,11 @@ Request Header  Value
 X-Auth-Token    User authentication token
 ==============  =========================
 
-|
+.. note:: Request parameters should be empty
+
+.. note:: Request body should be empty
+
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
@@ -2435,8 +2441,20 @@ Return Code                 Description
 \                           unavailable
 =========================== =====================
 
+Response body content::
+
+  networks: {
+    values: [
+      {
+        <network attribute>: <value>,
+        ...
+      },
+      ...
+    ]
+  }
+
 The ``detail`` operation lists the `full network attributes <#network-ref>`_,
-while the regular operation returns only the network ``id`` and ``name``.
+while the regular operation returns only the ``id`` and ``name`` attributes.
 
 **Example Networks List Response: JSON (regular)**:
 
@@ -2445,8 +2463,8 @@ while the regular operation returns only the network ``id`` and ``name``.
   {
     "networks": {
       "values": [
-        {"id": "1". "name": "public"},
-        {"id": "2". "name": "my private network"}
+        {"id": "1", "name": "public"},
+        {"id": "2", "name": "my private network"}
       ]
     }
   }
@@ -2479,7 +2497,9 @@ while the regular operation returns only the network ``id`` and ``name``.
 Create Network
 ..............
 
-This operation creates a new network
+This operation asynchronously provisions a new network.
+
+.. rubric:: Request
 
 ==================== ======
 URI                  Method
@@ -2495,10 +2515,14 @@ Request Header  Value
 X-Auth-Token    User authentication token
 ==============  =========================
 
-|
+.. note:: Request parameters should be empty
 
-The request body is json-formated and contains a collection of attributes under
-the ``network`` tag, which are presented bellow:
+Request body content::
+
+  network: {
+    <request attribute>: <value>,
+    ...
+  }
 
 ================== ======================= ======== =======
 Request Attributes Description             Required Default
@@ -2531,7 +2555,7 @@ public             If a public network     **✘**    False
 
   {"network": {"name": "private_net", "type": "MAC_FILTERED"}}
 
-|
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
@@ -2548,9 +2572,14 @@ Return Code                 Description
 503 (Service Unavailable)   Failed to allocated network resources
 =========================== =====================
 
-In case of a 202 code, the operation asynchronously provisions a new private
-network and the response body consists of a collection of 
-`network attributes <#network-red>`_.
+Response body content::
+
+  network: {
+    <network attribute>: <value>,
+    ...
+  }
+
+A list of the valid network attributes can be found `here <#network-ref>`_.
 
 **Example Create Network Response: JSON**:
 
@@ -2574,9 +2603,10 @@ network and the response body consists of a collection of
     }
   }
 
-
 Get Network Details
 ...................
+
+.. rubric:: Request
 
 ========================== ======
 URI                        Method
@@ -2594,7 +2624,11 @@ Request Header  Value
 X-Auth-Token    User authentication token
 ==============  =========================
 
-|
+.. note:: Request parameters should be empty
+
+.. note:: Request body should be empty
+
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
@@ -2608,10 +2642,14 @@ Return Code                 Description
 503 (Service Unavailable)   The service is not currently available
 =========================== =====================
 
-|
+Response code content::
 
-In case of a 200 code, the response body consists of a collection of
-`network attributes <#network-ref>`_.
+  network: {
+    <network attribute>: <value>,
+    ...
+  }
+
+A list of network attributes can be found `here <#network-ref>`_.
 
 **Example Get Network Details Response: JSON**:
 
@@ -2638,6 +2676,8 @@ In case of a 200 code, the response body consists of a collection of
 Rename Network
 ..............
 
+.. rubric:: Request
+
 ========================== ======
 URI                        Method
 ========================== ======
@@ -2654,24 +2694,19 @@ Request Header  Value
 X-Auth-Token    User authentication token
 ==============  =========================
 
-|
+.. note:: Request parameters should be empty
 
-The request body is json-formated and contains a ``network`` tab over the
-following attribute:
+Request body content::
 
-================== ================
-Request Parameters Description
-================== ================
-name               New network name
-================== ================
+  network: {name: <new value>}
 
-**Example Update Network Name Request: JSON**:
+**Example Update Network Name Request: JSON**
 
 .. code-block:: javascript
 
   {"network": {"name": "new_name"}}
 
-|
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
@@ -2688,11 +2723,14 @@ Return Code                 Description
 503 (Service Unavailable)   The service is not currently available
 =========================== =====================
 
-In case of a 200 response code, the ``name`` of the network is changed to the
-new value.
+.. note:: In case of a 204 code, the response body should be empty
 
 Delete Network
 ..............
+
+A network is deleted as long as it is not attached to any virtual servers.
+
+.. rubric:: Request
 
 ========================== ======
 URI                        Method
@@ -2710,7 +2748,11 @@ Request Header  Value
 X-Auth-Token    User authentication token
 ==============  =========================
 
-|
+.. note:: Request parameters should be empty
+
+.. note:: Request body should be empty
+
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
@@ -2720,13 +2762,22 @@ Return Code                 Description
 401 (Unauthorized)          Missing or expired user token
 403 (Forbidden)             Administratively suspended server
 404 (Not Found)             Network not found
+421 (Network In Use)        The network is in use and cannot be deleted
 500 (Internal Server Error) The request cannot be completed because of an
 \                           internal error
 503 (Service Unavailable)   The service is not currently available
 =========================== =====================
 
-Add / Remove Server
-...................
+.. note:: In case of a 204 code, the response body should be empty
+
+
+Connect network to Server
+..........................
+
+Connect a network to a virtual server. The effect of this operation is the
+creation of a NIC that connects the two parts.
+
+.. rubric:: Request
 
 ================================= ======
 URI                               Method
@@ -2736,24 +2787,17 @@ URI                               Method
 
 * **network-id** is the identifier of the network
 
-|
-
 ==============  =========================
 Request Header  Value                    
 ==============  =========================
 X-Auth-Token    User authentication token
 ==============  =========================
 
-|
+.. note:: Request parameters should be empty
 
-The json-formated request body should be an ``add`` **or** ``remove`` tag over
-the following attribute:
+Response body content (connect)::
 
-================== =================================
-Request Paramenter Description
-================== =================================
-serverRef          Server id to (dis)connect from/to
-================== =================================
+  add {serverRef: <server id to connect>}
 
 **Example Action Add (connect to): JSON**:
 
@@ -2761,18 +2805,12 @@ serverRef          Server id to (dis)connect from/to
 
   {"add" : {"serverRef" : 42}}
 
-**Example Action Remove (disconnect from): JSON**:
-
-.. code-block:: javascript
-
-  {"remove" : {"serverRef" : 42}}
-
-|
+.. rubric:: Response
 
 =========================== =====================
 Return Code                 Description
 =========================== =====================
-204 (OK)                    Request succeeded
+202 (OK)                    Request succeeded
 400 (Bad Request)           Malformed request or network already deleted
 401 (Unauthorized)          Missing or expired user token
 403 (Forbidden)             Not allowed to modify this network (e.g. public)
@@ -2782,8 +2820,58 @@ Return Code                 Description
 503 (Service Unavailable)   The service is not currently available
 =========================== =====================
 
-In case of 204 code, the server is connected to (``add``) or disconnected from
-(``remove``) the network.
+.. note:: In case of a 202 code, the request body should be empty
+
+Disconnect network from Server
+..............................
+
+Disconnect a network from a virtual server. The effect of this operation is the
+deletion of the NIC that connects the two parts.
+
+.. rubric:: Request
+
+================================= ======
+URI                               Method
+================================= ======
+``/networks/<network-id>/action`` POST
+================================= ======
+
+* **network-id** is the identifier of the network
+
+==============  =========================
+Request Header  Value                    
+==============  =========================
+X-Auth-Token    User authentication token
+==============  =========================
+
+.. note:: Request parameters should be empty
+
+Response body content (disconnect)::
+
+  remove {serverRef: <server id to disconnect>}
+
+**Example Action Remove (disconnect from): JSON**:
+
+.. code-block:: javascript
+
+  {"remove" : {"serverRef" : 42}}
+
+.. rubric:: Response
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+202 (OK)                    Request succeeded
+400 (Bad Request)           Malformed request or network already deleted
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Not allowed to modify this network (e.g. public)
+404 (Not Found)             Network not found
+500 (Internal Server Error) The request cannot be completed because of an
+\                           internal error
+503 (Service Unavailable)   The service is not currently available
+=========================== =====================
+
+.. note:: In case of a 202 code, the request body should be empty
 
 Index of Attributes
 -------------------
@@ -2824,15 +2912,23 @@ links            Server links               **✘**    ✔
 
 * **hostId** is always empty in Cyclades and is returned for compatibility reasons
 
-* **imageRef** and **flavorRef** always refer to existing Image and Flavor specifications. Cyclades improved the OpenStack approach by using references to Image and Flavor attributes, instead of listing their full properties
+* **imageRef** and **flavorRef** always refer to existing Image and Flavor
+  specifications. Cyclades improved the OpenStack approach by using references
+  to Image and Flavor attributes, instead of listing their full properties
 
-* **adminPass** in Cyclades it is generated automatically during creation. For safety, it is not stored anywhere in the system and it cannot be recovered with a query request
+* **adminPass** in Cyclades it is generated automatically during creation. For
+  safety, it is not stored anywhere in the system and it cannot be recovered
+  with a query request
 
-* **suspended** is True only of the server is suspended by the cloud administrations or policy
+* **suspended** is True only of the server is suspended by the cloud
+  administrations or policy
 
-* **progress** is a number between 0 and 100 and reflects the server building status
+* **progress** is a number between 0 and 100 and reflects the server building
+  status
 
-* **metadata** are custom key:value pairs refering to the VM. In Cyclades, the ``OS`` and ``users`` metadata are automatically retrieved from the servers image during creation
+* **metadata** are custom key:value pairs refering to the VM. In Cyclades, the
+  ``OS`` and ``users`` metadata are automatically retrieved from the servers
+  image during creation
 
 .. _status-ref:
 
@@ -2860,7 +2956,7 @@ SUSPENDED     Suspended            **✘**    ✔
 VERIFY_RESIZE Waiting confirmation **✘**    ✔
 ============= ==================== ======== ==========
 
-.. _network-ref
+.. _network-ref:
 
 Network
 .......
@@ -2900,11 +2996,16 @@ attachments        Network Interface Connections (NICs)
 Network Interface Connection (NIC)
 ..................................
 
-A Network Interface Connection (NIC) represents a servers connection to a network.
+A Network Interface Connection (NIC) represents a servers connection to a
+network.
 
-A NIC is identified by a server and an (obviously unique) mac address. A server can have multiple NICs, though. In practice, a NIC id is used of reference and identification.
+A NIC is identified by a server and an (obviously unique) mac address. A server
+can have multiple NICs, though. In practice, a NIC id is used of reference and
+identification.
 
-Each NIC is used to connect a specific server to a network. The network is aware of that connection for as long as it holds. If a NIC is disconnected from a network, it is destroyed.
+Each NIC is used to connect a specific server to a network. The network is
+aware of that connection for as long as it holds. If a NIC is disconnected from
+a network, it is destroyed.
 
 A NIC specification contains the following information:
 
@@ -2919,18 +3020,23 @@ ipv4              IP v4 address          ✔        **✘**
 ipv6              IP v6 address          ✔        **✘**
 ================= ====================== ======== ==========
 
-* **id** is the unique identified of the NIC. It consists of the server id and an ordinal number nic-<server-id>-<ordinal number> , e.g. for a server with id 42::
-  nic-42-0, nic-42-1, ...
+* **id** is the unique identified of the NIC. It consists of the server id and
+  an ordinal number nic-<server-id>-<ordinal number> , e.g. for a server with
+  id 42::
+
+    nic-42-0, nic-42-1, ...
 
 * **mac_address** is the unique mac address of the interface
 
 * **network_id** is the id of the network this nic connects to.
 
-* **firewallProfile** , if set, refers to the mode of the firewall. Valid firewall profile values::
+* **firewallProfile** , if set, refers to the mode of the firewall. Valid
+  firewall profile values::
 
-  ENABLED, DISABLED, PROTECTED
+    ENABLED, DISABLED, PROTECTED
 
-* **ipv4** and **ipv6** are the IP addresses (versions 4 and 6 respectively) of the specific network connection for that machine.
+* **ipv4** and **ipv6** are the IP addresses (versions 4 and 6 respectively) of
+  the specific network connection for that machine.
 
 .. _flavor-ref:
 
@@ -2960,16 +3066,17 @@ links href        Atom link href field **✘**    ✔
 
 * **ram** is the server RAM size in MB
 
-* **SNF:disk_template** is a reference to the underlying storage mechanism used
-by the Cyclades server. It is Cyclades specific.
+* **SNF:disk_template** is a reference to the underlying storage mechanism
+  used by the Cyclades server. It is Cyclades specific.
 
 * **disk** the servers disk size in GB
 
-* **cpu** and **vcpus** are semantically equivalent terms in Cyclades and OS/Compute APIs respectively and they refer to the number of virtual CPUs assigned
-to a server
+* **cpu** and **vcpus** are semantically equivalent terms in Cyclades and
+  OS/Compute APIs respectively and they refer to the number of virtual CPUs
+  assigned to a server
 
 * **link ref** and **link href** refer to the Atom link attributes that are
-`used in OS/Compute API <http://docs.openstack.org/api/openstack-compute/2/content/List_Flavors-d1e4188.html>`_.
+  `used in OS/Compute API <http://docs.openstack.org/api/openstack-compute/2/content/List_Flavors-d1e4188.html>`_.
 
 .. _image-ref:
 
@@ -3004,6 +3111,6 @@ minRam            Minimum required RAM   **✘**    ✔
 * **progress** varies between 0 and 100 and denotes the status of the image
 
 * **metadata** is a collection of ``key``:``values`` pairs of custom metadata,
-under the tag ``values`` which lies under the tag ``metadata``.
+  under the tag ``values`` which lies under the tag ``metadata``.
 
 .. note:: in OS/Compute, the ``values`` layer is missing

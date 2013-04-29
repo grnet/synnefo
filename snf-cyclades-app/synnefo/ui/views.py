@@ -258,22 +258,7 @@ def machines_console(request):
 def user_quota(request):
     get_user(request, settings.ASTAKOS_URL, usage=True)
 
-    if request.user and 'usage' in request.user:
-        response = json.dumps(request.user['usage'])
-    else:
-        # hmmm, old astakos ???
-        # try to mimic astakos response using cyclades quota settings
-        networks_limit_for_user = \
-            settings.NETWORKS_USER_QUOTA.get(request.user_uniq,
-                                             settings.MAX_NETWORKS_PER_USER)
-        vms_limit_for_user = \
-            settings.VMS_USER_QUOTA.get(request.user_uniq,
-                                        settings.MAX_NETWORKS_PER_USER)
-        usage = [{'name': 'cyclades.vm',
-                  'maxValue': vms_limit_for_user},
-                 {'name': 'cyclades.network.private',
-                  'maxValue': networks_limit_for_user}]
-        response = json.dumps(usage)
+    response = json.dumps(request.user['usage'])
 
     return HttpResponse(response, mimetype="application/json")
 

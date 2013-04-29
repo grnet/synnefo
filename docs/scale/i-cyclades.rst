@@ -45,13 +45,6 @@ In `/etc/synnefo/cyclades.conf` add:
     MAX_CIDR_BLOCK = 21
     PUBLIC_USE_POOL = True
 
-    MAX_VMS_PER_USER = 5
-    VMS_USER_QUOTA = {
-        'user@example.com': 20,
-    }
-    MAX_NETWORKS_PER_USER = 3
-    NETWORKS_USER_QUOTA = { 'user@example.com': 10 }
-
     CPU_BAR_GRAPH_URL = 'https://cyclades.example.com/stats/%s/cpu-bar.png'
     CPU_TIMESERIES_GRAPH_URL = 'https://cyclades.example.com/stats/%s/cpu-ts.png'
     NET_BAR_GRAPH_URL = 'https://cyclades.example.com/stats/%s/net-bar.png'

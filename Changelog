@@ -32,6 +32,9 @@ Cyclades
   which is equivalent to 'reconcile-resources-cyclades --fix'.
 * Rename 'cyclades-reconcile-commissions' management command to
   'reconcile-commissions-cyclades'.
+* Remove obsolete 'MAX_VMS_PER_USER', 'MAX_NETWORKS_PER_USER',
+  "VMS_USER_QUOTA" and "NETWORKS_USER_QUOTA" settings, since their usage
+  is covered by Quotaholder.
 
 
 Pithos

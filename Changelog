@@ -14,6 +14,12 @@ v0.13next
 
 Released: UNRELEASED
 
+* Incorporate quotaholder in astakos
+  * obsolete settings:
+    PITHOS_USE_QUOTAHOLDER, PITHOS_QUOTAHOLDER_URL, PITHOS_QUOTAHOLDER_TOKEN
+  * new settins:
+    PITHOS_ASTAKOSCLIENT_POOLSIZE
+
 Synnefo-wide
 ------------
 * Create 'snf_django' Python package to hold common code for all Synnefo

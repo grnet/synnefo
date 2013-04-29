@@ -908,6 +908,28 @@ def unset_user_setting(user_id, key):
     UserSetting.objects.filter(user=user_id, setting=key).delete()
 
 
+def _partition_by(f, l):
+    d = {}
+    for x in l:
+        group = f(x)
+        group_l = d.get(group, [])
+        group_l.append(x)
+        d[group] = group_l
+    return d
+
+
+def count_pending_app(users):
+    apps = ProjectApplication.objects.filter(state=ProjectApplication.PENDING,
+                                             owner__in=users)
+    apps_d = _partition_by(lambda a: a.owner.uuid, apps)
+
+    usage = {}
+    for user in users:
+        uuid = user.uuid
+        usage[uuid] = len(apps_d.get(uuid, []))
+    return usage
+
+
 def qh_add_pending_app(user, precursor=None, force=False, dry_run=False):
     if precursor is None:
         diff = 1

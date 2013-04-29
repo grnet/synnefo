@@ -366,10 +366,15 @@ def create_server(request):
         log.info("User %s created VM %s, NIC %s, Backend %s, JobID %s",
                  user_id, vm, nic, backend, str(jobID))
     except GanetiApiError as e:
-        log.exception("Can not communicate to backend %s: %s. Deleting VM %s",
-                      backend, e, vm)
-        vm.delete()
-        transaction.commit()
+        log.exception("Can not communicate to backend %s: %s.",
+                      backend, e)
+        # Failed while enqueuing OP_INSTANCE_CREATE to backend. Restore
+        # already reserved quotas by issuing a negative commission
+        vm.operstate = "ERROR"
+        vm.backendlogmsg = "Can not communicate to backend."
+        vm.deleted = True
+        vm.save()
+        quotas.issue_and_accept_commission(vm, delete=True)
         raise
     except:
         transaction.rollback()

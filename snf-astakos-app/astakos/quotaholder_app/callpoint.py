@@ -32,17 +32,17 @@
 # or implied, of GRNET S.A.
 
 from django.db.models import F
-from astakos.quotaholder.exception import (
+from astakos.quotaholder_app.exception import (
     QuotaholderError,
     NoCommissionError,
     CorruptedError, InvalidDataError,
     NoHoldingError,
     DuplicateError)
 
-from astakos.quotaholder.commission import (
+from astakos.quotaholder_app.commission import (
     Import, Release, Operations, finalize, undo)
 
-from .models import (Holding,
+from astakos.quotaholder_app.models import (Holding,
                      Commission, Provision, ProvisionLog,
                      now)
 

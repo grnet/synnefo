@@ -44,7 +44,7 @@ installed_apps = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django_tables2',
-    'astakos.quotaholder',
+    'astakos.quotaholder_app',
 #    'debug_toolbar',
 ]
 

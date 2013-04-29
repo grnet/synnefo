@@ -78,7 +78,7 @@ from astakos.im.project_notif import (
     project_termination_notify, project_suspension_notify)
 from astakos.im import settings
 import astakos.im.messages as astakos_messages
-from astakos.quotaholder.exception import NoCapacityError
+from astakos.quotaholder_app.exception import NoCapacityError
 
 logger = logging.getLogger(__name__)
 

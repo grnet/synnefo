@@ -33,8 +33,8 @@
 
 from django.test import TestCase
 
-import astakos.quotaholder.callpoint as qh
-from astakos.quotaholder.exception import (
+import astakos.quotaholder_app.callpoint as qh
+from astakos.quotaholder_app.exception import (
     InvalidDataError,
     NoCommissionError,
     NoQuantityError,

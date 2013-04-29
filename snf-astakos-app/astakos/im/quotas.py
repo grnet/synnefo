@@ -34,7 +34,7 @@
 from astakos.im.models import (
     Resource, AstakosUserQuota, AstakosUser,
     Project, ProjectMembership, ProjectResourceGrant, ProjectApplication)
-import astakos.quotaholder.callpoint as qh
+import astakos.quotaholder_app.callpoint as qh
 from django.db.models import Q
 
 

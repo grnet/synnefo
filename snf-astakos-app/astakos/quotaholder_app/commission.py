@@ -31,7 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from astakos.quotaholder.exception import NoCapacityError, NoQuantityError
+from astakos.quotaholder_app.exception import NoCapacityError, NoQuantityError
 
 
 class Operation(object):

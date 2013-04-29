@@ -47,8 +47,8 @@ from astakos.im.api.service import service_from_token
 from astakos.im.resources import get_resources
 from astakos.im.quotas import get_user_quotas, service_get_quotas
 
-import astakos.quotaholder.exception as qh_exception
-import astakos.quotaholder.callpoint as qh
+import astakos.quotaholder_app.exception as qh_exception
+import astakos.quotaholder_app.callpoint as qh
 
 
 @api.api_method(http_method='GET', token_required=True, user_required=False)

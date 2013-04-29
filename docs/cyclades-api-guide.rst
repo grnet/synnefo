@@ -78,6 +78,32 @@ API Operations
 Servers
 -------
 
+=================================================== ========================================= ====== ======== ==========
+Description                                         URI                                       Method Cyclades OS/Compute
+=================================================== ========================================= ====== ======== ==========
+`List <#list-servers>`_                             ``/servers``                              GET    ✔        ✔
+\                                                   ``/servers/detail``                       GET    ✔        ✔
+`Create <#create-server>`_                          ``/servers``                              POST   ✔        ✔
+`Get Stats <#get-server-stats>`_                    ``/servers/<server-id>/stats``            GET    ✔        **✘**
+`Get Diagnostics <#get-server-diagnostics>`_        ``/servers/<server-id>/diagnostics``      GET    ✔        **✘**
+`Get Details <#get-server-details>`_                ``/servers/<server id>``                  GET    ✔        ✔
+`Rename <#rename-server>`_                          ``/servers/<server id>``                  PUT    ✔        ✔
+`Delete <#delete-server>`_                          ``/servers/<server id>``                  DELETE ✔        ✔
+`List Addresses <#list-server-addresses>`_          ``/servers/<server id>/ips``              GET    ✔        ✔
+`Get NICs by Net <#get-server-nics-by-network>`_    ``/servers/<server id>/ips/<network id>`` GET    ✔        ✔
+`List Metadata <#list-server-metadata>`_            ``/servers/<server-id>/meta``             GET    ✔        **✘**
+\                                                   ``/servers/<server-id>/metadata``         GET    **✘**    ✔
+`Update Metadata <#set-update-server-metadata>`_    ``/servers/<server-id>/meta``             POST    ✔       **✘**
+\                                                   ``/servers/<server-id>/metadata``         PUT    **✘**    ✔
+\                                                   ``/servers/<server-id>/metadata``         POST   **✘**    ✔
+`Get Meta Item <#get-server-metadata-item>`_        ``/servers/<server-id>/meta/<key>``       GET    ✔        **✘**
+\                                                   ``/servers/<server-id>/metadata/<key>``   GET    **✘**    ✔
+`Update Meta Item <#update-server-metadatum-item>`_ ``/servers/<server-id>/meta/<key>``       PUT    ✔        **✘**
+\                                                   ``/servers/<server-id>/metadata/<key>``   PUT    **✘**    ✔
+`Delete Meta Item <#delete-server-metadatum>`_      ``/servers/<server-id>/meta/<key>``       DELETE ✔        **✘**
+\                                                   ``/servers/<server-id>/metadata/<key>``   DELETE **✘**    ✔
+=================================================== ========================================= ====== ======== ==========
+
 List Servers
 ............
 
@@ -585,11 +611,11 @@ URI                                  Method Cyclades OS/Compute
 
 |
 
-============================== ====== ======== ==========
-URI                            Method Cyclades OS/Compute
-============================== ====== ======== ==========
-``/servers/<server-id>/stats`` GET    ✔        **✘**
-============================== ====== ======== ==========
+==============  ========================= ======== ==========
+Request Header  Value                     Cyclades OS/Compute
+==============  ========================= ======== ==========
+X-Auth-Token    User authentication token required required
+==============  ========================= ======== ==========
 
 .. note:: Request parameters should be empty
 
@@ -1307,8 +1333,8 @@ Response body content::
 
 .. note:: In OS/Compute, ``metadata`` is ``meta``
 
-Set / Update Server Metadatum Item
-..................................
+Update Server Metadatum Item
+.............................
 
 Set a new or update an existing a metadum value for a virtual server.
 
@@ -1441,21 +1467,21 @@ between Synnefo/Cyclades and OS/Compute. Although this document focuses on
 Synnefo/Cyclades, differences and similarities between the APIs are also
 briefed.
 
-============================= ======== ==========
-Operations                    Cyclades OS/Compute
-============================= ======== ==========
-Start Server                  ✔        **✘**
-Shutdown Server               ✔        **✘**
-Reboot Server                 ✔        ✔
-Get Server Console            ✔        **✘**
-Set Firewall Profile          ✔        **✘**
-Change Administrator Password **✘**    ✔
-Rebuild Server                **✘**    ✔
-Resize Server                 **✘**    ✔
-Confirm Resized Server        **✘**    ✔
-Revert Resized Server         **✘**    ✔
-Create Image                  **✘**    ✔
-============================= ======== ==========
+=============================================== ======== ==========
+Operations                                      Cyclades OS/Compute
+=============================================== ======== ==========
+`Start <#start-server>`_                        ✔        **✘**
+`Shutdown <#shutdown-server>`_                  ✔        **✘**
+`Reboot <#reboot-server>`_                      ✔        ✔
+`Get Console <#get-server-console>`_            ✔        **✘**
+`Set Firewall <#set-server-firewall-profile>`_  ✔        **✘**
+`Change Admin Password <#os-compute-specific>`_ **✘**    ✔
+`Rebuild <#os-compute-specific>`_               **✘**    ✔
+`Resize <#os-compute-specific>`_                **✘**    ✔
+`Confirm Resized <#os-compute-specific>`_       **✘**    ✔
+`Revert Resized <#os-compute-specific>`_        **✘**    ✔
+`Create Image <#os-compute-specific>`_          **✘**    ✔
+=============================================== ======== ==========
 
 .. rubric:: Request
 

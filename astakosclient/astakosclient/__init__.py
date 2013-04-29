@@ -392,9 +392,6 @@ class AstakosClient():
         (See also issue_commission)
 
         """
-        check_input("issue_one_commission", self.logger,
-                    holder=holder, source=source,
-                    provisions=provisions)
 
         request = {}
         request["force"] = force
@@ -488,9 +485,6 @@ class AstakosClient():
         resolved.
 
         """
-        check_input("resolve_commissions", self.logger,
-                    accept_serials=accept_serials,
-                    reject_serials=reject_serials)
 
         path = "/astakos/api/commissions/action"
         req_headers = {'content-type': 'application/json'}

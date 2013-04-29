@@ -47,8 +47,8 @@ class Holding(Model):
     resource = CharField(max_length=4096, null=False)
 
     limit = intDecimalField()
-    imported_min = intDecimalField(default=0)
-    imported_max = intDecimalField(default=0)
+    usage_min = intDecimalField(default=0)
+    usage_max = intDecimalField(default=0)
 
     objects = ForUpdateManager()
 
@@ -104,8 +104,8 @@ class ProvisionLog(Model):
     source = CharField(max_length=4096, null=True)
     resource = CharField(max_length=4096)
     limit = intDecimalField()
-    imported_min = intDecimalField()
-    imported_max = intDecimalField()
+    usage_min = intDecimalField()
+    usage_max = intDecimalField()
     delta_quantity = intDecimalField()
     reason = CharField(max_length=4096)
 

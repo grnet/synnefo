@@ -39,16 +39,16 @@ from django.db.models import Q
 
 
 def from_holding(holding):
-    limit, imported_min, imported_max = holding
+    limit, usage_min, usage_max = holding
     body = {'limit':       limit,
-            'usage':       imported_max,
-            'pending':     imported_max-imported_min,
+            'usage':       usage_max,
+            'pending':     usage_max-usage_min,
             }
     return body
 
 
 def limits_only(holding):
-    limit, imported_min, imported_max = holding
+    limit, usage_min, usage_max = holding
     return limit
 
 

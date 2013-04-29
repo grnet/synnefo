@@ -38,7 +38,7 @@ class Operation(object):
 
     @staticmethod
     def assertions(holding):
-        assert(holding.imported_min <= holding.imported_max)
+        assert(holding.usage_min <= holding.usage_max)
 
     @classmethod
     def _prepare(cls, holding, quantity, check=True):
@@ -80,11 +80,11 @@ class Import(Operation):
 
     @classmethod
     def _prepare(cls, holding, quantity, check=True):
-        imported_max = holding.imported_max
-        new_imported_max = imported_max + quantity
+        usage_max = holding.usage_max
+        new_usage_max = usage_max + quantity
 
         limit = holding.limit
-        if check and new_imported_max > limit:
+        if check and new_usage_max > limit:
             holder = holding.holder
             resource = holding.resource
             m = ("%s has not enough capacity of %s." % (holder, resource))
@@ -92,14 +92,14 @@ class Import(Operation):
             raise NoCapacityError(m,
                                   provision=provision,
                                   limit=limit,
-                                  usage=imported_max)
+                                  usage=usage_max)
 
-        holding.imported_max = new_imported_max
+        holding.usage_max = new_usage_max
         holding.save()
 
     @classmethod
     def _finalize(cls, holding, quantity):
-        holding.imported_min += quantity
+        holding.usage_min += quantity
         holding.save()
 
 
@@ -107,10 +107,10 @@ class Release(Operation):
 
     @classmethod
     def _prepare(cls, holding, quantity, check=True):
-        imported_min = holding.imported_min
-        new_imported_min = imported_min - quantity
+        usage_min = holding.usage_min
+        new_usage_min = usage_min - quantity
 
-        if check and new_imported_min < 0:
+        if check and new_usage_min < 0:
             holder = holding.holder
             resource = holding.resource
             m = ("%s attempts to release more %s than it contains." %
@@ -118,14 +118,14 @@ class Release(Operation):
             provision = cls.provision(holding, quantity, importing=False)
             raise NoQuantityError(m,
                                   provision=provision,
-                                  available=imported_min)
+                                  available=usage_min)
 
-        holding.imported_min = new_imported_min
+        holding.usage_min = new_usage_min
         holding.save()
 
     @classmethod
     def _finalize(cls, holding, quantity):
-        holding.imported_max -= quantity
+        holding.usage_max -= quantity
         holding.save()
 
 

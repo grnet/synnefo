@@ -62,7 +62,7 @@ def get_quota(holders=None, sources=None, resources=None):
     quotas = {}
     for holding in holdings:
         key = (holding.holder, holding.source, holding.resource)
-        value = (holding.limit, holding.imported_min, holding.imported_max)
+        value = (holding.limit, holding.usage_min, holding.usage_max)
         quotas[key] = value
 
     return quotas
@@ -186,8 +186,8 @@ def _log_provision(commission, provision, holding, log_time, reason):
         'source':              holding.source,
         'resource':            holding.resource,
         'limit':               holding.limit,
-        'imported_min':        holding.imported_min,
-        'imported_max':        holding.imported_max,
+        'usage_min':           holding.usage_min,
+        'usage_max':           holding.usage_max,
         'delta_quantity':      provision.quantity,
         'issue_time':          commission.issue_time,
         'log_time':            log_time,

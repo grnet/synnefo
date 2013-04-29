@@ -56,7 +56,7 @@ class SwissArmy():
         self.backend.close()
 
     def existing_accounts(self):
-        return self.backend.node.node_accounts()
+        return sorted([path for path, _ in self.backend.node.node_accounts()])
 
     def duplicate_accounts(self):
         accounts = self.existing_accounts()

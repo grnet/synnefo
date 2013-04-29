@@ -69,23 +69,22 @@ class Command(NoArgsCommand):
 
             if options['fix']:
                 to_accept = b.quotaholder_serials.lookup(pending_commissions)
-                response = b.quotaholder.resolve_commissions(
-                    token=b.quotaholder_token,
-                    accept_serials=to_accept,
-                    reject_serials=[])
-                accepted = response['accepted']
-                self.stdout.write("Accepted commissions: %s\n" %  accepted)
-
-                b.quotaholder_serials.delete_many(to_accept)
-                self.stdout.write("Deleted serials: %s\n" %  to_accept)
-
                 to_reject = list(set(pending_commissions) - set(to_accept))
                 response = b.quotaholder.resolve_commissions(
                     token=b.quotaholder_token,
-                    accept_serials=[],
-                    reject_serials=to_reject)
+                    accept_serials=to_accept,
+                    reject_serials=to_reject
+                )
+                accepted = response['accepted']
                 rejected = response['rejected']
+                failed = response['failed']
+                self.stdout.write("Accepted commissions: %s\n" %  accepted)
                 self.stdout.write("Rejected commissions: %s\n" %  rejected)
+                self.stdout.write("Failed commissions:\n")
+                for i in failed:
+                    self.stdout.write('%s\n' % i)
+
+                b.quotaholder_serials.delete_many(accepted)
         except Exception, e:
             logger.exception(e)
             raise CommandError(e)

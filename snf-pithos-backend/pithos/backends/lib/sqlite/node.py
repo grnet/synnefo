@@ -384,6 +384,30 @@ class Node(DBWorker):
         self.execute(q, (node,))
         return True
 
+    def node_accounts(self, accounts=()):
+        q = ("select path, node from nodes where node != 0 and parent == 0 ")
+        args = []
+        if accounts:
+            placeholders = ','.join('?' for a in accounts)
+            q += ("and path in (%s)" % placeholders)
+            args += accounts
+        return self.execute(q, args).fetchall()
+
+    def node_account_usage(self, account_node, cluster):
+        select_children = ("select node from nodes where parent = ?")
+        select_descedents = ("select node from nodes "
+                             "where parent in (%s) "
+                             "or node in (%s) ") % ((select_children,)*2)
+        args = [account_node]*2
+        q = ("select sum(v.size) from versions v, nodes n "
+             "where v.node = n.node "
+             "and n.node in (%s) "
+             "and v.cluster = ?") % select_descedents
+        args += [cluster]
+
+        self.execute(q, args)
+        return self.fetchone()[0]
+
     def policy_get(self, node):
         q = "select key, value from policy where node = ?"
         self.execute(q, (node,))

@@ -58,9 +58,8 @@ and are related to all the services (Astakos, Pithos+, Cyclades, Plankton).
 To be able to download all synnefo components you need to add the following
 lines in your ``/etc/apt/sources.list`` file:
 
-| ``deb http://apt.dev.grnet.gr squeeze main``
-| ``deb-src http://apt.dev.grnet.gr squeeze main``
-| ``deb http://apt.dev.grnet.gr squeeze-backports main``
+| ``deb http://apt2.dev.grnet.gr stable/``
+| ``deb-src http://apt2.dev.grnet.gr stable/``
 
 and import the repo's GPG key:
 
@@ -848,12 +847,11 @@ this options:
 
 .. code-block:: console
 
-   PITHOS_BACKEND_DB_CONNECTION = 'postgresql://synnefo:example_passw0rd@node1.example.com:5432/snf_pithos'
+   ASTAKOS_URL = 'https://node1.example.com/'
 
+   PITHOS_BACKEND_DB_CONNECTION = 'postgresql://synnefo:example_passw0rd@node1.example.com:5432/snf_pithos'
    PITHOS_BACKEND_BLOCK_PATH = '/srv/pithos/data'
 
-   PITHOS_AUTHENTICATION_URL = 'https://node1.example.com/im/authenticate'
-   PITHOS_AUTHENTICATION_USERS = None
 
    PITHOS_SERVICE_TOKEN = 'pithos_service_token22w=='
    PITHOS_USER_CATALOG_URL = 'https://node1.example.com/user_catalogs'
@@ -879,9 +877,8 @@ the pithos+ backend data. Above we tell pithos+ to store its data under
 ``/srv/pithos/data``, which is visible by both nodes. We have already setup this
 directory at node1's "Pithos+ data directory setup" section.
 
-The ``PITHOS_AUTHENTICATION_URL`` option tells to the pithos+ app in which URI
-is available the astakos authentication api. If not set, pithos+ tries to
-authenticate using the ``PITHOS_AUTHENTICATION_USERS`` user pool.
+The ``ASTAKOS_URL`` option tells to the pithos+ app in which URI
+is available the astakos authentication api.
 
 The ``PITHOS_SERVICE_TOKEN`` should be the Pithos+ token returned by running on
 the Astakos node (node1 in our case):
@@ -905,6 +902,11 @@ The ``PITHOS_UI_LOGIN_URL`` option tells the client where to redirect you, if
 you are not logged in. The ``PITHOS_UI_FEEDBACK_URL`` option points at the
 pithos+ feedback form. Astakos already provides a generic feedback form for all
 services, so we use this one.
+
+The ``PITHOS_UPDATE_MD5`` option by default disables the computation of the
+object checksums. This results to improved performance during object uploading.
+However, if compatibility with the OpenStack Object Storage API is important
+then it should be changed to ``True``.
 
 Then edit ``/etc/synnefo/20-snf-pithos-webclient-cloudbar.conf``, to connect the
 pithos+ web UI with the astakos web UI (through the top cloudbar):
@@ -974,6 +976,35 @@ like this:
        '--timeout=43200'
      ),
     }
+
+Stamp Database Revision
+-----------------------
+
+Pithos uses the alembic_ database migrations tool.
+
+.. _alembic: http://alembic.readthedocs.org
+
+After a sucessful installation, we should stamp it at the most recent
+revision, so that future migrations know where to start upgrading in
+the migration history.
+
+First, find the most recent revision in the migration history:
+
+.. code-block:: console
+
+    root@node2:~ # pithos-migrate history
+    2a309a9a3438 -> 27381099d477 (head), alter public add column url
+    165ba3fbfe53 -> 2a309a9a3438, fix statistics negative population
+    3dd56e750a3 -> 165ba3fbfe53, update account in paths
+    230f8ce9c90f -> 3dd56e750a3, Fix latest_version
+    8320b1c62d9 -> 230f8ce9c90f, alter nodes add column latest version
+    None -> 8320b1c62d9, create index nodes.parent
+
+Finally, we stamp it with the one found in the previous step:
+
+.. code-block:: console
+
+    root@node2:~ # pithos-migrate stamp 27381099d477
 
 Servers Initialization
 ----------------------
@@ -1206,7 +1237,7 @@ a) Download the Image from the official snf-image page.
 
 b) Upload the Image to your Pithos+ installation, either using the Pithos+ Web
    UI or the command line client `kamaki
-   <http://docs.dev.grnet.gr/kamaki/latest/index.html>`_.
+   <http://www.synnefo.org/docs/kamaki/latest/index.html>`_.
 
 Once the Image is uploaded successfully, download the Image's metadata file
 from the official snf-image page. You will need it, for spawning a VM from
@@ -1393,6 +1424,7 @@ Assuming ``eth0`` on both hosts is the public interface (directly connected
 to the router), run on every node:
 
 .. code-block:: console
+
    # apt-get install vlan
    # brctl addbr br0
    # ip link set br0 up
@@ -1671,14 +1703,14 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-api.conf``:
 
 .. code-block:: console
 
-   ASTAKOS_URL = 'https://node1.example.com/im/authenticate'
+   ASTAKOS_URL = 'https://node1.example.com/'
 
    # Set to False if astakos & cyclades are on the same host
    CYCLADES_PROXY_USER_SERVICES = False
 
 The ``ASTAKOS_URL`` denotes the authentication endpoint for Cyclades and is set
 to point to Astakos (this should have the same value with Pithos+'s
-``PITHOS_AUTHENTICATION_URL``, setup :ref:`previously <conf-pithos>`).
+``ASTAKOS_URL``, setup :ref:`previously <conf-pithos>`).
 
 .. warning::
 
@@ -1769,7 +1801,7 @@ Edit ``/etc/default/vncauthproxy``:
 
 .. code-block:: console
 
-   CHUID="www-data:nogroup"
+   CHUID="nobody:www-data"
 
 We have now finished with the basic Cyclades and Plankton configuration.
 
@@ -2025,7 +2057,7 @@ steps, even though you may already have uploaded an Image on Pithos+ from a
  * Register that Image file to Plankton
  * Spawn a new VM from that Image from the Cyclades Web UI
 
-We will use the `kamaki <http://docs.dev.grnet.gr/kamaki/latest/index.html>`_
+We will use the `kamaki <http://www.synnefo.org/docs/kamaki/latest/index.html>`_
 command line client to do the uploading and registering of the Image.
 
 Installation of `kamaki`
@@ -2050,26 +2082,30 @@ installation. We do this by running:
 
 .. code-block:: console
 
-   $ kamaki config set astakos.url "https://node1.example.com"
+   $ kamaki config set user.url "https://node1.example.com"
    $ kamaki config set compute.url "https://node1.example.com/api/v1.1"
    $ kamaki config set image.url "https://node1.example.com/plankton"
-   $ kamaki config set store.url "https://node2.example.com/v1"
-   $ kamaki config set global.account "user@example.com"
-   $ kamaki config set store.enable on
-   $ kamaki config set store.pithos_extensions on
-   $ kamaki config set store.url "https://node2.example.com/v1"
-   $ kamaki config set store.account USER_UUID
-   $ kamaki config set global.token USER_TOKEN
+   $ kamaki config set file.url "https://node2.example.com/v1"
+   $ kamaki config set token USER_TOKEN
 
-The USER_TOKEN and USER_UUID appear on the user's (``user@example.com``)
-`Profile` web page on the Astakos Web UI.
+The USER_TOKEN appears on the user's `Profile` web page on the Astakos Web UI.
 
-You can see that the new configuration options have been applied correctly, by
-running:
+You can see that the new configuration options have been applied correctly,
+either by checking the editable file ``~/.kamakirc`` or by running:
 
 .. code-block:: console
 
    $ kamaki config list
+
+A quick test to check that kamaki is configured correctly, is to try to
+authenticate a user based on his/her token (in this case the user is you):
+
+.. code-block:: console
+
+  $ kamaki user authenticate
+
+The above operation provides various user information, e.g. UUID (the unique
+user id) which might prove useful in some operations.
 
 Upload an Image file to Pithos+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2090,30 +2126,43 @@ We create the new ``images`` container by running:
 
 .. code-block:: console
 
-   $ kamaki store create images
+   $ kamaki file create images
+
+To check if the container has been created, list all containers of your
+account:
+
+.. code-block:: console
+
+  $ kamaki file list
 
 Then, we upload the Image file to that container:
 
 .. code-block:: console
 
-   $ kamaki store upload --container images \
-                         /srv/images/debian_base-6.0-7-x86_64.diskdump \
-                         debian_base-6.0-7-x86_64.diskdump
+   $ kamaki file upload /srv/images/debian_base-6.0-7-x86_64.diskdump images
 
-The first is the local path and the second is the remote path on Pithos+. If
-the new container and the file appears on the Pithos+ Web UI, then you have
-successfully created the container and uploaded the Image file.
+The first is the local path and the second is the remote container on Pithos+.
+Check if the file has been uploaded, by listing the container contents:
+
+.. code-block:: console
+
+  $ kamaki file list images
+
+Alternatively check if the new container and file appear on the Pithos+ Web UI.
 
 Register an existing Image file to Plankton
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Once the Image file has been successfully uploaded on Pithos+, then we register
+For the purposes of the following example, we assume that the user UUID is
+``u53r-un1qu3-1d``.
+
+Once the Image file has been successfully uploaded on Pithos+ then we register
 it to Plankton (so that it becomes visible to Cyclades), by running:
 
 .. code-block:: console
 
    $ kamaki image register "Debian Base" \
-                           pithos://USER_UUID/images/debian_base-6.0-7-x86_64.diskdump \
+                           pithos://u53r-un1qu3-1d/images/debian_base-6.0-7-x86_64.diskdump \
                            --public \
                            --disk-format=diskdump \
                            --property OSFAMILY=linux --property ROOT_PARTITION=1 \
@@ -2122,7 +2171,7 @@ it to Plankton (so that it becomes visible to Cyclades), by running:
                            --property sortorder=1 --property USERS=root --property OS=debian
 
 This command registers the Pithos+ file
-``pithos://user@example.com/images/debian_base-6.0-7-x86_64.diskdump`` as an
+``pithos://u53r-un1qu3-1d/images/debian_base-6.0-7-x86_64.diskdump`` as an
 Image in Plankton. This Image will be public (``--public``), so all users will
 be able to spawn VMs from it and is of type ``diskdump``. The first two
 properties (``OSFAMILY`` and ``ROOT_PARTITION``) are mandatory. All the rest

@@ -30,8 +30,7 @@ Configure in ``settings.py`` or a ``.conf`` file in ``/etc/synnefo`` if using sn
 ===============================  ================================================================   ============================================================
 Name                             Default value                                                      Description
 ===============================  ================================================================   ============================================================
-PITHOS_AUTHENTICATION_URL        \https://<astakos.host>/im/authenticate/                           Astakos Authentication URL
-PITHOS_AUTHENTICATION_USERS      A dictionary of sample users (token to username)                   Set to empty or None to disable
+ASTAKOS_URL                      \https://<astakos.host>/                                           Astakos Authentication URL
 PITHOS_ASTAKOS_COOKIE_NAME       _pithos2_a                                                         Cookie name to retrieve fallback token
 PITHOS_BACKEND_DB_MODULE         pithos.backends.lib.sqlalchemy
 PITHOS_BACKEND_DB_CONNECTION     sqlite:////tmp/pithos-backend.db                                   SQLAlchemy database connection string
@@ -41,10 +40,12 @@ PITHOS_BACKEND_BLOCK_UMASK       0o022                                          
 PITHOS_BACKEND_QUEUE_MODULE      None                                                               Use ``pithos.backends.lib.rabbitmq`` to enable
 PITHOS_BACKEND_QUEUE_HOSTS       None                                                               Format like [``amqp://guest:guest@localhost:5672``
 PITHOS_BACKEND_QUEUE_EXCHANGE    pithos
-PITHOS_BACKEND_QUOTA             50 GB (50 * 1024 ** 3)                                             Default user quota
+PITHOS_BACKEND_ACCOUNT_QUOTA     50 GB (50 * 1024 ** 3)                                             Default account quota (set to 0 to disable control)
+PITHOS_BACKEND_CONTAINER_QUOTA   0                                                                  Default container quota (set to 0 to disable control - default disabled)
 PITHOS_BACKEND_VERSIONING        auto                                                               Default versioning policy for containers
 PITHOS_BACKEND_FREE_VERSIONING   True                                                               Default versioning debit policy (default free)
-PITHOS_UPDATE_MD5                True                                                               Update object checksums when using hashmaps
+PITHOS_BACKEND_POOL_SIZE         5                                                                  Default backend pool size
+PITHOS_UPDATE_MD5                False                                                               Update object checksums
 PITHOS_SERVICE_TOKEN             ''                                                                 Service token acquired by the identity provider (astakos)
 PITHOS_RADOS_STORAGE             False                                                              Enables or disables secondary Pithos storage on RADOS
 PITHOS_RADOS_POOL_BLOCKS         None                                                               RADOS pool to be used for block storage

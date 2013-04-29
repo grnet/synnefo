@@ -187,7 +187,7 @@ SERVICES = getattr(settings, 'ASTAKOS_SERVICES', {
             'group': 'compute',
             'uplimit': 6*1024*1024*1024,
             'unit': 'bytes',
-            'desc': 'Virtual machines'
+            'desc': 'Virtual machine memory size'
             }, {
             'name': 'vm',
             'group': 'compute',

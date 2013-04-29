@@ -41,7 +41,7 @@ from django.http import HttpResponse
 
 from django.core.exceptions import ValidationError, NON_FIELD_ERRORS
 
-from synnefo.lib.astakos import get_user
+from snf_django.lib.astakos import get_user
 from django.conf import settings
 
 # base view class

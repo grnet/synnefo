@@ -33,16 +33,13 @@
 
 from django.core.management import CommandError
 from synnefo.db.models import Backend, VirtualMachine, Network, Flavor
-from synnefo.api.util import get_image as backend_get_image
-from synnefo.api.faults import ItemNotFound, BadRequest, OverLimit
 
+from snf_django.lib.api import faults
+from synnefo.api.util import get_image as backend_get_image
 from synnefo.api.util import validate_network_params
-from synnefo.settings import (CYCLADES_ASTAKOS_SERVICE_TOKEN as ASTAKOS_TOKEN,
-                              ASTAKOS_URL)
 from synnefo.logic.rapi import GanetiApiError, GanetiRapiClient
 from synnefo.logic.utils import (id_from_instance_name,
                                  id_from_network_name)
-from synnefo.lib import astakos
 
 import logging
 log = logging.getLogger(__name__)
@@ -63,7 +60,7 @@ def validate_network_info(options):
 
     try:
         validate_network_params(subnet, gateway)
-    except (BadRequest, OverLimit) as e:
+    except (faults.BadRequest, faults.OverLimit) as e:
         raise CommandError(e)
 
     return subnet, gateway, subnet6, gateway6
@@ -85,7 +82,7 @@ def get_image(image_id, user_id):
     if image_id:
         try:
             return backend_get_image(image_id, user_id)
-        except ItemNotFound:
+        except faults.ItemNotFound:
             raise CommandError("Image with ID %s not found."
                                " Use snf-manage image-list to find"
                                " out available image IDs." % image_id)

@@ -43,18 +43,17 @@ from django.http import (
 from django.utils.http import urlencode
 from django.views.decorators.csrf import csrf_exempt
 
-from pithos.api.settings import (
-    AUTHENTICATION_USERS, USER_LOGIN_URL, USER_FEEDBACK_URL, USER_CATALOG_URL)
+from pithos.api.settings import (USER_LOGIN_URL, USER_FEEDBACK_URL,
+                                 USER_CATALOG_URL)
 
-from synnefo.lib.pool.http import PooledHTTPConnection
+from objpool.http import PooledHTTPConnection
 
 logger = logging.getLogger(__name__)
 
 
 def delegate_to_login_service(request):
     url = USER_LOGIN_URL
-    users = AUTHENTICATION_USERS
-    if users or not url:
+    if not url:
         return HttpResponseNotFound()
 
     p = urlparse(url)

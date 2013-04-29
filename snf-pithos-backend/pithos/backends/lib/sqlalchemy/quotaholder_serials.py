@@ -42,8 +42,8 @@ def create_tables(engine):
     metadata = MetaData()
     columns = []
     columns.append(Column('serial', BigInteger, primary_key=True))
-    config = Table('qh_serials', metadata, *columns, mysql_engine='InnoDB')
-    
+    Table('qh_serials', metadata, *columns, mysql_engine='InnoDB')
+
     metadata.create_all(engine)
     return metadata.sorted_tables
 
@@ -69,13 +69,41 @@ class QuotaholderSerial(DBWorker):
         rows = r.fetchall()
         r.close()
         return rows
-    
+
+    def lookup(self, serials):
+        """Return the registered serials."""
+
+        if not serials:
+            return []
+        s = select([self.qh_serials.c.serial])
+        s = s.where(self.qh_serials.c.serial.in_(serials))
+        r = self.conn.execute(s)
+        rows = r.fetchall()
+        r.close()
+        return [row[0] for row in rows]
+
     def insert_serial(self, serial):
         """Insert a serial.
         """
 
         s = self.qh_serials.insert()
         r = self.conn.execute(s, serial=serial)
-        inserted_primary_key = r.inserted_primary_key[0]
         r.close()
-        return inserted_primary_key
+
+    def insert_many(self, serials):
+        """Insert multiple serials.
+        """
+
+        r = self.conn.execute(
+            self.qh_serials.insert(),
+            list({'serial':s} for s in serials)
+        )
+        r.close()
+
+    def delete_many(self, serials):
+        if not serials:
+            return
+        st = self.qh_serials.delete().where(
+            self.qh_serials.c.serial.in_(serials)
+        )
+        self.conn.execute(st).close()

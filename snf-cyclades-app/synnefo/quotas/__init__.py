@@ -30,9 +30,8 @@
 from functools import wraps
 from contextlib import contextmanager
 
-
+from snf_django.lib.api import faults
 from synnefo.db.models import QuotaHolderSerial, VirtualMachine, Network
-from synnefo.api.faults import OverLimit
 from synnefo.settings import CYCLADES_USE_QUOTAHOLDER
 
 if CYCLADES_USE_QUOTAHOLDER:
@@ -209,7 +208,7 @@ def issue_commission(**commission_info):
             serial = qh.issue_commission(**commission_info)
         except (NoCapacityError, NoQuantityError) as e:
             msg, details = render_quotaholder_exception(e)
-            raise OverLimit(msg, details=details)
+            raise faults.OverLimit(msg, details=details)
         except CallError as e:
             log.exception("Unexpected error")
             raise

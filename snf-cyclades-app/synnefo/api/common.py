@@ -31,15 +31,15 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from synnefo.api.faults import BadRequest
+from snf_django.lib.api import faults
 from synnefo.api.util import api_method
 
 
 @api_method()
 def not_found(request):
-    raise BadRequest('Not found.')
+    raise faults.BadRequest('Not found.')
 
 
 @api_method()
 def method_not_allowed(request):
-    raise BadRequest('Method not allowed')
+    raise faults.BadRequest('Method not allowed')

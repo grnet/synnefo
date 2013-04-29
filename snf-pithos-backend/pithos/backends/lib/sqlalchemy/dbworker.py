@@ -37,8 +37,10 @@ class DBWorker(object):
 
     def __init__(self, **params):
         self.params = params
-        self.conn = params['wrapper'].conn
-        self.engine = params['wrapper'].engine
+        wrapper = params['wrapper']
+        self.wrapper = wrapper
+        self.conn = wrapper.conn
+        self.engine = wrapper.engine
 
     def escape_like(self, s):
         return s.replace('\\', '\\\\').replace('%', '\%').replace('_', '\_')

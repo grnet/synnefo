@@ -187,7 +187,7 @@ setup(
     package_data=find_package_data('.'),
     zip_safe=False,
 
-    dependency_links=['http://docs.dev.grnet.gr/pypi/'],
+    dependency_links=['http://www.synnefo.org/packages/pypi'],
 
     install_requires=INSTALL_REQUIRES,
     extras_require=EXTRAS_REQUIRES,

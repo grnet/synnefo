@@ -1,5 +1,5 @@
 recursive-include pithos *.json *.html *.json *.xml *.txt
 recursive-include pithos/backends/lib/sqlalchemy/alembic *
 
-include README Changelog
+include README
 include distribute_setup.py

@@ -33,8 +33,8 @@
 
 import json
 
-from synnefo.api.tests import BaseAPITest
-from synnefo.api.faults import ItemNotFound
+from snf_django.lib.api import faults
+from snf_django.utils.testing import BaseAPITest
 
 from mock import patch
 from functools import wraps
@@ -51,14 +51,14 @@ def assert_backend_closed(func):
     return wrapper
 
 
-@patch('synnefo.api.images.ImageBackend')
+@patch('synnefo.plankton.backend.ImageBackend')
 class ImageAPITest(BaseAPITest):
     @assert_backend_closed
     def test_create_image(self, mimage):
         """Test that create image is not implemented"""
         response = self.post('/api/v1.1/images/', 'user', json.dumps(''),
                              'json')
-        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.status_code, 501)
 
     @assert_backend_closed
     def test_list_images(self, mimage):
@@ -66,7 +66,7 @@ class ImageAPITest(BaseAPITest):
         images = [{'id': 1, 'name': 'image-1'},
                   {'id': 2, 'name': 'image-2'},
                   {'id': 3, 'name': 'image-3'}]
-        mimage().list.return_value = images
+        mimage().list_images.return_value = images
         response = self.get('/api/v1.1/images/', 'user')
         self.assertSuccess(response)
         api_images = json.loads(response.content)['images']['values']
@@ -115,7 +115,7 @@ class ImageAPITest(BaseAPITest):
                    'progress': 100,
                    'created': '2012-11-26T11:52:54+00:00',
                    'updated': '2012-12-26T11:52:54+00:00'}]
-        mimage().list.return_value = images
+        mimage().list_images.return_value = images
         response = self.get('/api/v1.1/images/detail', 'user')
         self.assertSuccess(response)
         api_images = json.loads(response.content)['images']['values']
@@ -146,7 +146,7 @@ class ImageAPITest(BaseAPITest):
                    'updated_at': new_time.isoformat(),
                    'deleted_at': new_time.isoformat(),
                    'properties': ''}]
-        mimage().iter.return_value = images
+        mimage().list_images.return_value = images
         response =\
             self.get('/api/v1.1/images/detail?changes-since=%sUTC' % new_time)
         self.assertSuccess(response)
@@ -170,27 +170,27 @@ class ImageAPITest(BaseAPITest):
                    'created': '2012-11-26T11:52:54+00:00',
                    'updated': '2012-12-26T11:52:54+00:00',
                    'metadata': {'values': {'foo': 'bar'}}}
-        with patch('synnefo.api.util.get_image') as m:
-            m.return_value = image
-            response = self.get('/api/v1.1/images/42', 'user')
+        mimage.return_value.get_image.return_value = image
+        response = self.get('/api/v1.1/images/42', 'user')
         self.assertSuccess(response)
         api_image = json.loads(response.content)['image']
         self.assertEqual(api_image, result_image)
 
     @assert_backend_closed
     def test_invalid_image(self, mimage):
-        with patch('synnefo.api.util.get_image') as m:
-            m.side_effect = ItemNotFound('Image not found')
-            response = self.get('/api/v1.1/images/42', 'user')
+        mimage.return_value.get_image.side_effect = faults.ItemNotFound('Image not found')
+        response = self.get('/api/v1.1/images/42', 'user')
         self.assertItemNotFound(response)
 
+    @assert_backend_closed
     def test_delete_image(self, mimage):
         response = self.delete("/api/v1.1/images/42", "user")
         self.assertEqual(response.status_code, 204)
-        mimage.return_value.delete.assert_called_once_with('42')
+        mimage.return_value.unregister.assert_called_once_with('42')
+        mimage.return_value._delete.assert_not_called('42')
 
 
-@patch('synnefo.api.util.ImageBackend')
+@patch('synnefo.plankton.backend.ImageBackend')
 class ImageMetadataAPITest(BaseAPITest):
     def setUp(self):
         self.image = {'id': 42,
@@ -231,81 +231,72 @@ class ImageMetadataAPITest(BaseAPITest):
         response = self.get('/api/v1.1/images/42/meta/not_found', 'user')
         self.assertItemNotFound(response)
 
-    @assert_backend_closed
     def test_delete_metadata_item(self, backend):
         backend.return_value.get_image.return_value = self.image
-        with patch("synnefo.api.images.ImageBackend") as m:
-            response = self.delete('/api/v1.1/images/42/meta/foo', 'user')
-            self.assertEqual(response.status_code, 204)
-            m.return_value.update.assert_called_once_with('42',
-                                        {'properties': {'foo2': 'bar2'}})
+        response = self.delete('/api/v1.1/images/42/meta/foo', 'user')
+        self.assertEqual(response.status_code, 204)
+        backend.return_value.update_metadata.assert_called_once_with('42', {'properties': {'foo2':
+                                                    'bar2'}})
 
     @assert_backend_closed
     def test_create_metadata_item(self, backend):
         backend.return_value.get_image.return_value = self.image
-        with patch("synnefo.api.images.ImageBackend") as m:
-                request = {'meta': {'foo3': 'bar3'}}
-                response = self.put('/api/v1.1/images/42/meta/foo3', 'user',
-                                    json.dumps(request), 'json')
-                self.assertEqual(response.status_code, 201)
-                m.return_value.update.assert_called_once_with('42',
-                        {'properties':
-                            {'foo': 'bar', 'foo2': 'bar2', 'foo3': 'bar3'}})
+        request = {'meta': {'foo3': 'bar3'}}
+        response = self.put('/api/v1.1/images/42/meta/foo3', 'user',
+                            json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 201)
+        backend.return_value.update_metadata.assert_called_once_with('42',
+                {'properties':
+                    {'foo': 'bar', 'foo2': 'bar2', 'foo3': 'bar3'}})
 
     @assert_backend_closed
     def test_create_metadata_malformed_1(self, backend):
         backend.return_value.get_image.return_value = self.image
-        with patch("synnefo.api.images.ImageBackend"):
-                request = {'met': {'foo3': 'bar3'}}
-                response = self.put('/api/v1.1/images/42/meta/foo3', 'user',
-                                    json.dumps(request), 'json')
-                self.assertBadRequest(response)
+        request = {'met': {'foo3': 'bar3'}}
+        response = self.put('/api/v1.1/images/42/meta/foo3', 'user',
+                            json.dumps(request), 'json')
+        self.assertBadRequest(response)
 
     @assert_backend_closed
     def test_create_metadata_malformed_2(self, backend):
         backend.return_value.get_image.return_value = self.image
-        with patch("synnefo.api.images.ImageBackend"):
-                request = {'meta': [('foo3', 'bar3')]}
-                response = self.put('/api/v1.1/images/42/meta/foo3', 'user',
-                                    json.dumps(request), 'json')
-                self.assertBadRequest(response)
+        request = {'meta': [('foo3', 'bar3')]}
+        response = self.put('/api/v1.1/images/42/meta/foo3', 'user',
+                            json.dumps(request), 'json')
+        self.assertBadRequest(response)
 
     @assert_backend_closed
     def test_create_metadata_malformed_3(self, backend):
         backend.return_value.get_image.return_value = self.image
-        with patch("synnefo.api.images.ImageBackend"):
-            request = {'met': {'foo3': 'bar3', 'foo4': 'bar4'}}
-            response = self.put('/api/v1.1/images/42/meta/foo3', 'user',
-                                    json.dumps(request), 'json')
-            self.assertBadRequest(response)
+        request = {'met': {'foo3': 'bar3', 'foo4': 'bar4'}}
+        response = self.put('/api/v1.1/images/42/meta/foo3', 'user',
+                                json.dumps(request), 'json')
+        self.assertBadRequest(response)
 
     @assert_backend_closed
     def test_create_metadata_malformed_4(self, backend):
         backend.return_value.get_image.return_value = self.image
-        with patch("synnefo.api.images.ImageBackend"):
-            request = {'met': {'foo3': 'bar3'}}
-            response = self.put('/api/v1.1/images/42/meta/foo4', 'user',
-                                    json.dumps(request), 'json')
-            self.assertBadRequest(response)
+        request = {'met': {'foo3': 'bar3'}}
+        response = self.put('/api/v1.1/images/42/meta/foo4', 'user',
+                                json.dumps(request), 'json')
+        self.assertBadRequest(response)
 
     @assert_backend_closed
     def test_update_metadata_item(self, backend):
         backend.return_value.get_image.return_value = self.image
-        with patch("synnefo.api.images.ImageBackend") as m:
-                request = {'metadata': {'foo': 'bar_new', 'foo4': 'bar4'}}
-                response = self.post('/api/v1.1/images/42/meta', 'user',
-                                    json.dumps(request), 'json')
-                self.assertEqual(response.status_code, 201)
-                m.return_value.update.assert_called_once_with('42',
-                        {'properties':
-                            {'foo': 'bar_new', 'foo2': 'bar2', 'foo4': 'bar4'}
-                        })
+        request = {'metadata': {'foo': 'bar_new', 'foo4': 'bar4'}}
+        response = self.post('/api/v1.1/images/42/meta', 'user',
+                             json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 201)
+        backend.return_value.update_metadata.assert_called_once_with('42',
+                {'properties':
+                    {'foo': 'bar_new', 'foo2': 'bar2', 'foo4': 'bar4'}
+                })
 
     @assert_backend_closed
     def test_update_metadata_malformed(self, backend):
         backend.return_value.get_image.return_value = self.image
-        with patch("synnefo.api.images.ImageBackend"):
-                request = {'meta': {'foo': 'bar_new', 'foo4': 'bar4'}}
-                response = self.post('/api/v1.1/images/42/meta', 'user',
-                                    json.dumps(request), 'json')
-                self.assertBadRequest(response)
+        request = {'meta': {'foo': 'bar_new', 'foo4': 'bar4'}}
+        response = self.post('/api/v1.1/images/42/meta', 'user',
+                            json.dumps(request), 'json')
+        self.assertBadRequest(response)

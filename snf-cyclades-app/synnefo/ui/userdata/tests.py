@@ -60,7 +60,7 @@ class TestRestViews(TransactionTestCase):
                 request.user = {'uniq': 'test'}
 
         # mock the astakos authentication function
-        from synnefo.lib import astakos
+        from snf_django.lib import astakos
         astakos.get_user = get_user_mock
 
         settings.SKIP_SSH_VALIDATION = True

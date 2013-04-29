@@ -33,12 +33,10 @@
 
 import json
 
-from django.test import TestCase
-
-from contextlib import contextmanager
 from mock import patch
 from functools import wraps
 from copy import deepcopy
+from snf_django.utils.testing import BaseAPITest
 
 
 FILTERS = ('name', 'container_format', 'disk_format', 'status', 'size_min',
@@ -56,67 +54,6 @@ ADD_FIELDS = ('name', 'id', 'store', 'disk_format', 'container_format', 'size',
               'checksum', 'is_public', 'owner', 'properties', 'location')
 UPDATE_FIELDS = ('name', 'disk_format', 'container_format', 'is_public',
                  'owner', 'properties', 'status')
-
-
-@contextmanager
-def astakos_user(user):
-    """
-    Context manager to mock astakos response.
-
-    usage:
-    with astakos_user("user@user.com"):
-        .... make api calls ....
-
-    """
-    def dummy_get_user(request, *args, **kwargs):
-        request.user = {'username': user, 'groups': []}
-        request.user_uniq = user
-
-    with patch('synnefo.plankton.util.get_user') as m:
-        m.side_effect = dummy_get_user
-        yield
-
-
-class BaseAPITest(TestCase):
-    def get(self, url, user='user', *args, **kwargs):
-        with astakos_user(user):
-            response = self.client.get(url, *args, **kwargs)
-        return response
-
-    def delete(self, url, user='user'):
-        with astakos_user(user):
-            response = self.client.delete(url)
-        return response
-
-    def post(self, url, user='user', params={}, ctype='json', *args, **kwargs):
-        if ctype == 'json':
-            content_type = 'application/json'
-        with astakos_user(user):
-            response = self.client.post(url, params, content_type=content_type,
-                                        *args, **kwargs)
-        return response
-
-    def put(self, url, user='user', params={}, ctype='json', *args, **kwargs):
-        if ctype == 'json':
-            content_type = 'application/json'
-        with astakos_user(user):
-            response = self.client.put(url, params, content_type=content_type,
-                                       *args, **kwargs)
-        return response
-
-    def assertSuccess(self, response):
-        self.assertTrue(response.status_code in [200, 203, 204])
-
-    def assertFault(self, response, status_code, name):
-        self.assertEqual(response.status_code, status_code)
-        fault = response.content
-        self.assertEqual(fault, name)
-
-    def assertBadRequest(self, response):
-        self.assertFault(response, 400, '400 Bad Request')
-
-    def assertItemNotFound(self, response):
-        self.assertFault(response, 404, 'itemNotFound')
 
 
 DummyImages = {
@@ -190,11 +127,11 @@ def assert_backend_closed(func):
     return wrapper
 
 
-@patch("synnefo.plankton.util.ImageBackend")
+@patch("synnefo.plankton.backend.ImageBackend")
 class PlanktonTest(BaseAPITest):
     @assert_backend_closed
     def test_list_images(self, backend):
-        backend.return_value.list.return_value =\
+        backend.return_value.list_images.return_value =\
                 deepcopy(DummyImages).values()
         response = self.get("/plankton/images/")
         self.assertSuccess(response)
@@ -206,12 +143,12 @@ class PlanktonTest(BaseAPITest):
                                 if key in LIST_FIELDS])
             self.assertEqual(api_image, pithos_image)
         backend.return_value\
-                .list.assert_called_once_with({}, {'sort_key': 'created_at',
+                .list_images.assert_called_once_with({}, {'sort_key': 'created_at',
                                                    'sort_dir': 'desc'})
 
     @assert_backend_closed
     def test_list_images_detail(self, backend):
-        backend.return_value.list.return_value =\
+        backend.return_value.list_images.return_value =\
                 deepcopy(DummyImages).values()
         response = self.get("/plankton/images/detail")
         self.assertSuccess(response)
@@ -223,19 +160,19 @@ class PlanktonTest(BaseAPITest):
                                 if key in DETAIL_FIELDS])
             self.assertEqual(api_image, pithos_image)
         backend.return_value\
-                .list.assert_called_once_with({}, {'sort_key': 'created_at',
+                .list_images.assert_called_once_with({}, {'sort_key': 'created_at',
                                                    'sort_dir': 'desc'})
 
     @assert_backend_closed
     def test_list_images_filters(self, backend):
-        backend.return_value.list.return_value =\
+        backend.return_value.list_images.return_value =\
                 deepcopy(DummyImages).values()
         response = self.get("/plankton/images/?size_max=1000")
         self.assertSuccess(response)
         backend.return_value\
-                .list.assert_called_once_with({'size_max': 1000},
-                                              {'sort_key': 'created_at',
-                                               'sort_dir': 'desc'})
+                .list_images.assert_called_once_with({'size_max': 1000},
+                                                     {'sort_key': 'created_at',
+                                                     'sort_dir': 'desc'})
 
     @assert_backend_closed
     def test_list_images_filters_error_1(self, backend):
@@ -254,8 +191,8 @@ class PlanktonTest(BaseAPITest):
                             json.dumps({}),
                             'json', HTTP_X_IMAGE_META_OWNER='user2')
         self.assertSuccess(response)
-        backend.return_value.update.assert_called_once_with(db_image['id'],
-                                                            {"owner": "user2"})
+        backend.return_value.update_metadata.assert_called_once_with(db_image['id'],
+                                                                     {"owner": "user2"})
 
     @assert_backend_closed
     def test_add_image_member(self, backend):
@@ -276,18 +213,26 @@ class PlanktonTest(BaseAPITest):
 
     @assert_backend_closed
     def test_add_image(self, backend):
+        location = "pithos://uuid/container/name/"
         response = self.post("/plankton/images/",
                              json.dumps({}),
                              'json',
                              HTTP_X_IMAGE_META_NAME='dummy_name',
                              HTTP_X_IMAGE_META_OWNER='dummy_owner',
-                             HTTP_X_IMAGE_META_LOCATION='dummy_location')
+                             HTTP_X_IMAGE_META_LOCATION=location)
         self.assertSuccess(response)
         backend.return_value.register.assert_called_once_with('dummy_name',
-                                                              'dummy_location',
+                                                              location,
                                                       {'owner': 'dummy_owner'})
 
     @assert_backend_closed
     def test_get_image(self, backend):
         response = self.get("/plankton/images/123")
         self.assertEqual(response.status_code, 501)
+
+    @assert_backend_closed
+    def test_delete_image(self, backend):
+        response = self.delete("/plankton/images/123")
+        self.assertEqual(response.status_code, 204)
+        backend.return_value.unregister.assert_called_once_with('123')
+        backend.return_value._delete.assert_not_called()

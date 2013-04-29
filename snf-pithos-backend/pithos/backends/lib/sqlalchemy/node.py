@@ -32,6 +32,9 @@
 # or implied, of GRNET S.A.
 
 from time import time
+from operator import itemgetter
+from itertools import groupby
+
 from sqlalchemy import Table, Integer, BigInteger, DECIMAL, Column, String, MetaData, ForeignKey
 from sqlalchemy.types import Text
 from sqlalchemy.schema import Index, Sequence
@@ -178,6 +181,7 @@ def create_tables(engine):
     columns.append(Column('key', String(128), primary_key=True))
     columns.append(Column('value', String(256)))
     attributes = Table('attributes', metadata, *columns, mysql_engine='InnoDB')
+    Index('idx_attributes_domain', attributes.c.domain)
 
     metadata.create_all(engine)
     return metadata.sorted_tables
@@ -206,13 +210,18 @@ class Node(DBWorker):
 
         s = self.nodes.select().where(and_(self.nodes.c.node == ROOTNODE,
                                            self.nodes.c.parent == ROOTNODE))
-        rp = self.conn.execute(s)
-        r = rp.fetchone()
-        rp.close()
-        if not r:
-            s = self.nodes.insert(
-            ).values(node=ROOTNODE, parent=ROOTNODE, path='')
-            self.conn.execute(s)
+        wrapper = self.wrapper
+        wrapper.execute()
+        try:
+            rp = self.conn.execute(s)
+            r = rp.fetchone()
+            rp.close()
+            if not r:
+                s = self.nodes.insert(
+                ).values(node=ROOTNODE, parent=ROOTNODE, path='')
+                self.conn.execute(s)
+        finally:
+            wrapper.commit()
 
     def node_create(self, parent, path):
         """Create a new node from the given properties.
@@ -1099,3 +1108,32 @@ class Node(DBWorker):
         l = r.fetchone()
         r.close()
         return l
+
+    def domain_object_list(self, domain, cluster=None):
+        """Return a list of (path, property list, attribute dictionary)
+           for the objects in the specific domain and cluster.
+        """
+
+        v = self.versions.alias('v')
+        n = self.nodes.alias('n')
+        a = self.attributes.alias('a')
+
+        s = select([n.c.path, v.c.serial, v.c.node, v.c.hash, v.c.size,
+                    v.c.type, v.c.source, v.c.mtime, v.c.muser, v.c.uuid,
+                    v.c.checksum, v.c.cluster, a.c.key, a.c.value])
+        s = s.where(n.c.node == v.c.node)
+        s = s.where(n.c.latest_version == v.c.serial)
+        if cluster:
+            s = s.where(v.c.cluster == cluster)
+        s = s.where(v.c.serial == a.c.serial)
+        s = s.where(a.c.domain == domain)
+
+        r = self.conn.execute(s)
+        rows = r.fetchall()
+        r.close()
+
+        group_by = itemgetter(slice(12))
+        rows.sort(key = group_by)
+        groups = groupby(rows, group_by)
+        return [(k[0], k[1:], dict([i[12:] for i in data])) \
+            for (k, data) in groups]

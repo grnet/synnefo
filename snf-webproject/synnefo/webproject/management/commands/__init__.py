@@ -36,8 +36,21 @@ from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 from django.core.exceptions import FieldError
 
-from synnefo.webproject.management import util
-from synnefo.lib.astakos import UserCache
+from synnefo.webproject.management import utils
+from snf_django.lib.astakos import UserCache
+
+
+class SynnefoCommand(BaseCommand):
+    option_list = BaseCommand.option_list + (
+        make_option(
+            "--output-format",
+            dest="output_format",
+            metavar="[pretty, csv, json]",
+            default="pretty",
+            choices=["pretty", "csv", "json"],
+            help="Select the output format: pretty [the default], tabs"
+                 " [tab-separated output], csv [comma-separated output]"),
+    )
 
 
 class ListCommand(BaseCommand):
@@ -192,7 +205,7 @@ class ListCommand(BaseCommand):
 
         # --filter-by option
         if options["filter_by"]:
-            filters, excludes = util.parse_filters(options["filter_by"])
+            filters, excludes = utils.parse_filters(options["filter_by"])
         else:
             filters, excludes = ({}, {})
 
@@ -268,8 +281,9 @@ class ListCommand(BaseCommand):
 
         # Print output
         output_format = options["output_format"]
-        headers = headers if options["headers"] else None
-        util.pprint_table(self.stdout, table, headers, output_format)
+        if output_format != "json" and not options["headers"]:
+            headers = None
+        utils.pprint_table(self.stdout, table, headers, output_format)
 
     def handle_args(self, *args, **kwargs):
         pass
@@ -285,7 +299,7 @@ class ListCommand(BaseCommand):
         table = []
         for field, (_, help_msg) in self.FIELDS.items():
             table.append((field, help_msg))
-        util.pprint_table(self.stdout, table, headers)
+        utils.pprint_table(self.stdout, table, headers)
 
     def validate_fields(self, fields):
         for f in fields:
@@ -299,4 +313,4 @@ class ListCommand(BaseCommand):
         table = []
         for field in self.object_class._meta.fields:
             table.append((field.name, field.verbose_name, field.help_text))
-        util.pprint_table(self.stdout, table, headers)
+        utils.pprint_table(self.stdout, table, headers)

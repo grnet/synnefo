@@ -32,8 +32,6 @@
 # or implied, of GRNET S.A.
 
 import sys
-import os
-import time
 import uuid as uuidlib
 import logging
 import hashlib
@@ -41,8 +39,10 @@ import binascii
 
 from synnefo.lib.quotaholder import QuotaholderClient
 
-from base import DEFAULT_QUOTA, DEFAULT_VERSIONING, NotAllowedError, QuotaError, BaseBackend, \
-    AccountExists, ContainerExists, AccountNotEmpty, ContainerNotEmpty, ItemNotExists, VersionNotExists
+from base import (DEFAULT_ACCOUNT_QUOTA, DEFAULT_CONTAINER_QUOTA,
+                  DEFAULT_CONTAINER_VERSIONING, NotAllowedError, QuotaError,
+                  BaseBackend, AccountExists, ContainerExists, AccountNotEmpty,
+                  ContainerNotEmpty, ItemNotExists, VersionNotExists)
 
 # Stripped-down version of the HashMap class found in tools.
 
@@ -123,6 +123,7 @@ def backend_method(func=None, autocommit=1):
             for m in self.messages:
                 self.queue.send(*m)
             if serials:
+                self.quotaholder_serials.insert_many(serials)
                 self.quotaholder.accept_commission(
                             context     =   {},
                             clientkey   =   'pithos',
@@ -154,7 +155,10 @@ class ModularBackend(BaseBackend):
                  quotaholder_client_poolsize=None,
                  free_versioning=True, block_params=None,
                  public_url_security=None,
-                 public_url_alphabet=None):
+                 public_url_alphabet=None,
+                 account_quota_policy=None,
+                 container_quota_policy=None,
+                 container_versioning_policy=None):
         db_module = db_module or DEFAULT_DB_MODULE
         db_connection = db_connection or DEFAULT_DB_CONNECTION
         block_module = block_module or DEFAULT_BLOCK_MODULE
@@ -162,8 +166,17 @@ class ModularBackend(BaseBackend):
         block_umask = block_umask or DEFAULT_BLOCK_UMASK
         block_params = block_params or DEFAULT_BLOCK_PARAMS
         #queue_module = queue_module or DEFAULT_QUEUE_MODULE
+        account_quota_policy = account_quota_policy or DEFAULT_ACCOUNT_QUOTA
+        container_quota_policy = container_quota_policy \
+            or DEFAULT_CONTAINER_QUOTA
+        container_versioning_policy = container_versioning_policy \
+            or DEFAULT_CONTAINER_VERSIONING
 
-        self.default_policy = {'quota': DEFAULT_QUOTA, 'versioning': DEFAULT_VERSIONING}
+        self.default_account_policy = {'quota': account_quota_policy}
+        self.default_container_policy = {
+            'quota': container_quota_policy,
+            'versioning': container_versioning_policy
+        }
         #queue_hosts = queue_hosts or DEFAULT_QUEUE_HOSTS
         #queue_exchange = queue_exchange or DEFAULT_QUEUE_EXCHANGE
 
@@ -173,9 +186,6 @@ class ModularBackend(BaseBackend):
         self.hash_algorithm = 'sha256'
         self.block_size = 4 * 1024 * 1024  # 4MB
         self.free_versioning = free_versioning
-
-        self.default_policy = {'quota': DEFAULT_QUOTA,
-                               'versioning': DEFAULT_VERSIONING}
 
         def load_module(m):
             __import__(m)
@@ -341,7 +351,7 @@ class ModularBackend(BaseBackend):
                 raise NotAllowedError
             return {}
         path, node = self._lookup_account(account, True)
-        policy = self._get_policy(node)
+        policy = self._get_policy(node, is_account_policy=True)
         if self.using_external_quotaholder:
             external_quota = external_quota or {}
             policy['quota'] = external_quota.get('maxValue', 0)
@@ -356,8 +366,8 @@ class ModularBackend(BaseBackend):
         if user != account:
             raise NotAllowedError
         path, node = self._lookup_account(account, True)
-        self._check_policy(policy)
-        self._put_policy(node, policy, replace)
+        self._check_policy(policy, is_account_policy=True)
+        self._put_policy(node, policy, replace, is_account_policy=True)
 
     @backend_method
     def put_account(self, user, account, policy=None):
@@ -371,9 +381,9 @@ class ModularBackend(BaseBackend):
         if node is not None:
             raise AccountExists('Account already exists')
         if policy:
-            self._check_policy(policy)
+            self._check_policy(policy, is_account_policy=True)
         node = self._put_path(user, self.ROOTNODE, account)
-        self._put_policy(node, policy, True)
+        self._put_policy(node, policy, True, is_account_policy=True)
 
     @backend_method
     def delete_account(self, user, account):
@@ -482,7 +492,8 @@ class ModularBackend(BaseBackend):
         src_version_id, dest_version_id = self._put_metadata(
             user, node, domain, meta, replace)
         if src_version_id is not None:
-            versioning = self._get_policy(node)['versioning']
+            versioning = self._get_policy(
+                node, is_account_policy=False)['versioning']
             if versioning != 'auto':
                 self.node.version_remove(src_version_id)
 
@@ -497,7 +508,7 @@ class ModularBackend(BaseBackend):
                 raise NotAllowedError
             return {}
         path, node = self._lookup_container(account, container)
-        return self._get_policy(node)
+        return self._get_policy(node, is_account_policy=False)
 
     @backend_method
     def update_container_policy(self, user, account, container, policy, replace=False):
@@ -508,8 +519,8 @@ class ModularBackend(BaseBackend):
         if user != account:
             raise NotAllowedError
         path, node = self._lookup_container(account, container)
-        self._check_policy(policy)
-        self._put_policy(node, policy, replace)
+        self._check_policy(policy, is_account_policy=False)
+        self._put_policy(node, policy, replace, is_account_policy=False)
 
     @backend_method
     def put_container(self, user, account, container, policy=None):
@@ -527,11 +538,11 @@ class ModularBackend(BaseBackend):
         else:
             raise ContainerExists('Container already exists')
         if policy:
-            self._check_policy(policy)
+            self._check_policy(policy, is_account_policy=False)
         path = '/'.join((account, container))
         node = self._put_path(
             user, self._lookup_account(account, True)[1], path)
-        self._put_policy(node, policy, True)
+        self._put_policy(node, policy, True, is_account_policy=False)
 
     @backend_method
     def delete_container(self, user, account, container, until=None, prefix='', delimiter=None):
@@ -603,13 +614,13 @@ class ModularBackend(BaseBackend):
             raise NotAllowedError
         if shared and public:
             # get shared first
-            shared = self._list_object_permissions(
+            shared_paths = self._list_object_permissions(
                 user, account, container, prefix, shared=True, public=False)
             objects = set()
-            if shared:
+            if shared_paths:
                 path, node = self._lookup_container(account, container)
-                shared = self._get_formatted_paths(shared)
-                objects |= set(self._list_object_properties(node, path, prefix, delimiter, marker, limit, virtual, domain, keys, until, size_range, shared, all_props))
+                shared_paths = self._get_formatted_paths(shared_paths)
+                objects |= set(self._list_object_properties(node, path, prefix, delimiter, marker, limit, virtual, domain, keys, until, size_range, shared_paths, all_props))
 
             # get public
             objects |= set(self._list_public_object_properties(
@@ -864,6 +875,7 @@ class ModularBackend(BaseBackend):
         account_path, account_node = self._lookup_account(account, True)
         container_path, container_node = self._lookup_container(
             account, container)
+
         path, node = self._put_object_node(
             container_path, container_node, name)
         pre_version_id, dest_version_id = self._put_version_duplicate(user, node, src_node=src_node, size=size, type=type, hash=hash, checksum=checksum, is_copy=is_copy)
@@ -876,24 +888,35 @@ class ModularBackend(BaseBackend):
 
         del_size = self._apply_versioning(account, container, pre_version_id)
         size_delta = size - del_size
-        if not self.using_external_quotaholder: # Check account quota.
-            if size_delta > 0:
-                account_quota = long(self._get_policy(account_node)['quota'])
-                account_usage = self._get_statistics(account_node)[1] + size_delta
+        if size_delta > 0:
+            # Check account quota.
+            if not self.using_external_quotaholder:
+                account_quota = long(
+                    self._get_policy(account_node, is_account_policy=True
+                    )['quota']
+                )
+                account_usage = self._get_statistics(account_node)[1]
                 if (account_quota > 0 and account_usage > account_quota):
-                    raise QuotaError('account quota exceeded: limit: %s, usage: %s' % (
-                        account_quota, account_usage
-                    ))
+                    raise QuotaError(
+                        'Account quota exceeded: limit: %s, usage: %s' % (
+                            account_quota, account_usage
+                        )
+                    )
 
-        # Check container quota.
-        container_quota = long(self._get_policy(container_node)['quota'])
-        container_usage = self._get_statistics(container_node)[1] + size_delta
-        if (container_quota > 0 and container_usage > container_quota):
-            # This must be executed in a transaction, so the version is
-            # never created if it fails.
-            raise QuotaError('container quota exceeded: limit: %s, usage: %s' % (
-                container_quota, container_usage
-            ))
+            # Check container quota.
+            container_quota = long(
+                self._get_policy(container_node, is_account_policy=False
+                )['quota']
+            )
+            container_usage = self._get_statistics(container_node)[1]
+            if (container_quota > 0 and container_usage > container_quota):
+                # This must be executed in a transaction, so the version is
+                # never created if it fails.
+                raise QuotaError(
+                    'Container quota exceeded: limit: %s, usage: %s' % (
+                        container_quota, container_usage
+                    )
+                )
 
         self._report_size_change(user, account, size_delta,
                                  {'action': 'object update', 'path': path,
@@ -1365,10 +1388,12 @@ class ModularBackend(BaseBackend):
 
     # Policy functions.
 
-    def _check_policy(self, policy):
+    def _check_policy(self, policy, is_account_policy=True):
+        default_policy = self.default_account_policy \
+            if is_account_policy else self.default_container_policy
         for k in policy.keys():
             if policy[k] == '':
-                policy[k] = self.default_policy.get(k)
+                policy[k] = default_policy.get(k)
         for k, v in policy.iteritems():
             if k == 'quota':
                 q = int(v)  # May raise ValueError.
@@ -1380,15 +1405,19 @@ class ModularBackend(BaseBackend):
             else:
                 raise ValueError
 
-    def _put_policy(self, node, policy, replace):
+    def _put_policy(self, node, policy, replace, is_account_policy=True):
+        default_policy = self.default_account_policy \
+            if is_account_policy else self.default_container_policy
         if replace:
-            for k, v in self.default_policy.iteritems():
+            for k, v in default_policy.iteritems():
                 if k not in policy:
                     policy[k] = v
         self.node.policy_set(node, policy)
 
-    def _get_policy(self, node):
-        policy = self.default_policy.copy()
+    def _get_policy(self, node, is_account_policy=True):
+        default_policy = self.default_account_policy \
+            if is_account_policy else self.default_container_policy
+        policy = default_policy.copy()
         policy.update(self.node.policy_get(node))
         return policy
 
@@ -1400,7 +1429,8 @@ class ModularBackend(BaseBackend):
         if version_id is None:
             return 0
         path, node = self._lookup_container(account, container)
-        versioning = self._get_policy(node)['versioning']
+        versioning = self._get_policy(
+            node, is_account_policy=False)['versioning']
         if versioning != 'auto':
             hash, size = self.node.version_remove(version_id)
             self.store.map_delete(hash)
@@ -1486,3 +1516,47 @@ class ModularBackend(BaseBackend):
         for path in self.permissions.access_list_paths(user, account):
             allow.add(path.split('/', 2)[1])
         return sorted(allow)
+
+    # Domain functions
+
+    @backend_method
+    def get_domain_objects(self, domain, user=None):
+        obj_list = self.node.domain_object_list(domain, CLUSTER_NORMAL)
+        if user != None:
+            obj_list = [t for t in obj_list \
+                if self._has_read_access(user, t[0])]
+        return [(path,
+                 self._build_metadata(props, user_defined_meta),
+                 self.permissions.access_get(path)) \
+            for path, props, user_defined_meta in obj_list]
+
+    # util functions
+
+    def _build_metadata(self, props, user_defined=None,
+                        include_user_defined=True):
+        meta = {'bytes': props[self.SIZE],
+                'type': props[self.TYPE],
+                'hash': props[self.HASH],
+                'version': props[self.SERIAL],
+                'version_timestamp': props[self.MTIME],
+                'modified_by': props[self.MUSER],
+                'uuid': props[self.UUID],
+                'checksum': props[self.CHECKSUM]}
+        if include_user_defined and user_defined != None:
+            meta.update(user_defined)
+        return meta
+
+    def _has_read_access(self, user, path):
+        try:
+            account, container, object = path.split('/', 2)
+        except ValueError:
+            raise ValueError('Invalid object path')
+
+        assert isinstance(user, basestring), "Invalid user"
+
+        try:
+            self._can_read(user, account, container, object)
+        except NotAllowedError:
+            return False
+        else:
+            return True

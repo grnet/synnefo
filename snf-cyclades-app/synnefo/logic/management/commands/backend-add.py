@@ -31,7 +31,6 @@
 from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 
-from django.db import transaction
 from synnefo.db.models import Backend, Network
 from django.db.utils import IntegrityError
 from synnefo.logic.backend import (get_physical_resources,
@@ -39,15 +38,13 @@ from synnefo.logic.backend import (get_physical_resources,
                                    create_network_synced,
                                    connect_network_synced)
 from synnefo.management.common import check_backend_credentials
-from synnefo.webproject.management.util import pprint_table
+from synnefo.webproject.management.utils import pprint_table
 
 
 class Command(BaseCommand):
     can_import_settings = True
 
     help = 'Create a new backend.'
-    output_transaction = True  # The management command runs inside
-                               # an SQL transaction
     option_list = BaseCommand.option_list + (
         make_option('--clustername', dest='clustername'),
         make_option('--port', dest='port', default=5080),
@@ -63,8 +60,10 @@ class Command(BaseCommand):
             help="Do not perform initialization of the Backend Model")
     )
 
-    @transaction.commit_on_success
-    def handle(self, **options):
+    def handle(self, *args, **options):
+        if len(args) > 0:
+            raise CommandError("Command takes no arguments")
+
         clustername = options['clustername']
         port = options['port']
         username = options['username']

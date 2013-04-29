@@ -1,9 +1,8 @@
 #coding=utf8
 from django.conf import settings
 
-AUTHENTICATION_URL = getattr(settings, 'PITHOS_AUTHENTICATION_URL',
-                             'https://accounts.example.synnefo.org/im/authenticate/')
-AUTHENTICATION_USERS = getattr(settings, 'PITHOS_AUTHENTICATION_USERS', {})
+ASTAKOS_URL = getattr(settings, "ASTAKOS_URL",
+                      "https://accounts.example.synnefo.org/")
 
 COOKIE_NAME = getattr(settings, 'PITHOS_ASTAKOS_COOKIE_NAME', '_pithos2_a')
 
@@ -27,13 +26,18 @@ BACKEND_QUEUE_HOSTS = getattr(settings, 'PITHOS_BACKEND_QUEUE_HOSTS', None) # Ex
 BACKEND_QUEUE_EXCHANGE = getattr(settings, 'PITHOS_BACKEND_QUEUE_EXCHANGE', 'pithos')
 
 # Default setting for new accounts.
-BACKEND_QUOTA = getattr(
-    settings, 'PITHOS_BACKEND_QUOTA', 50 * 1024 * 1024 * 1024)
+BACKEND_ACCOUNT_QUOTA = getattr(
+    settings, 'PITHOS_BACKEND_ACCOUNT_QUOTA', 50 * 1024 * 1024 * 1024)
+BACKEND_CONTAINER_QUOTA = getattr(
+    settings, 'PITHOS_BACKEND_CONTAINER_QUOTA', 0)
 BACKEND_VERSIONING = getattr(settings, 'PITHOS_BACKEND_VERSIONING', 'auto')
 BACKEND_FREE_VERSIONING = getattr(settings, 'PITHOS_BACKEND_FREE_VERSIONING', True)
 
-# Update object checksums when using hashmaps.
-UPDATE_MD5 = getattr(settings, 'PITHOS_UPDATE_MD5', True)
+# Default backend pool size
+BACKEND_POOL_SIZE = getattr(settings, 'PITHOS_BACKEND_POOL_SIZE', 5)
+
+# Update object checksums.
+UPDATE_MD5 = getattr(settings, 'PITHOS_UPDATE_MD5', False)
 
 # Service Token acquired by identity provider.
 SERVICE_TOKEN = getattr(settings, 'PITHOS_SERVICE_TOKEN', '')

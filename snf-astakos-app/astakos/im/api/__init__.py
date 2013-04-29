@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,20 +31,17 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from functools import wraps
-from traceback import format_exc
-from urllib import quote, unquote
+from functools import partial
 
 from django.http import HttpResponse
 from django.utils import simplejson as json
-from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext as _
 from django.contrib import messages
 
-from astakos.im.models import AstakosUser, Service, Resource
-from astakos.im.api.faults import (
-    Fault, ItemNotFound, InternalServerError, BadRequest)
+from astakos.im.models import AstakosUser, Service
+from snf_django.lib import api
+from snf_django.lib.api import faults
 from astakos.im.settings import (
     INVITATIONS_ENABLED, COOKIE_NAME, EMAILCHANGE_ENABLED, QUOTAHOLDER_URL,
     PROJECTS_VISIBLE)
@@ -59,44 +56,17 @@ format = ('%a, %d %b %Y %H:%M:%S GMT')
 absolute = lambda request, url: request.build_absolute_uri(url)
 
 
-def render_fault(request, fault):
-    if isinstance(fault, InternalServerError) and settings.DEBUG:
-        fault.details = format_exc(fault)
-
-    request.serialization = 'text'
-    data = fault.message + '\n'
-    if fault.details:
-        data += '\n' + fault.details
-    response = HttpResponse(data, status=fault.code)
-    response['Content-Length'] = len(response.content)
-    return response
-
-
-def api_method(http_method=None):
-    """Decorator function for views that implement an API method."""
-    def decorator(func):
-        @wraps(func)
-        def wrapper(request, *args, **kwargs):
-            try:
-                if http_method and request.method != http_method:
-                    raise BadRequest('Method not allowed.')
-                response = func(request, *args, **kwargs)
-                return response
-            except Fault, fault:
-                return render_fault(request, fault)
-            except BaseException, e:
-                logger.exception('Unexpected error: %s' % e)
-                fault = InternalServerError('Unexpected error')
-                return render_fault(request, fault)
-        return wrapper
-    return decorator
+# Decorator for API methods, using common utils.api_method decorator.
+# It is used for 'get_services' and 'get_menu' methods that do not
+# require any sort of authentication
+api_method = partial(api.api_method, user_required=False,
+                     token_required=False, logger=logger)
 
 
 def get_services_dict():
-    services = Service.objects.all()
-    data = tuple({'id': s.pk, 'name': s.name, 'url': s.url, 'icon':
-                 s.icon} for s in services)
-    return data
+    """Return dictionary with information about available Services."""
+    return list(Service.objects.values("id", "name", "url", "icon"))
+
 
 @api_method(http_method=None)
 def get_services(request):
@@ -123,55 +93,48 @@ def get_services(request):
 @api_method()
 def get_menu(request, with_extra_links=False, with_signout=True):
     user = request.user
-    from_location = request.GET.get('location')
     index_url = reverse('index')
 
-    l = [{'url': absolute(request, index_url), 'name': _("Sign in")}]
     if user.is_authenticated():
         l = []
         append = l.append
         item = MenuItem
         item.current_path = absolute(request, request.path)
-        append(item(
-               url=absolute(request, reverse('index')),
-               name=user.email))
+        append(item(url=absolute(request, reverse('index')),
+                    name=user.email))
         if with_extra_links:
-            append(item(
-                url=absolute(request, reverse('landing')),
-                name="Overview"))
+            append(item(url=absolute(request, reverse('landing')),
+                        name="Overview"))
         if with_signout:
-            append(item(
-                   url=absolute(request, reverse('edit_profile')),
-                   name="Dashboard"))
+            append(item(url=absolute(request, reverse('landing')),
+                        name="Dashboard"))
         if with_extra_links:
             append(item(url=absolute(request, reverse('edit_profile')),
-                    name="Profile"))
+                        name="Profile"))
 
         if with_extra_links:
             if INVITATIONS_ENABLED:
-                append(item(
-                       url=absolute(request, reverse('invite')),
-                       name="Invitations"))
+                append(item(url=absolute(request, reverse('invite')),
+                            name="Invitations"))
 
+            append(item(url=absolute(request, reverse('resource_usage')),
+                        name="Usage"))
 
-            append(item(
-                   url=absolute(request, reverse('resource_usage')),
-                   name="Usage"))
             if QUOTAHOLDER_URL and PROJECTS_VISIBLE:
-                append(item(
-                       url=absolute(request, reverse('project_list')),
-                       name="Projects"))
+                append(item(url=absolute(request, reverse('project_list')),
+                            name="Projects"))
             #append(item(
                 #url=absolute(request, reverse('api_access')),
                 #name="API Access"))
 
-            append(item(
-                   url=absolute(request, reverse('feedback')),
-                   name="Contact"))
+            append(item(url=absolute(request, reverse('feedback')),
+                        name="Contact"))
         if with_signout:
-            append(item(
-                   url=absolute(request, reverse('logout')),
-                   name="Sign out"))
+            append(item(url=absolute(request, reverse('logout')),
+                        name="Sign out"))
+    else:
+        l = [{'url': absolute(request, index_url),
+              'name': _("Sign in")}]
 
     callback = request.GET.get('callback', None)
     data = json.dumps(tuple(l))
@@ -218,14 +181,15 @@ class MenuItem(dict):
         if name == 'current_path':
             self.__set_is_active__()
 
+
 def __get_uuid_displayname_catalogs(request, user_call=True):
     # Normal Response Codes: 200
-    # Error Response Codes: badRequest (400)
+    # Error Response Codes: BadRequest (400)
 
     try:
         input_data = json.loads(request.raw_post_data)
     except:
-        raise BadRequest('Request body should be json formatted.')
+        raise faults.BadRequest('Request body should be json formatted.')
     else:
         uuids = input_data.get('uuids', [])
         if uuids == None and user_call:
@@ -233,31 +197,33 @@ def __get_uuid_displayname_catalogs(request, user_call=True):
         displaynames = input_data.get('displaynames', [])
         if displaynames == None and user_call:
             displaynames = []
-        d  = {'uuid_catalog':AstakosUser.objects.uuid_catalog(uuids),
-              'displayname_catalog':AstakosUser.objects.displayname_catalog(displaynames)}
+        user_obj = AstakosUser.objects
+        d = {'uuid_catalog': user_obj.uuid_catalog(uuids),
+             'displayname_catalog': user_obj.displayname_catalog(displaynames)}
 
         response = HttpResponse()
-        response.status = 200
         response.content = json.dumps(d)
         response['Content-Type'] = 'application/json; charset=UTF-8'
         response['Content-Length'] = len(response.content)
         return response
 
-def __send_feedback(request, email_template_name='im/feedback_mail.txt', user=None):
+
+def __send_feedback(request, email_template_name='im/feedback_mail.txt',
+                    user=None):
     if not user:
         auth_token = request.POST.get('auth', '')
         if not auth_token:
-            raise BadRequest('Missing user authentication')
+            raise faults.BadRequest('Missing user authentication')
 
         try:
             user = AstakosUser.objects.get(auth_token=auth_token)
         except AstakosUser.DoesNotExist:
-            raise BadRequest('Invalid user authentication')
+            raise faults.BadRequest('Invalid user authentication')
 
     form = FeedbackForm(request.POST)
     if not form.is_valid():
         logger.error("Invalid feedback request: %r", form.errors)
-        raise BadRequest('Invalid data')
+        raise faults.BadRequest('Invalid data')
 
     msg = form.cleaned_data['feedback_msg']
     data = form.cleaned_data['feedback_data']

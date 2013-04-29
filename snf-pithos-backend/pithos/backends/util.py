@@ -45,9 +45,8 @@ class PithosBackendPool(ObjectPool):
                  block_module=None, block_path=None, block_umask=None,
                  queue_module=None, queue_hosts=None,
                  queue_exchange=None, free_versioning=True,
-                 quotaholder_enabled=True,
-                 quotaholder_url=None, quotaholder_token=None,
-                 quotaholder_client_poolsize=None,
+                 astakos_url=None, service_token=None,
+                 astakosclient_poolsize=None,
                  block_params=None,
                  public_url_security=None,
                  public_url_alphabet=None,
@@ -65,10 +64,9 @@ class PithosBackendPool(ObjectPool):
         self.block_params = block_params
         self.queue_hosts = queue_hosts
         self.queue_exchange = queue_exchange
-        self.quotaholder_enabled = quotaholder_enabled
-        self.quotaholder_url = quotaholder_url
-        self.quotaholder_token = quotaholder_token
-        self.quotaholder_client_poolsize = quotaholder_client_poolsize
+        self.astakos_url = astakos_url
+        self.service_token = service_token
+        self.astakosclient_poolsize = astakosclient_poolsize
         self.free_versioning = free_versioning
         self.public_url_security = public_url_security
         self.public_url_alphabet = public_url_alphabet
@@ -87,10 +85,9 @@ class PithosBackendPool(ObjectPool):
                 block_params=self.block_params,
                 queue_hosts=self.queue_hosts,
                 queue_exchange=self.queue_exchange,
-                quotaholder_enabled=self.quotaholder_enabled,
-                quotaholder_url=self.quotaholder_url,
-                quotaholder_token=self.quotaholder_token,
-                quotaholder_client_poolsize=self.quotaholder_client_poolsize,
+                astakos_url=self.astakos_url,
+                service_token=self.service_token,
+                astakosclient_poolsize=self.astakosclient_poolsize,
                 free_versioning=self.free_versioning,
                 public_url_security=self.public_url_security,
                 public_url_alphabet=self.public_url_alphabet,

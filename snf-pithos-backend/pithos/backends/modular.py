@@ -123,17 +123,17 @@ def backend_method(func=None, autocommit=1):
             for m in self.messages:
                 self.queue.send(*m)
             if serials:
-                self.quotaholder_serials.insert_many(serials)
-                self.quotaholder.resolve_commissions(
-                    token=self.quotaholder_token,
+                self.commission_serials.insert_many(serials)
+                self.astakosclient.resolve_commissions(
+                    token=self.service_token,
                     accept_serials=serials,
                     reject_serials=[])
             self.wrapper.commit()
             return ret
         except:
             if serials:
-                self.quotaholder.resolve_commissions(
-                    token=self.quotaholder_token,
+                self.astakosclient.resolve_commissions(
+                    token=self.service_token,
                     accept_serials=[],
                     reject_serials=serials)
             self.wrapper.rollback()
@@ -150,9 +150,8 @@ class ModularBackend(BaseBackend):
     def __init__(self, db_module=None, db_connection=None,
                  block_module=None, block_path=None, block_umask=None,
                  queue_module=None, queue_hosts=None, queue_exchange=None,
-                 quotaholder_enabled=False,
-                 quotaholder_url=None, quotaholder_token=None,
-                 quotaholder_client_poolsize=None,
+                 astakos_url=None, service_token=None,
+                 astakosclient_poolsize=None,
                  free_versioning=True, block_params=None,
                  public_url_security=None,
                  public_url_alphabet=None,
@@ -196,7 +195,7 @@ class ModularBackend(BaseBackend):
         params = {'wrapper': self.wrapper}
         self.permissions = self.db_module.Permissions(**params)
         self.config = self.db_module.Config(**params)
-        self.quotaholder_serials = self.db_module.QuotaholderSerial(**params)
+        self.commission_serials = self.db_module.QuotaholderSerial(**params)
         for x in ['READ', 'WRITE']:
             setattr(self, x, getattr(self.db_module, x))
         self.node = self.db_module.Node(**params)
@@ -228,14 +227,12 @@ class ModularBackend(BaseBackend):
 
             self.queue = NoQueue()
 
-        self.quotaholder_enabled = quotaholder_enabled
-        if quotaholder_enabled:
-            self.quotaholder_url = quotaholder_url
-            self.quotaholder_token = quotaholder_token
-            self.quotaholder = AstakosClient(
-                quotaholder_url,
-                use_pool=True,
-                pool_size=quotaholder_client_poolsize)
+        self.astakos_url = astakos_url
+        self.service_token = service_token
+        self.astakosclient = AstakosClient(
+            astakos_url,
+            use_pool=True,
+            pool_size=astakosclient_poolsize)
 
         self.serials = []
         self.messages = []
@@ -246,7 +243,7 @@ class ModularBackend(BaseBackend):
 
     @property
     def using_external_quotaholder(self):
-        return self.quotaholder_enabled
+        return True
 
     @backend_method
     def list_accounts(self, user, marker=None, limit=10000):
@@ -1357,8 +1354,8 @@ class ModularBackend(BaseBackend):
 
         try:
             name = details['path'] if 'path' in details else ''
-            serial = self.quotaholder.issue_one_commission(
-                token=self.quotaholder_token,
+            serial = self.astakosclient.issue_one_commission(
+                token=self.service_token,
                 holder=account,
                 source=DEFAULT_SOURCE,
                 provisions={'pithos.diskspace': size},

@@ -99,8 +99,8 @@ class Command(NoArgsCommand):
                 size = backend.node.node_account_usage(node, CLUSTER_NORMAL)
                 db_usage[path] = size or 0
 
-            result = backend.quotaholder.service_get_quotas(
-                backend.quotaholder_token,
+            result = backend.astakosclient.service_get_quotas(
+                backend.service_token,
             )
 
             qh_usage = {}
@@ -149,13 +149,13 @@ class Command(NoArgsCommand):
                 request['auto_accept'] = True
                 request['provisions'] = provisions
                 try:
-                    serial = backend.quotaholder.issue_commission(
-                        backend.quotaholder_token, request
+                    serial = backend.astakosclient.issue_commission(
+                        backend.service_token, request
                     )
                 except AstakosClientException, e:
                     self.stdout.write(e.details)
                 else:
-                    backend.quotaholder_serials.insert_many([serial])
+                    backend.commission_serials.insert_many([serial])
             elif options['list'] and table:
                 output_format = options["output_format"]
                 if output_format != "json" and not options["headers"]:

@@ -63,7 +63,7 @@ class Command(BaseCommand):
 
         if fix and (accepted or rejected):
             self.stdout.write("Fixing pending commissions..\n")
-            quotas.resolve_commissions(accepted=accepted, rejected=rejected,
+            quotas.resolve_commissions(accept=accepted, reject=rejected,
                                        strict=False)
 
 

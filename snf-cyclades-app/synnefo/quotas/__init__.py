@@ -92,14 +92,14 @@ def issue_commission(user, source, provisions,
 
 
 def accept_commissions(accepted, strict=True):
-    return qh_resolve_commissions(accept=accepted, strict=strict)
+    return resolve_commissions(accept=accepted, strict=strict)
 
 
 def reject_commissions(rejected, strict=True):
-    return qh_resolve_commissions(reject=rejected, strict=strict)
+    return resolve_commissions(reject=rejected, strict=strict)
 
 
-def qh_resolve_commissions(accept=None, reject=None, strict=True):
+def resolve_commissions(accept=None, reject=None, strict=True):
     if accept is None:
         accept = []
     if reject is None:
@@ -119,7 +119,7 @@ def qh_resolve_commissions(accept=None, reject=None, strict=True):
 
 def fix_pending_commissions():
     (accepted, rejected) = resolve_pending_commissions()
-    qh_resolve_commissions(accepted, rejected)
+    resolve_commissions(accept=accepted, reject=rejected)
 
 
 def resolve_pending_commissions():

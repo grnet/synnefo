@@ -123,7 +123,7 @@ def backend_method(func=None, autocommit=1):
             for m in self.messages:
                 self.queue.send(*m)
             if self.serials:
-                self.commission_serials.insert_many(serials)
+                self.commission_serials.insert_many(self.serials)
 
                 # commit to ensure that the serials are registered
                 # even if accept commission fails

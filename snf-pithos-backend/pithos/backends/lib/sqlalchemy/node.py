@@ -460,6 +460,17 @@ class Node(DBWorker):
         r.close()
         return rows
 
+    def node_account_quotas(self):
+        s = select([self.nodes.c.path, self.policy.c.value])
+        s = s.where(and_(self.nodes.c.node != 0,
+                         self.nodes.c.parent == 0))
+        s = s.where(self.nodes.c.node == self.policy.c.node)
+        s = s.where(self.policy.c.key == 'quota')
+        r = self.conn.execute(s)
+        rows = r.fetchall()
+        r.close()
+        return dict(rows)
+
     def node_account_usage(self, account_node, cluster):
         select_children = select(
             [self.nodes.c.node]).where(self.nodes.c.parent == account_node)

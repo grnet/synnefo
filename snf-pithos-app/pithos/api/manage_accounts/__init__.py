@@ -48,7 +48,7 @@ def data_read_iterator(str, size=1024):
         yield data
 
 
-class SwissArmy():
+class ManageAccounts():
     def __init__(self):
         self.backend = get_backend()
 

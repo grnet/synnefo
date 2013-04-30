@@ -4,6 +4,7 @@ set -e
 DOCS_DIR=$1
 
 cd docs
+make clean
 make html
 cd -
 

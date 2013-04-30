@@ -1206,6 +1206,7 @@ class TestProjects(TestCase):
                                                       api_url="/astakos/api/")
         self.resource = Resource.objects.create(name="astakos.pending_app",
                                                 uplimit=0,
+                                                allow_in_projects=False,
                                                 service=self.astakos_service)
 
         # custom service resources
@@ -1241,6 +1242,36 @@ class TestProjects(TestCase):
         self.assertRedirects(r, reverse('project_add'))
 
     @im_settings(PROJECT_ADMINS=['uuid1'])
+    def test_allow_in_project(self):
+        dfrom = datetime.now()
+        dto = datetime.now() + timedelta(days=30)
+
+        # astakos.pending_uplimit allow_in_project flag is False
+        # we shouldn't be able to create a project application using this
+        # resource.
+        application_data = {
+            'name': 'project.synnefo.org',
+            'homepage': 'https://www.synnefo.org',
+            'start_date': dfrom.strftime("%Y-%m-%d"),
+            'end_date': dto.strftime("%Y-%m-%d"),
+            'member_join_policy': 2,
+            'member_leave_policy': 1,
+            'service1.resource_uplimit': 100,
+            'is_selected_service1.resource': "1",
+            'astakos.pending_app_uplimit': 100,
+            'is_selected_accounts': "1",
+            'user': self.user.pk
+        }
+        form = forms.ProjectApplicationForm(data=application_data)
+        # form is invalid
+        self.assertEqual(form.is_valid(), False)
+
+        del application_data['astakos.pending_app_uplimit']
+        del application_data['is_selected_accounts']
+        form = forms.ProjectApplicationForm(data=application_data)
+        self.assertEqual(form.is_valid(), True)
+
+    @im_settings(PROJECT_ADMINS=['uuid1'])
     def test_applications(self):
         # let user have 2 pending applications
         self.user.add_resource_policy('astakos.pending_app', 2)
@@ -1261,7 +1292,7 @@ class TestProjects(TestCase):
             'member_join_policy': 2,
             'member_leave_policy': 1,
             'service1.resource_uplimit': 100,
-            'is_selected_service1.resource': 1,
+            'is_selected_service1.resource': "1",
             'user': self.user.pk
         }
         r = self.user_client.post(post_url, data=application_data, follow=True)

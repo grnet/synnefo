@@ -36,7 +36,6 @@ import uuid
 import logging
 import json
 import math
-import copy
 
 from time import asctime
 from datetime import datetime, timedelta
@@ -64,6 +63,8 @@ from django.utils.importlib import import_module
 from django.utils.safestring import mark_safe
 from django.core.validators import email_re
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
+
+from synnefo.lib.utils import dict_merge
 
 from astakos.im.settings import (
     DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL,
@@ -101,21 +102,6 @@ def get_content_type():
     return content_type
 
 inf = float('inf')
-
-
-def dict_merge(a, b):
-    """
-    http://www.xormedia.com/recursively-merge-dictionaries-in-python/
-    """
-    if not isinstance(b, dict):
-        return b
-    result = copy.deepcopy(a)
-    for k, v in b.iteritems():
-        if k in result and isinstance(result[k], dict):
-                result[k] = dict_merge(result[k], v)
-        else:
-            result[k] = copy.deepcopy(v)
-    return result
 
 
 class Service(models.Model):
@@ -188,6 +174,8 @@ class Service(models.Model):
 
 
 _presentation_data = {}
+
+
 def get_presentation(resource):
     global _presentation_data
     resource_presentation = _presentation_data.get(resource, {})
@@ -196,6 +184,7 @@ def get_presentation(resource):
         resource_presentation = resources_presentation.get(resource, {})
         _presentation_data[resource] = resource_presentation
     return resource_presentation
+
 
 class Resource(models.Model):
     name = models.CharField(_('Name'), max_length=255, unique=True)

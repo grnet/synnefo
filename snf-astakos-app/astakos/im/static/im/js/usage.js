@@ -101,7 +101,7 @@ _.extend(UsageView.prototype, {
     this.container.append(this.el.main);
     var ul = this.container.find("ul");
     this.el.list = this.render('quotas', {
-      'resources':this.resources_ordered
+      'resources': this.resources_ordered
     });
     ul.append(this.el.list);
   },
@@ -125,7 +125,11 @@ _.extend(UsageView.prototype, {
       })
     });
       
-    resources_ordered = _.map(ordered, function(rk) { return resources[rk] });
+    resources_ordered = _.filter(_.map(ordered, 
+                                       function(rk) { 
+                                         return resources[rk] 
+                                       }), 
+                                 function(i) { return i});
     this.resources = resources;
     this.resources_ordered = resources_ordered;
 
@@ -137,6 +141,7 @@ _.extend(UsageView.prototype, {
     var self = this;
     _.each(this.quotas, function(value, key) {
       var usage = self.getUsage(key);
+      if (!usage) { return }
       var el = self.$().find("li[data-resource='"+key+"']");
       self.updateResourceElement(el, usage);
     })
@@ -158,6 +163,7 @@ _.extend(UsageView.prototype, {
   getUsage: function(resource_name) {
     var resource = this.quotas[resource_name];
     var resource_meta = this.resources[resource_name];
+    if (!resource_meta) { return }
     var value, limit, percentage; 
     
     limit = resource.limit;
@@ -169,7 +175,7 @@ _.extend(UsageView.prototype, {
     if (value > limit) {
       percentage = 100;
     }
-
+  
     if (resource_meta.unit == 'bytes') {
       value = humanize.filesize(value);
       limit = humanize.filesize(limit);
@@ -198,8 +204,10 @@ _.extend(UsageView.prototype, {
     _.each(this.quotas, function(v, k) {
       var r = self.resources[k];
       var usage = self.getUsage(k);
+      if (!usage) { return }
       r.usage = usage;
       self.resources[k].usage = usage;
+      if (!self.resources_ordered[r.index]) { return }
       self.resources_ordered[r.index].usage = usage;
     });
   },

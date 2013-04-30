@@ -863,12 +863,20 @@ def send_activation(request, user_id, template_name='im/login.html', extra_conte
 @valid_astakos_user_required
 def resource_usage(request):
 
+    resources_meta = presentation.RESOURCES
+
     current_usage = quotas.get_user_quotas(request.user)
     current_usage = json.dumps(current_usage['system'])
-    resource_catalog, resource_groups = _resources_catalog(request)
+    resource_catalog, resource_groups = _resources_catalog(for_usage=True)
+    if resource_catalog is False:
+        # on fail resource_groups contains the result object
+        result = resource_groups
+        messages.error(request, 'Unable to retrieve system resources: %s' %
+                       result.reason)
+
     resource_catalog = json.dumps(resource_catalog)
     resource_groups = json.dumps(resource_groups)
-    resources_order = json.dumps(presentation.RESOURCES.get('resources_order'))
+    resources_order = json.dumps(resources_meta.get('resources_order'))
 
     return render_response('im/resource_usage.html',
                            context_instance=get_context(request),
@@ -1016,7 +1024,7 @@ def _update_object(request, model=None, object_id=None, slug=None,
         return response
 
 
-def _resources_catalog(request):
+def _resources_catalog(for_project=False, for_usage=False):
     """
     `resource_catalog` contains a list of tuples. Each tuple contains the group
     key the resource is assigned to and resources list of dicts that contain
@@ -1024,15 +1032,15 @@ def _resources_catalog(request):
     `resource_groups` contains information about the groups
     """
     # presentation data
-    resource_groups = presentation.RESOURCES.get('groups', {})
+    resources_meta = presentation.RESOURCES
+    resource_groups = resources_meta.get('groups', {})
     resource_catalog = ()
     resource_keys = []
 
     # resources in database
     result = callpoint.list_resources()
     if not result.is_success:
-        messages.error(request, 'Unable to retrieve system resources: %s' %
-                                result.reason)
+        return False, result
     else:
         # initialize resource_catalog to contain all group/resource information
         for r in result.data:
@@ -1044,13 +1052,13 @@ def _resources_catalog(request):
                                        result.data)] for g in resource_groups]
 
     # order groups, also include unknown groups
-    groups_order = presentation.RESOURCES.get('groups_order')
+    groups_order = resources_meta.get('groups_order')
     for g in resource_groups.keys():
         if not g in groups_order:
             groups_order.append(g)
 
     # order resources, also include unknown resources
-    resources_order = presentation.RESOURCES.get('resources_order')
+    resources_order = resources_meta.get('resources_order')
     for r in resource_keys:
         if not r in resources_order:
             resources_order.append(r)
@@ -1069,6 +1077,7 @@ def _resources_catalog(request):
     # sort resources
     def resourceindex(r):
         return resources_order.index(r['str_repr'])
+
     for index, group in enumerate(resource_catalog):
         resource_catalog[index][1] = sorted(resource_catalog[index][1],
                                             key=resourceindex)
@@ -1077,6 +1086,24 @@ def _resources_catalog(request):
             for gindex, g in enumerate(resource_groups):
                 if g[0] == group[0]:
                     resource_groups.pop(gindex)
+
+    # filter out resources which user cannot request in a project application
+    exclude = resources_meta.get('exclude_from_usage', [])
+    for group_index, group_resources in enumerate(list(resource_catalog)):
+        group, resources = group_resources
+        for index, resource in list(enumerate(resources)):
+            if for_project and not resource.get('allow_in_projects'):
+                resources.remove(resource)
+            if resource.get('str_repr') in exclude and for_usage:
+                resources.remove(resource)
+
+    # cleanup empty groups
+    for group_index, group_resources in enumerate(list(resource_catalog)):
+        group, resources = group_resources
+        if len(resources) == 0:
+            resource_catalog.pop(group_index)
+            resource_groups.pop(group)
+
 
     return resource_catalog, resource_groups
 
@@ -1098,7 +1125,12 @@ def project_add(request):
                       "end_date", "comments"]
     membership_fields = ["member_join_policy", "member_leave_policy",
                          "limit_on_members_number"]
-    resource_catalog, resource_groups = _resources_catalog(request)
+    resource_catalog, resource_groups = _resources_catalog(for_project=True)
+    if resource_catalog is False:
+        # on fail resource_groups contains the result object
+        result = resource_groups
+        messages.error(request, 'Unable to retrieve system resources: %s' %
+                       result.reason)
     extra_context = {
         'resource_catalog': resource_catalog,
         'resource_groups': resource_groups,
@@ -1205,7 +1237,12 @@ def project_modify(request, application_id):
                       "end_date", "comments"]
     membership_fields = ["member_join_policy", "member_leave_policy",
                          "limit_on_members_number"]
-    resource_catalog, resource_groups = _resources_catalog(request)
+    resource_catalog, resource_groups = _resources_catalog(for_project=True)
+    if resource_catalog is False:
+        # on fail resource_groups contains the result object
+        result = resource_groups
+        messages.error(request, 'Unable to retrieve system resources: %s' %
+                       result.reason)
     extra_context = {
         'resource_catalog': resource_catalog,
         'resource_groups': resource_groups,

@@ -37,7 +37,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-fields = ['name', 'desc', 'unit']
+fields = ['name', 'desc', 'unit', 'allow_in_projects']
 
 
 class ResourceException(Exception):

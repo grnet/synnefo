@@ -203,6 +203,7 @@ class Resource(models.Model):
     service = models.ForeignKey(Service)
     unit = models.CharField(_('Unit'), null=True, max_length=255)
     uplimit = intDecimalField(default=0)
+    allow_in_projects = models.BooleanField(default=True)
 
     objects = ForUpdateManager()
 
@@ -216,6 +217,7 @@ class Resource(models.Model):
         return {'service': str(self.service),
                 'description': self.desc,
                 'unit': self.unit,
+                'allow_in_projects': self.allow_in_projects,
                 }
 
     @property

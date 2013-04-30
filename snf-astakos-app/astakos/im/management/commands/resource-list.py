@@ -46,6 +46,9 @@ class Command(ListCommand):
         "unit": ("unit", "Unit"),
         "limit": ("uplimit", "Base Quota"),
         "description": ("desc", "Description"),
+        "allow_in_projects": ("allow_in_projects",
+                              "Make resource available in projects"),
     }
 
-    fields = ["id", "name", "service", "unit", "limit", "description"]
+    fields = ["id", "name", "service", "unit", "limit", "allow_in_projects",
+              "description"]

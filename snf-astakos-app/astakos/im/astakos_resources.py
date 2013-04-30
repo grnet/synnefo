@@ -36,5 +36,6 @@ service = "astakos"
 resources = [
     {"desc": "Number of pending project applications",
      "name": "astakos.pending_app",
+     "allow_in_projects": False,
      }
 ]

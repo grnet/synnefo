@@ -33,12 +33,14 @@ Status  Description
       "cyclades.vm": {
           "unit": null,
           "description": "Number of virtual machines",
-          "service": "cyclades"
+          "service": "cyclades",
+          "allow_in_projects": true
           },
       "cyclades.ram": {
           "unit": "bytes",
           "description": "Virtual machine memory",
-          "service": "cyclades"
+          "service": "cyclades",
+          "allow_in_projects": true
           }
   }
 

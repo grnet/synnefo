@@ -39,7 +39,7 @@ import os
 
 from collections import defaultdict
 
-from pithos.api.swiss_army import SwissArmy
+from pithos.api.manage_accounts import ManageAccounts
 
 
 def get_random_data(length=500):
@@ -47,9 +47,9 @@ def get_random_data(length=500):
     return ''.join(random.choice(char_set) for x in xrange(length))
 
 
-class SwissArmyTests(unittest.TestCase):
+class ManageAccountsTests(unittest.TestCase):
     def setUp(self):
-        self.utils = SwissArmy()
+        self.utils = ManageAccounts()
         self.accounts = ('account1', 'Account1', 'account2', 'account3')
         for i in self.accounts:
             self.utils.create_account(i)

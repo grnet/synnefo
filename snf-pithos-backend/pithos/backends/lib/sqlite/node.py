@@ -385,13 +385,20 @@ class Node(DBWorker):
         return True
 
     def node_accounts(self, accounts=()):
-        q = ("select path, node from nodes where node != 0 and parent == 0 ")
+        q = ("select path, node from nodes where node != 0 and parent = 0 ")
         args = []
         if accounts:
             placeholders = ','.join('?' for a in accounts)
             q += ("and path in (%s)" % placeholders)
             args += accounts
         return self.execute(q, args).fetchall()
+
+    def node_account_quotas(self):
+        q = ("select n.path, p.value from nodes n, policy p "
+             "where n.node != 0 and n.parent = 0 "
+             "and n.node = p.node and p.key = 'quota'"
+        )
+        return dict(self.execute(q).fetchall())
 
     def node_account_usage(self, account_node, cluster):
         select_children = ("select node from nodes where parent = ?")

@@ -57,9 +57,8 @@ _firewall_tags = {
 _reverse_tags = dict((v.split(':')[3], k) for k, v in _firewall_tags.items())
 
 
-@quotas.uses_commission
 @transaction.commit_on_success
-def process_op_status(serials, vm, etime, jobid, opcode, status, logmsg):
+def process_op_status(vm, etime, jobid, opcode, status, logmsg):
     """Process a job progress notification from the backend
 
     Process an incoming message from the backend (currently Ganeti).
@@ -94,18 +93,13 @@ def process_op_status(serials, vm, etime, jobid, opcode, status, logmsg):
         #
         if status == 'success' or (status == 'error' and
                                    vm.operstate == 'ERROR'):
-            # Issue commission
-            serial = quotas.issue_vm_commission(vm.userid, vm.flavor,
-                                                delete=True)
-            serials.append(serial)
-            vm.serial = serial
-            serial.accepted = True
-            serial.save()
             release_instance_nics(vm)
             vm.nics.all().delete()
             vm.deleted = True
             vm.operstate = state_for_success
             vm.backendtime = etime
+            # Issue and accept commission to Quotaholder
+            quotas.issue_and_accept_commission(vm, delete=True)
 
     # Update backendtime only for jobs that have been successfully completed,
     # since only these jobs update the state of the VM. Else a "race condition"
@@ -239,8 +233,7 @@ def process_network_status(back_network, etime, jobid, opcode, status, logmsg):
     update_network_state(back_network.network)
 
 
-@quotas.uses_commission
-def update_network_state(serials, network):
+def update_network_state(network):
     old_state = network.state
 
     backend_states = [s.operstate for s in
@@ -267,12 +260,7 @@ def update_network_state(serials, network):
 
         # Issue commission
         if network.userid:
-            serial = quotas.issue_network_commission(network.userid,
-                                                     delete=True)
-            serials.append(serial)
-            network.serial = serial
-            serial.accepted = True
-            serial.save()
+            quotas.issue_and_accept_commission(network, delete=True)
         elif not network.public:
             log.warning("Network %s does not have an owner!", network.id)
     network.save()

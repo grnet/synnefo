@@ -1,4 +1,4 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright 2012-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,46 +31,16 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import NoArgsCommand, CommandError
-from optparse import make_option
-from synnefo import settings
-from os import path
+from django.utils import simplejson as json
+from django.core.management.base import NoArgsCommand
+from synnefo.quotas import resources
 
 
 class Command(NoArgsCommand):
-    help = "Export account quota policies"
-    option_list = NoArgsCommand.option_list + (
-        make_option(
-            '--location',
-            dest='location',
-            default='exported_quota',
-            help="Where to save the output file"),
-    )
+    help = "Export Cyclades resources in JSON format."
 
-    def handle_noargs(self, **options):
-        try:
-            vms_per_user = settings.VMS_USER_QUOTA
-            nets_per_user = settings.NETWORKS_USER_QUOTA
-        except AttributeError as e:
-            raise CommandError(e)
-        location = path.abspath(options['location'])
-
-        try:
-            f = open(location, 'w')
-        except IOError as e:
-            raise CommandError(e)
-
-        INF = str(10**30)
-        for user, value in vms_per_user.items():
-            f.write(' '.join([user, "cyclades.vm", "%s" % value, '0', INF,
-                              INF]))
-            f.write('\n')
-        for user, value in nets_per_user.items():
-            f.write(' '.join([user, "cyclades.network.private", "%s" % value,
-                              '0', INF, INF]))
-            f.write('\n')
-
-        f.close()
-
-        self.stdout.write("Successfully exported cyclades per-user-quotas to"
-                          " file '%s'\n" % location)
+    def handle(self, *args, **options):
+        data = {"service": resources.service,
+                "resources": resources.resources}
+        output = json.dumps(data, indent=4)
+        self.stdout.write(output + "\n")

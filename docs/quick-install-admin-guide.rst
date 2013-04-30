@@ -1779,14 +1779,6 @@ if they are not logged in. We point that to Astakos.
 The ``UI_LOGOUT_URL`` option tells the Cyclades Web UI where to redirect the
 user when he/she logs out. We point that to Astakos, too.
 
-Edit ``/etc/synnefo/20-snf-cyclades-app-quotas.conf``:
-
-.. code-block:: console
-
-   CYCLADES_USE_QUOTAHOLDER = True
-   CYCLADES_QUOTAHOLDER_URL = 'https://node1.example.com/quotaholder/v'
-   CYCLADES_QUOTAHOLDER_TOKEN = 'aExampleTokenJbFm12w'
-
 Edit ``/etc/synnefo/20-snf-cyclades-app-vmapi.conf``:
 
 .. code-block:: console
@@ -2012,7 +2004,7 @@ Apply Quotas
    node1 # snf-manage astakos-quota --verify
    node1 # snf-manage astakos-quota --sync
    node2 # snf-manage pithos-reset-usage
-   node1 # snf-manage cyclades-reset-usage
+   node1 # snf-manage reconcile-resources-cyclades --fix
 
 If all the above return successfully, then you have finished with the Cyclades
 and Plankton installation and setup.

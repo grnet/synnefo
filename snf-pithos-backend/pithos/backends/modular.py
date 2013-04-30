@@ -122,29 +122,28 @@ def backend_method(func=None, autocommit=1):
             ret = func(self, *args, **kw)
             for m in self.messages:
                 self.queue.send(*m)
-            if serials:
-                self.quotaholder_serials.insert_many(serials)
+            if self.serials:
+                self.commission_serials.insert_many(serials)
 
                 # commit to ensure that the serials are registered
                 # even if accept commission fails
                 self.wrapper.commit()
                 self.wrapper.execute()
 
-                self.quotaholder.accept_commission(
-                            context     =   {},
-                            clientkey   =   'pithos',
-                            serials     =   serials)
-
-                self.quotaholder_serials.delete_many(serials)
+                r = self.astakosclient.resolve_commissions(
+                            token=self.service_token,
+                            accept_serials=self.serials,
+                            reject_serials=[])
+                self.commission_serials.delete_many(r['accepted'])
 
             self.wrapper.commit()
             return ret
         except:
-            if serials:
+            if self.serials:
                 self.astakosclient.resolve_commissions(
                     token=self.service_token,
                     accept_serials=[],
-                    reject_serials=serials)
+                    reject_serials=self.serials)
             self.wrapper.rollback()
             raise
     return fn

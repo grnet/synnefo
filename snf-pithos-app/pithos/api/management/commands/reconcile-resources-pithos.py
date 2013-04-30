@@ -40,8 +40,6 @@ from pithos.backends.modular import CLUSTER_NORMAL, DEFAULT_SOURCE
 from synnefo.webproject.management import utils
 from astakosclient.errors import AstakosClientException
 
-ENTITY_KEY = '1'
-
 backend = get_backend()
 
 class Command(NoArgsCommand):
@@ -149,13 +147,11 @@ class Command(NoArgsCommand):
                 request['auto_accept'] = True
                 request['provisions'] = provisions
                 try:
-                    serial = backend.astakosclient.issue_commission(
+                    backend.astakosclient.issue_commission(
                         backend.service_token, request
                     )
                 except AstakosClientException, e:
                     self.stdout.write(e.details)
-                else:
-                    backend.commission_serials.insert_many([serial])
             elif options['list'] and table:
                 output_format = options["output_format"]
                 if output_format != "json" and not options["headers"]:

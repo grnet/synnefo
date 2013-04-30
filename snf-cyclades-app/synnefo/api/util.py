@@ -59,7 +59,7 @@ from django.db.models import Q
 from snf_django.lib.api import faults
 from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
                                Network, BackendNetwork, NetworkInterface,
-                               BridgePoolTable, MacPrefixPoolTable)
+                               BridgePoolTable, MacPrefixPoolTable, Backend)
 from synnefo.db.pools import EmptyPool
 
 from snf_django.lib.astakos import get_user
@@ -267,6 +267,12 @@ def get_public_ip(backend):
     This method should run inside a transaction.
 
     """
+
+    # Guarantee exclusive access to backend, because accessing the IP pools of
+    # the backend networks may result in a deadlock with backend allocator
+    # which also checks that backend networks have a free IP.
+    backend = Backend.objects.select_for_update().get(id=backend.id)
+
     address = None
     if settings.PUBLIC_USE_POOL:
         (network, address) = allocate_public_address(backend)

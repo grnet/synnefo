@@ -146,6 +146,7 @@ class Command(BaseCommand):
         link = options['link']
         mac_prefix = options['mac_prefix']
         tags = options['tags']
+        userid = options["owner"]
 
         if not name:
             raise CommandError("Name is required")
@@ -155,9 +156,8 @@ class Command(BaseCommand):
             raise CommandError("Flavor is required")
         if public and not backend_id:
             raise CommandError("backend-id is required")
-        if backend_id and not public:
-            raise CommandError("Private networks must be created to"
-                               " all backends")
+        if not userid and not public:
+            raise CommandError("'owner' is required for private networks")
 
         if mac_prefix and flavor == "MAC_FILTERED":
             raise CommandError("Can not override MAC_FILTERED mac-prefix")

@@ -1801,7 +1801,7 @@ Edit ``/etc/default/vncauthproxy``:
 
 .. code-block:: console
 
-   CHUID="www-data:nogroup"
+   CHUID="nobody:www-data"
 
 We have now finished with the basic Cyclades and Plankton configuration.
 

@@ -56,7 +56,7 @@ $(document).ready(function(){
             var sli = $("<li>");
             var slink = $("<a>");
             if (el.icon) {
-                slink.append($('<img src="'+cssloc+el.icon+'"/>'));
+                slink.append($('<img src="'+el.icon+'"/>'));
                 slink.addClass("with-icon");
             } else {
                 slink.text(el.name);

@@ -8,5 +8,4 @@ PROJECTS="\
  snf-cyclades-gtools\
  snf-cyclades-app\
  snf-pithos-app\
- snf-quotaholder-app\
  snf-tools"

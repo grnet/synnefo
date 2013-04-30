@@ -236,5 +236,8 @@ LOGIN_SUCCESS_URL = getattr(settings, 'ASTAKOS_LOGIN_SUCCESS_URL',
 # Whether or not to display projects in astakos menu
 PROJECTS_VISIBLE = getattr(settings, 'ASTAKOS_PROJECTS_VISIBLE', False)
 
-# A way to extend the settings presentation metadata
+# A way to extend the services presentation metadata
 SERVICES_META = getattr(settings, 'ASTAKOS_SERVICES_META', {})
+
+# A way to extend the resources presentation metadata
+RESOURCES_META = getattr(settings, 'ASTAKOS_RESOURCES_META', {})

@@ -843,6 +843,7 @@ class ProjectApplicationForm(forms.ModelForm):
 
     def clean(self):
         userid = self.data.get('user', None)
+        policies = self.resource_policies
         self.user = None
         if userid:
             try:
@@ -865,12 +866,18 @@ class ProjectApplicationForm(forms.ModelForm):
             if name.endswith('_uplimit'):
                 subs = name.split('_uplimit')
                 prefix, suffix = subs
-                resource = Resource.objects.get(name=prefix)
-
+                try:
+                    resource = Resource.objects.get(name=prefix)
+                except Resource.DoesNotExist:
+                    raise forms.ValidationError("Resource %s does not exist" %
+                                                resource.name)
                 # keep only resource limits for selected resource groups
                 if self.data.get(
                     'is_selected_%s' % resource.group, "0"
                  ) == "1":
+                    if not resource.allow_in_projects:
+                        raise forms.ValidationError("Invalid resource %s" %
+                                                    resource.name)
                     d = model_to_dict(resource)
                     if uplimit:
                         d.update(dict(resource=prefix, uplimit=uplimit))
@@ -879,7 +886,13 @@ class ProjectApplicationForm(forms.ModelForm):
                     append(d)
 
         ordered_keys = presentation.RESOURCES['resources_order']
-        policies = sorted(policies, key=lambda r:ordered_keys.index(r['str_repr']))
+        def resource_order(r):
+            if r['str_repr'] in ordered_keys:
+                return ordered_keys.index(r['str_repr'])
+            else:
+                return -1
+
+        policies = sorted(policies, key=resource_order)
         return policies
 
     def save(self, commit=True):

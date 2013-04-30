@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 from astakos.im import settings
+from synnefo.lib.utils import dict_merge
 
 RESOURCES = {
     'groups': {
@@ -132,17 +133,33 @@ RESOURCES = {
             'verbose_name': 'Private Network',
             'group': 'network'
 
-        }
+        },
+        'astakos.pending_app': {
+            'help_text': ('Pending project applications limit'),
+            'help_text_input_each': ('Total pending project applications user '
+                                     'is allowed to create'),
+            'is_abbreviation': False,
+            'report_desc': 'Pending Project Applications',
+            'placeholder': 'eg. 2',
+            'verbose_name': 'pending project application',
+            'group': 'accounts'
+
+        },
     },
-    'groups_order': ['storage', 'compute', 'network'],
+    'groups_order': ['storage', 'compute', 'network', 'accounts'],
     'resources_order': ['pithos.diskspace',
                         'cyclades.disk',
                         'cyclades.cpu',
                         'cyclades.ram',
                         'cyclades.vm',
-                        'cyclades.network.private'
-                        ]
+                        'cyclades.network.private',
+                        'astakos.pending_app'
+                        ],
+    'exclude_from_usage': []
 }
+
+# extend from settings
+RESOURCES = dict_merge(RESOURCES, settings.RESOURCES_META)
 
 
 def service_defaults(service_name):

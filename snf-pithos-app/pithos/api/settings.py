@@ -1,5 +1,6 @@
 #coding=utf8
 from django.conf import settings
+from urlparse import urljoin
 
 ASTAKOS_URL = getattr(settings, "ASTAKOS_URL",
                       "https://accounts.example.synnefo.org/")
@@ -57,12 +58,9 @@ TRANSLATE_UUIDS = getattr(settings, 'PITHOS_TRANSLATE_UUIDS', False)
 # the requests on its own.
 PROXY_USER_SERVICES = getattr(settings, 'PITHOS_PROXY_USER_SERVICES', True)
 
-USER_CATALOG_URL = getattr(settings, 'PITHOS_USER_CATALOG_URL',
-                           'https://accounts.example.synnefo.org/user_catalogs/')
-USER_FEEDBACK_URL = getattr(settings, 'PITHOS_USER_FEEDBACK_URL',
-                            'https://accounts.example.synnefo.org/feedback/')
-USER_LOGIN_URL = getattr(settings, 'PITHOS_USER_LOGIN_URL',
-                         'https://accounts.example.synnefo.org/login/')
+USER_CATALOG_URL = urljoin(ASTAKOS_URL, "user_catalogs")
+USER_FEEDBACK_URL = urljoin(ASTAKOS_URL, "feedback")
+USER_LOGIN_URL = urljoin(ASTAKOS_URL, "login")
 
 # Set the quota holder component URI
 USE_QUOTAHOLDER = getattr(settings, 'PITHOS_USE_QUOTAHOLDER', False)

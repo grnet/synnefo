@@ -51,6 +51,24 @@ USERS_DISPLAYNAMES = dict(map(lambda k: (k[1]['displayname'], {'uuid': k[0]}),
 
 from synnefo.db import models_factory as mfactory
 
+
+class AstakosClientMock():
+    def __init__(*args, **kwargs):
+        pass
+
+    def get_username(self, token, uuid):
+        try:
+            return USERS_UUIDS.get(uuid)['displayname']
+        except TypeError:
+            return None
+
+    def get_uuid(self, token, display_name):
+        try:
+            return USERS_DISPLAYNAMES.get(display_name)['uuid']
+        except TypeError:
+            return None
+
+
 class AuthClient(Client):
 
     def request(self, **request):
@@ -79,23 +97,11 @@ class HelpdeskTests(TestCase):
                                                            'helpdesk'],
                                 'auth_token': '0001'}
 
-        def get_uuid_mock(token, displayname, url):
-            try:
-                return USERS_DISPLAYNAMES.get(displayname)['uuid']
-            except TypeError:
-                return None
-
-        def get_displayname_mock(token, uuid, url):
-            try:
-                return USERS_UUIDS.get(uuid)['displayname']
-            except TypeError:
-                return None
-
         # mock the astakos authentication function
         from snf_django.lib import astakos
         astakos.get_user = get_user_mock
-        astakos.get_displayname = get_displayname_mock
-        astakos.get_user_uuid = get_uuid_mock
+        import astakosclient
+        astakosclient.AstakosClient = AstakosClientMock
 
         settings.SKIP_SSH_VALIDATION = True
         settings.HELPDESK_ENABLED = True

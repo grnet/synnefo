@@ -124,13 +124,7 @@ SECRET_ENCRYPTION_KEY= "Password Encryption Key"
 # using a user uuid)
 CYCLADES_ASTAKOS_SERVICE_TOKEN = ''
 
-# Astakos user_catalogs endpoint
-CYCLADES_USER_CATALOG_URL = 'https://<astakos domain>/user_catalogs'
-
 # Let cyclades proxy user specific api calls to astakos, via self served
 # endpoints. Set this to False if you deploy cyclades-app/astakos-app on the
 # same machine.
 CYCLADES_PROXY_USER_SERVICES = True
-
-# Astakos user_catalogs endpoint
-CYCLADES_USER_FEEDBACK_URL = 'https://accounts.example.synnefo.org/feedback'

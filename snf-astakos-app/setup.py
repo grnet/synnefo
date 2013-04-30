@@ -208,6 +208,9 @@ setup(
             'web_context_processors = astakos.synnefo_settings:context_processors',
             'urls = astakos.urls:urlpatterns',
             'web_static = astakos.synnefo_settings:static_files'
-        ]
+        ],
+        'console_scripts': [
+            'astakos-migrate-0.14 = astakos.scripts.upgrade.migrate_014:main'
+        ],
     }
 )

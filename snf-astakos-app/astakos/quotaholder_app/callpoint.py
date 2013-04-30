@@ -252,8 +252,7 @@ def resolve_pending_commissions(clientkey, accept_set=None, reject_set=None,
 
         accepted.append(serial) if accept else rejected.append(serial)
 
-        ps = provisions.get(serial)
-        assert ps is not None
+        ps = provisions.get(serial, [])
         for pv in ps:
             key = pv.holding_key()
             h = holdings.get(key)

@@ -263,3 +263,8 @@ class QuotaholderTest(TestCase):
             (holder, source, resource2): (limit2+10, limit2-2, limit2-1),
         }
         self.assertEqual(r, quotas)
+
+    def test_020_empty_provisions(self):
+        serial = self.issue_commission([])
+        r = qh.resolve_pending_commission(self.client, serial)
+        self.assertEqual(r, True)

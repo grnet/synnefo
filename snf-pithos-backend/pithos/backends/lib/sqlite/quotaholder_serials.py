@@ -34,8 +34,7 @@
 from dbworker import DBWorker
 
 class QuotaholderSerial(DBWorker):
-    """QuotaholderSerial keeps track of quota holder serials.
-    """
+    """QuotaholderSerial keeps track of quota holder serials."""
 
     def __init__(self, **params):
         DBWorker.__init__(self, **params)
@@ -43,18 +42,38 @@ class QuotaholderSerial(DBWorker):
 
         execute(""" create table if not exists qh_serials
                           ( serial bigint primary key) """)
-    
+
     def get_lower(self, serial):
         """Return entries lower than serial."""
 
         q = "select serial from qh_serials where serial < ?"
         self.execute(q, (serial,))
         return self.fetchall()
-    
+
+    def lookup(self, serials):
+        """Return the registered serials."""
+
+        placeholders = ','.join('?' for _ in serials)
+        q = "select serial from qh_serials where serial in (%s)" % placeholders
+        return [i[0] for i in self.execute(q, serials).fetchall()]
+
     def insert_serial(self, serial):
-        """Insert a serial.
-        """
+        """Insert a serial."""
 
         q = "insert or ignore into qh_serials (serial) values (?)"
         return self.execute(q, (serial,)).lastrowid
-        
+
+    def insert_many(self, serials):
+        """Insert multiple serials."""
+
+        q = "insert into qh_serials(serial) values (?)"
+        self.executemany(q, [(s,) for s in serials])
+
+    def delete_many(self, serials):
+        """Delete specified serials."""
+
+        if not serials:
+            return
+        placeholders = ','.join('?' for _ in serials)
+        q = "delete from qh_serials where serial in (%s)" % placeholders
+        self.conn.execute(q, serials)

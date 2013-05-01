@@ -399,7 +399,7 @@ def get_related_project_id(application_id):
         chain = app.chain
         Project.objects.get(id=chain)
         return chain
-    except ProjectApplication.DoesNotExist, Project.DoesNotExist:
+    except (ProjectApplication.DoesNotExist, Project.DoesNotExist):
         return None
 
 

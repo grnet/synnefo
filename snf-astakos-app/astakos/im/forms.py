@@ -895,12 +895,15 @@ class ProjectApplicationForm(forms.ModelForm):
         policies = sorted(policies, key=resource_order)
         return policies
 
+    def cleaned_resource_policies(self):
+        return [(d['name'], d['uplimit']) for d in self.resource_policies]
+
     def save(self, commit=True):
         data = dict(self.cleaned_data)
         data['precursor_application'] = self.instance.id
         is_new = self.instance.id is None
         data['owner'] = self.user if is_new else self.instance.owner
-        data['resource_policies'] = self.resource_policies
+        data['resource_policies'] = self.cleaned_resource_policies()
         submit_application(data, request_user=self.user)
 
 class ProjectSortForm(forms.Form):

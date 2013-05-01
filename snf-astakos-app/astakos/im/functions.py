@@ -746,7 +746,7 @@ def submit_application(kw, request_user=None):
             app.save()
 
     application.save()
-    application.resource_policies = resource_policies
+    application.set_resource_policies(resource_policies)
     logger.info("User %s submitted %s." %
                 (request_user.log_display, application.log_display))
     application_submit_notify(application)

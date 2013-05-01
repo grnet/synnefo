@@ -126,6 +126,7 @@ class Command(NoArgsCommand):
                     request = {}
                     request['force'] = options['force']
                     request['auto_accept'] = True
+                    request['name'] = "RECONCILE"
                     request['provisions'] = map(create_provision, unsynced)
                     backend.astakosclient.issue_commission(
                         backend.service_token, request

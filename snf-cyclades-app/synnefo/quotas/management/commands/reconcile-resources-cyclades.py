@@ -123,6 +123,7 @@ class Command(BaseCommand):
                 request = {}
                 request["force"] = options["force"]
                 request["auto_accept"] = True
+                request["name"] = "RECONCILE"
                 request["provisions"] = map(create_provision, unsynced)
                 qh.issue_commission(ASTAKOS_TOKEN, request)
                 write("Fixed unsynced resources\n")

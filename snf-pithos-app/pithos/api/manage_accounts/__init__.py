@@ -117,7 +117,7 @@ class ManageAccounts():
         if dest_account not in self.existing_accounts():
             raise NameError('%s does not exist' % dest_account)
 
-        trans = self.backend.wrapper.conn.begin()
+        self.backend.wrapper.execute()
         try:
             self._copy_object(src_account, src_container, src_name,
                               dest_account, move=True)
@@ -125,13 +125,13 @@ class ManageAccounts():
             if dry:
                 if not silent:
                     print "Skipping database commit."
-                trans.rollback()
+                self.backend.wrapper.rollback()
             else:
-                trans.commit()
+                self.backend.wrapper.commit()
                 if not silent:
                     print "%s is deleted." % src_account
         except:
-            trans.rollback()
+            self.backend.wrapper.rollback()
             raise
 
     def _copy_object(self, src_account, src_container, src_name,
@@ -247,21 +247,21 @@ class ManageAccounts():
                                                   src_account).keys()
             return
 
-        trans = self.backend.wrapper.conn.begin()
+        self.backend.wrapper.execute()
         try:
             self._merge_account(src_account, dest_account, delete_src)
 
             if dry:
                 if not silent:
                     print "Skipping database commit."
-                trans.rollback()
+                self.backend.wrapper.rollback()
             else:
-                trans.commit()
+                self.backend.wrapper.commit()
                 if not silent:
                     msg = "%s merged into %s."
                     print msg % (src_account, dest_account)
         except:
-            trans.rollback()
+            self.backend.wrapper.rollback()
             raise
 
     def delete_container_contents(self, account, container):
@@ -287,20 +287,20 @@ class ManageAccounts():
                 % self.backend.get_account_groups(account, account).keys()
             return
 
-        trans = self.backend.wrapper.conn.begin()
+        self.backend.wrapper.execute()
         try:
             self._delete_account(account)
 
             if dry:
                 if not silent:
                     print "Skipping database commit."
-                trans.rollback()
+                self.backend.wrapper.rollback()
             else:
-                trans.commit()
+                self.commit()
                 if not silent:
                     print "%s is deleted." % account
         except:
-            trans.rollback()
+            self.rollback()
             raise
 
     def create_account(self, account):

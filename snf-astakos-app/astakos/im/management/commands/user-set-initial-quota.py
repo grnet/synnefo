@@ -37,7 +37,6 @@ from optparse import make_option
 from collections import namedtuple
 
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.lib.quotaholder.api import QH_PRACTICALLY_INFINITE
 
 from snf_django.lib.db.transaction import commit_on_success_strict
 from astakos.im.models import AstakosUser, AstakosUserQuota, Resource

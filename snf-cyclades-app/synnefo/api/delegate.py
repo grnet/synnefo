@@ -33,7 +33,7 @@
 
 import logging
 
-from urlparse import urlparse
+import urlparse
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
 
 
 def proxy(request, url, headers={}, body=None):
-    p = urlparse(url)
+    p = urlparse.urlparse(url)
 
     kwargs = {}
     kwargs['headers'] = headers

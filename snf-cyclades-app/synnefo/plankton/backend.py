@@ -76,10 +76,9 @@ POOL_SIZE = 8
 _pithos_backend_pool = \
     PithosBackendPool(
         POOL_SIZE,
-        quotaholder_enabled=True,
-        quotaholder_url=settings.ASTAKOS_URL,
-        quotaholder_token=settings.CYCLADES_ASTAKOS_SERVICE_TOKEN,
-        quotaholder_client_poolsize=200,
+        astakos_url=settings.ASTAKOS_URL,
+        service_token=settings.CYCLADES_ASTAKOS_SERVICE_TOKEN,
+        astakosclient_poolsize=settings.CYCLADES_QUOTAHOLDER_POOLSIZE,
         db_connection=settings.BACKEND_DB_CONNECTION,
         block_path=settings.BACKEND_BLOCK_PATH)
 

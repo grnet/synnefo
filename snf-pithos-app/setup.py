@@ -195,6 +195,7 @@ setup(
 
     entry_points={
         'console_scripts': [
+            'pithos-manage-accounts = pithos.api.manage_accounts.cli:main'
         ],
         'synnefo': [
             'default_settings = pithos.api.synnefo_settings',

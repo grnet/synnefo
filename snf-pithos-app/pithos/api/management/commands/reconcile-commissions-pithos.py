@@ -56,9 +56,8 @@ class Command(NoArgsCommand):
     def handle_noargs(self, **options):
         b = get_backend()
         try:
-            pending_commissions = b.quotaholder.get_pending_commissions(
-                clientkey=CLIENTKEY
-            )
+            pending_commissions = b.astakosclient.get_pending_commissions(
+                token=b.service_token)
 
             if pending_commissions:
                 self.stdout.write(
@@ -69,24 +68,23 @@ class Command(NoArgsCommand):
                 return
 
             if options['fix']:
-                to_accept = b.quotaholder_serials.lookup(pending_commissions)
-                b.quotaholder.accept_commission(
-                    context     =   {},
-                    clientkey   =   CLIENTKEY,
-                    serials     =   to_accept
-                )
-                self.stdout.write("Accepted commissions: %s\n" %  to_accept)
-
-                b.quotaholder_serials.delete_many(to_accept)
-                self.stdout.write("Deleted serials: %s\n" %  to_accept)
-
+                to_accept = b.commision_serials.lookup(pending_commissions)
                 to_reject = list(set(pending_commissions) - set(to_accept))
-                b.quotaholder.reject_commission(
-                    context     =   {},
-                    clientkey   =   CLIENTKEY,
-                    serials     =   to_reject
+                response = b.astakosclient.resolve_commissions(
+                    token=b.service_token,
+                    accept_serials=to_accept,
+                    reject_serials=to_reject
                 )
-                self.stdout.write("Rejected commissions: %s\n" %  to_reject)
+                accepted = response['accepted']
+                rejected = response['rejected']
+                failed = response['failed']
+                self.stdout.write("Accepted commissions: %s\n" %  accepted)
+                self.stdout.write("Rejected commissions: %s\n" %  rejected)
+                self.stdout.write("Failed commissions:\n")
+                for i in failed:
+                    self.stdout.write('%s\n' % i)
+
+                b.commision_serials.delete_many(accepted)
         except Exception, e:
             logger.exception(e)
             raise CommandError(e)

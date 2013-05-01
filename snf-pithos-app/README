@@ -31,6 +31,7 @@ Configure in ``settings.py`` or a ``.conf`` file in ``/etc/synnefo`` if using sn
 Name                             Default value                                                      Description
 ===============================  ================================================================   ============================================================
 ASTAKOS_URL                      \https://<astakos.host>/                                           Astakos Authentication URL
+PITHOS_ASTAKOSCLIENT_POOLSIZE    200                                                                The size of the http pool for the astakos client
 PITHOS_ASTAKOS_COOKIE_NAME       _pithos2_a                                                         Cookie name to retrieve fallback token
 PITHOS_BACKEND_DB_MODULE         pithos.backends.lib.sqlalchemy
 PITHOS_BACKEND_DB_CONNECTION     sqlite:////tmp/pithos-backend.db                                   SQLAlchemy database connection string
@@ -52,9 +53,6 @@ PITHOS_RADOS_POOL_BLOCKS         None                                           
 PITHOS_RADOS_POOL_MAPS           None                                                               RADOS pool to be used for maps storage
 PITHOS_TRANSLATE_UUIDS           False                                                              Enables a ui compatibility layer for the introduction of UUIDs in identity management.
 PITHOS_PROXY_USER_SERVICES       True                                                               Whether to proxy user feedback and catalog services
-PITHOS_USE_QUOTAHOLDER           True                                                               Enable quotaholder
-PITHOS_QUOTAHOLDER_URL           ''                                                                 Quotaholder URL
-PITHOS_QUOTAHOLDER_TOKEN         ''                                                                 Quotaholder token
 PITHOS_PUBLIC_URL_SECURITY       16                                                                 How many random bytes to use for constructing the URL of Pithos public files
 PITHOS_PUBLIC_URL_ALPHABET       '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'   The alphabet to use for constructing the URL of Pithos public files
 ===============================  ================================================================   ============================================================

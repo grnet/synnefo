@@ -4,6 +4,7 @@ from urlparse import urljoin
 
 ASTAKOS_URL = getattr(settings, "ASTAKOS_URL",
                       "https://accounts.example.synnefo.org/")
+ASTAKOSCLIENT_POOLSIZE = getattr(settings, 'PITHOS_ASTAKOSCLIENT_POOLSIZE', 200)
 
 COOKIE_NAME = getattr(settings, 'PITHOS_ASTAKOS_COOKIE_NAME', '_pithos2_a')
 
@@ -61,12 +62,6 @@ PROXY_USER_SERVICES = getattr(settings, 'PITHOS_PROXY_USER_SERVICES', True)
 USER_CATALOG_URL = urljoin(ASTAKOS_URL, "user_catalogs")
 USER_FEEDBACK_URL = urljoin(ASTAKOS_URL, "feedback")
 USER_LOGIN_URL = urljoin(ASTAKOS_URL, "login")
-
-# Set the quota holder component URI
-USE_QUOTAHOLDER = getattr(settings, 'PITHOS_USE_QUOTAHOLDER', False)
-QUOTAHOLDER_URL = getattr(settings, 'PITHOS_QUOTAHOLDER_URL', '')
-QUOTAHOLDER_TOKEN = getattr(settings, 'PITHOS_QUOTAHOLDER_TOKEN', '')
-QUOTAHOLDER_POOLSIZE = getattr(settings, 'PITHOS_QUOTAHOLDER_POOLSIZE', 200)
 
 # Set how many random bytes to use for constructing the URL of Pithos public files
 PUBLIC_URL_SECURITY =  getattr(settings, 'PITHOS_PUBLIC_URL_SECURITY', 16)

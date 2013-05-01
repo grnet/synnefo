@@ -52,9 +52,9 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_BLOCK_MODULE, BACKEND_BLOCK_PATH,
                                  BACKEND_BLOCK_UMASK,
                                  BACKEND_QUEUE_MODULE, BACKEND_QUEUE_HOSTS,
-                                 BACKEND_QUEUE_EXCHANGE, USE_QUOTAHOLDER,
-                                 QUOTAHOLDER_URL, QUOTAHOLDER_TOKEN,
-                                 QUOTAHOLDER_POOLSIZE,
+                                 BACKEND_QUEUE_EXCHANGE,
+                                 ASTAKOSCLIENT_POOLSIZE,
+                                 SERVICE_TOKEN,
                                  ASTAKOS_URL,
                                  BACKEND_ACCOUNT_QUOTA, BACKEND_CONTAINER_QUOTA,
                                  BACKEND_VERSIONING,
@@ -982,26 +982,25 @@ else:
 
 
 _pithos_backend_pool = PithosBackendPool(
-    size=BACKEND_POOL_SIZE,
-    db_module=BACKEND_DB_MODULE,
-    db_connection=BACKEND_DB_CONNECTION,
-    block_module=BACKEND_BLOCK_MODULE,
-    block_path=BACKEND_BLOCK_PATH,
-    block_umask=BACKEND_BLOCK_UMASK,
-    queue_module=BACKEND_QUEUE_MODULE,
-    queue_hosts=BACKEND_QUEUE_HOSTS,
-    queue_exchange=BACKEND_QUEUE_EXCHANGE,
-    quotaholder_enabled=USE_QUOTAHOLDER,
-    quotaholder_url=QUOTAHOLDER_URL,
-    quotaholder_token=QUOTAHOLDER_TOKEN,
-    quotaholder_client_poolsize=QUOTAHOLDER_POOLSIZE,
-    free_versioning=BACKEND_FREE_VERSIONING,
-    block_params=BLOCK_PARAMS,
-    public_url_security=PUBLIC_URL_SECURITY,
-    public_url_alphabet=PUBLIC_URL_ALPHABET,
-    account_quota_policy=BACKEND_ACCOUNT_QUOTA,
-    container_quota_policy=BACKEND_CONTAINER_QUOTA,
-    container_versioning_policy=BACKEND_VERSIONING)
+        size=BACKEND_POOL_SIZE,
+        db_module=BACKEND_DB_MODULE,
+        db_connection=BACKEND_DB_CONNECTION,
+        block_module=BACKEND_BLOCK_MODULE,
+        block_path=BACKEND_BLOCK_PATH,
+        block_umask=BACKEND_BLOCK_UMASK,
+        queue_module=BACKEND_QUEUE_MODULE,
+        queue_hosts=BACKEND_QUEUE_HOSTS,
+        queue_exchange=BACKEND_QUEUE_EXCHANGE,
+        astakos_url=ASTAKOS_URL,
+        service_token=SERVICE_TOKEN,
+        astakosclient_poolsize=ASTAKOSCLIENT_POOLSIZE,
+        free_versioning=BACKEND_FREE_VERSIONING,
+        block_params=BLOCK_PARAMS,
+        public_url_security=PUBLIC_URL_SECURITY,
+        public_url_alphabet=PUBLIC_URL_ALPHABET,
+        account_quota_policy=BACKEND_ACCOUNT_QUOTA,
+        container_quota_policy=BACKEND_CONTAINER_QUOTA,
+        container_versioning_policy=BACKEND_VERSIONING)
 
 
 def get_backend():
@@ -1047,7 +1046,7 @@ def get_pithos_usage(token):
     user_info = user_for_token(astakos, token, usage=True)
     usage = user_info.get("usage", [])
     for u in usage:
-        if u.get('name') == 'pithos+.diskspace':
+        if u.get('name') == 'pithos.diskspace':
             return u
 
 

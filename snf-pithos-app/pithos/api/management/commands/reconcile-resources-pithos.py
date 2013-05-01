@@ -38,57 +38,36 @@ from optparse import make_option
 from pithos.api.util import get_backend
 from pithos.backends.modular import CLUSTER_NORMAL, DEFAULT_SOURCE
 from synnefo.webproject.management import utils
-from astakosclient.errors import AstakosClientException
 
 backend = get_backend()
 
+
 class Command(NoArgsCommand):
-    help = "List and reset pithos usage"
+    help = """Reconcile resource usage of Astakos with Pithos DB.
 
+    Detect unsynchronized usage between Astakos and Pithos DB resources and
+    synchronize them if specified so.
+
+    """
     option_list = NoArgsCommand.option_list + (
-        make_option('--list',
-                    dest='list',
-                    action="store_true",
-                    default=True,
-                    help="List usage for all or specified user"),
-        make_option('--reset',
-                    dest='reset',
-                    action="store_true",
+        make_option("--userid", dest="userid",
+                    default=None,
+                    help="Reconcile resources only for this user"),
+        make_option("--fix", dest="fix",
                     default=False,
-                    help="Reset usage for all or specified users"),
-        make_option('--diverging',
-                    dest='diverging',
                     action="store_true",
+                    help="Synchronize Astakos quotas with Pithos DB."),
+        make_option("--force",
                     default=False,
-                    help=("List or reset diverging usages")),
-        make_option('--user',
-                    dest='users',
-                    action='append',
-                    metavar='USER_UUID',
-                    help=("Specify which users --list or --reset applies."
-                          "This option can be repeated several times."
-                          "If no user is specified --list or --reset "
-                          "will be applied globally.")),
-        make_option(
-            "--no-headers",
-            dest="headers",
-            action="store_false",
-            default=True,
-            help="Do not display headers"),
-        make_option(
-            "--output-format",
-            dest="output_format",
-            metavar="[pretty, csv, json]",
-            default="pretty",
-            choices=["pretty", "csv", "json"],
-            help="Select the output format: pretty [the default], tabs"
-                 " [tab-separated output], csv [comma-separated output]"),
-
+                    action="store_true",
+                    help="Override Astakos quotas. Force Astakos to impose"
+                         " the Pithos quota, independently of their value.")
     )
 
     def handle_noargs(self, **options):
         try:
-            account_nodes = backend.node.node_accounts(options['users'])
+            users = (options['userid'],) if options['userid'] else None
+            account_nodes = backend.node.node_accounts(users)
             if not account_nodes:
                 raise CommandError('No users found.')
 
@@ -97,66 +76,75 @@ class Command(NoArgsCommand):
                 size = backend.node.node_account_usage(node, CLUSTER_NORMAL)
                 db_usage[path] = size or 0
 
-            result = backend.astakosclient.service_get_quotas(
+            qh_result = backend.astakosclient.service_get_quotas(
                 backend.service_token,
+                users
             )
 
-            qh_usage = {}
             resource = 'pithos.diskspace'
-            pending_list = []
-            for uuid, d in result.iteritems():
-                pithos_dict = d.get(DEFAULT_SOURCE, {}).get(resource, {})
-                pending = pithos_dict.get('pending', 0)
-                if pending != 0:
-                    pending_list.append(pending)
-                    continue
-                qh_usage[uuid] = pithos_dict.get('usage', 0)
-
-            if pending_list:
-                self.stdout.write((
-                    "There are pending commissions for: %s.\n"
-                    "Reconcile commissions and retry"
-                    "in order to list/reset their quota.\n"
-                ) % pending_list)
-
-            headers = ['uuid', 'usage']
-            table = []
-            provisions = []
+            pending_exists = False
+            unknown_user_exists = False
+            unsynced = []
             for uuid in db_usage.keys():
+                db_value = db_usage[uuid]
                 try:
-                    delta = db_usage[uuid] - qh_usage[uuid]
+                    qh_all = qh_result[uuid]
                 except KeyError:
-                    self.stdout.write('Unknown holder: %s\n' % uuid)
+                    self.stdout.write(
+                        "User '%s' does not exist in Quotaholder!\n" % uuid
+                    )
+                    unknown_user_exists = True
                     continue
                 else:
-                    if options['diverging'] and delta == 0:
+                    qh = qh_all.get(DEFAULT_SOURCE, {})
+                    try:
+                        qh_resource = qh[resource]
+                    except KeyError:
+                        self.stdout.write(
+                            "Resource '%s' does not exist in Quotaholder"
+                            " for user '%s'!\n" % (resource, uuid))
                         continue
-                    table.append((uuid, db_usage[uuid]))
-                    provisions.append({"holder": uuid,
-                                       "source": DEFAULT_SOURCE,
-                                       "resource": resource,
-                                       "quantity": delta
-                    })
 
+                    if qh_resource['pending']:
+                        self.stdout.write(
+                            "Pending commission. User '%s', resource '%s'.\n" %
+                            (uuid, resource)
+                        )
+                        pending_exists = True
+                        continue
 
-            if options['reset']:
-                if not provisions:
-                    raise CommandError('Nothing to reset')
-                request = {}
-                request['force'] = True
-                request['auto_accept'] = True
-                request['provisions'] = provisions
-                request['name'] = "RECONCILE"
-                try:
+                    qh_value = qh_resource['usage']
+
+                    if  db_value != qh_value:
+                        data = (uuid, resource, db_value, qh_value)
+                        unsynced.append(data)
+
+            if unsynced:
+                headers = ("User", "Resource", "Database", "Quotaholder")
+                utils.pprint_table(self.stdout, unsynced, headers)
+                if options['fix']:
+                    request = {}
+                    request['force'] = options['force']
+                    request['auto_accept'] = True
+                    request['provisions'] = map(create_provision, unsynced)
                     backend.astakosclient.issue_commission(
                         backend.service_token, request
                     )
-                except AstakosClientException, e:
-                    self.stdout.write(e.details)
-            elif options['list'] and table:
-                output_format = options["output_format"]
-                if output_format != "json" and not options["headers"]:
-                    headers = None
-                utils.pprint_table(self.stdout, table, headers, output_format)
+
+            if pending_exists:
+                self.stdout.write(
+                    "Found pending commissions. Run 'snf-manage"
+                    " reconcile-commissions-pithos'\n"
+                )
+            elif not (unsynced or unknown_user_exists):
+                self.stdout.write("Everything in sync.\n")
         finally:
             backend.close()
+
+
+def create_provision(provision_info):
+    user, resource, db_value, qh_value = provision_info
+    return {"holder": user,
+            "source": DEFAULT_SOURCE,
+            "resource": resource,
+            "quantity": db_value - qh_value}

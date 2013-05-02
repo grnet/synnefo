@@ -900,11 +900,13 @@ class ProjectApplicationForm(forms.ModelForm):
 
     def save(self, commit=True):
         data = dict(self.cleaned_data)
-        data['precursor_application'] = self.instance.id
+        data['precursor_id'] = self.instance.id
         is_new = self.instance.id is None
         data['owner'] = self.user if is_new else self.instance.owner
         data['resource_policies'] = self.cleaned_resource_policies()
-        submit_application(data, request_user=self.user)
+        data['request_user'] = self.user
+        submit_application(**data)
+
 
 class ProjectSortForm(forms.Form):
     sorting = forms.ChoiceField(

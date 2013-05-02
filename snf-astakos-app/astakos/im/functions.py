@@ -705,17 +705,24 @@ def join_project(project_id, request_user):
     return auto_accepted
 
 
-def submit_application(kw, request_user=None):
-
-    kw['applicant'] = request_user
-    resource_policies = kw.pop('resource_policies', None)
+def submit_application(owner=None,
+                       name=None,
+                       precursor_id=None,
+                       homepage=None,
+                       description=None,
+                       start_date=None,
+                       end_date=None,
+                       member_join_policy=None,
+                       member_leave_policy=None,
+                       limit_on_members_number=None,
+                       comments=None,
+                       resource_policies=None,
+                       request_user=None):
 
     precursor = None
-    precursor_id = kw.get('precursor_application', None)
     if precursor_id is not None:
         objs = ProjectApplication.objects
         precursor = objs.get_for_update(id=precursor_id)
-        kw['precursor_application'] = precursor
 
         if (request_user and
             (not precursor.owner == request_user and
@@ -724,14 +731,25 @@ def submit_application(kw, request_user=None):
             m = _(astakos_messages.NOT_ALLOWED)
             raise PermissionDenied(m)
 
-    owner = kw['owner']
     force = request_user.is_project_admin()
     ok, limit = qh_add_pending_app(owner, precursor, force)
     if not ok:
         m = _(astakos_messages.REACHED_PENDING_APPLICATION_LIMIT) % limit
         raise PermissionDenied(m)
 
-    application = ProjectApplication(**kw)
+    application = ProjectApplication(
+        applicant=request_user,
+        owner=owner,
+        name=name,
+        precursor_application_id=precursor_id,
+        homepage=homepage,
+        description=description,
+        start_date=start_date,
+        end_date=end_date,
+        member_join_policy=member_join_policy,
+        member_leave_policy=member_leave_policy,
+        limit_on_members_number=limit_on_members_number,
+        comments=comments)
 
     if precursor is None:
         application.chain = new_chain()

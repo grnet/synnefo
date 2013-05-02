@@ -1500,20 +1500,20 @@ def _project_cancel(request, chain_id):
 
 @require_http_methods(["POST"])
 @valid_astakos_user_required
-def project_accept_member(request, chain_id, user_id):
+def project_accept_member(request, chain_id, memb_id):
 
     with ExceptionHandler(request):
-        _project_accept_member(request, chain_id, user_id)
+        _project_accept_member(request, chain_id, memb_id)
 
     return redirect(reverse('project_detail', args=(chain_id,)))
 
 
 @commit_on_success_strict()
-def _project_accept_member(request, chain_id, user_id):
+def _project_accept_member(request, chain_id, memb_id):
     try:
         chain_id = int(chain_id)
-        user_id = int(user_id)
-        m = accept_membership(chain_id, user_id, request.user)
+        memb_id = int(memb_id)
+        m = accept_membership(chain_id, memb_id, request.user)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
     else:
@@ -1524,20 +1524,20 @@ def _project_accept_member(request, chain_id, user_id):
 
 @require_http_methods(["POST"])
 @valid_astakos_user_required
-def project_remove_member(request, chain_id, user_id):
+def project_remove_member(request, chain_id, memb_id):
 
     with ExceptionHandler(request):
-        _project_remove_member(request, chain_id, user_id)
+        _project_remove_member(request, chain_id, memb_id)
 
     return redirect(reverse('project_detail', args=(chain_id,)))
 
 
 @commit_on_success_strict()
-def _project_remove_member(request, chain_id, user_id):
+def _project_remove_member(request, chain_id, memb_id):
     try:
         chain_id = int(chain_id)
-        user_id = int(user_id)
-        m = remove_membership(chain_id, user_id, request.user)
+        memb_id = int(memb_id)
+        m = remove_membership(chain_id, memb_id, request.user)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
     else:
@@ -1548,20 +1548,20 @@ def _project_remove_member(request, chain_id, user_id):
 
 @require_http_methods(["POST"])
 @valid_astakos_user_required
-def project_reject_member(request, chain_id, user_id):
+def project_reject_member(request, chain_id, memb_id):
 
     with ExceptionHandler(request):
-        _project_reject_member(request, chain_id, user_id)
+        _project_reject_member(request, chain_id, memb_id)
 
     return redirect(reverse('project_detail', args=(chain_id,)))
 
 
 @commit_on_success_strict()
-def _project_reject_member(request, chain_id, user_id):
+def _project_reject_member(request, chain_id, memb_id):
     try:
         chain_id = int(chain_id)
-        user_id = int(user_id)
-        m = reject_membership(chain_id, user_id, request.user)
+        memb_id = int(memb_id)
+        m = reject_membership(chain_id, memb_id, request.user)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
     else:

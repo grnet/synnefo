@@ -558,6 +558,8 @@
     <div id="loading-view" class="hidden clearfix">
         <div class="header clearfix images off">Loading images...<span></span></div>
         <div class="header clearfix flavors off">Loading flavors...<span></span></div>
+        <div class="header clearfix resources off">Loading resources...<span></span></div>
+        <div class="header clearfix quotas off">Loading quotas...<span></span></div>
         <div class="header clearfix vms off">Loading machines...<span></span></div>
         <div class="header clearfix networks off">Loading networks...<span></span></div>
         <div class="header clearfix layout off">Rendering layout...<span></span></div>
@@ -611,7 +613,8 @@
    			// TODO: make it dynamic
             synnefo.config.api_urls = {
                 'compute':  {{ compute_api_url|safe }}, 
-                'glance': {{ glance_api_url|safe }}
+                'glance': {{ glance_api_url|safe }},
+                'accounts': {{ accounts_api_url|safe }},
             };
             
             // TODO: configurable userdata urls in models.js
@@ -649,7 +652,6 @@
             synnefo.config.grouped_public_network_name = {{ grouped_public_network_name|safe }};
             synnefo.config.vm_hostname_format = {{ vm_hostname_format|safe }};
             synnefo.config.automatic_network_range_format = {{ automatic_network_range_format|safe }};
-            synnefo.config.quota_url = '{% url synnefo.ui.views.user_quota %}';
             synnefo.config.custom_image_help_url = '{{ custom_image_help_url|safe }}';
             synnefo.config.quotas_update_interval = {{ quotas_update_interval }};
             

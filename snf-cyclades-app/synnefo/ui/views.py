@@ -62,7 +62,6 @@ UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT = \
     getattr(settings, "UI_UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT", 3)
 UPDATE_INTERVAL_FAST = getattr(settings, "UI_UPDATE_INTERVAL_FAST", 2500)
 UPDATE_INTERVAL_MAX = getattr(settings, "UI_UPDATE_INTERVAL_MAX", 10000)
-QUOTAS_UPDATE_INTERVAL = getattr(settings, "UI_QUOTAS_UPDATE_INTERVAL", 10000)
 
 # predefined values settings
 VM_IMAGE_COMMON_METADATA = \
@@ -161,6 +160,7 @@ GROUPED_PUBLIC_NETWORK_NAME = \
 USER_CATALOG_URL = getattr(settings, 'UI_USER_CATALOG_URL', '/user_catalogs')
 FEEDBACK_POST_URL = getattr(settings, 'UI_FEEDBACK_POST_URL', '/feedback')
 TRANSLATE_UUIDS = not getattr(settings, 'TRANSLATE_UUIDS', False)
+ACCOUNTS_API_URL = getattr(settings, 'UI_ACCOUNTS_API_URL', '/astakos/api')
 
 
 def template(name, request, context):
@@ -189,16 +189,16 @@ def home(request):
                'compute_api_url': json.dumps(COMPUTE_API_URL),
                'user_catalog_url': json.dumps(USER_CATALOG_URL),
                'feedback_post_url': json.dumps(FEEDBACK_POST_URL),
+               'accounts_api_url': json.dumps(ACCOUNTS_API_URL),
                'translate_uuids': json.dumps(TRANSLATE_UUIDS),
                # update interval settings
                'update_interval': UPDATE_INTERVAL,
                'update_interval_increase': UPDATE_INTERVAL_INCREASE,
                'update_interval_increase_after_calls':
-               UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT,
+                UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT,
                'update_interval_fast': UPDATE_INTERVAL_FAST,
                'update_interval_max': UPDATE_INTERVAL_MAX,
                'changes_since_alignment': CHANGES_SINCE_ALIGNMENT,
-               'quotas_update_interval': QUOTAS_UPDATE_INTERVAL,
                'image_icons': IMAGE_ICONS,
                'logout_redirect': LOGOUT_URL,
                'login_redirect': LOGIN_URL,
@@ -253,14 +253,6 @@ def machines_console(request):
     context = {'host': host, 'port': port, 'password': password,
                'machine': machine, 'host_ip': host_ip, 'host_ip_v6': host_ip_v6}
     return template('machines_console', request, context)
-
-
-def user_quota(request):
-    get_user(request, settings.ASTAKOS_URL, usage=True)
-
-    response = json.dumps(request.user['usage'])
-
-    return HttpResponse(response, mimetype="application/json")
 
 
 def js_tests(request):

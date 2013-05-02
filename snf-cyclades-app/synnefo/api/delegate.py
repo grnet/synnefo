@@ -42,6 +42,8 @@ from django.conf import settings
 ASTAKOS_URL = getattr(settings, 'ASTAKOS_URL', None)
 USER_CATALOG_URL = urlparse.urljoin(ASTAKOS_URL, "user_catalogs")
 USER_FEEDBACK_URL = urlparse.urljoin(ASTAKOS_URL, "feedback")
+USER_QUOTA_URL = urlparse.urljoin(ASTAKOS_URL, "astakos/api/quotas")
+RESOURCES_URL = urlparse.urljoin(ASTAKOS_URL, "astakos/api/resources")
 
 from objpool.http import PooledHTTPConnection
 
@@ -65,6 +67,24 @@ def proxy(request, url, headers={}, body=None):
         data = response.read(length)
         status = int(response.status)
         return HttpResponse(data, status=status)
+
+
+@csrf_exempt
+def delegate_to_resources_service(request):
+    logger.debug("Delegate resources request to %s" % RESOURCES_URL)
+    token = request.META.get('HTTP_X_AUTH_TOKEN')
+    headers = {'X-Auth-Token': token}
+    return proxy(request, RESOURCES_URL, headers=headers,
+                 body=request.raw_post_data)
+
+
+@csrf_exempt
+def delegate_to_user_quota_service(request):
+    logger.debug("Delegate quotas request to %s" % USER_QUOTA_URL)
+    token = request.META.get('HTTP_X_AUTH_TOKEN')
+    headers = {'X-Auth-Token': token}
+    return proxy(request, USER_QUOTA_URL, headers=headers,
+                 body=request.raw_post_data)
 
 
 @csrf_exempt

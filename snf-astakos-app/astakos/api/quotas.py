@@ -142,7 +142,7 @@ def issue_commission(request):
         raise BadRequest('"auto_accept" option should be a boolean.')
 
     name = input_data.get('name', "")
-    if not isinstance(name, str):
+    if not isinstance(name, basestring):
         raise BadRequest("Commission name should be a string.")
 
     try:

@@ -771,7 +771,7 @@ def submit_application(owner=None,
     return application
 
 
-def cancel_application(application_id, request_user=None):
+def cancel_application(application_id, request_user=None, reason=""):
     application = get_application_for_update(application_id)
     checkAllowed(application, request_user)
 
@@ -786,7 +786,7 @@ def cancel_application(application_id, request_user=None):
     logger.info("%s has been cancelled." % (application.log_display))
 
 
-def dismiss_application(application_id, request_user=None):
+def dismiss_application(application_id, request_user=None, reason=""):
     application = get_application_for_update(application_id)
     checkAllowed(application, request_user)
 
@@ -799,7 +799,7 @@ def dismiss_application(application_id, request_user=None):
     logger.info("%s has been dismissed." % (application.log_display))
 
 
-def deny_application(application_id, request_user=None, reason=None):
+def deny_application(application_id, request_user=None, reason=""):
     application = get_application_for_update(application_id)
 
     checkAllowed(application, request_user, admin_only=True)
@@ -811,15 +811,13 @@ def deny_application(application_id, request_user=None, reason=None):
 
     qh_release_pending_app(application.owner)
 
-    if reason is None:
-        reason = ""
     application.deny(reason)
     logger.info("%s has been denied with reason \"%s\"." %
                 (application.log_display, reason))
     application_deny_notify(application)
 
 
-def approve_application(app_id, request_user=None):
+def approve_application(app_id, request_user=None, reason=""):
 
     try:
         objects = ProjectApplication.objects
@@ -836,7 +834,7 @@ def approve_application(app_id, request_user=None):
         raise PermissionDenied(m)
 
     qh_release_pending_app(application.owner)
-    project = application.approve()
+    project = application.approve(reason)
     qh_sync_projects([project])
     logger.info("%s has been approved." % (application.log_display))
     application_approve_notify(application)

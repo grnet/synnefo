@@ -1617,7 +1617,7 @@ class ProjectApplication(models.Model):
     def can_approve(self):
         return self.state == self.PENDING
 
-    def approve(self):
+    def approve(self, reason):
         new_project_name = self.name
         if not self.can_approve():
             m = _("cannot approve: project '%s' in state '%s'") % (
@@ -1651,6 +1651,7 @@ class ProjectApplication(models.Model):
 
         self.state = self.APPROVED
         self.response_date = now
+        self.response = reason
         self.save()
         return project
 

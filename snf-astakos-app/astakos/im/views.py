@@ -110,7 +110,6 @@ from astakos.im.settings import (
     ACTIVATION_REDIRECT_URL,
     MODERATION_ENABLED)
 from astakos.im import presentation
-from astakos.im.api import get_services_dict
 from astakos.im import settings as astakos_settings
 from astakos.im.api.callpoint import AstakosCallpoint
 from astakos.im import auth_providers as auth
@@ -425,7 +424,7 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
     # providers that user can add
     user_available_providers = request.user.get_available_auth_providers()
 
-    extra_context['services'] = get_services_dict()
+    extra_context['services'] = Service.catalog().values()
     return render_response(template_name,
                            profile_form = form,
                            user_providers = user_providers,

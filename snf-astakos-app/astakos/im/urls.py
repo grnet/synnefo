@@ -147,15 +147,15 @@ if 'linkedin' in settings.IM_MODULES:
             'linkedin.authenticated'))
 
 urlpatterns += patterns(
-    'astakos.im.api',
+    'astakos.api',
     url(r'^get_services/?$', 'get_services'),
     url(r'^get_menu/?$', 'get_menu'))
 
 urlpatterns += patterns(
-    'astakos.im.api',
+    'astakos.api',
     url(r'^get_services/?$', 'get_services'),
     url(r'^get_menu/?$', 'get_menu'))
 
 urlpatterns += patterns(
-    'astakos.im.api.user',
+    'astakos.api.user',
     url(r'^authenticate/?$', 'authenticate'))

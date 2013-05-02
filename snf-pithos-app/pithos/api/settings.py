@@ -59,10 +59,6 @@ TRANSLATE_UUIDS = getattr(settings, 'PITHOS_TRANSLATE_UUIDS', False)
 # the requests on its own.
 PROXY_USER_SERVICES = getattr(settings, 'PITHOS_PROXY_USER_SERVICES', True)
 
-USER_CATALOG_URL = urljoin(ASTAKOS_URL, "user_catalogs")
-USER_FEEDBACK_URL = urljoin(ASTAKOS_URL, "feedback")
-USER_LOGIN_URL = urljoin(ASTAKOS_URL, "login")
-
 # Set how many random bytes to use for constructing the URL of Pithos public files
 PUBLIC_URL_SECURITY =  getattr(settings, 'PITHOS_PUBLIC_URL_SECURITY', 16)
 # Set the alphabet to use for constructing the URL of Pithos public files

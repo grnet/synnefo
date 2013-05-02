@@ -40,13 +40,15 @@ from django.http import (
 from django.utils.http import urlencode
 from django.views.decorators.csrf import csrf_exempt
 
-from pithos.api.settings import (USER_LOGIN_URL, USER_FEEDBACK_URL,
-                                 USER_CATALOG_URL)
+from pithos.api.settings import ASTAKOS_URL
 
 from objpool.http import PooledHTTPConnection
 
 logger = logging.getLogger(__name__)
 
+USER_CATALOG_URL = urlparse.urljoin(ASTAKOS_URL, "astakos/api/user_catalogs")
+USER_FEEDBACK_URL = urlparse.urljoin(ASTAKOS_URL, "astakos/api/feedback")
+USER_LOGIN_URL = urljoin(ASTAKOS_URL, "login")
 
 def delegate_to_login_service(request):
     url = USER_LOGIN_URL

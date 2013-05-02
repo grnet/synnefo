@@ -31,56 +31,19 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from time import time, mktime
-from functools import wraps
 from django.views.decorators.csrf import csrf_exempt
 
-from . import  __get_uuid_displayname_catalogs, __send_feedback
 from snf_django.lib import api
-from snf_django.lib.api import faults
-from astakos.im.models import Service
 
+from .util import (__get_uuid_displayname_catalogs, __send_feedback,
+                    service_from_token)
 import logging
 logger = logging.getLogger(__name__)
 
 
-def service_from_token(func):
-    """Decorator for authenticating service by it's token.
-
-    Check that a service with the corresponding token exists. Also,
-    if service's token has an expiration token, check that it has not
-    expired.
-
-    """
-    @wraps(func)
-    def wrapper(request, *args, **kwargs):
-        try:
-            token = request.x_auth_token
-        except AttributeError:
-            raise faults.Unauthorized("No authentication token")
-
-        if not token:
-            raise faults.Unauthorized("Invalid X-Auth-Token")
-        try:
-            service = Service.objects.get(auth_token=token)
-        except Service.DoesNotExist:
-            raise faults.Unauthorized("Invalid X-Auth-Token")
-
-        # Check if the token has expired
-        expiration_date = service.auth_token_expires
-        if expiration_date:
-            expires_at = mktime(expiration_date.timetuple())
-            if time() > expires_at:
-                raise faults.Unauthorized("Authentication expired")
-
-        request.service_instance = service
-        return func(request, *args, **kwargs)
-    return wrapper
-
-
 @csrf_exempt
 @api.api_method(http_method='POST', token_required=True, user_required=False,
-            logger=logger)
+                logger=logger)
 @service_from_token  # Authenticate service !!
 def get_uuid_displayname_catalogs(request):
     # Normal Response Codes: 200
@@ -92,7 +55,7 @@ def get_uuid_displayname_catalogs(request):
 
 @csrf_exempt
 @api.api_method(http_method='POST', token_required=True, user_required=False,
-            logger=logger)
+                logger=logger)
 @service_from_token  # Authenticate service !!
 def send_feedback(request, email_template_name='im/feedback_mail.txt'):
     # Normal Response Codes: 200

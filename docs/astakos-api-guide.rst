@@ -20,6 +20,7 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
+0.14 (May 02, 2013)        Change URIs (keep also the old ones until the next version)
 0.13 (January 21, 2013)    Extend api to export user presentation & quota information.
 0.6 (June 06, 2012)        Split service and admin API.
 0.1 (Feb 10, 2012)         Initial release.
@@ -30,11 +31,11 @@ Get Services
 
 Returns a json formatted list containing information about the supported cloud services.
 
-==================== =========  ==================
-Uri                  Method     Description
-==================== =========  ==================
-``/im/get_services`` GET        Get cloud services
-==================== =========  ==================
+============================= =========  ==================
+Uri                           Method     Description
+============================= =========  ==================
+``/astakos/api/get_services`` GET        Get cloud services
+============================= =========  ==================
 
 Example reply:
 
@@ -44,17 +45,20 @@ Example reply:
     {"url": "/okeanos.html", "name": "~okeanos", "id": "2"},
     {"url": "/ui/", "name": "pithos+", "id": "3"}]
 
+.. warning:: The service is also available under ``/im/get_services``.
+     It  will be removed in the next version.
+
 
 Get Menu
 ^^^^^^^^
 
 Returns a json formatted list containing the cloud bar links.
 
-==================== =========  ==================
-Uri                  Method     Description
-==================== =========  ==================
-``/im/get_menu``     GET        Get cloud bar menu
-==================== =========  ==================
+========================= =========  ==================
+Uri                       Method     Description
+========================= =========  ==================
+``/astakos/api/get_menu`` GET        Get cloud bar menu
+========================= =========  ==================
 
 Example reply if request user is not authenticated:
 
@@ -66,9 +70,12 @@ Example reply if request user is authenticated:
 
 ::
 
-    [{"url": "/im/login", "name": "user@example.com"},
-    {"url": "/im/profile", "name": "My account"},
+    [{"url": "/im/", "name": "user@example.com"},
+    {"url": "/im/landing", "name": "Dashboard"},
     {"url": "/im/logout", "name": "Sign out"}]
+
+.. warning:: The service is also available under ``/im/get_menu``.
+     It  will be removed in the next version.
 
 Admin API Operations
 --------------------
@@ -84,11 +91,11 @@ Authenticate
 
 Authenticate API requests require a token. An application that wishes to connect to Astakos, but does not have a token, should redirect the user to ``/login``. (see :ref:`authentication-label`)
 
-==================== =========  ==================
-Uri                  Method     Description
-==================== =========  ==================
-``/im/authenticate`` GET        Authenticate user using token
-==================== =========  ==================
+============================= =========  ==================
+Uri                           Method     Description
+============================= =========  ==================
+``/astakos/api/authenticate`` GET        Authenticate user using token
+============================= =========  ==================
 
 |
 
@@ -225,6 +232,9 @@ Return Code                 Description
 500 (Internal Server Error) The request cannot be completed because of an internal error
 =========================== =====================
 
+.. warning:: The service is also available under ``/im/authenticate``.
+     It  will be removed in the next version.
+
 
 Send feedback
 ^^^^^^^^^^^^^
@@ -234,7 +244,7 @@ Post user feedback.
 ========================= =========  ==================
 Uri                       Method     Description
 ========================= =========  ==================
-``/feedback``             POST       Send feedback
+``astakos/api/feedback``  POST       Send feedback
 ========================= =========  ==================
 
 |
@@ -274,7 +284,7 @@ Return a json formatted dictionary containing information about a specific user
 ================================ =========  ==================
 Uri                              Method     Description
 ================================ =========  ==================
-``/user_catalogs``               POST       Get 2 catalogs containing uuid to displayname mapping and the opposite
+``astakos/api/user_catalogs``    POST       Get 2 catalogs containing uuid to displayname mapping and the opposite
 ================================ =========  ==================
 
 |
@@ -329,11 +339,11 @@ Get User catalogs
 
 Return a json formatted dictionary containing information about a specific user
 
-================================ =========  ==================
-Uri                              Method     Description
-================================ =========  ==================
-``/user_catalogs``               POST       Get 2 catalogs containing uuid to displayname mapping and the opposite
-================================ =========  ==================
+===================================== =========  ==================
+Uri                                   Method     Description
+===================================== =========  ==================
+``astakos/api/service/user_catalogs`` POST       Get 2 catalogs containing uuid to displayname mapping and the opposite
+===================================== =========  ==================
 
 |
 

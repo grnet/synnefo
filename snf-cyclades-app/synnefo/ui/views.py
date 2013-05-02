@@ -157,8 +157,8 @@ GROUP_PUBLIC_NETWORKS = getattr(settings, 'UI_GROUP_PUBLIC_NETWORKS', True)
 GROUPED_PUBLIC_NETWORK_NAME = \
     getattr(settings, 'UI_GROUPED_PUBLIC_NETWORK_NAME', 'Internet')
 
-USER_CATALOG_URL = getattr(settings, 'UI_USER_CATALOG_URL', '/user_catalogs')
-FEEDBACK_POST_URL = getattr(settings, 'UI_FEEDBACK_POST_URL', '/feedback')
+USER_CATALOG_URL = getattr(settings, 'UI_USER_CATALOG_URL', '/astakos/api/user_catalogs')
+FEEDBACK_POST_URL = getattr(settings, 'UI_FEEDBACK_POST_URL', '/astakos/api/feedback')
 TRANSLATE_UUIDS = not getattr(settings, 'TRANSLATE_UUIDS', False)
 ACCOUNTS_API_URL = getattr(settings, 'UI_ACCOUNTS_API_URL', '/astakos/api')
 

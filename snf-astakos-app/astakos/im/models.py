@@ -1617,18 +1617,7 @@ class ProjectApplication(models.Model):
     def can_approve(self):
         return self.state == self.PENDING
 
-    def approve(self, approval_user=None):
-        """
-        If approval_user then during owner membership acceptance
-        it is checked whether the request_user is eligible.
-
-        Raises:
-            PermissionDenied
-        """
-
-        if not transaction.is_managed():
-            raise AssertionError("NOPE")
-
+    def approve(self):
         new_project_name = self.name
         if not self.can_approve():
             m = _("cannot approve: project '%s' in state '%s'") % (
@@ -1900,7 +1889,6 @@ class Project(models.Model):
     def add_member(self, user):
         """
         Raises:
-            django.exceptions.PermissionDenied
             astakos.im.models.AstakosUser.DoesNotExist
         """
         if isinstance(user, (int, long)):
@@ -1914,7 +1902,6 @@ class Project(models.Model):
     def remove_member(self, user):
         """
         Raises:
-            django.exceptions.PermissionDenied
             astakos.im.models.AstakosUser.DoesNotExist
             astakos.im.models.ProjectMembership.DoesNotExist
         """

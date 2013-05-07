@@ -122,7 +122,7 @@ def service_from_token(func):
     return wrapper
 
 
-def __get_uuid_displayname_catalogs(request, user_call=True):
+def get_uuid_displayname_catalogs(request, user_call=True):
     # Normal Response Codes: 200
     # Error Response Codes: BadRequest (400)
 

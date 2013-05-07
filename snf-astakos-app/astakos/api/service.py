@@ -35,8 +35,11 @@ from django.views.decorators.csrf import csrf_exempt
 
 from snf_django.lib import api
 
-from .util import (__get_uuid_displayname_catalogs, __send_feedback,
-                    service_from_token)
+from .util import (
+    get_uuid_displayname_catalogs as get_uuid_displayname_catalogs_util,
+    send_feedback as send_feedback_util,
+    service_from_token)
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -50,7 +53,7 @@ def get_uuid_displayname_catalogs(request):
     # Error Response Codes: internalServerError (500)
     #                       badRequest (400)
     #                       unauthorised (401)
-    return __get_uuid_displayname_catalogs(request, user_call=False)
+    return get_uuid_displayname_catalogs_util(request, user_call=False)
 
 
 @csrf_exempt
@@ -62,4 +65,4 @@ def send_feedback(request, email_template_name='im/feedback_mail.txt'):
     # Error Response Codes: internalServerError (500)
     #                       badRequest (400)
     #                       unauthorised (401)
-    return __send_feedback(request, email_template_name)
+    return send_feedback(request, email_template_name)

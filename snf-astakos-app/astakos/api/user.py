@@ -43,8 +43,10 @@ from snf_django.lib.api import faults
 from astakos.im.util import epoch
 from astakos.im.api.callpoint import AstakosCallpoint
 
-from .util import (__get_uuid_displayname_catalogs,
-                   __send_feedback, user_from_token)
+from .util import (
+    get_uuid_displayname_catalogs as get_uuid_displayname_catalogs_util,
+    send_feedback as send_feedback_util,
+    user_from_token)
 
 callpoint = AstakosCallpoint()
 

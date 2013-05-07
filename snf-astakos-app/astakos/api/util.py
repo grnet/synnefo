@@ -80,11 +80,11 @@ def user_from_token(func):
             raise faults.Unauthorized("Invalid X-Auth-Token")
 
         try:
-            user = AstakosUser.objects.get(auth_token=token)
+            request.user = AstakosUser.objects.get(auth_token=token)
         except AstakosUser.DoesNotExist:
             raise faults.Unauthorized('Invalid X-Auth-Token')
 
-        return func(request, user, *args, **kwargs)
+        return func(request, *args, **kwargs)
     return wrapper
 
 
@@ -148,18 +148,7 @@ def __get_uuid_displayname_catalogs(request, user_call=True):
         return response
 
 
-def __send_feedback(request, email_template_name='im/feedback_mail.txt',
-                    user=None):
-    if not user:
-        auth_token = request.POST.get('auth', '')
-        if not auth_token:
-            raise faults.BadRequest('Missing user authentication')
-
-        try:
-            user = AstakosUser.objects.get(auth_token=auth_token)
-        except AstakosUser.DoesNotExist:
-            raise faults.BadRequest('Invalid user authentication')
-
+def send_feedback(request, email_template_name='im/feedback_mail.txt'):
     form = FeedbackForm(request.POST)
     if not form.is_valid():
         logger.error("Invalid feedback request: %r", form.errors)
@@ -168,7 +157,7 @@ def __send_feedback(request, email_template_name='im/feedback_mail.txt',
     msg = form.cleaned_data['feedback_msg']
     data = form.cleaned_data['feedback_data']
     try:
-        send_feedback_func(msg, data, user, email_template_name)
+        send_feedback_func(msg, data, request.user, email_template_name)
     except:
         return HttpResponse(status=502)
     return HttpResponse(status=200)

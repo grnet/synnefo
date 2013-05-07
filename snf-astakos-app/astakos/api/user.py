@@ -114,7 +114,7 @@ def get_uuid_displayname_catalogs(request, user=None):
     #                       badRequest (400)
     #                       unauthorised (401)
 
-    return __get_uuid_displayname_catalogs(request)
+    return get_uuid_displayname_catalogs_util(request)
 
 
 @csrf_exempt
@@ -128,4 +128,4 @@ def send_feedback(request, email_template_name='im/feedback_mail.txt',
     #                       badRequest (400)
     #                       unauthorised (401)
 
-    return __send_feedback(request, email_template_name, user)
+    return send_feedback_util(request, email_template_name, user)

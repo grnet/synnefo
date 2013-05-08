@@ -137,24 +137,28 @@ class Service(models.Model):
     def catalog(cls, orderfor=None):
         catalog = {}
         services = list(cls.objects.all())
-        metadata = presentation.SERVICES
-        metadata = dict_merge(presentation.SERVICES,
-                              astakos_settings.SERVICES_META)
+        default_metadata = presentation.SERVICES
+        metadata = {}
 
         for service in services:
             d = {'api_url': service.api_url,
                  'url': service.url,
                  'name': service.name}
-            if service.name in metadata:
+            if service.name in default_metadata:
+                metadata[service.name] = default_metadata.get(service.name)
                 metadata[service.name].update(d)
             else:
                 metadata[service.name] = d
+
 
         def service_by_order(s):
             return s[1].get('order')
 
         def service_by_dashbaord_order(s):
             return s[1].get('dashboard').get('order')
+
+        metadata = dict_merge(metadata,
+                              astakos_settings.SERVICES_META)
 
         for service, info in metadata.iteritems():
             default_meta = presentation.service_defaults(service)

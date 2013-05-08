@@ -1891,31 +1891,6 @@ class Project(models.Model):
     def approved_members(self):
         return [m.person for m in self.approved_memberships]
 
-    def add_member(self, user):
-        """
-        Raises:
-            astakos.im.models.AstakosUser.DoesNotExist
-        """
-        if isinstance(user, (int, long)):
-            user = AstakosUser.objects.get(user=user)
-
-        m, created = ProjectMembership.objects.get_or_create(
-            person=user, project=self
-        )
-        m.accept()
-
-    def remove_member(self, user):
-        """
-        Raises:
-            astakos.im.models.AstakosUser.DoesNotExist
-            astakos.im.models.ProjectMembership.DoesNotExist
-        """
-        if isinstance(user, (int, long)):
-            user = AstakosUser.objects.get(user=user)
-
-        m = ProjectMembership.objects.get(person=user, project=self)
-        m.remove()
-
 
 CHAIN_STATE = {
     (Project.APPROVED,   ProjectApplication.PENDING)  : Chain.APPROVED_PENDING,

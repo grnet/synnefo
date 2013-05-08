@@ -92,7 +92,12 @@ class Command(SynnefoCommand):
             msg = "Unknown %s with %s '%s'" % (kind, field, name_or_id)
             raise CommandError(msg)
 
+        first = True
         for info in infolist:
+            if not first:
+                self.stdout.write("\n")
+            else:
+                first = False
             utils.pprint_table(self.stdout, [info.values()], info.keys(),
                                options["output_format"], vertical=True)
 

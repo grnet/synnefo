@@ -47,7 +47,7 @@ intersphinx_mapping = {
                'https://docs.djangoproject.com/en/dev/_objects/')
 }
 
-SYNNEFO_DOCS_BASE_URL = 'http://docs.dev.grnet.gr/'
+SYNNEFO_DOCS_BASE_URL = 'http://www.synnefo.org/docs'
 SYNNEFO_PROJECTS = {
     'synnefo': 'dev',
     'pithos': 'dev',

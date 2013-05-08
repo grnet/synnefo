@@ -614,13 +614,13 @@ class ModularBackend(BaseBackend):
             raise NotAllowedError
         if shared and public:
             # get shared first
-            shared = self._list_object_permissions(
+            shared_paths = self._list_object_permissions(
                 user, account, container, prefix, shared=True, public=False)
             objects = set()
-            if shared:
+            if shared_paths:
                 path, node = self._lookup_container(account, container)
-                shared = self._get_formatted_paths(shared)
-                objects |= set(self._list_object_properties(node, path, prefix, delimiter, marker, limit, virtual, domain, keys, until, size_range, shared, all_props))
+                shared_paths = self._get_formatted_paths(shared_paths)
+                objects |= set(self._list_object_properties(node, path, prefix, delimiter, marker, limit, virtual, domain, keys, until, size_range, shared_paths, all_props))
 
             # get public
             objects |= set(self._list_public_object_properties(
@@ -1516,3 +1516,47 @@ class ModularBackend(BaseBackend):
         for path in self.permissions.access_list_paths(user, account):
             allow.add(path.split('/', 2)[1])
         return sorted(allow)
+
+    # Domain functions
+
+    @backend_method
+    def get_domain_objects(self, domain, user=None):
+        obj_list = self.node.domain_object_list(domain, CLUSTER_NORMAL)
+        if user != None:
+            obj_list = [t for t in obj_list \
+                if self._has_read_access(user, t[0])]
+        return [(path,
+                 self._build_metadata(props, user_defined_meta),
+                 self.permissions.access_get(path)) \
+            for path, props, user_defined_meta in obj_list]
+
+    # util functions
+
+    def _build_metadata(self, props, user_defined=None,
+                        include_user_defined=True):
+        meta = {'bytes': props[self.SIZE],
+                'type': props[self.TYPE],
+                'hash': props[self.HASH],
+                'version': props[self.SERIAL],
+                'version_timestamp': props[self.MTIME],
+                'modified_by': props[self.MUSER],
+                'uuid': props[self.UUID],
+                'checksum': props[self.CHECKSUM]}
+        if include_user_defined and user_defined != None:
+            meta.update(user_defined)
+        return meta
+
+    def _has_read_access(self, user, path):
+        try:
+            account, container, object = path.split('/', 2)
+        except ValueError:
+            raise ValueError('Invalid object path')
+
+        assert isinstance(user, basestring), "Invalid user"
+
+        try:
+            self._can_read(user, account, container, object)
+        except NotAllowedError:
+            return False
+        else:
+            return True

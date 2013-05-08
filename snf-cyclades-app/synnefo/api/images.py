@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 from logging import getLogger
+from itertools import ifilter
 
 from dateutil.parser import parse as date_parse
 
@@ -118,18 +119,14 @@ def list_images(request, detail=False):
     #                       overLimit (413)
 
     log.debug('list_images detail=%s', detail)
+    since = utils.isoparse(request.GET.get('changes-since'))
     with image_backend(request.user_uniq) as backend:
-        since = utils.isoparse(request.GET.get('changes-since'))
+        images = backend.list_images()
         if since:
-            images = []
-            for image in backend.iter():
-                updated = date_parse(image['updated_at'])
-                if updated >= since:
-                    images.append(image)
+            updated_since = lambda img: date_parse(img["updated_at"]) >= since
+            images = ifilter(updated_since, images)
             if not images:
                 return HttpResponse(status=304)
-        else:
-            images = backend.list()
 
     images = sorted(images, key=lambda x: x['id'])
     reply = [image_to_dict(image, detail) for image in images]
@@ -172,7 +169,8 @@ def get_image_details(request, image_id):
     #                       overLimit (413)
 
     log.debug('get_image_details %s', image_id)
-    image = util.get_image(image_id, request.user_uniq)
+    with image_backend(request.user_uniq) as backend:
+        image = backend.get_image(image_id)
     reply = image_to_dict(image)
 
     if request.serialization == 'xml':
@@ -209,7 +207,8 @@ def list_metadata(request, image_id):
     #                       overLimit (413)
 
     log.debug('list_image_metadata %s', image_id)
-    image = util.get_image(image_id, request.user_uniq)
+    with image_backend(request.user_uniq) as backend:
+        image = backend.get_image(image_id)
     metadata = image['properties']
     return util.render_metadata(request, metadata, use_values=True, status=200)
 
@@ -227,18 +226,18 @@ def update_metadata(request, image_id):
 
     req = utils.get_request_dict(request)
     log.info('update_image_metadata %s %s', image_id, req)
-    image = util.get_image(image_id, request.user_uniq)
-    try:
-        metadata = req['metadata']
-        assert isinstance(metadata, dict)
-    except (KeyError, AssertionError):
-        raise faults.BadRequest('Malformed request.')
-
-    properties = image['properties']
-    properties.update(metadata)
-
     with image_backend(request.user_uniq) as backend:
-        backend.update(image_id, dict(properties=properties))
+        image = backend.get_image(image_id)
+        try:
+            metadata = req['metadata']
+            assert isinstance(metadata, dict)
+        except (KeyError, AssertionError):
+            raise faults.BadRequest('Malformed request.')
+
+        properties = image['properties']
+        properties.update(metadata)
+
+        backend.update_metadata(image_id, dict(properties=properties))
 
     return util.render_metadata(request, properties, status=201)
 
@@ -254,7 +253,8 @@ def get_metadata_item(request, image_id, key):
     #                       overLimit (413)
 
     log.debug('get_image_metadata_item %s %s', image_id, key)
-    image = util.get_image(image_id, request.user_uniq)
+    with image_backend(request.user_uniq) as backend:
+        image = backend.get_image(image_id)
     val = image['properties'].get(key)
     if val is None:
         raise faults.ItemNotFound('Metadata key not found.')
@@ -284,12 +284,12 @@ def create_metadata_item(request, image_id, key):
         raise faults.BadRequest('Malformed request.')
 
     val = metadict[key]
-    image = util.get_image(image_id, request.user_uniq)
-    properties = image['properties']
-    properties[key] = val
-
     with image_backend(request.user_uniq) as backend:
-        backend.update(image_id, dict(properties=properties))
+        image = backend.get_image(image_id)
+        properties = image['properties']
+        properties[key] = val
+
+        backend.update_metadata(image_id, dict(properties=properties))
 
     return util.render_meta(request, {key: val}, status=201)
 
@@ -307,11 +307,11 @@ def delete_metadata_item(request, image_id, key):
     #                       overLimit (413),
 
     log.info('delete_image_metadata_item %s %s', image_id, key)
-    image = util.get_image(image_id, request.user_uniq)
-    properties = image['properties']
-    properties.pop(key, None)
-
     with image_backend(request.user_uniq) as backend:
-        backend.update(image_id, dict(properties=properties))
+        image = backend.get_image(image_id)
+        properties = image['properties']
+        properties.pop(key, None)
+
+        backend.update_metadata(image_id, dict(properties=properties))
 
     return HttpResponse(status=204)

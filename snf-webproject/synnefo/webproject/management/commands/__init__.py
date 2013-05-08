@@ -104,6 +104,8 @@ class ListCommand(BaseCommand):
     # Default filters and excludes
     filters = {}
     excludes = {}
+    # Order results
+    order_by = None
 
     # Fields used only with user_user_field
     astakos_url = None
@@ -239,6 +241,9 @@ class ListCommand(BaseCommand):
             raise CommandError(e)
         except Exception as e:
             raise CommandError("Can not filter results: %s" % e)
+
+        order_key = self.order_by if self.order_by is not None else 'pk'
+        objects = objects.order_by(order_key)
 
         # --display-mails option
         display_mails = options.get("display_mails")

@@ -94,6 +94,8 @@ class Command(BaseCommand):
             raise CommandError("user-id is mandatory")
         if not password:
             raise CommandError("password is mandatory")
+        if not flavor_id:
+            raise CommandError("flavor-id is mandatory")
 
         # Get Flavor
         if flavor_id:

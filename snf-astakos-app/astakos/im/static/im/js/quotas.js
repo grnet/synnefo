@@ -72,7 +72,8 @@ $(document).ready(function() {
 		
  		// prevent extra actions if it is checked		 
 		if ( $(this).hasClass('selected')){
-			group_form_toggle_resources($(this));
+			 e.preventDefault();
+			//group_form_toggle_resources($(this));
 		} else {
 			
 			// show the relevant fieldsets

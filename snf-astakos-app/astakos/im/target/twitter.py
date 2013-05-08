@@ -39,12 +39,12 @@ from django.utils.translation import ugettext as _
 from django.contrib import messages
 from django.template import RequestContext
 from django.views.decorators.http import require_http_methods
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, urlencode
 from django.core.urlresolvers import reverse
 from django.core.exceptions import ImproperlyConfigured
 from django.shortcuts import get_object_or_404
 
-from urlparse import urlunsplit, urlsplit
+from urlparse import urlunsplit, urlsplit, parse_qsl
 
 from astakos.im.util import prepare_response, get_context, login_url
 from astakos.im.views import requires_anonymous, render_response, \
@@ -67,9 +67,9 @@ import oauth2 as oauth
 import cgi
 import urllib
 
-request_token_url = 'http://twitter.com/oauth/request_token'
-access_token_url = 'http://twitter.com/oauth/access_token'
-authenticate_url = 'http://twitter.com/oauth/authenticate'
+request_token_url = 'https://api.twitter.com/oauth/request_token'
+access_token_url = 'https://api.twitter.com/oauth/access_token'
+authenticate_url = 'https://api.twitter.com/oauth/authenticate'
 
 @requires_auth_provider('twitter')
 @require_http_methods(["GET", "POST"])
@@ -125,7 +125,15 @@ def authenticated(
     client = oauth.Client(consumer, token)
 
     # Step 2. Request the authorized access token from Twitter.
-    resp, content = client.request(access_token_url, "GET")
+    parts = list(urlsplit(access_token_url))
+    params = dict(parse_qsl(parts[3], keep_blank_values=True))
+    oauth_verifier = request.GET.get('oauth_verifier')
+    params['oauth_verifier'] = oauth_verifier
+    parts[3] = urlencode(params)
+    parameterized_url = urlunsplit(parts)
+
+    resp, content = client.request(parameterized_url, "GET")
+
     if resp['status'] != '200':
         try:
             del request.session['request_token']

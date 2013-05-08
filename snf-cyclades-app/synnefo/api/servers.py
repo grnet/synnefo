@@ -297,16 +297,6 @@ def create_server(serials, request):
     else:
         transaction.commit()
 
-    # Allocate IP from public network
-    try:
-        (network, address) = util.get_public_ip(backend)
-        nic = {'ip': address, 'network': network.backend_id}
-    except:
-        transaction.rollback()
-        raise
-    else:
-        transaction.commit()
-
     # Fix flavor for archipelago
     password = util.random_password()
     disk_template, provider = util.get_flavor_provider(flavor)
@@ -329,6 +319,10 @@ def create_server(serials, request):
         serial.accepted = True
         serial.save()
 
+        # Allocate IP from public network
+        (network, address) = util.get_public_ip(backend)
+        nic = {'ip': address, 'network': network.backend_id}
+
         # We must save the VM instance now, so that it gets a valid
         # vm.backend_vm_id.
         vm = VirtualMachine.objects.create(
@@ -344,7 +338,7 @@ def create_server(serials, request):
         # create this NIC, because if the hooks never run (e.g. building error)
         # the VM's public IP address will never be released!
         NetworkInterface.objects.create(machine=vm, network=network, index=0,
-                                        ipv4=address, state="Buidling")
+                                        ipv4=address, state="BUILDING")
 
         log.info("Created entry in DB for VM '%s'", vm)
 

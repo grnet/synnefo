@@ -24,7 +24,8 @@ IMAGE_ICONS = ["redhat", "ubuntu", "debian", "windows", "gentoo", "archlinux",
 # How often should the UI request changes from the API
 UI_UPDATE_INTERVAL = 5000
 
-# Milieconds to increase the interval after UI_UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT calls
+# Milieconds to increase the interval after 
+# UI_UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT calls
 # of recurrent api requests
 UI_UPDATE_INTERVAL_INCREASE = UI_UPDATE_INTERVAL / 4
 UI_UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT = 4
@@ -88,7 +89,7 @@ VM_CREATE_SUGGESTED_ROLES = ["Database server", "File server", "Mail server", "W
 VM_CREATE_NAME_TPL = "My {0} server"
 
 # Template to use to build vm hostname
-UI_VM_HOSTNAME_FORMAT = 'snf-%(id)s.vm.okeanos.grnet.gr'
+UI_VM_HOSTNAME_FORMAT = 'snf-%(id)s.vm.synnefo.org'
 
 # Name/description metadata for the available flavor disk templates
 # Dict key is the disk_template value as stored in database
@@ -199,8 +200,8 @@ UI_ENABLE_GLANCE = True
 # a dict of image owner ids and their associate name
 # to be displayed on images list
 UI_SYSTEM_IMAGES_OWNERS = {
-    'admin@synnefo.gr': 'system',
-    'images@synnefo.gr': 'system'
+    'admin@synnefo.org': 'system',
+    'images@synnefo.org': 'system'
 }
 
 # Astakos feedback endpoint. UI uses this setting to post error feedbacks

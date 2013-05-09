@@ -43,9 +43,10 @@ from django.core.urlresolvers import reverse
 
 from urllib import unquote
 
-from snf_django.lib.astakos import get_user
+import astakosclient
+from snf_django.lib import astakos
+
 from synnefo.db.models import VirtualMachine, NetworkInterface, Network
-from astakosclient import AstakosClient
 
 # server actions specific imports
 from synnefo.api import servers
@@ -109,13 +110,13 @@ def helpdesk_user_required(func, permitted_groups=PERMITTED_GROUPS):
             raise Http404
 
         token = get_token_from_cookie(request, AUTH_COOKIE_NAME)
-        get_user(request, settings.ASTAKOS_URL,
-                 fallback_token=token, logger=logger)
+        astakos.get_user(request, settings.ASTAKOS_URL,
+                         fallback_token=token, logger=logger)
         if hasattr(request, 'user') and request.user:
             groups = request.user.get('groups', [])
 
             if not groups:
-                logger.error("Failed to access helpdesk view %r",
+                logger.error("Failed to access helpdesk view. User: %r",
                              request.user_uniq)
                 raise PermissionDenied
 
@@ -131,7 +132,7 @@ def helpdesk_user_required(func, permitted_groups=PERMITTED_GROUPS):
                 raise PermissionDenied
         else:
             logger.error("Failed to access helpdesk view %r. No authenticated "
-                         "user found.")
+                         "user found.", request.user_uniq)
             raise PermissionDenied
 
         logging.info("User %s accessed helpdesk view (%s)", request.user_uniq,
@@ -194,16 +195,16 @@ def account(request, search_query):
             account = None
             search_query = vmid
 
-    astakos = AstakosClient(settings.ASTAKOS_URL, retry=2,
-                            use_pool=True, logger=logger)
+    astakos_client = astakosclient.AstakosClient(settings.ASTAKOS_URL, retry=2,
+                                                 use_pool=True, logger=logger)
 
     if is_uuid:
         account = search_query
-        account_name = astakos.get_username(auth_token, account)
+        account_name = astakos_client.get_username(auth_token, account)
 
     if account_exists and not is_uuid:
         account_name = search_query
-        account = astakos.get_uuid(auth_token, account_name)
+        account = astakos_client.get_uuid(auth_token, account_name)
 
     if not account:
         account_exists = False

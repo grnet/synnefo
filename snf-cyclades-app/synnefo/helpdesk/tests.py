@@ -88,6 +88,8 @@ class HelpdeskTests(TestCase):
     def setUp(self):
 
         def get_user_mock(request, *args, **kwargs):
+            request.user_uniq = None
+            request.user = None
             if request.META.get('HTTP_X_AUTH_TOKEN', None) == '0000':
                 request.user_uniq = 'test'
                 request.user = {'uniq': 'test', 'auth_token': '0000'}
@@ -238,9 +240,9 @@ class HelpdeskTests(TestCase):
         vms = r.context['vms']
         nets = r.context['networks']
         self.assertEqual(account, USER2)
-        self.assertEqual(vms[0].name, "user2 vm2")
-        self.assertEqual(vms[1].name, "user2 vm1")
         self.assertEqual(vms.count(), 2)
+        self.assertEqual(sorted([vms[0].name, vms[1].name]),
+                         sorted(["user2 vm1", "user2 vm2"]))
         self.assertEqual(len(nets), 0)
         self.assertEqual(r.context['account_exists'], True)
 

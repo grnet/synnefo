@@ -983,6 +983,9 @@ def object_write(request, v_account, v_container, v_object):
     #                       badRequest (400)
     #                       requestentitytoolarge (413)
 
+    # lock container path for concurrent updates
+    request.backend.lock_path('/'.join([v_account, v_container]))
+
     # Evaluate conditions.
     if (request.META.get('HTTP_IF_MATCH')
             or request.META.get('HTTP_IF_NONE_MATCH')):
@@ -1157,6 +1160,9 @@ def object_write_form(request, v_account, v_container, v_object):
         raise faults.BadRequest('Missing X-Object-Data field')
     file = request.FILES['X-Object-Data']
 
+    # lock container path for concurrent updates
+    request.backend.lock_path('/'.join([v_account, v_container]))
+
     checksum = file.etag
     try:
         version_id = \
@@ -1199,6 +1205,9 @@ def object_copy(request, v_account, v_container, v_object):
         dest_container, dest_name = split_container_object_string(dest_path)
     except ValueError:
         raise faults.BadRequest('Invalid Destination header')
+
+    # lock container path for concurrent updates
+    request.backend.lock_path('/'.join([v_account, v_container]))
 
     # Evaluate conditions.
     if (request.META.get('HTTP_IF_MATCH')
@@ -1244,6 +1253,9 @@ def object_move(request, v_account, v_container, v_object):
     except ValueError:
         raise faults.BadRequest('Invalid Destination header')
 
+    # lock container path for concurrent updates
+    request.backend.lock_path('/'.join([v_account, v_container]))
+
     # Evaluate conditions.
     if (request.META.get('HTTP_IF_MATCH')
             or request.META.get('HTTP_IF_NONE_MATCH')):
@@ -1277,6 +1289,9 @@ def object_update(request, v_account, v_container, v_object):
     #                       badRequest (400)
 
     content_type, meta, permissions, public = get_object_headers(request)
+
+    # lock container path for concurrent updates
+    request.backend.lock_path('/'.join([v_account, v_container]))
 
     try:
         prev_meta = request.backend.get_object_meta(
@@ -1503,6 +1518,9 @@ def object_delete(request, v_account, v_container, v_object):
 
     until = get_int_parameter(request.GET.get('until'))
     delimiter = request.GET.get('delimiter')
+
+    # lock container path for concurrent updates
+    request.backend.lock_path('/'.join([v_account, v_container]))
 
     try:
         request.backend.delete_object(

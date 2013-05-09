@@ -2,10 +2,10 @@
  
 <p class="termslink" style="float:right"><a href="{% url latest_terms %}">Terms of service</a></p>
 {% if BRANDING_SHOW_COPYRIGHT%}
-<p><a href="{{ BRANDING_COMPANY_URL }}" target="_blank" title="{{ BRANDING_COMPANY_NAME }}">{{  BRANDING_COPYRIGHT_MESSAGE }}</a> All rights reserved.</p>
+	<p><a href="{{ BRANDING_COMPANY_URL }}" target="_blank" title="{{ BRANDING_COMPANY_NAME }}">{{  BRANDING_COPYRIGHT_MESSAGE }}</a> All rights reserved.</p>
 {% endif %}
 
- <div class="software">Powered by <a href="http://www.synnefo.org/">synnefo</a> <span class="version">v{{ BRANDING_SYNNEFO_JS_LIB_VERSION }}</span></div>
+ <div class="software">Powered by <a href="http://www.synnefo.org/">Synnefo</a> <span class="version">v{{ BRANDING_SYNNEFO_JS_LIB_VERSION }}</span></div>
  
 {% endblock %}
  

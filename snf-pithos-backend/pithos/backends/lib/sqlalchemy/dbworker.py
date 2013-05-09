@@ -31,6 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+ESCAPE_CHAR = '@'
 
 class DBWorker(object):
     """Database connection handler."""
@@ -42,5 +43,10 @@ class DBWorker(object):
         self.conn = wrapper.conn
         self.engine = wrapper.engine
 
-    def escape_like(self, s):
-        return s.replace('\\', '\\\\').replace('%', '\%').replace('_', '\_')
+    def escape_like(self, s, escape_char=ESCAPE_CHAR):
+        return (
+                s
+                .replace(escape_char, escape_char * 2)
+                .replace('%', escape_char + '%')
+                .replace('_', escape_char + '_')
+        )

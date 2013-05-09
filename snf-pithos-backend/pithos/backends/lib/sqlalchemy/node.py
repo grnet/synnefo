@@ -43,7 +43,7 @@ from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.engine.reflection import Inspector
 from sqlalchemy.exc import NoSuchTableError
 
-from dbworker import DBWorker
+from dbworker import DBWorker, ESCAPE_CHAR
 
 from pithos.backends.filter import parse_filters
 
@@ -241,7 +241,7 @@ class Node(DBWorker):
 
         # Use LIKE for comparison to avoid MySQL problems with trailing spaces.
         s = select([self.nodes.c.node], self.nodes.c.path.like(
-            self.escape_like(path), escape='\\'))
+            self.escape_like(path), escape=ESCAPE_CHAR))
         r = self.conn.execute(s)
         row = r.fetchone()
         r.close()
@@ -621,7 +621,7 @@ class Node(DBWorker):
             c1 = select([self.nodes.c.serial],
                         self.nodes.c.node == v.c.node)
         c2 = select([self.nodes.c.node], self.nodes.c.path.like(
-            self.escape_like(path) + '%', escape='\\'))
+            self.escape_like(path) + '%', escape=ESCAPE_CHAR))
         s = s.where(and_(v.c.serial == c1,
                          v.c.cluster != except_cluster,
                          v.c.node.in_(c2)))
@@ -908,7 +908,11 @@ class Node(DBWorker):
         for path, match in pathq:
             if match == MATCH_PREFIX:
                 conj.append(
-                    n.c.path.like(self.escape_like(path) + '%', escape='\\'))
+                    n.c.path.like(
+                        self.escape_like(path) + '%',
+                        escape=ESCAPE_CHAR
+                    )
+                )
             elif match == MATCH_EXACT:
                 conj.append(n.c.path == path)
         if conj:
@@ -1003,7 +1007,11 @@ class Node(DBWorker):
         for path, match in pathq:
             if match == MATCH_PREFIX:
                 conj.append(
-                    n.c.path.like(self.escape_like(path) + '%', escape='\\'))
+                    n.c.path.like(
+                        self.escape_like(path) + '%',
+                        escape=ESCAPE_CHAR
+                    )
+                )
             elif match == MATCH_EXACT:
                 conj.append(n.c.path == path)
         if conj:

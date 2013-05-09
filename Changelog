@@ -30,6 +30,8 @@ Astakos
 
 Cyclades
 --------
+* Add 'ASTAKOS_POOLSIZE' setting which tunes the size of the http connection
+  pool to astakos.
 * Remove 'CYCLADES_USER_CATALOG_URL' and 'CYCLADES_USER_FEEDBACK_URL' settings
 * Remove CYCLADES_USE_QUOTAHOLDER, CYCLADES_QUOTAHOLDER_TOKEN,
   CYCLADES_QUOTAHOLDER_URL, CYCLADES_QUOTAHOLDER_POOLSIZE settings

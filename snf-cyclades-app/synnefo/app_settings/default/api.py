@@ -98,12 +98,16 @@ DEFAULT_GANETI_DISK_TEMPLATE = 'drbd'
 # The URL of an astakos instance that will be used for user authentication
 ASTAKOS_URL = 'https://accounts.example.org/'
 
+# Tune the size of the Astakos http client connection pool
+# This limit the number of concurrent requests to Astakos.
+ASTAKOS_POOLSIZE = 50
+
 # Key for password encryption-decryption. After changing this setting, synnefo
 # will be unable to decrypt all existing Backend passwords. You will need to
 # store again the new password by using 'snf-manage backend-modify'.
 # SECRET_ENCRYPTION_KEY may up to 32 bytes. Keys bigger than 32 bytes are not
 # supported.
-SECRET_ENCRYPTION_KEY= "Password Encryption Key"
+SECRET_ENCRYPTION_KEY = "Password Encryption Key"
 
 # Astakos service token
 # The token used for astakos service api calls (e.g. api to retrieve user email

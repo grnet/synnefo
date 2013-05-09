@@ -78,7 +78,7 @@ _pithos_backend_pool = \
         POOL_SIZE,
         astakos_url=settings.ASTAKOS_URL,
         service_token=settings.CYCLADES_ASTAKOS_SERVICE_TOKEN,
-        astakosclient_poolsize=settings.CYCLADES_QUOTAHOLDER_POOLSIZE,
+        astakosclient_poolsize=settings.ASTAKOS_POOLSIZE,
         db_connection=settings.BACKEND_DB_CONNECTION,
         block_path=settings.BACKEND_BLOCK_PATH)
 

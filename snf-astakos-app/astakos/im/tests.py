@@ -315,12 +315,12 @@ class ShibbolethTests(TestCase):
         client.reset_tokens()
         self.assertRedirects(r, "/im/signup?third_party_token=%s" % token)
 
-        form = r.context['form']
+        form = r.context['login_form']
         signupdata = copy.copy(form.initial)
         signupdata['email'] = 'kpap@grnet.gr'
         signupdata['third_party_token'] = token
         signupdata['provider'] = 'shibboleth'
-        del signupdata['id']
+        signupdata.pop('id', None)
 
         # the email exists to another user
         r = client.post("/im/signup", signupdata)
@@ -997,8 +997,8 @@ class TestAuthProvidersAPI(TestCase):
         provider = auth.get_provider('shibboleth', user, 'test123')
         provider.add_to_user()
         user = AstakosUser.objects.get()
-        self.assertItemsEqual(user.groups.values_list('name', flat=True),
-                              [u'group1', u'group2', u'group-create'])
+        self.assertEqual(sorted(user.groups.values_list('name', flat=True)),
+                         sorted([u'group1', u'group2', u'group-create']))
 
         local = auth.get_provider('local', user)
         local.add_to_user()
@@ -1007,19 +1007,17 @@ class TestAuthProvidersAPI(TestCase):
         provider.remove_from_user()
         user = AstakosUser.objects.get()
         self.assertEqual(len(user.get_auth_providers()), 1)
-        self.assertItemsEqual(user.groups.values_list('name', flat=True),
-                              [u'group-create', u'localgroup'])
+        self.assertEqual(sorted(user.groups.values_list('name', flat=True)),
+                         sorted([u'group-create', u'localgroup']))
 
         local = user.get_auth_provider('local')
         self.assertRaises(Exception, local.remove_from_user)
         provider = auth.get_provider('shibboleth', user, 'test123')
         provider.add_to_user()
         user = AstakosUser.objects.get()
-        self.assertItemsEqual(user.groups.values_list('name', flat=True),
-                              [u'group-create', u'group1', u'group2',
-                               u'localgroup'])
-
-
+        self.assertEqual(sorted(user.groups.values_list('name', flat=True)),
+                         sorted([u'group-create', u'group1', u'group2',
+                                 u'localgroup']))
 
     @im_settings(IM_MODULES=['local', 'shibboleth'])
     def test_policies(self):
@@ -1344,10 +1342,10 @@ class TestProjects(TestCase):
         self.assertEqual(ProjectMembership.objects.count(), 1)
 
         reject_member_url = reverse('project_reject_member',
-                                    kwargs={'chain_id': app1_id, 'user_id':
+                                    kwargs={'chain_id': app1_id, 'memb_id':
                                             self.member.pk})
         accept_member_url = reverse('project_accept_member',
-                                    kwargs={'chain_id': app1_id, 'user_id':
+                                    kwargs={'chain_id': app1_id, 'memb_id':
                                             self.member.pk})
 
         # only project owner is allowed to reject
@@ -1379,7 +1377,7 @@ class TestProjects(TestCase):
         self.assertEqual(newlimit, 200)
 
         remove_member_url = reverse('project_remove_member',
-                                    kwargs={'chain_id': app1_id, 'user_id':
+                                    kwargs={'chain_id': app1_id, 'memb_id':
                                             self.member.pk})
         r = self.user_client.post(remove_member_url, follow=True)
         self.assertEqual(r.status_code, 200)

@@ -47,7 +47,6 @@ path = os.path.dirname(os.path.realpath(__file__))
 os.environ['SYNNEFO_SETTINGS_DIR'] = path + '/settings'
 os.environ['DJANGO_SETTINGS_MODULE'] = 'synnefo.settings'
 
-from astakos.im.api.callpoint import AstakosCallpoint
 from astakos.im.functions import get_chain_of_application_id
 from views import submit, approve, join, leave
 from snf_django.lib.db.transaction import commit_on_success_strict
@@ -78,14 +77,10 @@ def random_email():
 
 def new_user():
     email = random_email()
-    u = {'email': email,
-         'first_name': random_name(),
-         'last_name': random_name(),
-         'active': True,
-         }
-    c = AstakosCallpoint()
-    r = c.create_users((u,)).next()
-    return r.data['id'], email
+    u = AstakosUser(email=random_email(), first_name=random_name(),
+                    last_name=random_name(), is_active=True)
+    u.save()
+    return u.id, u.email
 
 
 @commit_on_success_strict()

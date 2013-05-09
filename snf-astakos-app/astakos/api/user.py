@@ -41,14 +41,12 @@ from snf_django.lib import api
 from snf_django.lib.api import faults
 
 from astakos.im.util import epoch
-from astakos.im.api.callpoint import AstakosCallpoint
+from astakos.im.quotas import get_user_quotas
 
 from .util import (
     get_uuid_displayname_catalogs as get_uuid_displayname_catalogs_util,
     send_feedback as send_feedback_util,
     user_from_token)
-
-callpoint = AstakosCallpoint()
 
 import logging
 logger = logging.getLogger(__name__)
@@ -91,13 +89,13 @@ def authenticate(request):
 
     # append usage data if requested
     if request.REQUEST.get('usage', None):
-        resource_usage = None
-        result = callpoint.get_user_usage(user.id)
-        if result.is_success:
-            resource_usage = result.data
-        else:
-            resource_usage = []
-        user_info['usage'] = resource_usage
+        quotas = get_user_quotas(user)['system']
+        usage = []
+        for k in quotas:
+            usage.append({'name': k,
+                          'currValue': quotas[k]['usage'],
+                          'maxValue': quotas[k]['limit']})
+        user_info['usage'] = usage
 
     response.content = json.dumps(user_info)
     response['Content-Type'] = 'application/json; charset=UTF-8'

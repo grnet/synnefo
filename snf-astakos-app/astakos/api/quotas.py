@@ -51,8 +51,8 @@ from .util import (json_response, is_integer, are_integer,
 
 @api.api_method(http_method='GET', token_required=True, user_required=False)
 @user_from_token
-def quotas(request, user=None):
-    result = get_user_quotas(user)
+def quotas(request):
+    result = get_user_quotas(request.user)
     return json_response(result)
 
 

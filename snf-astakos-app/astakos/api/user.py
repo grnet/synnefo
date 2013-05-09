@@ -57,11 +57,12 @@ logger = logging.getLogger(__name__)
 @api.api_method(http_method="GET", token_required=True, user_required=False,
                 logger=logger)
 @user_from_token  # Authenticate user!!
-def authenticate(request, user=None):
+def authenticate(request):
     # Normal Response Codes: 200
     # Error Response Codes: internalServerError (500)
     #                       badRequest (400)
     #                       unauthorised (401)
+    user = request.user
     if not user:
         raise faults.BadRequest('No user')
 
@@ -108,7 +109,7 @@ def authenticate(request, user=None):
 @api.api_method(http_method="POST", token_required=True, user_required=False,
                 logger=logger)
 @user_from_token  # Authenticate user!!
-def get_uuid_displayname_catalogs(request, user=None):
+def get_uuid_displayname_catalogs(request):
     # Normal Response Codes: 200
     # Error Response Codes: internalServerError (500)
     #                       badRequest (400)
@@ -121,11 +122,10 @@ def get_uuid_displayname_catalogs(request, user=None):
 @api.api_method(http_method="POST", token_required=True, user_required=False,
                 logger=logger)
 @user_from_token  # Authenticate user!!
-def send_feedback(request, email_template_name='im/feedback_mail.txt',
-                  user=None):
+def send_feedback(request, email_template_name='im/feedback_mail.txt'):
     # Normal Response Codes: 200
     # Error Response Codes: internalServerError (500)
     #                       badRequest (400)
     #                       unauthorised (401)
 
-    return send_feedback_util(request, email_template_name, user)
+    return send_feedback_util(request, email_template_name)

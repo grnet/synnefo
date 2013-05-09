@@ -3,28 +3,27 @@
 API Guide
 *********
 
-`Cyclades <cyclades.html>`_ is the compute service developed by `GRNET 
-<http://www.grnet.gr>`_ as part of the `synnefo <http://www.synnefo.org>`_
-software. Cyclades API started as an extension of the `OpenStack Compute API v2
-<http://docs.openstack.org/api/openstack-compute/2/content>`_.
+`Cyclades <cyclades.html>`_ is the Compute Service of `Synnefo
+<http://www.synnefo.org>`_. The Cyclades API tries to be as close to the
+`OpenStack Compute API v2
+<http://docs.openstack.org/api/openstack-compute/2/content>`_ as possible.
 
 This document's goals are:
 
-* Define the Cyclades/Compute ReST API
-* Clarify the differences between Cyclades and OS/Compute
+* Define the Cyclades/Compute REST API
+* Clarify the differences between Cyclades and OpenStack/Compute
 
-Users and developers who wish to access a Synnefo Cyclades deployment through
-its ReST API are advised to use the `kamaki <http://docs.dev.grnet.gr/kamaki>`_
-command-line client and associated python library, instead of making direct
-calls.
+Users and developers who wish to access Cyclades through its REST API are
+advised to use the `kamaki <http://docs.dev.grnet.gr/kamaki>`_ command-line
+client and associated python library, instead of making direct calls.
 
 Overview
 ========
 
-* It is not defined if requests for invalid URLs should return 404 or a Fault.
-  We return a BadRequest Fault.
-* It is not defined if requests with a wrong HTTP method should return 405 or a
-  Fault. We return a BadRequest Fault.
+* OpenStack does not define if requests for invalid URLs should return 404 or a
+* Fault. We return a BadRequest Fault.
+* OpenStack does not define if requests with a wrong HTTP method should return
+* 405 or a Fault. We return a BadRequest Fault.
 
 General API Information
 =======================
@@ -326,10 +325,10 @@ Content-Length  Length of request body    required required
 |
 
 ================= ===============
-Request Parameter Value          
+Request Parameter Value
 ================= ===============
 json              Respond in json
-xml               Respond in xml 
+xml               Respond in xml
 ================= ===============
 
 Request body contents::
@@ -425,7 +424,7 @@ Return Code                 Description
 403 (Forbidden)             User is not allowed to perform this operation
 404 (Not Found)             Image or Flavor not found
 413 (Over Limit)            Exceeded some resource limit (#VMs, personality
-size, etc.) 
+size, etc.)
 415 (Bad Media Type)        
 500 (Internal Server Error) The request cannot be completed because of an
 \                           internal error
@@ -550,7 +549,7 @@ Response body contents::
   stats: {<parameter>: <value> }
 
 ============= ======================
-Parameter     Description           
+Parameter     Description
 ============= ======================
 serverRef     Server ID
 refresh       Refresh frequency
@@ -657,7 +656,7 @@ Diagnostic attribute Description
 level                Debug level
 created              Log entry timestamp
 source               Log source proccess
-source_date          Log source date          
+source_date          Log source date
 message              Log description
 details              Detailed log description
 ==================== ===========
@@ -1099,7 +1098,7 @@ Response body contents::
     ...
   }
 
-Network Interface Connection (NIC) attributes are listed `here <#nic-ref>`_. 
+Network Interface Connection (NIC) attributes are listed `here <#nic-ref>`_.
 
 **List Server NICs Example with server id 25455, network id 7: JSON**
 
@@ -1176,7 +1175,7 @@ Response body contents::
 
 .. code-block:: javascript
 
-  { 
+  {
     ""metadata": {
       "values": {
         "OS": "Linux",
@@ -1565,7 +1564,7 @@ Request body contents::
 *Example (soft) Reboot Server: JSON*
 
 .. code-block:: javascript
-  
+
   {"reboot" : { "type": "soft"}}
 
 .. note:: Response body should be empty
@@ -1615,7 +1614,7 @@ Response body contents::
   }
 
 ============== ======================
-VNC Attributes Description           
+VNC Attributes Description
 ============== ======================
 host           The vncprocy host
 port           vncprocy port
@@ -1712,10 +1711,10 @@ X-Auth-Token    User authentication token required required
 |
 
 ================= ===============
-Request Parameter Value          
+Request Parameter Value
 ================= ===============
 json              Respond in json
-xml               Respond in xml 
+xml               Respond in xml
 ================= ===============
 
 .. note:: Request body should be empty
@@ -1831,10 +1830,10 @@ X-Auth-Token    User authentication token required required
 |
 
 ================= ===============
-Request Parameter Value          
+Request Parameter Value
 ================= ===============
 json              Respond in json
-xml               Respond in xml 
+xml               Respond in xml
 ================= ===============
 
 .. note:: Request body should be empty
@@ -1866,7 +1865,7 @@ All flavor attributes are `listed here <flavor-ref>`_.
 *Example Flavor Details: JSON*
 
 .. code-block:: javascript
-  
+
   {
     "flavor": {
       {
@@ -2229,7 +2228,7 @@ Response body content::
 
 .. code-block:: javascript
 
-  { 
+  {
     "metadata": {
       "values": {
         "partition_table": "msdos",
@@ -2331,7 +2330,7 @@ Response body content::
 
 .. code-block:: javascript
 
-  { 
+  {
     "metadata": {
       "partition_table": "msdos",
       "kernel": "3.2.0",
@@ -2582,7 +2581,7 @@ URI                  Method
 |
 
 ==============  =========================
-Request Header  Value                    
+Request Header  Value
 ==============  =========================
 X-Auth-Token    User authentication token
 ==============  =========================
@@ -2597,7 +2596,7 @@ X-Auth-Token    User authentication token
 Return Code                 Description
 =========================== =====================
 204 (OK)                    Request succeeded
-304 (Not Modified)          
+304 (Not Modified)
 400 (Bad Request)           Malformed network id
 401 (Unauthorized)          Missing or expired user token
 404 (Not Found)             Network not found
@@ -2677,7 +2676,7 @@ URI                  Method
 |
 
 ==============  =========================
-Request Header  Value                    
+Request Header  Value
 ==============  =========================
 X-Auth-Token    User authentication token
 Content-Type    Type or request body     
@@ -2702,7 +2701,7 @@ Request body content::
 ================== ======================= ======== =======
 Request Attributes Description             Required Default
 ================== ======================= ======== =======
-name               Network name            ✔        
+name               Network name            ✔
 type               Network type            ✔
 dhcp               If use DHCP             **✘**    True
 cidr               IPv4 CIDR               **✘**    192.168.1.0/2
@@ -2786,7 +2785,7 @@ Get Network Details
 ========================== ======
 URI                        Method
 ========================== ======
-``/networks/<network-id>`` GET   
+``/networks/<network-id>`` GET
 ========================== ======
 
 * **network-id** is the identifier of the network
@@ -2794,7 +2793,7 @@ URI                        Method
 |
 
 ==============  =========================
-Request Header  Value                    
+Request Header  Value
 ==============  =========================
 X-Auth-Token    User authentication token
 ==============  =========================
@@ -2856,7 +2855,7 @@ Rename Network
 ========================== ======
 URI                        Method
 ========================== ======
-``/networks/<network-id>`` PUT   
+``/networks/<network-id>`` PUT
 ========================== ======
 
 * **network-id** is the identifier of the network
@@ -2864,11 +2863,11 @@ URI                        Method
 |
 
 ==============  =========================
-Request Header  Value                    
+Request Header  Value
 ==============  =========================
 X-Auth-Token    User authentication token
-Content-Type    Type or request body     
-Content-Length  Length of request body   
+Content-Type    Type or request body
+Content-Length  Length of request body
 ==============  =========================
 
 **Example Request Headers**::
@@ -2918,7 +2917,7 @@ A network is deleted as long as it is not attached to any virtual servers.
 ========================== ======
 URI                        Method
 ========================== ======
-``/networks/<network-id>`` DELETE   
+``/networks/<network-id>`` DELETE
 ========================== ======
 
 * **network-id** is the identifier of the network
@@ -2926,7 +2925,7 @@ URI                        Method
 |
 
 ==============  =========================
-Request Header  Value                    
+Request Header  Value
 ==============  =========================
 X-Auth-Token    User authentication token
 ==============  =========================
@@ -2973,11 +2972,11 @@ URI                               Method
 |
 
 ==============  =========================
-Request Header  Value                    
+Request Header  Value
 ==============  =========================
 X-Auth-Token    User authentication token
-Content-Type    Type or request body     
-Content-Length  Length of request body   
+Content-Type    Type or request body
+Content-Length  Length of request body
 ==============  =========================
 
 **Example Request Headers**::
@@ -3034,11 +3033,11 @@ URI                               Method
 |
 
 ==============  =========================
-Request Header  Value                    
+Request Header  Value
 ==============  =========================
 X-Auth-Token    User authentication token
-Content-Type    Type or request body     
-Content-Length  Length of request body   
+Content-Type    Type or request body
+Content-Length  Length of request body
 ==============  =========================
 
 **Example Request Headers**::

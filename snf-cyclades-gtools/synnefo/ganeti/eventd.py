@@ -57,6 +57,7 @@ from signal import signal, SIGINT, SIGTERM
 import setproctitle
 
 from ganeti import utils, jqueue, constants, serializer, cli
+from ganeti import errors as ganeti_errors
 from ganeti.ssconf import SimpleConfigReader
 
 
@@ -96,23 +97,39 @@ def get_time_from_status(op, job):
 def get_instance_nics(instance, logger):
     """Query Ganeti to a get the instance's NICs.
 
+    Get instance's NICs from Ganeti configuration data. If running on master,
+    query Ganeti via Ganeti CLI client. Otherwise, get the nics from Ganeti
+    configuration file.
+
     @type instance: string
     @param instance: the name of the instance
     @rtype: List of dicts
-    @retrun: Dictionary containing the instance's NICs. Each dictionary
+    @return: Dictionary containing the instance's NICs. Each dictionary
              contains the following keys: 'network', 'ip', 'mac', 'mode',
              'link' and 'firewall'
 
     """
-    fields = ["nic.networks", "nic.ips", "nic.macs", "nic.modes", "nic.links",
-              "tags"]
-    # Get Ganeti client
-    client = cli.GetClient()
-    info = client.QueryInstances([instance], fields, use_locking=False)
-    networks, ips, macs, modes, links, tags = info[0]
-    nic_keys = ["network", "ip", "mac", "mode", "link"]
-    nics = zip(networks, ips, macs, modes, links)
-    nics = map(lambda x: dict(zip(nic_keys, x)), nics)
+    try:
+        client = cli.GetClient()
+        fields = ["nic.networks", "nic.ips", "nic.macs", "nic.modes",
+                  "nic.links", "tags"]
+        info = client.QueryInstances([instance], fields, use_locking=False)
+        networks, ips, macs, modes, links, tags = info[0]
+        nic_keys = ["network", "ip", "mac", "mode", "link"]
+        nics = zip(networks, ips, macs, modes, links)
+        nics = map(lambda x: dict(zip(nic_keys, x)), nics)
+    except ganeti_errors.OpPrereqError:
+        # Not running on master! Load the conf file
+        raw_data = utils.ReadFile(constants.CLUSTER_CONF_FILE)
+        config = serializer.LoadJson(raw_data)
+        i = config["instances"][instance]
+        nics = []
+        for nic in i["nics"]:
+            params = nic.pop("nicparams")
+            nic["mode"] = params["mode"]
+            nic["link"] = params["link"]
+            nics.append(nic)
+        tags = i.get("tags", [])
     # Get firewall from instance Tags
     # Tags are of the form synnefo:network:N:firewall_mode
     for tag in tags:

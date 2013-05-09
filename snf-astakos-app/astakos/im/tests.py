@@ -673,7 +673,7 @@ class TestLocal(TestCase):
 
         # user visits change password link
         # "Refresh" user because created url is based on last_login timestamp
-        user = AstakosUser.objects.ger(pk=user.pk)
+        user = AstakosUser.objects.get(pk=user.pk)
         r = self.client.get(user.get_password_reset_url())
         r = self.client.post(user.get_password_reset_url(),
                              {'new_password1': 'newpass',

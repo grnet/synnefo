@@ -474,7 +474,7 @@ def get_membership_for_update_by_id(project_id, memb_id):
     try:
         objs = ProjectMembership.objects
         return objs.get_for_update(project__id=project_id,
-                                   id=memb_id)
+                                   person__id=memb_id)
     except ProjectMembership.DoesNotExist:
         m = _(astakos_messages.NOT_MEMBERSHIP_REQUEST)
         raise IOError(m)

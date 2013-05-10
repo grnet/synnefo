@@ -1193,10 +1193,6 @@ class ModularBackend(BaseBackend):
         self._can_read(user, account, container, name)
         return (account, container, name)
 
-    @backend_method
-    def lock_path(self, path):
-        node = self.node.node_lookup(path, for_update=True)
-
     @backend_method(autocommit=0)
     def get_block(self, hash):
         """Return a block's data."""
@@ -1253,8 +1249,9 @@ class ModularBackend(BaseBackend):
         return account, node
 
     def _lookup_container(self, account, container):
+        for_update = True if self.lock_container_path else False
         path = '/'.join((account, container))
-        node = self.node.node_lookup(path)
+        node = self.node.node_lookup(path, for_update)
         if node is None:
             raise ItemNotExists('Container does not exist')
         return path, node

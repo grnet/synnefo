@@ -1061,9 +1061,9 @@ def get_pithos_usage(token):
     return quotas.popitem()[-1] # assume only one resource
 
 
-def api_method(http_method=None, token_required=True, user_required=True, logger=None,
-               format_allowed=False, serializations=None,
-               strict_serlization=False):
+def api_method(http_method=None, token_required=True, user_required=True,
+               logger=None, format_allowed=False, serializations=None,
+               strict_serlization=False, lock_container_path=False):
     serializations = serializations or ['json', 'xml']
     def decorator(func):
         @api.api_method(http_method=http_method, token_required=token_required,
@@ -1083,6 +1083,7 @@ def api_method(http_method=None, token_required=True, user_required=True, logger
             try:
                 # Add a PithosBackend as attribute of the request object
                 request.backend = get_backend()
+                request.backend.lock_container_path = lock_container_path
                 # Many API method expect thet X-Auth-Token in request,token
                 request.token = request.x_auth_token
                 update_request_headers(request)

@@ -971,7 +971,8 @@ def _object_read(request, v_account, v_container, v_object):
     return object_data_response(request, sizes, hashmaps, meta)
 
 
-@api_method('PUT', format_allowed=True, user_required=True, logger=logger)
+@api_method('PUT', format_allowed=True, user_required=True, logger=logger,
+            lock_container_path=True)
 def object_write(request, v_account, v_container, v_object):
     # Normal Response Codes: 201
     # Error Response Codes: internalServerError (500),
@@ -982,9 +983,6 @@ def object_write(request, v_account, v_container, v_object):
     #                       forbidden (403),
     #                       badRequest (400)
     #                       requestentitytoolarge (413)
-
-    # lock container path for concurrent updates
-    request.backend.lock_path('/'.join([v_account, v_container]))
 
     # Evaluate conditions.
     if (request.META.get('HTTP_IF_MATCH')
@@ -1146,7 +1144,7 @@ def object_write(request, v_account, v_container, v_object):
     return response
 
 
-@api_method('POST', user_required=True, logger=logger)
+@api_method('POST', user_required=True, logger=logger, lock_container_path=True)
 def object_write_form(request, v_account, v_container, v_object):
     # Normal Response Codes: 201
     # Error Response Codes: internalServerError (500),
@@ -1159,9 +1157,6 @@ def object_write_form(request, v_account, v_container, v_object):
     if 'X-Object-Data' not in request.FILES:
         raise faults.BadRequest('Missing X-Object-Data field')
     file = request.FILES['X-Object-Data']
-
-    # lock container path for concurrent updates
-    request.backend.lock_path('/'.join([v_account, v_container]))
 
     checksum = file.etag
     try:
@@ -1186,7 +1181,8 @@ def object_write_form(request, v_account, v_container, v_object):
     return response
 
 
-@api_method('COPY', format_allowed=True, user_required=True, logger=logger)
+@api_method('COPY', format_allowed=True, user_required=True, logger=logger,
+            lock_container_path=True)
 def object_copy(request, v_account, v_container, v_object):
     # Normal Response Codes: 201
     # Error Response Codes: internalServerError (500),
@@ -1205,9 +1201,6 @@ def object_copy(request, v_account, v_container, v_object):
         dest_container, dest_name = split_container_object_string(dest_path)
     except ValueError:
         raise faults.BadRequest('Invalid Destination header')
-
-    # lock container path for concurrent updates
-    request.backend.lock_path('/'.join([v_account, v_container]))
 
     # Evaluate conditions.
     if (request.META.get('HTTP_IF_MATCH')
@@ -1233,7 +1226,8 @@ def object_copy(request, v_account, v_container, v_object):
     return response
 
 
-@api_method('MOVE', format_allowed=True, user_required=True, logger=logger)
+@api_method('MOVE', format_allowed=True, user_required=True, logger=logger,
+            lock_container_path=True)
 def object_move(request, v_account, v_container, v_object):
     # Normal Response Codes: 201
     # Error Response Codes: internalServerError (500),
@@ -1252,9 +1246,6 @@ def object_move(request, v_account, v_container, v_object):
         dest_container, dest_name = split_container_object_string(dest_path)
     except ValueError:
         raise faults.BadRequest('Invalid Destination header')
-
-    # lock container path for concurrent updates
-    request.backend.lock_path('/'.join([v_account, v_container]))
 
     # Evaluate conditions.
     if (request.META.get('HTTP_IF_MATCH')
@@ -1279,7 +1270,8 @@ def object_move(request, v_account, v_container, v_object):
     return response
 
 
-@api_method('POST', format_allowed=True, user_required=True, logger=logger)
+@api_method('POST', format_allowed=True, user_required=True, logger=logger,
+            lock_container_path=True)
 def object_update(request, v_account, v_container, v_object):
     # Normal Response Codes: 202, 204
     # Error Response Codes: internalServerError (500),
@@ -1289,9 +1281,6 @@ def object_update(request, v_account, v_container, v_object):
     #                       badRequest (400)
 
     content_type, meta, permissions, public = get_object_headers(request)
-
-    # lock container path for concurrent updates
-    request.backend.lock_path('/'.join([v_account, v_container]))
 
     try:
         prev_meta = request.backend.get_object_meta(
@@ -1507,7 +1496,8 @@ def object_update(request, v_account, v_container, v_object):
     return response
 
 
-@api_method('DELETE', user_required=True, logger=logger)
+@api_method('DELETE', user_required=True, logger=logger,
+            lock_container_path=True)
 def object_delete(request, v_account, v_container, v_object):
     # Normal Response Codes: 204
     # Error Response Codes: internalServerError (500),
@@ -1518,9 +1508,6 @@ def object_delete(request, v_account, v_container, v_object):
 
     until = get_int_parameter(request.GET.get('until'))
     delimiter = request.GET.get('delimiter')
-
-    # lock container path for concurrent updates
-    request.backend.lock_path('/'.join([v_account, v_container]))
 
     try:
         request.backend.delete_object(

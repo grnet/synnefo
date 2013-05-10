@@ -315,7 +315,8 @@ class Node(DBWorker):
         r.close()
         return row[0]
 
-    def node_purge_children(self, parent, before=inf, cluster=0):
+    def node_purge_children(self, parent, before=inf, cluster=0,
+                            update_statistics_ancestors_depth=None):
         """Delete all versions with the specified
            parent and cluster, and return
            the hashes, the total size and the serials of versions deleted.
@@ -340,7 +341,8 @@ class Node(DBWorker):
         nr, size = row[0], row[1] if row[1] else 0
         mtime = time()
         self.statistics_update(parent, -nr, -size, mtime, cluster)
-        self.statistics_update_ancestors(parent, -nr, -size, mtime, cluster)
+        self.statistics_update_ancestors(parent, -nr, -size, mtime, cluster,
+                                         update_statistics_ancestors_depth)
 
         s = select([self.versions.c.hash, self.versions.c.serial])
         s = s.where(where_clause)
@@ -371,7 +373,8 @@ class Node(DBWorker):
 
         return hashes, size, serials
 
-    def node_purge(self, node, before=inf, cluster=0):
+    def node_purge(self, node, before=inf, cluster=0,
+                   update_statistics_ancestors_depth=None):
         """Delete all versions with the specified
            node and cluster, and return
            the hashes and size of versions deleted.
@@ -394,7 +397,8 @@ class Node(DBWorker):
         if not nr:
             return (), 0, ()
         mtime = time()
-        self.statistics_update_ancestors(node, -nr, -size, mtime, cluster)
+        self.statistics_update_ancestors(node, -nr, -size, mtime, cluster,
+                                         update_statistics_ancestors_depth)
 
         s = select([self.versions.c.hash, self.versions.c.serial])
         s = s.where(where_clause)
@@ -425,7 +429,7 @@ class Node(DBWorker):
 
         return hashes, size, serials
 
-    def node_remove(self, node):
+    def node_remove(self, node, update_statistics_ancestors_depth=None):
         """Remove the node specified.
            Return false if the node has children or is not found.
         """
@@ -442,7 +446,8 @@ class Node(DBWorker):
         r = self.conn.execute(s)
         for population, size, cluster in r.fetchall():
             self.statistics_update_ancestors(
-                node, -population, -size, mtime, cluster)
+                node, -population, -size, mtime, cluster,
+                update_statistics_ancestors_depth)
         r.close()
 
         s = self.nodes.delete().where(self.nodes.c.node == node)
@@ -557,14 +562,19 @@ class Node(DBWorker):
                              mtime=mtime, cluster=cluster)
             self.conn.execute(ins).close()
 
-    def statistics_update_ancestors(self, node, population, size, mtime, cluster=0):
+    def statistics_update_ancestors(self, node, population, size, mtime,
+                                    cluster=0, recursion_depth=None):
         """Update the statistics of the given node's parent.
-           Then recursively update all parents up to the root.
+           Then recursively update all parents up to the root
+           or up to the ``recursion_depth`` (if not None).
            Population is not recursive.
         """
 
+        i = 0
         while True:
             if node == ROOTNODE:
+                break
+            if recursion_depth and recursion_depth == i:
                 break
             props = self.node_get_properties(node)
             if props is None:
@@ -573,6 +583,7 @@ class Node(DBWorker):
             self.statistics_update(parent, population, size, mtime, cluster)
             node = parent
             population = 0  # Population isn't recursive
+            i += 1
 
     def statistics_latest(self, node, before=inf, except_cluster=0):
         """Return population, total size and last mtime
@@ -671,7 +682,9 @@ class Node(DBWorker):
         s = s.values(latest_version=serial)
         self.conn.execute(s).close()
 
-    def version_create(self, node, hash, size, type, source, muser, uuid, checksum, cluster=0):
+    def version_create(self, node, hash, size, type, source, muser, uuid,
+                       checksum, cluster=0,
+                       update_statistics_ancestors_depth=None):
         """Create a new version from the given properties.
            Return the (serial, mtime) of the new version.
         """
@@ -681,7 +694,8 @@ class Node(DBWorker):
         ).values(node=node, hash=hash, size=size, type=type, source=source,
                  mtime=mtime, muser=muser, uuid=uuid, checksum=checksum, cluster=cluster)
         serial = self.conn.execute(s).inserted_primary_key[0]
-        self.statistics_update_ancestors(node, 1, size, mtime, cluster)
+        self.statistics_update_ancestors(node, 1, size, mtime, cluster,
+                                         update_statistics_ancestors_depth)
 
         self.nodes_set_latest_version(node, serial)
 
@@ -782,7 +796,8 @@ class Node(DBWorker):
         s = s.values(**{key: value})
         self.conn.execute(s).close()
 
-    def version_recluster(self, serial, cluster):
+    def version_recluster(self, serial, cluster,
+                          update_statistics_ancestors_depth=None):
         """Move the version into another cluster."""
 
         props = self.version_get_properties(serial)
@@ -795,15 +810,17 @@ class Node(DBWorker):
             return
 
         mtime = time()
-        self.statistics_update_ancestors(node, -1, -size, mtime, oldcluster)
-        self.statistics_update_ancestors(node, 1, size, mtime, cluster)
+        self.statistics_update_ancestors(node, -1, -size, mtime, oldcluster,
+                                         update_statistics_ancestors_depth)
+        self.statistics_update_ancestors(node, 1, size, mtime, cluster,
+                                         update_statistics_ancestors_depth)
 
         s = self.versions.update()
         s = s.where(self.versions.c.serial == serial)
         s = s.values(cluster=cluster)
         self.conn.execute(s).close()
 
-    def version_remove(self, serial):
+    def version_remove(self, serial, update_statistics_ancestors_depth=None):
         """Remove the serial specified."""
 
         props = self.version_get_properties(serial)
@@ -815,7 +832,8 @@ class Node(DBWorker):
         cluster = props[CLUSTER]
 
         mtime = time()
-        self.statistics_update_ancestors(node, -1, -size, mtime, cluster)
+        self.statistics_update_ancestors(node, -1, -size, mtime, cluster,
+                                         update_statistics_ancestors_depth)
 
         s = self.versions.delete().where(self.versions.c.serial == serial)
         self.conn.execute(s).close()

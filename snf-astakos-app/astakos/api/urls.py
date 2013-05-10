@@ -34,6 +34,12 @@
 from django.conf.urls.defaults import patterns, url
 
 urlpatterns = patterns(
+    'astakos.api',
+    url(r'^get_services/?$', 'get_services'),
+    url(r'^get_menu/?$', 'get_menu'),
+)
+
+urlpatterns += patterns(
     'astakos.api.quotas',
     url(r'^quotas/?$', 'quotas', name="astakos-api-quotas"),
     url(r'^service_quotas/?$', 'service_quotas'),
@@ -42,4 +48,16 @@ urlpatterns = patterns(
     url(r'^commissions/action/?$', 'resolve_pending_commissions'),
     url(r'^commissions/(?P<serial>\d+)/?$', 'get_commission'),
     url(r'^commissions/(?P<serial>\d+)/action/?$', 'serial_action'),
+)
+
+urlpatterns += patterns(
+    'astakos.api.user',
+    url(r'^feedback/?$', 'send_feedback'),
+    url(r'^user_catalogs/?$', 'get_uuid_displayname_catalogs'),
+    url(r'^authenticate/?$', 'authenticate'),
+)
+
+urlpatterns += patterns(
+    'astakos.api.service',
+    url(r'^service/user_catalogs/?$', 'get_uuid_displayname_catalogs'),
 )

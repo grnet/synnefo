@@ -36,9 +36,9 @@ def cloudbar(request):
     CB_ACTIVE_SERVICE = getattr(settings, 'CLOUDBAR_ACTIVE_SERVICE',
             'cloud')
     CB_SERVICES_URL = getattr(settings, 'CLOUDBAR_SERVICES_URL',
-            'https://accounts.okeanos.grnet.gr/im/get_services')
+            'https://accounts.okeanos.grnet.gr/astakos/api/get_services')
     CB_MENU_URL = getattr(settings, 'CLOUDBAR_MENU_URL',
-            'https://accounts.okeanos.grnet.gr/im/get_menu')
+            'https://accounts.okeanos.grnet.gr/astakos/api/get_menu')
     CB_HEIGHT = getattr(settings, 'CLOUDBAR_HEIGHT',
             '35')
     CB_BGCOLOR = getattr(settings, 'CLOUDBAR_BACKGROUND_COLOR',

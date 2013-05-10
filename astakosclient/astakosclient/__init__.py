@@ -173,7 +173,7 @@ class AstakosClient():
             raise InvalidResponse(str(err), data)
 
     # ------------------------
-    # GET /im/authenticate
+    # GET /astakos/api/authenticate
     def get_user_info(self, token, usage=False):
         """Authenticate user and get user's info as a dictionary
 
@@ -186,13 +186,13 @@ class AstakosClient():
 
         """
         # Send request
-        auth_path = "/im/authenticate"
+        auth_path = "/astakos/api/authenticate"
         if usage:
             auth_path += "?usage=1"
         return self._call_astakos(token, auth_path)
 
     # ----------------------------------
-    # POST /user_catalogs (or /service/api/user_catalogs)
+    # POST /astakos/api/user_catalogs (or /astakos/api/service/user_catalogs)
     #   with {'uuids': uuids}
     def _uuid_catalog(self, token, uuids, req_path):
         req_headers = {'content-type': 'application/json'}
@@ -218,7 +218,7 @@ class AstakosClient():
         keys and the corresponding user names as values
 
         """
-        req_path = "/user_catalogs"
+        req_path = "/astakos/api/user_catalogs"
         return self._uuid_catalog(token, uuids, req_path)
 
     def get_username(self, token, uuid):
@@ -232,7 +232,7 @@ class AstakosClient():
 
     def service_get_usernames(self, token, uuids):
         """Return a uuid_catalog dict using a service's token"""
-        req_path = "/service/api/user_catalogs"
+        req_path = "/astakos/api/service/user_catalogs"
         return self._uuid_catalog(token, uuids, req_path)
 
     def service_get_username(self, token, uuid):
@@ -245,7 +245,7 @@ class AstakosClient():
             raise NoUserName(uuid)
 
     # ----------------------------------
-    # POST /user_catalogs (or /service/api/user_catalogs)
+    # POST /astakos/api/user_catalogs (or /astakos/api/service/user_catalogs)
     #   with {'displaynames': display_names}
     def _displayname_catalog(self, token, display_names, req_path):
         req_headers = {'content-type': 'application/json'}
@@ -271,7 +271,7 @@ class AstakosClient():
         the names as keys and the corresponding uuids as values
 
         """
-        req_path = "/user_catalogs"
+        req_path = "/astakos/api/user_catalogs"
         return self._displayname_catalog(token, display_names, req_path)
 
     def get_uuid(self, token, display_name):
@@ -285,7 +285,7 @@ class AstakosClient():
 
     def service_get_uuids(self, token, display_names):
         """Return a display_name catalog using a service's token"""
-        req_path = "/service/api/user_catalogs"
+        req_path = "/astakos/api/service/user_catalogs"
         return self._displayname_catalog(token, display_names, req_path)
 
     def service_get_uuid(self, token, display_name):
@@ -298,10 +298,10 @@ class AstakosClient():
             raise NoUUID(display_name)
 
     # ----------------------------------
-    # GET "/im/get_services"
+    # GET "/astakos/api/get_services"
     def get_services(self):
         """Return a list of dicts with the registered services"""
-        return self._call_astakos(None, "/im/get_services")
+        return self._call_astakos(None, "/astakos/api/get_services")
 
     # ----------------------------------
     # GET "/astakos/api/resources"

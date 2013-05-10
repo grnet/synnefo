@@ -36,13 +36,9 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 
 from snf_django.lib.db.transaction import commit_on_success_strict
-from astakos.api.util import json_response, is_integer, are_integer
 
 from snf_django.lib import api
 from snf_django.lib.api.faults import BadRequest, ItemNotFound
-
-from astakos.im.api.user import user_from_token
-from astakos.im.api.service import service_from_token
 
 from astakos.im.resources import get_resources
 from astakos.im.quotas import get_user_quotas, service_get_quotas
@@ -50,11 +46,13 @@ from astakos.im.quotas import get_user_quotas, service_get_quotas
 import astakos.quotaholder_app.exception as qh_exception
 import astakos.quotaholder_app.callpoint as qh
 
+from .util import (json_response, is_integer, are_integer,
+                   user_from_token, service_from_token)
 
 @api.api_method(http_method='GET', token_required=True, user_required=False)
 @user_from_token
-def quotas(request, user=None):
-    result = get_user_quotas(user)
+def quotas(request):
+    result = get_user_quotas(request.user)
     return json_response(result)
 
 

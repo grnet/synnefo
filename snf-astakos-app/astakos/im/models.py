@@ -428,6 +428,10 @@ class AstakosUser(User):
                                    content_type=get_content_type())
         self.user_permissions.remove(p)
 
+    def add_group(self, gname):
+        group, _ = Group.objects.get_or_create(name=gname)
+        self.groups.add(group)
+
     def is_project_admin(self, application_id=None):
         return self.uuid in astakos_settings.PROJECT_ADMINS
 

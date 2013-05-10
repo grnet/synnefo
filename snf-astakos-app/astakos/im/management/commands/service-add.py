@@ -33,7 +33,6 @@
 
 from django.core.management.base import BaseCommand, CommandError
 
-from astakos.im.api.callpoint import AstakosCallpoint
 from astakos.im.models import Service
 
 

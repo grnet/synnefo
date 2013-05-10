@@ -31,7 +31,6 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from functools import wraps
 from time import time, mktime
 
 from django.http import HttpResponse
@@ -40,47 +39,28 @@ from django.views.decorators.csrf import csrf_exempt
 
 from snf_django.lib import api
 from snf_django.lib.api import faults
-from . import  __get_uuid_displayname_catalogs, __send_feedback
 
-from astakos.im.models import AstakosUser
 from astakos.im.util import epoch
+from astakos.im.quotas import get_user_quotas
 
-from astakos.im.api.callpoint import AstakosCallpoint
-callpoint = AstakosCallpoint()
+from .util import (
+    get_uuid_displayname_catalogs as get_uuid_displayname_catalogs_util,
+    send_feedback as send_feedback_util,
+    user_from_token)
 
 import logging
 logger = logging.getLogger(__name__)
-format = ('%a, %d %b %Y %H:%M:%S GMT')
-
-
-def user_from_token(func):
-    @wraps(func)
-    def wrapper(request, *args, **kwargs):
-        try:
-            token = request.x_auth_token
-        except AttributeError:
-            raise faults.Unauthorized("No authentication token")
-
-        if not token:
-            raise faults.Unauthorized("Invalid X-Auth-Token")
-
-        try:
-            user = AstakosUser.objects.get(auth_token=token)
-        except AstakosUser.DoesNotExist:
-            raise faults.Unauthorized('Invalid X-Auth-Token')
-
-        return func(request, user, *args, **kwargs)
-    return wrapper
 
 
 @api.api_method(http_method="GET", token_required=True, user_required=False,
-                  logger=logger)
+                logger=logger)
 @user_from_token  # Authenticate user!!
-def authenticate(request, user=None):
+def authenticate(request):
     # Normal Response Codes: 200
     # Error Response Codes: internalServerError (500)
     #                       badRequest (400)
     #                       unauthorised (401)
+    user = request.user
     if not user:
         raise faults.BadRequest('No user')
 
@@ -109,13 +89,13 @@ def authenticate(request, user=None):
 
     # append usage data if requested
     if request.REQUEST.get('usage', None):
-        resource_usage = None
-        result = callpoint.get_user_usage(user.id)
-        if result.is_success:
-            resource_usage = result.data
-        else:
-            resource_usage = []
-        user_info['usage'] = resource_usage
+        quotas = get_user_quotas(user)['system']
+        usage = []
+        for k in quotas:
+            usage.append({'name': k,
+                          'currValue': quotas[k]['usage'],
+                          'maxValue': quotas[k]['limit']})
+        user_info['usage'] = usage
 
     response.content = json.dumps(user_info)
     response['Content-Type'] = 'application/json; charset=UTF-8'
@@ -125,26 +105,25 @@ def authenticate(request, user=None):
 
 @csrf_exempt
 @api.api_method(http_method="POST", token_required=True, user_required=False,
-                  logger=logger)
+                logger=logger)
 @user_from_token  # Authenticate user!!
-def get_uuid_displayname_catalogs(request, user=None):
+def get_uuid_displayname_catalogs(request):
     # Normal Response Codes: 200
     # Error Response Codes: internalServerError (500)
     #                       badRequest (400)
     #                       unauthorised (401)
 
-    return __get_uuid_displayname_catalogs(request)
+    return get_uuid_displayname_catalogs_util(request)
 
 
 @csrf_exempt
 @api.api_method(http_method="POST", token_required=True, user_required=False,
-                  logger=logger)
+                logger=logger)
 @user_from_token  # Authenticate user!!
-def send_feedback(request, email_template_name='im/feedback_mail.txt',
-                  user=None):
+def send_feedback(request, email_template_name='im/feedback_mail.txt'):
     # Normal Response Codes: 200
     # Error Response Codes: internalServerError (500)
     #                       badRequest (400)
     #                       unauthorised (401)
 
-    return __send_feedback(request, email_template_name, user)
+    return send_feedback_util(request, email_template_name)

@@ -36,7 +36,7 @@ from astakos.im.settings import (
     LOGIN_MESSAGES, SIGNUP_MESSAGES, PROFILE_MESSAGES,
     GLOBAL_MESSAGES, PROFILE_EXTRA_LINKS,
     PROJECT_MEMBER_JOIN_POLICIES, PROJECT_MEMBER_LEAVE_POLICIES)
-from astakos.im.api import get_menu
+from astakos.api import get_menu
 from astakos.im.util import get_query
 from astakos.im.auth_providers import PROVIDERS as AUTH_PROVIDERS
 

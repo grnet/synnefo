@@ -108,9 +108,9 @@ def _request_status_400(conn, method, url, **kwargs):
 
 def _request_ok(conn, method, url, **kwargs):
     """This request behaves like original Astakos does"""
-    if url.startswith("/im/authenticate"):
+    if url.startswith("/astakos/api/authenticate"):
         return _req_authenticate(conn, method, url, **kwargs)
-    elif url.startswith("/user_catalogs"):
+    elif url.startswith("/astakos/api/user_catalogs"):
         return _req_catalogs(conn, method, url, **kwargs)
     elif url.startswith("/astakos/api/resources"):
         return _req_resources(conn, method, url, **kwargs)
@@ -472,7 +472,7 @@ class TestCallAstakos(unittest.TestCase):
         _mock_request([_request_offline])
         try:
             client = AstakosClient("https://example.com", use_pool=pool)
-            client._call_astakos(token_1, "/im/authenticate")
+            client._call_astakos(token_1, "/astakos/api/authenticate")
         except AstakosClientException:
             pass
         else:
@@ -493,7 +493,7 @@ class TestCallAstakos(unittest.TestCase):
         _mock_request([_request_ok])
         try:
             client = AstakosClient("https://example.com", use_pool=pool)
-            client._call_astakos(token, "/im/authenticate")
+            client._call_astakos(token, "/astakos/api/authenticate")
         except Unauthorized:
             pass
         except Exception:
@@ -516,7 +516,7 @@ class TestCallAstakos(unittest.TestCase):
         _mock_request([_request_ok])
         try:
             client = AstakosClient("https://example.com", use_pool=pool)
-            client._call_astakos(token_1, "/im/misspelled")
+            client._call_astakos(token_1, "/astakos/api/misspelled")
         except NotFound:
             pass
         except Exception:
@@ -539,7 +539,7 @@ class TestCallAstakos(unittest.TestCase):
         _mock_request([_request_ok])
         try:
             client = AstakosClient("ftp://example.com", use_pool=pool)
-            client._call_astakos(token_1, "/im/authenticate")
+            client._call_astakos(token_1, "/astakos/api/authenticate")
         except BadValue:
             pass
         except Exception:
@@ -562,7 +562,7 @@ class TestCallAstakos(unittest.TestCase):
         _mock_request([_request_ok])
         try:
             client = AstakosClient("http://example.com", use_pool=pool)
-            client._call_astakos(token_1, "/im/authenticate")
+            client._call_astakos(token_1, "/astakos/api/authenticate")
         except AstakosClientException as err:
             if err.status != 302:
                 self.fail("Should have returned 302 (Found)")
@@ -584,7 +584,7 @@ class TestCallAstakos(unittest.TestCase):
         _mock_request([_request_ok])
         try:
             client = AstakosClient("https://example.com", use_pool=pool)
-            client._call_astakos(token_1, "/im/authenticate", method="POST")
+            client._call_astakos(token_1, "/astakos/api/authenticate", method="POST")
         except BadRequest:
             pass
         except Exception:
@@ -607,7 +607,7 @@ class TestCallAstakos(unittest.TestCase):
         _mock_request([_request_ok])
         try:
             client = AstakosClient("https://example.com", use_pool=pool)
-            client._call_astakos(token_1, "/user_catalogs")
+            client._call_astakos(token_1, "/astakos/api/user_catalogs")
         except BadRequest:
             pass
         except Exception:

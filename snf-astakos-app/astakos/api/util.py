@@ -31,8 +31,22 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from functools import wraps
+from time import time, mktime
+
 from django.http import HttpResponse
 from django.utils import simplejson as json
+
+from astakos.im.models import AstakosUser, Service
+from snf_django.lib.api import faults
+
+from astakos.im.forms import FeedbackForm
+from astakos.im.functions import send_feedback as send_feedback_func
+
+import logging
+logger = logging.getLogger(__name__)
+
+absolute = lambda request, url: request.build_absolute_uri(url)
 
 
 def json_response(content, status_code=None):
@@ -52,3 +66,98 @@ def is_integer(x):
 
 def are_integer(lst):
     return all(map(is_integer, lst))
+
+
+def user_from_token(func):
+    @wraps(func)
+    def wrapper(request, *args, **kwargs):
+        try:
+            token = request.x_auth_token
+        except AttributeError:
+            raise faults.Unauthorized("No authentication token")
+
+        if not token:
+            raise faults.Unauthorized("Invalid X-Auth-Token")
+
+        try:
+            request.user = AstakosUser.objects.get(auth_token=token)
+        except AstakosUser.DoesNotExist:
+            raise faults.Unauthorized('Invalid X-Auth-Token')
+
+        return func(request, *args, **kwargs)
+    return wrapper
+
+
+def service_from_token(func):
+    """Decorator for authenticating service by it's token.
+
+    Check that a service with the corresponding token exists. Also,
+    if service's token has an expiration token, check that it has not
+    expired.
+
+    """
+    @wraps(func)
+    def wrapper(request, *args, **kwargs):
+        try:
+            token = request.x_auth_token
+        except AttributeError:
+            raise faults.Unauthorized("No authentication token")
+
+        if not token:
+            raise faults.Unauthorized("Invalid X-Auth-Token")
+        try:
+            service = Service.objects.get(auth_token=token)
+        except Service.DoesNotExist:
+            raise faults.Unauthorized("Invalid X-Auth-Token")
+
+        # Check if the token has expired
+        expiration_date = service.auth_token_expires
+        if expiration_date:
+            expires_at = mktime(expiration_date.timetuple())
+            if time() > expires_at:
+                raise faults.Unauthorized("Authentication expired")
+
+        request.service_instance = service
+        return func(request, *args, **kwargs)
+    return wrapper
+
+
+def get_uuid_displayname_catalogs(request, user_call=True):
+    # Normal Response Codes: 200
+    # Error Response Codes: BadRequest (400)
+
+    try:
+        input_data = json.loads(request.raw_post_data)
+    except:
+        raise faults.BadRequest('Request body should be json formatted.')
+    else:
+        uuids = input_data.get('uuids', [])
+        if uuids is None and user_call:
+            uuids = []
+        displaynames = input_data.get('displaynames', [])
+        if displaynames is None and user_call:
+            displaynames = []
+        user_obj = AstakosUser.objects
+        d = {'uuid_catalog': user_obj.uuid_catalog(uuids),
+             'displayname_catalog': user_obj.displayname_catalog(displaynames)}
+
+        response = HttpResponse()
+        response.content = json.dumps(d)
+        response['Content-Type'] = 'application/json; charset=UTF-8'
+        response['Content-Length'] = len(response.content)
+        return response
+
+
+def send_feedback(request, email_template_name='im/feedback_mail.txt'):
+    form = FeedbackForm(request.POST)
+    if not form.is_valid():
+        logger.error("Invalid feedback request: %r", form.errors)
+        raise faults.BadRequest('Invalid data')
+
+    msg = form.cleaned_data['feedback_msg']
+    data = form.cleaned_data['feedback_data']
+    try:
+        send_feedback_func(msg, data, request.user, email_template_name)
+    except:
+        return HttpResponse(status=502)
+    return HttpResponse(status=200)

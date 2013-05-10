@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,23 +31,38 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-class ItemNotExists(ValueError):
-    def __init__(self, type, **kwargs):
-        fields = " and ".join('%s=%s' % (k,v) for k,v in kwargs.iteritems())
-        msg = "%(type)s with %(fields)s does not exist."
-        super(ItemNotExists, self).__init__(msg % locals())
+from django.views.decorators.csrf import csrf_exempt
 
-class ItemExists(ValueError):
-    def __init__(self, type, **kwargs):
-        fields = " and ".join('%s=%s' % (k,v) for k,v in kwargs.iteritems())
-        msg = "%(type)s with %(fields)s already exists."
-        super(ItemExists, self).__init__(msg % locals())
+from snf_django.lib import api
 
-class MultipleItemsExist(ValueError):
-    def __init__(self, type, **kwargs):
-        fields = " and ".join('%s=%s' % (k,v) for k,v in kwargs.iteritems())
-        msg = "There are mulptiple %(type)s with %(fields)s."
-        super(MultipleItemsExist, self).__init__(msg % locals())
+from .util import (
+    get_uuid_displayname_catalogs as get_uuid_displayname_catalogs_util,
+    send_feedback as send_feedback_util,
+    service_from_token)
 
-class MissingIdentifier(IOError):
-    pass
+import logging
+logger = logging.getLogger(__name__)
+
+
+@csrf_exempt
+@api.api_method(http_method='POST', token_required=True, user_required=False,
+                logger=logger)
+@service_from_token  # Authenticate service !!
+def get_uuid_displayname_catalogs(request):
+    # Normal Response Codes: 200
+    # Error Response Codes: internalServerError (500)
+    #                       badRequest (400)
+    #                       unauthorised (401)
+    return get_uuid_displayname_catalogs_util(request, user_call=False)
+
+
+@csrf_exempt
+@api.api_method(http_method='POST', token_required=True, user_required=False,
+                logger=logger)
+@service_from_token  # Authenticate service !!
+def send_feedback(request, email_template_name='im/feedback_mail.txt'):
+    # Normal Response Codes: 200
+    # Error Response Codes: internalServerError (500)
+    #                       badRequest (400)
+    #                       unauthorised (401)
+    return send_feedback(request, email_template_name)

@@ -79,9 +79,9 @@ from astakos.im import tables
 from astakos.im.models import (
     AstakosUser, ApprovalTerms,
     EmailChange, AstakosUserAuthProvider, PendingThirdPartyUser,
-    ProjectApplication, ProjectMembership, Project, Service)
+    ProjectApplication, ProjectMembership, Project, Service, Resource)
 from astakos.im.util import (
-    get_context, prepare_response, get_query, restrict_next)
+    get_context, prepare_response, get_query, restrict_next, model_to_dict)
 from astakos.im.forms import (
     LoginForm, InvitationForm,
     FeedbackForm, SignApprovalTermsForm,
@@ -110,9 +110,7 @@ from astakos.im.settings import (
     ACTIVATION_REDIRECT_URL,
     MODERATION_ENABLED)
 from astakos.im import presentation
-from astakos.im.api import get_services_dict
 from astakos.im import settings as astakos_settings
-from astakos.im.api.callpoint import AstakosCallpoint
 from astakos.im import auth_providers as auth
 from snf_django.lib.db.transaction import commit_on_success_strict
 from astakos.im.ctx import ExceptionHandler
@@ -120,7 +118,6 @@ from astakos.im import quotas
 
 logger = logging.getLogger(__name__)
 
-callpoint = AstakosCallpoint()
 
 def render_response(template, tab=None, status=200, context_instance=None, **kwargs):
     """
@@ -425,7 +422,7 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
     # providers that user can add
     user_available_providers = request.user.get_available_auth_providers()
 
-    extra_context['services'] = get_services_dict()
+    extra_context['services'] = Service.catalog().values()
     return render_response(template_name,
                            profile_form = form,
                            user_providers = user_providers,
@@ -1038,18 +1035,16 @@ def _resources_catalog(for_project=False, for_usage=False):
     resource_keys = []
 
     # resources in database
-    result = callpoint.list_resources()
-    if not result.is_success:
-        return False, result
-    else:
-        # initialize resource_catalog to contain all group/resource information
-        for r in result.data:
-            if not r.get('group') in resource_groups:
-                resource_groups[r.get('group')] = {'icon': 'unknown'}
+    resource_details = map(lambda obj: model_to_dict(obj, exclude=[]),
+                           Resource.objects.all())
+    # initialize resource_catalog to contain all group/resource information
+    for r in resource_details:
+        if not r.get('group') in resource_groups:
+            resource_groups[r.get('group')] = {'icon': 'unknown'}
 
-        resource_keys = [r.get('str_repr') for r in result.data]
-        resource_catalog = [[g, filter(lambda r: r.get('group', '') == g,
-                                       result.data)] for g in resource_groups]
+    resource_keys = [r.get('str_repr') for r in resource_details]
+    resource_catalog = [[g, filter(lambda r: r.get('group', '') == g,
+                                   resource_details)] for g in resource_groups]
 
     # order groups, also include unknown groups
     groups_order = resources_meta.get('groups_order')

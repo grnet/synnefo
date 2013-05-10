@@ -41,6 +41,7 @@ from snf_django.lib import api
 from snf_django.lib.api import faults
 
 from astakos.im.util import epoch
+from astakos.im.models import Resource
 from astakos.im.quotas import get_user_quotas
 
 from .util import (
@@ -92,9 +93,27 @@ def authenticate(request):
         quotas = get_user_quotas(user)['system']
         usage = []
         for k in quotas:
-            usage.append({'name': k,
-                          'currValue': quotas[k]['usage'],
-                          'maxValue': quotas[k]['limit']})
+            service, _, resource = k.partition('.')
+            try:
+                resource = Resource.objects.select_related().get(
+                    service__name=service, name=k)
+            except Resource.DoesNotExist:
+                logger.error("Resource %s not found!" % k)
+                continue
+            usage.append(dict(
+                name=k,
+                description=resource.desc,
+                unit=resource.unit or '',
+                help_text=resource.help_text,
+                help_text_input_each=resource.help_text_input_each,
+                is_abbreviation=resource.is_abbreviation,
+                report_desc=resource.report_desc,
+                placeholder=resource.placeholder,
+                verbose_name=resource.verbose_name,
+                display_name=resource.display_name,
+                pluralized_display_name=resource.pluralized_display_name,
+                maxValue=quotas[k]['usage'],
+                currValue=quotas[k]['limit']))
         user_info['usage'] = usage
 
     response.content = json.dumps(user_info)

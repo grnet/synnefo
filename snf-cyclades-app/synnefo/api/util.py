@@ -128,7 +128,7 @@ def get_vm(server_id, user_id, for_update=False, non_deleted=False,
             servers = servers.select_for_update()
         vm = servers.get(id=server_id, userid=user_id)
         if non_deleted and vm.deleted:
-            raise VirtualMachine.DeletedError
+            raise faults.BadRequest("Server has been deleted.")
         if non_suspended and vm.suspended:
             raise faults.Forbidden("Administratively Suspended VM")
         return vm

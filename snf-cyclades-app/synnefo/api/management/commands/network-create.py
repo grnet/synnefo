@@ -39,6 +39,7 @@ from synnefo.webproject.management.utils import pprint_table
 
 from synnefo import quotas
 from synnefo.db.models import Network
+from synnefo.db.utils import validate_mac, InvalidMacAddress
 from synnefo.logic.backend import create_network
 from synnefo.api.util import values_from_flavor
 
@@ -174,6 +175,10 @@ class Command(BaseCommand):
         mac_prefix = mac_prefix or fmac_prefix
         tags = tags or ftags
 
+        try:
+            validate_mac(mac_prefix + "0:00:00:00")
+        except InvalidMacAddress:
+            raise CommandError("Invalid MAC prefix '%s'" % mac_prefix)
         subnet, gateway, subnet6, gateway6 = validate_network_info(options)
 
         if not link or not mode:
@@ -193,7 +198,7 @@ class Command(BaseCommand):
            "link": link,
            "mac_prefix": mac_prefix,
            "tags": tags,
-           "state": "PENDING"}
+           "state": "ACTIVE"}
 
         if dry_run:
             self.stdout.write("Creating network:\n")
@@ -204,11 +209,7 @@ class Command(BaseCommand):
         if userid:
             quotas.issue_and_accept_commission(network)
 
-        if public:
+        if backend_id:
             # Create BackendNetwork only to the specified Backend
             network.create_backend_network(backend)
-            create_network(network, backends=[backend])
-        else:
-            # Create BackendNetwork entries for all Backends
-            network.create_backend_network()
-            create_network(network)
+            create_network(network=network, backend=backend, connect=True)

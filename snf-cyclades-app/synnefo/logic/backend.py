@@ -234,22 +234,43 @@ def process_network_status(back_network, etime, jobid, opcode, status, logmsg):
 
 
 def update_network_state(network):
-    old_state = network.state
+    """Update the state of a Network based on BackendNetwork states.
 
-    backend_states = [s.operstate for s in
-                      network.backend_networks.filter(backend__offline=False)]
-    if not backend_states:
-        network.state = 'PENDING'
-        network.save()
+    Update the state of a Network based on the operstate of the networks in the
+    backends that network exists.
+
+    The state of the network is:
+    * ACTIVE: If it is 'ACTIVE' in at least one backend.
+    * DELETED: If it is is 'DELETED' in all backends that have been created.
+
+    This function also releases the resources (MAC prefix or Bridge) and the
+    quotas for the network.
+
+    """
+    if network.deleted:
+        # Network has already been deleted. Just assert that state is also
+        # DELETED
+        if not network.state == "DELETED":
+            network.state = "DELETED"
+            network.save()
         return
 
-    all_equal = len(set(backend_states)) <= 1
-    network.state = all_equal and backend_states[0] or 'PENDING'
+    backend_states = [s.operstate for s in network.backend_networks.all()]
+    if not backend_states:
+        if network.state != "ACTIVE":
+            network.state = "ACTIVE"
+            network.save()
+            return
+
+    # Network is deleted when all BackendNetworks go to "DELETED" operstate
+    deleted = reduce(lambda x, y: x == y, backend_states, 'DELETED')
+
     # Release the resources on the deletion of the Network
-    if old_state != 'DELETED' and network.state == 'DELETED':
+    if deleted:
         log.info("Network %r deleted. Releasing link %r mac_prefix %r",
                  network.id, network.mac_prefix, network.link)
         network.deleted = True
+        network.state = "DELETED"
         if network.mac_prefix:
             if network.FLAVORS[network.flavor]["mac_prefix"] == "pool":
                 release_resource(res_type="mac_prefix",
@@ -457,17 +478,17 @@ def get_instance_info(vm):
         return client.GetInstanceInfo(vm.backend_vm_id)
 
 
-def create_network(network, backends=None, connect=True):
-    """Create and connect a network."""
-    if not backends:
-        backends = Backend.objects.exclude(offline=True)
+def create_network(network, backend, connect=True):
+    """Create a network in a Ganeti backend"""
+    log.debug("Creating network %s in backend %s", network, backend)
 
-    log.debug("Creating network %s in backends %s", network, backends)
+    job_id = _create_network(network, backend)
 
-    for backend in backends:
-        create_jobID = _create_network(network, backend)
-        if connect:
-            connect_network(network, backend, create_jobID)
+    if connect:
+        job_ids = connect_network(network, backend, depends=[job_id])
+        return job_ids
+    else:
+        return [job_id]
 
 
 def _create_network(network, backend):
@@ -503,7 +524,7 @@ def _create_network(network, backend):
                                     tags=tags)
 
 
-def connect_network(network, backend, depend_job=None, group=None):
+def connect_network(network, backend, depends=[], group=None):
     """Connect a network to nodegroups."""
     log.debug("Connecting network %s to backend %s", network, backend)
 
@@ -512,51 +533,56 @@ def connect_network(network, backend, depend_job=None, group=None):
     else:
         conflicts_check = False
 
-    depend_jobs = [depend_job] if depend_job else []
+    depends = [[job, ["success", "error", "canceled"]] for job in depends]
     with pooled_rapi_client(backend) as client:
-        if group:
-            client.ConnectNetwork(network.backend_id, group, network.mode,
-                                  network.link, conflicts_check, depend_jobs)
-        else:
-            for group in client.GetGroups():
-                client.ConnectNetwork(network.backend_id, group, network.mode,
-                                      network.link, conflicts_check,
-                                      depend_jobs)
+        groups = [group] if group is not None else client.GetGroups()
+        job_ids = []
+        for group in groups:
+            job_id = client.ConnectNetwork(network.backend_id, group,
+                                           network.mode, network.link,
+                                           conflicts_check,
+                                           depends=depends)
+            job_ids.append(job_id)
+    return job_ids
 
 
-def delete_network(network, backends=None, disconnect=True):
-    if not backends:
-        backends = Backend.objects.exclude(offline=True)
+def delete_network(network, backend, disconnect=True):
+    log.debug("Deleting network %s from backend %s", network, backend)
 
-    log.debug("Deleting network %s from backends %s", network, backends)
-
-    for backend in backends:
-        disconnect_jobIDs = []
-        if disconnect:
-            disconnect_jobIDs = disconnect_network(network, backend)
-        _delete_network(network, backend, disconnect_jobIDs)
+    depends = []
+    if disconnect:
+        depends = disconnect_network(network, backend)
+    _delete_network(network, backend, depends=depends)
 
 
-def _delete_network(network, backend, depend_jobs=[]):
+def _delete_network(network, backend, depends=[]):
+    depends = [[job, ["success", "error", "canceled"]] for job in depends]
     with pooled_rapi_client(backend) as client:
-        return client.DeleteNetwork(network.backend_id, depend_jobs)
+        return client.DeleteNetwork(network.backend_id, depends)
 
 
 def disconnect_network(network, backend, group=None):
     log.debug("Disconnecting network %s to backend %s", network, backend)
 
     with pooled_rapi_client(backend) as client:
-        if group:
-            return [client.DisconnectNetwork(network.backend_id, group)]
-        else:
-            jobs = []
-            for group in client.GetGroups():
-                job = client.DisconnectNetwork(network.backend_id, group)
-                jobs.append(job)
-            return jobs
+        groups = [group] if group is not None else client.GetGroups()
+        job_ids = []
+        for group in groups:
+            job_id = client.DisconnectNetwork(network.backend_id, group)
+            job_ids.append(job_id)
+    return job_ids
 
 
 def connect_to_network(vm, network, address=None):
+    backend = vm.backend
+    bnet, created = BackendNetwork.objects.get_or_create(backend=backend,
+                                                         network=network)
+    depend_jobs = []
+    if bnet.operstate != "ACTIVE":
+        depend_jobs = create_network(network, backend, connect=True)
+
+    depends = [[job, ["success", "error", "canceled"]] for job in depend_jobs]
+
     nic = {'ip': address, 'network': network.backend_id}
 
     log.debug("Connecting vm %s to network %s(%s)", vm, network, address)
@@ -564,6 +590,7 @@ def connect_to_network(vm, network, address=None):
     with pooled_rapi_client(vm) as client:
         return client.ModifyInstance(vm.backend_vm_id, nics=[('add',  nic)],
                                      hotplug=settings.GANETI_USE_HOTPLUG,
+                                     depends=depends,
                                      dry_run=settings.TEST)
 
 

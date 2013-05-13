@@ -303,10 +303,7 @@ def connect(vm, network):
     address = None
     if network.dhcp:
         # Get a free IP from the address pool.
-        try:
-            address = util.get_network_free_address(network)
-        except EmptyPool:
-            raise faults.OverLimit('Network is full')
+        address = util.get_network_free_address(network)
 
     log.info("Connecting VM %s to Network %s(%s)", vm, network, address)
 

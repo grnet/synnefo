@@ -273,9 +273,10 @@ def allocate_public_address(backend):
     for network in backend_public_networks(backend):
         try:
             address = get_network_free_address(network)
-            return (network, address)
-        except EmptyPool:
+        except faults.OverLimit:
             pass
+        else:
+            return (network, address)
     return (None, None)
 
 
@@ -323,14 +324,14 @@ def backend_public_networks(backend):
 
 
 def get_network_free_address(network):
-    """Reserve an IP address from the IP Pool of the network.
-
-    Raises EmptyPool
-
-    """
+    """Reserve an IP address from the IP Pool of the network."""
 
     pool = network.get_pool()
-    address = pool.get()
+    try:
+        address = pool.get()
+    except EmptyPool:
+        raise faults.OverLimit("Network %s is full." % network.backend_id)
+        address = None
     pool.save()
     return address
 

@@ -162,9 +162,6 @@ QUOTAHOLDER_URL = getattr(settings, 'ASTAKOS_QUOTAHOLDER_URL', '')
 QUOTAHOLDER_TOKEN = getattr(settings, 'ASTAKOS_QUOTAHOLDER_TOKEN', '')
 QUOTAHOLDER_POOLSIZE = getattr(settings, 'ASTAKOS_QUOTAHOLDER_POOLSIZE', 50)
 
-# Set the billing URI
-AQUARIUM_URL = getattr(settings, 'ASTAKOS_AQUARIUM_URL', '')
-
 # Set how many objects should be displayed per page
 PAGINATE_BY = getattr(settings, 'ASTAKOS_PAGINATE_BY', 8)
 

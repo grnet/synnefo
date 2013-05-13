@@ -133,8 +133,6 @@ ASTAKOS_SERVICES                            {'cyclades': {'resources': [{'desc':
                                             'unit': 'bytes',
                                             'uplimit': 5368709120}],
                                             'url': 'https://node2.example.com/ui/'}}
-ASTAKOS_AQUARIUM_URL                        ''                                                                              The billing (aquarium) URI
-                                                                                                                            e.g. ``http://localhost:8888/user``
 ASTAKOS_PAGINATE_BY                         8                                                                               Number of object to be displayed per page
 ASTAKOS_PAGINATE_BY_ALL                     15                                                                              Number of object to be displayed per pagein show all projects page
 
@@ -180,6 +178,3 @@ showinvitation   Show invitation info
 showuser         Show user info
 ===============  ===========================
 
-To update user credibility from the billing system (Aquarium), enable the queue, install snf-pithos-tools and use ``pithos-dispatcher``::
-
-    pithos-dispatcher --exchange=aquarium --callback=astakos.im.endpoints.aquarium.consumer.on_creditevent

@@ -371,10 +371,6 @@ class SendNotificationError(SendMailError):
         super(SendNotificationError, self).__init__()
 
 
-def get_quota(users):
-    pass
-
-
 ### PROJECT FUNCTIONS ###
 
 AUTO_ACCEPT_POLICY = 1

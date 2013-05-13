@@ -205,7 +205,7 @@ def create(userid, name, password, flavor, image, metadata={},
         transaction.commit()
 
     try:
-        jobID = backend.create_instance(vm, nic, flavor, image)
+        jobID = backend.create_instance(vm, [nic], flavor, image)
         # At this point the job is enqueued in the Ganeti backend
         vm.backendjobid = jobID
         vm.task = "BUILD"

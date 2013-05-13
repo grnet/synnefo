@@ -482,7 +482,7 @@ def create_instance_diagnostic(vm, message, source, level="DEBUG", etime=None,
                                                    details=details)
 
 
-def create_instance(vm, public_nic, flavor, image):
+def create_instance(vm, nics, flavor, image):
     """`image` is a dictionary which should contain the keys:
             'backend_id', 'format' and 'metadata'
 
@@ -507,7 +507,7 @@ def create_instance(vm, public_nic, flavor, image):
         kw['disks'][0]['provider'] = provider
         kw['disks'][0]['origin'] = flavor.disk_origin
 
-    kw['nics'] = [public_nic]
+    kw['nics'] = nics
     if vm.backend.use_hotplug():
         kw['hotplug'] = True
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS

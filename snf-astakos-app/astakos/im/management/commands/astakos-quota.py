@@ -35,7 +35,7 @@ from optparse import make_option
 from django.core.management.base import CommandError
 
 from astakos.im.models import AstakosUser
-from astakos.im.quotas import set_user_quota, list_user_quotas
+from astakos.im.quotas import set_user_quota, list_user_quotas, add_base_quota
 from astakos.im.functions import get_user_by_uuid
 from astakos.im.management.commands._common import is_uuid, is_email
 from snf_django.lib.db.transaction import commit_on_success_strict
@@ -70,6 +70,14 @@ class Command(SynnefoCommand):
                     metavar='<uuid or email>',
                     dest='user',
                     help="List quotas for a specified user"),
+        make_option('--import-base-quota',
+                    dest='import_base_quota',
+                    metavar='<exported-quotas.txt>',
+                    help=("Import base quotas from file. "
+                          "The file must contain non-empty lines, and each "
+                          "line must contain a single-space-separated list "
+                          "of values: <user> <resource name> <capacity>")
+                    ),
     )
 
     @commit_on_success_strict()
@@ -77,6 +85,18 @@ class Command(SynnefoCommand):
         sync = options['sync']
         verify = options['verify']
         user_ident = options['user']
+        list_ = options['list']
+        import_base_quota = options['import_base_quota']
+
+        if import_base_quota:
+            if any([sync, verify, list_]):
+                m = "--from-file cannot be combined with other options."
+                raise CommandError(m)
+            self.import_from_file(import_base_quota)
+        else:
+            self.quotas(sync, verify, user_ident, options["output_format"])
+
+    def quotas(self, sync, verify, user_ident, output_format):
         list_only = not sync and not verify
 
         if user_ident is not None:
@@ -97,7 +117,7 @@ class Command(SynnefoCommand):
         if list_only:
             print_data, labels = show_quotas(qh_quotas, astakos_i, info)
             utils.pprint_table(self.stdout, print_data, labels,
-                               options["output_format"])
+                               output_format)
 
         else:
             if verify:
@@ -163,3 +183,29 @@ class Command(SynnefoCommand):
             diffs = len(diff_quotas)
             if diffs:
                 self.stdout.write("Quotas differ for %d users.\n" % (diffs))
+
+    def import_from_file(self, location):
+        users = set()
+        with open(location) as f:
+            for line in f.readlines():
+                try:
+                    t = line.rstrip('\n').split(' ')
+                    user = t[0]
+                    resource = t[1]
+                    capacity = t[2]
+                except(IndexError, TypeError):
+                    self.stdout.write('Invalid line format: %s:\n' % t)
+                    continue
+                else:
+                    try:
+                        user = self.get_user(user)
+                        users.add(user.id)
+                    except CommandError:
+                        self.stdout.write('Not found user: %s\n' % user)
+                        continue
+                    else:
+                        try:
+                            add_base_quota(user, resource, capacity)
+                        except Exception, e:
+                            self.stdout.write('Failed to add quota: %s\n' % e)
+                            continue

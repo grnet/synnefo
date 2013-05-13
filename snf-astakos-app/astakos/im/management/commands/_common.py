@@ -237,7 +237,7 @@ def is_email(s):
 
 
 def show_quotas(qh_quotas, astakos_initial, info=None):
-    labels = ('source', 'resource', 'initial', 'total', 'usage')
+    labels = ('source', 'resource', 'base quota', 'total quota', 'usage')
     if info is not None:
         labels = ('uuid', 'email') + labels
 

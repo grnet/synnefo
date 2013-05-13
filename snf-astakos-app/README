@@ -197,6 +197,5 @@ user-group-list               List available groups
 user-invite                   Invite somebody
 user-list                     List users
 user-modify                   Modify user
-user-set-initial-quota        Import user quota limits from file or set quota for a single user from the command line
 user-show                     Show user details
 ============================  ===========================

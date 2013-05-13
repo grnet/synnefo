@@ -1274,8 +1274,7 @@ class TestProjects(TestCase):
     @im_settings(PROJECT_ADMINS=['uuid1'])
     def test_applications(self):
         # let user have 2 pending applications
-        self.user.add_resource_policy('astakos.pending_app', 2)
-        quotas.qh_sync_users(AstakosUser.objects.all())
+        quotas.add_base_quota(self.user, 'astakos.pending_app', 2)
 
         r = self.user_client.get(reverse('project_add'), follow=True)
         self.assertRedirects(r, reverse('project_add'))

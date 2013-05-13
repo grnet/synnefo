@@ -446,30 +446,6 @@ class AstakosUser(User):
     def policies(self):
         return self.astakosuserquota_set.select_related().all()
 
-    @policies.setter
-    def policies(self, policies):
-        for p in policies:
-            p.setdefault('resource', '')
-            p.setdefault('capacity', 0)
-            p.setdefault('update', True)
-            self.add_resource_policy(**p)
-
-    def add_resource_policy(
-            self, resource, capacity,
-            update=True):
-        """Raises ObjectDoesNotExist, IntegrityError"""
-        resource = Resource.objects.get(name=resource)
-        if update:
-            AstakosUserQuota.objects.update_or_create(
-                user=self, resource=resource, defaults={
-                    'capacity':capacity,
-                    })
-        else:
-            q = self.astakosuserquota_set
-            q.create(
-                resource=resource, capacity=capacity,
-                )
-
     def get_resource_policy(self, resource):
         resource = Resource.objects.get(name=resource)
         default_capacity = resource.uplimit
@@ -478,11 +454,6 @@ class AstakosUser(User):
             return policy, default_capacity
         except AstakosUserQuota.DoesNotExist:
             return None, default_capacity
-
-    def remove_resource_policy(self, service, resource):
-        """Raises ObjectDoesNotExist, IntegrityError"""
-        resource = Resource.objects.get(name=resource)
-        q = self.policies.get(resource=resource).delete()
 
     def update_uuid(self):
         while not self.uuid:

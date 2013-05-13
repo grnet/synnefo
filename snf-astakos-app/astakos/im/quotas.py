@@ -152,6 +152,25 @@ def register_pending_apps(user, quantity, force=False, dry_run=False):
     return True, None
 
 
+def add_base_quota(user, resource, capacity):
+    resource = Resource.objects.get(name=resource)
+    obj, created = AstakosUserQuota.objects.get_or_create(
+        user=user, resource=resource, defaults={
+            'capacity': capacity,
+        })
+
+    if not created:
+        obj.capacity = capacity
+        obj.save()
+    qh_sync_user(user.id)
+
+
+def remove_base_quota(user, resource):
+    AstakosUserQuota.objects.filter(
+        user=user, resource__name=resource).delete()
+    qh_sync_user(user.id)
+
+
 def initial_quotas(users):
     initial = {}
     default_quotas = get_default_quota()

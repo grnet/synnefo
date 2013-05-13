@@ -39,8 +39,10 @@ from django.core.exceptions import ValidationError
 
 from astakos.im.models import AstakosUser
 from astakos.im.functions import (activate, deactivate)
+from astakos.im import quotas
 from ._common import remove_user_permission, add_user_permission, is_uuid
 from snf_django.lib.db.transaction import commit_on_success_strict
+import string
 
 
 class Command(BaseCommand):
@@ -102,6 +104,15 @@ class Command(BaseCommand):
         make_option('--delete-permission',
                     dest='delete-permission',
                     help="Delete user permission"),
+        make_option('--set-base-quota',
+                    dest='set_base_quota',
+                    metavar='<resource> <capacity>',
+                    nargs=2,
+                    help=("Set base quota for a specified resource. "
+                          "The special value 'default' sets the user base "
+                          "quota to the default value.")
+                    ),
+
     )
 
     @commit_on_success_strict()
@@ -210,3 +221,47 @@ class Command(BaseCommand):
 
         if password:
             self.stdout.write('User\'s new password: %s\n' % password)
+
+        set_base_quota = options.get('set_base_quota')
+        if set_base_quota is not None:
+            resource, capacity = set_base_quota
+            self.set_limit(user, resource, capacity, False)
+
+    def set_limit(self, user, resource, capacity, force):
+        if capacity != 'default':
+            try:
+                capacity = int(capacity)
+            except ValueError:
+                m = "Please specify capacity as a decimal integer or 'default'"
+                raise CommandError(m)
+
+        try:
+            quota, default_capacity = user.get_resource_policy(resource)
+        except Resource.DoesNotExist:
+            raise CommandError("No such resource: %s" % resource)
+
+        current = quota.capacity if quota is not None else 'default'
+
+        if not force:
+            self.stdout.write("user: %s (%s)\n" % (user.uuid, user.username))
+            self.stdout.write("default capacity: %s\n" % default_capacity)
+            self.stdout.write("current capacity: %s\n" % current)
+            self.stdout.write("new capacity: %s\n" % capacity)
+            self.stdout.write("Confirm? (y/n) ")
+            response = raw_input()
+            if string.lower(response) not in ['y', 'yes']:
+                self.stdout.write("Aborted.\n")
+                return
+
+        if capacity == 'default':
+            try:
+                quotas.remove_base_quota(user, resource)
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                raise CommandError("Failed to remove policy: %s" % e)
+        else:
+            try:
+                quotas.add_base_quota(user, resource, capacity)
+            except Exception as e:
+                raise CommandError("Failed to add policy: %s" % e)

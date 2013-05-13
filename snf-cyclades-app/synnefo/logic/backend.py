@@ -256,14 +256,15 @@ def update_network_state(network):
         return
 
     backend_states = [s.operstate for s in network.backend_networks.all()]
-    if not backend_states:
+    if not backend_states and network.action != "DESTROY":
         if network.state != "ACTIVE":
             network.state = "ACTIVE"
             network.save()
             return
 
     # Network is deleted when all BackendNetworks go to "DELETED" operstate
-    deleted = reduce(lambda x, y: x == y, backend_states, 'DELETED')
+    deleted = reduce(lambda x, y: x == y and "DELETED", backend_states,
+                     "DELETED")
 
     # Release the resources on the deletion of the Network
     if deleted:

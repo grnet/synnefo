@@ -309,6 +309,8 @@ def delete_network(request, network_id):
     backend_networks = net.backend_networks.exclude(operstate="DELETED")
     for bnet in backend_networks:
         backend.delete_network(net, bnet.backend)
+    if not backend_networks:
+        backend.update_network_state(net)
     return HttpResponse(status=204)
 
 

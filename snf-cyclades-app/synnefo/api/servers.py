@@ -348,7 +348,7 @@ def create_server(request):
                 meta_value=val,
                 vm=vm)
         # Issue commission to Quotaholder and accept it since at the end of
-        # this transaction the Network object will be created in the DB.
+        # this transaction the VirtualMachine object will be created in the DB.
         # Note: the following call does a commit!
         quotas.issue_and_accept_commission(vm)
     except:

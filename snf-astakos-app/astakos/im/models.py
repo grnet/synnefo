@@ -1941,7 +1941,7 @@ class ProjectMembershipManager(ForUpdateManager):
 class ProjectMembership(models.Model):
 
     person              =   models.ForeignKey(AstakosUser)
-    request_date        =   models.DateField(auto_now_add=True)
+    request_date        =   models.DateTimeField(auto_now_add=True)
     project             =   models.ForeignKey(Project)
 
     REQUESTED           =   0
@@ -1967,8 +1967,8 @@ class ProjectMembership(models.Model):
 
     state               =   models.IntegerField(default=REQUESTED,
                                                 db_index=True)
-    acceptance_date     =   models.DateField(null=True, db_index=True)
-    leave_request_date  =   models.DateField(null=True)
+    acceptance_date     =   models.DateTimeField(null=True, db_index=True)
+    leave_request_date  =   models.DateTimeField(null=True)
 
     objects     =   ProjectMembershipManager()
 
@@ -2126,7 +2126,7 @@ class ProjectMembershipHistory(models.Model):
 
     person  =   models.BigIntegerField()
     project =   models.BigIntegerField()
-    date    =   models.DateField(auto_now_add=True)
+    date    =   models.DateTimeField(auto_now_add=True)
     reason  =   models.IntegerField()
     serial  =   models.BigIntegerField()
 

@@ -1341,14 +1341,16 @@ class TestProjects(TestCase):
         r = self.member_client.post(join_url, follow=True)
         self.assertEqual(r.status_code, 200)
 
-        self.assertEqual(ProjectMembership.objects.count(), 1)
+        memberships = ProjectMembership.objects.all()
+        self.assertEqual(len(memberships), 1)
+        memb_id = memberships[0].id
 
         reject_member_url = reverse('project_reject_member',
                                     kwargs={'chain_id': app1_id, 'memb_id':
-                                            self.member.pk})
+                                            memb_id})
         accept_member_url = reverse('project_accept_member',
                                     kwargs={'chain_id': app1_id, 'memb_id':
-                                            self.member.pk})
+                                            memb_id})
 
         # only project owner is allowed to reject
         r = self.member_client.post(reject_member_url, follow=True)
@@ -1380,7 +1382,7 @@ class TestProjects(TestCase):
 
         remove_member_url = reverse('project_remove_member',
                                     kwargs={'chain_id': app1_id, 'memb_id':
-                                            self.member.pk})
+                                            membership.id})
         r = self.user_client.post(remove_member_url, follow=True)
         self.assertEqual(r.status_code, 200)
 

@@ -33,9 +33,7 @@
 # or implied, of GRNET S.A.
 
 from django import http
-from django.template import RequestContext, loader
 from django.utils import simplejson as json
-from django.core import serializers
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse
 
@@ -43,9 +41,6 @@ from django.core.exceptions import ValidationError, NON_FIELD_ERRORS
 
 from snf_django.lib.astakos import get_user
 from django.conf import settings
-
-# base view class
-# https://github.com/bfirsh/django-class-based-views/blob/master/class_based_views/base.py
 
 
 class View(object):
@@ -82,7 +77,7 @@ class View(object):
         Main entry point for a request-response process.
         """
         def view(request, *args, **kwargs):
-            user = get_user(request, settings.ASTAKOS_URL)
+            get_user(request, settings.ASTAKOS_URL)
             if not request.user_uniq:
                 return HttpResponse(status=401)
             self = cls(*initargs, **initkwargs)
@@ -100,20 +95,24 @@ class View(object):
 
             if request.method.upper() in ['POST', 'PUT']:
                 # Expect json data
-                if request.META.get('CONTENT_TYPE').startswith('application/json'):
+                if request.META.get('CONTENT_TYPE').startswith(
+                        'application/json'):
                     try:
                         data = json.loads(data)
                     except ValueError:
-                        return http.HttpResponseServerError('Invalid JSON data.')
+                        return \
+                            http.HttpResponseServerError('Invalid JSON data.')
                 else:
-                    return http.HttpResponseServerError('Unsupported Content-Type.')
+                    return http.HttpResponseServerError(
+                        'Unsupported Content-Type.')
             try:
-                return getattr(self, request.method.upper())(request, data, *args, **kwargs)
+                return getattr(self, request.method.upper())(
+                    request, data, *args, **kwargs)
             except ValidationError, e:
                 # specific response for validation errors
-                return http.HttpResponseServerError(json.dumps({'errors':
-                    e.message_dict, 'non_field_key':
-                    NON_FIELD_ERRORS }))
+                return http.HttpResponseServerError(
+                    json.dumps({'errors': e.message_dict,
+                                'non_field_key': NON_FIELD_ERRORS}))
 
         else:
             allowed_methods = [m for m in self.method_names if hasattr(self, m)]
@@ -126,6 +125,7 @@ class JSONRestView(View):
     """
 
     url_name = None
+
     def __init__(self, url_name, *args, **kwargs):
         self.url_name = url_name
         return super(JSONRestView, self).__init__(*args, **kwargs)
@@ -184,8 +184,8 @@ class ResourceView(JSONRestView):
             raise http.Http404
 
     def GET(self, request, data, *args, **kwargs):
-        return self.json_response(self.instance_to_dict(self.instance(),
-            self.exclude_fields))
+        return self.json_response(
+            self.instance_to_dict(self.instance(), self.exclude_fields))
 
     def PUT(self, request, data, *args, **kwargs):
         instance = self.instance()
@@ -209,16 +209,16 @@ class CollectionView(JSONRestView):
         return self.model.objects.all()
 
     def GET(self, request, data, *args, **kwargs):
-        return self.json_response(list(self.qs_to_dict_iter(self.queryset(),
-            self.exclude_fields)))
+        return self.json_response(
+            list(self.qs_to_dict_iter(self.queryset(), self.exclude_fields)))
 
     def POST(self, request, data, *args, **kwargs):
         instance = self.model()
         self.update_instance(instance, data, self.exclude_fields)
         instance.full_clean()
         instance.save()
-        return self.json_response(self.instance_to_dict(instance,
-            self.exclude_fields))
+        return self.json_response(
+            self.instance_to_dict(instance, self.exclude_fields))
 
 
 class UserResourceView(ResourceView):
@@ -227,7 +227,7 @@ class UserResourceView(ResourceView):
     """
     def queryset(self):
         return super(UserResourceView,
-                self).queryset().filter(user=self.request.user_uniq)
+                     self).queryset().filter(user=self.request.user_uniq)
 
 
 class UserCollectionView(CollectionView):
@@ -235,7 +235,8 @@ class UserCollectionView(CollectionView):
     Filter collection queryset for request user entries
     """
     def queryset(self):
-        return super(UserCollectionView, self).queryset().filter(user=self.request.user_uniq)
+        return super(UserCollectionView,
+                     self).queryset().filter(user=self.request.user_uniq)
 
     def POST(self, request, data, *args, **kwargs):
         instance = self.model()
@@ -243,5 +244,5 @@ class UserCollectionView(CollectionView):
         instance.user = request.user_uniq
         instance.full_clean()
         instance.save()
-        return self.json_response(self.instance_to_dict(instance,
-            self.exclude_fields))
+        return self.json_response(
+            self.instance_to_dict(instance, self.exclude_fields))

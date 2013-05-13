@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -41,7 +41,6 @@ from django.core.management.base import NoArgsCommand, CommandError, BaseCommand
 from django.db import transaction
 from django.conf import settings
 
-from synnefo.quotas import get_quota_holder
 from synnefo.api.util import get_existing_users
 from synnefo.lib.utils import case_unique
 from synnefo.db.models import Network, VirtualMachine

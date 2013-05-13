@@ -43,6 +43,7 @@ from synnefo.logic.backend import create_instance
 from synnefo.logic.backend_allocator import BackendAllocator
 from synnefo.api import util
 from synnefo.api.servers import server_created
+from synnefo import quotas
 
 HELP_MSG = """
 
@@ -156,6 +157,8 @@ class Command(BaseCommand):
                 'img_personality': '[]',
                 'img_properties': json.dumps(image['metadata']),
             })
+
+            quotas.issue_and_accept_commission(vm)
         except:
             transaction.rollback()
             raise

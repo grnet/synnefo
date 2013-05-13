@@ -33,11 +33,12 @@
 
 from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
 
-from astakos.im.models import sync_all_users, sync_users, AstakosUser
+from astakos.im.models import AstakosUser
+from astakos.im.quotas import set_user_quota, list_user_quotas
 from astakos.im.functions import get_user_by_uuid
 from astakos.im.management.commands._common import is_uuid, is_email
+from snf_django.lib.db.transaction import commit_on_success_strict
 
 import logging
 logger = logging.getLogger(__name__)
@@ -68,30 +69,42 @@ class Command(BaseCommand):
                     help="List quotas for a specified user"),
     )
 
+    @commit_on_success_strict()
     def handle(self, *args, **options):
         sync = options['sync']
         verify = options['verify']
         user_ident = options['user']
         list_only = not sync and not verify
 
-
         if user_ident is not None:
-            log = self.run_sync_user(user_ident, sync)
+            users = [self.get_user(user_ident)]
         else:
-            log = self.run(sync)
+            users = AstakosUser.objects.verified()
 
-        ex, nonex, qh_l, qh_c, astakos_i, diff_q, info = log
+        try:
+            qh_limits, qh_quotas, astakos_i, diff_q = list_user_quotas(users)
+        except BaseException as e:
+            logger.exception(e)
+            raise CommandError("Failed to compute quotas.")
+
+        info = {}
+        for user in users:
+            info[user.uuid] = user.email
 
         if list_only:
-            self.list_quotas(qh_l, qh_c, astakos_i, info)
+            self.list_quotas(qh_quotas, astakos_i, info)
         else:
             if verify:
-                self.print_verify(nonex, qh_l, diff_q)
+                self.print_verify(qh_limits, diff_q)
             if sync:
+                try:
+                    set_user_quota(diff_q)
+                except BaseException as e:
+                    logger.exception(e)
+                    raise CommandError("Failed to sync quotas.")
                 self.print_sync(diff_q)
 
-    @transaction.commit_on_success
-    def run_sync_user(self, user_ident, sync):
+    def get_user(self, user_ident):
         if is_uuid(user_ident):
             try:
                 user = AstakosUser.objects.get(uuid=user_ident)
@@ -110,49 +123,37 @@ class Command(BaseCommand):
         if not user.email_verified and sync:
             raise CommandError('User %s is not verified.' % user.uuid)
 
-        try:
-            return sync_users([user], sync=sync)
-        except BaseException, e:
-            logger.exception(e)
-            raise CommandError("Failed to compute quotas.")
+        return user
 
-    @transaction.commit_on_success
-    def run(self, sync):
-        try:
-            self.stderr.write("Calculating all quotas...\n")
-            return sync_all_users(sync=sync)
-        except BaseException, e:
-            logger.exception(e)
-            raise CommandError("Syncing failed.")
-
-    def list_quotas(self, qh_limits, qh_counters, astakos_initial, info):
-        labels = ('uuid', 'email', 'resource', 'initial', 'total', 'usage')
-        columns = (36, 30, 24, 12, 12, 12)
+    def list_quotas(self, qh_quotas, astakos_initial, info):
+        labels = ('uuid', 'email', 'source', 'resource', 'initial', 'total', 'usage')
+        columns = (36, 30, 20, 24, 12, 12, 12)
 
         line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
         self.stdout.write(line + '\n')
         sep = '-' * len(line)
         self.stdout.write(sep + '\n')
 
-        for holder, resources in qh_limits.iteritems():
-            h_counters = qh_counters[holder]
-            h_initial = astakos_initial[holder]
-            email = info[holder]
-            for resource, limits in resources.iteritems():
-                initials = h_initial[resource]
-                initial = str(initials.capacity)
-                capacity = str(limits.capacity)
-                c = h_counters[resource]
-                used = str(c.imported - c.exported + c.returned - c.released)
+        for holder, holder_quotas in qh_quotas.iteritems():
+            h_initial = astakos_initial.get(holder)
+            email = info.get(holder, "")
+            for source, source_quotas in holder_quotas.iteritems():
+                s_initial = h_initial.get(source) if h_initial else None
+                for resource, values in source_quotas.iteritems():
+                    initial = s_initial.get(resource) if s_initial else None
+                    initial = str(initial)
+                    capacity = str(values['limit'])
+                    usage = str(values['usage'])
 
-                fields = holder, email, resource, initial, capacity, used
-                output = []
-                for field, width in zip(fields, columns):
-                    s = field.rjust(width)
-                    output.append(s)
+                    fields = (holder, email, source, resource,
+                              initial, capacity, usage)
+                    output = []
+                    for field, width in zip(fields, columns):
+                        s = field.rjust(width)
+                        output.append(s)
 
-                line = ' '.join(output)
-                self.stdout.write(line + '\n')
+                    line = ' '.join(output)
+                    self.stdout.write(line + '\n')
 
     def print_sync(self, diff_quotas):
         size = len(diff_quotas)
@@ -165,15 +166,8 @@ class Command(BaseCommand):
                 self.stdout.write("%s (%s)\n" % (holder, user.username))
 
     def print_verify(self,
-                     nonexisting,
                      qh_limits,
                      diff_quotas):
-
-            if nonexisting:
-                self.stdout.write("Users not registered in quotaholder:\n")
-                for user in nonexisting:
-                    self.stdout.write("%s\n" % (user))
-                self.stdout.write("\n")
 
             for holder, local in diff_quotas.iteritems():
                 registered = qh_limits.pop(holder, None)

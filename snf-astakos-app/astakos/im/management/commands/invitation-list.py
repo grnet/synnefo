@@ -31,49 +31,21 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
-
-from django.core.management.base import NoArgsCommand, CommandError
-
 from astakos.im.models import Invitation
+from synnefo.webproject.management.commands import ListCommand
 
-from ._common import format_bool
-
-
-class Command(NoArgsCommand):
+class Command(ListCommand):
     help = "List invitations"
 
-    option_list = NoArgsCommand.option_list + (
-        make_option('-c',
-                    action='store_true',
-                    dest='csv',
-                    default=False,
-                    help="Use pipes to separate values"),
-    )
+    object_class = Invitation
 
-    def handle_noargs(self, **options):
-        invitations = Invitation.objects.all().order_by('id')
+    FIELDS = {
+        "id": ("id", "The ID of the invitation"),
+        "inviter": ("inviter.username", "The inviter of the invitation"),
+        "username": ("username", "The receiver username"),
+        "realname": ("realname", "The receiver name"),
+        "code": ("code", "The code  of the invitation"),
+        "is_consumed": ("is_consumed", "Whether the invitation is consumed or not"),
+    }
 
-        labels = ('id', 'inviter', 'email', 'real name', 'code', 'consumed')
-        columns = (3, 24, 24, 24, 20, 4, 8)
-
-        if not options['csv']:
-            line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
-            self.stdout.write(line + '\n')
-            sep = '-' * len(line)
-            self.stdout.write(sep + '\n')
-
-        for invitation in invitations:
-            id = str(invitation.id)
-            code = str(invitation.code)
-            consumed = format_bool(invitation.is_consumed)
-            fields = (format(elem) for elem in \
-                        (id, invitation.inviter.email, invitation.username,
-                         invitation.realname, code, consumed))
-
-            if options['csv']:
-                line = '|'.join(fields)
-            else:
-                line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
-
-            self.stdout.write(line + '\n')
+    fields = ["id", "inviter", "username", "realname", "code", "is_consumed"]

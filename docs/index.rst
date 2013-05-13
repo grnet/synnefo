@@ -123,7 +123,7 @@ They are also available from our apt repository: ``apt.okeanos.grnet.gr``
  * `snf-pithos-webclient <http://www.synnefo.org/docs/pithos-webclient/latest/index.html>`_
  * `snf-cyclades-app <http://www.synnefo.org/docs/snf-cyclades-app/latest/index.html>`_
  * `snf-cyclades-gtools <http://www.synnefo.org/docs/snf-cyclades-gtools/latest/index.html>`_
- * `snf-astakos-client <http://www.synnefo.org/docs/snf-astakos-client/latest/index.html>`_
+ * `astakosclient <http://www.synnefo.org/docs/astakosclient/latest/index.html>`_
  * `snf-vncauthproxy <https://code.grnet.gr/projects/vncauthproxy>`_
  * `snf-image <https://code.grnet.gr/projects/snf-image/wiki/>`_ 
  * `snf-image-creator <http://www.synnefo.org/docs/snf-image-creator/latest/index.html>`_

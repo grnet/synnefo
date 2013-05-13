@@ -610,9 +610,9 @@ Then edit ``/etc/synnefo/20-snf-astakos-app-cloudbar.conf`` :
 
     CLOUDBAR_LOCATION = 'https://node1.example.com/static/im/cloudbar/'
 
-    CLOUDBAR_SERVICES_URL = 'https://node1.example.com/im/get_services'
+    CLOUDBAR_SERVICES_URL = 'https://node1.example.com/astakos/api/get_services'
 
-    CLOUDBAR_MENU_URL = 'https://node1.example.com/im/get_menu'
+    CLOUDBAR_MENU_URL = 'https://node1.example.com/astakos/api/get_menu'
 
 Those settings have to do with the black cloudbar endpoints and will be
 described in more detail later on in this guide. For now, just edit the domain
@@ -854,9 +854,6 @@ this options:
 
 
    PITHOS_SERVICE_TOKEN = 'pithos_service_token22w=='
-   PITHOS_USER_CATALOG_URL = 'https://node1.example.com/user_catalogs'
-   PITHOS_USER_FEEDBACK_URL = 'https://node1.example.com/feedback'
-   PITHOS_USER_LOGIN_URL = 'https://node1.example.com/login'
 
    PITHOS_QUOTAHOLDER_URL = 'https://node1.example.com/quotaholder/v'
    PITHOS_QUOTAHOLDER_TOKEN = 'aExampleTokenJbFm12w'
@@ -915,8 +912,8 @@ pithos+ web UI with the astakos web UI (through the top cloudbar):
 
     CLOUDBAR_LOCATION = 'https://node1.example.com/static/im/cloudbar/'
     PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE = '3'
-    CLOUDBAR_SERVICES_URL = 'https://node1.example.com/im/get_services'
-    CLOUDBAR_MENU_URL = 'https://node1.example.com/im/get_menu'
+    CLOUDBAR_SERVICES_URL = 'https://node1.example.com/astakos/api/get_services'
+    CLOUDBAR_MENU_URL = 'https://node1.example.com/astakos/api/get_menu'
 
 The ``CLOUDBAR_LOCATION`` tells the client where to find the astakos common
 cloudbar.
@@ -1725,8 +1722,8 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-cloudbar.conf``:
 
    CLOUDBAR_LOCATION = 'https://node1.example.com/static/im/cloudbar/'
    CLOUDBAR_ACTIVE_SERVICE = '2'
-   CLOUDBAR_SERVICES_URL = 'https://node1.example.com/im/get_services'
-   CLOUDBAR_MENU_URL = 'https://account.node1.example.com/im/get_menu'
+   CLOUDBAR_SERVICES_URL = 'https://node1.example.com/astakos/api/get_services'
+   CLOUDBAR_MENU_URL = 'https://account.node1.example.com/astakos/api/get_menu'
 
 ``CLOUDBAR_LOCATION`` tells the client where to find the Astakos common
 cloudbar. The ``CLOUDBAR_SERVICES_URL`` and ``CLOUDBAR_MENU_URL`` options are
@@ -1781,14 +1778,6 @@ if they are not logged in. We point that to Astakos.
 
 The ``UI_LOGOUT_URL`` option tells the Cyclades Web UI where to redirect the
 user when he/she logs out. We point that to Astakos, too.
-
-Edit ``/etc/synnefo/20-snf-cyclades-app-quotas.conf``:
-
-.. code-block:: console
-
-   CYCLADES_USE_QUOTAHOLDER = True
-   CYCLADES_QUOTAHOLDER_URL = 'https://node1.example.com/quotaholder/v'
-   CYCLADES_QUOTAHOLDER_TOKEN = 'aExampleTokenJbFm12w'
 
 Edit ``/etc/synnefo/20-snf-cyclades-app-vmapi.conf``:
 
@@ -2015,7 +2004,7 @@ Apply Quotas
    node1 # snf-manage astakos-quota --verify
    node1 # snf-manage astakos-quota --sync
    node2 # snf-manage pithos-reset-usage
-   node1 # snf-manage cyclades-reset-usage
+   node1 # snf-manage reconcile-resources-cyclades --fix
 
 If all the above return successfully, then you have finished with the Cyclades
 and Plankton installation and setup.

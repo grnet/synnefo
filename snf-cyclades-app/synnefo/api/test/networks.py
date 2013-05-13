@@ -34,7 +34,7 @@
 import json
 from mock import patch
 
-from snf_django.utils.testing import BaseAPITest
+from snf_django.utils.testing import BaseAPITest, mocked_quotaholder
 from synnefo.db.models import Network, NetworkInterface
 from synnefo.db import models_factory as mfactory
 
@@ -74,8 +74,9 @@ class NetworkAPITest(BaseAPITest):
         request = {
             'network': {'name': 'foo', "type": "MAC_FILTERED"}
         }
-        response = self.post('/api/v1.1/networks/', 'user1',
-                             json.dumps(request), 'json')
+        with mocked_quotaholder():
+            response = self.post('/api/v1.1/networks/', 'user1',
+                                 json.dumps(request), 'json')
         self.assertEqual(response.status_code, 202)
         db_networks = Network.objects.filter(userid='user1')
         self.assertEqual(len(db_networks), 1)

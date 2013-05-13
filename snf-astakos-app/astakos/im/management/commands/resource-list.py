@@ -31,42 +31,24 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
-
-from django.core.management.base import NoArgsCommand
-
 from astakos.im.models import Resource
+from synnefo.webproject.management.commands import ListCommand
 
 
-class Command(NoArgsCommand):
+class Command(ListCommand):
     help = "List resources"
+    object_class = Resource
 
-    option_list = NoArgsCommand.option_list + (
-        make_option('-c',
-                    action='store_true',
-                    dest='csv',
-                    default=False,
-                    help="Use pipes to separate values"),
-    )
+    FIELDS = {
+        "id": ("id", "ID"),
+        "name": ("name", "Resource Name"),
+        "service": ("service", "Service"),
+        "unit": ("unit", "Unit"),
+        "limit": ("uplimit", "Base Quota"),
+        "description": ("desc", "Description"),
+        "allow_in_projects": ("allow_in_projects",
+                              "Make resource available in projects"),
+    }
 
-    def handle_noargs(self, **options):
-        resources = Resource.objects.select_related().all()
-
-        labels = ('id', 'service', 'name')
-        columns = (3, 40, 40)
-
-        if not options['csv']:
-            line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
-            self.stdout.write(line + '\n')
-            sep = '-' * len(line)
-            self.stdout.write(sep + '\n')
-
-        for r in resources:
-            fields = (str(r.id), r.service.name, r.name)
-
-            if options['csv']:
-                line = '|'.join(fields)
-            else:
-                line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
-
-            self.stdout.write(line + '\n')
+    fields = ["id", "name", "service", "unit", "limit", "allow_in_projects",
+              "description"]

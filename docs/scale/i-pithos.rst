@@ -58,9 +58,6 @@ In `/etc/synnefo/pithos.conf` add:
 .. code-block:: console
 
     ASTAKOS_URL = 'https:/accounts.example.com/'
-    PITHOS_USER_CATALOG_URL = 'https://accounts.example.com/user_catalogs'
-    PITHOS_USER_FEEDBACK_URL = 'https://accounts.example.com/feedback'
-    PITHOS_USER_LOGIN_URL = 'https://accounts.example.com/login'
 
     PITHOS_BACKEND_DB_CONNECTION = 'postgresql://synnefo:example_passw0rd@db.example.com:5432/snf_pithos'
     PITHOS_BACKEND_BLOCK_PATH = '/srv/pithos/data'
@@ -88,8 +85,8 @@ In `/etc/synnefo/webclient.conf` add:
 .. code-block:: console
 
     CLOUDBAR_LOCATION = 'https://accounts.example.com/static/im/cloudbar/'
-    CLOUDBAR_SERVICES_URL = 'https://accounts.example.com/im/get_services'
-    CLOUDBAR_MENU_URL = 'https://accounts.example.com/im/get_menu'
+    CLOUDBAR_SERVICES_URL = 'https://accounts.example.com/astakos/api/get_services'
+    CLOUDBAR_MENU_URL = 'https://accounts.example.com/astakos/api/get_menu'
 
     PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE = 'XXXXXXXX'
 

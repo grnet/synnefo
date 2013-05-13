@@ -31,24 +31,24 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import os
-import uuid
 import string
 
 from optparse import make_option
 from collections import namedtuple
 
 from django.core.management.base import BaseCommand, CommandError
-from django.core.validators import validate_email
-from synnefo.lib.quotaholder.api import QH_PRACTICALLY_INFINITE
 
+from snf_django.lib.db.transaction import commit_on_success_strict
 from astakos.im.models import AstakosUser, AstakosUserQuota, Resource
+from astakos.im.quotas import qh_sync_user, qh_sync_users
+
+from ._common import is_uuid, is_email
 
 AddResourceArgs = namedtuple('AddQuotaArgs', ('resource',
                                               'capacity',
-                                              'quantity',
-                                              'import_limit',
-                                              'export_limit'))
+                                              ))
+
+
 
 class Command(BaseCommand):
     help = """Import user quota limits from file or set quota
@@ -57,18 +57,14 @@ for a single user from the command line
     The file must contain non-empty lines, and each line must
     contain a single-space-separated list of values:
 
-    <user> <resource name> <capacity> <quantity> <import_limit> <export_limit>
+    <user> <resource name> <capacity>
 
     For example to grant the following user with 10 private networks
     (independent of any he receives from projects):
 
-    6119a50b-cbc7-42c0-bafc-4b6570e3f6ac cyclades.network.private 10 0 1000000 1000000
+    6119a50b-cbc7-42c0-bafc-4b6570e3f6ac cyclades.network.private 10
 
-    The last two values are arbitrarily large to represent no
-    import/export limit at all.
-
-    When setting quota from the command line, specify only capacity.
-    Quantity and import/export limit will get default values. Example:
+    Similar syntax is used when setting quota from the command line:
 
     --set-capacity 6119a50b-cbc7-42c0-bafc-4b6570e3f6ac cyclades.vm 10
 
@@ -93,6 +89,7 @@ for a single user from the command line
                     help="Do not ask for confirmation"),
     )
 
+    @commit_on_success_strict()
     def handle(self, *args, **options):
         from_file = options['from_file']
         set_capacity = options['set_capacity']
@@ -138,9 +135,6 @@ for a single user from the command line
 
         args = AddResourceArgs(resource=resource,
                                capacity=capacity,
-                               quantity=0,
-                               import_limit=QH_PRACTICALLY_INFINITE,
-                               export_limit=QH_PRACTICALLY_INFINITE,
                                )
 
         try:
@@ -163,11 +157,8 @@ for a single user from the command line
 
         if capacity == 'default':
             try:
-                service, sep, name = resource.partition('.')
-                q = AstakosUserQuota.objects.get(
-                        user=user,
-                        resource__service__name=service,
-                        resource__name=name)
+                q = AstakosUserQuota.objects.get(user=user,
+                                                 resource__name=resource)
                 q.delete()
             except Exception as e:
                 import traceback
@@ -178,54 +169,31 @@ for a single user from the command line
                 user.add_resource_policy(*args)
             except Exception as e:
                 raise CommandError("Failed to add policy: %s" % e)
+        qh_sync_user(user.id)
 
     def import_from_file(self, location):
-        try:
-            f = open(location, 'r')
-        except IOError, e:
-            raise CommandError(e)
-
-        for line in f.readlines():
-            try:
-                t = line.rstrip('\n').split(' ')
-                user = t[0]
-                args = AddResourceArgs(*t[1:])
-            except(IndexError, TypeError):
-                self.stdout.write('Invalid line format: %s:\n' % t)
-                continue
-            else:
+        users = set()
+        with open(location) as f:
+            for line in f.readlines():
                 try:
-                    user = AstakosUser.objects.get(uuid=user)
-                except AstakosUser.DoesNotExist:
-                    self.stdout.write('Not found user having uuid: %s\n' % user)
+                    t = line.rstrip('\n').split(' ')
+                    user = t[0]
+                    args = AddResourceArgs(*t[1:])
+                except(IndexError, TypeError):
+                    self.stdout.write('Invalid line format: %s:\n' % t)
                     continue
                 else:
                     try:
-                        user.add_resource_policy(*args)
-                    except Exception, e:
-                        self.stdout.write('Failed to policy: %s\n' % e)
+                        user = AstakosUser.objects.get(uuid=user)
+                        users.add(user.id)
+                    except AstakosUser.DoesNotExist:
+                        self.stdout.write('Not found user having uuid: %s\n'
+                                          % user)
                         continue
-            finally:
-                f.close()
-
-
-def is_uuid(s):
-    if s is None:
-        return False
-    try:
-        uuid.UUID(s)
-    except ValueError:
-        return False
-    else:
-        return True
-
-
-def is_email(s):
-    if s is None:
-        return False
-    try:
-        validate_email(s)
-    except:
-        return False
-    else:
-        return True
+                    else:
+                        try:
+                            user.add_resource_policy(*args)
+                        except Exception, e:
+                            self.stdout.write('Failed to policy: %s\n' % e)
+                            continue
+        qh_sync_users(users)

@@ -43,6 +43,7 @@ from mock import patch
 from synnefo.api.util import allocate_resource
 from synnefo.logic.callbacks import (update_db, update_net, update_network,
                                      update_build_progress)
+from snf_django.utils.testing import mocked_quotaholder
 
 now = datetime.now
 from time import time
@@ -135,7 +136,8 @@ class UpdateDBTest(TestCase):
         mfactory.NetworkInterfaceFactory(machine=vm)
         msg = self.create_msg(operation='OP_INSTANCE_REMOVE',
                               instance=vm.backend_vm_id)
-        update_db(client, msg)
+        with mocked_quotaholder():
+            update_db(client, msg)
         client.basic_ack.assert_called_once()
         db_vm = VirtualMachine.objects.get(id=vm.id)
         self.assertEqual(db_vm.operstate, 'DESTROYED')
@@ -170,7 +172,8 @@ class UpdateDBTest(TestCase):
         mfactory.NetworkInterfaceFactory(machine=vm)
         msg = self.create_msg(operation='OP_INSTANCE_REMOVE',
                               instance=vm.backend_vm_id)
-        update_db(client, msg)
+        with mocked_quotaholder():
+            update_db(client, msg)
         client.basic_ack.assert_called_once()
         db_vm = VirtualMachine.objects.get(id=vm.id)
         self.assertEqual(db_vm.operstate, 'DESTROYED')
@@ -395,7 +398,8 @@ class UpdateNetworkTest(TestCase):
                 msg = self.create_msg(operation='OP_NETWORK_REMOVE',
                                       network=net.backend_id,
                                       cluster=bn.backend.clustername)
-                update_network(client, msg)
+                with mocked_quotaholder():
+                    update_network(client, msg)
                 client.basic_ack.assert_called_once()
                 db_bnet = BackendNetwork.objects.get(id=bn.id)
                 self.assertEqual(db_bnet.operstate,
@@ -422,7 +426,8 @@ class UpdateNetworkTest(TestCase):
         msg = self.create_msg(operation='OP_NETWORK_REMOVE',
                               network=net.backend_id,
                               cluster=bn1.backend.clustername)
-        update_network(client, msg)
+        with mocked_quotaholder():
+            update_network(client, msg)
         client.basic_ack.assert_called_once()
         new_net = Network.objects.get(id=net.id)
         self.assertEqual(new_net.state, 'DELETED')

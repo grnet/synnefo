@@ -37,6 +37,7 @@ from django.core.management.base import BaseCommand, CommandError
 from synnefo.management.common import validate_network_info, get_backend
 from synnefo.webproject.management.utils import pprint_table
 
+from synnefo import quotas
 from synnefo.db.models import Network
 from synnefo.logic.backend import create_network
 from synnefo.api.util import values_from_flavor
@@ -200,6 +201,8 @@ class Command(BaseCommand):
             return
 
         network = Network.objects.create(**netinfo)
+        if userid:
+            quotas.issue_and_accept_commission(network)
 
         if public:
             # Create BackendNetwork only to the specified Backend

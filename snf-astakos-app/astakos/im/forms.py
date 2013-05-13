@@ -57,7 +57,7 @@ from django.core.exceptions import PermissionDenied
 
 from astakos.im.models import (
     AstakosUser, EmailChange, Invitation,
-    Resource, PendingThirdPartyUser, get_latest_terms, RESOURCE_SEPARATOR,
+    Resource, PendingThirdPartyUser, get_latest_terms,
     ProjectApplication, Project)
 from astakos.im.settings import (
     INVITATIONS_PER_LEVEL, BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY,
@@ -65,7 +65,8 @@ from astakos.im.settings import (
     PASSWORD_RESET_EMAIL_SUBJECT, NEWPASSWD_INVALIDATE_TOKEN,
     MODERATION_ENABLED, PROJECT_MEMBER_JOIN_POLICIES,
     PROJECT_MEMBER_LEAVE_POLICIES, EMAILCHANGE_ENABLED,
-    RESOURCES_PRESENTATION_DATA)
+    )
+from astakos.im import presentation
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
 from astakos.im.functions import (
     send_change_email, submit_application, accept_membership_checks)
@@ -842,6 +843,7 @@ class ProjectApplicationForm(forms.ModelForm):
 
     def clean(self):
         userid = self.data.get('user', None)
+        policies = self.resource_policies
         self.user = None
         if userid:
             try:
@@ -864,31 +866,47 @@ class ProjectApplicationForm(forms.ModelForm):
             if name.endswith('_uplimit'):
                 subs = name.split('_uplimit')
                 prefix, suffix = subs
-                s, sep, r = prefix.partition(RESOURCE_SEPARATOR)
-                resource = Resource.objects.get(service__name=s, name=r)
-
+                try:
+                    resource = Resource.objects.get(name=prefix)
+                except Resource.DoesNotExist:
+                    raise forms.ValidationError("Resource %s does not exist" %
+                                                resource.name)
                 # keep only resource limits for selected resource groups
                 if self.data.get(
                     'is_selected_%s' % resource.group, "0"
                  ) == "1":
+                    if not resource.allow_in_projects:
+                        raise forms.ValidationError("Invalid resource %s" %
+                                                    resource.name)
                     d = model_to_dict(resource)
                     if uplimit:
-                        d.update(dict(service=s, resource=r, uplimit=uplimit))
+                        d.update(dict(resource=prefix, uplimit=uplimit))
                     else:
-                        d.update(dict(service=s, resource=r, uplimit=None))
+                        d.update(dict(resource=prefix, uplimit=None))
                     append(d)
 
-        ordered_keys = RESOURCES_PRESENTATION_DATA['resources_order']
-        policies = sorted(policies, key=lambda r:ordered_keys.index(r['str_repr']))
+        ordered_keys = presentation.RESOURCES['resources_order']
+        def resource_order(r):
+            if r['str_repr'] in ordered_keys:
+                return ordered_keys.index(r['str_repr'])
+            else:
+                return -1
+
+        policies = sorted(policies, key=resource_order)
         return policies
+
+    def cleaned_resource_policies(self):
+        return [(d['name'], d['uplimit']) for d in self.resource_policies]
 
     def save(self, commit=True):
         data = dict(self.cleaned_data)
-        data['precursor_application'] = self.instance.id
+        data['precursor_id'] = self.instance.id
         is_new = self.instance.id is None
         data['owner'] = self.user if is_new else self.instance.owner
-        data['resource_policies'] = self.resource_policies
-        submit_application(data, request_user=self.user)
+        data['resource_policies'] = self.cleaned_resource_policies()
+        data['request_user'] = self.user
+        submit_application(**data)
+
 
 class ProjectSortForm(forms.Form):
     sorting = forms.ChoiceField(

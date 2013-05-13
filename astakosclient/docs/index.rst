@@ -1,9 +1,9 @@
-.. _snf-astakos-client:
+.. _astakosclient:
 
-Component snf-astakos-client
+Component astakosclient
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The Synnefo component :ref:`snf-astakos-client <snf-astakos-client>` defines a
+The Synnefo component :ref:`astakosclient <astakosclient>` defines a
 default client for the :ref:`Astakos <astakos>` service. It is designed to be
 simple and minimal, hence easy to debug and test.
 
@@ -12,12 +12,17 @@ It uses the user's authentication token to query Astakos for:
     * User's info
     * Usernames for given UUIDs
     * UUIDs for given usernames
+    * User's quotas
 
 It can also query Astakos with another service's (Cyclades or Pithos)
 authentication token for:
 
     * Usernames for given UUIDs
     * UUIDs for given usernames
+    * Quotas for all related resources
+    * Issue commissions
+    * Get pending commissions
+    * Accept or reject commissions
 
 Additionally, there are options for using the `objpool
 <https://github.com/grnet/objpool>`_ library to pool the http connections.
@@ -68,20 +73,20 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
     This class provides the following methods:
 
     **get_user_info(**\ token, usage=False\ **)**
-        Given a valid authentication token it returns a dict with the
+        Given a user's authentication token it returns a dict with the
         correspoinding user's info. If usage is set to True more
         information about user's resources will be returned.
         In case of error raise an AstakosClientException exception.
 
     **get_usernames(**\ token, uuids\ **)**
-        Given a valid authentication token and a list of UUIDs
+        Given a user's authentication token and a list of UUIDs
         return a uuid_catalog, that is a dictionary with the given
         UUIDs as keys and the corresponding user names as values.
         Invalid UUIDs will not be in the dictionary.
         In case of error raise an AstakosClientException exception.
 
     **get_username(**\ token, uuid\ **)**
-        Given a valid authentication token and a UUID (as string)
+        Given a user's authentication token and a UUID (as string)
         return the corresponding user name (as string).
         In case of invalid UUID raise NoUserName exception.
         In case of error raise an AstakosClientException exception.
@@ -93,14 +98,14 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
         Same as get_username but called with a service's token.
 
     **get_uuids(**\ token, display_names\ **)**
-        Given a valid authentication token and a list of usernames
+        Given a user's authentication token and a list of usernames
         return a displayname_catalog, that is a dictionary with the given
         usernames as keys and the corresponding UUIDs as values.
         Invalid usernames will not be in the dictionary.
         In case of error raise an AstakosClientException exception.
 
     **get_uuid(**\ token, display_name\ **)**
-        Given a valid authentication token and a username (as string)
+        Given a user's authentication token and a username (as string)
         return the corresponding UUID (as string).
         In case of invalid user name raise NoUUID exception.
         In case of error raise an AstakosClientException exception.
@@ -113,6 +118,66 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
 
     **get_services()**
         Return a list of dicts with the registered services.
+
+    **get_resources()**
+        Return a list of dicts with the available resources
+
+    **get_quotas(**\ token\ **)**
+        Given a user's authentication token return user's
+        current quotas (as dict of dicts).
+        In case of error raise an AstakosClientException exception.
+
+    **service_get_quotas(**\ token, user=None\ **)**
+        Given a service's authentication token return all users'
+        current quotas for the resources associated with the service
+        (as dict of dicts of dicts).
+        Optionally, one can query the quotas of a specific user with
+        argument user=UUID.
+        In case of error raise an AstakosClientException exception.
+
+    **issue_commission(**\ token, request\ **)**
+        Given a service's authentication token issue a commission.
+        In case of success return commission's id (int).
+        Otherwise raise an AstakosClientException exception.
+
+    **issue_one_commission(**\ token, holder, source, provisions, name="", force=False, auto_accept=False\ **)**
+        Given a service's authentication token issue a commission.
+        In this case we specify the holder, the source and the provisions
+        (a dict from string to int) and astakosclient will create the
+        corresponding commission.
+        In case of success return commission's id (int).
+        Otherwise raise an AstakosClientException exception.
+
+    **get_pending_commissions(**\ token\ **)**
+        Given a service's authentication token return the pending
+        commissions (list of integers).
+        In case of error raise an AstakosClientException exception.
+
+    **get_commission_info(**\ token, serial\ **)**
+        Given a service's authentication token and the id of a
+        pending commission return a dict of dicts containting
+        informations (details) about the requested commission.
+        In case of error raise an AstakosClientException exception.
+
+    **commission_action(**\ token, serial, action\ **)**
+        Given a service's authentication token and the id of a
+        pending commission, request the specified action (currently
+        one of accept, reject).
+        In case of success returns nothing.
+        Otherwise raise an AstakosClientException exception.
+
+    **accept_commission(**\ token, serial\ **)**
+        Accept a pending commission (see commission_action).
+
+    **reject_commission(**\ token, serial\ **)**
+        Reject a pending commission (see commission_action).
+
+    **resolve_commissions(**\ token, accept_serials, reject_serials\ **)**
+        Accept or Reject many pending commissions at once.
+        In case of success return a dict of dicts describing which
+        commissions accepted, which rejected and which failed to
+        resolved.
+        Otherwise raise an AstakosClientException exception.
 
 
 Public Functions
@@ -128,8 +193,15 @@ Exceptions and Errors
 
 *exception* **AstakosClientException**
     Raised in case of an error. It contains an error message and the
-    corresponding http status code. Other exceptions raise by astakosclient
-    module are derived from this one.
+    corresponding http status code. Other exceptions raised by
+    astakosclient module are derived from this one.
+
+*exception* **BadValue**
+    A redefinition of ValueError exception under AstakosClientException.
+
+*exception* **InvalidResponse**
+    This exception is raised whenever the server's response is not
+    valid json (cannot be parsed by simplejson library).
 
 *exception* **BadRequest**
     Raised in case of a Bad Request, with status 400.
@@ -143,6 +215,9 @@ Exceptions and Errors
 
 *exception* **NotFound**
     The server has not found anything matching the Request-URI. Status 404.
+
+*exception* **QuotaLimit**
+    Quantity fell below zero or exceeded capacity in one of the holdings.
 
 *exception* **NoUserName**
     Raised by getDisplayName and getServiceDisplayName when an invalid

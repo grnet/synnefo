@@ -41,6 +41,7 @@ from synnefo.logic.utils import id_from_network_name, id_from_instance_name
 from synnefo.logic.backend import wait_for_job
 from synnefo.logic.rapi import GanetiApiError
 from synnefo.api.util import allocate_public_address
+from synnefo import quotas
 
 import sys
 
@@ -165,6 +166,7 @@ def import_server(instance_name, backend_id, flavor_id, image_id, user_id,
                                        imageid=image_id,
                                        flavor=flavor)
 
+    quotas.issue_and_accept_commission(vm)
     # Rename instance
     rename_instance(instance_name, vm.backend_vm_id, backend_client,
                     stream)

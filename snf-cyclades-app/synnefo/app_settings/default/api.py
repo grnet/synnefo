@@ -70,20 +70,6 @@ BACKEND_PER_USER = {}
 # List of backend IDs used *only* for archipelago.
 ARCHIPELAGO_BACKENDS = []
 
-# Quota
-# Maximum number of VMs a user is allowed to have.
-MAX_VMS_PER_USER = 3
-
-# Override maximum number of VMs for specific users.
-# e.g. VMS_USER_QUOTA = {'user1@grnet.gr': 5, 'user2@grnet.gr': 10}
-VMS_USER_QUOTA = {}
-
-# Maximum number of networks a user is allowed to have.
-MAX_NETWORKS_PER_USER = 5
-
-# Override maximum number of private networks for specific users.
-# e.g. NETWORKS_USER_QUOTA = {'user1@grnet.gr': 5, 'user2@grnet.gr': 10}
-NETWORKS_USER_QUOTA = {}
 
 # URL templates for the stat graphs.
 # The API implementation replaces '%s' with the encrypted backend id.
@@ -112,25 +98,23 @@ DEFAULT_GANETI_DISK_TEMPLATE = 'drbd'
 # The URL of an astakos instance that will be used for user authentication
 ASTAKOS_URL = 'https://accounts.example.org/'
 
+# Tune the size of the Astakos http client connection pool
+# This limit the number of concurrent requests to Astakos.
+ASTAKOS_POOLSIZE = 50
+
 # Key for password encryption-decryption. After changing this setting, synnefo
 # will be unable to decrypt all existing Backend passwords. You will need to
 # store again the new password by using 'snf-manage backend-modify'.
 # SECRET_ENCRYPTION_KEY may up to 32 bytes. Keys bigger than 32 bytes are not
 # supported.
-SECRET_ENCRYPTION_KEY= "Password Encryption Key"
+SECRET_ENCRYPTION_KEY = "Password Encryption Key"
 
 # Astakos service token
 # The token used for astakos service api calls (e.g. api to retrieve user email
 # using a user uuid)
 CYCLADES_ASTAKOS_SERVICE_TOKEN = ''
 
-# Astakos user_catalogs endpoint
-CYCLADES_USER_CATALOG_URL = 'https://<astakos domain>/user_catalogs'
-
 # Let cyclades proxy user specific api calls to astakos, via self served
 # endpoints. Set this to False if you deploy cyclades-app/astakos-app on the
 # same machine.
 CYCLADES_PROXY_USER_SERVICES = True
-
-# Astakos user_catalogs endpoint
-CYCLADES_USER_FEEDBACK_URL = 'https://accounts.example.synnefo.org/feedback'

@@ -31,19 +31,22 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 
 from astakos.im.models import AstakosUser, get_latest_terms
-from astakos.im.util import model_to_dict
+from astakos.im.quotas import astakos_user_quotas
+
 from synnefo.lib.ordereddict import OrderedDict
+from synnefo.webproject.management.commands import SynnefoCommand
+from synnefo.webproject.management import utils
 
 from ._common import format
 
 import uuid
 
 
-class Command(BaseCommand):
-    args = "<user ID or email>"
+class Command(SynnefoCommand):
+    args = "<user ID or email or uuid>"
     help = "Show user info"
 
     def handle(self, *args, **options):
@@ -66,10 +69,7 @@ class Command(BaseCommand):
             raise CommandError(msg)
 
         for user in users:
-            quotas = user.all_quotas()
-            showable_quotas = {}
-            for resource, limits in quotas.iteritems():
-                showable_quotas[resource] = limits.capacity
+            quotas = astakos_user_quotas(user)
 
             settings_dict = {}
             settings = user.settings()
@@ -94,12 +94,12 @@ class Command(BaseCommand):
                     ('invitation level', user.level),
                     ('providers', user.auth_providers_display),
                     ('verified', user.is_verified),
-                    ('has_credits', format(user.has_credits)),
+                    ('has credits', format(user.has_credits)),
                     ('groups', [elem.name for elem in user.groups.all()]),
                     ('permissions', [elem.codename
                                      for elem in user.user_permissions.all()]),
-                    ('group_permissions', user.get_group_permissions()),
-                    ('email_verified', user.email_verified),
+                    ('group permissions', user.get_group_permissions()),
+                    ('email verified', user.email_verified),
                     ('username', user.username),
                     ('activation_sent_date', user.activation_sent),
                 ])
@@ -107,7 +107,7 @@ class Command(BaseCommand):
             if settings_dict:
                 kv['settings'] = settings_dict
 
-            kv['resources'] = showable_quotas
+            kv['resources'] = quotas
 
             if get_latest_terms():
                 has_signed_terms = user.signed_terms
@@ -115,5 +115,5 @@ class Command(BaseCommand):
                 if has_signed_terms:
                     kv['date_signed_terms'] = user.date_signed_terms
 
-            self.stdout.write(format(kv))
-            self.stdout.write('\n')
+            utils.pprint_table(self.stdout, [kv.values()], kv.keys(),
+                               options["output_format"], vertical=True)

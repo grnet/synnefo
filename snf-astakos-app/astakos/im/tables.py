@@ -344,7 +344,7 @@ def member_action_extra_context(membership, table, col):
 
     for i, url in enumerate(urls):
         context.append(dict(url=reverse(url, args=(table.project.pk,
-                                                   membership.person.pk)),
+                                                   membership.pk)),
                             action=actions[i], prompt=prompts[i],
                             confirm=confirms[i]))
     return context

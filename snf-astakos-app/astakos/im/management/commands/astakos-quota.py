@@ -32,22 +32,25 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 
 from astakos.im.models import AstakosUser
 from astakos.im.quotas import set_user_quota, list_user_quotas
 from astakos.im.functions import get_user_by_uuid
 from astakos.im.management.commands._common import is_uuid, is_email
 from snf_django.lib.db.transaction import commit_on_success_strict
+from synnefo.webproject.management.commands import SynnefoCommand
+from synnefo.webproject.management import utils
+from ._common import show_quotas
 
 import logging
 logger = logging.getLogger(__name__)
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     help = "Inspect quotaholder status"
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option('--list',
                     action='store_true',
                     dest='list',
@@ -92,7 +95,10 @@ class Command(BaseCommand):
             info[user.uuid] = user.email
 
         if list_only:
-            self.list_quotas(qh_quotas, astakos_i, info)
+            print_data, labels = show_quotas(qh_quotas, astakos_i, info)
+            utils.pprint_table(self.stdout, print_data, labels,
+                               options["output_format"])
+
         else:
             if verify:
                 self.print_verify(qh_limits, diff_q)
@@ -124,36 +130,6 @@ class Command(BaseCommand):
             raise CommandError('User %s is not verified.' % user.uuid)
 
         return user
-
-    def list_quotas(self, qh_quotas, astakos_initial, info):
-        labels = ('uuid', 'email', 'source', 'resource', 'initial', 'total', 'usage')
-        columns = (36, 30, 20, 24, 12, 12, 12)
-
-        line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
-        self.stdout.write(line + '\n')
-        sep = '-' * len(line)
-        self.stdout.write(sep + '\n')
-
-        for holder, holder_quotas in qh_quotas.iteritems():
-            h_initial = astakos_initial.get(holder)
-            email = info.get(holder, "")
-            for source, source_quotas in holder_quotas.iteritems():
-                s_initial = h_initial.get(source) if h_initial else None
-                for resource, values in source_quotas.iteritems():
-                    initial = s_initial.get(resource) if s_initial else None
-                    initial = str(initial)
-                    capacity = str(values['limit'])
-                    usage = str(values['usage'])
-
-                    fields = (holder, email, source, resource,
-                              initial, capacity, usage)
-                    output = []
-                    for field, width in zip(fields, columns):
-                        s = field.rjust(width)
-                        output.append(s)
-
-                    line = ' '.join(output)
-                    self.stdout.write(line + '\n')
 
     def print_sync(self, diff_quotas):
         size = len(diff_quotas)

@@ -234,3 +234,27 @@ def is_email(s):
         return False
     else:
         return True
+
+
+def show_quotas(qh_quotas, astakos_initial, info=None):
+    labels = ('source', 'resource', 'initial', 'total', 'usage')
+    if info is not None:
+        labels = ('uuid', 'email') + labels
+
+    print_data = []
+    for holder, holder_quotas in qh_quotas.iteritems():
+        h_initial = astakos_initial.get(holder)
+        if info is not None:
+            email = info.get(holder, "")
+
+        for source, source_quotas in holder_quotas.iteritems():
+            s_initial = h_initial.get(source) if h_initial else None
+            for resource, values in source_quotas.iteritems():
+                initial = s_initial.get(resource) if s_initial else None
+                fields = (source, resource, initial,
+                          values['limit'], values['usage'])
+                if info is not None:
+                    fields = (holder, email) + fields
+
+                print_data.append(fields)
+    return print_data, labels

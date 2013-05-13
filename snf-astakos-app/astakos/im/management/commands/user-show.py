@@ -32,15 +32,16 @@
 # or implied, of GRNET S.A.
 
 from django.core.management.base import CommandError
+from optparse import make_option
 
 from astakos.im.models import AstakosUser, get_latest_terms
-from astakos.im.quotas import astakos_user_quotas
+from astakos.im.quotas import list_user_quotas
 
 from synnefo.lib.ordereddict import OrderedDict
 from synnefo.webproject.management.commands import SynnefoCommand
 from synnefo.webproject.management import utils
 
-from ._common import format
+from ._common import format, show_quotas
 
 import uuid
 
@@ -48,6 +49,14 @@ import uuid
 class Command(SynnefoCommand):
     args = "<user ID or email or uuid>"
     help = "Show user info"
+
+    option_list = SynnefoCommand.option_list + (
+        make_option('--quotas',
+                    action='store_true',
+                    dest='list_quotas',
+                    default=False,
+                    help="Also list user quotas"),
+    )
 
     def handle(self, *args, **options):
         if len(args) != 1:
@@ -69,8 +78,6 @@ class Command(SynnefoCommand):
             raise CommandError(msg)
 
         for user in users:
-            quotas = astakos_user_quotas(user)
-
             settings_dict = {}
             settings = user.settings()
             for setting in settings:
@@ -107,8 +114,6 @@ class Command(SynnefoCommand):
             if settings_dict:
                 kv['settings'] = settings_dict
 
-            kv['resources'] = quotas
-
             if get_latest_terms():
                 has_signed_terms = user.signed_terms
                 kv['has_signed_terms'] = has_signed_terms
@@ -117,3 +122,10 @@ class Command(SynnefoCommand):
 
             utils.pprint_table(self.stdout, [kv.values()], kv.keys(),
                                options["output_format"], vertical=True)
+
+            if options["list_quotas"]:
+                self.stdout.write("\n")
+                _, quotas, initial, _ = list_user_quotas([user])
+                print_data, labels = show_quotas(quotas, initial)
+                utils.pprint_table(self.stdout, print_data, labels,
+                                   options["output_format"])

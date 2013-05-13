@@ -107,35 +107,26 @@ def reconcile_networks(conflicting_ips=False):
         uses_pool = not network.public or PUBLIC_USE_POOL
         for bend in backends:
             bnet = get_backend_network(network, bend)
-            if not bnet:
-                try:
-                    gnet = ganeti_networks[bend][network.id]
-                    if not network.public and network.action != "DESTROY":
-                        # Network exists in Ganeti backend, but not in DB.
-                        reconcile_parted_network(network, bend)
-                except KeyError:
-                    # Network does not exist either in DB not in Ganeti.
-                    # Nothing to reconcile..
-                    continue
+            gnet = ganeti_networks[bend].get(network.id)
+            if not (bnet or gnet):
+                # Network does not exist either in Ganeti nor in BD.
+                continue
+            if not bnet and gnet:
+                # Network exists in Ganeti and not in DB.
+                if network.action != "DESTROY" and not network.public:
+                    reconcile_parted_network(network, bend)
 
-            try:
-                gnet = ganeti_networks[bend][network.id]
-            except KeyError:
-                # Network does not exist in backend. If the network action is
-                # DESTROY, then we must destroy the network in the backend.
-                # Else we have to create it!
-                if network.action == "DESTROY" and bnet.operstate != "DELETED":
-                    # CASE-2: Stale DB network
-                    reconcile_stale_network(bnet)
-                    # Skip rest reconciliation as the backend is just being
-                    # deleted
-                    continue
+            if not gnet:
+                # Network does not exist in Ganeti. If the network action is
+                # DESTROY, we have to mark as deleted in DB, else we have to
+                # create it in Ganeti.
+                if network.action == "DESTROY":
+                    if bnet.operstate != "DELETED":
+                        reconcile_stale_network(bnet)
                 else:
-                    # CASE-3: Missing Ganeti network
                     reconcile_missing_network(network, bend)
-                    # Skip rest reconciliation as the network is just
-                    # being created
-                    continue
+                # Skip rest reconciliation!
+                continue
 
             try:
                 hanging_groups = ganeti_hanging_networks[bend][network.id]

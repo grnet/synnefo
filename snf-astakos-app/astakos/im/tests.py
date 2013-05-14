@@ -42,6 +42,7 @@ from django.test import TestCase, Client
 from django.core import mail
 from django.http import SimpleCookie, HttpRequest, QueryDict
 from django.utils.importlib import import_module
+from django.utils import simplejson as json
 
 from astakos.im.activation_backends import *
 from astakos.im.target.shibboleth import Tokens as ShibbolethTokens
@@ -56,6 +57,7 @@ from datetime import timedelta
 from astakos.im import messages
 from astakos.im import auth_providers
 from astakos.im import quotas
+from astakos.im import resources
 
 from django.conf import settings
 
@@ -1390,3 +1392,322 @@ class TestProjects(TestCase):
         newlimit = user_quotas[self.member.uuid]['system'][resource]['limit']
         # 200 - 100 from project
         self.assertEqual(newlimit, 100)
+
+
+ROOT = '/astakos/api/'
+u = lambda url: ROOT + url
+
+
+class QuotaAPITest(TestCase):
+    def test_0(self):
+        client = Client()
+        # custom service resources
+        service1 = Service.objects.create(
+            name="service1", api_url="http://service1.api")
+        resource11 = {"name": "service1.resource11",
+                      "desc": "resource11 desc",
+                      "allow_in_projects": True}
+        r, _ = resources.add_resource(service1, resource11)
+        resources.update_resource(r, 100)
+        resource12 = {"name": "service1.resource12",
+                      "desc": "resource11 desc",
+                      "unit": "bytes"}
+        r, _ = resources.add_resource(service1, resource12)
+        resources.update_resource(r, 1024)
+
+        # create user
+        user = get_local_user('test@grnet.gr')
+        quotas.qh_sync_user(user.id)
+
+        # create another service
+        service2 = Service.objects.create(
+            name="service2", api_url="http://service2.api")
+        resource21 = {"name": "service2.resource21",
+                      "desc": "resource11 desc",
+                      "allow_in_projects": False}
+        r, _ = resources.add_resource(service2, resource21)
+        resources.update_resource(r, 3)
+
+        resource_names = [r['name'] for r in
+                          [resource11, resource12, resource21]]
+
+        # get resources
+        r = client.get(u('resources'), follow=True)
+        self.assertEqual(r.status_code, 200)
+        body = json.loads(r.content)
+        for name in resource_names:
+            self.assertIn(name, body)
+
+        # get quota
+        r = client.get(u('quotas'), follow=True)
+        self.assertEqual(r.status_code, 401)
+
+        headers = {'HTTP_X_AUTH_TOKEN': user.auth_token}
+        r = client.get(u('quotas'), follow=True, **headers)
+        self.assertEqual(r.status_code, 200)
+        body = json.loads(r.content)
+        system_quota = body['system']
+        self.assertIn('system', body)
+        for name in resource_names:
+            self.assertIn(name, system_quota)
+
+        r = client.get(u('service_quotas'), follow=True)
+        self.assertEqual(r.status_code, 401)
+
+        s1_headers = {'HTTP_X_AUTH_TOKEN': service1.auth_token}
+        r = client.get(u('service_quotas'), follow=True, **s1_headers)
+        self.assertEqual(r.status_code, 200)
+        body = json.loads(r.content)
+        self.assertIn(user.uuid, body)
+
+        r = client.get(u('commissions'), follow=True, **s1_headers)
+        self.assertEqual(r.status_code, 200)
+        body = json.loads(r.content)
+        self.assertEqual(body, [])
+
+        # issue some commissions
+        commission_request = {
+            "force": False,
+            "auto_accept": False,
+            "name": "my commission",
+            "provisions": [
+                {
+                    "holder": user.uuid,
+                    "source": "system",
+                    "resource": resource11['name'],
+                    "quantity": 1
+                },
+                {
+                    "holder": user.uuid,
+                    "source": "system",
+                    "resource": resource12['name'],
+                    "quantity": 30000
+                }]}
+
+        post_data = json.dumps(commission_request)
+        r = client.post(u('commissions'), post_data,
+                        content_type='application/json', **s1_headers)
+        self.assertEqual(r.status_code, 413)
+
+        commission_request = {
+            "force": False,
+            "auto_accept": False,
+            "name": "my commission",
+            "provisions": [
+                {
+                    "holder": user.uuid,
+                    "source": "system",
+                    "resource": resource11['name'],
+                    "quantity": 1
+                },
+                {
+                    "holder": user.uuid,
+                    "source": "system",
+                    "resource": resource12['name'],
+                    "quantity": 100
+                }]}
+
+        post_data = json.dumps(commission_request)
+        r = client.post(u('commissions'), post_data,
+                        content_type='application/json', **s1_headers)
+        self.assertEqual(r.status_code, 201)
+        body = json.loads(r.content)
+        serial = body['serial']
+        self.assertEqual(serial, 1)
+
+        post_data = json.dumps(commission_request)
+        r = client.post(u('commissions'), post_data,
+                        content_type='application/json', **s1_headers)
+        self.assertEqual(r.status_code, 201)
+        body = json.loads(r.content)
+        self.assertEqual(body['serial'], 2)
+
+        post_data = json.dumps(commission_request)
+        r = client.post(u('commissions'), post_data,
+                        content_type='application/json', **s1_headers)
+        self.assertEqual(r.status_code, 201)
+        body = json.loads(r.content)
+        self.assertEqual(body['serial'], 3)
+
+        r = client.get(u('commissions'), follow=True, **s1_headers)
+        self.assertEqual(r.status_code, 200)
+        body = json.loads(r.content)
+        self.assertEqual(body, [1, 2, 3])
+
+        r = client.get(u('commissions/' + str(serial)), follow=True,
+                       **s1_headers)
+        self.assertEqual(r.status_code, 200)
+        body = json.loads(r.content)
+        self.assertEqual(body['serial'], serial)
+        self.assertIn('issue_time', body)
+        self.assertEqual(body['provisions'], commission_request['provisions'])
+        self.assertEqual(body['name'], commission_request['name'])
+
+        r = client.get(u('service_quotas?user=' + user.uuid),
+                       follow=True, **s1_headers)
+        self.assertEqual(r.status_code, 200)
+        body = json.loads(r.content)
+        user_quota = body[user.uuid]
+        system_quota = user_quota['system']
+        r11 = system_quota[resource11['name']]
+        self.assertEqual(r11['usage'], 3)
+        self.assertEqual(r11['pending'], 3)
+
+        # resolve pending commissions
+        resolve_data = {
+            "accept": [1, 3],
+            "reject": [2, 3, 4],
+        }
+        post_data = json.dumps(resolve_data)
+
+        r = client.post(u('commissions/action'), post_data,
+                        content_type='application/json', **s1_headers)
+        self.assertEqual(r.status_code, 200)
+        body = json.loads(r.content)
+        self.assertEqual(body['accepted'], [1])
+        self.assertEqual(body['rejected'], [2])
+        failed = body['failed']
+        self.assertEqual(len(failed), 2)
+
+        r = client.get(u('commissions/' + str(serial)), follow=True,
+                       **s1_headers)
+        self.assertEqual(r.status_code, 404)
+
+        # auto accept
+        commission_request = {
+            "auto_accept": True,
+            "name": "my commission",
+            "provisions": [
+                {
+                    "holder": user.uuid,
+                    "source": "system",
+                    "resource": resource11['name'],
+                    "quantity": 1
+                },
+                {
+                    "holder": user.uuid,
+                    "source": "system",
+                    "resource": resource12['name'],
+                    "quantity": 100
+                }]}
+
+        post_data = json.dumps(commission_request)
+        r = client.post(u('commissions'), post_data,
+                        content_type='application/json', **s1_headers)
+        self.assertEqual(r.status_code, 201)
+        body = json.loads(r.content)
+        serial = body['serial']
+        self.assertEqual(serial, 4)
+
+        r = client.get(u('commissions/' + str(serial)), follow=True,
+                       **s1_headers)
+        self.assertEqual(r.status_code, 404)
+
+        # malformed
+        commission_request = {
+            "auto_accept": True,
+            "name": "my commission",
+            "provisions": [
+                {
+                    "holder": user.uuid,
+                    "source": "system",
+                    "resource": resource11['name'],
+                }
+            ]}
+
+        post_data = json.dumps(commission_request)
+        r = client.post(u('commissions'), post_data,
+                        content_type='application/json', **s1_headers)
+        self.assertEqual(r.status_code, 400)
+
+        commission_request = {
+            "auto_accept": True,
+            "name": "my commission",
+            "provisions": "dummy"}
+
+        post_data = json.dumps(commission_request)
+        r = client.post(u('commissions'), post_data,
+                        content_type='application/json', **s1_headers)
+        self.assertEqual(r.status_code, 400)
+
+        r = client.post(u('commissions'), commission_request,
+                        content_type='application/json', **s1_headers)
+        self.assertEqual(r.status_code, 400)
+
+        # no holding
+        commission_request = {
+            "auto_accept": True,
+            "name": "my commission",
+            "provisions": [
+                {
+                    "holder": user.uuid,
+                    "source": "system",
+                    "resource": "non existent",
+                    "quantity": 1
+                },
+                {
+                    "holder": user.uuid,
+                    "source": "system",
+                    "resource": resource12['name'],
+                    "quantity": 100
+                }]}
+
+        post_data = json.dumps(commission_request)
+        r = client.post(u('commissions'), post_data,
+                        content_type='application/json', **s1_headers)
+        self.assertEqual(r.status_code, 404)
+
+        # release
+        commission_request = {
+            "provisions": [
+                {
+                    "holder": user.uuid,
+                    "source": "system",
+                    "resource": resource11['name'],
+                    "quantity": -1
+                }
+            ]}
+
+        post_data = json.dumps(commission_request)
+        r = client.post(u('commissions'), post_data,
+                        content_type='application/json', **s1_headers)
+        self.assertEqual(r.status_code, 201)
+        body = json.loads(r.content)
+        serial = body['serial']
+
+        accept_data = {'accept': ""}
+        post_data = json.dumps(accept_data)
+        r = client.post(u('commissions/' + str(serial) + '/action'), post_data,
+                        content_type='application/json', **s1_headers)
+        self.assertEqual(r.status_code, 200)
+
+        reject_data = {'reject': ""}
+        post_data = json.dumps(accept_data)
+        r = client.post(u('commissions/' + str(serial) + '/action'), post_data,
+                        content_type='application/json', **s1_headers)
+        self.assertEqual(r.status_code, 404)
+
+        # force
+        commission_request = {
+            "force": True,
+            "provisions": [
+                {
+                    "holder": user.uuid,
+                    "source": "system",
+                    "resource": resource11['name'],
+                    "quantity": 100
+                }]}
+
+        post_data = json.dumps(commission_request)
+        r = client.post(u('commissions'), post_data,
+                        content_type='application/json', **s1_headers)
+        self.assertEqual(r.status_code, 201)
+        body = json.loads(r.content)
+
+        r = client.get(u('quotas'), **headers)
+        self.assertEqual(r.status_code, 200)
+        body = json.loads(r.content)
+        system_quota = body['system']
+        r11 = system_quota[resource11['name']]
+        self.assertEqual(r11['usage'], 102)
+        self.assertEqual(r11['pending'], 101)

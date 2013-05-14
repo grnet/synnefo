@@ -140,7 +140,7 @@ Then initialize the Database and register services with:
    # snf-manage service-add "cyclades" https://cyclades.example.com/ui/
    # snf-manage service-add "pithos+" https://pithos.example.com/ui/
    # snf-manage astakos-init --load-service-resources
-   # snf-manage astakos-quota --sync
+   # snf-manage quota --sync
    # /etc/init.d/gunicorn restart
    # /etc/init.d/apache2 restart
 

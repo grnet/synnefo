@@ -140,29 +140,29 @@ FIXME: Describe Regex activation method
 Setting quota limits
 ~~~~~~~~~~~~~~~~~~~~
 
-Set default quotas
-``````````````````
+Set default quota
+`````````````````
 
 In 20-snf-astakos-app-settings.conf, 
 uncomment the default setting ``ASTAKOS_SERVICES``
 and customize the ``'uplimit'`` values.
-These are the default base quotas for all users.
+These are the default base quota for all users.
 
 To apply your configuration run::
 
     # snf-manage astakos-init --load-service-resources
-    # snf-manage astakos-quota --sync
+    # snf-manage quota --sync
 
-Set base quotas for individual users
-````````````````````````````````````
+Set base quota for individual users
+```````````````````````````````````
 
-For individual users that need different quotas than the default
+For individual users that need different quota than the default
 you can set it for each resource like this::
 
-    # use this to display quotas / uuid
-    # snf-manage user-show 'uuid or email' --quotas
+    # use this to display quota / uuid
+    # snf-manage user-show 'uuid or email' --quota
 
-    # snf-manage user-modify 'user-uuid' --set-quota 'cyclades.vm' 10
+    # snf-manage user-modify 'user-uuid' --set-base-quota 'cyclades.vm' 10
 
 
 Enable the Projects feature
@@ -182,7 +182,7 @@ per user with::
 
 You can also set a user-specific limit with::
 
-    # snf-manage user-modify 'user-uuid' --set-quota 'astakos.pending_app' 5
+    # snf-manage user-modify 'user-uuid' --set-base-quota 'astakos.pending_app' 5
 
 When users apply for projects they are not automatically granted
 the resources. They must first be approved by the administrator.

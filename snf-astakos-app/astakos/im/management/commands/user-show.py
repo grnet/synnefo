@@ -51,11 +51,11 @@ class Command(SynnefoCommand):
     help = "Show user info"
 
     option_list = SynnefoCommand.option_list + (
-        make_option('--quotas',
+        make_option('--quota',
                     action='store_true',
                     dest='list_quotas',
                     default=False,
-                    help="Also list user quotas"),
+                    help="Also list user quota"),
     )
 
     def handle(self, *args, **options):

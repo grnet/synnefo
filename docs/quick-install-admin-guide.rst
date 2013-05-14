@@ -2001,8 +2001,8 @@ Apply Quotas
 .. code-block:: console
 
    node1 # snf-manage astakos-init --load-service-resources
-   node1 # snf-manage astakos-quota --verify
-   node1 # snf-manage astakos-quota --sync
+   node1 # snf-manage quota --verify
+   node1 # snf-manage quota --sync
    node2 # snf-manage pithos-reset-usage
    node1 # snf-manage reconcile-resources-cyclades --fix
 

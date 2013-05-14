@@ -165,7 +165,6 @@ Available as extensions to Django's command-line management utility:
 ============================  ===========================
 Name                          Description
 ============================  ===========================
-astakos-quota                 Inspect quotaholder status
 fix-superusers                Transform superusers created by syncdb into AstakosUser instances
 full-cleanup                  Cleanup sessions and session catalog
 invitation-list               List invitation
@@ -173,6 +172,7 @@ invitation-show               Show invitation details
 project-control               Manage projects and applications
 project-list                  List projects
 project-show                  Show project details
+quota                         List and check the integrity of user quota
 reconcile-resources-astakos   Reconcile resource usage of Quotaholder with Astakos DB
 resource-add                  Add resource
 resource-export-astakos       Export astakos resources in json format

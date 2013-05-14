@@ -48,14 +48,14 @@ logger = logging.getLogger(__name__)
 
 
 class Command(SynnefoCommand):
-    help = "Inspect quotaholder status"
+    help = "List and check the integrity of user quota"
 
     option_list = SynnefoCommand.option_list + (
         make_option('--list',
                     action='store_true',
                     dest='list',
                     default=False,
-                    help="List all quotas (default)"),
+                    help="List all quota (default)"),
         make_option('--verify',
                     action='store_true',
                     dest='verify',
@@ -69,11 +69,11 @@ class Command(SynnefoCommand):
         make_option('--user',
                     metavar='<uuid or email>',
                     dest='user',
-                    help="List quotas for a specified user"),
+                    help="List quota for a specified user"),
         make_option('--import-base-quota',
                     dest='import_base_quota',
-                    metavar='<exported-quotas.txt>',
-                    help=("Import base quotas from file. "
+                    metavar='<exported-quota.txt>',
+                    help=("Import base quota from file. "
                           "The file must contain non-empty lines, and each "
                           "line must contain a single-space-separated list "
                           "of values: <user> <resource name> <capacity>")
@@ -108,7 +108,7 @@ class Command(SynnefoCommand):
             qh_limits, qh_quotas, astakos_i, diff_q = list_user_quotas(users)
         except BaseException as e:
             logger.exception(e)
-            raise CommandError("Failed to compute quotas.")
+            raise CommandError("Failed to compute quota.")
 
         info = {}
         for user in users:
@@ -127,7 +127,7 @@ class Command(SynnefoCommand):
                     set_user_quota(diff_q)
                 except BaseException as e:
                     logger.exception(e)
-                    raise CommandError("Failed to sync quotas.")
+                    raise CommandError("Failed to sync quota.")
                 self.print_sync(diff_q)
 
     def get_user(self, user_ident):
@@ -170,19 +170,19 @@ class Command(SynnefoCommand):
                 user = get_user_by_uuid(holder)
                 if registered is None:
                     self.stdout.write(
-                        "No quotas for %s (%s) in quotaholder.\n" %
+                        "No quota for %s (%s) in quotaholder.\n" %
                         (holder, user.username))
                 else:
-                    self.stdout.write("Quotas differ for %s (%s):\n" %
+                    self.stdout.write("Quota differ for %s (%s):\n" %
                                       (holder, user.username))
-                    self.stdout.write("Quotas according to quotaholder:\n")
+                    self.stdout.write("Quota according to quotaholder:\n")
                     self.stdout.write("%s\n" % (registered))
-                    self.stdout.write("Quotas according to astakos:\n")
+                    self.stdout.write("Quota according to astakos:\n")
                     self.stdout.write("%s\n\n" % (local))
 
             diffs = len(diff_quotas)
             if diffs:
-                self.stdout.write("Quotas differ for %d users.\n" % (diffs))
+                self.stdout.write("Quota differ for %d users.\n" % (diffs))
 
     def import_from_file(self, location):
         users = set()

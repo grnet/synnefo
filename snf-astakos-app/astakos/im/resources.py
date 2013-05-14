@@ -70,7 +70,7 @@ def add_resource(service, resource_dict):
         logger.info("Updated resource %s." % (name))
     else:
         logger.info("Added resource %s." % (name))
-    return exists
+    return r, exists
 
 
 def update_resource(resource, uplimit):

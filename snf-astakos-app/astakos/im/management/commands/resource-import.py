@@ -111,8 +111,8 @@ class Command(BaseCommand):
         for resource in resources:
             if not isinstance(resource, dict):
                 raise CommandError("Malformed resource dict.")
-            exists = add_resource(s, resource)
-            name = resource['name']
+            r, exists = add_resource(s, resource)
+            name = r.name
             if exists:
                 m = "Resource '%s' updated in database.\n" % (name)
             else:

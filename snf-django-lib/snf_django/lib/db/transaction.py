@@ -32,11 +32,13 @@
 # or implied, of GRNET S.A.
 
 
+from functools import wraps
 from django.db import transaction
 
 
 def commit_on_success_strict(**kwargs):
     def wrap(func):
+        @wraps(func)
         @transaction.commit_manually(**kwargs)
         def inner(*args, **kwargs):
             try:

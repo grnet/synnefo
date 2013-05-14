@@ -5,4 +5,4 @@ For any remarks or problems you may contact {{ support }}.
 
 Thank you for participating in  {{ BRANDING_SERVICE_NAME }}.
 
-{{ BRANDING_COMPANY_NAME_FORMAL }}
+{{ BRANDING_COMPANY_NAME }}

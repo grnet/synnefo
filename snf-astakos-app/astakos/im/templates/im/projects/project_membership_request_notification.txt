@@ -1,6 +1,6 @@
---- A translation in English follows ---
+{% extends "im/email.txt" %}
 
-Ο χρήστης {{user}} επιθυμεί να συμμετάσχει στο project {{object.name}}.
---
-
+  
+{% block content %}
 User {{user}} requests to join project {{object.name}}.
+{% endblock content %}

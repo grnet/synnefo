@@ -1,14 +1,6 @@
---- A translation in English follows ---
+{% extends "im/email.txt" %}
 
-{% if action == 'accepted' %}
-Η συμμετοχή σας στο project {{object.name}} έχει γίνει δεκτή.
-{% else %}
-    {% if action == 'rejected' %}
-Η συμμετοχή σας στο project {{object.name}} έχει απορριφθεί.
-    {% else %}
-Η συμμετοχή σας στο project {{object.name}} έχει διαγραφεί.
-    {% endif %}
-{% endif %}
---
-
+  
+{% block content %}
 Your project membership ({{object.name}}) has been {{action}}.
+{% endblock content %}

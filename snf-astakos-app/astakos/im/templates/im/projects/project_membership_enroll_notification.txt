@@ -1,6 +1,6 @@
---- A translation in English follows ---
+{% extends "im/email.txt" %}
 
-Έχετε εγγραφεί στο project {{object.name}}.
---
-
+  
+{% block content %}
 You have been enrolled in project {{object.name}}.
+{% endblock content %}

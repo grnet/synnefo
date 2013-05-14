@@ -75,10 +75,10 @@ INSTALL_REQUIRES = [
     'ipaddr',
     'setproctitle>=1.0.1',
     'bitarray>=0.8',
-    'snf-branding',
     'objpool>=0.2',
     'astakosclient',
-    'snf-django-lib'
+    'snf-django-lib',
+    'snf-branding-app',
 ]
 
 EXTRAS_REQUIRES = {

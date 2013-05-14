@@ -92,7 +92,7 @@ def get_users_quotas_and_limits(users, resources=None, sources=None):
 
 def get_user_quotas(user, resources=None, sources=None):
     quotas = get_users_quotas([user], resources, sources)
-    return quotas[user.uuid]
+    return quotas.get(user.uuid, {})
 
 
 def service_get_quotas(service, users=None):

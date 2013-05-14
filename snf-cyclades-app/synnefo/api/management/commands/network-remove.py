@@ -56,7 +56,8 @@ class Command(BaseCommand):
         network.action = 'DESTROY'
         network.save()
 
-        quotas.issue_and_accept_commission(network, delete=True)
+        if network.userid:
+            quotas.issue_and_accept_commission(network, delete=True)
 
         for bnet in network.backend_networks.exclude(operstate="DELETED"):
             delete_network(network, bnet.backend)

@@ -258,10 +258,8 @@ for the commission. On failure, in the case of ``overLimit`` (413) or
 ``itemNotFound`` (404), the returned cloudFault contains an extra field
 ``data`` with additional application-specific information. It contains at
 least the ``provision`` that is to blame and the actual ``name`` of the
-exception raised. In case of ``NoCapacityError``, ``limit`` and ``usage`` are
-also included; in case of ``NoQuantityError`` (that is, when attempting to
-release a value greater than what is registered), the ``available`` quantity
-is provided.
+exception raised. In the case of ``overLimit``, ``limit`` and ``usage`` are
+also included.
 
 **Example Successful Response**:
 

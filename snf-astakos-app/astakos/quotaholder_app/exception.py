@@ -63,17 +63,19 @@ class CommissionException(QuotaholderError):
         QuotaholderError.__init__(self, *args, **kwargs)
 
 
-class NoCapacityError(CommissionException):
+class OverLimitError(CommissionException):
     def __init__(self, *args, **kwargs):
         self.add_data(kwargs, 'usage')
         self.add_data(kwargs, 'limit')
         CommissionException.__init__(self, *args, **kwargs)
 
 
-class NoQuantityError(CommissionException):
-    def __init__(self, *args, **kwargs):
-        self.add_data(kwargs, 'available')
-        CommissionException.__init__(self, *args, **kwargs)
+class NoCapacityError(OverLimitError):
+    pass
+
+
+class NoQuantityError(OverLimitError):
+    pass
 
 
 class NoHoldingError(CommissionException):

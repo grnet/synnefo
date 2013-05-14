@@ -118,7 +118,8 @@ class Release(Operation):
             provision = cls.provision(holding, quantity, importing=False)
             raise NoQuantityError(m,
                                   provision=provision,
-                                  available=usage_min)
+                                  limit=0,
+                                  usage=usage_min)
 
         holding.usage_min = new_usage_min
         holding.save()

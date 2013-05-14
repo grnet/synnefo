@@ -124,7 +124,8 @@ class QuotaholderTest(TestCase):
         self.assertEqual(provision['source'], source)
         self.assertEqual(provision['resource'], resource1)
         self.assertEqual(provision['quantity'], -1)
-        self.assertEqual(e.data['available'], 0)
+        self.assertEqual(e.data['usage'], 0)
+        self.assertEqual(e.data['limit'], 0)
 
         with self.assertRaises(NoHoldingError) as cm:
             self.issue_commission([((holder, source, resource1), 1),

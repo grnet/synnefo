@@ -265,9 +265,10 @@ class NetworkAPITest(BaseAPITest):
         self.assertFault(response, 403, 'forbidden')
 
     def test_delete_network(self, mrapi):
-        net = mfactory.NetworkFactory()
-        response = self.delete('/api/v1.1/networks/%d' % net.id,
-                                net.userid)
+        net = mfactory.NetworkFactory(deleted=False, state='ACTIVE')
+        with mocked_quotaholder():
+            response = self.delete('/api/v1.1/networks/%d' % net.id,
+                                    net.userid)
         self.assertEqual(response.status_code, 204)
         net = Network.objects.get(id=net.id, userid=net.userid)
         self.assertEqual(net.action, 'DESTROY')

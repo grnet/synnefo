@@ -426,6 +426,7 @@ class UpdateNetworkTest(TestCase):
                                       link='prv12')
         bn1 = mfactory.BackendNetworkFactory(network=net)
         mfactory.BackendNetworkFactory(network=net,
+                                       operstate="ACTIVE",
                                        backend__offline=True)
         msg = self.create_msg(operation='OP_NETWORK_REMOVE',
                               network=net.backend_id,
@@ -438,8 +439,10 @@ class UpdateNetworkTest(TestCase):
         self.assertFalse(new_net.deleted)
 
     def test_error_opcode(self, client):
+        mfactory.MacPrefixPoolTableFactory()
+        mfactory.BridgePoolTableFactory()
         for state, _ in Network.OPER_STATES:
-            bn = mfactory.BackendNetworkFactory()
+            bn = mfactory.BackendNetworkFactory(operstate="ACTIVE")
             bn.operstate = state
             bn.save()
             network = bn.network
@@ -451,8 +454,11 @@ class UpdateNetworkTest(TestCase):
                 msg = self.create_msg(operation=opcode,
                                       network=bn.network.backend_id,
                                       status='error',
+                                      add_reserved_ips=[],
+                                      remove_reserved_ips=[],
                                       cluster=bn.backend.clustername)
-                update_network(client, msg)
+                with mocked_quotaholder():
+                    update_network(client, msg)
                 client.basic_ack.assert_called_once()
                 db_bnet = BackendNetwork.objects.get(id=bn.id)
                 self.assertEqual(bn.operstate, db_bnet.operstate)

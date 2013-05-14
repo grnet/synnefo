@@ -44,5 +44,5 @@ class Command(BaseCommand):
         data = {'service': service,
                 'resources': resources,
                 }
-        output = json.dumps(data)
+        output = json.dumps(data, indent=4)
         self.stdout.write(output + '\n')

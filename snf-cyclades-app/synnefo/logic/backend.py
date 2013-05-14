@@ -576,6 +576,7 @@ def disconnect_network(network, backend, group=None):
 
 def connect_to_network(vm, network, address=None):
     backend = vm.backend
+    network = Network.objects.select_for_update().get(id=network.id)
     bnet, created = BackendNetwork.objects.get_or_create(backend=backend,
                                                          network=network)
     depend_jobs = []

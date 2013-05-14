@@ -105,9 +105,11 @@ def network_from_msg(func):
             network_id = utils.id_from_network_name(msg["network"])
             network = Network.objects.select_for_update().get(id=network_id)
             backend = Backend.objects.get(clustername=msg['cluster'])
-            backend_network = BackendNetwork.objects.get(network=network,
-                                                         backend=backend)
-            func(backend_network, msg)
+            bnet, new = BackendNetwork.objects.get_or_create(network=network,
+                                                             backend=backend)
+            if new:
+                log.info("Created missing BackendNetwork %s", bnet)
+            func(bnet, msg)
         except Network.InvalidBackendIdError:
             log.debug("Ignoring msg for unknown network %s.", msg['network'])
         except Network.DoesNotExist:

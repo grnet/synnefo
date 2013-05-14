@@ -5,22 +5,28 @@
 
 {% block page.body %}
 <div class="landing-page">
-	{% block content%}
-		{% for service in services %}
-			<div class="two-cols clearfix dotted">
-				<div class="rt">
-					<a href="{{ service.url }}">
-						<img class="pic" src="{{ service.landing_image }}" />
-					</a>
-				</div>
-				<div class="lt">
-					<h2>{{ service.name }}</h2>
-					{{ service.description }}
-				</div>
-			</div>
-		{% endfor %}
-	{% endblock content %}
-	 
-</div>	
-	 
+    {% for id, service in services.items %}
+    {% if service.dashboard.show %}
+        <div class="two-cols clearfix dotted {{ id }}">
+            <div class="rt">
+                {% if service.url %}
+                <a href="{{ service.url }}">
+                {% endif %}
+                <img class="pic" src="{{ IM_STATIC_URL }}images/landing-{{ id }}.png" />
+                {% if service.url %}
+                </a>
+                {% endif %}
+            </div>
+            <div class="lt">
+                {{ service.dashboard.description }}
+            </div>
+        </div>
+    {% endif %}
+    {% endfor %}
+</div>
+<script type="text/javascript">
+	$(document).ready(function() {
+		$('body').append('<div id="hand">&nbsp;</div>');
+	});
+</script>	
 {% endblock %}

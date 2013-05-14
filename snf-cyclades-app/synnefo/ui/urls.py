@@ -37,7 +37,6 @@ import os
 
 urlpatterns = patterns('',
     url(r'^$', 'synnefo.ui.views.home', name='ui_index'),
-    url(r'^userquota$', 'synnefo.ui.views.user_quota', name='ui_userquota'),
     url(r'userdata/', include('synnefo.ui.userdata.urls'))
 )
 

@@ -40,13 +40,7 @@ from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 
 from astakos.im.models import AstakosUser
-from astakos.im.api.callpoint import AstakosCallpoint
 from astakos.im.functions import activate
-
-def filter_custom_options(options):
-    base_dests = list(
-        getattr(o, 'dest', None) for o in BaseCommand.option_list)
-    return dict((k, v) for k, v in options.iteritems() if k not in base_dests)
 
 
 class Command(BaseCommand):
@@ -54,10 +48,6 @@ class Command(BaseCommand):
     help = "Create a user"
 
     option_list = BaseCommand.option_list + (
-        make_option('--affiliation',
-                    dest='affiliation',
-                    metavar='AFFILIATION',
-                    help="Set user's affiliation"),
         make_option('--password',
                     dest='password',
                     metavar='PASSWORD',
@@ -86,32 +76,42 @@ class Command(BaseCommand):
         if len(args) != 3:
             raise CommandError("Invalid number of arguments")
 
-        email, first_name, last_name = (args[i].decode('utf8') for i in range(3))
+        email, first_name, last_name = map(lambda arg: arg.decode('utf8'),
+                                           args[:3])
 
         try:
             validate_email(email)
         except ValidationError:
             raise CommandError("Invalid email")
 
-        u = {'email': email,
-             'first_name':first_name,
-             'last_name':last_name
-        }
-        u.update(filter_custom_options(options))
-        if not u.get('password'):
-            u['password'] = AstakosUser.objects.make_random_password()
+        password = options['password'] or \
+            AstakosUser.objects.make_random_password()
 
         try:
-            c = AstakosCallpoint()
-            r = c.create_users((u,)).next()
+            u = AstakosUser(email=email,
+                            first_name=first_name,
+                            last_name=last_name,
+                            password=password,
+                            is_superuser=options['is_superuser'])
+            u.save()
+
         except BaseException, e:
             raise CommandError(e)
         else:
-            if not r.is_success:
-                raise CommandError(r.reason)
+            self.stdout.write('User created successfully ')
+            if not options.get('password'):
+                self.stdout.write('with password: %s\n' % password)
             else:
-                self.stdout.write('User created successfully ')
-                if not options.get('password'):
-                    self.stdout.write('with password: %s\n' % u['password'])
-                else:
-                    self.stdout.write('\n')
+                self.stdout.write('\n')
+
+            try:
+                u.add_auth_provider('local')
+                map(u.add_permission, options['permissions'])
+                map(u.add_group, options['groups'])
+
+                if options['active']:
+                    activate(u)
+            except BaseException, e:
+                import traceback
+                traceback.print_exc()
+                raise CommandError(e)

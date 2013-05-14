@@ -31,17 +31,15 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 
 from astakos.im.models import AuthProviderPolicyProfile as Profile
 from synnefo.lib.ordereddict import OrderedDict
-
-from ._common import format
-
-import uuid
+from synnefo.webproject.management.commands import SynnefoCommand
+from synnefo.webproject.management import utils
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     args = "<profile_name>"
     help = "Show authentication provider profile details"
 
@@ -65,5 +63,5 @@ class Command(BaseCommand):
                 ('users', profile.users.all())
             ])
 
-        self.stdout.write(format(kv))
-        self.stdout.write('\n')
+        utils.pprint_table(self.stdout, [kv.values()], kv.keys(),
+                           options["output_format"], vertical=True)

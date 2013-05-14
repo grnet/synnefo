@@ -31,6 +31,7 @@
 from django.core.management.base import BaseCommand, CommandError
 from synnefo.logic.backend import delete_network
 from synnefo.management.common import get_network
+from synnefo import quotas
 
 
 class Command(BaseCommand):
@@ -54,6 +55,10 @@ class Command(BaseCommand):
 
         network.action = 'DESTROY'
         network.save()
-        delete_network(network)
+
+        quotas.issue_and_accept_commission(network, delete=True)
+
+        for bnet in network.backend_networks.exclude(operstate="DELETED"):
+            delete_network(network, bnet.backend)
 
         self.stdout.write('Successfully removed network.\n')

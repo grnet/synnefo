@@ -46,6 +46,7 @@ from synnefo.api import util
 from synnefo.api.actions import network_actions
 from synnefo import quotas
 from synnefo.db.models import Network
+from synnefo.db.utils import validate_mac
 from synnefo.db.pools import EmptyPool
 from synnefo.logic import backend
 
@@ -147,9 +148,8 @@ def list_networks(request, detail=False):
 
 
 @api.api_method(http_method='POST', user_required=True, logger=log)
-@quotas.uses_commission
 @transaction.commit_manually
-def create_network(serials, request):
+def create_network(request):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
     #                       serviceUnavailable (503),
@@ -178,7 +178,8 @@ def create_network(serials, request):
         elif flavor not in Network.FLAVORS.keys():
             raise faults.BadRequest("Invalid network type '%s'" % flavor)
         elif flavor not in settings.API_ENABLED_NETWORK_FLAVORS:
-            raise faults.Forbidden("Can not create network of type '%s'" % flavor)
+            raise faults.Forbidden("Can not create network of type '%s'" %
+                                   flavor)
 
         public = d.get("public", False)
         if public:
@@ -194,16 +195,9 @@ def create_network(serials, request):
         # Check that user provided a valid subnet
         util.validate_network_params(subnet, gateway, subnet6, gateway6)
 
-        # Issue commission
-        serial = quotas.issue_network_commission(user_id)
-        serials.append(serial)
-        # Make the commission accepted, since in the end of this
-        # transaction the Network will have been created in the DB.
-        serial.accepted = True
-        serial.save()
-
         try:
             mode, link, mac_prefix, tags = util.values_from_flavor(flavor)
+            validate_mac(mac_prefix + "0:00:00:00")
             network = Network.objects.create(
                 name=name,
                 userid=user_id,
@@ -218,23 +212,22 @@ def create_network(serials, request):
                 mac_prefix=mac_prefix,
                 tags=tags,
                 action='CREATE',
-                state='PENDING',
-                serial=serial)
+                state='ACTIVE')
         except EmptyPool:
             log.error("Failed to allocate resources for network of type: %s",
                       flavor)
-            raise faults.ServiceUnavailable("Failed to allocate network resources")
+            raise faults.ServiceUnavailable("Failed to allocate network"
+                                            " resources")
 
-        # Create BackendNetwork entries for each Backend
-        network.create_backend_network()
+        # Issue commission to Quotaholder and accept it since at the end of
+        # this transaction the Network object will be created in the DB.
+        # Note: the following call does a commit!
+        quotas.issue_and_accept_commission(network)
     except:
         transaction.rollback()
         raise
     else:
         transaction.commit()
-
-    # Create the network in the actual backends
-    backend.create_network(network)
 
     networkdict = network_to_dict(network, request.user_uniq)
     response = render_network(request, networkdict, status=202)
@@ -313,7 +306,9 @@ def delete_network(request, network_id):
     net.action = 'DESTROY'
     net.save()
 
-    backend.delete_network(net)
+    backend_networks = net.backend_networks.exclude(operstate="DELETED")
+    for bnet in backend_networks:
+        backend.delete_network(net, bnet.backend)
     return HttpResponse(status=204)
 
 

@@ -25,6 +25,13 @@
     </div>
   </form>
   <br> 
-  {% if not forloop.last %}
+  {% if not forloop.last and not is_master %}
   LOGIN using &nbsp;&nbsp;
+  {% endif %}
+  {% if is_master %}
+  {% with auth_providers|length as l %}
+  {% if l > 1 %}
+  LOGIN using &nbsp;&nbsp;
+  {% endif %}
+  {% endwith %}
   {% endif %}

@@ -77,6 +77,7 @@ INSTALL_REQUIRES = [
     'bitarray>=0.8',
     'snf-branding',
     'objpool>=0.2',
+    'astakosclient',
     'snf-django-lib'
 ]
 

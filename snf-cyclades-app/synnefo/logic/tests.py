@@ -43,6 +43,7 @@ from mock import patch
 from synnefo.api.util import allocate_resource
 from synnefo.logic.callbacks import (update_db, update_net, update_network,
                                      update_build_progress)
+from snf_django.utils.testing import mocked_quotaholder
 
 now = datetime.now
 from time import time
@@ -135,7 +136,8 @@ class UpdateDBTest(TestCase):
         mfactory.NetworkInterfaceFactory(machine=vm)
         msg = self.create_msg(operation='OP_INSTANCE_REMOVE',
                               instance=vm.backend_vm_id)
-        update_db(client, msg)
+        with mocked_quotaholder():
+            update_db(client, msg)
         client.basic_ack.assert_called_once()
         db_vm = VirtualMachine.objects.get(id=vm.id)
         self.assertEqual(db_vm.operstate, 'DESTROYED')
@@ -170,7 +172,8 @@ class UpdateDBTest(TestCase):
         mfactory.NetworkInterfaceFactory(machine=vm)
         msg = self.create_msg(operation='OP_INSTANCE_REMOVE',
                               instance=vm.backend_vm_id)
-        update_db(client, msg)
+        with mocked_quotaholder():
+            update_db(client, msg)
         client.basic_ack.assert_called_once()
         db_vm = VirtualMachine.objects.get(id=vm.id)
         self.assertEqual(db_vm.operstate, 'DESTROYED')
@@ -318,6 +321,8 @@ class UpdateNetworkTest(TestCase):
     def test_create(self, client):
         back_network = mfactory.BackendNetworkFactory(operstate='PENDING')
         net = back_network.network
+        net.state = 'ACTIVE'
+        net.save()
         back1 = back_network.backend
 
         back_network2 = mfactory.BackendNetworkFactory(operstate='PENDING',
@@ -333,7 +338,7 @@ class UpdateNetworkTest(TestCase):
         back_net = BackendNetwork.objects.get(id=back_network.id)
         self.assertEqual(back_net.operstate, 'ACTIVE')
         db_net = Network.objects.get(id=net.id)
-        self.assertEqual(db_net.state, 'PENDING')
+        self.assertEqual(db_net.state, 'ACTIVE')
         # msg from second backend network
         msg = self.create_msg(operation='OP_NETWORK_CONNECT',
                               network=net.backend_id,
@@ -348,7 +353,7 @@ class UpdateNetworkTest(TestCase):
 
     def test_create_offline_backend(self, client):
         """Test network creation when a backend is offline"""
-        net = mfactory.NetworkFactory()
+        net = mfactory.NetworkFactory(state='ACTIVE')
         bn1 = mfactory.BackendNetworkFactory(network=net)
         bn2 = mfactory.BackendNetworkFactory(network=net,
                                              backend__offline=True)
@@ -363,7 +368,8 @@ class UpdateNetworkTest(TestCase):
     def test_disconnect(self, client):
         bn1 = mfactory.BackendNetworkFactory(operstate='ACTIVE')
         net1 = bn1.network
-        net1.operstate = 'ACTIVE'
+        net1.state = "ACTIVE"
+        net1.state = 'ACTIVE'
         net1.save()
         bn2 = mfactory.BackendNetworkFactory(operstate='ACTIVE',
                                              network=net1)
@@ -372,7 +378,7 @@ class UpdateNetworkTest(TestCase):
                               cluster=bn2.backend.clustername)
         update_network(client, msg)
         client.basic_ack.assert_called_once()
-        self.assertEqual(Network.objects.get(id=net1.id).state, 'PENDING')
+        self.assertEqual(Network.objects.get(id=net1.id).state, 'ACTIVE')
         self.assertEqual(BackendNetwork.objects.get(id=bn2.id).operstate,
                          'PENDING')
 
@@ -395,7 +401,8 @@ class UpdateNetworkTest(TestCase):
                 msg = self.create_msg(operation='OP_NETWORK_REMOVE',
                                       network=net.backend_id,
                                       cluster=bn.backend.clustername)
-                update_network(client, msg)
+                with mocked_quotaholder():
+                    update_network(client, msg)
                 client.basic_ack.assert_called_once()
                 db_bnet = BackendNetwork.objects.get(id=bn.id)
                 self.assertEqual(db_bnet.operstate,
@@ -422,11 +429,12 @@ class UpdateNetworkTest(TestCase):
         msg = self.create_msg(operation='OP_NETWORK_REMOVE',
                               network=net.backend_id,
                               cluster=bn1.backend.clustername)
-        update_network(client, msg)
+        with mocked_quotaholder():
+            update_network(client, msg)
         client.basic_ack.assert_called_once()
         new_net = Network.objects.get(id=net.id)
-        self.assertEqual(new_net.state, 'DELETED')
-        self.assertTrue(new_net.deleted)
+        self.assertEqual(new_net.state, 'ACTIVE')
+        self.assertFalse(new_net.deleted)
 
     def test_error_opcode(self, client):
         for state, _ in Network.OPER_STATES:

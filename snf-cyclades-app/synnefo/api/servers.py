@@ -249,9 +249,8 @@ def list_servers(request, detail=False):
 # access (SELECT..FOR UPDATE). Running create_server with commit_on_success
 # would result in backends and public networks to be locked until the job is
 # sent to the Ganeti backend.
-@quotas.uses_commission
 @transaction.commit_manually
-def create_server(serials, request):
+def create_server(request):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
     #                       serviceUnavailable (503),
@@ -311,14 +310,6 @@ def create_server(serials, request):
         flavor.disk_provider = None
 
     try:
-        # Issue commission
-        serial = quotas.issue_vm_commission(user_id, flavor)
-        serials.append(serial)
-        # Make the commission accepted, since in the end of this
-        # transaction the VM will have been created in the DB.
-        serial.accepted = True
-        serial.save()
-
         # Allocate IP from public network
         (network, address) = util.get_public_ip(backend)
         nic = {'ip': address, 'network': network.backend_id}
@@ -331,14 +322,13 @@ def create_server(serials, request):
             userid=user_id,
             imageid=image_id,
             flavor=flavor,
-            action="CREATE",
-            serial=serial)
+            action="CREATE")
 
         # Create VM's public NIC. Do not wait notification form ganeti hooks to
         # create this NIC, because if the hooks never run (e.g. building error)
         # the VM's public IP address will never be released!
         NetworkInterface.objects.create(machine=vm, network=network, index=0,
-                                        ipv4=address, state="Buidling")
+                                        ipv4=address, state="BUILDING")
 
         log.info("Created entry in DB for VM '%s'", vm)
 
@@ -357,6 +347,10 @@ def create_server(serials, request):
                 meta_key=key,
                 meta_value=val,
                 vm=vm)
+        # Issue commission to Quotaholder and accept it since at the end of
+        # this transaction the Network object will be created in the DB.
+        # Note: the following call does a commit!
+        quotas.issue_and_accept_commission(vm)
     except:
         transaction.rollback()
         raise
@@ -372,10 +366,15 @@ def create_server(serials, request):
         log.info("User %s created VM %s, NIC %s, Backend %s, JobID %s",
                  user_id, vm, nic, backend, str(jobID))
     except GanetiApiError as e:
-        log.exception("Can not communicate to backend %s: %s. Deleting VM %s",
-                      backend, e, vm)
-        vm.delete()
-        transaction.commit()
+        log.exception("Can not communicate to backend %s: %s.",
+                      backend, e)
+        # Failed while enqueuing OP_INSTANCE_CREATE to backend. Restore
+        # already reserved quotas by issuing a negative commission
+        vm.operstate = "ERROR"
+        vm.backendlogmsg = "Can not communicate to backend."
+        vm.deleted = True
+        vm.save()
+        quotas.issue_and_accept_commission(vm, delete=True)
         raise
     except:
         transaction.rollback()
@@ -385,9 +384,9 @@ def create_server(serials, request):
     server['status'] = 'BUILD'
     server['adminPass'] = password
 
-    respsone = render_server(request, server, status=202)
+    response = render_server(request, server, status=202)
 
-    return respsone
+    return response
 
 
 @api.api_method(http_method='GET', user_required=True, logger=log)

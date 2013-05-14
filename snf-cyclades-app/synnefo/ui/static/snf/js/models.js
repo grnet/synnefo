@@ -615,7 +615,7 @@
 
                 var _success = _.bind(function() {
                     if (success) { success() };
-                    snf.ui.main.load_user_quotas();
+                    synnefo.storage.quotas.get('cyclades.network.private').decrease();
                 }, this);
                 var _error = _.bind(function() {
                     this.set({state: previous_state, status: previous_status})
@@ -1441,7 +1441,7 @@
                                              // set state after successful call
                                              self.state('DESTROY');
                                              success.apply(this, arguments);
-                                             snf.ui.main.load_user_quotas();
+                                             synnefo.storage.quotas.get('cyclades.vm').decrease();
 
                                          },  
                                          error, 'destroy', params);
@@ -1693,7 +1693,7 @@
             
             var cb = function() {
               callback();
-              snf.ui.main.load_user_quotas();
+              synnefo.storage.quotas.get('cyclades.network.private').increase();
             }
             return this.api_call(this.path, "create", params, cb);
         },
@@ -2122,15 +2122,17 @@
                 }
             }
             
-            opts = {name: name, imageRef: image.id, flavorRef: flavor.id, metadata:meta}
+            opts = {name: name, imageRef: image.id, flavorRef: flavor.id, 
+                    metadata:meta}
             opts = _.extend(opts, extra);
             
             var cb = function(data) {
-              snf.ui.main.load_user_quotas();
+              synnefo.storage.quotas.get('cyclades.vm').increase();
               callback(data);
             }
 
-            this.api_call(this.path, "create", {'server': opts}, undefined, undefined, cb, {critical: true});
+            this.api_call(this.path, "create", {'server': opts}, undefined, 
+                          undefined, cb, {critical: true});
         },
 
         load_missing_images: function(callback) {
@@ -2365,7 +2367,103 @@
             
             this.create(m.attributes, options);
         }
+    });
+
+  
+    models.Quota = models.Model.extend({
+
+        initialize: function() {
+            models.Quota.__super__.initialize.apply(this, arguments);
+            this.bind("change", this.check, this);
+            this.check();
+        },
+        
+        check: function() {
+            var usage, limit;
+            usage = this.get('usage');
+            limit = this.get('limit');
+            if (usage >= limit) {
+                this.trigger("available");
+            } else {
+                this.trigger("unavailable");
+            }
+        },
+
+        increase: function(val) {
+            if (val === undefined) { val = 1};
+            this.set({'usage': this.get('usage') + val})
+        },
+
+        decrease: function(val) {
+            if (val === undefined) { val = 1};
+            this.set({'usage': this.get('usage') - val})
+        },
+
+        can_consume: function() {
+            var usage, limit;
+            usage = this.get('usage');
+            limit = this.get('limit');
+            if (usage >= limit) {
+                return false
+            } else {
+                return true
+            }
+        },
+        
+        is_bytes: function() {
+            return this.get('resource').get('unit') == 'bytes';
+        },
+        
+        get_available: function() {
+            var value = this.get('limit') - this.get('usage');
+            if (value < 0) { return value }
+            return value
+        },
+
+        get_readable: function(key) {
+            var value;
+            if (key == 'available') {
+                value = this.get_available();
+            } else {
+                value = this.get(key)
+            }
+            if (!this.is_bytes()) {
+              return value + "";
+            }
+            return snf.util.readablizeBytes(value);
+        }
+    });
+
+    models.Quotas = models.Collection.extend({
+        model: models.Quota,
+        api_type: 'accounts',
+        path: 'quotas',
+        parse: function(resp) {
+            return _.map(resp.system, function(value, key) {
+                var available = (value.limit - value.usage) || 0;
+                return _.extend(value, {'name': key, 'id': key, 
+                          'available': available,
+                          'resource': snf.storage.resources.get(key)});
+            })
+        }
     })
+
+    models.Resource = models.Model.extend({
+        api_type: 'accounts',
+        path: 'resources'
+    });
+
+    models.Resources = models.Collection.extend({
+        api_type: 'accounts',
+        path: 'resources',
+        model: models.Network,
+
+        parse: function(resp) {
+            return _.map(resp, function(value, key) {
+                return _.extend(value, {'name': key, 'id': key});
+            })
+        }
+    });
     
     // storage initialization
     snf.storage.images = new models.Images();
@@ -2374,9 +2472,7 @@
     snf.storage.vms = new models.VMS();
     snf.storage.keys = new models.PublicKeys();
     snf.storage.nics = new models.NICs();
-
-    //snf.storage.vms.fetch({update:true});
-    //snf.storage.images.fetch({update:true});
-    //snf.storage.flavors.fetch({update:true});
+    snf.storage.resources = new models.Resources();
+    snf.storage.quotas = new models.Quotas();
 
 })(this);

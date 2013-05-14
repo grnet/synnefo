@@ -133,8 +133,6 @@ ASTAKOS_SERVICES                            {'cyclades': {'resources': [{'desc':
                                             'unit': 'bytes',
                                             'uplimit': 5368709120}],
                                             'url': 'https://node2.example.com/ui/'}}
-ASTAKOS_AQUARIUM_URL                        ''                                                                              The billing (aquarium) URI
-                                                                                                                            e.g. ``http://localhost:8888/user``
 ASTAKOS_PAGINATE_BY                         8                                                                               Number of object to be displayed per page
 ASTAKOS_PAGINATE_BY_ALL                     15                                                                              Number of object to be displayed per pagein show all projects page
 
@@ -164,22 +162,40 @@ Administrator functions
 
 Available as extensions to Django's command-line management utility:
 
-===============  ===========================
-Name             Description
-===============  ===========================
-addgroup         Add new group
-addterms         Add new approval terms
-createuser       Create a user
-inviteuser       Invite a user
-listgroups       List groups
-listinvitations  List invitations
-listusers        List users
-modifyuser       Modify a user's attributes
-sendactivation   Send activation email
-showinvitation   Show invitation info
-showuser         Show user info
-===============  ===========================
-
-To update user credibility from the billing system (Aquarium), enable the queue, install snf-pithos-tools and use ``pithos-dispatcher``::
-
-    pithos-dispatcher --exchange=aquarium --callback=astakos.im.endpoints.aquarium.consumer.on_creditevent
+============================  ===========================
+Name                          Description
+============================  ===========================
+astakos-quota                 Inspect quotaholder status
+fix-superusers                Transform superusers created by syncdb into AstakosUser instances
+full-cleanup                  Cleanup sessions and session catalog
+invitation-list               List invitation
+invitation-show               Show invitation details
+project-control               Manage projects and applications
+project-list                  List projects
+project-show                  Show project details
+reconcile-resources-astakos   Reconcile resource usage of Quotaholder with Astakos DB
+resource-add                  Add resource
+resource-export-astakos       Export astakos resources in json format
+resource-import               Import resources
+resource-list                 List resources
+resource-modify               Modify resources
+resource-remove               Remove resource
+service-add                   Add service
+service-list                  List services
+service-modify                Modify service
+service-remove                Remove service
+term-add                      Add approval terms
+user-activation-send          Send user activation
+user-add                      Add user
+user-auth-policy-add          Create a new authentication provider policy profile
+user-auth-policy-list         List existing authentication provider policy profiles
+user-auth-policy-remove       Remove an authentication provider policy
+user-auth-policy-set          Assign an existing authentication provider policy profile to a user or group
+user-auth-policy-show         Show authentication provider profile details
+user-group-add                Create a group with the given name
+user-group-list               List available groups
+user-invite                   Invite somebody
+user-list                     List users
+user-modify                   Modify user
+user-show                     Show user details
+============================  ===========================

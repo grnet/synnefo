@@ -156,11 +156,10 @@ def pprint_table(out, table, headers=None, output_format='pretty',
             assert(len(table) == 1)
             row = table[0]
             max_key = max(map(len, headers))
-            max_val = max(map(len, row))
             for row in table:
                 for (k, v) in zip(headers, row):
                     k = uenc(k.ljust(max_key))
-                    v = uenc(v.ljust(max_val))
+                    v = uenc(v)
                     out.write("%s: %s\n" % (k, v))
         else:
             # Find out the max width of each column

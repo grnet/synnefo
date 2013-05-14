@@ -51,5 +51,9 @@ if PROXY_USER_SERVICES:
     urlpatterns += patterns(
         '',
         (r'^feedback/?$', 'synnefo.api.delegate.delegate_to_feedback_service'),
-        (r'^user_catalogs/?$', 'synnefo.api.delegate.delegate_to_user_catalogs_service'))
-
+        (r'^user_catalogs/?$',
+         'synnefo.api.delegate.delegate_to_user_catalogs_service'),
+        (r'^astakos/api/resources/?$',
+         'synnefo.api.delegate.delegate_to_resources_service'),
+        (r'^astakos/api/quotas/?$',
+         'synnefo.api.delegate.delegate_to_user_quota_service'))

@@ -37,7 +37,7 @@ import logging
 import hashlib
 import binascii
 
-from synnefo.lib.quotaholder import QuotaholderClient
+from astakosclient import AstakosClient
 
 from base import (DEFAULT_ACCOUNT_QUOTA, DEFAULT_CONTAINER_QUOTA,
                   DEFAULT_CONTAINER_VERSIONING, NotAllowedError, QuotaError,
@@ -45,7 +45,6 @@ from base import (DEFAULT_ACCOUNT_QUOTA, DEFAULT_CONTAINER_QUOTA,
                   ContainerNotEmpty, ItemNotExists, VersionNotExists)
 
 # Stripped-down version of the HashMap class found in tools.
-
 
 class HashMap(list):
 
@@ -99,6 +98,7 @@ inf = float('inf')
 
 ULTIMATE_ANSWER = 42
 
+DEFAULT_SOURCE = 'system'
 
 logger = logging.getLogger(__name__)
 
@@ -122,20 +122,28 @@ def backend_method(func=None, autocommit=1):
             ret = func(self, *args, **kw)
             for m in self.messages:
                 self.queue.send(*m)
-            if serials:
-                self.quotaholder_serials.insert_many(serials)
-                self.quotaholder.accept_commission(
-                            context     =   {},
-                            clientkey   =   'pithos',
-                            serials     =   serials)
+            if self.serials:
+                self.commission_serials.insert_many(self.serials)
+
+                # commit to ensure that the serials are registered
+                # even if accept commission fails
+                self.wrapper.commit()
+                self.wrapper.execute()
+
+                r = self.astakosclient.resolve_commissions(
+                            token=self.service_token,
+                            accept_serials=self.serials,
+                            reject_serials=[])
+                self.commission_serials.delete_many(r['accepted'])
+
             self.wrapper.commit()
             return ret
         except:
-            if serials:
-                self.quotaholder.reject_commission(
-                            context     =   {},
-                            clientkey   =   'pithos',
-                            serials     =   serials)
+            if self.serials:
+                self.astakosclient.resolve_commissions(
+                    token=self.service_token,
+                    accept_serials=[],
+                    reject_serials=self.serials)
             self.wrapper.rollback()
             raise
     return fn
@@ -150,9 +158,8 @@ class ModularBackend(BaseBackend):
     def __init__(self, db_module=None, db_connection=None,
                  block_module=None, block_path=None, block_umask=None,
                  queue_module=None, queue_hosts=None, queue_exchange=None,
-                 quotaholder_enabled=False,
-                 quotaholder_url=None, quotaholder_token=None,
-                 quotaholder_client_poolsize=None,
+                 astakos_url=None, service_token=None,
+                 astakosclient_poolsize=None,
                  free_versioning=True, block_params=None,
                  public_url_security=None,
                  public_url_alphabet=None,
@@ -196,7 +203,7 @@ class ModularBackend(BaseBackend):
         params = {'wrapper': self.wrapper}
         self.permissions = self.db_module.Permissions(**params)
         self.config = self.db_module.Config(**params)
-        self.quotaholder_serials = self.db_module.QuotaholderSerial(**params)
+        self.commission_serials = self.db_module.QuotaholderSerial(**params)
         for x in ['READ', 'WRITE']:
             setattr(self, x, getattr(self.db_module, x))
         self.node = self.db_module.Node(**params)
@@ -228,14 +235,12 @@ class ModularBackend(BaseBackend):
 
             self.queue = NoQueue()
 
-        self.quotaholder_enabled = quotaholder_enabled
-        if quotaholder_enabled:
-            self.quotaholder_url = quotaholder_url
-            self.quotaholder_token = quotaholder_token
-            self.quotaholder = QuotaholderClient(
-                                    quotaholder_url,
-                                    token=quotaholder_token,
-                                    poolsize=quotaholder_client_poolsize)
+        self.astakos_url = astakos_url
+        self.service_token = service_token
+        self.astakosclient = AstakosClient(
+            astakos_url,
+            use_pool=True,
+            pool_size=astakosclient_poolsize)
 
         self.serials = []
         self.messages = []
@@ -246,7 +251,7 @@ class ModularBackend(BaseBackend):
 
     @property
     def using_external_quotaholder(self):
-        return self.quotaholder_enabled
+        return True
 
     @backend_method
     def list_accounts(self, user, marker=None, limit=10000):
@@ -1356,15 +1361,14 @@ class ModularBackend(BaseBackend):
             return
 
         try:
-            serial = self.quotaholder.issue_commission(
-                    context     =   {},
-                    target      =   account,
-                    key         =   '1',
-                    clientkey   =   'pithos',
-                    ownerkey    =   '',
-                    name        =   details['path'] if 'path' in details else '',
-                    provisions  =   (('pithos+', 'pithos+.diskspace', size),)
-            )
+            name = details['path'] if 'path' in details else ''
+            serial = self.astakosclient.issue_one_commission(
+                token=self.service_token,
+                holder=account,
+                source=DEFAULT_SOURCE,
+                provisions={'pithos.diskspace': size},
+                name=name
+                )
         except BaseException, e:
             raise QuotaError(e)
         else:

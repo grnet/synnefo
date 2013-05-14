@@ -33,13 +33,55 @@
 
 from optparse import make_option
 
-from django.core.management.base import NoArgsCommand
-
-from astakos.im.models import Chain
-from ._common import format, shortened
+from astakos.im.models import Chain, Project
+from synnefo.webproject.management.commands import ListCommand
 
 
-class Command(NoArgsCommand):
+def get_name(chain):
+    try:
+        p = Project.objects.get(pk=chain.pk)
+    except Project.DoesNotExist:
+        app = chain.last_application()
+        return app.name
+    else:
+        return p.name
+
+
+def get_owner_name(chain):
+    return chain.last_application().owner.realname
+
+
+def get_owner_email(chain):
+    return chain.last_application().owner.email
+
+
+def get_state(chain):
+    try:
+        p = Project.objects.get(pk=chain.pk)
+    except Project.DoesNotExist:
+        p = None
+    app = chain.last_application()
+    return chain.get_state(p, app)[0]
+
+
+def get_state_display(chain):
+    return Chain.state_display(get_state(chain))
+
+
+def get_appid(chain):
+    try:
+        p = Project.objects.get(pk=chain.pk)
+    except Project.DoesNotExist:
+        p = None
+    app = chain.last_application()
+    state = chain.get_state(p, app)[0]
+    if state in Chain.PENDING_STATES:
+        return str(app.id)
+    else:
+        return ""
+
+
+class Command(ListCommand):
     help = """
     List projects and project status.
 
@@ -69,7 +111,20 @@ class Command(NoArgsCommand):
                            by a new project
 """
 
-    option_list = NoArgsCommand.option_list + (
+    object_class = Chain
+
+    FIELDS = {
+        'ProjID': ('pk', 'The id of the project'),
+        'Name': (get_name, 'The name of the project'),
+        'Owner': (get_owner_name, 'The name of the project owner'),
+        'Email': (get_owner_email, 'The email of the project owner'),
+        'Status': (get_state_display, 'The status of the project'),
+        'AppID': (get_appid, 'The project application identification'),
+    }
+
+    fields = ['ProjID', 'Name', 'Owner', 'Email', 'Status', 'AppID']
+
+    option_list = ListCommand.option_list + (
         make_option('--all',
                     action='store_true',
                     dest='all',
@@ -101,99 +156,24 @@ class Command(NoArgsCommand):
                     dest='full',
                     default=False,
                     help="Do not shorten long names"),
-        make_option('-c',
-                    action='store_true',
-                    dest='csv',
-                    default=False,
-                    help="Use pipes to separate values"),
     )
 
-    def handle_noargs(self, **options):
-        allow_shorten = not options['full']
-        csv = options['csv']
+    def handle_db_objects(self, objects, **options):
+        if options['all']:
+            return
 
-        chain_dict = Chain.objects.all_full_state()
-
-        if not options['all']:
-            f_states = []
-            if options['new']:
-                f_states.append(Chain.PENDING)
-            if options['modified']:
-                f_states += Chain.MODIFICATION_STATES
-            if options['pending']:
-                f_states.append(Chain.PENDING)
-                f_states += Chain.MODIFICATION_STATES
-            if options['skip']:
-                if not f_states:
+        f_states = []
+        if options['new']:
+            f_states.append(Chain.PENDING)
+        if options['modified']:
+            f_states += Chain.MODIFICATION_STATES
+        if options['pending']:
+            f_states.append(Chain.PENDING)
+            f_states += Chain.MODIFICATION_STATES
+        if options['skip']:
+            if not f_states:
                     f_states = Chain.RELEVANT_STATES
 
-            if f_states:
-                chain_dict = filter_by_state(chain_dict, f_states)
-
-        self.show(csv, allow_shorten, chain_dict)
-
-    def show(self, csv, allow_shorten, chain_dict):
-        labels = ('ProjID', 'Name', 'Owner', 'Email', 'Status', 'AppID')
-        columns = (7, 23, 20, 20, 17, 7)
-
-        if not csv:
-            line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
-            self.stdout.write(line + '\n')
-            sep = '-' * len(line)
-            self.stdout.write(sep + '\n')
-
-        for info in chain_info(chain_dict):
-
-            fields = [
-                (info['projectid'], False),
-                (info['name'], True),
-                (info['owner'], True),
-                (info['email'], True),
-                (info['status'], False),
-                (info['appid'], False),
-            ]
-
-            fields = [(format(elem), flag) for (elem, flag) in fields]
-
-            if csv:
-                line = '|'.join(fields)
-            else:
-                output = []
-                for (field, shorten), width in zip(fields, columns):
-                    s = (shortened(field, width) if shorten and allow_shorten
-                         else field)
-                    s = s.rjust(width)
-                    output.append(s)
-
-                line = ' '.join(output)
-
-            self.stdout.write(line + '\n')
-
-
-def filter_by_state(chain_dict, states):
-    d = {}
-    for chain, (state, project, app) in chain_dict.iteritems():
-        if state in states:
-            d[chain] = (state, project, app)
-    return d
-
-
-def chain_info(chain_dict):
-    l = []
-    for chain, (state, project, app) in chain_dict.iteritems():
-        status = Chain.state_display(state)
-        if state in Chain.PENDING_STATES:
-            appid = str(app.id)
-        else:
-            appid = ""
-
-        d = {
-            'projectid': str(chain),
-            'name': project.application.name if project else app.name,
-            'owner': app.owner.realname,
-            'email': app.owner.email,
-            'status': status,
-            'appid': appid,
-        }
-        l.append(d)
-    return l
+        if f_states:
+            map(objects.remove,
+                filter(lambda o: get_state(o) not in f_states, objects))

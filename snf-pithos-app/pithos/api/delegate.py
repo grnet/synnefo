@@ -33,22 +33,24 @@
 
 import logging
 
-from urlparse import urlparse
-import urllib
-import urllib2
+import urlparse
 
 from django.http import (
-    HttpResponseNotFound, HttpResponseRedirect, HttpResponseBadRequest,
-    HttpResponse)
+    HttpResponseNotFound, HttpResponseRedirect, HttpResponse)
 from django.utils.http import urlencode
 from django.views.decorators.csrf import csrf_exempt
+from django.utils import simplejson as json
 
-from pithos.api.settings import (USER_LOGIN_URL, USER_FEEDBACK_URL,
-                                 USER_CATALOG_URL)
+from pithos.api.settings import ASTAKOS_URL
 
-from objpool.http import PooledHTTPConnection
+from astakosclient import AstakosClient
+from astakosclient.errors import AstakosClientException
 
 logger = logging.getLogger(__name__)
+
+USER_CATALOG_URL = "/astakos/api/user_catalogs"
+USER_FEEDBACK_URL = "/astakos/api/feedback"
+USER_LOGIN_URL = urlparse.urljoin(ASTAKOS_URL, "login")
 
 
 def delegate_to_login_service(request):
@@ -56,7 +58,7 @@ def delegate_to_login_service(request):
     if not url:
         return HttpResponseNotFound()
 
-    p = urlparse(url)
+    p = urlparse.urlparse(url)
     if request.is_secure():
         proto = 'https://'
     else:
@@ -66,36 +68,39 @@ def delegate_to_login_service(request):
     return HttpResponseRedirect(uri)
 
 
-def proxy(request, url, headers=None, body=None):
-    p = urlparse(url)
-
-    kwargs = {}
-    if headers is None:
-        headers = {}
-    kwargs["headers"] = headers
-    kwargs['headers'].update(request.META)
-    kwargs['body'] = body
-    kwargs['headers'].setdefault('content-type', 'application/json')
-    kwargs['headers'].setdefault('content-length', len(body) if body else 0)
-
-    with PooledHTTPConnection(p.netloc, p.scheme) as conn:
-        conn.request(request.method, p.path + '?' + p.query, **kwargs)
-        response = conn.getresponse()
-        length = response.getheader('content-length', None)
-        data = response.read(length)
-        status = int(response.status)
-        return HttpResponse(data, status=status)
-
 @csrf_exempt
 def delegate_to_feedback_service(request):
     token = request.META.get('HTTP_X_AUTH_TOKEN')
-    headers = {'X-Auth-Token': token}
-    return proxy(
-        request, USER_FEEDBACK_URL, headers=headers, body=request.raw_post_data)
+    body = request.raw_post_data
+    method = request.method
+    astakos = AstakosClient(ASTAKOS_URL, retry=2, use_pool=True, logger=logger)
+    try:
+        data = astakos._call_astakos(token, USER_FEEDBACK_URL, None, body,
+                                     method)
+        status = 200
+    except AstakosClientException, e:
+        status = e.status
+        details = json.loads(e.details)
+        _, d = details.popitem()
+        data = d.get('message')
+    return HttpResponse(data, status=status)
+
 
 @csrf_exempt
 def delegate_to_user_catalogs_service(request):
     token = request.META.get('HTTP_X_AUTH_TOKEN')
-    headers = {'X-Auth-Token': token, 'content-type': 'application/json'}
-    return proxy(
-        request, USER_CATALOG_URL, headers=headers, body=request.raw_post_data)
+    headers = {'content-type': 'application/json'}
+    body = request.raw_post_data
+    method = request.method
+    astakos = AstakosClient(ASTAKOS_URL, retry=2, use_pool=True, logger=logger)
+    try:
+        data = astakos._call_astakos(token, USER_CATALOG_URL, headers, body,
+                                     method)
+        data = json.dumps(data)
+        status = 200
+    except AstakosClientException, e:
+        status = e.status
+        details = json.loads(e.details)
+        _, d = details.popitem()
+        data = d.get('message')
+    return HttpResponse(data, status=status)

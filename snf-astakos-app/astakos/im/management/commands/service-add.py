@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -33,27 +33,36 @@
 
 from django.core.management.base import BaseCommand, CommandError
 
-from astakos.im.api.callpoint import AstakosCallpoint
+from astakos.im.models import Service
+
 
 class Command(BaseCommand):
-    args = "<name> <url> [<icon>]"
+    args = "<name> <service URL> <API URL> "
     help = "Register a service"
 
     def handle(self, *args, **options):
         if len(args) < 2:
             raise CommandError("Invalid number of arguments")
 
-        s = {'name':args[0], 'url':args[1]}
-        if len(args) == 3:
-            s['icon'] = args[2]
+        name = args[0]
+        api_url = args[1]
+        url = args[2]
+
         try:
-            c = AstakosCallpoint()
-            r = c.add_services((s,)).next()
-        except Exception, e:
-            raise CommandError(e)
+            s = Service.objects.get(name=name)
+            m = "There already exists service named '%s'." % name
+            raise CommandError(m)
+        except Service.DoesNotExist:
+            pass
+
+        services = list(Service.objects.filter(api_url=api_url))
+        if services:
+            m = "URL '%s' is registered for another service." % api_url
+            raise CommandError(m)
+
+        try:
+            s = Service.objects.create(name=name, api_url=api_url, url=url)
+        except BaseException as e:
+            raise CommandError("Failed to create service.")
         else:
-            if r.is_success:
-                self.stdout.write(
-                    'Service created successfully\n')
-            else:
-                raise CommandError(r.reason)
+            self.stdout.write('Token: %s\n' % s.auth_token)

@@ -37,7 +37,8 @@ from astakos.im.forms import (
     ExtendedPasswordResetForm,
     ExtendedPasswordChangeForm,
     ExtendedSetPasswordForm, LoginForm)
-from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, EMAILCHANGE_ENABLED
+
+from astakos.im import settings
 
 urlpatterns = patterns(
     'astakos.im.views',
@@ -66,9 +67,9 @@ urlpatterns = patterns(
     url(r'^projects/(?P<chain_id>\d+)/join/?$', 'project_join', {}, name='project_join'),
     url(r'^projects/(?P<chain_id>\d+)/leave/?$', 'project_leave', {}, name='project_leave'),
     url(r'^projects/(?P<chain_id>\d+)/cancel/?$', 'project_cancel', {}, name='project_cancel'),
-    url(r'^projects/(?P<chain_id>\d+)/(?P<user_id>\d+)/accept/?$', 'project_accept_member', {}, name='project_accept_member'),
-    url(r'^projects/(?P<chain_id>\d+)/(?P<user_id>\d+)/reject/?$', 'project_reject_member', {}, name='project_reject_member'),
-    url(r'^projects/(?P<chain_id>\d+)/(?P<user_id>\d+)/remove/?$', 'project_remove_member', {}, name='project_remove_member'),
+    url(r'^projects/(?P<chain_id>\d+)/(?P<memb_id>\d+)/accept/?$', 'project_accept_member', {}, name='project_accept_member'),
+    url(r'^projects/(?P<chain_id>\d+)/(?P<memb_id>\d+)/reject/?$', 'project_reject_member', {}, name='project_reject_member'),
+    url(r'^projects/(?P<chain_id>\d+)/(?P<memb_id>\d+)/remove/?$', 'project_remove_member', {}, name='project_remove_member'),
     url(r'^projects/app/(?P<application_id>\d+)/?$', 'project_app', {}, name='project_app'),
     url(r'^projects/app/(?P<application_id>\d+)/modify$', 'project_modify', {}, name='project_modify'),
     url(r'^projects/app/(?P<application_id>\d+)/approve$', 'project_app_approve', {}, name='project_app_approve'),
@@ -81,14 +82,14 @@ urlpatterns = patterns(
 )
 
 
-if EMAILCHANGE_ENABLED:
+if settings.EMAILCHANGE_ENABLED:
     urlpatterns += patterns(
         'astakos.im.views',
         url(r'^email_change/?$', 'change_email', {}, name='email_change'),
         url(r'^email_change/confirm/(?P<activation_key>\w+)/?$', 'change_email', {},
             name='email_change_confirm'))
 
-if 'local' in IM_MODULES:
+if 'local' in settings.IM_MODULES:
     urlpatterns += patterns(
         'astakos.im.target',
         url(r'^local/?$', 'local.login'),
@@ -113,32 +114,32 @@ if 'local' in IM_MODULES:
         url(r'^local/password/reset/complete/?$', 'password_reset_complete')
     )
 
-if INVITATIONS_ENABLED:
+if settings.INVITATIONS_ENABLED:
     urlpatterns += patterns(
         'astakos.im.views',
         url(r'^invite/?$', 'invite', {}, name='invite'))
 
-if 'shibboleth' in IM_MODULES:
+if 'shibboleth' in settings.IM_MODULES:
     urlpatterns += patterns(
         'astakos.im.target',
         url(r'^login/shibboleth/?$', 'shibboleth.login'),
     )
 
-if 'twitter' in IM_MODULES:
+if 'twitter' in settings.IM_MODULES:
     urlpatterns += patterns(
         'astakos.im.target',
         url(r'^login/twitter/?$', 'twitter.login'),
         url(r'^login/twitter/authenticated/?$',
             'twitter.authenticated'))
 
-if 'google' in IM_MODULES:
+if 'google' in settings.IM_MODULES:
     urlpatterns += patterns(
         'astakos.im.target',
         url(r'^login/google/?$', 'google.login'),
         url(r'^login/google/authenticated/?$',
             'google.authenticated'))
 
-if 'linkedin' in IM_MODULES:
+if 'linkedin' in settings.IM_MODULES:
     urlpatterns += patterns(
         'astakos.im.target',
         url(r'^login/linkedin/?$', 'linkedin.login'),
@@ -146,15 +147,15 @@ if 'linkedin' in IM_MODULES:
             'linkedin.authenticated'))
 
 urlpatterns += patterns(
-    'astakos.im.api',
+    'astakos.api',
     url(r'^get_services/?$', 'get_services'),
     url(r'^get_menu/?$', 'get_menu'))
 
 urlpatterns += patterns(
-    'astakos.im.api',
+    'astakos.api',
     url(r'^get_services/?$', 'get_services'),
     url(r'^get_menu/?$', 'get_menu'))
 
 urlpatterns += patterns(
-    'astakos.im.api.user',
+    'astakos.api.user',
     url(r'^authenticate/?$', 'authenticate'))

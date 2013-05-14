@@ -47,9 +47,8 @@ from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.utils.translation import ugettext as _
 
 from astakos.im.models import AstakosUser, Invitation
-from astakos.im.settings import (
-    COOKIE_DOMAIN, FORCE_PROFILE_UPDATE, LOGIN_SUCCESS_URL)
 from astakos.im.functions import login
+from astakos.im import settings
 
 import astakos.im.messages as astakos_messages
 
@@ -170,9 +169,10 @@ def prepare_response(request, user, next='', renew=False):
         except ValidationError, e:
             return HttpResponseBadRequest(e)
 
-    next = restrict_next(next, domain=COOKIE_DOMAIN)
+    next = restrict_next(next, domain=settings.COOKIE_DOMAIN)
 
-    if FORCE_PROFILE_UPDATE and not user.is_verified and not user.is_superuser:
+    if settings.FORCE_PROFILE_UPDATE and \
+            not user.is_verified and not user.is_superuser:
         params = ''
         if next:
             params = '?' + urlencode({'next': next})
@@ -186,7 +186,7 @@ def prepare_response(request, user, next='', renew=False):
     request.session.set_expiry(user.auth_token_expires)
 
     if not next:
-        next = LOGIN_SUCCESS_URL
+        next = settings.LOGIN_SUCCESS_URL
 
     response['Location'] = next
     response.status_code = 302

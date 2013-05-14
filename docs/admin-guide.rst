@@ -160,12 +160,9 @@ For individual users that need different quotas than the default
 you can set it for each resource like this::
 
     # use this to display quotas / uuid
-    # snf-manage user-show 'uuid or email'
+    # snf-manage user-show 'uuid or email' --quotas
 
-    # snf-manage user-set-initial-quota --set-capacity 'user-uuid' 'cyclades.vm' 10
-
-    # this applies the configuration
-    # snf-manage astakos-quota --sync --user 'user-uuid'
+    # snf-manage user-modify 'user-uuid' --set-quota 'cyclades.vm' 10
 
 
 Enable the Projects feature
@@ -175,15 +172,17 @@ If you want to enable the projects feature so that users may apply
 on their own for resources by creating and joining projects,
 in ``20-snf-astakos-app-settings.conf`` set::
 
-    # this will allow at most one pending project application per user
-    ASTAKOS_PENDING_APPLICATION_LIMIT = 1
     # this will make the 'projects' page visible in the dashboard
     ASTAKOS_PROJECTS_VISIBLE = True
 
-You can specify a user-specific limit on pending project applications
-with::
+You can change the maximum allowed number of pending project applications
+per user with::
 
-    # snf-manage user-update <user id> --max-pending-projects=2
+    # snf-manage resource-modify astakos.pending_app --limit <number>
+
+You can also set a user-specific limit with::
+
+    # snf-manage user-modify 'user-uuid' --set-quota 'astakos.pending_app' 5
 
 When users apply for projects they are not automatically granted
 the resources. They must first be approved by the administrator.

@@ -41,9 +41,10 @@ from django import template
 from django.core.paginator import Paginator, EmptyPage
 from django.db.models.query import QuerySet
 
+from synnefo.lib.ordereddict import OrderedDict
 
-from astakos.im.settings import PAGINATE_BY, RESOURCES_PRESENTATION_DATA
-from astakos.im.models import RESOURCE_SEPARATOR, ProjectResourceGrant
+from astakos.im import settings
+from astakos.im.models import ProjectResourceGrant
 
 register = template.Library()
 
@@ -202,9 +203,8 @@ def resource_grants(project_definition):
         grants = project_definition.projectresourcegrant_set
         grants = grants.values_list(
             'resource__name',
-            'resource__service__name',
             'member_capacity'
         )
-        return dict((RESOURCE_SEPARATOR.join([e[1], e[0]]), e[2]) for e in grants)
+        return dict((e[0], e[1]) for e in grants)
     except:
         return {}

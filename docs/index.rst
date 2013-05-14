@@ -10,7 +10,7 @@ Welcome to Synnefo's documentation
 
 | You can see Synnefo in action, powering GRNET's
   `~okeanos public cloud service <http://okeanos.io>`_.
-| It is a collection of components (snf-*), most of them written in python, that
+| It is a collection of components (``snf-*``), most of them written in python, that
   are used as the building bricks to provide the following services:
 
 .. toctree::
@@ -123,7 +123,7 @@ They are also available from our apt repository: ``apt.okeanos.grnet.gr``
  * `snf-pithos-webclient <http://www.synnefo.org/docs/pithos-webclient/latest/index.html>`_
  * `snf-cyclades-app <http://www.synnefo.org/docs/snf-cyclades-app/latest/index.html>`_
  * `snf-cyclades-gtools <http://www.synnefo.org/docs/snf-cyclades-gtools/latest/index.html>`_
- * `snf-astakos-client <http://www.synnefo.org/docs/snf-astakos-client/latest/index.html>`_
+ * `astakosclient <http://www.synnefo.org/docs/astakosclient/latest/index.html>`_
  * `snf-vncauthproxy <https://code.grnet.gr/projects/vncauthproxy>`_
  * `snf-image <https://code.grnet.gr/projects/snf-image/wiki/>`_ 
  * `snf-image-creator <http://www.synnefo.org/docs/snf-image-creator/latest/index.html>`_

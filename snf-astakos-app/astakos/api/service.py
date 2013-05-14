@@ -65,4 +65,4 @@ def send_feedback(request, email_template_name='im/feedback_mail.txt'):
     # Error Response Codes: internalServerError (500)
     #                       badRequest (400)
     #                       unauthorised (401)
-    return send_feedback(request, email_template_name)
+    return send_feedback_util(request, email_template_name)

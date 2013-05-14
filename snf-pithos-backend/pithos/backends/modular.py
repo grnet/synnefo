@@ -301,7 +301,7 @@ class ModularBackend(BaseBackend):
             meta.update({'name': account, 'count': count, 'bytes': bytes})
             if self.using_external_quotaholder:
                 external_quota = external_quota or {}
-                meta['bytes'] = external_quota.get('currValue', 0)
+                meta['bytes'] = external_quota.get('usage', 0)
         meta.update({'modified': modified})
         return meta
 
@@ -359,7 +359,7 @@ class ModularBackend(BaseBackend):
         policy = self._get_policy(node, is_account_policy=True)
         if self.using_external_quotaholder:
             external_quota = external_quota or {}
-            policy['quota'] = external_quota.get('maxValue', 0)
+            policy['quota'] = external_quota.get('limit', 0)
         return policy
 
     @backend_method

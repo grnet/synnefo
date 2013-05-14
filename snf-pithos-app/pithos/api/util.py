@@ -44,7 +44,6 @@ from django.core.files.uploadhandler import FileUploadHandler
 from django.core.files.uploadedfile import UploadedFile
 
 from snf_django.lib.api.parsedate import parse_http_date_safe, parse_http_date
-from snf_django.lib.astakos import user_for_token
 from snf_django.lib import api
 from snf_django.lib.api import faults, utils
 
@@ -63,6 +62,7 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  RADOS_POOL_MAPS, TRANSLATE_UUIDS,
                                  PUBLIC_URL_SECURITY,
                                  PUBLIC_URL_ALPHABET)
+from pithos.api.resources import resources
 from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
                                   VersionNotExists)
 from astakosclient import AstakosClient
@@ -1043,11 +1043,10 @@ def update_response_headers(request, response):
 def get_pithos_usage(token):
     """Get Pithos Usage from astakos."""
     astakos = AstakosClient(ASTAKOS_URL, retry=2, use_pool=True, logger=logger)
-    user_info = user_for_token(astakos, token, usage=True)
-    usage = user_info.get("usage", [])
-    for u in usage:
-        if u.get('name') == 'pithos.diskspace':
-            return u
+    quotas = astakos.get_quotas(token)['system']
+    pithos_resources = [r['name'] for r in resources]
+    map(quotas.pop, filter(lambda k: k not in pithos_resources, quotas.keys()))
+    return quotas.popitem()[-1] # assume only one resource
 
 
 def api_method(http_method=None, user_required=True, logger=None,

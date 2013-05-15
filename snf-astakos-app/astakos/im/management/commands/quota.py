@@ -35,7 +35,8 @@ from optparse import make_option
 from django.core.management.base import CommandError
 
 from astakos.im.models import AstakosUser
-from astakos.im.quotas import set_user_quota, list_user_quotas, add_base_quota
+from astakos.im.quotas import (
+    qh_sync_users, list_user_quotas, add_base_quota)
 from astakos.im.functions import get_user_by_uuid
 from astakos.im.management.commands._common import is_uuid, is_email
 from snf_django.lib.db.transaction import commit_on_success_strict
@@ -104,30 +105,22 @@ class Command(SynnefoCommand):
         else:
             users = AstakosUser.objects.verified()
 
-        try:
-            qh_limits, qh_quotas, astakos_i, diff_q = list_user_quotas(users)
-        except BaseException as e:
-            logger.exception(e)
-            raise CommandError("Failed to compute quota.")
-
-        info = {}
-        for user in users:
-            info[user.uuid] = user.email
-
         if list_only:
+            qh_quotas, astakos_i = list_user_quotas(users)
+
+            info = {}
+            for user in users:
+                info[user.uuid] = user.email
+
             print_data, labels = show_quotas(qh_quotas, astakos_i, info)
             utils.pprint_table(self.stdout, print_data, labels,
                                output_format)
 
-        else:
+        elif verify or sync:
+            qh_limits, diff_q = qh_sync_users(users, sync=sync, diff_only=True)
             if verify:
                 self.print_verify(qh_limits, diff_q)
             if sync:
-                try:
-                    set_user_quota(diff_q)
-                except BaseException as e:
-                    logger.exception(e)
-                    raise CommandError("Failed to sync quota.")
                 self.print_sync(diff_q)
 
     def get_user(self, user_ident):

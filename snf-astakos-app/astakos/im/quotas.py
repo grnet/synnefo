@@ -83,11 +83,10 @@ def get_users_quotas(users, resources=None, sources=None):
     return quotas
 
 
-def get_users_quotas_and_limits(users, resources=None, sources=None):
+def get_users_quota_limits(users, resources=None, sources=None):
     counters = get_counters(users, resources, sources)
-    quotas = transform_data(counters)
     limits = transform_data(counters, limits_only)
-    return quotas, limits
+    return limits
 
 
 def get_user_quotas(user, resources=None, sources=None):
@@ -112,7 +111,7 @@ def _level_quota_dict(quotas):
     return lst
 
 
-def set_user_quota(quotas):
+def _set_user_quota(quotas):
     q = _level_quota_dict(quotas)
     qh.set_quota(q)
 
@@ -128,10 +127,6 @@ def get_default_quota():
 
 
 SYSTEM = 'system'
-
-
-def resolve_pending_serial(serial, accept=True):
-    return qh.resolve_pending_commission('astakos', serial, accept)
 
 
 def register_pending_apps(user, quantity, force=False, dry_run=False):
@@ -162,13 +157,13 @@ def add_base_quota(user, resource, capacity):
     if not created:
         obj.capacity = capacity
         obj.save()
-    qh_sync_user(user.id)
+    qh_sync_user(user)
 
 
 def remove_base_quota(user, resource):
     AstakosUserQuota.objects.filter(
         user=user, resource__name=resource).delete()
-    qh_sync_user(user.id)
+    qh_sync_user(user)
 
 
 def initial_quotas(users):
@@ -244,27 +239,52 @@ def astakos_users_quotas(users, initial=None):
     return quotas
 
 
-def astakos_user_quotas(user):
-    quotas = astakos_users_quotas([user])
-    try:
-        return quotas[user.uuid]
-    except KeyError:
-        raise ValueError("could not compute quotas")
-
-
 def list_user_quotas(users):
-    qh_quotas, qh_limits = get_users_quotas_and_limits(users)
+    qh_quotas = get_users_quotas(users)
     astakos_initial = initial_quotas(users)
+    return qh_quotas, astakos_initial
+
+
+# Syncing to quotaholder
+
+def qh_sync_users(users, sync=True, diff_only=False):
+    uids = [user.id for user in users]
+    if sync:
+        users = AstakosUser.forupdate.filter(id__in=uids).select_for_update()
+
     astakos_quotas = astakos_users_quotas(users)
 
-    diff_quotas = {}
-    for holder, local in astakos_quotas.iteritems():
-        registered = qh_limits.get(holder, None)
-        if local != registered:
-            diff_quotas[holder] = dict(local)
+    if diff_only:
+        qh_limits = get_users_quota_limits(users)
+        diff_quotas = {}
+        for holder, local in astakos_quotas.iteritems():
+            registered = qh_limits.get(holder, None)
+            if local != registered:
+                diff_quotas[holder] = dict(local)
 
-    return (qh_limits, qh_quotas,
-            astakos_initial, diff_quotas)
+        if sync:
+            _set_user_quota(diff_quotas)
+        return qh_limits, diff_quotas
+    else:
+        if sync:
+            _set_user_quota(astakos_quotas)
+        return None
+
+
+def qh_sync_user(user):
+    qh_sync_users([user])
+
+
+def qh_sync_projects(projects):
+    memberships = ProjectMembership.objects.filter(
+        project__in=projects, state__in=ProjectMembership.ACTUALLY_ACCEPTED)
+    users = set(m.person for m in memberships)
+
+    qh_sync_users(users)
+
+
+def qh_sync_project(project):
+    qh_sync_projects([project])
 
 
 def qh_add_resource_limit(resource, diff):
@@ -288,13 +308,3 @@ def qh_sync_new_resource(resource, limit):
         data.append((key, limit))
 
     qh.set_quota(data)
-
-
-def qh_sync_users(user_ids):
-    users = AstakosUser.forupdate.filter(id__in=user_ids).select_for_update()
-    astakos_quotas = astakos_users_quotas(list(users))
-    set_user_quota(astakos_quotas)
-
-
-def qh_sync_user(user_id):
-    qh_sync_users([user_id])

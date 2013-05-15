@@ -1417,7 +1417,7 @@ class QuotaAPITest(TestCase):
 
         # create user
         user = get_local_user('test@grnet.gr')
-        quotas.qh_sync_user(user.id)
+        quotas.qh_sync_user(user)
 
         # create another service
         service2 = Service.objects.create(

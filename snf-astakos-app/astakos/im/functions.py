@@ -68,7 +68,7 @@ from astakos.im.models import (
     AstakosUser, Invitation, ProjectMembership, ProjectApplication, Project,
     UserSetting,
     get_resource_names, new_chain)
-from astakos.im.quotas import (qh_sync_user, qh_sync_users,
+from astakos.im.quotas import (qh_sync_user, qh_sync_project,
                                register_pending_apps)
 from astakos.im.project_notif import (
     membership_change_notify, membership_enroll_notify,
@@ -293,7 +293,7 @@ def activate(
     if not user.activation_sent:
         user.activation_sent = datetime.now()
     user.save()
-    qh_sync_user(user.id)
+    qh_sync_user(user)
     send_helpdesk_notification(user, helpdesk_email_template_name)
     send_greeting(user, email_template_name)
 
@@ -526,7 +526,7 @@ def accept_membership(project_id, memb_id, request_user=None):
 
     user = membership.person
     membership.accept()
-    qh_sync_user(user.id)
+    qh_sync_user(user)
     logger.info("User %s has been accepted in %s." %
                 (user.log_display, project))
 
@@ -593,7 +593,7 @@ def remove_membership(project_id, memb_id, request_user=None):
 
     user = membership.person
     membership.remove()
-    qh_sync_user(user.id)
+    qh_sync_user(user)
     logger.info("User %s has been removed from %s." %
                 (user.log_display, project))
 
@@ -614,7 +614,7 @@ def enroll_member(project_id, user, request_user=None):
         raise PermissionDenied(m)
 
     membership.accept()
-    qh_sync_user(user.id)
+    qh_sync_user(user)
     logger.info("User %s has been enrolled in %s." %
                 (membership.person.log_display, project))
 
@@ -655,7 +655,7 @@ def leave_project(project_id, request_user):
     leave_policy = project.application.member_leave_policy
     if leave_policy == AUTO_ACCEPT_POLICY:
         membership.remove()
-        qh_sync_user(request_user.id)
+        qh_sync_user(request_user)
         logger.info("User %s has left %s." %
                     (membership.person.log_display, project))
         auto_accepted = True
@@ -703,7 +703,7 @@ def join_project(project_id, request_user):
     if (join_policy == AUTO_ACCEPT_POLICY and (
             not project.violates_members_limit(adding=1))):
         membership.accept()
-        qh_sync_user(request_user.id)
+        qh_sync_user(request_user)
         logger.info("User %s joined %s." %
                     (membership.person.log_display, project))
         auto_accepted = True
@@ -844,7 +844,7 @@ def approve_application(app_id, request_user=None, reason=""):
 
     qh_release_pending_app(application.owner)
     project = application.approve(reason)
-    qh_sync_projects([project])
+    qh_sync_project(project)
     logger.info("%s has been approved." % (application.log_display))
     application_approve_notify(application)
 
@@ -865,19 +865,19 @@ def terminate(project_id, request_user=None):
     checkAlive(project)
 
     project.terminate()
-    qh_sync_projects([project])
+    qh_sync_project(project)
     logger.info("%s has been terminated." % (project))
 
     project_termination_notify(project)
 
 
 def suspend(project_id, request_user=None):
-    project = get_project_by_id(project_id)
+    project = get_project_for_update(project_id)
     checkAllowed(project, request_user, admin_only=True)
     checkAlive(project)
 
     project.suspend()
-    qh_sync_projects([project])
+    qh_sync_project(project)
     logger.info("%s has been suspended." % (project))
 
     project_suspension_notify(project)
@@ -892,7 +892,7 @@ def resume(project_id, request_user=None):
         raise PermissionDenied(m)
 
     project.resume()
-    qh_sync_projects([project])
+    qh_sync_project(project)
     logger.info("%s has been unsuspended." % (project))
 
 
@@ -969,11 +969,3 @@ def qh_add_pending_app(user, precursor=None, force=False, dry_run=False):
 
 def qh_release_pending_app(user):
     register_pending_apps(user, -1)
-
-
-def qh_sync_projects(projects):
-
-    memberships = ProjectMembership.objects.filter(project__in=projects)
-    user_ids = set(m.person_id for m in memberships)
-
-    qh_sync_users(user_ids)

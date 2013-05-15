@@ -123,19 +123,22 @@ class Migration(DataMigration):
     def forwards(self, orm):
         "Write your forwards methods here."
         for backend in orm.Backend.objects.all():
-            old_pass = decrypt_db_charfield_old(backend.password_hash)
-            new_hash = encrypt_db_charfield(old_pass)
-            # Bypass save method!
-            orm.Backend.objects.filter(id=backend.id).update(password_hash=new_hash)
-
+            old_hash = backend.password_hash
+            if len(old_hash.split(":")) == 2:
+                old_pass = decrypt_db_charfield_old(old_hash)
+                new_hash = encrypt_db_charfield(old_pass)
+                # Bypass save method!
+                orm.Backend.objects.filter(id=backend.id).update(password_hash=new_hash)
 
     def backwards(self, orm):
         "Write your backwards methods here."
-        for backend in orm.Backend.objects.all():
-            old_pass = decrypt_db_charfield(backend.password_hash)
-            new_hash = encrypt_db_charfield_old(old_pass)
-            orm.Backend.objects.filter(id=backend.id).update(password_hash=new_hash)
-
+        try:
+            for backend in orm.Backend.objects.all():
+                old_pass = decrypt_db_charfield(backend.password_hash)
+                new_hash = encrypt_db_charfield_old(old_pass)
+                orm.Backend.objects.filter(id=backend.id).update(password_hash=new_hash)
+        except:
+            pass
 
     models = {
         'db.backend': {

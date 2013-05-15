@@ -153,11 +153,9 @@ class Command(BaseCommand):
                     length,))
 
     @commit_on_success_strict()
-    def expire(self, execute=False, ctx=None):
+    def expire(self, execute=False):
         try:
             projects = check_expiration(execute=execute)
             self.print_expired(projects, execute)
         except BaseException as e:
-            if ctx:
-                ctx.mark_rollback()
             raise CommandError(e)

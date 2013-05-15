@@ -182,22 +182,9 @@ SHIBBOLETH_REQUIRE_NAME_INFO = getattr(settings,
                                        'ASTAKOS_SHIBBOLETH_REQUIRE_NAME_INFO',
                                        False)
 
-PROJECT_MEMBER_JOIN_POLICIES = getattr(settings,
-                                'ASTAKOS_PROJECT_MEMBER_JOIN_POLICIES',
-                                {'1':'automatically accepted',
-                                 '2':'owner accepts',
-                                 '3':'closed'})
-
-PROJECT_MEMBER_LEAVE_POLICIES = getattr(settings,
-                                'ASTAKOS_PROJECT_MEMBER_LEAVE_POLICIES',
-                                {'1':'automatically accepted',
-                                 '2':'owner accepts',
-                                 '3':'closed'})
-
 ACTIVATION_REDIRECT_URL = getattr(settings,
                                   'ASTAKOS_ACTIVATION_REDIRECT_URL',
                                   "/im/landing")
-
 
 # If true, this enables a ui compatibility layer for the introduction of UUIDs
 # in identity management. WARNING: Setting to True will break your installation.

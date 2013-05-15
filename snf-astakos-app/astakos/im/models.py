@@ -70,7 +70,7 @@ from astakos.im.settings import (
     DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL,
     AUTH_TOKEN_DURATION, EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL,
     SITENAME, MODERATION_ENABLED,
-    PROJECT_MEMBER_JOIN_POLICIES, PROJECT_MEMBER_LEAVE_POLICIES)
+    )
 from astakos.im import settings as astakos_settings
 from astakos.im import auth_providers as auth
 
@@ -1636,11 +1636,13 @@ class ProjectApplication(models.Model):
 
     @property
     def member_join_policy_display(self):
-        return PROJECT_MEMBER_JOIN_POLICIES.get(str(self.member_join_policy))
+        policy = self.member_join_policy
+        return presentation.PROJECT_MEMBER_JOIN_POLICIES.get(policy)
 
     @property
     def member_leave_policy_display(self):
-        return PROJECT_MEMBER_LEAVE_POLICIES.get(str(self.member_leave_policy))
+        policy = self.member_leave_policy
+        return presentation.PROJECT_MEMBER_LEAVE_POLICIES.get(policy)
 
 class ProjectResourceGrant(models.Model):
 

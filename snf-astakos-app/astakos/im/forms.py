@@ -63,8 +63,7 @@ from astakos.im.settings import (
     INVITATIONS_PER_LEVEL, BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY,
     RECAPTCHA_ENABLED, CONTACT_EMAIL, LOGGING_LEVEL,
     PASSWORD_RESET_EMAIL_SUBJECT, NEWPASSWD_INVALIDATE_TOKEN,
-    MODERATION_ENABLED, PROJECT_MEMBER_JOIN_POLICIES,
-    PROJECT_MEMBER_LEAVE_POLICIES, EMAILCHANGE_ENABLED,
+    MODERATION_ENABLED, EMAILCHANGE_ENABLED,
     )
 from astakos.im import presentation
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
@@ -744,8 +743,8 @@ max_members_help     =  _("""
         If you are not certain, it is best to start with a conservative
         limit. You can always request a raise when you need it.""")
 
-join_policies = PROJECT_MEMBER_JOIN_POLICIES.iteritems()
-leave_policies = PROJECT_MEMBER_LEAVE_POLICIES.iteritems()
+join_policies = presentation.PROJECT_MEMBER_JOIN_POLICIES.items()
+leave_policies = presentation.PROJECT_MEMBER_LEAVE_POLICIES.items()
 
 class ProjectApplicationForm(forms.ModelForm):
 
@@ -814,8 +813,8 @@ class ProjectApplicationForm(forms.ModelForm):
         super(ProjectApplicationForm, self).__init__(*args, **kwargs)
         # in case of new application remove closed join policy
         if not instance:
-            policies = PROJECT_MEMBER_JOIN_POLICIES.copy()
-            policies.pop('3')
+            policies = presentation.PROJECT_MEMBER_JOIN_POLICIES.copy()
+            policies.pop(3)
             self.fields['member_join_policy'].choices = policies.iteritems()
 
     def clean_start_date(self):

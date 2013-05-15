@@ -142,8 +142,6 @@ ASTAKOS_ENABLE_LOCAL_ACCOUNT_MIGRATION      True                                
 ASTAKOS_RESOURCES_PRESENTATION_DATA         {}                                                                              Customizes resource presentation
 ASTAKOS_ENABLE_LOCAL_ACCOUNT_MIGRATION      True                                                                            Permits local account migration
 ASTAKOS_SHIBBOLETH_REQUIRE_NAME_INFO        False                                                                           Strict shibboleth usage
-ASTAKOS_PROJECT_MEMBER_JOIN_POLICIES        {'1':'automatically accepted', '2':'owner accepts', '3':'closed'}               Text to be displayed in project member join policy dropdown
-ASTAKOS_PROJECT_MEMBER_LEAVE_POLICIES       {'1':'automatically accepted', '2':'owner accepts', '3':'closed'}               Text to be displayed in project member leave policy dropdown
 ASTAKOS_ACTIVATION_REDIRECT_URL             "/im/landing"
 ASTAKOS_TRANSLATE_UUIDS                     False                                                                           If true, this enables a ui compatibility layer for the introduction of UUIDs in identity management.
                                                                                                                             WARNING: Setting to True will break your installation.

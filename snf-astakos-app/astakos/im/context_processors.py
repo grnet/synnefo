@@ -35,7 +35,8 @@ from astakos.im.settings import (
     IM_MODULES, INVITATIONS_ENABLED, IM_STATIC_URL,
     LOGIN_MESSAGES, SIGNUP_MESSAGES, PROFILE_MESSAGES,
     GLOBAL_MESSAGES, PROFILE_EXTRA_LINKS,
-    PROJECT_MEMBER_JOIN_POLICIES, PROJECT_MEMBER_LEAVE_POLICIES)
+    )
+from astakos.im import presentation
 from astakos.api import get_menu
 from astakos.im.util import get_query
 from astakos.im.auth_providers import PROVIDERS as AUTH_PROVIDERS
@@ -110,6 +111,6 @@ def menu(request):
         return {'menu': menu_items}
 
 def membership_policies(request):
-    return {'join_policies':PROJECT_MEMBER_JOIN_POLICIES,
-            'leave_policies':PROJECT_MEMBER_LEAVE_POLICIES}
+    return {'join_policies': presentation.PROJECT_MEMBER_JOIN_POLICIES,
+            'leave_policies': presentation.PROJECT_MEMBER_LEAVE_POLICIES}
 

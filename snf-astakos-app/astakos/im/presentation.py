@@ -228,3 +228,17 @@ SERVICES = {
         }
     }
 }
+
+
+PROJECT_MEMBER_JOIN_POLICIES = {
+    1: 'automatically accepted',
+    2: 'owner accepts',
+    3: 'closed',
+}
+
+
+PROJECT_MEMBER_LEAVE_POLICIES = {
+    1: 'automatically accepted',
+    2: 'owner accepts',
+    3: 'closed',
+}

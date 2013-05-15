@@ -87,7 +87,7 @@ def to_string(s):
 @register.filter
 def lookup(d, key):
     try:
-        return d.get(str(key))
+        return d.get(key)
     except:
         return
 

@@ -43,44 +43,23 @@ from astakos.im.models import Service
 
 
 class Command(BaseCommand):
-    args = "<service> <resource> <desc> <unit>"
-    help = "Import resources"
+    help = "Register service resources"
 
     option_list = BaseCommand.option_list + (
         make_option('--json',
                     dest='json',
                     metavar='<json.file>',
-                    help="Load resource info from a json file"),
-        make_option('--service',
-                    dest='service_id',
-                    metavar='<service_id>',
-                    help=("Automatically load resource info for a given "
-                          "service")),
-        make_option('--conf',
-                    dest='conf',
-                    metavar='<conf.json>',
-                    help="Limit configuration file"),
+                    help="Load resource definitions from a json file"),
     )
 
     def handle(self, *args, **options):
 
-        config = {}
-        conf_file = options['conf']
-        if conf_file is not None:
-            with open(conf_file) as file_data:
-                config = json.load(file_data)
-
-
         json_file = options['json']
-        service_id = options['service_id']
-        if bool(json_file) == bool(service_id):
-            m = "Please provide either --service or --json option."
+        if not json_file:
+            m = "Expecting option --json."
             raise CommandError(m)
 
-        if service_id:
-            raise NotImplementedError()
-
-        if json_file:
+        else:
             with open(json_file) as file_data:
                 m = ('Input should be a JSON dict containing "service" '
                      'and "resource" keys.')

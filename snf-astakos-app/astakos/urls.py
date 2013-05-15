@@ -36,6 +36,13 @@ from django.conf.urls.defaults import include, patterns
 urlpatterns = patterns(
     '',
     (r'^im/', include('astakos.im.urls')),
-    (r'^login/?$', 'astakos.im.target.redirect.login'),
     (r'^astakos/api/', include('astakos.api.urls')),
+    (r'^login/?$', 'astakos.im.target.redirect.login')
+)
+
+urlpatterns += patterns(
+    'astakos.api',
+    (r'^feedback/?$', 'user.send_feedback'),
+    (r'^user_catalogs/?$', 'user.get_uuid_displayname_catalogs'),
+    (r'^service/api/user_catalogs/?$', 'service.get_uuid_displayname_catalogs')
 )

@@ -152,10 +152,5 @@ urlpatterns += patterns(
     url(r'^get_menu/?$', 'get_menu'))
 
 urlpatterns += patterns(
-    'astakos.api',
-    url(r'^get_services/?$', 'get_services'),
-    url(r'^get_menu/?$', 'get_menu'))
-
-urlpatterns += patterns(
     'astakos.api.user',
     url(r'^authenticate/?$', 'authenticate'))

@@ -1,6 +1,6 @@
 include README
 include distribute_setup.py
-global-include */templates/* */fixtures/* */static/*
+global-include */templates/* */static/*
 global-exclude */.DS_Store
 include astakos/settings.d/*
 recursive-include astakos/im/templates/ *.html *.txt

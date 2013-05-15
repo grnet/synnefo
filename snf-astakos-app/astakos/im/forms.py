@@ -30,7 +30,6 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
-from urlparse import urljoin
 from random import random
 from datetime import datetime, timedelta
 
@@ -55,6 +54,7 @@ from django.core import validators
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import PermissionDenied
 
+from synnefo.lib import join_urls
 from astakos.im.models import (
     AstakosUser, EmailChange, Invitation,
     Resource, PendingThirdPartyUser, get_latest_terms,
@@ -539,7 +539,7 @@ class ExtendedPasswordResetForm(PasswordResetForm):
         """
         for user in self.users_cache:
             url = user.astakosuser.get_password_reset_url(token_generator)
-            url = urljoin(BASEURL, url)
+            url = join_urls(BASEURL, url)
             t = loader.get_template(email_template_name)
             c = {
                 'email': user.email,

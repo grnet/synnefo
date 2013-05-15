@@ -35,7 +35,7 @@
 from django.test import TestCase
 from django.utils import simplejson as json
 
-import urlparse
+from synnefo.lib import join_urls
 from synnefo.vmapi import settings
 
 
@@ -68,8 +68,8 @@ class TestServerParams(TestCase):
         uuid = create_server_params(sender=vm, created_vm_params=params)
 
         self.assertEqual(vm.config_url,
-                         urlparse.urljoin(settings.BASE_URL,
-                                          '/vmapi/server-params/%s' % uuid))
+                         join_urls(settings.BASE_URL,
+                                   '/vmapi/server-params/%s' % uuid))
         key = "vmapi_%s" % uuid
         self.assertEqual(type(backend.get(key)), str)
         data = json.loads(backend.get(key))

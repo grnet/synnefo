@@ -1,6 +1,5 @@
 #coding=utf8
 from django.conf import settings
-from urlparse import urljoin
 
 ASTAKOS_URL = getattr(settings, "ASTAKOS_URL",
                       "https://accounts.example.synnefo.org/")

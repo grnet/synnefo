@@ -39,11 +39,13 @@ from django.views.decorators.csrf import csrf_exempt
 
 from django.conf import settings
 
+from synnefo.lib import join_urls
+
 ASTAKOS_URL = getattr(settings, 'ASTAKOS_URL', None)
-USER_QUOTA_URL = urlparse.urljoin(ASTAKOS_URL, "astakos/api/quotas")
-RESOURCES_URL = urlparse.urljoin(ASTAKOS_URL, "astakos/api/resources")
-USER_CATALOG_URL = urlparse.urljoin(ASTAKOS_URL, "astakos/api/user_catalogs")
-USER_FEEDBACK_URL = urlparse.urljoin(ASTAKOS_URL, "astakos/api/feedback")
+USER_QUOTA_URL = join_urls(ASTAKOS_URL, "astakos/api/quotas")
+RESOURCES_URL = join_urls(ASTAKOS_URL, "astakos/api/resources")
+USER_CATALOG_URL = join_urls(ASTAKOS_URL, "astakos/api/user_catalogs")
+USER_FEEDBACK_URL = join_urls(ASTAKOS_URL, "astakos/api/feedback")
 
 from objpool.http import PooledHTTPConnection
 

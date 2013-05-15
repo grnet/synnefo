@@ -48,11 +48,11 @@ from django.db import IntegrityError
 from django.http import Http404
 
 from urllib import quote
-from urlparse import urljoin
 from smtplib import SMTPException
 from datetime import datetime
 from functools import wraps
 
+from synnefo.lib import join_urls
 from astakos.im.settings import (
     CONTACT_EMAIL, SITENAME, BASEURL, LOGGING_LEVEL,
     VERIFICATION_EMAIL_SUBJECT, ACCOUNT_CREATION_SUBJECT,
@@ -104,9 +104,9 @@ def send_verification(user, template_name='im/activation_email.txt'):
 
     Raises SendVerificationError
     """
-    url = '%s?auth=%s&next=%s' % (urljoin(BASEURL, reverse('activate')),
+    url = '%s?auth=%s&next=%s' % (join_urls(BASEURL, reverse('activate')),
                                   quote(user.auth_token),
-                                  quote(urljoin(BASEURL, reverse('index'))))
+                                  quote(join_urls(BASEURL, reverse('index'))))
     message = render_to_string(template_name, {
                                'user': user,
                                'url': url,
@@ -192,7 +192,7 @@ def send_invitation(invitation, template_name='im/invitation.txt'):
     Raises SendInvitationError
     """
     subject = _(INVITATION_EMAIL_SUBJECT)
-    url = '%s?code=%d' % (urljoin(BASEURL, reverse('index')), invitation.code)
+    url = '%s?code=%d' % (join_urls(BASEURL, reverse('index')), invitation.code)
     message = render_to_string(template_name, {
                                'invitation': invitation,
                                'url': url,
@@ -223,7 +223,7 @@ def send_greeting(user, email_template_name='im/welcome_email.txt'):
     subject = _(GREETING_EMAIL_SUBJECT)
     message = render_to_string(email_template_name, {
                                'user': user,
-                               'url': urljoin(BASEURL, reverse('index')),
+                               'url': join_urls(BASEURL, reverse('index')),
                                'baseurl': BASEURL,
                                'site_name': SITENAME,
                                'support': CONTACT_EMAIL})

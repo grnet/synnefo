@@ -33,7 +33,7 @@
 
 from django.http import HttpResponse
 
-from synnefo.lib.pool.http import PooledHTTPConnection
+from objpool.http import PooledHTTPConnection
 
 from .utils import fix_header, forward_header
 

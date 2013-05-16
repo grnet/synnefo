@@ -1432,18 +1432,18 @@ class QuotaAPITest(TestCase):
                           [resource11, resource12, resource21]]
 
         # get resources
-        r = client.get(u('resources'), follow=True)
+        r = client.get(u('resources'))
         self.assertEqual(r.status_code, 200)
         body = json.loads(r.content)
         for name in resource_names:
             assertIn(name, body)
 
         # get quota
-        r = client.get(u('quotas'), follow=True)
+        r = client.get(u('quotas'))
         self.assertEqual(r.status_code, 401)
 
         headers = {'HTTP_X_AUTH_TOKEN': user.auth_token}
-        r = client.get(u('quotas'), follow=True, **headers)
+        r = client.get(u('quotas/'), **headers)
         self.assertEqual(r.status_code, 200)
         body = json.loads(r.content)
         system_quota = body['system']
@@ -1451,16 +1451,16 @@ class QuotaAPITest(TestCase):
         for name in resource_names:
             assertIn(name, system_quota)
 
-        r = client.get(u('service_quotas'), follow=True)
+        r = client.get(u('service_quotas'))
         self.assertEqual(r.status_code, 401)
 
         s1_headers = {'HTTP_X_AUTH_TOKEN': service1.auth_token}
-        r = client.get(u('service_quotas'), follow=True, **s1_headers)
+        r = client.get(u('service_quotas'), **s1_headers)
         self.assertEqual(r.status_code, 200)
         body = json.loads(r.content)
         assertIn(user.uuid, body)
 
-        r = client.get(u('commissions'), follow=True, **s1_headers)
+        r = client.get(u('commissions'), **s1_headers)
         self.assertEqual(r.status_code, 200)
         body = json.loads(r.content)
         self.assertEqual(body, [])
@@ -1529,13 +1529,12 @@ class QuotaAPITest(TestCase):
         body = json.loads(r.content)
         self.assertEqual(body['serial'], 3)
 
-        r = client.get(u('commissions'), follow=True, **s1_headers)
+        r = client.get(u('commissions'), **s1_headers)
         self.assertEqual(r.status_code, 200)
         body = json.loads(r.content)
         self.assertEqual(body, [1, 2, 3])
 
-        r = client.get(u('commissions/' + str(serial)), follow=True,
-                       **s1_headers)
+        r = client.get(u('commissions/' + str(serial)), **s1_headers)
         self.assertEqual(r.status_code, 200)
         body = json.loads(r.content)
         self.assertEqual(body['serial'], serial)
@@ -1543,8 +1542,7 @@ class QuotaAPITest(TestCase):
         self.assertEqual(body['provisions'], commission_request['provisions'])
         self.assertEqual(body['name'], commission_request['name'])
 
-        r = client.get(u('service_quotas?user=' + user.uuid),
-                       follow=True, **s1_headers)
+        r = client.get(u('service_quotas?user=' + user.uuid), **s1_headers)
         self.assertEqual(r.status_code, 200)
         body = json.loads(r.content)
         user_quota = body[user.uuid]
@@ -1569,8 +1567,7 @@ class QuotaAPITest(TestCase):
         failed = body['failed']
         self.assertEqual(len(failed), 2)
 
-        r = client.get(u('commissions/' + str(serial)), follow=True,
-                       **s1_headers)
+        r = client.get(u('commissions/' + str(serial)), **s1_headers)
         self.assertEqual(r.status_code, 404)
 
         # auto accept
@@ -1599,8 +1596,7 @@ class QuotaAPITest(TestCase):
         serial = body['serial']
         self.assertEqual(serial, 4)
 
-        r = client.get(u('commissions/' + str(serial)), follow=True,
-                       **s1_headers)
+        r = client.get(u('commissions/' + str(serial)), **s1_headers)
         self.assertEqual(r.status_code, 404)
 
         # malformed

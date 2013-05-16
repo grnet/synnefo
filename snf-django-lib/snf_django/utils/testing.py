@@ -186,3 +186,44 @@ class BaseAPITest(TestCase):
 
     def assertItemNotFound(self, response):
         self.assertFault(response, 404, 'itemNotFound')
+
+
+# Imitate unittest assertions new in Python 2.7
+
+class _AssertRaisesContext(object):
+    """
+    A context manager used to implement TestCase.assertRaises* methods.
+    Adapted from unittest2.
+    """
+
+    def __init__(self, expected):
+        self.expected = expected
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, tb):
+        if exc_type is None:
+            try:
+                exc_name = self.expected.__name__
+            except AttributeError:
+                exc_name = str(self.expected)
+            raise AssertionError(
+                "%s not raised" % (exc_name,))
+        if not issubclass(exc_type, self.expected):
+            # let unexpected exceptions pass through
+            return False
+        self.exception = exc_value  # store for later retrieval
+        return True
+
+
+def assertRaises(excClass):
+    return _AssertRaisesContext(excClass)
+
+
+def assertGreater(x, y):
+    assert x > y
+
+
+def assertIn(x, y):
+    assert x in y

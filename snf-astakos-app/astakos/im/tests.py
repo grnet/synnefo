@@ -36,7 +36,7 @@ import copy
 import datetime
 import functools
 
-from snf_django.utils.testing import with_settings, override_settings
+from snf_django.utils.testing import with_settings, override_settings, assertIn
 
 from django.test import TestCase, Client
 from django.core import mail
@@ -1436,7 +1436,7 @@ class QuotaAPITest(TestCase):
         self.assertEqual(r.status_code, 200)
         body = json.loads(r.content)
         for name in resource_names:
-            self.assertIn(name, body)
+            assertIn(name, body)
 
         # get quota
         r = client.get(u('quotas'), follow=True)
@@ -1447,9 +1447,9 @@ class QuotaAPITest(TestCase):
         self.assertEqual(r.status_code, 200)
         body = json.loads(r.content)
         system_quota = body['system']
-        self.assertIn('system', body)
+        assertIn('system', body)
         for name in resource_names:
-            self.assertIn(name, system_quota)
+            assertIn(name, system_quota)
 
         r = client.get(u('service_quotas'), follow=True)
         self.assertEqual(r.status_code, 401)
@@ -1458,7 +1458,7 @@ class QuotaAPITest(TestCase):
         r = client.get(u('service_quotas'), follow=True, **s1_headers)
         self.assertEqual(r.status_code, 200)
         body = json.loads(r.content)
-        self.assertIn(user.uuid, body)
+        assertIn(user.uuid, body)
 
         r = client.get(u('commissions'), follow=True, **s1_headers)
         self.assertEqual(r.status_code, 200)
@@ -1539,7 +1539,7 @@ class QuotaAPITest(TestCase):
         self.assertEqual(r.status_code, 200)
         body = json.loads(r.content)
         self.assertEqual(body['serial'], serial)
-        self.assertIn('issue_time', body)
+        assertIn('issue_time', body)
         self.assertEqual(body['provisions'], commission_request['provisions'])
         self.assertEqual(body['name'], commission_request['name'])
 

@@ -22,3 +22,6 @@ LOGIN_URL = 'http://host:port/'
 SOUTH_TESTS_MIGRATE = bool(int(os.environ.get('SOUTH_TESTS_MIGRATE', True)))
 
 ASTAKOS_IM_MODULES = ['local', 'shibboleth']
+
+CYCLADES_PROXY_USER_SERVICES = False
+PITHOS_PROXY_USER_SERVICES = False

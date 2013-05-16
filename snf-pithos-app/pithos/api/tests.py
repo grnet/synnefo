@@ -39,7 +39,7 @@ import time as _time
 
 import pithos.api.settings as settings
 
-from pithos.api.swiss_army import SwissArmy
+from pithos.api.manage_accounts import ManageAccounts
 
 def get_random_data(length=500):
     char_set = string.ascii_uppercase + string.digits
@@ -47,7 +47,7 @@ def get_random_data(length=500):
 
 class TestPublic(unittest.TestCase):
     def setUp(self):
-        self.utils = SwissArmy()
+        self.utils = ManageAccounts()
         self.backend = self.utils.backend
         self.utils.create_account('account')
 

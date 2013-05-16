@@ -33,6 +33,7 @@
 
 from django.test import TestCase
 
+from snf_django.utils.testing import assertGreater, assertIn, assertRaises
 import astakos.quotaholder_app.callpoint as qh
 from astakos.quotaholder_app.exception import (
     InvalidDataError,
@@ -77,7 +78,7 @@ class QuotaholderTest(TestCase):
         s1 = self.issue_commission([((holder, source, resource1), limit1/2),
                                     ((holder, source, resource2), limit2)],
                                    name="initial")
-        self.assertGreater(s1, 0)
+        assertGreater(s1, 0)
 
         r = qh.get_commission(self.client, s1)
         provisions = [
@@ -95,14 +96,14 @@ class QuotaholderTest(TestCase):
         self.assertEqual(r['serial'], s1)
         ps = r['provisions']
         for p in ps:
-            self.assertIn(p, provisions)
+            assertIn(p, provisions)
 
-        with self.assertRaises(NoCommissionError):
+        with assertRaises(NoCommissionError):
             qh.get_commission(self.client, s1+1)
 
         # commission exceptions
 
-        with self.assertRaises(NoCapacityError) as cm:
+        with assertRaises(NoCapacityError) as cm:
             self.issue_commission([((holder, source, resource1), 1),
                                    ((holder, source, resource2), 1)])
 
@@ -115,7 +116,7 @@ class QuotaholderTest(TestCase):
         self.assertEqual(e.data['usage'], limit2)
         self.assertEqual(e.data['limit'], limit2)
 
-        with self.assertRaises(NoQuantityError) as cm:
+        with assertRaises(NoQuantityError) as cm:
             self.issue_commission([((holder, source, resource1), -1)])
 
         e = cm.exception
@@ -127,7 +128,7 @@ class QuotaholderTest(TestCase):
         self.assertEqual(e.data['usage'], 0)
         self.assertEqual(e.data['limit'], 0)
 
-        with self.assertRaises(NoHoldingError) as cm:
+        with assertRaises(NoHoldingError) as cm:
             self.issue_commission([((holder, source, resource1), 1),
                                    (('nonex', source, resource1), 1)])
 
@@ -138,7 +139,7 @@ class QuotaholderTest(TestCase):
         self.assertEqual(provision['resource'], resource1)
         self.assertEqual(provision['quantity'], 1)
 
-        with self.assertRaises(DuplicateError) as cm:
+        with assertRaises(DuplicateError) as cm:
             self.issue_commission([((holder, source, resource1), 1),
                                    ((holder, source, resource1), 2)])
 
@@ -149,7 +150,7 @@ class QuotaholderTest(TestCase):
         self.assertEqual(provision['resource'], resource1)
         self.assertEqual(provision['quantity'], 2)
 
-        with self.assertRaises(InvalidDataError):
+        with assertRaises(InvalidDataError):
             self.issue_commission([((holder, source, resource1), 1),
                                    ((holder, source, resource1), "nan")])
 
@@ -217,7 +218,7 @@ class QuotaholderTest(TestCase):
         }
         self.assertEqual(r, quotas)
 
-        with self.assertRaises(NoCapacityError):
+        with assertRaises(NoCapacityError):
             self.issue_commission(
                 [((holder, source, resource1), limit1/2+1)])
 

@@ -1,6 +1,10 @@
 import sys, os
 
 sys.path.insert(0, os.path.abspath('../snf-cyclades-app'))
+import synnefo
+reload(synnefo)
+import synnefo.versions
+reload(synnefo.versions)
 from synnefo.versions.app import __version__
 
 project = u'synnefo'

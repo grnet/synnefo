@@ -6,7 +6,16 @@ Dear {{ user.realname }},
 
 After your request a new account for {{ BRANDING_COMPANY_NAME|upper }}'s {{ BRANDING_SERVICE_NAME }} service has been created.
 
-To activate the account, please use the link: {{ url }}
+To proceed with your account activation we require you to verify the email 
+address you provided during the signup process.
+
+Please click the link below to complete verification: 
+
+{{ url }}
+
+
+If you did not sign up for this account you can ignore this email and the 
+account will be deleted. 
 {% endblock %}
 
 {% block note %} {% endblock%}

@@ -74,11 +74,6 @@ class Command(ListCommand):
               'uuid']
 
     option_list = ListCommand.option_list + (
-        make_option('-p',
-                    action='store_true',
-                    dest='pending',
-                    default=False,
-                    help="List only users pending activation"),
         make_option('--auth-providers',
                     action='store_true',
                     dest='auth_providers',
@@ -89,11 +84,6 @@ class Command(ListCommand):
                     dest='groups',
                     default=None,
                     help="Only show users that belong to the specified goups"),
-        make_option('-n',
-                    action='store_true',
-                    dest='pending_send_mail',
-                    default=False,
-                    help="List only users who have not received activation"),
         make_option('--active',
                     action='store_true',
                     dest='active',
@@ -117,13 +107,6 @@ class Command(ListCommand):
     )
 
     def handle_args(self, *args, **options):
-        if options['pending']:
-            self.filters['is_active'] = False
-
-        if options['pending_send_mail']:
-            self.filters['is_active'] = False
-            self.filters['activation_sent'] = None
-
         if options['active']:
             self.filters['is_active'] = True
 

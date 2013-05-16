@@ -209,7 +209,7 @@ def provider_login_url(context, provider, from_login=False):
     if "?" in url:
         joinchar = "&"
 
-    return "%s%s%s" % (provider.add_url, joinchar, urllib.urlencode(attrs))
+    return "%s%s%s" % (url, joinchar, urllib.urlencode(attrs))
 
 
 EXTRA_CONTENT_MAP = {

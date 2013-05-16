@@ -417,7 +417,7 @@ class InvitationsBackend(ActivationBackend):
     as soon as an administrator activates his/her account.
     """
 
-    def get_signup_form(self, invitation, provider='local', inital_data=None,
+    def get_signup_form(self, invitation, provider='local', initial_data=None,
                         instance=None):
         """
         Returns a form instance of the relevant class

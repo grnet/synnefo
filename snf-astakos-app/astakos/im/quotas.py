@@ -140,8 +140,6 @@ def register_pending_apps(user, quantity, force=False, dry_run=False):
     except NoCapacityError as e:
         limit = e.data['limit']
         return False, limit
-    except QuotaholderError:
-        return False, None
     accept = not dry_run
     qh.resolve_pending_commission('astakos', s, accept)
     return True, None

@@ -125,7 +125,12 @@ class Command(BaseCommand):
                 request["auto_accept"] = True
                 request["name"] = "RECONCILE"
                 request["provisions"] = map(create_provision, unsynced)
-                qh.issue_commission(ASTAKOS_TOKEN, request)
+                try:
+                    qh.issue_commission(ASTAKOS_TOKEN, request)
+                except quotas.QuotaLimit:
+                    write("Reconciling failed because a limit has been "
+                          "reached. Use --force to ignore the check.\n")
+                    return
                 write("Fixed unsynced resources\n")
 
         if pending_exists:

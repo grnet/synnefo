@@ -38,6 +38,7 @@ from optparse import make_option
 from pithos.api.util import get_backend
 from pithos.backends.modular import CLUSTER_NORMAL, DEFAULT_SOURCE
 from synnefo.webproject.management import utils
+from astakosclient.errors import QuotaLimit
 
 backend = get_backend()
 
@@ -128,9 +129,16 @@ class Command(NoArgsCommand):
                     request['auto_accept'] = True
                     request['name'] = "RECONCILE"
                     request['provisions'] = map(create_provision, unsynced)
-                    backend.astakosclient.issue_commission(
-                        backend.service_token, request
-                    )
+                    try:
+                        backend.astakosclient.issue_commission(
+                            backend.service_token, request
+                            )
+                    except QuotaLimit:
+                        self.stdout.write(
+                            "Reconciling failed because a limit has been "
+                            "reached. Use --force to ignore the check.\n")
+                        return
+
 
             if pending_exists:
                 self.stdout.write(

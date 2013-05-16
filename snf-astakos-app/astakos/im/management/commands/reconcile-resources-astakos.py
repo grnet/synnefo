@@ -41,6 +41,7 @@ from astakos.im.models import Service, AstakosUser
 from astakos.im.quotas import service_get_quotas, SYSTEM
 from astakos.im.functions import count_pending_app
 import astakos.quotaholder_app.callpoint as qh
+import astakos.quotaholder_app.exception as qh_exception
 
 
 class Command(BaseCommand):
@@ -129,8 +130,14 @@ class Command(BaseCommand):
             pprint_table(self.stderr, unsynced, headers)
             if options["fix"]:
                 provisions = map(create_provision, unsynced)
-                s = qh.issue_commission('astakos', provisions,
-                                        name='RECONCILE', force=force)
+                try:
+                    s = qh.issue_commission('astakos', provisions,
+                                            name='RECONCILE', force=force)
+                except qh_exception.NoCapacityError:
+                    write("Reconciling failed because a limit has been "
+                          "reached. Use --force to ignore the check.\n")
+                    return
+
                 qh.resolve_pending_commission('astakos', s)
                 write("Fixed unsynced resources\n")
 

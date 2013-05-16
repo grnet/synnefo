@@ -666,7 +666,8 @@ def submit_application(owner=None,
             app.save()
 
     application.save()
-    application.set_resource_policies(resource_policies)
+    if resource_policies is not None:
+        application.set_resource_policies(resource_policies)
     logger.info("User %s submitted %s." %
                 (request_user.log_display, application.log_display))
     application_submit_notify(application)

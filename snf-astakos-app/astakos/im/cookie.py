@@ -91,20 +91,26 @@ class Cookie():
             COOKIE_NAME, value=cookie_value, expires=expire_fmt, path='/',
             domain=COOKIE_DOMAIN, secure=COOKIE_SECURE
         )
-        msg = 'Cookie [expiring %(auth_token_expires)s] set for %(uuid)s' % user.__dict__
+        msg = str(('Cookie [expiring %(auth_token_expires)s]',
+                   'set for %(uuid)s')) % user.__dict__
         logger._log(LOGGING_LEVEL, msg, [])
 
     def __delete(self):
         if not self.response:
             raise ValueError(_(astakos_messages.NO_RESPONSE))
-        self.response.delete_cookie(COOKIE_NAME, path='/', domain=COOKIE_DOMAIN)
+        self.response.delete_cookie(
+            COOKIE_NAME, path='/', domain=COOKIE_DOMAIN)
         msg = 'Cookie deleted for %(uuid)s' % self.__dict__
         logger._log(LOGGING_LEVEL, msg, [])
 
     def fix(self, response=None):
         self.response = response or self.response
         try:
-	    if self.user.is_authenticated():
+            api_call = getattr(self.request, 'api_call', False)
+            if api_call:
+                return
+
+            if self.user.is_authenticated():
                 if not self.is_set or not self.is_valid:
                     self.__set()
             else:

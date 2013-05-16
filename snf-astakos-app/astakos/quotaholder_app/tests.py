@@ -70,7 +70,7 @@ class QuotaholderTest(TestCase):
         r = qh.get_quota()
         self.assertEqual(r, {(holder, source, resource1): (limit2, 0, 0)})
 
-        # issueing commissions
+        # issuing commissions
 
         qh.set_quota([((holder, source, resource1), limit1),
                       ((holder, source, resource2), limit2)])
@@ -235,6 +235,11 @@ class QuotaholderTest(TestCase):
             (holder, source, resource2): (limit2, limit2-2, limit2-1),
         }
         self.assertEqual(r, quotas)
+
+        with assertRaises(NoQuantityError):
+            self.issue_commission(
+                [((holder, source, resource1), -2*limit1)],
+                force=True)
 
         # release off upper limit
 

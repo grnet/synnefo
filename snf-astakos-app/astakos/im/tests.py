@@ -1917,7 +1917,21 @@ class QuotaAPITest(TestCase):
         r = client.post(u('commissions'), post_data,
                         content_type='application/json', **s1_headers)
         self.assertEqual(r.status_code, 201)
-        body = json.loads(r.content)
+
+        commission_request = {
+            "force": True,
+            "provisions": [
+                {
+                    "holder": user.uuid,
+                    "source": "system",
+                    "resource": resource11['name'],
+                    "quantity": -200
+                }]}
+
+        post_data = json.dumps(commission_request)
+        r = client.post(u('commissions'), post_data,
+                        content_type='application/json', **s1_headers)
+        self.assertEqual(r.status_code, 413)
 
         r = client.get(u('quotas'), **headers)
         self.assertEqual(r.status_code, 200)

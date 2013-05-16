@@ -155,7 +155,7 @@ def issue_commission(clientkey, provisions, name="", force=False):
 
             else:  # release
                 abs_quantity = -quantity
-                operations.prepare(Release, th, abs_quantity, force)
+                operations.prepare(Release, th, abs_quantity, False)
 
             holdings[key] = th
             provisions_to_create.append((key, quantity))

@@ -173,6 +173,14 @@ Cyclades
   'service-export-cyclades'.
 * Obsolete PUBLIC_USE_POOL setting, since Cyclades manages IP pool for all
   type of networks.
+* Encrypt / decrypt the instance id / hostname in the  stats URL in
+  snf-cyclades-app and snf-stats-app, using the 'CYCLADES_STATS_SECRET_KEY'
+  and 'STATS_SECRET_KEY' respectively.
+* Add support for snf-vncauthproxy-1.5 and the setting
+  'CYCLADES_VNCAUTHPROXY_OPTS', which configures the extra options / arguments
+  needed by the newer version of snf-vncauthproxy. Support for older versions
+  of snf-vncauthproxy has been dropped. See also the upgrade notes for Synnefo
+  and snf-vncauthproxy-1.5.
 
 Pithos
 ------
@@ -340,6 +348,7 @@ Cyclades
 
 * Add new setting PITHOS_BACKEND_POOL_SIZE, which configures the size
   of the pool of Pithos backends that are used by plankton.
+
 
 
 .. _Changelog-0.14:

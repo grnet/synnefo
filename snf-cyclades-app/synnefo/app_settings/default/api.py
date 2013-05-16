@@ -84,13 +84,17 @@ DEFAULT_FIREWALL_PROFILE = 'DISABLED'
 BACKEND_PER_USER = {}
 
 
+# Encryption key for the instance hostname in the stat graphs URLs. Set it to
+# a random string and update the STATS_SECRET_KEY setting in the snf-stats-app
+# host (20-snf-stats-app-settings.conf) accordingly.
+CYCLADES_STATS_SECRET_KEY = "secret_key"
+
 # URL templates for the stat graphs.
 # The API implementation replaces '%s' with the encrypted backend id.
-# FIXME: For now we do not encrypt the backend id.
-CPU_BAR_GRAPH_URL = 'http://stats.synnefo.org/%s/cpu-bar.png'
-CPU_TIMESERIES_GRAPH_URL = 'http://stats.synnefo.org/%s/cpu-ts.png'
-NET_BAR_GRAPH_URL = 'http://stats.synnefo.org/%s/net-bar.png'
-NET_TIMESERIES_GRAPH_URL = 'http://stats.synnefo.org/%s/net-ts.png'
+CPU_BAR_GRAPH_URL = 'http://stats.example.synnefo.org/stats/v1.0/cpu-bar/%s'
+CPU_TIMESERIES_GRAPH_URL = 'http://stats.example.synnefo.org/stats/v1.0/cpu-ts/%s'
+NET_BAR_GRAPH_URL = 'http://stats.example.synnefo.org/stats/v1.0/net-bar/%s'
+NET_TIMESERIES_GRAPH_URL = 'http://stats.example.synnefo.org/stats/v1.0/net-ts/%s'
 
 # Recommended refresh period for server stats
 STATS_REFRESH_PERIOD = 60

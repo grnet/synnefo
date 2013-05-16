@@ -59,6 +59,7 @@ INSTALL_REQUIRES = [
     'py-rrdtool',
     'Django>=1.4, <1.5',
     'snf-django-lib',
+    'pycrypto>=2.1.0',
 ]
 
 setup(

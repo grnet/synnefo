@@ -161,6 +161,14 @@ For Pithos service we have to change the ``20-snf-pithos-app-settings.conf``
 file in the same way as above.
 
 
+v0.15 has also introduced the ``CYCLADES_STATS_SECRET_KEY`` and
+``STATS_SECRET_KEY`` settings. ``CYCLADES_STATS_SECRET_KEY`` in
+``20-snf-cyclades-app-api.conf`` is used by Cyclades to encrypt the instance id
+/ hostname  in the URLs serving the VM stats. You should set it to a random
+value / string and make sure that it's the same as the ``STATS_SECRET_KEY``
+setting (used to decrypt the instance hostname) in
+``20-snf-stats-settings.conf`` on your Stats host.
+
 3. Create floating IP pools
 ===========================
 

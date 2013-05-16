@@ -43,6 +43,10 @@ from cStringIO import StringIO
 
 import rrdtool
 
+from Crypto.Cipher import AES
+from base64 import urlsafe_b64decode
+from hashlib import sha256
+
 from synnefo_stats import settings
 
 from synnefo.util.text import uenc
@@ -196,10 +200,8 @@ def draw_net_ts(fname, outfname):
     outfname += "-net.png"
 
     rrdtool.graph(outfname, "-s", "-1d", "-e", "-20s",
-              #"-t", "Network traffic",
               "--units", "si",
               "-v", "Bits/s",
-              #"--lazy",
               "COMMENT:\t\t\tAverage network traffic\\n",
               "DEF:rx=%s:rx:AVERAGE" % fname,
               "DEF:tx=%s:tx:AVERAGE" % fname,
@@ -218,10 +220,8 @@ def draw_net_ts_w(fname, outfname):
     outfname += "-net-weekly.png"
 
     rrdtool.graph(outfname, "-s", "-1w", "-e", "-20s",
-              #"-t", "Network traffic",
               "--units", "si",
               "-v", "Bits/s",
-              #"--lazy",
               "COMMENT:\t\t\tAverage network traffic\\n",
               "DEF:rx=%s:rx:AVERAGE" % fname,
               "DEF:tx=%s:tx:AVERAGE" % fname,
@@ -233,6 +233,14 @@ def draw_net_ts_w(fname, outfname):
               "GPRINT:txbits:AVERAGE:\t%4.0lf%sbps\\n")
 
     return read_file(outfname)
+
+
+def decrypt(secret):
+    # Make sure key is 32 bytes long
+    key = sha256(settings.STATS_SECRET_KEY).digest()
+
+    aes = AES.new(key)
+    return aes.decrypt(urlsafe_b64decode(secret)).rstrip('\x00')
 
 
 available_graph_types = {
@@ -248,6 +256,7 @@ available_graph_types = {
 @api_method(http_method='GET', token_required=False, user_required=False,
             format_allowed=False, logger=log)
 def grapher(request, graph_type, hostname):
+    hostname = decrypt(uenc(hostname))
     fname = uenc(os.path.join(settings.RRD_PREFIX, hostname))
     if not os.path.isdir(fname):
         raise faults.ItemNotFound('No such instance')

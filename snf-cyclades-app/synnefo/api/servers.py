@@ -687,8 +687,7 @@ def server_stats(request, server_id):
 
     log.debug('server_stats %s', server_id)
     vm = util.get_vm(server_id, request.user_uniq)
-    #secret = util.encrypt(vm.backend_vm_id)
-    secret = vm.backend_vm_id      # XXX disable backend id encryption
+    secret = util.stats_encrypt(vm.backend_vm_id)
 
     stats = {
         'serverRef': vm.id,

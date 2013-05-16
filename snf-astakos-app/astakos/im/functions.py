@@ -35,7 +35,7 @@ import logging
 import socket
 
 from django.utils.translation import ugettext as _
-from django.template.loader import render_to_string
+from synnefo_branding.utils import render_to_string
 from django.core.mail import send_mail, get_connection
 from django.core.urlresolvers import reverse
 from django.template import Context, loader

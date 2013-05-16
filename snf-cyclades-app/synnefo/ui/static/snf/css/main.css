@@ -327,6 +327,11 @@ div.css-panes {
     padding-top: 28px;
 }
 
+.header-logo img {
+    max-width:100%;
+    max-height:64px;
+}
+
 div#footer-text a {
     color: #FFFFFF;
     text-decoration: none;
@@ -3805,6 +3810,11 @@ div.single div.column3 div.server-name:hover {
     padding-top: 16px;
     margin-left: 30px;
     position: fixed;
+}
+
+.console-header-logo img {
+    max-width:100%;
+    max-height:65px;
 }
 
 #console-header div.help-text {

@@ -59,7 +59,7 @@ $(document).ready(function(){
             var title = el.cloudbar.name || el.verbose_name || el.name;
             if (!el.cloudbar.show) { return }
             if (el.cloudbar.icon) {
-                slink.append($('<img alt="'+title+'" src="'+cssloc+el.cloudbar.icon+'"/>'));
+                slink.append($('<img alt="'+title+'" src="'+el.cloudbar.icon+'"/>'));
                 slink.addClass("with-icon");
             } else {
                 slink.html(title);

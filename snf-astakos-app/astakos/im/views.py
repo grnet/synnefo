@@ -117,6 +117,7 @@ from astakos.im import quotas
 logger = logging.getLogger(__name__)
 
 
+
 def render_response(template, tab=None, status=200, context_instance=None, **kwargs):
     """
     Calls ``django.template.loader.render_to_string`` with an additional ``tab``
@@ -1025,6 +1026,7 @@ def _update_object(request, model=None, object_id=None, slug=None,
         return response
 
 
+
 def _resources_catalog(for_project=False, for_usage=False):
     """
     `resource_catalog` contains a list of tuples. Each tuple contains the group
@@ -1202,6 +1204,7 @@ def _project_app_cancel(request, application_id):
         cancel_application(application_id, request.user)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
+
     else:
         msg = _(astakos_messages.APPLICATION_CANCELLED)
         messages.success(request, msg)
@@ -1497,6 +1500,7 @@ def _project_cancel(request, chain_id):
         messages.error(request, e)
 
 
+
 @require_http_methods(["POST"])
 @valid_astakos_user_required
 def project_accept_member(request, chain_id, memb_id):
@@ -1515,6 +1519,7 @@ def _project_accept_member(request, chain_id, memb_id):
         m = accept_membership(chain_id, memb_id, request.user)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
+
     else:
         email = escape(m.person.email)
         msg = _(astakos_messages.USER_MEMBERSHIP_ACCEPTED) % email

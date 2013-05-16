@@ -43,6 +43,7 @@ from django.utils import simplejson as json
 from django.template.loader import render_to_string
 from django.core.urlresolvers import reverse
 from django.template import RequestContext
+from synnefo_branding import settings as snf_settings
 
 from synnefo.util.version import get_component_version
 
@@ -81,6 +82,7 @@ IMAGE_DELETED_SIZE_TITLE = \
 
 SUPPORT_SSH_OS_LIST = getattr(settings, "UI_SUPPORT_SSH_OS_LIST",)
 OS_CREATED_USERS = getattr(settings, "UI_OS_DEFAULT_USER_MAP")
+UNKNOWN_OS = getattr(settings, "UI_UNKNOWN_OS", "unknown")
 LOGOUT_URL = getattr(settings, "UI_LOGOUT_URL", '/im/authenticate')
 LOGIN_URL = getattr(settings, "UI_LOGIN_URL", '/im/login')
 AUTH_COOKIE_NAME = getattr(settings, "UI_AUTH_COOKIE_NAME", 'synnefo_user')
@@ -95,7 +97,7 @@ SKIP_TIMEOUTS = getattr(settings, "UI_SKIP_TIMEOUTS", 1)
 # Additional settings
 VM_NAME_TEMPLATE = getattr(settings, "VM_CREATE_NAME_TPL", "My {0} server")
 VM_HOSTNAME_FORMAT = getattr(settings, "UI_VM_HOSTNAME_FORMAT",
-                             'snf-%(id)s.vm.okeanos.grnet.gr')
+                                    'snf-%(id)s.vm.synnefo.org')
 
 if isinstance(VM_HOSTNAME_FORMAT, basestring):
     VM_HOSTNAME_FORMAT = VM_HOSTNAME_FORMAT % {'id': '{0}'}
@@ -168,14 +170,14 @@ def template(name, request, context):
     current_template = template_path + name + '.html'
     t = loader.get_template(current_template)
     media_context = {
-        'UI_MEDIA_URL': UI_MEDIA_URL,
-        'SYNNEFO_JS_URL': UI_SYNNEFO_JS_URL,
-        'SYNNEFO_JS_LIB_URL': UI_SYNNEFO_JS_LIB_URL,
-        'SYNNEFO_JS_WEB_URL': UI_SYNNEFO_JS_WEB_URL,
-        'SYNNEFO_IMAGES_URL': UI_SYNNEFO_IMAGES_URL,
-        'SYNNEFO_CSS_URL': UI_SYNNEFO_CSS_URL,
-        'SYNNEFO_JS_LIB_VERSION': SYNNEFO_JS_LIB_VERSION,
-        'DEBUG': settings.DEBUG
+       'UI_MEDIA_URL': UI_MEDIA_URL,
+       'SYNNEFO_JS_URL': UI_SYNNEFO_JS_URL,
+       'SYNNEFO_JS_LIB_URL': UI_SYNNEFO_JS_LIB_URL,
+       'SYNNEFO_JS_WEB_URL': UI_SYNNEFO_JS_WEB_URL,
+       'SYNNEFO_IMAGES_URL': UI_SYNNEFO_IMAGES_URL,
+       'SYNNEFO_CSS_URL': UI_SYNNEFO_CSS_URL,
+       'SYNNEFO_JS_LIB_VERSION': SYNNEFO_JS_LIB_VERSION,
+       'DEBUG': settings.DEBUG
     }
     context.update(media_context)
     return HttpResponse(t.render(RequestContext(request, context)))
@@ -198,7 +200,7 @@ def home(request):
                 UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT,
                'update_interval_fast': UPDATE_INTERVAL_FAST,
                'update_interval_max': UPDATE_INTERVAL_MAX,
-               'changes_since_alignment': CHANGES_SINCE_ALIGNMENT,
+               'changes_since_alignment': CHANGES_SINCE_ALIGNMENT, 
                'image_icons': IMAGE_ICONS,
                'logout_redirect': LOGOUT_URL,
                'login_redirect': LOGIN_URL,
@@ -240,7 +242,6 @@ def home(request):
                'vm_hostname_format': json.dumps(VM_HOSTNAME_FORMAT)
                }
     return template('home', request, context)
-
 
 def machines_console(request):
     host, port, password = ('', '', '')
@@ -380,7 +381,7 @@ def machines_connect(request):
                     'ip_address': ip_address,
                     'hostname': hostname,
                     'user': username
-                }
+                  }
 
         rdp_context = {
             'username': username,
@@ -445,3 +446,4 @@ def machines_connect(request):
                          mimetype='application/json')  # no windows, no rdp
 
     return response
+

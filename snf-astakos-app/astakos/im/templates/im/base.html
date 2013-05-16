@@ -1,4 +1,5 @@
 {% load astakos_tags %}<!doctype html>
+<html>
 <head>
   {% block starthead %}{% endblock starthead %}
   <meta charset="UTF-8">
@@ -6,7 +7,7 @@
   <meta http-equiv="X-UA-Compatible" content="{{ resource.meta.compatibility }}">
   
   <title>
-     {% block page.title %}Accounts{% endblock %} / GRNET Cloud Accounts 
+    {{ BRANDING_SERVICE_NAME }} Dashboard | {% block page.title %}Overview{% endblock %}
   </title>
   
   <meta name="description" content="">
@@ -21,7 +22,7 @@
   {% endblock %}
   
   {% block page.favicons %}
-  <link rel="shortcut icon" href="">
+  <link rel="shortcut icon" href="{{ BRANDING_FAVICON_URL }}" />
   <link rel="apple-touch-icon" href="">
   {% endblock page.favicons %}
 
@@ -53,7 +54,8 @@
       <script src="{{ IM_STATIC_URL }}js/jquery-ui-1.8.21.custom.min.js"></script>
       <script src="{{ IM_STATIC_URL }}js/jquery.tablesorter.js"></script>	 	 
       <script src="{{ IM_STATIC_URL }}js/jquery.cookie.js"></script>	 	 
-      <script src="{{ IM_STATIC_URL }}js/mustache.js"></script>	 	 
+      <script src="{{ IM_STATIC_URL }}js/mustache.js"></script>
+	  <script src="{{ IM_STATIC_URL }}js/retina.js"></script>	 	 
       <script src="{{ IM_STATIC_URL }}js/common.js"></script> 
   {% endblock headjs %}
   {% block endhead %}{% endblock endhead %}
@@ -80,13 +82,12 @@
 
 <body>
     <div class="container">
-        <div class="wrapper">       
-            
+        <div class="wrapper">     
             {% display_messages %}
 
 	        <div class="mainlogo">
-                <a href="{% url astakos.im.views.index %}">
-	        		<img src="{{ IM_STATIC_URL }}images/accounts-logo.png" alt="accounts" />
+            <a href="{% url index %}" title="{{ BRANDING_SERVICE_NAME }} Dashboard">
+	        		<img src="{{ BRANDING_DASHBOARD_LOGO_URL }}" alt="{{ BRANDING_SERVICE_NAME }} Dashboard" />
 	        	</a>
 	        </div>
             {% block page.nav %}

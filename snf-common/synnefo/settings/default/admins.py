@@ -24,7 +24,7 @@ EMAIL_SUBJECT_PREFIX = "[email-subject-prefix] "
 DEFAULT_CHARSET = 'utf-8'
 
 # Address to use for outgoing emails
-DEFAULT_FROM_EMAIL = "~okeanos <no-reply@grnet.gr>"
+DEFAULT_FROM_EMAIL = "synnefo <no-reply@synnefo.org>"
 
 # Email where users can contact for support
 CONTACT_EMAIL = "support@synnefo.org"

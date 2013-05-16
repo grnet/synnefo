@@ -964,6 +964,7 @@ class TestAuthProviderViews(TestCase):
         login_data = {'username': 'olduser@synnefo.org', 'password': 'password'}
         r = cl_olduser.post('/im/local', login_data, follow=True)
         self.assertContains(r, "href='/im/login/shibboleth'>Academic login")
+        Group.objects.all().delete()
 
 
 class TestAuthProvidersAPI(TestCase):
@@ -1052,6 +1053,7 @@ class TestAuthProvidersAPI(TestCase):
         self.assertEqual(sorted(user.groups.values_list('name', flat=True)),
                               sorted([u'group-create', u'group1', u'group2',
                                u'localgroup']))
+        Group.objects.all().delete()
 
 
 

@@ -111,9 +111,6 @@ class Command(SynnefoCommand):
                     ('activation_sent_date', user.activation_sent),
                 ])
 
-            if settings_dict:
-                kv['settings'] = settings_dict
-
             if get_latest_terms():
                 has_signed_terms = user.signed_terms
                 kv['has_signed_terms'] = has_signed_terms
@@ -125,7 +122,7 @@ class Command(SynnefoCommand):
 
             if options["list_quotas"]:
                 self.stdout.write("\n")
-                _, quotas, initial, _ = list_user_quotas([user])
+                quotas, initial = list_user_quotas([user])
                 print_data, labels = show_quotas(quotas, initial)
                 utils.pprint_table(self.stdout, print_data, labels,
                                    options["output_format"])

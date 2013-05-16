@@ -114,6 +114,10 @@ class Command(BaseCommand):
                     dest='accept',
                     action='store_true',
                     help="Accept user"),
+        make_option('--verify',
+                    dest='verify',
+                    action='store_true',
+                    help="Verify user email"),
         make_option('--reject',
                     dest='reject',
                     action='store_true',
@@ -168,6 +172,16 @@ class Command(BaseCommand):
                 print "Failed to reject.", res.message
             else:
                 print "Account rejected"
+
+        if options.get('verify'):
+            res = activation_backend.handle_verification(
+                user,
+                user.verification_code)
+            #activation_backend.send_result_notifications(res, user)
+            if res.is_error():
+                print "Failed to verify.", res.message
+            else:
+                print "Account verified (%s)" % res.status_display()
 
         if options.get('accept'):
             res = activation_backend.handle_moderation(user, accept=True)

@@ -245,11 +245,6 @@ def list_servers(request, detail=False):
 
 
 @api.api_method(http_method='POST', user_required=True, logger=log)
-# Use manual transactions. Backend and IP pool allocations need exclusive
-# access (SELECT..FOR UPDATE). Running create_server with commit_on_success
-# would result in backends and public networks to be locked until the job is
-# sent to the Ganeti backend.
-@transaction.commit_manually
 def create_server(request):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
@@ -260,44 +255,62 @@ def create_server(request):
     #                       badRequest (400),
     #                       serverCapacityUnavailable (503),
     #                       overLimit (413)
+    req = utils.get_request_dict(request)
+    log.info('create_server %s', req)
+    user_id = request.user_uniq
+
     try:
-        req = utils.get_request_dict(request)
-        log.info('create_server %s', req)
-        user_id = request.user_uniq
+        server = req['server']
+        name = server['name']
+        metadata = server.get('metadata', {})
+        assert isinstance(metadata, dict)
+        image_id = server['imageRef']
+        flavor_id = server['flavorRef']
+        personality = server.get('personality', [])
+        assert isinstance(personality, list)
+    except (KeyError, AssertionError):
+        raise faults.BadRequest("Malformed request")
 
+    # Verify that personalities are well-formed
+    util.verify_personality(personality)
+    # Get image information
+    image = util.get_image_dict(image_id, user_id)
+    # Get flavor (ensure it is active)
+    flavor = util.get_flavor(flavor_id, include_deleted=False)
+    # Generate password
+    password = util.random_password()
+
+    vm = do_create_server(user_id, name, password, flavor, image,
+                          metadata=metadata, personality=personality)
+
+    server = vm_to_dict(vm, detail=True)
+    server['status'] = 'BUILD'
+    server['adminPass'] = password
+
+    response = render_server(request, server, status=202)
+
+    return response
+
+
+@transaction.commit_manually
+def do_create_server(userid, name, password, flavor, image, metadata={},
+                  personality=[], network=None, backend=None):
+    if backend is None:
+        # Allocate backend to host the server. Commit after allocation to
+        # release the locks hold by the backend allocator.
         try:
-            server = req['server']
-            name = server['name']
-            metadata = server.get('metadata', {})
-            assert isinstance(metadata, dict)
-            image_id = server['imageRef']
-            flavor_id = server['flavorRef']
-            personality = server.get('personality', [])
-            assert isinstance(personality, list)
-        except (KeyError, AssertionError):
-            raise faults.BadRequest("Malformed request")
-
-        # Verify that personalities are well-formed
-        util.verify_personality(personality)
-        # Get image information
-        image = util.get_image_dict(image_id, user_id)
-        # Get flavor (ensure it is active)
-        flavor = util.get_flavor(flavor_id, include_deleted=False)
-        # Allocate VM to backend
-        backend_allocator = BackendAllocator()
-        backend = backend_allocator.allocate(request.user_uniq, flavor)
-
-        if backend is None:
-            log.error("No available backends for VM with flavor %s", flavor)
-            raise faults.ServiceUnavailable("No available backends")
-    except:
-        transaction.rollback()
-        raise
-    else:
-        transaction.commit()
+            backend_allocator = BackendAllocator()
+            backend = backend_allocator.allocate(userid, flavor)
+            if backend is None:
+                log.error("No available backend for VM with flavor %s", flavor)
+                raise faults.ServiceUnavailable("No available backends")
+        except:
+            transaction.rollback()
+            raise
+        else:
+            transaction.commit()
 
     # Fix flavor for archipelago
-    password = util.random_password()
     disk_template, provider = util.get_flavor_provider(flavor)
     if provider:
         flavor.disk_template = disk_template
@@ -310,17 +323,20 @@ def create_server(request):
         flavor.disk_provider = None
 
     try:
-        # Allocate IP from public network
-        (network, address) = util.get_public_ip(backend)
-        nic = {'ip': address, 'network': network.backend_id}
+        if network is None:
+            # Allocate IP from public network
+            (network, address) = util.get_public_ip(backend)
+            nic = {'ip': address, 'network': network.backend_id}
+        else:
+            address = util.get_network_free_address(network)
 
         # We must save the VM instance now, so that it gets a valid
         # vm.backend_vm_id.
         vm = VirtualMachine.objects.create(
             name=name,
             backend=backend,
-            userid=user_id,
-            imageid=image_id,
+            userid=userid,
+            imageid=image["id"],
             flavor=flavor,
             action="CREATE")
 
@@ -364,7 +380,7 @@ def create_server(request):
         vm.save()
         transaction.commit()
         log.info("User %s created VM %s, NIC %s, Backend %s, JobID %s",
-                 user_id, vm, nic, backend, str(jobID))
+                 userid, vm, nic, backend, str(jobID))
     except GanetiApiError as e:
         log.exception("Can not communicate to backend %s: %s.",
                       backend, e)
@@ -380,13 +396,7 @@ def create_server(request):
         transaction.rollback()
         raise
 
-    server = vm_to_dict(vm, detail=True)
-    server['status'] = 'BUILD'
-    server['adminPass'] = password
-
-    response = render_server(request, server, status=202)
-
-    return response
+    return vm
 
 
 @api.api_method(http_method='GET', user_required=True, logger=log)

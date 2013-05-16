@@ -158,6 +158,8 @@ def get_image_dict(image_id, user_id):
     image = {}
     img = get_image(image_id, user_id)
     properties = img.get('properties', {})
+    image["id"] = img["id"]
+    image["name"] = img["name"]
     image['backend_id'] = img['location']
     image['format'] = img['disk_format']
     image['metadata'] = dict((key.upper(), val)

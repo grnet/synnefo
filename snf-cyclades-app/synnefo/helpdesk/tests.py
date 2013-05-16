@@ -78,6 +78,21 @@ class AuthClient(Client):
         return super(AuthClient, self).request(**request)
 
 
+def get_user_mock(request, *args, **kwargs):
+    request.user_uniq = None
+    request.user = None
+    if request.META.get('HTTP_X_AUTH_TOKEN', None) == '0000':
+        request.user_uniq = 'test'
+        request.user = {'uniq': 'test', 'auth_token': '0000'}
+    if request.META.get('HTTP_X_AUTH_TOKEN', None) == '0001':
+        request.user_uniq = 'test'
+        request.user = {'uniq': 'test', 'groups': ['default',
+                                                   'helpdesk'],
+                        'auth_token': '0001'}
+
+
+@mock.patch("astakosclient.AstakosClient", new=AstakosClientMock)
+@mock.patch("snf_django.lib.astakos.get_user", new=get_user_mock)
 class HelpdeskTests(TestCase):
     """
     Helpdesk tests. Test correctness of permissions and returned data.
@@ -86,25 +101,6 @@ class HelpdeskTests(TestCase):
     fixtures = ['helpdesk_test']
 
     def setUp(self):
-
-        def get_user_mock(request, *args, **kwargs):
-            request.user_uniq = None
-            request.user = None
-            if request.META.get('HTTP_X_AUTH_TOKEN', None) == '0000':
-                request.user_uniq = 'test'
-                request.user = {'uniq': 'test', 'auth_token': '0000'}
-            if request.META.get('HTTP_X_AUTH_TOKEN', None) == '0001':
-                request.user_uniq = 'test'
-                request.user = {'uniq': 'test', 'groups': ['default',
-                                                           'helpdesk'],
-                                'auth_token': '0001'}
-
-        # mock the astakos authentication function
-        from snf_django.lib import astakos
-        astakos.get_user = get_user_mock
-        import astakosclient
-        astakosclient.AstakosClient = AstakosClientMock
-
         settings.SKIP_SSH_VALIDATION = True
         settings.HELPDESK_ENABLED = True
         self.client = AuthClient()

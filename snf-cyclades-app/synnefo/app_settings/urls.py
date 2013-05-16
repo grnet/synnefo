@@ -50,10 +50,8 @@ PROXY_USER_SERVICES = getattr(settings, 'CYCLADES_PROXY_USER_SERVICES', True)
 if PROXY_USER_SERVICES:
     urlpatterns += patterns(
         '',
-        (r'^feedback/?$', 'synnefo.api.delegate.delegate_to_feedback_service'),
-        (r'^user_catalogs/?$',
-         'synnefo.api.delegate.delegate_to_user_catalogs_service'),
-        (r'^astakos/api/resources/?$',
-         'synnefo.api.delegate.delegate_to_resources_service'),
-        (r'^astakos/api/quotas/?$',
-         'synnefo.api.delegate.delegate_to_user_quota_service'))
+        (r'^login/?$', csrf_exempt(astakos_proxy)),
+        (r'^feedback/?$', csrf_exempt(astakos_proxy)),
+        (r'^user_catalogs/?$', csrf_exempt(astakos_proxy)),
+        (r'^astakos/api/', csrf_exempt(astakos_proxy))
+    )

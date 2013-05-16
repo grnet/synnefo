@@ -836,6 +836,7 @@ def _partition_by(f, l):
 
 
 def count_pending_app(users):
+    users = list(users)
     apps = ProjectApplication.objects.filter(state=ProjectApplication.PENDING,
                                              owner__in=users)
     apps_d = _partition_by(lambda a: a.owner.uuid, apps)

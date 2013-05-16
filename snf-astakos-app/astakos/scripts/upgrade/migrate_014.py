@@ -47,7 +47,7 @@ def main():
         print "Resource 'astakos.pending_app' not found."
         return
 
-    userids = set()
+    users = set()
     settings = UserSetting.objects.filter(setting=SETTING)
     for setting in settings:
         user = setting.user
@@ -59,9 +59,9 @@ def main():
             print "Base quota already exists: %s %s" % (user.uuid, RESOURCE)
             continue
         print "Migrated base quota: %s %s %s" % (user.uuid, RESOURCE, value)
-        userids.add(user.id)
+        users.add(user)
 
-    qh_sync_users(userids)
+    qh_sync_users(users)
 
 
 if __name__ == '__main__':

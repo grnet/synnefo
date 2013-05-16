@@ -165,6 +165,7 @@ def remove_base_quota(user, resource):
 
 
 def initial_quotas(users):
+    users = list(users)
     initial = {}
     default_quotas = get_default_quota()
 
@@ -192,6 +193,7 @@ def get_grant_source(grant):
 
 
 def astakos_users_quotas(users, initial=None):
+    users = list(users)
     if initial is None:
         quotas = initial_quotas(users)
     else:
@@ -274,6 +276,7 @@ def qh_sync_user(user):
 
 
 def qh_sync_projects(projects):
+    projects = list(projects)
     memberships = ProjectMembership.objects.filter(
         project__in=projects, state__in=ProjectMembership.ACTUALLY_ACCEPTED)
     users = set(m.person for m in memberships)

@@ -42,6 +42,7 @@ from django.utils import simplejson as json
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext as _
 from django.contrib import messages
+from django.contrib.auth.models import User
 
 from snf_django.lib import api
 from astakos.im.models import Service
@@ -84,7 +85,7 @@ def get_menu(request, with_extra_links=False, with_signout=True):
     user = request.user
     index_url = reverse('index')
 
-    if user.is_authenticated():
+    if isinstance(user, User) and user.is_authenticated():
         l = []
         append = l.append
         item = MenuItem

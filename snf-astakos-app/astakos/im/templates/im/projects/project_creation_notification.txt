@@ -1,7 +1,5 @@
-{% load filters %}
- 
 {% extends "im/email.txt" %}
-
+{% load filters %}
   
 {% block content %}
 The following project has been created:

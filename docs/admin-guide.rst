@@ -932,16 +932,16 @@ company’s  visual identity.
 Configuration
 ~~~~~~~~~~~~~
 
-The settings for the snf-branding application are found in the configuration 
-file   <path_to_conf_file> 15-snf-branding.conf
+The settings for the snf-branding application can be found in the configuration 
+file   <path_to_conf_file>/15-snf-branding.conf
 
-By default, the service name is Synnefo and the Company name is GRNET. 
+By default, the service name is Synnefo and the company name is GRNET. 
 These name and their respective logos and urls are used throughout Astakos, 
 Pithos and Cyclades UI.
 
 **Name and logos:**
 
-The first group of branding customization regards Company and Service info.
+The first group of branding customization regards company and service info.
 
 You can overwrite the company and the service name and url respectively  by 
 uncommenting  and setting the following:
@@ -954,15 +954,15 @@ uncommenting  and setting the following:
   #BRANDING_COMPANY_URL = 'https://www.grnet.gr/en/'
 
 
-BRANDING_COMPANY_NAME and BRANDING_COMPANY_URL  appear in Astakos and Cyclades 
-footer.
-BRANDING_COMPANY_NAME appears also in Astakos project tab.
+BRANDING_COMPANY_NAME and BRANDING_COMPANY_URL  appear in Astakos, Cyclades and 
+Pithos footer.
+In addition to that, BRANDING_COMPANY_NAME appears in Astakos project tab.
 
 **Copyright options:**
 
 By default, no copyright message is shown in the UI. If you want to make it 
-visible to to footer of Astakos and Cyclades,  you can uncomment and  set True 
-the setting:
+visible to the footer of Astakos, Cyclades and Pithos UI,  you can uncomment and
+set True the setting:
 
 .. code-block:: console
 
@@ -989,13 +989,13 @@ Console logo     console_logo.png              Visible in Console Page for VMs
 Storage logo     storage_logo.png              Visible in Pithos UI pages
 ===============  ============================  =========
 
-The  methods  available for replacing all or individual branding-related images 
-are :
+There are two methods  available for replacing all or individual 
+branding-related images:
 
 1. Create a new directory and  place there  some or all of your images.
 
 If you want to replace all images, keep the name/extension conventions as 
-indicated above and set
+indicated in the above table and set:
 
 .. code-block:: console
 
@@ -1008,31 +1008,34 @@ BRANDING_IMAGE_MEDIA_URL but instead provide a relative path,
 pointing to the file inside your directory for each BRANDING_<image>_URL that 
 will be replaced.
 
-2. Upload some or all of your images to a server and replace 
+2. Upload some or all of your images to a server and replace each 
 BRANDING_<image>_URL with the absolute url of the image ( i.e.  
 BRANDING_DASHBOARD_URL=’https://www.example.com/images/my_dashboard.jpg’ ).
 
 Note that the alternative text  for each image tag inside html documents  is 
-alt=“BRANDING_SERVICE_NAME {Dashboad, Console, Compute}” respectively.
+alt=“BRANDING_SERVICE_NAME {Dashboad, Compute. Console, Storage}” respectively.
 
 
 .. note:: Retina optimised images:
 
-  Synnefo UI is optimised for Retina displays. As far as images are concerned, 
-  retina.js (http://retinajs.com/ )  is used.
+  Synnefo UI is optimised for Retina displays. As far as images are concerned,  
+  `retina.js <http://retinajs.com/>`_ is used.
 
   Retina.js checks each image on a page to  see if there is a high-resolution 
   version of that image on your server. If a high-resolution variant exists, 
   the script will swap in that image in-place.
 
-  The script assumes you use Apple's prescribed high-resolution modifier (@2x) 
-  to denote high-resolution image variants on your server.
+  The script assumes you use  `Apple's prescribed high-resolution modifier (@2x)
+  <http://developer.apple.com/library/ios/#documentation/2DDrawing/Conceptual/
+  DrawingPrintingiOS/SupportingHiResScreensInViews/SupportingHiResScreensInViews
+  .html#//apple_ref/doc/uid/TP40010156-CH15-SW1>`_ to denote high-resolution 
+  image variants on your server.
 
   For each of the images that you wish the script to  replace you must have a 
   high-resolution variant in the same folder  named correctly and it will be 
   detected automatically. For example if your image is in <my_directory> and is 
-  named “my_image.jpg” the script will look in the same directory for an image 
-  named “my_image@2x.jpg”.
+  named "my_image.jpg" the script will look in the same directory for an image 
+  named "my_image@2x.jpg".
 
   In case that you don’t want to use a high-resolution image, the 
   normal-resolution image will be visible.
@@ -1045,9 +1048,9 @@ customization  is feasible.
 
 **EMAILS**
 
-All the  email *.txt files  are already customized to contain your Company and 
-Service names but you can further alter their content if you feel it best fits 
-your needs  using django’s TEMPLATE_DIRS setting.                               
+The output of all email *.txt files will be already customized to contain your 
+company and service names but you can further alter their content if you feel 
+it best fits your needs  using django’s TEMPLATE_DIRS setting.                               
 
 In order to overwrite a template you need to create a new one with the same 
 name, place it to a folder of your choice and provide its path to the 
@@ -1061,12 +1064,13 @@ Below is a list of all emails sent by Synnefo to users along with a short
 description and a link to their content:
 
 
-* ``snf-astakos-app/astakos/im/templates/im/email.txt`` Base email template. Contains a contact email  and a “ thank you” message. 
+* ``snf-astakos-app/astakos/im/templates/im/email.txt`` Base email template. 
+Contains a contact email  and a “ thank you” message. 
 (Link: https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/email.txt )
 
 
 * ``snf-astakos-app/astakos/im/templates/im/activation_email.txt`` Email sent to user that prompts  him/her to click on a link provided to activate the account.
-  Extends “email.txt”
+Extends “email.txt”
 (Link: https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/activation_email.txt  )
 
 * ``snf-astakos-app/astakos/im/templates/im/invitation.txt:``  Email sent to invited user. He/she has to click on a link provided to activate the  account. 
@@ -1115,9 +1119,9 @@ association. Extends “email.txt”
 .. warning:: Django templates language:
 
   If you choose to  overwrite these email templates, be mindful of the necessary 
-  information contained in django template variables that must not be omitted , 
-  such as the activation link for activating one’s account etc.These variables 
-  are contained into {{}} inside the templates.
+  information contained in django template variables that must not be omitted, 
+  such as the activation link for activating one’s account and many more. 
+  These variables are contained into {{}} inside the templates.
 
 
 

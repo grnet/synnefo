@@ -36,7 +36,6 @@ import logging
 from urllib import quote, unquote
 
 from django.contrib.auth.models import AnonymousUser
-from django.http import HttpRequest
 from django.utils.translation import ugettext as _
 
 from astakos.im.settings import (
@@ -45,6 +44,7 @@ from astakos.im.settings import (
 import astakos.im.messages as astakos_messages
 
 logger = logging.getLogger(__name__)
+
 
 class Cookie():
     def __init__(self, request, response=None):
@@ -81,7 +81,8 @@ class Cookie():
         if not self.response:
             raise ValueError(_(astakos_messages.NO_RESPONSE))
         user = self.user
-        expire_fmt = user.auth_token_expires.strftime('%a, %d-%b-%Y %H:%M:%S %Z')
+        expire_fmt = user.auth_token_expires.strftime(
+            '%a, %d-%b-%Y %H:%M:%S %Z')
         if TRANSLATE_UUIDS:
             cookie_value = quote(user.username + '|' + user.auth_token)
         else:

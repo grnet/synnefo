@@ -35,6 +35,7 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 from synnefo.management.common import get_flavor
+from synnefo.webproject.management.utils import parse_bool
 
 
 from logging import getLogger
@@ -63,6 +64,7 @@ class Command(BaseCommand):
 
         deleted = options['deleted']
         if deleted:
+            deleted = parse_bool(deleted)
             log.info("Marking flavor %s as deleted=%s", flavor, deleted)
             flavor.deleted = deleted
             flavor.save()

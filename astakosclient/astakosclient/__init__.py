@@ -102,6 +102,7 @@ class AstakosClient():
         self.logger = logger
         self.netloc = p.netloc
         self.scheme = p.scheme
+        self.path = p.path.lstrip('/')
         self.conn_class = conn_class
 
     # ----------------------------------
@@ -124,8 +125,7 @@ class AstakosClient():
             headers = {}
         if body is None:
             body = {}
-        if request_path[0] != '/':
-            request_path = "/" + request_path
+        path = self.path + "/" + request_path.strip('/')
 
         # Build request's header and body
         kwargs = {}
@@ -144,7 +144,7 @@ class AstakosClient():
             with self.conn_class(self.netloc) as conn:
                 # Send request
                 (message, data, status) = \
-                    _do_request(conn, method, request_path, **kwargs)
+                    _do_request(conn, method, path, **kwargs)
         except Exception as err:
             self.logger.error("Failed to send request: %s" % repr(err))
             raise AstakosClientException(str(err))

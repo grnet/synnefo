@@ -8,4 +8,5 @@ PROJECTS="\
  snf-cyclades-gtools\
  snf-cyclades-app\
  snf-pithos-app\
- snf-tools"
+ snf-tools\
+ snf-branding"

@@ -118,6 +118,7 @@ Description: Synnefo Stats
 Package: python-astakosclient
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}
+Build-Depends: python-objpool (>=0.2), python-simplejson
 Provides: ${python:Provides}
 XB-Python-Version: ${python:Versions}
 Description: Synnefo Astakos Client

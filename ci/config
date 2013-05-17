@@ -3,10 +3,10 @@ PROJECTS="\
  astakosclient\
  snf-django-lib\
  snf-webproject\
+ snf-branding\
  snf-astakos-app\
  snf-pithos-backend\
  snf-cyclades-gtools\
  snf-cyclades-app\
  snf-pithos-app\
- snf-tools\
- snf-branding"
+ snf-tools"

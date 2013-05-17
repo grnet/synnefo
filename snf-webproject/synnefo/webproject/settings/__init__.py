@@ -40,9 +40,9 @@ from synnefo.util.entry_points import extend_list_from_entry_point, \
 # Provide common django settings and extend them from entry_point hooks
 INSTALLED_APPS = (
     'django.contrib.contenttypes',
-    'django.contrib.sessions',
+    #'django.contrib.sessions',
     'django.contrib.sites',
-    'django.contrib.messages',
+    #'django.contrib.messages',
     'django.contrib.admin',
     'south',
     'synnefo.webproject'
@@ -62,10 +62,10 @@ TEMPLATE_CONTEXT_PROCESSORS = extend_list_from_entry_point(
 
 
 MIDDLEWARE_CLASSES = (
-    'django.contrib.sessions.middleware.SessionMiddleware',
+    #'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
+    #'django.contrib.messages.middleware.MessageMiddleware',
     'synnefo.lib.middleware.LoggingConfigMiddleware',
     'synnefo.lib.middleware.CleanseSettingsMiddleware'
 )

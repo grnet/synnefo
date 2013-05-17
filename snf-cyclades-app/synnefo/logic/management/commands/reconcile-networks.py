@@ -42,6 +42,7 @@ from optparse import make_option
 
 from synnefo.settings import PUBLIC_USE_POOL
 from django.core.management.base import BaseCommand
+from django.db import transaction
 
 from synnefo.db.models import Backend, Network, BackendNetwork
 from synnefo.db.pools import IPPool
@@ -221,24 +222,34 @@ def reconcile_unsynced_network(network, backend, backend_network):
                                            "Reconciliation simulated eventd")
 
 
+@transaction.commit_on_success
 def reconcile_ip_pools(network, available_maps, reserved_maps):
     available_map = reduce(lambda x, y: x & y, available_maps)
     reserved_map = reduce(lambda x, y: x & y, reserved_maps)
 
     pool = network.get_pool()
-    if pool.available != available_map:
+    # Temporary release unused floating IPs
+    temp_pool = network.get_pool()
+    used_ips = network.nics.values_list("ipv4", flat=True)
+    unused_static_ips = network.floating_ips.exclude(ipv4__in=used_ips)
+    map(lambda ip: temp_pool.put(ip.ipv4), unused_static_ips)
+    if temp_pool.available != available_map:
         write("D: Unsynced available map of network %s:\n"
               "\tDB: %r\n\tGB: %r\n" %
-              (network, pool.available.to01(), available_map.to01()))
+              (network, temp_pool.available.to01(), available_map.to01()))
         if fix:
             pool.available = available_map
+            # Release unsued floating IPs, as they are not included in the
+            # available map
+            map(lambda ip: pool.reserve(ip.ipv4), unused_static_ips)
+            pool.save()
     if pool.reserved != reserved_map:
         write("D: Unsynced reserved map of network %s:\n"
               "\tDB: %r\n\tGB: %r\n" %
               (network, pool.reserved.to01(), reserved_map.to01()))
         if fix:
             pool.reserved = reserved_map
-    pool.save()
+            pool.save()
 
 
 def detect_conflicting_ips(network):

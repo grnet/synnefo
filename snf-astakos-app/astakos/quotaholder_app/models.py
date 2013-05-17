@@ -36,7 +36,6 @@ from snf_django.lib.db.fields import intDecimalField
 
 from django.db.models import (Model, BigIntegerField, CharField,
                               ForeignKey, AutoField)
-from django.db import transaction
 from snf_django.lib.db.managers import ForUpdateManager
 
 

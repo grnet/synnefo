@@ -60,15 +60,12 @@ from astakos.im.settings import (
     GROUP_CREATION_SUBJECT, HELPDESK_NOTIFICATION_EMAIL_SUBJECT,
     INVITATION_EMAIL_SUBJECT, GREETING_EMAIL_SUBJECT, FEEDBACK_EMAIL_SUBJECT,
     EMAIL_CHANGE_EMAIL_SUBJECT,
-    PROJECT_CREATION_SUBJECT, PROJECT_APPROVED_SUBJECT,
-    PROJECT_TERMINATION_SUBJECT, PROJECT_SUSPENSION_SUBJECT,
-    PROJECT_MEMBERSHIP_CHANGE_SUBJECT)
+    )
 from astakos.im.notifications import build_notification, NotificationError
 from astakos.im.models import (
     AstakosUser, Invitation, ProjectMembership, ProjectApplication, Project,
-    UserSetting,
-    get_resource_names, new_chain)
-from astakos.im.quotas import (qh_sync_user, qh_sync_users,
+    UserSetting, new_chain)
+from astakos.im.quotas import (qh_sync_user,
                                register_pending_apps, qh_sync_project)
 from astakos.im.project_notif import (
     membership_change_notify, membership_enroll_notify,

@@ -41,8 +41,7 @@ from astakos.im import functions
 from astakos.im import settings
 from astakos.im import forms
 
-from astakos.im.quotas import (qh_sync_user, qh_sync_users,
-                               register_pending_apps)
+from astakos.im.quotas import qh_sync_user
 
 import astakos.im.messages as astakos_messages
 

@@ -44,7 +44,6 @@ from base64 import b64encode
 from urlparse import urlparse
 from urllib import quote
 from random import randint
-from collections import defaultdict, namedtuple
 
 from django.db import models, IntegrityError, transaction
 from django.contrib.auth.models import User, UserManager, Group, Permission

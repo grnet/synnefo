@@ -31,11 +31,12 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import copy
 from astakos.im.models import (
     Resource, AstakosUserQuota, AstakosUser,
     Project, ProjectMembership, ProjectResourceGrant, ProjectApplication)
 import astakos.quotaholder_app.callpoint as qh
-from astakos.quotaholder_app.exception import QuotaholderError, NoCapacityError
+from astakos.quotaholder_app.exception import NoCapacityError
 from django.db.models import Q
 
 

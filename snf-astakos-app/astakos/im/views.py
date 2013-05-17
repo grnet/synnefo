@@ -67,7 +67,6 @@ from django.core.xheaders import populate_xheaders
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.views.decorators.http import require_http_methods
 from django.db.models import Q
-from django.core.exceptions import PermissionDenied
 from django.utils import simplejson as json
 from django.contrib.auth.views import redirect_to_login
 

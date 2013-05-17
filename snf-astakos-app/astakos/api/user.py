@@ -41,7 +41,6 @@ from snf_django.lib import api
 from snf_django.lib.api import faults
 
 from astakos.im.util import epoch
-from astakos.im.quotas import get_user_quotas
 
 from .util import (
     get_uuid_displayname_catalogs as get_uuid_displayname_catalogs_util,

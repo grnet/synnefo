@@ -35,7 +35,6 @@
 # or implied, of GRNET S.A.
 
 import os
-import sys
 from optparse import OptionParser
 from time import sleep
 import threading
@@ -47,9 +46,12 @@ path = os.path.dirname(os.path.realpath(__file__))
 os.environ['SYNNEFO_SETTINGS_DIR'] = path + '/settings'
 os.environ['DJANGO_SETTINGS_MODULE'] = 'synnefo.settings'
 
+from astakos.im.models import AstakosUser
 from astakos.im.functions import get_chain_of_application_id
+from astakos.im import quotas
 from views import submit, approve, join, leave
 from snf_django.lib.db.transaction import commit_on_success_strict
+from django.core.exceptions import PermissionDenied
 
 USERS = {}
 PROJECTS = {}
@@ -72,22 +74,32 @@ def random_email():
     alphabet = u'abcdef'
     length = randint(2, 4)
     last = ''.join(choice(alphabet) for _ in xrange(length))
-    return first + '@' + last
+    return first + '@' + last + '.com'
 
 
 def new_user():
     email = random_email()
-    u = AstakosUser(email=random_email(), first_name=random_name(),
-                    last_name=random_name(), is_active=True)
-    u.save()
-    return u.id, u.email
+    defaults = {'first_name': random_name(),
+                'last_name': random_name(),
+                'is_active': True,
+                }
+    u, created = AstakosUser.objects.get_or_create(
+        email=email, defaults=defaults)
+    if created:
+        quotas.qh_sync_user(u)
+        return u.id, u.email
+    return None
 
 
 @commit_on_success_strict()
 def new_users(count):
     for i in range(count):
-        uid, email = new_user()
-        USERS[uid] = email
+        while True:
+            result = new_user()
+            if result is not None:
+                uid, email = result
+                USERS[uid] = email
+                break
 
 
 class SubmitApproveT(threading.Thread):
@@ -113,8 +125,11 @@ def submit_and_approve(name, user_id, prec, repeat, prefix=""):
                         % (prefix, now, prec))
             app_id = submit(name, user_id, prec)
             prec = app_id
+        except PermissionDenied as e:
+            logger.info('Limit reached')
         except Exception as e:
             logger.exception(e)
+            continue
         try:
             now = datetime.datetime.now()
             pid = get_chain_of_application_id(app_id)
@@ -152,6 +167,8 @@ def join_and_leave(proj_id, user_id, repeat, prefix=""):
             logger.info('%s%s: user %s joining project %s'
                         % (prefix, now, user_id, proj_id))
             join(proj_id, user_id)
+        except PermissionDenied as e:
+            logger.info('Membership already exists')
         except Exception as e:
             logger.exception(e)
 
@@ -160,6 +177,8 @@ def join_and_leave(proj_id, user_id, repeat, prefix=""):
             logger.info('%s%s: user %s leaving project %s'
                         % (prefix, now, user_id, proj_id))
             leave(proj_id, user_id)
+        except IOError as e:
+            logger.info('No such membership')
         except Exception as e:
             logger.exception(e)
 

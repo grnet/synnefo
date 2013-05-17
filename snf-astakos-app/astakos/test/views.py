@@ -33,41 +33,54 @@
 
 from datetime import datetime, timedelta
 
-from astakos.im.models import AstakosUser
+from django.core.exceptions import PermissionDenied
+from astakos.im.models import AstakosUser, ProjectApplication
 from astakos.im.functions import (join_project, leave_project,
-                                  submit_application, approve_application)
+                                  submit_application, approve_application,
+                                  get_user_by_id, qh_add_pending_app)
 from snf_django.lib.db.transaction import commit_on_success_strict
 
-@commit_on_success_strict()
-def join(proj_id, user_id, ctx=None):
-    join_project(proj_id, user_id)
 
 @commit_on_success_strict()
-def leave(proj_id, user_id, ctx=None):
-    leave_project(proj_id, user_id)
+def join(proj_id, user_id):
+    join_project(proj_id, get_user_by_id(user_id))
+
 
 @commit_on_success_strict()
-def submit(name, user_id, prec, ctx=None):
+def leave(proj_id, user_id):
+    leave_project(proj_id, get_user_by_id(user_id))
+
+
+@commit_on_success_strict()
+def submit(name, user_id, prec):
     try:
         owner = AstakosUser.objects.get(id=user_id)
     except AstakosUser.DoesNotExist:
         raise AttributeError('user does not exist')
 
-    resource_policies = [{'service': 'cyclades',
-                          'resource': 'network.private',
-                          'uplimit': 5}]
+    precursor = (ProjectApplication.objects.get(id=prec)
+                 if prec is not None
+                 else None)
+
+    ok, limit = qh_add_pending_app(owner, precursor=precursor, dry_run=True)
+    if not ok:
+        raise PermissionDenied('Limit %s reached', limit)
+
+    resource_policies = [('cyclades.network.private', 5)]
     data = {'owner': owner,
             'name': name,
-            'precursor_application': prec,
+            'precursor_id': prec,
             'end_date': datetime.now() + timedelta(days=1),
             'member_join_policy': 1,
             'member_leave_policy': 1,
             'resource_policies': resource_policies,
+            'request_user': owner
             }
 
-    app = submit_application(data, request_user=owner)
+    app = submit_application(**data)
     return app.id
 
+
 @commit_on_success_strict()
-def approve(app_id, ctx=None):
+def approve(app_id):
     approve_application(app_id)

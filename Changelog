@@ -26,6 +26,9 @@ Astakos
 
 Cyclades
 --------
+* Make 'type' attribute required for network create API request.
+* Networks not created to all Ganeti backends upon creation, they are instead
+  created to a backend only when a VM connects to the network.
 * Add 'ASTAKOS_POOLSIZE' setting which tunes the size of the http connection
   pool to astakos.
 * Remove 'CYCLADES_USER_CATALOG_URL' and 'CYCLADES_USER_FEEDBACK_URL' settings

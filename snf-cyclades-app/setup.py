@@ -78,7 +78,7 @@ INSTALL_REQUIRES = [
     'objpool>=0.2',
     'astakosclient',
     'snf-django-lib',
-    'snf-branding-app',
+    'snf-branding',
 ]
 
 EXTRAS_REQUIRES = {

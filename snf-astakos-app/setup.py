@@ -76,7 +76,7 @@ INSTALL_REQUIRES = [
     'requests',
     'inflect',
     'snf-django-lib',
-    'snf-branding-app',
+    'snf-branding',
 ]
 
 EXTRAS_REQUIRES = {

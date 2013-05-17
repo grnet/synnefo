@@ -151,7 +151,7 @@ def find_package_data(
                 out.setdefault(package, []).append(prefix+name)
     return out
 setup(
-    name='snf-branding-app',
+    name='snf-branding',
     version=VERSION,
     license='BSD',
     url='http://www.synnefo.org/',

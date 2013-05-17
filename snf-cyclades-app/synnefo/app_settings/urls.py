@@ -33,6 +33,12 @@
 
 from django.conf.urls.defaults import *
 from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
+from snf_django.lib.api.proxy import proxy
+
+from functools import partial
+
+astakos_proxy = partial(proxy, target=settings.ASTAKOS_URL)
 
 urlpatterns = patterns('',
     (r'^ui/', include('synnefo.ui.urls')),
@@ -53,5 +59,5 @@ if PROXY_USER_SERVICES:
         (r'^login/?$', csrf_exempt(astakos_proxy)),
         (r'^feedback/?$', csrf_exempt(astakos_proxy)),
         (r'^user_catalogs/?$', csrf_exempt(astakos_proxy)),
-        (r'^astakos/api/', csrf_exempt(astakos_proxy))
+        (r'^astakos/api/', csrf_exempt(astakos_proxy)),
     )

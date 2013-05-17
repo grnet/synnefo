@@ -32,6 +32,13 @@ Provides: ${python:Provides}
 XB-Python-Version: ${python:Versions}
 Description: Synnefo webproject package (common settings mechanism)
 
+Package: snf-branding
+Architecture: all
+Depends: ${python:Depends}
+Provides: ${python:Provides}
+XB-Python-Version: ${python:Versions}
+Description: Synnefo Branding package for user interface and message customization.
+
 Package: snf-cyclades-app
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}, snf-common,

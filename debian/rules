@@ -12,6 +12,7 @@ DESTDIR := ${CURDIR}/${BUILDDIR}
 PACKAGES = \
 	snf-astakos-app \
 	snf-common \
+	snf-branding \
 	snf-cyclades-app \
 	snf-cyclades-gtools \
 	snf-webproject \

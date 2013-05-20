@@ -755,9 +755,6 @@ class AstakosUser(User):
             return False
         return True
 
-    def settings(self):
-        return UserSetting.objects.filter(user=self)
-
 
 class AstakosUserAuthProviderManager(models.Manager):
 

@@ -65,7 +65,7 @@ from astakos.im.settings import (
 from astakos.im.notifications import build_notification, NotificationError
 from astakos.im.models import (
     AstakosUser, Invitation, ProjectMembership, ProjectApplication, Project,
-    UserSetting, Chain, new_chain)
+    Chain, new_chain)
 from astakos.im.quotas import (qh_sync_user, get_pending_app_quota,
                                register_pending_apps, qh_sync_project,
                                qh_sync_locked_users, get_users_for_update,
@@ -837,29 +837,6 @@ def get_by_chain_or_404(chain_id):
             raise Http404
         else:
             return None, application
-
-
-def get_user_setting(user_id, key):
-    try:
-        setting = UserSetting.objects.get(
-            user=user_id, setting=key)
-        return setting.value
-    except UserSetting.DoesNotExist:
-        return getattr(settings, key)
-
-
-def set_user_setting(user_id, key, value):
-    try:
-        setting = UserSetting.objects.get_for_update(
-            user=user_id, setting=key)
-    except UserSetting.DoesNotExist:
-        setting = UserSetting(user_id=user_id, setting=key)
-    setting.value = value
-    setting.save()
-
-
-def unset_user_setting(user_id, key):
-    UserSetting.objects.filter(user=user_id, setting=key).delete()
 
 
 def _partition_by(f, l):

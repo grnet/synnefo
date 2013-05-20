@@ -78,11 +78,6 @@ class Command(SynnefoCommand):
             raise CommandError(msg)
 
         for user in users:
-            settings_dict = {}
-            settings = user.settings()
-            for setting in settings:
-                settings_dict[setting.setting] = setting.value
-
             kv = OrderedDict(
                 [
                     ('id', user.id),

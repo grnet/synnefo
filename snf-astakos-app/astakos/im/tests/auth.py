@@ -650,8 +650,15 @@ class UserActionsTests(TestCase):
         change2 = EmailChange.objects.get()
 
         r = self.client.get(change1.get_url())
-        self.assertEquals(r.status_code, 302)
+        self.assertEquals(r.status_code, 404)
         self.client.logout()
+
+        invalid_client = Client()
+        r = invalid_client.post('/im/local?',
+                                {'username': 'existing@synnefo.org',
+                                 'password': 'password'})
+        r = invalid_client.get(change2.get_url(), follow=True)
+        self.assertEquals(r.status_code, 403)
 
         r = self.client.post('/im/local?next=' + change2.get_url(),
                              {'username': 'kpap@synnefo.org',
@@ -819,7 +826,8 @@ class TestAuthProviderViews(TestCase):
         self.assertEqual(local_provider.get_login_policy, False)
 
         cl_olduser.logout()
-        login_data = {'username': 'olduser@synnefo.org', 'password': 'password'}
+        login_data = {'username': 'olduser@synnefo.org',
+                      'password': 'password'}
         r = cl_olduser.post('/im/local', login_data, follow=True)
         self.assertContains(r, "href='/im/login/shibboleth'>Academic login")
         Group.objects.all().delete()

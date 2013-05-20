@@ -781,14 +781,28 @@ def change_email(request, activation_key=None,
 
     if activation_key:
         try:
-            user = EmailChange.objects.change_email(activation_key)
-            if request.user.is_authenticated() and \
-                request.user == user or not \
+            try:
+                email_change = EmailChange.objects.get(
+                    activation_key=activation_key)
+            except EmailChange.DoesNotExist:
+                transaction.rollback()
+                logger.error("[change-email] Invalid or used activation "
+                             "code, %s", activation_key)
+                raise Http404
+
+            if (request.user.is_authenticated() and \
+                request.user == email_change.user) or not \
                     request.user.is_authenticated():
+                user = EmailChange.objects.change_email(activation_key)
                 msg = _(astakos_messages.EMAIL_CHANGED)
                 messages.success(request, msg)
                 transaction.commit()
                 return HttpResponseRedirect(reverse('edit_profile'))
+            else:
+                logger.error("[change-email] Access from invalid user, %s %s",
+                             email_change.user, request.user.log_display)
+                transaction.rollback()
+                raise PermissionDenied
         except ValueError, e:
             messages.error(request, e)
             transaction.rollback()

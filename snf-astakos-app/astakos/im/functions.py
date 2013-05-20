@@ -225,35 +225,25 @@ def send_feedback(msg, data, user, email_template_name='im/feedback_mail.txt'):
         'message': msg,
         'data': data,
         'user': user})
-    try:
-        send_mail(subject, content, from_email, recipient_list,
-                  connection=get_connection())
-    except (SMTPException, socket.error) as e:
-        logger.exception(e)
-        raise SendFeedbackError()
-    else:
-        msg = 'Sent feedback from %s' % user.log_display
-        logger.log(LOGGING_LEVEL, msg)
+    send_mail(subject, content, from_email, recipient_list,
+              connection=get_connection())
+    msg = 'Sent feedback from %s' % user.log_display
+    logger.log(LOGGING_LEVEL, msg)
 
 
 def send_change_email(
     ec, request, email_template_name='registration/email_change_email.txt'):
-    try:
-        url = ec.get_url()
-        url = request.build_absolute_uri(url)
-        t = loader.get_template(email_template_name)
-        c = {'url': url, 'site_name': SITENAME,
-             'support': CONTACT_EMAIL, 'ec': ec}
-        from_email = settings.SERVER_EMAIL
-        send_mail(_(EMAIL_CHANGE_EMAIL_SUBJECT), t.render(Context(c)),
-                  from_email, [ec.new_email_address],
-                  connection=get_connection())
-    except (SMTPException, socket.error) as e:
-        logger.exception(e)
-        raise ChangeEmailError()
-    else:
-        msg = 'Sent change email for %s' % ec.user.log_display
-        logger.log(LOGGING_LEVEL, msg)
+    url = ec.get_url()
+    url = request.build_absolute_uri(url)
+    t = loader.get_template(email_template_name)
+    c = {'url': url, 'site_name': SITENAME,
+         'support': CONTACT_EMAIL, 'ec': ec}
+    from_email = settings.SERVER_EMAIL
+    send_mail(_(EMAIL_CHANGE_EMAIL_SUBJECT), t.render(Context(c)),
+              from_email, [ec.new_email_address],
+              connection=get_connection())
+    msg = 'Sent change email for %s' % ec.user.log_display
+    logger.log(LOGGING_LEVEL, msg)
 
 
 def invite(inviter, email, realname):

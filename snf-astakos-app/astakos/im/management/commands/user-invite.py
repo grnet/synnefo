@@ -35,8 +35,6 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db.utils import IntegrityError
 from django.db import transaction
 
-from astakos.im.functions import SendMailError
-
 from ._common import get_user
 
 
@@ -62,10 +60,7 @@ class Command(BaseCommand):
             try:
                 inviter.invite(email, realname)
                 self.stdout.write("Invitation sent to '%s'\n" % (email,))
-            except SendMailError, e:
-                transaction.rollback()
-                raise CommandError(e.message)
-            except IntegrityError, e:
+            except IntegrityError:
                 transaction.rollback()
                 raise CommandError(
                     "There is already an invitation for %s" % (email,))

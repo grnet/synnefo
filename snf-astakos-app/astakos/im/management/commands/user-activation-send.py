@@ -57,9 +57,6 @@ class Command(BaseCommand):
                     "User email already verified '%s'\n" % (user.email,))
                 continue
 
-            try:
-                activation_backend.send_user_verification_email(user)
-            except SendMailError, e:
-                raise CommandError(e.message)
+            activation_backend.send_user_verification_email(user)
 
             self.stdout.write("Activation sent to '%s'\n" % (user.email,))

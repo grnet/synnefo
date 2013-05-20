@@ -69,15 +69,15 @@ def get_quota(holders=None, sources=None, resources=None):
 
 
 def _get_holdings_for_update(holding_keys):
-    holding_keys = sorted(holding_keys)
+    holders = set(holder for (holder, source, resource) in holding_keys)
+    objs = Holding.objects
+    hs = objs.filter(holder__in=holders).order_by('pk').select_for_update()
+
     holdings = {}
-    for (holder, source, resource) in holding_keys:
-        try:
-            h = Holding.objects.get_for_update(
-                holder=holder, source=source, resource=resource)
-            holdings[(holder, source, resource)] = h
-        except Holding.DoesNotExist:
-            pass
+    for h in hs:
+        key = h.holder, h.source, h.resource
+        holdings[key] = h
+
     return holdings
 
 

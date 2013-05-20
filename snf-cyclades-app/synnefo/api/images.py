@@ -54,8 +54,8 @@ urlpatterns = patterns(
     (r'^(?:/|.json|.xml)?$', 'demux'),
     (r'^/detail(?:.json|.xml)?$', 'list_images', {'detail': True}),
     (r'^/([\w-]+)(?:.json|.xml)?$', 'image_demux'),
-    (r'^/([\w-]+)/meta(?:.json|.xml)?$', 'metadata_demux'),
-    (r'^/([\w-]+)/meta/(.+?)(?:.json|.xml)?$', 'metadata_item_demux')
+    (r'^/([\w-]+)/metadata(?:.json|.xml)?$', 'metadata_demux'),
+    (r'^/([\w-]+)/metadata/(.+?)(?:.json|.xml)?$', 'metadata_item_demux')
 )
 
 

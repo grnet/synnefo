@@ -65,8 +65,8 @@ urlpatterns = patterns(
     (r'^/(\d+)/action(?:.json|.xml)?$', 'server_action'),
     (r'^/(\d+)/ips(?:.json|.xml)?$', 'list_addresses'),
     (r'^/(\d+)/ips/(.+?)(?:.json|.xml)?$', 'list_addresses_by_network'),
-    (r'^/(\d+)/meta(?:.json|.xml)?$', 'metadata_demux'),
-    (r'^/(\d+)/meta/(.+?)(?:.json|.xml)?$', 'metadata_item_demux'),
+    (r'^/(\d+)/metadata(?:.json|.xml)?$', 'metadata_demux'),
+    (r'^/(\d+)/metadata/(.+?)(?:.json|.xml)?$', 'metadata_item_demux'),
     (r'^/(\d+)/stats(?:.json|.xml)?$', 'server_stats'),
     (r'^/(\d+)/diagnostics(?:.json)?$', 'get_server_diagnostics'),
 )

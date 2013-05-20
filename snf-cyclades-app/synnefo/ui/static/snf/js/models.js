@@ -2140,17 +2140,29 @@
 
         load_missing_images: function(callback) {
           var missing_ids = [];
+          var resolved = 0;
+
+          // fill missing_ids
           this.each(function(el) {
             var imgid = el.get("imageRef");
             var existing = synnefo.storage.images.get(imgid);
             if (!existing && missing_ids.indexOf(imgid) == -1) {
-                missing_ids.push(imgid);
-                synnefo.storage.images.update_unknown_id(imgid, function(){});
+              missing_ids.push(imgid);
             }
           });
-          callback(missing_ids);
+          var check = function() {
+            // once all missing ids where resolved continue calling the 
+            // callback
+            resolved++;
+            if (resolved == missing_ids.length) {
+              callback(missing_ids)
+            }
+          }
+          // start resolving missing image ids
+          _(missing_ids).each(function(imgid){
+            synnefo.storage.images.update_unknown_id(imgid, check);
+          });
         }
-
     })
     
     models.NIC = models.Model.extend({

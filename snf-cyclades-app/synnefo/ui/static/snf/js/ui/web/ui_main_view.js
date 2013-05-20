@@ -601,9 +601,6 @@
         check_status: function(loaded) {
             this.completed_items++;
             // images, flavors loaded
-            if (this.completed_items == 2) {
-                this.load_nets_and_vms();
-            }
             if (this.completed_items == this.items_to_load) {
                 this.update_status("layout", 1);
                 var self = this;
@@ -738,7 +735,8 @@
             this.update_status("images", 0);
             storage.images.fetch({refresh:true, update:false, success: function(){
                 self.update_status("images", 1);
-                self.check_status()
+                self.check_status();
+                self.load_nets_and_vms();
             }});
             this.update_status("flavors", 0);
             storage.flavors.fetch({refresh:true, update:false, success:function(){

@@ -610,13 +610,13 @@
 
    			// TODO: make it dynamic
             synnefo.config.api_urls = {
+                'userdata': '{% url ui_userdata %}', 
                 'compute':  {{ compute_api_url|safe }}, 
                 'glance': {{ glance_api_url|safe }},
                 'accounts': {{ accounts_api_url|safe }},
             };
             
             // TODO: configurable userdata urls in models.js
-            synnefo.config.userdata_url = '/ui/userdata';
             synnefo.config.userdata_keys_url = '{% url ui_keys_collection %}';
             synnefo.config.userdata_keys_limit = {{ userdata_keys_limit }};
             

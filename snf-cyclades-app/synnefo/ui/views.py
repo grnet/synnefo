@@ -46,6 +46,7 @@ from django.template import RequestContext
 from synnefo_branding import settings as snf_settings
 
 from synnefo.util.version import get_component_version
+from synnefo.lib import join_urls
 
 from snf_django.lib.astakos import get_user
 
@@ -154,15 +155,21 @@ NETWORK_ALLOW_MULTIPLE_DESTROY = \
             'UI_NETWORK_ALLOW_MULTIPLE_DESTROY', False)
 AUTOMATIC_NETWORK_RANGE_FORMAT = getattr(settings,
                                          'UI_AUTOMATIC_NETWORK_RANGE_FORMAT',
-                                         "192.168.%d.0/24").replace("%d", "{0}")
+                                         "192.168.%d.0/24").replace("%d",
+                                                                    "{0}")
 GROUP_PUBLIC_NETWORKS = getattr(settings, 'UI_GROUP_PUBLIC_NETWORKS', True)
 GROUPED_PUBLIC_NETWORK_NAME = \
     getattr(settings, 'UI_GROUPED_PUBLIC_NETWORK_NAME', 'Internet')
 
-USER_CATALOG_URL = getattr(settings, 'UI_USER_CATALOG_URL', '/astakos/api/user_catalogs')
-FEEDBACK_POST_URL = getattr(settings, 'UI_FEEDBACK_POST_URL', '/astakos/api/feedback')
+ASTAKOS_BASE_URL = '/'
+ASTAKOS_API_URL = join_urls(ASTAKOS_BASE_URL, 'astakos/api')
+
+USER_CATALOG_URL = getattr(settings, 'UI_USER_CATALOG_URL',
+                           join_urls(ASTAKOS_API_URL, 'user_catalogs'))
+FEEDBACK_POST_URL = getattr(settings, 'UI_FEEDBACK_POST_URL',
+                            join_urls(ASTAKOS_API_URL, 'feedback'))
+ACCOUNTS_API_URL = getattr(settings, 'UI_ACCOUNTS_API_URL', ASTAKOS_API_URL)
 TRANSLATE_UUIDS = not getattr(settings, 'TRANSLATE_UUIDS', False)
-ACCOUNTS_API_URL = getattr(settings, 'UI_ACCOUNTS_API_URL', '/astakos/api')
 
 
 def template(name, request, context):

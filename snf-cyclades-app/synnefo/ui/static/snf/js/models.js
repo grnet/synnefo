@@ -54,7 +54,11 @@
     // get url helper
     var getUrl = function(baseurl) {
         var baseurl = baseurl || snf.config.api_urls[this.api_type];
-        return baseurl + "/" + this.path;
+        var append = "/";
+        if (baseurl.split("").reverse()[0] == "/") {
+          append = "";
+        }
+        return baseurl + append + this.path;
     }
 
     var NIC_REGEX = /^nic-([0-9]+)-([0-9]+)$/
@@ -2304,7 +2308,7 @@
 
     models.PublicKey = models.Model.extend({
         path: 'keys',
-        base_url: '/ui/userdata',
+        api_type: 'userdata',
         details: false,
         noUpdate: true,
 
@@ -2331,7 +2335,7 @@
         model: models.PublicKey,
         details: false,
         path: 'keys',
-        base_url: '/ui/userdata',
+        api_type: 'userdata',
         noUpdate: true,
 
         generate_new: function(success, error) {

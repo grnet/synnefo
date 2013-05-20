@@ -34,6 +34,8 @@
 from django.core.management.base import BaseCommand, CommandError
 
 from astakos.im import activation_backends
+from astakos.im.functions import SendMailError
+
 activation_backend = activation_backends.get_backend()
 
 from ._common import get_user

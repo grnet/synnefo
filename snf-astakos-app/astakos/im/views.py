@@ -100,7 +100,7 @@ from astakos.im.functions import (
     can_leave_request,
     get_related_project_id, get_by_chain_or_404,
     approve_application, deny_application,
-    cancel_application, dismiss_application)
+    cancel_application, dismiss_application, SendMailError)
 from astakos.im.settings import (
     COOKIE_DOMAIN, LOGOUT_NEXT,
     LOGGING_LEVEL, PAGINATE_BY,
@@ -618,9 +618,13 @@ def feedback(request, template_name='im/feedback.html', email_template_name='im/
         if form.is_valid():
             msg = form.cleaned_data['feedback_msg']
             data = form.cleaned_data['feedback_data']
-            send_feedback(msg, data, request.user, email_template_name)
-            message = _(astakos_messages.FEEDBACK_SENT)
-            messages.success(request, message)
+            try:
+                send_feedback(msg, data, request.user, email_template_name)
+            except SendMailError, e:
+                messages.error(request, e)
+            else:
+                message = _(astakos_messages.FEEDBACK_SENT)
+                messages.success(request, message)
             return HttpResponseRedirect(reverse('feedback'))
 
     return render_response(template_name,

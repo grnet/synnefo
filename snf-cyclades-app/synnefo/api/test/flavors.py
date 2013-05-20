@@ -71,7 +71,7 @@ class FlavorAPITest(BaseAPITest):
         for i in range(0, len(db_flavors)):
             api_flavor = api_flavors[i]
             db_flavor = Flavor.objects.get(id=db_flavors[i].id)
-            self.assertEqual(api_flavor['cpu'], db_flavor.cpu)
+            self.assertEqual(api_flavor['vcpus'], db_flavor.cpu)
             self.assertEqual(api_flavor['id'], db_flavor.id)
             self.assertEqual(api_flavor['disk'], db_flavor.disk)
             self.assertEqual(api_flavor['name'], db_flavor.name)
@@ -88,7 +88,7 @@ class FlavorAPITest(BaseAPITest):
 
         api_flavor = json.loads(response.content)['flavor']
         db_flavor = Flavor.objects.get(id=flavor.id)
-        self.assertEqual(api_flavor['cpu'], db_flavor.cpu)
+        self.assertEqual(api_flavor['vcpus'], db_flavor.cpu)
         self.assertEqual(api_flavor['id'], db_flavor.id)
         self.assertEqual(api_flavor['disk'], db_flavor.disk)
         self.assertEqual(api_flavor['name'], db_flavor.name)

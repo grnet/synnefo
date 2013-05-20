@@ -68,7 +68,7 @@ class NetworkAPITest(BaseAPITest):
             self.assertEqual(db_net.public, api_net['public'])
             db_nics = ["nic-%d-%d" % (nic.machine.id, nic.index) for nic in
                        db_net.nics.filter(machine__userid=db_net.userid)]
-            self.assertEqual(db_nics, api_net['attachments']['values'])
+            self.assertEqual(db_nics, api_net['attachments'])
 
     def test_create_network_1(self, mrapi):
         request = {
@@ -189,7 +189,7 @@ class NetworkAPITest(BaseAPITest):
         self.assertSuccess(response)
 
         db_nets = Network.objects.filter(userid=self.user, deleted=False)
-        api_nets = json.loads(response.content)["networks"]["values"]
+        api_nets = json.loads(response.content)["networks"]
 
         self.assertEqual(len(db_nets), len(api_nets))
         for api_net in api_nets:
@@ -205,7 +205,7 @@ class NetworkAPITest(BaseAPITest):
         self.assertSuccess(response)
 
         db_nets = Network.objects.filter(userid=self.user, deleted=False)
-        api_nets = json.loads(response.content)["networks"]["values"]
+        api_nets = json.loads(response.content)["networks"]
 
         self.assertEqual(len(db_nets), len(api_nets))
         for api_net in api_nets:
@@ -222,7 +222,7 @@ class NetworkAPITest(BaseAPITest):
                             net.userid)
         self.assertSuccess(response)
         api_net = json.loads(response.content)["network"]
-        self.assertEqual(len(api_net["attachments"]["values"]), 0)
+        self.assertEqual(len(api_net["attachments"]), 0)
 
     def test_network_details_1(self, mrapi):
         """Test that expected details for a network are returned"""

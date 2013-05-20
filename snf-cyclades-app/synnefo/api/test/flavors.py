@@ -50,7 +50,7 @@ class FlavorAPITest(BaseAPITest):
         response = self.get('/api/v1.1/flavors')
         self.assertSuccess(response)
 
-        api_flavors = json.loads(response.content)['flavors']['values']
+        api_flavors = json.loads(response.content)['flavors']
         db_flavors = Flavor.objects.filter(deleted=False)
         self.assertEqual(len(api_flavors), len(db_flavors))
         for api_flavor in api_flavors:
@@ -64,7 +64,7 @@ class FlavorAPITest(BaseAPITest):
         self.assertSuccess(response)
 
         db_flavors = Flavor.objects.filter(deleted=False)
-        api_flavors = json.loads(response.content)['flavors']['values']
+        api_flavors = json.loads(response.content)['flavors']
 
         self.assertEqual(len(db_flavors), len(api_flavors))
 
@@ -108,7 +108,7 @@ class FlavorAPITest(BaseAPITest):
         """Test that deleted flavors do not appear to flavors list"""
         response = self.get('/api/v1.1/flavors')
         self.assertSuccess(response)
-        api_flavors = json.loads(response.content)['flavors']['values']
+        api_flavors = json.loads(response.content)['flavors']
         self.assertEqual(len(api_flavors), 2)
 
     def test_deleted_flavors_details(self):
@@ -116,7 +116,7 @@ class FlavorAPITest(BaseAPITest):
         FlavorFactory(deleted=True)
         response = self.get('/api/v1.1/flavors/detail')
         self.assertSuccess(response)
-        api_flavors = json.loads(response.content)['flavors']['values']
+        api_flavors = json.loads(response.content)['flavors']
         self.assertEqual(len(api_flavors), 2)
 
     def test_wrong_flavor(self):

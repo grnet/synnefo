@@ -45,6 +45,7 @@ from urlparse import urlunsplit, urlsplit, parse_qsl
 from astakos.im.settings import COOKIE_DOMAIN
 from astakos.im.util import restrict_next
 from astakos.im.functions import login as auth_login, logout
+from astakos.im.decorators import cookie_fix
 
 import astakos.im.messages as astakos_messages
 
@@ -54,6 +55,7 @@ logger = logging.getLogger(__name__)
 
 
 @require_http_methods(["GET", "POST"])
+@cookie_fix
 def login(request):
     """
     If there is no ``next`` request parameter redirects to astakos index page

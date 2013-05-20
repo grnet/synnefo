@@ -56,6 +56,7 @@ from astakos.im import settings
 from astakos.im import auth_providers
 from astakos.im.target import add_pending_auth_provider, get_pending_key, \
     handle_third_party_signup, handle_third_party_login, init_third_party_session
+from astakos.im.decorators import cookie_fix
 
 import logging
 import time
@@ -111,6 +112,7 @@ def login(request):
 
 @requires_auth_provider('google')
 @require_http_methods(["GET", "POST"])
+@cookie_fix
 def authenticated(
     request,
     template='im/third_party_check_local.html',

@@ -57,6 +57,7 @@ from astakos.im import auth_providers
 from astakos.im import settings
 from astakos.im.target import add_pending_auth_provider, get_pending_key, \
     handle_third_party_signup, handle_third_party_login, init_third_party_session
+from astakos.im.decorators import cookie_fix
 
 import astakos.im.messages as astakos_messages
 import logging
@@ -78,6 +79,7 @@ class Tokens:
 
 @requires_auth_provider('shibboleth')
 @require_http_methods(["GET", "POST"])
+@cookie_fix
 def login(
     request,
     template='im/third_party_check_local.html',

@@ -91,17 +91,15 @@ if settings.EMAILCHANGE_ENABLED:
 
 if 'local' in settings.IM_MODULES:
     urlpatterns += patterns(
-        'astakos.im.target',
-        url(r'^local/?$', 'local.login'),
-        url(r'^password_change/?$', 'local.password_change', {
+        'astakos.im.target.local',
+        url(r'^local/?$', 'login'),
+        url(r'^password_change/?$', 'password_change', {
             'post_change_redirect':'profile',
             'password_change_form':ExtendedPasswordChangeForm},
             name='password_change'),
-        url(r'^local/password_reset/done$', 'local.password_reset_done'),
+        url(r'^local/password_reset/done$', 'password_reset_done'),
         url(r'^local/reset/confirm/done$',
-            'local.password_reset_confirm_done')
-    )
-    urlpatterns += patterns('django.contrib.auth.views',
+            'password_reset_confirm_done'),
         url(r'^local/password_reset/?$', 'password_reset', {
             'email_template_name':'registration/password_email.txt',
             'password_reset_form':ExtendedPasswordResetForm,

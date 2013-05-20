@@ -46,7 +46,7 @@ import astakos.im.messages as astakos_messages
 logger = logging.getLogger(__name__)
 
 
-class Cookie():
+class CookieHandler():
     def __init__(self, request, response=None):
         cookies = getattr(request, 'COOKIES', {})
         cookie = unquote(cookies.get(COOKIE_NAME, ''))
@@ -106,10 +106,6 @@ class Cookie():
     def fix(self, response=None):
         self.response = response or self.response
         try:
-            api_call = getattr(self.request, 'api_call', False)
-            if api_call:
-                return
-
             if self.user.is_authenticated():
                 if not self.is_set or not self.is_valid:
                     self.__set()

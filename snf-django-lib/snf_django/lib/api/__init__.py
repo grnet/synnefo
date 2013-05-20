@@ -97,9 +97,6 @@ def api_method(http_method=None, token_required=True, user_required=True,
                     request.user_uniq = user_info["uuid"]
                     request.user = user_info
 
-                # Mark request as api call
-                request.api_call = True
-
                 # Get the response object
                 response = func(request, *args, **kwargs)
 

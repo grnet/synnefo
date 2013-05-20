@@ -41,6 +41,8 @@ from django.views.decorators.http import require_http_methods
 from django.core.urlresolvers import reverse
 from django.contrib.auth.decorators import login_required
 
+import django.contrib.auth.views as django_auth_views
+
 from astakos.im.util import prepare_response, get_query
 from astakos.im.views import requires_anonymous, signed_terms_required
 from astakos.im.models import PendingThirdPartyUser
@@ -52,6 +54,7 @@ import astakos.im.messages as astakos_messages
 from astakos.im.views import requires_auth_provider
 from astakos.im import settings
 from astakos.im import auth_providers as auth
+from astakos.im.decorators import cookie_fix
 
 from ratelimit.decorators import ratelimit
 
@@ -63,6 +66,7 @@ rate = str(retries) + '/m'
 @require_http_methods(["GET", "POST"])
 @csrf_exempt
 @requires_anonymous
+@cookie_fix
 @ratelimit(field='username', method='POST', rate=rate)
 def login(request, on_failure='im/login.html'):
     """
@@ -133,20 +137,42 @@ def login(request, on_failure='im/login.html'):
 
 
 @require_http_methods(["GET"])
+@cookie_fix
 def password_reset_done(request, *args, **kwargs):
     messages.success(request, _(astakos_messages.PASSWORD_RESET_DONE))
     return HttpResponseRedirect(reverse('index'))
 
 
 @require_http_methods(["GET"])
+@cookie_fix
 def password_reset_confirm_done(request, *args, **kwargs):
     messages.success(request, _(astakos_messages.PASSWORD_RESET_CONFIRM_DONE))
     return HttpResponseRedirect(reverse('index'))
 
 
+@cookie_fix
+def password_reset(request, *args, **kwargs):
+    kwargs['post_reset_redirect'] = reverse(
+            'astakos.im.target.local.password_reset_done')
+    return django_auth_views.password_reset(request, *args, **kwargs)
+
+
+@cookie_fix
+def password_reset_confirm(request, *args, **kwargs):
+    kwargs['post_reset_redirect'] = reverse(
+            'astakos.im.target.local.password_reset_complete')
+    return django_auth_views.password_reset_confirm(request, *args, **kwargs)
+
+
+@cookie_fix
+def password_reset_complete(request, *args, **kwargs):
+    return django_auth_views.password_reset_complete(request, *args, **kwargs)
+
+
 @require_http_methods(["GET", "POST"])
 @signed_terms_required
 @login_required
+@cookie_fix
 @requires_auth_provider('local', login=True)
 def password_change(request, template_name='registration/password_change_form.html',
                     post_change_redirect=None, password_change_form=ExtendedPasswordChangeForm):

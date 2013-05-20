@@ -56,6 +56,7 @@ from astakos.im import settings
 from astakos.im import auth_providers
 from astakos.im.target import add_pending_auth_provider, get_pending_key, \
     handle_third_party_signup, handle_third_party_login, init_third_party_session
+from astakos.im.decorators import cookie_fix
 
 import astakos.im.messages as astakos_messages
 
@@ -74,6 +75,7 @@ authenticate_url       = 'https://www.linkedin.com/uas/oauth/authorize'
 
 @requires_auth_provider('linkedin')
 @require_http_methods(["GET", "POST"])
+@cookie_fix
 def login(request):
     init_third_party_session(request)
     resp, content = client.request(request_token_url, "GET")
@@ -97,6 +99,7 @@ def login(request):
 
 @requires_auth_provider('linkedin', login=True)
 @require_http_methods(["GET", "POST"])
+@cookie_fix
 def authenticated(
     request,
     template='im/third_party_check_local.html',

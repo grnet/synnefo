@@ -113,6 +113,7 @@ from astakos.im import auth_providers as auth
 from snf_django.lib.db.transaction import commit_on_success_strict
 from astakos.im.ctx import ExceptionHandler
 from astakos.im import quotas
+from astakos.im.decorators import cookie_fix
 
 logger = logging.getLogger(__name__)
 
@@ -211,6 +212,7 @@ def valid_astakos_user_required(func):
 
 
 @require_http_methods(["GET", "POST"])
+@cookie_fix
 @signed_terms_required
 def index(request, login_template_name='im/login.html', profile_template_name='im/profile.html', extra_context=None):
     """
@@ -251,6 +253,7 @@ def index(request, login_template_name='im/login.html', profile_template_name='i
 
 
 @require_http_methods(["POST"])
+@cookie_fix
 @valid_astakos_user_required
 def update_token(request):
     """
@@ -264,6 +267,7 @@ def update_token(request):
 
 
 @require_http_methods(["GET", "POST"])
+@cookie_fix
 @valid_astakos_user_required
 @transaction.commit_manually
 def invite(request, template_name='im/invitations.html', extra_context=None):
@@ -338,6 +342,7 @@ def invite(request, template_name='im/invitations.html', extra_context=None):
 @require_http_methods(["GET", "POST"])
 @required_auth_methods_assigned(allow_access=True)
 @login_required
+@cookie_fix
 @signed_terms_required
 def edit_profile(request, template_name='im/profile.html', extra_context=None):
     """
@@ -427,6 +432,7 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
 
 @transaction.commit_manually
 @require_http_methods(["GET", "POST"])
+@cookie_fix
 def signup(request, template_name='im/signup.html', on_success='index',
            extra_context=None, activation_backend=None):
     """
@@ -573,6 +579,7 @@ def signup(request, template_name='im/signup.html', on_success='index',
 @require_http_methods(["GET", "POST"])
 @required_auth_methods_assigned(allow_access=True)
 @login_required
+@cookie_fix
 @signed_terms_required
 def feedback(request, template_name='im/feedback.html', email_template_name='im/feedback_mail.txt', extra_context=None):
     """
@@ -623,6 +630,7 @@ def feedback(request, template_name='im/feedback.html', email_template_name='im/
 
 
 @require_http_methods(["GET"])
+@cookie_fix
 def logout(request, template='registration/logged_out.html',
            extra_context=None):
     """
@@ -663,6 +671,7 @@ def logout(request, template='registration/logged_out.html',
 
 
 @require_http_methods(["GET", "POST"])
+@cookie_fix
 @transaction.commit_manually
 def activate(request, greeting_email_template_name='im/welcome_email.txt',
              helpdesk_email_template_name='im/helpdesk_notification.txt'):
@@ -711,6 +720,7 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
 
 
 @require_http_methods(["GET", "POST"])
+@cookie_fix
 def approval_terms(request, term_id=None,
                    template_name='im/approval_terms.html', extra_context=None):
     extra_context = extra_context or {}
@@ -768,6 +778,7 @@ def approval_terms(request, term_id=None,
 
 
 @require_http_methods(["GET", "POST"])
+@cookie_fix
 @transaction.commit_manually
 def change_email(request, activation_key=None,
                  email_template_name='registration/email_change_email.txt',
@@ -849,6 +860,7 @@ def change_email(request, activation_key=None,
     )
 
 
+@cookie_fix
 def send_activation(request, user_id, template_name='im/login.html',
                     extra_context=None):
 
@@ -876,6 +888,7 @@ def send_activation(request, user_id, template_name='im/login.html',
 
 
 @require_http_methods(["GET"])
+@cookie_fix
 @valid_astakos_user_required
 def resource_usage(request):
 
@@ -907,6 +920,7 @@ def resource_usage(request):
 
 # TODO: action only on POST and user should confirm the removal
 @require_http_methods(["GET", "POST"])
+@cookie_fix
 @valid_astakos_user_required
 def remove_auth_provider(request, pk):
     try:
@@ -922,6 +936,7 @@ def remove_auth_provider(request, pk):
         raise PermissionDenied
 
 
+@cookie_fix
 def how_it_works(request):
     return render_response(
         'im/how_it_works.html',
@@ -1124,6 +1139,7 @@ def _resources_catalog(for_project=False, for_usage=False):
 
 
 @require_http_methods(["GET", "POST"])
+@cookie_fix
 @valid_astakos_user_required
 def project_add(request):
     user = request.user
@@ -1174,6 +1190,7 @@ def project_add(request):
 
 
 @require_http_methods(["GET"])
+@cookie_fix
 @valid_astakos_user_required
 def project_list(request):
     projects = ProjectApplication.objects.user_accessible_projects(request.user).select_related()
@@ -1192,6 +1209,7 @@ def project_list(request):
 
 
 @require_http_methods(["POST"])
+@cookie_fix
 @valid_astakos_user_required
 def project_app_cancel(request, application_id):
     next = request.GET.get('next')
@@ -1226,6 +1244,7 @@ def _project_app_cancel(request, application_id):
 
 
 @require_http_methods(["GET", "POST"])
+@cookie_fix
 @valid_astakos_user_required
 def project_modify(request, application_id):
 
@@ -1288,11 +1307,13 @@ def project_modify(request, application_id):
     return redirect(next)
 
 @require_http_methods(["GET", "POST"])
+@cookie_fix
 @valid_astakos_user_required
 def project_app(request, application_id):
     return common_detail(request, application_id, project_view=False)
 
 @require_http_methods(["GET", "POST"])
+@cookie_fix
 @valid_astakos_user_required
 def project_detail(request, chain_id):
     return common_detail(request, chain_id)
@@ -1389,6 +1410,7 @@ def common_detail(request, chain_or_app_id, project_view=True):
             })
 
 @require_http_methods(["GET", "POST"])
+@cookie_fix
 @valid_astakos_user_required
 def project_search(request):
     q = request.GET.get('q', '')
@@ -1432,6 +1454,7 @@ def project_search(request):
         })
 
 @require_http_methods(["POST"])
+@cookie_fix
 @valid_astakos_user_required
 def project_join(request, chain_id):
     next = request.GET.get('next')
@@ -1462,6 +1485,7 @@ def _project_join(request, chain_id):
 
 
 @require_http_methods(["POST"])
+@cookie_fix
 @valid_astakos_user_required
 def project_leave(request, chain_id):
     next = request.GET.get('next')
@@ -1490,6 +1514,7 @@ def _project_leave(request, chain_id):
 
 
 @require_http_methods(["POST"])
+@cookie_fix
 @valid_astakos_user_required
 def project_cancel(request, chain_id):
     next = request.GET.get('next')
@@ -1516,6 +1541,7 @@ def _project_cancel(request, chain_id):
 
 
 @require_http_methods(["POST"])
+@cookie_fix
 @valid_astakos_user_required
 def project_accept_member(request, chain_id, memb_id):
 
@@ -1541,6 +1567,7 @@ def _project_accept_member(request, chain_id, memb_id):
 
 
 @require_http_methods(["POST"])
+@cookie_fix
 @valid_astakos_user_required
 def project_remove_member(request, chain_id, memb_id):
 
@@ -1565,6 +1592,7 @@ def _project_remove_member(request, chain_id, memb_id):
 
 
 @require_http_methods(["POST"])
+@cookie_fix
 @valid_astakos_user_required
 def project_reject_member(request, chain_id, memb_id):
 
@@ -1591,6 +1619,7 @@ def _project_reject_member(request, chain_id, memb_id):
 @require_http_methods(["POST"])
 @signed_terms_required
 @login_required
+@cookie_fix
 def project_app_approve(request, application_id):
 
     if not request.user.is_project_admin():
@@ -1617,6 +1646,7 @@ def _project_app_approve(request, application_id):
 @require_http_methods(["POST"])
 @signed_terms_required
 @login_required
+@cookie_fix
 def project_app_deny(request, application_id):
 
     reason = request.POST.get('reason', None)
@@ -1646,6 +1676,7 @@ def _project_app_deny(request, application_id, reason):
 @require_http_methods(["POST"])
 @signed_terms_required
 @login_required
+@cookie_fix
 def project_app_dismiss(request, application_id):
     try:
         app = ProjectApplication.objects.get(id=application_id)
@@ -1676,6 +1707,7 @@ def _project_app_dismiss(request, application_id):
 @require_http_methods(["GET"])
 @required_auth_methods_assigned(allow_access=True)
 @login_required
+@cookie_fix
 @signed_terms_required
 def landing(request):
     context = {'services': Service.catalog(orderfor='dashboard')}

@@ -681,7 +681,7 @@ class AstakosUser(User):
         return url
 
     def get_password_reset_url(self, token_generator=default_token_generator):
-        return reverse('django.contrib.auth.views.password_reset_confirm',
+        return reverse('astakos.im.target.local.password_reset_confirm',
                           kwargs={'uidb36':int_to_base36(self.id),
                                   'token':token_generator.make_token(self)})
 

@@ -1,4 +1,4 @@
-<form action="{% url astakos.im.target.local.login %}" method="post" 
+<form action="{% url astakos.im.views.target.local.login %}" method="post" 
   class="login-form login innerlabels">{% csrf_token %}
   <p>
     {{ provider.get_login_prompt_msg }}
@@ -20,7 +20,7 @@
     
     <div class="form-row submit clearfix">
         <input type="submit" class="submit altcol" value="SUBMIT" />
-        <a class="extra-link" href="{% url astakos.im.target.local.password_reset %}">Forgot your password?</a>
+        <a class="extra-link" href="{% url astakos.im.views.target.local.password_reset %}">Forgot your password?</a>
       </div>
     </div>
   </form>

@@ -32,67 +32,73 @@
 # or implied, of GRNET S.A.
 
 import json
-import logging
 
 from django.http import HttpResponseBadRequest
 from django.utils.translation import ugettext as _
 from django.contrib import messages
 from django.template import RequestContext
 from django.views.decorators.http import require_http_methods
-from django.http import HttpResponseRedirect, urlencode
+from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.core.exceptions import ImproperlyConfigured
 from django.shortcuts import get_object_or_404
 
-from urlparse import urlunsplit, urlsplit, parse_qsl
+from urlparse import urlunsplit, urlsplit
 
 from astakos.im.util import prepare_response, get_context, login_url
-from astakos.im.views import requires_anonymous, render_response, \
-        requires_auth_provider, required_auth_methods_assigned
 from astakos.im.settings import ENABLE_LOCAL_ACCOUNT_MIGRATION, BASEURL
 from astakos.im.models import AstakosUser, PendingThirdPartyUser
 from astakos.im.forms import LoginForm
 from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im import settings
 from astakos.im import auth_providers
-from astakos.im.target import add_pending_auth_provider, get_pending_key, \
+from astakos.im.views.target import add_pending_auth_provider, get_pending_key, \
     handle_third_party_signup, handle_third_party_login, init_third_party_session
-from astakos.im.decorators import cookie_fix
+from astakos.im.views.util import render_response
+from astakos.im.views.decorators import cookie_fix, requires_anonymous, \
+    requires_auth_provider
 
+import logging
+import time
 import astakos.im.messages as astakos_messages
-
+import urlparse
+import urllib
 
 logger = logging.getLogger(__name__)
 
 import oauth2 as oauth
 import cgi
-import urllib
 
-request_token_url = 'https://api.twitter.com/oauth/request_token'
-access_token_url = 'https://api.twitter.com/oauth/access_token'
-authenticate_url = 'https://api.twitter.com/oauth/authenticate'
+signature_method = oauth.SignatureMethod_HMAC_SHA1()
 
-@requires_auth_provider('twitter')
+OAUTH_CONSUMER_KEY = settings.GOOGLE_CLIENT_ID
+OAUTH_CONSUMER_SECRET = settings.GOOGLE_SECRET
+
+token_scope = 'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email'
+authenticate_url = 'https://accounts.google.com/o/oauth2/auth'
+access_token_url = 'https://www.googleapis.com/oauth2/v1/tokeninfo'
+request_token_url = 'https://accounts.google.com/o/oauth2/token'
+
+
+def get_redirect_uri():
+    return "%s%s" % (settings.BASEURL,
+                     reverse('astakos.im.views.target.google.authenticated'))
+
+
+@requires_auth_provider('google')
 @require_http_methods(["GET", "POST"])
-@cookie_fix
 def login(request):
     init_third_party_session(request)
-    force_login = request.GET.get('force_login',
-                                  settings.TWITTER_AUTH_FORCE_LOGIN)
-    consumer = oauth.Consumer(settings.TWITTER_TOKEN,
-                              settings.TWITTER_SECRET)
-    client = oauth.Client(consumer)
-    resp, content = client.request(request_token_url, "GET")
-    if resp['status'] != '200':
-        messages.error(request, 'Invalid Twitter response')
-        return HttpResponseRedirect(reverse('edit_profile'))
-
-    request.session['request_token'] = dict(cgi.parse_qsl(content))
     params = {
-        'oauth_token': request.session['request_token']['oauth_token'],
+        'scope': token_scope,
+        'response_type': 'code',
+        'redirect_uri': get_redirect_uri(),
+        'client_id': settings.GOOGLE_CLIENT_ID
     }
+    force_login = request.GET.get('force_login', request.GET.get('from_login',
+                                                                 True))
     if force_login:
-        params['force_login'] = 1
+        params['approval_prompt'] = 'force'
 
     if request.GET.get('key', None):
         request.session['pending_key'] = request.GET.get('key')
@@ -104,67 +110,66 @@ def login(request):
     return HttpResponseRedirect(url)
 
 
-@requires_auth_provider('twitter', login=True)
+@requires_auth_provider('google')
 @require_http_methods(["GET", "POST"])
 @cookie_fix
 def authenticated(
     request,
     template='im/third_party_check_local.html',
-    extra_context=None):
+    extra_context=None
+):
 
     if extra_context is None:
         extra_context = {}
 
-    consumer = oauth.Consumer(settings.TWITTER_TOKEN,
-                              settings.TWITTER_SECRET)
-    client = oauth.Client(consumer)
-
-    if request.GET.get('denied'):
+    if request.GET.get('error', None):
         return HttpResponseRedirect(reverse('edit_profile'))
 
-    if not 'request_token' in request.session:
-        messages.error(request, 'Twitter handshake failed')
+    # TODO: Handle errors, e.g. error=access_denied
+    try:
+        consumer = oauth.Consumer(key=OAUTH_CONSUMER_KEY,
+                                  secret=OAUTH_CONSUMER_SECRET)
+        client = oauth.Client(consumer)
+
+        code = request.GET.get('code', None)
+        params = {
+            'code': code,
+            'client_id': settings.GOOGLE_CLIENT_ID,
+            'client_secret': settings.GOOGLE_SECRET,
+            'redirect_uri': get_redirect_uri(),
+            'grant_type': 'authorization_code'
+        }
+        get_token_url = "%s" % (request_token_url,)
+        resp, content = client.request(get_token_url, "POST",
+                                       body=urllib.urlencode(params))
+        token = json.loads(content).get('access_token', None)
+
+        resp, content = client.request("%s?access_token=%s" %
+                                       (access_token_url, token), "GET")
+        access_token_data = json.loads(content)
+    except Exception:
+        messages.error(request, _('Invalid Google response. Please '
+                                  'contact support'))
         return HttpResponseRedirect(reverse('edit_profile'))
 
-    token = oauth.Token(request.session['request_token']['oauth_token'],
-        request.session['request_token']['oauth_token_secret'])
-    client = oauth.Client(consumer, token)
-
-    # Step 2. Request the authorized access token from Twitter.
-    parts = list(urlsplit(access_token_url))
-    params = dict(parse_qsl(parts[3], keep_blank_values=True))
-    oauth_verifier = request.GET.get('oauth_verifier')
-    params['oauth_verifier'] = oauth_verifier
-    parts[3] = urlencode(params)
-    parameterized_url = urlunsplit(parts)
-
-    resp, content = client.request(parameterized_url, "GET")
-
-    if resp['status'] != '200':
-        try:
-            del request.session['request_token']
-        except:
-            pass
-        messages.error(request, 'Invalid Twitter response')
+    if not access_token_data.get('user_id', None):
+        messages.error(request, _('Invalid Google response. Please contact '
+                                  ' support'))
         return HttpResponseRedirect(reverse('edit_profile'))
 
-    access_token = dict(cgi.parse_qsl(content))
-    userid = access_token['user_id']
-    username = access_token.get('screen_name', userid)
-    provider_info = {'screen_name': username}
-    affiliation = 'Twitter.com'
-
+    userid = access_token_data['user_id']
+    provider_info = access_token_data
+    affiliation = 'Google.com'
 
     try:
-        return handle_third_party_login(request, 'twitter', userid,
+        return handle_third_party_login(request, 'google', userid,
                                         provider_info, affiliation)
-    except AstakosUser.DoesNotExist, e:
+    except AstakosUser.DoesNotExist:
         third_party_key = get_pending_key(request)
         user_info = {'affiliation': affiliation}
-        return handle_third_party_signup(request, userid, 'twitter',
+        return handle_third_party_signup(request, userid, 'google',
                                          third_party_key,
                                          provider_info,
                                          user_info,
                                          template,
                                          extra_context)
-

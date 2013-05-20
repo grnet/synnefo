@@ -37,7 +37,7 @@ urlpatterns = patterns(
     '',
     (r'^im/', include('astakos.im.urls')),
     (r'^astakos/api/', include('astakos.api.urls')),
-    (r'^login/?$', 'astakos.im.target.redirect.login')
+    (r'^login/?$', 'astakos.im.views.target.redirect.login')
 )
 
 urlpatterns += patterns(

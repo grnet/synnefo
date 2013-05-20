@@ -47,17 +47,17 @@ from django.shortcuts import get_object_or_404
 from urlparse import urlunsplit, urlsplit
 
 from astakos.im.util import prepare_response, get_context, login_url
-from astakos.im.views import (
-    requires_anonymous, render_response, requires_auth_provider)
 from astakos.im.settings import ENABLE_LOCAL_ACCOUNT_MIGRATION, BASEURL
 from astakos.im.models import AstakosUser, PendingThirdPartyUser
 from astakos.im.forms import LoginForm
 from astakos.im.activation_backends import get_backend, SimpleBackend
 from astakos.im import auth_providers
 from astakos.im import settings
-from astakos.im.target import add_pending_auth_provider, get_pending_key, \
+from astakos.im.views.target import add_pending_auth_provider, get_pending_key, \
     handle_third_party_signup, handle_third_party_login, init_third_party_session
-from astakos.im.decorators import cookie_fix
+from astakos.im.views.util import render_response
+from astakos.im.views.decorators import cookie_fix, requires_anonymous, \
+    requires_auth_provider
 
 import astakos.im.messages as astakos_messages
 import logging

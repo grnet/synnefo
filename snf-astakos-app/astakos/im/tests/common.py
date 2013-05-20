@@ -47,7 +47,7 @@ from django.utils.importlib import import_module
 from django.utils import simplejson as json
 
 from astakos.im.activation_backends import *
-from astakos.im.target.shibboleth import Tokens as ShibbolethTokens
+from astakos.im.views.target.shibboleth import Tokens as ShibbolethTokens
 from astakos.im.models import *
 from astakos.im import functions
 from astakos.im import settings as astakos_settings

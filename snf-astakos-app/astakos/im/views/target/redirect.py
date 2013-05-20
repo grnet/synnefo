@@ -45,7 +45,7 @@ from urlparse import urlunsplit, urlsplit, parse_qsl
 from astakos.im.settings import COOKIE_DOMAIN
 from astakos.im.util import restrict_next
 from astakos.im.functions import login as auth_login, logout
-from astakos.im.decorators import cookie_fix
+from astakos.im.views.decorators import cookie_fix
 
 import astakos.im.messages as astakos_messages
 

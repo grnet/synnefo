@@ -44,7 +44,8 @@ from astakos.im.util import get_query, login_url
 from astakos.im import messages as astakos_messages
 from astakos.im import auth_providers as auth
 from astakos.im.util import prepare_response, get_context
-from astakos.im.views import requires_anonymous, render_response
+from astakos.im.views.util import render_response
+from astakos.im.views.decorators import requires_anonymous
 import logging
 
 logger = logging.getLogger(__name__)

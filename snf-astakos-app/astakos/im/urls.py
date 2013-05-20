@@ -91,7 +91,7 @@ if settings.EMAILCHANGE_ENABLED:
 
 if 'local' in settings.IM_MODULES:
     urlpatterns += patterns(
-        'astakos.im.target.local',
+        'astakos.im.views.target.local',
         url(r'^local/?$', 'login'),
         url(r'^password_change/?$', 'password_change', {
             'post_change_redirect':'profile',
@@ -119,27 +119,27 @@ if settings.INVITATIONS_ENABLED:
 
 if 'shibboleth' in settings.IM_MODULES:
     urlpatterns += patterns(
-        'astakos.im.target',
+        'astakos.im.views.target',
         url(r'^login/shibboleth/?$', 'shibboleth.login'),
     )
 
 if 'twitter' in settings.IM_MODULES:
     urlpatterns += patterns(
-        'astakos.im.target',
+        'astakos.im.views.target',
         url(r'^login/twitter/?$', 'twitter.login'),
         url(r'^login/twitter/authenticated/?$',
             'twitter.authenticated'))
 
 if 'google' in settings.IM_MODULES:
     urlpatterns += patterns(
-        'astakos.im.target',
+        'astakos.im.views.target',
         url(r'^login/google/?$', 'google.login'),
         url(r'^login/google/authenticated/?$',
             'google.authenticated'))
 
 if 'linkedin' in settings.IM_MODULES:
     urlpatterns += patterns(
-        'astakos.im.target',
+        'astakos.im.views.target',
         url(r'^login/linkedin/?$', 'linkedin.login'),
         url(r'^login/linkedin/authenticated/?$',
             'linkedin.authenticated'))

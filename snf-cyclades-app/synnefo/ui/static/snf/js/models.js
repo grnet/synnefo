@@ -366,8 +366,7 @@
                     path: pathinfo.path,
                     contents: contents,
                     mode: 0600,
-                    owner: pathinfo.user,
-                    group: pathinfo.user
+                    owner: pathinfo.user
                 }
             });
         }

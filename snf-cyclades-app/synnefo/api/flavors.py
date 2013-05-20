@@ -83,7 +83,7 @@ def list_flavors(request, detail=False):
             'flavors': flavors,
             'detail': detail})
     else:
-        data = json.dumps({'flavors': {'values': flavors}})
+        data = json.dumps({'flavors': flavors})
 
     return HttpResponse(data, status=200)
 

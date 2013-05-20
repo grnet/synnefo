@@ -85,7 +85,7 @@ def versions_list(request):
     if request.serialization == 'xml':
         data = render_to_string('versions_list.xml', {'versions': VERSIONS})
     else:
-        data = json.dumps({'versions': {'values': VERSIONS}})
+        data = json.dumps({'versions': VERSIONS})
 
     return HttpResponse(data)
 

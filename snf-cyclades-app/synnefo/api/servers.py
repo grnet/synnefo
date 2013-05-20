@@ -139,11 +139,11 @@ def vm_to_dict(vm, detail=False):
 
         metadata = dict((m.meta_key, m.meta_value) for m in vm.metadata.all())
         if metadata:
-            d['metadata'] = {'values': metadata}
+            d['metadata'] = metadata
 
         vm_nics = vm.nics.filter(state="ACTIVE").order_by("index")
         attachments = map(nic_to_dict, vm_nics)
-        d['attachments'] = {'values': attachments}
+        d['attachments'] = attachments
 
         # include the latest vm diagnostic, if set
         diagnostic = vm.get_last_diagnostic()
@@ -238,7 +238,7 @@ def list_servers(request, detail=False):
             'servers': servers,
             'detail': detail})
     else:
-        data = json.dumps({'servers': {'values': servers}})
+        data = json.dumps({'servers': servers})
 
     return HttpResponse(data, status=200)
 
@@ -544,7 +544,7 @@ def list_addresses(request, server_id):
     if request.serialization == 'xml':
         data = render_to_string('list_addresses.xml', {'addresses': addresses})
     else:
-        data = json.dumps({'addresses': {'values': addresses}})
+        data = json.dumps({'addresses': addresses})
 
     return HttpResponse(data, status=200)
 
@@ -585,7 +585,8 @@ def list_metadata(request, server_id):
     log.debug('list_server_metadata %s', server_id)
     vm = util.get_vm(server_id, request.user_uniq)
     metadata = dict((m.meta_key, m.meta_value) for m in vm.metadata.all())
-    return util.render_metadata(request, metadata, use_values=True, status=200)
+    return util.render_metadata(request, metadata, use_values=False,
+                                status=200)
 
 
 @api.api_method(http_method='POST', user_required=True, logger=log)

@@ -22,6 +22,9 @@ def brand_message(msg, **extra_args):
 def render_to_string(template_name, dictionary=None, context_instance=None):
     if not dictionary:
         dictionary = {}
-    newdict = get_branding_dict("BRANDING")
-    newdict.update(dictionary)
+    if isinstance(dictionary, dict):
+        newdict = get_branding_dict("BRANDING")
+        newdict.update(dictionary)
+    else:
+        newdict = dictionary
     return django_render_to_string(template_name, newdict, context_instance)

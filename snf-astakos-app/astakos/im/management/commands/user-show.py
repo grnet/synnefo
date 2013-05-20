@@ -34,7 +34,7 @@
 from django.core.management.base import CommandError
 from optparse import make_option
 
-from astakos.im.models import AstakosUser, get_latest_terms
+from astakos.im.models import AstakosUser, get_latest_terms, Chain
 from astakos.im.quotas import list_user_quotas
 
 from synnefo.lib.ordereddict import OrderedDict
@@ -56,6 +56,11 @@ class Command(SynnefoCommand):
                     dest='list_quotas',
                     default=False,
                     help="Also list user quota"),
+        make_option('--projects',
+                    action='store_true',
+                    dest='list_projects',
+                    default=False,
+                    help="Also list project memberships"),
     )
 
     def handle(self, *args, **options):
@@ -122,3 +127,71 @@ class Command(SynnefoCommand):
                 print_data, labels = show_quotas(quotas, initial)
                 utils.pprint_table(self.stdout, print_data, labels,
                                    options["output_format"])
+
+            if options["list_projects"]:
+                print_data, labels = ownerships(user)
+                if print_data:
+                    self.stdout.write("\n")
+                    utils.pprint_table(self.stdout, print_data, labels,
+                                       options["output_format"],
+                                       title="Owned Projects")
+
+                print_data, labels = memberships(user)
+                if print_data:
+                    self.stdout.write("\n")
+                    utils.pprint_table(self.stdout, print_data, labels,
+                                       options["output_format"],
+                                       title="Project Memberships")
+
+
+def memberships(user):
+    ms = user.projectmembership_set.all()
+    print_data = []
+    labels = ('project id', 'project name', 'status')
+
+    for m in ms:
+        project = m.project
+        print_data.append((project.id,
+                           project.application.name,
+                           m.state_display(),
+                           ))
+    return print_data, labels
+
+
+def ownerships(user):
+    chain_dict = Chain.objects.all_full_state()
+    chain_dict = filter_by(is_owner(user), chain_dict)
+    return chain_info(chain_dict)
+
+
+def is_owner(user):
+    def f(state, project, app):
+        return user == app.owner
+    return f
+
+
+def filter_by(f, chain_dict):
+    d = {}
+    for chain, tpl in chain_dict.iteritems():
+        if f(*tpl):
+            d[chain] = tpl
+    return d
+
+
+def chain_info(chain_dict):
+    labels = ('project id', 'project name', 'status', 'pending app id')
+    l = []
+    for chain, (state, project, app) in chain_dict.iteritems():
+        status = Chain.state_display(state)
+        if state in Chain.PENDING_STATES:
+            appid = str(app.id)
+        else:
+            appid = ""
+
+        t = (chain,
+             project.application.name if project else app.name,
+             status,
+             appid,
+             )
+        l.append(t)
+    return l, labels

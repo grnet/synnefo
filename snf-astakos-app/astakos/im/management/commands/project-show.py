@@ -41,16 +41,8 @@ from astakos.im.models import Chain, ProjectApplication
 
 
 class Command(SynnefoCommand):
-    args = "<id or name>"
-    help = """
-    Show project details.
-
-    Command comes in two forms:
-        project-show <id>    Look up project by id
-
-        project-show <name>  Look up all projects whose name
-                             contains the given string
-"""
+    args = "<id>"
+    help = "Show details for project (or application) <id>"
 
     option_list = SynnefoCommand.option_list + (
         make_option('--app',
@@ -63,8 +55,14 @@ class Command(SynnefoCommand):
                     action='store_true',
                     dest='pending',
                     default=False,
-                    help=("For a given project, show also pending modifications"
-                          "(applications), if any")
+                    help=("For a given project, show also pending "
+                          "modifications (applications), if any")
+                    ),
+        make_option('--members',
+                    action='store_true',
+                    dest='members',
+                    default=False,
+                    help=("Show a list of project memberships")
                     ),
     )
 
@@ -73,73 +71,59 @@ class Command(SynnefoCommand):
             raise CommandError("Please provide project ID or name")
 
         show_pending = bool(options['pending'])
+        show_members = bool(options['members'])
         search_apps = options['app']
+        self.output_format = options['output_format']
 
-        name_or_id = args[0]
-        is_id = name_or_id.isdigit()
-        if is_id:
-            name_or_id = int(name_or_id)
+        id_ = args[0]
+        try:
+            id_ = int(id_)
+        except ValueError:
+            raise CommandError("id should be an integer value.")
 
         if search_apps:
-            infolist = app_info(name_or_id, is_id)
+            self.pprint_dict(app_info(id_))
         else:
-            chains = get_chains(name_or_id, is_id)
-            infolist = collect_info(chains, show_pending)
-
-        if not infolist:
-            kind = 'project application' if search_apps else 'project'
-            field = 'id' if is_id else 'name'
-            msg = "Unknown %s with %s '%s'" % (kind, field, name_or_id)
-            raise CommandError(msg)
-
-        first = True
-        for info in infolist:
-            if not first:
+            state, project, app = get_chain_state(id_)
+            self.pprint_dict(chain_fields(state, project, app))
+            if show_members and project is not None:
                 self.stdout.write("\n")
-            else:
-                first = False
-            utils.pprint_table(self.stdout, [info.values()], info.keys(),
-                               options["output_format"], vertical=True)
+                fields, labels = members_fields(project)
+                self.pprint_table(fields, labels)
+            if show_pending and state in Chain.PENDING_STATES:
+                self.stdout.write("\n")
+                self.pprint_dict(app_fields(app))
+
+    def pprint_dict(self, d, vertical=True):
+        utils.pprint_table(self.stdout, [d.values()], d.keys(),
+                           self.output_format, vertical=vertical)
+
+    def pprint_table(self, tbl, labels):
+        utils.pprint_table(self.stdout, tbl, labels,
+                           self.output_format)
 
 
-def app_info(name_or_id, is_id):
+def app_info(app_id):
     try:
-        apps = ([ProjectApplication.objects.get(id=name_or_id)]
-                if is_id
-                else ProjectApplication.objects.search_by_name(name_or_id))
-        return [app_fields(app) for app in apps]
+        app = ProjectApplication.objects.get(id=app_id)
+        return app_fields(app)
     except ProjectApplication.DoesNotExist:
-            return []
+        raise CommandError("Application with id %s not found." % app_id)
 
 
-def get_chains(name_or_id, is_id):
-    if is_id:
-        try:
-            return [Chain.objects.get(chain=name_or_id)]
-        except Chain.DoesNotExist:
-            return []
+def get_chain_state(project_id):
+    try:
+        chain = Chain.objects.get(chain=project_id)
+        return chain.full_state()
+    except Chain.DoesNotExist:
+        raise CommandError("Project with id %s not found." % project_id)
+
+
+def chain_fields(state, project, app):
+    if project is not None:
+        return project_fields(state, project, app)
     else:
-        return Chain.objects.search_by_name(name_or_id)
-
-
-def collect_info(chains, pending):
-    states = [chain.full_state() for chain in chains]
-
-    infolist = []
-    for state in states:
-        infolist += (chain_fields(state, pending))
-    return infolist
-
-
-def chain_fields((s, project, app), request=False):
-    l = []
-    if project:
-        l = [project_fields(s, project, app)]
-        if request and s in Chain.PENDING_STATES:
-            l.append(app_fields(app))
-    else:
-        l = [app_fields(app)]
-    return l
+        return app_fields(app)
 
 
 def app_fields(app):
@@ -206,18 +190,18 @@ def project_fields(s, project, last_app):
             ('total members', project.members_count()),
     ])
 
-    memberships = project.projectmembership_set
-    accepted = [str(m.person) for m in memberships.any_accepted()]
-    requested = [str(m.person) for m in memberships.requested()]
-    suspended = [str(m.person) for m in memberships.suspended()]
-
-    if accepted:
-        d['accepted members'] = ', '.join(accepted)
-
-    if suspended:
-        d['suspended members'] = ', '.join(suspended)
-
-    if requested:
-        d['membership requests'] = ', '.join(requested)
-
     return d
+
+
+def members_fields(project):
+    labels = ('member uuid', 'email', 'status')
+    objs = project.projectmembership_set.select_related('person')
+    memberships = objs.all().order_by('state', 'person__email')
+    collect = []
+    for m in memberships:
+        user = m.person
+        collect.append((user.uuid,
+                       user.email,
+                       m.state_display()))
+
+    return collect, labels

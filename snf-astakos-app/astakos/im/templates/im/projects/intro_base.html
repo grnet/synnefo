@@ -8,7 +8,10 @@
     <li class="create">
     <div>
       <div class="wrap">
-        <p class="centered"><a href="{% url project_add %}"><img alt="THINK ABOUT IT" src="/static/im/images/create.png"></a></p>
+          <p class="centered"><a href="{% url project_add %}">
+              <img alt="THINK ABOUT IT" 
+              src="{{ IM_STATIC_URL }}images/create.png"></a>
+          </p>
         <p class="txt">
         {% blocktrans %}
   Create a new Project. Name it, describe its purpose,
@@ -24,7 +27,9 @@
     <li class="join">
     <div>
       <div class="wrap">
-        <p class="centered"><a href="{% url project_search %}"><img alt="THINK ABOUT IT" src="/static/im/images/join.png"></a></p>
+          <p class="centered"><a href="{% url project_search %}">
+              <img alt="THINK ABOUT IT" src="{{ IM_STATIC_URL }}images/join.png"></a>
+          </p>
         <p class="txt">
         {% blocktrans %}
   Request to be a member of an existing Project

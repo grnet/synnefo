@@ -102,7 +102,7 @@ class AstakosClient():
         self.logger = logger
         self.netloc = p.netloc
         self.scheme = p.scheme
-        self.path = p.path.lstrip('/')
+        self.path = p.path.rstrip('/')
         self.conn_class = conn_class
 
     # ----------------------------------

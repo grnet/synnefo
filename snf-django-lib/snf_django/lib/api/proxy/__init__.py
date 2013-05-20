@@ -35,6 +35,8 @@ from django.http import HttpResponse
 
 from objpool.http import PooledHTTPConnection
 
+from synnefo.lib import join_urls
+
 from .utils import fix_header, forward_header
 
 import urllib
@@ -74,11 +76,11 @@ def proxy(request, target):
     kwargs['body'] = request.raw_post_data
 
     p = urlparse.urlparse(target)
+    path = join_urls(p.path, request.path)
     with PooledHTTPConnection(p.netloc, p.scheme) as conn:
         conn.request(
             request.method,
-            '?'.join([request.path, urllib.urlencode(request.GET)]),
-            **kwargs)
+            '?'.join([path, urllib.urlencode(request.GET)]), **kwargs)
         response = conn.getresponse()
 
         # turn httplib.HttpResponse to django.http.Response

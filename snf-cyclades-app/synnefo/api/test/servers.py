@@ -78,10 +78,10 @@ class ServerAPITest(BaseAPITest):
         self.assertEqual(len(servers), len(user_vms))
         for api_vm in servers:
             db_vm = user_vms[api_vm['id']]
-            self.assertEqual(api_vm['flavorRef'], db_vm.flavor.id)
+            self.assertEqual(api_vm['flavor'], db_vm.flavor.id)
             self.assertEqual(api_vm['hostId'], db_vm.hostid)
             self.assertEqual(api_vm['id'], db_vm.id)
-            self.assertEqual(api_vm['imageRef'], db_vm.imageid)
+            self.assertEqual(api_vm['image'], db_vm.imageid)
             self.assertEqual(api_vm['name'], db_vm.name)
             self.assertEqual(api_vm['status'], get_rsapi_state(db_vm))
             self.assertSuccess(response)
@@ -98,10 +98,10 @@ class ServerAPITest(BaseAPITest):
         response = self.get('/api/v1.1/servers/%d' % db_vm.id, user)
         server = json.loads(response.content)['server']
 
-        self.assertEqual(server['flavorRef'], db_vm.flavor.id)
+        self.assertEqual(server['flavor'], db_vm.flavor.id)
         self.assertEqual(server['hostId'], db_vm.hostid)
         self.assertEqual(server['id'], db_vm.id)
-        self.assertEqual(server['imageRef'], db_vm.imageid)
+        self.assertEqual(server['image'], db_vm.imageid)
         self.assertEqual(server['name'], db_vm.name)
         self.assertEqual(server['status'], get_rsapi_state(db_vm))
         api_nic = server['attachments']['values'][0]

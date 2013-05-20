@@ -133,8 +133,8 @@ def vm_to_dict(vm, detail=False):
         d['hostId'] = vm.hostid
         d['updated'] = utils.isoformat(vm.updated)
         d['created'] = utils.isoformat(vm.created)
-        d['flavorRef'] = vm.flavor.id
-        d['imageRef'] = vm.imageid
+        d['flavor'] = vm.flavor.id
+        d['image'] = vm.imageid
         d['suspended'] = vm.suspended
 
         metadata = dict((m.meta_key, m.meta_value) for m in vm.metadata.all())

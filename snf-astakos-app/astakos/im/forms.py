@@ -54,6 +54,7 @@ from django.core import validators
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import PermissionDenied
 
+from synnefo_branding.utils import render_to_string
 from synnefo.lib import join_urls
 from astakos.im.models import (
     AstakosUser, EmailChange, Invitation,
@@ -548,7 +549,6 @@ class ExtendedPasswordResetForm(PasswordResetForm):
         for user in self.users_cache:
             url = user.astakosuser.get_password_reset_url(token_generator)
             url = join_urls(BASEURL, url)
-            t = loader.get_template(email_template_name)
             c = {
                 'email': user.email,
                 'url': url,
@@ -557,9 +557,10 @@ class ExtendedPasswordResetForm(PasswordResetForm):
                 'baseurl': BASEURL,
                 'support': CONTACT_EMAIL
             }
+            message = render_to_string(email_template_name, c)
             from_email = settings.SERVER_EMAIL
             send_mail(_(PASSWORD_RESET_EMAIL_SUBJECT),
-                      t.render(Context(c)),
+                      message,
                       from_email,
                       [user.email],
                       connection=get_connection())

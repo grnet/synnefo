@@ -40,7 +40,7 @@ from django.core.urlresolvers import resolve
 from django.conf import settings
 from django.template import TemplateSyntaxError, Variable
 from django.utils.translation import ugettext as _
-from django.template.loader import render_to_string
+from synnefo_branding.utils import render_to_string
 from django.template import RequestContext
 from django.core.urlresolvers import reverse
 from django.utils.safestring import mark_safe

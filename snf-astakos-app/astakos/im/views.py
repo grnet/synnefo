@@ -65,12 +65,13 @@ from django.views.generic.create_update import (
 from django.views.generic.list_detail import object_list, object_detail
 from django.core.xheaders import populate_xheaders
 from django.core.exceptions import ValidationError, PermissionDenied
-from django.template.loader import render_to_string
 from django.views.decorators.http import require_http_methods
 from django.db.models import Q
 from django.core.exceptions import PermissionDenied
 from django.utils import simplejson as json
 from django.contrib.auth.views import redirect_to_login
+
+from synnefo_branding.utils import render_to_string
 
 import astakos.im.messages as astakos_messages
 

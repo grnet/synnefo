@@ -36,7 +36,7 @@ import recaptcha.client.captcha as captcha
 from django import forms
 from django.utils.safestring import mark_safe
 from django.utils import simplejson as json
-from django.template.loader import render_to_string
+from synnefo_branding.utils import render_to_string
 
 from astakos.im.settings import RECAPTCHA_PUBLIC_KEY, RECAPTCHA_OPTIONS, \
     RECAPTCHA_USE_SSL

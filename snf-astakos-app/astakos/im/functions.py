@@ -35,7 +35,6 @@ import logging
 import socket
 
 from django.utils.translation import ugettext as _
-from synnefo_branding.utils import render_to_string
 from django.core.mail import send_mail, get_connection
 from django.core.urlresolvers import reverse
 from django.template import Context, loader
@@ -46,6 +45,8 @@ from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError
 from django.http import Http404
+
+from synnefo_branding.utils import render_to_string
 
 from urllib import quote
 from smtplib import SMTPException
@@ -235,13 +236,12 @@ def send_change_email(
     ec, request, email_template_name='registration/email_change_email.txt'):
     url = ec.get_url()
     url = request.build_absolute_uri(url)
-    t = loader.get_template(email_template_name)
-    c = {'url': url, 'site_name': SITENAME,
-         'support': CONTACT_EMAIL, 'ec': ec}
+    c = {'url': url, 'site_name': SITENAME, 'support': CONTACT_EMAIL,
+         'ec': ec}
+    message = render_to_string(email_template_name, c)
     from_email = settings.SERVER_EMAIL
-    send_mail(_(EMAIL_CHANGE_EMAIL_SUBJECT), t.render(Context(c)),
-              from_email, [ec.new_email_address],
-              connection=get_connection())
+    send_mail(_(EMAIL_CHANGE_EMAIL_SUBJECT), message, from_email,
+              [ec.new_email_address], connection=get_connection())
     msg = 'Sent change email for %s' % ec.user.log_display
     logger.log(LOGGING_LEVEL, msg)
 

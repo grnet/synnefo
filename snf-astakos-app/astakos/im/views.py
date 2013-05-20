@@ -94,7 +94,7 @@ from astakos.im.functions import (
     send_feedback,
     logout as auth_logout,
     invite as invite_func,
-    qh_add_pending_app,
+    check_pending_app_quota,
     accept_membership, reject_membership, remove_membership, cancel_membership,
     leave_project, join_project, enroll_member, can_join_request,
     can_leave_request,
@@ -1144,7 +1144,7 @@ def _resources_catalog(for_project=False, for_usage=False):
 def project_add(request):
     user = request.user
     if not user.is_project_admin():
-        ok, limit = qh_add_pending_app(user, dry_run=True)
+        ok, limit = check_pending_app_quota(user)
         if not ok:
             m = _(astakos_messages.PENDING_APPLICATION_LIMIT_ADD) % limit
             messages.error(request, m)
@@ -1260,7 +1260,7 @@ def project_modify(request, application_id):
 
     if not user.is_project_admin():
         owner = app.owner
-        ok, limit = qh_add_pending_app(owner, precursor=app, dry_run=True)
+        ok, limit = check_pending_app_quota(owner, precursor=app)
         if not ok:
             m = _(astakos_messages.PENDING_APPLICATION_LIMIT_MODIFY) % limit
             messages.error(request, m)

@@ -37,7 +37,7 @@ from django.core.exceptions import PermissionDenied
 from astakos.im.models import AstakosUser, ProjectApplication
 from astakos.im.functions import (join_project, leave_project,
                                   submit_application, approve_application,
-                                  get_user_by_id, qh_add_pending_app)
+                                  get_user_by_id, check_pending_app_quota)
 from snf_django.lib.db.transaction import commit_on_success_strict
 
 
@@ -62,7 +62,7 @@ def submit(name, user_id, prec):
                  if prec is not None
                  else None)
 
-    ok, limit = qh_add_pending_app(owner, precursor=precursor, dry_run=True)
+    ok, limit = check_pending_app_quota(owner, precursor=precursor)
     if not ok:
         raise PermissionDenied('Limit %s reached', limit)
 

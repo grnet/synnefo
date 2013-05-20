@@ -36,7 +36,7 @@ from django.core.management.base import CommandError
 
 from astakos.im.models import AstakosUser
 from astakos.im.quotas import (
-    qh_sync_users, list_user_quotas, add_base_quota)
+    qh_sync_users_diffs, list_user_quotas, add_base_quota)
 from astakos.im.functions import get_user_by_uuid
 from astakos.im.management.commands._common import is_uuid, is_email
 from snf_django.lib.db.transaction import commit_on_success_strict
@@ -117,7 +117,7 @@ class Command(SynnefoCommand):
                                output_format)
 
         elif verify or sync:
-            qh_limits, diff_q = qh_sync_users(users, sync=sync, diff_only=True)
+            qh_limits, diff_q = qh_sync_users_diffs(users, sync=sync)
             if verify:
                 self.print_verify(qh_limits, diff_q)
             if sync:

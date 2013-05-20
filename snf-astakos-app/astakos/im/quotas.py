@@ -128,26 +128,30 @@ def get_default_quota():
 
 
 SYSTEM = 'system'
+PENDING_APP_RESOURCE = 'astakos.pending_app'
 
 
-def register_pending_apps(user, quantity, force=False, dry_run=False):
-    provision = (user.uuid, SYSTEM, 'astakos.pending_app'), quantity
-    name = "DRYRUN" if dry_run else ""
+def register_pending_apps(user, quantity, force=False):
+    provision = (user.uuid, SYSTEM, PENDING_APP_RESOURCE), quantity
     try:
         s = qh.issue_commission(clientkey='astakos',
                                 force=force,
-                                name=name,
                                 provisions=[provision])
     except NoCapacityError as e:
         limit = e.data['limit']
         return False, limit
-    accept = not dry_run
-    qh.resolve_pending_commission('astakos', s, accept)
+    qh.resolve_pending_commission('astakos', s)
     return True, None
+
+
+def get_pending_app_quota(user):
+    quota = get_user_quotas(user)
+    return quota[SYSTEM][PENDING_APP_RESOURCE]
 
 
 def add_base_quota(user, resource, capacity):
     resource = Resource.objects.get(name=resource)
+    user = get_user_for_update(user.id)
     obj, created = AstakosUserQuota.objects.get_or_create(
         user=user, resource=resource, defaults={
             'capacity': capacity,
@@ -156,13 +160,14 @@ def add_base_quota(user, resource, capacity):
     if not created:
         obj.capacity = capacity
         obj.save()
-    qh_sync_user(user)
+    qh_sync_locked_user(user)
 
 
 def remove_base_quota(user, resource):
+    user = get_user_for_update(user.id)
     AstakosUserQuota.objects.filter(
         user=user, resource__name=resource).delete()
-    qh_sync_user(user)
+    qh_sync_locked_user(user)
 
 
 def initial_quotas(users):
@@ -248,51 +253,69 @@ def list_user_quotas(users):
 
 # Syncing to quotaholder
 
-def qh_sync_users(users, sync=True, diff_only=False):
+def get_users_for_update(user_ids):
+    uids = sorted(user_ids)
+    objs = AstakosUser.forupdate
+    return list(objs.filter(id__in=uids).order_by('id').select_for_update())
+
+
+def get_user_for_update(user_id):
+    return get_users_for_update([user_id])[0]
+
+
+def qh_sync_locked_users(users):
+    astakos_quotas = astakos_users_quotas(users)
+    _set_user_quota(astakos_quotas)
+
+
+def qh_sync_users(users):
+    uids = [user.id for user in users]
+    users = get_users_for_update(uids)
+    qh_sync_locked_users(users)
+
+
+def qh_sync_users_diffs(users, sync=True):
     uids = [user.id for user in users]
     if sync:
-        users = AstakosUser.forupdate.filter(id__in=uids).select_for_update()
+        users = get_users_for_update(uids)
 
     astakos_quotas = astakos_users_quotas(users)
+    qh_limits = get_users_quota_limits(users)
+    diff_quotas = {}
+    for holder, local in astakos_quotas.iteritems():
+        registered = qh_limits.get(holder, None)
+        if local != registered:
+            diff_quotas[holder] = dict(local)
 
-    if diff_only:
-        qh_limits = get_users_quota_limits(users)
-        diff_quotas = {}
-        for holder, local in astakos_quotas.iteritems():
-            registered = qh_limits.get(holder, None)
-            if local != registered:
-                diff_quotas[holder] = dict(local)
+    if sync:
+        _set_user_quota(diff_quotas)
+    return qh_limits, diff_quotas
 
-        if sync:
-            _set_user_quota(diff_quotas)
-        return qh_limits, diff_quotas
-    else:
-        if sync:
-            _set_user_quota(astakos_quotas)
-        return None
+
+def qh_sync_locked_user(user):
+    qh_sync_locked_users([user])
 
 
 def qh_sync_user(user):
     qh_sync_users([user])
 
 
-def qh_sync_projects(projects):
-    projects = list(projects)
-    memberships = ProjectMembership.objects.filter(
-        project__in=projects, state__in=ProjectMembership.ACTUALLY_ACCEPTED)
-    users = set(m.person for m in memberships)
-
-    qh_sync_users(users)
+def members_to_sync(project):
+    objs = ProjectMembership.objects.select_related('person')
+    memberships = objs.filter(project=project,
+                              state__in=ProjectMembership.ACTUALLY_ACCEPTED)
+    return set(m.person for m in memberships)
 
 
 def qh_sync_project(project):
-    qh_sync_projects([project])
+    users = members_to_sync(project)
+    qh_sync_users(users)
 
 
 def qh_add_resource_limit(resource, diff):
     objs = AstakosUser.forupdate.filter(Q(email_verified=True) &
                                         ~Q(policy=resource))
-    users = objs.select_for_update()
+    users = objs.order_by('id').select_for_update()
     uuids = [u.uuid for u in users]
     qh.add_resource_limit(holders=uuids, sources=[SYSTEM],
                           resources=[resource.name], diff=diff)
@@ -300,7 +323,7 @@ def qh_add_resource_limit(resource, diff):
 
 def qh_sync_new_resource(resource, limit):
     users = AstakosUser.forupdate.filter(
-        email_verified=True).select_for_update()
+        email_verified=True).order_by('id').select_for_update()
 
     resource_name = resource.name
     data = []

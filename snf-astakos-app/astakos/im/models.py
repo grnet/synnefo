@@ -1473,13 +1473,6 @@ class ProjectApplication(models.Model):
         return "application %s (%s) for project %s" % (
             self.id, self.name, self.chain)
 
-    def get_project(self):
-        try:
-            project = Project.objects.get(id=self.chain, state=Project.APPROVED)
-            return Project
-        except Project.DoesNotExist, e:
-            return None
-
     def state_display(self):
         return self.APPLICATION_STATE_DISPLAY.get(self.state, _('Unknown'))
 
@@ -1579,14 +1572,6 @@ class ProjectApplication(models.Model):
     def project_exists(self):
         return self.get_project() is not None
 
-    def _get_project_for_update(self):
-        try:
-            objects = Project.objects
-            project = objects.get_for_update(id=self.chain)
-            return project
-        except Project.DoesNotExist:
-            return None
-
     def can_cancel(self):
         return self.state == self.PENDING
 
@@ -1629,41 +1614,25 @@ class ProjectApplication(models.Model):
         return self.state == self.PENDING
 
     def approve(self, reason):
-        new_project_name = self.name
         if not self.can_approve():
             m = _("cannot approve: project '%s' in state '%s'") % (
-                    new_project_name, self.state)
+                    self.name, self.state)
             raise AssertionError(m) # invalid argument
 
         now = datetime.now()
-        project = self._get_project_for_update()
-
-        try:
-            q = Q(name=new_project_name) & ~Q(state=Project.TERMINATED)
-            conflicting_project = Project.objects.get(q)
-            if (conflicting_project != project):
-                m = (_("cannot approve: project with name '%s' "
-                       "already exists (id: %s)") % (
-                        new_project_name, conflicting_project.id))
-                raise PermissionDenied(m) # invalid argument
-        except Project.DoesNotExist:
-            pass
-
-        new_project = False
-        if project is None:
-            new_project = True
-            project = Project(id=self.chain)
-
-        project.name = new_project_name
-        project.application = self
-        project.last_approval_date = now
-
-        project.save()
-
         self.state = self.APPROVED
         self.response_date = now
         self.response = reason
         self.save()
+
+        project = self.get_project()
+        if project is None:
+            project = Project(id=self.chain)
+
+        project.name = self.name
+        project.application = self
+        project.last_approval_date = now
+        project.save()
         return project
 
     @property

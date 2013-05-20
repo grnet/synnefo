@@ -38,10 +38,9 @@ def fix_header(k, v):
     prefix = 'HTTP_'
     if k.startswith(prefix):
         k = k[len(prefix):].title().replace('_', '-')
-    elif k in ('CONTENT_TYPE', 'CONTENT_LENGTH'):
-        k = k.replace('_', '-')
     return k, v
 
 
 def forward_header(k):
-    return k.lower() != "HOST" and not is_hop_by_hop(k)
+    return k.upper() not in ['HOST', 'CONTENT_LENGTH', 'CONTENT_TYPE'] and \
+           not is_hop_by_hop(k) and not '.' in k

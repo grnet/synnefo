@@ -40,6 +40,13 @@ from .utils import fix_header, forward_header
 import urllib
 import urlparse
 
+# We use proxy to delegate requests to another domain. Sending host specific
+# headers (Host, Cookie) may cause confusion to the server we proxy to.
+#
+# http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.10
+# Connection and MUST NOT be communicated by proxies over further connections
+EXCLUDE_HEADERS = ['Host', 'Cookie', 'Connection']
+
 
 def proxy(request, target):
     kwargs = {}
@@ -48,6 +55,20 @@ def proxy(request, target):
     headers = dict(map(lambda (k, v): fix_header(k, v),
                    filter(lambda (k, v): forward_header(k),
                           request.META.iteritems())))
+
+    # set X-Forwarded-For, if already set, pass it through, otherwise set it
+    # to the current request remote address
+    SOURCE_IP = request.META.get('REMOTE_ADDR', None)
+    if SOURCE_IP and not 'X-Forwarded-For' in headers:
+        headers['X-Forwarded-For'] = SOURCE_IP
+
+    # request.META remains cleanup
+    for k in headers.keys():
+        if '_' in k:
+            headers.pop(k)
+
+    for k in EXCLUDE_HEADERS:
+        headers.pop(k, None)
 
     kwargs['headers'] = headers
     kwargs['body'] = request.raw_post_data

@@ -386,7 +386,7 @@ def create_instance(vm, public_nic, flavor, image):
     # arguments, such as the disk template to use, name of os provider
     # and hypervisor-specific parameters at will (see Synnefo #785, #835).
     #
-    kw = settings.GANETI_CREATEINSTANCE_KWARGS
+    kw = vm.backend.get_create_params()
     kw['mode'] = 'create'
     kw['name'] = vm.backend_vm_id
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
@@ -401,7 +401,7 @@ def create_instance(vm, public_nic, flavor, image):
             kw['disks'][0]['origin'] = flavor.disk_origin
 
     kw['nics'] = [public_nic]
-    if settings.GANETI_USE_HOTPLUG:
+    if vm.backend.use_hotplug():
         kw['hotplug'] = True
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
     # kw['os'] = settings.GANETI_OS_PROVIDER
@@ -475,7 +475,7 @@ def get_instance_console(vm):
     with pooled_rapi_client(vm) as client:
         i = client.GetInstance(vm.backend_vm_id)
 
-    if i['hvparams']['serial_console']:
+    if vm.backend.hypervisor == "kvm" and i['hvparams']['serial_console']:
         raise Exception("hv parameter serial_console cannot be true")
     console['host'] = i['pnode']
     console['port'] = i['network_port']
@@ -600,7 +600,7 @@ def connect_to_network(vm, network, address=None):
 
     with pooled_rapi_client(vm) as client:
         return client.ModifyInstance(vm.backend_vm_id, nics=[('add',  nic)],
-                                     hotplug=settings.GANETI_USE_HOTPLUG,
+                                     hotplug=vm.backend.use_hotplug(),
                                      depends=depends,
                                      dry_run=settings.TEST)
 
@@ -612,7 +612,7 @@ def disconnect_from_network(vm, nic):
 
     with pooled_rapi_client(vm) as client:
         return client.ModifyInstance(vm.backend_vm_id, nics=op,
-                                     hotplug=settings.GANETI_USE_HOTPLUG,
+                                     hotplug=vm.backend.use_hotplug(),
                                      dry_run=settings.TEST)
 
 

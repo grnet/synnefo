@@ -39,12 +39,13 @@ class ShibbolethTests(TestCase):
     Testing shibboleth authentication.
     """
 
-    fixtures = ['groups']
-
     def setUp(self):
         self.client = ShibbolethClient()
         astakos_settings.IM_MODULES = ['local', 'shibboleth']
         astakos_settings.MODERATION_ENABLED = True
+
+    def tearDown(self):
+        AstakosUser.objects.all().delete()
 
     @im_settings(FORCE_PROFILE_UPDATE=False)
     def test_create_account(self):
@@ -337,8 +338,6 @@ class ShibbolethTests(TestCase):
 
 class TestLocal(TestCase):
 
-    fixtures = ['groups']
-
     def setUp(self):
         settings.ADMINS = (('admin', 'support@cloud.synnefo.org'),)
         settings.SERVER_EMAIL = 'no-reply@synnefo.org'
@@ -347,6 +346,7 @@ class TestLocal(TestCase):
 
     def tearDown(self):
         settings.ASTAKOS_MODERATION_ENABLED = self._orig_moderation
+        AstakosUser.objects.all().delete()
 
     def test_no_moderation(self):
         # disable moderation
@@ -681,6 +681,9 @@ class UserActionsTests(TestCase):
 
 
 class TestAuthProviderViews(TestCase):
+
+    def tearDown(self):
+        AstakosUser.objects.all().delete()
 
     @shibboleth_settings(CREATION_GROUPS_POLICY=['academic-login'],
                          AUTOMODERATE_POLICY=True)

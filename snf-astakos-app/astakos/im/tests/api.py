@@ -32,7 +32,7 @@
 # or implied, of GRNET S.A.
 
 from astakos.im.tests.common import *
-
+from django.test import TestCase
 
 ROOT = '/astakos/api/'
 u = lambda url: ROOT + url

@@ -68,6 +68,10 @@ class TestProjects(TestCase):
 
         quotas.qh_sync_users(AstakosUser.objects.all())
 
+    def tearDown(self):
+        Service.objects.all().delete()
+        ProjectApplication.objects.all().delete()
+
     @im_settings(PROJECT_ADMINS=['uuid1'])
     def test_application_limit(self):
         # user cannot create a project

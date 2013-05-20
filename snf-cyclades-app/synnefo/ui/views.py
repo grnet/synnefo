@@ -200,7 +200,7 @@ def home(request):
                 UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT,
                'update_interval_fast': UPDATE_INTERVAL_FAST,
                'update_interval_max': UPDATE_INTERVAL_MAX,
-               'changes_since_alignment': CHANGES_SINCE_ALIGNMENT, 
+               'changes_since_alignment': CHANGES_SINCE_ALIGNMENT,
                'image_icons': IMAGE_ICONS,
                'logout_redirect': LOGOUT_URL,
                'login_redirect': LOGIN_URL,
@@ -217,6 +217,7 @@ def home(request):
                'flavors_disk_templates_info':
                json.dumps(FLAVORS_DISK_TEMPLATES_INFO),
                'support_ssh_os_list': json.dumps(SUPPORT_SSH_OS_LIST),
+               'unknown_os': json.dumps(UNKNOWN_OS),
                'os_created_users': json.dumps(OS_CREATED_USERS),
                'userdata_keys_limit': json.dumps(MAX_SSH_KEYS_PER_USER),
                'use_glance': json.dumps(ENABLE_GLANCE),

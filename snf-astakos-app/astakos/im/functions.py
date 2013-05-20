@@ -864,19 +864,3 @@ def qh_add_pending_app(user, precursor=None, force=False, dry_run=False):
 
 def qh_release_pending_app(user):
     register_pending_apps(user, -1)
-
-
-class SendMailError(Exception):
-    pass
-
-
-class SendFeedbackError(SendMailError):
-    def __init__(self):
-        self.message = _(astakos_messages.FEEDBACK_SEND_ERR)
-        super(SendFeedbackError, self).__init__()
-
-
-class ChangeEmailError(SendMailError):
-    def __init__(self):
-        self.message = _(astakos_messages.CHANGE_EMAIL_SEND_ERR)
-        super(ChangeEmailError, self).__init__()

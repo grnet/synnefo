@@ -2158,6 +2158,10 @@
               callback(missing_ids)
             }
           }
+          if (missing_ids.length == 0) {
+            callback(missing_ids);
+            return;
+          }
           // start resolving missing image ids
           _(missing_ids).each(function(imgid){
             synnefo.storage.images.update_unknown_id(imgid, check);

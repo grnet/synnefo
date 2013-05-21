@@ -333,7 +333,7 @@ class ShibbolethTests(TestCase):
         client.set_tokens(mail="kpap_second@shibboleth.gr",
                           eppn="existingeppn", cn="Kostas Papadimitriou")
         r = client.get("/im/login/shibboleth?", follow=True)
-        self.assertContains(r, "this account is already assigned")
+        self.assertContains(r, "is already in use")
 
 
 class TestLocal(TestCase):
@@ -806,7 +806,7 @@ class TestAuthProviderViews(TestCase):
         self.assertContains(r, 'Your request is missing a unique token')
         cl_olduser.set_tokens(eppn="newusereppn")
         r = cl_olduser.get('/im/login/shibboleth?', follow=True)
-        self.assertContains(r, 'is already assigned to another user')
+        self.assertContains(r, 'already in use')
         cl_olduser.set_tokens(eppn="oldusereppn")
         r = cl_olduser.get('/im/login/shibboleth?', follow=True)
         self.assertContains(r, 'Academic login enabled for this account')
@@ -840,6 +840,9 @@ class TestAuthProvidersAPI(TestCase):
     """
     Test auth_providers module API
     """
+
+    def tearDown(self):
+        Group.objects.all().delete()
 
     @im_settings(IM_MODULES=['local', 'shibboleth'])
     def test_create(self):

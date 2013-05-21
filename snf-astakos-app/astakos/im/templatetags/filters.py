@@ -130,7 +130,7 @@ def paginate(l, args):
                 default = datetime.datetime.utcfromtimestamp(0)
             l.sort(key=lambda i: getattr(i, sorting)
                    if getattr(i, sorting) else default)
-    paginator = Paginator(l, PAGINATE_BY)
+    paginator = Paginator(l, settings.PAGINATE_BY)
     try:
         paginator.len
     except AttributeError:

@@ -38,14 +38,13 @@ from django.utils.safestring import mark_safe
 from django.utils import simplejson as json
 from synnefo_branding.utils import render_to_string
 
-from astakos.im.settings import RECAPTCHA_PUBLIC_KEY, RECAPTCHA_OPTIONS, \
-    RECAPTCHA_USE_SSL
+from astakos.im import settings
 
 
 class RecaptchaWidget(forms.Widget):
     """ A Widget which "renders" the output of captcha.displayhtml """
     def render(self, *args, **kwargs):
-        conf = RECAPTCHA_OPTIONS
+        conf = settings.RECAPTCHA_OPTIONS
         recaptcha_conf = ('<script type="text/javascript">'
                           'var RecaptchaOptions = %s'
                           '</script>') % json.dumps(conf)
@@ -53,8 +52,8 @@ class RecaptchaWidget(forms.Widget):
                                               {'conf': 'Bob'})
         return mark_safe(recaptcha_conf +
                          custom_widget_html +
-                         captcha.displayhtml(RECAPTCHA_PUBLIC_KEY,
-                                             use_ssl=RECAPTCHA_USE_SSL))
+                         captcha.displayhtml(settings.RECAPTCHA_PUBLIC_KEY,
+                                             use_ssl=settings.RECAPTCHA_USE_SSL))
 
 
 class DummyWidget(forms.Widget):

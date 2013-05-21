@@ -47,7 +47,7 @@ from astakos.im.util import prepare_response, get_query
 from astakos.im.models import PendingThirdPartyUser
 from astakos.im.forms import LoginForm, ExtendedPasswordChangeForm, \
                              ExtendedSetPasswordForm
-from astakos.im.settings import RATELIMIT_RETRIES_ALLOWED
+from astakos.im import settings
 import astakos.im.messages as astakos_messages
 from astakos.im import auth_providers as auth
 from astakos.im.views.decorators import cookie_fix, requires_anonymous, \
@@ -55,7 +55,7 @@ from astakos.im.views.decorators import cookie_fix, requires_anonymous, \
 
 from ratelimit.decorators import ratelimit
 
-retries = RATELIMIT_RETRIES_ALLOWED - 1
+retries = settings.RATELIMIT_RETRIES_ALLOWED - 1
 rate = str(retries) + '/m'
 
 

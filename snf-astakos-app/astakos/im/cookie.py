@@ -38,9 +38,7 @@ from urllib import quote, unquote
 from django.contrib.auth.models import AnonymousUser
 from django.utils.translation import ugettext as _
 
-from astakos.im.settings import (
-    COOKIE_NAME, COOKIE_DOMAIN, COOKIE_SECURE, LOGGING_LEVEL, TRANSLATE_UUIDS)
-
+from astakos.im import settings
 import astakos.im.messages as astakos_messages
 
 logger = logging.getLogger(__name__)
@@ -49,7 +47,7 @@ logger = logging.getLogger(__name__)
 class CookieHandler():
     def __init__(self, request, response=None):
         cookies = getattr(request, 'COOKIES', {})
-        cookie = unquote(cookies.get(COOKIE_NAME, ''))
+        cookie = unquote(cookies.get(settings.COOKIE_NAME, ''))
         self.uuid, sep, self.auth_token = cookie.partition('|')
         self.request = request
         self.response = response
@@ -69,7 +67,7 @@ class CookieHandler():
 
     @property
     def is_valid(self):
-        cookie_attribute = 'uuid' if not TRANSLATE_UUIDS else 'username'
+        cookie_attribute = 'uuid' if not settings.TRANSLATE_UUIDS else 'username'
         return (self.uuid == getattr(self.user, cookie_attribute, '') and
                 self.auth_token == getattr(self.user, 'auth_token', ''))
 
@@ -83,25 +81,25 @@ class CookieHandler():
         user = self.user
         expire_fmt = user.auth_token_expires.strftime(
             '%a, %d-%b-%Y %H:%M:%S %Z')
-        if TRANSLATE_UUIDS:
+        if settings.TRANSLATE_UUIDS:
             cookie_value = quote(user.username + '|' + user.auth_token)
         else:
             cookie_value = quote(user.uuid + '|' + user.auth_token)
         self.response.set_cookie(
-            COOKIE_NAME, value=cookie_value, expires=expire_fmt, path='/',
-            domain=COOKIE_DOMAIN, secure=COOKIE_SECURE
+            settings.COOKIE_NAME, value=cookie_value, expires=expire_fmt, path='/',
+            domain=settings.COOKIE_DOMAIN, secure=settings.COOKIE_SECURE
         )
         msg = str(('Cookie [expiring %(auth_token_expires)s]',
                    'set for %(uuid)s')) % user.__dict__
-        logger._log(LOGGING_LEVEL, msg, [])
+        logger._log(settings.LOGGING_LEVEL, msg, [])
 
     def __delete(self):
         if not self.response:
             raise ValueError(_(astakos_messages.NO_RESPONSE))
         self.response.delete_cookie(
-            COOKIE_NAME, path='/', domain=COOKIE_DOMAIN)
+            settings.COOKIE_NAME, path='/', domain=settings.COOKIE_DOMAIN)
         msg = 'Cookie deleted for %(uuid)s' % self.__dict__
-        logger._log(LOGGING_LEVEL, msg, [])
+        logger._log(settings.LOGGING_LEVEL, msg, [])
 
     def fix(self, response=None):
         self.response = response or self.response

@@ -42,7 +42,6 @@ from django.contrib.auth.tokens import default_token_generator
 from django.core.urlresolvers import reverse
 from django.utils.safestring import mark_safe
 from django.utils.encoding import smart_str
-from django.conf import settings
 from django.db import transaction
 from django.core import validators
 from django.core.exceptions import PermissionDenied
@@ -51,9 +50,6 @@ from synnefo_branding.utils import render_to_string
 from synnefo.lib import join_urls
 from astakos.im.models import AstakosUser, EmailChange, Invitation, Resource, \
     PendingThirdPartyUser, get_latest_terms, ProjectApplication, Project
-from astakos.im.settings import BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY, \
-    RECAPTCHA_ENABLED, CONTACT_EMAIL, PASSWORD_RESET_EMAIL_SUBJECT, \
-    NEWPASSWD_INVALIDATE_TOKEN, EMAILCHANGE_ENABLED
 from astakos.im import presentation
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
 from astakos.im.functions import send_change_email, submit_application, \
@@ -61,6 +57,7 @@ from astakos.im.functions import send_change_email, submit_application, \
 
 from astakos.im.util import reserved_verified_email, model_to_dict
 from astakos.im import auth_providers
+from astakos.im import settings
 
 import astakos.im.messages as astakos_messages
 
@@ -132,7 +129,7 @@ class LocalUserCreationForm(UserCreationForm, StoreUserMixin):
         self.fields.keyOrder = ['email', 'first_name', 'last_name',
                                 'password1', 'password2']
 
-        if RECAPTCHA_ENABLED:
+        if settings.RECAPTCHA_ENABLED:
             self.fields.keyOrder.extend(['recaptcha_challenge_field',
                                          'recaptcha_response_field', ])
         if get_latest_terms():
@@ -173,9 +170,11 @@ class LocalUserCreationForm(UserCreationForm, StoreUserMixin):
     def validate_captcha(self):
         rcf = self.cleaned_data['recaptcha_challenge_field']
         rrf = self.cleaned_data['recaptcha_response_field']
-        check = captcha.submit(rcf, rrf, RECAPTCHA_PRIVATE_KEY, self.ip)
+        check = captcha.submit(
+            rcf, rrf, settings.RECAPTCHA_PRIVATE_KEY, self.ip)
         if not check.is_valid:
-            raise forms.ValidationError(_(astakos_messages.CAPTCHA_VALIDATION_ERR))
+            raise forms.ValidationError(_(
+                astakos_messages.CAPTCHA_VALIDATION_ERR))
 
     def post_store_user(self, user, request=None):
         """
@@ -370,7 +369,7 @@ class LoginForm(AuthenticationForm):
         super(LoginForm, self).__init__(*args, **kwargs)
 
         self.fields.keyOrder = ['username', 'password']
-        if was_limited and RECAPTCHA_ENABLED:
+        if was_limited and settings.RECAPTCHA_ENABLED:
             self.fields.keyOrder.extend(['recaptcha_challenge_field',
                                          'recaptcha_response_field', ])
 
@@ -390,9 +389,11 @@ class LoginForm(AuthenticationForm):
     def validate_captcha(self):
         rcf = self.cleaned_data['recaptcha_challenge_field']
         rrf = self.cleaned_data['recaptcha_response_field']
-        check = captcha.submit(rcf, rrf, RECAPTCHA_PRIVATE_KEY, self.ip)
+        check = captcha.submit(
+            rcf, rrf, settings.RECAPTCHA_PRIVATE_KEY, self.ip)
         if not check.is_valid:
-            raise forms.ValidationError(_(astakos_messages.CAPTCHA_VALIDATION_ERR))
+            raise forms.ValidationError(_(
+                astakos_messages.CAPTCHA_VALIDATION_ERR))
 
     def clean(self):
         """
@@ -535,18 +536,18 @@ class ExtendedPasswordResetForm(PasswordResetForm):
         """
         for user in self.users_cache:
             url = user.astakosuser.get_password_reset_url(token_generator)
-            url = join_urls(BASEURL, url)
+            url = join_urls(settings.BASEURL, url)
             c = {
                 'email': user.email,
                 'url': url,
-                'site_name': SITENAME,
+                'site_name': settings.SITENAME,
                 'user': user,
-                'baseurl': BASEURL,
-                'support': CONTACT_EMAIL
+                'baseurl': settings.BASEURL,
+                'support': settings.CONTACT_EMAIL
             }
             message = render_to_string(email_template_name, c)
             from_email = settings.SERVER_EMAIL
-            send_mail(_(PASSWORD_RESET_EMAIL_SUBJECT),
+            send_mail(_(settings.PASSWORD_RESET_EMAIL_SUBJECT),
                       message,
                       from_email,
                       [user.email],
@@ -628,7 +629,7 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
     Extends PasswordChangeForm by enabling user
     to optionally renew also the token.
     """
-    if not NEWPASSWD_INVALIDATE_TOKEN:
+    if not settings.NEWPASSWD_INVALIDATE_TOKEN:
         renew = forms.BooleanField(label='Renew token', required=False,
                                    initial=True,
                                    help_text='Unsetting this may result in security risk.')
@@ -639,7 +640,8 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
 
     def save(self, commit=True):
         try:
-            if NEWPASSWD_INVALIDATE_TOKEN or self.cleaned_data.get('renew'):
+            if settings.NEWPASSWD_INVALIDATE_TOKEN or \
+                    self.cleaned_data.get('renew'):
                 self.user.renew_token()
             self.user.flush_sessions(current_key=self.session_key)
         except AttributeError:
@@ -652,7 +654,7 @@ class ExtendedSetPasswordForm(SetPasswordForm):
     Extends SetPasswordForm by enabling user
     to optionally renew also the token.
     """
-    if not NEWPASSWD_INVALIDATE_TOKEN:
+    if not settings.NEWPASSWD_INVALIDATE_TOKEN:
         renew = forms.BooleanField(
             label='Renew token',
             required=False,
@@ -666,7 +668,8 @@ class ExtendedSetPasswordForm(SetPasswordForm):
     def save(self, commit=True):
         try:
             self.user = AstakosUser.objects.get(id=self.user.id)
-            if NEWPASSWD_INVALIDATE_TOKEN or self.cleaned_data.get('renew'):
+            if settings.NEWPASSWD_INVALIDATE_TOKEN or \
+                    self.cleaned_data.get('renew'):
                 self.user.renew_token()
 
             provider = auth_providers.get_provider('local', self.user)
@@ -1038,7 +1041,7 @@ class ExtendedProfileForm(ProfileForm):
             self.fields_list.remove('change_password')
             del self.fields['change_password']
 
-        if EMAILCHANGE_ENABLED and self.instance.can_change_email():
+        if settings.EMAILCHANGE_ENABLED and self.instance.can_change_email():
             self.email_change = True
         else:
             self.fields_list.remove('new_email_address')

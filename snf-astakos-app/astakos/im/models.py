@@ -60,8 +60,6 @@ from django.utils.safestring import mark_safe
 
 from synnefo.lib.utils import dict_merge
 
-from astakos.im.settings import DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL, \
-    AUTH_TOKEN_DURATION, EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL
 from astakos.im import settings as astakos_settings
 from astakos.im import auth_providers as auth
 
@@ -320,10 +318,10 @@ class AstakosUser(User):
                                    null=True)
 
     #for invitations
-    user_level = DEFAULT_USER_LEVEL
+    user_level = astakos_settings.DEFAULT_USER_LEVEL
     level = models.IntegerField(_('Inviter level'), default=user_level)
     invitations = models.IntegerField(
-        _('Invitations left'), default=INVITATIONS_PER_LEVEL.get(user_level, 0))
+        _('Invitations left'), default=astakos_settings.INVITATIONS_PER_LEVEL.get(user_level, 0))
 
     auth_token = models.CharField(_('Authentication Token'),
                                   max_length=32,
@@ -510,11 +508,11 @@ class AstakosUser(User):
         self.auth_token = b64encode(md5.digest())
         self.auth_token_created = datetime.now()
         self.auth_token_expires = self.auth_token_created + \
-                                  timedelta(hours=AUTH_TOKEN_DURATION)
+                                  timedelta(hours=astakos_settings.AUTH_TOKEN_DURATION)
         if flush_sessions:
             self.flush_sessions(current_key)
         msg = 'Token renewed for %s' % self.log_display
-        logger.log(LOGGING_LEVEL, msg)
+        logger.log(astakos_settings.LOGGING_LEVEL, msg)
 
     def flush_sessions(self, current_key=None):
         q = self.sessions
@@ -524,7 +522,7 @@ class AstakosUser(User):
         keys = q.values_list('session_key', flat=True)
         if keys:
             msg = 'Flushing sessions: %s' % ','.join(keys)
-            logger.log(LOGGING_LEVEL, msg, [])
+            logger.log(astakos_settings.LOGGING_LEVEL, msg, [])
         engine = import_module(settings.SESSION_ENGINE)
         for k in keys:
             s = engine.SessionStore(k)
@@ -592,7 +590,7 @@ class AstakosUser(User):
         """
         level = self.invitation.inviter.level + 1
         self.level = level
-        self.invitations = INVITATIONS_PER_LEVEL.get(level, 0)
+        self.invitations = astakos_settings.INVITATIONS_PER_LEVEL.get(level, 0)
 
     def can_change_password(self):
         return self.has_auth_provider('local', auth_backend='astakos')
@@ -1075,7 +1073,7 @@ class EmailChangeManager(models.Manager):
             msg = "User %s changed email from %s to %s" % (user.log_display,
                                                            old_email,
                                                            user.email)
-            logger.log(LOGGING_LEVEL, msg)
+            logger.log(astakos_settings.LOGGING_LEVEL, msg)
             return user
         except EmailChange.DoesNotExist:
             raise ValueError(_('Invalid activation key.'))
@@ -1100,7 +1098,7 @@ class EmailChange(models.Model):
                       kwargs={'activation_key': self.activation_key})
 
     def activation_key_expired(self):
-        expiration_date = timedelta(days=EMAILCHANGE_ACTIVATION_DAYS)
+        expiration_date = timedelta(days=astakos_settings.EMAILCHANGE_ACTIVATION_DAYS)
         return self.requested_at + expiration_date < datetime.now()
 
 

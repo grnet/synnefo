@@ -46,8 +46,7 @@ from django.contrib.auth.models import User
 
 from snf_django.lib import api
 from astakos.im.models import Service
-from astakos.im.settings import (INVITATIONS_ENABLED, QUOTAHOLDER_URL,
-                                 PROJECTS_VISIBLE)
+from astakos.im import settings
 
 import logging
 logger = logging.getLogger(__name__)
@@ -103,14 +102,14 @@ def get_menu(request, with_extra_links=False, with_signout=True):
                         name="Profile"))
 
         if with_extra_links:
-            if INVITATIONS_ENABLED:
+            if settings.INVITATIONS_ENABLED:
                 append(item(url=absolute(request, reverse('invite')),
                             name="Invitations"))
 
             append(item(url=absolute(request, reverse('resource_usage')),
                         name="Usage"))
 
-            if QUOTAHOLDER_URL and PROJECTS_VISIBLE:
+            if settings.PROJECTS_VISIBLE:
                 append(item(url=absolute(request, reverse('project_list')),
                             name="Projects"))
             #append(item(

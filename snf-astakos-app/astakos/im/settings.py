@@ -21,6 +21,8 @@ HELPDESK = getattr(settings, 'HELPDESK', ADMINS)
 
 CONTACT_EMAIL = settings.CONTACT_EMAIL
 SERVER_EMAIL = settings.SERVER_EMAIL
+SECRET_KEY = settings.SECRET_KEY
+SESSION_ENGINE = settings.SESSION_ENGINE
 
 # Identity Management enabled modules
 # Supported modules are: 'local', 'twitter' and 'shibboleth'

@@ -39,7 +39,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 
-from astakos.im.models import AstakosUser
+from astakos.im.models import AstakosUser, Resource
 from astakos.im import quotas
 from astakos.im import activation_backends
 from ._common import remove_user_permission, add_user_permission, is_uuid

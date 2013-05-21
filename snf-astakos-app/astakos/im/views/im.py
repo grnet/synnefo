@@ -62,10 +62,8 @@ from astakos.im.forms import LoginForm, InvitationForm, FeedbackForm, \
 from astakos.im.forms import ExtendedProfileForm as ProfileForm
 from astakos.im.functions import send_feedback, logout as auth_logout, \
     invite as invite_func
-from astakos.im.settings import COOKIE_DOMAIN, LOGOUT_NEXT, \
-    ACTIVATION_REDIRECT_URL
-from astakos.im import presentation
 from astakos.im import settings
+from astakos.im import presentation
 from astakos.im import auth_providers as auth
 from astakos.im import quotas
 from astakos.im.views.util import render_response, _resources_catalog
@@ -255,7 +253,7 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
                 user = form.save(request=request)
                 next = restrict_next(
                     request.POST.get('next'),
-                    domain=COOKIE_DOMAIN
+                    domain=settings.COOKIE_DOMAIN
                 )
                 msg = _(astakos_messages.PROFILE_UPDATED)
                 messages.success(request, msg)
@@ -512,14 +510,14 @@ def logout(request, template='registration/logged_out.html',
 
     next = restrict_next(
         request.GET.get('next'),
-        domain=COOKIE_DOMAIN
+        domain=settings.COOKIE_DOMAIN
     )
 
     if next:
         response['Location'] = next
         response.status_code = 302
-    elif LOGOUT_NEXT:
-        response['Location'] = LOGOUT_NEXT
+    elif settings.LOGOUT_NEXT:
+        response['Location'] = settings.LOGOUT_NEXT
         response.status_code = 301
     else:
         last_provider = request.COOKIES.get('astakos_last_login_method', 'local')
@@ -568,7 +566,7 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
         backend = activation_backends.get_backend()
         result = backend.handle_verification(user, token)
         backend.send_result_notifications(result, user)
-        next = ACTIVATION_REDIRECT_URL or next
+        next = settings.ACTIVATION_REDIRECT_URL or next
         response = HttpResponseRedirect(reverse('index'))
         if user.is_active:
             response = prepare_response(request, user, next, renew=True)
@@ -617,7 +615,7 @@ def approval_terms(request, term_id=None,
     if request.method == 'POST':
         next = restrict_next(
             request.POST.get('next'),
-            domain=COOKIE_DOMAIN
+            domain=settings.COOKIE_DOMAIN
         )
         if not next:
             next = reverse('index')

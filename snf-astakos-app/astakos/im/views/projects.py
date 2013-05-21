@@ -65,7 +65,7 @@ from astakos.im.functions import check_pending_app_quota, accept_membership, \
     join_project, enroll_member, can_join_request, can_leave_request, \
     get_related_project_id, get_by_chain_or_404, approve_application, \
     deny_application, cancel_application, dismiss_application
-from astakos.im.settings import COOKIE_DOMAIN, PAGINATE_BY
+from astakos.im import settings
 from astakos.im.ctx import ExceptionHandler
 from astakos.im.views.util import render_response, _create_object, \
     _update_object, _resources_catalog
@@ -93,7 +93,7 @@ def project_add(request):
             m = _(astakos_messages.PENDING_APPLICATION_LIMIT_ADD) % limit
             messages.error(request, m)
             next = reverse('astakos.im.views.project_list')
-            next = restrict_next(next, domain=COOKIE_DOMAIN)
+            next = restrict_next(next, domain=settings.COOKIE_DOMAIN)
             return redirect(next)
 
     details_fields = ["name", "homepage", "description", "start_date",
@@ -129,7 +129,7 @@ def project_add(request):
         return response
 
     next = reverse('astakos.im.views.project_list')
-    next = restrict_next(next, domain=COOKIE_DOMAIN)
+    next = restrict_next(next, domain=settings.COOKIE_DOMAIN)
     return redirect(next)
 
 
@@ -140,7 +140,7 @@ def project_list(request):
     projects = ProjectApplication.objects.user_accessible_projects(request.user).select_related()
     table = tables.UserProjectApplicationsTable(projects, user=request.user,
                                                 prefix="my_projects_")
-    RequestConfig(request, paginate={"per_page": PAGINATE_BY}).configure(table)
+    RequestConfig(request, paginate={"per_page": settings.PAGINATE_BY}).configure(table)
 
     return object_list(
         request,
@@ -168,7 +168,7 @@ def project_app_cancel(request, application_id):
         else:
             next = reverse('astakos.im.views.project_list')
 
-    next = restrict_next(next, domain=COOKIE_DOMAIN)
+    next = restrict_next(next, domain=settings.COOKIE_DOMAIN)
     return redirect(next)
 
 @commit_on_success_strict()
@@ -209,7 +209,7 @@ def project_modify(request, application_id):
             m = _(astakos_messages.PENDING_APPLICATION_LIMIT_MODIFY) % limit
             messages.error(request, m)
             next = reverse('astakos.im.views.project_list')
-            next = restrict_next(next, domain=COOKIE_DOMAIN)
+            next = restrict_next(next, domain=settings.COOKIE_DOMAIN)
             return redirect(next)
 
     details_fields = ["name", "homepage", "description", "start_date",
@@ -247,7 +247,7 @@ def project_modify(request, application_id):
         return response
 
     next = reverse('astakos.im.views.project_list')
-    next = restrict_next(next, domain=COOKIE_DOMAIN)
+    next = restrict_next(next, domain=settings.COOKIE_DOMAIN)
     return redirect(next)
 
 @require_http_methods(["GET", "POST"])
@@ -299,7 +299,7 @@ def common_detail(request, chain_or_app_id, project_view=True):
                                                        members,
                                                        user=request.user,
                                                        prefix="members_")
-            RequestConfig(request, paginate={"per_page": PAGINATE_BY}
+            RequestConfig(request, paginate={"per_page": settings.PAGINATE_BY}
                           ).configure(members_table)
 
         else:
@@ -384,7 +384,7 @@ def project_search(request):
     else:
         table.caption = _('ALL PROJECTS')
 
-    RequestConfig(request, paginate={"per_page": PAGINATE_BY}).configure(table)
+    RequestConfig(request, paginate={"per_page": settings.PAGINATE_BY}).configure(table)
 
     return object_list(
         request,
@@ -410,7 +410,7 @@ def project_join(request, chain_id):
         _project_join(request, chain_id)
 
 
-    next = restrict_next(next, domain=COOKIE_DOMAIN)
+    next = restrict_next(next, domain=settings.COOKIE_DOMAIN)
     return redirect(next)
 
 
@@ -439,7 +439,7 @@ def project_leave(request, chain_id):
     with ExceptionHandler(request):
         _project_leave(request, chain_id)
 
-    next = restrict_next(next, domain=COOKIE_DOMAIN)
+    next = restrict_next(next, domain=settings.COOKIE_DOMAIN)
     return redirect(next)
 
 
@@ -468,7 +468,7 @@ def project_cancel(request, chain_id):
     with ExceptionHandler(request):
         _project_cancel(request, chain_id)
 
-    next = restrict_next(next, domain=COOKIE_DOMAIN)
+    next = restrict_next(next, domain=settings.COOKIE_DOMAIN)
     return redirect(next)
 
 

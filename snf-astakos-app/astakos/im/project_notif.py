@@ -1,6 +1,6 @@
 import logging
 from django.utils.translation import ugettext as _
-import astakos.im.settings as settings
+from astakos.im import settings
 from astakos.im.notifications import build_notification, NotificationError
 
 logger = logging.getLogger(__name__)

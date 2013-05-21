@@ -42,7 +42,7 @@ from django.views.decorators.http import require_http_methods
 
 from urlparse import urlunsplit, urlsplit, parse_qsl
 
-from astakos.im.settings import COOKIE_DOMAIN
+from astakos.im import settings
 from astakos.im.util import restrict_next
 from astakos.im.functions import login as auth_login, logout
 from astakos.im.views.decorators import cookie_fix
@@ -70,7 +70,7 @@ def login(request):
         next = reverse('index')
 
     if not restrict_next(
-        next, domain=COOKIE_DOMAIN, allowed_schemes=('pithos',)
+        next, domain=settings.COOKIE_DOMAIN, allowed_schemes=('pithos',)
     ):
         return HttpResponseForbidden(_(astakos_messages.NOT_ALLOWED_NEXT_PARAM))
     force = request.GET.get('force', None)

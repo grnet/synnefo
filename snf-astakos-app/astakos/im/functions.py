@@ -36,9 +36,7 @@ import logging
 from django.utils.translation import ugettext as _
 from django.core.mail import send_mail, get_connection
 from django.core.urlresolvers import reverse
-from django.contrib.auth import (
-    login as auth_login,
-    logout as auth_logout)
+from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.http import Http404
@@ -46,27 +44,18 @@ from django.http import Http404
 from synnefo_branding.utils import render_to_string
 
 from synnefo.lib import join_urls
-from astakos.im.settings import (
-    CONTACT_EMAIL, SITENAME, BASEURL, LOGGING_LEVEL,
-    VERIFICATION_EMAIL_SUBJECT, ACCOUNT_CREATION_SUBJECT,
-    HELPDESK_NOTIFICATION_EMAIL_SUBJECT,
-    INVITATION_EMAIL_SUBJECT, GREETING_EMAIL_SUBJECT, FEEDBACK_EMAIL_SUBJECT,
-    EMAIL_CHANGE_EMAIL_SUBJECT,
-    )
-from astakos.im.models import (
-    AstakosUser, Invitation, ProjectMembership, ProjectApplication, Project,
-    Chain, new_chain)
-from astakos.im.quotas import (qh_sync_user, get_pending_app_quota,
-                               register_pending_apps, qh_sync_project,
-                               qh_sync_locked_users, get_users_for_update,
-                               members_to_sync)
-from astakos.im.project_notif import (
-    membership_change_notify, membership_enroll_notify,
-    membership_request_notify, membership_leave_request_notify,
-    application_submit_notify, application_approve_notify,
-    application_deny_notify,
-    project_termination_notify, project_suspension_notify)
+from astakos.im.models import AstakosUser, Invitation, ProjectMembership, \
+    ProjectApplication, Project, Chain, new_chain
+from astakos.im.quotas import qh_sync_user, get_pending_app_quota, \
+    register_pending_apps, qh_sync_project, qh_sync_locked_users, \
+    get_users_for_update, members_to_sync
+from astakos.im.project_notif import membership_change_notify, \
+    membership_enroll_notify, membership_request_notify, \
+    membership_leave_request_notify, application_submit_notify, \
+    application_approve_notify, application_deny_notify, \
+    project_termination_notify, project_suspension_notify
 from astakos.im import settings
+
 import astakos.im.messages as astakos_messages
 
 logger = logging.getLogger(__name__)
@@ -92,15 +81,15 @@ def send_verification(user, template_name='im/activation_email.txt'):
     """
     Send email to user to verify his/her email and activate his/her account.
     """
-    url = join_urls(BASEURL, user.get_activation_url(nxt=reverse('index')))
+    url = join_urls(settings.BASEURL, user.get_activation_url(nxt=reverse('index')))
     message = render_to_string(template_name, {
                                'user': user,
                                'url': url,
-                               'baseurl': BASEURL,
-                               'site_name': SITENAME,
-                               'support': CONTACT_EMAIL})
+                               'baseurl': settings.BASEURL,
+                               'site_name': settings.SITENAME,
+                               'support': settings.CONTACT_EMAIL})
     sender = settings.SERVER_EMAIL
-    send_mail(_(VERIFICATION_EMAIL_SUBJECT), message, sender, [user.email],
+    send_mail(_(settings.VERIFICATION_EMAIL_SUBJECT), message, sender, [user.email],
               connection=get_connection())
     logger.info("Sent user verirfication email: %s", user.log_display)
 
@@ -131,7 +120,7 @@ def _send_admin_notification(template_name,
     else:
         msg = 'Sent admin notification (%s)' % msg
 
-    logger.log(LOGGING_LEVEL, msg)
+    logger.log(settings.LOGGING_LEVEL, msg)
 
 
 def send_account_pending_moderation_notification(
@@ -141,7 +130,7 @@ def send_account_pending_moderation_notification(
     Notify admins that a new user has verified his email address and moderation
     step is required to activate his account.
     """
-    subject = _(ACCOUNT_CREATION_SUBJECT) % {'user': user.email}
+    subject = _(settings.ACCOUNT_CREATION_SUBJECT) % {'user': user.email}
     return _send_admin_notification(template_name, {}, subject=subject,
                                     user=user, msg="account creation")
 
@@ -160,29 +149,29 @@ def send_account_activated_notification(
     sender = settings.SERVER_EMAIL
     recipient_list = [e[1] for e in settings.HELPDESK +
                       settings.MANAGERS + settings.ADMINS]
-    send_mail(_(HELPDESK_NOTIFICATION_EMAIL_SUBJECT) % {'user': user.email},
+    send_mail(_(settings.HELPDESK_NOTIFICATION_EMAIL_SUBJECT) % {'user': user.email},
               message, sender, recipient_list, connection=get_connection())
     msg = 'Sent helpdesk admin notification for %s' % user.email
-    logger.log(LOGGING_LEVEL, msg)
+    logger.log(settings.LOGGING_LEVEL, msg)
 
 
 def send_invitation(invitation, template_name='im/invitation.txt'):
     """
     Send invitation email.
     """
-    subject = _(INVITATION_EMAIL_SUBJECT)
-    url = '%s?code=%d' % (join_urls(BASEURL, reverse('index')), invitation.code)
+    subject = _(settings.INVITATION_EMAIL_SUBJECT)
+    url = '%s?code=%d' % (join_urls(settings.BASEURL, reverse('index')), invitation.code)
     message = render_to_string(template_name, {
                                'invitation': invitation,
                                'url': url,
-                               'baseurl': BASEURL,
-                               'site_name': SITENAME,
-                               'support': CONTACT_EMAIL})
+                               'baseurl': settings.BASEURL,
+                               'site_name': settings.SITENAME,
+                               'support': settings.CONTACT_EMAIL})
     sender = settings.SERVER_EMAIL
     send_mail(subject, message, sender, [invitation.username],
               connection=get_connection())
     msg = 'Sent invitation %s' % invitation
-    logger.log(LOGGING_LEVEL, msg)
+    logger.log(settings.LOGGING_LEVEL, msg)
     inviter_invitations = invitation.inviter.invitations
     invitation.inviter.invitations = max(0, inviter_invitations - 1)
     invitation.inviter.save()
@@ -194,22 +183,22 @@ def send_greeting(user, email_template_name='im/welcome_email.txt'):
 
     Raises SMTPException, socket.error
     """
-    subject = _(GREETING_EMAIL_SUBJECT)
+    subject = _(settings.GREETING_EMAIL_SUBJECT)
     message = render_to_string(email_template_name, {
                                'user': user,
-                               'url': join_urls(BASEURL, reverse('index')),
-                               'baseurl': BASEURL,
-                               'site_name': SITENAME,
-                               'support': CONTACT_EMAIL})
+                               'url': join_urls(settings.BASEURL, reverse('index')),
+                               'baseurl': settings.BASEURL,
+                               'site_name': settings.SITENAME,
+                               'support': settings.CONTACT_EMAIL})
     sender = settings.SERVER_EMAIL
     send_mail(subject, message, sender, [user.email],
               connection=get_connection())
     msg = 'Sent greeting %s' % user.log_display
-    logger.log(LOGGING_LEVEL, msg)
+    logger.log(settings.LOGGING_LEVEL, msg)
 
 
 def send_feedback(msg, data, user, email_template_name='im/feedback_mail.txt'):
-    subject = _(FEEDBACK_EMAIL_SUBJECT)
+    subject = _(settings.FEEDBACK_EMAIL_SUBJECT)
     from_email = settings.SERVER_EMAIL
     recipient_list = [e[1] for e in settings.HELPDESK]
     content = render_to_string(email_template_name, {
@@ -219,21 +208,21 @@ def send_feedback(msg, data, user, email_template_name='im/feedback_mail.txt'):
     send_mail(subject, content, from_email, recipient_list,
               connection=get_connection())
     msg = 'Sent feedback from %s' % user.log_display
-    logger.log(LOGGING_LEVEL, msg)
+    logger.log(settings.LOGGING_LEVEL, msg)
 
 
 def send_change_email(
     ec, request, email_template_name='registration/email_change_email.txt'):
     url = ec.get_url()
     url = request.build_absolute_uri(url)
-    c = {'url': url, 'site_name': SITENAME, 'support': CONTACT_EMAIL,
+    c = {'url': url, 'site_name': settings.SITENAME, 'support': settings.CONTACT_EMAIL,
          'ec': ec}
     message = render_to_string(email_template_name, c)
     from_email = settings.SERVER_EMAIL
-    send_mail(_(EMAIL_CHANGE_EMAIL_SUBJECT), message, from_email,
+    send_mail(_(settings.EMAIL_CHANGE_EMAIL_SUBJECT), message, from_email,
               [ec.new_email_address], connection=get_connection())
     msg = 'Sent change email for %s' % ec.user.log_display
-    logger.log(LOGGING_LEVEL, msg)
+    logger.log(settings.LOGGING_LEVEL, msg)
 
 
 def invite(inviter, email, realname):

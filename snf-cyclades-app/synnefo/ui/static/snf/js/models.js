@@ -235,7 +235,7 @@
         path: 'images',
         
         get_size: function() {
-            return parseInt(this.get('metadata') ? this.get('metadata').values.size : -1)
+            return parseInt(this.get('metadata') ? this.get('metadata').size : -1)
         },
 
         get_description: function(escape) {
@@ -245,17 +245,17 @@
         },
 
         get_meta: function(key) {
-            if (this.get('metadata') && this.get('metadata').values) {
-                if (!this.get('metadata').values[key]) { return null }
-                return _.escape(this.get('metadata').values[key]);
+            if (this.get('metadata') && this.get('metadata')) {
+                if (!this.get('metadata')[key]) { return null }
+                return _.escape(this.get('metadata')[key]);
             } else {
                 return null;
             }
         },
 
         get_meta_keys: function() {
-            if (this.get('metadata') && this.get('metadata').values) {
-                return _.keys(this.get('metadata').values);
+            if (this.get('metadata') && this.get('metadata')) {
+                return _.keys(this.get('metadata'));
             } else {
                 return [];
             }
@@ -312,7 +312,7 @@
         },
 
         get_sort_order: function() {
-            return parseInt(this.get('metadata') ? this.get('metadata').values.sortorder : -1)
+            return parseInt(this.get('metadata') ? this.get('metadata').sortorder : -1)
         },
 
         get_vm: function() {
@@ -1230,9 +1230,9 @@
         // get image object
         get_image: function(callback) {
             if (callback == undefined) { callback = function(){} }
-            var image = storage.images.get(this.get('imageRef'));
+            var image = storage.images.get(this.get('image'));
             if (!image) {
-                storage.images.update_unknown_id(this.get('imageRef'), callback);
+                storage.images.update_unknown_id(this.get('image'), callback);
                 return;
             }
             callback(image);
@@ -1241,26 +1241,26 @@
         
         // get flavor object
         get_flavor: function() {
-            var flv = storage.flavors.get(this.get('flavorRef'));
+            var flv = storage.flavors.get(this.get('flavor'));
             if (!flv) {
-                storage.flavors.update_unknown_id(this.get('flavorRef'));
-                flv = storage.flavors.get(this.get('flavorRef'));
+                storage.flavors.update_unknown_id(this.get('flavor'));
+                flv = storage.flavors.get(this.get('flavor'));
             }
             return flv;
         },
 
         get_meta: function(key, deflt) {
-            if (this.get('metadata') && this.get('metadata').values) {
-                if (!this.get('metadata').values[key]) { return deflt }
-                return _.escape(this.get('metadata').values[key]);
+            if (this.get('metadata') && this.get('metadata')) {
+                if (!this.get('metadata')[key]) { return deflt }
+                return _.escape(this.get('metadata')[key]);
             } else {
                 return deflt;
             }
         },
 
         get_meta_keys: function() {
-            if (this.get('metadata') && this.get('metadata').values) {
-                return _.keys(this.get('metadata').values);
+            if (this.get('metadata') && this.get('metadata')) {
+                return _.keys(this.get('metadata'));
             } else {
                 return [];
             }
@@ -1613,9 +1613,10 @@
         defaults: {'nics':[],'linked_to':[]},
         
         parse: function (resp, xhr) {
+          console.log(resp);
             // FIXME: depricated global var
             if (!resp) { return []};
-            var data = _.filter(_.map(resp.networks.values, _.bind(this.parse_net_api_data, this)),
+            var data = _.filter(_.map(resp.networks, _.bind(this.parse_net_api_data, this)),
                                function(e){ return e });
             return data;
         },
@@ -1646,10 +1647,10 @@
             // e.g. {'vm_id':12231, 'index':1}
             // net.get('linked_to') contains a list of vms the network is 
             // connected to e.g. [1001, 1002]
-            if (data.attachments && data.attachments.values) {
+            if (data.attachments && data.attachments) {
                 data['nics'] = {};
                 data['linked_to'] = [];
-                _.each(data.attachments.values, function(nic_id){
+                _.each(data.attachments, function(nic_id){
                   
                   var vm_id = NIC_REGEX.exec(nic_id)[1];
                   var nic_index = parseInt(NIC_REGEX.exec(nic_id)[2]);
@@ -1767,7 +1768,7 @@
         },
 
         parse: function (resp, xhr) {
-            var parsed = _.map(resp.images.values, _.bind(this.parse_meta, this));
+            var parsed = _.map(resp.images, _.bind(this.parse_meta, this));
             parsed = this.fill_owners(parsed);
             return parsed;
         },
@@ -1812,8 +1813,8 @@
         },
 
         get_meta_key: function(img, key) {
-            if (img.metadata && img.metadata.values && img.metadata.values[key]) {
-                return _.escape(img.metadata.values[key]);
+            if (img.metadata && img.metadata && img.metadata[key]) {
+                return _.escape(img.metadata[key]);
             }
             return undefined;
         },
@@ -1892,7 +1893,7 @@
         },
 
         parse: function (resp, xhr) {
-            return _.map(resp.flavors.values, function(o) { o.disk_template = o['SNF:disk_template']; return o});
+            return _.map(resp.flavors, function(o) { o.disk_template = o['SNF:disk_template']; return o});
         },
 
         comparator: function(flv) {
@@ -1998,7 +1999,7 @@
         parse: function (resp, xhr) {
             var data = resp;
             if (!resp) { return [] };
-            data = _.filter(_.map(resp.servers.values, _.bind(this.parse_vm_api_data, this)), function(v){return v});
+            data = _.filter(_.map(resp.servers, _.bind(this.parse_vm_api_data, this)), function(v){return v});
             return data;
         },
 
@@ -2012,7 +2013,7 @@
 
             // OS attribute
             if (this.has_meta(data)) {
-                data['OS'] = data.metadata.values.OS || snf.config.unknown_os;
+                data['OS'] = data.metadata.OS || snf.config.unknown_os;
             }
             
             if (!data.diagnostics) {
@@ -2024,8 +2025,8 @@
             data['nics'] = {};
             data['linked_to'] = [];
 
-            if (data['attachments'] && data['attachments'].values) {
-                var nics = data['attachments'].values;
+            if (data['attachments'] && data['attachments']) {
+                var nics = data['attachments'];
                 _.each(nics, function(nic) {
                     var net_id = nic.network_id;
                     var index = parseInt(NIC_REGEX.exec(nic.id)[2]);
@@ -2041,7 +2042,7 @@
             // is in json response, reset it to force
             // value update
             if (!data['metadata']) {
-                data['metadata'] = {values:{}};
+                data['metadata'] = {};
             }
 
             return data;
@@ -2102,11 +2103,11 @@
         },
         
         has_meta: function(vm_data) {
-            return vm_data.metadata && vm_data.metadata.values
+            return vm_data.metadata && vm_data.metadata
         },
 
         has_addresses: function(vm_data) {
-            return vm_data.metadata && vm_data.metadata.values
+            return vm_data.metadata && vm_data.metadata
         },
 
         create: function (name, image, flavor, meta, extra, callback) {
@@ -2126,7 +2127,7 @@
                 }
             }
             
-            opts = {name: name, imageRef: image.id, flavorRef: flavor.id, 
+            opts = {name: name, image: image.id, flavor: flavor.id, 
                     metadata:meta}
             opts = _.extend(opts, extra);
             
@@ -2145,7 +2146,7 @@
 
           // fill missing_ids
           this.each(function(el) {
-            var imgid = el.get("imageRef");
+            var imgid = el.get("image");
             var existing = synnefo.storage.images.get(imgid);
             if (!existing && missing_ids.indexOf(imgid) == -1) {
               missing_ids.push(imgid);

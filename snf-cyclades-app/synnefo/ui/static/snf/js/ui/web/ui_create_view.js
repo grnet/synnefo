@@ -419,7 +419,7 @@
             }, this);
             
             if (synnefo.storage.images.display_extra_metadata) {
-                _.each(image.get('metadata').values, function(value, key) {
+                _.each(image.get('metadata'), function(value, key) {
                     if (!_.contains(meta_keys, key) && 
                         !_.contains(meta_keys, key.toLowerCase()) &&
                         !_.contains(meta_keys, key.toUpperCase()) &&

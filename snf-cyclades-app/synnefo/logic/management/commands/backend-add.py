@@ -41,6 +41,9 @@ from synnefo.management.common import check_backend_credentials
 from synnefo.webproject.management.utils import pprint_table
 
 
+HYPERVISORS = [h[0] for h in Backend.HYPERVISORS]
+
+
 class Command(BaseCommand):
     can_import_settings = True
 
@@ -54,6 +57,12 @@ class Command(BaseCommand):
             '--no-check', action='store_false',
             dest='check', default=True,
             help="Do not perform credentials check and resources update"),
+       make_option('--hypervisor',
+            dest='hypervisor',
+            default=None,
+            choices=HYPERVISORS,
+            metavar="|".join(HYPERVISORS),
+            help="The hypervisor that the Ganeti backend uses"),
     )
 
     def handle(self, *args, **options):
@@ -64,6 +73,7 @@ class Command(BaseCommand):
         port = options['port']
         username = options['username']
         password = options['password']
+        hypervisor = options["hypervisor"]
 
         if not (clustername and username and password):
             raise CommandError("Clustername, user and pass must be supplied")
@@ -72,13 +82,17 @@ class Command(BaseCommand):
         if options['check']:
             check_backend_credentials(clustername, port, username, password)
 
+        kw = {"clustername": clustername,
+              "port": port,
+              "username": username,
+              "password": password,
+              "drained": True}
+
+        if hypervisor:
+            kw["hypervisor"] = hypervisor
         # Create the new backend in database
         try:
-            backend = Backend.objects.create(clustername=clustername,
-                                             port=port,
-                                             username=username,
-                                             password=password,
-                                             drained=True)
+            backend = Backend.objects.create(**kw)
         except IntegrityError as e:
             raise CommandError("Cannot create backend: %s\n" % e)
 

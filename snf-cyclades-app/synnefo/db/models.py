@@ -105,6 +105,12 @@ class Backend(models.Model):
     # Custom object manager to protect from cascade delete
     objects = ProtectedDeleteManager()
 
+    HYPERVISORS = (
+        ("kvm", "Linux KVM hypervisor"),
+        ("xen-pvm", "Xen PVM hypervisor"),
+        ("xen-hvm", "Xen KVM hypervisor"),
+    )
+
     class Meta:
         verbose_name = u'Backend'
         ordering = ["clustername"]

@@ -1050,14 +1050,38 @@ customization  is feasible.
 
 The output of all email *.txt files will be already customized to contain your 
 company and service names but you can further alter their content if you feel 
-it best fits your needs  using django’s TEMPLATE_DIRS setting.                               
-
-In order to overwrite a template you need to create a new one with the same 
-name, place it to a folder of your choice and provide its path to the 
-TEMPLATE_DIRS.
+it best fits your needs  using django’s TEMPLATE_DIRS setting.    
 
 For more information visit  
-https://docs.djangoproject.com/en/1.2/ref/settings/#template-dirs.
+https://docs.djangoproject.com/en/1.2/ref/settings/#template-dirs.                           
+
+In order to overwrite one or more email-templates you need to create a new one 
+directory and  provide its path to the TEMPLATE_DIRS. Inside this directory, you
+must place your <email-file>.txt files respecting the following structure:
+  
+  *<emails-dir>*/
+      *im*/
+          | activation_email.txt
+          | email.txt
+          | invitation.txt
+          | switch_accounts_email.txt
+          | welcome_email.txt
+          *projects*/
+              | project_approval_notification.txt
+              | project_denial_notification.txt    
+              | project_membership_change_notification.txt
+              | project_membership_enroll_notification.txt
+              | project_membership_leave_request_notification.txt
+              | project_membership_request_notification.txt
+              | project_suspension_notification.txt
+              | project_termination_notification.txt
+      *registration*/
+          | email_change_email.txt
+          | password_email.txt
+
+Feel free to omit any of the above files you do not wish to overwrite.
+
+
 
 
 Below is a list of all emails sent by Synnefo to users along with a short 

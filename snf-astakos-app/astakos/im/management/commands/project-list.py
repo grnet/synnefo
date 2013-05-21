@@ -33,55 +33,14 @@
 
 from optparse import make_option
 
-from astakos.im.models import Chain, Project
-from synnefo.webproject.management.commands import ListCommand
+from synnefo.webproject.management.commands import SynnefoCommand, CommandError
+
+from astakos.im.models import Chain
+from synnefo.webproject.management import utils
+from ._common import is_uuid, is_email
 
 
-def get_name(chain):
-    try:
-        p = Project.objects.get(pk=chain.pk)
-    except Project.DoesNotExist:
-        app = chain.last_application()
-        return app.name
-    else:
-        return p.name
-
-
-def get_owner_name(chain):
-    return chain.last_application().owner.realname
-
-
-def get_owner_email(chain):
-    return chain.last_application().owner.email
-
-
-def get_state(chain):
-    try:
-        p = Project.objects.get(pk=chain.pk)
-    except Project.DoesNotExist:
-        p = None
-    app = chain.last_application()
-    return chain.get_state(p, app)[0]
-
-
-def get_state_display(chain):
-    return Chain.state_display(get_state(chain))
-
-
-def get_appid(chain):
-    try:
-        p = Project.objects.get(pk=chain.pk)
-    except Project.DoesNotExist:
-        p = None
-    app = chain.last_application()
-    state = chain.get_state(p, app)[0]
-    if state in Chain.PENDING_STATES:
-        return str(app.id)
-    else:
-        return ""
-
-
-class Command(ListCommand):
+class Command(SynnefoCommand):
     help = """
     List projects and project status.
 
@@ -111,20 +70,7 @@ class Command(ListCommand):
                            by a new project
 """
 
-    object_class = Chain
-
-    FIELDS = {
-        'ProjID': ('pk', 'The id of the project'),
-        'Name': (get_name, 'The name of the project'),
-        'Owner': (get_owner_name, 'The name of the project owner'),
-        'Email': (get_owner_email, 'The email of the project owner'),
-        'Status': (get_state_display, 'The status of the project'),
-        'AppID': (get_appid, 'The project application identification'),
-    }
-
-    fields = ['ProjID', 'Name', 'Owner', 'Email', 'Status', 'AppID']
-
-    option_list = ListCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option('--all',
                     action='store_true',
                     dest='all',
@@ -151,29 +97,96 @@ class Command(ListCommand):
                     dest='skip',
                     default=False,
                     help="Skip cancelled and terminated projects"),
-        make_option('--full',
-                    action='store_true',
-                    dest='full',
-                    default=False,
-                    help="Do not shorten long names"),
+        make_option('--name',
+                    dest='name',
+                    help='Filter projects by name'),
+        make_option('--owner',
+                    dest='owner',
+                    help='Filter projects by owner\'s email or uuid'),
     )
 
-    def handle_db_objects(self, objects, **options):
-        if options['all']:
-            return
+    def handle(self, *args, **options):
 
-        f_states = []
-        if options['new']:
-            f_states.append(Chain.PENDING)
-        if options['modified']:
-            f_states += Chain.MODIFICATION_STATES
-        if options['pending']:
-            f_states.append(Chain.PENDING)
-            f_states += Chain.MODIFICATION_STATES
-        if options['skip']:
-            if not f_states:
+        chain_dict = Chain.objects.all_full_state()
+
+        if not options['all']:
+            f_states = []
+            if options['new']:
+                f_states.append(Chain.PENDING)
+            if options['modified']:
+                f_states += Chain.MODIFICATION_STATES
+            if options['pending']:
+                f_states.append(Chain.PENDING)
+                f_states += Chain.MODIFICATION_STATES
+            if options['skip']:
+                if not f_states:
                     f_states = Chain.RELEVANT_STATES
 
-        if f_states:
-            map(objects.remove,
-                filter(lambda o: get_state(o) not in f_states, objects))
+            if f_states:
+                chain_dict = filter_by(in_states(f_states), chain_dict)
+
+            name = options['name']
+            if name:
+                chain_dict = filter_by(is_name(name), chain_dict)
+
+            owner = options['owner']
+            if owner:
+                chain_dict = filter_by(is_owner(owner), chain_dict)
+
+        labels = ('ProjID', 'Name', 'Owner', 'Email', 'Status', 'AppID')
+
+        info = chain_info(chain_dict)
+        utils.pprint_table(self.stdout, info, labels,
+                           options["output_format"])
+
+
+def is_name(name):
+    def f(state, project, app):
+        n = project.application.name if project else app.name
+        return name == n
+    return f
+
+
+def in_states(states):
+    def f(state, project, app):
+        return state in states
+    return f
+
+
+def is_owner(s):
+    def f(state, project, app):
+        owner = app.owner
+        if is_email(s):
+            return owner.email == s
+        if is_uuid(s):
+            return owner.uuid == s
+        raise CommandError("Expecting either email or uuid.")
+    return f
+
+
+def filter_by(f, chain_dict):
+    d = {}
+    for chain, tpl in chain_dict.iteritems():
+        if f(*tpl):
+            d[chain] = tpl
+    return d
+
+
+def chain_info(chain_dict):
+    l = []
+    for chain, (state, project, app) in chain_dict.iteritems():
+        status = Chain.state_display(state)
+        if state in Chain.PENDING_STATES:
+            appid = str(app.id)
+        else:
+            appid = ""
+
+        t = (chain,
+             project.application.name if project else app.name,
+             app.owner.realname,
+             app.owner.email,
+             status,
+             appid,
+             )
+        l.append(t)
+    return l

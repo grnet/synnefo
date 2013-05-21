@@ -41,19 +41,15 @@ import copy
 from time import asctime
 from datetime import datetime, timedelta
 from base64 import b64encode
-from urlparse import urlparse
 from urllib import quote
 from random import randint
 
 from django.db import models, IntegrityError, transaction
 from django.contrib.auth.models import User, UserManager, Group, Permission
 from django.utils.translation import ugettext as _
-from django.core.exceptions import ValidationError
-from django.db.models.signals import (
-    pre_save, post_save, post_syncdb, post_delete)
+from django.db.models.signals import pre_save, post_save
 from django.contrib.contenttypes.models import ContentType
 
-from django.dispatch import Signal
 from django.db.models import Q, Max
 from django.core.urlresolvers import reverse
 from django.utils.http import int_to_base36
@@ -61,16 +57,11 @@ from django.contrib.auth.tokens import default_token_generator
 from django.conf import settings
 from django.utils.importlib import import_module
 from django.utils.safestring import mark_safe
-from django.core.validators import email_re
-from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 
 from synnefo.lib.utils import dict_merge
 
-from astakos.im.settings import (
-    DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL,
-    AUTH_TOKEN_DURATION, EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL,
-    SITENAME, MODERATION_ENABLED,
-    )
+from astakos.im.settings import DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL, \
+    AUTH_TOKEN_DURATION, EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL
 from astakos.im import settings as astakos_settings
 from astakos.im import auth_providers as auth
 

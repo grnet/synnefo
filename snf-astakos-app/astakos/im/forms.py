@@ -31,48 +31,35 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 from random import random
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from django import forms
 from django.utils.translation import ugettext as _
-from django.contrib.auth.forms import (
-    UserCreationForm, AuthenticationForm,
-    PasswordResetForm, PasswordChangeForm,
-    SetPasswordForm)
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm, \
+    PasswordResetForm, PasswordChangeForm, SetPasswordForm
 from django.core.mail import send_mail, get_connection
 from django.contrib.auth.tokens import default_token_generator
-from django.template import Context, loader
-from django.utils.http import int_to_base36
 from django.core.urlresolvers import reverse
 from django.utils.safestring import mark_safe
 from django.utils.encoding import smart_str
 from django.conf import settings
-from django.forms.models import fields_for_model
 from django.db import transaction
-from django.utils.encoding import smart_unicode
 from django.core import validators
-from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import PermissionDenied
 
 from synnefo_branding.utils import render_to_string
 from synnefo.lib import join_urls
-from astakos.im.models import (
-    AstakosUser, EmailChange, Invitation,
-    Resource, PendingThirdPartyUser, get_latest_terms,
-    ProjectApplication, Project)
-from astakos.im.settings import (
-    INVITATIONS_PER_LEVEL, BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY,
-    RECAPTCHA_ENABLED, CONTACT_EMAIL, LOGGING_LEVEL,
-    PASSWORD_RESET_EMAIL_SUBJECT, NEWPASSWD_INVALIDATE_TOKEN,
-    MODERATION_ENABLED, EMAILCHANGE_ENABLED,
-    )
+from astakos.im.models import AstakosUser, EmailChange, Invitation, Resource, \
+    PendingThirdPartyUser, get_latest_terms, ProjectApplication, Project
+from astakos.im.settings import BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY, \
+    RECAPTCHA_ENABLED, CONTACT_EMAIL, PASSWORD_RESET_EMAIL_SUBJECT, \
+    NEWPASSWD_INVALIDATE_TOKEN, EMAILCHANGE_ENABLED
 from astakos.im import presentation
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
-from astakos.im.functions import (
-    send_change_email, submit_application, accept_membership_checks)
+from astakos.im.functions import send_change_email, submit_application, \
+    accept_membership_checks
 
-from astakos.im.util import reserved_email, reserved_verified_email, \
-                            get_query, model_to_dict
+from astakos.im.util import reserved_verified_email, model_to_dict
 from astakos.im import auth_providers
 
 import astakos.im.messages as astakos_messages

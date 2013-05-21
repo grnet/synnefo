@@ -36,7 +36,6 @@ from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import ugettext as _
 
 from astakos.im.models import AstakosUser
-from astakos.im.util import get_invitation
 from astakos.im import functions
 from astakos.im import settings
 from astakos.im import forms

@@ -32,15 +32,9 @@
 # or implied, of GRNET S.A.
 
 import logging
-import calendar
 import inflect
 
 engine = inflect.engine()
-
-from urllib import quote
-from functools import wraps
-from datetime import datetime
-from synnefo.lib.ordereddict import OrderedDict
 
 from django_tables2 import RequestConfig
 
@@ -48,76 +42,35 @@ from django.shortcuts import get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
-from django.db import transaction
-from django.db.utils import IntegrityError
-from django.http import (
-    HttpResponse, HttpResponseBadRequest,
-    HttpResponseForbidden, HttpResponseRedirect,
-    HttpResponseBadRequest, Http404)
+from django.http import Http404
 from django.shortcuts import redirect
-from django.template import RequestContext, loader as template_loader
-from django.utils.http import urlencode
 from django.utils.html import escape
-from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
-from django.views.generic.create_update import (
-    apply_extra_context, lookup_object, delete_object, get_model_and_form_class)
 from django.views.generic.list_detail import object_list, object_detail
-from django.core.xheaders import populate_xheaders
-from django.core.exceptions import ValidationError, PermissionDenied
+from django.core.exceptions import PermissionDenied
 from django.views.decorators.http import require_http_methods
 from django.db.models import Q
-from django.utils import simplejson as json
-from django.contrib.auth.views import redirect_to_login
 
-from synnefo_branding.utils import render_to_string
 from snf_django.lib.db.transaction import commit_on_success_strict
 
 import astakos.im.messages as astakos_messages
 
-from astakos.im import activation_backends
 from astakos.im import tables
-from astakos.im.models import (
-    AstakosUser, ApprovalTerms,
-    EmailChange, AstakosUserAuthProvider, PendingThirdPartyUser,
-    ProjectApplication, ProjectMembership, Project, Service, Resource)
-from astakos.im.util import (
-    get_context, prepare_response, get_query, restrict_next, model_to_dict)
-from astakos.im.forms import (
-    LoginForm, InvitationForm,
-    FeedbackForm, SignApprovalTermsForm,
-    EmailChangeForm,
-    ProjectApplicationForm, ProjectSortForm,
-    AddProjectMembersForm, ProjectSearchForm,
-    ProjectMembersSortForm)
-from astakos.im.forms import ExtendedProfileForm as ProfileForm
-from astakos.im.functions import (
-    send_feedback,
-    logout as auth_logout,
-    invite as invite_func,
-    check_pending_app_quota,
-    accept_membership, reject_membership, remove_membership, cancel_membership,
-    leave_project, join_project, enroll_member, can_join_request,
-    can_leave_request,
-    get_related_project_id, get_by_chain_or_404,
-    approve_application, deny_application,
-    cancel_application, dismiss_application)
-from astakos.im.settings import (
-    COOKIE_DOMAIN, LOGOUT_NEXT,
-    LOGGING_LEVEL, PAGINATE_BY,
-    PAGINATE_BY_ALL,
-    ACTIVATION_REDIRECT_URL,
-    MODERATION_ENABLED)
-from astakos.im import presentation
-from astakos.im import settings
-from astakos.im import auth_providers as auth
-from snf_django.lib.db.transaction import commit_on_success_strict
+from astakos.im.models import ProjectApplication
+from astakos.im.util import get_context, restrict_next
+from astakos.im.forms import ProjectApplicationForm, AddProjectMembersForm, \
+    ProjectSearchForm
+from astakos.im.functions import check_pending_app_quota, accept_membership, \
+    reject_membership, remove_membership, cancel_membership, leave_project, \
+    join_project, enroll_member, can_join_request, can_leave_request, \
+    get_related_project_id, get_by_chain_or_404, approve_application, \
+    deny_application, cancel_application, dismiss_application
+from astakos.im.settings import COOKIE_DOMAIN, PAGINATE_BY
 from astakos.im.ctx import ExceptionHandler
-from astakos.im import quotas
 from astakos.im.views.util import render_response, _create_object, \
     _update_object, _resources_catalog
 from astakos.im.views.decorators import cookie_fix, signed_terms_required,\
-    required_auth_methods_assigned, valid_astakos_user_required
+    valid_astakos_user_required
 
 logger = logging.getLogger(__name__)
 

@@ -32,37 +32,27 @@
 # or implied, of GRNET S.A.
 
 import logging
-import socket
 
 from django.utils.translation import ugettext as _
 from django.core.mail import send_mail, get_connection
 from django.core.urlresolvers import reverse
-from django.template import Context, loader
 from django.contrib.auth import (
     login as auth_login,
     logout as auth_logout)
-from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import PermissionDenied
-from django.db import IntegrityError
 from django.db.models import Q
 from django.http import Http404
 
 from synnefo_branding.utils import render_to_string
 
-from urllib import quote
-from smtplib import SMTPException
-from datetime import datetime
-from functools import wraps
-
 from synnefo.lib import join_urls
 from astakos.im.settings import (
     CONTACT_EMAIL, SITENAME, BASEURL, LOGGING_LEVEL,
     VERIFICATION_EMAIL_SUBJECT, ACCOUNT_CREATION_SUBJECT,
-    GROUP_CREATION_SUBJECT, HELPDESK_NOTIFICATION_EMAIL_SUBJECT,
+    HELPDESK_NOTIFICATION_EMAIL_SUBJECT,
     INVITATION_EMAIL_SUBJECT, GREETING_EMAIL_SUBJECT, FEEDBACK_EMAIL_SUBJECT,
     EMAIL_CHANGE_EMAIL_SUBJECT,
     )
-from astakos.im.notifications import build_notification, NotificationError
 from astakos.im.models import (
     AstakosUser, Invitation, ProjectMembership, ProjectApplication, Project,
     Chain, new_chain)

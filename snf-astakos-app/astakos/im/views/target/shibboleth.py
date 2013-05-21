@@ -31,33 +31,19 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import json
-
 from django.conf import settings as global_settings
-from django.http import HttpResponseBadRequest
 from django.utils.translation import ugettext as _
 from django.contrib import messages
-from django.template import RequestContext
 from django.views.decorators.http import require_http_methods
 from django.http import HttpResponseRedirect
-from django.core.urlresolvers import reverse
-from django.core.exceptions import ImproperlyConfigured
-from django.shortcuts import get_object_or_404
 
-from urlparse import urlunsplit, urlsplit
-
-from astakos.im.util import prepare_response, get_context, login_url
-from astakos.im.settings import ENABLE_LOCAL_ACCOUNT_MIGRATION, BASEURL
-from astakos.im.models import AstakosUser, PendingThirdPartyUser
-from astakos.im.forms import LoginForm
-from astakos.im.activation_backends import get_backend, SimpleBackend
-from astakos.im import auth_providers
+from astakos.im.util import login_url
+from astakos.im.models import AstakosUser
 from astakos.im import settings
-from astakos.im.views.target import add_pending_auth_provider, get_pending_key, \
-    handle_third_party_signup, handle_third_party_login, init_third_party_session
-from astakos.im.views.util import render_response
-from astakos.im.views.decorators import cookie_fix, requires_anonymous, \
-    requires_auth_provider
+from astakos.im.views.target import get_pending_key, \
+    handle_third_party_signup, handle_third_party_login, \
+    init_third_party_session
+from astakos.im.views.decorators import cookie_fix, requires_auth_provider
 
 import astakos.im.messages as astakos_messages
 import logging

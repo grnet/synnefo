@@ -34,7 +34,6 @@
 import json
 
 from django.contrib import messages
-from django.utils.translation import ugettext as _
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.db import transaction
@@ -43,9 +42,8 @@ from astakos.im.models import PendingThirdPartyUser, AstakosUser
 from astakos.im.util import get_query, login_url
 from astakos.im import messages as astakos_messages
 from astakos.im import auth_providers as auth
-from astakos.im.util import prepare_response, get_context
-from astakos.im.views.util import render_response
-from astakos.im.views.decorators import requires_anonymous
+from astakos.im.util import prepare_response
+
 import logging
 
 logger = logging.getLogger(__name__)

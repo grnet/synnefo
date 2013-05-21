@@ -31,8 +31,6 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from collections import defaultdict
-
 from django.utils.translation import ugettext as _
 from django.utils.safestring import mark_safe
 from django.template import Context, Template
@@ -44,9 +42,8 @@ import django_tables2 as tables
 
 from astakos.im.models import *
 from astakos.im.templatetags.filters import truncatename
-from astakos.im.functions import (join_project_checks,
-                                  can_leave_request,
-                                  cancel_membership_checks)
+from astakos.im.functions import join_project_checks, can_leave_request, \
+    cancel_membership_checks
 
 DEFAULT_DATE_FORMAT = "d/m/Y"
 

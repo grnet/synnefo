@@ -36,7 +36,6 @@ import socket
 
 from smtplib import SMTPException
 
-from django.conf import settings
 from django.core.mail import send_mail, get_connection
 from django.utils.translation import ugettext as _
 from synnefo_branding.utils import render_to_string

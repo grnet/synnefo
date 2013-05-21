@@ -36,7 +36,6 @@ from django.conf.urls.defaults import patterns, url
 urlpatterns = patterns(
     'astakos.api',
     url(r'^get_services/?$', 'get_services'),
-    url(r'^get_menu/?$', 'get_menu'),
 )
 
 urlpatterns += patterns(

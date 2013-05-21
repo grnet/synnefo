@@ -79,50 +79,44 @@ of pending applications per user::
 =================================
 
 In astakos-host edit ``/etc/synnefo/20-snf-astakos-app-cloudbar.conf`` and replace
-the following lines:
+the following line:
 
 .. code-block:: console
 
     CLOUDBAR_SERVICES_URL = 'https://node1.example.com/im/get_services'
-    CLOUDBAR_MENU_URL = 'https://node1.example.com/im/get_menu'
 
 with:
 
 .. code-block:: console
 
     CLOUDBAR_SERVICES_URL = 'https://node1.example.com/astakos/api/get_services'
-    CLOUDBAR_MENU_URL = 'https://node1.example.com/astakos/api/get_menu'
 
 |
 
 Also in pithos-host edit ``/etc/synnefo/20-snf-pithos-webclient-cloudbar.conf``
-and the following lines:
+and the following line:
 
 .. code-block:: console
 
     CLOUDBAR_SERVICES_URL = 'https://node1.example.com/im/get_services'
-    CLOUDBAR_MENU_URL = 'https://node1.example.com/im/get_menu'
 
 with:
 
 .. code-block:: console
 
     CLOUDBAR_SERVICES_URL = 'https://node1.example.com/astakos/api/get_services'
-    CLOUDBAR_MENU_URL = 'https://node1.example.com/astakos/api/get_menu'
 
 |
 
 Finally in cyclades-node edit ``/etc/synnefo/20-snf-cyclades-app-cloudbar.conf``
-and replace the following lines:
+and replace the following line:
 
 .. code-block:: console
 
    CLOUDBAR_SERVICES_URL = 'https://node1.example.com/im/get_services'
-   CLOUDBAR_MENU_URL = 'https://account.node1.example.com/im/get_menu'
 
 with:
 
 .. code-block:: console
 
    CLOUDBAR_SERVICES_URL = 'https://node1.example.com/astakos/api/get_services'
-   CLOUDBAR_MENU_URL = 'https://account.node1.example.com/astakos/api/get_menu'

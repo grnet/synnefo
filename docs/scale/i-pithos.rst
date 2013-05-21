@@ -86,7 +86,7 @@ In `/etc/synnefo/webclient.conf` add:
 
     CLOUDBAR_LOCATION = 'https://accounts.example.com/static/im/cloudbar/'
     CLOUDBAR_SERVICES_URL = 'https://accounts.example.com/astakos/api/get_services'
-    CLOUDBAR_MENU_URL = 'https://accounts.example.com/astakos/api/get_menu'
+    CLOUDBAR_MENU_URL = 'https://accounts.example.com/im/get_menu'
 
     PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE = 'XXXXXXXX'
 

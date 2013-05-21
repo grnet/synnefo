@@ -40,7 +40,7 @@ In `/etc/synnefo/astakos.conf` add:
 
     CLOUDBAR_LOCATION = 'https://accounts.example.com/static/im/cloudbar/'
     CLOUDBAR_SERVICES_URL = 'https://accounts.example.com/astakos/api/get_services'
-    CLOUDBAR_MENU_URL = 'https://accounts.example.com/astakos/api/get_menu'
+    CLOUDBAR_MENU_URL = 'https://accounts.example.com/im/get_menu'
 
     ASTAKOS_IM_MODULES = ['local']
 

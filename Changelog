@@ -19,7 +19,6 @@ Synnefo-wide
 * Create 'snf_django' Python package to hold common code for all Synnefo
   components.
 * CLOUDBAR_SERVICES_URL should point to /astakos/api/get_services
-* CLOUDBAR_MENU_URL should point to /astakos/api/get_menu
 
 Astakos
 -------

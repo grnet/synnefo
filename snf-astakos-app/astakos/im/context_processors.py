@@ -33,7 +33,7 @@
 
 from astakos.im import settings
 from astakos.im import presentation
-from astakos.api import get_menu
+from astakos.im.views import get_menu
 from astakos.im.util import get_query
 from astakos.im.auth_providers import PROVIDERS as AUTH_PROVIDERS
 

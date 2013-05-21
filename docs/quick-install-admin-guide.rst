@@ -612,7 +612,7 @@ Then edit ``/etc/synnefo/20-snf-astakos-app-cloudbar.conf`` :
 
     CLOUDBAR_SERVICES_URL = 'https://node1.example.com/astakos/api/get_services'
 
-    CLOUDBAR_MENU_URL = 'https://node1.example.com/astakos/api/get_menu'
+    CLOUDBAR_MENU_URL = 'https://node1.example.com/im/get_menu'
 
 Those settings have to do with the black cloudbar endpoints and will be
 described in more detail later on in this guide. For now, just edit the domain
@@ -913,7 +913,7 @@ pithos+ web UI with the astakos web UI (through the top cloudbar):
     CLOUDBAR_LOCATION = 'https://node1.example.com/static/im/cloudbar/'
     PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE = '3'
     CLOUDBAR_SERVICES_URL = 'https://node1.example.com/astakos/api/get_services'
-    CLOUDBAR_MENU_URL = 'https://node1.example.com/astakos/api/get_menu'
+    CLOUDBAR_MENU_URL = 'https://node1.example.com/im/get_menu'
 
 The ``CLOUDBAR_LOCATION`` tells the client where to find the astakos common
 cloudbar.
@@ -1723,7 +1723,7 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-cloudbar.conf``:
    CLOUDBAR_LOCATION = 'https://node1.example.com/static/im/cloudbar/'
    CLOUDBAR_ACTIVE_SERVICE = '2'
    CLOUDBAR_SERVICES_URL = 'https://node1.example.com/astakos/api/get_services'
-   CLOUDBAR_MENU_URL = 'https://account.node1.example.com/astakos/api/get_menu'
+   CLOUDBAR_MENU_URL = 'https://account.node1.example.com/im/get_menu'
 
 ``CLOUDBAR_LOCATION`` tells the client where to find the Astakos common
 cloudbar. The ``CLOUDBAR_SERVICES_URL`` and ``CLOUDBAR_MENU_URL`` options are

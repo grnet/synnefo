@@ -58,7 +58,7 @@ Returns a json formatted list containing the cloud bar links.
 ========================= =========  ==================
 Uri                       Method     Description
 ========================= =========  ==================
-``/astakos/api/get_menu`` GET        Get cloud bar menu
+``/im/get_menu``          GET        Get cloud bar menu
 ========================= =========  ==================
 
 Example reply if request user is not authenticated:
@@ -75,8 +75,6 @@ Example reply if request user is authenticated:
     {"url": "/im/landing", "name": "Dashboard"},
     {"url": "/im/logout", "name": "Sign out"}]
 
-.. warning:: The service is also available under ``/im/get_menu``.
-     It  will be removed in the next version.
 
 User API Operations
 --------------------

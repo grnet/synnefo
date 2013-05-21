@@ -122,11 +122,13 @@ class Command(SynnefoCommand):
                                options["output_format"], vertical=True)
 
             if options["list_quotas"]:
-                self.stdout.write("\n")
                 quotas, initial = list_user_quotas([user])
-                print_data, labels = show_quotas(quotas, initial)
-                utils.pprint_table(self.stdout, print_data, labels,
-                                   options["output_format"])
+                if quotas:
+                    self.stdout.write("\n")
+                    print_data, labels = show_quotas(quotas, initial)
+                    utils.pprint_table(self.stdout, print_data, labels,
+                                       options["output_format"],
+                                       title="User Quota")
 
             if options["list_projects"]:
                 print_data, labels = ownerships(user)

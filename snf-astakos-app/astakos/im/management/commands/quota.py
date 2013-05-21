@@ -128,19 +128,19 @@ class Command(SynnefoCommand):
             try:
                 user = AstakosUser.objects.get(uuid=user_ident)
             except AstakosUser.DoesNotExist:
-                raise CommandError('Not found user having uuid: %s' %
+                raise CommandError('There is no user with uuid: %s' %
                                    user_ident)
         elif is_email(user_ident):
             try:
                 user = AstakosUser.objects.get(username=user_ident)
             except AstakosUser.DoesNotExist:
-                raise CommandError('Not found user having email: %s' %
+                raise CommandError('There is no user with email: %s' %
                                    user_ident)
         else:
             raise CommandError('Please specify user by uuid or email')
 
-        if not user.email_verified and sync:
-            raise CommandError('User %s is not verified.' % user.uuid)
+        if not user.email_verified:
+            raise CommandError('%s is not a verified user.\n' % user.uuid)
 
         return user
 

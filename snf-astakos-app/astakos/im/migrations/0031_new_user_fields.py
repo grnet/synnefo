@@ -22,6 +22,7 @@ class Migration(DataMigration):
                     user.email_verified:
                 user_handled = True
                 user.moderated = True
+                user.accepted_policy = 'migration'
                 user.moderated_at = user.updated
                 user.verification_code = user.auth_token
 

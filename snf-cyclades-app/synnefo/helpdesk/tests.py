@@ -98,12 +98,25 @@ class HelpdeskTests(TestCase):
     Helpdesk tests. Test correctness of permissions and returned data.
     """
 
-    fixtures = ['helpdesk_test']
-
     def setUp(self):
         settings.SKIP_SSH_VALIDATION = True
         settings.HELPDESK_ENABLED = True
         self.client = AuthClient()
+
+        # init models
+        vm1u1 = mfactory.VirtualMachineFactory(userid=USER1, name="user1 vm",
+                                               pk=1001)
+        vm1u2 = mfactory.VirtualMachineFactory(userid=USER2, name="user2 vm1",
+                                               pk=1002)
+        vm2u2 = mfactory.VirtualMachineFactory(userid=USER2, name="user2 vm2",
+                                               pk=1003)
+
+        netpub = mfactory.NetworkFactory(public=True)
+        net1u1 = mfactory.NetworkFactory(public=False, userid=USER1)
+
+        nic1 = mfactory.NetworkInterfaceFactory(machine=vm1u2, network=net1u1)
+        nic2 = mfactory.NetworkInterfaceFactory(machine=vm1u1, network=netpub,
+                                                ipv4="195.251.222.211")
 
     def test_enabled_setting(self):
         settings.HELPDESK_ENABLED = False
@@ -125,7 +138,7 @@ class HelpdeskTests(TestCase):
         # ip exists, 'test' account discovered
         r = self.client.get(reverse('helpdesk-details',
                             args=["195.251.222.211"]), user_token='0001')
-        self.assertEqual(r.context['account'], USER2)
+        self.assertEqual(r.context['account'], USER1)
 
     def test_vm_lookup(self):
         # vm id does not exist
@@ -224,7 +237,7 @@ class HelpdeskTests(TestCase):
         self.assertEqual(account, USER1)
         self.assertEqual(vms[0].name, "user1 vm")
         self.assertEqual(vms.count(), 1)
-        self.assertEqual(len(nets), 1)
+        self.assertEqual(len(nets), 2)
         self.assertEqual(r.context['account_exists'], True)
 
         # 'testuser2@test.com' details, see helpdesk

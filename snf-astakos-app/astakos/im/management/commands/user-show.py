@@ -82,6 +82,7 @@ class Command(SynnefoCommand):
                 [
                     ('id', user.id),
                     ('uuid', user.uuid),
+                    ('status', user.status_display),
                     ('email', user.email),
                     ('first name', user.first_name),
                     ('last name', user.last_name),

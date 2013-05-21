@@ -544,6 +544,33 @@ class AstakosUser(User):
         return self.emailchanges.count() > 0
 
     @property
+    def status_display(self):
+        msg = ""
+        append = None
+        if self.is_active:
+            msg = "Accepted/Active"
+        if self.is_rejected:
+            msg = "Rejected"
+            if self.rejected_reason:
+                msg += " (%s)" % self.rejected_reason
+        if not self.email_verified:
+            msg = "Pending email verification"
+        if not self.moderated:
+            msg = "Pending moderation"
+        if not self.is_active and self.email_verified:
+            msg = "Accepted/Inactive"
+            if self.deactivated_reason:
+                msg += " (%s)" % (self.deactivated_reason)
+
+        if self.moderated and not self.is_rejected:
+            if self.accepted_policy == 'manual':
+                msg += " (manually accepted)"
+            else:
+                msg += " (accepted policy: %s)" % \
+                        self.accepted_policy
+        return msg
+
+    @property
     def signed_terms(self):
         term = get_latest_terms()
         if not term:

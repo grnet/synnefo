@@ -37,7 +37,7 @@ from astakos.im.models import Service
 
 
 class Command(BaseCommand):
-    args = "<name>"
+    args = "<service-id>"
     help = "Unregister a service"
 
     def handle(self, *args, **options):
@@ -45,7 +45,7 @@ class Command(BaseCommand):
             raise CommandError("Invalid number of arguments")
 
         try:
-            service = Service.objects.get(name=args[0])
+            service = Service.objects.get(id=args[0])
             service.delete()
         except Service.DoesNotExist, e:
             raise CommandError(e)

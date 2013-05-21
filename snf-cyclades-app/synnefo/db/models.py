@@ -29,6 +29,7 @@
 
 import datetime
 
+from copy import deepcopy
 from django.conf import settings
 from django.db import models
 from django.db import IntegrityError
@@ -87,6 +88,9 @@ class Backend(models.Model):
                                         default=0)
     drained = models.BooleanField('Drained', default=False, null=False)
     offline = models.BooleanField('Offline', default=False, null=False)
+    # Type of hypervisor
+    hypervisor = models.CharField('Hypervisor', max_length=32, default="kvm",
+                                  null=False)
     # Last refresh of backend resources
     updated = models.DateTimeField(auto_now_add=True)
     # Backend resources
@@ -100,6 +104,12 @@ class Backend(models.Model):
                                          default=0, null=False)
     # Custom object manager to protect from cascade delete
     objects = ProtectedDeleteManager()
+
+    HYPERVISORS = (
+        ("kvm", "Linux KVM hypervisor"),
+        ("xen-pvm", "Xen PVM hypervisor"),
+        ("xen-hvm", "Xen KVM hypervisor"),
+    )
 
     class Meta:
         verbose_name = u'Backend'
@@ -178,6 +188,15 @@ class Backend(models.Model):
                 self.index = first_free
             except IndexError:
                 raise Exception("Can not create more than 16 backends")
+
+    def use_hotplug(self):
+        return self.hypervisor == "kvm" and snf_settings.GANETI_USE_HOTPLUG
+
+    def get_create_params(self):
+        params = deepcopy(snf_settings.GANETI_CREATEINSTANCE_KWARGS)
+        params["hvparams"] = params.get("hvparams", {})\
+                                   .get(self.hypervisor, {})
+        return params
 
 
 # A backend job may be in one of the following possible states

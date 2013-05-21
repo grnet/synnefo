@@ -23,6 +23,74 @@ Synnefo-wide
 
 Astakos
 -------
+* Redesign of the accounting system (quotaholder) and integration into
+astakos.
+
+  * Simplified the quotaholder model; removed tables Entity and Policy; now
+    table Holding contains limit and usage for every holding.
+
+  * Extended table Holding, so that we can keep track of quota for every
+    valid combination of holder (e.g. user), resource, and source (e.g. the
+    default system or some specific project).
+
+  * Refactored code for issuing and resolving commissions for robustness;
+    added a 'force' option to bypass the upper limit check when issuing a
+    commission.
+
+  * Simplified syncing to the quotaholder; removed fields from models
+    Project and ProjectMembership, previously needed for syncing; removed
+    state PROJECT_DEACTIVATED from ProjectMembership.
+
+* Service and resource specification and handling:
+
+  * Specified a format for defining resources a service exposes. Migrated
+    internal resource name by prefixing it with service name (e.g. 'vm'
+    becomes 'cyclades.vm'); renamed registered service 'pithos+' to
+    'pithos'.
+
+  * Specified a procedure to register a service's resources in astakos and
+    set their respective default base quota limit. Removed resource
+    definitions from settings.
+
+  * Moved service and resource presentation data out of the respective db
+    models into a separate file of UI constants.
+
+* Converted the limit on pending applications from a setting to a quotable
+  resource. Converted the related user setting to a user-specific base quota
+  limit. Deprecated model UserSetting; removed setting
+  ASTAKOS_PENDING_APPLICATION_LIMIT.
+
+* Changes in locking strategy:
+
+  * Lock only project's chain for all project operations; lock user before
+    syncing to quotaholder.
+
+  * When locking multiple rows (e.g. users or holdings) include an ORDER BY
+    clause in the query to impose ordering on locking.
+
+* API-related changes:
+
+ * Implemented API calls for quota, resources, and commissions.
+
+ * Moved all API calls under '/astakos/api'. Kept also previous locations
+   for backwards compatibility.
+
+* Changes in views:
+
+  * Replaced custom transaction context with a simple decorator for managing
+    transactions and a context 'ExceptionHandler', which logs and suppresses
+    exceptions
+
+* Management commands:
+
+  * Renamed command astakos-quota to quota; user-update to user-modify.
+
+  * Removed user-set-initial-quota; integrated its functionality in
+    user-modify and quota.
+
+  * Added quota and project-related information in user-show command; added
+    membership information in project-show.
+
 
 Cyclades
 --------

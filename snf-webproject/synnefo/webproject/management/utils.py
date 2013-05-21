@@ -117,7 +117,7 @@ def parse_filters(filter_by):
 
 
 def pprint_table(out, table, headers=None, output_format='pretty',
-                 separator=None, vertical=False):
+                 separator=None, vertical=False, title=None):
     """Print a pretty, aligned string representation of table.
 
     Works by finding out the max width of each column and padding to data
@@ -167,6 +167,8 @@ def pprint_table(out, table, headers=None, output_format='pretty',
             widths = [max(map(len, col)) for col in zip(*(columns))]
 
             t_length = sum(widths) + len(sep) * (len(widths) - 1)
+            if title is not None:
+                out.write(title.center(t_length) + "\n")
             if headers:
                 # pretty print the headers
                 line = sep.join(uenc(v.rjust(w))\

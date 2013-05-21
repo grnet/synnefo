@@ -2,6 +2,8 @@
 
 set -e
 
+export SYNNEFO_SETTINGS_DIR='/tmp/snf-test-settings'
+
 APPS="api db logic plankton quotas vmapi im quotaholder_app helpdesk"
 TEST="$(which snf-manage) test $APPS --settings=synnefo.settings.test"
 

@@ -173,6 +173,8 @@ class AuthProvider(object):
             setting_key = "%s_POLICY" % policy.upper()
             if self.has_setting(setting_key):
                 self.module_policies[policy] = self.get_setting(setting_key)
+            else:
+                self.module_policies[policy] = value
 
         # messages cache
         self.message_tpls_compiled = OrderedDict()
@@ -553,7 +555,8 @@ class LocalAuthProvider(AuthProvider):
     }
 
     policies = {
-        'limit': 1
+        'limit': 1,
+        'switch': False
     }
 
     @property
@@ -581,6 +584,10 @@ class ShibbolethAuthProvider(AuthProvider):
     module = 'shibboleth'
     login_view = 'astakos.im.views.target.shibboleth.login'
     username_key = 'identifier'
+
+    policies = {
+        'switch': False
+    }
 
     messages = {
         'title': _('Academic'),

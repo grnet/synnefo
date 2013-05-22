@@ -49,4 +49,4 @@ copyright_message_default = 'Copyright (c) %s %s' % (copyright_period_default,
 COPYRIGHT_MESSAGE = getattr(settings, 'BRANDING_COPYRIGHT_MESSAGE', 
 						    copyright_message_default)
  
-SYNNEFO_JS_LIB_VERSION = get_component_version('app')
+SYNNEFO_VERSION = get_component_version('common')

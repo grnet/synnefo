@@ -146,7 +146,8 @@ if 'linkedin' in settings.IM_MODULES:
 
 urlpatterns += patterns(
     'astakos.im.views',
-    url(r'^get_menu/?$', 'get_menu'))
+    url(r'^get_menu/?$', 'get_menu'),
+    url(r'^get_services/?$', 'get_services'))
 
 urlpatterns += patterns(
     'astakos.api.user',

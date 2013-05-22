@@ -903,3 +903,24 @@ class MenuItem(dict):
         super(MenuItem, self).__setattribute__(name, value)
         if name == 'current_path':
             self.__set_is_active__()
+
+
+def get_services(request):
+    callback = request.GET.get('callback', None)
+    mimetype = 'application/json'
+    data = json.dumps(Service.catalog().values())
+
+    if callback:
+        # Consume session messages. When get_services is loaded from an astakos
+        # page, messages should have already been consumed in the html
+        # response. When get_services is loaded from another domain/service we
+        # consume them here so that no stale messages to appear if user visits
+        # an astakos view later on.
+        # TODO: messages could be served to other services/sites in the dict
+        # response of get_services and/or get_menu. Services could handle those
+        # messages respectively.
+        messages_list = list(messages.get_messages(request))
+        mimetype = 'application/javascript'
+        data = '%s(%s)' % (callback, data)
+
+    return HttpResponse(content=data, mimetype=mimetype)

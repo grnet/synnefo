@@ -64,7 +64,7 @@ In `/etc/synnefo/cyclades.conf` add:
     GANETI_USE_HOTPLUG = True
     CLOUDBAR_LOCATION = 'https://accounts.example.com/static/im/cloudbar/'
     CLOUDBAR_ACTIVE_SERVICE = '2'
-    CLOUDBAR_SERVICES_URL = 'https://accounts.example.com/astakos/api/get_services'
+    CLOUDBAR_SERVICES_URL = 'https://accounts.example.com/im/get_services'
     CLOUDBAR_MENU_URL = 'https://accounts.example.com/im/get_menu'
     BACKEND_DB_CONNECTION = 'postgresql://synnefo:example_passw0rd@db.example.com:5432/snf_pithos'
     BACKEND_BLOCK_PATH = '/srv/pithos/data/'

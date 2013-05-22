@@ -35,7 +35,7 @@ Returns a json formatted list containing information about the supported cloud s
 ============================= =========  ==================
 Uri                           Method     Description
 ============================= =========  ==================
-``/astakos/api/get_services`` GET        Get cloud services
+``/im/get_services``          GET        Get cloud services
 ============================= =========  ==================
 
 Example reply:
@@ -45,9 +45,6 @@ Example reply:
     [{"url": "/", "icon": "home-icon.png", "name": "grnet cloud", "id": "1"},
     {"url": "/okeanos.html", "name": "~okeanos", "id": "2"},
     {"url": "/ui/", "name": "pithos+", "id": "3"}]
-
-.. warning:: The service is also available under ``/im/get_services``.
-     It  will be removed in the next version.
 
 
 Get Menu

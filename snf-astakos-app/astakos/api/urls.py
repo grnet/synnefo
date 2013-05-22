@@ -33,12 +33,8 @@
 
 from django.conf.urls.defaults import patterns, url
 
-urlpatterns = patterns(
-    'astakos.api',
-    url(r'^get_services/?$', 'get_services'),
-)
 
-urlpatterns += patterns(
+urlpatterns = patterns(
     'astakos.api.quotas',
     url(r'^quotas/?$', 'quotas', name="astakos-api-quotas"),
     url(r'^service_quotas/?$', 'service_quotas'),

@@ -702,6 +702,31 @@ class NetworkInterface(models.Model):
         return '%s@%s' % (self.machine.name, self.network.name)
 
 
+class FloatingIP(models.Model):
+    userid = models.CharField("UUID of the owner", max_length=128,
+                              null=False, db_index=True)
+    ipv4 = models.IPAddressField(null=False, unique=True, db_index=True)
+    network = models.ForeignKey(Network, related_name="floating_ips",
+                                null=False)
+    machine = models.ForeignKey(VirtualMachine, related_name="floating_ips",
+                                null=True)
+    created = models.DateTimeField(auto_now_add=True)
+    deleted = models.BooleanField(default=False, null=False)
+    serial = models.ForeignKey(QuotaHolderSerial,
+                               related_name="floating_ips", null=True)
+
+    objects = ForUpdateManager()
+
+    def __unicode__(self):
+        return "<%s@%s>" % (self.ipv4, self.network.id)
+
+    def in_use(self):
+        if self.machine is None:
+            return False
+        else:
+            return (not self.machine.deleted)
+
+
 class PoolTable(models.Model):
     available_map = models.TextField(default="", null=False)
     reserved_map = models.TextField(default="", null=False)

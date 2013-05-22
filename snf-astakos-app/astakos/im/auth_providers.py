@@ -64,6 +64,8 @@ class AuthProviderBase(type):
             if type_id:
                 include = True
             if type_id in astakos_settings.IM_MODULES:
+                if astakos_settings.IM_MODULES.index(type_id) == 0:
+                    dct['is_primary'] = True
                 dct['module_enabled'] = True
 
         newcls = super(AuthProviderBase, cls).__new__(cls, name, bases, dct)
@@ -80,6 +82,7 @@ class AuthProvider(object):
 
     module = None
     module_enabled = False
+    is_primary = False
 
     message_tpls = OrderedDict((
         ('title', '{module_title}'),

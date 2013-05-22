@@ -25,7 +25,7 @@
 {% for provider_obj in auth_providers %}
 	{% if provider_obj.get_create_policy %}
 		{% if provider_obj.module == 'local' %}
-			<a href="#" class="submit standalone" id="signup-classic">CLASSIC</a>
+        <a href="#" class="submit standalone {{ provider_obj.module }}-provider" id="signup-classic">CLASSIC</a>
             {% if "local" in im_modules %}
             {% include "im/auth/signup_form.html" %}
 		    {% endif %}

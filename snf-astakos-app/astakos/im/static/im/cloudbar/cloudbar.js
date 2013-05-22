@@ -59,7 +59,11 @@ $(document).ready(function(){
             var title = el.cloudbar.name || el.verbose_name || el.name;
             if (!el.cloudbar.show) { return }
             if (el.cloudbar.icon) {
-                slink.append($('<img alt="'+title+'" src="'+el.cloudbar.icon+'"/>'));
+                var iconloc = el.cloudbar.icon;
+                if (el.cloudbar.icon.substring(0, 4) != 'http') {
+                  iconloc = cssloc + el.cloudbar.icon;
+                }
+                slink.append($('<img alt="'+title+'" src="'+iconloc+'"/>'));
                 slink.addClass("with-icon");
             } else {
                 slink.html(title);

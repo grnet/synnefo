@@ -96,6 +96,16 @@ class GetDBHoldingsTestCase(TestCase):
         holdings = util.get_db_holdings()
         self.assertEqual(holdings["user2"], user_holdings["user2"])
 
+    def test_floating_ip_holdings(self):
+        mfactory.FloatingIPFactory(userid="user1")
+        mfactory.FloatingIPFactory(userid="user1")
+        mfactory.FloatingIPFactory(userid="user2")
+        mfactory.FloatingIPFactory(userid="user3")
+        holdings = util.get_db_holdings()
+        self.assertEqual(holdings["user1"]["cyclades.floating_ip"], 2)
+        self.assertEqual(holdings["user2"]["cyclades.floating_ip"], 1)
+        self.assertEqual(holdings["user3"]["cyclades.floating_ip"], 1)
+
 
 @patch("synnefo.quotas.get_quotaholder_pending")
 class ResolvePendingTestCase(TestCase):

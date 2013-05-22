@@ -31,7 +31,8 @@ from django.utils import simplejson as json
 from django.db import transaction
 
 from snf_django.lib.api import faults
-from synnefo.db.models import QuotaHolderSerial, VirtualMachine, Network
+from synnefo.db.models import (QuotaHolderSerial, VirtualMachine, Network,
+                               FloatingIP)
 
 from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
                               ASTAKOS_BASE_URL)
@@ -50,7 +51,8 @@ RESOURCES = [
     "cyclades.disk",
     "cyclades.ram",
     "cyclades.active_ram",
-    "cyclades.network.private"
+    "cyclades.network.private",
+    "cyclades.floating_ip",
 ]
 
 
@@ -194,7 +196,8 @@ def render_overlimit_exception(e):
     resource_name = {"vm": "Virtual Machine",
                      "cpu": "CPU",
                      "ram": "RAM",
-                     "network.private": "Private Network"}
+                     "network.private": "Private Network",
+                     "floating_ip": "Floating IP address"}
     details = json.loads(e.details)
     data = details['overLimit']['data']
     usage = data["usage"]
@@ -291,6 +294,8 @@ def prepare_qh_resources(resource):
                 'cyclades.active_ram': 1048576 * flavor.ram}
     elif isinstance(resource, Network):
         return {"cyclades.network.private": 1}
+    elif isinstance(resource, FloatingIP):
+        return {"cyclades.floating_ip": 1}
     else:
         raise ValueError("Unknown Resource '%s'" % resource)
 

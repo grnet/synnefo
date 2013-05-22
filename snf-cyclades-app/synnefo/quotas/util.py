@@ -33,7 +33,7 @@
 
 from django.db.models import Sum, Count, Q
 
-from synnefo.db.models import VirtualMachine, Network
+from synnefo.db.models import VirtualMachine, Network, FloatingIP
 from synnefo.quotas import Quotaholder, ASTAKOS_TOKEN
 
 
@@ -43,10 +43,12 @@ def get_db_holdings(user=None):
 
     vms = VirtualMachine.objects.filter(deleted=False)
     networks = Network.objects.filter(deleted=False)
+    floating_ips = FloatingIP.objects.filter(deleted=False)
 
     if user is not None:
         vms = vms.filter(userid=user)
         networks = networks.filter(userid=user)
+        floating_ips = floating_ips.filter(userid=user)
 
     # Get resources related with VMs
     vm_resources = vms.values("userid").annotate(num=Count("id"),
@@ -60,7 +62,7 @@ def get_db_holdings(user=None):
            .annotate(active_ram=Sum("flavor__ram"),
                      active_cpu=Sum("flavor__cpu"))
 
-    for vm_res in vm_resources:
+    for vm_res in vm_resources.iterator():
         user = vm_res['userid']
         res = {"cyclades.vm": vm_res["num"],
                "cyclades.cpu": vm_res["cpu"],
@@ -68,7 +70,7 @@ def get_db_holdings(user=None):
                "cyclades.ram": 1048576 * vm_res["ram"]}
         holdings[user] = res
 
-    for vm_res in vm_active_resources:
+    for vm_res in vm_active_resources.iterator():
         user = vm_res['userid']
         holdings[user]["cyclades.active_cpu"] = vm_res["active_cpu"]
         holdings[user]["cyclades.active_ram"] = 1048576 * vm_res["active_ram"]
@@ -76,11 +78,17 @@ def get_db_holdings(user=None):
     # Get resources related with networks
     net_resources = networks.values("userid")\
                             .annotate(num=Count("id"))
-    for net_res in net_resources:
+    for net_res in net_resources.iterator():
         user = net_res['userid']
-        if user not in holdings:
-            holdings[user] = {}
+        holdings.setdefault(user, {})
         holdings[user]["cyclades.network.private"] = net_res["num"]
+
+    floating_ips_resources = floating_ips.values("userid")\
+                                         .annotate(num=Count("id"))
+    for floating_ip_res in floating_ips_resources.iterator():
+        user = floating_ip_res["userid"]
+        holdings.setdefault(user, {})
+        holdings[user]["cyclades.floating_ip"] = floating_ip_res["num"]
 
     return holdings
 

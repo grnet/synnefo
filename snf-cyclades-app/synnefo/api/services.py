@@ -91,6 +91,12 @@ cyclades_services = {
                 "service_type": "compute",
                 "service_origin": "cyclades_compute",
             },
+            'floating_ip': {
+                "name": "cyclades.floating_ip",
+                "desc": "Number of Floating IP addresses",
+                "service_type": "compute",
+                "service_origin": "cyclades_compute",
+            },
         },
     },
 

@@ -31,24 +31,44 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from optparse import make_option
 from astakos.im.models import Resource
 from synnefo.webproject.management.commands import ListCommand
+from ._common import show_resource_value, style_options, check_style
 
 
 class Command(ListCommand):
     help = "List resources"
     object_class = Resource
 
+    option_list = ListCommand.option_list + (
+        make_option('--unit-style',
+                    default='mb',
+                    help=("Specify display unit for resource values "
+                          "(one of %s); defaults to mb") % style_options),
+    )
+
     FIELDS = {
         "id": ("id", "ID"),
         "name": ("name", "Resource Name"),
         "service": ("service", "Service"),
-        "unit": ("unit", "Unit"),
-        "limit": ("uplimit", "Base Quota"),
+        "limit": ("limit_with_unit", "Base Quota"),
         "description": ("desc", "Description"),
         "allow_in_projects": ("allow_in_projects",
                               "Make resource available in projects"),
     }
 
-    fields = ["id", "name", "service", "unit", "limit", "allow_in_projects",
+    fields = ["id", "name", "service", "limit", "allow_in_projects",
               "description"]
+
+    def show_limit(self, resource):
+        limit = resource.uplimit
+        return show_resource_value(limit, resource.name, self.unit_style)
+
+    def handle_args(self, *args, **options):
+        self.unit_style = options['unit_style']
+        check_style(self.unit_style)
+
+    def handle_db_objects(self, rows, *args, **kwargs):
+        for resource in rows:
+            resource.limit_with_unit = self.show_limit(resource)

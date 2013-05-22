@@ -41,7 +41,7 @@ from synnefo.lib.ordereddict import OrderedDict
 from synnefo.webproject.management.commands import SynnefoCommand
 from synnefo.webproject.management import utils
 
-from ._common import format, show_quotas
+from ._common import format, show_quotas, style_options, check_style
 
 import uuid
 
@@ -56,6 +56,10 @@ class Command(SynnefoCommand):
                     dest='list_quotas',
                     default=False,
                     help="Also list user quota"),
+        make_option('--unit-style',
+                    default='mb',
+                    help=("Specify display unit for resource values "
+                          "(one of %s); defaults to mb") % style_options),
         make_option('--projects',
                     action='store_true',
                     dest='list_projects',
@@ -122,10 +126,14 @@ class Command(SynnefoCommand):
                                options["output_format"], vertical=True)
 
             if options["list_quotas"]:
+                unit_style = options["unit_style"]
+                check_style(unit_style)
+
                 quotas, initial = list_user_quotas([user])
                 if quotas:
                     self.stdout.write("\n")
-                    print_data, labels = show_quotas(quotas, initial)
+                    print_data, labels = show_quotas(quotas, initial,
+                                                     style=unit_style)
                     utils.pprint_table(self.stdout, print_data, labels,
                                        options["output_format"],
                                        title="User Quota")

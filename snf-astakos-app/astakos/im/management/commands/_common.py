@@ -41,8 +41,10 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import FieldError
 from django.core.management import CommandError
 
+from synnefo.util import units
 from synnefo.lib.ordereddict import OrderedDict
 from astakos.im.models import AstakosUser
+from astakos.im.resources import get_resources
 
 DEFAULT_CONTENT_TYPE = None
 
@@ -236,7 +238,32 @@ def is_email(s):
         return True
 
 
-def show_quotas(qh_quotas, astakos_initial, info=None):
+style_options = ', '.join(units.STYLES)
+
+
+def check_style(style):
+    if style not in units.STYLES:
+        m = "Invalid unit style. Valid ones are %s." % style_options
+        raise CommandError(m)
+
+
+class ResourceDict(object):
+    _object = None
+
+    @classmethod
+    def get(cls):
+        if cls._object is None:
+            cls._object = get_resources()
+        return cls._object
+
+
+def show_resource_value(number, resource, style):
+    resource_dict = ResourceDict.get()
+    unit = resource_dict[resource]['unit']
+    return units.show(number, unit, style)
+
+
+def show_quotas(qh_quotas, astakos_initial, info=None, style=None):
     labels = ('source', 'resource', 'base quota', 'total quota', 'usage')
     if info is not None:
         labels = ('uuid', 'email') + labels
@@ -251,8 +278,10 @@ def show_quotas(qh_quotas, astakos_initial, info=None):
             s_initial = h_initial.get(source) if h_initial else None
             for resource, values in source_quotas.iteritems():
                 initial = s_initial.get(resource) if s_initial else None
-                fields = (source, resource, initial,
-                          values['limit'], values['usage'])
+                initial = show_resource_value(initial, resource, style)
+                limit = show_resource_value(values['limit'], resource, style)
+                usage = show_resource_value(values['usage'], resource, style)
+                fields = (source, resource, initial, limit, usage)
                 if info is not None:
                     fields = (holder, email) + fields
 

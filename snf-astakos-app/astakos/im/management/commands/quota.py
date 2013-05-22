@@ -42,7 +42,7 @@ from astakos.im.management.commands._common import is_uuid, is_email
 from snf_django.lib.db.transaction import commit_on_success_strict
 from synnefo.webproject.management.commands import SynnefoCommand
 from synnefo.webproject.management import utils
-from ._common import show_quotas
+from ._common import show_quotas, style_options, check_style, units
 
 import logging
 logger = logging.getLogger(__name__)
@@ -57,6 +57,10 @@ class Command(SynnefoCommand):
                     dest='list',
                     default=False,
                     help="List all quota (default)"),
+        make_option('--unit-style',
+                    default='mb',
+                    help=("Specify display unit for resource values "
+                          "(one of %s); defaults to mb") % style_options),
         make_option('--verify',
                     action='store_true',
                     dest='verify',
@@ -77,7 +81,9 @@ class Command(SynnefoCommand):
                     help=("Import base quota from file. "
                           "The file must contain non-empty lines, and each "
                           "line must contain a single-space-separated list "
-                          "of values: <user> <resource name> <capacity>")
+                          "of values: <user> <resource name> <capacity>. "
+                          "Capacity can be followed by a unit with no "
+                          "separating space (e.g 10GB).")
                     ),
     )
 
@@ -95,9 +101,13 @@ class Command(SynnefoCommand):
                 raise CommandError(m)
             self.import_from_file(import_base_quota)
         else:
-            self.quotas(sync, verify, user_ident, options["output_format"])
+            unit_style = options["unit_style"]
+            check_style(unit_style)
 
-    def quotas(self, sync, verify, user_ident, output_format):
+            self.quotas(sync, verify, user_ident, options["output_format"],
+                        unit_style)
+
+    def quotas(self, sync, verify, user_ident, output_format, style):
         list_only = not sync and not verify
 
         if user_ident is not None:
@@ -112,7 +122,8 @@ class Command(SynnefoCommand):
             for user in users:
                 info[user.uuid] = user.email
 
-            print_data, labels = show_quotas(qh_quotas, astakos_i, info)
+            print_data, labels = show_quotas(qh_quotas, astakos_i, info,
+                                             style=style)
             utils.pprint_table(self.stdout, print_data, labels,
                                output_format)
 
@@ -186,6 +197,12 @@ class Command(SynnefoCommand):
                     user = t[0]
                     resource = t[1]
                     capacity = t[2]
+                    try:
+                        capacity = units.parse(capacity)
+                    except units.ParseError:
+                        m = ("Capacity should be an integer, optionally "
+                             "followed by a unit.")
+                        raise CommandError(m)
                 except(IndexError, TypeError):
                     self.stdout.write('Invalid line format: %s:\n' % t)
                     continue

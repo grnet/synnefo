@@ -39,10 +39,12 @@ from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 
+from synnefo.util import units
 from astakos.im.models import AstakosUser, Resource
 from astakos.im import quotas
 from astakos.im import activation_backends
-from ._common import remove_user_permission, add_user_permission, is_uuid
+from ._common import (remove_user_permission, add_user_permission, is_uuid,
+                      show_resource_value)
 from snf_django.lib.db.transaction import commit_on_success_strict
 
 activation_backend = activation_backends.get_backend()
@@ -290,10 +292,11 @@ class Command(BaseCommand):
             self.set_limit(user, resource, capacity, False)
 
     def set_limit(self, user, resource, capacity, force):
+        style = None
         if capacity != 'default':
             try:
-                capacity = int(capacity)
-            except ValueError:
+                capacity, style = units.parse_with_style(capacity)
+            except:
                 m = "Please specify capacity as a decimal integer or 'default'"
                 raise CommandError(m)
 
@@ -302,13 +305,16 @@ class Command(BaseCommand):
         except Resource.DoesNotExist:
             raise CommandError("No such resource: %s" % resource)
 
-        current = quota.capacity if quota is not None else 'default'
-
         if not force:
+            s_default = show_resource_value(default_capacity, resource, style)
+            s_current = (show_resource_value(quota.capacity, resource, style)
+                         if quota is not None else 'default')
+            s_capacity = (show_resource_value(capacity, resource, style)
+                          if capacity != 'default' else capacity)
             self.stdout.write("user: %s (%s)\n" % (user.uuid, user.username))
-            self.stdout.write("default capacity: %s\n" % default_capacity)
-            self.stdout.write("current capacity: %s\n" % current)
-            self.stdout.write("new capacity: %s\n" % capacity)
+            self.stdout.write("default capacity: %s\n" % s_default)
+            self.stdout.write("current capacity: %s\n" % s_current)
+            self.stdout.write("new capacity: %s\n" % s_capacity)
             self.stdout.write("Confirm? (y/n) ")
             response = raw_input()
             if string.lower(response) not in ['y', 'yes']:

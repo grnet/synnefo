@@ -37,6 +37,7 @@ from django.utils import simplejson as json
 
 from astakos.im.models import Resource
 from astakos.im.resources import update_resource
+from ._common import show_resource_value, style_options, check_style, units
 
 
 class Command(BaseCommand):
@@ -57,6 +58,10 @@ class Command(BaseCommand):
                     dest='from_file',
                     metavar='<limits_file.json>',
                     help="Read default base quotas from a json file"),
+        make_option('--unit-style',
+                    default='mb',
+                    help=("Specify display unit for resource values "
+                          "(one of %s); defaults to mb") % style_options),
     )
 
     def handle(self, *args, **options):
@@ -73,7 +78,11 @@ class Command(BaseCommand):
                 if key in actions and value is not None]
 
         if len(opts) != 1:
-            raise CommandError("Please provide exactly one option.")
+            raise CommandError("Please provide exactly one of the options: %s."
+                               % ", ".join(actions.keys()))
+
+        self.unit_style = options['unit_style']
+        check_style(self.unit_style)
 
         key, value = opts[0]
         action = actions[key]
@@ -123,26 +132,28 @@ class Command(BaseCommand):
         for resource in resources:
             self.stdout.write("Resource '%s' (%s)\n" %
                               (resource.name, resource.desc))
-            unit = (" in %s" % resource.unit) if resource.unit else ""
-            self.stdout.write("Current limit%s: %s\n"
-                              % (unit, resource.uplimit))
+            value = show_resource_value(resource.uplimit, resource.name,
+                                        self.unit_style)
+            self.stdout.write("Current limit: %s\n" % value)
             while True:
-                self.stdout.write("New limit%s (leave blank to keep current): "
-                                  % (unit))
+                self.stdout.write("New limit (leave blank to keep current): ")
                 response = raw_input()
                 if response == "":
                     break
                 else:
                     try:
-                        value = int(response)
-                    except ValueError:
+                        value = units.parse(response)
+                    except units.ParseError:
                         continue
                     update_resource(resource, value)
                     break
 
     def change_resource_limit(self, resource, limit):
-        try:
-            limit = int(limit)
-        except:
-            raise CommandError("Limit should be an integer.")
-        update_resource(resource, limit)
+        if not isinstance(limit, (int, long)):
+            try:
+                limit = units.parse(limit)
+            except units.ParseError:
+                m = ("Limit should be an integer, optionally followed "
+                     "by a unit.")
+                raise CommandError(m)
+            update_resource(resource, limit)

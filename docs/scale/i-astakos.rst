@@ -71,51 +71,6 @@ In `/etc/synnefo/astakos.conf` add:
     ASTAKOS_PASSWORD_RESET_EMAIL_SUBJECT = 'Password reset on %s' % ASTAKOS_SITENAME
 
     EMAIL_BACKEND = 'django.core.mail.backends.dummy.EmailBackend'
-    ASTAKOS_SERVICES = {
-        'cyclades': {
-            'url': 'https://cyclades.example.com/ui/',
-            'resources': [{
-                'name':'disk',
-                'group':'compute',
-                'uplimit':30*1024*1024*1024,
-                'unit':'bytes',
-                'desc': 'Virtual machine disk size'
-                },{
-                'name':'cpu',
-                'group':'compute',
-                'uplimit':6,
-                'desc': 'Number of virtual machine processors'
-                },{
-                'name':'ram',
-                'group':'compute',
-                'uplimit':6*1024*1024*1024,
-                'unit':'bytes',
-                'desc': 'Virtual machines'
-                },{
-                'name':'vm',
-                'group':'compute',
-                'uplimit':2,
-                'desc': 'Number of virtual machines'
-                },{
-                'name':'network.private',
-                'group':'network',
-                'uplimit':1,
-                'desc': 'Private networks'
-                }
-            ]
-        },
-        'pithos+': {
-            'url': 'https://pithos.example.com/ui/',
-            'resources':[{
-                'name':'diskspace',
-                'group':'storage',
-                'uplimit':5 * 1024 * 1024 * 1024,
-                'unit':'bytes',
-                'desc': 'Pithos account diskspace'
-                }]
-        }
-    }
-
 
 If ``astakos`` is on the same node with ``cyclades`` or ``pithos``, add the following
 line in `/etc/synnefo/astakos.conf` but please note that your setup will be prone to

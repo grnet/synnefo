@@ -40,11 +40,11 @@ from django.conf import settings
 
 from synnefo.lib import join_urls
 
-ASTAKOS_URL = getattr(settings, 'ASTAKOS_URL', None)
-USER_QUOTA_URL = join_urls(ASTAKOS_URL, "astakos/api/quotas")
-RESOURCES_URL = join_urls(ASTAKOS_URL, "astakos/api/resources")
-USER_CATALOG_URL = join_urls(ASTAKOS_URL, "astakos/api/user_catalogs")
-USER_FEEDBACK_URL = join_urls(ASTAKOS_URL, "astakos/api/feedback")
+ASTAKOS_BASE_URL = getattr(settings, 'ASTAKOS_BASE_URL', None)
+USER_QUOTA_URL = join_urls(ASTAKOS_BASE_URL, "astakos/api/quotas")
+RESOURCES_URL = join_urls(ASTAKOS_BASE_URL, "astakos/api/resources")
+USER_CATALOG_URL = join_urls(ASTAKOS_BASE_URL, "astakos/api/user_catalogs")
+USER_FEEDBACK_URL = join_urls(ASTAKOS_BASE_URL, "astakos/api/feedback")
 
 from objpool.http import PooledHTTPConnection
 

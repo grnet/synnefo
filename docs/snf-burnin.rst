@@ -23,9 +23,9 @@ Usage
 ::
 
   snf-burnin --token=TOKEN \
-             --api=CYCLADES_URL
-             --pithos=PITHOS_URL \
-             --astakos=ASTAKOS_URL \
+             --api=CYCLADES_BASE_URL
+             --pithos=PITHOS_BASE_URL \
+             --astakos=ASTAKOS_BASE_URL \
              --plankton=PLANKTON_URL \
              --plankton-user=PLANKTON_SYSTEM_USER \
              --image-id=IMAGE_ID \

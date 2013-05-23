@@ -46,6 +46,25 @@ The bulk of the upgrade to v0.14 is about resource and quota migrations.
     cyclades-host$ snf-manage migrate
 
 
+2.3 Configure Base URL settings for all services
+------------------------------------------------
+
+In order to make all services' URLs configurable and discoverable from
+a single endpoint in Astakos through the Openstack Keystone API,
+every service has a ``XXXXX_BASE_URL`` setting, or it's old corresponding
+setting was renamed to this. Therefore:
+
+* Rename ``ASTAKOS_URL`` setting to ``ASTAKOS_BASE_URL``
+  everywhere in your settings, in all nodes and all config files.
+  This must point to the top-level Astakos URL.
+
+* In Cyclades settings, rename the ``APP_INSTALL_URL`` setting
+  to ``CYCLADES_BASE_URL``. If no such setting has been configured,
+  you must set it. It must point to the top-level Cyclades URL.
+
+* In Pithos settings, introduce a ``PITHOS_BASE_URL`` setting.
+  It must point to the top-level Pithos URL.
+
 3 Quota-related steps
 =====================
 

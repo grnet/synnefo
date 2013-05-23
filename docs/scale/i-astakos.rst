@@ -44,7 +44,7 @@ In `/etc/synnefo/astakos.conf` add:
 
     ASTAKOS_IM_MODULES = ['local']
 
-    ASTAKOS_BASEURL = 'https://accounts.example.com'
+    ASTAKOS_BASE_URL = 'https://accounts.example.com'
 
     ASTAKOS_SITENAME = '~okeanos @ example.com'
     ASTAKOS_RECAPTCHA_PUBLIC_KEY = '6LeFidMSAAAAAM7Px7a96YQzsBcKYeXCI_sFz0Gk'

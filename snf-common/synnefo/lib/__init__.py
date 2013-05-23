@@ -31,6 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.
 
+from urlparse import urlparse
+
 
 def join_urls(a, b):
     """
@@ -55,6 +57,25 @@ def join_urls(a, b):
 
     """
     return a.rstrip("/") + "/" + b.lstrip("/")
+
+
+def parse_base_url(base_url):
+    """
+    >>> parse_base_url("https://one.two.three/four/five")
+    ('https://one.two.three', '/four/five')
+    >>> parse_base_url("https://one.two.three/four/five/")
+    ('https://one.two.three', '/four/five/')
+    >>> parse_base_url("https://one.two.three/")
+    ('https://one.two.three', '/')
+    >>> parse_base_url("https://one.two.three")
+    ('https://one.two.three', '/')
+
+    """
+    parsed = urlparse(base_url)
+    base_path = parsed.path.strip('/')
+    base_host = parsed.scheme + '://' + parsed.netloc
+    return base_host, base_path
+
 
 if __name__ == "__main__":
     import doctest

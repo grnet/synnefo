@@ -1,8 +1,24 @@
 #coding=utf8
 from django.conf import settings
+from synnefo.lib import parse_base_url
 
-ASTAKOS_URL = getattr(settings, "ASTAKOS_URL",
-                      "https://accounts.example.synnefo.org/")
+# Top-level URL for Pithos. Must set.
+BASE_URL = getattr(settings, 'PITHOS_BASE_URL',
+                   "https://pithos.example.synnefo.org/")
+
+BASE_HOST, BASE_PATH = parse_base_url(BASE_URL)
+
+ASTAKOS_BASE_URL = getattr(settings, 'ASTAKOS_BASE_URL',
+                           "https://accounts.example.synnefo.org/")
+
+ASTAKOS_BASE_HOST, ASTAKOS_BASE_PATH = parse_base_url(ASTAKOS_BASE_URL)
+
+BASE_ASTAKOS_PROXY_PATH = getattr(settings, 'PITHOS_BASE_ASTAKOS_PROXY_PATH',
+                                  ASTAKOS_BASE_PATH)
+
+ASTAKOS_ACCOUNTS_PREFIX = getattr(settings, 'ASTAKOS_ACCOUNTS_PREFIX',
+                                  'accounts')
+
 ASTAKOSCLIENT_POOLSIZE = getattr(settings, 'PITHOS_ASTAKOSCLIENT_POOLSIZE', 200)
 
 COOKIE_NAME = getattr(settings, 'PITHOS_ASTAKOS_COOKIE_NAME', '_pithos2_a')

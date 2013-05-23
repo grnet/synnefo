@@ -105,3 +105,12 @@ def get_request_dict(request):
             raise faults.BadRequest("Invalid JSON data")
     else:
         raise faults.BadRequest("Unsupported Content-type: '%s'" % content_type)
+
+
+def prefix_pattern(prefix):
+    """Return a reliable urls.py pattern from a prefix"""
+    prefix = prefix.strip('/')
+    if prefix:
+        prefix += '/'
+    pattern = '^' + prefix
+    return pattern

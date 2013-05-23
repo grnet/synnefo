@@ -34,6 +34,8 @@
 
 import os
 
+from urlparse import urlparse
+
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from django.template import loader
@@ -49,17 +51,38 @@ from synnefo.util.version import get_component_version
 from synnefo.lib import join_urls
 
 from snf_django.lib.astakos import get_user
+from synnefo import cyclades_settings
 
 SYNNEFO_JS_LIB_VERSION = get_component_version('app')
+PROXY_USER_SERVICES = getattr(settings, 'CYCLADES_PROXY_USER_SERVICES', True)
+
+
+# resolve astakos base url to be used by ui
+UI_ASTAKOS_BASE_HREF = cyclades_settings.ASTAKOS_BASE_URL
+if PROXY_USER_SERVICES:
+    UI_ASTAKOS_BASE_HREF = \
+        '/' + cyclades_settings.BASE_ASTAKOS_PROXY_PATH.lstrip('/')
+
+UI_ASTAKOS_ACCOUNTS_HREF = join_urls(UI_ASTAKOS_BASE_HREF,
+                                     cyclades_settings.ASTAKOS_ACCOUNTS_PREFIX)
+
+UI_ASTAKOS_VIEWS_HREF = join_urls(UI_ASTAKOS_BASE_HREF,
+                                  cyclades_settings.ASTAKOS_VIEWS_PREFIX)
+
+UI_ASTAKOS_KEYSTONE_HREF = join_urls(UI_ASTAKOS_BASE_HREF,
+                                     cyclades_settings.ASTAKOS_KEYSTONE_PREFIX)
 
 # api configuration
-COMPUTE_API_URL = getattr(settings, 'COMPUTE_API_URL', '/api/v1.1')
+api_path = join_urls(cyclades_settings.COMPUTE_PREFIX, 'v1.1').lstrip('/')
+api_path = '/' + join_urls(cyclades_settings.BASE_PATH, api_path).lstrip('/')
+COMPUTE_API_HREF = getattr(settings, 'COMPUTE_API_URL', api_path)
 
 # UI preferences settings
 TIMEOUT = getattr(settings, "TIMEOUT", 10000)
 UPDATE_INTERVAL = getattr(settings, "UI_UPDATE_INTERVAL", 5000)
 CHANGES_SINCE_ALIGNMENT = getattr(settings, "UI_CHANGES_SINCE_ALIGNMENT", 0)
-UPDATE_INTERVAL_INCREASE = getattr(settings, "UI_UPDATE_INTERVAL_INCREASE", 500)
+UPDATE_INTERVAL_INCREASE = getattr(settings, "UI_UPDATE_INTERVAL_INCREASE",
+                                   500)
 UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT = \
     getattr(settings, "UI_UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT", 3)
 UPDATE_INTERVAL_FAST = getattr(settings, "UI_UPDATE_INTERVAL_FAST", 2500)
@@ -84,8 +107,15 @@ IMAGE_DELETED_SIZE_TITLE = \
 SUPPORT_SSH_OS_LIST = getattr(settings, "UI_SUPPORT_SSH_OS_LIST",)
 OS_CREATED_USERS = getattr(settings, "UI_OS_DEFAULT_USER_MAP")
 UNKNOWN_OS = getattr(settings, "UI_UNKNOWN_OS", "unknown")
-LOGOUT_URL = getattr(settings, "UI_LOGOUT_URL", '/im/authenticate')
-LOGIN_URL = getattr(settings, "UI_LOGIN_URL", '/im/login')
+
+LOGOUT_PATH = join_urls(cyclades_settings.ASTAKOS_ACCOUNTS_PREFIX,
+                        getattr(settings, "UI_LOGOUT_PATH", 'authenticate'))
+LOGOUT_URL = join_urls(cyclades_settings.ASTAKOS_BASE_URL, LOGOUT_PATH)
+
+LOGIN_PATH = join_urls(cyclades_settings.ASTAKOS_VIEWS_PREFIX,
+                       getattr(settings, "UI_LOGIN_PATH", 'login'))
+LOGIN_URL = join_urls(cyclades_settings.ASTAKOS_BASE_URL, LOGIN_PATH)
+
 AUTH_COOKIE_NAME = getattr(settings, "UI_AUTH_COOKIE_NAME", 'synnefo_user')
 
 # UI behaviour settings
@@ -130,7 +160,11 @@ UI_SYNNEFO_JS_WEB_URL = \
 
 # extensions
 ENABLE_GLANCE = getattr(settings, 'UI_ENABLE_GLANCE', True)
-GLANCE_API_URL = getattr(settings, 'UI_GLANCE_API_URL', '/glance')
+glance_path = join_urls(cyclades_settings.BASE_PATH,
+                        cyclades_settings.PLANKTON_PREFIX)
+glance_path = '/' + glance_path.lstrip('/')
+GLANCE_API_HREF = getattr(settings, 'UI_GLANCE_API_URL', glance_path)
+
 DIAGNOSTICS_UPDATE_INTERVAL = \
     getattr(settings, 'UI_DIAGNOSTICS_UPDATE_INTERVAL', 2000)
 
@@ -161,14 +195,16 @@ GROUP_PUBLIC_NETWORKS = getattr(settings, 'UI_GROUP_PUBLIC_NETWORKS', True)
 GROUPED_PUBLIC_NETWORK_NAME = \
     getattr(settings, 'UI_GROUPED_PUBLIC_NETWORK_NAME', 'Internet')
 
-ASTAKOS_BASE_URL = '/'
-ASTAKOS_API_URL = join_urls(ASTAKOS_BASE_URL, 'astakos/api')
+USER_CATALOG_PATH = getattr(settings, 'UI_USER_CATALOG_PATH', 'user_catalogs')
+USER_CATALOG_HREF = join_urls(UI_ASTAKOS_ACCOUNTS_HREF, USER_CATALOG_PATH)
 
-USER_CATALOG_URL = getattr(settings, 'UI_USER_CATALOG_URL',
-                           join_urls(ASTAKOS_API_URL, 'user_catalogs'))
-FEEDBACK_POST_URL = getattr(settings, 'UI_FEEDBACK_POST_URL',
-                            join_urls(ASTAKOS_API_URL, 'feedback'))
-ACCOUNTS_API_URL = getattr(settings, 'UI_ACCOUNTS_API_URL', ASTAKOS_API_URL)
+FEEDBACK_POST_PATH = getattr(settings, 'UI_FEEDBACK_POST_PATH', 'feedback')
+FEEDBACK_POST_HREF = join_urls(UI_ASTAKOS_ACCOUNTS_HREF, FEEDBACK_POST_PATH)
+
+
+ACCOUNTS_API_VERSION = getattr(settings, 'UI_ACCOUNTS_API_VERSION', '')
+ACCOUNTS_API_HREF = join_urls(UI_ASTAKOS_ACCOUNTS_HREF, ACCOUNTS_API_VERSION)
+
 TRANSLATE_UUIDS = not getattr(settings, 'TRANSLATE_UUIDS', False)
 
 
@@ -195,10 +231,10 @@ def home(request):
                'project': '+nefo',
                'request': request,
                'current_lang': get_language() or 'en',
-               'compute_api_url': json.dumps(COMPUTE_API_URL),
-               'user_catalog_url': json.dumps(USER_CATALOG_URL),
-               'feedback_post_url': json.dumps(FEEDBACK_POST_URL),
-               'accounts_api_url': json.dumps(ACCOUNTS_API_URL),
+               'compute_api_url': json.dumps(COMPUTE_API_HREF),
+               'user_catalog_url': json.dumps(USER_CATALOG_HREF),
+               'feedback_post_url': json.dumps(FEEDBACK_POST_HREF),
+               'accounts_api_url': json.dumps(ACCOUNTS_API_HREF),
                'translate_uuids': json.dumps(TRANSLATE_UUIDS),
                # update interval settings
                'update_interval': UPDATE_INTERVAL,
@@ -228,7 +264,7 @@ def home(request):
                'os_created_users': json.dumps(OS_CREATED_USERS),
                'userdata_keys_limit': json.dumps(MAX_SSH_KEYS_PER_USER),
                'use_glance': json.dumps(ENABLE_GLANCE),
-               'glance_api_url': json.dumps(GLANCE_API_URL),
+               'glance_api_url': json.dumps(GLANCE_API_HREF),
                'system_images_owners': json.dumps(SYSTEM_IMAGES_OWNERS),
                'custom_image_help_url': CUSTOM_IMAGE_HELP_URL,
                'image_deleted_title': json.dumps(IMAGE_DELETED_TITLE),

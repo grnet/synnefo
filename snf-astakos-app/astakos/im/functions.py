@@ -81,7 +81,8 @@ def send_verification(user, template_name='im/activation_email.txt'):
     """
     Send email to user to verify his/her email and activate his/her account.
     """
-    url = join_urls(settings.BASEURL, user.get_activation_url(nxt=reverse('index')))
+    url = join_urls(settings.BASE_HOST,
+                    user.get_activation_url(nxt=reverse('index')))
     message = render_to_string(template_name, {
                                'user': user,
                                'url': url,

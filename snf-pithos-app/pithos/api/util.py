@@ -54,7 +54,7 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_QUEUE_EXCHANGE,
                                  ASTAKOSCLIENT_POOLSIZE,
                                  SERVICE_TOKEN,
-                                 ASTAKOS_URL,
+                                 ASTAKOS_BASE_URL,
                                  BACKEND_ACCOUNT_QUOTA, BACKEND_CONTAINER_QUOTA,
                                  BACKEND_VERSIONING,
                                  BACKEND_FREE_VERSIONING, BACKEND_POOL_SIZE,
@@ -284,7 +284,8 @@ def is_uuid(str):
 ##########################
 
 def retrieve_displayname(token, uuid, fail_silently=True):
-    astakos = AstakosClient(ASTAKOS_URL, retry=2, use_pool=True, logger=logger)
+    astakos = AstakosClient(ASTAKOS_BASE_URL, retry=2, use_pool=True,
+                            logger=logger)
     try:
         displayname = astakos.get_username(token, uuid)
     except NoUserName:
@@ -297,7 +298,8 @@ def retrieve_displayname(token, uuid, fail_silently=True):
 
 
 def retrieve_displaynames(token, uuids, return_dict=False, fail_silently=True):
-    astakos = AstakosClient(ASTAKOS_URL, retry=2, use_pool=True, logger=logger)
+    astakos = AstakosClient(ASTAKOS_BASE_URL, retry=2, use_pool=True,
+                            logger=logger)
     catalog = astakos.get_usernames(token, uuids) or {}
     missing = list(set(uuids) - set(catalog))
     if missing and not fail_silently:
@@ -309,7 +311,8 @@ def retrieve_uuid(token, displayname):
     if is_uuid(displayname):
         return displayname
 
-    astakos = AstakosClient(ASTAKOS_URL, retry=2, use_pool=True, logger=logger)
+    astakos = AstakosClient(ASTAKOS_BASE_URL, retry=2, use_pool=True,
+                            logger=logger)
     try:
         uuid = astakos.get_uuid(token, displayname)
     except NoUUID:
@@ -318,7 +321,8 @@ def retrieve_uuid(token, displayname):
 
 
 def retrieve_uuids(token, displaynames, return_dict=False, fail_silently=True):
-    astakos = AstakosClient(ASTAKOS_URL, retry=2, use_pool=True, logger=logger)
+    astakos = AstakosClient(ASTAKOS_BASE_URL, retry=2, use_pool=True,
+                            logger=logger)
     catalog = astakos.get_uuids(token, displaynames) or {}
     missing = list(set(displaynames) - set(catalog))
     if missing and not fail_silently:
@@ -991,7 +995,7 @@ _pithos_backend_pool = PithosBackendPool(
         queue_module=BACKEND_QUEUE_MODULE,
         queue_hosts=BACKEND_QUEUE_HOSTS,
         queue_exchange=BACKEND_QUEUE_EXCHANGE,
-        astakos_url=ASTAKOS_URL,
+        astakos_url=ASTAKOS_BASE_URL,
         service_token=SERVICE_TOKEN,
         astakosclient_poolsize=ASTAKOSCLIENT_POOLSIZE,
         free_versioning=BACKEND_FREE_VERSIONING,
@@ -1042,7 +1046,8 @@ def update_response_headers(request, response):
 
 def get_pithos_usage(token):
     """Get Pithos Usage from astakos."""
-    astakos = AstakosClient(ASTAKOS_URL, retry=2, use_pool=True, logger=logger)
+    astakos = AstakosClient(ASTAKOS_BASE_URL, retry=2, use_pool=True,
+                            logger=logger)
     quotas = astakos.get_quotas(token)['system']
     pithos_resources = [r['name'] for r in resources]
     map(quotas.pop, filter(lambda k: k not in pithos_resources, quotas.keys()))
@@ -1054,7 +1059,7 @@ def api_method(http_method=None, user_required=True, logger=None,
     def decorator(func):
         @api.api_method(http_method=http_method, user_required=user_required,
                         logger=logger, format_allowed=format_allowed,
-                        astakos_url=ASTAKOS_URL)
+                        astakos_url=ASTAKOS_BASE_URL)
         @wraps(func)
         def wrapper(request, *args, **kwargs):
             # The args variable may contain up to (account, container, object).

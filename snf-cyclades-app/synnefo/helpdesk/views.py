@@ -113,7 +113,7 @@ def helpdesk_user_required(func, permitted_groups=PERMITTED_GROUPS):
             raise Http404
 
         token = get_token_from_cookie(request, AUTH_COOKIE_NAME)
-        astakos.get_user(request, settings.ASTAKOS_URL,
+        astakos.get_user(request, settings.ASTAKOS_BASE_URL,
                          fallback_token=token, logger=logger)
         if hasattr(request, 'user') and request.user:
             groups = request.user.get('groups', [])
@@ -200,8 +200,9 @@ def account(request, search_query):
             account = None
             search_query = vmid
 
-    astakos_client = astakosclient.AstakosClient(settings.ASTAKOS_URL, retry=2,
-                                                 use_pool=True, logger=logger)
+    astakos_client = astakosclient.AstakosClient(settings.ASTAKOS_BASE_URL,
+                                                 retry=2, use_pool=True,
+                                                 logger=logger)
 
     if is_uuid:
         account = search_query

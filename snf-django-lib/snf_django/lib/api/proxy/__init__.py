@@ -50,8 +50,16 @@ import urlparse
 EXCLUDE_HEADERS = ['Host', 'Cookie', 'Connection', 'X-Forwarded-Host']
 
 
-def proxy(request, target):
+def proxy(request, proxy_base=None, target_base=None):
     kwargs = {}
+
+    if None in (proxy_base, target_base):
+        m = "proxy() needs both proxy_base and target_base argument not None"
+        raise AssertionError(m)
+
+    parsed = urlparse.urlparse(target_base)
+    target_base = '/' + parsed.path.strip('/')
+    proxy_base = proxy_base.strip('/')
 
     # prepare headers
     headers = dict(map(lambda (k, v): fix_header(k, v),
@@ -75,9 +83,13 @@ def proxy(request, target):
     kwargs['headers'] = headers
     kwargs['body'] = request.raw_post_data
 
-    p = urlparse.urlparse(target)
-    path = join_urls(p.path, request.path)
-    with PooledHTTPConnection(p.netloc, p.scheme) as conn:
+    path = request.path.lstrip('/')
+    if path.startswith(proxy_base):
+        m = "request path '{0}' does not start with proxy_base '{1}'"
+        m = m.format(path, proxy_base)
+    path = path.replace(proxy_base, '', 1)
+    path = join_urls(target_base, path)
+    with PooledHTTPConnection(parsed.netloc, parsed.scheme) as conn:
         conn.request(
             request.method,
             '?'.join([path, urllib.urlencode(request.GET)]), **kwargs)

@@ -1,5 +1,16 @@
 from django.conf import settings
 from synnefo_branding import settings as synnefo_settings
+from synnefo.lib import parse_base_url
+
+BASE_URL = getattr(settings, 'ASTAKOS_BASE_URL',
+                   'https://accounts.example.synnefo.org')
+
+
+BASE_HOST, BASE_PATH = parse_base_url(BASE_URL)
+
+ACCOUNTS_PREFIX = getattr(settings, 'ASTAKOS_ACCOUNTS_PREFIX', 'accounts')
+VIEWS_PREFIX = getattr(settings, 'ASTAKOS_VIEWS_PREFIX', 'im')
+KEYSTONE_PREFIX = getattr(settings, 'ASTAKOS_ACCOUNTS_PREFIX', 'keystone')
 
 # Set the expiration time of newly created auth tokens
 # to be this many hours after their creation time.
@@ -45,7 +56,7 @@ IM_STATIC_URL = getattr(settings, 'ASTAKOS_IM_STATIC_URL', '/static/im/')
 MODERATION_ENABLED = getattr(settings, 'ASTAKOS_MODERATION_ENABLED', True)
 
 # Set baseurl
-BASEURL = getattr(settings, 'ASTAKOS_BASEURL', 'https://accounts.example.synnefo.org')
+BASEURL = getattr(settings, 'ASTAKOS_BASE_URL', 'https://accounts.example.synnefo.org')
 
 # Set service name
 SITENAME = getattr(settings, 'ASTAKOS_SITENAME', synnefo_settings.SERVICE_NAME)

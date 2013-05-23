@@ -32,17 +32,32 @@
 # or implied, of GRNET S.A.
 
 from django.conf.urls.defaults import include, patterns
+from synnefo.lib import join_urls
+from astakos.im.settings import (
+    BASE_PATH, ACCOUNTS_PREFIX, VIEWS_PREFIX, KEYSTONE_PREFIX
+)
+from snf_django.lib.api.utils import prefix_pattern
+
+astakos_patterns = patterns(
+    '',
+    (prefix_pattern(VIEWS_PREFIX), include('astakos.im.urls')),
+    (prefix_pattern(ACCOUNTS_PREFIX), include('astakos.api.urls')),
+    #(prefix_pattern(KEYSTONE_PREFIX), include('astakos.api.keystone_urls')),
+)
+
+# Compatibility: expose some API URLs at top-level
+compatibility_patterns = patterns(
+    'astakos',
+    (r'^login/?$', 'im.views.target.redirect.login'),
+    (r'^feedback/?$', 'api.user.send_feedback'),
+    (r'^user_catalogs/?$', 'api.user.get_uuid_displayname_catalogs'),
+    (r'^service/api/user_catalogs/?$',
+        'api.service.get_uuid_displayname_catalogs'),
+)
+
+astakos_patterns += compatibility_patterns
 
 urlpatterns = patterns(
     '',
-    (r'^im/', include('astakos.im.urls')),
-    (r'^astakos/api/', include('astakos.api.urls')),
-    (r'^login/?$', 'astakos.im.views.target.redirect.login')
-)
-
-urlpatterns += patterns(
-    'astakos.api',
-    (r'^feedback/?$', 'user.send_feedback'),
-    (r'^user_catalogs/?$', 'user.get_uuid_displayname_catalogs'),
-    (r'^service/api/user_catalogs/?$', 'service.get_uuid_displayname_catalogs')
+    (prefix_pattern(BASE_PATH), include(astakos_patterns)),
 )

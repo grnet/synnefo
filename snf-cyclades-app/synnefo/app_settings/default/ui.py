@@ -4,7 +4,7 @@
 ###################
 
 # API URL
-COMPUTE_API_URL = '/api/v1.1'
+#COMPUTE_API_URL = '/api/v1.1'
 
 # base url for ui static files
 # if not set, defaults to MEDIA_URL + 'snf-<latest_ui_version>/'
@@ -24,7 +24,7 @@ IMAGE_ICONS = ["redhat", "ubuntu", "debian", "windows", "gentoo", "archlinux",
 # How often should the UI request changes from the API
 UI_UPDATE_INTERVAL = 5000
 
-# Milieconds to increase the interval after 
+# Milieconds to increase the interval after
 # UI_UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT calls
 # of recurrent api requests
 UI_UPDATE_INTERVAL_INCREASE = UI_UPDATE_INTERVAL / 4
@@ -190,7 +190,7 @@ UI_GROUPED_PUBLIC_NETWORK_NAME = 'Internet'
 ###############
 
 # Glance images API endpoint
-UI_GLANCE_API_URL = '/plankton'
+#UI_GLANCE_API_URL = '/plankton'
 
 # Whether or not UI should display images from the Glance API
 # set in UI_GLANCE_API_URL, if setting is set to False, ui will

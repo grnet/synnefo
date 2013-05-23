@@ -581,10 +581,10 @@ For astakos specific configuration, edit the following options in
 
     ASTAKOS_COOKIE_DOMAIN = '.example.com'
 
-    ASTAKOS_BASEURL = 'https://node1.example.com'
+    ASTAKOS_BASE_URL = 'https://node1.example.com'
 
 The ``ASTAKOS_COOKIE_DOMAIN`` should be the base url of our domain (for all
-services). ``ASTAKOS_BASEURL`` is the astakos home page.
+services). ``ASTAKOS_BASE_URL`` is the astakos top-level URL.
 
 ``ASTAKOS_DEFAULT_ADMIN_EMAIL`` refers to the administrator's email.
 Every time a new account is created a notification is sent to this email.
@@ -834,7 +834,7 @@ this options:
 
 .. code-block:: console
 
-   ASTAKOS_URL = 'https://node1.example.com/'
+   ASTAKOS_BASE_URL = 'https://node1.example.com/'
 
    PITHOS_BACKEND_DB_CONNECTION = 'postgresql://synnefo:example_passw0rd@node1.example.com:5432/snf_pithos'
    PITHOS_BACKEND_BLOCK_PATH = '/srv/pithos/data'
@@ -857,8 +857,8 @@ the Pithos backend data. Above we tell Pithos to store its data under
 ``/srv/pithos/data``, which is visible by both nodes. We have already setup this
 directory at node1's "Pithos data directory setup" section.
 
-The ``ASTAKOS_URL`` option tells to the Pithos app in which URI
-is available the astakos authentication api.
+The ``ASTAKOS_BASE_URL`` option informs the Pithos app where Astakos is.
+The Astakos service is used for user management (authentication, quotas, etc.)
 
 The ``PITHOS_SERVICE_TOKEN`` should be the Pithos token returned by running on
 the Astakos node (node1 in our case):
@@ -1682,14 +1682,17 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-api.conf``:
 
 .. code-block:: console
 
-   ASTAKOS_URL = 'https://node1.example.com/'
+   CYCLADES_BASE_URL = 'https://node1.example.com/cyclades'
+   ASTAKOS_BASE_URL = 'https://node1.example.com/astakos'
 
    # Set to False if astakos & cyclades are on the same host
    CYCLADES_PROXY_USER_SERVICES = False
 
-The ``ASTAKOS_URL`` denotes the authentication endpoint for Cyclades and is set
-to point to Astakos (this should have the same value with Pithos's
-``ASTAKOS_URL``, setup :ref:`previously <conf-pithos>`).
+The ``ASTAKOS_BASE_URL`` denotes the Astakos endpoint for Cyclades,
+which is used for all user management, including authentication.
+Since our Astakos, Cyclades, and Pithos installations belong together,
+they should all have identical ``ASTAKOS_BASE_URL`` setting
+(see also, :ref:`previously <conf-pithos>`).
 
 .. warning::
 

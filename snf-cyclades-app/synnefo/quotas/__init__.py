@@ -34,7 +34,7 @@ from snf_django.lib.api import faults
 from synnefo.db.models import QuotaHolderSerial, VirtualMachine, Network
 
 from synnefo.settings import (CYCLADES_ASTAKOS_SERVICE_TOKEN as ASTAKOS_TOKEN,
-                              ASTAKOS_URL)
+                              ASTAKOS_BASE_URL)
 from astakosclient import AstakosClient
 from astakosclient.errors import AstakosClientException, QuotaLimit
 from functools import wraps
@@ -59,7 +59,7 @@ class Quotaholder(object):
     def get(cls):
         if cls._object is None:
             cls._object = AstakosClient(
-                ASTAKOS_URL,
+                ASTAKOS_BASE_URL,
                 use_pool=True,
                 logger=log)
         return cls._object

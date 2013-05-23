@@ -61,7 +61,7 @@ from pithos.api.util import (
 )
 
 from pithos.api.settings import (UPDATE_MD5, TRANSLATE_UUIDS,
-                                 SERVICE_TOKEN, ASTAKOS_URL)
+                                 SERVICE_TOKEN, ASTAKOS_BASE_URL)
 
 from pithos.backends.base import (
     NotAllowedError, QuotaError, ContainerNotEmpty, ItemNotExists,
@@ -77,7 +77,7 @@ logger = logging.getLogger(__name__)
 
 def get_uuids(names):
     try:
-        astakos = AstakosClient(ASTAKOS_URL, retry=2,
+        astakos = AstakosClient(ASTAKOS_BASE_URL, retry=2,
                                 use_pool=True, logger=logger)
         uuids = astakos.service_get_uuids(SERVICE_TOKEN, names)
     except Exception, e:

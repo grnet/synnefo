@@ -56,7 +56,7 @@ In `/etc/synnefo/pithos.conf` add:
 
 .. code-block:: console
 
-    ASTAKOS_URL = 'https:/accounts.example.com/'
+    ASTAKOS_BASE_URL = 'https://accounts.example.com/'
 
     PITHOS_BACKEND_DB_CONNECTION = 'postgresql://synnefo:example_passw0rd@db.example.com:5432/snf_pithos'
     PITHOS_BACKEND_BLOCK_PATH = '/srv/pithos/data'

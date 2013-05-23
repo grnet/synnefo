@@ -99,6 +99,7 @@ class Service(models.Model):
     url = models.CharField(_('Service url'), max_length=255, null=True,
                            help_text=_("URL the service is accessible from"))
     api_url = models.CharField(_('Service API url'), max_length=255, null=True)
+    type = models.CharField(_('Type'), max_length=255, null=True, blank='True')
     auth_token = models.CharField(_('Authentication Token'), max_length=32,
                                   null=True, blank=True)
     auth_token_created = models.DateTimeField(_('Token creation date'),

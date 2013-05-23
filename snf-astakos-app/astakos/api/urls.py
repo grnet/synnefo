@@ -56,3 +56,8 @@ urlpatterns += patterns(
     'astakos.api.service',
     url(r'^service/user_catalogs/?$', 'get_uuid_displayname_catalogs'),
 )
+
+urlpatterns += patterns(
+    'astakos.api.tokens',
+    url(r'tokens/(?P<token>.+?)/endpoints', 'get_endpoints'),
+)

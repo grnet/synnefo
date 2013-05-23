@@ -36,6 +36,7 @@ from time import time, mktime
 
 from django.http import HttpResponse
 from django.utils import simplejson as json
+from django.template.loader import render_to_string
 
 from astakos.im.models import AstakosUser, Service
 from snf_django.lib.api import faults
@@ -56,6 +57,17 @@ def json_response(content, status_code=None):
 
     response.content = json.dumps(content)
     response['Content-Type'] = 'application/json; charset=UTF-8'
+    response['Content-Length'] = len(response.content)
+    return response
+
+
+def xml_response(content, template, status_code=None):
+    response = HttpResponse()
+    if status_code is not None:
+        response.status_code = status_code
+
+    response.content = render_to_string(template, content)
+    response['Content-Type'] = 'application/xml; charset=UTF-8'
     response['Content-Length'] = len(response.content)
     return response
 
@@ -174,3 +186,10 @@ def send_feedback(request, email_template_name='im/feedback_mail.txt'):
     except:
         return HttpResponse(status=502)
     return HttpResponse(status=200)
+
+
+def rename_meta_key(d, old, new):
+    if old not in d:
+        return
+    d[new] = d[old]
+    del(d[old])

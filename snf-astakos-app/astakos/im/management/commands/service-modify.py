@@ -64,6 +64,10 @@ class Command(BaseCommand):
                     dest='renew_token',
                     default=False,
                     help="Renew service auth token"),
+        make_option('--type',
+                    dest='type',
+                    default=None,
+                    help="Modify service type"),
     )
 
     def handle(self, *args, **options):
@@ -81,6 +85,7 @@ class Command(BaseCommand):
         url = options.get('url')
         auth_token = options.get('auth_token')
         renew_token = options.get('renew_token')
+        type = options.get('type')
 
         if name:
             service.name = name
@@ -96,6 +101,9 @@ class Command(BaseCommand):
 
         if renew_token and not auth_token:
             service.renew_token()
+
+        if type:
+            service.type = type
 
         service.save()
 

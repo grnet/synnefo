@@ -31,7 +31,10 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from optparse import make_option
+
 from django.core.management.base import BaseCommand, CommandError
+from django.db.utils import IntegrityError
 
 from astakos.im.models import Service
 
@@ -40,29 +43,32 @@ class Command(BaseCommand):
     args = "<name> <service URL> <API URL> "
     help = "Register a service"
 
+    option_list = BaseCommand.option_list + (
+        make_option('--type',
+                    dest='type',
+                    help="Service type"),
+    )
+
     def handle(self, *args, **options):
         if len(args) < 2:
             raise CommandError("Invalid number of arguments")
 
-        name = args[0]
-        api_url = args[1]
-        url = args[2]
+        kwargs = dict(name=args[0], api_url=args[1], url=args[2])
+        if options['type']:
+            kwargs['type'] = options['type']
 
-        try:
-            s = Service.objects.get(name=name)
-            m = "There already exists service named '%s'." % name
-            raise CommandError(m)
-        except Service.DoesNotExist:
-            pass
-
-        services = list(Service.objects.filter(api_url=api_url))
+        services = list(Service.objects.filter(api_url=kwargs['api_url']))
         if services:
-            m = "URL '%s' is registered for another service." % api_url
+            m = "URL '%s' is registered for another service." %\
+                kwargs['api_url']
             raise CommandError(m)
 
         try:
-            s = Service.objects.create(name=name, api_url=api_url, url=url)
-        except BaseException as e:
+            s = Service.objects.create(**kwargs)
+        except IntegrityError:
+            m = "There already exists service named '%s'." % kwargs['name']
+            raise CommandError(m)
+        except BaseException:
             raise CommandError("Failed to create service.")
         else:
             self.stdout.write('Token: %s\n' % s.auth_token)

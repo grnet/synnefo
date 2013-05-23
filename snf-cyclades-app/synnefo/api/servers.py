@@ -818,3 +818,23 @@ def remove(request, net, args):
     servers.disconnect(vm, nic_index=nic_index)
 
     return HttpResponse(status=202)
+
+
+@server_action("addfloatingip")
+def add_floating_ip(request, vm, args):
+    address = args.get("address")
+    if address is None:
+        raise faults.BadRequest("Missing 'address' attribute")
+
+    servers.add_floating_ip(vm, address)
+    return HttpResponse(status=202)
+
+
+@server_action("removefloatingip")
+def remove_floating_ip(request, vm, args):
+    address = args.get("address")
+    if address is None:
+        raise faults.BadRequest("Missing 'address' attribute")
+
+    servers.remove_floating_ip(vm, address)
+    return HttpResponse(status=202)

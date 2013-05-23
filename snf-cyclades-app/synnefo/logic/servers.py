@@ -14,8 +14,7 @@ from synnefo.logic import backend
 from synnefo.logic.backend_allocator import BackendAllocator
 from synnefo.logic.rapi import GanetiApiError
 from synnefo.db.models import (NetworkInterface, VirtualMachine,
-                               VirtualMachineMetadata)
-from synnefo.db.pools import EmptyPool
+                               VirtualMachineMetadata, FloatingIP)
 
 from vncauthproxy.client import request_forwarding as request_vnc_forwarding
 
@@ -378,3 +377,47 @@ def console(vm, console_type):
         'password': password}
 
     return console
+
+
+@server_command("CONNECTING")
+def add_floating_ip(vm, address):
+    user_id = vm.userid
+    # Get lock in VM, to guarantee that floating IP will only by assigned once
+    try:
+        floating_ip = FloatingIP.objects.select_for_update()\
+                                        .get(userid=user_id, ipv4=address,
+                                             deleted=False)
+    except FloatingIP.DoesNotExist:
+        raise faults.ItemNotFound("Floating IP '%s' does not exist" % address)
+
+    if floating_ip.in_use():
+        raise faults.Conflict("Floating IP '%s' already in use" %
+                              floating_ip.id)
+
+    floating_ip.machine = vm
+    floating_ip.save()
+
+    log.info("Connecting VM %s to floating IP %s", vm, floating_ip)
+    return backend.connect_to_network(vm, floating_ip.network, address)
+
+
+@server_command("DISCONNECTING")
+def remove_floating_ip(vm, address):
+    user_id = vm.userid
+    try:
+        floating_ip = FloatingIP.objects.select_for_update()\
+                                        .get(userid=user_id, ipv4=address,
+                                             deleted=False, machine=vm)
+    except FloatingIP.DoesNotExist:
+        raise faults.ItemNotFound("Floating IP '%s' does not exist" % address)
+
+    try:
+        nic = NetworkInterface.objects.get(machine=vm, ipv4=address)
+    except NetworkInterface.DoesNotExist:
+        raise faults.ItemNotFound("Floating IP '%s' is not attached to"
+                                  "VM '%s'" % (floating_ip, vm))
+
+    log.info("Removing NIC %s from VM %s. Floating IP '%s'", str(nic.index),
+             vm, floating_ip)
+
+    return backend.disconnect_from_network(vm, nic)

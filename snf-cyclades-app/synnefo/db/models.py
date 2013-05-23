@@ -245,6 +245,8 @@ class VirtualMachine(models.Model):
         ('REBOOT', 'Reboot VM'),
         ('DESTROY', 'Destroy VM'),
         ('RESIZE', 'Resize a VM'),
+        ('ADDFLOATINGIP', 'Add floating IP to VM'),
+        ('REMOVEFLOATINGIP', 'Add floating IP to VM'),
     )
 
     # The internal operating state of a VM

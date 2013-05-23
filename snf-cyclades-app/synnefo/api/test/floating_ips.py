@@ -35,7 +35,10 @@ import json
 
 from snf_django.utils.testing import BaseAPITest, mocked_quotaholder
 from synnefo.db.models import FloatingIP
-from synnefo.db.models_factory import FloatingIPFactory, NetworkFactory
+from synnefo.db.models_factory import (FloatingIPFactory, NetworkFactory,
+                                       VirtualMachineFactory,
+                                       NetworkInterfaceFactory)
+from mock import patch
 
 
 URL = "/api/v1.1/os-floating-ips"
@@ -107,6 +110,24 @@ class FloatingIPAPITest(BaseAPITest):
 
     def test_release_in_use(self):
         ip = FloatingIPFactory()
+        vm = ip.machine
+        vm.operstate = "ACTIVE"
+        vm.userid = ip.userid
+        vm.save()
+        vm.nics.create(index=0, ipv4=ip.ipv4, network=ip.network,
+                       state="ACTIVE")
+        with mocked_quotaholder():
+            response = self.delete(URL + "/%s" % ip.id, ip.userid)
+        self.assertFault(response, 409, "conflict")
+        # Also send a notification to remove the NIC and assert that FIP is in
+        # use until notification from ganeti arrives
+        request = {"removeFloatingIp": {"address": ip.ipv4}}
+        url = "/api/v1.1/servers/%s/action" % vm.id
+        with patch('synnefo.logic.rapi_pool.GanetiRapiClient') as c:
+            c().ModifyInstance.return_value = 10
+            response = self.post(url, vm.userid, json.dumps(request),
+                                 "json")
+        self.assertEqual(response.status_code, 202)
         with mocked_quotaholder():
             response = self.delete(URL + "/%s" % ip.id, ip.userid)
         self.assertFault(response, 409, "conflict")
@@ -137,3 +158,65 @@ class FloatingIPPoolsAPITest(BaseAPITest):
         self.assertSuccess(response)
         self.assertEqual(json.loads(response.content)["floating_ip_pools"],
                         [{"name": str(net.id)}])
+
+
+class FloatingIPActionsTest(BaseAPITest):
+    def setUp(self):
+        vm = VirtualMachineFactory()
+        vm.operstate = "ACTIVE"
+        vm.save()
+        self.vm = vm
+
+    def test_bad_request(self):
+        url = "/api/v1.1/servers/%s/action" % self.vm.id
+        response = self.post(url, self.vm.userid, json.dumps({}), "json")
+        self.assertBadRequest(response)
+        response = self.post(url, self.vm.userid,
+                             json.dumps({"addFloatingIp": {}}),
+                             "json")
+        self.assertBadRequest(response)
+
+    @patch('synnefo.logic.rapi_pool.GanetiRapiClient')
+    def test_add_floating_ip(self, mock):
+        # Not exists
+        url = "/api/v1.1/servers/%s/action" % self.vm.id
+        request = {"addFloatingIp": {"address": "10.0.0.1"}}
+        response = self.post(url, self.vm.userid, json.dumps(request), "json")
+        self.assertItemNotFound(response)
+        # In use
+        vm1 = VirtualMachineFactory()
+        ip1 = FloatingIPFactory(userid=self.vm.userid, machine=vm1)
+        request = {"addFloatingIp": {"address": ip1.ipv4}}
+        response = self.post(url, self.vm.userid, json.dumps(request), "json")
+        self.assertFault(response, 409, "conflict")
+        # Success
+        ip1 = FloatingIPFactory(userid=self.vm.userid, machine=None)
+        request = {"addFloatingIp": {"address": ip1.ipv4}}
+        response = self.post(url, self.vm.userid, json.dumps(request), "json")
+        self.assertEqual(response.status_code, 202)
+        ip1_after = FloatingIP.objects.get(id=ip1.id)
+        self.assertEqual(ip1_after.machine, self.vm)
+        self.assertTrue(ip1_after.in_use())
+
+    @patch('synnefo.logic.rapi_pool.GanetiRapiClient')
+    def test_remove_floating_ip(self, mock):
+        # Not exists
+        url = "/api/v1.1/servers/%s/action" % self.vm.id
+        request = {"removeFloatingIp": {"address": "10.0.0.1"}}
+        response = self.post(url, self.vm.userid, json.dumps(request), "json")
+        self.assertItemNotFound(response)
+        # Not In Use
+        ip1 = FloatingIPFactory(userid=self.vm.userid, machine=None)
+        request = {"removeFloatingIp": {"address": ip1.ipv4}}
+        response = self.post(url, self.vm.userid, json.dumps(request), "json")
+        self.assertItemNotFound(response)
+        # Success
+        ip1 = FloatingIPFactory(userid=self.vm.userid, machine=self.vm)
+        NetworkInterfaceFactory(machine=self.vm, ipv4=ip1.ipv4)
+        request = {"removeFloatingIp": {"address": ip1.ipv4}}
+        response = self.post(url, self.vm.userid, json.dumps(request), "json")
+        self.assertEqual(response.status_code, 202)
+        # Yet used. Wait for the callbacks
+        ip1_after = FloatingIP.objects.get(id=ip1.id)
+        self.assertEqual(ip1_after.machine, self.vm)
+        self.assertTrue(ip1_after.in_use())

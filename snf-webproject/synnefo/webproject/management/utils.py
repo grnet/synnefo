@@ -43,7 +43,7 @@ from synnefo.util.text import uenc, udec
 def parse_bool(value, strict=True):
     """Convert a string to boolen value.
 
-    If string is True, then ValueError will be raised, if the string can not be
+    If strict is True, then ValueError will be raised, if the string can not be
     converted to boolean. Otherwise the string will be returned as is.
 
     """
@@ -53,7 +53,7 @@ def parse_bool(value, strict=True):
         return False
 
     if strict:
-        raise ValueError("Can convert '%s' to boolean value")
+        raise ValueError("Cannot convert '%s' to boolean value" % value)
     else:
         return value
 

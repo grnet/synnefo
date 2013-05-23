@@ -108,6 +108,50 @@ class FloatingIPAPITest(BaseAPITest):
             response = self.post(URL, "test_user", json.dumps(request), "json")
         self.assertEqual(response.status_code, 413)
 
+    def test_reserve_with_address(self):
+        net = NetworkFactory(userid="test_user", subnet="192.168.2.0/24",
+                             gateway=None, public=True)
+        request = {'pool': net.id, "address": "192.168.2.10"}
+        with mocked_quotaholder():
+            response = self.post(URL, "test_user", json.dumps(request), "json")
+        self.assertSuccess(response)
+        self.assertEqual(json.loads(response.content)["floating_ip"],
+                         {"instance_id": None, "ip": "192.168.2.10",
+                          "fixed_ip": None, "id": "1", "pool": "1"})
+
+        # Already reserved
+        FloatingIPFactory(network=net, ipv4="192.168.2.3")
+        request = {'pool': net.id, "address": "192.168.2.3"}
+        with mocked_quotaholder():
+            response = self.post(URL, "test_user", json.dumps(request), "json")
+        self.assertFault(response, 409, "conflict")
+
+        # Already used
+        pool = net.get_pool()
+        pool.reserve("192.168.2.5")
+        pool.save()
+        # ..by another_user
+        nic = NetworkInterfaceFactory(network=net, ipv4="192.168.2.5",
+                                      machine__userid="test2")
+        request = {'pool': net.id, "address": "192.168.2.5"}
+        with mocked_quotaholder():
+            response = self.post(URL, "test_user", json.dumps(request), "json")
+        self.assertFault(response, 409, "conflict")
+        # ..and by him
+        nic.delete()
+        NetworkInterfaceFactory(network=net, ipv4="192.168.2.5",
+                                machine__userid="test_user")
+        request = {'pool': net.id, "address": "192.168.2.5"}
+        with mocked_quotaholder():
+            response = self.post(URL, "test_user", json.dumps(request), "json")
+        self.assertSuccess(response)
+
+        # Address out of pool
+        request = {'pool': net.id, "address": "192.168.3.5"}
+        with mocked_quotaholder():
+            response = self.post(URL, "test_user", json.dumps(request), "json")
+        self.assertBadRequest(response)
+
     def test_release_in_use(self):
         ip = FloatingIPFactory()
         vm = ip.machine

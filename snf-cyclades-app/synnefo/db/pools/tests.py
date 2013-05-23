@@ -220,6 +220,8 @@ class IPPoolTestCase(TestCase):
         self.assertEqual(pool.is_available('192.168.2.255'), False)
         self.assertEqual(pool.count_available(), 253)
         self.assertEqual(pool.get(), '192.168.2.2')
+        self.assertTrue(pool.contains("192.168.2.10"))
+        self.assertFalse(pool.contains("192.168.3.10"))
 
     def test_auto_reservations_2(self):
         obj = DummyObject(0)

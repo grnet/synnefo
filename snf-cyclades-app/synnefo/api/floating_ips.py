@@ -40,7 +40,7 @@ from snf_django.lib import api
 from snf_django.lib.api import faults, utils
 from synnefo.api import util
 from synnefo import quotas
-from synnefo.db.models import Network, FloatingIP
+from synnefo.db.models import Network, FloatingIP, NetworkInterface
 
 
 from logging import getLogger
@@ -137,10 +137,30 @@ def allocate_floating_ip(request):
     except Network.DoesNotExist:
         raise faults.ItemNotFound("Pool '%s' does not exist." % pool)
 
+    address = req.get("address", None)
+    machine = None
     try:
-        address = util.get_network_free_address(network)
+        if address is None:
+            address = util.get_network_free_address(network)  # Get X-Lock
+        else:
+            if FloatingIP.objects.filter(network=network,
+                                         ipv4=address).exists():
+                msg = "Floating IP '%s' is reserved" % address
+                raise faults.Conflict(msg)
+            pool = network.get_pool()  # Gets X-Lock
+            if not pool.contains(address):
+                raise faults.BadRequest("Invalid address")
+            if not pool.is_available(address):
+                try:
+                    network.nics.get(ipv4=address,
+                                     machine__userid=userid)
+                except NetworkInterface.DoesNotExist:
+                    msg = "Address '%s' is already in use" % address
+                    raise faults.Conflict(msg)
+            pool.reserve(address)
+            pool.save()
         floating_ip = FloatingIP.objects.create(ipv4=address, network=network,
-                                                userid=userid)
+                                                userid=userid, machine=machine)
         quotas.issue_and_accept_commission(floating_ip)
     except:
         transaction.rollback()

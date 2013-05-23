@@ -56,6 +56,7 @@ API_QUOTAS = "/astakos/api/quotas"
 API_SERVICE_QUOTAS = "/astakos/api/service_quotas"
 API_COMMISSIONS = "/astakos/api/commissions"
 API_COMMISSIONS_ACTION = API_COMMISSIONS + "/action"
+API_FEEDBACK = "/astakos/api/feedback"
 
 
 # --------------------------------------------------------------------
@@ -321,6 +322,27 @@ class AstakosClient():
     def get_resources(self):
         """Return a dict of dicts with the available resources"""
         return self._call_astakos(None, copy(API_RESOURCES))
+
+    # ----------------------------------
+    # do a POST to ``API_FEEDBACK``
+    def send_feedback(self, token, message, data):
+        """Send feedback to astakos service
+
+        keyword arguments:
+        token       -- user's token (string)
+        message     -- Feedback message
+        data        -- Additional information about service client status
+
+        In case of success return nothing.
+        Otherwise raise an AstakosClientException
+
+        """
+        check_input("send_feedback", self.logger, message=message, data=data)
+        path = copy(API_FEEDBACK)
+        req_headers = {'content-type': 'application/json'}
+        req_body = urllib.urlencode(
+            {'feedback_msg': message, 'feedback_data': data})
+        self._call_astakos(token, path, req_headers, req_body, "POST")
 
     # ----------------------------------
     # do a GET to ``API_QUOTAS``

@@ -46,6 +46,19 @@ from astakosclient.errors import \
 
 
 # --------------------------------------------------------------------
+# Astakos API urls
+API_AUTHENTICATE = "/astakos/api/authenticate"
+API_USERCATALOGS = "/astakos/api/user_catalogs"
+API_SERVICE_USERCATALOGS = "/astakos/api/service/user_catalogs"
+API_GETSERVICES = "/astakos/api/get_services"
+API_RESOURCES = "/astakos/api/resources"
+API_QUOTAS = "/astakos/api/quotas"
+API_SERVICE_QUOTAS = "/astakos/api/service_quotas"
+API_COMMISSIONS = "/astakos/api/commissions"
+API_COMMISSIONS_ACTION = API_COMMISSIONS + "/action"
+
+
+# --------------------------------------------------------------------
 # Astakos Client Class
 
 def get_token_from_cookie(request, cookie_name):
@@ -173,7 +186,7 @@ class AstakosClient():
             raise InvalidResponse(str(err), data)
 
     # ------------------------
-    # GET /astakos/api/authenticate
+    # do a GET to ``API_AUTHENTICATE``
     def get_user_info(self, token, usage=False):
         """Authenticate user and get user's info as a dictionary
 
@@ -186,13 +199,13 @@ class AstakosClient():
 
         """
         # Send request
-        auth_path = "/astakos/api/authenticate"
+        auth_path = copy(API_AUTHENTICATE)
         if usage:
             auth_path += "?usage=1"
         return self._call_astakos(token, auth_path)
 
     # ----------------------------------
-    # POST /astakos/api/user_catalogs (or /astakos/api/service/user_catalogs)
+    # do a POST to ``API_USERCATALOGS`` (or ``API_SERVICE_USERCATALOGS``)
     #   with {'uuids': uuids}
     def _uuid_catalog(self, token, uuids, req_path):
         req_headers = {'content-type': 'application/json'}
@@ -218,7 +231,7 @@ class AstakosClient():
         keys and the corresponding user names as values
 
         """
-        req_path = "/astakos/api/user_catalogs"
+        req_path = copy(API_USERCATALOGS)
         return self._uuid_catalog(token, uuids, req_path)
 
     def get_username(self, token, uuid):
@@ -232,7 +245,7 @@ class AstakosClient():
 
     def service_get_usernames(self, token, uuids):
         """Return a uuid_catalog dict using a service's token"""
-        req_path = "/astakos/api/service/user_catalogs"
+        req_path = copy(API_SERVICE_USERCATALOGS)
         return self._uuid_catalog(token, uuids, req_path)
 
     def service_get_username(self, token, uuid):
@@ -245,7 +258,7 @@ class AstakosClient():
             raise NoUserName(uuid)
 
     # ----------------------------------
-    # POST /astakos/api/user_catalogs (or /astakos/api/service/user_catalogs)
+    # do a POST to ``API_USERCATALOGS`` (or ``API_SERVICE_USERCATALOGS``)
     #   with {'displaynames': display_names}
     def _displayname_catalog(self, token, display_names, req_path):
         req_headers = {'content-type': 'application/json'}
@@ -271,7 +284,7 @@ class AstakosClient():
         the names as keys and the corresponding uuids as values
 
         """
-        req_path = "/astakos/api/user_catalogs"
+        req_path = copy(API_USERCATALOGS)
         return self._displayname_catalog(token, display_names, req_path)
 
     def get_uuid(self, token, display_name):
@@ -285,7 +298,7 @@ class AstakosClient():
 
     def service_get_uuids(self, token, display_names):
         """Return a display_name catalog using a service's token"""
-        req_path = "/astakos/api/service/user_catalogs"
+        req_path = copy(API_SERVICE_USERCATALOGS)
         return self._displayname_catalog(token, display_names, req_path)
 
     def service_get_uuid(self, token, display_name):
@@ -298,19 +311,19 @@ class AstakosClient():
             raise NoUUID(display_name)
 
     # ----------------------------------
-    # GET "/astakos/api/get_services"
+    # do a GET to ``API_GETSERVICES``
     def get_services(self):
         """Return a list of dicts with the registered services"""
-        return self._call_astakos(None, "/astakos/api/get_services")
+        return self._call_astakos(None, copy(API_GETSERVICES))
 
     # ----------------------------------
-    # GET "/astakos/api/resources"
+    # do a GET to ``API_RESOURCES``
     def get_resources(self):
         """Return a dict of dicts with the available resources"""
-        return self._call_astakos(None, "/astakos/api/resources")
+        return self._call_astakos(None, copy(API_RESOURCES))
 
     # ----------------------------------
-    # GET "/astakos/api/quotas"
+    # do a GET to ``API_QUOTAS``
     def get_quotas(self, token):
         """Get user's quotas
 
@@ -321,10 +334,10 @@ class AstakosClient():
         Otherwise raise an AstakosClientException
 
         """
-        return self._call_astakos(token, "/astakos/api/quotas")
+        return self._call_astakos(token, copy(API_QUOTAS))
 
     # ----------------------------------
-    # GET "/astakos/api/service_quotas"
+    # do a GET to ``API_SERVICE_QUOTAS``
     def service_get_quotas(self, token, user=None):
         """Get all quotas for resources associated with the service
 
@@ -337,13 +350,13 @@ class AstakosClient():
         Otherwise raise an AstakosClientException
 
         """
-        query = "/astakos/api/service_quotas"
+        query = copy(API_SERVICE_QUOTAS)
         if user is not None:
             query += "?user=" + user
         return self._call_astakos(token, query)
 
     # ----------------------------------
-    # POST "/astakos/api/commisions"
+    # do a POST to ``API_COMMISSIONS``
     def issue_commission(self, token, request):
         """Issue a commission
 
@@ -358,7 +371,7 @@ class AstakosClient():
         req_headers = {'content-type': 'application/json'}
         req_body = parse_request(request, self.logger)
         try:
-            response = self._call_astakos(token, "/astakos/api/commissions",
+            response = self._call_astakos(token, copy(API_COMMISSIONS),
                                           req_headers, req_body, "POST")
         except AstakosClientException as err:
             if err.status == 413:
@@ -413,7 +426,7 @@ class AstakosClient():
         return self.issue_commission(token, request)
 
     # ----------------------------------
-    # GET "/astakos/api/commissions"
+    # do a GET to ``API_COMMISSIONS``
     def get_pending_commissions(self, token):
         """Get Pending Commissions
 
@@ -424,10 +437,10 @@ class AstakosClient():
         (list of integers)
 
         """
-        return self._call_astakos(token, "/astakos/api/commissions")
+        return self._call_astakos(token, copy(API_COMMISSIONS))
 
     # ----------------------------------
-    # GET "/astakos/api/commissions/<serial>
+    # do a GET to ``API_COMMISSIONS``/<serial>
     def get_commission_info(self, token, serial):
         """Get Description of a Commission
 
@@ -441,11 +454,11 @@ class AstakosClient():
         """
         check_input("get_commission_info", self.logger, serial=serial)
 
-        path = "/astakos/api/commissions/" + str(serial)
+        path = API_COMMISSIONS + "/" + str(serial)
         return self._call_astakos(token, path)
 
     # ----------------------------------
-    # POST "/astakos/api/commissions/<serial>/action"
+    # do a POST to ``API_COMMISSIONS``/<serial>/action"
     def commission_action(self, token, serial, action):
         """Perform a commission action
 
@@ -460,7 +473,7 @@ class AstakosClient():
         check_input("commission_action", self.logger,
                     serial=serial, action=action)
 
-        path = "/astakos/api/commissions/" + str(serial) + "/action"
+        path = API_COMMISSIONS + "/" + str(serial) + "/action"
         req_headers = {'content-type': 'application/json'}
         req_body = parse_request({str(action): ""}, self.logger)
         self._call_astakos(token, path, req_headers, req_body, "POST")
@@ -474,7 +487,7 @@ class AstakosClient():
         self.commission_action(token, serial, "reject")
 
     # ----------------------------------
-    # POST "/astakos/api/commissions/action"
+    # do a POST to ``API_COMMISSIONS_ACTION``
     def resolve_commissions(self, token, accept_serials, reject_serials):
         """Resolve multiple commissions at once
 
@@ -492,7 +505,7 @@ class AstakosClient():
                     accept_serials=accept_serials,
                     reject_serials=reject_serials)
 
-        path = "/astakos/api/commissions/action"
+        path = copy(API_COMMISSIONS_ACTION)
         req_headers = {'content-type': 'application/json'}
         req_body = parse_request({"accept": accept_serials,
                                   "reject": reject_serials},

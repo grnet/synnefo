@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 from astakos.im.tests.common import *
+from astakos.im.activation_backends import get_backend
 
 from django.test import TestCase
 
@@ -372,8 +373,19 @@ class QuotaAPITest(TestCase):
 
 class TokensApiTest(TestCase):
     def setUp(self):
-        self.user1 = AstakosUser.objects.create(email='test1', is_active=True)
-        self.user2 = AstakosUser.objects.create(email='test2', is_active=True)
+        backend = activation_backends.get_backend()
+
+        self.user1 = AstakosUser.objects.create(
+            email='test1', email_verified=True, moderated=True,
+            is_rejected=False)
+        backend.activate_user(self.user1)
+        assert self.user1.is_active is True
+
+        self.user2 = AstakosUser.objects.create(
+            email='test2', email_verified=True, moderated=True,
+            is_rejected=False)
+        backend.activate_user(self.user2)
+        assert self.user2.is_active is True
 
         Service(name='service1', url='http://localhost/service1',
                 api_url='http://localhost/api/service1').save()
@@ -385,10 +397,31 @@ class TokensApiTest(TestCase):
     def test_get_endpoints(self):
         client = Client()
 
-        # Check unauthorized request
+        # Check no token
         url = '/astakos/api/tokens/%s/endpoints' % quote(self.user1.auth_token)
         r = client.get(url)
         self.assertEqual(r.status_code, 401)
+
+        # Check in active user token
+        inactive_user = AstakosUser.objects.create(email='test3')
+        url = '/astakos/api/tokens/%s/endpoints' % quote(
+            inactive_user.auth_token)
+        r = client.get(url)
+        self.assertEqual(r.status_code, 401)
+
+        # Check invalid user token in path
+        url = '/astakos/api/tokens/nouser/endpoints'
+        r = client.get(url)
+        self.assertEqual(r.status_code, 401)
+
+
+        # Check forbidden
+        url = '/astakos/api/tokens/%s/endpoints' % quote(self.user1.auth_token)
+        headers = {'HTTP_X_AUTH_TOKEN': AstakosUser.objects.create(
+            email='test4').auth_token}
+        r = client.get(url, **headers)
+        self.assertEqual(r.status_code, 401)
+
 
         # Check bad request method
         url = '/astakos/api/tokens/%s/endpoints' % quote(self.user1.auth_token)

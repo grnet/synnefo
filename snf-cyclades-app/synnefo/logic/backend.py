@@ -35,6 +35,7 @@ from django.db import transaction
 from datetime import datetime
 
 from synnefo.db.models import (Backend, VirtualMachine, Network,
+                               FloatingIP,
                                BackendNetwork, BACKEND_STATUSES,
                                pooled_rapi_client, VirtualMachineDiagnostic,
                                Flavor)
@@ -160,7 +161,10 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
         # See ticket #799 for all the details.
         if status == 'success' or (status == 'error' and
                                    vm.operstate == 'ERROR'):
-            _process_net_status(vm, etime, nics=[])
+            # VM has been deleted. Release the instance IPs
+            release_instance_ips(vm, [])
+            # And delete the releated NICs (must be performed after release!)
+            vm.nics.all().delete()
             vm.deleted = True
             vm.operstate = state_for_success
             vm.backendtime = etime
@@ -220,7 +224,10 @@ def _process_net_status(vm, etime, nics):
     # guarantee that no deadlock will occur with Backend allocator.
     Backend.objects.select_for_update().get(id=vm.backend_id)
 
-    release_instance_nics(vm)
+    # NICs have changed. Release the instance IPs
+    release_instance_ips(vm, ganeti_nics)
+    # And delete the releated NICs (must be performed after release!)
+    vm.nics.all().delete()
 
     for nic in ganeti_nics:
         ipv4 = nic.get('ipv4', '')
@@ -286,13 +293,29 @@ def nics_changed(old_nics, new_nics):
     return False
 
 
-def release_instance_nics(vm):
-    for nic in vm.nics.all():
-        net = nic.network
-        if nic.ipv4:
-            net.release_address(nic.ipv4)
-        nic.delete()
-        net.save()
+def release_instance_ips(vm, ganeti_nics):
+    old_addresses = set(vm.nics.values_list("network", "ipv4"))
+    new_addresses = set(map(lambda nic: (nic["network"], nic["ipv4"]),
+                            ganeti_nics))
+    to_release = old_addresses - new_addresses
+    for (network_id, ipv4) in to_release:
+        if ipv4:
+            net = Network.objects.get(id=network_id)
+            # Important: Take exclusive lock in pool before checking if there
+            # is a floating IP with this ipv4 address, otherwise there is a
+            # race condition, where you may release a floating IP that has been
+            # created after search floating IPs and before you get exclusively
+            # the pool
+            pool = net.get_pool()
+            try:
+                floating_ip = net.floating_ips.select_for_update()\
+                                              .get(ipv4=ipv4, machine=vm,
+                                                   deleted=False)
+                floating_ip.machine = None
+                floating_ip.save()
+            except FloatingIP.DoesNotExist:
+                net.release_address(ipv4)
+                pool.save()
 
 
 @transaction.commit_on_success

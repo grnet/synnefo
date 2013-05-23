@@ -144,6 +144,7 @@ def allocate_floating_ip(request):
             address = util.get_network_free_address(network)  # Get X-Lock
         else:
             if FloatingIP.objects.filter(network=network,
+                                         deleted=False,
                                          ipv4=address).exists():
                 msg = "Floating IP '%s' is reserved" % address
                 raise faults.Conflict(msg)
@@ -190,6 +191,9 @@ def release_floating_ip(request, floating_ip_id):
         raise faults.ItemNotFound("Floating IP '%s' does not exist" %
                                   floating_ip_id)
 
+    # Since we have got an exlusively lock in floating IP, and since
+    # to remove a floating IP you need the same lock, the in_use() query
+    # is safe
     if floating_ip.in_use():
         msg = "Floating IP '%s' is used" % floating_ip.id
         raise faults.Conflict(message=msg)

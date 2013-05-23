@@ -254,7 +254,8 @@ class UpdateDBTest(TestCase):
     def test_remove(self, client):
         vm = mfactory.VirtualMachineFactory()
         # Also create a NIC
-        mfactory.NetworkInterfaceFactory(machine=vm)
+        nic = mfactory.NetworkInterfaceFactory(machine=vm)
+        nic.network.get_pool().reserve(nic.ipv4)
         msg = self.create_msg(operation='OP_INSTANCE_REMOVE',
                               instance=vm.backend_vm_id)
         with mocked_quotaholder():
@@ -265,6 +266,33 @@ class UpdateDBTest(TestCase):
         self.assertTrue(db_vm.deleted)
         # Check that nics are deleted
         self.assertFalse(db_vm.nics.all())
+        self.assertTrue(nic.network.get_pool().is_available(nic.ipv4))
+        vm2 = mfactory.VirtualMachineFactory()
+        network = mfactory.NetworkFactory()
+        fp1 = mfactory.FloatingIPFactory(machine=vm2, network=network)
+        fp2 = mfactory.FloatingIPFactory(machine=vm2, network=network)
+        mfactory.NetworkInterfaceFactory(machine=vm2, network=network,
+                ipv4=fp1.ipv4)
+        mfactory.NetworkInterfaceFactory(machine=vm2, network=network,
+                ipv4=fp2.ipv4)
+        pool = network.get_pool()
+        pool.reserve(fp1.ipv4)
+        pool.reserve(fp2.ipv4)
+        pool.save()
+        msg = self.create_msg(operation='OP_INSTANCE_REMOVE',
+                              instance=vm2.backend_vm_id)
+        with mocked_quotaholder():
+            update_db(client, msg)
+        client.basic_ack.assert_called_once()
+        db_vm = VirtualMachine.objects.get(id=vm.id)
+        self.assertEqual(db_vm.operstate, 'DESTROYED')
+        self.assertTrue(db_vm.deleted)
+        self.assertEqual(FloatingIP.objects.get(id=fp1.id).machine, None)
+        self.assertEqual(FloatingIP.objects.get(id=fp2.id).machine, None)
+        pool = network.get_pool()
+        # Test that floating ips are not released
+        self.assertFalse(pool.is_available(fp1.ipv4))
+        self.assertFalse(pool.is_available(fp2.ipv4))
 
     def test_create(self, client):
         vm = mfactory.VirtualMachineFactory()

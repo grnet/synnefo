@@ -342,24 +342,11 @@ Example json reply:
 
 ::
 
-    {'endpoint_links': [{'href': '/astakos/api/tokens/0000/endpoints?marker=7&limit=10000',
-       'rel': 'next'}],
-     'endpoints': [
-      {'adminURL': 'https://node1.example.com/ui/',
-       'id': 5,
-       'internalURL': 'https://node1.example.com/ui/',
-       'name': 'cyclades',
-       'publicURL': 'https://node1.example.com/ui/',
-       'region': 'cyclades',
-       'type': None},
-      {'adminURL': 'https://node2.example.com/v1',
-       'id': 6,
-       'internalURL': 'https://node2.example.com/ui/',
-       'name': 'pithos',
-       'publicURL': 'https://node2.example.com/ui/',
-       'region': 'pithos',
-       'type': None},
-     ]}
+    {"endpoints": [
+        {"name": "cyclades", "region": "cyclades", "internalURL": "https://node1.example.com/ui/", "adminURL": "https://node1.example.com/v1/", "type": null, "id": 5, "publicURL": "https://node1.example.com/ui/"},
+        {"name": "pithos", "region": "pithos", "internalURL": "https://node2.example.com/ui/", "adminURL": "https://node2.example.com/v1", "type": null, "id": 6, "publicURL": "https://node2.example.com/ui/"},
+    ],
+    "endpoint_links": [{"href": "/astakos/api/tokens/0000/endpoints?marker=6&limit=10000", "rel": "next"}]}
 
 
 Example xml reply:
@@ -372,7 +359,7 @@ Example xml reply:
         <endpoint "name"="pithos" "region"="pithos" "internalURL"="https://node2.example.com/ui/" "adminURL"="https://node2.example.com/v1" "id"="6" "publicURL"="https://node2.example.com/ui/" />
     </endpoints>
     <endpoint_links>
-            <endpoint_link "href"="/astakos/api/tokens/0000/endpoints?marker=7&amp;limit=10000" "rel"="next" />
+            <endpoint_link "href"="/astakos/api/tokens/0000/endpoints?marker=6&amp;limit=10000" "rel"="next" />
     </endpoint_links>
 
 

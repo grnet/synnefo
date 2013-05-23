@@ -31,8 +31,6 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from time import time, mktime
-
 from django.http import HttpResponse
 from django.utils import simplejson as json
 from django.views.decorators.csrf import csrf_exempt
@@ -62,17 +60,6 @@ def authenticate(request):
     user = request.user
     if not user:
         raise faults.BadRequest('No user')
-
-    # Check if the is active.
-    if not user.is_active:
-        raise faults.Unauthorized('User inactive')
-
-    # Check if the token has expired.
-    if (time() - mktime(user.auth_token_expires.timetuple())) > 0:
-        raise faults.Unauthorized('Authentication expired')
-
-    if not user.signed_terms:
-        raise faults.Unauthorized('Pending approval terms')
 
     response = HttpResponse()
     user_info = {

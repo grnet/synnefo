@@ -158,7 +158,7 @@ def prepare_response(request, user, next='', renew=False):
        or user has not a valid token.
     """
     renew = renew or (not user.auth_token)
-    renew = renew or (user.auth_token_expires < datetime.datetime.now())
+    renew = renew or user.token_expired()
     if renew:
         user.renew_token(
             flush_sessions=True,

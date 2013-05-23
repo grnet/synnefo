@@ -514,6 +514,9 @@ class AstakosUser(User):
         msg = 'Token renewed for %s' % self.log_display
         logger.log(astakos_settings.LOGGING_LEVEL, msg)
 
+    def token_expired(self):
+        return self.auth_token_expires < datetime.now()
+
     def flush_sessions(self, current_key=None):
         q = self.sessions
         if current_key:

@@ -80,10 +80,23 @@ def user_from_token(func):
             raise faults.Unauthorized("Invalid X-Auth-Token")
 
         try:
-            request.user = AstakosUser.objects.get(auth_token=token)
+            user = AstakosUser.objects.get(auth_token=token)
         except AstakosUser.DoesNotExist:
             raise faults.Unauthorized('Invalid X-Auth-Token')
 
+        # Check if the user is active.
+        if not user.is_active:
+            raise faults.Unauthorized('User inactive')
+
+        # Check if the token has expired.
+        if user.token_expired():
+            raise faults.Unauthorized('Authentication expired')
+
+        # Check if the user has accepted the terms.
+        if not user.signed_terms:
+            raise faults.Unauthorized('Pending approval terms')
+
+        request.user = user
         return func(request, *args, **kwargs)
     return wrapper
 

@@ -43,7 +43,7 @@ from synnefo.db import models_factory as mfactory
 class NetworkAPITest(BaseAPITest):
     def setUp(self):
         self.mac_prefixes = mfactory.MacPrefixPoolTableFactory()
-        self.bridges = mfactory.BridgePoolTableFactory()
+        self.bridges = mfactory.BridgePoolTableFactory(base="link")
         self.user = 'dummy-user'
         self.net1 = mfactory.NetworkFactory(userid=self.user)
         self.vm1 = mfactory.VirtualMachineFactory(userid=self.user)
@@ -265,7 +265,8 @@ class NetworkAPITest(BaseAPITest):
         self.assertFault(response, 403, 'forbidden')
 
     def test_delete_network(self, mrapi):
-        net = mfactory.NetworkFactory(deleted=False, state='ACTIVE')
+        net = mfactory.NetworkFactory(deleted=False, state='ACTIVE',
+                                      link="link-10")
         with mocked_quotaholder():
             response = self.delete('/api/v1.1/networks/%d' % net.id,
                                     net.userid)

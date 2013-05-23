@@ -46,10 +46,15 @@ from synnefo.db.models import Network, FloatingIP
 from logging import getLogger
 log = getLogger(__name__)
 
-urlpatterns = patterns(
+ips_urlpatterns = patterns(
     'synnefo.api.floating_ips',
     (r'^(?:/|.json|.xml)?$', 'demux'),
     (r'^/(\w+)(?:.json|.xml)?$', 'floating_ip_demux'),
+)
+
+pools_urlpatterns = patterns(
+    "synnefo.api.floating_ips",
+    (r'^(?:/|.json|.xml)?$', 'list_floating_ip_pools'),
 )
 
 
@@ -183,3 +188,13 @@ def release_floating_ip(request, floating_ip_id):
     log.info("User '%s' released IP '%s", userid, floating_ip)
 
     return HttpResponse(status=204)
+
+
+@api.api_method(http_method='GET', user_required=True, logger=log)
+def list_floating_ip_pools(request):
+    networks = Network.objects.filter(public=True, deleted=False)
+    pools = [{"name": str(net.id)} for net in networks]
+    request.serialization = "json"
+    data = json.dumps({"floating_ip_pools": pools})
+    request.serialization = "json"
+    return HttpResponse(data, status=200)

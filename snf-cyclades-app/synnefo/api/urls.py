@@ -34,7 +34,8 @@
 from django.conf.urls.defaults import include, patterns
 
 from snf_django.lib.api import api_endpoint_not_found
-from synnefo import api
+from synnefo.api import (servers, flavors, images, networks, extensions,
+                         floating_ips)
 from synnefo.api.versions import versions_list, version_details
 
 
@@ -43,12 +44,13 @@ from synnefo.api.versions import versions_list, version_details
 #
 api20_patterns = patterns(
     '',
-    (r'^servers', include(api.servers)),
-    (r'^flavors', include(api.flavors)),
-    (r'^images', include(api.images)),
-    (r'^networks', include(api.networks)),
-    (r'^extensions', include(api.extensions)),
-    (r'^os-floating-ips', include(api.floating_ips)),
+    (r'^servers', include(servers)),
+    (r'^flavors', include(flavors)),
+    (r'^images', include(images)),
+    (r'^networks', include(networks)),
+    (r'^extensions', include(extensions)),
+    (r'^os-floating-ips', include(floating_ips.ips_urlpatterns)),
+    (r'^os-floating-ip-pools', include(floating_ips.pools_urlpatterns)),
 )
 
 

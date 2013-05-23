@@ -118,3 +118,22 @@ class FloatingIPAPITest(BaseAPITest):
         self.assertSuccess(response)
         ips_after = FloatingIP.objects.filter(id=ip.id)
         self.assertEqual(len(ips_after), 0)
+
+
+POOLS_URL = "/api/v1.1/os-floating-ip-pools"
+
+
+class FloatingIPPoolsAPITest(BaseAPITest):
+    def test_no_pool(self):
+        response = self.get(POOLS_URL)
+        self.assertSuccess(response)
+        self.assertEqual(json.loads(response.content)["floating_ip_pools"], [])
+
+    def test_list_pools(self):
+        net = NetworkFactory(public=True, deleted=False)
+        NetworkFactory(public=True, deleted=True)
+        NetworkFactory(public=False, deleted=False)
+        response = self.get(POOLS_URL)
+        self.assertSuccess(response)
+        self.assertEqual(json.loads(response.content)["floating_ip_pools"],
+                        [{"name": str(net.id)}])

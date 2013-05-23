@@ -41,7 +41,7 @@ from synnefo.lib.ordereddict import OrderedDict
 from synnefo.webproject.management.commands import SynnefoCommand
 from synnefo.webproject.management import utils
 
-from ._common import format, show_quotas, style_options, check_style
+from ._common import show_quotas, style_options, check_style
 
 import uuid
 
@@ -106,7 +106,6 @@ class Command(SynnefoCommand):
                     ('invitation level', user.level),
                     ('providers', user.auth_providers_display),
                     ('verified', user.is_verified),
-                    ('has credits', format(user.has_credits)),
                     ('groups', [elem.name for elem in user.groups.all()]),
                     ('permissions', [elem.codename
                                      for elem in user.user_permissions.all()]),

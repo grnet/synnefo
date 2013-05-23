@@ -631,20 +631,6 @@ method, read the relative :ref:`section <shibboleth-auth>`.
         MIDDLEWARE_CLASSES.remove('django.middleware.csrf.CsrfViewMiddleware')
         TEMPLATE_CONTEXT_PROCESSORS.remove('django.core.context_processors.csrf')
 
-Since version 0.13 you need to configure some basic settings for the new *Quota*
-feature.
-
-Specifically:
-
-Edit ``/etc/synnefo/20-snf-astakos-app-settings.conf``:
-
-.. code-block:: console
-
-    QUOTAHOLDER_URL = 'https://node1.example.com/quotaholder/v'
-    QUOTAHOLDER_TOKEN = 'aExampleTokenJbFm12w'
-    ASTAKOS_QUOTAHOLDER_TOKEN = 'aExampleTokenJbFm12w'
-    ASTAKOS_QUOTAHOLDER_URL = 'https://node1.example.com/quotaholder/v'
-
 Enable Pooling
 --------------
 
@@ -854,10 +840,6 @@ this options:
 
 
    PITHOS_SERVICE_TOKEN = 'pithos_service_token22w=='
-
-   PITHOS_QUOTAHOLDER_URL = 'https://node1.example.com/quotaholder/v'
-   PITHOS_QUOTAHOLDER_TOKEN = 'aExampleTokenJbFm12w'
-   PITHOS_USE_QUOTAHOLDER = True
 
    # Set to False if astakos & pithos are on the same host
    #PITHOS_PROXY_USER_SERVICES = True

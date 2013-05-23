@@ -65,12 +65,8 @@ In `/etc/synnefo/pithos.conf` add:
     PITHOS_UPDATE_MD5 = False
     PITHOS_SERVICE_TOKEN = 'XXXXXXXXXXX'
 
-    PITHOS_QUOTAHOLDER_TOKEN = '1234'
-    PITHOS_QUOTAHOLDER_URL = 'https://qh.example.com/quotaholder/v'
-
     # Set False if astakos & pithos are on the same node
     PITHOS_PROXY_USER_SERVICES = True
-    PITHOS_USE_QUOTAHOLDER = True
 
 
 Install pithos web UI with:

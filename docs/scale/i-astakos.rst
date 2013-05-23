@@ -70,9 +70,6 @@ In `/etc/synnefo/astakos.conf` add:
     ASTAKOS_EMAIL_CHANGE_EMAIL_SUBJECT = 'Email change on %s' % ASTAKOS_SITENAME
     ASTAKOS_PASSWORD_RESET_EMAIL_SUBJECT = 'Password reset on %s' % ASTAKOS_SITENAME
 
-    ASTAKOS_QUOTAHOLDER_TOKEN = '1234'
-    ASTAKOS_QUOTAHOLDER_URL = 'https://qh.example.com/quotaholder/v'
-
     EMAIL_BACKEND = 'django.core.mail.backends.dummy.EmailBackend'
     ASTAKOS_SERVICES = {
         'cyclades': {

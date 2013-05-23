@@ -39,6 +39,9 @@ astakos.
     Project and ProjectMembership, previously needed for syncing; removed
     state PROJECT_DEACTIVATED from ProjectMembership.
 
+  * Removed settings ASTAKOS_QUOTAHOLDER_URL, ASTAKOS_QUOTAHOLDER_TOKEN,
+    and ASTAKOS_QUOTAHOLDER_POOLSIZE.
+
 * Service and resource specification and handling:
 
   * Specified a format for defining resources a service exposes. Migrated

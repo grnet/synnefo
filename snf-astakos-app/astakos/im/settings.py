@@ -191,12 +191,6 @@ TRANSLATE_UUIDS = getattr(settings, 'ASTAKOS_TRANSLATE_UUIDS', False)
 # Users that can approve or deny project applications from the web.
 PROJECT_ADMINS = getattr(settings, 'ASTAKOS_PROJECT_ADMINS', set())
 
-# Maximum pending project applications per applicant.
-# This is to reduce the volume of applications
-# in case users abuse the mechanism.
-PENDING_APPLICATION_LIMIT = getattr(settings,
-                                    'ASTAKOS_PENDING_APPLICATION_LIMIT', 0)
-
 # OAuth2 Twitter credentials.
 TWITTER_TOKEN = getattr(settings, 'ASTAKOS_TWITTER_TOKEN', '')
 TWITTER_SECRET = getattr(settings, 'ASTAKOS_TWITTER_SECRET', '')

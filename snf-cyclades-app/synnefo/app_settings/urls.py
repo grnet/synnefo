@@ -33,7 +33,6 @@
 
 from django.conf.urls.defaults import *
 from django.conf import settings
-from django.views.decorators.csrf import csrf_exempt
 from snf_django.lib.api.proxy import proxy
 
 from functools import partial
@@ -56,8 +55,8 @@ PROXY_USER_SERVICES = getattr(settings, 'CYCLADES_PROXY_USER_SERVICES', True)
 if PROXY_USER_SERVICES:
     urlpatterns += patterns(
         '',
-        (r'^login/?$', csrf_exempt(astakos_proxy)),
-        (r'^feedback/?$', csrf_exempt(astakos_proxy)),
-        (r'^user_catalogs/?$', csrf_exempt(astakos_proxy)),
-        (r'^astakos/api/', csrf_exempt(astakos_proxy)),
+        (r'^login/?$', astakos_proxy),
+        (r'^feedback/?$', astakos_proxy),
+        (r'^user_catalogs/?$', astakos_proxy),
+        (r'^astakos/api/', astakos_proxy),
     )

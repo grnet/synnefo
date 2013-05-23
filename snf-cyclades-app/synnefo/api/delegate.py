@@ -35,7 +35,6 @@ import logging
 
 import urlparse
 from django.http import HttpResponse
-from django.views.decorators.csrf import csrf_exempt
 
 from django.conf import settings
 
@@ -71,7 +70,6 @@ def proxy(request, url, headers={}, body=None):
         return HttpResponse(data, status=status)
 
 
-@csrf_exempt
 def delegate_to_resources_service(request):
     logger.debug("Delegate resources request to %s" % RESOURCES_URL)
     token = request.META.get('HTTP_X_AUTH_TOKEN')
@@ -80,7 +78,6 @@ def delegate_to_resources_service(request):
                  body=request.raw_post_data)
 
 
-@csrf_exempt
 def delegate_to_user_quota_service(request):
     logger.debug("Delegate quotas request to %s" % USER_QUOTA_URL)
     token = request.META.get('HTTP_X_AUTH_TOKEN')
@@ -89,7 +86,6 @@ def delegate_to_user_quota_service(request):
                  body=request.raw_post_data)
 
 
-@csrf_exempt
 def delegate_to_feedback_service(request):
     logger.debug("Delegate feedback request to %s" % USER_FEEDBACK_URL)
     token = request.META.get('HTTP_X_AUTH_TOKEN')
@@ -98,7 +94,6 @@ def delegate_to_feedback_service(request):
                  body=request.raw_post_data)
 
 
-@csrf_exempt
 def delegate_to_user_catalogs_service(request):
     token = request.META.get('HTTP_X_AUTH_TOKEN')
     headers = {'X-Auth-Token': token, 'content-type': 'application/json'}

@@ -35,6 +35,7 @@ from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import simplejson as json
 
+from synnefo.webproject.management import utils
 from astakos.im.models import Resource
 from astakos.im.resources import update_resource
 from ._common import show_resource_value, style_options, check_style, units
@@ -42,26 +43,30 @@ from ._common import show_resource_value, style_options, check_style, units
 
 class Command(BaseCommand):
     args = "<resource name>"
-    help = ("Modify a resource (currently only change the default base quota)."
-            "\nIf no resource is specified, all resources are considered.")
+    help = "Modify a resource's default base quota and boolean flags."
 
     option_list = BaseCommand.option_list + (
         make_option('--limit',
-                    dest='limit',
                     help="Specify default base quota"),
-        make_option('--interactive',
+        make_option('--limit-interactive',
                     action='store_true',
-                    dest='interactive',
                     default=None,
-                    help="Prompt user to change default base quotas"),
-        make_option('--from-file',
-                    dest='from_file',
+                    help=("Prompt user to change default base quota. "
+                          "If no resource is given, prompts for all "
+                          "resources.")),
+        make_option('--limit-from-file',
                     metavar='<limits_file.json>',
-                    help="Read default base quotas from a json file"),
+                    help=("Read default base quota from a file. "
+                          "File should contain a json dict mapping resource "
+                          "names to limits")),
         make_option('--unit-style',
                     default='mb',
                     help=("Specify display unit for resource values "
                           "(one of %s); defaults to mb") % style_options),
+        make_option('--allow-in-projects',
+                    metavar='True|False',
+                    help=("Specify whether to allow this resource "
+                          "in projects.")),
     )
 
     def handle(self, *args, **options):
@@ -69,8 +74,9 @@ class Command(BaseCommand):
 
         actions = {
             'limit': self.change_limit,
-            'interactive': self.change_interactive,
-            'from_file': self.change_from_file,
+            'limit_interactive': self.change_interactive,
+            'limit_from_file': self.change_from_file,
+            'allow_in_projects': self.set_allow_in_projects,
         }
 
         opts = [(key, value)
@@ -78,8 +84,9 @@ class Command(BaseCommand):
                 if key in actions and value is not None]
 
         if len(opts) != 1:
-            raise CommandError("Please provide exactly one of the options: %s."
-                               % ", ".join(actions.keys()))
+            raise CommandError("Please provide exactly one of the options: "
+                               "--limit, --limit-interactive, "
+                               "--limit-from-file, --allow-in-projects.")
 
         self.unit_style = options['unit_style']
         check_style(self.unit_style)
@@ -87,6 +94,18 @@ class Command(BaseCommand):
         key, value = opts[0]
         action = actions[key]
         action(resource_name, value)
+
+    def set_allow_in_projects(self, resource_name, allow):
+        if resource_name is None:
+            raise CommandError("Please provide a resource name.")
+
+        try:
+            allow = utils.parse_bool(allow)
+        except ValueError:
+            raise CommandError("Expecting a boolean value.")
+        resource = self.get_resource(resource_name)
+        resource.allow_in_projects = allow
+        resource.save()
 
     def get_resource(self, resource_name):
         try:

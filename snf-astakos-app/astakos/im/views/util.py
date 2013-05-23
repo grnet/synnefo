@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -49,6 +49,26 @@ from snf_django.lib.db.transaction import commit_on_success_strict
 from astakos.im import presentation
 from astakos.im.util import model_to_dict
 from astakos.im.models import Resource
+import astakos.im.messages as astakos_messages
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+class ExceptionHandler(object):
+    def __init__(self, request):
+        self.request = request
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, value, traceback):
+        if value is not None:  # exception
+            logger.exception(value)
+            m = _(astakos_messages.GENERIC_ERROR)
+            messages.error(self.request, m)
+            return True  # suppress exception
+
 
 def render_response(template, tab=None, status=200, context_instance=None, **kwargs):
     """

@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -66,9 +66,8 @@ from astakos.im.functions import check_pending_app_quota, accept_membership, \
     get_related_project_id, get_by_chain_or_404, approve_application, \
     deny_application, cancel_application, dismiss_application
 from astakos.im import settings
-from astakos.im.ctx import ExceptionHandler
 from astakos.im.views.util import render_response, _create_object, \
-    _update_object, _resources_catalog
+    _update_object, _resources_catalog, ExceptionHandler
 from astakos.im.views.decorators import cookie_fix, signed_terms_required,\
     valid_astakos_user_required
 

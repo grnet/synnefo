@@ -920,11 +920,11 @@ To verify that the image was registered successfully use:
 Miscellaneous
 =============
 
-.. snf-branding
+.. branding
 
-Snf-branding
+Branding
 ------------
-Snf-branding  allows you to adapt Astakos, Pithos  and Cyclades UI  to your 
+snf-branding  allows you to adapt Astakos, Pithos  and Cyclades UI  to your 
 company’s  visual identity.  
 
 
@@ -932,8 +932,8 @@ company’s  visual identity.
 Configuration
 ~~~~~~~~~~~~~
 
-The settings for the snf-branding application can be found in the configuration 
-file   <path_to_conf_file>/15-snf-branding.conf
+The settings for the snf-branding application can be found inside the 
+configuration file /etc/synnefo/15-snf-branding.conf.
 
 By default, the service name is Synnefo and the company name is GRNET. 
 These name and their respective logos and urls are used throughout Astakos, 
@@ -954,26 +954,26 @@ uncommenting  and setting the following:
   #BRANDING_COMPANY_URL = 'https://www.grnet.gr/en/'
 
 
-BRANDING_COMPANY_NAME and BRANDING_COMPANY_URL  appear in Astakos, Cyclades and 
-Pithos footer.
-In addition to that, BRANDING_COMPANY_NAME appears in Astakos project tab.
+| BRANDING_COMPANY_NAME appears in Dashboard/projects page.
+| BRANDING_COMPANY_NAME and BRANDING_COMPANY_URL  appear in Astakos, Pithos  and
+ Cyclades footer only if BRANDING_SHOW_COPYRIGHT is set to True.
 
 **Copyright options:**
 
-By default, no copyright message is shown in the UI. If you want to make it 
-visible to the footer of Astakos, Cyclades and Pithos UI,  you can uncomment and
-set True the setting:
+By default, no copyright message is shown in the UI footer. If you want to make 
+it visible in the footer of Astakos, Pithos and Cyclades UI,  you can uncomment 
+and set True the setting:
 
 .. code-block:: console
 
   #BRANDING_SHOW_COPYRIGHT = False
 
-Copyright message defaults to 'Copyright (c) 2011-<current_year> GRNET.'  
-but you can alter it using the setting:
+Copyright message defaults to 'Copyright (c) 2011-<current_year> 
+<your-company-name>.' but you can alter it using the setting:
 
 .. code-block:: console
 
-  #BRANDING_COPYRIGHT_MESSAGE = 'Copyright (c) 2011-<current_year> GRNET S.A.'
+  #BRANDING_COPYRIGHT_MESSAGE = 'Copyright (c) 2011-<current_year> GRNET'
 
 **Images:**
 
@@ -994,31 +994,32 @@ branding-related images:
 
 1. Create a new directory and  place there  some or all of your images.
 
-If you want to replace all images, keep the name/extension conventions as 
-indicated in the above table and set:
+If you want to replace all of your images, keep the name/extension conventions 
+as indicated in the above table and set:
 
 .. code-block:: console
 
   #BRANDING_IMAGE_MEDIA_URL= MEDIA_URL + 'branding/images/' 
 
-to the relative path of your directory.
+to the relative path of your directory. 
+You could also use an absolute path to a directory and set for example 
+BRANDING_IMAGE_MEDIA_URL = 'https://www.synnefo.org/images/'
 
 If you wish to replace individual images, **do not uncomment**  
-BRANDING_IMAGE_MEDIA_URL but instead provide a relative path, 
-pointing to the file inside your directory for each BRANDING_<image>_URL that 
-will be replaced.
+BRANDING_IMAGE_MEDIA_URL but instead provide a relative path, pointing to the 
+file inside your directory for each BRANDING_<image>_URL that will be replaced.
 
 2. Upload some or all of your images to a server and replace each 
 BRANDING_<image>_URL with the absolute url of the image ( i.e.  
-BRANDING_DASHBOARD_URL=’https://www.example.com/images/my_dashboard.jpg’ ).
+BRANDING_DASHBOARD_URL=’https://www.synnefo.com/images/my_dashboard.jpg’).
 
 Note that the alternative text  for each image tag inside html documents  is 
-alt=“BRANDING_SERVICE_NAME {Dashboad, Compute. Console, Storage}” respectively.
+alt=“BRANDING_SERVICE_NAME {Dashboard, Compute. Console, Storage}” respectively.
 
 
-.. note:: Retina optimised images:
+.. note:: Retina optimized images:
 
-  Synnefo UI is optimised for Retina displays. As far as images are concerned,  
+  Synnefo UI is optimized for Retina displays. As far as images are concerned,  
   `retina.js <http://retinajs.com/>`_ is used.
 
   Retina.js checks each image on a page to  see if there is a high-resolution 
@@ -1031,7 +1032,7 @@ alt=“BRANDING_SERVICE_NAME {Dashboad, Compute. Console, Storage}” respective
   .html#//apple_ref/doc/uid/TP40010156-CH15-SW1>`_ to denote high-resolution 
   image variants on your server.
 
-  For each of the images that you wish the script to  replace you must have a 
+  For each of the images that you wish the script to  replace, you must have a 
   high-resolution variant in the same folder  named correctly and it will be 
   detected automatically. For example if your image is in <my_directory> and is 
   named "my_image.jpg" the script will look in the same directory for an image 
@@ -1082,8 +1083,6 @@ must place your <email-file>.txt files respecting the following structure:
 Feel free to omit any of the above files you do not wish to overwrite.
 
 
-
-
 Below is a list of all emails sent by Synnefo to users along with a short 
 description and a link to their content:
 
@@ -1097,7 +1096,7 @@ Contains a contact email  and a “ thank you” message.
 Extends “email.txt”
 (Link: https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/activation_email.txt  )
 
-* ``snf-astakos-app/astakos/im/templates/im/invitation.txt:``  Email sent to invited user. He/she has to click on a link provided to activate the  account. 
+* ``snf-astakos-app/astakos/im/templates/im/invitation.txt:``  Email sent to an invited user. He/she has to click on a link provided to activate the  account. 
 Extends “email.txt” 
 (Link: https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/invitation.txt )
 
@@ -1109,10 +1108,10 @@ association. Extends “email.txt”
 * ``snf-astakos-app/astakos/im/templates/im/welcome_email.txt`` Email sent to inform the user that his/ her account has been activated. Extends “email.txt”
 (Link: https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/welcome_email.txt )
 
-* ``snf-astakos-app/astakos/im/templates/registration/email_change_email.txt`` Email sent to user when he/she has requested new email address assignment. The user has to click on link provided to validate this action. Extends “email.txt” 
+* ``snf-astakos-app/astakos/im/templates/registration/email_change_email.txt`` Email sent to user when he/she has requested new email address assignment. The user has to click on a link provided to validate this action. Extends “email.txt” 
 (Link: https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/registration/email_change_email.txt )
 
-* ``snf-astakos-app/astakos/im/templates/registration/password_email.txt`` Email sent for resetting password purpose.  The user has to click on link provided to validate this action. Extends “email.txt” 
+* ``snf-astakos-app/astakos/im/templates/registration/password_email.txt`` Email sent for resetting password purpose.  The user has to click on a link provided to validate this action. Extends “email.txt” 
 (Link: https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/registration/password_email.txt )
 
 * ``snf-astakos-app/astakos/im/templates/im/projects/project_approval_notification.txt`` Informs  the project owner that his/her project has been approved.  Extends “email.txt” 

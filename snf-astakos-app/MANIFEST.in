@@ -1,4 +1,3 @@
-include README
 include distribute_setup.py
 global-include */templates/* */static/*
 global-exclude */.DS_Store

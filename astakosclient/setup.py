@@ -49,7 +49,6 @@ from version import __version__
 
 # Package info
 VERSION = __version__
-README = open(os.path.join(HERE, 'README')).read()
 SHORT_DESCRIPTION = 'A set of tools to ease versioning and use of git flow.'
 
 PACKAGES_ROOT = '.'
@@ -163,7 +162,6 @@ setup(
     license='BSD',
     url='http://www.synnefo.org/',
     description=SHORT_DESCRIPTION,
-    long_description=README,
     classifiers=CLASSIFIERS,
 
     author='Synnefo development team',

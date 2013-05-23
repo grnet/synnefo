@@ -96,6 +96,8 @@ def get_request_dict(request):
     """
     data = request.raw_post_data
     content_type = request.META.get("CONTENT_TYPE")
+    if content_type is None:
+        faults.BadRequest("Missing Content-Type header field")
     if content_type.startswith("application/json"):
         try:
             return json.loads(data)

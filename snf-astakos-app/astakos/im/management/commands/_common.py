@@ -159,8 +159,9 @@ class ResourceDict(object):
 
 
 def show_resource_value(number, resource, style):
-    resource_dict = ResourceDict.get()
-    unit = resource_dict[resource]['unit']
+    resources = ResourceDict.get()
+    resource_dict = resources.get(resource)
+    unit = resource_dict.get('unit') if resource_dict else None
     return units.show(number, unit, style)
 
 

@@ -920,31 +920,35 @@ To verify that the image was registered successfully use:
 Miscellaneous
 =============
 
-.. branding
+.. _branding:
 
 Branding
-------------
-snf-branding  allows you to adapt Astakos, Pithos  and Cyclades UI  to your 
-company’s  visual identity.  
+--------
 
-
+Since Synnefo v0.14, you are able to adapt the Astakos, Pithos and Cyclades Web
+UI to your company’s visual identity. This is possible using the snf-branding
+component, which is automatically installed on the nodes running the API
+servers for Astakos, Pithos and Cyclades. 
 
 Configuration
 ~~~~~~~~~~~~~
 
-The settings for the snf-branding application can be found inside the 
-configuration file /etc/synnefo/15-snf-branding.conf.
+This can be done by changing only the settings of the snf-branding component.
+The settings for the snf-branding application can be found inside the
+configuration file ``/etc/synnefo/15-snf-branding.conf`` on the nodes that have
+Astakos, Pithos and Cyclades installed.
 
-By default, the service name is Synnefo and the company name is GRNET. 
-These name and their respective logos and urls are used throughout Astakos, 
-Pithos and Cyclades UI.
+By default, the global service name is "Synnefo" and the company name is
+"GRNET". These names and their respective logos and URLs are used throughout
+the Astakos, Pithos and Cyclades UI.
 
-**Name and logos:**
+**Names and URLs:**
 
-The first group of branding customization regards company and service info.
+The first group of branding customization refers to the service's and company's
+information.
 
-You can overwrite the company and the service name and url respectively  by 
-uncommenting  and setting the following:
+You can overwrite the company and the service name and URL respectively by
+uncommenting and setting the following:
 
 .. code-block:: console
 
@@ -953,23 +957,23 @@ uncommenting  and setting the following:
   #BRANDING_COMPANY_NAME = 'GRNET'
   #BRANDING_COMPANY_URL = 'https://www.grnet.gr/en/'
 
-
-| BRANDING_COMPANY_NAME appears in Dashboard/projects page.
-| BRANDING_COMPANY_NAME and BRANDING_COMPANY_URL  appear in Astakos, Pithos  and
- Cyclades footer only if BRANDING_SHOW_COPYRIGHT is set to True.
+| ``BRANDING_SERVICE_NAME`` appears in Astakos Dashboard/Projects pages.
+| ``BRANDING_COMPANY_NAME`` and ``BRANDING_COMPANY_URL`` appear in Astakos,
+  Pithos and Cyclades footer only if ``BRANDING_SHOW_COPYRIGHT`` is set to True.
 
 **Copyright options:**
 
-By default, no copyright message is shown in the UI footer. If you want to make 
-it visible in the footer of Astakos, Pithos and Cyclades UI,  you can uncomment 
-and set True the setting:
+By default, no Copyright message is shown in the UI footer. If you want to make
+it visible in the footer of Astakos, Pithos and Cyclades UI, you can uncomment
+and set to ``True`` the setting:
 
 .. code-block:: console
 
   #BRANDING_SHOW_COPYRIGHT = False
 
 Copyright message defaults to 'Copyright (c) 2011-<current_year> 
-<your-company-name>.' but you can alter it using the setting:
+<BRANDING_COMPANY_NAME>.' but you can overwrite it to a completely custom one by
+setting the following option:
 
 .. code-block:: console
 
@@ -977,6 +981,8 @@ Copyright message defaults to 'Copyright (c) 2011-<current_year>
 
 **Images:**
 
+The Astakos, Pithos and Cyclades Web UI has some logos and images.
+ 
 The branding-related images are presented in  the following table:
 
 ===============  ============================  =========
@@ -985,17 +991,17 @@ Image            Name/extension  convention    Usage
 Favicon          favicon.ico                   Favicon for all services
 Dashboard logo   dashboard_logo.png            Visible in all Astakos UI pages
 Compute logo     compute_logo.png              Visible in all Cyclades UI pages
-Console logo     console_logo.png              Visible in Console Page for VMs
-Storage logo     storage_logo.png              Visible in Pithos UI pages
+Console logo     console_logo.png              Visible in the Cyclades Console Window
+Storage logo     storage_logo.png              Visible in all Pithos UI pages
 ===============  ============================  =========
 
-There are two methods  available for replacing all or individual 
+There are two methods  available for replacing all, or individual, 
 branding-related images:
 
-1. Create a new directory and  place there  some or all of your images.
+1. Create a new directory and  place there some or all of your images.
 
-If you want to replace all of your images, keep the name/extension conventions 
-as indicated in the above table and set:
+   If you want to replace all of your images, keep the name/extension
+   conventions as indicated in the above table and set:
 
 .. code-block:: console
 
@@ -1003,49 +1009,49 @@ as indicated in the above table and set:
 
 to the relative path of your directory. 
 You could also use an absolute path to a directory and set for example 
-BRANDING_IMAGE_MEDIA_URL = 'https://www.synnefo.org/images/'
+``BRANDING_IMAGE_MEDIA_URL`` = 'https://www.synnefo.org/images/'
 
-If you wish to replace individual images, **do not uncomment**  
-BRANDING_IMAGE_MEDIA_URL but instead provide a relative path, pointing to the 
-file inside your directory for each BRANDING_<image>_URL that will be replaced.
+   If you wish to replace individual images, **do not uncomment**
+   ``BRANDING_IMAGE_MEDIA_URL``, but instead provide a relative path, pointing to
+   the file inside your directory for each ``BRANDING_<image>_URL`` that you wish
+   to replace.
 
 2. Upload some or all of your images to a server and replace each 
-BRANDING_<image>_URL with the absolute url of the image ( i.e.  
-BRANDING_DASHBOARD_URL=’https://www.synnefo.com/images/my_dashboard.jpg’).
+   ``BRANDING_<image>_URL`` with the absolute url of the image (i.e.
+   ``BRANDING_DASHBOARD_URL``= 'https://www.synnefo.com/images/my_dashboard.jpg').
 
-Note that the alternative text  for each image tag inside html documents  is 
-alt=“BRANDING_SERVICE_NAME {Dashboard, Compute. Console, Storage}” respectively.
-
+   Note that the alternative text  for each image tag inside html documents  is 
+   alt=“BRANDING_SERVICE_NAME {Dashboard, Compute. Console, Storage}” respectively.
 
 .. note:: Retina optimized images:
 
-  Synnefo UI is optimized for Retina displays. As far as images are concerned,  
-  `retina.js <http://retinajs.com/>`_ is used.
+   Synnefo UI is optimized for Retina displays. As far as images are concerned,  
+   `retina.js <http://retinajs.com/>`_ is used.
 
-  Retina.js checks each image on a page to  see if there is a high-resolution 
-  version of that image on your server. If a high-resolution variant exists, 
-  the script will swap in that image in-place.
+   Retina.js checks each image on a page to  see if there is a high-resolution 
+   version of that image on your server. If a high-resolution variant exists, 
+   the script will swap in that image in-place.
 
-  The script assumes you use  `Apple's prescribed high-resolution modifier (@2x)
-  <http://developer.apple.com/library/ios/#documentation/2DDrawing/Conceptual/
-  DrawingPrintingiOS/SupportingHiResScreensInViews/SupportingHiResScreensInViews
-  .html#//apple_ref/doc/uid/TP40010156-CH15-SW1>`_ to denote high-resolution 
-  image variants on your server.
+   The script assumes you use  `Apple's prescribed high-resolution modifier (@2x)
+   <http://developer.apple.com/library/ios/#documentation/2DDrawing/Conceptual/
+   DrawingPrintingiOS/SupportingHiResScreensInViews/SupportingHiResScreensInViews
+   .html#//apple_ref/doc/uid/TP40010156-CH15-SW1>`_ to denote high-resolution 
+   image variants on your server.
 
-  For each of the images that you wish the script to  replace, you must have a 
-  high-resolution variant in the same folder  named correctly and it will be 
-  detected automatically. For example if your image is in <my_directory> and is 
-  named "my_image.jpg" the script will look in the same directory for an image 
-  named "my_image@2x.jpg".
+   For each of the images that you wish the script to  replace, you must have a 
+   high-resolution variant in the same folder  named correctly and it will be 
+   detected automatically. For example if your image is in <my_directory> and is 
+   named "my_image.jpg" the script will look in the same directory for an image 
+   named "my_image@2x.jpg".
 
-  In case that you don’t want to use a high-resolution image, the 
-  normal-resolution image will be visible.
+   In case that you don’t want to use a high-resolution image, the 
+   normal-resolution image will be visible.
 
-Branding-related issues:
-~~~~~~~~~~~~~~~~~~~~~~~~
+More branding
+~~~~~~~~~~~~~
 
-Although, it is not strictly-speaking branding-related, further verbal 
-customization  is feasible. 
+Although, it is not 100% branding-related, further verbal customization is
+feasible. 
 
 **EMAILS**
 
@@ -1082,62 +1088,57 @@ must place your <email-file>.txt files respecting the following structure:
 
 Feel free to omit any of the above files you do not wish to overwrite.
 
-
 Below is a list of all emails sent by Synnefo to users along with a short 
 description and a link to their content:
 
-
-* ``snf-astakos-app/astakos/im/templates/im/email.txt`` Base email template. 
-Contains a contact email  and a “ thank you” message. 
-(Link: https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/email.txt )
-
-
-* ``snf-astakos-app/astakos/im/templates/im/activation_email.txt`` Email sent to user that prompts  him/her to click on a link provided to activate the account.
-Extends “email.txt”
-(Link: https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/activation_email.txt  )
-
-* ``snf-astakos-app/astakos/im/templates/im/invitation.txt:``  Email sent to an invited user. He/she has to click on a link provided to activate the  account. 
-Extends “email.txt” 
-(Link: https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/invitation.txt )
-
-* ``snf-astakos-app/astakos/im/templates/im/switch_accounts_email.txt`` Email sent to user upon his/her request to associate this email address with a 
-shibboleth account. He/she has to click on a link provided to activate the  
-association. Extends “email.txt”
-(Link: https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/switch_accounts_email.txt )
-
-* ``snf-astakos-app/astakos/im/templates/im/welcome_email.txt`` Email sent to inform the user that his/ her account has been activated. Extends “email.txt”
-(Link: https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/welcome_email.txt )
-
-* ``snf-astakos-app/astakos/im/templates/registration/email_change_email.txt`` Email sent to user when he/she has requested new email address assignment. The user has to click on a link provided to validate this action. Extends “email.txt” 
-(Link: https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/registration/email_change_email.txt )
-
-* ``snf-astakos-app/astakos/im/templates/registration/password_email.txt`` Email sent for resetting password purpose.  The user has to click on a link provided to validate this action. Extends “email.txt” 
-(Link: https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/registration/password_email.txt )
-
-* ``snf-astakos-app/astakos/im/templates/im/projects/project_approval_notification.txt`` Informs  the project owner that his/her project has been approved.  Extends “email.txt” 
-(Link: https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_approval_notification.txt )
-
-* ``snf-astakos-app/astakos/im/templates/im/projects/project_denial_notification.txt`` Informs the project owner that his/her  project application has been denied explaining the reasons.  Extends “email.txt”  
-( Link: https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_denial_notification.txt )
-
-* ``snf-astakos-app/astakos/im/templates/im/projects/project_membership_change_notification.txt`` An email is sent to a user containing information about his project membership (whether he has been accepted, rejected or removed). Extends “email.txt” 
-(Link:  https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_membership_change_notification.txt )
-
-* ``snf-astakos-app/astakos/im/templates/im/projects/project_membership_enroll_notification.txt`` Informs a user that he/she  has been enrolled to a project.  Extends “email.txt” 
-( Link: https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_membership_enroll_notification.txt )
-
-* ``snf-astakos-app/astakos/im/templates/im/projects/project_membership_leave_request_notification.txt`` An email is sent to the project owner to make him aware of a  user having requested to leave his project.  Extends “email.txt” 
-( Link: https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_membership_leave_request_notification.txt )
-
-* ``snf-astakos-app/astakos/im/templates/im/projects/project_membership_request_notification.txt`` An email is sent to the project owner to make him/her aware of a user having requested to join  his project. Extends “email.txt” 
-(Link: https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_membership_request_notification.txt )
-
-* ``snf-astakos-app/astakos/im/templates/im/projects/project_suspension_notification.txt`` An email is sent to the project owner to make him/her aware of his/her project having  been suspended.   Extends “email.txt” 
-(Link: https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_suspension_notification.txt )
-
-* ``snf-astakos-app/astakos/im/templates/im/projects/project_termination_notification.txt`` An email is sent to the project owner to make him/her aware of his/her project having  been terminated. Extends “email.txt”  
-(Link: https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_termination_notification.txt )
-
+* ``snf-astakos-app/astakos/im/templates/im/email.txt``
+  Base email template. Contains a contact email and a “thank you” message.
+  (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/email.txt>`_)
+* ``snf-astakos-app/astakos/im/templates/im/activation_email.txt`` Email sent to
+  user that prompts  him/her to click on a link provided to activate the account.
+  Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/activation_email.txt>`_)
+* ``snf-astakos-app/astakos/im/templates/im/invitation.txt`` Email sent to an
+  invited user. He/she has to click on a link provided to activate the account.
+  Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/invitation.txt>`_)
+* ``snf-astakos-app/astakos/im/templates/im/switch_accounts_email.txt`` Email
+  sent to user upon his/her request to associate this email address with a
+  shibboleth account. He/she has to click on a link provided to activate the
+  association. Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/switch_accounts_email.txt>`_)
+* ``snf-astakos-app/astakos/im/templates/im/welcome_email.txt`` Email sent to
+  inform the user that his/ her account has been activated. Extends “email.txt”
+  (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/welcome_email.txt>`_)
+* ``snf-astakos-app/astakos/im/templates/registration/email_change_email.txt``
+  Email sent to user when he/she has requested new email address assignment. The
+  user has to click on a link provided to validate this action. Extends
+  “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/registration/email_change_email.txt>`_)
+* ``snf-astakos-app/astakos/im/templates/registration/password_email.txt`` Email
+  sent for resetting password purpose. The user has to click on a link provided
+  to validate this action. Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/registration/password_email.txt>`_)
+* ``snf-astakos-app/astakos/im/templates/im/projects/project_approval_notification.txt``
+  Informs  the project owner that his/her project has been approved. Extends
+  “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_approval_notification.txt>`_)
+* ``snf-astakos-app/astakos/im/templates/im/projects/project_denial_notification.txt``
+  Informs the project owner that his/her  project application has been denied
+  explaining the reasons. Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_denial_notification.txt>`_)
+* ``snf-astakos-app/astakos/im/templates/im/projects/project_membership_change_notification.txt``
+  An email is sent to a user containing information about his project membership
+  (whether he has been accepted, rejected or removed). Extends “email.txt” (`Link
+  <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_membership_change_notification.txt>`_)
+* ``snf-astakos-app/astakos/im/templates/im/projects/project_membership_enroll_notification.txt``
+  Informs a user that he/she  has been enrolled to a project. Extends
+  “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_membership_enroll_notification.txt>`_)
+* ``snf-astakos-app/astakos/im/templates/im/projects/project_membership_leave_request_notification.txt``
+  An email is sent to the project owner to make him aware of a  user having
+  requested to leave his project. Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_membership_leave_request_notification.txt>`_)
+* ``snf-astakos-app/astakos/im/templates/im/projects/project_membership_request_notification.txt``
+  An email is sent to the project owner to make him/her aware of a user having
+  requested to join  his project. Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_membership_request_notification.txt>`_)
+* ``snf-astakos-app/astakos/im/templates/im/projects/project_suspension_notification.txt``
+  An email is sent to the project owner to make him/her aware of his/her project
+  having been suspended. Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_suspension_notification.txt>`_)
+* ``snf-astakos-app/astakos/im/templates/im/projects/project_termination_notification.txt``
+  An email is sent to the project owner to make him/her aware of his/her project
+  having been terminated. Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_termination_notification.txt>`_)
 
 .. warning:: Django templates language:
 
@@ -1145,7 +1146,6 @@ association. Extends “email.txt”
   information contained in django template variables that must not be omitted, 
   such as the activation link for activating one’s account and many more. 
   These variables are contained into {{}} inside the templates.
-
 
 
 .. RabbitMQ

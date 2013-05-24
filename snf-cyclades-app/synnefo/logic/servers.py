@@ -394,6 +394,12 @@ def add_floating_ip(vm, address):
         raise faults.Conflict("Floating IP '%s' already in use" %
                               floating_ip.id)
 
+    bnet = floating_ip.network.backend_networks.filter(backend=vm.backend_id)
+    if not bnet.exists():
+        msg = "Network '%s' is a floating IP pool, but it not connected"\
+              " to backend '%s'" % (floating_ip.network, vm.backend)
+        raise faults.ServiceUnavailable(msg)
+
     floating_ip.machine = vm
     floating_ip.save()
 

@@ -53,21 +53,32 @@ class Command(BaseCommand):
         if len(args) < 2:
             raise CommandError("Invalid number of arguments")
 
-        kwargs = dict(name=args[0], api_url=args[1], url=args[2])
+        name = args[0]
+        url = args[1]
+        api_url = args[2]
+        kwargs = dict(name=name, url=url, api_url=api_url)
         if options['type']:
             kwargs['type'] = options['type']
 
-        services = list(Service.objects.filter(api_url=kwargs['api_url']))
+        try:
+            s = Service.objects.get(name=name)
+            m = "There already exists service named '%s'." % name
+            raise CommandError(m)
+        except Service.DoesNotExist:
+            pass
+
+        services = list(Service.objects.filter(url=url))
         if services:
-            m = "URL '%s' is registered for another service." %\
-                kwargs['api_url']
+            m = "Service URL '%s' is registered for another service." % url
+            raise CommandError(m)
+
+        services = list(Service.objects.filter(api_url=api_url))
+        if services:
+            m = "API URL '%s' is registered for another service." % api_url
             raise CommandError(m)
 
         try:
             s = Service.objects.create(**kwargs)
-        except IntegrityError:
-            m = "There already exists service named '%s'." % kwargs['name']
-            raise CommandError(m)
         except BaseException:
             raise CommandError("Failed to create service.")
         else:

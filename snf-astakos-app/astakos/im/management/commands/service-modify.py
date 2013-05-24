@@ -43,10 +43,6 @@ class Command(BaseCommand):
     help = "Modify service attributes"
 
     option_list = BaseCommand.option_list + (
-        make_option('--name',
-                    dest='name',
-                    default=None,
-                    help="Set service name"),
         make_option('--url',
                     dest='url',
                     default=None,
@@ -81,15 +77,11 @@ class Command(BaseCommand):
                 "Service does not exist. You may run snf-manage "
                 "service-list for available service IDs.")
 
-        name = options.get('name')
         api_url = options.get('api_url')
         url = options.get('url')
         auth_token = options.get('auth_token')
         renew_token = options.get('renew_token')
         type = options.get('type')
-
-        if name:
-            service.name = name
 
         if api_url:
             service.api_url = api_url

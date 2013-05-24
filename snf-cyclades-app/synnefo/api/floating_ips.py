@@ -126,41 +126,45 @@ def allocate_floating_ip(request):
     log.info('allocate_floating_ip %s', req)
 
     userid = request.user_uniq
-    try:
-        pool = req['pool']
-    except KeyError:
-        raise faults.BadRequest("Malformed request. Missing"
-                                " 'pool' attribute")
-
-    try:
-        objects = Network.objects.select_for_update()
-        network = objects.get(id=pool, public=True, deleted=False)
-    except Network.DoesNotExist:
-        raise faults.ItemNotFound("Pool '%s' does not exist." % pool)
-
+    pool = req.get("pool", None)
     address = req.get("address", None)
     machine = None
+    net_objects = Network.objects.select_for_update().filter(public=True,
+                                                             deleted=False)
     try:
-        if address is None:
-            address = util.get_network_free_address(network)  # Get X-Lock
+        if pool is None:
+            # User did not specified a pool. Choose a random public IP
+            network, address = util.allocate_public_ip(net_objects)
         else:
-            if FloatingIP.objects.filter(network=network,
-                                         deleted=False,
-                                         ipv4=address).exists():
-                msg = "Floating IP '%s' is reserved" % address
-                raise faults.Conflict(msg)
-            pool = network.get_pool()  # Gets X-Lock
-            if not pool.contains(address):
-                raise faults.BadRequest("Invalid address")
-            if not pool.is_available(address):
-                try:
-                    network.nics.get(ipv4=address,
-                                     machine__userid=userid)
-                except NetworkInterface.DoesNotExist:
-                    msg = "Address '%s' is already in use" % address
+            try:
+                network = net_objects.get(id=pool)
+            except Network.DoesNotExist:
+                raise faults.ItemNotFound("Pool '%s' does not exist." % pool)
+            if address is None:
+                # User did not specified an IP address. Choose a random one
+                # Gets X-Lock on IP pool
+                address = util.get_network_free_address(network)
+            else:
+                # User specified an IP address. Check that it is not a used
+                # floating IP
+                if FloatingIP.objects.filter(network=network,
+                                             deleted=False,
+                                             ipv4=address).exists():
+                    msg = "Floating IP '%s' is reserved" % address
                     raise faults.Conflict(msg)
-            pool.reserve(address)
-            pool.save()
+                pool = network.get_pool()  # Gets X-Lock
+                # Check address belongs to pool
+                if not pool.contains(address):
+                    raise faults.BadRequest("Invalid address")
+                if pool.is_available(address):
+                    pool.reserve(address)
+                    pool.save()
+                # If address is not available, check that it belongs to the
+                # same user
+                elif not network.nics.filter(ipv4=address,
+                                            machine__userid=userid).exists():
+                        msg = "Address '%s' is already in use" % address
+                        raise faults.Conflict(msg)
         floating_ip = FloatingIP.objects.create(ipv4=address, network=network,
                                                 userid=userid, machine=machine)
         quotas.issue_and_accept_commission(floating_ip)

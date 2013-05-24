@@ -37,7 +37,8 @@ from snf_django.utils.testing import BaseAPITest, mocked_quotaholder
 from synnefo.db.models import FloatingIP
 from synnefo.db.models_factory import (FloatingIPFactory, NetworkFactory,
                                        VirtualMachineFactory,
-                                       NetworkInterfaceFactory)
+                                       NetworkInterfaceFactory,
+                                       BackendNetworkFactory)
 from mock import patch, Mock
 
 
@@ -99,6 +100,26 @@ class FloatingIPAPITest(BaseAPITest):
         self.assertEqual(json.loads(response.content)["floating_ip"],
                          {"instance_id": None, "ip": "192.168.2.1",
                           "fixed_ip": None, "id": "1", "pool": "1"})
+
+    def test_reserve_no_pool(self):
+        # No networks
+        with mocked_quotaholder():
+            response = self.post(URL, "test_user", json.dumps({}), "json")
+        self.assertFault(response, 413, "overLimit")
+        # Full network
+        net = NetworkFactory(userid="test_user", subnet="192.168.2.0/32",
+                             gateway=None, public=True)
+        with mocked_quotaholder():
+            response = self.post(URL, "test_user", json.dumps({}), "json")
+        self.assertFault(response, 413, "overLimit")
+        # Success
+        net2 = NetworkFactory(userid="test_user", subnet="192.168.2.0/24",
+                              gateway=None, public=True)
+        with mocked_quotaholder():
+            response = self.post(URL, "test_user", json.dumps({}), "json")
+        self.assertEqual(json.loads(response.content)["floating_ip"],
+                         {"instance_id": None, "ip": "192.168.2.1",
+                          "fixed_ip": None, "id": "1", "pool": str(net2.id)})
 
     def test_reserve_full(self):
         net = NetworkFactory(userid="test_user", subnet="192.168.2.0/32",
@@ -186,7 +207,7 @@ class FloatingIPAPITest(BaseAPITest):
 
     @patch("synnefo.logic.backend", Mock())
     def test_delete_network_with_floating_ips(self):
-        ip = FloatingIPFactory(machine=None)
+        ip = FloatingIPFactory(machine=None, network__flavor="IP_LESS_ROUTED")
         net = ip.network
         # Can not remove network with floating IPs
         with mocked_quotaholder():
@@ -247,11 +268,15 @@ class FloatingIPActionsTest(BaseAPITest):
         # In use
         vm1 = VirtualMachineFactory()
         ip1 = FloatingIPFactory(userid=self.vm.userid, machine=vm1)
+        BackendNetworkFactory(network=ip1.network, backend=vm1.backend,
+                              operstate='ACTIVE')
         request = {"addFloatingIp": {"address": ip1.ipv4}}
         response = self.post(url, self.vm.userid, json.dumps(request), "json")
         self.assertFault(response, 409, "conflict")
         # Success
         ip1 = FloatingIPFactory(userid=self.vm.userid, machine=None)
+        BackendNetworkFactory(network=ip1.network, backend=self.vm.backend,
+                              operstate='ACTIVE')
         request = {"addFloatingIp": {"address": ip1.ipv4}}
         response = self.post(url, self.vm.userid, json.dumps(request), "json")
         self.assertEqual(response.status_code, 202)

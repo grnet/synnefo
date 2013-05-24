@@ -213,7 +213,7 @@ def get_flavor_provider(flavor):
     return disk_template, provider
 
 
-def get_network(network_id, user_id, for_update=False):
+def get_network(network_id, user_id, for_update=False, non_deleted=False):
     """Return a Network instance or raise ItemNotFound."""
 
     try:
@@ -221,7 +221,11 @@ def get_network(network_id, user_id, for_update=False):
         objects = Network.objects
         if for_update:
             objects = objects.select_for_update()
-        return objects.get(Q(userid=user_id) | Q(public=True), id=network_id)
+        network = objects.get(Q(userid=user_id) | Q(public=True),
+                              id=network_id)
+        if non_deleted and network.deleted:
+            raise faults.BadRequest("Networkhas been deleted.")
+        return network
     except (ValueError, Network.DoesNotExist):
         raise faults.ItemNotFound('Network not found.')
 
@@ -334,6 +338,23 @@ def get_network_free_address(network):
         address = None
     pool.save()
     return address
+
+
+def allocate_public_ip(networks=None):
+    """Allocate an IP address from public networks."""
+    if networks is None:
+        networks = Network.objects.select_for_update().filter(public=True,
+                                                              deleted=False)
+    for network in networks:
+        try:
+            address = get_network_free_address(network)
+        except:
+            pass
+        else:
+            return network, address
+    msg = "Can not allocate public IP. Public networks are full."
+    log.error(msg)
+    raise faults.OverLimit(msg)
 
 
 def get_nic(machine, network):

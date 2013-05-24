@@ -501,7 +501,7 @@ previously), by running:
 
 .. code-block:: console
 
-   # apt-get install snf-astakos-app snf-quotaholder-app snf-pithos-backend
+   # apt-get install snf-astakos-app snf-pithos-backend
 
 After successful installation of snf-astakos-app, make sure that also
 snf-webproject has been installed (marked as "Recommended" package). By default
@@ -710,6 +710,7 @@ for astakos:
 .. code-block:: console
 
     # snf-manage migrate im
+    # snf-manage migrate quotaholder_app
 
 Then, we load the pre-defined user groups
 
@@ -722,14 +723,28 @@ Then, we load the pre-defined user groups
 Services Registration
 ---------------------
 
-When the database is ready, we configure the elements of the Astakos cloudbar,
-to point to our future services:
+When the database is ready, we need to register the services. The following
+command will ask you to register the standard Synnefo services (astakos,
+cyclades, and pithos). Note that you have to register at least astakos in
+order to have a usable authentication system. For each service, you will be
+asked to provide the service URL (to appear in the Cloudbar) as well as its
+API URL. Moreover, the command will automatically register the resource
+definitions offered by the respective service.
 
 .. code-block:: console
 
-    # snf-manage service-add "~okeanos home" https://node1.example.com/im/ home-icon.png
-    # snf-manage service-add "cyclades" https://node1.example.com/ui/
-    # snf-manage service-add "pithos" https://node2.example.com/ui/
+    # snf-register-services
+
+Setting Default Base Quota for Resources
+----------------------------------------
+
+We now have to specify the limit on resources that each user can employ
+(exempting resources offered by projects).
+
+.. code-block:: console
+
+    # snf-manage resource-modify --limit-interactive
+
 
 Servers Initialization
 ----------------------
@@ -1694,11 +1709,6 @@ Since our Astakos, Cyclades, and Pithos installations belong together,
 they should all have identical ``ASTAKOS_BASE_URL`` setting
 (see also, :ref:`previously <conf-pithos>`).
 
-.. warning::
-
-   All services must match the quotaholder token and url configured for
-   quotaholder.
-
 TODO: Document the Network Options here
 
 Edit ``/etc/synnefo/20-snf-cyclades-app-cloudbar.conf``:
@@ -1980,15 +1990,18 @@ and start the daemon:
 
 .. warning:: Make sure you start ``snf-ganeti-eventd`` *ONLY* on GANETI MASTER
 
-Apply Quotas
-------------
+Apply Quota
+-----------
+
+The following commands will check and fix the integrity of user quota.
+In a freshly installed system, these commands have no effect and can be
+skipped.
 
 .. code-block:: console
 
-   node1 # snf-manage astakos-init --load-service-resources
-   node1 # snf-manage quota --verify
    node1 # snf-manage quota --sync
-   node2 # snf-manage pithos-reset-usage
+   node1 # snf-manage reconcile-resources-astakos --fix
+   node2 # snf-manage reconcile-resources-pithos --fix
    node1 # snf-manage reconcile-resources-cyclades --fix
 
 If all the above return successfully, then you have finished with the Cyclades

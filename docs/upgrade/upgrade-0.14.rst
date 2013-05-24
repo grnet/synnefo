@@ -65,17 +65,27 @@ setting was renamed to this. Therefore:
 * In Pithos settings, introduce a ``PITHOS_BASE_URL`` setting.
   It must point to the top-level Pithos URL.
 
-3 Quota-related steps
-=====================
+3 Register astakos service and migrate quota
+============================================
 
-Astakos and its resources should also get registered, so that they can
-be known to the quota system.
+You need to register Astakos as a service. The following command will ask
+you to provide the service URL (to appear in the Cloudbar) as well as its
+API URL. It will also automatically register the resource definitions
+offered by astakos.
 
 Run::
 
-    astakos-host$ snf-manage service-add astakos service_url api_url
-    astakos-host$ snf-manage resource-export-astakos > astakos.json
-    astakos-host$ snf-manage resource-import --json astakos.json
+    astakos-host$ snf-register-services astakos
+
+.. note::
+
+   This command is equivalent to running:
+
+   .. code-block:: console
+     astakos-host$ snf-manage service-add astakos service_url api_url
+     astakos-host$ snf-manage resource-export-astakos > astakos.json
+     astakos-host$ snf-manage resource-import --json astakos.json
+
 
 The limit on pending project applications is since 0.14 handled as an
 Astakos resource, rather than a custom setting. In order to set this

@@ -77,8 +77,9 @@ class Command(BaseCommand):
         try:
             service = Service.objects.get(id=int(args[0]))
         except Service.DoesNotExist:
-            raise CommandError("Service does not exist. You may run snf-mange "
-                               "service-list for available service IDs.")
+            raise CommandError(
+                "Service does not exist. You may run snf-manage "
+                "service-list for available service IDs.")
 
         name = options.get('name')
         api_url = options.get('api_url')

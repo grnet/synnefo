@@ -45,9 +45,9 @@ class Command(ListCommand):
         "url": ("url", "Service url"),
         "api_url": ("api_url", "Service API url"),
         "token": ("auth_token", "Authentication token"),
-        "created": ("auth_token_created", "Token creation date"),
-        "expires": ("auth_token_expires", "Token expiration date"),
+        "token created": ("auth_token_created", "Token creation date"),
+        "token expires": ("auth_token_expires", "Token expiration date"),
         "type": ("type", "Service type"),
     }
 
-    fields = ["id", "name", "url", "api_url", "token", "created", "expires"]
+    fields = ["id", "name", "type", "token", "token created"]

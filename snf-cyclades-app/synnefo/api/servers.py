@@ -143,8 +143,7 @@ def vm_to_dict(vm, detail=False):
 
         vm_nics = vm.nics.filter(state="ACTIVE").order_by("index")
         attachments = map(nic_to_dict, vm_nics)
-        if attachments:
-            d['attachments'] = {'values': attachments}
+        d['attachments'] = {'values': attachments}
 
         # include the latest vm diagnostic, if set
         diagnostic = vm.get_last_diagnostic()

@@ -701,7 +701,9 @@ class NetworkInterface(models.Model):
                              choices=STATES)
 
     def __unicode__(self):
-        return '%s@%s' % (self.machine.name, self.network.name)
+        return "<%s:vm:%s network:%s ipv4:%s ipv6:%s>" % \
+            (self.index, self.machine_id, self.network_id, self.ipv4,
+             self.ipv6)
 
 
 class FloatingIP(models.Model):

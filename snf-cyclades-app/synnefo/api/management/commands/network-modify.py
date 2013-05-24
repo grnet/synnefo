@@ -36,8 +36,10 @@ from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 
 from synnefo.db.models import Network, pooled_rapi_client
-from synnefo.management.common import validate_network_info, get_network
+from synnefo.management.common import (validate_network_info, get_network,
+                                       get_backend)
 from synnefo.webproject.management.utils import parse_bool
+from synnefo.logic.backend import create_network, delete_network
 
 HELP_MSG = """Modify a network.
 
@@ -115,7 +117,15 @@ class Command(BaseCommand):
             metavar="True|False",
             choices=["True", "False"],
             help="Set as drained to exclude for IP allocation."
-                 " Only used for public networks.")
+                 " Only used for public networks."),
+        make_option(
+            "--add-to-backend",
+            dest="add_to_backend",
+            help="Create a public network to a Ganeti backend."),
+        make_option(
+            "--remove-from-backend",
+            dest="remove_from_backend",
+            help="Remove a public network from a Ganeti backend."),
     )
 
     def handle(self, *args, **options):
@@ -164,3 +174,25 @@ class Command(BaseCommand):
                                 remove_reserved_ips=remove_reserved_ips)
 
         network.save()
+
+        add_to_backend = options["add_to_backend"]
+        if add_to_backend is not None:
+            backend = get_backend(add_to_backend)
+            network.create_backend_network(backend=backend)
+            create_network(network, backend, connect=True)
+            msg = "Sent job to create network '%s' in backend '%s'\n"
+            self.stdout.write(msg % (network, backend))
+
+        remove_from_backend = options["remove_from_backend"]
+        if remove_from_backend is not None:
+            backend = get_backend(remove_from_backend)
+            if network.nics.filter(machine__backend=backend,
+                                   machine__deleted=False).exists():
+                msg = "Can not remove. There are still connected VMs to this"\
+                      " network"
+                raise CommandError(msg)
+            network.action = "DESTROY"
+            network.save()
+            delete_network(network, backend, disconnect=True)
+            msg = "Sent job to delete network '%s' from backend '%s'\n"
+            self.stdout.write(msg % (network, backend))

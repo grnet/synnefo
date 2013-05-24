@@ -133,7 +133,8 @@ def allocate_floating_ip(request):
                                 " 'pool' attribute")
 
     try:
-        network = Network.objects.get(public=True, deleted=False, id=pool)
+        objects = Network.objects.select_for_update()
+        network = objects.get(id=pool, public=True, deleted=False)
     except Network.DoesNotExist:
         raise faults.ItemNotFound("Pool '%s' does not exist." % pool)
 

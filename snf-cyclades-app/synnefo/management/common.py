@@ -112,7 +112,7 @@ def get_vm(server_id):
                            " available server IDs." % server_id)
 
 
-def get_network(network_id):
+def get_network(network_id, for_update=True):
     """Get a Network object by its ID.
 
     @type network_id: int or string
@@ -128,8 +128,11 @@ def get_network(network_id):
         except Network.InvalidBackendIdError:
             raise CommandError("Invalid network ID: %s" % network_id)
 
+    networks = Network.objects
+    if for_update:
+        networks = networks.select_for_update()
     try:
-        return Network.objects.get(id=network_id)
+        return networks.get(id=network_id)
     except Network.DoesNotExist:
         raise CommandError("Network with ID %s not found in DB."
                            " Use snf-manage network-list to find out"

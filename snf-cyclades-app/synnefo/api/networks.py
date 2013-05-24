@@ -306,6 +306,9 @@ def delete_network(request, network_id):
     if net.machines.all():  # Nics attached on network
         raise faults.NetworkInUse('Machines are connected to network.')
 
+    if net.floating_ips.filter(deleted=False).exists():
+        raise faults.NetworkInUse("Network has allocated floating IP addresses")
+
     net.action = 'DESTROY'
     net.save()
 

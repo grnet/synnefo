@@ -38,7 +38,7 @@ from synnefo.db.models import FloatingIP
 from synnefo.db.models_factory import (FloatingIPFactory, NetworkFactory,
                                        VirtualMachineFactory,
                                        NetworkInterfaceFactory)
-from mock import patch
+from mock import patch, Mock
 
 
 URL = "/api/v1.1/os-floating-ips"
@@ -183,6 +183,23 @@ class FloatingIPAPITest(BaseAPITest):
         self.assertSuccess(response)
         ips_after = FloatingIP.objects.filter(id=ip.id)
         self.assertEqual(len(ips_after), 0)
+
+    @patch("synnefo.logic.backend", Mock())
+    def test_delete_network_with_floating_ips(self):
+        ip = FloatingIPFactory(machine=None)
+        net = ip.network
+        # Can not remove network with floating IPs
+        with mocked_quotaholder():
+            response = self.delete("/api/v1.1/networks/%s" % net.id,
+                                   net.userid)
+        self.assertFault(response, 421, "networkInUse")
+        # But we can with only deleted Floating Ips
+        ip.deleted = True
+        ip.save()
+        with mocked_quotaholder():
+            response = self.delete("/api/v1.1/networks/%s" % net.id,
+                                   net.userid)
+        self.assertSuccess(response)
 
 
 POOLS_URL = "/api/v1.1/os-floating-ip-pools"

@@ -54,6 +54,9 @@ from synnefo.logic import backend as servers_backend
 
 logger = logging.getLogger(__name__)
 
+HELPDESK_MEDIA_URL = getattr(settings, 'HELPDESK_MEDIA_URL',
+                             settings.MEDIA_URL + 'helpdesk/')
+
 IP_SEARCH_REGEX = re.compile('([0-9]+)(?:\.[0-9]+){3}')
 UUID_SEARCH_REGEX = re.compile('([0-9a-z]{8}-([0-9a-z]{4}-){3}[0-9a-z]{12})')
 VM_SEARCH_REGEX = re.compile('vm(-){0,}(?P<vmid>[0-9]+)')
@@ -154,7 +157,9 @@ def index(request):
                         search_query=account)
 
     # show index template
-    return direct_to_template(request, "helpdesk/index.html")
+    return direct_to_template(request, "helpdesk/index.html",
+                              extra_context={'HELPDESK_MEDIA_URL':
+                                             HELPDESK_MEDIA_URL})
 
 
 @helpdesk_user_required
@@ -240,7 +245,7 @@ def account(request, search_query):
         'account_name': account_name,
         'token': request.user['auth_token'],
         'networks': networks,
-        'UI_MEDIA_URL': settings.UI_MEDIA_URL
+        'HELPDESK_MEDIA_URL': HELPDESK_MEDIA_URL
     }
 
     return direct_to_template(request, "helpdesk/account.html",

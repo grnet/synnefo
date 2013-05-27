@@ -547,7 +547,7 @@ class ExtendedPasswordResetForm(PasswordResetForm):
             }
             message = render_to_string(email_template_name, c)
             from_email = settings.SERVER_EMAIL
-            send_mail(_(settings.PASSWORD_RESET_EMAIL_SUBJECT),
+            send_mail(_(astakos_messages.PASSWORD_RESET_EMAIL_SUBJECT),
                       message,
                       from_email,
                       [user.email],

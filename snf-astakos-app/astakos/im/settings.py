@@ -100,60 +100,6 @@ EMAILCHANGE_ACTIVATION_DAYS = getattr(
 from logging import INFO
 LOGGING_LEVEL = getattr(settings, 'ASTAKOS_LOGGING_LEVEL', INFO)
 
-# Configurable email subjects
-INVITATION_EMAIL_SUBJECT = getattr(
-    settings, 'ASTAKOS_INVITATION_EMAIL_SUBJECT',
-    'Invitation to %s' % SITENAME)
-GREETING_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_GREETING_EMAIL_SUBJECT',
-                                 'Welcome to %s' % SITENAME)
-FEEDBACK_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_FEEDBACK_EMAIL_SUBJECT',
-                                 'Feedback from %s' % SITENAME)
-VERIFICATION_EMAIL_SUBJECT = getattr(
-    settings, 'ASTAKOS_VERIFICATION_EMAIL_SUBJECT',
-    '%s account activation is needed' % SITENAME)
-ACCOUNT_CREATION_SUBJECT = getattr(
-    settings, 'ASTAKOS_ACCOUNT_CREATION_SUBJECT',
-    '%s account created (%%(user)s)' % SITENAME)
-GROUP_CREATION_SUBJECT = getattr(
-    settings, 'ASTAKOS_GROUP_CREATION_SUBJECT',
-    '%s group created (%%(group)s)' % SITENAME)
-HELPDESK_NOTIFICATION_EMAIL_SUBJECT = getattr(
-    settings, 'ASTAKOS_HELPDESK_NOTIFICATION_EMAIL_SUBJECT',
-    '%s account activated (%%(user)s)' % SITENAME)
-EMAIL_CHANGE_EMAIL_SUBJECT = getattr(
-    settings, 'ASTAKOS_EMAIL_CHANGE_EMAIL_SUBJECT',
-    'Email change on %s ' % SITENAME)
-PASSWORD_RESET_EMAIL_SUBJECT = getattr(
-    settings, 'ASTAKOS_PASSWORD_RESET_EMAIL_SUBJECT',
-    'Password reset on %s ' % SITENAME)
-PROJECT_CREATION_SUBJECT = getattr(
-    settings, 'ASTAKOS_PROJECT_CREATION_SUBJECT',
-    '%s project application created (%%(name)s)' % SITENAME)
-PROJECT_APPROVED_SUBJECT = getattr(
-    settings, 'ASTAKOS_PROJECT_APPROVED_SUBJECT',
-    '%s project application approved (%%(name)s)' % SITENAME)
-PROJECT_DENIED_SUBJECT = getattr(
-    settings, 'ASTAKOS_PROJECT_DENIED_SUBJECT',
-    '%s project application denied (%%(name)s)' % SITENAME)
-PROJECT_TERMINATION_SUBJECT = getattr(
-    settings, 'ASTAKOS_PROJECT_TERMINATION_SUBJECT',
-    '%s project terminated (%%(name)s)' % SITENAME)
-PROJECT_SUSPENSION_SUBJECT = getattr(
-    settings, 'ASTAKOS_PROJECT_SUSPENSION_SUBJECT',
-    '%s testing project suspended (%%(name)s)' % SITENAME)
-PROJECT_MEMBERSHIP_CHANGE_SUBJECT = getattr(
-    settings, 'ASTAKOS_PROJECT_MEMBERSHIP_CHANGE_SUBJECT',
-    '%s testing project membership changed (%%(name)s)' % SITENAME)
-PROJECT_MEMBERSHIP_ENROLL_SUBJECT = getattr(
-    settings, 'ASTAKOS_PROJECT_MEMBERSHIP_ENROLL_SUBJECT',
-    '%s testing project enrollment (%%(name)s)' % SITENAME)
-PROJECT_MEMBERSHIP_REQUEST_SUBJECT = getattr(
-    settings, 'ASTAKOS_PROJECT_MEMBERSHIP_REQUEST_SUBJECT',
-    '%s testing project membership request (%%(name)s)' % SITENAME)
-PROJECT_MEMBERSHIP_LEAVE_REQUEST_SUBJECT = getattr(
-    settings, 'ASTAKOS_PROJECT_MEMBERSHIP_LEAVE_REQUEST_SUBJECT',
-    '%s testing project membership leave request (%%(name)s)' % SITENAME)
-
 # Set how many objects should be displayed per page
 PAGINATE_BY = getattr(settings, 'ASTAKOS_PAGINATE_BY', 8)
 

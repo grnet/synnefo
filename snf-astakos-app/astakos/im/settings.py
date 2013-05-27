@@ -58,12 +58,6 @@ RECAPTCHA_OPTIONS = getattr(settings, 'ASTAKOS_RECAPTCHA_OPTIONS',
 RECAPTCHA_USE_SSL = getattr(settings, 'ASTAKOS_RECAPTCHA_USE_SSL', True)
 RECAPTCHA_ENABLED = getattr(settings, 'ASTAKOS_RECAPTCHA_ENABLED', False)
 
-# set AstakosUser fields to propagate in the billing system
-BILLING_FIELDS = getattr(settings, 'ASTAKOS_BILLING_FIELDS', ['is_active'])
-
-# Queue for billing.
-# Example: 'rabbitmq://guest:guest@localhost:5672/astakos'
-QUEUE_CONNECTION = getattr(settings, 'ASTAKOS_QUEUE_CONNECTION', None)
 # Set where the user should be redirected after logout
 LOGOUT_NEXT = getattr(settings, 'ASTAKOS_LOGOUT_NEXT', '')
 

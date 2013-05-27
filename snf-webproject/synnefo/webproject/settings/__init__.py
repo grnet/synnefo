@@ -54,7 +54,6 @@ INSTALLED_APPS = extend_list_from_entry_point(INSTALLED_APPS, 'synnefo', \
 TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.request',
     'django.core.context_processors.i18n',
-    'django.contrib.auth.context_processors.auth',
     'django.core.context_processors.media'
 )
 TEMPLATE_CONTEXT_PROCESSORS = extend_list_from_entry_point(

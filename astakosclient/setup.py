@@ -49,7 +49,7 @@ from version import __version__
 
 # Package info
 VERSION = __version__
-SHORT_DESCRIPTION = 'A set of tools to ease versioning and use of git flow.'
+SHORT_DESCRIPTION = 'A client for the astakos authentication service.'
 
 PACKAGES_ROOT = '.'
 PACKAGES = find_packages(PACKAGES_ROOT)

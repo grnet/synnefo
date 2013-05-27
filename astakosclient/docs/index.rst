@@ -1,7 +1,7 @@
 .. _astakosclient:
 
 Component astakosclient
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^
 
 The Synnefo component :ref:`astakosclient <astakosclient>` defines a
 default client for the :ref:`Astakos <astakos>` service. It is designed to be

@@ -57,6 +57,8 @@ API_SERVICE_QUOTAS = "/astakos/api/service_quotas"
 API_COMMISSIONS = "/astakos/api/commissions"
 API_COMMISSIONS_ACTION = API_COMMISSIONS + "/action"
 API_FEEDBACK = "/astakos/api/feedback"
+API_TOKENS = "/astakos/api/tokens"
+TOKENS_ENDPOINTS = "endpoints"
 
 
 # --------------------------------------------------------------------
@@ -339,10 +341,40 @@ class AstakosClient():
         """
         check_input("send_feedback", self.logger, message=message, data=data)
         path = copy(API_FEEDBACK)
-        req_headers = {'content-type': 'application/json'}
         req_body = urllib.urlencode(
             {'feedback_msg': message, 'feedback_data': data})
-        self._call_astakos(token, path, req_headers, req_body, "POST")
+        self._call_astakos(token, path, None, req_body, "POST")
+
+    # ----------------------------------
+    # do a GET to ``API_TOKENS``/<user_token>/``TOKENS_ENDPOINTS``
+    def get_endpoints(self, token, belongs_to=None, marker=None, limit=None):
+        """Request registered endpoints from astakos
+
+        keyword arguments:
+        token       -- user's token (string)
+        belongs_to  -- user's uuid (string)
+        marker      -- return endpoints whose ID is higher than marker's (int)
+        limit       -- maximum number of endpoints to return (int)
+
+        Return a json formatted dictionary containing information
+        about registered endpoints.
+
+        WARNING: This api call encodes the user's token inside the url.
+        It's thoughs security unsafe to use it (both astakosclient and
+        nginx tend to log requested urls).
+        Avoid the use of get_endpoints method and use *** instead.
+
+        """
+        params = {}
+        if belongs_to is not None:
+            params['belongsTo'] = str(belongs_to)
+        if marker is not None:
+            params['marker'] = str(marker)
+        if limit is not None:
+            params['limit'] = str(limit)
+        path = API_TOKENS + "/" + token + "/" + \
+            TOKENS_ENDPOINTS + "?" + urllib.urlencode(params)
+        return self._call_astakos(token, path)
 
     # ----------------------------------
     # do a GET to ``API_QUOTAS``

@@ -90,6 +90,14 @@ def _request_status_404(conn, method, url, **kwargs):
     return (message, data, status)
 
 
+def _request_status_403(conn, method, url, **kwargs):
+    """This request returns 403"""
+    message = "UNAUTHORIZED"
+    status = 403
+    data = "Forbidden"
+    return (message, data, status)
+
+
 def _request_status_401(conn, method, url, **kwargs):
     """This request returns 401"""
     message = "UNAUTHORIZED"
@@ -118,6 +126,8 @@ def _request_ok(conn, method, url, **kwargs):
         return _req_quotas(conn, method, url, **kwargs)
     elif url.startswith(astakosclient.API_COMMISSIONS):
         return _req_commission(conn, method, url, **kwargs)
+    elif url.startswith(astakosclient.API_TOKENS):
+        return _req_endpoints(conn, method, url, **kwargs)
     else:
         return _request_status_404(conn, method, url, **kwargs)
 
@@ -274,6 +284,28 @@ def _req_commission(conn, method, url, **kwargs):
         return _request_status_400(conn, method, url, **kwargs)
 
 
+def _req_endpoints(conn, method, url, **kwargs):
+    """Request endpoints"""
+    global token_1, endpoints
+
+    # Check input
+    if conn.__class__.__name__ != "HTTPSConnection":
+        return _request_status_302(conn, method, url, **kwargs)
+    if method != "GET":
+        return _request_status_400(conn, method, url, **kwargs)
+
+    token_head = kwargs['headers'].get('X-Auth-Token')
+    url_split = url[len(astakosclient.API_TOKENS):].split('/')
+    token_url = url_split[1]
+    if token_head != token_url:
+        return _request_status_403(conn, method, url, **kwargs)
+    if token_url != token_1:
+        return _request_status_401(conn, method, url, **kwargs)
+
+    # Return
+    return ("", simplejson.dumps(endpoints), 200)
+
+
 # ----------------------------
 # Mock the actual _doRequest
 def _mock_request(new_requests):
@@ -366,6 +398,26 @@ resources = {
         "unit": "bytes",
         "description": "Virtual machine memory",
         "service": "cyclades"}}
+
+endpoints = {
+    "endpoints": [
+        {"name": "cyclades",
+         "region": "cyclades",
+         "internalURL": "https://node1.example.com/ui/",
+         "adminURL": "https://node1.example.com/v1/",
+         "type": None,
+         "id": 5,
+         "publicURL": "https://node1.example.com/ui/"},
+        {"name": "pithos",
+         "region": "pithos",
+         "internalURL": "https://node2.example.com/ui/",
+         "adminURL": "https://node2.example.com/v1",
+         "type": None,
+         "id": 6,
+         "publicURL": "https://node2.example.com/ui/"}],
+    "endpoint_links": [
+        {"href": "/astakos/api/tokens/0000/endpoints?marker=4&limit=10000",
+         "rel": "next"}]}
 
 quotas = {
     "system": {
@@ -1078,6 +1130,37 @@ class TestCommissions(unittest.TestCase):
         except Exception as err:
             self.fail("Shouldn't raise Exception %s" % err)
         self.assertEqual(result, resolve_commissions_rep)
+
+
+class TestEndPoints(unittest.TestCase):
+    """Test cases for endpoints requests"""
+
+    # ----------------------------------
+    def test_get_endpoints(self):
+        """Test function call of get_endpoints"""
+        global token_1, endpoints
+        _mock_request([_request_ok])
+        try:
+            client = AstakosClient("https://example.com")
+            response = client.get_endpoints(token_1)
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
+        self.assertEqual(response, endpoints)
+
+    # ----------------------------------
+    def test_get_endpoints_wrong_token(self):
+        """Test function call of get_endpoints with wrong token"""
+        global token_2, endpoints
+        _mock_request([_request_ok])
+        try:
+            client = AstakosClient("https://example.com")
+            client.get_endpoints(token_2, marker=2, limit=100)
+        except Unauthorized:
+            pass
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
+        else:
+            self.fail("Should have raised Unauthorized Exception")
 
 
 # ----------------------------

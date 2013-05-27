@@ -62,7 +62,7 @@ INSTALL_REQUIRES = [
     "python-prctl",
     "paramiko",
     "vncauthproxy",
-    "kamaki >= 0.6.2"]
+    "kamaki >= 0.9"]
 
 setup(
     name='snf-tools',

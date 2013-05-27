@@ -63,6 +63,9 @@ authenticate_url       = 'https://www.linkedin.com/uas/oauth/authorize'
 @cookie_fix
 def login(request):
     init_third_party_session(request)
+    consumer = oauth.Consumer(settings.LINKEDIN_TOKEN,
+                              settings.LINKEDIN_SECRET)
+    client = oauth.Client(consumer)
     resp, content = client.request(request_token_url, "GET")
     if resp['status'] != '200':
         messages.error(request, 'Invalid linkedin response')
@@ -71,7 +74,8 @@ def login(request):
     request_token = dict(cgi.parse_qsl(content))
     request.session['request_token'] = request_token
 
-    url = request_token.get('xoauth_request_auth_url') + "?oauth_token=%s" % request_token.get('oauth_token')
+    url = request_token.get('xoauth_request_auth_url') + \
+        "?oauth_token=%s" % request_token.get('oauth_token')
 
     if request.GET.get('key', None):
         request.session['pending_key'] = request.GET.get('key')

@@ -595,6 +595,9 @@ form.withlabels.hidden-submit					{ margin-bottom:4em; }
 .auth_methods .assigned, 
 .auth_methods .notassigned						{ margin-bottom:40px; }
 .auth_methods .assigned span.details			{   color:grey; display:inline-block; max-width:400px;  vertical-align:middle; position:absolute; left:140px; top:13px;}
+.auth_methods .dialog-wrap form 				{ display: inline-block;}
+.auth_methods .dialog-wrap form input[type="submit"]	{ margin:0 20px 0 0;}
+.auth_methods .dialog-wrap form +.submit 		{ height:23px; position: relative;top:-1px;}
 #token-confirm									{ display:none; position:absolute; left:550px; top:-10px; }
 /* login section */
 .login-section {}

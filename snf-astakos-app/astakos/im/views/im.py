@@ -782,7 +782,7 @@ def resource_usage(request):
 
 
 # TODO: action only on POST and user should confirm the removal
-@require_http_methods(["GET", "POST"])
+@require_http_methods(["POST"])
 @cookie_fix
 @valid_astakos_user_required
 def remove_auth_provider(request, pk):

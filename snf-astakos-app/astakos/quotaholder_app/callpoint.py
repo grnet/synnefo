@@ -42,9 +42,8 @@ from astakos.quotaholder_app.exception import (
 from astakos.quotaholder_app.commission import (
     Import, Release, Operations, finalize, undo)
 
-from astakos.quotaholder_app.models import (Holding,
-                     Commission, Provision, ProvisionLog,
-                     now)
+from astakos.quotaholder_app.models import (
+    Holding, Commission, Provision, ProvisionLog, now)
 
 
 def get_quota(holders=None, sources=None, resources=None):

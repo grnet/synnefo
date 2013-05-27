@@ -349,7 +349,8 @@ class AuthProvider(object):
         return self.get_username_msg
 
     def get_user_providers(self):
-        return self.user.auth_providers.active()
+        return self.user.auth_providers.active().filter(
+            module__in=astakos_settings.IM_MODULES)
 
     def get_user_module_providers(self):
         return self.user.auth_providers.active().filter(module=self.module)

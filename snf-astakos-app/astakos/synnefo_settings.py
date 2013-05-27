@@ -50,6 +50,7 @@ installed_apps = [
 ]
 
 context_processors = [
+    'django.contrib.auth.context_processors.auth',
     'django.core.context_processors.media',
     'django.core.context_processors.request',
     'django.core.context_processors.csrf',

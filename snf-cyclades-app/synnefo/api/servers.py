@@ -285,6 +285,8 @@ def create_server(request):
         flavor_id = server['flavorRef']
         personality = server.get('personality', [])
         assert isinstance(personality, list)
+        private_networks = server.get("networks", [])
+        assert isinstance(private_networks, list)
     except (KeyError, AssertionError):
         raise faults.BadRequest("Malformed request")
 
@@ -298,7 +300,8 @@ def create_server(request):
     password = util.random_password()
 
     vm = servers.create(user_id, name, password, flavor, image,
-                        metadata=metadata, personality=personality)
+                        metadata=metadata, personality=personality,
+                        private_networks=private_networks)
 
     server = vm_to_dict(vm, detail=True)
     server['status'] = 'BUILD'

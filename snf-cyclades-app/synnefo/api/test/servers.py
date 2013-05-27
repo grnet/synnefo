@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 import json
+from copy import deepcopy
 
 from snf_django.utils.testing import (BaseAPITest, mocked_quotaholder,
                                       override_settings)
@@ -43,7 +44,7 @@ from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
 from synnefo import settings
 
-from mock import patch
+from mock import patch, Mock, call
 
 
 class ComputeAPITest(BaseAPITest):
@@ -234,39 +235,47 @@ class ServerAPITest(ComputeAPITest):
         self.assertMethodNotAllowed(response)
 
 
-@patch('synnefo.api.util.get_image')
+fixed_image = Mock()
+fixed_image.return_value = {'location': 'pithos://foo',
+                            'checksum': '1234',
+                            "id": 1,
+                            "name": "test_image",
+                            'disk_format': 'diskdump'}
+
+
+@patch('synnefo.api.util.get_image', fixed_image)
 @patch('synnefo.logic.rapi_pool.GanetiRapiClient')
 class ServerCreateAPITest(ComputeAPITest):
-    def test_create_server(self, mrapi, mimage):
-        """Test if the create server call returns the expected response
-           if a valid request has been speficied."""
-        mimage.return_value = {'location': 'pithos://foo',
-                               'checksum': '1234',
-                               "id": 1,
-                               "name": "test_image",
-                               'disk_format': 'diskdump'}
-        mrapi().CreateInstance.return_value = 12
-        flavor = mfactory.FlavorFactory()
+    def setUp(self):
+        self.flavor = mfactory.FlavorFactory()
         # Create public network and backend
-        network = mfactory.NetworkFactory(public=True)
-        backend = mfactory.BackendFactory()
-        mfactory.BackendNetworkFactory(network=network, backend=backend)
-
-        request = {
+        self.network = mfactory.NetworkFactory(public=True)
+        self.backend = mfactory.BackendFactory()
+        mfactory.BackendNetworkFactory(network=self.network,
+                                       backend=self.backend,
+                                       operstate="ACTIVE")
+        self.request = {
                     "server": {
                         "name": "new-server-test",
                         "userid": "test_user",
                         "imageRef": 1,
-                        "flavorRef": flavor.id,
+                        "flavorRef": self.flavor.id,
                         "metadata": {
                             "My Server Name": "Apache1"
                         },
                         "personality": []
                     }
         }
-        with mocked_quotaholder():
-            response = self.mypost('servers', 'test_user',
-                                   json.dumps(request), 'json')
+
+    def test_create_server(self, mrapi):
+        """Test if the create server call returns the expected response
+           if a valid request has been speficied."""
+
+        mrapi().CreateInstance.return_value = 12
+        with override_settings(settings, DEFAULT_INSTANCE_NETWORKS=[]):
+            with mocked_quotaholder():
+                response = self.mypost('/api/v1.1/servers', 'test_user',
+                                       json.dumps(self.request), 'json')
         self.assertEqual(response.status_code, 202)
         mrapi().CreateInstance.assert_called_once()
 
@@ -282,28 +291,91 @@ class ServerCreateAPITest(ComputeAPITest):
         self.assertEqual(api_server['status'], db_vm.operstate)
 
         # Test drained flag in Network:
-        network.drained = True
-        network.save()
+        self.network.drained = True
+        self.network.save()
         with mocked_quotaholder():
             response = self.mypost('servers', 'test_user',
-                                    json.dumps(request), 'json')
+                                    json.dumps(self.request), 'json')
         self.assertEqual(response.status_code, 503, "serviceUnavailable")
 
-    def test_create_server_no_flavor(self, mrapi, mimage):
-        request = {
-                    "server": {
-                        "name": "new-server-test",
-                        "userid": "test_user",
-                        "imageRef": 1,
-                        "flavorRef": 42,
-                        "metadata": {
-                            "My Server Name": "Apache1"
-                        },
-                        "personality": []
-                    }
-        }
-        response = self.mypost('servers', 'test_user',
-                               json.dumps(request), 'json')
+    def test_create_network_settings(self, mrapi):
+        mrapi().CreateInstance.return_value = 12
+        bnet1 = mfactory.BackendNetworkFactory(operstate="ACTIVE",
+                                               backend=self.backend)
+        bnet2 = mfactory.BackendNetworkFactory(operstate="ACTIVE",
+                                               backend=self.backend)
+        bnet3 = mfactory.BackendNetworkFactory(network__userid="test_user",
+                                               operstate="ACTIVE",
+                                               backend=self.backend)
+        bnet4 = mfactory.BackendNetworkFactory(network__userid="test_user",
+                                               operstate="ACTIVE",
+                                               backend=self.backend)
+        # User requested private networks
+        request = deepcopy(self.request)
+        request["server"]["networks"] = [bnet3.network.id, bnet4.network.id]
+        with override_settings(settings,
+                DEFAULT_INSTANCE_NETWORKS=["public", bnet1.network.id,
+                                           bnet2.network.id]):
+            with mocked_quotaholder():
+                response = self.mypost('/api/v1.1/servers', 'test_user',
+                                       json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 202)
+        name, args, kwargs = mrapi().CreateInstance.mock_calls[0]
+        self.assertEqual(len(kwargs["nics"]), 5)
+        self.assertEqual(kwargs["nics"][0]["network"],
+                         self.network.backend_id)
+        self.assertEqual(kwargs["nics"][1]["network"],
+                         bnet1.network.backend_id)
+        self.assertEqual(kwargs["nics"][2]["network"],
+                         bnet2.network.backend_id)
+        self.assertEqual(kwargs["nics"][3]["network"],
+                         bnet3.network.backend_id)
+        self.assertEqual(kwargs["nics"][4]["network"],
+                         bnet4.network.backend_id)
+
+        with override_settings(settings,
+                DEFAULT_INSTANCE_NETWORKS=[bnet2.network.id]):
+            with mocked_quotaholder():
+                response = self.mypost('/api/v1.1/servers', 'test_user',
+                                       json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 202)
+        name, args, kwargs = mrapi().CreateInstance.mock_calls[1]
+        self.assertEqual(len(kwargs["nics"]), 3)
+        self.assertEqual(kwargs["nics"][0]["network"],
+                         bnet2.network.backend_id)
+        self.assertEqual(kwargs["nics"][1]["network"],
+                         bnet3.network.backend_id)
+        self.assertEqual(kwargs["nics"][2]["network"],
+                         bnet4.network.backend_id)
+
+        # test invalid network in DEFAULT_INSTANCE_NETWORKS
+        with override_settings(settings, DEFAULT_INSTANCE_NETWORKS=[42]):
+            response = self.mypost('/api/v1.1/servers', 'test_user',
+                                   json.dumps(request), 'json')
+        self.assertFault(response, 500, "internalServerError")
+
+        # test connect to public netwok
+        request = deepcopy(self.request)
+        request["server"]["networks"] = [self.network.id]
+        with override_settings(settings, DEFAULT_INSTANCE_NETWORKS=["public"]):
+            response = self.mypost('/api/v1.1/servers', 'test_user',
+                                    json.dumps(request), 'json')
+        self.assertFault(response, 403, "forbidden")
+        # test wrong user
+        request = deepcopy(self.request)
+        request["server"]["networks"] = [bnet3.network.id]
+        with override_settings(settings, DEFAULT_INSTANCE_NETWORKS=["public"]):
+            with mocked_quotaholder():
+                response = self.mypost('/api/v1.1/servers', 'dummy_user',
+                                       json.dumps(request), 'json')
+        self.assertItemNotFound(response)
+
+    def test_create_server_no_flavor(self, mrapi):
+        request = deepcopy(self.request)
+        request["server"]["flavorRef"] = 42
+        with mocked_quotaholder():
+            response = self.mypost('/api/v1.1/servers', 'test_user',
+                                   json.dumps(request), 'json')
         self.assertItemNotFound(response)
 
 

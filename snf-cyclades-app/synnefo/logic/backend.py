@@ -507,7 +507,24 @@ def create_instance(vm, nics, flavor, image):
         kw['disks'][0]['provider'] = provider
         kw['disks'][0]['origin'] = flavor.disk_origin
 
-    kw['nics'] = nics
+    kw['nics'] = [{"network": nic.network.backend_id, "ip": nic.ipv4}
+                  for nic in nics]
+    backend = vm.backend
+    depend_jobs = []
+    for nic in nics:
+        network = Network.objects.select_for_update().get(id=nic.network.id)
+        bnet, created = BackendNetwork.objects.get_or_create(backend=backend,
+                                                             network=network)
+        if bnet.operstate != "ACTIVE":
+            if network.public:
+                # TODO: What to raise here ?
+                raise Exception("LALA")
+            else:
+                depend_jobs.append(create_network(network, backend,
+                                                  connect=True))
+    kw["depends"] = [[job, ["success", "error", "canceled"]]
+                     for job in depend_jobs]
+
     if vm.backend.use_hotplug():
         kw['hotplug'] = True
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS

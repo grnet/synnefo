@@ -13,7 +13,7 @@ from synnefo.api import util
 from synnefo.logic import backend
 from synnefo.logic.backend_allocator import BackendAllocator
 from synnefo.logic.rapi import GanetiApiError
-from synnefo.db.models import (NetworkInterface, VirtualMachine,
+from synnefo.db.models import (NetworkInterface, VirtualMachine, Network,
                                VirtualMachineMetadata, FloatingIP)
 
 from vncauthproxy.client import request_forwarding as request_vnc_forwarding
@@ -125,7 +125,8 @@ def server_command(action):
 
 @transaction.commit_manually
 def create(userid, name, password, flavor, image, metadata={},
-           personality=[], network=None, use_backend=None):
+           personality=[], network=None, private_networks=None,
+           use_backend=None):
     if use_backend is None:
         # Allocate backend to host the server. Commit after allocation to
         # release the locks hold by the backend allocator.
@@ -154,13 +155,6 @@ def create(userid, name, password, flavor, image, metadata={},
         flavor.disk_provider = None
 
     try:
-        if network is None:
-            # Allocate IP from public network
-            (network, address) = util.get_public_ip(use_backend)
-            nic = {'ip': address, 'network': network.backend_id}
-        else:
-            address = util.get_network_free_address(network)
-
         # We must save the VM instance now, so that it gets a valid
         # vm.backend_vm_id.
         vm = VirtualMachine.objects.create(
@@ -170,12 +164,6 @@ def create(userid, name, password, flavor, image, metadata={},
             imageid=image["id"],
             flavor=flavor,
             action="CREATE")
-
-        # Create VM's public NIC. Do not wait notification form ganeti hooks to
-        # create this NIC, because if the hooks never run (e.g. building error)
-        # the VM's public IP address will never be released!
-        NetworkInterface.objects.create(machine=vm, network=network, index=0,
-                                        ipv4=address, state="BUILDING")
 
         log.info("Created entry in DB for VM '%s'", vm)
 
@@ -187,6 +175,8 @@ def create(userid, name, password, flavor, image, metadata={},
             'img_personality': json.dumps(personality),
             'img_properties': json.dumps(image['metadata']),
         })
+
+        nics = create_instance_nics(vm, userid, private_networks)
 
         # Also we must create the VM metadata in the same transaction.
         for key, val in metadata.items():
@@ -205,7 +195,7 @@ def create(userid, name, password, flavor, image, metadata={},
         transaction.commit()
 
     try:
-        jobID = backend.create_instance(vm, [nic], flavor, image)
+        jobID = backend.create_instance(vm, nics, flavor, image)
         # At this point the job is enqueued in the Ganeti backend
         vm.backendjobid = jobID
         vm.task = "BUILD"
@@ -213,7 +203,7 @@ def create(userid, name, password, flavor, image, metadata={},
         vm.save()
         transaction.commit()
         log.info("User %s created VM %s, NIC %s, Backend %s, JobID %s",
-                 userid, vm, nic, backend, str(jobID))
+                 userid, vm, nics, backend, str(jobID))
     except GanetiApiError as e:
         log.exception("Can not communicate to backend %s: %s.",
                       backend, e)
@@ -230,6 +220,54 @@ def create(userid, name, password, flavor, image, metadata={},
         raise
 
     return vm
+
+
+def create_instance_nics(vm, userid, private_networks):
+    """Create NICs for VirtualMachine.
+
+    Helper function for allocating IP addresses and creating NICs in the DB
+    for a VirtualMachine. Created NICs are the combination of the default
+    network policy (defined by administration settings) and the private
+    networks defined by the user.
+
+    """
+    attachments = []
+    for network_id in settings.DEFAULT_INSTANCE_NETWORKS:
+        network, address = None, None
+        if network_id == "public":
+            network, address = util.get_public_ip(backend=vm.backend)
+        else:
+            try:
+                network = Network.objects.get(id=network_id, deleted=False)
+            except Network.DoesNotExist:
+                msg = "Invalid configuration. Setting"\
+                      " 'DEFAULT_INSTANCE_NETWORKS' contains invalid"\
+                      " network '%s'" % network_id
+                log.error(msg)
+                raise Exception(msg)
+            if network.dhcp:
+                address = util.get_network_free_address(network)
+        attachments.append((network, address))
+    for network_id in private_networks:
+        network, address = None, None
+        network = util.get_network(network_id, userid, non_deleted=True)
+        if network.public:
+            raise faults.Forbidden("Can not connect to public network")
+        if network.dhcp:
+            address = util.get_network_free_address(network)
+        attachments.append((network, address))
+
+    nics = []
+    for index, (network, address) in enumerate(attachments):
+        # Create VM's public NIC. Do not wait notification form ganeti
+        # hooks to create this NIC, because if the hooks never run (e.g.
+        # building error) the VM's public IP address will never be
+        # released!
+        nic = NetworkInterface.objects.create(machine=vm, network=network,
+                                              index=index, ipv4=address,
+                                              state="BUILDING")
+        nics.append(nic)
+    return nics
 
 
 @server_command("DESTROY")

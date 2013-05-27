@@ -15,9 +15,9 @@ INVITATIONS_PER_LEVEL = getattr(settings, 'ASTAKOS_INVITATIONS_PER_LEVEL', {
     4: 0
 })
 
-ADMINS = getattr(settings, 'ADMINS', ())
-MANAGERS = getattr(settings, 'MANAGERS', ADMINS)
-HELPDESK = getattr(settings, 'HELPDESK', ADMINS)
+ADMINS = tuple(getattr(settings, 'ADMINS', ()))
+MANAGERS = tuple(getattr(settings, 'MANAGERS', ()))
+HELPDESK = tuple(getattr(settings, 'HELPDESK', ()))
 
 CONTACT_EMAIL = settings.CONTACT_EMAIL
 SERVER_EMAIL = settings.SERVER_EMAIL

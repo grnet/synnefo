@@ -88,18 +88,11 @@ Run::
 
 
 The limit on pending project applications is since 0.14 handled as an
-Astakos resource, rather than a custom setting. In order to set this
-limit (replacing setting ASTAKOS_PENDING_APPLICATION_LIMIT) run::
-
-    astakos-host$ snf-manage resource-modify astakos.pending_app --limit <num>
-
-To take into account the user-specific limits we need a data migration. The
-following command populates the user-specific base quota for resource
-``astakos.pending_app`` using the deprecated user setting::
+Astakos resource, rather than a custom setting. Command::
 
     astakos-host$ astakos-migrate-0.14
 
-Finally, Astakos needs to inform the quota system for the current number
-of pending applications per user::
-
-    astakos-host$ snf-manage reconcile-resources-astakos --fix
+will prompt you to set this limit (replacing setting
+ASTAKOS_PENDING_APPLICATION_LIMIT) and then automatically migrate the
+user-specific base quota for the new resource ``astakos.pending_app`` using
+the deprecated user setting.

@@ -37,10 +37,9 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 from django.core.validators import validate_email
-from django.core.exceptions import ValidationError
+from snf_django.lib.db import transaction
 
 from astakos.im.models import AstakosUser
-from astakos.im.functions import activate
 
 
 class Command(BaseCommand):
@@ -52,11 +51,6 @@ class Command(BaseCommand):
                     dest='password',
                     metavar='PASSWORD',
                     help="Set user's password"),
-        make_option('--active',
-                    action='store_true',
-                    dest='active',
-                    default=False,
-                    help="Set active"),
         make_option('--admin',
                     action='store_true',
                     dest='is_superuser',
@@ -65,13 +59,16 @@ class Command(BaseCommand):
         make_option('-g',
                     action='append',
                     dest='groups',
+                    default=[],
                     help="Add user group (may be used multiple times)"),
         make_option('-p',
                     action='append',
                     dest='permissions',
+                    default=[],
                     help="Add user permission (may be used multiple times)")
     )
 
+    @transaction.commit_on_success_strict()
     def handle(self, *args, **options):
         if len(args) != 3:
             raise CommandError("Invalid number of arguments")
@@ -79,13 +76,13 @@ class Command(BaseCommand):
         email, first_name, last_name = map(lambda arg: arg.decode('utf8'),
                                            args[:3])
 
+        password = options['password'] or \
+            AstakosUser.objects.make_random_password()
+
         try:
             validate_email(email)
         except ValidationError:
             raise CommandError("Invalid email")
-
-        password = options['password'] or \
-            AstakosUser.objects.make_random_password()
 
         try:
             u = AstakosUser(email=email,
@@ -108,9 +105,6 @@ class Command(BaseCommand):
                 u.add_auth_provider('local')
                 map(u.add_permission, options['permissions'])
                 map(u.add_group, options['groups'])
-
-                if options['active']:
-                    activate(u)
             except BaseException, e:
                 import traceback
                 traceback.print_exc()

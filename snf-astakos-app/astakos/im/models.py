@@ -489,6 +489,10 @@ class AstakosUser(User):
             self.updated = datetime.now()
 
         self.update_uuid()
+
+        if not self.verification_code:
+            self.renew_verification_code()
+
         # username currently matches email
         if self.username != self.email.lower():
             self.username = self.email.lower()

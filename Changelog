@@ -21,6 +21,7 @@ Synnefo-wide
 
 Astakos
 -------
+
 * Redesign of the accounting system (quotaholder) and integration into
 astakos.
 
@@ -82,6 +83,26 @@ astakos.
     transactions and a context 'ExceptionHandler', which logs and suppresses
     exceptions
 
+* Added fine grain user auth provider's policies.
+
+  * Administrator can override default auth provider policies to a specific 
+    user or group of users.
+  * Optionally a user can be assigned to a list of groups, based on the
+    authentication method he choosed to signup.
+
+* Removed explicit handling of SMTP errors on each email delivery. Exceptions 
+  are now propagated to base django exception handler.
+
+* Improvements in user activation flow
+
+  * User moderation now takes place after the user has verified his email
+    address.
+  * User model enriched with additional user state fields
+  * Split activation email from moderation process. Administrator is required 
+    to moderate user explicitly using the `user-modify --accept` or
+    `user-modify --reject` commands.
+   * Improved logging throught out user activation procedures.
+
 * Management commands:
 
   * Renamed command astakos-quota to quota; user-update to user-modify.
@@ -91,6 +112,11 @@ astakos.
 
   * Added quota and project-related information in user-show command; added
     membership information in project-show.
+
+  * New commands introduced
+
+    * user-group-{add, list}
+    * user-auth-policy-{add, list, remove, set, show}
 
 
 Cyclades

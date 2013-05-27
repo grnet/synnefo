@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
+import string
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db.utils import IntegrityError
@@ -47,6 +48,11 @@ class Command(BaseCommand):
         make_option('--type',
                     dest='type',
                     help="Service type"),
+        make_option('-f', '--no-confirm',
+                    action='store_true',
+                    default=False,
+                    dest='force',
+                    help="Do not ask for confirmation"),
     )
 
     def handle(self, *args, **options):
@@ -57,8 +63,9 @@ class Command(BaseCommand):
         url = args[1]
         api_url = args[2]
         kwargs = dict(name=name, url=url, api_url=api_url)
-        if options['type']:
-            kwargs['type'] = options['type']
+        s_type = options['type']
+        if s_type:
+            kwargs['type'] = s_type
 
         try:
             s = Service.objects.get(name=name)
@@ -76,6 +83,18 @@ class Command(BaseCommand):
         if services:
             m = "API URL '%s' is registered for another service." % api_url
             raise CommandError(m)
+
+        force = options['force']
+        if not force:
+            tp = (' of type %s' % s_type) if s_type else ''
+            self.stdout.write("Add service %s%s with:\n" % (name, tp))
+            self.stdout.write("service URL: %s\n" % url)
+            self.stdout.write("API URL: %s\n" % api_url)
+            self.stdout.write("Confirm? (y/n) ")
+            response = raw_input()
+            if string.lower(response) not in ['y', 'yes']:
+                self.stdout.write("Aborted.\n")
+                return
 
         try:
             s = Service.objects.create(**kwargs)

@@ -135,7 +135,11 @@ class Command(BaseCommand):
                           "The special value 'default' sets the user base "
                           "quota to the default value.")
                     ),
-
+        make_option('-f', '--no-confirm',
+                    action='store_true',
+                    default=False,
+                    dest='force',
+                    help="Do not ask for confirmation"),
     )
 
     @commit_on_success_strict()
@@ -286,10 +290,12 @@ class Command(BaseCommand):
         if password:
             self.stdout.write('User\'s new password: %s\n' % password)
 
+        force = options['force']
+
         set_base_quota = options.get('set_base_quota')
         if set_base_quota is not None:
             resource, capacity = set_base_quota
-            self.set_limit(user, resource, capacity, False)
+            self.set_limit(user, resource, capacity, force)
 
     def set_limit(self, user, resource, capacity, force):
         style = None

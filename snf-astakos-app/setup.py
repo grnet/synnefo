@@ -199,6 +199,7 @@ setup(
 
     dependency_links=['http://www.synnefo.org/packages/pypi'],
 
+    scripts=['astakos/scripts/astakos-register-services'],
     entry_points={
         'synnefo': [
             'default_settings = astakos.synnefo_settings',

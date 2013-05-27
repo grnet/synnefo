@@ -122,6 +122,26 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
     **get_resources()**
         Return a list of dicts with the available resources
 
+    **send_feedback(**\ token, message, data\ **)**
+        Using a user's authentication token send some feedback to
+        astakos service. Additional information about the service
+        client status can be given in the data variable.
+        In case of success returns nothing.
+        Otherwise raise an AstakosClientException exception.
+
+    **get_endpoints(**\ token, belongs_to, marker, limit\ **)**
+        Given a user's authentication token, request registered
+        endpoints from astakos service. If belongs_to is given (uuid)
+        check that the token belongs to this user. If marker is given
+        (int) return endpoints (ordered by ID) whose ID is higher than
+        the marker. Limit (int) specifies the maximum number of
+        endpoints to return. Return a json formatted dictionary containing
+        information about registered endpoints.
+
+        .. warning:: *get_endpoints* api call encodes the user's token inside
+            the url. It's security unsafe to use it (both astakosclient
+            and nginx tend to log requested urls).
+
     **get_quotas(**\ token\ **)**
         Given a user's authentication token return user's
         current quotas (as dict of dicts).

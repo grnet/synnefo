@@ -33,6 +33,7 @@
 
 from functools import wraps
 from time import time, mktime
+import datetime
 
 from django.http import HttpResponse
 from django.utils import simplejson as json
@@ -40,6 +41,7 @@ from django.template.loader import render_to_string
 
 from astakos.im.models import AstakosUser, Service
 from snf_django.lib.api import faults
+from snf_django.lib.api.utils import isoformat
 
 from astakos.im.forms import FeedbackForm
 from astakos.im.functions import send_feedback as send_feedback_func
@@ -50,12 +52,19 @@ logger = logging.getLogger(__name__)
 absolute = lambda request, url: request.build_absolute_uri(url)
 
 
+def _dthandler(obj):
+    if isinstance(obj, datetime.datetime):
+        return isoformat(obj)
+    else:
+        raise TypeError
+
+
 def json_response(content, status_code=None):
     response = HttpResponse()
     if status_code is not None:
         response.status_code = status_code
 
-    response.content = json.dumps(content)
+    response.content = json.dumps(content, default=_dthandler)
     response['Content-Type'] = 'application/json; charset=UTF-8'
     response['Content-Length'] = len(response.content)
     return response

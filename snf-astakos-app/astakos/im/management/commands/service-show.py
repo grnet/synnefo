@@ -40,7 +40,7 @@ from synnefo.webproject.management import utils
 
 class Command(SynnefoCommand):
     args = "<service name or ID>"
-    help = "Show service info"
+    help = "Show service details"
 
     def handle(self, *args, **options):
         if len(args) != 1:

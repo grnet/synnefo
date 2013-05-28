@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -39,7 +39,10 @@ from django.conf import settings
 
 from astakos.im.models import SessionCatalog
 
+
 class Command(NoArgsCommand):
+    help = "Cleanup sessions and session catalog"
+
     def handle_noargs(self, **options):
         self.stdout.write('Cleanup sessions ...\n')
         call_command('cleanup')
@@ -47,7 +50,7 @@ class Command(NoArgsCommand):
         self.stdout.write('Cleanup session catalog ...\n')
         engine = import_module(settings.SESSION_ENGINE)
         store = engine.SessionStore()
-        tbd = (entry for entry in SessionCatalog.objects.all() \
-            if not store.exists(entry.session_key))
+        tbd = (entry for entry in SessionCatalog.objects.all()
+               if not store.exists(entry.session_key))
         for entry in tbd:
             entry.delete()

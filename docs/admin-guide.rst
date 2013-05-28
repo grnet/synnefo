@@ -877,7 +877,7 @@ Astakos snf-manage commands
 Name                          Description
 ============================  ===========================
 fix-superusers                Transform superusers created by syncdb into AstakosUser instances
-full-cleanup                  Cleanup sessions and session catalog
+cleanup-full                  Cleanup sessions and session catalog
 invitation-list               List invitation
 invitation-show               Show invitation details
 project-control               Manage projects and applications
@@ -887,14 +887,13 @@ quota                         List and check the integrity of user quota
 reconcile-resources-astakos   Reconcile resource usage of Quotaholder with Astakos DB
 resource-add                  Add resource
 resource-export-astakos       Export astakos resources in json format
-resource-import               Import resources
+resource-import               Register service resources
 resource-list                 List resources
-resource-modify               Modify resources
-resource-remove               Remove resource
-service-add                   Add service
+resource-modify               Modify a resource's default base quota and boolean flags
+service-add                   Register a service
 service-list                  List services
-service-modify                Modify service
-service-remove                Remove service
+service-modify                Modify service attributes
+service-show                  Show service details
 term-add                      Add approval terms
 user-activation-send          Send user activation
 user-add                      Add user

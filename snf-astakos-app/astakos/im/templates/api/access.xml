@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+{% load filters %}
+<access xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="http://docs.openstack.org/identity/api/v2.0">
+    <token id="{{access.token.id}}" expires="{{access.token.expires}}">
+        <tenant id="{{access.token.tenant.id}}" name="{{access.token.tenant.name}}" />
+    </token>
+    <user id="{{access.user.id}}" name="{{access.user.name}}">
+        <roles>
+            {% for r in access.user.roles %}
+                <role id="{{r.id}}" name="{{r.name}}"/>
+            {% endfor %}
+        </roles>
+    </user>
+    <serviceCatalog>
+    {% for s in access.serviceCatalog %}
+        <service type="{{s.type}}" name="{{s.name}}">
+            {% for e in s.endpoints %}
+                <endpoint
+                    region="{{e.region}}"
+                    publicURL="{{e.publicURL}}"
+                    adminURL="{{e.adminURL}}"
+                    internalURL="{{e.internalURL}}"
+                    SNF:uiURL="{{e|lookup:'SNF:uiURL'}}"/>
+            {% endfor %}
+        </service>
+    {% endfor %}
+    </serviceCatalog>
+</access>

@@ -878,6 +878,8 @@ Name                          Description
 ============================  ===========================
 fix-superusers                Transform superusers created by syncdb into AstakosUser instances
 cleanup-full                  Cleanup sessions and session catalog
+commission-list               List pending commissions
+commission-show               Show details for a pending commission
 project-control               Manage projects and applications
 project-list                  List projects
 project-show                  Show project details

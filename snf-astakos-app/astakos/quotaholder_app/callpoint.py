@@ -300,7 +300,7 @@ def get_commission(clientkey, serial):
     except Commission.DoesNotExist:
         raise NoCommissionError(serial)
 
-    objs = Provision.objects.select_related('holding')
+    objs = Provision.objects
     provisions = objs.filter(serial=commission)
 
     ps = [p.todict() for p in provisions]

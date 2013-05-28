@@ -150,7 +150,7 @@ def get_serialization(request, format_allowed=True):
         accept, sep, rest = item.strip().partition(";")
         if accept == "application/json":
             return "json"
-        elif accept == "applcation/xml":
+        elif accept == "application/xml":
             return "xml"
 
     return "json"

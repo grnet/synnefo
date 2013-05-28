@@ -40,6 +40,7 @@ from django.utils import simplejson as json
 
 from snf_django.lib import api
 from snf_django.lib.api import faults, utils
+
 from synnefo.api import util
 from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata)
 from synnefo.logic import servers, utils as logic_utils
@@ -287,6 +288,8 @@ def create_server(request):
         assert isinstance(personality, list)
         private_networks = server.get("networks", [])
         assert isinstance(private_networks, list)
+        floating_ips = server.get("floating_ips", [])
+        assert isinstance(floating_ips, list)
     except (KeyError, AssertionError):
         raise faults.BadRequest("Malformed request")
 
@@ -301,7 +304,8 @@ def create_server(request):
 
     vm = servers.create(user_id, name, password, flavor, image,
                         metadata=metadata, personality=personality,
-                        private_networks=private_networks)
+                        private_networks=private_networks,
+                        floating_ips=floating_ips)
 
     server = vm_to_dict(vm, detail=True)
     server['status'] = 'BUILD'

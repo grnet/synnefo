@@ -126,7 +126,7 @@ def server_command(action):
 @transaction.commit_manually
 def create(userid, name, password, flavor, image, metadata={},
            personality=[], network=None, private_networks=None,
-           use_backend=None):
+           floating_ips=None, use_backend=None):
     if use_backend is None:
         # Allocate backend to host the server. Commit after allocation to
         # release the locks hold by the backend allocator.
@@ -176,7 +176,7 @@ def create(userid, name, password, flavor, image, metadata={},
             'img_properties': json.dumps(image['metadata']),
         })
 
-        nics = create_instance_nics(vm, userid, private_networks)
+        nics = create_instance_nics(vm, userid, private_networks, floating_ips)
 
         # Also we must create the VM metadata in the same transaction.
         for key, val in metadata.items():
@@ -222,7 +222,7 @@ def create(userid, name, password, flavor, image, metadata={},
     return vm
 
 
-def create_instance_nics(vm, userid, private_networks):
+def create_instance_nics(vm, userid, private_networks=[], floating_ips=[]):
     """Create NICs for VirtualMachine.
 
     Helper function for allocating IP addresses and creating NICs in the DB
@@ -247,6 +247,12 @@ def create_instance_nics(vm, userid, private_networks):
                 raise Exception(msg)
             if network.dhcp:
                 address = util.get_network_free_address(network)
+        attachments.append((network, address))
+    for address in floating_ips:
+        floating_ip = add_floating_ip_to_vm(address=address,
+                                            user_id=userid,
+                                            vm=vm)
+        network = floating_ip.network
         attachments.append((network, address))
     for network_id in private_networks:
         network, address = None, None
@@ -419,9 +425,24 @@ def console(vm, console_type):
 
 @server_command("CONNECTING")
 def add_floating_ip(vm, address):
+    floating_ip = add_floating_ip_to_vm(vm, address)
+    log.info("Connecting VM %s to floating IP %s", vm, floating_ip)
+    return backend.connect_to_network(vm, floating_ip.network, address)
+
+
+def add_floating_ip_to_vm(vm, address):
+    """Get a floating IP by it's address and add it to VirtualMachine.
+
+    Helper function for looking up a FloatingIP by it's address and associating
+    it with a VirtualMachine object (without adding the NIC in the Ganeti
+    backend!). This function also checks if the floating IP is currently used
+    by any instance and if it is available in the Backend that hosts the VM.
+
+    """
     user_id = vm.userid
-    # Get lock in VM, to guarantee that floating IP will only by assigned once
     try:
+        # Get lock in VM, to guarantee that floating IP will only by assigned
+        # once
         floating_ip = FloatingIP.objects.select_for_update()\
                                         .get(userid=user_id, ipv4=address,
                                              deleted=False)
@@ -440,9 +461,7 @@ def add_floating_ip(vm, address):
 
     floating_ip.machine = vm
     floating_ip.save()
-
-    log.info("Connecting VM %s to floating IP %s", vm, floating_ip)
-    return backend.connect_to_network(vm, floating_ip.network, address)
+    return floating_ip
 
 
 @server_command("DISCONNECTING")

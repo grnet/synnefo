@@ -55,6 +55,10 @@ registration cases are illustrated in :ref:`registration-flow-label`
 Invited user
 ~~~~~~~~~~~~
 
+.. note::
+
+   Invitation feature is currently disabled.
+
 A registered ~okeanos user, invites student Alice to subscribe to ~okeanos
 services. Alice receives an email and through a link is navigated to Astakos's
 signup page. The system prompts her to select one of the available

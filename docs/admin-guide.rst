@@ -878,8 +878,6 @@ Name                          Description
 ============================  ===========================
 fix-superusers                Transform superusers created by syncdb into AstakosUser instances
 cleanup-full                  Cleanup sessions and session catalog
-invitation-list               List invitation
-invitation-show               Show invitation details
 project-control               Manage projects and applications
 project-list                  List projects
 project-show                  Show project details
@@ -904,7 +902,6 @@ authpolicy-set                Assign an existing authentication provider policy 
 authpolicy-show               Show authentication provider profile details
 group-add                     Create a group with the given name
 group-list                    List available groups
-user-invite                   Invite somebody
 user-list                     List users
 user-modify                   Modify user
 user-show                     Show user details

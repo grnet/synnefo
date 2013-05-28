@@ -71,6 +71,9 @@
 
         // custom glance api parser
         parse: function (resp, xhr) {
+            if (_.isArray(resp)) {
+              resp = {'images': resp };
+            }
             return models.GlanceImages.__super__.parse.call(this, resp, xhr);
         },
 

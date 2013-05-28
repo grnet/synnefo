@@ -1680,9 +1680,10 @@
                 }
             };
 
-            if (type) {
-                params.network.type = type;
+            if (!type) {
+                throw "Network type cannot be empty";
             }
+            params.network.type = type;
             if (cidr) {
                 params.network.cidr = cidr;
             }

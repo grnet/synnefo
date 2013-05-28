@@ -90,17 +90,12 @@ Description                                         URI                         
 `Delete <#delete-server>`_                          ``/servers/<server id>``                  DELETE ✔        ✔
 `List Addresses <#list-server-addresses>`_          ``/servers/<server id>/ips``              GET    ✔        ✔
 `Get NICs by Net <#get-server-nics-by-network>`_    ``/servers/<server id>/ips/<network id>`` GET    ✔        ✔
-`List Metadata <#list-server-metadata>`_            ``/servers/<server-id>/meta``             GET    ✔        **✘**
-\                                                   ``/servers/<server-id>/metadata``         GET    **✘**    ✔
-`Update Metadata <#set-update-server-metadata>`_    ``/servers/<server-id>/meta``             POST    ✔       **✘**
-\                                                   ``/servers/<server-id>/metadata``         PUT    **✘**    ✔
-\                                                   ``/servers/<server-id>/metadata``         POST   **✘**    ✔
-`Get Meta Item <#get-server-metadata-item>`_        ``/servers/<server-id>/meta/<key>``       GET    ✔        **✘**
-\                                                   ``/servers/<server-id>/metadata/<key>``   GET    **✘**    ✔
-`Update Meta Item <#update-server-metadatum-item>`_ ``/servers/<server-id>/meta/<key>``       PUT    ✔        **✘**
-\                                                   ``/servers/<server-id>/metadata/<key>``   PUT    **✘**    ✔
-`Delete Meta Item <#delete-server-metadatum>`_      ``/servers/<server-id>/meta/<key>``       DELETE ✔        **✘**
-\                                                   ``/servers/<server-id>/metadata/<key>``   DELETE **✘**    ✔
+`List Metadata <#list-server-metadata>`_            ``/servers/<server-id>/metadata``         GET    ✔        ✔
+`Update Metadata <#set-update-server-metadata>`_    ``/servers/<server-id>/metadata``         PUT    **✘**    ✔
+\                                                   ``/servers/<server-id>/metadata``         POST   ✔        ✔
+`Get Meta Item <#get-server-metadata-item>`_        ``/servers/<server-id>/metadata/<key>``   GET    ✔        ✔
+`Update Meta Item <#update-server-metadatum-item>`_ ``/servers/<server-id>/metadata/<key>``   PUT    ✔        ✔
+`Delete Meta Item <#delete-server-metadatum>`_      ``/servers/<server-id>/metadata/<key>``   DELETE ✔        ✔
 =================================================== ========================================= ====== ======== ==========
 
 List Servers
@@ -188,10 +183,8 @@ name              The server name        ✔        ✔
 hostId            Server playground      empty    ✔
 created           Creation date          ✔        ✔
 updated           Creation date          ✔        ✔
-flavorRef         The flavor id          ✔        **✘**
-flavor            The flavor id          **✘**    ✔
-imageRef          The image id           ✔        **✘**
-image             The image id           **✘**    ✔
+flavor            The flavor id          ✔        ✔
+image             The image id           ✔        ✔
 progress          Build progress         ✔        ✔
 status            Server status          ✔        ✔
 attachments       Network interfaces     ✔        **✘**
@@ -228,68 +221,62 @@ metadata          Server custom metadata ✔        ✔
 .. code-block:: javascript
 
   {
-    "servers":
-      {"values": [
-        {
-          "attachments": {
-            "values": [
-              {
-                "id": "nic-42-0",
-                "network_id": "101",
-                "mac_address": "aa:00:00:49:2e:7e",
-                "firewallProfile": "DISABLED",
-                "ipv4": "192.168.4.5",
-                "ipv6": "2001:648:2ffc:1222:a800:ff:fef5:3f5b"
-              }
-            ]
-          },
-          "created': '2011-04-19T10:18:52.085737+00:00',
-          "flavorRef": "1",
-          "hostId": "",
-          "id": "42",
-          "imageRef": "3",
-          "metadata": {"values": {"foo": "bar"}},
-          "name": "My Server",
-          "status": "ACTIVE",
-          "updated": "2011-05-29T14:07:07.037602+00:00"
-        }, {
-          "attachments": {
-            "values": [
-              {
-                "id": "nic-43-0",
-                "mac_address": "aa:00:00:91:2f:df",
-                "network_id": "1",
-                "ipv4": "192.168.32.2"
-              }, {
-                "id": "nic-43-1",
-                "network_id": "101",
-                "mac_address": "aa:00:00:49:2g:7f",
-                "firewallProfile": "DISABLED",
-                "ipv4": "192.168.32.6",
-                "ipv6": "2001:648:2ffc:1222:a800:ff:fef5:3f5c'
-              }, {
-                "id": "nic-43-2",
-                "network_id": "101",
-                "mac_address": "aa:00:00:51:2h:7f",
-                "firewallProfile": "DISABLED",
-                "ipv4": "192.168.32.7",
-                "ipv6": "2001:638:2eec:1222:a800:ff:fef5:3f5c"
-              }
-            ]
-          },
-          "created": "2011-05-02T20:51:08.527759+00:00",
-          "flavorRef": "1",
-          "hostId": "",
-          "id": "43",
-          "imageRef": "3",
-          "name": "Other Server",
-          "description": "A sample server to showcase server requests",
-          "progress": "0",
-          "status": "ACTIVE",
-          "updated": "2011-05-29T14:59:11.267087+00:00"
-        }
-      ]
-    }
+    "servers": [
+      {
+        "attachments": [
+            {
+              "id": "nic-42-0",
+              "network_id": "101",
+              "mac_address": "aa:00:00:49:2e:7e",
+              "firewallProfile": "DISABLED",
+              "ipv4": "192.168.4.5",
+              "ipv6": "2001:648:2ffc:1222:a800:ff:fef5:3f5b"
+            }
+        ],
+        "created': '2011-04-19T10:18:52.085737+00:00',
+        "flavorRef": "1",
+        "hostId": "",
+        "id": "42",
+        "imageRef": "3",
+        "metadata": {{"foo": "bar"},
+        "name": "My Server",
+        "status": "ACTIVE",
+        "updated": "2011-05-29T14:07:07.037602+00:00"
+      }, {
+        "attachments": [
+            {
+              "id": "nic-43-0",
+              "mac_address": "aa:00:00:91:2f:df",
+              "network_id": "1",
+              "ipv4": "192.168.32.2"
+            }, {
+              "id": "nic-43-1",
+              "network_id": "101",
+              "mac_address": "aa:00:00:49:2g:7f",
+              "firewallProfile": "DISABLED",
+              "ipv4": "192.168.32.6",
+              "ipv6": "2001:648:2ffc:1222:a800:ff:fef5:3f5c'
+            }, {
+              "id": "nic-43-2",
+              "network_id": "101",
+              "mac_address": "aa:00:00:51:2h:7f",
+              "firewallProfile": "DISABLED",
+              "ipv4": "192.168.32.7",
+              "ipv6": "2001:638:2eec:1222:a800:ff:fef5:3f5c"
+            }
+        ],
+        "created": "2011-05-02T20:51:08.527759+00:00",
+        "flavorRef": "1",
+        "hostId": "",
+        "id": "43",
+        "imageRef": "3",
+        "name": "Other Server",
+        "description": "A sample server to showcase server requests",
+        "progress": "0",
+        "status": "ACTIVE",
+        "updated": "2011-05-29T14:59:11.267087+00:00"
+      }
+    ]
   }
 
 
@@ -405,10 +392,8 @@ owner                  File owner          ✔        **✘**
         }
       ],
       "metadata": {
-        "values": {
-          "EloquentDescription": "Example server with personality",
-          "ShortDescription": "Trying VMs"
-        }
+        "EloquentDescription": "Example server with personality",
+        "ShortDescription": "Trying VMs"
       }
     }
   }
@@ -461,10 +446,8 @@ Server attributes are `listed here <#server-ref>`_.
       "suspended": false,
       "progress": 0
       "metadata": {
-        "values": {
-          "EloquentDescription": "Example server with personality",
-          "ShortDescription": "Trying VMs"
-        }
+        "EloquentDescription": "Example server with personality",
+        "ShortDescription": "Trying VMs"
       }
     }
   }
@@ -750,10 +733,8 @@ name              The server name        ✔        ✔
 hostId            Server playground      empty    ✔
 created           Creation date          ✔        ✔
 updated           Creation date          ✔        ✔
-flavorRef         The flavor id          ✔        **✘**
-flavor            The flavor id          **✘**    ✔
-imageRef          The image id           ✔        **✘**
-image             The image id           **✘**    ✔
+flavor            The flavor id          ✔        ✔
+image             The image id           ✔        ✔
 progress          Build progress         ✔        ✔
 status            Server status          ✔        ✔
 suspended         If server is suspended ✔        **✘**
@@ -799,33 +780,34 @@ diagnostics       Diagnostic information ✔        **✘**
       "imageRef": "926a1bc5-2d85-49d4-aebe-0fc127ed89b9",
       "created": "2013-04-18T10:06:58.288273+00:00",
       "flavorRef": 22,
-      "attachments": {
-        "values": [{
+      "attachments": [
+        {
           "network_id": "1888",
           "mac_address": "aa:0c:f5:ad:16:41",
           "firewallProfile": "DISABLED",
           "ipv4": "83.212.112.56",
           "ipv6": "2001:648:2ffc:1119:a80c:f5ff:fead:1641",
           "id": "nic-42042-0"
-        }]
-      },
+        }
+      ],
       "suspended": false,
-      "diagnostics": [{
-        "level": "DEBUG",
-        "created": "2013-04-18T10:09:52.776920+00:00",
-        "source": "image-info",
-        "source_date": "2013-04-18T10:09:52.709791+00:00",
-        "message": "Image customization finished successfully.",
-        "details": null
-      }],
+      "diagnostics": [
+        {
+          "level": "DEBUG",
+          "created": "2013-04-18T10:09:52.776920+00:00",
+          "source": "image-info",
+          "source_date": "2013-04-18T10:09:52.709791+00:00",
+          "message": "Image customization finished successfully.",
+          "details": null
+        }
+      ],
       "progress": 100,
       "metadata": {
-        "values": {"OS": "windows", "users": "Administrator"}
+        "OS": "windows",
+        "users": "Administrator"
       }
     }
   }
-
-.. note:: the ``values`` layer is not featured in OS/Compute API
 
 Rename Server
 .............
@@ -1003,13 +985,13 @@ Return Code                 Description
 
 Response body contents::
 
-  addresses: {values: [
+  addresses: [
     {
       <NIC attribute>: <value>,
       ...
     },
     ...
-  ]}
+  ]
 
 A Network Interface Connection (or NIC) connects the current server to a
 network, through their respective identifiers. More information in NIC
@@ -1020,25 +1002,23 @@ attributes are `enlisted here <#nic-ref>`_.
 .. code-block:: javascript
 
   {
-    "addresses": {
-      "values": [
-        {
-          "id": "nic-25455-0"
-          "network_id": "1",
-          "mac_address": "aa:00:03:7a:84:bb",
-          "firewallProfile": "DISABLED",
-          "ipv4": "192.168.0.27",
-          "ipv6": "2001:646:2ffc:1222:a820:3fd:fe7a:84bb",
-        }, {
-          "id": "nic-25455-1"
-          "network_id": "7",
-          "mac_address": "aa:00:03:7a:84:cc",
-          "firewallProfile": "DISABLED",
-          "ipv4": "192.168.0.28",
-          "ipv6": "2002:646:2fec:1222:a820:3fd:fe7a:84bc",
-        },
-      ]
-    }
+    "addresses": [
+      {
+        "id": "nic-25455-0"
+        "network_id": "1",
+        "mac_address": "aa:00:03:7a:84:bb",
+        "firewallProfile": "DISABLED",
+        "ipv4": "192.168.0.27",
+        "ipv6": "2001:646:2ffc:1222:a820:3fd:fe7a:84bb",
+      }, {
+        "id": "nic-25455-1"
+        "network_id": "7",
+        "mac_address": "aa:00:03:7a:84:cc",
+        "firewallProfile": "DISABLED",
+        "ipv4": "192.168.0.28",
+        "ipv6": "2002:646:2fec:1222:a820:3fd:fe7a:84bc",
+      },
+    ]
   }
 
 Get Server NICs by Network
@@ -1129,8 +1109,7 @@ List the metadata of a server
 ================================= ====== ======== ==========
 URI                               Method Cyclades OS/Compute
 ================================= ====== ======== ==========
-``/servers/<server-id>/meta``     GET    ✔        **✘**
-``/servers/<server-id>/metadata`` GET    **✘**    ✔
+``/servers/<server-id>/metadata`` GET    ✔        ✔
 ================================= ====== ======== ==========
 
 * **server-id** is the identifier of the virtual server
@@ -1164,11 +1143,9 @@ Return Code                 Description
 
 Response body contents::
 
-  metadata: {values:
-    {
-      <metadatum key>: <value>,
+  metadata: {
+    <key>: <value>,
       ...
-    }
   }
 
 *Example List Server Metadata: JSON*
@@ -1177,14 +1154,10 @@ Response body contents::
 
   {
     ""metadata": {
-      "values": {
-        "OS": "Linux",
-        "users": "root"
-      }
+      "OS": "Linux",
+      "users": "root"
     }
   }
-
-.. note:: In OS/Compute API  the ``values`` level is missing from the response.
 
 Set / Update Server Metadata
 ............................
@@ -1205,9 +1178,8 @@ remain intact, while metadata referred by the operation will be overwritten.
 ================================= ====== ======== ==========
 URI                               Method Cyclades OS/Compute
 ================================= ====== ======== ==========
-``/servers/<server-id>/meta``     POST    ✔       **✘**
 ``/servers/<server-id>/metadata`` PUT    **✘**    ✔
-``/servers/<server-id>/metadata`` POST   **✘**    ✔
+``/servers/<server-id>/metadata`` POST   ✔       ✔
 ================================= ====== ======== ==========
 
 * **server-id** is the identifier of the virtual server
@@ -1233,7 +1205,7 @@ Content-Length  Length of request body    required required
 Request body contents::
 
   metadata: {
-    <metadatum key>: <value>,
+    <key>: <value>,
     ...
   }
 
@@ -1262,7 +1234,7 @@ Return Code                 Description
 Response body contents::
 
   metadata: {
-    <metadatum key>: <value>,
+    <key>: <value>,
     ...
   }
 
@@ -1275,18 +1247,14 @@ Response body contents::
 Get Server Metadata Item
 ........................
 
-Get the value of a specific metadatum of a virtual server
-
-.. note:: This operation is semantically equivalent in Cyclades and OS/Compute
-  besides the different URI.
+Get the value of a specific piece of metadata of a virtual server
 
 .. rubric:: Request
 
 ======================================= ====== ======== ==========
 URI                                     Method Cyclades OS/Compute
 ======================================= ====== ======== ==========
-``/servers/<server-id>/meta/<key>``     GET    ✔        **✘**
-``/servers/<server-id>/metadata/<key>`` GET    **✘**    ✔
+``/servers/<server-id>/metadata/<key>`` GET    ✔        ✔
 ======================================= ====== ======== ==========
 
 * **server-id** is the identifier of the virtual server
@@ -1322,7 +1290,7 @@ Return Code                 Description
 
 Response body content::
 
-  metadata: {<metadatum key>: <value>}
+  metadata: {<key>: <value>}
 
 *Example Get Server Metadatum for Item 'role', JSON*
 
@@ -1330,28 +1298,22 @@ Response body content::
 
   {"metadata": {"role": "webmail"}}
 
-.. note:: In OS/Compute, ``metadata`` is ``meta``
-
 Update Server Metadatum Item
 .............................
 
 Set a new or update an existing a metadum value for a virtual server.
-
-.. note:: This operation is semantically equivalent in Cyclades and OS/Compute
-  besides the different URI.
 
 .. rubric:: Request
 
 ======================================= ====== ======== ==========
 URI                                     Method Cyclades OS/Compute
 ======================================= ====== ======== ==========
-``/servers/<server-id>/meta/<key>``     PUT    ✔        **✘**
-``/servers/<server-id>/metadata/<key>`` PUT    **✘**    ✔
+``/servers/<server-id>/metadata/<key>`` PUT    ✔        ✔
 ======================================= ====== ======== ==========
 
 * **server-id** is the identifier of the virtual server
 
-* **key** is the key of a matadatum ``key``:``value`` pair
+* **key** is the key of a ``key``:``value`` pair piece of metadata
 
 |
 
@@ -1373,13 +1335,13 @@ Content-Length  Length of request body    required required
 
 Request body content::
 
-  meta: {<metadatum key>: <value>}
+  metadata: {<key>: <value>}
 
 *Example Request to Set or Update Server Metadatum "role": JSON*
 
 .. code-block:: javascript
 
-  {"meta": {"role": "gateway"}}
+  {"metadata": {"role": "gateway"}}
 
 .. rubric:: Response
 
@@ -1399,29 +1361,25 @@ Return Code                 Description
 
 Response body content::
 
-  meta: {<metadatum key>: <value>}
+  metadata: {<key>: <value>}
 
 *Example Set or Update Server Metadatum "role":"gateway": JSON*
 
 .. code-block:: javascript
 
-  {"meta": {"role": "gateway"}}
+  {"metadata": {"role": "gateway"}}
 
 Delete Server Metadatum
 .......................
 
 Delete a metadatum of a virtual server
 
-.. note:: This operation is semantically equivalent in Cyclades and OS/Compute
-  besides the different URI.
-
 .. rubric:: Request
 
 ======================================= ====== ======== ==========
 URI                                     Method Cyclades OS/Compute
 ======================================= ====== ======== ==========
-``/servers/<server-id>/meta/<key>``     DELETE ✔        **✘**
-``/servers/<server-id>/metadata/<key>`` DELETE **✘**    ✔
+``/servers/<server-id>/metadata/<key>`` DELETE ✔        ✔
 ======================================= ====== ======== ==========
 
 * **server-id** is the identifier of the virtual server
@@ -1693,12 +1651,8 @@ List the flavors that are accessible by the user
 URI                 Method Cyclades OS/Compute
 =================== ====== ======== ==========
 ``/flavors``        GET    ✔        ✔
-``/flavors/detail`` GET    ✔        **✘**
+``/flavors/detail`` GET    ✔        ✔
 =================== ====== ======== ==========
-
-* The detailed (``/flavors/detail``) listing in Cyclades is semantically
-  similar to OS/Compute regular (``/flavor``) listing. The Cyclades regular
-  listing semantics are Cyclades specific.
 
 |
 
@@ -1735,13 +1689,13 @@ Return Code                 Description
 
 Response code contents::
 
-  flavors: {values[
+  flavors: [
     {
       <flavor attribute>: <value>,
       ...
     },
     ...
-  ]}
+  ]
 
 Flavor attributes are `listed here <#flavor-ref>`_. Regular listing contains
 only ``id`` and ``name`` attributes.
@@ -1751,17 +1705,15 @@ only ``id`` and ``name`` attributes.
 .. code-block:: javascript
 
   {
-    "flavors": {
-      "values": [
-        {
-          "id": 1,
-          "name": "One code",
-        }, {
-          "id": 3,
-          "name": "Four core",
-        }
-      ]
-    }
+    "flavors": [
+      {
+        "id": 1,
+        "name": "One code",
+      }, {
+        "id": 3,
+        "name": "Four core",
+      }
+    ]
   }
 
 
@@ -1781,28 +1733,24 @@ only ``id`` and ``name`` attributes.
 .. code-block:: javascript
 
   {
-    "flavors": {
-      "values": [
-        {
-          "id": 1,
-          "name": "One core",
-          "ram": 1024,
-          "SNF:disk_template": "drbd",
-          "disk": 20,
-          "cpu": 1
-        }, {
-          "id": 3,
-          "name": "Four core",
-          "ram": 1024,
-          "SNF:disk_template": "drbd",
-          "disk": 40,
-          "cpu": 4
-        }
-      ]
-    }
+    "flavors": [
+      {
+        "id": 1,
+        "name": "One core",
+        "ram": 1024,
+        "SNF:disk_template": "drbd",
+        "disk": 20,
+        "cpu": 1
+      }, {
+        "id": 3,
+        "name": "Four core",
+        "ram": 1024,
+        "SNF:disk_template": "drbd",
+        "disk": 40,
+        "cpu": 4
+      }
+    ]
   }
-
-.. note:: In Compute OS API, the ``values`` layer is missing from the response
 
 Get Flavor Details
 ..................
@@ -1902,17 +1850,12 @@ Description                                   URI                               
 \                                             ``/images/detail``                    GET    ✔        ✔
 `Get details <#get-image-details>`_           ``/images/<image-id>``                GET    ✔        ✔
 `Delete <#delete-image>`_                     ``/images/<image id>``                DELETE ✔        ✔
-`List Metadata <#list-image-metadata>`_       ``/images/<image-id>/meta``           GET    ✔        **✘**
-\                                             ``/images/<image-id>/metadata``       GET    **✘**    ✔
-`Update Metadata <#update-image-metadata>`_   ``/images/<image-id>/meta``           POST    ✔       **✘**
+`List Metadata <#list-image-metadata>`_       ``/images/<image-id>/metadata``       GET    ✔        ✔
+`Update Metadata <#update-image-metadata>`_   ``/images/<image-id>/metadata``       POST   ✔        ✔
 \                                             ``/images/<image-id>/metadata``       PUT    **✘**    ✔
-\                                             ``/images/<image-id>/metadata``       POST   **✘**    ✔
-`Get Meta Item <#get-image-metadatum>`_       ``/image/<image-id>/meta/<key>``      GET    ✔        **✘**
-\                                             ``/images/<image-id>/metadata/<key>`` GET    **✘**    ✔
-`Update Metadatum <#update-image-metadatum>`_ ``/images/<image-id>/meta/<key>``     PUT    ✔        **✘**
-\                                             ``/images/<image-id>/metadata/<key>`` PUT    **✘**    ✔
-`Delete Metadatum <#delete-image-metadatum>`_ ``/images/<image-id>/meta/<key>``     DELETE ✔        **✘**
-\                                             ``/images/<image-id>/metadata/<key>`` DELETE **✘**    ✔
+`Get Meta Item <#get-image-metadatum>`_       ``/image/<image-id>/metadata/<key>``  GET    ✔        ✔
+`Update Metadatum <#update-image-metadatum>`_ ``/images/<image-id>/metadata/<key>`` PUT    ✔        ✔
+`Delete Metadatum <#delete-image-metadatum>`_ ``/images/<image-id>/metadata/<key>`` DELETE ✔        ✔
 ============================================= ===================================== ====== ======== ==========
 
 
@@ -1976,70 +1919,63 @@ Return Code                 Description
 
 Response body contents::
 
-  images: {values: [
+  images: [
     {
       <image attribute>: <value>,
       ...
-      metadata: {values: {
+      metadata: {
         <image metadatum key>: <value>,
         ...
-      }},
+      },
       ...
     },
     ...
-  ]}
+  ]
 
-The regular response returns just ``id`` and ``name``, while the detail returns a collections of the `image attributes listed here <#image-ref>`_.
+The regular response returns just ``id`` and ``name``, while the detail returns
+a collections of the `image attributes listed here <#image-ref>`_.
 
 *Example List Image (detail): JSON*
 
 .. code-block:: javascript
 
   {
-    "images: {
-      "values": [
-        {
-          "status": "ACTIVE",
-          "updated": "2013-03-02T15:57:03+00:00",
-          "name": "edx_saas",
-          "created": "2013-03-02T12:21:00+00:00",
-          "progress": 100,
-          "id": "175716...526236",
-          "metadata": {
-            "values": {
-              "partition_table": "msdos",
-              "osfamily": "linux",
-              "users": "root saasbook",
-              "exclude_task_changepassword": "yes",
-              "os": "ubuntu",
-              "root_partition": "1",
-              "description": "Ubuntu 12.04 LTS"
-            }
-          }
-        }, {
-          "status": "ACTIVE",
-          "updated": "2013-03-02T15:57:03+00:00",
-          "name": "edx_saas",
-          "created": "2013-03-02T12:21:00+00:00",
-          "progress": 100,
-          "id": "1357163d...c526206",
-          "metadata": {
-            "values": {
-              "partition_table": "msdos",
-              "osfamily": "windows",
-              "users": "Administratior",
-              "exclude_task_changepassword": "yes",
-              "os": "WinME",
-              "root_partition": "1",
-              "description": "Rerto Windows"
-            }
-          }
+    "images: [
+      {
+        "status": "ACTIVE",
+        "updated": "2013-03-02T15:57:03+00:00",
+        "name": "edx_saas",
+        "created": "2013-03-02T12:21:00+00:00",
+        "progress": 100,
+        "id": "175716...526236",
+        "metadata": {
+          "partition_table": "msdos",
+          "osfamily": "linux",
+          "users": "root saasbook",
+          "exclude_task_changepassword": "yes",
+          "os": "ubuntu",
+          "root_partition": "1",
+          "description": "Ubuntu 12.04 LTS"
         }
-      ]
-    }
+      }, {
+        "status": "ACTIVE",
+        "updated": "2013-03-02T15:57:03+00:00",
+        "name": "edx_saas",
+        "created": "2013-03-02T12:21:00+00:00",
+        "progress": 100,
+        "id": "1357163d...c526206",
+        "metadata": {
+          "partition_table": "msdos",
+          "osfamily": "windows",
+          "users": "Administratior",
+          "exclude_task_changepassword": "yes",
+          "os": "WinME",
+          "root_partition": "1",
+          "description": "Rerto Windows"
+        }
+      }
+    ]
   }
-
-.. note:: In Compute OS API, the ``values`` layer is missing from the response
 
 Get Image Details
 .................
@@ -2089,9 +2025,9 @@ Response body contents::
   image: {
     <image attribute>: <value>,
     ...
-    metadata: {values:{
+    metadata: {
       <image metadatum key>: <value>
-    }}
+    }
   }
 
 Image attributes are `listed here <#image-ref>`_.
@@ -2100,30 +2036,26 @@ Image attributes are `listed here <#image-ref>`_.
 
 .. code-block:: javascript
 
-    {
-    "image": {
-      "id": "6404619d-...-aef57eaff4af",
-      "name": "FreeBSD",
-      "status": "ACTIVE",
-      "updated": "2013-04-24T12:06:02+00:00",
-      "created": "2013-04-24T11:52:16+00:00",
-      "progress": 100,
-      "metadata": {
-        "values": {
-          "kernel": "9.1 RELEASE",
-          "osfamily": "freebsd",
-          "users": "root",
-          "gui": "No GUI",
-          "sortorder": "9",
-          "os": "freebsd",
-          "root_partition": "2",
-          "description": "FreeBSD 9"
-        }
+  {
+  "image": {
+    "id": "6404619d-...-aef57eaff4af",
+    "name": "FreeBSD",
+    "status": "ACTIVE",
+    "updated": "2013-04-24T12:06:02+00:00",
+    "created": "2013-04-24T11:52:16+00:00",
+    "progress": 100,
+    "metadata": {
+      "kernel": "9.1 RELEASE",
+      "osfamily": "freebsd",
+      "users": "root",
+      "gui": "No GUI",
+      "sortorder": "9",
+      "os": "freebsd",
+      "root_partition": "2",
+      "description": "FreeBSD 9"
       }
     }
   }
-
-.. note:: In OS/Compute API, the ``values`` layer is missing.
 
 
 Delete Image
@@ -2173,16 +2105,12 @@ Return Code                 Description
 List Image Metadata
 ...................
 
-.. note:: This operation is semantically equivalent in Cyclades and OS/Compute
-  besides the different URI.
-
 .. rubric:: Request
 
 =============================== ====== ======== ==========
 URI                             Method Cyclades OS/Compute
 =============================== ====== ======== ==========
-``/images/<image-id>/meta``     GET    ✔        **✘**
-``/images/<image-id>/metadata`` GET    **✘**    ✔
+``/images/<image-id>/metadata`` GET    ✔        ✔
 =============================== ====== ======== ==========
 
 * **image-id** is the identifier of the virtual image
@@ -2218,10 +2146,8 @@ Return Code                 Description
 Response body content::
 
   metadata: {
-    values: {
-      <metadatum key>: <value>,
-    ...
-    }
+    <metadatum key>: <value>,
+  ...
   }
 
 *Example List Image Metadata: JSON*
@@ -2230,17 +2156,15 @@ Response body content::
 
   {
     "metadata": {
-      "values": {
-        "partition_table": "msdos",
-        "kernel": "3.2.0",
-        "osfamily": "linux",
-        "users": "user",
-        "gui": "Unity 5",
-        "sortorder": "3",
-        "os": "ubuntu",
-        "root_partition": "1",
-        "description": "Ubuntu 12 LTS"
-      }
+      "partition_table": "msdos",
+      "kernel": "3.2.0",
+      "osfamily": "linux",
+      "users": "user",
+      "gui": "Unity 5",
+      "sortorder": "3",
+      "os": "ubuntu",
+      "root_partition": "1",
+      "description": "Ubuntu 12 LTS"
     }
   }
 
@@ -2265,9 +2189,8 @@ referred by the operation will be overwritten.
 =============================== ====== ======== ==========
 URI                             Method Cyclades OS/Compute
 =============================== ====== ======== ==========
-``/images/<image-id>/meta``     POST    ✔       **✘**
 ``/images/<image-id>/metadata`` PUT    **✘**    ✔
-``/images/<image-id>/metadata`` POST   **✘**    ✔
+``/images/<image-id>/metadata`` POST   ✔        ✔
 =============================== ====== ======== ==========
 
 * **image-id** is the identifier of the virtual image
@@ -2322,7 +2245,7 @@ Return Code                 Description
 Response body content::
 
   metadata: {
-    <metadatum key>: <value>,
+    <key>: <value>,
     ...
   }
 
@@ -2348,16 +2271,12 @@ Response body content::
 Get Image Metadatum
 ...................
 
-.. note:: This operation is semantically equivalent in Cyclades and OS/Compute
-  besides the different URI.
-
 .. rubric:: Request
 
 ===================================== ====== ======== ==========
 URI                                   Method Cyclades OS/Compute
 ===================================== ====== ======== ==========
-``/image/<image-id>/meta/<key>``      GET    ✔        **✘**
-``/images/<image-id>/metadata/<key>`` GET    **✘**    ✔
+``/images/<image-id>/metadata/<key>`` GET    ✔        ✔
 ===================================== ====== ======== ==========
 
 * **image-id** is the identifier of the image
@@ -2393,7 +2312,7 @@ Return Code                 Description
 
 Response body content::
 
-  metadata: {<metadatum key>: <value>}
+  metadata: {<key>: <value>}
 
 *Example Get Image Metadatum Item: JSON*
 
@@ -2406,16 +2325,12 @@ Response body content::
 Update Image Metadatum
 ......................
 
-.. note:: This operation is semantically equivalent in Cyclades and OS/Compute
-  besides the different URI.
-
 .. rubric:: Request
 
 ===================================== ====== ======== ==========
 URI                                   Method Cyclades OS/Compute
 ===================================== ====== ======== ==========
-``/images/<image-id>/meta/<key>``     PUT    ✔        **✘**
-``/images/<image-id>/metadata/<key>`` PUT    **✘**    ✔
+``/images/<image-id>/metadata/<key>`` PUT    ✔        ✔
 ===================================== ====== ======== ==========
 
 * **image-id** is the identifier of the image
@@ -2444,13 +2359,13 @@ Content-Length  Length of request body    required required
 
 Request body content::
 
-  meta: {<metadatum key>: <value>}
+  metadata: {<key>: <value>}
 
 *Example Update Image Metadatum Item Request: JSON*
 
 .. code-block:: javascript
 
-  {"meta": {"os": "Kubuntu"}}
+  {"metadata": {"os": "Kubuntu"}}
 
 .. rubric:: Response
 
@@ -2470,32 +2385,29 @@ Return Code                 Description
 
 Request body content::
 
-  meta: {<metadatum key>: <value>}
+  metadata: {<key>: <value>}
 
 *Example Update Image Metadatum Item Response: JSON*
 
 .. code-block:: javascript
 
-  {"meta": {"os": "Kubuntu"}}
+  {"metadata": {"os": "Kubuntu"}}
 
 Delete Image Metadatum
 ......................
 
 Delete an image metadatum by its key.
 
-.. note:: This operation is semantically equivalent in Cyclades and OS/Compute
-  besides the different URI.
-
 .. rubric:: Request
 
 ===================================== ====== ======== ==========
 URI                                   Method Cyclades OS/Compute
 ===================================== ====== ======== ==========
-``/images/<image-id>/meta/<key>``     DELETE ✔        **✘**
-``/images/<image-id>/metadata/<key>`` DELETE **✘**    ✔
+``/images/<image-id>/metadata/<key>`` DELETE ✔        ✔
 ===================================== ====== ======== ==========
 
 * **image-id** is the identifier of the image
+
 * **key** is the key of a matadatum ``key``:``value`` pair
 
 |
@@ -2609,14 +2521,12 @@ Return Code                 Description
 
 Response body content::
 
-  networks: {
-    values: [
-      {
-        <network attribute>: <value>,
-        ...
-      },
+  networks: [
+    {
+      <network attribute>: <value>,
       ...
-    ]
+    },
+    ...
   }
 
 The ``detail`` operation lists the `full network attributes <#network-ref>`_,
@@ -2627,12 +2537,10 @@ while the regular operation returns only the ``id`` and ``name`` attributes.
 .. code-block:: javascript
 
   {
-    "networks": {
-      "values": [
-        {"id": "1", "name": "public"},
-        {"id": "2", "name": "my private network"}
-      ]
-    }
+    "networks": [
+      {"id": "1", "name": "public"},
+      {"id": "2", "name": "my private network"}
+    ]
   }
 
 *Example Networks List Response: JSON (detail)*
@@ -2640,23 +2548,21 @@ while the regular operation returns only the ``id`` and ``name`` attributes.
 .. code-block:: javascript
 
   {
-    "networks": {
-      "values": [
-        {
-          "id": "1",
-          "name": "public",
-          "created": "2011-04-20T15:31:08.199640+00:00",
-          "updated": "2011-05-06T12:47:05.582679+00:00",
-          "attachments": {"values": ["nic-42-0", "nic-73-0"]}
-        }, {
-          "id": 2,
-          "name": "my private network",
-          "created": "2011-04-20T14:32:08.199640+00:00",
-          "updated": "2011-05-06T11:40:05.582679+00:00",
-          "attachments": {"values": ["nic-42-2", "nic-7-3"]}
-        }
-      ]
-    }
+    "networks": [
+      {
+        "id": "1",
+        "name": "public",
+        "created": "2011-04-20T15:31:08.199640+00:00",
+        "updated": "2011-05-06T12:47:05.582679+00:00",
+        "attachments": ["nic-42-0", "nic-73-0"]
+      }, {
+        "id": 2,
+        "name": "my private network",
+        "created": "2011-04-20T14:32:08.199640+00:00",
+        "updated": "2011-05-06T11:40:05.582679+00:00",
+        "attachments": ["nic-42-2", "nic-7-3"]
+      }
+    ]
   }
 
 
@@ -2773,7 +2679,7 @@ A list of the valid network attributes can be found `here <#network-ref>`_.
       "cidr": "192.168.1.0/24",
       "type": "MAC_FILTERED",
       "gateway": null,
-      "attachments": {"values": []}
+      "attachments": []
     }
   }
 
@@ -2843,7 +2749,7 @@ A list of network attributes can be found `here <#network-ref>`_.
       "cidr": "192.168.1.0/24",
       "type": "MAC_FILTERED",
       "gateway": null,
-      "attachments": {"values": []}
+      "attachments": []
     }
   }
 
@@ -3092,10 +2998,8 @@ status           Server Status              ✔        ✔
 updated          Date of last modification  ✔        ✔
 created          Date of creation           ✔        ✔
 hostId           Physical host              empty    ✔
-imageRef         Image ID                   ✔        **✘**
-image            A full image descreption   **✘**    ✔
-flavorRef        Flavor ID                  ✔        **✘**
-flavor           A full flavor description  **✘**    ✔
+image            A full image descreption   ✔        ✔
+flavor           A full flavor description  ✔        ✔
 adminPass        Superuser Password         ✔        ✔
 suspended        If server is suspended     ✔        ✔
 progress         Build progress             ✔        ✔
@@ -3114,9 +3018,8 @@ links            Server links               **✘**    ✔
 
 * **hostId** is always empty in Cyclades and is returned for compatibility reasons
 
-* **imageRef** and **flavorRef** always refer to existing Image and Flavor
-  specifications. Cyclades improved the OpenStack approach by using references
-  to Image and Flavor attributes, instead of listing their full properties
+* **image** and **flavor** always refer to existing Image and Flavor
+  specifications.
 
 * **adminPass** in Cyclades it is generated automatically during creation. For
   safety, it is not stored anywhere in the system and it cannot be recovered
@@ -3256,8 +3159,7 @@ name              The flavor name      ✔        ✔
 ram               Server RAM size      ✔        ✔
 SNF:disk_template Storage mechanism    ✔        **✘**
 disk              Server disk size     ✔        ✔
-cpu               # of Virtual CPUs    ✔        **✘**
-vcpus             # of Virtual CPUs    **✘**    ✔
+vcpus             # of Virtual CPUs    ✔        ✔
 links rel         Atom link rel field  **✘**    ✔
 links href        Atom link href field **✘**    ✔
 ================= ==================== ======== ==========
@@ -3273,9 +3175,7 @@ links href        Atom link href field **✘**    ✔
 
 * **disk** the servers disk size in GB
 
-* **cpu** and **vcpus** are semantically equivalent terms in Cyclades and
-  OS/Compute APIs respectively and they refer to the number of virtual CPUs
-  assigned to a server
+* **vcpus** refer to the number of virtual CPUs assigned to a server
 
 * **link ref** and **link href** refer to the Atom link attributes that are
   `used in OS/Compute API <http://docs.openstack.org/api/openstack-compute/2/content/List_Flavors-d1e4188.html>`_.

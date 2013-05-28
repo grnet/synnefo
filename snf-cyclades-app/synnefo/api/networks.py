@@ -101,7 +101,7 @@ def network_to_dict(network, user_id, detail=True):
                        for nic in network.nics.filter(machine__userid=user_id)
                                               .filter(state="ACTIVE")
                                               .order_by('machine')]
-        d['attachments'] = {'values': attachments}
+        d['attachments'] = attachments
     return d
 
 
@@ -142,7 +142,7 @@ def list_networks(request, detail=False):
             'networks': networks,
             'detail': detail})
     else:
-        data = json.dumps({'networks': {'values': networks}})
+        data = json.dumps({'networks': networks})
 
     return HttpResponse(data, status=200)
 

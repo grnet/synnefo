@@ -55,14 +55,14 @@ class ServerAPITest(BaseAPITest):
         """Test if the expected list of servers is returned."""
         response = self.get('/api/v1.1/servers')
         self.assertSuccess(response)
-        servers = json.loads(response.content)['servers']['values']
+        servers = json.loads(response.content)['servers']
         self.assertEqual(servers, [])
 
     def test_server_list_2(self):
         """Test if the expected list of servers is returned."""
         response = self.get('/api/v1.1/servers', self.user1)
         self.assertSuccess(response)
-        servers = json.loads(response.content)['servers']['values']
+        servers = json.loads(response.content)['servers']
         db_server = self.vm1
         self.assertEqual(servers, [{'name': db_server.name,
                                     'id': db_server.id}])
@@ -74,14 +74,14 @@ class ServerAPITest(BaseAPITest):
                     self.vm4.id: self.vm4}
 
         response = self.get('/api/v1.1/servers/detail', user)
-        servers = json.loads(response.content)['servers']['values']
+        servers = json.loads(response.content)['servers']
         self.assertEqual(len(servers), len(user_vms))
         for api_vm in servers:
             db_vm = user_vms[api_vm['id']]
-            self.assertEqual(api_vm['flavorRef'], db_vm.flavor.id)
+            self.assertEqual(api_vm['flavor'], db_vm.flavor.id)
             self.assertEqual(api_vm['hostId'], db_vm.hostid)
             self.assertEqual(api_vm['id'], db_vm.id)
-            self.assertEqual(api_vm['imageRef'], db_vm.imageid)
+            self.assertEqual(api_vm['image'], db_vm.imageid)
             self.assertEqual(api_vm['name'], db_vm.name)
             self.assertEqual(api_vm['status'], get_rsapi_state(db_vm))
             self.assertSuccess(response)
@@ -98,13 +98,13 @@ class ServerAPITest(BaseAPITest):
         response = self.get('/api/v1.1/servers/%d' % db_vm.id, user)
         server = json.loads(response.content)['server']
 
-        self.assertEqual(server['flavorRef'], db_vm.flavor.id)
+        self.assertEqual(server['flavor'], db_vm.flavor.id)
         self.assertEqual(server['hostId'], db_vm.hostid)
         self.assertEqual(server['id'], db_vm.id)
-        self.assertEqual(server['imageRef'], db_vm.imageid)
+        self.assertEqual(server['image'], db_vm.imageid)
         self.assertEqual(server['name'], db_vm.name)
         self.assertEqual(server['status'], get_rsapi_state(db_vm))
-        api_nic = server['attachments']['values'][0]
+        api_nic = server['attachments'][0]
         self.assertEqual(api_nic['network_id'], str(net.id))
         self.assertEqual(api_nic['mac_address'], nic.mac)
         self.assertEqual(api_nic['firewallProfile'], nic.firewall_profile)
@@ -112,7 +112,7 @@ class ServerAPITest(BaseAPITest):
         self.assertEqual(api_nic['ipv6'], nic.ipv6)
         self.assertEqual(api_nic['id'], 'nic-%s-%s' % (db_vm.id, nic.index))
 
-        metadata = server['metadata']['values']
+        metadata = server['metadata']
         self.assertEqual(len(metadata), 1)
         self.assertEqual(metadata[db_vm_meta.meta_key], db_vm_meta.meta_value)
         self.assertSuccess(response)
@@ -132,7 +132,7 @@ class ServerAPITest(BaseAPITest):
 
         response = self.get('/api/v1.1/servers/%d' % db_vm.id, user)
         server = json.loads(response.content)['server']
-        nics = server["attachments"]["values"]
+        nics = server["attachments"]
         self.assertEqual(len(nics), 1)
         self.assertEqual(nics[0]["network_id"], str(nic2.network_id))
 
@@ -203,7 +203,7 @@ class ServerCreateAPITest(BaseAPITest):
         api_server = json.loads(response.content)['server']
         self.assertEqual(api_server['status'], "BUILD")
         self.assertEqual(api_server['progress'], 0)
-        self.assertEqual(api_server['metadata']['values'],
+        self.assertEqual(api_server['metadata'],
                         {"My Server Name":  "Apache1"})
         self.assertTrue('adminPass' in api_server)
 
@@ -253,9 +253,9 @@ class ServerMetadataAPITest(BaseAPITest):
         vm = self.vm
         create_meta = lambda: mfactory.VirtualMachineMetadataFactory(vm=vm)
         metadata = [create_meta(), create_meta(), create_meta()]
-        response = self.get('/api/v1.1/servers/%d/meta' % vm.id, vm.userid)
+        response = self.get('/api/v1.1/servers/%d/metadata' % vm.id, vm.userid)
         self.assertTrue(response.status_code in [200, 203])
-        api_metadata = json.loads(response.content)['metadata']['values']
+        api_metadata = json.loads(response.content)['metadata']
         self.assertEqual(len(api_metadata), len(metadata) + 1)
         for db_m in metadata:
             self.assertEqual(api_metadata[db_m.meta_key], db_m.meta_value)
@@ -264,12 +264,12 @@ class ServerMetadataAPITest(BaseAPITest):
                         {'foo': 'bar'},
                         metadata[0].meta_key: 'bar2'
                   }
-        response = self.post('/api/v1.1/servers/%d/meta' % vm.id, vm.userid,
-                             json.dumps(request), 'json')
+        response = self.post('/api/v1.1/servers/%d/metadata' % vm.id,
+                             vm.userid, json.dumps(request), 'json')
         metadata2 = VirtualMachineMetadata.objects.filter(vm=vm)
-        response = self.get('/api/v1.1/servers/%d/meta' % vm.id, vm.userid)
+        response = self.get('/api/v1.1/servers/%d/metadata' % vm.id, vm.userid)
         self.assertTrue(response.status_code in [200, 203])
-        api_metadata2 = json.loads(response.content)['metadata']['values']
+        api_metadata2 = json.loads(response.content)['metadata']
         self.assertTrue('foo' in api_metadata2.keys())
         self.assertTrue(api_metadata2[metadata[0].meta_key], 'bar2')
         self.assertEqual(len(api_metadata2), len(metadata2))
@@ -278,38 +278,39 @@ class ServerMetadataAPITest(BaseAPITest):
 
         # Create new meta
         request = {'meta': {'foo2': 'bar2'}}
-        response = self.put('/api/v1.1/servers/%d/meta/foo2' % vm.id,
+        response = self.put('/api/v1.1/servers/%d/metadata/foo2' % vm.id,
                             vm.userid, json.dumps(request), 'json')
 
         # Get the new meta
-        response = self.get('/api/v1.1/servers/%d/meta/foo2' % vm.id,
+        response = self.get('/api/v1.1/servers/%d/metadata/foo2' % vm.id,
                             vm.userid)
         meta = json.loads(response.content)['meta']
         self.assertEqual(meta['foo2'], 'bar2')
 
         # Delete the new meta
-        response = self.delete('/api/v1.1/servers/%d/meta/foo2' % vm.id,
+        response = self.delete('/api/v1.1/servers/%d/metadata/foo2' % vm.id,
                                vm.userid)
         self.assertEqual(response.status_code, 204)
 
         # Try to get the deleted meta: should raise 404
-        response = self.get('/api/v1.1/servers/%d/meta/foo2' % vm.id,
+        response = self.get('/api/v1.1/servers/%d/metadata/foo2' % vm.id,
                             vm.userid)
         self.assertEqual(response.status_code, 404)
 
     def test_invalid_metadata(self):
         vm = self.vm
-        response = self.post('/api/v1.1/servers/%d/meta' % vm.id, vm.userid)
+        response = self.post('/api/v1.1/servers/%d/metadata' % vm.id,
+                             vm.userid)
         self.assertBadRequest(response)
         self.assertEqual(len(vm.metadata.all()), 1)
 
     def test_invalid_metadata_server(self):
-        response = self.post('/api/v1.1/servers/42/meta', 'user')
+        response = self.post('/api/v1.1/servers/42/metadata', 'user')
         self.assertItemNotFound(response)
 
     def test_get_meta_invalid_key(self):
         vm = self.vm
-        response = self.get('/api/v1.1/servers/%d/meta/foo2' % vm.id,
+        response = self.get('/api/v1.1/servers/%d/metadata/foo2' % vm.id,
                             vm.userid)
         self.assertItemNotFound(response)
 

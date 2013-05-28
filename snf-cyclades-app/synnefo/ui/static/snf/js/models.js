@@ -2131,7 +2131,7 @@
                 }
             }
             
-            opts = {name: name, image: image.id, flavor: flavor.id, 
+            opts = {name: name, imageRef: image.id, flavorRef: flavor.id, 
                     metadata:meta}
             opts = _.extend(opts, extra);
             

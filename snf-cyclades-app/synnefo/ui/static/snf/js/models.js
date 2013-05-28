@@ -1893,7 +1893,11 @@
         },
 
         parse: function (resp, xhr) {
-            return _.map(resp.flavors, function(o) { o.disk_template = o['SNF:disk_template']; return o});
+            return _.map(resp.flavors, function(o) {
+              o.cpu = o['vcpus'];
+              o.disk_template = o['SNF:disk_template'];
+              return o
+            });
         },
 
         comparator: function(flv) {

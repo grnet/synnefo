@@ -92,6 +92,7 @@ def authenticate(request):
 
     uuid = None
     try:
+        tenant = req['auth']['tenantName']
         token_id = req['auth']['token']['id']
     except KeyError:
         try:
@@ -107,6 +108,9 @@ def authenticate(request):
         user = AstakosUser.objects.get(auth_token=token_id)
     except AstakosUser.DoesNotExist:
         raise faults.Unauthorized('Invalid token')
+
+    if tenant != user.uuid:
+        raise faults.Unauthorized('Invalid tenant')
 
     if uuid is not None:
         if user.uuid != uuid:
@@ -125,11 +129,11 @@ def authenticate(request):
         append({'name': s.name, 'type': s.type,
                 'endpoints': [{'adminURL': s.api_url,
                                'publicURL': s.api_url,
-                               'internalUrl': s.api_url,
+                               'internalURL': s.api_url,
                                'SNF:uiURL': s.url,
                                'region': s.name}]})
 
     if request.serialization == 'xml':
-        return xml_response(access, 'api/access.xml')
+        return xml_response({'access': access}, 'api/access.xml')
     else:
         return json_response(access)

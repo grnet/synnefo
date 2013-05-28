@@ -43,7 +43,7 @@ class Command(NoArgsCommand):
     def handle_noargs(self, **options):
         self.stdout.write('Cleanup sessions ...\n')
         call_command('cleanup')
-        
+
         self.stdout.write('Cleanup session catalog ...\n')
         engine = import_module(settings.SESSION_ENGINE)
         store = engine.SessionStore()

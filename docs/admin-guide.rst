@@ -898,13 +898,13 @@ service-remove                Remove service
 term-add                      Add approval terms
 user-activation-send          Send user activation
 user-add                      Add user
-user-auth-policy-add          Create a new authentication provider policy profile
-user-auth-policy-list         List existing authentication provider policy profiles
-user-auth-policy-remove       Remove an authentication provider policy
-user-auth-policy-set          Assign an existing authentication provider policy profile to a user or group
-user-auth-policy-show         Show authentication provider profile details
-user-group-add                Create a group with the given name
-user-group-list               List available groups
+authpolicy-add                Create a new authentication provider policy profile
+authpolicy-list               List existing authentication provider policy profiles
+authpolicy-remove             Remove an authentication provider policy
+authpolicy-set                Assign an existing authentication provider policy profile to a user or group
+authpolicy-show               Show authentication provider profile details
+group-add                     Create a group with the given name
+group-list                    List available groups
 user-invite                   Invite somebody
 user-list                     List users
 user-modify                   Modify user

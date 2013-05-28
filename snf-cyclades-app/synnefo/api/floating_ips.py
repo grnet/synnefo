@@ -40,7 +40,7 @@ from snf_django.lib import api
 from snf_django.lib.api import faults, utils
 from synnefo.api import util
 from synnefo import quotas
-from synnefo.db.models import Network, FloatingIP, NetworkInterface
+from synnefo.db.models import Network, FloatingIP
 
 
 from logging import getLogger
@@ -129,16 +129,21 @@ def allocate_floating_ip(request):
     pool = req.get("pool", None)
     address = req.get("address", None)
     machine = None
-    net_objects = Network.objects.select_for_update().filter(public=True,
-                                                             deleted=False)
+    net_objects = Network.objects.select_for_update()\
+                                 .filter(public=True, floating_ip_pool=True,
+                                         deleted=False)
     try:
         if pool is None:
             # User did not specified a pool. Choose a random public IP
             network, address = util.allocate_public_ip(net_objects)
         else:
             try:
-                network = net_objects.get(id=pool)
-            except Network.DoesNotExist:
+                network = Network.objects.select_for_update()\
+                                         .get(id=pool, public=True,
+                                              deleted=False,
+                                              floating_ip_pool=True)
+
+            except IndexError:
                 raise faults.ItemNotFound("Pool '%s' does not exist." % pool)
             if address is None:
                 # User did not specified an IP address. Choose a random one
@@ -221,7 +226,8 @@ def release_floating_ip(request, floating_ip_id):
 
 @api.api_method(http_method='GET', user_required=True, logger=log)
 def list_floating_ip_pools(request):
-    networks = Network.objects.filter(public=True, deleted=False)
+    networks = Network.objects.filter(public=True, deleted=False,
+                                      floating_ip_pool=True)
     pools = [{"name": str(net.id)} for net in networks]
     request.serialization = "json"
     data = json.dumps({"floating_ip_pools": pools})

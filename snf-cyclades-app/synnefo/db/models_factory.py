@@ -185,7 +185,8 @@ class FloatingIPFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.FloatingIP
 
     machine = factory.SubFactory(VirtualMachineFactory)
-    network = factory.SubFactory(NetworkFactory, public=False, deleted=False)
+    network = factory.SubFactory(NetworkFactory, public=False, deleted=False,
+                                 floating_ip_pool=True)
     ipv4 = factory.LazyAttributeSequence(lambda a, n: a.network.subnet[:-4] +
                                          '{0}'.format(int(n) + 2))
 

@@ -514,7 +514,8 @@ class Network(models.Model):
     action = models.CharField(choices=ACTIONS, max_length=32, null=True,
                               default=None)
     drained = models.BooleanField("Drained", default=False, null=False)
-
+    floating_ip_pool = models.BooleanField('Floating IP Pool', null=False,
+                                          default=False)
     pool = models.OneToOneField('IPPoolTable', related_name='network',
                 default=lambda: IPPoolTable.objects.create(available_map='',
                                                            reserved_map='',

@@ -109,13 +109,18 @@ def reconcile_networks(conflicting_ips=False):
         for bend in backends:
             bnet = get_backend_network(network, bend)
             gnet = ganeti_networks[bend].get(network.id)
-            if not (bnet or gnet):
-                # Network does not exist either in Ganeti nor in BD.
-                continue
-            if not bnet and gnet:
-                # Network exists in Ganeti and not in DB.
-                if network.action != "DESTROY" and not network.public:
-                    reconcile_parted_network(network, bend)
+            if not bnet:
+                if network.floating_ip_pool:
+                    # Network is a floating IP pool and does not exist in
+                    # backend. We need to create it
+                    bnet = reconcile_parted_network(network, bend)
+                elif not gnet:
+                    # Network does not exist either in Ganeti nor in BD.
+                    continue
+                else:
+                    # Network exists in Ganeti and not in DB.
+                    if network.action != "DESTROY" and not network.public:
+                        bnet = reconcile_parted_network(network, bend)
 
             if not gnet:
                 # Network does not exist in Ganeti. If the network action is

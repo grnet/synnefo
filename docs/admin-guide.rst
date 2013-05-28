@@ -826,6 +826,110 @@ The ``vlmc`` tool provides a way to interact with archipelago volumes
   must be used to break the lock.
 
 
+Synnefo management commands ("snf-manage")
+==========================================
+
+Each Synnefo service, Astakos, Pithos and Cyclades are controlled by the
+administrator using the "snf-manage" admin tool. This tool is an extension of
+the Django command-line management utility. It is run on the host that runs
+each service and provides different types of commands depending the services
+running on the host. If you are running more than one service on the same host
+"snf-manage" adds all the corresponding commands for each service dynamically,
+providing a unified admin environment.
+
+To run "snf-manage" you just type:
+
+.. code-block:: console
+
+   # snf-manage <command> [arguments]
+
+on the corresponding host that runs the service. For example, if you have all
+services running on different physical hosts you would do:
+
+.. code-block:: console
+
+   root@astakos-host # snf-manage <astakos-command> [argument]
+   root@pithos-host # snf-manage <pithos-command> [argument]
+   root@cyclades-host # snf-manage <cyclades-command> [argument]
+
+If you have all services running on the same host you would do:
+
+.. code-block:: console
+
+   root@synnefo-host # snf-manage <{astakos,pithos,cyclades}-command> [argument]
+
+Note that you cannot execute a service's command on a host that is not running
+this service. For example, the following will return an error if Astakos and
+Cyclades are installed on different physical hosts:
+
+.. code-block:: console
+
+   root@astakos-host # snf-manage <cyclades-command> [argument]
+   Unknown command: 'cyclades-command'
+   Type 'snf-manage help' for usage.
+
+This is the complete list of "snf-manage" commands for each service.
+
+Astakos snf-manage commands
+---------------------------
+
+============================  ===========================
+Name                          Description
+============================  ===========================
+fix-superusers                Transform superusers created by syncdb into AstakosUser instances
+full-cleanup                  Cleanup sessions and session catalog
+invitation-list               List invitation
+invitation-show               Show invitation details
+project-control               Manage projects and applications
+project-list                  List projects
+project-show                  Show project details
+quota                         List and check the integrity of user quota
+reconcile-resources-astakos   Reconcile resource usage of Quotaholder with Astakos DB
+resource-add                  Add resource
+resource-export-astakos       Export astakos resources in json format
+resource-import               Import resources
+resource-list                 List resources
+resource-modify               Modify resources
+resource-remove               Remove resource
+service-add                   Add service
+service-list                  List services
+service-modify                Modify service
+service-remove                Remove service
+term-add                      Add approval terms
+user-activation-send          Send user activation
+user-add                      Add user
+user-auth-policy-add          Create a new authentication provider policy profile
+user-auth-policy-list         List existing authentication provider policy profiles
+user-auth-policy-remove       Remove an authentication provider policy
+user-auth-policy-set          Assign an existing authentication provider policy profile to a user or group
+user-auth-policy-show         Show authentication provider profile details
+user-group-add                Create a group with the given name
+user-group-list               List available groups
+user-invite                   Invite somebody
+user-list                     List users
+user-modify                   Modify user
+user-show                     Show user details
+============================  ===========================
+
+Pithos snf-manage commands
+--------------------------
+
+============================  ===========================
+Name                          Description
+============================  ===========================
+FIXME: list pithos cmds
+============================  ===========================
+
+Cyclades snf-manage commands
+----------------------------
+
+============================  ===========================
+Name                          Description
+============================  ===========================
+FIXME: list cyclades cmds
+============================  ===========================
+
+
 The "kamaki" API client
 =======================
 
@@ -1230,24 +1334,6 @@ You can verify that the cluster is set up correctly by running:
 
   root@node2: rabbitmqctl cluster_status
 
-
-
-
-
-Admin tool: snf-manage
-----------------------
-
-``snf-manage`` is a tool used to perform various administrative tasks. It needs
-to be able to access the django database, so the following should be able to
-import the Django settings.
-
-Additionally, administrative tasks can be performed via the admin web interface
-located in /admin. Only users of type ADMIN can access the admin pages. To
-change the type of a user to ADMIN, snf-manage can be used:
-
-.. code-block:: console
-
-   $ snf-manage user-modify 42 --type ADMIN
 
 Logging
 -------

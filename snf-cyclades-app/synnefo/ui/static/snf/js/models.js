@@ -1166,12 +1166,12 @@
         },
         
         remove_meta: function(key, complete, error) {
-            var url = this.api_path() + "/meta/" + key;
+            var url = this.api_path() + "/metadata/" + key;
             this.api_call(url, "delete", undefined, complete, error);
         },
 
         save_meta: function(meta, complete, error) {
-            var url = this.api_path() + "/meta/" + meta.key;
+            var url = this.api_path() + "/metadata/" + meta.key;
             var payload = {meta:{}};
             payload.meta[meta.key] = meta.value;
             payload._options = {

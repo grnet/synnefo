@@ -47,7 +47,7 @@ import urlparse
 #
 # http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.10
 # Connection and MUST NOT be communicated by proxies over further connections
-EXCLUDE_HEADERS = ['Host', 'Cookie', 'Connection']
+EXCLUDE_HEADERS = ['Host', 'Cookie', 'Connection', 'X-Forwarded-Host']
 
 
 def proxy(request, target):

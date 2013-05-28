@@ -477,7 +477,7 @@ pending_commissions = [100, 200]
 
 commission_description = {
     "serial": 57,
-    "issue_time": "2013-04-08T10:19:15.0373",
+    "issue_time": "2013-04-08T10:19:15.0373+00:00",
     "name": "a commission",
     "provisions": [
         {

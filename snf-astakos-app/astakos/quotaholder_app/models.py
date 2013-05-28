@@ -31,10 +31,9 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from datetime import datetime
 from snf_django.lib.db.fields import intDecimalField
 
-from django.db.models import (Model, BigIntegerField, CharField,
+from django.db.models import (Model, BigIntegerField, CharField, DateTimeField,
                               ForeignKey, AutoField)
 from snf_django.lib.db.managers import ForUpdateManager
 
@@ -55,16 +54,12 @@ class Holding(Model):
         unique_together = (('holder', 'source', 'resource'),)
 
 
-def now():
-    return datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%f')[:24]
-
-
 class Commission(Model):
 
     serial = AutoField(primary_key=True)
     name = CharField(max_length=4096, default="")
     clientkey = CharField(max_length=4096, null=False)
-    issue_time = CharField(max_length=24)
+    issue_datetime = DateTimeField()
 
     objects = ForUpdateManager()
 
@@ -97,8 +92,8 @@ class ProvisionLog(Model):
 
     serial = BigIntegerField()
     name = CharField(max_length=4096)
-    issue_time = CharField(max_length=4096)
-    log_time = CharField(max_length=4096)
+    issue_datetime = DateTimeField()
+    log_datetime = DateTimeField()
     holder = CharField(max_length=4096)
     source = CharField(max_length=4096, null=True)
     resource = CharField(max_length=4096)

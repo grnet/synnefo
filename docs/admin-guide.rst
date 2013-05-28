@@ -1086,11 +1086,11 @@ Before proceeding make sure that it is configured properly. Verify that
 
    $ kamaki config list
 
-To chage a setting use ``kamaki config set``:
+To change a setting use ``kamaki config set``:
 
 .. code-block:: console
 
-   $ kamaki config set image.url https://cyclades.example.com/plankton
+   $ kamaki config set image.url https://cyclades.example.com/image
    $ kamaki config set file.url https://pithos.example.com/v1
    $ kamaki config set user.url https://accounts.example.com
    $ kamaki config set token ...

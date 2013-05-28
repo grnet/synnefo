@@ -20,7 +20,7 @@ Welcome to Synnefo's documentation
    Object Storage Service (codename: pithos) <pithos>
    Compute Service (codename: cyclades) <cyclades>
    Network Service (part of Cyclades) <networks>
-   Image Service (codename: plankton) <plankton>
+   Image Service (part of Cyclades) <plankton>
    Volume Storage Service (codename: archipelago) <archipelago>
 
 .. image:: images/synnefo-overview.png

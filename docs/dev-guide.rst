@@ -11,14 +11,15 @@ Synnefo exposes the OpenStack APIs for all its operations. Also, extensions
 have been written for advanced operations wherever needed, and minor changes
 for things that were missing or change frequently.
 
-All Synnefo services have the analogous OpenStack API:
+Most Synnefo services have a corresponding OpenStack API:
 
 | Cyclades/Compute Service -> OpenStack Compute API
 | Cyclades/Network Service -> OpenStack Compute/Network API (not Quantum yet)
-| Cyclades/Image Service -> OpenStack Compute/Image API
-| Cyclades/Plankton/Image Service -> OpenStack Glance API
+| Cyclades/Image Service -> OpenStack Glance API
 | Pithos/Storage Service -> OpenStack Object Store API
 | Astakos/Identity Service -> Proprietary, moving to OpenStack Keystone API
+| Astakos/Quota Service -> Proprietary API
+| Astakos/Resource Service -> Proprietary API
 
 Below, we will describe all Synnefo APIs with conjuction to the OpenStack APIs.
 
@@ -37,8 +38,8 @@ The current Identity Management API is:
     Identity API <astakos-api-guide>
 
 
-Resource and Quota API (Astakos)
-================================
+Resource and Quota Service API (Astakos)
+========================================
 
 .. toctree::
     :maxdepth: 2
@@ -71,14 +72,13 @@ Please consult the :ref:`Cyclades/Network API <cyclades-api-guide>` for more
 details.
 
 
-Images Service API (Cyclades/Plankton)
-======================================
+Image Service API (Cyclades)
+============================
 
-Plankton is the Image Service of Synnefo, currently implemented inside
-Cyclades. Plankton exposes the OpenStack Glance API with minor changes wherever
-needed.
+The Image Service is implemented inside Cyclades. It exposes the OpenStack
+Glance API with minor changes wherever needed.
 
-This is the Cyclades/Plankton Image API:
+This is the Cyclades/Image API:
 
 .. toctree::
    :maxdepth: 2

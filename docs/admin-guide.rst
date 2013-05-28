@@ -916,7 +916,9 @@ Pithos snf-manage commands
 ============================  ===========================
 Name                          Description
 ============================  ===========================
-FIXME: list pithos cmds
+reconcile-commissions-pithos  Display unresolved commissions and trigger their recovery
+resource-export-pithos        Export pithos resources in json format
+reconcile-resources-pithos    Detect unsynchronized usage between Astakos and Pithos DB resources and synchronize them if specified so.
 ============================  ===========================
 
 Cyclades snf-manage commands
@@ -926,6 +928,28 @@ Cyclades snf-manage commands
 Name                          Description
 ============================  ===========================
 FIXME: list cyclades cmds
+============================  ===========================
+
+Pithos managing accounts
+========================
+
+Pithos provides a utility tool for managing accounts.
+To run you just type:
+
+.. code-block:: console
+
+   # pithos-manage-accounts <command> [arguments]
+
+This is the list of the available commands:
+
+============================  ===========================
+Name                          Description
+============================  ===========================
+delete                        Remove an account from the Pithos DB
+export-quota                  Export account quota in a file
+list                          List existing/dublicate accounts
+merge                         Move an account contents in another account
+set-container-quota           Set container quota for all or a specific account
 ============================  ===========================
 
 

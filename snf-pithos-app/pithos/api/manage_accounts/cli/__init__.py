@@ -217,7 +217,7 @@ def main(argv=None):
     # create the parser for the "set-container-quota" command
     parser_set_container_quota = subparsers.add_parser(
         'set-container-quota',
-        description="Set container quota for all the existing accounts"
+        description="Set container quota for all or a specific account"
     )
     parser_set_container_quota.add_argument(
         '--account', dest='account',

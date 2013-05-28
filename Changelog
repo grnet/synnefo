@@ -139,6 +139,13 @@ Cyclades
   is covered by Quotaholder.
 
 
+Cyclades helpdesk
+-----------------
+* Additional start/stop vm action
+* Display extend backend info in vm's view
+* Fixed IP lookup
+
+
 Pithos
 ------
 * Remove PITHOS_AUTHENTICATION_USERS setting, which was used to override

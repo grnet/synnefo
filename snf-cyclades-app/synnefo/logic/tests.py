@@ -68,7 +68,7 @@ class UpdateDBTest(TestCase):
 
     def test_missing_attribute(self, client):
         update_db(client, json.dumps({'body': {}}))
-        client.basic_nack.assert_called_once()
+        self.assertTrue(client.basic_reject.called)
 
     def test_unhandled_exception(self, client):
         update_db(client, {})
@@ -78,12 +78,12 @@ class UpdateDBTest(TestCase):
         msg = self.create_msg(operation='OP_INSTANCE_STARTUP',
                               instance='foo')
         update_db(client, msg)
-        client.basic_nack.assert_called_once()
+        self.assertTrue(client.basic_ack.called)
 
     def test_wrong_type(self, client):
         msg = self.create_msg(type="WRONG_TYPE")
         update_db(client, msg)
-        client.basic_ack.assert_called_once()
+        self.assertTrue(client.basic_nack.called)
 
     def test_old_msg(self, client):
         from time import sleep
@@ -98,7 +98,7 @@ class UpdateDBTest(TestCase):
                               event_time=split_time(old_time),
                               instance=vm.backend_vm_id)
         update_db(client, msg)
-        client.basic_ack.assert_called_once()
+        self.assertTrue(client.basic_ack.called)
         db_vm = VirtualMachine.objects.get(id=vm.id)
         self.assertEquals(db_vm.operstate, "STOPPED")
         self.assertEquals(db_vm.backendtime, new_time)
@@ -108,7 +108,7 @@ class UpdateDBTest(TestCase):
         msg = self.create_msg(operation='OP_INSTANCE_STARTUP',
                               instance=vm.backend_vm_id)
         update_db(client, msg)
-        client.basic_ack.assert_called_once()
+        self.assertTrue(client.basic_ack.called)
         db_vm = VirtualMachine.objects.get(id=vm.id)
         self.assertEqual(db_vm.operstate, 'STARTED')
 
@@ -117,7 +117,7 @@ class UpdateDBTest(TestCase):
         msg = self.create_msg(operation='OP_INSTANCE_SHUTDOWN',
                               instance=vm.backend_vm_id)
         update_db(client, msg)
-        client.basic_ack.assert_called_once()
+        self.assertTrue(client.basic_ack.called)
         db_vm = VirtualMachine.objects.get(id=vm.id)
         self.assertEqual(db_vm.operstate, 'STOPPED')
 
@@ -126,7 +126,7 @@ class UpdateDBTest(TestCase):
         msg = self.create_msg(operation='OP_INSTANCE_REBOOT',
                               instance=vm.backend_vm_id)
         update_db(client, msg)
-        client.basic_ack.assert_called_once()
+        self.assertTrue(client.basic_ack.called)
         db_vm = VirtualMachine.objects.get(id=vm.id)
         self.assertEqual(db_vm.operstate, 'STARTED')
 
@@ -138,7 +138,7 @@ class UpdateDBTest(TestCase):
                               instance=vm.backend_vm_id)
         with mocked_quotaholder():
             update_db(client, msg)
-        client.basic_ack.assert_called_once()
+        self.assertTrue(client.basic_ack.called)
         db_vm = VirtualMachine.objects.get(id=vm.id)
         self.assertEqual(db_vm.operstate, 'DESTROYED')
         self.assertTrue(db_vm.deleted)
@@ -150,7 +150,7 @@ class UpdateDBTest(TestCase):
         msg = self.create_msg(operation='OP_INSTANCE_CREATE',
                               instance=vm.backend_vm_id)
         update_db(client, msg)
-        client.basic_ack.assert_called_once()
+        self.assertTrue(client.basic_ack.called)
         db_vm = VirtualMachine.objects.get(id=vm.id)
         self.assertEqual(db_vm.operstate, 'STARTED')
 
@@ -161,7 +161,7 @@ class UpdateDBTest(TestCase):
                               instance=vm.backend_vm_id,
                               status='error')
         update_db(client, msg)
-        client.basic_ack.assert_called_once()
+        self.assertTrue(client.basic_ack.called)
         db_vm = VirtualMachine.objects.get(id=vm.id)
         self.assertEqual(db_vm.operstate, 'ERROR')
 
@@ -174,7 +174,7 @@ class UpdateDBTest(TestCase):
                               instance=vm.backend_vm_id)
         with mocked_quotaholder():
             update_db(client, msg)
-        client.basic_ack.assert_called_once()
+        self.assertTrue(client.basic_ack.called)
         db_vm = VirtualMachine.objects.get(id=vm.id)
         self.assertEqual(db_vm.operstate, 'DESTROYED')
         self.assertTrue(db_vm.deleted)
@@ -188,7 +188,7 @@ class UpdateDBTest(TestCase):
                               instance=vm.backend_vm_id,
                               status='error')
         update_db(client, msg)
-        client.basic_ack.assert_called_once()
+        self.assertTrue(client.basic_ack.called)
         db_vm = VirtualMachine.objects.get(id=vm.id)
         self.assertEqual(db_vm.operstate, vm.operstate)
         self.assertEqual(db_vm.backendtime, vm.backendtime)
@@ -211,7 +211,7 @@ class UpdateNetTest(TestCase):
 
     def test_missing_attribute(self, client):
         update_db(client, json.dumps({'body': {}}))
-        client.basic_nack.assert_called_once()
+        self.assertTrue(client.basic_reject.called)
 
     def test_unhandled_exception(self, client):
         update_db(client, {})
@@ -220,13 +220,13 @@ class UpdateNetTest(TestCase):
     def test_wrong_type(self, client):
         msg = self.create_msg(type="WRONG_TYPE")
         update_db(client, msg)
-        client.basic_ack.assert_called_once()
+        self.assertTrue(client.basic_nack.called)
 
     def test_missing_instance(self, client):
         msg = self.create_msg(operation='OP_INSTANCE_STARTUP',
                               instance='foo')
         update_db(client, msg)
-        client.basic_nack.assert_called_once()
+        self.assertTrue(client.basic_ack.called)
 
     def test_no_nics(self, client):
         vm = mfactory.VirtualMachineFactory(operstate='ERROR')
@@ -237,7 +237,7 @@ class UpdateNetTest(TestCase):
         msg = self.create_msg(nics=[],
                               instance=vm.backend_vm_id)
         update_db(client, msg)
-        client.basic_ack.assert_called_once()
+        self.assertTrue(client.basic_ack.called)
         db_vm = VirtualMachine.objects.get(id=vm.id)
         self.assertEqual(len(db_vm.nics.all()), 0)
 
@@ -248,7 +248,7 @@ class UpdateNetTest(TestCase):
             msg = self.create_msg(nics=[{'network': net.backend_id}],
                                   instance=vm.backend_vm_id)
             update_db(client, msg)
-            client.basic_ack.assert_called_once()
+            self.assertTrue(client.basic_ack.called)
             db_vm = VirtualMachine.objects.get(id=vm.id)
             nics = db_vm.nics.all()
             self.assertEqual(len(nics), 1)
@@ -273,7 +273,7 @@ class UpdateNetTest(TestCase):
                                      'mac': 'aa:bb:cc:00:11:22'}],
                               instance=vm.backend_vm_id)
         update_db(client, msg)
-        client.basic_ack.assert_called_once()
+        self.assertTrue(client.basic_ack.called)
         db_vm = VirtualMachine.objects.get(id=vm.id)
         nics = db_vm.nics.all()
         self.assertEqual(len(nics), 1)
@@ -302,7 +302,7 @@ class UpdateNetworkTest(TestCase):
 
     def test_missing_attribute(self, client):
         update_network(client, json.dumps({'body': {}}))
-        client.basic_nack.assert_called_once()
+        self.assertTrue(client.basic_reject.called)
 
     def test_unhandled_exception(self, client):
         update_network(client, {})
@@ -311,13 +311,13 @@ class UpdateNetworkTest(TestCase):
     def test_wrong_type(self, client):
         msg = self.create_msg(type="WRONG_TYPE")
         update_network(client, msg)
-        client.basic_ack.assert_called_once()
+        self.assertTrue(client.basic_nack.called)
 
     def test_missing_network(self, client):
         msg = self.create_msg(operation='OP_NETWORK_CREATE',
                               network='foo')
         update_network(client, msg)
-        client.basic_nack.assert_called_once()
+        self.assertTrue(client.basic_ack.called)
 
     def test_create(self, client):
         back_network = mfactory.BackendNetworkFactory(operstate='PENDING')
@@ -334,7 +334,7 @@ class UpdateNetworkTest(TestCase):
                               network=net.backend_id,
                               cluster=back1.clustername)
         update_network(client, msg)
-        client.basic_ack.assert_called_once()
+        self.assertTrue(client.basic_ack.called)
 
         back_net = BackendNetwork.objects.get(id=back_network.id)
         self.assertEqual(back_net.operstate, 'ACTIVE')
@@ -345,7 +345,7 @@ class UpdateNetworkTest(TestCase):
                               network=net.backend_id,
                               cluster=back2.clustername)
         update_network(client, msg)
-        client.basic_ack.assert_called_once()
+        self.assertTrue(client.basic_ack.called)
 
         db_net = Network.objects.get(id=net.id)
         self.assertEqual(db_net.state, 'ACTIVE')
@@ -362,7 +362,7 @@ class UpdateNetworkTest(TestCase):
                               network=net.backend_id,
                               cluster=bn1.backend.clustername)
         update_network(client, msg)
-        client.basic_ack.assert_called_once()
+        self.assertTrue(client.basic_ack.called)
         new_net = Network.objects.get(id=net.id)
         self.assertEqual(new_net.state, 'ACTIVE')
 
@@ -378,7 +378,7 @@ class UpdateNetworkTest(TestCase):
                               network=net1.backend_id,
                               cluster=bn2.backend.clustername)
         update_network(client, msg)
-        client.basic_ack.assert_called_once()
+        self.assertTrue(client.basic_ack.called)
         self.assertEqual(Network.objects.get(id=net1.id).state, 'ACTIVE')
         self.assertEqual(BackendNetwork.objects.get(id=bn2.id).operstate,
                          'PENDING')
@@ -404,7 +404,7 @@ class UpdateNetworkTest(TestCase):
                                       cluster=bn.backend.clustername)
                 with mocked_quotaholder():
                     update_network(client, msg)
-                client.basic_ack.assert_called_once()
+                self.assertTrue(client.basic_ack.called)
                 db_bnet = BackendNetwork.objects.get(id=bn.id)
                 self.assertEqual(db_bnet.operstate,
                                  'DELETED')
@@ -433,7 +433,7 @@ class UpdateNetworkTest(TestCase):
                               cluster=bn1.backend.clustername)
         with mocked_quotaholder():
             update_network(client, msg)
-        client.basic_ack.assert_called_once()
+        self.assertTrue(client.basic_ack.called)
         new_net = Network.objects.get(id=net.id)
         self.assertEqual(new_net.state, 'ACTIVE')
         self.assertFalse(new_net.deleted)
@@ -459,7 +459,7 @@ class UpdateNetworkTest(TestCase):
                                       cluster=bn.backend.clustername)
                 with mocked_quotaholder():
                     update_network(client, msg)
-                client.basic_ack.assert_called_once()
+                self.assertTrue(client.basic_ack.called)
                 db_bnet = BackendNetwork.objects.get(id=bn.id)
                 self.assertEqual(bn.operstate, db_bnet.operstate)
                 self.assertEqual(bn.network.state, db_bnet.network.state)
@@ -474,7 +474,7 @@ class UpdateNetworkTest(TestCase):
                               add_reserved_ips=['10.0.0.10', '10.0.0.20'],
                               remove_reserved_ips=[])
         update_network(client, msg)
-        client.basic_ack.assert_called_once()
+        self.assertTrue(client.basic_ack.called)
         pool = network.get_pool()
         self.assertTrue(pool.is_reserved('10.0.0.10'))
         self.assertTrue(pool.is_reserved('10.0.0.20'))
@@ -486,7 +486,7 @@ class UpdateNetworkTest(TestCase):
                               add_reserved_ips=[],
                               remove_reserved_ips=['10.0.0.10', '10.0.0.20'])
         update_network(client, msg)
-        client.basic_ack.assert_called_once()
+        self.assertTrue(client.basic_ack.called)
         pool = network.get_pool()
         self.assertFalse(pool.is_reserved('10.0.0.10'))
         self.assertFalse(pool.is_reserved('10.0.0.20'))
@@ -512,7 +512,7 @@ class UpdateBuildProgressTest(TestCase):
 
     def test_missing_attribute(self, client):
         update_build_progress(client, json.dumps({'body': {}}))
-        client.basic_nack.assert_called_once()
+        self.assertTrue(client.basic_reject.called)
 
     def test_unhandled_exception(self, client):
         update_build_progress(client, {})
@@ -521,19 +521,19 @@ class UpdateBuildProgressTest(TestCase):
     def test_missing_instance(self, client):
         msg = self.create_msg(instance='foo')
         update_build_progress(client, msg)
-        client.basic_nack.assert_called_once()
+        self.assertTrue(client.basic_ack.called)
 
     def test_wrong_type(self, client):
         msg = self.create_msg(type="WRONG_TYPE")
         update_build_progress(client, msg)
-        client.basic_ack.assert_called_once()
+        self.assertTrue(client.basic_nack.called)
 
     def test_progress_update(self, client):
         rprogress = randint(10, 100)
         msg = self.create_msg(progress=rprogress,
                               instance=self.vm.backend_vm_id)
         update_build_progress(client, msg)
-        client.basic_ack.assert_called_once()
+        self.assertTrue(client.basic_ack.called)
         vm = self.get_db_vm()
         self.assertEqual(vm.buildpercentage, rprogress)
 
@@ -543,7 +543,7 @@ class UpdateBuildProgressTest(TestCase):
             msg = self.create_msg(progress=rprogress,
                                   instance=self.vm.backend_vm_id)
             update_build_progress(client, msg)
-            client.basic_ack.assert_called_once()
+            self.assertTrue(client.basic_ack.called)
             vm = self.get_db_vm()
             self.assertEqual(vm.buildpercentage, old)
 

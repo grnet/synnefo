@@ -36,11 +36,10 @@ from django.conf import settings
 from snf_django.lib.api.proxy import proxy
 from snf_django.lib.api.utils import prefix_pattern
 from synnefo.cyclades_settings import (
-        BASE_URL, BASE_HOST, BASE_PATH,
-        COMPUTE_PREFIX, VMAPI_PREFIX, PLANKTON_PREFIX, HELPDESK_PREFIX,
-        ASTAKOS_BASE_URL, ASTAKOS_BASE_PATH, BASE_ASTAKOS_PROXY_PATH,
-        ASTAKOS_ACCOUNTS_PREFIX, ASTAKOS_VIEWS_PREFIX,
-        PROXY_USER_SERVICES)
+    BASE_URL, BASE_HOST, BASE_PATH, COMPUTE_PREFIX, VMAPI_PREFIX,
+    PLANKTON_PREFIX, HELPDESK_PREFIX, UI_PREFIX, ASTAKOS_BASE_URL,
+    ASTAKOS_BASE_PATH, BASE_ASTAKOS_PROXY_PATH, ASTAKOS_ACCOUNTS_PREFIX,
+    ASTAKOS_VIEWS_PREFIX, PROXY_USER_SERVICES)
 
 from urlparse import urlparse
 from functools import partial
@@ -50,7 +49,7 @@ astakos_proxy = partial(proxy, proxy_base=BASE_ASTAKOS_PROXY_PATH,
                         target_base=ASTAKOS_BASE_URL)
 
 cyclades_patterns = patterns('',
-    (prefix_pattern('ui'), include('synnefo.ui.urls')),
+    (prefix_pattern(UI_PREFIX), include('synnefo.ui.urls')),
     url(r'^machines/console$', 'synnefo.ui.views.machines_console',
         name='ui_machines_console'),
     url(r'^machines/connect$', 'synnefo.ui.views.machines_connect',
@@ -64,7 +63,7 @@ cyclades_patterns = patterns('',
 urlpatterns = patterns(
     '',
     (prefix_pattern(BASE_PATH), include(cyclades_patterns)),
-) 
+)
 
 if PROXY_USER_SERVICES:
     astakos_proxy = partial(proxy, proxy_base=BASE_ASTAKOS_PROXY_PATH,

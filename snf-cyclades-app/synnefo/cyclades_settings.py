@@ -46,6 +46,7 @@ COMPUTE_PREFIX = getattr(settings, 'CYCLADES_COMPUTE_PREFIX', 'compute')
 VMAPI_PREFIX = getattr(settings, 'CYCLADES_VMAPI_PREFIX', 'vmapi')
 PLANKTON_PREFIX = getattr(settings, 'CYCLADES_PLANKTON_PREFIX', 'plankton')
 HELPDESK_PREFIX = getattr(settings, 'CYCLADES_HELPDESK_PREFIX', 'helpdesk')
+UI_PREFIX = getattr(settings, 'CYCLADES_UI_PREFIX', 'ui')
 
 # The API implementation needs to accept and return absolute references
 # to its resources. Thus, it needs to know its public URL.

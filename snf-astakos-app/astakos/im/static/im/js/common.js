@@ -373,6 +373,24 @@ function check_form_actions_inactive(){
   } else {
     $('.projects .form-actions').addClass('inactive');
   }
+
+  // updating form data
+  var forms = $("form.link-like:has('input.members-batch-action')");
+  forms.each(function(index, form){
+    var member_ids, checked;
+    form = $(form);
+    form.find("input.member-option").remove();
+    checked = $('#members-table tbody td.check input:checked');
+    member_ids = _.map(checked, function(el) {
+      return parseInt($(el).val());
+    });
+    
+    _.each(member_ids, function(id) {
+      var newel;
+      newel = $("<input name='members' class='member-option' type='hidden' value='"+id+"'>");
+      form.append(newel);
+    });
+  })
 }
 
 $('#members-table td.email').click(function(e){

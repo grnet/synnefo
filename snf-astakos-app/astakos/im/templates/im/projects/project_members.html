@@ -26,9 +26,9 @@
        
         {% render_table members_table %}
         <div class="form-actions inactive">
-          {% confirm_link "Reject selected" "project_app_cancel" 0 1 "" "OK" 1 "reject" %}
-          {% confirm_link "Accept selected" "project_app_cancel" 0 1 "" "OK" 1 "approve" %}
-          {% confirm_link "Remove selected" "project_app_cancel" 0 1 "" "OK" 1 "remove" %} 
+          {% confirm_link "Reject selected" "Reject selected members ?" "project_members_reject" chain_id "" "OK" 1 "reject members-batch-action" %}
+          {% confirm_link "Accept selected" "Accept selected members ?" "project_members_accept" chain_id "" "OK" 1 "accept members-batch-action" %}
+          {% confirm_link "Remove selected" "Remove selected members ?" "project_members_remove" chain_id "" "OK" 1 "remove members-batch-action" %}
         </div>
         {% endif %}
         

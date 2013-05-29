@@ -594,6 +594,66 @@ class TokensApiTest(TestCase):
 #        except Exception, e:
 #            self.fail(e)
 
+        # Check belongsTo BadRequest
+        url = '/astakos/api/tokens/%s/endpoints?belongsTo=%s' % (
+            quote(self.user1.auth_token), quote(self.user2.uuid))
+        headers = {'HTTP_X_AUTH_TOKEN': self.user1.auth_token}
+        r = client.get(url, **headers)
+        self.assertEqual(r.status_code, 400)
+
+        # Check successful request
+        url = '/astakos/api/tokens/%s/endpoints' % quote(self.user1.auth_token)
+        headers = {'HTTP_X_AUTH_TOKEN': self.user1.auth_token}
+        r = client.get(url, **headers)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r['Content-Type'], 'application/json; charset=UTF-8')
+        try:
+            body = json.loads(r.content)
+        except:
+            self.fail('json format expected')
+        endpoints = body.get('endpoints')
+        self.assertEqual(len(endpoints), 3)
+
+         # Check xml serialization
+        url = '/astakos/api/tokens/%s/endpoints?format=xml' %\
+            quote(self.user1.auth_token)
+        headers = {'HTTP_X_AUTH_TOKEN': self.user1.auth_token}
+        r = client.get(url, **headers)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r['Content-Type'], 'application/xml; charset=UTF-8')
+#        try:
+#            body = minidom.parseString(r.content)
+#        except Exception, e:
+#            self.fail('xml format expected')
+        endpoints = body.get('endpoints')
+        self.assertEqual(len(endpoints), 3)
+
+        # Check limit
+        url = '/astakos/api/tokens/%s/endpoints?limit=2' %\
+            quote(self.user1.auth_token)
+        headers = {'HTTP_X_AUTH_TOKEN': self.user1.auth_token}
+        r = client.get(url, **headers)
+        self.assertEqual(r.status_code, 200)
+        body = json.loads(r.content)
+        endpoints = body.get('endpoints')
+        self.assertEqual(len(endpoints), 2)
+
+        endpoint_link = body.get('endpoint_links', [])[0]
+        next = endpoint_link.get('href')
+        p = urlparse(next)
+        params = parse_qs(p.query)
+        self.assertTrue('limit' in params)
+        self.assertTrue('marker' in params)
+        self.assertEqual(params['marker'][0], '2')
+
+        # Check marker
+        headers = {'HTTP_X_AUTH_TOKEN': self.user1.auth_token}
+        r = client.get(next, **headers)
+        self.assertEqual(r.status_code, 200)
+        body = json.loads(r.content)
+        endpoints = body.get('endpoints')
+        self.assertEqual(len(endpoints), 1)
+
 
 class WrongPathAPITest(TestCase):
     def test_catch_wrong_account_paths(self, *args):
@@ -612,6 +672,6 @@ class WrongPathAPITest(TestCase):
         response = self.client.get(path)
         self.assertEqual(response.status_code, 400)
         try:
-            error = json.loads(response.content)
+            json.loads(response.content)
         except ValueError:
             self.assertTrue(False)

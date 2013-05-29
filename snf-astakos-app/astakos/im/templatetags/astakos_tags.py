@@ -245,7 +245,14 @@ def confirm_link(context, title, prompt='', url=None, urlarg=None,
 
     urlargs = None
     if urlarg:
-        urlargs = (urlarg,)
+        if isinstance(urlarg, basestring) and "," in urlarg:
+            args = urlarg.split(",")
+            for index, arg in enumerate(args):
+                if context.get(arg, None) is not None:
+                    args[index] = context.get(arg)
+            urlargs = args
+        else:
+            urlargs = (urlarg,)
 
     if CONFIRM_LINK_PROMPT_MAP.get(prompt, None):
         prompt = mark_safe(CONFIRM_LINK_PROMPT_MAP.get(prompt))
@@ -254,7 +261,6 @@ def confirm_link(context, title, prompt='', url=None, urlarg=None,
         url = reverse(url, args=urlargs)
     else:
         url = None
-
 
     title = _(title)
     tpl_context = RequestContext(context.get('request'))

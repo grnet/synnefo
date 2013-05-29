@@ -6,7 +6,7 @@
 {% block bottom_link %}<a href="{% url project_detail object.chain %}" title="Back to project ">&lt; Back to Project</a>{% endblock bottom_link %}
 {% block inner_project %} 
    
-  {% if owner_mode and project_view %}
+  {% if owner_mode or admin_mode and project_view %}
     {% if object.project.is_alive %}
       
       <div class="full-dotted{% if members_status_filter == None %} all{% endif %}{% if members_status_filter == 1 %} approved {% endif %}{% if members_status_filter == 0 %} pending{% endif %}">

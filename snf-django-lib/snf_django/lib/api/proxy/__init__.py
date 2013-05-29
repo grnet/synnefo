@@ -99,4 +99,8 @@ def proxy(request, proxy_base=None, target_base=None):
         length = response.getheader('content-length', None)
         data = response.read(length)
         status = int(response.status)
-        return HttpResponse(data, status=status)
+        django_http_response = HttpResponse(data, status=status)
+        # do we need to exclude any headers here?
+        for name, value in response.getheaders():
+            django_http_response[name] = value
+        return django_http_response

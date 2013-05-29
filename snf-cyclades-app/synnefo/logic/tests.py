@@ -34,9 +34,10 @@ from random import randint
 
 from django.test import TestCase
 
+from snf_django.lib.api import faults
 from synnefo.db.models import *
 from synnefo.db import models_factory as mfactory
-from synnefo.logic import reconciliation
+from synnefo.logic import reconciliation, servers
 from synnefo.lib.utils import split_time
 from datetime import datetime
 from mock import patch
@@ -48,6 +49,124 @@ from snf_django.utils.testing import mocked_quotaholder
 now = datetime.now
 from time import time
 import json
+
+
+@patch("synnefo.logic.rapi_pool.GanetiRapiClient")
+class ServerCommandTest(TestCase):
+    def test_pending_task(self, mrapi):
+        vm = mfactory.VirtualMachineFactory(task="REBOOT", task_job_id=1)
+        self.assertRaises(faults.BadRequest, servers.start, vm)
+        vm = mfactory.VirtualMachineFactory(task="BUILD", task_job_id=1)
+        self.assertRaises(faults.BuildInProgress, servers.start, vm)
+        # Assert always succeeds
+        vm = mfactory.VirtualMachineFactory(task="BUILD", task_job_id=1)
+        mrapi().DeleteInstance.return_value = 1
+        with mocked_quotaholder():
+            servers.destroy(vm)
+        vm = mfactory.VirtualMachineFactory(task="REBOOT", task_job_id=1)
+        with mocked_quotaholder():
+            servers.destroy(vm)
+
+    def test_deleted_vm(self, mrapi):
+        vm = mfactory.VirtualMachineFactory(deleted=True)
+        self.assertRaises(faults.BadRequest, servers.start, vm)
+
+    def test_invalid_operstate_for_action(self, mrapi):
+        vm = mfactory.VirtualMachineFactory(operstate="STARTED")
+        self.assertRaises(faults.BadRequest, servers.start, vm)
+        vm = mfactory.VirtualMachineFactory(operstate="STOPPED")
+        self.assertRaises(faults.BadRequest, servers.stop, vm)
+        vm = mfactory.VirtualMachineFactory(operstate="STARTED")
+        self.assertRaises(faults.BadRequest, servers.resize, vm)
+        vm = mfactory.VirtualMachineFactory(operstate="STOPPED")
+        self.assertRaises(faults.BadRequest, servers.stop, vm)
+        #test valid
+        mrapi().StartupInstance.return_value = 1
+        with mocked_quotaholder():
+            servers.start(vm)
+        vm.task = None
+        vm.task_job_id = None
+        vm.save()
+        mrapi().RebootInstance.return_value = 1
+        with mocked_quotaholder():
+            servers.reboot(vm, "HARD")
+
+    def test_commission(self, mrapi):
+        vm = mfactory.VirtualMachineFactory(operstate="STOPPED")
+        # Still pending
+        vm.serial = mfactory.QuotaHolderSerialFactory(serial=200,
+                                                      resolved=False,
+                                                      pending=True)
+        serial = vm.serial
+        mrapi().StartupInstance.return_value = 1
+        with mocked_quotaholder() as m:
+            servers.start(vm)
+            m.resolve_commissions.assert_called_once_with('', [],
+                                                          [serial.serial])
+            self.assertTrue(m.issue_one_commission.called)
+        # Not pending, rejct
+        vm.task = None
+        vm.serial = mfactory.QuotaHolderSerialFactory(serial=400,
+                                                      resolved=False,
+                                                      pending=False,
+                                                      accept=False)
+        serial = vm.serial
+        mrapi().StartupInstance.return_value = 1
+        with mocked_quotaholder() as m:
+            servers.start(vm)
+            m.resolve_commissions.assert_called_once_with('', [],
+                                                          [serial.serial])
+            self.assertTrue(m.issue_one_commission.called)
+        # Not pending, accept
+        vm.task = None
+        vm.serial = mfactory.QuotaHolderSerialFactory(serial=600,
+                                                      resolved=False,
+                                                      pending=False,
+                                                      accept=True)
+        serial = vm.serial
+        mrapi().StartupInstance.return_value = 1
+        with mocked_quotaholder() as m:
+            servers.start(vm)
+            m.resolve_commissions.assert_called_once_with('', [serial.serial],
+                                                          [])
+            self.assertTrue(m.issue_one_commission.called)
+
+        mrapi().StartupInstance.side_effect = ValueError
+        vm.task = None
+        vm.serial = None
+        # Test reject if Ganeti erro
+        with mocked_quotaholder() as m:
+            try:
+                servers.start(vm)
+            except:
+                m.resolve_commissions.assert_called_once_with('', [],
+                                                            [vm.serial.serial])
+
+    def test_task_after(self, mrapi):
+        return
+        vm = mfactory.VirtualMachineFactory()
+        mrapi().StartupInstance.return_value = 1
+        mrapi().ShutdownInstance.return_value = 2
+        mrapi().RebootInstance.return_value = 2
+        with mocked_quotaholder() as m:
+            vm.task = None
+            vm.operstate = "STOPPED"
+            servers.start(vm)
+            self.assertEqual(vm.task, "START")
+            self.assertEqual(vm.task_job_id, 1)
+        with mocked_quotaholder() as m:
+            vm.task = None
+            vm.operstate = "STARTED"
+            servers.stop(vm)
+            self.assertEqual(vm.task, "STOP")
+            self.assertEqual(vm.task_job_id, 2)
+        with mocked_quotaholder() as m:
+            vm.task = None
+            servers.reboot(vm)
+            self.assertEqual(vm.task, "REBOOT")
+            self.assertEqual(vm.task_job_id, 3)
+
+
 
 ## Test Callbacks
 
@@ -107,7 +226,8 @@ class UpdateDBTest(TestCase):
         vm = mfactory.VirtualMachineFactory()
         msg = self.create_msg(operation='OP_INSTANCE_STARTUP',
                               instance=vm.backend_vm_id)
-        update_db(client, msg)
+        with mocked_quotaholder():
+            update_db(client, msg)
         self.assertTrue(client.basic_ack.called)
         db_vm = VirtualMachine.objects.get(id=vm.id)
         self.assertEqual(db_vm.operstate, 'STARTED')
@@ -116,7 +236,8 @@ class UpdateDBTest(TestCase):
         vm = mfactory.VirtualMachineFactory()
         msg = self.create_msg(operation='OP_INSTANCE_SHUTDOWN',
                               instance=vm.backend_vm_id)
-        update_db(client, msg)
+        with mocked_quotaholder():
+            update_db(client, msg)
         self.assertTrue(client.basic_ack.called)
         db_vm = VirtualMachine.objects.get(id=vm.id)
         self.assertEqual(db_vm.operstate, 'STOPPED')
@@ -202,7 +323,8 @@ class UpdateDBTest(TestCase):
                                   beparams={},
                                   status=status)
             client.reset_mock()
-            update_db(client, msg)
+            with mocked_quotaholder():
+                update_db(client, msg)
             self.assertTrue(client.basic_ack.called)
             db_vm = VirtualMachine.objects.get(id=vm.id)
             self.assertEqual(db_vm.operstate, vm.operstate)
@@ -217,14 +339,15 @@ class UpdateDBTest(TestCase):
             update_db(client, msg)
             self.assertTrue(client.basic_ack.called)
             db_vm = VirtualMachine.objects.get(id=vm.id)
-            self.assertEqual(db_vm.operstate, "RESIZE")
+            self.assertEqual(db_vm.operstate, "STOPPED")
         # Test operstate after error
         msg = self.create_msg(operation='OP_INSTANCE_SET_PARAMS',
                               instance=vm.backend_vm_id,
                               beparams={"vcpus": 4},
                               status="error")
         client.reset_mock()
-        update_db(client, msg)
+        with mocked_quotaholder():
+            update_db(client, msg)
         self.assertTrue(client.basic_ack.called)
         db_vm = VirtualMachine.objects.get(id=vm.id)
         self.assertEqual(db_vm.operstate, "STOPPED")
@@ -241,7 +364,8 @@ class UpdateDBTest(TestCase):
                                         "maxmem": 2048},
                               status="success")
         client.reset_mock()
-        update_db(client, msg)
+        with mocked_quotaholder():
+            update_db(client, msg)
         self.assertTrue(client.basic_ack.called)
         db_vm = VirtualMachine.objects.get(id=vm.id)
         self.assertEqual(db_vm.operstate, "STOPPED")
@@ -252,7 +376,8 @@ class UpdateDBTest(TestCase):
                                         "maxmem": 2048},
                               status="success")
         client.reset_mock()
-        update_db(client, msg)
+        with mocked_quotaholder():
+            update_db(client, msg)
         self.assertTrue(client.basic_reject.called)
 
 

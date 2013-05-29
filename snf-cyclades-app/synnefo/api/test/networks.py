@@ -318,6 +318,7 @@ class NetworkAPITest(ComputeAPITest):
         user = 'userr'
         vm = mfactory.VirtualMachineFactory(name='yo', userid=user)
         net = mfactory.NetworkFactory(state='ACTIVE', userid=user)
+        mrapi().ModifyInstance.return_value = 1
         request = {'add': {'serverRef': vm.id}}
         response = self.mypost('networks/%d/action' % net.id,
                                net.userid, json.dumps(request), 'json')
@@ -370,8 +371,8 @@ class NetworkAPITest(ComputeAPITest):
         vm = mfactory.VirtualMachineFactory(name='yo', userid=user)
         net = mfactory.NetworkFactory(state='PENDING', subnet='10.0.0.0/31',
                                       userid=user)
-        request = {'add': {'serveRef': vm.id}}
-        response = self.mypost('networks/%d/action' % net.id,
+        request = {'add': {'serverRef': vm.id}}
+        response = self.mypost('/api/v1.1/networks/%d/action' % net.id,
                                net.userid, json.dumps(request), 'json')
         # Test that returns BuildInProgress
         self.assertEqual(response.status_code, 409)
@@ -380,7 +381,8 @@ class NetworkAPITest(ComputeAPITest):
     def test_add_nic_full_network(self, mrapi):
         """Test connecting VM to a full network"""
         user = 'userr'
-        vm = mfactory.VirtualMachineFactory(name='yo', userid=user)
+        vm = mfactory.VirtualMachineFactory(name='yo', userid=user,
+                                            operstate="STARTED")
         net = mfactory.NetworkFactory(state='ACTIVE', subnet='10.0.0.0/30',
                                       userid=user, dhcp=True)
         pool = net.get_pool()
@@ -401,11 +403,15 @@ class NetworkAPITest(ComputeAPITest):
         vm = mfactory.VirtualMachineFactory(name='yo', userid=user)
         net = mfactory.NetworkFactory(state='ACTIVE', userid=user)
         nic = mfactory.NetworkInterfaceFactory(machine=vm, network=net)
+        mrapi().ModifyInstance.return_value = 1
         request = {'remove': {'attachment': 'nic-%s-%s' % (vm.id, nic.index)}}
         response = self.mypost('networks/%d/action' % net.id,
                                net.userid, json.dumps(request), 'json')
         self.assertEqual(response.status_code, 202)
         self.assertTrue(NetworkInterface.objects.get(id=nic.id).dirty)
+        vm.task = None
+        vm.task_job_id = None
+        vm.save()
         # Remove dirty nic
         response = self.mypost('networks/%d/action' % net.id,
                                net.userid, json.dumps(request), 'json')

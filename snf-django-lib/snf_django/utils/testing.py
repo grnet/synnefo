@@ -143,7 +143,7 @@ def mocked_quotaholder(success=True):
         serial += 1
         astakos.return_value.issue_one_commission.return_value = serial
         astakos.return_value.resolve_commissions.return_value = {"failed": []}
-        yield
+        yield astakos.return_value
 
 
 class BaseAPITest(TestCase):

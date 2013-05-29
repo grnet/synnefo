@@ -43,7 +43,7 @@ from django.utils import simplejson as json
 from snf_django.lib import api
 from snf_django.lib.api import faults, utils
 from synnefo.api import util
-from synnefo.api.actions import network_actions
+from synnefo.api.servers import network_actions
 from synnefo import quotas
 from synnefo.db.models import Network
 from synnefo.db.utils import validate_mac

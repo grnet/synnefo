@@ -46,8 +46,10 @@ DEFAULT_SOURCE = 'system'
 RESOURCES = [
     "cyclades.vm",
     "cyclades.cpu",
+    "cyclades.active_cpu",
     "cyclades.disk",
     "cyclades.ram",
+    "cyclades.active_ram",
     "cyclades.network.private"
 ]
 
@@ -105,6 +107,22 @@ def issue_commission(user, source, provisions,
         return QuotaHolderSerial.objects.create(**serial_info)
     else:
         raise Exception("No serial")
+
+
+def accept_serial(serial, strict=True):
+    response = resolve_commissions(accept=[serial.serial], strict=strict)
+    serial.accept = True
+    serial.resolved = True
+    serial.save()
+    return response
+
+
+def reject_serial(serial, strict=True):
+    response = resolve_commissions(reject=[serial.serial], strict=strict)
+    serial.reject = True
+    serial.resolved = True
+    serial.save()
+    return response
 
 
 def accept_commissions(accepted, strict=True):
@@ -222,10 +240,9 @@ def issue_and_accept_commission(resource, delete=False):
                   " '%s' is still pending." % (resource, previous_serial)
             raise Exception(msg)
         elif previous_serial.accept:
-            accept_commissions(accepted=[previous_serial.serial], strict=False)
+            accept_serial(previous_serial, strict=False)
         else:
-            reject_commissions(rejected=[previous_serial.serial], strict=False)
-        previous_serial.resolved = True
+            reject_serial(previous_serial, strict=False)
 
     try:
         # Convert resources in the format expected by Quotaholder
@@ -241,41 +258,23 @@ def issue_and_accept_commission(resource, delete=False):
         raise
 
     try:
-        # Mark the serial as one to accept. This step is necessary for
-        # reconciliation
+        # Mark the serial as one to accept and associate it with the resource
         serial.pending = False
         serial.accept = True
         serial.save()
-
-        # Associate serial with the resource
         resource.serial = serial
         resource.save()
-
-        # Commit transaction in the DB! If this commit succeeds, then the
-        # serial is created in the DB with all the necessary information to
-        # reconcile commission
         transaction.commit()
+        # Accept the commission to quotaholder
+        accept_serial(serial)
+        transaction.commit()
+        return serial
     except:
+        log.exception("Unexpected ERROR")
         transaction.rollback()
-        serial.pending = False
-        serial.accept = False
-        serial.save()
+        reject_serial(serial)
         transaction.commit()
         raise
-
-    if serial.accept:
-        # Accept commission to Quotaholder
-        accept_commissions(accepted=[serial.serial])
-    else:
-        reject_commissions(rejected=[serial.serial])
-
-    # Mark the serial as resolved, indicating that no further actions are
-    # needed for this serial
-    serial.resolved = True
-    serial.save()
-    transaction.commit()
-
-    return serial
 
 
 def prepare_qh_resources(resource):
@@ -283,15 +282,70 @@ def prepare_qh_resources(resource):
         flavor = resource.flavor
         return {'cyclades.vm': 1,
                 'cyclades.cpu': flavor.cpu,
+                'cyclades.active_cpu': flavor.cpu,
                 'cyclades.disk': 1073741824 * flavor.disk,  # flavor.disk in GB
                 # 'public_ip': 1,
                 #'disk_template': flavor.disk_template,
-                'cyclades.ram': 1048576 * flavor.ram}  # flavor.ram is in MB
+                # flavor.ram is in MB
+                'cyclades.ram': 1048576 * flavor.ram,
+                'cyclades.active_ram': 1048576 * flavor.ram}
     elif isinstance(resource, Network):
         return {"cyclades.network.private": 1}
     else:
         raise ValueError("Unknown Resource '%s'" % resource)
 
 
+def get_commission_info(resource, action, action_fields=None):
+    if isinstance(resource, VirtualMachine):
+        flavor = resource.flavor
+        resources = {"cyclades.vm": 1,
+                     "cyclades.cpu": flavor.cpu,
+                     "cyclades.disk": 1073741824 * flavor.disk,
+                     "cyclades.ram": 1048576 * flavor.ram}
+        online_resources = {"cyclades.active_cpu": flavor.cpu,
+                            "cyclades.active_ram": 1048576 * flavor.ram}
+        # No commission for build! Commission has already been issued and
+        # accepted, since the VM has been created in DB.
+        #if action == "BUILD":
+        #    resources.update(online_resources)
+        #    return resources
+        if action == "START":
+            if resource.operstate == "STOPPED":
+                return online_resources
+            else:
+                return None
+        elif action == "STOP":
+            if resource.operstate in ["STARTED", "BUILD", "ERROR"]:
+                return reverse_quantities(online_resources)
+            else:
+                return None
+        elif action == "REBOOT":
+            if resource.operstate == "STOPPED":
+                return online_resources
+            else:
+                return None
+        elif action == "DESTROY":
+            if resource.operstate in ["STARTED", "BUILD", "ERROR"]:
+                resources.update(online_resources)
+            return reverse_quantities(resources)
+        elif action == "RESIZE" and action_fields:
+            beparams = action_fields.get("beparams")
+            cpu = beparams.get("vcpus", flavor.cpu)
+            ram = beparams.get("maxmem", flavor.ram)
+            return {"cyclades.cpu": cpu - flavor.cpu,
+                    "cyclades.ram": 1048576 * (ram - flavor.ram)}
+        else:
+            #["CONNECT", "DISCONNECT", "SET_FIREWALL_PROFILE"]:
+            return None
+
+
 def reverse_quantities(resources):
     return dict((r, -s) for r, s in resources.items())
+
+
+def resolve_vm_commission(serial):
+    log.warning("Resolving pending commission: %s", serial)
+    if not serial.pending and serial.accept:
+        accept_serial(serial)
+    else:
+        reject_serial(serial)

@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -55,6 +55,58 @@ _firewall_tags = {
 _reverse_tags = dict((v.split(':')[3], k) for k, v in _firewall_tags.items())
 
 
+def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields):
+    """Handle quotas for updated VirtualMachine.
+
+    Update quotas for the updated VirtualMachine based on the job that run on
+    the Ganeti backend. If a commission has been already issued for this job,
+    then this commission is just accepted or rejected based on the job status.
+    Otherwise, a new commission for the given change is issued, that is also in
+    force and auto-accept mode. In this case, previous commissions are
+    rejected, since they reflect a previous state of the VM.
+
+    """
+    if job_status not in ["success", "error", "canceled"]:
+        return
+
+    # Check successful completion of a job will trigger any quotable change in
+    # the VM state.
+    action = utils.get_action_from_opcode(job_opcode, job_fields)
+    commission_info = quotas.get_commission_info(vm, action=action,
+                                                 action_fields=job_fields)
+
+    if vm.task_job_id == job_id and vm.serial is not None:
+        # Commission for this change has already been issued. So just
+        # accept/reject it
+        serial = vm.serial
+        if job_status == "success":
+            quotas.accept_serial(serial)
+        elif job_status in ["error", "canceled"]:
+            log.debug("Job %s failed. Rejecting related serial %s", job_id,
+                      serial)
+            quotas.reject_serial(serial)
+        vm.serial = None
+    elif job_status == "success" and commission_info is not None:
+        log.debug("Expected job was %s. Processing job %s. Commission for"
+                  " this job: %s", vm.task_job_id, job_id, commission_info)
+        # Commission for this change has not been issued, or the issued
+        # commission was unaware of the current change. Reject all previous
+        # commissions and create a new one in forced mode!
+        previous_serial = vm.serial
+        if previous_serial and not previous_serial.resolved:
+            quotas.resolve_vm_commission(previous_serial)
+        serial = quotas.issue_commission(user=vm.userid,
+                                         source=quotas.DEFAULT_SOURCE,
+                                         provisions=commission_info,
+                                         force=True,
+                                         auto_accept=True)
+        # Clear VM's serial. Expected job may arrive later. However correlated
+        # serial must not be accepted, since it reflects a previous VM state
+        vm.serial = None
+
+    return vm
+
+
 @transaction.commit_on_success
 def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
                       beparams=None):
@@ -75,27 +127,27 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
     vm.backendopcode = opcode
     vm.backendlogmsg = logmsg
 
+    if status in ["queued", "waiting", "running"]:
+        vm.save()
+        return
+
+    state_for_success = VirtualMachine.OPER_STATE_FROM_OPCODE.get(opcode)
     # Notifications of success change the operating state
-    state_for_success = VirtualMachine.OPER_STATE_FROM_OPCODE.get(opcode, None)
-    if status == 'success' and state_for_success is not None:
-        vm.operstate = state_for_success
-
-    if status == "success" and nics is not None:
-        # Update the NICs of the VM
-        _process_net_status(vm, etime, nics)
-
-    if beparams:
-        assert(opcode == "OP_INSTANCE_SET_PARAMS"), "'beparams' should exist"\
-                                                    " only for SET_PARAMS"
-        # VM Resize
-        if status == "success":
-            # VM has been resized. Change the flavor
+    if status == "success":
+        if state_for_success is not None:
+            vm.operstate = state_for_success
+        if nics is not None:
+            # Update the NICs of the VM
+            _process_net_status(vm, etime, nics)
+        if beparams:
+            # Change the flavor of the VM
             _process_resize(vm, beparams)
-            vm.operstate = "STOPPED"
-        elif status in ("canceled", "error"):
-            vm.operstate = "STOPPED"
-        else:
-            vm.operstate = "RESIZE"
+        # Update backendtime only for jobs that have been successfully
+        # completed, since only these jobs update the state of the VM. Else a
+        # "race condition" may occur when a successful job (e.g.
+        # OP_INSTANCE_REMOVE) completes before an error job and messages arrive
+        # in reversed order.
+        vm.backendtime = etime
 
     # Special case: if OP_INSTANCE_CREATE fails --> ERROR
     if opcode == 'OP_INSTANCE_CREATE' and status in ('canceled', 'error'):
@@ -106,22 +158,23 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
         # Special case: OP_INSTANCE_REMOVE fails for machines in ERROR,
         # when no instance exists at the Ganeti backend.
         # See ticket #799 for all the details.
-        #
         if status == 'success' or (status == 'error' and
                                    vm.operstate == 'ERROR'):
             _process_net_status(vm, etime, nics=[])
             vm.deleted = True
             vm.operstate = state_for_success
             vm.backendtime = etime
-            # Issue and accept commission to Quotaholder
-            quotas.issue_and_accept_commission(vm, delete=True)
+            status = "success"
 
-    # Update backendtime only for jobs that have been successfully completed,
-    # since only these jobs update the state of the VM. Else a "race condition"
-    # may occur when a successful job (e.g. OP_INSTANCE_REMOVE) completes
-    # before an error job and messages arrive in reversed order.
-    if status == 'success':
-        vm.backendtime = etime
+    if status in ["success", "error", "canceled"]:
+        # Job is finalized: Handle quotas/commissioning
+        job_fields = {"nics": nics, "beparams": beparams}
+        vm = handle_vm_quotas(vm, job_id=jobid, job_opcode=opcode,
+                              job_status=status, job_fields=job_fields)
+        # and clear task fields
+        if vm.task_job_id == jobid:
+            vm.task = None
+            vm.task_job_id = None
 
     vm.save()
 
@@ -129,12 +182,10 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
 def _process_resize(vm, beparams):
     """Change flavor of a VirtualMachine based on new beparams."""
     old_flavor = vm.flavor
-    vcpus = beparams.get("vcpus", None) or old_flavor.cpu
-    minmem, maxmem = beparams.get("minmem"), beparams.get("maxmem")
-    assert(minmem == maxmem), "Different minmem from maxmem"
-    if vcpus is None and maxmem is None:
+    vcpus = beparams.get("vcpus", old_flavor.cpu)
+    ram = beparams.get("maxmem", old_flavor.ram)
+    if vcpus == old_flavor.cpu and ram == old_flavor.ram:
         return
-    ram = maxmem or old_flavor.ram
     try:
         new_flavor = Flavor.objects.get(cpu=vcpus, ram=ram,
                                         disk=old_flavor.disk,
@@ -678,6 +729,7 @@ def set_firewall_profile(vm, profile):
         os_name = settings.GANETI_CREATEINSTANCE_KWARGS['os']
         client.ModifyInstance(vm.backend_vm_id,
                               os_name=os_name)
+    return None
 
 
 def get_instances(backend, bulk=True):

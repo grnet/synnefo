@@ -33,13 +33,15 @@
 
 import json
 
-from snf_django.utils.testing import BaseAPITest, mocked_quotaholder
+from snf_django.utils.testing import (BaseAPITest, mocked_quotaholder,
+                                      override_settings)
 from synnefo.db.models import VirtualMachine, VirtualMachineMetadata
 from synnefo.db import models_factory as mfactory
 from synnefo.logic.utils import get_rsapi_state
 from synnefo.cyclades_settings import cyclades_services
 from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
+from synnefo import settings
 
 from mock import patch
 
@@ -49,6 +51,7 @@ class ComputeAPITest(BaseAPITest):
         super(ComputeAPITest, self).setUp(*args, **kwargs)
         self.compute_path = get_service_path(cyclades_services, 'compute',
                                              version='v2.0')
+
     def myget(self, path, *args, **kwargs):
         path = join_urls(self.compute_path, path)
         return self.get(path, *args, **kwargs)
@@ -308,7 +311,8 @@ class ServerCreateAPITest(ComputeAPITest):
 class ServerDestroyAPITest(ComputeAPITest):
     def test_delete_server(self, mrapi):
         vm = mfactory.VirtualMachineFactory()
-        response = self.mydelete('servers/%d' % vm.id, vm.userid)
+        mrapi().DeleteInstance.return_value = 12
+        response = self.mydelete('/api/v1.1/servers/%d' % vm.id, vm.userid)
         self.assertEqual(response.status_code, 204)
         mrapi().DeleteInstance.assert_called_once()
 
@@ -394,32 +398,47 @@ class ServerActionAPITest(ComputeAPITest):
         vm = mfactory.VirtualMachineFactory()
         vm.operstate = "STOPPED"
         vm.save()
-        for action in actions:
+        mrapi().StartupInstance.return_value = 0
+        mrapi().ShutdownInstance.return_value = 1
+        mrapi().RebootInstance.return_value = 2
+        for jobId, action in enumerate(actions):
+            if action in ["shutdown", "reboot"]:
+                vm.operstate = "STARTED"
+            else:
+                vm.operstate = "STOPPED"
+            vm.task = None
+            vm.task_job_id = None
+            vm.save()
             val = {'type': 'HARD'} if action == 'reboot' else {}
             request = {action: val}
             response = self.mypost('servers/%d/action' % vm.id,
                                    vm.userid, json.dumps(request), 'json')
             self.assertEqual(response.status_code, 202)
             if action == 'shutdown':
-                self.assertEqual(VirtualMachine.objects.get(id=vm.id).action,
+                self.assertEqual(VirtualMachine.objects.get(id=vm.id).task,
                                  "STOP")
             else:
-                self.assertEqual(VirtualMachine.objects.get(id=vm.id).action,
+                self.assertEqual(VirtualMachine.objects.get(id=vm.id).task,
                                  action.upper())
+            self.assertEqual(VirtualMachine.objects.get(id=vm.id).task_job_id,
+                             jobId)
 
     def test_action_in_building_vm(self, mrapi, mimage):
         """Test building in progress"""
-        vm = mfactory.VirtualMachineFactory()
-        request = {'start': '{}'}
-        response = self.mypost('servers/%d/action' % vm.id,
-                               vm.userid, json.dumps(request), 'json')
+        vm = mfactory.VirtualMachineFactory(operstate="BUILD")
+        request = {'start': {}}
+        with mocked_quotaholder():
+            response = self.mypost('/api/v1.1/servers/%d/action' % vm.id,
+                                   vm.userid, json.dumps(request), 'json')
         self.assertEqual(response.status_code, 409)
         self.assertFalse(mrapi.mock_calls)
 
     def test_destroy_build_vm(self, mrapi, mimage):
         """Test building in progress"""
         vm = mfactory.VirtualMachineFactory()
-        response = self.mydelete('servers/%d' % vm.id, vm.userid)
+        mrapi().DeleteInstance.return_value = 2
+        response = self.mydelete('/api/v1.1/servers/%d' % vm.id,
+                                 vm.userid)
         self.assertSuccess(response)
         mrapi().RemoveInstance.assert_called_once()
 
@@ -456,7 +475,7 @@ class ServerActionAPITest(ComputeAPITest):
         request = {'resize': {'flavorRef': flavor.id}}
         response = self.post('/api/v1.1/servers/%d/action' % vm.id,
                              vm.userid, json.dumps(request), 'json')
-        self.assertSuccess(response)
+        self.assertBadRequest(response)
         # Check flavor with different disk
         flavor2 = mfactory.FlavorFactory(disk=1024)
         flavor3 = mfactory.FlavorFactory(disk=2048)
@@ -483,11 +502,26 @@ class ServerActionAPITest(ComputeAPITest):
                              vm.userid, json.dumps(request), 'json')
         self.assertEqual(response.status_code, 202)
         vm = VirtualMachine.objects.get(id=vm.id)
-        self.assertEqual(vm.backendjobid, 42)
+        self.assertEqual(vm.task_job_id, 42)
         name, args, kwargs = mrapi().ModifyInstance.mock_calls[0]
         self.assertEqual(kwargs["beparams"]["vcpus"], 4)
         self.assertEqual(kwargs["beparams"]["minmem"], 2048)
         self.assertEqual(kwargs["beparams"]["maxmem"], 2048)
+
+    def test_action_on_resizing_vm(self, mrapi, mimage):
+        vm = mfactory.VirtualMachineFactory()
+        vm.operstate = "RESIZE"
+        vm.save()
+        for action in VirtualMachine.ACTIONS:
+            request = {action[0]: ""}
+            response = self.post('/api/v1.1/servers/%d/action' % vm.id,
+                                 vm.userid, json.dumps(request), 'json')
+            self.assertBadRequest(response)
+        # however you can destroy
+        mrapi().DeleteInstance.return_value = 42
+        response = self.delete('/api/v1.1/servers/%d' % vm.id,
+                               vm.userid)
+        self.assertSuccess(response)
 
     def get_vm(self, flavor, operstate):
         vm = mfactory.VirtualMachineFactory(flavor=flavor)
@@ -500,7 +534,7 @@ class ServerActionAPITest(ComputeAPITest):
 class ServerVNCConsole(ComputeAPITest):
     def test_not_active_server(self):
         """Test console req for not ACTIVE server returns badRequest"""
-        vm = mfactory.VirtualMachineFactory()
+        vm = mfactory.VirtualMachineFactory(operstate="BUILD")
         data = json.dumps({'console': {'type': 'vnc'}})
         response = self.mypost('servers/%d/action' % vm.id,
                                vm.userid, data, 'json')
@@ -513,8 +547,9 @@ class ServerVNCConsole(ComputeAPITest):
         vm.save()
 
         data = json.dumps({'console': {'type': 'vnc'}})
-        response = self.mypost('servers/%d/action' % vm.id,
-                               vm.userid, data, 'json')
+        with override_settings(settings, TEST=True):
+            response = self.mypost('/api/v1.1/servers/%d/action' % vm.id,
+                                   vm.userid, data, 'json')
         self.assertEqual(response.status_code, 200)
         reply = json.loads(response.content)
         self.assertEqual(reply.keys(), ['console'])

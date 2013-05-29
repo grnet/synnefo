@@ -493,3 +493,11 @@ def image_to_links(image_id):
     links.append({"rel": "alternate",
                   "href": join_urls(IMAGES_PLANKTON_URL, str(image_id))})
     return links
+
+def start_action(vm, action, jobId):
+    vm.action = action
+    vm.backendjobid = jobId
+    vm.backendopcode = None
+    vm.backendjobstatus = None
+    vm.backendlogmsg = None
+    vm.save()

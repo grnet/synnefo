@@ -196,3 +196,4 @@ class MacPrefixPoolTableFactory(factory.DjangoModelFactory):
 
 class QuotaHolderSerialFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.QuotaHolderSerial
+    serial = factory.Sequence(lambda x: x, type=int)

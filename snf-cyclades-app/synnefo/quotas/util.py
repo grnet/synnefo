@@ -31,7 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.db.models import Sum, Count
+from django.db.models import Sum, Count, Q
 
 from synnefo.db.models import VirtualMachine, Network
 from synnefo.quotas import Quotaholder, ASTAKOS_TOKEN
@@ -53,6 +53,13 @@ def get_db_holdings(user=None):
                                                  ram=Sum("flavor__ram"),
                                                  cpu=Sum("flavor__cpu"),
                                                  disk=Sum("flavor__disk"))
+    vm_active_resources = \
+        vms.values("userid")\
+           .filter(Q(operstate="STARTED") | Q(operstate="BUILD") |\
+                   Q(operstate="ERROR"))\
+           .annotate(active_ram=Sum("flavor__ram"),
+                     active_cpu=Sum("flavor__cpu"))
+
     for vm_res in vm_resources:
         user = vm_res['userid']
         res = {"cyclades.vm": vm_res["num"],
@@ -60,6 +67,11 @@ def get_db_holdings(user=None):
                "cyclades.disk": 1073741824 * vm_res["disk"],
                "cyclades.ram": 1048576 * vm_res["ram"]}
         holdings[user] = res
+
+    for vm_res in vm_active_resources:
+        user = vm_res['userid']
+        holdings[user]["cyclades.active_cpu"] = vm_res["active_cpu"]
+        holdings[user]["cyclades.active_ram"] = 1048576 * vm_res["active_ram"]
 
     # Get resources related with networks
     net_resources = networks.values("userid")\

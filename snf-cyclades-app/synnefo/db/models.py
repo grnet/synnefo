@@ -231,6 +231,9 @@ class QuotaHolderSerial(models.Model):
         verbose_name = u'Quota Serial'
         ordering = ["serial"]
 
+    def __unicode__(self):
+        return u"<serial: %s>" % self.serial
+
 
 class VirtualMachine(models.Model):
     # The list of possible actions for a VM
@@ -306,8 +309,8 @@ class VirtualMachine(models.Model):
         "ERROR": "ERROR",
         "STOPPED": "STOPPED",
         "STARTED": "ACTIVE",
-        "DESTROYED": "DELETED",
-        "RESIZE": "RESIZE"
+        'RESIZE': 'RESIZE',
+        'DESTROYED': 'DELETED',
     }
 
     name = models.CharField('Virtual Machine Name', max_length=255)
@@ -348,6 +351,11 @@ class VirtualMachine(models.Model):
     backendlogmsg = models.TextField(null=True)
     buildpercentage = models.IntegerField(default=0)
     backendtime = models.DateTimeField(default=datetime.datetime.min)
+
+    # Latest action and corresponding Ganeti job ID, for actions issued
+    # by the API
+    task = models.CharField(max_length=64, null=True)
+    task_job_id = models.BigIntegerField(max_length=64, null=True)
 
     objects = ForUpdateManager()
 

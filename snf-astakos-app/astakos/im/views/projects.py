@@ -700,8 +700,8 @@ def project_members_action(request, chain_id, action=None, redirect_to=''):
     if not user.owns_project(project) and not user.is_project_admin():
         return redirect(reverse('index'))
 
-    logger.info("Batch members action from %s (action: %s, members: %r)",
-                user.log_display, action, member_ids)
+    logger.info("Batch members action from %s (chain: %r, action: %s, "
+                "members: %r)", user.log_display, chain_id, action, member_ids)
 
     action_func = actions_map.get(action)
     for member_id in member_ids:

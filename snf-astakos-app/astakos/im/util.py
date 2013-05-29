@@ -39,12 +39,15 @@ import urllib
 from urlparse import urlparse
 from datetime import tzinfo, timedelta
 
-from django.http import HttpResponse, HttpResponseBadRequest, urlencode
+from django.http import HttpResponse, HttpResponseBadRequest, urlencode, \
+                        HttpResponseRedirect
 from django.template import RequestContext
 from django.contrib.auth import authenticate
 from django.core.urlresolvers import reverse
+from django.shortcuts import redirect
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.utils.translation import ugettext as _
+from django.core.urlresolvers import reverse
 
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.functions import login
@@ -292,3 +295,20 @@ def login_url(request):
         if val:
             attrs[attr] = val
     return "%s?%s" % (reverse('login'), urllib.urlencode(attrs))
+
+
+def redirect_back(request, default='index'):
+    """
+    Redirect back to referer if safe and possible.
+    """
+    referer = request.META.get('HTTP_REFERER')
+
+    safedomain = settings.BASEURL.replace("https://", "").replace(
+        "http://", "")
+    safe = restrict_next(referer, safedomain)
+    assert safe
+    # avoid redirect loop
+    loops = referer == request.get_full_path()
+    if referer and safe and not loops:
+        return redirect(referer)
+    return redirect(reverse(default))

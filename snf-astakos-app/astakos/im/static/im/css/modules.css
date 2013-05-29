@@ -663,16 +663,19 @@ table.cols-3 tr.links td 						{ font-size:1.154em}
 
 
 .members-table 									{ width:100%;}
-.members-table .check 							{ width:10%;}
+.members-table .check 							{ width:5%;}
+.members-table .check + td.email	 			{ padding-left:5px;}
+.approved .members-table .email:hover,
+.pending .members-table.email:hover 			{ cursor: pointer;} 
 .members-table + .pagination 					{ display: none}
 .all .members-table .check 						{ display:none;}
 .form-actions 									{ position: relative;}
 .form-actions input[type="submit"]				{ display: none; position: } 
 .pending .form-actions .reject,
-.pending .form-actions .approve					{ display: inline-block;}
+.pending .form-actions .accept					{ display: inline-block;}
 .approved .form-actions .remove					{ display: inline-block;}
-.form-actions a.approve 						{ background-color: #55B577}
-.form-actions a.approve:hover 					{ background-color: #3582AC} 
+.form-actions form.link-like input[type="submit"].accept	 		{ background-color: #55B577}
+.form-actions form.link-like .accept:hover 					{ background-color: #3582AC} 
 
 
 .form-actions form.link-like input[type="submit"]				{ margin:0; padding:0; background:#F24E53; color:#fff; cursor:pointer; height:auto; line-height: 22px; padding: 10px 22px; margin-right:10px;}

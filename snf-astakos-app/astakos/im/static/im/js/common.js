@@ -261,10 +261,16 @@ $(document).ready(function() {
     });
     
      $('.msg-wrap .no').click( function(e){
-		e.preventDefault();
-		$(this).parents('.dialog').hide();
-	})
-    
+    		e.preventDefault();
+    		$(this).parents('.dialog').hide();
+        e.stopPropagation();
+    	})
+
+      $(document).click(function() {
+        $('.msg-wrap .dialog').hide();
+      });
+
+     
     $('.msg-wrap .yes').click( function(e){
 		e.preventDefault();
         var dialog = $(this).parents('.msg-wrap').find('.dialog');
@@ -365,7 +371,8 @@ $(document).ready(function() {
 	  
 	// fix for recaptcha fields
 	$('#okeanos_recaptcha').parents('.form-row').find('.extra-img').hide();	  
-     
+   
+   check_form_actions_inactive();  
 /* project members page js */	 
 function check_form_actions_inactive(){
    if ( $('#members-table tbody td.check input:checked').length >0 ) {
@@ -418,7 +425,6 @@ $('#members-table tr th.check input').click(function(e){
 $('#members-table tr .check input').click(function(e){
   check_form_actions_inactive()
 });
-
 
 /* end of project members page js */
 

@@ -939,12 +939,11 @@ class ProjectSortForm(forms.Form):
 
 class AddProjectMembersForm(forms.Form):
     q = forms.CharField(
-        max_length=800, 
         widget=forms.Textarea(attrs={
             'placeholder': astakos_messages.ADD_PROJECT_MEMBERS_Q_PLACEHOLDER}
-            ), 
+            ),
         label=_('Add members'),
-        help_text=_(astakos_messages.ADD_PROJECT_MEMBERS_Q_HELP), 
+        help_text=_(astakos_messages.ADD_PROJECT_MEMBERS_Q_HELP),
         required=True,)
 
     def __init__(self, *args, **kwargs):

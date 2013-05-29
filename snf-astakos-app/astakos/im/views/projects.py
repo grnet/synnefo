@@ -667,6 +667,12 @@ def _project_app_dismiss(request, application_id):
 @valid_astakos_user_required
 def project_members(request, chain_id, members_status_filter=None,
                     template_name='im/projects/project_members.html'):
+    project, application = get_by_chain_or_404(chain_id)
+
+    user = request.user
+    if not user.owns_project(project) and not user.is_project_admin():
+        return redirect(reverse('index'))
+
     return common_detail(request, chain_id,
                          members_status_filter=members_status_filter,
                          template_name=template_name)

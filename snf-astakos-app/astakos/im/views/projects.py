@@ -581,6 +581,8 @@ def project_app_approve(request, application_id):
         _project_app_approve(request, application_id)
 
     chain_id = get_related_project_id(application_id)
+    if not chain_id:
+        return redirect_back(request, 'project_list')
     return redirect(reverse('project_detail', args=(chain_id,)))
 
 

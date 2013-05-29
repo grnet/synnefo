@@ -69,7 +69,7 @@ class Flavor(models.Model):
                                  self.disk_template)
 
     def __unicode__(self):
-        return str(self.id)
+        return "<%s:%s>" % (str(self.id), self.name)
 
 
 class Backend(models.Model):

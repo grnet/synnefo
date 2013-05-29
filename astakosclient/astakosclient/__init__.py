@@ -123,8 +123,8 @@ class AstakosClient():
 
     # ----------------------------------
     @retry
-    def _call_astakos(self, token, request_path,
-                      headers=None, body=None, method="GET"):
+    def _call_astakos(self, token, request_path, headers=None,
+                      body=None, method="GET", log_body=True):
         """Make the actual call to Astakos Service"""
         if token is not None:
             hashed_token = hashlib.sha1()
@@ -134,7 +134,8 @@ class AstakosClient():
             using_token = "without using token"
         self.logger.debug(
             "Make a %s request to %s %s with headers %s and body %s"
-            % (method, request_path, using_token, headers, body))
+            % (method, request_path, using_token, headers,
+               body if log_body else "(not logged)"))
 
         # Check Input
         if headers is None:
@@ -362,7 +363,8 @@ class AstakosClient():
         WARNING: This api call encodes the user's token inside the url.
         It's thoughs security unsafe to use it (both astakosclient and
         nginx tend to log requested urls).
-        Avoid the use of get_endpoints method and use *** instead.
+        Avoid the use of get_endpoints method and use
+        get_user_info_with_endpoints instead.
 
         """
         params = {}
@@ -375,6 +377,29 @@ class AstakosClient():
         path = API_TOKENS + "/" + token + "/" + \
             TOKENS_ENDPOINTS + "?" + urllib.urlencode(params)
         return self._call_astakos(token, path)
+
+    # ----------------------------------
+    # do a POST to ``API_TOKENS``
+    def get_user_info_with_endpoints(self, token, uuid=None):
+        """ Fallback call for authenticate
+
+        Keyword arguments:
+        token   -- user's token (string)
+        uuid    -- user's uniq id
+
+        It returns back the token as well as information about the token
+        holder and the services he/she can acess (in json format).
+        In case of error raise an AstakosClientException.
+
+        """
+        req_path = copy(API_TOKENS)
+        req_headers = {'content-type': 'application/json'}
+        body = {'auth': {'token': {'id': token}}}
+        if uuid is not None:
+            body['auth']['tenantName'] = uuid
+        req_body = parse_request(body, self.logger)
+        return self._call_astakos(token, req_path, req_headers,
+                                  req_body, "POST", False)
 
     # ----------------------------------
     # do a GET to ``API_QUOTAS``

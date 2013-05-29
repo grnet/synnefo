@@ -140,7 +140,14 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
 
         .. warning:: *get_endpoints* api call encodes the user's token inside
             the url. It's security unsafe to use it (both astakosclient
-            and nginx tend to log requested urls).
+            and nginx tend to log requested urls). Use
+            get_user_info_with_endpoints instead.
+
+    **get_user_info_with_endpoints(**\ token, uuid=None\ **)**
+        Fallback call which receives the user token or the user uuid/token
+        and returns back the token as well as information about the token
+        holder and the services he/seh can access.
+        In case of error raise an AstakosClientException exception.
 
     **get_quotas(**\ token\ **)**
         Given a user's authentication token return user's

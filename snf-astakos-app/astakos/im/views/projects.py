@@ -355,6 +355,8 @@ def common_detail(request, chain_or_app_id, project_view=True,
         template_name=template_name,
         extra_context={
             'project_view': project_view,
+            'chain_id': chain_or_app_id,
+            'application': application,
             'addmembers_form': addmembers_form,
             'approved_members_count': approved_members_count,
             'pending_members_count': pending_members_count,

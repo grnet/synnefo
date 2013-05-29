@@ -66,6 +66,7 @@ from astakos.im.functions import check_pending_app_quota, accept_membership, \
     get_related_project_id, get_by_chain_or_404, approve_application, \
     deny_application, cancel_application, dismiss_application
 from astakos.im import settings
+from astakos.im.util import redirect_back
 from astakos.im.views.util import render_response, _create_object, \
     _update_object, _resources_catalog, ExceptionHandler
 from astakos.im.views.decorators import cookie_fix, signed_terms_required,\
@@ -509,7 +510,7 @@ def project_accept_member(request, chain_id, memb_id):
     with ExceptionHandler(request):
         _project_accept_member(request, chain_id, memb_id)
 
-    return redirect(reverse('project_detail', args=(chain_id,)))
+    return redirect_back(request, 'project_list')
 
 
 @commit_on_success_strict()
@@ -535,7 +536,7 @@ def project_remove_member(request, chain_id, memb_id):
     with ExceptionHandler(request):
         _project_remove_member(request, chain_id, memb_id)
 
-    return redirect(reverse('project_detail', args=(chain_id,)))
+    return redirect_back(request, 'project_list')
 
 
 @commit_on_success_strict()
@@ -560,7 +561,7 @@ def project_reject_member(request, chain_id, memb_id):
     with ExceptionHandler(request):
         _project_reject_member(request, chain_id, memb_id)
 
-    return redirect(reverse('project_detail', args=(chain_id,)))
+    return redirect_back(request, 'project_list')
 
 
 @commit_on_success_strict()
@@ -709,4 +710,4 @@ def project_members_action(request, chain_id, action=None, redirect_to=''):
         with ExceptionHandler(request):
             action_func(request, chain_id, member_id)
 
-    return redirect(reverse('project_members', args=(chain_id,)))
+    return redirect_back(request, 'project_list')

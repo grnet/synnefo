@@ -291,19 +291,29 @@ def _req_endpoints(conn, method, url, **kwargs):
     # Check input
     if conn.__class__.__name__ != "HTTPSConnection":
         return _request_status_302(conn, method, url, **kwargs)
-    if method != "GET":
-        return _request_status_400(conn, method, url, **kwargs)
 
     token_head = kwargs['headers'].get('X-Auth-Token')
-    url_split = url[len(astakosclient.API_TOKENS):].split('/')
-    token_url = url_split[1]
-    if token_head != token_url:
-        return _request_status_403(conn, method, url, **kwargs)
-    if token_url != token_1:
-        return _request_status_401(conn, method, url, **kwargs)
+    if url == astakosclient.API_TOKENS:
+        if method != "POST":
+            return _request_status_400(conn, method, url, **kwargs)
+        body = simplejson.loads(kwargs['body'])
+        token = body['auth']['token']['id']
+        if token != token_1:
+            return _request_status_401(conn, method, url, **kwargs)
+        # Return
+        return ("", simplejson.dumps(user_info_endpoints), 200)
 
-    # Return
-    return ("", simplejson.dumps(endpoints), 200)
+    else:
+        if method != "GET":
+            return _request_status_400(conn, method, url, **kwargs)
+        url_split = url[len(astakosclient.API_TOKENS):].split('/')
+        token_url = url_split[1]
+        if token_head != token_url:
+            return _request_status_403(conn, method, url, **kwargs)
+        if token_url != token_1:
+            return _request_status_401(conn, method, url, **kwargs)
+        # Return
+        return ("", simplejson.dumps(endpoints), 200)
 
 
 # ----------------------------
@@ -419,6 +429,36 @@ endpoints = {
         {"href": "/astakos/api/tokens/0000/endpoints?marker=4&limit=10000",
          "rel": "next"}]}
 
+user_info_endpoints = \
+    {'serviceCatalog': [
+        {'endpoints': [{
+            'SNF:uiURL': 'https://node1.example.com/ui/',
+            'adminURL': 'https://node1.example.com/v1',
+            'internalUrl': 'https://node1.example.com/v1',
+            'publicURL': 'https://node1.example.com/v1',
+            'region': 'cyclades'}],
+         'name': 'cyclades',
+         'type': 'compute'},
+        {'endpoints': [{
+            'SNF:uiURL': 'https://node2.example.com/ui/',
+            'adminURL': 'https://node2.example.com/v1',
+            'internalUrl': 'https://node2.example.com/v1',
+            'publicURL': 'https://node2.example.com/v1',
+            'region': 'pithos'}],
+         'name': 'pithos',
+         'type': 'storage'}],
+     'token': {
+         'expires': '2013-06-19T15:23:59.975572+00:00',
+         'id': token_1,
+         'tenant': {
+             'id': user_1,
+             'name': 'Firstname Lastname'}},
+     'user': {
+         'id': user_1,
+         'name': 'Firstname Lastname',
+         'roles': [{'id': 1, 'name': 'default'}],
+         'roles_links': []}}
+
 quotas = {
     "system": {
         "cyclades.ram": {
@@ -477,7 +517,7 @@ pending_commissions = [100, 200]
 
 commission_description = {
     "serial": 57,
-    "issue_time": "2013-04-08T10:19:15.0373",
+    "issue_time": "2013-04-08T10:19:15.0373+00:00",
     "name": "a commission",
     "provisions": [
         {
@@ -1161,6 +1201,18 @@ class TestEndPoints(unittest.TestCase):
             self.fail("Shouldn't raise Exception %s" % err)
         else:
             self.fail("Should have raised Unauthorized Exception")
+
+    # ----------------------------------
+    def test_get_user_info_with_endpoints(self):
+        """Test function call of get_user_info_with_endpoints"""
+        global token_1, user_info_endpoints
+        _mock_request([_request_ok])
+        try:
+            client = AstakosClient("https://example.com")
+            response = client.get_user_info_with_endpoints(token_1)
+        except Exception as err:
+            self.fail("Shouldn't raise Exception %s" % err)
+        self.assertEqual(response, user_info_endpoints)
 
 
 # ----------------------------

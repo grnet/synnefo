@@ -104,4 +104,4 @@ def get_request_dict(request):
         except ValueError:
             raise faults.BadRequest("Invalid JSON data")
     else:
-        raise faults.BadRequest("Unsupported Content-type: '%s'", content_type)
+        raise faults.BadRequest("Unsupported Content-type: '%s'" % content_type)

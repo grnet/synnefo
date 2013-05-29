@@ -54,8 +54,8 @@ urlpatterns = patterns(
     (r'^(?:/|.json|.xml)?$', 'demux'),
     (r'^/detail(?:.json|.xml)?$', 'list_images', {'detail': True}),
     (r'^/([\w-]+)(?:.json|.xml)?$', 'image_demux'),
-    (r'^/([\w-]+)/meta(?:.json|.xml)?$', 'metadata_demux'),
-    (r'^/([\w-]+)/meta/(.+?)(?:.json|.xml)?$', 'metadata_item_demux')
+    (r'^/([\w-]+)/metadata(?:.json|.xml)?$', 'metadata_demux'),
+    (r'^/([\w-]+)/metadata/(.+?)(?:.json|.xml)?$', 'metadata_item_demux')
 )
 
 
@@ -105,7 +105,7 @@ def image_to_dict(image, detail=True):
         d['status'] = 'DELETED' if image['deleted_at'] else 'ACTIVE'
         d['progress'] = 100 if image['status'] == 'available' else 0
         if image['properties']:
-            d['metadata'] = {'values': image['properties']}
+            d['metadata'] = image['properties']
     return d
 
 
@@ -135,7 +135,7 @@ def list_images(request, detail=False):
         data = render_to_string('list_images.xml',
                                 dict(images=reply, detail=detail))
     else:
-        data = json.dumps(dict(images={'values': reply}))
+        data = json.dumps(dict(images=reply))
 
     return HttpResponse(data, status=200)
 
@@ -210,7 +210,8 @@ def list_metadata(request, image_id):
     with image_backend(request.user_uniq) as backend:
         image = backend.get_image(image_id)
     metadata = image['properties']
-    return util.render_metadata(request, metadata, use_values=True, status=200)
+    return util.render_metadata(request, metadata, use_values=False,
+                                status=200)
 
 
 @api.api_method('POST', user_required=True, logger=log)

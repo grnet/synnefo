@@ -32,43 +32,60 @@
 # or implied, of GRNET S.A.
 
 from django.core.management.base import CommandError
-from astakos.im.models import Service
-from synnefo.lib.ordereddict import OrderedDict
 from synnefo.webproject.management.commands import SynnefoCommand
 from synnefo.webproject.management import utils
 
+from astakos.quotaholder_app.models import Commission, Provision
+
 
 class Command(SynnefoCommand):
-    args = "<service name or ID>"
-    help = "Show service details"
+    args = "<commission serial>"
+    help = "Show details for a pending commission"
 
     def handle(self, *args, **options):
+        self.output_format = options['output_format']
+
         if len(args) != 1:
-            raise CommandError("Please provide a service name or ID.")
+            raise CommandError("Please provide a commission serial.")
 
-        identifier = args[0]
-        if identifier.isdigit():
-            try:
-                service = Service.objects.get(id=int(identifier))
-            except Service.DoesNotExist:
-                raise CommandError('No service found with ID %s.' % identifier)
-        else:
-            try:
-                service = Service.objects.get(name=identifier)
-            except Service.DoesNotExist:
-                raise CommandError('No service found named %s.' % identifier)
+        try:
+            serial = int(args[0])
+        except ValueError:
+            raise CommandError('Expecting an integer serial.')
 
-        kv = OrderedDict(
-            [
-                ('id', service.id),
-                ('name', service.name),
-                ('type', service.type),
-                ('service URL', service.url),
-                ('API URL', service.api_url),
-                ('token', service.auth_token),
-                ('token created', service.auth_token_created),
-                ('token expires', service.auth_token_expires),
-            ])
+        try:
+            commission = Commission.objects.get(serial=serial)
+        except Commission.DoesNotExist:
+            m = 'There is no pending commission with serial %s.' % serial
+            raise CommandError(m)
 
-        utils.pprint_table(self.stdout, [kv.values()], kv.keys(),
-                           options["output_format"], vertical=True)
+        data = {'serial':     serial,
+                'name':       commission.name,
+                'clientkey':  commission.clientkey,
+                'issue_time': commission.issue_datetime,
+                }
+        self.pprint_dict(data)
+
+        provisions = Provision.objects.filter(serial=commission)
+        data, labels = self.show_provisions(provisions)
+        self.stdout.write('\n')
+        self.pprint_table(data, labels, title='Provisions')
+
+    def show_provisions(self, provisions):
+        acc = []
+        labels = 'holder', 'resource', 'source', 'quantity'
+        for provision in provisions:
+            fields = []
+            for label in labels:
+                f = getattr(provision, label)
+                fields.append(f)
+            acc.append(fields)
+        return acc, labels
+
+    def pprint_dict(self, d, vertical=True):
+        utils.pprint_table(self.stdout, [d.values()], d.keys(),
+                           self.output_format, vertical=vertical)
+
+    def pprint_table(self, tbl, labels, title=None):
+        utils.pprint_table(self.stdout, tbl, labels,
+                           self.output_format, title=title)

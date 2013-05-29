@@ -104,38 +104,161 @@ Configuration
 Working with Astakos
 --------------------
 
-User activation methods
-~~~~~~~~~~~~~~~~~~~~~~~
+User registration
+~~~~~~~~~~~~~~~~~
 
-When a new user signs up, he/she is not marked as active. You can see his/her
-state by running (on the machine that runs the Astakos app):
+When a new user signs up, he/she is not directly marked as active. You can see 
+his/her state by running (on the machine that runs the Astakos app):
 
 .. code-block:: console
 
    $ snf-manage user-list
 
-There are two different ways to activate a new user. Both need access to a
-running :ref:`mail server <mail-server>`.
-
-Manual activation
-`````````````````
-
-You can manually activate a new user that has already signed up, by sending
-him/her an activation email. The email will contain an approriate activation
-link, which will complete the activation process if followed. You can send the
-email by running:
+More detailed user status is provided in the `status` field of the `user-show` 
+command:
 
 .. code-block:: console
 
-   $ snf-manage user-activation-send <user ID or email>
+  $ snf-manage user-show <user-id>
 
-Be sure to have already setup your mail server and defined it in your Synnefo
-settings, before running the command.
+  id                  : 6
+  uuid                : 78661411-5eed-412f-a9ea-2de24f542c2e
+  status              : Accepted/Active (accepted policy: manual)
+  email               : user@synnefo.org
+  ....
 
-Automatic activation
+
+Based on how your configuration of `astakos-app`, there are several ways for a 
+user to get activated and be able to login. We discuss the user activation 
+flow in the following section.
+
+
+User activation flow
 ````````````````````
 
-FIXME: Describe Regex activation method
+A user can register for an account using the astakos signup form. Once the form
+is submited successfully a user entry is created in astakos database. That entry
+is passed through the astakos activation backend which handles whether the user
+should be automatically verified and activated.
+
+
+Email verification
+``````````````````
+
+The verification process takes place in order to ensure that the user owns the
+email provided during the signup process. By default, after each successful
+signup astakos notifies user with an verification url via email. 
+
+At this stage:
+
+    * subsequent registrations invalidate and delete the previous registrations 
+      of the same email address.
+
+    * in case user misses the initial notification, additional emails can be
+      send either via the url which is prompted to the user if he tries to
+      login, or by the administrator using the ``snf-manage user-activation-send
+      <userid>`` command.
+
+    * administrator may also enforce a user to get verified using the
+      ``snf-manage user-modify --verify <userid>`` command.
+
+
+Account activation
+``````````````````
+
+Once user gets verified it is time for astakos to decide whether or not to
+proceed through user activation process. If ``ASTAKOS_MODERATION_ENABLED``
+setting is set to ``False`` (default value) user gets activated automatically. 
+
+In case the moderation is enabled astakos may still automatically activate the
+user in the following cases:
+
+    * User email matches any of the regular expressions defined in
+      ``ASTAKOS_RE_USER_EMAIL_PATTERNS`` (defaults to ``[]``)
+    * User used a signup method (e.g. ``shibboleth``) for which automatic
+      activation is enabled (see 
+      :ref:`authentication methods policies <auth_methods_policies>`).
+
+If all of the above fail to trigger automatic activation, an email is sent 
+to the persons listed in ``HELPDESK``, ``MANAGERS`` and ``ADMINS`` settings, 
+notifing that there is a new user pending for moderation and that it's 
+up to the administrator to decide if the user should be activated, using the 
+``user-modify`` command.
+
+.. code-block:: console
+
+    # command to activate a pending user
+    $ snf-manage user-modify --accept <userid>
+
+    # command to reject a pending user
+    $ snf-manage user-modify --reject --reject-reason="spammer" <userid>
+
+Once activation process finish, a greeting message is sent to the user email
+address and a notification for the activation to the persons listed in 
+``HELPDESK``, ``MANAGERS`` and ``ADMINS`` settings. Once activated the user is 
+able to login and access the synnefo services.
+
+
+Additional authentication methods
+`````````````````````````````````
+
+Astakos supports third party logins from external identity providers. This
+can be usefull since it allows users to use their existing credentials to 
+login to astakos service.
+
+Currently astakos supports the following identity providers:
+
+    * `Shibboleth <http://www.internet2.edu/shibboleth>`_ (module name
+      ``shibboleth``)
+    * `Google <https://developers.google.com/accounts/docs/OAuth2>`_ (module
+      name ``google``)
+    * `Twitter <https://dev.twitter.com/docs/auth>`_ (module name ``twitter``)
+    * `LinkedIn <http://developer.linkedin.com/documents/authentication>`_
+      (module name ``linkedin``)
+
+To enable any of the above modules (by default only ``local`` accounts are
+allowed), retrieve and set the required provider settings and append the 
+module name in ``ASTAKOS_IM_MODULES``.
+
+.. code-block:: python
+
+    # settings from https://code.google.com/apis/console/
+    ASTAKOS_GOOGLE_CLIENT_ID = '1111111111-epi60tvimgha63qqnjo40cljkojcann3.apps.googleusercontent.com'
+    ASTAKOS_GOOGLE_SECRET = 'tNDQqTDKlTf7_LaeUcWTWwZM'
+    
+    # let users signup and login using their google account
+    ASTAKOS_IM_MODULES = ['local', 'google']
+
+
+.. _auth_methods_policies:
+
+Authentication method policies
+``````````````````````````````
+
+Astakos allows you to override the default policies for each enabled provider 
+separately by adding the approriate settings in your ``.conf`` files in the 
+following format:
+
+**ASTAKOS_AUTH_PROVIDER_<module>_<policy>_POLICY**
+
+Available policies are:
+
+    * **CREATE** Users can signup using that provider (default: ``True``) 
+    * **REMOVE/ADD** Users can remove/add login method from their profile 
+      (default: ``True``)
+    * **AUTOMODERATE** Automatically activate users that signup using that
+      provider (default: ``False``)
+    * **LOGIN** Whether or not users can use the provider to login (default:
+      ``True``).
+
+e.g. to enable automatic activation for your academic users, while keeping 
+locally signed up users under moderation you can apply the following settings.
+
+.. code-block:: python
+
+    ASTAKOS_AUTH_PROVIDER_SHIBBOLETH_AUTOMODERATE_POLICY = True
+    ASTAKOS_AUTH_PROVIDER_SHIBBOLETH_REMOVE_POLICY = False
+
 
 Setting quota limits
 ~~~~~~~~~~~~~~~~~~~~
@@ -826,6 +949,132 @@ The ``vlmc`` tool provides a way to interact with archipelago volumes
   must be used to break the lock.
 
 
+Synnefo management commands ("snf-manage")
+==========================================
+
+Each Synnefo service, Astakos, Pithos and Cyclades are controlled by the
+administrator using the "snf-manage" admin tool. This tool is an extension of
+the Django command-line management utility. It is run on the host that runs
+each service and provides different types of commands depending the services
+running on the host. If you are running more than one service on the same host
+"snf-manage" adds all the corresponding commands for each service dynamically,
+providing a unified admin environment.
+
+To run "snf-manage" you just type:
+
+.. code-block:: console
+
+   # snf-manage <command> [arguments]
+
+on the corresponding host that runs the service. For example, if you have all
+services running on different physical hosts you would do:
+
+.. code-block:: console
+
+   root@astakos-host # snf-manage <astakos-command> [argument]
+   root@pithos-host # snf-manage <pithos-command> [argument]
+   root@cyclades-host # snf-manage <cyclades-command> [argument]
+
+If you have all services running on the same host you would do:
+
+.. code-block:: console
+
+   root@synnefo-host # snf-manage <{astakos,pithos,cyclades}-command> [argument]
+
+Note that you cannot execute a service's command on a host that is not running
+this service. For example, the following will return an error if Astakos and
+Cyclades are installed on different physical hosts:
+
+.. code-block:: console
+
+   root@astakos-host # snf-manage <cyclades-command> [argument]
+   Unknown command: 'cyclades-command'
+   Type 'snf-manage help' for usage.
+
+This is the complete list of "snf-manage" commands for each service.
+
+Astakos snf-manage commands
+---------------------------
+
+============================  ===========================
+Name                          Description
+============================  ===========================
+fix-superusers                Transform superusers created by syncdb into AstakosUser instances
+cleanup-full                  Cleanup sessions and session catalog
+commission-list               List pending commissions
+commission-show               Show details for a pending commission
+project-control               Manage projects and applications
+project-list                  List projects
+project-show                  Show project details
+quota                         List and check the integrity of user quota
+reconcile-resources-astakos   Reconcile resource usage of Quotaholder with Astakos DB
+resource-add                  Add resource
+resource-export-astakos       Export astakos resources in json format
+resource-import               Register service resources
+resource-list                 List resources
+resource-modify               Modify a resource's default base quota and boolean flags
+service-add                   Register a service
+service-list                  List services
+service-modify                Modify service attributes
+service-show                  Show service details
+term-add                      Add approval terms
+user-activation-send          Send user activation
+user-add                      Add user
+authpolicy-add                Create a new authentication provider policy profile
+authpolicy-list               List existing authentication provider policy profiles
+authpolicy-remove             Remove an authentication provider policy
+authpolicy-set                Assign an existing authentication provider policy profile to a user or group
+authpolicy-show               Show authentication provider profile details
+group-add                     Create a group with the given name
+group-list                    List available groups
+user-list                     List users
+user-modify                   Modify user
+user-show                     Show user details
+============================  ===========================
+
+Pithos snf-manage commands
+--------------------------
+
+============================  ===========================
+Name                          Description
+============================  ===========================
+reconcile-commissions-pithos  Display unresolved commissions and trigger their recovery
+resource-export-pithos        Export pithos resources in json format
+reconcile-resources-pithos    Detect unsynchronized usage between Astakos and Pithos DB resources and synchronize them if specified so.
+============================  ===========================
+
+Cyclades snf-manage commands
+----------------------------
+
+============================  ===========================
+Name                          Description
+============================  ===========================
+FIXME: list cyclades cmds
+============================  ===========================
+
+Pithos managing accounts
+========================
+
+Pithos provides a utility tool for managing accounts.
+To run you just type:
+
+.. code-block:: console
+
+   # pithos-manage-accounts <command> [arguments]
+
+This is the list of the available commands:
+
+============================  ===========================
+Name                          Description
+============================  ===========================
+delete                        Remove an account from the Pithos DB
+export-quota                  Export account quota in a file
+list                          List existing/dublicate accounts
+merge                         Move an account contents in another account
+set-container-quota           Set container quota for all or a specific account
+============================  ===========================
+
+
 The "kamaki" API client
 =======================
 
@@ -837,11 +1086,11 @@ Before proceeding make sure that it is configured properly. Verify that
 
    $ kamaki config list
 
-To chage a setting use ``kamaki config set``:
+To change a setting use ``kamaki config set``:
 
 .. code-block:: console
 
-   $ kamaki config set image.url https://cyclades.example.com/plankton
+   $ kamaki config set image.url https://cyclades.example.com/image
    $ kamaki config set file.url https://pithos.example.com/v1
    $ kamaki config set user.url https://accounts.example.com
    $ kamaki config set token ...
@@ -872,13 +1121,13 @@ If the container ``images`` does not exist, create it:
   $ kamaki file create images
 
 You are now ready to upload an image to container ``images``. You can upload it
-with a Pithos+ client, or use kamaki directly:
+with a Pithos client, or use kamaki directly:
 
 .. code-block:: console
 
    $ kamaki file upload ubuntu.iso images
 
-You can use any Pithos+ client to verify that the image was uploaded correctly,
+You can use any Pithos client to verify that the image was uploaded correctly,
 or you can list the contents of the container with kamaki:
 
 .. code-block:: console
@@ -892,7 +1141,7 @@ unique user id (uuid).
 Register Image
 --------------
 
-To register an image you will need to use the full Pithos+ URL. To register as
+To register an image you will need to use the full Pithos URL. To register as
 a public image the one from the previous example use:
 
 .. code-block:: console
@@ -933,10 +1182,10 @@ servers for Astakos, Pithos and Cyclades.
 Configuration
 ~~~~~~~~~~~~~
 
-This can be done by changing only the settings of the snf-branding component.
-The settings for the snf-branding application can be found inside the
-configuration file ``/etc/synnefo/15-snf-branding.conf`` on the nodes that have
-Astakos, Pithos and Cyclades installed.
+This can be done by modifing the settings provided by the snf-branding component
+to match your service identity. The settings for the snf-branding application
+can be found inside the configuration file ``/etc/synnefo/15-snf-branding.conf``
+on the nodes that have Astakos, Pithos and Cyclades installed.
 
 By default, the global service name is "Synnefo" and the company name is
 "GRNET". These names and their respective logos and URLs are used throughout
@@ -950,34 +1199,37 @@ information.
 You can overwrite the company and the service name and URL respectively by
 uncommenting and setting the following:
 
-.. code-block:: console
+.. code-block:: python
+  
+  # setting used in Astakos Dashboard/Projects pages
+  BRANDING_SERVICE_NAME = 'My cloud'
+  BRANDING_SERVICE_URL = 'http://www.mycloud.synnefo.org/'
 
-  #BRANDING_SERVICE_NAME = 'Synnefo'
-  #BRANDING_SERVICE_URL = 'http://www.synnefo.org/'
-  #BRANDING_COMPANY_NAME = 'GRNET'
-  #BRANDING_COMPANY_URL = 'https://www.grnet.gr/en/'
+  # settings used in Astakos, Pithos, Cyclades footer only if 
+  # BRANDING_SHOW_COPYRIGHT is set to True
+  BRANDING_SHOW_COPYRIGHT = True
+  BRANDING_COMPANY_NAME = 'Company LTD'
+  BRANDING_COMPANY_URL = 'https://www.company-ltd.synnefo.org/'
 
-| ``BRANDING_SERVICE_NAME`` appears in Astakos Dashboard/Projects pages.
-| ``BRANDING_COMPANY_NAME`` and ``BRANDING_COMPANY_URL`` appear in Astakos,
-  Pithos and Cyclades footer only if ``BRANDING_SHOW_COPYRIGHT`` is set to True.
 
 **Copyright options:**
 
 By default, no Copyright message is shown in the UI footer. If you want to make
 it visible in the footer of Astakos, Pithos and Cyclades UI, you can uncomment
-and set to ``True`` the setting:
+and set to ``True`` the ``BRANDING_SHOW_COPYRIGHT`` setting:
 
-.. code-block:: console
+.. code-block:: python
 
   #BRANDING_SHOW_COPYRIGHT = False
 
-Copyright message defaults to 'Copyright (c) 2011-<current_year> 
+Copyright message defaults to 'Copyright (c) 2011-<current_year>
 <BRANDING_COMPANY_NAME>.' but you can overwrite it to a completely custom one by
 setting the following option:
 
-.. code-block:: console
+.. code-block:: python
 
-  #BRANDING_COPYRIGHT_MESSAGE = 'Copyright (c) 2011-<current_year> GRNET'
+  BRANDING_COPYRIGHT_MESSAGE = 'Copyright (c) 2011-2013 GRNET'
+
 
 **Images:**
 
@@ -998,18 +1250,21 @@ Storage logo     storage_logo.png              Visible in all Pithos UI pages
 There are two methods  available for replacing all, or individual, 
 branding-related images:
 
-1. Create a new directory and  place there some or all of your images.
+1. Create a new directory inside ``/usr/share/synnefo/static/`` (e.g.
+   ``mybranding``) and place there some or all of your images.
 
    If you want to replace all of your images, keep the name/extension
-   conventions as indicated in the above table and set:
+   conventions as indicated in the above table and change the
+   ``BRANDING_IMAGE_MEDIA_URL`` setting accordingly:
 
-.. code-block:: console
+   .. code-block:: python
+        
+      # using relative path
+      BRANDING_IMAGE_MEDIA_URL= '/static/mybranding/images/' 
 
-  #BRANDING_IMAGE_MEDIA_URL= MEDIA_URL + 'branding/images/' 
+      # or if you already host them in a separate domain (e.g. cdn)
+      BRANDING_IMAGE_MEDIA_URL= 'https://cdn.synnefo.org/branding/images/'
 
-to the relative path of your directory. 
-You could also use an absolute path to a directory and set for example 
-``BRANDING_IMAGE_MEDIA_URL`` = 'https://www.synnefo.org/images/'
 
    If you wish to replace individual images, **do not uncomment**
    ``BRANDING_IMAGE_MEDIA_URL``, but instead provide a relative path, pointing to
@@ -1018,9 +1273,9 @@ You could also use an absolute path to a directory and set for example
 
 2. Upload some or all of your images to a server and replace each 
    ``BRANDING_<image>_URL`` with the absolute url of the image (i.e.
-   ``BRANDING_DASHBOARD_URL``= 'https://www.synnefo.com/images/my_dashboard.jpg').
+   ``BRANDING_DASHBOARD_URL = 'https://www.synnefo.com/images/my_dashboard.jpg'``).
 
-   Note that the alternative text  for each image tag inside html documents  is 
+   Note that the alternative text  for each image tag inside html documents is 
    alt=“BRANDING_SERVICE_NAME {Dashboard, Compute. Console, Storage}” respectively.
 
 .. note:: Retina optimized images:
@@ -1028,7 +1283,7 @@ You could also use an absolute path to a directory and set for example
    Synnefo UI is optimized for Retina displays. As far as images are concerned,  
    `retina.js <http://retinajs.com/>`_ is used.
 
-   Retina.js checks each image on a page to  see if there is a high-resolution 
+   Retina.js checks each image on a page to see if there is a high-resolution 
    version of that image on your server. If a high-resolution variant exists, 
    the script will swap in that image in-place.
 
@@ -1055,25 +1310,21 @@ feasible.
 
 **EMAILS**
 
-The output of all email *.txt files will be already customized to contain your 
-company and service names but you can further alter their content if you feel 
-it best fits your needs  using django’s TEMPLATE_DIRS setting.    
+The output of all email `*`.txt files will be already customized to contain your
+company and service names but you can further alter their content if you feel it
+best fits your needs as simple as creasynnefo template.    
 
-For more information visit  
-https://docs.djangoproject.com/en/1.2/ref/settings/#template-dirs.                           
-
-In order to overwrite one or more email-templates you need to create a new one 
-directory and  provide its path to the TEMPLATE_DIRS. Inside this directory, you
-must place your <email-file>.txt files respecting the following structure:
+In order to overwrite one or more email-templates you need to place your 
+modified <email-file>.txt files respecting the following structure:
   
-  *<emails-dir>*/
-      *im*/
+  **/etc/synnefo/templates/**
+      **im/**
           | activation_email.txt
           | email.txt
           | invitation.txt
           | switch_accounts_email.txt
           | welcome_email.txt
-          *projects*/
+          **projects/**
               | project_approval_notification.txt
               | project_denial_notification.txt    
               | project_membership_change_notification.txt
@@ -1082,7 +1333,7 @@ must place your <email-file>.txt files respecting the following structure:
               | project_membership_request_notification.txt
               | project_suspension_notification.txt
               | project_termination_notification.txt
-      *registration*/
+      **registration/**
           | email_change_email.txt
           | password_email.txt
 
@@ -1230,24 +1481,6 @@ You can verify that the cluster is set up correctly by running:
 
   root@node2: rabbitmqctl cluster_status
 
-
-
-
-
-Admin tool: snf-manage
-----------------------
-
-``snf-manage`` is a tool used to perform various administrative tasks. It needs
-to be able to access the django database, so the following should be able to
-import the Django settings.
-
-Additionally, administrative tasks can be performed via the admin web interface
-located in /admin. Only users of type ADMIN can access the admin pages. To
-change the type of a user to ADMIN, snf-manage can be used:
-
-.. code-block:: console
-
-   $ snf-manage user-modify 42 --type ADMIN
 
 Logging
 -------

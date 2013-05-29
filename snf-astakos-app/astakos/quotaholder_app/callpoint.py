@@ -31,6 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from datetime import datetime
 from django.db.models import F
 from astakos.quotaholder_app.exception import (
     QuotaholderError,
@@ -42,9 +43,8 @@ from astakos.quotaholder_app.exception import (
 from astakos.quotaholder_app.commission import (
     Import, Release, Operations, finalize, undo)
 
-from astakos.quotaholder_app.models import (Holding,
-                     Commission, Provision, ProvisionLog,
-                     now)
+from astakos.quotaholder_app.models import (
+    Holding, Commission, Provision, ProvisionLog)
 
 
 def get_quota(holders=None, sources=None, resources=None):
@@ -166,7 +166,7 @@ def issue_commission(clientkey, provisions, name="", force=False):
 
     commission = Commission.objects.create(clientkey=clientkey,
                                            name=name,
-                                           issue_time=now())
+                                           issue_datetime=datetime.now())
     for (holder, source, resource), quantity in provisions_to_create:
         Provision.objects.create(serial=commission,
                                  holder=holder,
@@ -177,7 +177,7 @@ def issue_commission(clientkey, provisions, name="", force=False):
     return commission.serial
 
 
-def _log_provision(commission, provision, holding, log_time, reason):
+def _log_provision(commission, provision, holding, log_datetime, reason):
 
     kwargs = {
         'serial':              commission.serial,
@@ -189,8 +189,8 @@ def _log_provision(commission, provision, holding, log_time, reason):
         'usage_min':           holding.usage_min,
         'usage_max':           holding.usage_max,
         'delta_quantity':      provision.quantity,
-        'issue_time':          commission.issue_time,
-        'log_time':            log_time,
+        'issue_datetime':      commission.issue_datetime,
+        'log_datetime':        log_datetime,
         'reason':              reason,
     }
 
@@ -241,7 +241,7 @@ def resolve_pending_commissions(clientkey, accept_set=None, reject_set=None,
     holdings = _get_holdings_for_update(holding_keys)
     provisions = _partition_by(lambda p: p.serial_id, ps)
 
-    log_time = now()
+    log_datetime = datetime.now()
 
     accepted, rejected, notFound = [], [], []
     for serial, accept in actions.iteritems():
@@ -268,7 +268,7 @@ def resolve_pending_commissions(clientkey, accept_set=None, reject_set=None,
 
             prefix = 'ACCEPT:' if accept else 'REJECT:'
             comm_reason = prefix + reason[-121:]
-            _log_provision(commission, pv, h, log_time, comm_reason)
+            _log_provision(commission, pv, h, log_datetime, comm_reason)
             pv.delete()
         commission.delete()
     return accepted, rejected, notFound, conflicting
@@ -300,14 +300,14 @@ def get_commission(clientkey, serial):
     except Commission.DoesNotExist:
         raise NoCommissionError(serial)
 
-    objs = Provision.objects.select_related('holding')
+    objs = Provision.objects
     provisions = objs.filter(serial=commission)
 
     ps = [p.todict() for p in provisions]
 
     response = {'serial':     serial,
                 'provisions': ps,
-                'issue_time': commission.issue_time,
+                'issue_time': commission.issue_datetime,
                 'name':       commission.name,
                 }
     return response

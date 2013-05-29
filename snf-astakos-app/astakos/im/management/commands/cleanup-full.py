@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,40 +31,26 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import BaseCommand, CommandError
-from django.db.utils import IntegrityError
-from django.db import transaction
 
-from ._common import get_user
+from django.core.management.base import NoArgsCommand
+from django.core.management import call_command
+from django.utils.importlib import import_module
+from django.conf import settings
+
+from astakos.im.models import SessionCatalog
 
 
-@transaction.commit_manually
-class Command(BaseCommand):
-    args = "<inviter id or email> <email> <real name>"
-    help = "Invite a user"
+class Command(NoArgsCommand):
+    help = "Cleanup sessions and session catalog"
 
-    def handle(self, *args, **options):
-        if len(args) != 3:
-            raise CommandError("Invalid number of arguments")
+    def handle_noargs(self, **options):
+        self.stdout.write('Cleanup sessions ...\n')
+        call_command('cleanup')
 
-        inviter = get_user(args[0], is_active=True)
-        if not inviter:
-            raise CommandError("Unknown inviter")
-        if not inviter.is_active:
-            raise CommandError("Inactive inviter")
-
-        if inviter.invitations > 0:
-            email = args[1]
-            realname = args[2]
-
-            try:
-                inviter.invite(email, realname)
-                self.stdout.write("Invitation sent to '%s'\n" % (email,))
-            except IntegrityError:
-                transaction.rollback()
-                raise CommandError(
-                    "There is already an invitation for %s" % (email,))
-            else:
-                transaction.commit()
-        else:
-            raise CommandError("No invitations left")
+        self.stdout.write('Cleanup session catalog ...\n')
+        engine = import_module(settings.SESSION_ENGINE)
+        store = engine.SessionStore()
+        tbd = (entry for entry in SessionCatalog.objects.all()
+               if not store.exists(entry.session_key))
+        for entry in tbd:
+            entry.delete()

@@ -31,12 +31,11 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import socket
-
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 from snf_django.lib.db import transaction
 
 from astakos.im.models import AstakosUser

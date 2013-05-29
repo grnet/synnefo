@@ -287,12 +287,15 @@ class ShibbolethTests(TestCase):
         r = client.get("/im/login/shibboleth?", follow=True)
         client.reset_tokens()
 
-        # TODO: this view should use POST
-        r = client.get(remove_local_url)
+        # only POST is allowed (for CSRF protection)
+        r = client.get(remove_local_url, follow=True)
+        self.assertEqual(r.status_code, 405)
+
+        r = client.post(remove_local_url, follow=True)
         # 2 providers left
         self.assertEqual(user.auth_providers.count(), 1)
         # cannot remove last provider
-        r = client.get(remove_shibbo_url)
+        r = client.post(remove_shibbo_url)
         self.assertEqual(r.status_code, 403)
         self.client.logout()
 

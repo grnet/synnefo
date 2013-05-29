@@ -102,8 +102,6 @@ class Command(SynnefoCommand):
                     ('last update', user.updated),
                     #('token', user.auth_token),
                     ('token expiration', user.auth_token_expires),
-                    ('invitations', user.invitations),
-                    ('invitation level', user.level),
                     ('providers', user.auth_providers_display),
                     ('verified', user.is_verified),
                     ('groups', [elem.name for elem in user.groups.all()]),

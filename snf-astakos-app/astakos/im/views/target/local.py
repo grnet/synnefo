@@ -79,7 +79,7 @@ def login(request, on_failure='im/login.html'):
 
     if not form.is_valid():
         if third_party_token:
-            messages.info(request, astakos_messages.get_login_to_add_msg)
+            messages.info(request, provider.get_login_to_add_msg)
 
         return render_to_response(
             on_failure,

@@ -34,40 +34,39 @@
 from urlparse import urlunsplit, urlsplit
 
 from django.http import urlencode
+from django.views.decorators.csrf import csrf_exempt
 
-from snf_django.lib import api
+from snf_django.lib.api import faults, utils, api_method
 
-from astakos.im.models import Service
-
-from .util import user_from_token, rename_meta_key, json_response, xml_response
+from astakos.im.models import Service, AstakosUser
+from .util import user_from_token, json_response, xml_response, validate_user
 
 import logging
 logger = logging.getLogger(__name__)
 
 
-@api.api_method(http_method="GET", token_required=True, user_required=False,
-                logger=logger)
+@api_method(http_method="GET", token_required=True, user_required=False,
+            logger=logger)
 @user_from_token  # Authenticate user!!
 def get_endpoints(request, token):
-    if token != api.get_token(request):
-        raise api.faults.Forbidden()
+    if token != request.user.auth_token:
+        raise faults.Forbidden()
 
     belongsTo = request.GET.get('belongsTo')
     if belongsTo and belongsTo != request.user.uuid:
-        raise api.faults.BadRequest()
+        raise faults.BadRequest()
 
     marker = request.GET.get('marker', 0)
     limit = request.GET.get('limit', 10000)
 
-    endpoints = list(Service.objects.all().order_by('id').\
-        filter(id__gt=marker)[:limit].\
-        values('name', 'url', 'api_url', 'id', 'type'))
+    endpoints = list(Service.objects.all().order_by('id').
+                     filter(id__gt=marker)[:limit].
+                     values('name', 'url', 'api_url', 'id', 'type'))
     for e in endpoints:
-        e['api_url'] = e['api_url'] or e['url']
-        e['internalURL'] = e['url']
+        e['publicURL'] = e['admiURL'] = e['internalURL'] = e['api_url']
+        e['SNF:uiURL'] = e['url']
         e['region'] = e['name']
-        rename_meta_key(e, 'api_url', 'adminURL')
-        rename_meta_key(e, 'url', 'publicURL')
+        e.pop('api_url')
 
     if endpoints:
         parts = list(urlsplit(request.path))
@@ -83,3 +82,56 @@ def get_endpoints(request, token):
         return xml_response(result, 'api/endpoints.xml')
     else:
         return json_response(result)
+
+
+@csrf_exempt
+@api_method(http_method="POST", token_required=False, user_required=False,
+            logger=logger)
+def authenticate(request):
+    req = utils.get_request_dict(request)
+
+    uuid = None
+    try:
+        token_id = req['auth']['token']['id']
+    except KeyError:
+        try:
+            token_id = req['auth']['passwordCredentials']['password']
+            uuid = req['auth']['passwordCredentials']['username']
+        except KeyError:
+            raise faults.BadRequest('Malformed request')
+
+    if token_id is None:
+        raise faults.BadRequest('Malformed request')
+
+    try:
+        user = AstakosUser.objects.get(auth_token=token_id)
+    except AstakosUser.DoesNotExist:
+        raise faults.Unauthorized('Invalid token')
+
+    validate_user(user)
+
+    if uuid is not None:
+        if user.uuid != uuid:
+            raise faults.Unauthorized('Invalid credentials')
+
+    access = {}
+    access['token'] = {'id': user.auth_token,
+                       'expires': utils.isoformat(user.auth_token_expires),
+                       'tenant': {'id': user.uuid, 'name': user.realname}}
+    access['user'] = {'id': user.uuid, 'name': user.realname,
+                      'roles': list(user.groups.values('id', 'name')),
+                      'roles_links': []}
+    access['serviceCatalog'] = []
+    append = access['serviceCatalog'].append
+    for s in Service.objects.all().order_by('id'):
+        append({'name': s.name, 'type': s.type,
+                'endpoints': [{'adminURL': s.api_url,
+                               'publicURL': s.api_url,
+                               'internalURL': s.api_url,
+                               'SNF:uiURL': s.url,
+                               'region': s.name}]})
+
+    if request.serialization == 'xml':
+        return xml_response({'access': access}, 'api/access.xml')
+    else:
+        return json_response(access)

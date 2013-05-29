@@ -15,9 +15,9 @@ INVITATIONS_PER_LEVEL = getattr(settings, 'ASTAKOS_INVITATIONS_PER_LEVEL', {
     4: 0
 })
 
-ADMINS = getattr(settings, 'ADMINS', ())
-MANAGERS = getattr(settings, 'MANAGERS', ADMINS)
-HELPDESK = getattr(settings, 'HELPDESK', ADMINS)
+ADMINS = tuple(getattr(settings, 'ADMINS', ()))
+MANAGERS = tuple(getattr(settings, 'MANAGERS', ()))
+HELPDESK = tuple(getattr(settings, 'HELPDESK', ()))
 
 CONTACT_EMAIL = settings.CONTACT_EMAIL
 SERVER_EMAIL = settings.SERVER_EMAIL
@@ -58,12 +58,6 @@ RECAPTCHA_OPTIONS = getattr(settings, 'ASTAKOS_RECAPTCHA_OPTIONS',
 RECAPTCHA_USE_SSL = getattr(settings, 'ASTAKOS_RECAPTCHA_USE_SSL', True)
 RECAPTCHA_ENABLED = getattr(settings, 'ASTAKOS_RECAPTCHA_ENABLED', False)
 
-# set AstakosUser fields to propagate in the billing system
-BILLING_FIELDS = getattr(settings, 'ASTAKOS_BILLING_FIELDS', ['is_active'])
-
-# Queue for billing.
-# Example: 'rabbitmq://guest:guest@localhost:5672/astakos'
-QUEUE_CONNECTION = getattr(settings, 'ASTAKOS_QUEUE_CONNECTION', None)
 # Set where the user should be redirected after logout
 LOGOUT_NEXT = getattr(settings, 'ASTAKOS_LOGOUT_NEXT', '')
 
@@ -105,60 +99,6 @@ EMAILCHANGE_ACTIVATION_DAYS = getattr(
 # Set the astakos main functions logging severity (None to disable)
 from logging import INFO
 LOGGING_LEVEL = getattr(settings, 'ASTAKOS_LOGGING_LEVEL', INFO)
-
-# Configurable email subjects
-INVITATION_EMAIL_SUBJECT = getattr(
-    settings, 'ASTAKOS_INVITATION_EMAIL_SUBJECT',
-    'Invitation to %s' % SITENAME)
-GREETING_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_GREETING_EMAIL_SUBJECT',
-                                 'Welcome to %s' % SITENAME)
-FEEDBACK_EMAIL_SUBJECT = getattr(settings, 'ASTAKOS_FEEDBACK_EMAIL_SUBJECT',
-                                 'Feedback from %s' % SITENAME)
-VERIFICATION_EMAIL_SUBJECT = getattr(
-    settings, 'ASTAKOS_VERIFICATION_EMAIL_SUBJECT',
-    '%s account activation is needed' % SITENAME)
-ACCOUNT_CREATION_SUBJECT = getattr(
-    settings, 'ASTAKOS_ACCOUNT_CREATION_SUBJECT',
-    '%s account created (%%(user)s)' % SITENAME)
-GROUP_CREATION_SUBJECT = getattr(
-    settings, 'ASTAKOS_GROUP_CREATION_SUBJECT',
-    '%s group created (%%(group)s)' % SITENAME)
-HELPDESK_NOTIFICATION_EMAIL_SUBJECT = getattr(
-    settings, 'ASTAKOS_HELPDESK_NOTIFICATION_EMAIL_SUBJECT',
-    '%s account activated (%%(user)s)' % SITENAME)
-EMAIL_CHANGE_EMAIL_SUBJECT = getattr(
-    settings, 'ASTAKOS_EMAIL_CHANGE_EMAIL_SUBJECT',
-    'Email change on %s ' % SITENAME)
-PASSWORD_RESET_EMAIL_SUBJECT = getattr(
-    settings, 'ASTAKOS_PASSWORD_RESET_EMAIL_SUBJECT',
-    'Password reset on %s ' % SITENAME)
-PROJECT_CREATION_SUBJECT = getattr(
-    settings, 'ASTAKOS_PROJECT_CREATION_SUBJECT',
-    '%s project application created (%%(name)s)' % SITENAME)
-PROJECT_APPROVED_SUBJECT = getattr(
-    settings, 'ASTAKOS_PROJECT_APPROVED_SUBJECT',
-    '%s project application approved (%%(name)s)' % SITENAME)
-PROJECT_DENIED_SUBJECT = getattr(
-    settings, 'ASTAKOS_PROJECT_DENIED_SUBJECT',
-    '%s project application denied (%%(name)s)' % SITENAME)
-PROJECT_TERMINATION_SUBJECT = getattr(
-    settings, 'ASTAKOS_PROJECT_TERMINATION_SUBJECT',
-    '%s project terminated (%%(name)s)' % SITENAME)
-PROJECT_SUSPENSION_SUBJECT = getattr(
-    settings, 'ASTAKOS_PROJECT_SUSPENSION_SUBJECT',
-    '%s testing project suspended (%%(name)s)' % SITENAME)
-PROJECT_MEMBERSHIP_CHANGE_SUBJECT = getattr(
-    settings, 'ASTAKOS_PROJECT_MEMBERSHIP_CHANGE_SUBJECT',
-    '%s testing project membership changed (%%(name)s)' % SITENAME)
-PROJECT_MEMBERSHIP_ENROLL_SUBJECT = getattr(
-    settings, 'ASTAKOS_PROJECT_MEMBERSHIP_ENROLL_SUBJECT',
-    '%s testing project enrollment (%%(name)s)' % SITENAME)
-PROJECT_MEMBERSHIP_REQUEST_SUBJECT = getattr(
-    settings, 'ASTAKOS_PROJECT_MEMBERSHIP_REQUEST_SUBJECT',
-    '%s testing project membership request (%%(name)s)' % SITENAME)
-PROJECT_MEMBERSHIP_LEAVE_REQUEST_SUBJECT = getattr(
-    settings, 'ASTAKOS_PROJECT_MEMBERSHIP_LEAVE_REQUEST_SUBJECT',
-    '%s testing project membership leave request (%%(name)s)' % SITENAME)
 
 # Set how many objects should be displayed per page
 PAGINATE_BY = getattr(settings, 'ASTAKOS_PAGINATE_BY', 8)

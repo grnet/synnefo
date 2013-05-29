@@ -90,7 +90,7 @@ In `/etc/synnefo/webclient.conf` add:
     PITHOS_UI_FEEDBACK_URL = "/feedback"
 
 
-XXXXXXXXXXXXXX  should be the Pithos+ token and id found on astakos node by running:
+XXXXXXXXXXXXXX  should be the Pithos token and id found on astakos node by running:
 
 .. code-block:: console
 

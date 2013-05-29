@@ -61,14 +61,6 @@ In `/etc/synnefo/astakos.conf` add:
     ASTAKOS_GLOBAL_MESSAGES = []
 
     ASTAKOS_PROFILE_EXTRA_LINKS = []
-    ASTAKOS_INVITATION_EMAIL_SUBJECT = 'Invitation to %s' % ASTAKOS_SITENAME
-    ASTAKOS_GREETING_EMAIL_SUBJECT = 'Welcome to %s' % ASTAKOS_SITENAME
-    ASTAKOS_FEEDBACK_EMAIL_SUBJECT = 'Feedback from %s' % ASTAKOS_SITENAME
-    ASTAKOS_VERIFICATION_EMAIL_SUBJECT = '%s account activation is needed' % ASTAKOS_SITENAME
-    ASTAKOS_ADMIN_NOTIFICATION_EMAIL_SUBJECT = '%s account created (%%(user)s)' % ASTAKOS_SITENAME
-    ASTAKOS_HELPDESK_NOTIFICATION_EMAIL_SUBJECT = '%s account activated (%%(user)s)' % ASTAKOS_SITENAME
-    ASTAKOS_EMAIL_CHANGE_EMAIL_SUBJECT = 'Email change on %s' % ASTAKOS_SITENAME
-    ASTAKOS_PASSWORD_RESET_EMAIL_SUBJECT = 'Password reset on %s' % ASTAKOS_SITENAME
 
     EMAIL_BACKEND = 'django.core.mail.backends.dummy.EmailBackend'
 
@@ -90,7 +82,7 @@ Then initialize the Database and register services with:
    # snf-manage loaddata groups
    # snf-manage service-add "home" https://cms.example.com/ home-icon.png
    # snf-manage service-add "cyclades" https://cyclades.example.com/ui/
-   # snf-manage service-add "pithos+" https://pithos.example.com/ui/
+   # snf-manage service-add "pithos" https://pithos.example.com/ui/
    # snf-manage astakos-init --load-service-resources
    # snf-manage quota --sync
    # /etc/init.d/gunicorn restart

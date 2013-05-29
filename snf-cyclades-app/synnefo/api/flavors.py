@@ -59,7 +59,7 @@ def flavor_to_dict(flavor, detail=True):
     if detail:
         d['ram'] = flavor.ram
         d['disk'] = flavor.disk
-        d['cpu'] = flavor.cpu
+        d['vcpus'] = flavor.cpu
         d['SNF:disk_template'] = flavor.disk_template
     return d
 
@@ -83,7 +83,7 @@ def list_flavors(request, detail=False):
             'flavors': flavors,
             'detail': detail})
     else:
-        data = json.dumps({'flavors': {'values': flavors}})
+        data = json.dumps({'flavors': flavors})
 
     return HttpResponse(data, status=200)
 

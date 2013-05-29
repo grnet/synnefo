@@ -89,7 +89,8 @@ def send_verification(user, template_name='im/activation_email.txt'):
                                'site_name': settings.SITENAME,
                                'support': settings.CONTACT_EMAIL})
     sender = settings.SERVER_EMAIL
-    send_mail(_(settings.VERIFICATION_EMAIL_SUBJECT), message, sender, [user.email],
+    send_mail(_(astakos_messages.VERIFICATION_EMAIL_SUBJECT), message, sender,
+              [user.email],
               connection=get_connection())
     logger.info("Sent user verirfication email: %s", user.log_display)
 
@@ -130,7 +131,8 @@ def send_account_pending_moderation_notification(
     Notify admins that a new user has verified his email address and moderation
     step is required to activate his account.
     """
-    subject = _(settings.ACCOUNT_CREATION_SUBJECT) % {'user': user.email}
+    subject = (_(astakos_messages.ACCOUNT_CREATION_SUBJECT) %
+               {'user': user.email})
     return _send_admin_notification(template_name, {}, subject=subject,
                                     user=user, msg="account creation")
 
@@ -149,7 +151,8 @@ def send_account_activated_notification(
     sender = settings.SERVER_EMAIL
     recipient_list = [e[1] for e in settings.HELPDESK +
                       settings.MANAGERS + settings.ADMINS]
-    send_mail(_(settings.HELPDESK_NOTIFICATION_EMAIL_SUBJECT) % {'user': user.email},
+    send_mail(_(astakos_messages.HELPDESK_NOTIFICATION_EMAIL_SUBJECT) %
+              {'user': user.email},
               message, sender, recipient_list, connection=get_connection())
     msg = 'Sent helpdesk admin notification for %s' % user.email
     logger.log(settings.LOGGING_LEVEL, msg)
@@ -159,7 +162,7 @@ def send_invitation(invitation, template_name='im/invitation.txt'):
     """
     Send invitation email.
     """
-    subject = _(settings.INVITATION_EMAIL_SUBJECT)
+    subject = _(astakos_messages.INVITATION_EMAIL_SUBJECT)
     url = '%s?code=%d' % (join_urls(settings.BASEURL, reverse('index')), invitation.code)
     message = render_to_string(template_name, {
                                'invitation': invitation,
@@ -183,7 +186,7 @@ def send_greeting(user, email_template_name='im/welcome_email.txt'):
 
     Raises SMTPException, socket.error
     """
-    subject = _(settings.GREETING_EMAIL_SUBJECT)
+    subject = _(astakos_messages.GREETING_EMAIL_SUBJECT)
     message = render_to_string(email_template_name, {
                                'user': user,
                                'url': join_urls(settings.BASEURL, reverse('index')),
@@ -198,7 +201,7 @@ def send_greeting(user, email_template_name='im/welcome_email.txt'):
 
 
 def send_feedback(msg, data, user, email_template_name='im/feedback_mail.txt'):
-    subject = _(settings.FEEDBACK_EMAIL_SUBJECT)
+    subject = _(astakos_messages.FEEDBACK_EMAIL_SUBJECT)
     from_email = settings.SERVER_EMAIL
     recipient_list = [e[1] for e in settings.HELPDESK]
     content = render_to_string(email_template_name, {
@@ -219,7 +222,8 @@ def send_change_email(
          'ec': ec}
     message = render_to_string(email_template_name, c)
     from_email = settings.SERVER_EMAIL
-    send_mail(_(settings.EMAIL_CHANGE_EMAIL_SUBJECT), message, from_email,
+    send_mail(_(astakos_messages.EMAIL_CHANGE_EMAIL_SUBJECT), message,
+              from_email,
               [ec.new_email_address], connection=get_connection())
     msg = 'Sent change email for %s' % ec.user.log_display
     logger.log(settings.LOGGING_LEVEL, msg)

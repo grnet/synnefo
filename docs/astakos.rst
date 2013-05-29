@@ -40,7 +40,7 @@ Overview
 
 Astakos service co-ordinates the access to resources (and the subsequent
 permission model) and acts as the single point of registry and entry to the
-GRNET cloud offering, comprising of Cyclades and Pithos+ subsystems.
+GRNET cloud offering, comprising of Cyclades and Pithos subsystems.
 
 It also propagates the user state to the Aquarium pricing subsystem.
 
@@ -54,6 +54,10 @@ registration cases are illustrated in :ref:`registration-flow-label`
 
 Invited user
 ~~~~~~~~~~~~
+
+.. note::
+
+   Invitation feature is currently disabled.
 
 A registered ~okeanos user, invites student Alice to subscribe to ~okeanos
 services. Alice receives an email and through a link is navigated to Astakos's
@@ -83,7 +87,7 @@ Authentication Use Cases
 Cloud service user
 ~~~~~~~~~~~~~~~~~~
 
-Alice requests a specific resource from a cloud service ex. Pithos+. In the
+Alice requests a specific resource from a cloud service ex. Pithos. In the
 request supplies the `X-Auth-Token` to identify whether she is eligible to
 perform the specific task. The service contacts Astakos through its
 ``/astakos/api/authenticate`` api call (see :ref:`authenticate-api-label`)
@@ -135,7 +139,7 @@ In case there are later approval terms that the user has not signed, the ``signe
 Service Registration
 --------------------
 
-Services (ex. cyclades, pithos+) are registered in astakos via ``snf-manage registerservice``. This command generates and prints a service token useful for accessing the service API.
+Services (ex. Cyclades, Pithos) are registered in astakos via ``snf-manage registerservice``. This command generates and prints a service token useful for accessing the service API.
 Registered services can be viewed by ``snf-manage showservices`` command and ``snf-manage unregisterservice`` can be used to unregister a service.
 
 .. _authentication-label:

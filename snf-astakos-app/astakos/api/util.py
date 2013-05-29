@@ -33,6 +33,7 @@
 
 from functools import wraps
 from time import time, mktime
+import datetime
 
 from django.http import HttpResponse
 from django.utils import simplejson as json
@@ -40,6 +41,7 @@ from django.template.loader import render_to_string
 
 from astakos.im.models import AstakosUser, Service
 from snf_django.lib.api import faults
+from snf_django.lib.api.utils import isoformat
 
 from astakos.im.forms import FeedbackForm
 from astakos.im.functions import send_feedback as send_feedback_func
@@ -50,12 +52,19 @@ logger = logging.getLogger(__name__)
 absolute = lambda request, url: request.build_absolute_uri(url)
 
 
+def _dthandler(obj):
+    if isinstance(obj, datetime.datetime):
+        return isoformat(obj)
+    else:
+        raise TypeError
+
+
 def json_response(content, status_code=None):
     response = HttpResponse()
     if status_code is not None:
         response.status_code = status_code
 
-    response.content = json.dumps(content)
+    response.content = json.dumps(content, default=_dthandler)
     response['Content-Type'] = 'application/json; charset=UTF-8'
     response['Content-Length'] = len(response.content)
     return response
@@ -80,6 +89,20 @@ def are_integer(lst):
     return all(map(is_integer, lst))
 
 
+def validate_user(user):
+    # Check if the user is active.
+    if not user.is_active:
+        raise faults.Unauthorized('User inactive')
+
+    # Check if the token has expired.
+    if user.token_expired():
+        raise faults.Unauthorized('Authentication expired')
+
+    # Check if the user has accepted the terms.
+    if not user.signed_terms:
+        raise faults.Unauthorized('Pending approval terms')
+
+
 def user_from_token(func):
     @wraps(func)
     def wrapper(request, *args, **kwargs):
@@ -96,17 +119,7 @@ def user_from_token(func):
         except AstakosUser.DoesNotExist:
             raise faults.Unauthorized('Invalid X-Auth-Token')
 
-        # Check if the user is active.
-        if not user.is_active:
-            raise faults.Unauthorized('User inactive')
-
-        # Check if the token has expired.
-        if user.token_expired():
-            raise faults.Unauthorized('Authentication expired')
-
-        # Check if the user has accepted the terms.
-        if not user.signed_terms:
-            raise faults.Unauthorized('Pending approval terms')
+        validate_user(user)
 
         request.user = user
         return func(request, *args, **kwargs)

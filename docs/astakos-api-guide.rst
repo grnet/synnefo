@@ -20,6 +20,7 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
+0.14 (May 28, 2013)        Extend token api with authenticate call
 0.14 (May 23, 2013)        Extend api to list endpoints
 0.14 (May 14, 2013)        Do not serve user quotas in :ref:`authenticate-api-label`
 0.14 (May 02, 2013)        Change URIs (keep also the old ones until the next version)
@@ -45,7 +46,7 @@ Example reply:
 
     [{"url": "/", "icon": "home-icon.png", "name": "grnet cloud", "id": "1"},
     {"url": "/okeanos.html", "name": "~okeanos", "id": "2"},
-    {"url": "/ui/", "name": "pithos+", "id": "3"}]
+    {"url": "/ui/", "name": "pithos", "id": "3"}]
 
 
 Get Menu
@@ -306,6 +307,132 @@ Return Code                 Description
 Tokens API Operations
 ----------------------
 
+Authenticate
+^^^^^^^^^^^^
+
+Fallback call which receives the user token or the user uuid/token and returns
+back the token as well as information about the token holder and the services
+he/she can access.
+
+========================================= =========  ==================
+Uri                                       Method     Description
+========================================= =========  ==================
+``/astakos/api/tokens/``                  POST       Checks whether the provided token is valid and conforms with the provided uuid (if present) and returns back information about the user
+========================================= =========  ==================
+
+The input should be json formatted.
+
+Example request:
+
+::
+
+    {
+        "auth":{
+            "passwordCredentials":{
+                "username":"c18088be-16b1-4263-8180-043c54e22903",
+                "password":"CDEe2k0T/HdiJWBMMbHyOA=="
+            },
+            "tenantName":"c18088be-16b1-4263-8180-043c54e22903"
+        }
+    }
+
+or
+
+::
+
+    {
+        "auth":{
+            "token":{
+                "id":"CDEe2k0T/HdiJWBMMbHyOA=="
+            },
+            "tenantName":"c18088be-16b1-4263-8180-043c54e22903"
+        }
+    }
+
+
+The tenantName in the above requests is optional.
+
+The response is json formatted unless it is requested otherwise via format
+request parameter or Accept header.
+
+Example json response:
+
+::
+
+    {'serviceCatalog': [
+        {'endpoints': [{'SNF:uiURL': 'https://node1.example.com/ui/',
+                        'adminURL': 'https://node1.example.com/v1',
+                        'internalUrl': 'https://node1.example.com/v1',
+                        'publicURL': 'https://node1.example.com/v1',
+                        'region': 'cyclades'}],
+         'name': 'cyclades',
+         'type': 'compute'},
+       {'endpoints': [{'SNF:uiURL': 'https://node2.example.com/ui/',
+                      'adminURL': 'https://node2.example.com/v1',
+                      'internalUrl': 'https://node2.example.com/v1',
+                      'publicURL': 'https://node2.example.com/v1',
+                      'region': 'pithos'}],
+        'name': 'pithos',
+        'type': 'storage'}],
+     'token': {'expires': '2013-06-19T15:23:59.975572+00:00',
+               'id': 'CDEe2k0T/HdiJWBMMbHyOA==',
+               'tenant': {'id': 'c18088be-16b1-4263-8180-043c54e22903',
+                          'name': 'Firstname Lastname'}},
+     'user': {'id': 'c18088be-16b1-4263-8180-043c54e22903',
+              'name': 'Firstname Lastname',
+              'roles': [{'id': 1, 'name': 'default'}],
+              'roles_links': []}}
+
+
+Example xml response:
+
+::
+
+    <?xml version="1.0" encoding="UTF-8"?>
+    <access xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns="http://docs.openstack.org/identity/api/v2.0">
+        <token id="CDEe2k0T/HdiJWBMMbHyOA==" expires="2013-06-19T15:23:59.975572+00:00">
+            <tenant id="c18088be-16b1-4263-8180-043c54e22903" name="Firstname Lastname" />
+        </token>
+        <user id="c18088be-16b1-4263-8180-043c54e22903" name="Firstname Lastname">
+            <roles>
+                    <role id="1" name="default"/>
+            </roles>
+        </user>
+        <serviceCatalog>
+            <service type="None" name="cyclades">
+                    <endpoint region="cyclades"
+                        publicURL="https://node1.example.com/v1"
+                        adminURL="https://node1.example.com/v1"
+                        internalURL="https://node1.example.com/v1"
+                        SNF:uiURL="https://node1.example.com/ui/">
+                </endpoint>
+            </service>
+            <service type="None" name="pithos">
+                <endpoint
+                        region="pithos"
+                        publicURL="https://node2.example.com/v1"
+                        adminURL="https://node2.example.com/v1"
+                        internalURL="https://node2.example.com/v1"
+                        SNF:uiURL="https://node2.example.com/ui/">
+                </endpoint>
+            </service>
+        </serviceCatalog>
+    </access>
+
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    The request succeeded
+400 (Bad Request)           Method not allowed or invalid request format or missing expected input
+401 (Unauthorized)          Invalid token or invalid creadentials or tenantName does not comply with the provided token
+500 (Internal Server Error) The request cannot be completed because of an internal error
+=========================== =====================
+
+
+
 Get endpoints
 ^^^^^^^^^^^^^
 
@@ -343,10 +470,24 @@ Example json reply:
 ::
 
     {"endpoints": [
-        {"name": "cyclades", "region": "cyclades", "internalURL": "https://node1.example.com/ui/", "adminURL": "https://node1.example.com/v1/", "type": null, "id": 5, "publicURL": "https://node1.example.com/ui/"},
-        {"name": "pithos", "region": "pithos", "internalURL": "https://node2.example.com/ui/", "adminURL": "https://node2.example.com/v1", "type": null, "id": 6, "publicURL": "https://node2.example.com/ui/"},
+        {"name": "cyclades",
+         "region": "cyclades",
+         "internalURL": "https://node1.example.com/v1",
+         "adminURL": "https://node1.example.com/v1",
+         "type": null,
+         "id": 5,
+         "publicURL": "https://node1.example.com/vi/"},
+        {"name": "pithos",
+         "region": "pithos",
+         "internalURL": "https://node2.example.com/vi/",
+         "adminURL": "https://node2.example.com/v1",
+         "type": null,
+         "id": 6,
+         "publicURL": "https://node2.example.com/vi/"},
     ],
-    "endpoint_links": [{"href": "/astakos/api/tokens/0000/endpoints?marker=6&limit=10000", "rel": "next"}]}
+    "endpoint_links": [{
+        "href": "/astakos/api/tokens/0000/endpoints?marker=6&limit=10000",
+         "rel": "next"}]}
 
 
 Example xml reply:

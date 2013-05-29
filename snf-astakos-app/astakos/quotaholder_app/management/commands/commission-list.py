@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,21 +31,43 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from astakos.im.models import Invitation
+from django.core.management.base import CommandError
 from synnefo.webproject.management.commands import ListCommand
 
-class Command(ListCommand):
-    help = "List invitations"
+from optparse import make_option
+from astakos.quotaholder_app.models import Commission
+import datetime
 
-    object_class = Invitation
+
+class Command(ListCommand):
+    help = "List pending commissions"
+
+    option_list = ListCommand.option_list + (
+        make_option('--overdue',
+                    help="Specify overdue time in seconds"),
+    )
+
+    object_class = Commission
 
     FIELDS = {
-        "id": ("id", "The ID of the invitation"),
-        "inviter": ("inviter.username", "The inviter of the invitation"),
-        "username": ("username", "The receiver username"),
-        "realname": ("realname", "The receiver name"),
-        "code": ("code", "The code  of the invitation"),
-        "is_consumed": ("is_consumed", "Whether the invitation is consumed or not"),
+        'serial': ('serial', ('Commission serial')),
+        'name': ('name', 'Commission name'),
+        'clientkey': (
+            'clientkey',
+            'Key of the client (service) that issued the commission'),
+        'issue time': ('issue_datetime', 'Commission issue time'),
     }
 
-    fields = ["id", "inviter", "username", "realname", "code", "is_consumed"]
+    fields = ['serial', 'name', 'clientkey', 'issue time']
+
+    def handle_args(self, *args, **options):
+        overdue = options['overdue']
+        if overdue is not None:
+            try:
+                overdue = int(overdue)
+            except ValueError:
+                raise CommandError("Expecting an integer.")
+
+            delta = datetime.timedelta(0, overdue)
+            until = datetime.datetime.now() - delta
+            self.filters["issue_datetime__lt"] = until

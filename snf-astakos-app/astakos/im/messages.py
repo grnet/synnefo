@@ -32,6 +32,8 @@
 # or implied, of GRNET S.A.
 
 from django.conf import settings
+import astakos.im.settings as astakos_settings
+
 
 LOGGED_IN_WARNING                       =   'It seems that you are already logged in.'
 ACCOUNT_ALREADY_VERIFIED                =   'This account is already verified.'
@@ -247,6 +249,37 @@ AUTH_PROVIDER_ACCOUNT_INACTIVE               =   'Your account is disabled.'
 
 AUTH_PROVIDER_ADD_TO_EXISTING_ACCOUNT        =   "You can add {method_prompt} to your existing account from your " \
                                                  " <a href='{profile_url}'>profile page</a>"
+
+# Email subjects
+_SITENAME = astakos_settings.SITENAME
+INVITATION_EMAIL_SUBJECT = 'Invitation to %s' % _SITENAME
+GREETING_EMAIL_SUBJECT = 'Welcome to %s' % _SITENAME
+FEEDBACK_EMAIL_SUBJECT = 'Feedback from %s' % _SITENAME
+VERIFICATION_EMAIL_SUBJECT = '%s account activation is needed' % _SITENAME
+ACCOUNT_CREATION_SUBJECT = '%s account created (%%(user)s)' % _SITENAME
+HELPDESK_NOTIFICATION_EMAIL_SUBJECT = \
+    '%s account activated (%%(user)s)' % _SITENAME
+EMAIL_CHANGE_EMAIL_SUBJECT = 'Email change on %s ' % _SITENAME
+PASSWORD_RESET_EMAIL_SUBJECT = 'Password reset on %s ' % _SITENAME
+PROJECT_CREATION_SUBJECT = \
+    '%s project application created (%%(name)s)' % _SITENAME
+PROJECT_APPROVED_SUBJECT = \
+    '%s project application approved (%%(name)s)' % _SITENAME
+PROJECT_DENIED_SUBJECT = \
+    '%s project application denied (%%(name)s)' % _SITENAME
+PROJECT_TERMINATION_SUBJECT = \
+    '%s project terminated (%%(name)s)' % _SITENAME
+PROJECT_SUSPENSION_SUBJECT = \
+    '%s project suspended (%%(name)s)' % _SITENAME
+PROJECT_MEMBERSHIP_CHANGE_SUBJECT = \
+    '%s project membership changed (%%(name)s)' % _SITENAME
+PROJECT_MEMBERSHIP_ENROLL_SUBJECT = \
+    '%s project enrollment (%%(name)s)' % _SITENAME
+PROJECT_MEMBERSHIP_REQUEST_SUBJECT = \
+    '%s project membership request (%%(name)s)' % _SITENAME
+PROJECT_MEMBERSHIP_LEAVE_REQUEST_SUBJECT = \
+    '%s project membership leave request (%%(name)s)' % _SITENAME
+
 
 messages = locals().keys()
 for msg in messages:

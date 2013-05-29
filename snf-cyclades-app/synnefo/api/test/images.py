@@ -69,7 +69,7 @@ class ImageAPITest(BaseAPITest):
         mimage().list_images.return_value = images
         response = self.get('/api/v1.1/images/', 'user')
         self.assertSuccess(response)
-        api_images = json.loads(response.content)['images']['values']
+        api_images = json.loads(response.content)['images']
         self.assertEqual(images, api_images)
 
     @assert_backend_closed
@@ -102,7 +102,7 @@ class ImageAPITest(BaseAPITest):
                    'progress': 100,
                    'created': '2012-11-26T11:52:54+00:00',
                    'updated': '2012-12-26T11:52:54+00:00',
-                   'metadata': {'values': {'foo':'bar'}}},
+                   'metadata': {'foo':'bar'}},
                   {'id': 2,
                    'name': 'image-2',
                    'status': 'DELETED',
@@ -118,7 +118,7 @@ class ImageAPITest(BaseAPITest):
         mimage().list_images.return_value = images
         response = self.get('/api/v1.1/images/detail', 'user')
         self.assertSuccess(response)
-        api_images = json.loads(response.content)['images']['values']
+        api_images = json.loads(response.content)['images']
         self.assertEqual(len(result_images), len(api_images))
         self.assertEqual(result_images, api_images)
 
@@ -150,7 +150,7 @@ class ImageAPITest(BaseAPITest):
         response =\
             self.get('/api/v1.1/images/detail?changes-since=%sUTC' % new_time)
         self.assertSuccess(response)
-        api_images = json.loads(response.content)['images']['values']
+        api_images = json.loads(response.content)['images']
         self.assertEqual(1, len(api_images))
 
     @assert_backend_closed
@@ -169,7 +169,7 @@ class ImageAPITest(BaseAPITest):
                    'progress': 100,
                    'created': '2012-11-26T11:52:54+00:00',
                    'updated': '2012-12-26T11:52:54+00:00',
-                   'metadata': {'values': {'foo': 'bar'}}}
+                   'metadata': {'foo': 'bar'}}
         mimage.return_value.get_image.return_value = image
         response = self.get('/api/v1.1/images/42', 'user')
         self.assertSuccess(response)
@@ -207,20 +207,20 @@ class ImageMetadataAPITest(BaseAPITest):
                    'progress': 100,
                    'created': '2012-11-26T11:52:54+00:00',
                    'updated': '2012-12-26T11:52:54+00:00',
-                   'metadata': {'values': {'foo': 'bar'}}}
+                   'metadata': {'foo': 'bar'}}
 
     @assert_backend_closed
     def test_list_metadata(self, backend):
         backend.return_value.get_image.return_value = self.image
-        response = self.get('/api/v1.1/images/42/meta', 'user')
+        response = self.get('/api/v1.1/images/42/metadata', 'user')
         self.assertSuccess(response)
-        meta = json.loads(response.content)['metadata']['values']
+        meta = json.loads(response.content)['metadata']
         self.assertEqual(meta, self.image['properties'])
 
     @assert_backend_closed
     def test_get_metadata(self, backend):
         backend.return_value.get_image.return_value = self.image
-        response = self.get('/api/v1.1/images/42/meta/foo', 'user')
+        response = self.get('/api/v1.1/images/42/metadata/foo', 'user')
         self.assertSuccess(response)
         meta = json.loads(response.content)['meta']
         self.assertEqual(meta['foo'], 'bar')
@@ -228,12 +228,12 @@ class ImageMetadataAPITest(BaseAPITest):
     @assert_backend_closed
     def test_get_invalid_metadata(self, backend):
         backend.return_value.get_image.return_value = self.image
-        response = self.get('/api/v1.1/images/42/meta/not_found', 'user')
+        response = self.get('/api/v1.1/images/42/metadata/not_found', 'user')
         self.assertItemNotFound(response)
 
     def test_delete_metadata_item(self, backend):
         backend.return_value.get_image.return_value = self.image
-        response = self.delete('/api/v1.1/images/42/meta/foo', 'user')
+        response = self.delete('/api/v1.1/images/42/metadata/foo', 'user')
         self.assertEqual(response.status_code, 204)
         backend.return_value.update_metadata.assert_called_once_with('42', {'properties': {'foo2':
                                                     'bar2'}})
@@ -242,7 +242,7 @@ class ImageMetadataAPITest(BaseAPITest):
     def test_create_metadata_item(self, backend):
         backend.return_value.get_image.return_value = self.image
         request = {'meta': {'foo3': 'bar3'}}
-        response = self.put('/api/v1.1/images/42/meta/foo3', 'user',
+        response = self.put('/api/v1.1/images/42/metadata/foo3', 'user',
                             json.dumps(request), 'json')
         self.assertEqual(response.status_code, 201)
         backend.return_value.update_metadata.assert_called_once_with('42',
@@ -253,15 +253,15 @@ class ImageMetadataAPITest(BaseAPITest):
     def test_create_metadata_malformed_1(self, backend):
         backend.return_value.get_image.return_value = self.image
         request = {'met': {'foo3': 'bar3'}}
-        response = self.put('/api/v1.1/images/42/meta/foo3', 'user',
+        response = self.put('/api/v1.1/images/42/metadata/foo3', 'user',
                             json.dumps(request), 'json')
         self.assertBadRequest(response)
 
     @assert_backend_closed
     def test_create_metadata_malformed_2(self, backend):
         backend.return_value.get_image.return_value = self.image
-        request = {'meta': [('foo3', 'bar3')]}
-        response = self.put('/api/v1.1/images/42/meta/foo3', 'user',
+        request = {'metadata': [('foo3', 'bar3')]}
+        response = self.put('/api/v1.1/images/42/metadata/foo3', 'user',
                             json.dumps(request), 'json')
         self.assertBadRequest(response)
 
@@ -269,7 +269,7 @@ class ImageMetadataAPITest(BaseAPITest):
     def test_create_metadata_malformed_3(self, backend):
         backend.return_value.get_image.return_value = self.image
         request = {'met': {'foo3': 'bar3', 'foo4': 'bar4'}}
-        response = self.put('/api/v1.1/images/42/meta/foo3', 'user',
+        response = self.put('/api/v1.1/images/42/metadata/foo3', 'user',
                                 json.dumps(request), 'json')
         self.assertBadRequest(response)
 
@@ -277,7 +277,7 @@ class ImageMetadataAPITest(BaseAPITest):
     def test_create_metadata_malformed_4(self, backend):
         backend.return_value.get_image.return_value = self.image
         request = {'met': {'foo3': 'bar3'}}
-        response = self.put('/api/v1.1/images/42/meta/foo4', 'user',
+        response = self.put('/api/v1.1/images/42/metadata/foo4', 'user',
                                 json.dumps(request), 'json')
         self.assertBadRequest(response)
 
@@ -285,7 +285,7 @@ class ImageMetadataAPITest(BaseAPITest):
     def test_update_metadata_item(self, backend):
         backend.return_value.get_image.return_value = self.image
         request = {'metadata': {'foo': 'bar_new', 'foo4': 'bar4'}}
-        response = self.post('/api/v1.1/images/42/meta', 'user',
+        response = self.post('/api/v1.1/images/42/metadata', 'user',
                              json.dumps(request), 'json')
         self.assertEqual(response.status_code, 201)
         backend.return_value.update_metadata.assert_called_once_with('42',
@@ -297,6 +297,6 @@ class ImageMetadataAPITest(BaseAPITest):
     def test_update_metadata_malformed(self, backend):
         backend.return_value.get_image.return_value = self.image
         request = {'meta': {'foo': 'bar_new', 'foo4': 'bar4'}}
-        response = self.post('/api/v1.1/images/42/meta', 'user',
+        response = self.post('/api/v1.1/images/42/metadata', 'user',
                             json.dumps(request), 'json')
         self.assertBadRequest(response)

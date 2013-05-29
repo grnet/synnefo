@@ -35,8 +35,7 @@ from django.core.management import CommandError
 from synnefo.db.models import Backend, VirtualMachine, Network, Flavor
 
 from snf_django.lib.api import faults
-from synnefo.api.util import get_image as backend_get_image
-from synnefo.api.util import validate_network_params
+from synnefo.api import util
 from synnefo.logic.rapi import GanetiApiError, GanetiRapiClient
 from synnefo.logic.utils import (id_from_instance_name,
                                  id_from_network_name)
@@ -59,7 +58,7 @@ def validate_network_info(options):
     gateway6 = options['gateway6']
 
     try:
-        validate_network_params(subnet, gateway)
+        util.validate_network_params(subnet, gateway)
     except (faults.BadRequest, faults.OverLimit) as e:
         raise CommandError(e)
 
@@ -81,7 +80,7 @@ def get_backend(backend_id):
 def get_image(image_id, user_id):
     if image_id:
         try:
-            return backend_get_image(image_id, user_id)
+            return util.get_image_dict(image_id, user_id)
         except faults.ItemNotFound:
             raise CommandError("Image with ID %s not found."
                                " Use snf-manage image-list to find"

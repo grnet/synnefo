@@ -39,6 +39,8 @@ from sqlalchemy.exc import NoSuchTableError
 
 from pithos.backends.random_word import get_random_word
 
+from dbworker import ESCAPE_CHAR
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -126,7 +128,7 @@ class Public(DBWorker):
     def public_list(self, prefix):
         s = select([self.public.c.path, self.public.c.url])
         s = s.where(self.public.c.path.like(
-            self.escape_like(prefix) + '%', escape='\\'))
+            self.escape_like(prefix) + '%', escape=ESCAPE_CHAR))
         s = s.where(self.public.c.active == True)
         r = self.conn.execute(s)
         rows = r.fetchall()

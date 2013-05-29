@@ -12,7 +12,6 @@ synnefo ||
 :ref:`apache <i-apache>` ||
 :ref:`webproject <i-webproject>` ||
 :ref:`astakos <i-astakos>` ||
-:ref:`qh <i-qh>` ||
 :ref:`cms <i-cms>` ||
 :ref:`pithos <i-pithos>` ||
 :ref:`cyclades <i-cyclades>` ||
@@ -27,7 +26,8 @@ will have the following services running:
  * Identity Management (Astakos)
  * Object Storage Service (Pithos+)
  * Compute Service (Cyclades)
- * Image Registry Service (Plankton)
+ * Image Service (part of Cyclades)
+ * Network Service (part of Cyclades)
 
 and a single unified Web UI to manage them all.
 

@@ -94,7 +94,7 @@ class Command(ListCommand):
     }
 
     fields = ["id", "name", "user.uuid", "state", "public", "subnet.ipv4",
-              "gateway.ipv4", "link", "mac_prefix"]
+              "gateway.ipv4", "link", "mac_prefix", "dhcp"]
 
     def handle_args(self, *args, **options):
         if options["public"]:

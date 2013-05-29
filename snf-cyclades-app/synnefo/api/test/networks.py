@@ -34,7 +34,7 @@
 import json
 from mock import patch
 
-from snf_django.utils.testing import BaseAPITest
+from snf_django.utils.testing import BaseAPITest, mocked_quotaholder
 from synnefo.db.models import Network, NetworkInterface
 from synnefo.db import models_factory as mfactory
 
@@ -43,7 +43,7 @@ from synnefo.db import models_factory as mfactory
 class NetworkAPITest(BaseAPITest):
     def setUp(self):
         self.mac_prefixes = mfactory.MacPrefixPoolTableFactory()
-        self.bridges = mfactory.BridgePoolTableFactory()
+        self.bridges = mfactory.BridgePoolTableFactory(base="link")
         self.user = 'dummy-user'
         self.net1 = mfactory.NetworkFactory(userid=self.user)
         self.vm1 = mfactory.VirtualMachineFactory(userid=self.user)
@@ -68,14 +68,15 @@ class NetworkAPITest(BaseAPITest):
             self.assertEqual(db_net.public, api_net['public'])
             db_nics = ["nic-%d-%d" % (nic.machine.id, nic.index) for nic in
                        db_net.nics.filter(machine__userid=db_net.userid)]
-            self.assertEqual(db_nics, api_net['attachments']['values'])
+            self.assertEqual(db_nics, api_net['attachments'])
 
     def test_create_network_1(self, mrapi):
         request = {
             'network': {'name': 'foo', "type": "MAC_FILTERED"}
         }
-        response = self.post('/api/v1.1/networks/', 'user1',
-                             json.dumps(request), 'json')
+        with mocked_quotaholder():
+            response = self.post('/api/v1.1/networks/', 'user1',
+                                 json.dumps(request), 'json')
         self.assertEqual(response.status_code, 202)
         db_networks = Network.objects.filter(userid='user1')
         self.assertEqual(len(db_networks), 1)
@@ -188,7 +189,7 @@ class NetworkAPITest(BaseAPITest):
         self.assertSuccess(response)
 
         db_nets = Network.objects.filter(userid=self.user, deleted=False)
-        api_nets = json.loads(response.content)["networks"]["values"]
+        api_nets = json.loads(response.content)["networks"]
 
         self.assertEqual(len(db_nets), len(api_nets))
         for api_net in api_nets:
@@ -204,7 +205,7 @@ class NetworkAPITest(BaseAPITest):
         self.assertSuccess(response)
 
         db_nets = Network.objects.filter(userid=self.user, deleted=False)
-        api_nets = json.loads(response.content)["networks"]["values"]
+        api_nets = json.loads(response.content)["networks"]
 
         self.assertEqual(len(db_nets), len(api_nets))
         for api_net in api_nets:
@@ -221,7 +222,7 @@ class NetworkAPITest(BaseAPITest):
                             net.userid)
         self.assertSuccess(response)
         api_net = json.loads(response.content)["network"]
-        self.assertEqual(len(api_net["attachments"]["values"]), 0)
+        self.assertEqual(len(api_net["attachments"]), 0)
 
     def test_network_details_1(self, mrapi):
         """Test that expected details for a network are returned"""
@@ -264,9 +265,11 @@ class NetworkAPITest(BaseAPITest):
         self.assertFault(response, 403, 'forbidden')
 
     def test_delete_network(self, mrapi):
-        net = mfactory.NetworkFactory()
-        response = self.delete('/api/v1.1/networks/%d' % net.id,
-                                net.userid)
+        net = mfactory.NetworkFactory(deleted=False, state='ACTIVE',
+                                      link="link-10")
+        with mocked_quotaholder():
+            response = self.delete('/api/v1.1/networks/%d' % net.id,
+                                    net.userid)
         self.assertEqual(response.status_code, 204)
         net = Network.objects.get(id=net.id, userid=net.userid)
         self.assertEqual(net.action, 'DESTROY')

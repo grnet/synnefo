@@ -13,7 +13,6 @@ Synnefo
 :ref:`apache <i-apache>` ||
 :ref:`webproject <i-webproject>` ||
 :ref:`astakos <i-astakos>` ||
-:ref:`qh <i-qh>` ||
 :ref:`cms <i-cms>` ||
 :ref:`pithos <i-pithos>` ||
 cyclades ||
@@ -44,13 +43,6 @@ In `/etc/synnefo/cyclades.conf` add:
 
     MAX_CIDR_BLOCK = 21
     PUBLIC_USE_POOL = True
-
-    MAX_VMS_PER_USER = 5
-    VMS_USER_QUOTA = {
-        'user@example.com': 20,
-    }
-    MAX_NETWORKS_PER_USER = 3
-    NETWORKS_USER_QUOTA = { 'user@example.com': 10 }
 
     CPU_BAR_GRAPH_URL = 'https://cyclades.example.com/stats/%s/cpu-bar.png'
     CPU_TIMESERIES_GRAPH_URL = 'https://cyclades.example.com/stats/%s/cpu-ts.png'
@@ -107,13 +99,7 @@ In `/etc/synnefo/cyclades.conf` add:
     CACHE_BACKEND = 'memcached://127.0.0.1:11211/'
     VMAPI_BASE_URL = 'https://cyclades.example.com/'
 
-    CYCLADES_QUOTAHOLDER_TOKEN = '1234'
-    CYCLADES_QUOTAHOLDER_URL = 'https://qh.example.com/quotaholder/v'
-    CYCLADES_USE_QUOTAHOLDER = True
-
     CYCLADES_ASTAKOS_SERVICE_TOKEN = "XXXXXXXXXX"
-
-    CYCLADES_USER_CATALOG_URL = 'https://accounts.example.com/user_catalogs'
 
     UI_SYSTEM_IMAGES_OWNERS = {
         'admin@synnefo.gr': 'system',

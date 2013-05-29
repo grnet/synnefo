@@ -32,9 +32,17 @@
 # or implied, of GRNET S.A.
 
 from django.conf import settings
+import astakos.im.settings as astakos_settings
 
+
+LOGGED_IN_WARNING                       =   'It seems that you are already logged in.'
+ACCOUNT_ALREADY_VERIFIED                =   'This account is already verified.'
+ACCOUNT_ALREADY_MODERATED               =   'This account is already moderated.'
 ACCOUNT_ALREADY_ACTIVE                  =   'This account is already active.'
+ACCOUNT_REJECTED                        =   'This account has been rejected.'
 ACCOUNT_NOT_ACTIVE                      =   'User account is not active.'
+ACCOUNT_NOT_MODERATED                   =   'User account is not moderated.'
+ACCOUNT_NOT_VERIFIED                    =   'User account does not have a verified email address.'
 ACCOUNT_RESEND_ACTIVATION               =   'It seems that an activation email has been sent to you, but you have not followed the activation link. <a href="%(send_activation_url)s">Resend activation email.</a>'
 INACTIVE_ACCOUNT_CHANGE_EMAIL           =   ''.join([ACCOUNT_RESEND_ACTIVATION, ' Or <a href="%(signup_url)s">Send activation to a new email.</a>'])
 
@@ -42,6 +50,7 @@ ACCOUNT_PENDING_ACTIVATION_HELP         =   'An activation email has been sent t
 
 ACCOUNT_ACTIVATED                       =   'Congratulations. Your account has' + \
                                             ' been activated. You are now logged in.'
+ACCOUNT_DEACTIVATED                     =   'Your account is inactive'
 PASSWORD_RESET_DONE                     =   'An email with details on how to change your password has been sent. Please check your Inbox.'
 PASSWORD_RESET_CONFIRM_DONE             =   'Your password has changed successfully. You can now login using your new password.'
 PASSWORD_CHANGED                        =   'Your new password was set successfully.'
@@ -134,12 +143,13 @@ INVITATION_SENT                         =   'Invitation sent to %(email)s.'
 VERIFICATION_SENT                       =   'Your information has been submitted successfully. A verification email, with an activation link \
                                                has been sent to the email address you provided. Please follow the activation link on this \
                                                email to complete the registration process.'
+VERIFICATION_FAILED                     =   'Email verification process failed.'
 SWITCH_ACCOUNT_LINK_SENT                =   'This email is already associated with a local account, and a verification email has been sent \
                                              to %(email)s. To complete the association process, go back to your Inbox and follow the link \
                                              inside the verification email.'
 NOTIFICATION_SENT                       =   'Your request for an account has been submitted successfully, and is now pending approval. \
                                                You will be notified by email in the next few days. \
-                                               Thanks for your interest in ~okeanos! The GRNET team.'
+                                               Thanks for your interest!'
 ACTIVATION_SENT                         =   'An email containing your activation link has been sent to your email address.'
 
 REGISTRATION_COMPLETED                  =   'Your registration completed successfully. You can now login to your new account!'
@@ -214,7 +224,7 @@ AUTH_PROVIDER_ADDED                          =   "{method_prompt} enabled for th
 AUTH_PROVIDER_SWITCHED                       =   "{method_prompt} changed for this account."
 AUTH_PROVIDER_REMOVED                        =   "{method_prompt} removed for this account."
 AUTH_PROVIDER_ADD_FAILED                     =   "Failed to add {method_prompt}."
-AUTH_PROVIDER_ADD_EXISTS                     =   "It seems that this account is already assigned to another user."
+AUTH_PROVIDER_ADD_EXISTS                     =   "It seems that this '{method_prompt}' is already in use by another account."
 AUTH_PROVIDER_LOGIN_TO_ADD                   =   "The new login method will be assigned once you login to your account."
 AUTH_PROVIDER_INVALID_LOGIN                  =   "No account exists."
 AUTH_PROVIDER_REQUIRED                       =   "{method_prompt} is required. Add one from your profile page."
@@ -236,10 +246,41 @@ all pending registrations will be deleted.'''
 AUTH_PROVIDER_PENDING_RESEND_ACTIVATION      =   '<a href="{resend_activation_url}">Click here to resend activation email.</a>'
 AUTH_PROVIDER_PENDING_MODERATION             =   'Your account request is pending moderation.'
 AUTH_PROVIDER_PENDING_ACTIVATION             =   'Your account request is pending activation.'
-AUTH_PROVIDER_ACCOUNT_INACTIVE                        =   'Your account is disabled.'
+AUTH_PROVIDER_ACCOUNT_INACTIVE               =   'Your account is disabled.'
 
 AUTH_PROVIDER_ADD_TO_EXISTING_ACCOUNT        =   "You can add {method_prompt} to your existing account from your " \
                                                  " <a href='{profile_url}'>profile page</a>"
+
+# Email subjects
+_SITENAME = astakos_settings.SITENAME
+INVITATION_EMAIL_SUBJECT = 'Invitation to %s' % _SITENAME
+GREETING_EMAIL_SUBJECT = 'Welcome to %s' % _SITENAME
+FEEDBACK_EMAIL_SUBJECT = 'Feedback from %s' % _SITENAME
+VERIFICATION_EMAIL_SUBJECT = '%s account activation is needed' % _SITENAME
+ACCOUNT_CREATION_SUBJECT = '%s account created (%%(user)s)' % _SITENAME
+HELPDESK_NOTIFICATION_EMAIL_SUBJECT = \
+    '%s account activated (%%(user)s)' % _SITENAME
+EMAIL_CHANGE_EMAIL_SUBJECT = 'Email change on %s ' % _SITENAME
+PASSWORD_RESET_EMAIL_SUBJECT = 'Password reset on %s ' % _SITENAME
+PROJECT_CREATION_SUBJECT = \
+    '%s project application created (%%(name)s)' % _SITENAME
+PROJECT_APPROVED_SUBJECT = \
+    '%s project application approved (%%(name)s)' % _SITENAME
+PROJECT_DENIED_SUBJECT = \
+    '%s project application denied (%%(name)s)' % _SITENAME
+PROJECT_TERMINATION_SUBJECT = \
+    '%s project terminated (%%(name)s)' % _SITENAME
+PROJECT_SUSPENSION_SUBJECT = \
+    '%s project suspended (%%(name)s)' % _SITENAME
+PROJECT_MEMBERSHIP_CHANGE_SUBJECT = \
+    '%s project membership changed (%%(name)s)' % _SITENAME
+PROJECT_MEMBERSHIP_ENROLL_SUBJECT = \
+    '%s project enrollment (%%(name)s)' % _SITENAME
+PROJECT_MEMBERSHIP_REQUEST_SUBJECT = \
+    '%s project membership request (%%(name)s)' % _SITENAME
+PROJECT_MEMBERSHIP_LEAVE_REQUEST_SUBJECT = \
+    '%s project membership leave request (%%(name)s)' % _SITENAME
+
 
 messages = locals().keys()
 for msg in messages:

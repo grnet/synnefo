@@ -32,41 +32,43 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
-
-from django.core.management.base import NoArgsCommand
-
 from astakos.im.models import Resource
+from synnefo.webproject.management.commands import ListCommand
+from ._common import show_resource_value, style_options, check_style
 
 
-class Command(NoArgsCommand):
+class Command(ListCommand):
     help = "List resources"
+    object_class = Resource
 
-    option_list = NoArgsCommand.option_list + (
-        make_option('-c',
-                    action='store_true',
-                    dest='csv',
-                    default=False,
-                    help="Use pipes to separate values"),
+    option_list = ListCommand.option_list + (
+        make_option('--unit-style',
+                    default='mb',
+                    help=("Specify display unit for resource values "
+                          "(one of %s); defaults to mb") % style_options),
     )
 
-    def handle_noargs(self, **options):
-        resources = Resource.objects.select_related().all()
+    FIELDS = {
+        "id": ("id", "ID"),
+        "name": ("name", "Resource Name"),
+        "service": ("service", "Service"),
+        "limit": ("limit_with_unit", "Base Quota"),
+        "description": ("desc", "Description"),
+        "allow_in_projects": ("allow_in_projects",
+                              "Make resource available in projects"),
+    }
 
-        labels = ('id', 'service', 'name')
-        columns = (3, 40, 40)
+    fields = ["id", "name", "service", "limit", "allow_in_projects",
+              "description"]
 
-        if not options['csv']:
-            line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
-            self.stdout.write(line + '\n')
-            sep = '-' * len(line)
-            self.stdout.write(sep + '\n')
+    def show_limit(self, resource):
+        limit = resource.uplimit
+        return show_resource_value(limit, resource.name, self.unit_style)
 
-        for r in resources:
-            fields = (str(r.id), r.service.name, r.name)
+    def handle_args(self, *args, **options):
+        self.unit_style = options['unit_style']
+        check_style(self.unit_style)
 
-            if options['csv']:
-                line = '|'.join(fields)
-            else:
-                line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
-
-            self.stdout.write(line + '\n')
+    def handle_db_objects(self, rows, *args, **kwargs):
+        for resource in rows:
+            resource.limit_with_unit = self.show_limit(resource)

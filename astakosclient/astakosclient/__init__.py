@@ -38,10 +38,27 @@ import hashlib
 from copy import copy
 
 import simplejson
-from astakosclient.utils import retry, scheme_to_class
+from astakosclient.utils import \
+    retry, scheme_to_class, parse_request, check_input
 from astakosclient.errors import \
     AstakosClientException, Unauthorized, BadRequest, NotFound, Forbidden, \
-    NoUserName, NoUUID, BadValue
+    NoUserName, NoUUID, BadValue, QuotaLimit, InvalidResponse
+
+
+# --------------------------------------------------------------------
+# Astakos API urls
+API_AUTHENTICATE = "/astakos/api/authenticate"
+API_USERCATALOGS = "/astakos/api/user_catalogs"
+API_SERVICE_USERCATALOGS = "/astakos/api/service/user_catalogs"
+API_GETSERVICES = "/astakos/api/get_services"
+API_RESOURCES = "/astakos/api/resources"
+API_QUOTAS = "/astakos/api/quotas"
+API_SERVICE_QUOTAS = "/astakos/api/service_quotas"
+API_COMMISSIONS = "/astakos/api/commissions"
+API_COMMISSIONS_ACTION = API_COMMISSIONS + "/action"
+API_FEEDBACK = "/astakos/api/feedback"
+API_TOKENS = "/astakos/api/tokens"
+TOKENS_ENDPOINTS = "endpoints"
 
 
 # --------------------------------------------------------------------
@@ -68,7 +85,7 @@ class AstakosClient():
     # ----------------------------------
     def __init__(self, astakos_url, retry=0,
                  use_pool=False, pool_size=8, logger=None):
-        """Intialize AstakosClient Class
+        """Initialize AstakosClient Class
 
         Keyword arguments:
         astakos_url -- i.e https://accounts.example.com (string)
@@ -86,10 +103,7 @@ class AstakosClient():
         logger.debug("Intialize AstakosClient: astakos_url = %s, "
                      "use_pool = %s" % (astakos_url, use_pool))
 
-        if not astakos_url:
-            m = "Astakos url not given"
-            logger.error(m)
-            raise BadValue(m)
+        check_input("__init__", logger, astakos_url=astakos_url)
 
         # Check for supported scheme
         p = urlparse.urlparse(astakos_url)
@@ -104,6 +118,7 @@ class AstakosClient():
         self.logger = logger
         self.netloc = p.netloc
         self.scheme = p.scheme
+        self.path = p.path.rstrip('/')
         self.conn_class = conn_class
 
     # ----------------------------------
@@ -111,29 +126,28 @@ class AstakosClient():
     def _call_astakos(self, token, request_path,
                       headers=None, body=None, method="GET"):
         """Make the actual call to Astakos Service"""
-        hashed_token = hashlib.sha1()
-        hashed_token.update(token)
+        if token is not None:
+            hashed_token = hashlib.sha1()
+            hashed_token.update(token)
+            using_token = "using token %s" % (hashed_token.hexdigest())
+        else:
+            using_token = "without using token"
         self.logger.debug(
-            "Make a %s request to %s using token %s "
-            "with headers %s and body %s"
-            % (method, request_path, hashed_token.hexdigest(), headers, body))
+            "Make a %s request to %s %s with headers %s and body %s"
+            % (method, request_path, using_token, headers, body))
 
         # Check Input
-        if not token:
-            m = "Token not given"
-            self.logger.error(m)
-            raise ValueError(m)
         if headers is None:
             headers = {}
         if body is None:
             body = {}
-        if request_path[0] != '/':
-            request_path = "/" + request_path
+        path = self.path + "/" + request_path.strip('/')
 
         # Build request's header and body
         kwargs = {}
         kwargs['headers'] = copy(headers)
-        kwargs['headers']['X-Auth-Token'] = token
+        if token is not None:
+            kwargs['headers']['X-Auth-Token'] = token
         if body:
             kwargs['body'] = copy(body)
             kwargs['headers'].setdefault(
@@ -146,7 +160,7 @@ class AstakosClient():
             with self.conn_class(self.netloc) as conn:
                 # Send request
                 (message, data, status) = \
-                    _do_request(conn, method, request_path, **kwargs)
+                    _do_request(conn, method, path, **kwargs)
         except Exception as err:
             self.logger.error("Failed to send request: %s" % repr(err))
             raise AstakosClientException(str(err))
@@ -163,9 +177,19 @@ class AstakosClient():
             raise NotFound(message, data)
         elif status < 200 or status >= 300:
             raise AstakosClientException(message, data, status)
-        return simplejson.loads(unicode(data))
+
+        try:
+            if data:
+                return simplejson.loads(unicode(data))
+            else:
+                return None
+        except Exception as err:
+            self.logger.error("Cannot parse response \"%s\" with simplejson: %s"
+                              % (data, str(err)))
+            raise InvalidResponse(str(err), data)
 
     # ------------------------
+    # do a GET to ``API_AUTHENTICATE``
     def get_user_info(self, token, usage=False):
         """Authenticate user and get user's info as a dictionary
 
@@ -178,15 +202,17 @@ class AstakosClient():
 
         """
         # Send request
-        auth_path = "/im/authenticate"
+        auth_path = copy(API_AUTHENTICATE)
         if usage:
             auth_path += "?usage=1"
         return self._call_astakos(token, auth_path)
 
     # ----------------------------------
+    # do a POST to ``API_USERCATALOGS`` (or ``API_SERVICE_USERCATALOGS``)
+    #   with {'uuids': uuids}
     def _uuid_catalog(self, token, uuids, req_path):
         req_headers = {'content-type': 'application/json'}
-        req_body = simplejson.dumps({'uuids': uuids})
+        req_body = parse_request({'uuids': uuids}, self.logger)
         data = self._call_astakos(
             token, req_path, req_headers, req_body, "POST")
         if "uuid_catalog" in data:
@@ -208,15 +234,12 @@ class AstakosClient():
         keys and the corresponding user names as values
 
         """
-        req_path = "/user_catalogs"
+        req_path = copy(API_USERCATALOGS)
         return self._uuid_catalog(token, uuids, req_path)
 
     def get_username(self, token, uuid):
         """Return the user name of a uuid (see get_usernames)"""
-        if not uuid:
-            m = "No uuid was given"
-            self.logger.error(m)
-            raise BadValue(m)
+        check_input("get_username", self.logger, uuid=uuid)
         uuid_dict = self.get_usernames(token, [uuid])
         if uuid in uuid_dict:
             return uuid_dict.get(uuid)
@@ -225,15 +248,12 @@ class AstakosClient():
 
     def service_get_usernames(self, token, uuids):
         """Return a uuid_catalog dict using a service's token"""
-        req_path = "/service/api/user_catalogs"
+        req_path = copy(API_SERVICE_USERCATALOGS)
         return self._uuid_catalog(token, uuids, req_path)
 
     def service_get_username(self, token, uuid):
         """Return the displayName of a uuid using a service's token"""
-        if not uuid:
-            m = "No uuid was given"
-            self.logger.error(m)
-            raise BadValue(m)
+        check_input("service_get_username", self.logger, uuid=uuid)
         uuid_dict = self.service_get_usernames(token, [uuid])
         if uuid in uuid_dict:
             return uuid_dict.get(uuid)
@@ -241,9 +261,11 @@ class AstakosClient():
             raise NoUserName(uuid)
 
     # ----------------------------------
+    # do a POST to ``API_USERCATALOGS`` (or ``API_SERVICE_USERCATALOGS``)
+    #   with {'displaynames': display_names}
     def _displayname_catalog(self, token, display_names, req_path):
         req_headers = {'content-type': 'application/json'}
-        req_body = simplejson.dumps({'displaynames': display_names})
+        req_body = parse_request({'displaynames': display_names}, self.logger)
         data = self._call_astakos(
             token, req_path, req_headers, req_body, "POST")
         if "displayname_catalog" in data:
@@ -265,15 +287,12 @@ class AstakosClient():
         the names as keys and the corresponding uuids as values
 
         """
-        req_path = "/user_catalogs"
+        req_path = copy(API_USERCATALOGS)
         return self._displayname_catalog(token, display_names, req_path)
 
     def get_uuid(self, token, display_name):
         """Return the uuid of a name (see getUUIDs)"""
-        if not display_name:
-            m = "No display_name was given"
-            self.logger.error(m)
-            raise BadValue(m)
+        check_input("get_uuid", self.logger, display_name=display_name)
         name_dict = self.get_uuids(token, [display_name])
         if display_name in name_dict:
             return name_dict.get(display_name)
@@ -282,15 +301,12 @@ class AstakosClient():
 
     def service_get_uuids(self, token, display_names):
         """Return a display_name catalog using a service's token"""
-        req_path = "/service/api/user_catalogs"
+        req_path = copy(API_SERVICE_USERCATALOGS)
         return self._displayname_catalog(token, display_names, req_path)
 
     def service_get_uuid(self, token, display_name):
         """Return the uuid of a name using a service's token"""
-        if not display_name:
-            m = "No display_name was given"
-            self.logger.error(m)
-            raise BadValue(m)
+        check_input("service_get_uuid", self.logger, display_name=display_name)
         name_dict = self.service_get_uuids(token, [display_name])
         if display_name in name_dict:
             return name_dict.get(display_name)
@@ -298,9 +314,257 @@ class AstakosClient():
             raise NoUUID(display_name)
 
     # ----------------------------------
+    # do a GET to ``API_GETSERVICES``
     def get_services(self):
         """Return a list of dicts with the registered services"""
-        return self._call_astakos("dummy token", "/im/get_services")
+        return self._call_astakos(None, copy(API_GETSERVICES))
+
+    # ----------------------------------
+    # do a GET to ``API_RESOURCES``
+    def get_resources(self):
+        """Return a dict of dicts with the available resources"""
+        return self._call_astakos(None, copy(API_RESOURCES))
+
+    # ----------------------------------
+    # do a POST to ``API_FEEDBACK``
+    def send_feedback(self, token, message, data):
+        """Send feedback to astakos service
+
+        keyword arguments:
+        token       -- user's token (string)
+        message     -- Feedback message
+        data        -- Additional information about service client status
+
+        In case of success return nothing.
+        Otherwise raise an AstakosClientException
+
+        """
+        check_input("send_feedback", self.logger, message=message, data=data)
+        path = copy(API_FEEDBACK)
+        req_body = urllib.urlencode(
+            {'feedback_msg': message, 'feedback_data': data})
+        self._call_astakos(token, path, None, req_body, "POST")
+
+    # ----------------------------------
+    # do a GET to ``API_TOKENS``/<user_token>/``TOKENS_ENDPOINTS``
+    def get_endpoints(self, token, belongs_to=None, marker=None, limit=None):
+        """Request registered endpoints from astakos
+
+        keyword arguments:
+        token       -- user's token (string)
+        belongs_to  -- user's uuid (string)
+        marker      -- return endpoints whose ID is higher than marker's (int)
+        limit       -- maximum number of endpoints to return (int)
+
+        Return a json formatted dictionary containing information
+        about registered endpoints.
+
+        WARNING: This api call encodes the user's token inside the url.
+        It's thoughs security unsafe to use it (both astakosclient and
+        nginx tend to log requested urls).
+        Avoid the use of get_endpoints method and use *** instead.
+
+        """
+        params = {}
+        if belongs_to is not None:
+            params['belongsTo'] = str(belongs_to)
+        if marker is not None:
+            params['marker'] = str(marker)
+        if limit is not None:
+            params['limit'] = str(limit)
+        path = API_TOKENS + "/" + token + "/" + \
+            TOKENS_ENDPOINTS + "?" + urllib.urlencode(params)
+        return self._call_astakos(token, path)
+
+    # ----------------------------------
+    # do a GET to ``API_QUOTAS``
+    def get_quotas(self, token):
+        """Get user's quotas
+
+        Keyword arguments:
+        token   -- user's token (string)
+
+        In case of success return a dict of dicts with user's current quotas.
+        Otherwise raise an AstakosClientException
+
+        """
+        return self._call_astakos(token, copy(API_QUOTAS))
+
+    # ----------------------------------
+    # do a GET to ``API_SERVICE_QUOTAS``
+    def service_get_quotas(self, token, user=None):
+        """Get all quotas for resources associated with the service
+
+        Keyword arguments:
+        token   -- service's token (string)
+        user    -- optionally, the uuid of a specific user
+
+        In case of success return a dict of dicts of dicts with current quotas
+        for all users, or of a specified user, if user argument is set.
+        Otherwise raise an AstakosClientException
+
+        """
+        query = copy(API_SERVICE_QUOTAS)
+        if user is not None:
+            query += "?user=" + user
+        return self._call_astakos(token, query)
+
+    # ----------------------------------
+    # do a POST to ``API_COMMISSIONS``
+    def issue_commission(self, token, request):
+        """Issue a commission
+
+        Keyword arguments:
+        token   -- service's token (string)
+        request -- commision request (dict)
+
+        In case of success return commission's id (int).
+        Otherwise raise an AstakosClientException.
+
+        """
+        req_headers = {'content-type': 'application/json'}
+        req_body = parse_request(request, self.logger)
+        try:
+            response = self._call_astakos(token, copy(API_COMMISSIONS),
+                                          req_headers, req_body, "POST")
+        except AstakosClientException as err:
+            if err.status == 413:
+                raise QuotaLimit(err.message, err.details)
+            else:
+                raise
+
+        if "serial" in response:
+            return response['serial']
+        else:
+            m = "issue_commission_core request returned %s. No serial found" \
+                % response
+            self.logger.error(m)
+            raise AstakosClientException(m)
+
+    def issue_one_commission(self, token, holder, source, provisions,
+                             name="", force=False, auto_accept=False):
+        """Issue one commission (with specific holder and source)
+
+        keyword arguments:
+        token       -- service's token (string)
+        holder      -- user's id (string)
+        source      -- commission's source (ex system) (string)
+        provisions  -- resources with their quantity (dict from string to int)
+        name        -- description of the commission (string)
+        force       -- force this commission (boolean)
+        auto_accept -- auto accept this commission (boolean)
+
+        In case of success return commission's id (int).
+        Otherwise raise an AstakosClientException.
+        (See also issue_commission)
+
+        """
+        check_input("issue_one_commission", self.logger,
+                    holder=holder, source=source,
+                    provisions=provisions)
+
+        request = {}
+        request["force"] = force
+        request["auto_accept"] = auto_accept
+        request["name"] = name
+        try:
+            request["provisions"] = []
+            for resource, quantity in provisions.iteritems():
+                t = {"holder": holder, "source": source,
+                     "resource": resource, "quantity": quantity}
+                request["provisions"].append(t)
+        except Exception as err:
+            self.logger.error(str(err))
+            raise BadValue(str(err))
+
+        return self.issue_commission(token, request)
+
+    # ----------------------------------
+    # do a GET to ``API_COMMISSIONS``
+    def get_pending_commissions(self, token):
+        """Get Pending Commissions
+
+        Keyword arguments:
+        token   -- service's token (string)
+
+        In case of success return a list of pending commissions' ids
+        (list of integers)
+
+        """
+        return self._call_astakos(token, copy(API_COMMISSIONS))
+
+    # ----------------------------------
+    # do a GET to ``API_COMMISSIONS``/<serial>
+    def get_commission_info(self, token, serial):
+        """Get Description of a Commission
+
+        Keyword arguments:
+        token   -- service's token (string)
+        serial  -- commission's id (int)
+
+        In case of success return a dict of dicts containing
+        informations (details) about the requested commission
+
+        """
+        check_input("get_commission_info", self.logger, serial=serial)
+
+        path = API_COMMISSIONS + "/" + str(serial)
+        return self._call_astakos(token, path)
+
+    # ----------------------------------
+    # do a POST to ``API_COMMISSIONS``/<serial>/action"
+    def commission_action(self, token, serial, action):
+        """Perform a commission action
+
+        Keyword arguments:
+        token   -- service's token (string)
+        serial  -- commission's id (int)
+        action  -- action to perform, currently accept/reject (string)
+
+        In case of success return nothing.
+
+        """
+        check_input("commission_action", self.logger,
+                    serial=serial, action=action)
+
+        path = API_COMMISSIONS + "/" + str(serial) + "/action"
+        req_headers = {'content-type': 'application/json'}
+        req_body = parse_request({str(action): ""}, self.logger)
+        self._call_astakos(token, path, req_headers, req_body, "POST")
+
+    def accept_commission(self, token, serial):
+        """Accept a commission (see commission_action)"""
+        self.commission_action(token, serial, "accept")
+
+    def reject_commission(self, token, serial):
+        """Reject a commission (see commission_action)"""
+        self.commission_action(token, serial, "reject")
+
+    # ----------------------------------
+    # do a POST to ``API_COMMISSIONS_ACTION``
+    def resolve_commissions(self, token, accept_serials, reject_serials):
+        """Resolve multiple commissions at once
+
+        Keyword arguments:
+        token           -- service's token (string)
+        accept_serials  -- commissions to accept (list of ints)
+        reject_serials  -- commissions to reject (list of ints)
+
+        In case of success return a dict of dicts describing which
+        commissions accepted, which rejected and which failed to
+        resolved.
+
+        """
+        check_input("resolve_commissions", self.logger,
+                    accept_serials=accept_serials,
+                    reject_serials=reject_serials)
+
+        path = copy(API_COMMISSIONS_ACTION)
+        req_headers = {'content-type': 'application/json'}
+        req_body = parse_request({"accept": accept_serials,
+                                  "reject": reject_serials},
+                                 self.logger)
+        return self._call_astakos(token, path, req_headers, req_body, "POST")
 
 
 # --------------------------------------------------------------------

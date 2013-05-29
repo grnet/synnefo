@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+{% load get_type %}
+<endpoints xmlns="http://docs.openstack.org/identity/api/v2.0">
+    {% for e in endpoints %}
+    <endpoint {%for k,v in e.items %}{% if v %}"{{k}}"="{{v}}" {% endif %}{%endfor%}/>
+    {% endfor %}
+</endpoints>
+<endpoint_links>
+    {% for l in endpoint_links %}
+        <endpoint_link {%for k,v in l.items %}"{{k}}"="{{v}}" {%endfor%}/>
+    {% endfor %}
+</endpoint_links>

@@ -1,7 +1,6 @@
---- A translation in English follows ---
+{% extends "im/email.txt" %}
 
-Η αίτησή σας για το project {{object.name}} έχει γίνει δεκτή.
-
---
-
+  
+{% block content %}
 Your project application request ({{object.name}}) has been approved.
+{% endblock  %}

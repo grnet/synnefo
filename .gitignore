@@ -36,3 +36,4 @@ snf-quotaholder-app/quotaholder_django/version.py
 snf-stats-app/synnefo_stats/version.py
 astakosclient/astakosclient/version.py
 snf-django-lib/snf_django/version.py
+snf-branding/synnefo_branding/version.py

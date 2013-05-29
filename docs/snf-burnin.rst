@@ -91,6 +91,19 @@ For more info
                         Default = all
 
 
+Log files
+=========
+
+In each run, snf-burnin stores log files in the folder defined in the
+--log-foler parameter, under the folder with the timestamp of the
+snf-burnin-run and the image used for it. The name prefixes of the log
+files are:
+
+* details: Showing the complete log of snf-burnin run.
+* error: Showing the testcases that encountered a runtime error.
+* failed: Showing the testcases that encountered a failure.
+
+
 Detailed description of testcases
 =================================
 
@@ -190,3 +203,18 @@ PithosTestCase
 * Upload simple file to newly created container
 * Download file from Pithos and test it is the same with the one uploaded
 * Remove created file and container from Pithos
+
+
+Example scripts
+===============
+
+Under /snf-tools/conf you can find example scripts for automating snf-burnin
+testing using cron.
+
+* **snf-burnin-run.sh** runs snf-burnin with the given parameters, deletes
+  stale instances (servers, networks) from old runs and delete logs older
+  than a week. It aborts if snf-burnin runs for longer than expected.
+
+* **snf-burnin-output.sh** checks for failed snf-burnin tests the last 30
+  minutes in a given log folder. Exit status is 0 if no failures were
+  encountered, else exit status is 1.

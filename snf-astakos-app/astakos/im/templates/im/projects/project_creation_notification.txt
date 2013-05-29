@@ -1,29 +1,7 @@
+{% extends "im/email.txt" %}
 {% load filters %}
-
---- A translation in English follows ---
-
-Έχει δημιουργηθεί το παρακάτω project:
-
-Id:                             {{object.id}}
-Name:                           {{object.name}}
-Issue date:                     {{object.issue_date|date:"d/m/Y"}}
-Start date:                     {{object.start_date|date:"d/m/Y"}}
-End date:                       {{object.end_date|date:"d/m/Y"}}
-Member Join Policy:             {{object.member_join_policy_display}}
-Member Leave Policy:            {{object.member_leave_policy_display}}
-Owner:                          {{object.owner}}
-Applicant:                      {{object.applicant}}
-Maximum participant number:     {{object.limit_on_members_number}}
-Precursor:                      {{object.precursor_application.id}}
-Policies:
-{% for rp in object.projectresourcegrant_set.all %}
-    {{rp}}
-{% endfor %}
-
-Για την ενεργοποίησή του μπορείτε να χρησιμοποιήσετε το command line εργαλείο:
-snf-manage project-control --approve <id>
---
-
+  
+{% block content %}
 The following project has been created:
 
 
@@ -45,3 +23,4 @@ Policies:
 
 For approving it you can use the command line tool:
 snf-manage project-control --approve <id>
+{% endblock content %}

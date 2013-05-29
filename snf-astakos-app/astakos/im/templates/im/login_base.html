@@ -2,9 +2,10 @@
 {% load i18n %}
 
 {% block signup_class %}hidden{% endblock %}
+{% block page.title %}Login{% endblock %}
 
 {% block body.left %}
-  <img class="pic" src="{{ IM_STATIC_URL }}images/porta.png" />
+	<img class="pic" src="{{ IM_STATIC_URL }}images/porta.png" />
 {% endblock body.left %}
     
 {% block body.right %} 
@@ -15,7 +16,9 @@
         <a href="{% url signup %}">{% trans "Sign up" %}</a></span>
       </h2>
       <div class="main-login-method">
-        {% include master_auth_provider.get_login_template %}
+        {% with 1 as is_master %}
+          {% include master_auth_provider.get_login_template %}
+        {% endwith %}
       </div>
       <div class="extralogin">
       {% for provider in auth_providers %}

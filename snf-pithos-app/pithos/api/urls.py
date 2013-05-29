@@ -31,9 +31,16 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from functools import partial
+
 from django.conf.urls.defaults import include, patterns
+from django.views.decorators.csrf import csrf_exempt
+
+from snf_django.lib.api.proxy import proxy
 
 import pithos.api.settings as settings
+
+astakos_proxy = partial(proxy, target=settings.ASTAKOS_URL)
 
 # TODO: This only works when in this order.
 api_urlpatterns = patterns(
@@ -54,6 +61,8 @@ urlpatterns = patterns(
 if settings.PROXY_USER_SERVICES:
     urlpatterns += patterns(
         '',
-        (r'^login/?$', 'pithos.api.delegate.delegate_to_login_service'),
-        (r'^feedback/?$', 'pithos.api.delegate.delegate_to_feedback_service'),
-        (r'^user_catalogs/?$', 'pithos.api.delegate.delegate_to_user_catalogs_service'))
+        (r'^login/?$', csrf_exempt(astakos_proxy)),
+        (r'^feedback/?$', csrf_exempt(astakos_proxy)),
+        (r'^user_catalogs/?$', csrf_exempt(astakos_proxy)),
+        (r'^astakos/api/', csrf_exempt(astakos_proxy))
+    )

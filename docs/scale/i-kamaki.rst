@@ -13,7 +13,6 @@ Synnefo
 :ref:`apache <i-apache>` ||
 :ref:`webproject <i-webproject>` ||
 :ref:`astakos <i-astakos>` ||
-:ref:`qh <i-qh>` ||
 :ref:`cms <i-cms>` ||
 :ref:`pithos <i-pithos>` ||
 :ref:`cyclades <i-cyclades>` ||
@@ -41,7 +40,7 @@ and build the correct config file:
 
     # kamaki config set astakos.url "https://accounts.example.com"
     # kamaki config set compute.url "https://cyclades.example.com/api/v1.1"
-    # kamaki config set image.url "https://cyclades.example.com/plankton"
+    # kamaki config set image.url "https://cyclades.example.com/image"
     # kamaki config set store.enable on
     # kamaki config set store.pithos_extensions on
     # kamaki config set store.url "https://pithos.example.com/v1"
@@ -64,7 +63,7 @@ create a container in pithos, upload it:
    # kamaki store create images
    # kamaki store upload --container images /tmp/debian_base.diskdump debian_base.diskdump
 
-and register it to plankton:
+and register it with Cyclades:
 
 .. code-block:: console
 

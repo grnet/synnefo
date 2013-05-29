@@ -43,7 +43,7 @@ from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.engine.reflection import Inspector
 from sqlalchemy.exc import NoSuchTableError
 
-from dbworker import DBWorker
+from dbworker import DBWorker, ESCAPE_CHAR
 
 from pithos.backends.filter import parse_filters
 
@@ -241,7 +241,7 @@ class Node(DBWorker):
 
         # Use LIKE for comparison to avoid MySQL problems with trailing spaces.
         s = select([self.nodes.c.node], self.nodes.c.path.like(
-            self.escape_like(path), escape='\\'))
+            self.escape_like(path), escape=ESCAPE_CHAR))
         r = self.conn.execute(s)
         row = r.fetchone()
         r.close()
@@ -449,11 +449,43 @@ class Node(DBWorker):
         self.conn.execute(s).close()
         return True
 
-    def node_accounts(self):
-        s = select([self.nodes.c.path])
-        s = s.where(and_(self.nodes.c.node != 0, self.nodes.c.parent == 0))
-        account_nodes = self.conn.execute(s).fetchall()
-        return sorted(i[0] for i in account_nodes)
+    def node_accounts(self, accounts=()):
+        s = select([self.nodes.c.path, self.nodes.c.node])
+        s = s.where(and_(self.nodes.c.node != 0,
+                         self.nodes.c.parent == 0))
+        if accounts:
+            s = s.where(self.nodes.c.path.in_(accounts))
+        r = self.conn.execute(s)
+        rows = r.fetchall()
+        r.close()
+        return rows
+
+    def node_account_quotas(self):
+        s = select([self.nodes.c.path, self.policy.c.value])
+        s = s.where(and_(self.nodes.c.node != 0,
+                         self.nodes.c.parent == 0))
+        s = s.where(self.nodes.c.node == self.policy.c.node)
+        s = s.where(self.policy.c.key == 'quota')
+        r = self.conn.execute(s)
+        rows = r.fetchall()
+        r.close()
+        return dict(rows)
+
+    def node_account_usage(self, account_node, cluster):
+        select_children = select(
+            [self.nodes.c.node]).where(self.nodes.c.parent == account_node)
+        select_descendants = select([self.nodes.c.node]).where(
+            or_(self.nodes.c.parent.in_(select_children),
+                self.nodes.c.node.in_(select_children)))
+        s = select([func.sum(self.versions.c.size)])
+        s = s.group_by(self.versions.c.cluster)
+        s = s.where(self.nodes.c.node == self.versions.c.node)
+        s = s.where(self.nodes.c.node.in_(select_descendants))
+        s = s.where(self.versions.c.cluster == cluster)
+        r = self.conn.execute(s)
+        usage = r.fetchone()[0]
+        r.close()
+        return usage
 
     def policy_get(self, node):
         s = select([self.policy.c.key, self.policy.c.value],
@@ -621,7 +653,7 @@ class Node(DBWorker):
             c1 = select([self.nodes.c.serial],
                         self.nodes.c.node == v.c.node)
         c2 = select([self.nodes.c.node], self.nodes.c.path.like(
-            self.escape_like(path) + '%', escape='\\'))
+            self.escape_like(path) + '%', escape=ESCAPE_CHAR))
         s = s.where(and_(v.c.serial == c1,
                          v.c.cluster != except_cluster,
                          v.c.node.in_(c2)))
@@ -908,7 +940,11 @@ class Node(DBWorker):
         for path, match in pathq:
             if match == MATCH_PREFIX:
                 conj.append(
-                    n.c.path.like(self.escape_like(path) + '%', escape='\\'))
+                    n.c.path.like(
+                        self.escape_like(path) + '%',
+                        escape=ESCAPE_CHAR
+                    )
+                )
             elif match == MATCH_EXACT:
                 conj.append(n.c.path == path)
         if conj:
@@ -1003,7 +1039,11 @@ class Node(DBWorker):
         for path, match in pathq:
             if match == MATCH_PREFIX:
                 conj.append(
-                    n.c.path.like(self.escape_like(path) + '%', escape='\\'))
+                    n.c.path.like(
+                        self.escape_like(path) + '%',
+                        escape=ESCAPE_CHAR
+                    )
+                )
             elif match == MATCH_EXACT:
                 conj.append(n.c.path == path)
         if conj:

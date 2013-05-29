@@ -55,11 +55,18 @@ $(document).ready(function(){
             $.each(data, function(i, el){
             var sli = $("<li>");
             var slink = $("<a>");
-            if (el.icon) {
-                slink.append($('<img src="'+cssloc+el.icon+'"/>'));
+            if (!el.cloudbar) { el.cloudbar = {} }
+            var title = el.cloudbar.name || el.verbose_name || el.name;
+            if (!el.cloudbar.show) { return }
+            if (el.cloudbar.icon) {
+                var iconloc = el.cloudbar.icon;
+                if (el.cloudbar.icon.substring(0, 4) != 'http') {
+                  iconloc = cssloc + el.cloudbar.icon;
+                }
+                slink.append($('<img alt="'+title+'" src="'+iconloc+'"/>'));
                 slink.addClass("with-icon");
             } else {
-                slink.text(el.name);
+                slink.html(title);
             }
             slink.attr('href', el.url);
             slink.attr('title', el.name);

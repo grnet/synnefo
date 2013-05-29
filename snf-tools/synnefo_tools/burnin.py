@@ -288,7 +288,7 @@ class ImagesTestCase(unittest.TestCase):
         keys = frozenset(["osfamily", "root_partition"])
         details = self.client.list_images(detail=True)
         for i in details:
-            self.assertTrue(keys.issubset(i["metadata"]["values"].keys()))
+            self.assertTrue(keys.issubset(i["metadata"].keys()))
 
     def test_006_download_image(self):
         """Download image from pithos+"""
@@ -503,7 +503,7 @@ class SpawnServerTestCase(unittest.TestCase):
     def _get_ipv4(self, server):
         """Get the public IPv4 of a server from the detailed server info"""
 
-        nics = server["attachments"]["values"]
+        nics = server["attachments"]
 
         for nic in nics:
             net_id = nic["network_id"]
@@ -517,7 +517,7 @@ class SpawnServerTestCase(unittest.TestCase):
     def _get_ipv6(self, server):
         """Get the public IPv6 of a server from the detailed server info"""
 
-        nics = server["attachments"]["values"]
+        nics = server["attachments"]
 
         for nic in nics:
             net_id = nic["network_id"]
@@ -675,8 +675,8 @@ class SpawnServerTestCase(unittest.TestCase):
         log.info("Server id: " + str(server["id"]))
         log.info("Server password: " + server["adminPass"])
         self.assertEqual(server["name"], self.servername)
-        self.assertEqual(server["flavorRef"], self.flavorid)
-        self.assertEqual(server["imageRef"], self.imageid)
+        self.assertEqual(server["flavor"], self.flavorid)
+        self.assertEqual(server["image"], self.imageid)
         self.assertEqual(server["status"], "BUILD")
 
         # Update class attributes to reflect data on building server
@@ -699,8 +699,8 @@ class SpawnServerTestCase(unittest.TestCase):
 
         server = servers[0]
         self.assertEqual(server["name"], self.servername)
-        self.assertEqual(server["flavorRef"], self.flavorid)
-        self.assertEqual(server["imageRef"], self.imageid)
+        self.assertEqual(server["flavor"], self.flavorid)
+        self.assertEqual(server["image"], self.imageid)
         self.assertEqual(server["status"], "BUILD")
 
     def test_002b_server_is_building_in_details(self):
@@ -710,8 +710,8 @@ class SpawnServerTestCase(unittest.TestCase):
 
         server = self.client.get_server_details(self.serverid)
         self.assertEqual(server["name"], self.servername)
-        self.assertEqual(server["flavorRef"], self.flavorid)
-        self.assertEqual(server["imageRef"], self.imageid)
+        self.assertEqual(server["flavor"], self.flavorid)
+        self.assertEqual(server["image"], self.imageid)
         self.assertEqual(server["status"], "BUILD")
 
     def test_002c_set_server_metadata(self):
@@ -719,8 +719,8 @@ class SpawnServerTestCase(unittest.TestCase):
         log.info("Creating server metadata")
 
         image = self.client.get_image_details(self.imageid)
-        os_value = image["metadata"]["values"]["os"]
-        users = image["metadata"]["values"].get("users", None)
+        os_value = image["metadata"]["os"]
+        users = image["metadata"].get("users", None)
         self.client.update_server_metadata(self.serverid, OS=os_value)
 
         userlist = users.split()
@@ -995,7 +995,7 @@ class NetworkTestCase(unittest.TestCase):
     def _get_ipv4(self, server):
         """Get the public IPv4 of a server from the detailed server info"""
 
-        nics = server["attachments"]["values"]
+        nics = server["attachments"]
 
         for nic in nics:
             net_id = nic["network_id"]
@@ -1035,8 +1035,8 @@ class NetworkTestCase(unittest.TestCase):
                                             self.imageid, personality=None)
 
         self.assertEqual(serverA["name"], self.servername)
-        self.assertEqual(serverA["flavorRef"], self.flavorid)
-        self.assertEqual(serverA["imageRef"], self.imageid)
+        self.assertEqual(serverA["flavor"], self.flavorid)
+        self.assertEqual(serverA["image"], self.imageid)
         self.assertEqual(serverA["status"], "BUILD")
 
         # Update class attributes to reflect data on building server
@@ -1079,8 +1079,8 @@ class NetworkTestCase(unittest.TestCase):
                                             self.imageid, personality=None)
 
         self.assertEqual(serverB["name"], self.servername)
-        self.assertEqual(serverB["flavorRef"], self.flavorid)
-        self.assertEqual(serverB["imageRef"], self.imageid)
+        self.assertEqual(serverB["flavor"], self.flavorid)
+        self.assertEqual(serverB["image"], self.imageid)
         self.assertEqual(serverB["status"], "BUILD")
 
         # Update class attributes to reflect data on building server
@@ -1168,10 +1168,10 @@ class NetworkTestCase(unittest.TestCase):
 
             netsA = [x['network_id']
                      for x in self.client.get_server_details(
-                         self.serverid['A'])['attachments']['values']]
+                         self.serverid['A'])['attachments']]
             netsB = [x['network_id']
                      for x in self.client.get_server_details(
-                         self.serverid['B'])['attachments']['values']]
+                         self.serverid['B'])['attachments']]
 
             if (self.networkid in netsA) and (self.networkid in netsB):
                 conn_exists = True
@@ -1186,9 +1186,9 @@ class NetworkTestCase(unittest.TestCase):
         cls.priv_ip = dict()
 
         nicsA = self.client.get_server_details(
-            self.serverid['A'])['attachments']['values']
+            self.serverid['A'])['attachments']
         nicsB = self.client.get_server_details(
-            self.serverid['B'])['attachments']['values']
+            self.serverid['B'])['attachments']
 
         if conn_exists:
             for nic in nicsA:
@@ -1339,9 +1339,9 @@ class NetworkTestCase(unittest.TestCase):
 
         server = self.client.get_server_details(self.serverid['A'])
         image = self.client.get_image_details(self.imageid)
-        os_value = image['metadata']['values']['os']
+        os_value = image['metadata']['os']
 
-        users = image["metadata"]["values"].get("users", None)
+        users = image["metadata"].get("users", None)
         userlist = users.split()
 
         if "root" in userlist:
@@ -1373,9 +1373,9 @@ class NetworkTestCase(unittest.TestCase):
 
         server = self.client.get_server_details(self.serverid['B'])
         image = self.client.get_image_details(self.imageid)
-        os_value = image['metadata']['values']['os']
+        os_value = image['metadata']['os']
 
-        users = image["metadata"]["values"].get("users", None)
+        users = image["metadata"].get("users", None)
         userlist = users.split()
 
         if "root" in userlist:
@@ -1407,10 +1407,10 @@ class NetworkTestCase(unittest.TestCase):
 
         server = self.client.get_server_details(self.serverid['A'])
         image = self.client.get_image_details(self.imageid)
-        os_value = image['metadata']['values']['os']
+        os_value = image['metadata']['os']
         hostip = self._get_ipv4(server)
 
-        users = image["metadata"]["values"].get("users", None)
+        users = image["metadata"].get("users", None)
         userlist = users.split()
 
         if "root" in userlist:
@@ -1440,15 +1440,15 @@ class NetworkTestCase(unittest.TestCase):
         log.info("Disconnecting servers from private network")
 
         prev_state = self.client.get_network_details(self.networkid)
-        prev_nics = prev_state['attachments']['values']
+        prev_nics = prev_state['attachments']
         #prev_conn = len(prev_nics)
 
         nicsA = [x['id']
                  for x in self.client.get_server_details(
-                     self.serverid['A'])['attachments']['values']]
+                     self.serverid['A'])['attachments']]
         nicsB = [x['id']
                  for x in self.client.get_server_details(
-                     self.serverid['B'])['attachments']['values']]
+                     self.serverid['B'])['attachments']]
 
         for nic in prev_nics:
             if nic in nicsA:
@@ -1462,13 +1462,13 @@ class NetworkTestCase(unittest.TestCase):
         while True:
             netsA = [x['network_id']
                      for x in self.client.get_server_details(
-                         self.serverid['A'])['attachments']['values']]
+                         self.serverid['A'])['attachments']]
             netsB = [x['network_id']
                      for x in self.client.get_server_details(
-                         self.serverid['B'])['attachments']['values']]
+                         self.serverid['B'])['attachments']]
 
             #connected = (self.client.get_network_details(self.networkid))
-            #connections = connected['attachments']['values']
+            #connections = connected['attachments']
             if (self.networkid not in netsA) and (self.networkid not in netsB):
                 conn_exists = False
                 break

@@ -13,7 +13,6 @@ Synnefo
 :ref:`apache <i-apache>` ||
 :ref:`webproject <i-webproject>` ||
 :ref:`astakos <i-astakos>` ||
-:ref:`qh <i-qh>` ||
 :ref:`cms <i-cms>` ||
 pithos ||
 :ref:`cyclades <i-cyclades>` ||
@@ -58,9 +57,6 @@ In `/etc/synnefo/pithos.conf` add:
 .. code-block:: console
 
     ASTAKOS_URL = 'https:/accounts.example.com/'
-    PITHOS_USER_CATALOG_URL = 'https://accounts.example.com/user_catalogs'
-    PITHOS_USER_FEEDBACK_URL = 'https://accounts.example.com/feedback'
-    PITHOS_USER_LOGIN_URL = 'https://accounts.example.com/login'
 
     PITHOS_BACKEND_DB_CONNECTION = 'postgresql://synnefo:example_passw0rd@db.example.com:5432/snf_pithos'
     PITHOS_BACKEND_BLOCK_PATH = '/srv/pithos/data'
@@ -68,12 +64,8 @@ In `/etc/synnefo/pithos.conf` add:
     PITHOS_UPDATE_MD5 = False
     PITHOS_SERVICE_TOKEN = 'XXXXXXXXXXX'
 
-    PITHOS_QUOTAHOLDER_TOKEN = '1234'
-    PITHOS_QUOTAHOLDER_URL = 'https://qh.example.com/quotaholder/v'
-
     # Set False if astakos & pithos are on the same node
     PITHOS_PROXY_USER_SERVICES = True
-    PITHOS_USE_QUOTAHOLDER = True
 
 
 Install pithos web UI with:

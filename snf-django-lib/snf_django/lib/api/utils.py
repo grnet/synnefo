@@ -96,10 +96,12 @@ def get_request_dict(request):
     """
     data = request.raw_post_data
     content_type = request.META.get("CONTENT_TYPE")
+    if content_type is None:
+        faults.BadRequest("Missing Content-Type header field")
     if content_type.startswith("application/json"):
         try:
             return json.loads(data)
         except ValueError:
             raise faults.BadRequest("Invalid JSON data")
     else:
-        raise faults.BadRequest("Unsupported Content-type: '%s'", content_type)
+        raise faults.BadRequest("Unsupported Content-type: '%s'" % content_type)

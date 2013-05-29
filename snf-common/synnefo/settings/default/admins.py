@@ -10,11 +10,15 @@ ADMINS = (
 )
 
 # List of people to receive user feedback notifications.
-HELPDESK = ADMINS
+HELPDESK = (
+    # ('Your Name', 'your_email@domain.com'),
+)
 
 # A list of people to receive email notifications on some application events
 # (e.g. account creation/activation).
-MANAGERS = ADMINS
+MANAGERS = (
+    # ('Your Name', 'your_email@domain.com'),
+)
 
 # Email configuration
 EMAIL_HOST = "127.0.0.1"
@@ -24,7 +28,7 @@ EMAIL_SUBJECT_PREFIX = "[email-subject-prefix] "
 DEFAULT_CHARSET = 'utf-8'
 
 # Address to use for outgoing emails
-DEFAULT_FROM_EMAIL = "~okeanos <no-reply@grnet.gr>"
+DEFAULT_FROM_EMAIL = "synnefo <no-reply@synnefo.org>"
 
 # Email where users can contact for support
 CONTACT_EMAIL = "support@synnefo.org"

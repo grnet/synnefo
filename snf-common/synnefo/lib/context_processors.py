@@ -1,6 +1,7 @@
 from django.utils.safestring import mark_safe
 from django.conf import settings
 
+
 def cloudbar(request):
     """
     Django context processor that applies all cloudbar settings in response
@@ -85,4 +86,3 @@ def cloudbar(request):
         'CLOUDBAR_MENU_URL': CB_MENU_URL,
         'CLOUDBAR_CODE': CB_CODE
     }
-

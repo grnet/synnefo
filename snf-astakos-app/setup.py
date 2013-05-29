@@ -49,7 +49,6 @@ from astakos.version import __version__
 
 # Package info
 VERSION = __version__
-README = open(os.path.join(HERE, 'README')).read()
 SHORT_DESCRIPTION = 'Synnefo Identity Management component'
 
 PACKAGES_ROOT = '.'
@@ -76,6 +75,7 @@ INSTALL_REQUIRES = [
     'requests',
     'inflect',
     'snf-django-lib',
+    'snf-branding',
 ]
 
 EXTRAS_REQUIRES = {
@@ -183,7 +183,6 @@ setup(
     license='BSD',
     url='http://www.synnefo.org/',
     description=SHORT_DESCRIPTION,
-    long_description=README,
     classifiers=CLASSIFIERS,
 
     author='Synnefo development team',
@@ -202,12 +201,15 @@ setup(
 
     entry_points={
         'synnefo': [
-            'default_settings = astakos.im.synnefo_settings',
-            'web_apps = astakos.im.synnefo_settings:installed_apps',
-            'web_middleware = astakos.im.synnefo_settings:middlware_classes',
-            'web_context_processors = astakos.im.synnefo_settings:context_processors',
+            'default_settings = astakos.synnefo_settings',
+            'web_apps = astakos.synnefo_settings:installed_apps',
+            'web_middleware = astakos.synnefo_settings:middlware_classes',
+            'web_context_processors = astakos.synnefo_settings:context_processors',
             'urls = astakos.urls:urlpatterns',
-            'web_static = astakos.im.synnefo_settings:static_files'
-        ]
+            'web_static = astakos.synnefo_settings:static_files'
+        ],
+        'console_scripts': [
+            'astakos-migrate-0.14 = astakos.scripts.upgrade.migrate_014:main'
+        ],
     }
 )

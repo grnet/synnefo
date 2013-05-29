@@ -41,6 +41,9 @@ from synnefo.management.common import check_backend_credentials
 from synnefo.webproject.management.utils import pprint_table
 
 
+HYPERVISORS = [h[0] for h in Backend.HYPERVISORS]
+
+
 class Command(BaseCommand):
     can_import_settings = True
 
@@ -54,10 +57,12 @@ class Command(BaseCommand):
             '--no-check', action='store_false',
             dest='check', default=True,
             help="Do not perform credentials check and resources update"),
-        make_option(
-            '--no-init', action='store_false',
-            dest='init', default=True,
-            help="Do not perform initialization of the Backend Model")
+       make_option('--hypervisor',
+            dest='hypervisor',
+            default=None,
+            choices=HYPERVISORS,
+            metavar="|".join(HYPERVISORS),
+            help="The hypervisor that the Ganeti backend uses"),
     )
 
     def handle(self, *args, **options):
@@ -68,6 +73,7 @@ class Command(BaseCommand):
         port = options['port']
         username = options['username']
         password = options['password']
+        hypervisor = options["hypervisor"]
 
         if not (clustername and username and password):
             raise CommandError("Clustername, user and pass must be supplied")
@@ -76,13 +82,17 @@ class Command(BaseCommand):
         if options['check']:
             check_backend_credentials(clustername, port, username, password)
 
+        kw = {"clustername": clustername,
+              "port": port,
+              "username": username,
+              "password": password,
+              "drained": True}
+
+        if hypervisor:
+            kw["hypervisor"] = hypervisor
         # Create the new backend in database
         try:
-            backend = Backend.objects.create(clustername=clustername,
-                                             port=port,
-                                             username=username,
-                                             password=password,
-                                             drained=True)
+            backend = Backend.objects.create(**kw)
         except IntegrityError as e:
             raise CommandError("Cannot create backend: %s\n" % e)
 
@@ -100,36 +110,3 @@ class Command(BaseCommand):
         pprint_table(self.stdout, table, attr)
 
         update_resources(backend, resources)
-
-        if not options['init']:
-            return
-
-        networks = Network.objects.filter(deleted=False, public=False)
-        if not networks:
-            return
-
-        self.stdout.write('\nCreating the follow networks:\n')
-        headers = ('Name', 'Subnet', 'Gateway', 'Mac Prefix', 'Public')
-        table = []
-
-        for net in networks:
-            table.append((net.backend_id, str(net.subnet), str(net.gateway),
-                         str(net.mac_prefix), str(net.public)))
-        pprint_table(self.stdout, table, headers)
-
-        for net in networks:
-            net.create_backend_network(backend)
-            result = create_network_synced(net, backend)
-            if result[0] != "success":
-                self.stdout.write('\nError Creating Network %s: %s\n' %
-                                  (net.backend_id, result[1]))
-            else:
-                self.stdout.write('Successfully created Network: %s\n' %
-                                  net.backend_id)
-            result = connect_network_synced(network=net, backend=backend)
-            if result[0] != "success":
-                self.stdout.write('\nError Connecting Network %s: %s\n' %
-                                  (net.backend_id, result[1]))
-            else:
-                self.stdout.write('Successfully connected Network: %s\n' %
-                                  net.backend_id)

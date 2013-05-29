@@ -36,10 +36,9 @@ import socket
 
 from smtplib import SMTPException
 
-from django.conf import settings
 from django.core.mail import send_mail, get_connection
 from django.utils.translation import ugettext as _
-from django.template.loader import render_to_string
+from synnefo_branding.utils import render_to_string
 
 import astakos.im.messages as astakos_messages
 
@@ -61,7 +60,7 @@ class Notification(object):
         self.recipients = recipients
         self.subject = subject
         self.message = message or render_to_string(template, dictionary)
-    
+
     def send(self):
         pass
 
@@ -82,3 +81,4 @@ class NotificationError(Exception):
     def __init__(self, nofication):
         self.message = _(astakos_messages.DETAILED_NOTIFICATION_SEND_ERR) % nofication.__dict__
         super(NotificationError, self).__init__()
+

@@ -13,7 +13,8 @@ have the following services running:
     * Identity Management (Astakos)
     * Object Storage Service (Pithos+)
     * Compute Service (Cyclades)
-    * Image Registry Service (Plankton)
+    * Image Service (part of Cyclades)
+    * Network Service (part of Cyclades)
 
 and a single unified Web UI to manage them all.
 
@@ -27,12 +28,12 @@ guide and just stop after the "Testing of Pithos+" section.
 Installation of Synnefo / Introduction
 ======================================
 
-We will install the services with the above list's order. Cyclades and Plankton
-will be installed in a single step (at the end), because at the moment they are
-contained in the same software component. Furthermore, we will install all
-services in the first physical node, except Pithos+ which will be installed in
-the second, due to a conflict between the snf-pithos-app and snf-cyclades-app
-component (scheduled to be fixed in the next version).
+We will install the services with the above list's order. The last three
+services will be installed in a single step (at the end), because at the moment
+they are contained in the same software component (Cyclades). Furthermore, we
+will install all services in the first physical node, except Pithos+ which will
+be installed in the second, due to a conflict between the snf-pithos-app and
+snf-cyclades-app component (scheduled to be fixed in the next version).
 
 For the rest of the documentation we will refer to the first physical node as
 "node1" and the second as "node2". We will also assume that their domain names
@@ -53,7 +54,7 @@ General Prerequisites
 =====================
 
 These are the general synnefo prerequisites, that you need on node1 and node2
-and are related to all the services (Astakos, Pithos+, Cyclades, Plankton).
+and are related to all the services (Astakos, Pithos+, Cyclades).
 
 To be able to download all synnefo components you need to add the following
 lines in your ``/etc/apt/sources.list`` file:
@@ -631,20 +632,6 @@ method, read the relative :ref:`section <shibboleth-auth>`.
         MIDDLEWARE_CLASSES.remove('django.middleware.csrf.CsrfViewMiddleware')
         TEMPLATE_CONTEXT_PROCESSORS.remove('django.core.context_processors.csrf')
 
-Since version 0.13 you need to configure some basic settings for the new *Quota*
-feature.
-
-Specifically:
-
-Edit ``/etc/synnefo/20-snf-astakos-app-settings.conf``:
-
-.. code-block:: console
-
-    QUOTAHOLDER_URL = 'https://node1.example.com/quotaholder/v'
-    QUOTAHOLDER_TOKEN = 'aExampleTokenJbFm12w'
-    ASTAKOS_QUOTAHOLDER_TOKEN = 'aExampleTokenJbFm12w'
-    ASTAKOS_QUOTAHOLDER_URL = 'https://node1.example.com/quotaholder/v'
-
 Enable Pooling
 --------------
 
@@ -854,13 +841,6 @@ this options:
 
 
    PITHOS_SERVICE_TOKEN = 'pithos_service_token22w=='
-   PITHOS_USER_CATALOG_URL = 'https://node1.example.com/user_catalogs'
-   PITHOS_USER_FEEDBACK_URL = 'https://node1.example.com/feedback'
-   PITHOS_USER_LOGIN_URL = 'https://node1.example.com/login'
-
-   PITHOS_QUOTAHOLDER_URL = 'https://node1.example.com/quotaholder/v'
-   PITHOS_QUOTAHOLDER_TOKEN = 'aExampleTokenJbFm12w'
-   PITHOS_USE_QUOTAHOLDER = True
 
    # Set to False if astakos & pithos are on the same host
    #PITHOS_PROXY_USER_SERVICES = True
@@ -1056,13 +1036,13 @@ If you would like to do more, such as:
 please continue with the rest of the guide.
 
 
-Cyclades (and Plankton) Prerequisites
-=====================================
+Cyclades Prerequisites
+======================
 
-Before proceeding with the Cyclades (and Plankton) installation, make sure you
-have successfully set up Astakos and Pithos+ first, because Cyclades depends
-on them. If you don't have a working Astakos and Pithos+ installation yet,
-please return to the :ref:`top <quick-install-admin-guide>` of this guide.
+Before proceeding with the Cyclades installation, make sure you have
+successfully set up Astakos and Pithos+ first, because Cyclades depends on
+them. If you don't have a working Astakos and Pithos+ installation yet, please
+return to the :ref:`top <quick-install-admin-guide>` of this guide.
 
 Besides Astakos and Pithos+, you will also need a number of additional working
 prerequisites, before you start the Cyclades installation.
@@ -1657,27 +1637,26 @@ and then putting the output in ``/var/lib/ganeti/rapi/users`` as follows:
 More about Ganeti's RAPI users `here.
 <http://docs.ganeti.org/ganeti/2.5/html/rapi.html#introduction>`_
 
-You have now finished with all needed Prerequisites for Cyclades (and
-Plankton). Let's move on to the actual Cyclades installation.
+You have now finished with all needed Prerequisites for Cyclades. Let's move on
+to the actual Cyclades installation.
 
 
-Installation of Cyclades (and Plankton) on node1
-================================================
+Installation of Cyclades on node1
+=================================
 
 This section describes the installation of Cyclades. Cyclades is Synnefo's
-Compute service. Plankton (the Image Registry service) will get installed
-automatically along with Cyclades, because it is contained in the same Synnefo
-component right now.
+Compute service. The Image Service will get installed automatically along with
+Cyclades, because it is contained in the same Synnefo component.
 
-We will install Cyclades (and Plankton) on node1. To do so, we install the
-corresponding package by running on node1:
+We will install Cyclades on node1. To do so, we install the corresponding
+package by running on node1:
 
 .. code-block:: console
 
    # apt-get install snf-cyclades-app memcached python-memcache
 
-If all packages install successfully, then Cyclades and Plankton are installed
-and we proceed with their configuration.
+If all packages install successfully, then Cyclades are installed and we
+proceed with their configuration.
 
 Since version 0.13, Synnefo uses the VMAPI in order to prevent sensitive data
 needed by 'snf-image' to be stored in Ganeti configuration (e.g. VM password).
@@ -1686,8 +1665,8 @@ exporting it via VMAPI. The cache entries are invalidated after the first
 request. Synnefo uses `memcached <http://memcached.org/>`_ as a
 `Django <https://www.djangoproject.com/>`_ cache backend.
 
-Configuration of Cyclades (and Plankton)
-========================================
+Configuration of Cyclades
+=========================
 
 Conf files
 ----------
@@ -1754,7 +1733,7 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-plankton.conf``:
    BACKEND_DB_CONNECTION = 'postgresql://synnefo:example_passw0rd@node1.example.com:5432/snf_pithos'
    BACKEND_BLOCK_PATH = '/srv/pithos/data/'
 
-In this file we configure the Plankton Service. ``BACKEND_DB_CONNECTION``
+In this file we configure the Image Service. ``BACKEND_DB_CONNECTION``
 denotes the Pithos+ database (where the Image files are stored). So we set that
 to point to our Pithos+ database. ``BACKEND_BLOCK_PATH`` denotes the actual
 Pithos+ data location.
@@ -1782,14 +1761,6 @@ if they are not logged in. We point that to Astakos.
 The ``UI_LOGOUT_URL`` option tells the Cyclades Web UI where to redirect the
 user when he/she logs out. We point that to Astakos, too.
 
-Edit ``/etc/synnefo/20-snf-cyclades-app-quotas.conf``:
-
-.. code-block:: console
-
-   CYCLADES_USE_QUOTAHOLDER = True
-   CYCLADES_QUOTAHOLDER_URL = 'https://node1.example.com/quotaholder/v'
-   CYCLADES_QUOTAHOLDER_TOKEN = 'aExampleTokenJbFm12w'
-
 Edit ``/etc/synnefo/20-snf-cyclades-app-vmapi.conf``:
 
 .. code-block:: console
@@ -1803,7 +1774,7 @@ Edit ``/etc/default/vncauthproxy``:
 
    CHUID="nobody:www-data"
 
-We have now finished with the basic Cyclades and Plankton configuration.
+We have now finished with the basic Cyclades configuration.
 
 Database Initialization
 -----------------------
@@ -2012,19 +1983,19 @@ Apply Quotas
 .. code-block:: console
 
    node1 # snf-manage astakos-init --load-service-resources
-   node1 # snf-manage astakos-quota --verify
-   node1 # snf-manage astakos-quota --sync
+   node1 # snf-manage quota --verify
+   node1 # snf-manage quota --sync
    node2 # snf-manage pithos-reset-usage
-   node1 # snf-manage cyclades-reset-usage
+   node1 # snf-manage reconcile-resources-cyclades --fix
 
 If all the above return successfully, then you have finished with the Cyclades
-and Plankton installation and setup.
+installation and setup.
 
 Let's test our installation now.
 
 
-Testing of Cyclades (and Plankton)
-==================================
+Testing of Cyclades
+===================
 
 Cyclades Web UI
 ---------------
@@ -2048,13 +2019,13 @@ register our first Image file.
 Cyclades Images
 ---------------
 
-To test our Cyclades (and Plankton) installation, we will use an Image stored on
-Pithos+ to spawn a new VM from the Cyclades interface. We will describe all
-steps, even though you may already have uploaded an Image on Pithos+ from a
-:ref:`previous <snf-image-images>` section:
+To test our Cyclades installation, we will use an Image stored on Pithos+ to
+spawn a new VM from the Cyclades interface. We will describe all steps, even
+though you may already have uploaded an Image on Pithos+ from a :ref:`previous
+<snf-image-images>` section:
 
  * Upload an Image file to Pithos+
- * Register that Image file to Plankton
+ * Register that Image file to Cyclades
  * Spawn a new VM from that Image from the Cyclades Web UI
 
 We will use the `kamaki <http://www.synnefo.org/docs/kamaki/latest/index.html>`_
@@ -2084,7 +2055,7 @@ installation. We do this by running:
 
    $ kamaki config set user.url "https://node1.example.com"
    $ kamaki config set compute.url "https://node1.example.com/api/v1.1"
-   $ kamaki config set image.url "https://node1.example.com/plankton"
+   $ kamaki config set image.url "https://node1.example.com/image"
    $ kamaki config set file.url "https://node2.example.com/v1"
    $ kamaki config set token USER_TOKEN
 
@@ -2150,14 +2121,14 @@ Check if the file has been uploaded, by listing the container contents:
 
 Alternatively check if the new container and file appear on the Pithos+ Web UI.
 
-Register an existing Image file to Plankton
+Register an existing Image file to Cyclades
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For the purposes of the following example, we assume that the user UUID is
 ``u53r-un1qu3-1d``.
 
 Once the Image file has been successfully uploaded on Pithos+ then we register
-it to Plankton (so that it becomes visible to Cyclades), by running:
+it to Cyclades, by running:
 
 .. code-block:: console
 
@@ -2172,7 +2143,7 @@ it to Plankton (so that it becomes visible to Cyclades), by running:
 
 This command registers the Pithos+ file
 ``pithos://u53r-un1qu3-1d/images/debian_base-6.0-7-x86_64.diskdump`` as an
-Image in Plankton. This Image will be public (``--public``), so all users will
+Image in Cyclades. This Image will be public (``--public``), so all users will
 be able to spawn VMs from it and is of type ``diskdump``. The first two
 properties (``OSFAMILY`` and ``ROOT_PARTITION``) are mandatory. All the rest
 properties are optional, but recommended, so that the Images appear nicely on
@@ -2181,7 +2152,7 @@ the Cyclades Web UI. ``Debian Base`` will appear as the name of this Image. The
 inside the ``20-snf-cyclades-app-ui.conf`` configuration file.
 
 ``OSFAMILY`` and ``ROOT_PARTITION`` are mandatory because they will be passed
-from Plankton to Cyclades and then to Ganeti and `snf-image` (also see
+from Cyclades to Ganeti and then `snf-image` (also see
 :ref:`previous section <ganeti-with-pithos-images>`). All other properties are
 used to show information on the Cyclades UI.
 

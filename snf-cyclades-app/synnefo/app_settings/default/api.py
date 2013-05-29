@@ -64,34 +64,20 @@ DEFAULT_FIREWALL_PROFILE = 'DISABLED'
 APPEND_SLASH = False
 
 # Fixed mapping of user VMs to a specific backend.
-# e.g. BACKEND_PER_USER = {'example@okeanos.grnet.gr': 2}
+# e.g. BACKEND_PER_USER = {'example@synnefo.org': 2}
 BACKEND_PER_USER = {}
 
 # List of backend IDs used *only* for archipelago.
 ARCHIPELAGO_BACKENDS = []
 
-# Quota
-# Maximum number of VMs a user is allowed to have.
-MAX_VMS_PER_USER = 3
-
-# Override maximum number of VMs for specific users.
-# e.g. VMS_USER_QUOTA = {'user1@grnet.gr': 5, 'user2@grnet.gr': 10}
-VMS_USER_QUOTA = {}
-
-# Maximum number of networks a user is allowed to have.
-MAX_NETWORKS_PER_USER = 5
-
-# Override maximum number of private networks for specific users.
-# e.g. NETWORKS_USER_QUOTA = {'user1@grnet.gr': 5, 'user2@grnet.gr': 10}
-NETWORKS_USER_QUOTA = {}
 
 # URL templates for the stat graphs.
 # The API implementation replaces '%s' with the encrypted backend id.
 # FIXME: For now we do not encrypt the backend id.
-CPU_BAR_GRAPH_URL = 'http://stats.okeanos.grnet.gr/%s/cpu-bar.png'
-CPU_TIMESERIES_GRAPH_URL = 'http://stats.okeanos.grnet.gr/%s/cpu-ts.png'
-NET_BAR_GRAPH_URL = 'http://stats.okeanos.grnet.gr/%s/net-bar.png'
-NET_TIMESERIES_GRAPH_URL = 'http://stats.okeanos.grnet.gr/%s/net-ts.png'
+CPU_BAR_GRAPH_URL = 'http://stats.synnefo.org/%s/cpu-bar.png'
+CPU_TIMESERIES_GRAPH_URL = 'http://stats.synnefo.org/%s/cpu-ts.png'
+NET_BAR_GRAPH_URL = 'http://stats.synnefo.org/%s/net-bar.png'
+NET_TIMESERIES_GRAPH_URL = 'http://stats.synnefo.org/%s/net-ts.png'
 
 # Recommended refresh period for server stats
 STATS_REFRESH_PERIOD = 60
@@ -110,27 +96,25 @@ GANETI_DISK_TEMPLATES = ('blockdev', 'diskless', 'drbd', 'file', 'plain',
 DEFAULT_GANETI_DISK_TEMPLATE = 'drbd'
 
 # The URL of an astakos instance that will be used for user authentication
-ASTAKOS_URL = 'https://accounts.example.org/'
+ASTAKOS_URL = 'https://accounts.synnefo.org/'
+
+# Tune the size of the Astakos http client connection pool
+# This limit the number of concurrent requests to Astakos.
+ASTAKOS_POOLSIZE = 50
 
 # Key for password encryption-decryption. After changing this setting, synnefo
 # will be unable to decrypt all existing Backend passwords. You will need to
 # store again the new password by using 'snf-manage backend-modify'.
 # SECRET_ENCRYPTION_KEY may up to 32 bytes. Keys bigger than 32 bytes are not
 # supported.
-SECRET_ENCRYPTION_KEY= "Password Encryption Key"
+SECRET_ENCRYPTION_KEY = "Password Encryption Key"
 
 # Astakos service token
 # The token used for astakos service api calls (e.g. api to retrieve user email
 # using a user uuid)
-CYCLADES_ASTAKOS_SERVICE_TOKEN = ''
-
-# Astakos user_catalogs endpoint
-CYCLADES_USER_CATALOG_URL = 'https://<astakos domain>/user_catalogs'
+CYCLADES_ASTAKOS_SERVICE_TOKEN = '' 
 
 # Let cyclades proxy user specific api calls to astakos, via self served
 # endpoints. Set this to False if you deploy cyclades-app/astakos-app on the
 # same machine.
 CYCLADES_PROXY_USER_SERVICES = True
-
-# Astakos user_catalogs endpoint
-CYCLADES_USER_FEEDBACK_URL = 'https://accounts.example.synnefo.org/feedback'

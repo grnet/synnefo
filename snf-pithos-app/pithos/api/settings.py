@@ -3,6 +3,7 @@ from django.conf import settings
 
 ASTAKOS_URL = getattr(settings, "ASTAKOS_URL",
                       "https://accounts.example.synnefo.org/")
+ASTAKOSCLIENT_POOLSIZE = getattr(settings, 'PITHOS_ASTAKOSCLIENT_POOLSIZE', 200)
 
 COOKIE_NAME = getattr(settings, 'PITHOS_ASTAKOS_COOKIE_NAME', '_pithos2_a')
 
@@ -56,19 +57,6 @@ TRANSLATE_UUIDS = getattr(settings, 'PITHOS_TRANSLATE_UUIDS', False)
 # Set to False if snf astakos-app is running on the same machine, so it handles
 # the requests on its own.
 PROXY_USER_SERVICES = getattr(settings, 'PITHOS_PROXY_USER_SERVICES', True)
-
-USER_CATALOG_URL = getattr(settings, 'PITHOS_USER_CATALOG_URL',
-                           'https://accounts.example.synnefo.org/user_catalogs/')
-USER_FEEDBACK_URL = getattr(settings, 'PITHOS_USER_FEEDBACK_URL',
-                            'https://accounts.example.synnefo.org/feedback/')
-USER_LOGIN_URL = getattr(settings, 'PITHOS_USER_LOGIN_URL',
-                         'https://accounts.example.synnefo.org/login/')
-
-# Set the quota holder component URI
-USE_QUOTAHOLDER = getattr(settings, 'PITHOS_USE_QUOTAHOLDER', False)
-QUOTAHOLDER_URL = getattr(settings, 'PITHOS_QUOTAHOLDER_URL', '')
-QUOTAHOLDER_TOKEN = getattr(settings, 'PITHOS_QUOTAHOLDER_TOKEN', '')
-QUOTAHOLDER_POOLSIZE = getattr(settings, 'PITHOS_QUOTAHOLDER_POOLSIZE', 200)
 
 # Set how many random bytes to use for constructing the URL of Pithos public files
 PUBLIC_URL_SECURITY =  getattr(settings, 'PITHOS_PUBLIC_URL_SECURITY', 16)

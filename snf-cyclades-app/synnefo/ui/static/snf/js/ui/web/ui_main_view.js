@@ -231,9 +231,12 @@
                 this.fix_position();
             }, this));
 
-            storage.vms.bind("change:pending_action", _.bind(this.handle_action_add, this, "vms"));
-            storage.vms.bind("change:reboot_required", _.bind(this.handle_action_add, this, "reboots"));
-            storage.networks.bind("change:actions", _.bind(this.handle_action_add, this, "nets"));
+            storage.vms.bind("change:pending_action", 
+                             _.bind(this.handle_action_add, this, "vms"));
+            storage.vms.bind("change:reboot_required", 
+                             _.bind(this.handle_action_add, this, "reboots"));
+            storage.networks.bind("change:actions", 
+                                  _.bind(this.handle_action_add, this, "nets"));
         },
 
         handle_action_add: function(type, model, action) {
@@ -532,6 +535,7 @@
             storage.vms.bind("add", _.bind(this.check_empty, this));
             storage.vms.bind("change:status", _.bind(this.check_empty, this));
             storage.vms.bind("reset", _.bind(this.check_empty, this));
+            storage.quotas.bind("change", _.bind(this.update_create_buttons_status, this));
             
         },
         
@@ -592,14 +596,11 @@
             $(".css-panes").show();
         },
         
-        items_to_load: 4,
+        items_to_load: 6,
         completed_items: 0,
         check_status: function(loaded) {
             this.completed_items++;
             // images, flavors loaded
-            if (this.completed_items == 2) {
-                this.load_nets_and_vms();
-            }
             if (this.completed_items == this.items_to_load) {
                 this.update_status("layout", 1);
                 var self = this;
@@ -629,6 +630,7 @@
                 self.update_status("networks", 1);
                 self.check_status();
             }});
+
         },  
 
         init_intervals: function() {
@@ -642,11 +644,13 @@
             
             this._networks = storage.networks.get_fetcher.apply(storage.networks, _.clone(fetcher_params));
             this._vms = storage.vms.get_fetcher.apply(storage.vms, _.clone(fetcher_params));
+            this._quotas = storage.quotas.get_fetcher.apply(storage.quotas, _.clone(fetcher_params));
         },
 
         stop_intervals: function() {
             if (this._networks) { this._networks.stop(); }
             if (this._vms) { this._vms.stop(); }
+            if (this._quotas) { this._quotas.stop(); }
             this.intervals_stopped = true;
         },
 
@@ -661,6 +665,13 @@
             if (this._vms) {
                 this._vms.stop();
                 this._vms.start();
+            } else {
+                this.init_intervals();
+            }
+
+            if (this._quotas) {
+                this._quotas.stop();
+                this._quotas.start();
             } else {
                 this.init_intervals();
             }
@@ -683,7 +694,6 @@
             snf.config.update_hidden_views = uhv;
 
             window.setTimeout(function() {
-                self.update_status("layout", 0);
                 self.load_initialize_overlays();
             }, 20);
         },
@@ -725,13 +735,26 @@
             this.update_status("images", 0);
             storage.images.fetch({refresh:true, update:false, success: function(){
                 self.update_status("images", 1);
-                self.check_status()
+                self.check_status();
+                self.load_nets_and_vms();
             }});
             this.update_status("flavors", 0);
             storage.flavors.fetch({refresh:true, update:false, success:function(){
                 self.update_status("flavors", 1);
                 self.check_status()
             }});
+
+            this.update_status("resources", 0);
+            storage.resources.fetch({refresh:true, update:false, success: function(){
+                self.update_status("resources", 1);
+                self.update_status("quotas", 0);
+                self.check_status();
+                storage.quotas.fetch({refresh:true, update:true, success: function() {
+                  self.update_status("quotas", 1);
+                  self.update_status("layout", 1);
+                  self.check_status()
+                }})
+            }})
         },
 
         update_status: function(ns, state) {
@@ -779,78 +802,36 @@
             }
         },
         
-        quota_handlers_initialized: false,
-
-        load_user_quotas: function(repeat) {
-          var main_view = this;
-          if (!snf.user.quota) {
-            snf.user.quota = new snf.quota.Quota("cyclades");
-            main_view.init_quotas_handlers();
-      
-          }
-
-          snf.api.sync('read', undefined, {
-            url: synnefo.config.quota_url, 
-            success: function(d) {
-              snf.user.quota.load(d);
-            },
-            complete: function() {
-                if (repeat) {
-                  setTimeout(function(){
-                      main_view.load_user_quotas(1);
-                  }, synnefo.config.quotas_update_interval || 10000);
-                }
-            }
-          });
-        },
-        
-        check_quotas: function(type) {
-          var storage = synnefo.storage[type];
-          var consumed = storage.length;
-          var quotakey = {
-            'networks': 'cyclades.network.private',
-            'vms': 'cyclades.vm'
-          }
-          if (type == "networks") {
-            consumed = storage.filter(function(net){
-              return !net.is_public() && !net.is_deleted();
-            }).length;
-          }
-          
-          var limit = snf.user.quota.get_limit(quotakey[type]);
-          if (snf.user.quota && snf.user.quota.data && consumed >= limit) {
-            storage.trigger("quota_reached");
-          } else {
-            storage.trigger("quota_free");
-          }
-        },
-
-        init_quotas_handlers: function() {
-          var self = this, event;
-          snf.user.quota.bind("cyclades.vm.quota.changed", function() {
-            this.check_quotas("vms");
-          }, this);
-
-          var event = "cyclades.network.private.quota.changed";
-          snf.user.quota.bind(event, function() {
-            this.check_quotas("networks");
-          }, this);
-        },
-
         // initial view based on user cookie
         show_initial_view: function() {
           this.set_vm_view_handlers();
-          this.load_user_quotas(1);
           this.hide_loading_view();
-          
           bb.history.start();
-
           this.trigger("ready");
         },
 
         show_vm_details: function(vm) {
             if (vm) {
               this.router.vm_details_view(vm.id);
+            }
+        },
+        
+        update_create_buttons_status: function() {
+            var nets = storage.quotas.get('cyclades.network.private');
+            var vms = storage.quotas.get('cyclades.vm');
+            
+            if (!nets || !vms) { return }
+
+            if (!nets.can_consume()) {
+                $("#networks-pane a.createbutton").addClass("disabled");
+            } else {
+                $("#networks-pane a.createbutton").removeClass("disabled");
+            }
+
+            if (!vms.can_consume()) {
+                $("#createcontainer #create").addClass("disabled");
+            } else {
+                $("#createcontainer #create").removeClass("disabled");
             }
         },
 
@@ -861,17 +842,6 @@
                 if ($(this).hasClass("disabled")) { return }
                 self.router.vm_create_view();
             });
-
-            synnefo.storage.vms.bind("quota_reached", function(){
-              $("#createcontainer #create").addClass("disabled");
-              $("#createcontainer #create").attr("title", "Machines limit reached");
-            });
-
-            synnefo.storage.vms.bind("quota_free", function(){
-              $("#createcontainer #create").removeClass("disabled");
-              $("#createcontainer #create").attr("title", "");
-            });
-
         },
 
         check_empty: function() {

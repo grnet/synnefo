@@ -287,8 +287,7 @@ On the Pithos host, edit ``/etc/synnefo/20-snf-pithos-app-settings.conf``:
 
     (see `<http://www.synnefo.org/docs/synnefo/latest/quick-install-admin-guide.html#apache2-setup>`_)
 
-- Enable users to change their contact email. Edit
-``/etc/synnefo/20-snf-astakos-app-settings.conf`` ::
+- Enable users to change their contact email. Edit ``/etc/synnefo/20-snf-astakos-app-settings.conf`` ::
 
     ASTAKOS_EMAILCHANGE_ENABLED = True
 

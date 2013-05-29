@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,29 +31,74 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import BaseCommand, CommandError
+from optparse import make_option
+import string
 
-from astakos.im.api.callpoint import AstakosCallpoint
+from django.core.management.base import BaseCommand, CommandError
+from django.db.utils import IntegrityError
+
+from astakos.im.models import Service
+
 
 class Command(BaseCommand):
-    args = "<name> <url> [<icon>]"
+    args = "<name> <service URL> <API URL> "
     help = "Register a service"
+
+    option_list = BaseCommand.option_list + (
+        make_option('--type',
+                    dest='type',
+                    help="Service type"),
+        make_option('-f', '--no-confirm',
+                    action='store_true',
+                    default=False,
+                    dest='force',
+                    help="Do not ask for confirmation"),
+    )
 
     def handle(self, *args, **options):
         if len(args) < 2:
             raise CommandError("Invalid number of arguments")
 
-        s = {'name':args[0], 'url':args[1]}
-        if len(args) == 3:
-            s['icon'] = args[2]
+        name = args[0]
+        url = args[1]
+        api_url = args[2]
+        kwargs = dict(name=name, url=url, api_url=api_url)
+        s_type = options['type']
+        if s_type:
+            kwargs['type'] = s_type
+
         try:
-            c = AstakosCallpoint()
-            r = c.add_services((s,)).next()
-        except Exception, e:
-            raise CommandError(e)
+            s = Service.objects.get(name=name)
+            m = "There already exists service named '%s'." % name
+            raise CommandError(m)
+        except Service.DoesNotExist:
+            pass
+
+        services = list(Service.objects.filter(url=url))
+        if services:
+            m = "Service URL '%s' is registered for another service." % url
+            raise CommandError(m)
+
+        services = list(Service.objects.filter(api_url=api_url))
+        if services:
+            m = "API URL '%s' is registered for another service." % api_url
+            raise CommandError(m)
+
+        force = options['force']
+        if not force:
+            tp = (' of type %s' % s_type) if s_type else ''
+            self.stdout.write("Add service %s%s with:\n" % (name, tp))
+            self.stdout.write("service URL: %s\n" % url)
+            self.stdout.write("API URL: %s\n" % api_url)
+            self.stdout.write("Confirm? (y/n) ")
+            response = raw_input()
+            if string.lower(response) not in ['y', 'yes']:
+                self.stdout.write("Aborted.\n")
+                return
+
+        try:
+            s = Service.objects.create(**kwargs)
+        except BaseException:
+            raise CommandError("Failed to create service.")
         else:
-            if r.is_success:
-                self.stdout.write(
-                    'Service created successfully\n')
-            else:
-                raise CommandError(r.reason)
+            self.stdout.write('Token: %s\n' % s.auth_token)

@@ -54,7 +54,11 @@
     // get url helper
     var getUrl = function(baseurl) {
         var baseurl = baseurl || snf.config.api_urls[this.api_type];
-        return baseurl + "/" + this.path;
+        var append = "/";
+        if (baseurl.split("").reverse()[0] == "/") {
+          append = "";
+        }
+        return baseurl + append + this.path;
     }
 
     var NIC_REGEX = /^nic-([0-9]+)-([0-9]+)$/
@@ -231,7 +235,7 @@
         path: 'images',
         
         get_size: function() {
-            return parseInt(this.get('metadata') ? this.get('metadata').values.size : -1)
+            return parseInt(this.get('metadata') ? this.get('metadata').size : -1)
         },
 
         get_description: function(escape) {
@@ -241,17 +245,17 @@
         },
 
         get_meta: function(key) {
-            if (this.get('metadata') && this.get('metadata').values) {
-                if (!this.get('metadata').values[key]) { return null }
-                return _.escape(this.get('metadata').values[key]);
+            if (this.get('metadata') && this.get('metadata')) {
+                if (!this.get('metadata')[key]) { return null }
+                return _.escape(this.get('metadata')[key]);
             } else {
                 return null;
             }
         },
 
         get_meta_keys: function() {
-            if (this.get('metadata') && this.get('metadata').values) {
-                return _.keys(this.get('metadata').values);
+            if (this.get('metadata') && this.get('metadata')) {
+                return _.keys(this.get('metadata'));
             } else {
                 return [];
             }
@@ -308,7 +312,7 @@
         },
 
         get_sort_order: function() {
-            return parseInt(this.get('metadata') ? this.get('metadata').values.sortorder : -1)
+            return parseInt(this.get('metadata') ? this.get('metadata').sortorder : -1)
         },
 
         get_vm: function() {
@@ -366,8 +370,7 @@
                     path: pathinfo.path,
                     contents: contents,
                     mode: 0600,
-                    owner: pathinfo.user,
-                    group: pathinfo.user
+                    owner: pathinfo.user
                 }
             });
         }
@@ -615,7 +618,7 @@
 
                 var _success = _.bind(function() {
                     if (success) { success() };
-                    snf.ui.main.load_user_quotas();
+                    synnefo.storage.quotas.get('cyclades.network.private').decrease();
                 }, this);
                 var _error = _.bind(function() {
                     this.set({state: previous_state, status: previous_status})
@@ -1163,12 +1166,12 @@
         },
         
         remove_meta: function(key, complete, error) {
-            var url = this.api_path() + "/meta/" + key;
+            var url = this.api_path() + "/metadata/" + key;
             this.api_call(url, "delete", undefined, complete, error);
         },
 
         save_meta: function(meta, complete, error) {
-            var url = this.api_path() + "/meta/" + meta.key;
+            var url = this.api_path() + "/metadata/" + meta.key;
             var payload = {meta:{}};
             payload.meta[meta.key] = meta.value;
             payload._options = {
@@ -1227,9 +1230,9 @@
         // get image object
         get_image: function(callback) {
             if (callback == undefined) { callback = function(){} }
-            var image = storage.images.get(this.get('imageRef'));
+            var image = storage.images.get(this.get('image'));
             if (!image) {
-                storage.images.update_unknown_id(this.get('imageRef'), callback);
+                storage.images.update_unknown_id(this.get('image'), callback);
                 return;
             }
             callback(image);
@@ -1238,26 +1241,26 @@
         
         // get flavor object
         get_flavor: function() {
-            var flv = storage.flavors.get(this.get('flavorRef'));
+            var flv = storage.flavors.get(this.get('flavor'));
             if (!flv) {
-                storage.flavors.update_unknown_id(this.get('flavorRef'));
-                flv = storage.flavors.get(this.get('flavorRef'));
+                storage.flavors.update_unknown_id(this.get('flavor'));
+                flv = storage.flavors.get(this.get('flavor'));
             }
             return flv;
         },
 
         get_meta: function(key, deflt) {
-            if (this.get('metadata') && this.get('metadata').values) {
-                if (!this.get('metadata').values[key]) { return deflt }
-                return _.escape(this.get('metadata').values[key]);
+            if (this.get('metadata') && this.get('metadata')) {
+                if (!this.get('metadata')[key]) { return deflt }
+                return _.escape(this.get('metadata')[key]);
             } else {
                 return deflt;
             }
         },
 
         get_meta_keys: function() {
-            if (this.get('metadata') && this.get('metadata').values) {
-                return _.keys(this.get('metadata').values);
+            if (this.get('metadata') && this.get('metadata')) {
+                return _.keys(this.get('metadata'));
             } else {
                 return [];
             }
@@ -1441,7 +1444,7 @@
                                              // set state after successful call
                                              self.state('DESTROY');
                                              success.apply(this, arguments);
-                                             snf.ui.main.load_user_quotas();
+                                             synnefo.storage.quotas.get('cyclades.vm').decrease();
 
                                          },  
                                          error, 'destroy', params);
@@ -1610,9 +1613,10 @@
         defaults: {'nics':[],'linked_to':[]},
         
         parse: function (resp, xhr) {
+          console.log(resp);
             // FIXME: depricated global var
             if (!resp) { return []};
-            var data = _.filter(_.map(resp.networks.values, _.bind(this.parse_net_api_data, this)),
+            var data = _.filter(_.map(resp.networks, _.bind(this.parse_net_api_data, this)),
                                function(e){ return e });
             return data;
         },
@@ -1643,10 +1647,10 @@
             // e.g. {'vm_id':12231, 'index':1}
             // net.get('linked_to') contains a list of vms the network is 
             // connected to e.g. [1001, 1002]
-            if (data.attachments && data.attachments.values) {
+            if (data.attachments && data.attachments) {
                 data['nics'] = {};
                 data['linked_to'] = [];
-                _.each(data.attachments.values, function(nic_id){
+                _.each(data.attachments, function(nic_id){
                   
                   var vm_id = NIC_REGEX.exec(nic_id)[1];
                   var nic_index = parseInt(NIC_REGEX.exec(nic_id)[2]);
@@ -1677,9 +1681,10 @@
                 }
             };
 
-            if (type) {
-                params.network.type = type;
+            if (!type) {
+                throw "Network type cannot be empty";
             }
+            params.network.type = type;
             if (cidr) {
                 params.network.cidr = cidr;
             }
@@ -1693,7 +1698,7 @@
             
             var cb = function() {
               callback();
-              snf.ui.main.load_user_quotas();
+              synnefo.storage.quotas.get('cyclades.network.private').increase();
             }
             return this.api_call(this.path, "create", params, cb);
         },
@@ -1763,7 +1768,7 @@
         },
 
         parse: function (resp, xhr) {
-            var parsed = _.map(resp.images.values, _.bind(this.parse_meta, this));
+            var parsed = _.map(resp.images, _.bind(this.parse_meta, this));
             parsed = this.fill_owners(parsed);
             return parsed;
         },
@@ -1808,8 +1813,8 @@
         },
 
         get_meta_key: function(img, key) {
-            if (img.metadata && img.metadata.values && img.metadata.values[key]) {
-                return _.escape(img.metadata.values[key]);
+            if (img.metadata && img.metadata && img.metadata[key]) {
+                return _.escape(img.metadata[key]);
             }
             return undefined;
         },
@@ -1888,7 +1893,11 @@
         },
 
         parse: function (resp, xhr) {
-            return _.map(resp.flavors.values, function(o) { o.disk_template = o['SNF:disk_template']; return o});
+            return _.map(resp.flavors, function(o) {
+              o.cpu = o['vcpus'];
+              o.disk_template = o['SNF:disk_template'];
+              return o
+            });
         },
 
         comparator: function(flv) {
@@ -1994,7 +2003,7 @@
         parse: function (resp, xhr) {
             var data = resp;
             if (!resp) { return [] };
-            data = _.filter(_.map(resp.servers.values, _.bind(this.parse_vm_api_data, this)), function(v){return v});
+            data = _.filter(_.map(resp.servers, _.bind(this.parse_vm_api_data, this)), function(v){return v});
             return data;
         },
 
@@ -2008,7 +2017,7 @@
 
             // OS attribute
             if (this.has_meta(data)) {
-                data['OS'] = data.metadata.values.OS || "okeanos";
+                data['OS'] = data.metadata.OS || snf.config.unknown_os;
             }
             
             if (!data.diagnostics) {
@@ -2020,8 +2029,8 @@
             data['nics'] = {};
             data['linked_to'] = [];
 
-            if (data['attachments'] && data['attachments'].values) {
-                var nics = data['attachments'].values;
+            if (data['attachments'] && data['attachments']) {
+                var nics = data['attachments'];
                 _.each(nics, function(nic) {
                     var net_id = nic.network_id;
                     var index = parseInt(NIC_REGEX.exec(nic.id)[2]);
@@ -2037,7 +2046,7 @@
             // is in json response, reset it to force
             // value update
             if (!data['metadata']) {
-                data['metadata'] = {values:{}};
+                data['metadata'] = {};
             }
 
             return data;
@@ -2098,11 +2107,11 @@
         },
         
         has_meta: function(vm_data) {
-            return vm_data.metadata && vm_data.metadata.values
+            return vm_data.metadata && vm_data.metadata
         },
 
         has_addresses: function(vm_data) {
-            return vm_data.metadata && vm_data.metadata.values
+            return vm_data.metadata && vm_data.metadata
         },
 
         create: function (name, image, flavor, meta, extra, callback) {
@@ -2122,30 +2131,48 @@
                 }
             }
             
-            opts = {name: name, imageRef: image.id, flavorRef: flavor.id, metadata:meta}
+            opts = {name: name, imageRef: image.id, flavorRef: flavor.id, 
+                    metadata:meta}
             opts = _.extend(opts, extra);
             
             var cb = function(data) {
-              snf.ui.main.load_user_quotas();
+              synnefo.storage.quotas.get('cyclades.vm').increase();
               callback(data);
             }
 
-            this.api_call(this.path, "create", {'server': opts}, undefined, undefined, cb, {critical: true});
+            this.api_call(this.path, "create", {'server': opts}, undefined, 
+                          undefined, cb, {critical: true});
         },
 
         load_missing_images: function(callback) {
           var missing_ids = [];
+          var resolved = 0;
+
+          // fill missing_ids
           this.each(function(el) {
-            var imgid = el.get("imageRef");
+            var imgid = el.get("image");
             var existing = synnefo.storage.images.get(imgid);
             if (!existing && missing_ids.indexOf(imgid) == -1) {
-                missing_ids.push(imgid);
-                synnefo.storage.images.update_unknown_id(imgid, function(){});
+              missing_ids.push(imgid);
             }
           });
-          callback(missing_ids);
+          var check = function() {
+            // once all missing ids where resolved continue calling the 
+            // callback
+            resolved++;
+            if (resolved == missing_ids.length) {
+              callback(missing_ids)
+            }
+          }
+          if (missing_ids.length == 0) {
+            callback(missing_ids);
+            return;
+          }
+          // start resolving missing image ids
+          _(missing_ids).each(function(imgid){
+            synnefo.storage.images.update_unknown_id(imgid, check);
+          });
         }
-
     })
     
     models.NIC = models.Model.extend({
@@ -2303,7 +2330,7 @@
 
     models.PublicKey = models.Model.extend({
         path: 'keys',
-        base_url: '/ui/userdata',
+        api_type: 'userdata',
         details: false,
         noUpdate: true,
 
@@ -2330,7 +2357,7 @@
         model: models.PublicKey,
         details: false,
         path: 'keys',
-        base_url: '/ui/userdata',
+        api_type: 'userdata',
         noUpdate: true,
 
         generate_new: function(success, error) {
@@ -2365,7 +2392,103 @@
             
             this.create(m.attributes, options);
         }
+    });
+
+  
+    models.Quota = models.Model.extend({
+
+        initialize: function() {
+            models.Quota.__super__.initialize.apply(this, arguments);
+            this.bind("change", this.check, this);
+            this.check();
+        },
+        
+        check: function() {
+            var usage, limit;
+            usage = this.get('usage');
+            limit = this.get('limit');
+            if (usage >= limit) {
+                this.trigger("available");
+            } else {
+                this.trigger("unavailable");
+            }
+        },
+
+        increase: function(val) {
+            if (val === undefined) { val = 1};
+            this.set({'usage': this.get('usage') + val})
+        },
+
+        decrease: function(val) {
+            if (val === undefined) { val = 1};
+            this.set({'usage': this.get('usage') - val})
+        },
+
+        can_consume: function() {
+            var usage, limit;
+            usage = this.get('usage');
+            limit = this.get('limit');
+            if (usage >= limit) {
+                return false
+            } else {
+                return true
+            }
+        },
+        
+        is_bytes: function() {
+            return this.get('resource').get('unit') == 'bytes';
+        },
+        
+        get_available: function() {
+            var value = this.get('limit') - this.get('usage');
+            if (value < 0) { return value }
+            return value
+        },
+
+        get_readable: function(key) {
+            var value;
+            if (key == 'available') {
+                value = this.get_available();
+            } else {
+                value = this.get(key)
+            }
+            if (!this.is_bytes()) {
+              return value + "";
+            }
+            return snf.util.readablizeBytes(value);
+        }
+    });
+
+    models.Quotas = models.Collection.extend({
+        model: models.Quota,
+        api_type: 'accounts',
+        path: 'quotas',
+        parse: function(resp) {
+            return _.map(resp.system, function(value, key) {
+                var available = (value.limit - value.usage) || 0;
+                return _.extend(value, {'name': key, 'id': key, 
+                          'available': available,
+                          'resource': snf.storage.resources.get(key)});
+            })
+        }
     })
+
+    models.Resource = models.Model.extend({
+        api_type: 'accounts',
+        path: 'resources'
+    });
+
+    models.Resources = models.Collection.extend({
+        api_type: 'accounts',
+        path: 'resources',
+        model: models.Network,
+
+        parse: function(resp) {
+            return _.map(resp, function(value, key) {
+                return _.extend(value, {'name': key, 'id': key});
+            })
+        }
+    });
     
     // storage initialization
     snf.storage.images = new models.Images();
@@ -2374,9 +2497,7 @@
     snf.storage.vms = new models.VMS();
     snf.storage.keys = new models.PublicKeys();
     snf.storage.nics = new models.NICs();
-
-    //snf.storage.vms.fetch({update:true});
-    //snf.storage.images.fetch({update:true});
-    //snf.storage.flavors.fetch({update:true});
+    snf.storage.resources = new models.Resources();
+    snf.storage.quotas = new models.Quotas();
 
 })(this);

@@ -17,7 +17,8 @@ installation, you will have the following services running:
  * Identity Management (Astakos)
  * Object Storage Service (Pithos+)
  * Compute Service (Cyclades)
- * Image Registry Service (Plankton)
+ * Image Service (part of Cyclades)
+ * Network Service (part of Cyclades)
 
 and a single unified Web UI to manage them all.
 

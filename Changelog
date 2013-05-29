@@ -16,19 +16,134 @@ Released: UNRELEASED
 
 Synnefo-wide
 ------------
+
 * Create 'snf_django' Python package to hold common code for all Synnefo
   components.
 
 Astakos
 -------
 
+* Redesign of the accounting system (quotaholder) and integration into
+  Astakos.
+
+  * Simplified the quotaholder model; removed tables Entity and Policy; now
+    table Holding contains limit and usage for every holding.
+  * Extended table Holding, so that we can keep track of quota for every
+    valid combination of holder (e.g. user), resource, and source (e.g. the
+    default system or some specific project).
+  * Refactored code for issuing and resolving commissions for robustness;
+    added a 'force' option to bypass the upper limit check when issuing a
+    commission.
+  * Simplified syncing to the quotaholder; removed fields from models
+    Project and ProjectMembership, previously needed for syncing; removed
+    state PROJECT_DEACTIVATED from ProjectMembership.
+  * Removed settings ASTAKOS_QUOTAHOLDER_URL, ASTAKOS_QUOTAHOLDER_TOKEN,
+    and ASTAKOS_QUOTAHOLDER_POOLSIZE.
+
+* Service and resource specification and handling:
+
+  * Specified a format for defining resources a service exposes. Migrated
+    internal resource name by prefixing it with service name (e.g. 'vm'
+    becomes 'cyclades.vm'); renamed registered service 'pithos+' to
+    'pithos'.
+  * Specified a procedure to register a service's resources in astakos and
+    set their respective default base quota limit. Removed resource
+    definitions from settings.
+  * Moved service and resource presentation data out of the respective db
+    models into a separate file of UI constants.
+
+* Converted the limit on pending applications from a setting to a quotable
+  resource. Converted the related user setting to a user-specific base quota
+  limit. Deprecated model UserSetting; removed setting
+  ASTAKOS_PENDING_APPLICATION_LIMIT.
+
+* Changes in locking strategy:
+
+  * Lock only project's chain for all project operations; lock user before
+    syncing to quotaholder.
+  * When locking multiple rows (e.g. users or holdings) include an ORDER BY
+    clause in the query to impose ordering on locking.
+
+* API-related changes:
+
+  * Implemented API calls for quota, resources, and commissions.
+  * Moved all API calls under '/astakos/api'. Kept also previous locations
+    for backwards compatibility.
+
+* Changes in views:
+
+  * Replaced custom transaction context with a simple decorator for managing
+    transactions and a context 'ExceptionHandler', which logs and suppresses
+    exceptions
+
+* Added fine grain user auth provider's policies.
+
+  * Administrator can override default auth provider policies to a specific 
+    user or group of users.
+  * Optionally a user can be assigned to a list of groups, based on the
+    authentication method he choosed to signup.
+
+* Removed explicit handling of SMTP errors on each email delivery. Exceptions 
+  are now propagated to base django exception handler.
+
+* Improvements in user activation flow
+
+  * User moderation now takes place after the user has verified his email
+    address.
+  * User model enriched with additional user state fields
+  * Split activation email from moderation process. Administrator is required 
+    to moderate user explicitly using the `user-modify --accept` or
+    `user-modify --reject` commands.
+  * Improved logging throught out user activation procedures.
+
+* Management commands:
+
+  * Renamed command astakos-quota to quota; user-update to user-modify.
+  * Removed user-set-initial-quota; integrated its functionality in
+    user-modify and quota.
+  * Added quota and project-related information in user-show command; added
+    membership information in project-show.
+  * New commands introduced
+
+    * user-group-{add, list}
+    * user-auth-policy-{add, list, remove, set, show}
+
 Cyclades
 --------
 
+* Make 'type' attribute required for network create API request.
+* Networks not created to all Ganeti backends upon creation, they are instead
+  created to a backend only when a VM connects to the network.
+* Add 'ASTAKOS_POOLSIZE' setting which tunes the size of the http connection
+  pool to astakos.
+* Remove 'CYCLADES_USER_CATALOG_URL' and 'CYCLADES_USER_FEEDBACK_URL' settings
+* Remove CYCLADES_USE_QUOTAHOLDER, CYCLADES_QUOTAHOLDER_TOKEN,
+  CYCLADES_QUOTAHOLDER_URL, CYCLADES_QUOTAHOLDER_POOLSIZE settings
+* Rename 'cyclades-usage-verify' management command to
+  'reconcile-resources-cyclades'. Also, remove 'cyclades-usage-reset' command,
+  which is equivalent to 'reconcile-resources-cyclades --fix'.
+* Rename 'cyclades-reconcile-commissions' management command to
+  'reconcile-commissions-cyclades'.
+* Remove obsolete 'MAX_VMS_PER_USER', 'MAX_NETWORKS_PER_USER',
+  "VMS_USER_QUOTA" and "NETWORKS_USER_QUOTA" settings, since their usage
+  is covered by Quotaholder.
+
+Cyclades helpdesk
+-----------------
+
+* Additional start/stop vm action
+* Display extend backend info in vm's view
+* Fixed IP lookup
+
 Pithos
 ------
+
 * Remove PITHOS_AUTHENTICATION_USERS setting, which was used to override
   astakos users.
+* Remove 'PITHOS_USER_CATALOG_URL', 'PITHOS_USER_FEEDBACK_URL' and
+  'PITHOS_USER_LOGIN_URL' settings.
+* Remove PITHOS_USE_QUOTAHOLDER, PITHOS_QUOTAHOLDER_URL,
+  PITHOS_QUOTAHOLDER_TOKEN and PITHOS_ASTAKOSCLIENT_POOLSIZE
 
 Tools
 -----

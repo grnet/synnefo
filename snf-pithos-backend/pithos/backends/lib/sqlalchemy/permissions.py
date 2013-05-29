@@ -38,6 +38,8 @@ from xfeatures import XFeatures
 from groups import Groups
 from public import Public
 
+from dbworker import ESCAPE_CHAR
+
 
 READ = 0
 WRITE = 1
@@ -172,7 +174,8 @@ class Permissions(XFeatures, Groups, Public):
         s = select([self.xfeatures.c.path], from_obj=[inner_join]).distinct()
         if prefix:
             s = s.where(self.xfeatures.c.path.like(
-                self.escape_like(prefix) + '%', escape='\\'))
+                self.escape_like(prefix) + '%', escape=ESCAPE_CHAR
+            ))
         r = self.conn.execute(s)
         l = [row[0] for row in r.fetchall()]
         r.close()
@@ -182,7 +185,10 @@ class Permissions(XFeatures, Groups, Public):
         """Return the list of shared paths."""
 
         s = select([self.xfeatures.c.path],
-                   self.xfeatures.c.path.like(self.escape_like(prefix) + '%', escape='\\')).order_by(self.xfeatures.c.path.asc())
+                   self.xfeatures.c.path.like(self.escape_like(prefix) + '%',
+                                              escape=ESCAPE_CHAR
+                   )
+        ).order_by(self.xfeatures.c.path.asc())
         r = self.conn.execute(s)
         l = [row[0] for row in r.fetchall()]
         r.close()

@@ -419,7 +419,7 @@
             }, this);
             
             if (synnefo.storage.images.display_extra_metadata) {
-                _.each(image.get('metadata').values, function(value, key) {
+                _.each(image.get('metadata'), function(value, key) {
                     if (!_.contains(meta_keys, key) && 
                         !_.contains(meta_keys, key.toLowerCase()) &&
                         !_.contains(meta_keys, key.toUpperCase()) &&
@@ -678,10 +678,8 @@
               image_excluded = storage.flavors.unavailable_values_for_image(this.current_image);
             }
 
-            if (snf.user.quota) {
-              quotas = this.get_vm_params_quotas();
-              user_excluded = storage.flavors.unavailable_values_for_quotas(quotas);
-            }
+            quotas = this.get_vm_params_quotas();
+            user_excluded = storage.flavors.unavailable_values_for_quotas(quotas);
 
             unavailable.disk = user_excluded.disk.concat(image_excluded.disk);
             unavailable.ram = user_excluded.ram.concat(image_excluded.ram);
@@ -691,10 +689,11 @@
         },
         
         get_vm_params_quotas: function() {
+          var quotas = synnefo.storage.quotas;
           var quota = {
-            'ram': snf.user.quota.get_available('cyclades.ram'),
-            'cpu': snf.user.quota.get_available('cyclades.cpu'),
-            'disk': snf.user.quota.get_available('cyclades.disk')
+            'ram': quotas.get('cyclades.ram').get('available'),
+            'cpu': quotas.get('cyclades.cpu').get('available'),
+            'disk': quotas.get('cyclades.disk').get('available')
           }
           return quota;
         },
@@ -769,7 +768,7 @@
                 };
             }, this));
 
-            this.$("#create-vm-flavor-options .flavor-options.ram li").each(_.bind(function(i, el){
+            this.$("#create-vm-flavor-options .flavor-options.mem li").each(_.bind(function(i, el){
                 var el_value = $(el).data("value");
                 if (this.unavailable_values.ram.indexOf(el_value) > -1) {
                     $(el).addClass("disabled");
@@ -941,11 +940,11 @@
         },
         
         update_quota_display: function() {
-          if (!snf.user.quota || !snf.user.quota.data) { return };
 
+          var quotas = synnefo.storage.quotas;
           _.each(["disk", "ram", "cpu"], function(type) {
-            var available_dsp = snf.user.quota.get_available_readable(type);
-            var available = snf.user.quota.get_available(type);
+            var available_dsp = quotas.get('cyclades.'+type).get_readable('available');
+            var available = quotas.get('cyclades.'+type).get('available');
             var content = "({0} left)".format(available_dsp);
             if (available <= 0) { content = "(None left)" }
             

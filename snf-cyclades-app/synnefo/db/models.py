@@ -29,6 +29,7 @@
 
 import datetime
 
+from copy import deepcopy
 from django.conf import settings
 from django.db import models
 from django.db import IntegrityError
@@ -87,6 +88,9 @@ class Backend(models.Model):
                                         default=0)
     drained = models.BooleanField('Drained', default=False, null=False)
     offline = models.BooleanField('Offline', default=False, null=False)
+    # Type of hypervisor
+    hypervisor = models.CharField('Hypervisor', max_length=32, default="kvm",
+                                  null=False)
     # Last refresh of backend resources
     updated = models.DateTimeField(auto_now_add=True)
     # Backend resources
@@ -100,6 +104,12 @@ class Backend(models.Model):
                                          default=0, null=False)
     # Custom object manager to protect from cascade delete
     objects = ProtectedDeleteManager()
+
+    HYPERVISORS = (
+        ("kvm", "Linux KVM hypervisor"),
+        ("xen-pvm", "Xen PVM hypervisor"),
+        ("xen-hvm", "Xen KVM hypervisor"),
+    )
 
     class Meta:
         verbose_name = u'Backend'
@@ -179,6 +189,15 @@ class Backend(models.Model):
             except IndexError:
                 raise Exception("Can not create more than 16 backends")
 
+    def use_hotplug(self):
+        return self.hypervisor == "kvm" and snf_settings.GANETI_USE_HOTPLUG
+
+    def get_create_params(self):
+        params = deepcopy(snf_settings.GANETI_CREATEINSTANCE_KWARGS)
+        params["hvparams"] = params.get("hvparams", {})\
+                                   .get(self.hypervisor, {})
+        return params
+
 
 # A backend job may be in one of the following possible states
 BACKEND_STATUSES = (
@@ -193,19 +212,25 @@ BACKEND_STATUSES = (
 
 
 class QuotaHolderSerial(models.Model):
+    """Model representing a serial for a Quotaholder Commission.
+
+    serial:   The serial that Quotaholder assigned to this commission
+    pending:  Whether it has been decided to accept or reject this commission
+    accept:   If pending is False, this attribute indicates whether to accept
+              or reject this commission
+    resolved: Whether this commission has been accepted or rejected to
+              Quotaholder.
+
+    """
     serial = models.BigIntegerField(null=False, primary_key=True,
                                     db_index=True)
     pending = models.BooleanField(default=True, db_index=True)
-    accepted = models.BooleanField(default=False)
-    rejected = models.BooleanField(default=False)
+    accept = models.BooleanField(default=False)
+    resolved = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = u'Quota Serial'
         ordering = ["serial"]
-
-    def save(self, *args, **kwargs):
-        self.pending = not (self.accepted or self.rejected)
-        super(QuotaHolderSerial, self).save(*args, **kwargs)
 
 
 class VirtualMachine(models.Model):
@@ -411,7 +436,7 @@ class VirtualMachineMetadata(models.Model):
 
 class Network(models.Model):
     OPER_STATES = (
-        ('PENDING', 'Pending'),
+        ('PENDING', 'Pending'),  # Unused because of lazy networks
         ('ACTIVE', 'Active'),
         ('DELETED', 'Deleted'),
         ('ERROR', 'Error')
@@ -643,6 +668,9 @@ class BackendNetwork(models.Model):
                                               mac_prefix)
             self.mac_prefix = mac_prefix
 
+    def __unicode__(self):
+        return '<%s@%s>' % (self.network, self.backend)
+
 
 class NetworkInterface(models.Model):
     FIREWALL_PROFILES = (
@@ -721,6 +749,7 @@ def pooled_rapi_client(obj):
             backend = obj
 
         if backend.offline:
+            log.warning("Trying to connect with offline backend: %s", backend)
             raise faults.ServiceUnavailable
 
         b = backend

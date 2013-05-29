@@ -90,15 +90,10 @@ def api_method(http_method=None, token_required=True, user_required=True,
                 if user_required:
                     assert(token_required), "Can not get user without token"
                     astakos = astakos_url or settings.ASTAKOS_URL
-                    try:
-                        astakos = AstakosClient(astakos,
-                                                use_pool=True,
-                                                logger=logger)
-                        user_info = astakos.get_user_info(token)
-                    except AstakosClientException as err:
-                        raise faults.Fault(message=err.message,
-                                           details=err.details,
-                                           code=err.status)
+                    astakos = AstakosClient(astakos,
+                                            use_pool=True,
+                                            logger=logger)
+                    user_info = astakos.get_user_info(token)
                     request.user_uniq = user_info["uuid"]
                     request.user = user_info
 
@@ -111,6 +106,13 @@ def api_method(http_method=None, token_required=True, user_required=True,
             except faults.Fault, fault:
                 if fault.code >= 500:
                     logger.exception("API ERROR")
+                return render_fault(request, fault)
+            except AstakosClientException as err:
+                fault = faults.Fault(message=err.message,
+                                     details=err.details,
+                                     code=err.status)
+                if fault.code >= 500:
+                    logger.exception("Astakos ERROR")
                 return render_fault(request, fault)
             except:
                 logger.exception("Unexpected ERROR")
@@ -148,7 +150,7 @@ def get_serialization(request, format_allowed=True):
         accept, sep, rest = item.strip().partition(";")
         if accept == "application/json":
             return "json"
-        elif accept == "applcation/xml":
+        elif accept == "application/xml":
             return "xml"
 
     return "json"

@@ -55,6 +55,10 @@ registration cases are illustrated in :ref:`registration-flow-label`
 Invited user
 ~~~~~~~~~~~~
 
+.. note::
+
+   Invitation feature is currently disabled.
+
 A registered ~okeanos user, invites student Alice to subscribe to ~okeanos
 services. Alice receives an email and through a link is navigated to Astakos's
 signup page. The system prompts her to select one of the available
@@ -86,11 +90,12 @@ Cloud service user
 Alice requests a specific resource from a cloud service ex. Pithos+. In the
 request supplies the `X-Auth-Token` to identify whether she is eligible to
 perform the specific task. The service contacts Astakos through its
-``/im/authenticate`` api call (see :ref:`authenticate-api-label`) providing the
-specific ``X-Auth-Token``. Astakos checkes whether the token belongs to an
-active user and it has not expired and returns a dictionary containing user
-related information. Finally the service uses the ``uniq`` field included in
-the dictionary as the account string to identify the user accessible resources.
+``/astakos/api/authenticate`` api call (see :ref:`authenticate-api-label`)
+providing the specific ``X-Auth-Token``. Astakos checkes whether the token
+belongs to an active user and it has not expired and returns a dictionary
+containing user related information. Finally the service uses the ``uniq``
+field included in the dictionary as the account string to identify the user
+accessible resources.
 
 .. _registration-flow-label:
 

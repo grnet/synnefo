@@ -1,0 +1,8 @@
+The following account has been activated:
+
+Email:          {{user.email}}
+First name:     {{user.first_name}}
+Last name:      {{user.last_name}}
+Is active:      {{user.is_active}}
+Level:          {{user.level}}
+Invitations:    {{user.invitations}}

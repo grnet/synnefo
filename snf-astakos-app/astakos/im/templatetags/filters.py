@@ -41,9 +41,10 @@ from django import template
 from django.core.paginator import Paginator, EmptyPage
 from django.db.models.query import QuerySet
 
+from synnefo.lib.ordereddict import OrderedDict
 
-from astakos.im.settings import PAGINATE_BY, RESOURCES_PRESENTATION_DATA
-from astakos.im.models import RESOURCE_SEPARATOR, ProjectResourceGrant
+from astakos.im import settings
+from astakos.im.models import ProjectResourceGrant
 
 register = template.Library()
 
@@ -86,7 +87,7 @@ def to_string(s):
 @register.filter
 def lookup(d, key):
     try:
-        return d.get(str(key))
+        return d.get(key)
     except:
         return
 
@@ -129,7 +130,7 @@ def paginate(l, args):
                 default = datetime.datetime.utcfromtimestamp(0)
             l.sort(key=lambda i: getattr(i, sorting)
                    if getattr(i, sorting) else default)
-    paginator = Paginator(l, PAGINATE_BY)
+    paginator = Paginator(l, settings.PAGINATE_BY)
     try:
         paginator.len
     except AttributeError:
@@ -202,10 +203,9 @@ def resource_grants(project_definition):
         grants = project_definition.projectresourcegrant_set
         grants = grants.values_list(
             'resource__name',
-            'resource__service__name',
             'member_capacity'
         )
-        return dict((RESOURCE_SEPARATOR.join([e[1], e[0]]), e[2]) for e in grants)
+        return dict((e[0], e[1]) for e in grants)
     except:
         return {}
         

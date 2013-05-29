@@ -350,6 +350,8 @@ or
     }
 
 
+The tenantName in the above requests is optional.
+
 The response is json formatted unless it is requested otherwise via format
 request parameter or Accept header.
 

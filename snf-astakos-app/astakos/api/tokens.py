@@ -36,10 +36,10 @@ from urlparse import urlunsplit, urlsplit
 from django.http import urlencode
 from django.views.decorators.csrf import csrf_exempt
 
-from snf_django.lib.api import faults, utils, api_method, get_token
+from snf_django.lib.api import faults, utils, api_method
 
 from astakos.im.models import Service, AstakosUser
-from .util import user_from_token, json_response, xml_response
+from .util import user_from_token, json_response, xml_response, validate_user
 
 import logging
 logger = logging.getLogger(__name__)
@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
             logger=logger)
 @user_from_token  # Authenticate user!!
 def get_endpoints(request, token):
-    if token != get_token(request):
+    if token != request.user.auth_token:
         raise faults.Forbidden()
 
     belongsTo = request.GET.get('belongsTo')
@@ -92,7 +92,6 @@ def authenticate(request):
 
     uuid = None
     try:
-        tenant = req['auth']['tenantName']
         token_id = req['auth']['token']['id']
     except KeyError:
         try:
@@ -109,8 +108,7 @@ def authenticate(request):
     except AstakosUser.DoesNotExist:
         raise faults.Unauthorized('Invalid token')
 
-    if tenant != user.uuid:
-        raise faults.Unauthorized('Invalid tenant')
+    validate_user(user)
 
     if uuid is not None:
         if user.uuid != uuid:

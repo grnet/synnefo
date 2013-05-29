@@ -471,18 +471,6 @@ class TokensApiTest(TestCase):
         self.assertEqual(body['unauthorized']['message'],
                          'Invalid credentials')
 
-        # Check inconsistent tenant
-        url = '/astakos/api/tokens'
-        post_data = """{"auth":{"passwordCredentials":{"username":"%s",
-                                                       "password":"%s"},
-                                "tenantName":"%s"}}""" % (
-            self.user1.uuid, self.user1.auth_token, self.user2.uuid)
-        r = client.post(url, post_data, content_type='application/json')
-        self.assertEqual(r.status_code, 401)
-        body = json.loads(r.content)
-        self.assertEqual(body['unauthorized']['message'],
-                         'Invalid tenant')
-
         # Check invalid json data
         url = '/astakos/api/tokens'
         r = client.post(url, "not json", content_type='application/json')
@@ -577,6 +565,14 @@ class TokensApiTest(TestCase):
         r = client.get(url, **headers)
         self.assertEqual(r.status_code, 403)
 
+        # Check belongsTo BadRequest
+        url = '/astakos/api/tokens/%s/endpoints?belongsTo=%s' % (
+            quote(self.user1.auth_token), quote(self.user2.uuid))
+        headers = {'HTTP_X_AUTH_TOKEN': self.user1.auth_token}
+        r = client.get(url, **headers)
+        self.assertEqual(r.status_code, 400)
+
+        # Check successful request
         url = '/astakos/api/tokens/%s/endpoints' % quote(self.user1.auth_token)
         headers = {'HTTP_X_AUTH_TOKEN': self.user1.auth_token}
         r = client.get(url, **headers)
@@ -588,13 +584,6 @@ class TokensApiTest(TestCase):
             self.fail('json format expected')
         endpoints = body.get('endpoints')
         self.assertEqual(len(endpoints), 3)
-
-        # Check belongsTo BadRequest
-        url = '/astakos/api/tokens/%s/endpoints?belongsTo=%s' % (
-            quote(self.user1.auth_token), quote(self.user2.uuid))
-        headers = {'HTTP_X_AUTH_TOKEN': self.user1.auth_token}
-        r = client.get(url, **headers)
-        self.assertEqual(r.status_code, 400)
 
          # Check xml serialization
         url = '/astakos/api/tokens/%s/endpoints?format=xml' %\

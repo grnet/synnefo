@@ -41,6 +41,7 @@ from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
 from snf_django.lib.api import faults
+from synnefo.api import util
 from synnefo.api.util import (random_password, get_vm, get_nic_from_index,
                               get_network_free_address)
 from synnefo.db.models import NetworkInterface
@@ -168,8 +169,48 @@ def resize(request, vm, args):
     #                       serverCapacityUnavailable (503),
     #                       overLimit (413),
     #                       resizeNotAllowed (403)
+    log.debug("resize %s: %s", vm, args)
+    flavorRef = args.get("flavorRef", None)
+    if flavorRef is None:
+        raise faults.BadRequest("Missing 'flavorRef' attribute")
 
-    raise faults.NotImplemented('Resize not supported.')
+    new_flavor = util.get_flavor(flavor_id=flavorRef, include_deleted=False)
+    old_flavor = vm.flavor
+    # User requested the same flavor
+    if old_flavor.id == new_flavor.id:
+        return HttpResponse(status=200)
+    # Check that resize can be performed
+    if old_flavor.disk != new_flavor.disk:
+        raise faults.BadRequest("Can not resize instance disk")
+    if old_flavor.disk_template != new_flavor.disk_template:
+        raise faults.BadRequest("Can not change instance disk template")
+
+    if not vm_is_stopped(vm):
+        raise faults.BadRequest("Can not resize running instance")
+
+    vcpus, memory = new_flavor.cpu, new_flavor.ram
+    jobId = backend.resize_instance(vm, vcpus=vcpus, memory=memory)
+
+    log.info("User '%s' resized VM from flavor '%s' to '%s', job %s",
+              request.user_uniq, old_flavor, new_flavor, jobId)
+
+    # Save operstate now, since you don't want any other action when an
+    # an instance is resizing
+    vm.operstate = "RESIZE"
+    util.start_action(vm, "RESIZE", jobId)
+
+    vm.save()
+    return HttpResponse(status=202)
+
+
+def vm_is_stopped(vm):
+    """Check if a VirtualMachine is currently stopped.
+
+    A server is stopped if it's operstate is 'STOPPED'. Also, you must check
+    that no other job is currently running, because this job may start the
+    instance
+    """
+    return vm.operstate == "STOPPED" and vm.backendjobstatus == "success"
 
 
 @server_action('confirmResize')

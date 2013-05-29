@@ -240,7 +240,8 @@ class VirtualMachine(models.Model):
         ('STOP', 'Shutdown VM'),
         ('SUSPEND', 'Admin Suspend VM'),
         ('REBOOT', 'Reboot VM'),
-        ('DESTROY', 'Destroy VM')
+        ('DESTROY', 'Destroy VM'),
+        ('RESIZE', 'Resize a VM'),
     )
 
     # The internal operating state of a VM
@@ -249,7 +250,8 @@ class VirtualMachine(models.Model):
         ('ERROR', 'Creation failed'),
         ('STOPPED', 'Stopped'),
         ('STARTED', 'Started'),
-        ('DESTROYED', 'Destroyed')
+        ('DESTROYED', 'Destroyed'),
+        ('RESIZE', 'Resizing')
     )
 
     # The list of possible operations on the backend
@@ -304,7 +306,8 @@ class VirtualMachine(models.Model):
         "ERROR": "ERROR",
         "STOPPED": "STOPPED",
         "STARTED": "ACTIVE",
-        "DESTROYED": "DELETED"
+        "DESTROYED": "DELETED",
+        "RESIZE": "RESIZE"
     }
 
     name = models.CharField('Virtual Machine Name', max_length=255)

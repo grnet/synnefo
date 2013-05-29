@@ -443,6 +443,59 @@ class ServerActionAPITest(ComputeAPITest):
         self.assertBadRequest(response)
         self.assertFalse(mrapi.mock_calls)
 
+    def test_resize_vm(self, mrapi, mimage):
+        flavor = mfactory.FlavorFactory(cpu=1, ram=1024)
+        # Check building VM
+        vm = self.get_vm(flavor=flavor, operstate="BUILD")
+        request = {'resize': {'flavorRef': flavor.id}}
+        response = self.post('/api/v1.1/servers/%d/action' % vm.id,
+                             vm.userid, json.dumps(request), 'json')
+        self.assertFault(response, 409, "buildInProgress")
+        # Check same Flavor
+        vm = self.get_vm(flavor=flavor, operstate="STOPPED")
+        request = {'resize': {'flavorRef': flavor.id}}
+        response = self.post('/api/v1.1/servers/%d/action' % vm.id,
+                             vm.userid, json.dumps(request), 'json')
+        self.assertSuccess(response)
+        # Check flavor with different disk
+        flavor2 = mfactory.FlavorFactory(disk=1024)
+        flavor3 = mfactory.FlavorFactory(disk=2048)
+        vm = self.get_vm(flavor=flavor2, operstate="STOPPED")
+        request = {'resize': {'flavorRef': flavor3.id}}
+        response = self.post('/api/v1.1/servers/%d/action' % vm.id,
+                             vm.userid, json.dumps(request), 'json')
+        self.assertBadRequest(response)
+        flavor2 = mfactory.FlavorFactory(disk_template="foo")
+        flavor3 = mfactory.FlavorFactory(disk_template="baz")
+        vm = self.get_vm(flavor=flavor2, operstate="STOPPED")
+        request = {'resize': {'flavorRef': flavor3.id}}
+        response = self.post('/api/v1.1/servers/%d/action' % vm.id,
+                             vm.userid, json.dumps(request), 'json')
+        self.assertBadRequest(response)
+        # Check success
+        vm = self.get_vm(flavor=flavor, operstate="STOPPED")
+        flavor4 = mfactory.FlavorFactory(disk_template=flavor.disk_template,
+                                         disk=flavor.disk,
+                                         cpu=4, ram=2048)
+        request = {'resize': {'flavorRef': flavor4.id}}
+        mrapi().ModifyInstance.return_value = 42
+        response = self.post('/api/v1.1/servers/%d/action' % vm.id,
+                             vm.userid, json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 202)
+        vm = VirtualMachine.objects.get(id=vm.id)
+        self.assertEqual(vm.backendjobid, 42)
+        name, args, kwargs = mrapi().ModifyInstance.mock_calls[0]
+        self.assertEqual(kwargs["beparams"]["vcpus"], 4)
+        self.assertEqual(kwargs["beparams"]["minmem"], 2048)
+        self.assertEqual(kwargs["beparams"]["maxmem"], 2048)
+
+    def get_vm(self, flavor, operstate):
+        vm = mfactory.VirtualMachineFactory(flavor=flavor)
+        vm.operstate = operstate
+        vm.backendjobstatus = "success"
+        vm.save()
+        return vm
+
 
 class ServerVNCConsole(ComputeAPITest):
     def test_not_active_server(self):

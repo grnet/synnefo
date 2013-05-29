@@ -454,6 +454,14 @@ def shutdown_instance(vm):
         return client.ShutdownInstance(vm.backend_vm_id, dry_run=settings.TEST)
 
 
+def resize_instance(vm, vcpus, memory):
+    beparams = {"vcpus": int(vcpus),
+                "minmem": int(memory),
+                "maxmem": int(memory)}
+    with pooled_rapi_client(vm) as client:
+        return client.ModifyInstance(vm.backend_vm_id, beparams=beparams)
+
+
 def get_instance_console(vm):
     # RAPI GetInstanceConsole() returns endpoints to the vnc_bind_address,
     # which is a cluster-wide setting, either 0.0.0.0 or 127.0.0.1, and pretty

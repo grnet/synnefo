@@ -82,7 +82,7 @@ Then initialize the Database and register services with:
    # snf-manage loaddata groups
    # snf-manage service-add "home" https://cms.example.com/ home-icon.png
    # snf-manage service-add "cyclades" https://cyclades.example.com/ui/
-   # snf-manage service-add "pithos+" https://pithos.example.com/ui/
+   # snf-manage service-add "pithos" https://pithos.example.com/ui/
    # snf-manage astakos-init --load-service-resources
    # snf-manage quota --sync
    # /etc/init.d/gunicorn restart

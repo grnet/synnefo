@@ -1,5 +1,5 @@
-Pithos+ API
-===========
+Pithos API
+==========
 
 Introduction
 ------------

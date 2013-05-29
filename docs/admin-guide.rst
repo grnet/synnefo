@@ -1121,13 +1121,13 @@ If the container ``images`` does not exist, create it:
   $ kamaki file create images
 
 You are now ready to upload an image to container ``images``. You can upload it
-with a Pithos+ client, or use kamaki directly:
+with a Pithos client, or use kamaki directly:
 
 .. code-block:: console
 
    $ kamaki file upload ubuntu.iso images
 
-You can use any Pithos+ client to verify that the image was uploaded correctly,
+You can use any Pithos client to verify that the image was uploaded correctly,
 or you can list the contents of the container with kamaki:
 
 .. code-block:: console
@@ -1141,7 +1141,7 @@ unique user id (uuid).
 Register Image
 --------------
 
-To register an image you will need to use the full Pithos+ URL. To register as
+To register an image you will need to use the full Pithos URL. To register as
 a public image the one from the previous example use:
 
 .. code-block:: console

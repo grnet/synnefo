@@ -42,7 +42,7 @@ privileges on the database. We do this by running:
    postgres=# CREATE USER synnefo WITH PASSWORD 'example_passw0rd';
    postgres=# GRANT ALL PRIVILEGES ON DATABASE snf_apps TO synnefo;
 
-We also create the database ``snf_pithos`` needed by the pithos+ backend and
+We also create the database ``snf_pithos`` needed by the Pithos backend and
 grant the ``synnefo`` user all privileges on the database.
 
 .. code-block:: console

@@ -172,9 +172,9 @@ Name             Description           Image    Glance
 ================ ===================== ======== ======
 id               A unique image id     ✔        **✘**
 uri              Unique id in URI form **✘**    ✔
-location         Pithos+ file location ✔        **✘**
+location         Pithos file location  ✔        **✘**
 name             The name of the image ✔        ✔
-status           ???The VM status???   ✔        **✘**
+status           The Image status      ✔        **✘**
 disk_format      The disc format       ✔        ✔
 container_format The container format  ✔        ✔
 size             Image size in bytes   ✔        ✔
@@ -236,8 +236,8 @@ According to the Synnefo approach, this request performs two operations:
 * commits metadata for the new image
 * update the metadata of an existing image
 
-The physical image file must be uploaded on a `Pithos+ <pithos.html>`_ server,
-at a space accessible by the user. The Pithos+ location of the physical file
+The physical image file must be uploaded on a `Pithos <pithos.html>`_ server,
+at a space accessible by the user. The Pithos location of the physical file
 acts as a key for the image (image ids and image locations are uniquely
 coupled).
 
@@ -323,7 +323,7 @@ X-Image-Meta-Disk-Format      Disk format           ✔        **✘**
 X-Image-Meta-Container-Format Container format      ✔        **✘**
 X-Image-Meta-Size             Img file size         ✔        **✘**
 X-Image-Meta-Checksum         Img file MD5 checksum ✔        **✘**
-X-Image-Meta-Location         Pithos+ file location ✔        **✘**
+X-Image-Meta-Location         Pithos file location  ✔        **✘**
 X-Image-Meta-Created-At       Date of img creation  ✔        **✘**
 X-Image-Meta-Deleted-At       Date of img deletion  ✔        **✘**
 X-Image-Meta-Status           Img status            ✔        **✘**
@@ -412,7 +412,7 @@ X-Image-Meta-Disk-Format      Disk format
 X-Image-Meta-Container-Format Container format     
 X-Image-Meta-Size             Img file size        
 X-Image-Meta-Checksum         Img file MD5 checksum
-X-Image-Meta-Location         Pithos+ file location
+X-Image-Meta-Location         Pithos file location
 X-Image-Meta-Created-At       Date of img creation 
 X-Image-Meta-Deleted-At       Date of img deletion 
 X-Image-Meta-Status           Img status           
@@ -469,7 +469,7 @@ Return Code                 Description
 Response Header               Description           Image    Glance
 ============================= ===================== ======== ======
 X-Image-Meta-Id               Unique img id         ✔        ✔
-X-Image-Meta-Location         Pithos+ file location ✔        **✘**
+X-Image-Meta-Location         Pithos file location  ✔        **✘**
 X-Image-Meta-URI              URI of image file     **✘**    ✔
 X-Image-Meta-Name             Img name              ✔        ✔
 X-Image-Meta-Disk-Format      Disk format           ✔        **✘**
@@ -814,8 +814,8 @@ Can be provided by user **✘**     ✔
 
 .. _location-ref:
 
-Image File Location at a Pithos+ Server
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Image File Location at a Pithos Server
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To refer to a pithos location file, use the following format::
 

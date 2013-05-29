@@ -46,7 +46,7 @@ Example reply:
 
     [{"url": "/", "icon": "home-icon.png", "name": "grnet cloud", "id": "1"},
     {"url": "/okeanos.html", "name": "~okeanos", "id": "2"},
-    {"url": "/ui/", "name": "pithos+", "id": "3"}]
+    {"url": "/ui/", "name": "pithos", "id": "3"}]
 
 
 Get Menu

@@ -24,7 +24,7 @@ order to have full synnefo funtionality.  After successful installation, you
 will have the following services running:
 
  * Identity Management (Astakos)
- * Object Storage Service (Pithos+)
+ * Object Storage Service (Pithos)
  * Compute Service (Cyclades)
  * Image Service (part of Cyclades)
  * Network Service (part of Cyclades)

@@ -1,16 +1,16 @@
-Object Storage Service (Pithos+)
-================================
+Object Storage Service (Pithos)
+===============================
 
-Pithos+ is an online storage service based on the OpenStack Object
+Pithos is an online storage service based on the OpenStack Object
 Storage API with several important extensions. It uses a
 block-based mechanism to allow users to upload, download, and share
 files, keep different versions of a file, and attach policies to them.
-It follows a layered, modular implementation. Pithos+ was designed to
+It follows a layered, modular implementation. Pithos was designed to
 be used as a storage service by the total set of the Greek research
 and academic community (counting tens of thousands of users) but is
 free and open to use by anybody, under a BSD-2 clause license.
 
-A presentation of Pithos+ features and architecture is :download:`here <pithos-plus.pdf>`.
+A presentation of Pithos features and architecture is :download:`here <pithos-plus.pdf>`.
 
 Introduction
 ------------
@@ -22,7 +22,7 @@ and was made available in spring 2009. It now has more than
 12,000 users.
 
 In 2011 GRNET decided to offer a new, evolved online storage
-service, to be called Pithos+. Pithos+ is designed to address the
+service, to be called Pithos. Pithos is designed to address the
 main requirements expressed by the Pithos users in the first two years of
 operation:
 
@@ -45,21 +45,21 @@ operation:
   open up Pithos to non-Shibboleth authenticated users as well.
 * Use open standards as far as possible.   
 
-In what follows we describe the main features of Pithos+, the elements
+In what follows we describe the main features of Pithos, the elements
 of its design and the capabilities it affords. We touch on related
 work and we provide some discussion on our experiences and thoughts on
 the future.
 
-Pithos+ Features
-----------------
+Pithos Features
+---------------
 
-Pithos+ is based on the OpenStack Object Storage API (Pithos
+Pithos is based on the OpenStack Object Storage API (Pithos
 used a home-grown API). We decided to adopt an open standard
 API in order to leverage existing clients that implement the
-API. In this way, a user can access Pithos+ with a standard
-OpenStack client - although users will want to use a Pithos+ client to
+API. In this way, a user can access Pithos with a standard
+OpenStack client - although users will want to use a Pithos client to
 use features going beyond those offered by the OpenStack API.
-The strategy paid off during Pithos+ development itself, as we were
+The strategy paid off during Pithos development itself, as we were
 able to access and test the service with existing clients, while also
 developing new clients based on open source OpenStack clients.
 
@@ -69,10 +69,10 @@ The major extensions on the OpenStack API are:
   OpenStack stores objects, which may be files, but this is not
   necessary - large files (longer than 5GBytes), for instance, must be
   stored as a series of distinct objects accompanied by a manifest.
-  Pithos+ stores blocks, so objects can be of unlimited size.
+  Pithos stores blocks, so objects can be of unlimited size.
 * Permissions on individual files and folders. Note that folders
   do not exist in the OpenStack API, but are simulated by
-  appropriate conventions, an approach we have kept in Pithos+ to
+  appropriate conventions, an approach we have kept in Pithos to
   avoid incompatibility.
 * Fully-versioned objects.
 * Metadata-based queries. Users are free to set metadata on their
@@ -84,25 +84,25 @@ The major extensions on the OpenStack API are:
 * Partial upload and download based on HTTP request
   headers and parameters.
 * Object updates, where data may even come from other objects
-  already stored in Pithos+. This allows users to compose objects from
+  already stored in Pithos. This allows users to compose objects from
   other objects without uploading data.
 * All objects are assigned UUIDs on creation, which can be
   used to reference them regardless of their path location.
 
-Pithos+ Design
---------------
+Pithos Design
+-------------
 
-Pithos+ is built on a layered architecture (see Figure).
-The Pithos+ server speaks HTTP with the outside world. The HTTP
+Pithos is built on a layered architecture (see Figure).
+The Pithos server speaks HTTP with the outside world. The HTTP
 operations implement an extended OpenStack Object Storage API.
 The back end is a library meant to be used by internal code and
 other front ends. For instance, the back end library, apart from being
-used in Pithos+ for implementing the OpenStack Object Storage API,
+used in Pithos for implementing the OpenStack Object Storage API,
 is also used in our implementation of the OpenStack Image
 Service API. Moreover, the back end library allows specification
 of different namespaces for metadata, so that the same object can be
 viewed by different front end APIs with different sets of
-metadata. Hence the same object can be viewed as a file in Pithos+,
+metadata. Hence the same object can be viewed as a file in Pithos,
 with one set of metadata, or as an image with a different set of
 metadata, in our implementation of the OpenStack Image Service.
 
@@ -118,13 +118,13 @@ evaluating RADOS - http://ceph.newdream.net/category/rados), and metadata to a N
 Block-based Storage for the Client
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Since an object is saved as a set of blocks in Pithos+, object
+Since an object is saved as a set of blocks in Pithos, object
 operations are no longer required to refer to the whole object. We can
 handle parts of objects as needed when uploading, downloading, or
 copying and moving data.
 
 In particular, a client, provided it has access permissions, can
-download data from Pithos+ by issuing a ``GET`` request on an
+download data from Pithos by issuing a ``GET`` request on an
 object. If the request includes the ``hashmap`` parameter, then the
 request refers to a hashmap, that is, a set containing the
 object's block hashes. The reply is of the form::
@@ -142,7 +142,7 @@ checked against the ``X-Object-Hash`` header, returned by the
 server and containing the root Merkle hash of the object's
 hashmap.
 
-When uploading a file to Pithos+, only the missing blocks will be
+When uploading a file to Pithos, only the missing blocks will be
 submitted to the server, with the following algorithm:
 
 * Calculate the hash value for each block of the object to be
@@ -162,14 +162,14 @@ submitted to the server, with the following algorithm:
 
 In effect, we are deduplicating data based on their block hashes,
 transparently to the users. This results to perceived instantaneous
-uploads when material is already present in Pithos+ storage.
+uploads when material is already present in Pithos storage.
 
 Block-based Storage Processing
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Hashmaps themselves are saved in blocks. All blocks are persisted to
 storage using content-based addressing. It follows that to read a
-file, Pithos+ performs the following operations:
+file, Pithos performs the following operations:
 
 * The client issues a request to get a file, via HTTP ``GET``.
 * The API front end asks from the back end the metadata
@@ -227,10 +227,10 @@ possible to pass a parameter to HTTP ``POST`` to specify that the
 data will come from another object, instead of being uploaded by the
 client. 
 
-Pithos+ Back End Nodes
-^^^^^^^^^^^^^^^^^^^^^^
+Pithos Back End Nodes
+^^^^^^^^^^^^^^^^^^^^^
 
-Pithos+ organizes entities in a tree hierarchy, with one tree node per
+Pithos organizes entities in a tree hierarchy, with one tree node per
 path entry (see Figure). Nodes can be accounts,
 containers, and objects. A user may have multiple
 accounts, each account may have multiple containers, and each
@@ -246,13 +246,13 @@ The notion of folders or directories is through conventions that
 simulate pseudo-hierarchical folders. In particular, object names that
 contain the forward slash character and have an accompanying marker
 object with a ``Content-Type: application/directory`` as part of
-their metadata can be treated as directories by Pithos+ clients. Each
+their metadata can be treated as directories by Pithos clients. Each
 node corresponds to a unique path, and we keep its parent in the
 account/container/object hierarchy (that is, all objects have a
 container as their parent).
 
-Pithos+ Back End Versions
-^^^^^^^^^^^^^^^^^^^^^^^^^
+Pithos Back End Versions
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 For each object version we keep the root Merkle hash of the object it
 refers to, the size of the object, the last modification time and the
@@ -265,25 +265,25 @@ to one of the following three clusters (see Figure):
 
 .. image:: images/pithos-backend-versions.png
 
-This versioning allows Pithos+ to offer to its user time-based
+This versioning allows Pithos to offer to its user time-based
 contents listing of their accounts. In effect, this also allows them
 to take their containers back in time. This is implemented
 conceptually by taking a vertical line in the Figure and
 presenting to the user the state on the left side of the line.
 
-Pithos+ Back End Permissions
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Pithos Back End Permissions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Pithos+ recognizes read and write permissions, which can be granted to
+Pithos recognizes read and write permissions, which can be granted to
 individual users or groups of users. Groups as collections of users
 created at the account level by users themselves, and are flat - a
 group cannot contain or reference another group. Ownership of a file
 cannot be delegated.
 
-Pithos+ also recognizes a "public" permission, which means that the
+Pithos also recognizes a "public" permission, which means that the
 object is readable by all. When an object is made public, it is
 assigned a URL that can be used to access the object from
-outside Pithos+ even by non-Pithos+ users. 
+outside Pithos even by non-Pithos users. 
 
 Permissions can be assigned to objects, which may be actual files, or
 directories. When listing objects, the back end uses the permissions as
@@ -310,7 +310,7 @@ OpenStack, while offering additional capabilities.
 Discussion
 ----------
 
-Pithos+ is implemented in Python as a Django application. We use SQLAlchemy
+Pithos is implemented in Python as a Django application. We use SQLAlchemy
 as a database abstraction layer. It is currently about
 17,000 lines of code, and it has taken about 50 person months of
 development effort. This development was done from scratch, with no
@@ -328,20 +328,20 @@ different operating systems (MS-Windows, Mac OS X, Android, and iOS).
 The desktop clients allow synchronization with local directories, a
 feature that existing users of Pithos have been asking for, probably
 influenced by services like DropBox. These clients are offered in
-parallel to the standard Pithos+ interface, which is a web application
+parallel to the standard Pithos interface, which is a web application
 build on top of the API front end - we treat our own web
 application as just another client that has to go through the API
 front end, without granting it access to the back end directly.
 
-We are carrying the idea of our own services being clients to Pithos+
+We are carrying the idea of our own services being clients to Pithos
 a step further, with new projects we have in our pipeline, in which a
-digital repository service will be built on top of Pithos+. It will
+digital repository service will be built on top of Pithos. It will
 use again the API front end, so that repository users will have
-all Pithos+ capabilities, and on top of them we will build additional
+all Pithos capabilities, and on top of them we will build additional
 functionality such as full text search, Dublin Core metadata storage
 and querying, streaming, and so on.
 
-At the time of this writing (March 2012) Pithos+ is in alpha,
+At the time of this writing (March 2012) Pithos is in alpha,
 available to users by invitation. We will extend our user base as we
 move to beta in the coming months, and to our full set of users in the
 second half of 2012. We are eager to see how our ideas fare as we will
@@ -350,14 +350,14 @@ scaling up, and we welcome any comments and suggestions.
 Acknowledgments
 ---------------
 
-Pithos+ is financially supported by Grant 296114, "Advanced Computing
+Pithos is financially supported by Grant 296114, "Advanced Computing
 Services for the Research and Academic Community", of the Greek
 National Strategic Reference Framework.
 
 Availability
 ------------
 
-The Pithos+ code is available under a BSD 2-clause license from:
+The Pithos code is available under a BSD 2-clause license from:
 https://code.grnet.gr/projects/pithos/repository
 
 The code can also be accessed from its source repository:

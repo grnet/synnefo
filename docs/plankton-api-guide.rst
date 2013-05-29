@@ -1,22 +1,25 @@
 .. _plankton-api-guide:
 
-Plankton API Guide
-==================
+Cyclades/Image API Guide
+========================
 
 Introduction
 ------------
 
-Plankton is an image service implemented by `GRNET <http://www.grnet.gr>`_ as part of the `Synnefo <http://www.synnefo.org>`_ cloud software, and implements an extension of the `OpenStack Image API <http://docs.openstack.org/api/openstack-image-service/1.1/content/>`_. To take full advantage of the Plankton infrastructure, client software should be aware of the extensions that differentiate Plankton from OOSs `Glance <http://docs.openstack.org/developer/glance/glanceapi.html>`_.
+The Image Service of `Synnefo <http://www.synnefo.org>`_ is implemented as part
+of Cyclades. It exposes the OpenStack `Glance API
+<http://docs.openstack.org/developer/glance/glanceapi.html>`_, with minor
+changes or additions wherever needed.
 
 This document's goals are:
 
-* Define the Plankton ReST API
-* Clarify the differences between Plankton and Glance
+* Define the Cyclades/Image ReST API
+* Clarify the differences between Cyclades/Image and Glance
 
 Image ReST API
 --------------
 ========================================= ===================================== ====== ======== ======
-Description                               URI                                   Method Plankton Glance
+Description                               URI                                   Method Image    Glance
 ========================================= ===================================== ====== ======== ======
 `List Available Images <#id2>`_           ``/images``                           GET    ✔        ✔
 `List Available Images in Detail <#id3>`_ ``/images/detail``                    GET    ✔        ✔
@@ -35,22 +38,29 @@ Description                               URI                                   
 Authentication
 --------------
 
-**Plankton** depends on Astakos to handle authentication of clients. An authentication token must be obtained from the identity manager which should be send along with each API requests through the *X-Auth-Token* header. Plankton handles the communication with Astakos to verify the token validity and obtain identity credentials.
+**Image** depends on Astakos to handle authentication of clients. An
+authentication token must be obtained from the identity manager which should be
+send along with each API requests through the *X-Auth-Token* header. Image
+handles the communication with Astakos to verify the token validity and obtain
+identity credentials.
 
-**Glance** handles authentication in a `similar manner <http://docs.openstack.org/developer/glance/glanceapi.html#authentication>`_, with the only difference being the suggested identity manager.
+**Glance** handles authentication in a `similar manner
+<http://docs.openstack.org/developer/glance/glanceapi.html#authentication>`_,
+with the only difference being the suggested identity manager.
 
 
 List Available Images
 ---------------------
 
-This request returns a list of all images accessible by the user. In specific, the list contains images falling at one of the following categories:
+This request returns a list of all images accessible by the user. In specific,
+the list contains images falling at one of the following categories:
 
 * registered by the user
 * shared to  user by others
 * public
 
 =========== ====== ======== ======
-URI         Method Plankton Glance
+URI         Method Image    Glance
 =========== ====== ======== ======
 ``/images`` GET    ✔        ✔
 =========== ====== ======== ======
@@ -58,7 +68,7 @@ URI         Method Plankton Glance
 |
 
 ====================== ======================================= ======== ======
-Request Parameter Name Value                                   Plankton Glance
+Request Parameter Name Value                                   Image    Glance
 ====================== ======================================= ======== ======
 name                   Return images of given name             ✔        ✔
 container_format       Return images of given container format ✔        ✔
@@ -77,7 +87,7 @@ sort_dir               Sort images in given direction          ✔        ✔
 **sort_key** values: id, name, status, size, disk_format, container_format, created_at, updated_at
 
 ======== ================ ======== =======
-sort_dir Description      Plankton Glance
+sort_dir Description      Image    Glance
 ======== ================ ======== =======
 asc      Ascending order  default  default
 desc     Descending order ✔        ✔
@@ -86,7 +96,7 @@ desc     Descending order ✔        ✔
 |
 
 ====================  ========================= ======== =========
-Request Header Name   Value                     Plankton Glance
+Request Header Name   Value                     Image    Glance
 ====================  ========================= ======== =========
 X-Auth-Token          User authentication token required required
 ====================  ========================= ======== =========
@@ -106,7 +116,7 @@ Return Code                 Description
 The response data is a list of images in a json format containing the fields presented bellow
 
 ================ ===================== ======== ======
-Name             Description           Plankton Glance
+Name             Description           Image    Glance
 ================ ===================== ======== ======
 id               A unique image id      ✔        **✘**
 uri              Unique id in URI form **✘**    ✔
@@ -117,7 +127,7 @@ container_format The container format  ✔        ✔
 size             Image size in bytes   ✔        ✔
 ================ ===================== ======== ======
 
-Example Plankton response:
+Example Image response:
 
 ::
 
@@ -140,21 +150,25 @@ Example Plankton response:
 List Available Images in Detail
 -------------------------------
 
-This request returns the same list of images as in `List Available Images <#id2>`_, but the results are reacher in metadata.
+This request returns the same list of images as in `List Available Images
+<#id2>`_, but the results are reacher in metadata.
 
 ================== ====== ======== ======
-URI                Method Plankton Glance
+URI                Method Image    Glance
 ================== ====== ======== ======
 ``/images/detail`` GET    ✔        ✔
 ================== ====== ======== ======
 
-**Request parameters** and **headers** as well as **response headers** and **error codes** are exactly the same as in `List Available Images <#id2>`_, both syntactically and semantically.
+**Request parameters** and **headers** as well as **response headers** and
+**error codes** are exactly the same as in `List Available Images <#id2>`_,
+both syntactically and semantically.
 
 
-The response data is a list of images in json format containing the fields presented bellow
+The response data is a list of images in json format containing the fields
+presented bellow
 
 ================ ===================== ======== ======
-Name             Description           Plankton Glance
+Name             Description           Image    Glance
 ================ ===================== ======== ======
 id               A unique image id     ✔        **✘**
 uri              Unique id in URI form **✘**    ✔
@@ -177,7 +191,7 @@ properties       Custom properties     ✔        ✔
 
 |
 
-Example Plankton response::
+Example Image response::
 
     [{
         "status": "available", 
@@ -216,18 +230,23 @@ Example Plankton response::
 Add or update an image
 ----------------------
 
-According to the Synnefo approach, this request performs two functionalities:
+According to the Synnefo approach, this request performs two operations:
 
-* registers a new image to Plankton
+* registers a new image to Cyclades/Image 
 * commits metadata for the new image
 * update the metadata of an existing image
 
-The physical image file must be uploaded on a `Pithos+ <pithos.html>`_ server, at a space accessible by the user. The Pithos+ location of the physical file acts as a key for the image (image ids and image locations are uniquely coupled).
+The physical image file must be uploaded on a `Pithos+ <pithos.html>`_ server,
+at a space accessible by the user. The Pithos+ location of the physical file
+acts as a key for the image (image ids and image locations are uniquely
+coupled).
 
-According to the OpenStack approach, this request performs the first two functionalities by uploading the the image data and metadata to Glance. In Glance, the update mechanism is not implemented with this specific request.
+According to the OpenStack approach, this request performs the first two
+functionalities by uploading the the image data and metadata to Glance. In
+Glance, the update mechanism is not implemented with this specific request.
 
 =========== ====== ======== ======
-URI         Method Plankton Glance
+URI         Method Image    Glance
 =========== ====== ======== ======
 ``/images`` POST   ✔        ✔
 =========== ====== ======== ======
@@ -235,7 +254,7 @@ URI         Method Plankton Glance
 |
 
 ============================= ========================= ========  ========
-Request Header Name           Value                     Plankton  Glance
+Request Header Name           Value                     Image     Glance
 ============================= ========================= ========  ========
 X-Auth-Token                  User authentication token required  required
 X-Image-Meta-Name             Img name                  required  required
@@ -296,7 +315,7 @@ Return Code                 Description
 The following is used when the response code is 200:
 
 ============================= ===================== ======== ======
-Response Header               Description           Plankton Glance
+Response Header               Description           Image    Glance
 ============================= ===================== ======== ======
 X-Image-Meta-Id               Unique img id         ✔        **✘**
 X-Image-Meta-Name             Img name              ✔        **✘**
@@ -316,18 +335,21 @@ X-Image-Meta-Property-*       Custom img properties ✔        **✘**
 Update an Image
 ---------------
 
-In Plankton, an image can be updated either by re-registering with different metadata, or by using the request described in the present subsection.
+In Cyclades/Image, an image can be updated either by re-registering with
+different metadata, or by using the request described in the present
+subsection.
 
-In Glance, an update is implemented as a *PUT* request on ``/images`` URI. The method described bellow is not part of the Glance API.
+In Glance, an update is implemented as a *PUT* request on ``/images`` URI. The
+method described bellow is not part of the Glance API.
 
 ====================== ====== ======== ======
-URI                    Method Plankton Glance
+URI                    Method Image    Glance
 ====================== ====== ======== ======
 ``/images``            PUT    **✘**    ✔
 ``/images/<image-id>`` PUT    ✔        **✘**
 ====================== ====== ======== ======
 
-The following refers only to the Plankton implementation.
+The following refers only to the Cyclades/Image implementation.
 
 **image-id** is explained at :ref:`id-ref`
 
@@ -354,7 +376,10 @@ X-Image-Meta-Property-*       Add / modify properties
 
 **X-Image-Meta-Is-Public** values are true or false (case insensitive)
 
-**X-Image-Meta-Property-*** is used as a prefix to update image property values, or set some extra proeperties. If a registered image already contains some custom properties that are not addressed in the update request, these properties will remain untouched. For example::
+**X-Image-Meta-Property-*** is used as a prefix to update image property
+values, or set some extra proeperties. If a registered image already contains
+some custom properties that are not addressed in the update request, these
+properties will remain untouched. For example::
 
     X-Image-Meta-Property-OS: Debian Linux
     X-Image-Meta-Property-Users: Root
@@ -396,17 +421,22 @@ X-Image-Meta-Owner            Img owner or tentant
 X-Image-Meta-Property-*       Custom img properties
 ============================= =====================
 
-.. hint:: In Plankton, use POST to completely reset all image properties and metadata, but use PUT to update a few values without affecting the rest.
+.. hint:: In Cyclades/Image, use POST to completely reset all image properties
+          and metadata, but use PUT to update a few values without affecting the
+          rest.
 
 Retrieve Image Metadata
 -----------------------
 
-This request returns the metadata of an image. Images are identified by their unique image id.
+This request returns the metadata of an image. Images are identified by their
+unique image id.
 
-In a typical scenario, client applications would query the server to `List Available Images <#id2>`_ for them and then choose one of the image ids returned.
+In a typical scenario, client applications would query the server to `List
+Available Images <#id2>`_ for them and then choose one of the image ids
+returned.
 
 ====================== ====== ======== ======
-URI                    Method Plankton Glance
+URI                    Method Image    Glance
 ====================== ====== ======== ======
 ``/images/<image-id>`` HEAD   ✔        ✔
 ====================== ====== ======== ======
@@ -416,7 +446,7 @@ URI                    Method Plankton Glance
 |
 
 ====================  ========================= ======== =========
-Request Header Name   Value                     Plankton Glance
+Request Header Name   Value                     Image    Glance
 ====================  ========================= ======== =========
 X-Auth-Token          User authentication token required  required
 ====================  ========================= ======== =========
@@ -436,7 +466,7 @@ Return Code                 Description
 |
 
 ============================= ===================== ======== ======
-Response Header               Description           Plankton Glance
+Response Header               Description           Image    Glance
 ============================= ===================== ======== ======
 X-Image-Meta-Id               Unique img id         ✔        ✔
 X-Image-Meta-Location         Pithos+ file location ✔        **✘**
@@ -462,22 +492,26 @@ X-Image-Meta-Owner            Img owner or tentant  ✔        ✔
 X-Image-Meta-Property-*       Custom img properties ✔        ✔
 ============================= ===================== ======== ======
 
-**X-Image-Created-At** is the (immutable) date of initial registration, while **X-Image-Meta-Updated-At** indicates the date of last modification of the image (if any).
+**X-Image-Created-At** is the (immutable) date of initial registration, while
+**X-Image-Meta-Updated-At** indicates the date of last modification of the
+image (if any).
 
 **X-Image-Meta-Store** values are listed at :ref:`store-ref`
 
 **X-Image-Meta-Disk-Format** values are listed at :ref:`disk-format-ref`
 
-**X-Image-Meta-Container-Format** values are listed at :ref:`container-format-ref`
+**X-Image-Meta-Container-Format** values are listed at
+:ref:`container-format-ref`
 
 **X-Image-Meta-Is-Public** values are true or false (case insensitive)
 
-**X-Image-Meta-Property-*** is used as a prefix to set custom, free-form key:value properties on an image, e.g.::
+**X-Image-Meta-Property-*** is used as a prefix to set custom, free-form
+key:value properties on an image, e.g.::
 
     X-Image-Meta-Property-OS: Debian Linux
     X-Image-Meta-Property-Users: Root
 
-Example Plankton Headers response::
+Example Cyclades/Image Headers response::
 
     x-image-meta-id: 940509eb-eb4f-496c-8443-22ffd24912e9
     x-image-meta-location: pithos://25cced7-bd53-4145-91ee-cf4737e9fb2/images/some-image.diskdump
@@ -505,17 +539,24 @@ Example Plankton Headers response::
 Retrieve Raw Image Data
 -----------------------
 
-In **Plankton**, the raw image data is stored at a `Pithos <pithos.html>`_ server and it can be downloaded from the Pithos web UI, with a `client <https://okeanos.grnet.gr/services/pithos/>`_ or with `kamaki <http://www.synnefo.org/docs/kamaki/latest/index.html>`_. The location of an image file can be retrieved from the *X-Image-Meta-Location* header field (see `Retrieve Image Meta <#id10>`_)
+In **Image**, the raw image data is stored at a `Pithos <pithos.html>`_
+server and it can be downloaded from the Pithos web UI, with a `client
+<https://okeanos.grnet.gr/services/pithos/>`_ or with `kamaki
+<http://www.synnefo.org/docs/kamaki/latest/index.html>`_. The location of an
+image file can be retrieved from the *X-Image-Meta-Location* header field (see
+`Retrieve Image Meta <#id10>`_)
 
-In **Glance**, the raw image can be downloaded with a GET request on ``/images/<image-id>``.
+In **Glance**, the raw image can be downloaded with a GET request on
+``/images/<image-id>``.
 
 List Image Memberships
 ----------------------
 
-This request returns the list of users who can access an image. Plankton returns an empty list if the image is publicly accessible.
+This request returns the list of users who can access an image. Cyclades/Image
+returns an empty list if the image is publicly accessible.
 
 ============================== ====== ======== ======
-URI                            Method Plankton Glance
+URI                            Method Image    Glance
 ============================== ====== ======== ======
 ``/images/<image-id>/members`` GET    ✔        ✔
 ============================== ====== ======== ======
@@ -525,7 +566,7 @@ URI                            Method Plankton Glance
 |
 
 ====================  ========================= ======== =========
-Request Header Name   Value                     Plankton Glance
+Request Header Name   Value                     Image    Glance
 ====================  ========================= ======== =========
 X-Auth-Token          User authentication token required  required
 ====================  ========================= ======== =========
@@ -547,15 +588,16 @@ Return Code                 Description
 The response data is a list of users (members) who can access this image
 
 ================ ===================== ======== ======
-Name             Description           Plankton Glance
+Name             Description           Image    Glance
 ================ ===================== ======== ======
 member_id        uuid (user id)        ✔        ✔
 can_share        Member can share img  false    ✔
 ================ ===================== ======== ======
 
-**can_share** in Plankton is always false and is returned for compatibility reasons.
+**can_share** in Cyclades/Image is always false and is returned for
+compatibility reasons.
 
-Example Plankton response::
+Example Cyclades/Image response::
 
     {'members': [
         {'member_id': 'th15-4-u53r-1d-fr0m-p1th05',
@@ -566,10 +608,12 @@ Example Plankton response::
 Replace a Membership List
 -------------------------
 
-This request replaces the list of users who can access a registered image. The term "replace" means that the old permission list of the image is abandoned (old permission settings are lost).
+This request replaces the list of users who can access a registered image. The
+term "replace" means that the old permission list of the image is abandoned
+(old permission settings are lost).
 
 ============================== ====== ======== ======
-URI                            Method Plankton Glance
+URI                            Method Image    Glance
 ============================== ====== ======== ======
 ``/images/<image-id>/members`` PUT    ✔        ✔
 ============================== ====== ======== ======
@@ -579,23 +623,24 @@ URI                            Method Plankton Glance
 |
 
 ====================  ========================= ======== =========
-Request Header Name   Value                     Plankton Glance
+Request Header Name   Value                     Image    Glance
 ====================  ========================= ======== =========
 X-Auth-Token          User authentication token required  required
 ====================  ========================= ======== =========
 
 |
 
-Request data should be json-formated. It must consist of a *memberships* field which is a list of members with the following fields:
+Request data should be json-formated. It must consist of a *memberships* field
+which is a list of members with the following fields:
 
 ================ ===================== ======== ======
-Name             Description           Plankton Glance
+Name             Description           Image    Glance
 ================ ===================== ======== ======
 member_id        uuid (user id)        ✔        ✔
 can_share        Member can share img  ignored  ✔
 ================ ===================== ======== ======
 
-**can_share** is optional and ignored in Plankton.
+**can_share** is optional and ignored in Cyclades/Image.
 
 A request data example::
 
@@ -622,22 +667,24 @@ Return Code                 Description
 Add a Member to an Image
 ------------------------
 
-This request appends a user id to the list of users who can access a registered image.
+This request appends a user id to the list of users who can access a registered
+image.
 
 ===================================== ====== ======== ======
-URI                                   Method Plankton Glance
+URI                                   Method Image    Glance
 ===================================== ====== ======== ======
 ``/images/<image-id>/members/<uuid>`` PUT    ✔        ✔
 ===================================== ====== ======== ======
 
 **image-id** is explained at :ref:`id-ref`
 
-**uuid** is the unique user id of the user (see `Astakos API <astakos-api-guide.html>`_ on how to handle it)
+**uuid** is the unique user id of the user (see `Astakos API
+<astakos-api-guide.html>`_ on how to handle it)
 
 |
 
 ====================  ========================= ======== =========
-Request Header Name   Value                     Plankton Glance
+Request Header Name   Value                     Image    Glance
 ====================  ========================= ======== =========
 X-Auth-Token          User authentication token required  required
 ====================  ========================= ======== =========
@@ -657,22 +704,24 @@ Return Code                 Description
 Remove a Member from an Image
 -----------------------------
 
-This request ensures that, after a successful call, the user with the given uuid will not have access to that image.
+This request ensures that, after a successful call, the user with the given
+uuid will not have access to that image.
 
 ===================================== ====== ======== ======
-URI                                   Method Plankton Glance
+URI                                   Method Image    Glance
 ===================================== ====== ======== ======
 ``/images/<image-id>/members/<uuid>`` DELETE ✔        ✔
 ===================================== ====== ======== ======
 
 **image-id** is explained at :ref:`id-ref`
 
-**uuid** is the unique user id of the user (see `Astakos API <astakos-api-guide.html>`_ on how to handle it)
+**uuid** is the unique user id of the user (see `Astakos API
+<astakos-api-guide.html>`_ on how to handle it)
 
 |
 
 ====================  ========================= ======== =========
-Request Header Name   Value                     Plankton Glance
+Request Header Name   Value                     Image    Glance
 ====================  ========================= ======== =========
 X-Auth-Token          User authentication token required  required
 ====================  ========================= ======== =========
@@ -695,7 +744,7 @@ List Shared Images
 This request returns a list of the images that are shared with a given user.
 
 ========================= ====== ======== ======
-URI                       Method Plankton Glance
+URI                       Method Image    Glance
 ========================= ====== ======== ======
 ``/shared-images/<uuid>`` DELETE ✔        ✔
 ========================= ====== ======== ======
@@ -705,7 +754,7 @@ URI                       Method Plankton Glance
 |
 
 ====================  ========================= ======== =========
-Request Header Name   Value                     Plankton Glance
+Request Header Name   Value                     Image    Glance
 ====================  ========================= ======== =========
 X-Auth-Token          User authentication token required  required
 ====================  ========================= ======== =========
@@ -722,18 +771,20 @@ Return Code                 Description
 500 (Internal Server Error) The request cannot be completed because of an internal error
 =========================== =====================
 
-In case of a 200 response, the response data is json-formated list of images that are shared with given user
+In case of a 200 response, the response data is json-formated list of images
+that are shared with given user
 
 ================ ===================== ======== ======
-Name             Description           Plankton Glance
+Name             Description           Image    Glance
 ================ ===================== ======== ======
 image_id         The Image ID          ✔        ✔
 can_share        Member can share img  false    ✔
 ================ ===================== ======== ======
 
-**can_share** in Plankton is always false and is returned for compatibility reasons.
+**can_share** in Cyclades/Image is always false and is returned for
+compatibility reasons.
 
-Example Plankton response::
+Example Cyclades/Image response::
 
     {'shared_images': [
         {'image_id': 'th3-r3qu3573d-1m4g3-1d',
@@ -751,10 +802,11 @@ The following variables affect the behavior of many requests.
 Image ID
 ^^^^^^^^
 
-The image id is a unique identifier for an image stored in Plankton or Glance.
+The image id is a unique identifier for an image stored in Cyclades/Image or
+Glance.
 
 ======================= ========  ======
-Image-Id                Plankton  Glance
+Image-Id                Image     Glance
 ======================= ========  ======
 Automatically generated ✔         **✘**
 Can be provided by user **✘**     ✔
@@ -769,7 +821,8 @@ To refer to a pithos location file, use the following format::
 
     pithos://<unique-user-id>/<container>/<object-path>
 
-The terms unique-user-id (uuid), container and object-path are used as defined in `Pithos <pithos.html>`_ context.
+The terms unique-user-id (uuid), container and object-path are used as defined
+in `Pithos <pithos.html>`_ context.
 
 .. _container-format-ref:
 
@@ -777,7 +830,7 @@ Container format
 ^^^^^^^^^^^^^^^^
 
 ===== ================================= ======== ======
-Value Description                       Plankton Glance
+Value Description                       Image    Glance
 ===== ================================= ======== ======
 aki   Amazon kernel image               ✔        ✔
 ari   Amazon ramdisk image              ✔        ✔
@@ -792,7 +845,7 @@ Disk format
 ^^^^^^^^^^^
 
 ======== ================================= ======== ======
-Value    Description                       Plankton Glance
+Value    Description                       Image    Glance
 ======== ================================= ======== ======
 diskdump Any disk image dump               default  **✘**
 extdump  EXT3 image                        ✔        **✘**
@@ -814,7 +867,7 @@ Store types
 ^^^^^^^^^^^
 
 ======================= ========  ======
-X-Image-Meta-Store      Plankton  Glance
+X-Image-Meta-Store      Image     Glance
 ======================= ========  ======
 pithos                  ✔         **✘**
 file                    **✘**     ✔

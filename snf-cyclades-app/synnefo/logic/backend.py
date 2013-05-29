@@ -36,7 +36,8 @@ from datetime import datetime
 
 from synnefo.db.models import (Backend, VirtualMachine, Network,
                                BackendNetwork, BACKEND_STATUSES,
-                               pooled_rapi_client, VirtualMachineDiagnostic)
+                               pooled_rapi_client, VirtualMachineDiagnostic,
+                               Flavor)
 from synnefo.logic import utils
 from synnefo import quotas
 from synnefo.api.util import release_resource
@@ -55,7 +56,8 @@ _reverse_tags = dict((v.split(':')[3], k) for k, v in _firewall_tags.items())
 
 
 @transaction.commit_on_success
-def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None):
+def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
+                      beparams=None):
     """Process a job progress notification from the backend
 
     Process an incoming message from the backend (currently Ganeti).
@@ -78,9 +80,22 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None):
     if status == 'success' and state_for_success is not None:
         vm.operstate = state_for_success
 
-    # Update the NICs of the VM
     if status == "success" and nics is not None:
+        # Update the NICs of the VM
         _process_net_status(vm, etime, nics)
+
+    if beparams:
+        assert(opcode == "OP_INSTANCE_SET_PARAMS"), "'beparams' should exist"\
+                                                    " only for SET_PARAMS"
+        # VM Resize
+        if status == "success":
+            # VM has been resized. Change the flavor
+            _process_resize(vm, beparams)
+            vm.operstate = "STOPPED"
+        elif status in ("canceled", "error"):
+            vm.operstate = "STOPPED"
+        else:
+            vm.operstate = "RESIZE"
 
     # Special case: if OP_INSTANCE_CREATE fails --> ERROR
     if opcode == 'OP_INSTANCE_CREATE' and status in ('canceled', 'error'):
@@ -108,6 +123,25 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None):
     if status == 'success':
         vm.backendtime = etime
 
+    vm.save()
+
+
+def _process_resize(vm, beparams):
+    """Change flavor of a VirtualMachine based on new beparams."""
+    old_flavor = vm.flavor
+    vcpus = beparams.get("vcpus", None) or old_flavor.cpu
+    minmem, maxmem = beparams.get("minmem"), beparams.get("maxmem")
+    assert(minmem == maxmem), "Different minmem from maxmem"
+    if vcpus is None and maxmem is None:
+        return
+    ram = maxmem or old_flavor.ram
+    try:
+        new_flavor = Flavor.objects.get(cpu=vcpus, ram=ram,
+                                        disk=old_flavor.disk,
+                                        disk_template=old_flavor.disk_template)
+    except Flavor.DoesNotExist:
+        raise Exception("Can not find flavor for VM")
+    vm.flavor = new_flavor
     vm.save()
 
 

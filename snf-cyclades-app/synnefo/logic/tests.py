@@ -193,6 +193,68 @@ class UpdateDBTest(TestCase):
         self.assertEqual(db_vm.operstate, vm.operstate)
         self.assertEqual(db_vm.backendtime, vm.backendtime)
 
+    def test_resize_msg(self, client):
+        vm = mfactory.VirtualMachineFactory()
+        # Test empty beparams
+        for status in ["success", "error"]:
+            msg = self.create_msg(operation='OP_INSTANCE_SET_PARAMS',
+                                  instance=vm.backend_vm_id,
+                                  beparams={},
+                                  status=status)
+            client.reset_mock()
+            update_db(client, msg)
+            self.assertTrue(client.basic_ack.called)
+            db_vm = VirtualMachine.objects.get(id=vm.id)
+            self.assertEqual(db_vm.operstate, vm.operstate)
+        # Test intermediate states
+        for status in ["queued", "waiting", "running"]:
+            msg = self.create_msg(operation='OP_INSTANCE_SET_PARAMS',
+                                  instance=vm.backend_vm_id,
+                                  beparams={"vcpus": 4, "minmem": 2048,
+                                            "maxmem": 2048},
+                                  status=status)
+            client.reset_mock()
+            update_db(client, msg)
+            self.assertTrue(client.basic_ack.called)
+            db_vm = VirtualMachine.objects.get(id=vm.id)
+            self.assertEqual(db_vm.operstate, "RESIZE")
+        # Test operstate after error
+        msg = self.create_msg(operation='OP_INSTANCE_SET_PARAMS',
+                              instance=vm.backend_vm_id,
+                              beparams={"vcpus": 4},
+                              status="error")
+        client.reset_mock()
+        update_db(client, msg)
+        self.assertTrue(client.basic_ack.called)
+        db_vm = VirtualMachine.objects.get(id=vm.id)
+        self.assertEqual(db_vm.operstate, "STOPPED")
+        # Test success
+        f1 = mfactory.FlavorFactory(cpu=4, ram=1024, disk_template="drbd",
+                                    disk=1024)
+        vm.flavor = f1
+        vm.save()
+        f2 = mfactory.FlavorFactory(cpu=8, ram=2048, disk_template="drbd",
+                                    disk=1024)
+        msg = self.create_msg(operation='OP_INSTANCE_SET_PARAMS',
+                              instance=vm.backend_vm_id,
+                              beparams={"vcpus": 8, "minmem": 2048,
+                                        "maxmem": 2048},
+                              status="success")
+        client.reset_mock()
+        update_db(client, msg)
+        self.assertTrue(client.basic_ack.called)
+        db_vm = VirtualMachine.objects.get(id=vm.id)
+        self.assertEqual(db_vm.operstate, "STOPPED")
+        self.assertEqual(db_vm.flavor, f2)
+        msg = self.create_msg(operation='OP_INSTANCE_SET_PARAMS',
+                              instance=vm.backend_vm_id,
+                              beparams={"vcpus": 100, "minmem": 2048,
+                                        "maxmem": 2048},
+                              status="success")
+        client.reset_mock()
+        update_db(client, msg)
+        self.assertTrue(client.basic_reject.called)
+
 
 @patch('synnefo.lib.amqp.AMQPClient')
 class UpdateNetTest(TestCase):

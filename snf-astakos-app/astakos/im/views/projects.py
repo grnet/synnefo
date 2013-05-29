@@ -276,6 +276,9 @@ def addmembers(request, chain_id, addmembers_form):
 
 def common_detail(request, chain_or_app_id, project_view=True):
     project = None
+    approved_members_count = 0
+    pending_members_count = 0
+    remaining_memberships_count = 0
     if project_view:
         chain_id = chain_or_app_id
         if request.method == 'POST':

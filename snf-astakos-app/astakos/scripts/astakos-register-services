@@ -16,8 +16,8 @@ ex_url[cyclades]='https://cyclades.example.synnefo.org/cyclades/ui/'
 ex_url[pithos]='https://pithos.example.synnefo.org/pithos/ui/'
 
 declare -A ex_api_url
-ex_api_url[astakos]='https://accounts.example.synnefo.org/accounts/v1/'
-ex_api_url[cyclades]='https://cyclades.example.synnefo.org/cyclades/v1/'
+ex_api_url[astakos]='https://accounts.example.synnefo.org/accounts/'
+ex_api_url[cyclades]='https://cyclades.example.synnefo.org/cyclades/compute/v1.1/'
 ex_api_url[pithos]='https://pithos.example.synnefo.org/pithos/v1/'
 
 declare -A resources

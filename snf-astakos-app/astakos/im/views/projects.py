@@ -676,3 +676,35 @@ def project_members(request, chain_id, members_status_filter=None,
     return common_detail(request, chain_id,
                          members_status_filter=members_status_filter,
                          template_name=template_name)
+
+
+@require_http_methods(["POST"])
+@valid_astakos_user_required
+def project_members_action(request, chain_id, action=None, redirect_to=''):
+
+    actions_map = {
+        'remove': _project_remove_member,
+        'accept': _project_accept_member,
+        'reject': _project_reject_member
+    }
+
+    if not action in actions_map.keys():
+        raise PermissionDenied
+
+    member_ids = request.POST.getlist('members')
+    project, application = get_by_chain_or_404(chain_id)
+
+    user = request.user
+    if not user.owns_project(project) and not user.is_project_admin():
+        return redirect(reverse('index'))
+
+    logger.info("Batch members action from %s (action: %s, members: %r)",
+                user.log_display, action, member_ids)
+
+    action_func = actions_map.get(action)
+    for member_id in member_ids:
+        member_id = int(member_id)
+        with ExceptionHandler(request):
+            action_func(request, chain_id, member_id)
+
+    return redirect(reverse('project_members', args=(chain_id,)))

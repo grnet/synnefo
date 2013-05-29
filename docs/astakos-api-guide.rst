@@ -350,6 +350,8 @@ or
     }
 
 
+The tenantName in the above requests is optional.
+
 The response is json formatted unless it is requested otherwise via format
 request parameter or Accept header.
 
@@ -364,14 +366,14 @@ Example json response:
                         'publicURL': 'https://node1.example.com/v1',
                         'region': 'cyclades'}],
          'name': 'cyclades',
-         'type': compute},
+         'type': 'compute'},
        {'endpoints': [{'SNF:uiURL': 'https://node2.example.com/ui/',
                       'adminURL': 'https://node2.example.com/v1',
                       'internalUrl': 'https://node2.example.com/v1',
                       'publicURL': 'https://node2.example.com/v1',
                       'region': 'pithos'}],
         'name': 'pithos',
-        'type': storage},
+        'type': 'storage'}],
      'token': {'expires': '2013-06-19T15:23:59.975572+00:00',
                'id': 'CDEe2k0T/HdiJWBMMbHyOA==',
                'tenant': {'id': 'c18088be-16b1-4263-8180-043c54e22903',

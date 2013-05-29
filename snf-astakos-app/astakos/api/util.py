@@ -89,6 +89,20 @@ def are_integer(lst):
     return all(map(is_integer, lst))
 
 
+def validate_user(user):
+    # Check if the user is active.
+    if not user.is_active:
+        raise faults.Unauthorized('User inactive')
+
+    # Check if the token has expired.
+    if user.token_expired():
+        raise faults.Unauthorized('Authentication expired')
+
+    # Check if the user has accepted the terms.
+    if not user.signed_terms:
+        raise faults.Unauthorized('Pending approval terms')
+
+
 def user_from_token(func):
     @wraps(func)
     def wrapper(request, *args, **kwargs):
@@ -105,17 +119,7 @@ def user_from_token(func):
         except AstakosUser.DoesNotExist:
             raise faults.Unauthorized('Invalid X-Auth-Token')
 
-        # Check if the user is active.
-        if not user.is_active:
-            raise faults.Unauthorized('User inactive')
-
-        # Check if the token has expired.
-        if user.token_expired():
-            raise faults.Unauthorized('Authentication expired')
-
-        # Check if the user has accepted the terms.
-        if not user.signed_terms:
-            raise faults.Unauthorized('Pending approval terms')
+        validate_user(user)
 
         request.user = user
         return func(request, *args, **kwargs)

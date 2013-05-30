@@ -1379,7 +1379,7 @@
                 port: data.port,
                 password: data.password
             }
-            return '/machines/console?' + $.param(url_params);
+            return synnefo.config.ui_console_url + '?' + $.param(url_params);
         },
 
         // action helper
@@ -1499,7 +1499,7 @@
         },
 
         get_connection_info: function(host_os, success, error) {
-            var url = "/machines/connect";
+            var url = synnefo.config.ui_connect_url;
             params = {
                 ip_address: this.get_public_nic().get('ipv4'),
                 hostname: this.get_hostname(),

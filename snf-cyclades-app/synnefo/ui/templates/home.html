@@ -630,6 +630,8 @@
             synnefo.config.use_glance = {{ use_glance }};
             synnefo.config.indicators_icons_url = '{{ SYNNEFO_IMAGES_URL }}icons/indicators/';
             synnefo.config.machines_icons_url = '{{ SYNNEFO_IMAGES_URL }}icons/machines/';
+            synnefo.config.ui_console_url = '{% url ui_machines_console %}';
+            synnefo.config.ui_connect_url = '{% url ui_machines_connect %}';
             synnefo.config.support_ssh_os_list = {{ support_ssh_os_list|safe }};
             synnefo.config.unknown_os = {{ unknown_os|safe }};
             synnefo.config.os_created_users = {{ os_created_users|safe }};

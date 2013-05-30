@@ -34,8 +34,10 @@
 from urlparse import urlparse
 
 
-def join_urls(a, b):
+def join_urls(*args):
     """
+    Join arguments into a url.
+
     >>> join_urls("http://www.test.org", "path")
     'http://www.test.org/path'
     >>> join_urls("http://www.test.org/", "path")
@@ -56,7 +58,8 @@ def join_urls(a, b):
     'http://www.test.org/a/b/c/d'
 
     """
-    return a.rstrip("/") + "/" + b.lstrip("/")
+    return "/".join([a.lstrip("/").rstrip("/") for a in args[:-1]]) + \
+            "/" + args[-1].lstrip("/")
 
 
 def parse_base_url(base_url):

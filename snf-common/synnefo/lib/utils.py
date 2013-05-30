@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -76,12 +76,12 @@ def case_unique(iterable):
     """
     Compare case uniquness across iterable contents. Return diff.
 
-    >>> case_compare(['a','b','c'])
+    >>> case_unique(['a','b','c'])
     []
-    >>> case_compaer(['a','A','b','c'])
+    >>> case_unique(['a','A','b','c'])
     ['A']
     """
-    icase = set(map(unicode.lower, iterable))
+    icase = set(map(unicode.lower, unicode(iterable)))
     same = len(icase) == len(iterable)
     if not same:
         return list(set(iterable) - set(icase))

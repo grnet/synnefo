@@ -411,7 +411,7 @@ def machines_connect(request):
     # rdp param is set, the user requested rdp file
     # check if we are on windows
     if operating_system == 'windows' and request.GET.get("rdp", False):
-
+        extra_rdp_content = ''
         # UI sent domain info (from vm metadata) use this
         # otherwise use our default snf-<vm_id> domain
         EXTRA_RDP_CONTENT = getattr(settings, 'UI_EXTRA_RDP_CONTENT', '')
@@ -419,13 +419,14 @@ def machines_connect(request):
             extra_rdp_content = EXTRA_RDP_CONTENT(server_id, ip_address,
                                                   hostname, username)
         else:
-            extra_rdp_content = EXTRA_RDP_CONTENT % \
-                {
-                    'server_id': server_id,
-                    'ip_address': ip_address,
-                    'hostname': hostname,
-                    'user': username
-                  }
+            if EXTRA_RDP_CONTENT:
+                extra_rdp_content = EXTRA_RDP_CONTENT % \
+                    {
+                        'server_id': server_id,
+                        'ip_address': ip_address,
+                        'hostname': hostname,
+                        'user': username
+                      }
 
         rdp_context = {
             'username': username,

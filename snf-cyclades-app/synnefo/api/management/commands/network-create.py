@@ -35,10 +35,10 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 from synnefo.management.common import validate_network_info, get_backend
-from synnefo.webproject.management.utils import pprint_table
+from synnefo.webproject.management.utils import pprint_table, parse_bool
 
 from synnefo import quotas
-from synnefo.db.models import Network
+from synnefo.db.models import Network, Backend
 from synnefo.db.utils import validate_mac, InvalidMacAddress
 from synnefo.logic.backend import create_network
 from synnefo.api.util import values_from_flavor
@@ -127,6 +127,14 @@ class Command(BaseCommand):
             default=None,
             help='The tags of the Network (comma separated strings)'),
         make_option(
+            '--floating-ip-pool',
+            dest='floating_ip_pool',
+            default="False",
+            choices=["True", "False"],
+            metavar="True|False",
+            help="Use the network as a Floating IP pool. Floating IP pools"
+                 " are created in all available backends."),
+        make_option(
             '--backend-id',
             dest='backend_id',
             default=None,
@@ -149,6 +157,7 @@ class Command(BaseCommand):
         mac_prefix = options['mac_prefix']
         tags = options['tags']
         userid = options["owner"]
+        floating_ip_pool = parse_bool(options["floating_ip_pool"])
 
         if not name:
             raise CommandError("Name is required")
@@ -156,7 +165,7 @@ class Command(BaseCommand):
             raise CommandError("Subnet is required")
         if not flavor:
             raise CommandError("Flavor is required")
-        if public and not backend_id:
+        if public and not (backend_id or floating_ip_pool):
             raise CommandError("backend-id is required")
         if not userid and not public:
             raise CommandError("'owner' is required for private networks")
@@ -198,6 +207,7 @@ class Command(BaseCommand):
            "link": link,
            "mac_prefix": mac_prefix,
            "tags": tags,
+           "floating_ip_pool": floating_ip_pool,
            "state": "ACTIVE"}
 
         if dry_run:
@@ -209,7 +219,19 @@ class Command(BaseCommand):
         if userid:
             quotas.issue_and_accept_commission(network)
 
-        if backend_id:
-            # Create BackendNetwork only to the specified Backend
+        # Create network in Backend if needed
+        if floating_ip_pool:
+            backends = Backend.objects.filter(offline=False)
+        elif backend_id:
+            backends = [backend]
+        else:
+            backends = []
+
+        for backend in backends:
             network.create_backend_network(backend)
-            create_network(network=network, backend=backend, connect=True)
+            self.stdout.write("Trying to connect network to backend '%s'\n" %
+                              backend)
+            jobs = create_network(network=network, backend=backend,
+                                   connect=True)
+            self.stdout.write("Successfully issued jobs: %s\n" %
+                              ",".join(jobs))

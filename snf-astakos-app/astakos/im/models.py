@@ -178,24 +178,27 @@ def get_presentation(resource):
 
 
 class Service(models.Model):
-    name = models.CharField(_('Name'), max_length=255, unique=True,
-                            db_index=True)
-    url = models.CharField(_('Service url'), max_length=255, null=True,
-                           help_text=_("URL the service is accessible from"))
-    api_url = models.CharField(_('Service API url'), max_length=255, null=True)
-    type = models.CharField(_('Type'), max_length=255, null=True, blank='True')
-    auth_token = models.CharField(_('Authentication Token'), max_length=32,
-                                  null=True, blank=True)
-    auth_token_created = models.DateTimeField(_('Token creation date'),
-                                              null=True)
-    auth_token_expires = models.DateTimeField(_('Token expiration date'),
-                                              null=True)
+    component = models.ForeignKey(Component)
+    name = models.CharField(max_length=255, unique=True)
+    type = models.CharField(max_length=255)
+
+
+class Endpoint(models.Model):
+    service = models.ForeignKey(Service, related_name='endpoints')
+
+
+class EndpointData(models.Model):
+    endpoint = models.ForeignKey(Endpoint, related_name='data')
+    key = models.CharField(max_length=255)
+    value = models.CharField(max_length=1024)
+
+    class Meta:
+        unique_together = (('endpoint', 'key'),)
 
 
 class Resource(models.Model):
     name = models.CharField(_('Name'), max_length=255, unique=True)
     desc = models.TextField(_('Description'), null=True)
-    service = models.ForeignKey(Service)
     service_type = models.CharField(_('Type'), max_length=255)
     unit = models.CharField(_('Unit'), null=True, max_length=255)
     uplimit = intDecimalField(default=0)

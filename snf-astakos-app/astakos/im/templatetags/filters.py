@@ -208,3 +208,4 @@ def resource_grants(project_definition):
         return dict((e[0], e[1]) for e in grants)
     except:
         return {}
+        

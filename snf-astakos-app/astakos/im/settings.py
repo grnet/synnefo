@@ -101,10 +101,10 @@ from logging import INFO
 LOGGING_LEVEL = getattr(settings, 'ASTAKOS_LOGGING_LEVEL', INFO)
 
 # Set how many objects should be displayed per page
-PAGINATE_BY = getattr(settings, 'ASTAKOS_PAGINATE_BY', 8)
+PAGINATE_BY = getattr(settings, 'ASTAKOS_PAGINATE_BY', 50)
 
 # Set how many objects should be displayed per page in show all projects page
-PAGINATE_BY_ALL = getattr(settings, 'ASTAKOS_PAGINATE_BY_ALL', 15)
+PAGINATE_BY_ALL = getattr(settings, 'ASTAKOS_PAGINATE_BY_ALL', 50)
 
 # Enforce token renewal on password change/reset
 NEWPASSWD_INVALIDATE_TOKEN = getattr(

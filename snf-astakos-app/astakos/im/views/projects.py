@@ -56,7 +56,7 @@ from snf_django.lib.db.transaction import commit_on_success_strict
 import astakos.im.messages as astakos_messages
 
 from astakos.im import tables
-from astakos.im.models import ProjectApplication
+from astakos.im.models import ProjectApplication, ProjectMembership
 from astakos.im.util import get_context, restrict_next
 from astakos.im.forms import ProjectApplicationForm, AddProjectMembersForm, \
     ProjectSearchForm
@@ -66,6 +66,7 @@ from astakos.im.functions import check_pending_app_quota, accept_membership, \
     get_related_project_id, get_by_chain_or_404, approve_application, \
     deny_application, cancel_application, dismiss_application
 from astakos.im import settings
+from astakos.im.util import redirect_back
 from astakos.im.views.util import render_response, _create_object, \
     _update_object, _resources_catalog, ExceptionHandler
 from astakos.im.views.decorators import cookie_fix, signed_terms_required,\
@@ -274,7 +275,10 @@ def addmembers(request, chain_id, addmembers_form):
         except (IOError, PermissionDenied), e:
             messages.error(request, e)
 
-def common_detail(request, chain_or_app_id, project_view=True):
+
+def common_detail(request, chain_or_app_id, project_view=True,
+                  template_name='im/projects/project_detail.html',
+                  members_status_filter=None):
     project = None
     approved_members_count = 0
     pending_members_count = 0
@@ -294,9 +298,18 @@ def common_detail(request, chain_or_app_id, project_view=True):
         else:
             addmembers_form = AddProjectMembersForm()  # initialize form
 
+        approved_members_count = 0
+        pending_members_count = 0
+        remaining_memberships_count = 0
         project, application = get_by_chain_or_404(chain_id)
         if project:
             members = project.projectmembership_set.select_related()
+            approved_members_count = \
+                    project.count_actually_accepted_memberships()
+            pending_members_count = project.count_pending_memberships()
+            if members_status_filter in (ProjectMembership.REQUESTED,
+                ProjectMembership.ACCEPTED):
+                members = members.filter(state=members_status_filter)
             members_table = tables.ProjectMembersTable(project,
                                                        members,
                                                        user=request.user,
@@ -307,7 +320,8 @@ def common_detail(request, chain_or_app_id, project_view=True):
         else:
             members_table = None
 
-    else: # is application
+    else:
+        # is application
         application_id = chain_or_app_id
         application = get_object_or_404(ProjectApplication, pk=application_id)
         members_table = None
@@ -342,10 +356,14 @@ def common_detail(request, chain_or_app_id, project_view=True):
         request,
         queryset=ProjectApplication.objects.select_related(),
         object_id=application.id,
-        template_name='im/projects/project_detail.html',
+        template_name=template_name,
         extra_context={
             'project_view': project_view,
-            'addmembers_form':addmembers_form,
+            'chain_id': chain_or_app_id,
+            'application': application,
+            'addmembers_form': addmembers_form,
+            'approved_members_count': approved_members_count,
+            'pending_members_count': pending_members_count,
             'members_table': members_table,
             'owner_mode': is_owner,
             'admin_mode': is_project_admin,
@@ -353,6 +371,7 @@ def common_detail(request, chain_or_app_id, project_view=True):
             'mem_display': mem_display,
             'can_join_request': can_join_req,
             'can_leave_request': can_leave_req,
+            'members_status_filter':members_status_filter,
             })
 
 @require_http_methods(["GET", "POST"])
@@ -494,7 +513,7 @@ def project_accept_member(request, chain_id, memb_id):
     with ExceptionHandler(request):
         _project_accept_member(request, chain_id, memb_id)
 
-    return redirect(reverse('project_detail', args=(chain_id,)))
+    return redirect_back(request, 'project_list')
 
 
 @commit_on_success_strict()
@@ -520,7 +539,7 @@ def project_remove_member(request, chain_id, memb_id):
     with ExceptionHandler(request):
         _project_remove_member(request, chain_id, memb_id)
 
-    return redirect(reverse('project_detail', args=(chain_id,)))
+    return redirect_back(request, 'project_list')
 
 
 @commit_on_success_strict()
@@ -545,7 +564,7 @@ def project_reject_member(request, chain_id, memb_id):
     with ExceptionHandler(request):
         _project_reject_member(request, chain_id, memb_id)
 
-    return redirect(reverse('project_detail', args=(chain_id,)))
+    return redirect_back(request, 'project_list')
 
 
 @commit_on_success_strict()
@@ -650,3 +669,50 @@ def project_app_dismiss(request, application_id):
 def _project_app_dismiss(request, application_id):
     # XXX: dismiss application also does authorization
     dismiss_application(application_id, request_user=request.user)
+
+
+@require_http_methods(["GET", "POST"])
+@valid_astakos_user_required
+def project_members(request, chain_id, members_status_filter=None,
+                    template_name='im/projects/project_members.html'):
+    project, application = get_by_chain_or_404(chain_id)
+
+    user = request.user
+    if not user.owns_project(project) and not user.is_project_admin():
+        return redirect(reverse('index'))
+
+    return common_detail(request, chain_id,
+                         members_status_filter=members_status_filter,
+                         template_name=template_name)
+
+
+@require_http_methods(["POST"])
+@valid_astakos_user_required
+def project_members_action(request, chain_id, action=None, redirect_to=''):
+
+    actions_map = {
+        'remove': _project_remove_member,
+        'accept': _project_accept_member,
+        'reject': _project_reject_member
+    }
+
+    if not action in actions_map.keys():
+        raise PermissionDenied
+
+    member_ids = request.POST.getlist('members')
+    project, application = get_by_chain_or_404(chain_id)
+
+    user = request.user
+    if not user.owns_project(project) and not user.is_project_admin():
+        return redirect(reverse('index'))
+
+    logger.info("Batch members action from %s (chain: %r, action: %s, "
+                "members: %r)", user.log_display, chain_id, action, member_ids)
+
+    action_func = actions_map.get(action)
+    for member_id in member_ids:
+        member_id = int(member_id)
+        with ExceptionHandler(request):
+            action_func(request, chain_id, member_id)
+
+    return redirect_back(request, 'project_list')

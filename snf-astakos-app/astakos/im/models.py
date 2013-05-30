@@ -1878,6 +1878,12 @@ class Project(models.Model):
         memb_count = memb_set.filter(state=ProjectMembership.REQUESTED).count()
         return memb_count
 
+    def count_actually_accepted_memberships(self):
+        memb_set = self.projectmembership_set
+        memb_count = memb_set.filter(state=ProjectMembership.LEAVE_REQUESTED)
+        memb_count = memb_set.filter(state=ProjectMembership.ACCEPTED).count()
+        return memb_count
+
     def members_count(self):
         return self.approved_memberships.count()
 

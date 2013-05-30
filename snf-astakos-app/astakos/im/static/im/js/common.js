@@ -89,7 +89,7 @@ $(document).ready(function() {
 	
 	 
     setContainerMinHeight('.container .wrapper');
-    tableFixedCols('my-projects', 25);
+    //tableFixedCols('my-projects', 25);
 	
     $('.show-extra').click(function(e) {
         e.preventDefault();
@@ -228,6 +228,9 @@ $(document).ready(function() {
 			}
 		});
 	
+
+
+
  
 	$("input.leave, input.join").click(function (e) {
         e.preventDefault();
@@ -235,6 +238,9 @@ $(document).ready(function() {
         var dialog = $(this).parents('.msg-wrap').find('.dialog');
 
 		$('.dialog').hide();
+    if ($(this).parents('.form-actions').hasClass('inactive')) {
+      return false;
+    }
 		$(this).parents('.msg-wrap').find('.dialog').show();
         var offset = dialog.offset();
 
@@ -255,10 +261,16 @@ $(document).ready(function() {
     });
     
      $('.msg-wrap .no').click( function(e){
-		e.preventDefault();
-		$(this).parents('.dialog').hide();
-	})
-    
+    		e.preventDefault();
+    		$(this).parents('.dialog').hide();
+        e.stopPropagation();
+    	})
+
+      $(document).click(function() {
+        $('.msg-wrap .dialog').hide();
+      });
+
+     
     $('.msg-wrap .yes').click( function(e){
 		e.preventDefault();
         var dialog = $(this).parents('.msg-wrap').find('.dialog');
@@ -359,8 +371,65 @@ $(document).ready(function() {
 	  
 	// fix for recaptcha fields
 	$('#okeanos_recaptcha').parents('.form-row').find('.extra-img').hide();	  
-     
-	 
+   
+   check_form_actions_inactive();  
+/* project members page js */	 
+function check_form_actions_inactive(){
+   if ( $('#members-table tbody td.check input:checked').length >0 ) {
+    $('.projects .form-actions').removeClass('inactive');
+  } else {
+    $('.projects .form-actions').addClass('inactive');
+  }
+
+  // updating form data
+  var forms = $("form.link-like:has('input.members-batch-action')");
+  forms.each(function(index, form){
+    var member_ids, checked;
+    form = $(form);
+    form.find("input.member-option").remove();
+    checked = $('#members-table tbody td.check input:checked');
+    member_ids = _.map(checked, function(el) {
+      return parseInt($(el).val());
+    });
+    
+    _.each(member_ids, function(id) {
+      var newel;
+      newel = $("<input name='members' class='member-option' type='hidden' value='"+id+"'>");
+      form.append(newel);
+    });
+  })
+}
+
+$('#members-table td.email').click(function(e){
+  var that = $(this).parent('tr').find('.check').find('input[type="checkbox"]')
+  if(that.is(":checked")){
+    that.removeAttr('checked');
+  } else {
+    that.attr('checked', 'checked');
+  }
+  check_form_actions_inactive();
+
+})
+
+
+
+
+$('#members-table tr th.check input').click(function(e){
+  if($(this).is(":checked")){
+    $('#members-table tbody td.check input').attr('checked', 'checked');
+  } else {
+    $('#members-table tbody td.check input').removeAttr('checked');
+  } 
+});
+
+$('#members-table tr .check input').click(function(e){
+  check_form_actions_inactive()
+});
+
+/* end of project members page js */
+
+
+
 	    
 });
 	

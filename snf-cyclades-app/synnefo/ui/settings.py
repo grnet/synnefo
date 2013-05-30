@@ -44,9 +44,13 @@ ASTAKOS_VIEWS_URL = join_urls(cyclades.ASTAKOS_BASE_URL,
 ASTAKOS_ACCOUNTS_URL = join_urls(cyclades.ASTAKOS_BASE_URL,
                                  cyclades.ASTAKOS_ACCOUNTS_PREFIX)
 if cyclades.PROXY_USER_SERVICES:
-    ASTAKOS_ACCOUNTS_URL = join_urls(cyclades.BASE_ASTAKOS_PROXY_PATH,
+    ASTAKOS_ACCOUNTS_URL = join_urls('/', cyclades.BASE_ASTAKOS_PROXY_PATH,
                                      cyclades.ASTAKOS_ACCOUNTS_PREFIX)
 
+
+BASE_PATH = cyclades.BASE_PATH
+if not BASE_PATH.startswith("/"):
+    BASE_PATH = "/" + BASE_PATH
 
 ACCOUNTS_URL = getattr(settings, 'CYCLADES_UI_ACCOUNTS_URL',
                        join_urls(ASTAKOS_ACCOUNTS_URL))
@@ -55,13 +59,12 @@ USER_CATALOG_URL = getattr(settings, 'CYCLADES_UI_USER_CATALOG_URL',
 FEEDBACK_URL = getattr(settings, 'CYCLADES_UI_FEEDBACK_URL',
                        join_urls(ACCOUNTS_URL, 'feedback'))
 COMPUTE_URL = getattr(settings, 'CYCLADES_UI_COMPUTE_URL',
-                      join_urls(cyclades.BASE_PATH,
-                                cyclades.COMPUTE_PREFIX,
+                      join_urls(BASE_PATH, cyclades.COMPUTE_PREFIX,
                                 'v1.1'))
 GLANCE_URL = getattr(settings, 'CYCLADES_UI_GLANCE_URL',
-                     join_urls(cyclades.BASE_PATH, cyclades.PLANKTON_PREFIX))
+                     join_urls(BASE_PATH, cyclades.PLANKTON_PREFIX))
 USERDATA_URL = getattr(settings, 'CYCLADES_UI_USERDATA_URL',
-                       join_urls(cyclades.BASE_PATH, cyclades.USERDATA_PREFIX))
+                       join_urls(BASE_PATH, cyclades.USERDATA_PREFIX))
 LOGIN_URL = getattr(settings, 'CYCLADES_UI_LOGIN_URL',
                     join_urls(cyclades.ASTAKOS_BASE_URL,
                               cyclades.ASTAKOS_VIEWS_PREFIX, 'login'))

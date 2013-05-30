@@ -442,7 +442,7 @@ def get_existing_users():
     Retrieve user ids stored in cyclades user agnostic models.
     """
     # also check PublicKeys a user with no servers/networks exist
-    from synnefo.ui.userdata.models import PublicKeyPair
+    from synnefo.userdata.models import PublicKeyPair
     from synnefo.db.models import VirtualMachine, Network
 
     keypairusernames = PublicKeyPair.objects.filter().values_list('user',

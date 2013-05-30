@@ -40,7 +40,7 @@ from django.utils import simplejson as json
 from django.conf import settings
 from django.core.urlresolvers import reverse
 
-from synnefo.ui.userdata.models import *
+from synnefo.userdata.models import *
 
 
 class AaiClient(Client):

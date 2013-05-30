@@ -33,7 +33,7 @@
 # or implied, of GRNET S.A.
 
 from django.conf.urls.defaults import *
-from synnefo.ui.userdata import views
+from synnefo.userdata import views
 from django.http import Http404
 
 

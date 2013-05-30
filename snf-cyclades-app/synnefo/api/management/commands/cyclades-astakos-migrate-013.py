@@ -44,7 +44,7 @@ from django.conf import settings
 from synnefo.api.util import get_existing_users
 from synnefo.lib.utils import case_unique
 from synnefo.db.models import Network, VirtualMachine
-from synnefo.ui.userdata.models import PublicKeyPair
+from synnefo.userdata.models import PublicKeyPair
 
 from snf_django.lib import astakos
 

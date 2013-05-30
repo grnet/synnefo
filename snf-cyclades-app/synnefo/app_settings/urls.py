@@ -38,8 +38,8 @@ from snf_django.lib.api.utils import prefix_pattern
 from synnefo.cyclades_settings import (
     BASE_URL, BASE_HOST, BASE_PATH, COMPUTE_PREFIX, VMAPI_PREFIX,
     PLANKTON_PREFIX, HELPDESK_PREFIX, UI_PREFIX, ASTAKOS_BASE_URL,
-    ASTAKOS_BASE_PATH, BASE_ASTAKOS_PROXY_PATH, ASTAKOS_ACCOUNTS_PREFIX,
-    ASTAKOS_VIEWS_PREFIX, PROXY_USER_SERVICES)
+    USERDATA_PREFIX, ASTAKOS_BASE_PATH, BASE_ASTAKOS_PROXY_PATH,
+    ASTAKOS_ACCOUNTS_PREFIX, ASTAKOS_VIEWS_PREFIX, PROXY_USER_SERVICES)
 
 from urlparse import urlparse
 from functools import partial
@@ -54,6 +54,7 @@ cyclades_patterns = patterns('',
     (prefix_pattern(PLANKTON_PREFIX), include('synnefo.plankton.urls')),
     (prefix_pattern(HELPDESK_PREFIX), include('synnefo.helpdesk.urls')),
     (prefix_pattern(COMPUTE_PREFIX), include('synnefo.api.urls')),
+    (prefix_pattern(USERDATA_PREFIX), include('synnefo.userdata.urls')),
 )
 
 urlpatterns = patterns(

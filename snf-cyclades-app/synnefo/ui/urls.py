@@ -37,7 +37,6 @@ import os
 
 urlpatterns = patterns('',
     url(r'^$', 'synnefo.ui.views.home', name='ui_index'),
-    url(r'userdata/', include('synnefo.ui.userdata.urls')),
     url(r'^machines/console$', 'synnefo.ui.views.machines_console',
         name='ui_machines_console'),
     url(r'^machines/connect$', 'synnefo.ui.views.machines_connect',

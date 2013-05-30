@@ -93,13 +93,11 @@ def get_content_type():
 inf = float('inf')
 
 
-class Service(models.Model):
+class Component(models.Model):
     name = models.CharField(_('Name'), max_length=255, unique=True,
                             db_index=True)
-    url = models.CharField(_('Service url'), max_length=255, null=True,
-                           help_text=_("URL the service is accessible from"))
-    api_url = models.CharField(_('Service API url'), max_length=255, null=True)
-    type = models.CharField(_('Type'), max_length=255, null=True, blank='True')
+    url = models.CharField(_('Component url'), max_length=255, null=True,
+                           help_text=_("URL the component is accessible from"))
     auth_token = models.CharField(_('Authentication Token'), max_length=32,
                                   null=True, blank=True)
     auth_token_created = models.DateTimeField(_('Token creation date'),
@@ -110,7 +108,7 @@ class Service(models.Model):
     def renew_token(self, expiration_date=None):
         md5 = hashlib.md5()
         md5.update(self.name.encode('ascii', 'ignore'))
-        md5.update(self.api_url.encode('ascii', 'ignore'))
+        md5.update(self.url.encode('ascii', 'ignore'))
         md5.update(asctime())
 
         self.auth_token = b64encode(md5.digest())
@@ -126,41 +124,40 @@ class Service(models.Model):
     @classmethod
     def catalog(cls, orderfor=None):
         catalog = {}
-        services = list(cls.objects.all())
-        default_metadata = presentation.SERVICES
+        components = list(cls.objects.all())
+        default_metadata = presentation.COMPONENTS
         metadata = {}
 
-        for service in services:
-            d = {'api_url': service.api_url,
-                 'url': service.url,
-                 'name': service.name}
-            if service.name in default_metadata:
-                metadata[service.name] = default_metadata.get(service.name)
-                metadata[service.name].update(d)
+        for component in components:
+            d = {'url': component.url,
+                 'name': component.name}
+            if component.name in default_metadata:
+                metadata[component.name] = default_metadata.get(component.name)
+                metadata[component.name].update(d)
             else:
-                metadata[service.name] = d
+                metadata[component.name] = d
 
 
-        def service_by_order(s):
+        def component_by_order(s):
             return s[1].get('order')
 
-        def service_by_dashbaord_order(s):
+        def component_by_dashboard_order(s):
             return s[1].get('dashboard').get('order')
 
         metadata = dict_merge(metadata,
-                              astakos_settings.SERVICES_META)
+                              astakos_settings.COMPONENTS_META)
 
-        for service, info in metadata.iteritems():
-            default_meta = presentation.service_defaults(service)
-            base_meta = metadata.get(service, {})
-            settings_meta = astakos_settings.SERVICES_META.get(service, {})
-            service_meta = dict_merge(default_meta, base_meta)
-            meta = dict_merge(service_meta, settings_meta)
-            catalog[service] = meta
+        for component, info in metadata.iteritems():
+            default_meta = presentation.component_defaults(component)
+            base_meta = metadata.get(component, {})
+            settings_meta = astakos_settings.COMPONENTS_META.get(component, {})
+            component_meta = dict_merge(default_meta, base_meta)
+            meta = dict_merge(component_meta, settings_meta)
+            catalog[component] = meta
 
-        order_key = service_by_order
+        order_key = component_by_order
         if orderfor == 'dashboard':
-            order_key = service_by_dashbaord_order
+            order_key = component_by_dashboard_order
 
         ordered_catalog = OrderedDict(sorted(catalog.iteritems(),
                                              key=order_key))
@@ -180,10 +177,26 @@ def get_presentation(resource):
     return resource_presentation
 
 
+class Service(models.Model):
+    name = models.CharField(_('Name'), max_length=255, unique=True,
+                            db_index=True)
+    url = models.CharField(_('Service url'), max_length=255, null=True,
+                           help_text=_("URL the service is accessible from"))
+    api_url = models.CharField(_('Service API url'), max_length=255, null=True)
+    type = models.CharField(_('Type'), max_length=255, null=True, blank='True')
+    auth_token = models.CharField(_('Authentication Token'), max_length=32,
+                                  null=True, blank=True)
+    auth_token_created = models.DateTimeField(_('Token creation date'),
+                                              null=True)
+    auth_token_expires = models.DateTimeField(_('Token expiration date'),
+                                              null=True)
+
+
 class Resource(models.Model):
     name = models.CharField(_('Name'), max_length=255, unique=True)
     desc = models.TextField(_('Description'), null=True)
     service = models.ForeignKey(Service)
+    service_type = models.CharField(_('Type'), max_length=255)
     unit = models.CharField(_('Unit'), null=True, max_length=255)
     uplimit = intDecimalField(default=0)
     allow_in_projects = models.BooleanField(default=True)
@@ -197,7 +210,7 @@ class Resource(models.Model):
         return str(self)
 
     def get_info(self):
-        return {'service': str(self.service),
+        return {'service_type': self.service_type,
                 'description': self.desc,
                 'unit': self.unit,
                 'allow_in_projects': self.allow_in_projects,
@@ -2172,4 +2185,4 @@ def renew_token(sender, instance, **kwargs):
     if not instance.auth_token:
         instance.renew_token()
 pre_save.connect(renew_token, sender=AstakosUser)
-pre_save.connect(renew_token, sender=Service)
+pre_save.connect(renew_token, sender=Component)

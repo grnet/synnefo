@@ -38,7 +38,7 @@ from snf_django.lib import api
 from .util import (
     get_uuid_displayname_catalogs as get_uuid_displayname_catalogs_util,
     send_feedback as send_feedback_util,
-    service_from_token)
+    component_from_token)
 
 import logging
 logger = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ logger = logging.getLogger(__name__)
 @csrf_exempt
 @api.api_method(http_method='POST', token_required=True, user_required=False,
                 logger=logger)
-@service_from_token  # Authenticate service !!
+@component_from_token  # Authenticate service !!
 def get_uuid_displayname_catalogs(request):
     # Normal Response Codes: 200
     # Error Response Codes: internalServerError (500)
@@ -59,7 +59,7 @@ def get_uuid_displayname_catalogs(request):
 @csrf_exempt
 @api.api_method(http_method='POST', token_required=True, user_required=False,
                 logger=logger)
-@service_from_token  # Authenticate service !!
+@component_from_token  # Authenticate service !!
 def send_feedback(request, email_template_name='im/feedback_mail.txt'):
     # Normal Response Codes: 200
     # Error Response Codes: internalServerError (500)

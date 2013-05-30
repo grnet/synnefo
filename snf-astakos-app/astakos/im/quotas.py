@@ -33,7 +33,7 @@
 
 import copy
 from astakos.im.models import (
-    Resource, AstakosUserQuota, AstakosUser,
+    Resource, AstakosUserQuota, AstakosUser, Service,
     Project, ProjectMembership, ProjectResourceGrant, ProjectApplication)
 import astakos.quotaholder_app.callpoint as qh
 from astakos.quotaholder_app.exception import NoCapacityError
@@ -95,8 +95,11 @@ def get_user_quotas(user, resources=None, sources=None):
     return quotas.get(user.uuid, {})
 
 
-def service_get_quotas(service, users=None):
-    resources = Resource.objects.filter(service=service)
+def service_get_quotas(component, users=None):
+    type_values = Service.objects.filter(
+        component=component).values_list('type')
+    service_types = [t for (t,) in type_values]
+    resources = Resource.objects.filter(service_type__in=service_types)
     resource_names = [r.name for r in resources]
     counters = qh.get_quota(holders=users, resources=resource_names)
     return transform_data(counters)

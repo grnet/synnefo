@@ -162,7 +162,7 @@ RESOURCES = {
 RESOURCES = dict_merge(RESOURCES, settings.RESOURCES_META)
 
 
-def service_defaults(service_name):
+def component_defaults(service_name):
     """
     Metadata for unkown services
     """
@@ -182,7 +182,7 @@ def service_defaults(service_name):
     }
 
 
-SERVICES = {
+COMPONENTS = {
     'astakos': {
         'url': '/im/landing',
         'order': 1,

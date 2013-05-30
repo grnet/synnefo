@@ -64,7 +64,16 @@ def join_urls(*args):
     'path1/'
     >>> join_urls("path1/", "path2", "path3")
     'path1/path2/path3'
+    >>> join_urls("", "path2", "path3")
+    'path2/path3'
+    >>> join_urls("", "", "")
+    ''
     """
+    args = filter(bool, args)
+
+    if len(args) == 0:
+        return ''
+
     if len(args) == 1:
         return args[0]
 

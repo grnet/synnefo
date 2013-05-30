@@ -7,7 +7,6 @@ synnefo_web_apps = [
     'synnefo.vmapi',
     'synnefo.helpdesk',
     'synnefo.userdata',
-    'synnefo.helpdesk',
     'synnefo.quotas',
 ]
 

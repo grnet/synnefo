@@ -33,6 +33,11 @@
 
 from django.conf import settings
 from synnefo.lib import join_urls, parse_base_url
+from synnefo.util.keypath import get_path
+from synnefo.api.services import cyclades_services as vanilla_cyclades_services
+from astakosclient import astakos_services as vanilla_astakos_services
+
+from copy import deepcopy
 
 BASE_URL = getattr(settings, 'CYCLADES_BASE_URL',
                    'https://compute.example.synnefo.org/compute/')
@@ -42,12 +47,27 @@ ASTAKOS_BASE_URL = getattr(settings, 'ASTAKOS_BASE_URL',
                            'https://accounts.example.synnefo.org/astakos/')
 ASTAKOS_BASE_HOST, ASTAKOS_BASE_PATH = parse_base_url(ASTAKOS_BASE_URL)
 
-COMPUTE_PREFIX = getattr(settings, 'CYCLADES_COMPUTE_PREFIX', 'compute')
-VMAPI_PREFIX = getattr(settings, 'CYCLADES_VMAPI_PREFIX', 'vmapi')
-PLANKTON_PREFIX = getattr(settings, 'CYCLADES_PLANKTON_PREFIX', 'plankton')
-HELPDESK_PREFIX = getattr(settings, 'CYCLADES_HELPDESK_PREFIX', 'helpdesk')
-UI_PREFIX = getattr(settings, 'CYCLADES_UI_PREFIX', 'ui')
-USERDATA_PREFIX = getattr(settings, 'CYCLADES_USERDATA_PREFIX', 'userdata')
+CUSTOMIZE_SERVICES = getattr(settings, 'CYCLADES_CUSTOMIZE_SERVICES', ())
+cyclades_services = deepcopy(vanilla_cyclades_services)
+for path, value in CUSTOMIZE_SERVICES:
+    set_path(cyclades_services, path, value, createpath=True)
+
+astakos_services = deepcopy(vanilla_astakos_services)
+CUSTOMIZE_ASTAKOS_SERVICES = \
+        getattr(settings, 'CYCLADES_CUSTOMIZE_ASTAKOS_SERVICES', ())
+for path, value in CUSTOMIZE_ASTAKOS_SERVICES:
+    set_path(astakos_services, path, value, createpath=True)
+
+COMPUTE_PREFIX = get_path(cyclades_services, 'cyclades_compute.prefix')
+VMAPI_PREFIX = get_path(cyclades_services, 'cyclades_vmapi.prefix')
+PLANKTON_PREFIX = get_path(cyclades_services, 'cyclades_plankton.prefix')
+HELPDESK_PREFIX = get_path(cyclades_services, 'cyclades_helpdesk.prefix')
+UI_PREFIX = get_path(cyclades_services, 'cyclades_ui.prefix')
+USERDATA_PREFIX = get_path(cyclades_services, 'cyclades_userdata.prefix')
+
+ASTAKOS_ACCOUNTS_PREFIX = get_path(astakos_services, 'astakos_account.prefix')
+ASTAKOS_VIEWS_PREFIX = get_path(astakos_services, 'astakos_ui.prefix')
+ASTAKOS_KEYSTONE_PREFIX = get_path(astakos_services, 'astakos_keystone.prefix')
 
 # The API implementation needs to accept and return absolute references
 # to its resources. Thus, it needs to know its public URL.
@@ -58,15 +78,5 @@ BASE_ASTAKOS_PROXY_PATH = getattr(settings,
                                   ASTAKOS_BASE_PATH)
 BASE_ASTAKOS_PROXY_PATH = join_urls(BASE_PATH, BASE_ASTAKOS_PROXY_PATH)
 BASE_ASTAKOS_PROXY_PATH = BASE_ASTAKOS_PROXY_PATH.strip('/')
-
-ASTAKOS_ACCOUNTS_PREFIX = getattr(settings,
-                             'ASTAKOS_ACCOUNTS_PREFIX', 'accounts').strip('/')
-
-ASTAKOS_VIEWS_PREFIX = getattr(settings,
-                               'ASTAKOS_VIEWS_PREFIX', 'im').strip('/')
-
-ASTAKOS_KEYSTONE_PREFIX = getattr(settings,
-                                  'ASTAKOS_KEYSTONE_PREFIX',
-                                  'keystone').strip('/')
 
 PROXY_USER_SERVICES = getattr(settings, 'CYCLADES_PROXY_USER_SERVICES', True)

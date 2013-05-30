@@ -31,67 +31,19 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from synnefo.lib import join_urls
+from synnefo.util.keypath import get_path, set_path
 
-# Required but undefined fields are given a value of None
 
-cyclades_services = {
-    'cyclades_compute': {
-        'type': 'compute',
-        'component': 'cyclades',
-        'prefix': 'compute',
-        'public': True,
-        'endpoints': [
-            {'version': 'v2.0',
-             'publicURL': None},
-        ]},
+def fill_in_endpoints(services, base_url):
+    for name, service in services.iteritems():
+        prefix = get_path(service, 'prefix')
+        endpoints = get_path(service, 'endpoints')
+        for name, endpoint in endpoints.iteritems():
+            version = get_path('versionId')
+            publicURL = get_path('publicURL')
+            if publicURL is not None:
+                continue
 
-    'cyclades_plankton': {
-        'type': 'image',
-        'component': 'cyclades',
-        'prefix': 'image',
-        'public': True,
-        'endpoints': [
-            {'version': 'v1',
-             'publicURL': None}
-        ]},
-
-    'cyclades_vmapi': {
-        'type': 'cyclades_vmapi',
-        'component': 'cyclades',
-        'prefix': 'vmapi',
-        'public': True,
-        'endpoints': [
-            {'version': 'v1.0',
-             'publicURL': None},
-        ]},
-
-    'cyclades_helpdesk': {
-        'type': 'cyclades_helpdesk',
-        'component': 'cyclades',
-        'prefix': 'helpdesk',
-        'public': False,
-        'endpoints': [
-            {'version': '',
-             'publicURL': None},
-        ]},
-
-    'cyclades_userdata': {
-        'type': 'cyclades_userdata',
-        'component': 'cyclades',
-        'prefix': 'userdata',
-        'public': False,
-        'endpoints': [
-            {'version': '',
-             'publicURL': None},
-        ]},
-
-    'cyclades_ui': {
-        'type': 'cyclades_ui',
-        'component': 'cyclades',
-        'prefix': 'ui',
-        'public': False,
-        'endpoints': [
-            {'version': '',
-             'publicURL': None},
-        ]},
-}
+            publicURL = join_urls(base_url, prefix, version)
+            set_path('publicURL', publicURL)

@@ -56,10 +56,21 @@ def join_urls(*args):
     'http://www.test.org/a/b/c/d'
     >>> join_urls("http://www.test.org/a/b/", "/c/d")
     'http://www.test.org/a/b/c/d'
-
+    >>> join_urls("/path1", "/path")
+    '/path1/path'
+    >>> join_urls("path1", "/path")
+    'path1/path'
+    >>> join_urls("path1/")
+    'path1/'
+    >>> join_urls("path1/", "path2", "path3")
+    'path1/path2/path3'
     """
-    return "/".join([a.lstrip("/").rstrip("/") for a in args[:-1]]) + \
-            "/" + args[-1].lstrip("/")
+    if len(args) == 1:
+        return args[0]
+
+    return "/".join([args[0].rstrip("/")] +
+                    [a.lstrip("/") for a in args[1:-1]] +
+                    [args[-1].lstrip("/")])
 
 
 def parse_base_url(base_url):

@@ -84,7 +84,7 @@
     <script>
         tmp_auth_client = new synnefo.auth.AstakosClient({
             cookie_name: '{{ auth_cookie_name }}',
-            login_url: '{{ login_redirect }}'
+            login_url: {{ login_redirect|safe }}
         });
         if (!tmp_auth_client.get_token()) { tmp_auth_client.redirect_to_login(); }
     </script>
@@ -637,8 +637,8 @@
             synnefo.config.os_created_users = {{ os_created_users|safe }};
             synnefo.config.feedback_post_url = {{ feedback_post_url|safe }};
             
-            synnefo.config.logout_redirect = '{{ logout_redirect }}';
-            synnefo.config.login_redirect = '{{ login_redirect }}';
+            synnefo.config.logout_redirect = {{ logout_redirect|safe }};
+            synnefo.config.login_redirect = {{ login_redirect|safe }};
             synnefo.config.auth_cookie_name = '{{ auth_cookie_name }}';
 
             synnefo.config.translate_uuids = {{ translate_uuids|safe }};

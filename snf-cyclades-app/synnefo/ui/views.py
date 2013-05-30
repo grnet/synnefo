@@ -52,30 +52,9 @@ from synnefo.lib import join_urls
 
 from snf_django.lib.astakos import get_user
 from synnefo import cyclades_settings
+from synnefo.ui import settings as uisettings
 
 SYNNEFO_JS_LIB_VERSION = get_component_version('app')
-PROXY_USER_SERVICES = getattr(settings, 'CYCLADES_PROXY_USER_SERVICES', True)
-
-
-# resolve astakos base url to be used by ui
-UI_ASTAKOS_BASE_HREF = cyclades_settings.ASTAKOS_BASE_URL
-if PROXY_USER_SERVICES:
-    UI_ASTAKOS_BASE_HREF = \
-        '/' + cyclades_settings.BASE_ASTAKOS_PROXY_PATH.lstrip('/')
-
-UI_ASTAKOS_ACCOUNTS_HREF = join_urls(UI_ASTAKOS_BASE_HREF,
-                                     cyclades_settings.ASTAKOS_ACCOUNTS_PREFIX)
-
-UI_ASTAKOS_VIEWS_HREF = join_urls(UI_ASTAKOS_BASE_HREF,
-                                  cyclades_settings.ASTAKOS_VIEWS_PREFIX)
-
-UI_ASTAKOS_KEYSTONE_HREF = join_urls(UI_ASTAKOS_BASE_HREF,
-                                     cyclades_settings.ASTAKOS_KEYSTONE_PREFIX)
-
-# api configuration
-api_path = join_urls(cyclades_settings.COMPUTE_PREFIX, 'v1.1').lstrip('/')
-api_path = '/' + join_urls(cyclades_settings.BASE_PATH, api_path).lstrip('/')
-COMPUTE_API_HREF = getattr(settings, 'COMPUTE_API_URL', api_path)
 
 # UI preferences settings
 TIMEOUT = getattr(settings, "TIMEOUT", 10000)
@@ -107,14 +86,6 @@ IMAGE_DELETED_SIZE_TITLE = \
 SUPPORT_SSH_OS_LIST = getattr(settings, "UI_SUPPORT_SSH_OS_LIST",)
 OS_CREATED_USERS = getattr(settings, "UI_OS_DEFAULT_USER_MAP")
 UNKNOWN_OS = getattr(settings, "UI_UNKNOWN_OS", "unknown")
-
-LOGOUT_PATH = join_urls(cyclades_settings.ASTAKOS_ACCOUNTS_PREFIX,
-                        getattr(settings, "UI_LOGOUT_PATH", 'authenticate'))
-LOGOUT_URL = join_urls(cyclades_settings.ASTAKOS_BASE_URL, LOGOUT_PATH)
-
-LOGIN_PATH = join_urls(cyclades_settings.ASTAKOS_VIEWS_PREFIX,
-                       getattr(settings, "UI_LOGIN_PATH", 'login'))
-LOGIN_URL = join_urls(cyclades_settings.ASTAKOS_BASE_URL, LOGIN_PATH)
 
 AUTH_COOKIE_NAME = getattr(settings, "UI_AUTH_COOKIE_NAME", 'synnefo_user')
 
@@ -160,10 +131,6 @@ UI_SYNNEFO_JS_WEB_URL = \
 
 # extensions
 ENABLE_GLANCE = getattr(settings, 'UI_ENABLE_GLANCE', True)
-glance_path = join_urls(cyclades_settings.BASE_PATH,
-                        cyclades_settings.PLANKTON_PREFIX)
-glance_path = '/' + glance_path.lstrip('/')
-GLANCE_API_HREF = getattr(settings, 'UI_GLANCE_API_URL', glance_path)
 
 DIAGNOSTICS_UPDATE_INTERVAL = \
     getattr(settings, 'UI_DIAGNOSTICS_UPDATE_INTERVAL', 2000)
@@ -195,18 +162,6 @@ GROUP_PUBLIC_NETWORKS = getattr(settings, 'UI_GROUP_PUBLIC_NETWORKS', True)
 GROUPED_PUBLIC_NETWORK_NAME = \
     getattr(settings, 'UI_GROUPED_PUBLIC_NETWORK_NAME', 'Internet')
 
-USER_CATALOG_PATH = getattr(settings, 'UI_USER_CATALOG_PATH', 'user_catalogs')
-USER_CATALOG_HREF = join_urls(UI_ASTAKOS_ACCOUNTS_HREF, USER_CATALOG_PATH)
-
-FEEDBACK_POST_PATH = getattr(settings, 'UI_FEEDBACK_POST_PATH', 'feedback')
-FEEDBACK_POST_HREF = join_urls(UI_ASTAKOS_ACCOUNTS_HREF, FEEDBACK_POST_PATH)
-
-
-ACCOUNTS_API_VERSION = getattr(settings, 'UI_ACCOUNTS_API_VERSION', '')
-ACCOUNTS_API_HREF = join_urls(UI_ASTAKOS_ACCOUNTS_HREF, ACCOUNTS_API_VERSION)
-
-TRANSLATE_UUIDS = not getattr(settings, 'TRANSLATE_UUIDS', False)
-
 
 def template(name, request, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
@@ -231,11 +186,14 @@ def home(request):
                'project': '+nefo',
                'request': request,
                'current_lang': get_language() or 'en',
-               'compute_api_url': json.dumps(COMPUTE_API_HREF),
-               'user_catalog_url': json.dumps(USER_CATALOG_HREF),
-               'feedback_post_url': json.dumps(FEEDBACK_POST_HREF),
-               'accounts_api_url': json.dumps(ACCOUNTS_API_HREF),
-               'translate_uuids': json.dumps(TRANSLATE_UUIDS),
+               'compute_api_url': json.dumps(uisettings.COMPUTE_URL),
+               'user_catalog_url': json.dumps(uisettings.USER_CATALOG_URL),
+               'feedback_post_url': json.dumps(uisettings.FEEDBACK_URL),
+               'accounts_api_url': json.dumps(uisettings.ACCOUNTS_URL),
+               'logout_redirect': json.dumps(uisettings.LOGOUT_REDIRECT),
+               'login_redirect': json.dumps(uisettings.LOGIN_URL),
+               'glance_api_url': json.dumps(uisettings.GLANCE_URL),
+               'translate_uuids': json.dumps(True),
                # update interval settings
                'update_interval': UPDATE_INTERVAL,
                'update_interval_increase': UPDATE_INTERVAL_INCREASE,
@@ -245,8 +203,6 @@ def home(request):
                'update_interval_max': UPDATE_INTERVAL_MAX,
                'changes_since_alignment': CHANGES_SINCE_ALIGNMENT,
                'image_icons': IMAGE_ICONS,
-               'logout_redirect': LOGOUT_URL,
-               'login_redirect': LOGIN_URL,
                'auth_cookie_name': AUTH_COOKIE_NAME,
                'suggested_flavors': json.dumps(SUGGESTED_FLAVORS),
                'suggested_roles': json.dumps(SUGGESTED_ROLES),
@@ -264,7 +220,6 @@ def home(request):
                'os_created_users': json.dumps(OS_CREATED_USERS),
                'userdata_keys_limit': json.dumps(MAX_SSH_KEYS_PER_USER),
                'use_glance': json.dumps(ENABLE_GLANCE),
-               'glance_api_url': json.dumps(GLANCE_API_HREF),
                'system_images_owners': json.dumps(SYSTEM_IMAGES_OWNERS),
                'custom_image_help_url': CUSTOM_IMAGE_HELP_URL,
                'image_deleted_title': json.dumps(IMAGE_DELETED_TITLE),

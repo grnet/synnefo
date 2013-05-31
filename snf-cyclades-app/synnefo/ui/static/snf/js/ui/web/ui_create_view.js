@@ -71,7 +71,6 @@
                     return;
                 }
                 this.hide();
-                snf.ui.main.show_vm_details(storage.vms.get(this.vm_id));
             }, this));
 
             _.bindAll(this, "handle_vm_added");

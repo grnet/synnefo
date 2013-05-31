@@ -1613,7 +1613,6 @@
         defaults: {'nics':[],'linked_to':[]},
         
         parse: function (resp, xhr) {
-          console.log(resp);
             // FIXME: depricated global var
             if (!resp) { return []};
             var data = _.filter(_.map(resp.networks, _.bind(this.parse_net_api_data, this)),

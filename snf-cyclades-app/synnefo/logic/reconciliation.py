@@ -72,7 +72,7 @@ setup_environ(settings)
 from datetime import datetime, timedelta
 from collections import namedtuple
 
-from synnefo.db.models import (VirtualMachine, NetworkInterface,
+from synnefo.db.models import (VirtualMachine, NetworkInterface, Flavor,
                                pooled_rapi_client)
 from synnefo.logic.rapi import GanetiApiError
 from synnefo.logic.backend import get_instances
@@ -92,7 +92,7 @@ def needs_reconciliation(vm):
     return (now > vm.updated + timedelta(seconds=CHECK_INTERVAL)) or\
            (now > vm.backendtime + timedelta(seconds=2*CHECK_INTERVAL))
 
-VMState = namedtuple("VMState", ["state", "nics"])
+VMState = namedtuple("VMState", ["state", "cpu", "ram", "nics"])
 
 
 def stale_servers_in_db(D, G):
@@ -155,6 +155,25 @@ def unsynced_operstate(D, G):
     return unsynced
 
 
+def unsynced_flavors(D, G):
+    unsynced = set()
+    idD = set(D.keys())
+    idG = set(G.keys())
+
+    for i in idD & idG:
+        if D[i].ram != G[i].ram or D[i].cpu != G[i].cpu:
+            db_flavor = VirtualMachine.objects.get(id=i).flavor
+            try:
+                gnt_flavor = Flavor.objects.get(
+                                    ram=G[i].ram, cpu=G[i].cpu,
+                                    disk=db_flavor.disk,
+                                    disk_template=db_flavor.disk_template)
+            except Flavor.DoesNotExist:
+                gnt_flavor = None
+            unsynced.add((i, db_flavor, gnt_flavor))
+    return unsynced
+
+
 def instances_with_build_errors(D, G):
     failed = set()
     idD = set(D.keys())
@@ -183,7 +202,7 @@ def instances_with_build_errors(D, G):
 
 def get_servers_from_db(backends, with_nics=True):
     vms = VirtualMachine.objects.filter(deleted=False, backend__in=backends)
-    vm_info = vms.values_list("id", "operstate")
+    vm_info = vms.values_list("id", "operstate", "flavor__cpu", "flavor__ram")
     if with_nics:
         nics = NetworkInterface.objects.filter(machine__in=vms)\
                                .order_by("machine")\
@@ -199,8 +218,11 @@ def get_servers_from_db(backends, with_nics=True):
                        'ipv4':     ipv4 if ipv4 != '' else None
                        }
                 vm_nics[machine][index] = nic
-    servers = dict([(vm_id, VMState(state=state, nics=vm_nics.get(vm_id, [])))
-                    for vm_id, state in vm_info])
+    servers = dict([(vm_id, VMState(state=state,
+                                    cpu=cpu,
+                                    ram=ram,
+                                    nics=vm_nics.get(vm_id, [])))
+                    for vm_id, state, cpu, ram in vm_info])
     return servers
 
 
@@ -227,7 +249,12 @@ def get_instances_from_ganeti(backends):
                 continue
 
             nics = get_nics_from_instance(i)
+            beparams = i["beparams"]
+            vcpus = beparams["vcpus"]
+            ram = beparams["maxmem"]
             snf_instances[id] = VMState(state=i["oper_state"],
+                                        cpu=vcpus,
+                                        ram=ram,
                                         nics=nics)
 
     return snf_instances

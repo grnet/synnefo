@@ -71,6 +71,9 @@ class Command(BaseCommand):
         make_option('--detect-unsynced-nics', action='store_true',
                     dest='detect_unsynced_nics', default=False,
                     help='Detect unsynced nics between DB and Ganeti'),
+        make_option('--detect-unsynced-flavors', action='store_true',
+                    dest='detect_unsynced_flavors', default=False,
+                    help='Detect unsynced flavors between DB and Ganeti'),
         make_option('--detect-all', action='store_true',
                     dest='detect_all',
                     default=False, help='Enable all --detect-* arguments'),
@@ -87,6 +90,9 @@ class Command(BaseCommand):
         make_option('--fix-unsynced-nics', action='store_true',
                     dest='fix_unsynced_nics', default=False,
                     help='Fix unsynced nics between DB and Ganeti'),
+        make_option('--fix-unsynced-flavors', action='store_true',
+                    dest='fix_unsynced_flavors', default=False,
+                    help='Fix unsynced flavors between DB and Ganeti'),
         make_option('--fix-all', action='store_true', dest='fix_all',
                     default=False, help='Enable all --fix-* arguments'),
         make_option('--backend-id', default=None, dest='backend-id',
@@ -197,6 +203,19 @@ class Command(BaseCommand):
             elif verbosity == 2:
                 print >> sys.stderr, "All instance nics are synced."
 
+        if options["detect_unsynced_flavors"]:
+            unsynced_flavors = reconciliation.unsynced_flavors(DBVMs,
+                                                               GanetiVMs)
+            if len(unsynced_flavors) > 0:
+                print >> sys.stderr, "The flavor of the following server" \
+                                     " IDs is out-of-sync:"
+                print "    " + "\n    ".join(
+                    ["%d is %s in DB, %s in Ganeti" %
+                     (x[0], x[1], x[2])
+                     for x in unsynced_flavors])
+            elif verbosity == 2:
+                print >> sys.stderr, "All instance flavors are synced."
+
         #
         # Then fix them
         #
@@ -283,4 +302,26 @@ class Command(BaseCommand):
                 event_time = datetime.datetime.now()
                 backend_mod.process_net_status(vm=vm, etime=event_time,
                                                nics=final_nics)
+            print >> sys.stderr, "    ...done"
+        if options["fix_unsynced_flavors"] and len(unsynced_flavors) > 0:
+            print >> sys.stderr, "Setting the flavor of %d unsynced VMs:" % \
+                len(unsynced_flavors)
+            for id, db_flavor, gnt_flavor in unsynced_flavors:
+                vm = VirtualMachine.objects.get(pk=id)
+                old_state = vm.operstate
+                opcode = "OP_INSTANCE_SET_PARAMS"
+                beparams = {"vcpus": gnt_flavor.cpu,
+                            "minmem": gnt_flavor.ram,
+                            "maxmem": gnt_flavor.ram}
+                event_time = datetime.datetime.now()
+                backend_mod.process_op_status(
+                    vm=vm, etime=event_time, jobid=-0,
+                    opcode=opcode, status='success',
+                    beparams=beparams,
+                    logmsg='Reconciliation: simulated Ganeti event')
+                # process_op_status with beparams will set the vmstate to
+                # shutdown. Fix this be returning it to old state
+                vm = VirtualMachine.objects.get(pk=id)
+                vm.operstate = old_state
+                vm.save()
             print >> sys.stderr, "    ...done"

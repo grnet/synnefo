@@ -89,6 +89,9 @@ UNKNOWN_OS = getattr(settings, "UI_UNKNOWN_OS", "unknown")
 
 AUTH_COOKIE_NAME = getattr(settings, "UI_AUTH_COOKIE_NAME", 'synnefo_user')
 
+# never change window location. Helpful in development environments
+AUTH_SKIP_REDIRECTS = getattr(settings, "UI_AUTH_SKIP_REDIRECTS", False)
+
 # UI behaviour settings
 DELAY_ON_BLUR = getattr(settings, "UI_DELAY_ON_BLUR", True)
 UPDATE_HIDDEN_VIEWS = getattr(settings, "UI_UPDATE_HIDDEN_VIEWS", False)
@@ -204,6 +207,7 @@ def home(request):
                'changes_since_alignment': CHANGES_SINCE_ALIGNMENT,
                'image_icons': IMAGE_ICONS,
                'auth_cookie_name': AUTH_COOKIE_NAME,
+               'auth_skip_redirects': json.dumps(AUTH_SKIP_REDIRECTS),
                'suggested_flavors': json.dumps(SUGGESTED_FLAVORS),
                'suggested_roles': json.dumps(SUGGESTED_ROLES),
                'vm_image_common_metadata': json.dumps(VM_IMAGE_COMMON_METADATA),

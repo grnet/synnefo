@@ -658,6 +658,7 @@
                 login_url: synnefo.config.login_redirect,
                 logout_url: synnefo.config.logout_redirect,
                 cookie_name: synnefo.config.auth_cookie_name,
+                skip_redirects: {{ auth_skip_redirects|safe }},
                 logout_callback: function(client) {
                     Backbone.history.navigate(client.config.logout_url);
                     window.location = client.config.logout_url; 

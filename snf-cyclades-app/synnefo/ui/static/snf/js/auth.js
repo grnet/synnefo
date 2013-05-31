@@ -67,6 +67,8 @@
         this.config = $.extend(this.default_config, config);
         this.current_token = undefined;
         this.current_username = undefined;
+        this.skip_redirects = config.skip_redirects === undefined ? false : 
+                              config.skip_redirects;
       
         var self = this;
         this.updater = window.setInterval(function(){
@@ -85,15 +87,21 @@
     }
 
     snf.auth.AstakosClient.prototype.delete_cookie = function() {
+      if (!this.skip_redirects) {
         $.cookie(this.config.cookie_name, null);
+      }
     }
 
     snf.auth.AstakosClient.prototype.redirect_to_logout = function() {
+      if (!this.skip_redirects) {
         window.location = this.config.logout_url + "?next=";
+      }
     }
     
     snf.auth.AstakosClient.prototype.redirect_to_login = function() {
+      if (!this.skip_redirects) {
         window.location = this.config.login_url + "?next=" + window.location.toString();
+      }
     }
 
     // delete cookie and redirect to logout

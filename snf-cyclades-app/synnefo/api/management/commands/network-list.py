@@ -88,13 +88,14 @@ class Command(ListCommand):
         "mode": ("mode", "The mode of the network"),
         "link": ("link", "The link of the network"),
         "mac_prefix": ("mac_prefix", "The network's MAC prefix"),
+        "drained": ("drained", "Whether network is drained or not"),
         "vms": (get_machines, "Number of connected servers"),
         "backends": (get_backends, "IDs of Ganeti backends that the network is"
                                    " connected to"),
     }
 
     fields = ["id", "name", "user.uuid", "state", "public", "subnet.ipv4",
-              "gateway.ipv4", "link", "mac_prefix", "dhcp"]
+              "gateway.ipv4", "link", "mac_prefix", "dhcp", "drained"]
 
     def handle_args(self, *args, **options):
         if options["public"]:

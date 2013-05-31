@@ -109,7 +109,13 @@ class Command(BaseCommand):
             '--remove-reserved-ips',
             dest="remove_reserved_ips",
             help="Comma seperated list of IPs to externally release."),
-
+        make_option(
+            "--drained",
+            dest="drained",
+            metavar="True|False",
+            choices=["True", "False"],
+            help="Set as drained to exclude for IP allocation."
+                 " Only used for public networks.")
     )
 
     def handle(self, *args, **options):
@@ -133,8 +139,11 @@ class Command(BaseCommand):
         dhcp = options.get("dhcp")
         if dhcp:
             options["dhcp"] = parse_bool(dhcp)
+        drained = options.get("drained")
+        if drained:
+            options["drained"] = parse_bool(drained)
         fields = ('name', 'userid', 'subnet', 'gateway', 'subnet6', 'gateway6',
-                  'dhcp', 'state', 'link', 'mac_prefix')
+                  'dhcp', 'state', 'link', 'mac_prefix', 'drained')
         for field in fields:
             value = options.get(field, None)
             if value is not None:

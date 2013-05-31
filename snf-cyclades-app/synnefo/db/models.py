@@ -512,6 +512,7 @@ class Network(models.Model):
                                       through='NetworkInterface')
     action = models.CharField(choices=ACTIONS, max_length=32, null=True,
                               default=None)
+    drained = models.BooleanField("Drained", default=False, null=False)
 
     pool = models.OneToOneField('IPPoolTable', related_name='network',
                 default=lambda: IPPoolTable.objects.create(available_map='',

@@ -52,6 +52,7 @@ class Command(ListCommand):
         free_ips = 0
         total_ips = 0
         for bnet in backend.networks.filter(deleted=False,
+                                            network__drained=False,
                                             network__public=True,
                                             network__deleted=False):
             network = bnet.network

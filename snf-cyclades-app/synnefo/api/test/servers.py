@@ -211,6 +211,14 @@ class ServerCreateAPITest(BaseAPITest):
         self.assertEqual(api_server['name'], db_vm.name)
         self.assertEqual(api_server['status'], db_vm.operstate)
 
+        # Test drained flag in Network:
+        network.drained = True
+        network.save()
+        with mocked_quotaholder():
+            response = self.post('/api/v1.1/servers', 'test_user',
+                                     json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 503, "serviceUnavailable")
+
     def test_create_server_no_flavor(self, mrapi, mimage):
         request = {
                     "server": {

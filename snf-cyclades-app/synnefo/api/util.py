@@ -299,7 +299,8 @@ def backend_public_networks(backend):
     to the specified backend.
 
     """
-    for network in Network.objects.filter(public=True, deleted=False):
+    for network in Network.objects.filter(public=True, deleted=False,
+                                          drained=False):
         if BackendNetwork.objects.filter(network=network,
                                          backend=backend).exists():
             yield network

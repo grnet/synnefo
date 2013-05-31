@@ -39,7 +39,7 @@ astakos_services = {
         'prefix': 'account',
         'public': True,
         'endpoints': [
-            {'version': 'v1.0',
+            {'versionId': 'v1.0',
              'publicURL': None},
         ]},
 
@@ -49,7 +49,7 @@ astakos_services = {
         'prefix': 'identity',
         'public': True,
         'endpoints': [
-            {'version': 'v2.0',
+            {'versionId': 'v2.0',
              'publicURL': None},
         ]},
 
@@ -59,7 +59,7 @@ astakos_services = {
         'prefix': 'ui',
         'public': False,
         'endpoints': [
-            {'version': 'v1.0',
+            {'versionId': 'v1.0',
              'publicURL': None},
         ]},
 }

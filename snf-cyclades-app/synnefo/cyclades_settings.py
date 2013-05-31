@@ -35,6 +35,7 @@ from django.conf import settings
 from synnefo.lib import join_urls, parse_base_url
 from synnefo.util.keypath import get_path
 from synnefo.api.services import cyclades_services as vanilla_cyclades_services
+from synnefo.lib.services import fill_endpoints
 from astakosclient import astakos_services
 
 from copy import deepcopy
@@ -48,6 +49,7 @@ BASE_HOST, BASE_PATH = parse_base_url(BASE_URL)
 
 CUSTOMIZE_SERVICES = getattr(settings, 'CYCLADES_CUSTOMIZE_SERVICES', ())
 cyclades_services = deepcopy(vanilla_cyclades_services)
+fill_endpoints(cyclades_services, BASE_URL)
 for path, value in CUSTOMIZE_SERVICES:
     set_path(cyclades_services, path, value, createpath=True)
 

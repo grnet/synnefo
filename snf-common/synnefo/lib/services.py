@@ -35,15 +35,15 @@ from synnefo.lib import join_urls
 from synnefo.util.keypath import get_path, set_path
 
 
-def fill_in_endpoints(services, base_url):
+def fill_endpoints(services, base_url):
     for name, service in services.iteritems():
         prefix = get_path(service, 'prefix')
         endpoints = get_path(service, 'endpoints')
-        for name, endpoint in endpoints.iteritems():
-            version = get_path('versionId')
-            publicURL = get_path('publicURL')
+        for endpoint in endpoints:
+            version = get_path(endpoint, 'versionId')
+            publicURL = get_path(endpoint, 'publicURL')
             if publicURL is not None:
                 continue
 
             publicURL = join_urls(base_url, prefix, version)
-            set_path('publicURL', publicURL)
+            set_path(endpoint, 'publicURL', publicURL)

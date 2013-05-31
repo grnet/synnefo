@@ -1,7 +1,7 @@
 from django.conf import settings
 from synnefo_branding import settings as synnefo_settings
 from synnefo.lib import parse_base_url
-from astakosclient import astakos_services
+from astakosclient import astakos_services as vanilla_astakos_services
 from synnefo.util.keypath import get_path
 from synnefo.lib import join_urls
 

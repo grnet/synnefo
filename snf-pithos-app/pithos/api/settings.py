@@ -3,7 +3,9 @@ from django.conf import settings
 from synnefo.lib import parse_base_url
 from astakosclient import astakos_services
 from synnefo.util.keypath import get_path
-from pithos.api.services import pithos_services
+from pithos.api.services import pithos_services as vanilla_pithos_services
+
+from copy import deepcopy
 
 # Top-level URL for Pithos. Must set.
 BASE_URL = getattr(settings, 'PITHOS_BASE_URL',

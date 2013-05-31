@@ -41,7 +41,7 @@ cyclades_services = {
         'prefix': 'compute',
         'public': True,
         'endpoints': [
-            {'version': 'v2.0',
+            {'versionId': 'v2.0',
              'publicURL': None},
         ]},
 
@@ -51,7 +51,7 @@ cyclades_services = {
         'prefix': 'image',
         'public': True,
         'endpoints': [
-            {'version': 'v1',
+            {'versionId': 'v1',
              'publicURL': None}
         ]},
 
@@ -61,7 +61,7 @@ cyclades_services = {
         'prefix': 'vmapi',
         'public': True,
         'endpoints': [
-            {'version': 'v1.0',
+            {'versionId': 'v1.0',
              'publicURL': None},
         ]},
 
@@ -71,7 +71,7 @@ cyclades_services = {
         'prefix': 'helpdesk',
         'public': False,
         'endpoints': [
-            {'version': '',
+            {'versionId': '',
              'publicURL': None},
         ]},
 
@@ -81,7 +81,7 @@ cyclades_services = {
         'prefix': 'userdata',
         'public': False,
         'endpoints': [
-            {'version': '',
+            {'versionId': '',
              'publicURL': None},
         ]},
 
@@ -91,7 +91,7 @@ cyclades_services = {
         'prefix': 'ui',
         'public': False,
         'endpoints': [
-            {'version': '',
+            {'versionId': '',
              'publicURL': None},
         ]},
 }

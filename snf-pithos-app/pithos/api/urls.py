@@ -37,7 +37,8 @@ from snf_django.lib.api.proxy import proxy
 from snf_django.lib.api.utils import prefix_pattern
 from pithos.api.settings import (
     BASE_PATH, ASTAKOS_BASE_URL, BASE_ASTAKOS_PROXY_PATH,
-    ASTAKOS_ACCOUNTS_PREFIX, PROXY_USER_SERVICES)
+    ASTAKOS_ACCOUNT_PREFIX, PROXY_USER_SERVICES,
+    PITHOS_PREFIX, PUBLIC_PREFIX, UI_PREFIX)
 from urlparse import urlparse
 
 
@@ -53,9 +54,10 @@ pithos_api_patterns = patterns(
 
 pithos_patterns = patterns(
     '',
-    (r'^v1(?:$|/)', include(pithos_api_patterns)),
-    (r'^v1\.0(?:$|/)', include(pithos_api_patterns)),
-    (r'^public/(?P<v_public>.+?)/?$', 'pithos.api.public.public_demux'))
+    (r'{0}v1/'.format(prefix_pattern(PITHOS_PREFIX)),
+        include(pithos_api_patterns)),
+    (r'{0}(?P<v_public>.+?)/?$'.format(prefix_pattern(PUBLIC_PREFIX)),
+        'pithos.api.public.public_demux'))
 
 urlpatterns = patterns(
     '',
@@ -71,7 +73,7 @@ if PROXY_USER_SERVICES:
         (r'^login/?$', astakos_proxy),
         (r'^feedback/?$', astakos_proxy),
         (r'^user_catalogs/?$', astakos_proxy),
-        (prefix_pattern(ASTAKOS_ACCOUNTS_PREFIX), astakos_proxy),
+        (prefix_pattern(ASTAKOS_ACCOUNT_PREFIX), astakos_proxy),
     )
 
     urlpatterns += patterns(

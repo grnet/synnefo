@@ -1,23 +1,35 @@
 #coding=utf8
 from django.conf import settings
 from synnefo.lib import parse_base_url
+from astakosclient import astakos_services
+from synnefo.util.keypath import get_path
+from pithos.api.services import pithos_services
 
 # Top-level URL for Pithos. Must set.
 BASE_URL = getattr(settings, 'PITHOS_BASE_URL',
-                   "https://pithos.example.synnefo.org/")
+                   "https://object-store.example.synnefo.org/pithos/")
 
 BASE_HOST, BASE_PATH = parse_base_url(BASE_URL)
 
+# Process Astakos settings
 ASTAKOS_BASE_URL = getattr(settings, 'ASTAKOS_BASE_URL',
-                           "https://accounts.example.synnefo.org/")
-
+                           'https://accounts.example.synnefo.org/astakos/')
 ASTAKOS_BASE_HOST, ASTAKOS_BASE_PATH = parse_base_url(ASTAKOS_BASE_URL)
+
+PITHOS_PREFIX = get_path(pithos_services, 'pithos_object-store.prefix')
+PUBLIC_PREFIX = get_path(pithos_services, 'pithos_public.prefix')
+UI_PREFIX = get_path(pithos_services, 'pithos_ui.prefix')
+
+CUSTOMIZE_ASTAKOS_SERVICES = \
+        getattr(settings, 'PITHOS_CUSTOMIZE_ASTAKOS_SERVICES', ())
+for path, value in CUSTOMIZE_ASTAKOS_SERVICES:
+    set_path(astakos_services, path, value, createpath=True)
+
+ASTAKOS_ACCOUNT_PREFIX = get_path(astakos_services, 'astakos_account.prefix')
 
 BASE_ASTAKOS_PROXY_PATH = getattr(settings, 'PITHOS_BASE_ASTAKOS_PROXY_PATH',
                                   ASTAKOS_BASE_PATH)
 
-ASTAKOS_ACCOUNTS_PREFIX = getattr(settings, 'ASTAKOS_ACCOUNTS_PREFIX',
-                                  'accounts')
 
 ASTAKOSCLIENT_POOLSIZE = getattr(settings, 'PITHOS_ASTAKOSCLIENT_POOLSIZE', 200)
 

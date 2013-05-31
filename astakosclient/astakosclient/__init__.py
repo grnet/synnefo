@@ -43,6 +43,11 @@ from astakosclient.utils import \
 from astakosclient.errors import \
     AstakosClientException, Unauthorized, BadRequest, NotFound, Forbidden, \
     NoUserName, NoUUID, BadValue, QuotaLimit, InvalidResponse
+from .keypath import get_path
+from .services import astakos_services
+
+
+# Customize astakos_services here?
 
 
 def join_urls(a, b):
@@ -51,7 +56,7 @@ def join_urls(a, b):
 
 # --------------------------------------------------------------------
 # Astakos API urls
-ACCOUNTS_PREFIX = 'accounts'
+ACCOUNTS_PREFIX = get_path(astakos_services, 'astakos_account.prefix')
 API_AUTHENTICATE = join_urls(ACCOUNTS_PREFIX, "authenticate")
 API_USERCATALOGS = join_urls(ACCOUNTS_PREFIX, "user_catalogs")
 API_SERVICE_USERCATALOGS = join_urls(ACCOUNTS_PREFIX, "service/user_catalogs")
@@ -65,7 +70,7 @@ API_FEEDBACK = join_urls(ACCOUNTS_PREFIX, "feedback")
 
 # --------------------------------------------------------------------
 # Astakos Keystone API urls
-KEYSTONE_PREFIX = 'keystone'
+KEYSTONE_PREFIX = get_path(astakos_services, 'astakos_keystone.prefix')
 API_TOKENS = join_urls(KEYSTONE_PREFIX, "tokens")
 TOKENS_ENDPOINTS = join_urls(API_TOKENS, "endpoints")
 

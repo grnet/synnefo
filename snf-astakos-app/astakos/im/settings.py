@@ -4,6 +4,9 @@ from synnefo.lib import parse_base_url
 from astakosclient import astakos_services as vanilla_astakos_services
 from synnefo.util.keypath import get_path
 from synnefo.lib import join_urls
+from synnefo.lib.services import fill_endpoints
+
+from copy import deepcopy
 
 
 BASE_URL = getattr(settings, 'ASTAKOS_BASE_URL',
@@ -12,6 +15,8 @@ BASE_URL = getattr(settings, 'ASTAKOS_BASE_URL',
 
 BASE_HOST, BASE_PATH = parse_base_url(BASE_URL)
 
+astakos_services = deepcopy(vanilla_astakos_services)
+fill_endpoints(astakos_services, BASE_URL)
 ACCOUNTS_PREFIX = get_path(astakos_services, 'astakos_account.prefix')
 VIEWS_PREFIX = get_path(astakos_services, 'astakos_ui.prefix')
 KEYSTONE_PREFIX = get_path(astakos_services, 'astakos_keystone.prefix')

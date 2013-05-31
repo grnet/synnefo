@@ -309,62 +309,37 @@ $(document).ready(function() {
 	
 	
 	
-	
-	$('.landing-page .cms').hover(
-      function () {
-      	 el = $('.cloudbar ul.services li').first();
-      	 var offset = el.offset();
-      	 positionX = offset.left;
-      	 $('#hand').css('left',positionX);  		 
-         $('#hand').show();
-      }, 
-      function () {
+	// landing-page initialization
+    if ($('.landing-page').length > 0) {
+      var wrapper = $(".landing-page");
+      var services = wrapper.find(".landing-service");
+      services.hover(function(e) {
+        var cls, service_cls, cloudbar_li, offset, positionX;
+        cls = _.filter($(this).attr("class").split(" "), function(cls) {
+          return cls.indexOf("service-") == 0
+        });
+        if (!cls.length) { return }
+        service_cls = $.trim(cls[0]);
+        extra = 0;
+        if (service_cls == 'service-astakos') {
+          cloudbar_li = $(".cloudbar .profile");
+          extra = 50;
+        } else {
+          cloudbar_li = $(".cloudbar ul.services li." + service_cls);
+          if (cloudbar_li.index() != 0) {
+            extra = 20;
+          }
+        }
+      	offset = cloudbar_li.offset();
+        if (!offset) { return }
+      	positionX = offset.left + extra;
+      	$('#hand').css('left',positionX + 'px');
+        $('#hand').show();
+      }, function (e) {
       	$('#hand').hide();
-    
-    });  
-    
-    $('.landing-page .pithos').hover(
-      function () {
-      	 el = $('.cloudbar ul.services li:nth-child(3)');
-      	 var offset = el.offset();
-      	 positionX = offset.left;
-      	 left = parseInt(positionX) +20;
-      	 $('#hand').css('left',left+'px');  		 
-         $('#hand').show();
-      }, 
-      function () {
-      	$('#hand').hide();
-    
-    });  
-    
-    $('.landing-page .cyclades').hover(
-      function () {
-      	 el = $('.cloudbar ul.services li:nth-child(2)').first();
-      	 var offset = el.offset();
-      	 positionX = offset.left;
-      	 left = parseInt(positionX) +20;
-      	 $('#hand').css('left',left+'px');  		 
-         $('#hand').show();
-      }, 
-      function () {
-      	$('#hand').hide();
-    
-    });  
-    
-    
-    $('.landing-page .dashboard').hover(
-      function () {
-      	 el = $('.cloudbar .profile');
-      	 var offset = el.offset();
-      	 positionX = offset.left +50;
-      	 $('#hand').css('left',positionX);  		 
-         $('#hand').show();
-      }, 
-      function () {
-      	$('#hand').hide();
-    
-    });  
-    
+      });
+    }
+
     $('.pagination a.disabled').click(function(e){
     	e.preventDefault();
     });

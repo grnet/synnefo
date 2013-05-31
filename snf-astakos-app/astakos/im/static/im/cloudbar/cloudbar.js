@@ -53,7 +53,7 @@ $(document).ready(function(){
     // create services links and set the active class to the current service
     $.getJSON(get_services_url + "?callback=?", function(data) {
             $.each(data, function(i, el){
-            var sli = $("<li>");
+            var sli = $("<li class='service-"+el.name+"'>");
             var slink = $("<a>");
             if (!el.cloudbar) { el.cloudbar = {} }
             var title = el.cloudbar.name || el.verbose_name || el.name;

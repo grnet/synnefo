@@ -38,7 +38,7 @@ import json
 import math
 import copy
 
-from time import asctime
+import time
 from datetime import datetime, timedelta
 from base64 import b64encode
 from urllib import quote
@@ -93,30 +93,48 @@ def get_content_type():
 inf = float('inf')
 
 
+def generate_token(*args):
+    md5 = hashlib.md5()
+    md5.update(settings.SECRET_KEY)
+    for arg in args:
+        md5.update(arg)
+    md5.update("%.15f" % time.time())
+    return b64encode(md5.digest())
+
+
 class Component(models.Model):
     name = models.CharField(_('Name'), max_length=255, unique=True,
                             db_index=True)
     url = models.CharField(_('Component url'), max_length=255, null=True,
                            help_text=_("URL the component is accessible from"))
     auth_token = models.CharField(_('Authentication Token'), max_length=32,
-                                  null=True, blank=True)
+                                  null=True, blank=True, unique=True)
     auth_token_created = models.DateTimeField(_('Token creation date'),
                                               null=True)
     auth_token_expires = models.DateTimeField(_('Token expiration date'),
                                               null=True)
 
     def renew_token(self, expiration_date=None):
-        md5 = hashlib.md5()
-        md5.update(self.name.encode('ascii', 'ignore'))
-        md5.update(self.url.encode('ascii', 'ignore'))
-        md5.update(asctime())
+        for i in range(10):
+            data = (self.name.encode('ascii', 'ignore'),)
+            if self.url is not None:
+                data += (self.url.encode('ascii', 'ignore'),)
+            new_token = generate_token(*data)
+            count = Component.objects.filter(auth_token=new_token).count()
+            if count == 0:
+                break
+            continue
+        else:
+            raise ValueError('Could not generate a token')
 
-        self.auth_token = b64encode(md5.digest())
+        self.auth_token = new_token
         self.auth_token_created = datetime.now()
         if expiration_date:
             self.auth_token_expires = expiration_date
         else:
             self.auth_token_expires = None
+        msg = 'Token renewed for component %s' % self.name
+        logger.log(astakos_settings.LOGGING_LEVEL, msg)
 
     def __str__(self):
         return self.name
@@ -342,6 +360,7 @@ class AstakosUser(User):
 
     auth_token = models.CharField(_('Authentication Token'),
                                   max_length=32,
+                                  unique=True,
                                   null=True,
                                   blank=True,
                                   help_text = _('Renew your authentication '
@@ -520,13 +539,17 @@ class AstakosUser(User):
         logger.info("Verification code renewed for %s" % self.log_display)
 
     def renew_token(self, flush_sessions=False, current_key=None):
-        md5 = hashlib.md5()
-        md5.update(settings.SECRET_KEY)
-        md5.update(self.username)
-        md5.update(self.realname.encode('ascii', 'ignore'))
-        md5.update(asctime())
+        for i in range(10):
+            data = (self.username, self.realname.encode('ascii', 'ignore'))
+            new_token = generate_token(*data)
+            count = AstakosUser.objects.filter(auth_token=new_token).count()
+            if count == 0:
+                break
+            continue
+        else:
+            raise ValueError('Could not generate a token')
 
-        self.auth_token = b64encode(md5.digest())
+        self.auth_token = new_token
         self.auth_token_created = datetime.now()
         self.auth_token_expires = self.auth_token_created + \
                                   timedelta(hours=astakos_settings.AUTH_TOKEN_DURATION)

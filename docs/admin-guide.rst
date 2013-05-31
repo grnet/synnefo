@@ -1003,6 +1003,9 @@ fix-superusers                Transform superusers created by syncdb into Astako
 cleanup-full                  Cleanup sessions and session catalog
 commission-list               List pending commissions
 commission-show               Show details for a pending commission
+component-add                 Register a component
+component-list                List components
+component-modify              Modify component attributes
 project-control               Manage projects and applications
 project-list                  List projects
 project-show                  Show project details
@@ -1015,7 +1018,6 @@ resource-list                 List resources
 resource-modify               Modify a resource's default base quota and boolean flags
 service-add                   Register a service
 service-list                  List services
-service-modify                Modify service attributes
 service-show                  Show service details
 term-add                      Add approval terms
 user-activation-send          Send user activation

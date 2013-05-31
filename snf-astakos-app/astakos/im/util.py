@@ -306,7 +306,6 @@ def redirect_back(request, default='index'):
     safedomain = settings.BASEURL.replace("https://", "").replace(
         "http://", "")
     safe = restrict_next(referer, safedomain)
-    assert safe
     # avoid redirect loop
     loops = referer == request.get_full_path()
     if referer and safe and not loops:

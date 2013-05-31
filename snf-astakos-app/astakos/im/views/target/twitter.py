@@ -81,6 +81,13 @@ def login(request):
     resp, content = client.request(request_token_url, "GET")
     if resp['status'] != '200':
         messages.error(request, 'Invalid Twitter response')
+        logger.error("Invalid twitter response %s", resp)
+        return HttpResponseRedirect(reverse('edit_profile'))
+
+    oa_resp = dict(cgi.parse_qsl(content))
+    if 'status' in oa_resp and oa_resp['status'] != '200':
+        messages.error(request, 'Invalid Twitter response')
+        logger.error("Invalid twitter response %s", resp)
         return HttpResponseRedirect(reverse('edit_profile'))
 
     request.session['request_token'] = dict(cgi.parse_qsl(content))
@@ -142,6 +149,7 @@ def authenticated(
         except:
             pass
         messages.error(request, 'Invalid Twitter response')
+        logger.error("Invalid twitter response %s", resp)
         return HttpResponseRedirect(reverse('edit_profile'))
 
     access_token = dict(cgi.parse_qsl(content))
@@ -149,7 +157,6 @@ def authenticated(
     username = access_token.get('screen_name', userid)
     provider_info = {'screen_name': username}
     affiliation = 'Twitter.com'
-
 
     try:
         return handle_third_party_login(request, 'twitter', userid,

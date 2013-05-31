@@ -610,21 +610,31 @@ class UpdateBuildProgressTest(TestCase):
             self.assertEqual(vm.buildpercentage, old)
 
 
+from synnefo.logic.reconciliation import VMState
 class ReconciliationTest(TestCase):
-    SERVERS = 1000
-    fixtures = ['db_test_data']
+    def get_vm(self, operstate, deleted=False):
+        flavor = mfactory.FlavorFactory(cpu=2, ram=1024)
+        vm = mfactory.VirtualMachineFactory(deleted=deleted, flavor=flavor)
+        vm.operstate = operstate
+        vm.save()
+        return vm
 
     def test_get_servers_from_db(self):
         """Test getting a dictionary from each server to its operstate"""
         backend = 30000
-        self.assertEquals(reconciliation.get_servers_from_db(backends=[backend]),
-                          {30000: 'STARTED', 30001: 'STOPPED', 30002: 'BUILD'})
+        vm1 = self.get_vm('STARTED')
+        vm2 = self.get_vm('DESTROYED', deleted=True)
+        vm3 = self.get_vm('STOPPED')
+        self.assertEquals(reconciliation.get_servers_from_db(),
+                    {vm1.id: VMState(state='STARTED', cpu=2, ram=1024, nics=[]),
+                     vm3.id: VMState(state='STOPPED', cpu=2, ram=1024, nics=[])}
+                    )
 
     def test_stale_servers_in_db(self):
         """Test discovery of stale entries in DB"""
 
-        D = {1: 'STARTED', 2: 'STOPPED', 3: 'STARTED', 30000: 'BUILD',
-             30002: 'STOPPED'}
+        D = {1: None, 2: 'None', 3: None, 30000: 'BUILD',
+             30002: 'None'}
         G = {1: True, 3: True, 30000: True}
         self.assertEquals(reconciliation.stale_servers_in_db(D, G),
                           set([2, 30002]))
@@ -666,13 +676,21 @@ class ReconciliationTest(TestCase):
 
     def test_unsynced_operstate(self):
         """Test discovery of unsynced operstate between the DB and Ganeti"""
+        mkstate = lambda state: VMState(state=state, cpu=1, ram=1024, nics=[])
+        vm1 = self.get_vm("STARTED")
+        vm2 = self.get_vm("STARTED")
+        vm3= self.get_vm("BUILD")
+        vm4 = self.get_vm("STARTED")
+        vm5 = self.get_vm("BUILD")
 
-        G = {1: True, 2: False, 3: True, 4: False, 50: True}
-        D = {1: 'STARTED', 2: 'STARTED', 3: 'BUILD', 4: 'STARTED', 50: 'BUILD'}
+        D = {1: mkstate("STARTED"), 2: mkstate("STARTED"), 3: mkstate("BUILD"),
+             4: mkstate("STARTED"), 50: mkstate("BUILD")}
+        G = {vm1.id: mkstate(True), vm2.id: mkstate(False),
+             vm4.id: mkstate(True), vm4.id: mkstate(False),
+             vm5.id: mkstate(False)}
         self.assertEquals(reconciliation.unsynced_operstate(D, G),
-                          set([(2, 'STARTED', False),
-                               (3, 'BUILD', True), (4, 'STARTED', False),
-                               (50, 'BUILD', True)]))
+                          set([(vm2.id, "STARTED", False),
+                               (vm4.id, "STARTED", False)]))
 
 from synnefo.logic.test.rapi_pool_tests import *
 from synnefo.logic.test.utils_tests import *

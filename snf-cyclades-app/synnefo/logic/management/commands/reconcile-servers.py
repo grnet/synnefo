@@ -123,16 +123,16 @@ class Command(BaseCommand):
         else:
             backends = Backend.objects.filter(offline=False)
 
-        D = reconciliation.get_servers_from_db(backends)
-        G, GNics = reconciliation.get_instances_from_ganeti(backends)
+        with_nics = options["detect_unsynced_nics"]
 
-        DBNics = reconciliation.get_nics_from_db(backends)
+        DBVMs = reconciliation.get_servers_from_db(backend, with_nics)
+        GanetiVMs = reconciliation.get_instances_from_ganeti(backend)
 
         #
         # Detect problems
         #
         if options['detect_stale']:
-            stale = reconciliation.stale_servers_in_db(D, G)
+            stale = reconciliation.stale_servers_in_db(DBVMs, GanetiVMs)
             if len(stale) > 0:
                 print >> sys.stderr, "Found the following stale server IDs: "
                 print "    " + "\n    ".join(
@@ -141,7 +141,8 @@ class Command(BaseCommand):
                 print >> sys.stderr, "Found no stale server IDs in DB."
 
         if options['detect_orphans']:
-            orphans = reconciliation.orphan_instances_in_ganeti(D, G)
+            orphans = reconciliation.orphan_instances_in_ganeti(DBVMs,
+                                                                GanetiVMs)
             if len(orphans) > 0:
                 print >> sys.stderr, "Found orphan Ganeti instances with IDs: "
                 print "    " + "\n    ".join(
@@ -150,7 +151,7 @@ class Command(BaseCommand):
                 print >> sys.stderr, "Found no orphan Ganeti instances."
 
         if options['detect_unsynced']:
-            unsynced = reconciliation.unsynced_operstate(D, G)
+            unsynced = reconciliation.unsynced_operstate(DBVMs, GanetiVMs)
             if len(unsynced) > 0:
                 print >> sys.stderr, "The operstate of the following server" \
                                      " IDs is out-of-sync:"
@@ -162,7 +163,8 @@ class Command(BaseCommand):
                 print >> sys.stderr, "The operstate of all servers is in sync."
 
         if options['detect_build_errors']:
-            build_errors = reconciliation.instances_with_build_errors(D, G)
+            build_errors = reconciliation.\
+                instances_with_build_errors(DBVMs, GanetiVMs)
             if len(build_errors) > 0:
                 msg = "The os for the following server IDs was not build"\
                       " successfully:"
@@ -181,7 +183,7 @@ class Command(BaseCommand):
                           ': MAC: %s, IP: %s, Network: %s' % \
                           (info['mac'], info['ipv4'], info['network'])
 
-            unsynced_nics = reconciliation.unsynced_nics(DBNics, GNics)
+            unsynced_nics = reconciliation.unsynced_nics(DBVMs, GanetiVMs)
             if len(unsynced_nics) > 0:
                 msg = "The NICs of the servers with the following IDs are"\
                       " unsynced:"

@@ -70,8 +70,10 @@ setup_environ(settings)
 
 
 from datetime import datetime, timedelta
+from collections import namedtuple
 
-from synnefo.db.models import (VirtualMachine, pooled_rapi_client)
+from synnefo.db.models import (VirtualMachine, NetworkInterface,
+                               pooled_rapi_client)
 from synnefo.logic.rapi import GanetiApiError
 from synnefo.logic.backend import get_instances
 from synnefo.logic import utils
@@ -89,6 +91,8 @@ def needs_reconciliation(vm):
     now = datetime.now()
     return (now > vm.updated + timedelta(seconds=CHECK_INTERVAL)) or\
            (now > vm.backendtime + timedelta(seconds=2*CHECK_INTERVAL))
+
+VMState = namedtuple("VMState", ["state", "nics"])
 
 
 def stale_servers_in_db(D, G):
@@ -131,18 +135,20 @@ def unsynced_operstate(D, G):
     idG = set(G.keys())
 
     for i in idD & idG:
-        vm_unsynced = (G[i] and D[i] != "STARTED") or\
-                      (not G[i] and D[i] not in ('BUILD', 'ERROR', 'STOPPED'))
+        dbstate = D[i].state
+        gntstate = G[i].state
+        vm_unsynced = (gntstate and dbstate != "STARTED") or\
+            (not gntstate and dbstate not in ('BUILD', 'ERROR', 'STOPPED'))
         if vm_unsynced:
-            unsynced.add((i, D[i], G[i]))
-        if not G[i] and D[i] == 'BUILD':
+            unsynced.add((i, dbstate, gntstate))
+        if not gntstate and dbstate == 'BUILD':
             vm = VirtualMachine.objects.get(id=i)
             if needs_reconciliation(vm):
                 with pooled_rapi_client(vm) as c:
                     try:
                         job_info = c.GetJobStatus(job_id=vm.backendjobid)
                         if job_info['status'] == 'success':
-                            unsynced.add((i, D[i], G[i]))
+                            unsynced.add((i, dbstate, gntstate))
                     except GanetiApiError:
                         pass
 
@@ -175,9 +181,27 @@ def instances_with_build_errors(D, G):
     return failed
 
 
-def get_servers_from_db(backends):
+def get_servers_from_db(backends, with_nics=True):
     vms = VirtualMachine.objects.filter(deleted=False, backend__in=backends)
-    return dict(map(lambda x: (x.id, x.operstate), vms))
+    vm_info = vms.values_list("id", "operstate")
+    if with_nics:
+        nics = NetworkInterface.objects.filter(machine__in=vms)\
+                               .order_by("machine")\
+                               .values_list("machine", "index", "mac", "ipv4",
+                                            "network")
+        vm_nics = {}
+        for machine, machine_nics in itertools.groupby(nics,
+                                                       lambda nic: nic[0]):
+            vm_nics[machine] = {}
+            for machine, index, mac, ipv4, network in machine_nics:
+                nic = {'mac':      mac,
+                       'network':  utils.id_to_network_name(network),
+                       'ipv4':     ipv4 if ipv4 != '' else None
+                       }
+                vm_nics[machine][index] = nic
+    servers = dict([(vm_id, VMState(state=state, nics=vm_nics.get(vm_id, [])))
+                    for vm_id, state in vm_info])
+    return servers
 
 
 def get_instances_from_ganeti(backends):
@@ -186,7 +210,6 @@ def get_instances_from_ganeti(backends):
         instances.append(get_instances(backend))
     ganeti_instances = reduce(list.__add__, instances, [])
     snf_instances = {}
-    snf_nics = {}
 
     prefix = settings.BACKEND_PREFIX_ID
     for i in ganeti_instances:
@@ -203,10 +226,11 @@ def get_instances_from_ganeti(backends):
                           i['name'])
                 continue
 
-            snf_instances[id] = i['oper_state']
-            snf_nics[id] = get_nics_from_instance(i)
+            nics = get_nics_from_instance(i)
+            snf_instances[id] = VMState(state=i["oper_state"],
+                                        nics=nics)
 
-    return snf_instances, snf_nics
+    return snf_instances
 
 
 #
@@ -254,27 +278,7 @@ def get_nics_from_instance(i):
     return nics
 
 
-def get_nics_from_db(backends):
-    """Get network interfaces for each vm in DB.
-
-    """
-    instances = VirtualMachine.objects.filter(deleted=False,
-                                              backend__in=backends)
-    instances_nics = {}
-    for instance in instances:
-        nics = {}
-        for n in instance.nics.all():
-            ipv4 = n.ipv4
-            nic = {'mac':      n.mac,
-                   'network':  n.network.backend_id,
-                   'ipv4':     ipv4 if ipv4 != '' else None
-                   }
-            nics[n.index] = nic
-        instances_nics[instance.id] = nics
-    return instances_nics
-
-
-def unsynced_nics(DBNics, GNics):
+def unsynced_nics(DBVMs, GanetiVMs):
     """Find unsynced network interfaces between DB and Ganeti.
 
     @ rtype: dict; {instance_id: ganeti_nics}
@@ -282,13 +286,13 @@ def unsynced_nics(DBNics, GNics):
     interfaces between DB and Ganeti and the network interfaces in Ganeti.
 
     """
-    idD = set(DBNics.keys())
-    idG = set(GNics.keys())
+    idD = set(DBVMs.keys())
+    idG = set(GanetiVMs.keys())
 
     unsynced = {}
     for i in idD & idG:
-        nicsD = DBNics[i]
-        nicsG = GNics[i]
+        nicsD = DBVMs[i].nics
+        nicsG = GanetiVMs[i].nics
         if len(nicsD) != len(nicsG):
             unsynced[i] = (nicsD, nicsG)
             continue

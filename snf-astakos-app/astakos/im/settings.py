@@ -1,6 +1,9 @@
 from django.conf import settings
 from synnefo_branding import settings as synnefo_settings
 from synnefo.lib import parse_base_url
+from astakosclient import astakos_services
+from synnefo.util.keypath import get_path
+
 
 BASE_URL = getattr(settings, 'ASTAKOS_BASE_URL',
                    'https://accounts.example.synnefo.org')
@@ -8,9 +11,9 @@ BASE_URL = getattr(settings, 'ASTAKOS_BASE_URL',
 
 BASE_HOST, BASE_PATH = parse_base_url(BASE_URL)
 
-ACCOUNTS_PREFIX = getattr(settings, 'ASTAKOS_ACCOUNTS_PREFIX', 'accounts')
-VIEWS_PREFIX = getattr(settings, 'ASTAKOS_VIEWS_PREFIX', 'im')
-KEYSTONE_PREFIX = getattr(settings, 'ASTAKOS_ACCOUNTS_PREFIX', 'keystone')
+ACCOUNTS_PREFIX = get_path(astakos_services, 'astakos_account.prefix')
+VIEWS_PREFIX = get_path(astakos_services, 'astakos_ui.prefix')
+KEYSTONE_PREFIX = get_path(astakos_services, 'astakos_keystone.prefix')
 
 # Set the expiration time of newly created auth tokens
 # to be this many hours after their creation time.
@@ -131,9 +134,9 @@ SHIBBOLETH_REQUIRE_NAME_INFO = getattr(settings,
                                        'ASTAKOS_SHIBBOLETH_REQUIRE_NAME_INFO',
                                        False)
 
-ACTIVATION_REDIRECT_URL = getattr(settings,
-                                  'ASTAKOS_ACTIVATION_REDIRECT_URL',
-                                  "/im/landing")
+default_redirect_url = join_urls(ASTAKOS_BASE_URL, VIEWS_PREFIX, "landing")
+ACTIVATION_REDIRECT_URL = getattr(settings, 'ASTAKOS_ACTIVATION_REDIRECT_URL',
+                                  default_redirect_url)
 
 # If true, this enables a ui compatibility layer for the introduction of UUIDs
 # in identity management. WARNING: Setting to True will break your installation.
@@ -157,7 +160,9 @@ LINKEDIN_TOKEN = getattr(settings, 'ASTAKOS_LINKEDIN_TOKEN', '')
 LINKEDIN_SECRET = getattr(settings, 'ASTAKOS_LINKEDIN_SECRET', '')
 
 # URL to redirect the user after successful login when no next parameter is set
-LOGIN_SUCCESS_URL = getattr(settings, 'ASTAKOS_LOGIN_SUCCESS_URL','/im/landing')
+default_success_url = join_urls(ASTAKOS_BASE_URL, VIEWS_PREFIX, "landing")
+LOGIN_SUCCESS_URL = getattr(settings, 'ASTAKOS_LOGIN_SUCCESS_URL',
+                            default_redirect_url)
 
 # Whether or not to display projects in astakos menu
 PROJECTS_VISIBLE = getattr(settings, 'ASTAKOS_PROJECTS_VISIBLE', False)

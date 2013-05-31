@@ -32,11 +32,15 @@
 # or implied, of GRNET S.A.
 
 import logging
+import oauth2 as oauth
+import cgi
+import urllib
 
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
 from django.http import HttpResponseRedirect, urlencode
 from django.core.urlresolvers import reverse
+from django.conf import settings as django_settings
 
 from urlparse import urlunsplit, urlsplit, parse_qsl
 
@@ -47,16 +51,22 @@ from astakos.im.views.target import get_pending_key, \
     init_third_party_session
 from astakos.im.views.decorators import cookie_fix, requires_auth_provider
 
-
 logger = logging.getLogger(__name__)
 
-import oauth2 as oauth
-import cgi
-import urllib
 
-request_token_url = 'https://api.twitter.com/oauth/request_token'
-access_token_url = 'https://api.twitter.com/oauth/access_token'
-authenticate_url = 'https://api.twitter.com/oauth/authenticate'
+def django_setting(key, default):
+    return getattr(django_settings, 'TWITTER_%s' % key.upper, default)
+
+request_token_url = django_setting(
+    'request_token_url',
+    'https://api.twitter.com/oauth/request_token')
+access_token_url = django_setting(
+    'access_token_url',
+    'https://api.twitter.com/oauth/access_token')
+authenticate_url = django_setting(
+    'authenticate_url',
+    'https://api.twitter.com/oauth/authenticate')
+
 
 @requires_auth_provider('twitter')
 @require_http_methods(["GET", "POST"])

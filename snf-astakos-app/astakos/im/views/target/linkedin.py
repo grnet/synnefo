@@ -32,30 +32,40 @@
 # or implied, of GRNET S.A.
 
 import json
+import logging
+import oauth2 as oauth
+import cgi
 
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
+from django.conf import settings as django_settings
 
 from astakos.im.models import AstakosUser
 from astakos.im import settings
 from astakos.im.views.target import get_pending_key, \
-    handle_third_party_signup, handle_third_party_login, init_third_party_session
+    handle_third_party_signup, handle_third_party_login, \
+    init_third_party_session
 from astakos.im.views.decorators import cookie_fix, \
     requires_auth_provider
 
-import logging
-
 logger = logging.getLogger(__name__)
 
-import oauth2 as oauth
-import cgi
 
+def django_setting(key, default):
+    return getattr(django_settings, 'GOOGLE_%s' % key.upper, default)
 
-request_token_url      = 'https://api.linkedin.com/uas/oauth/requestToken?scope=r_basicprofile+r_emailaddress'
-access_token_url       = 'https://api.linkedin.com/uas/oauth/accessToken'
-authenticate_url       = 'https://www.linkedin.com/uas/oauth/authorize'
+token_scope = 'r_basicprofile+r_emailaddress'
+request_token_url = django_setting(
+    'request_token_url',
+    'https://api.linkedin.com/uas/oauth/requestToken?scope=' + token_scope)
+access_token_url = django_setting(
+    'access_token_url',
+    'https://api.linkedin.com/uas/oauth/accessToken')
+authenticate_url = django_setting(
+    'authenticate_url',
+    'https://www.linkedin.com/uas/oauth/authorize')
 
 
 @requires_auth_provider('linkedin')

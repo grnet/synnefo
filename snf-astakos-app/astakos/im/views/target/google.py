@@ -32,35 +32,47 @@
 # or implied, of GRNET S.A.
 
 import json
+import logging
+import urllib
+import oauth2 as oauth
 
 from django.utils.translation import ugettext as _
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
+from django.conf import settings as django_settings
 
 from astakos.im.models import AstakosUser
 from astakos.im import settings
 from astakos.im.views.target import get_pending_key, \
-    handle_third_party_signup, handle_third_party_login, init_third_party_session
+    handle_third_party_signup, handle_third_party_login, \
+    init_third_party_session
 from astakos.im.views.decorators import cookie_fix, requires_auth_provider
 
-import logging
-import urllib
-
 logger = logging.getLogger(__name__)
-
-import oauth2 as oauth
-
 signature_method = oauth.SignatureMethod_HMAC_SHA1()
 
 OAUTH_CONSUMER_KEY = settings.GOOGLE_CLIENT_ID
 OAUTH_CONSUMER_SECRET = settings.GOOGLE_SECRET
 
-token_scope = 'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email'
-authenticate_url = 'https://accounts.google.com/o/oauth2/auth'
-access_token_url = 'https://www.googleapis.com/oauth2/v1/tokeninfo'
-request_token_url = 'https://accounts.google.com/o/oauth2/token'
+
+def django_setting(key, default):
+    return getattr(django_settings, 'GOOGLE_%s' % key.upper, default)
+
+default_token_scopes = ['https://www.googleapis.com/auth/userinfo.profile',
+                        'https://www.googleapis.com/auth/userinfo.email']
+
+token_scope = django_setting('token_scope', ' '.join(default_token_scopes))
+authenticate_url = django_setting(
+    'authenticate_url',
+    'https://accounts.google.com/o/oauth2/auth')
+access_token_url = django_setting(
+    'access_token_url',
+    'https://www.googleapis.com/oauth2/v1/tokeninfo')
+request_token_url = django_setting(
+    'request_token_url',
+    'https://accounts.google.com/o/oauth2/token')
 
 
 def get_redirect_uri():

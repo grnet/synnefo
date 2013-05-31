@@ -95,7 +95,7 @@ def login(
 
         if not eppn:
             raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_EPPN) % {
-                'domain': settings.BASEURL,
+                'domain': settings.BASE_URL,
                 'contact_email': settings.CONTACT_EMAIL
             })
         if Tokens.SHIB_DISPLAYNAME in tokens:

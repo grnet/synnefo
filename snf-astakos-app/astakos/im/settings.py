@@ -3,6 +3,7 @@ from synnefo_branding import settings as synnefo_settings
 from synnefo.lib import parse_base_url
 from astakosclient import astakos_services
 from synnefo.util.keypath import get_path
+from synnefo.lib import join_urls
 
 
 BASE_URL = getattr(settings, 'ASTAKOS_BASE_URL',
@@ -57,9 +58,6 @@ IM_STATIC_URL = getattr(settings, 'ASTAKOS_IM_STATIC_URL', '/static/im/')
 # If set to False and invitations not enabled newly created user
 # will be automatically accepted
 MODERATION_ENABLED = getattr(settings, 'ASTAKOS_MODERATION_ENABLED', True)
-
-# Set baseurl
-BASEURL = getattr(settings, 'ASTAKOS_BASE_URL', 'https://accounts.example.synnefo.org')
 
 # Set service name
 SITENAME = getattr(settings, 'ASTAKOS_SITENAME', synnefo_settings.SERVICE_NAME)
@@ -134,7 +132,7 @@ SHIBBOLETH_REQUIRE_NAME_INFO = getattr(settings,
                                        'ASTAKOS_SHIBBOLETH_REQUIRE_NAME_INFO',
                                        False)
 
-default_redirect_url = join_urls(ASTAKOS_BASE_URL, VIEWS_PREFIX, "landing")
+default_redirect_url = join_urls(BASE_URL, VIEWS_PREFIX, "landing")
 ACTIVATION_REDIRECT_URL = getattr(settings, 'ASTAKOS_ACTIVATION_REDIRECT_URL',
                                   default_redirect_url)
 
@@ -160,7 +158,7 @@ LINKEDIN_TOKEN = getattr(settings, 'ASTAKOS_LINKEDIN_TOKEN', '')
 LINKEDIN_SECRET = getattr(settings, 'ASTAKOS_LINKEDIN_SECRET', '')
 
 # URL to redirect the user after successful login when no next parameter is set
-default_success_url = join_urls(ASTAKOS_BASE_URL, VIEWS_PREFIX, "landing")
+default_success_url = join_urls(BASE_URL, VIEWS_PREFIX, "landing")
 LOGIN_SUCCESS_URL = getattr(settings, 'ASTAKOS_LOGIN_SUCCESS_URL',
                             default_redirect_url)
 

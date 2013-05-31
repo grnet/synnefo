@@ -76,7 +76,7 @@ request_token_url = django_setting(
 
 
 def get_redirect_uri():
-    return "%s%s" % (settings.BASEURL,
+    return "%s%s" % (settings.BASE_URL,
                      reverse('astakos.im.views.target.google.authenticated'))
 
 

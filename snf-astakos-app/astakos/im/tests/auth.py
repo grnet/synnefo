@@ -56,7 +56,7 @@ class ShibbolethTests(TestCase):
         # eepn required
         r = client.get('/im/login/shibboleth?', follow=True)
         self.assertContains(r, messages.SHIBBOLETH_MISSING_EPPN % {
-            'domain': astakos_settings.BASEURL,
+            'domain': astakos_settings.BASE_URL,
             'contact_email': settings.CONTACT_EMAIL
         })
         client.set_tokens(eppn="kpapeppn")

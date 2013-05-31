@@ -2,6 +2,7 @@
 from django.conf import settings
 from synnefo.lib import parse_base_url
 from astakosclient import astakos_services
+from synnefo.lib.services import fill_endpoints
 from synnefo.util.keypath import get_path
 from pithos.api.services import pithos_services as vanilla_pithos_services
 
@@ -18,6 +19,8 @@ ASTAKOS_BASE_URL = getattr(settings, 'ASTAKOS_BASE_URL',
                            'https://accounts.example.synnefo.org/astakos/')
 ASTAKOS_BASE_HOST, ASTAKOS_BASE_PATH = parse_base_url(ASTAKOS_BASE_URL)
 
+pithos_services = deepcopy(vanilla_pithos_services)
+fill_endpoints(pithos_services, BASE_URL)
 PITHOS_PREFIX = get_path(pithos_services, 'pithos_object-store.prefix')
 PUBLIC_PREFIX = get_path(pithos_services, 'pithos_public.prefix')
 UI_PREFIX = get_path(pithos_services, 'pithos_ui.prefix')

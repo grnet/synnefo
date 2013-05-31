@@ -40,14 +40,10 @@ class Command(ListCommand):
     object_class = Service
 
     FIELDS = {
-        "id": ("id", "ID"),
+        "id": ("id", "Service ID"),
         "name": ("name", "Service Name"),
-        "url": ("url", "Service url"),
-        "api_url": ("api_url", "Service API url"),
-        "token": ("auth_token", "Authentication token"),
-        "token created": ("auth_token_created", "Token creation date"),
-        "token expires": ("auth_token_expires", "Token expiration date"),
+        "component": ("component.name", "Service url"),
         "type": ("type", "Service type"),
     }
 
-    fields = ["id", "name", "type", "token", "token created"]
+    fields = ["id", "name", "component", "type"]

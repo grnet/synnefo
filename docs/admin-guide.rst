@@ -1011,12 +1011,11 @@ project-list                  List projects
 project-show                  Show project details
 quota                         List and check the integrity of user quota
 reconcile-resources-astakos   Reconcile resource usage of Quotaholder with Astakos DB
-resource-add                  Add resource
 resource-export-astakos       Export astakos resources in json format
-resource-import               Register service resources
+resource-import               Register resources
 resource-list                 List resources
 resource-modify               Modify a resource's default base quota and boolean flags
-service-add                   Register a service
+service-import                Register services
 service-list                  List services
 service-show                  Show service details
 term-add                      Add approval terms

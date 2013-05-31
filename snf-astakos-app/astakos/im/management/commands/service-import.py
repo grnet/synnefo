@@ -38,20 +38,21 @@ from django.db.utils import IntegrityError
 from django.utils import simplejson as json
 
 from snf_django.lib.db.transaction import commit_on_success_strict
-from astakos.im.register import add_resource, ResourceException
-from astakos.im.models import Service
+from astakos.im.register import add_service, ServiceException
+from astakos.im.models import Component
 
 
 class Command(BaseCommand):
-    help = "Register resources"
+    help = "Register services"
 
     option_list = BaseCommand.option_list + (
         make_option('--json',
                     dest='json',
                     metavar='<json.file>',
-                    help="Load resource definitions from a json file"),
+                    help="Load service definitions from a json file"),
     )
 
+    @commit_on_success_strict()
     def handle(self, *args, **options):
 
         json_file = options['json']
@@ -61,33 +62,40 @@ class Command(BaseCommand):
 
         else:
             with open(json_file) as file_data:
-                m = 'Input should be a JSON list.'
+                m = ('Input should be a JSON dict mapping service names '
+                     'to definitions.')
                 try:
                     data = json.load(file_data)
                 except json.JSONDecodeError:
                     raise CommandError(m)
-                if not isinstance(data, list):
+                if not isinstance(data, dict):
                     raise CommandError(m)
-        self.add_resources(data)
+        self.add_services(data)
 
-
-    @commit_on_success_strict()
-    def add_resources(self, resources):
+    def add_services(self, data):
+        write = self.stdout.write
         output = []
-        for resource in resources:
-            if not isinstance(resource, dict):
-                raise CommandError("Malformed resource dict.")
+        for name, service_dict in data.iteritems():
             try:
-                r, exists = add_resource(resource)
-            except ResourceException as e:
+                component_name = service_dict['component']
+                service_type = service_dict['type']
+                endpoints = service_dict['endpoints']
+            except KeyError:
+                raise CommandError('Malformed service definition.')
+
+            try:
+                component = Component.objects.get(name=component_name)
+            except Component.DoesNotExist:
+                m = "Component '%s' is not registered." % component_name
+                raise CommandError(m)
+
+            try:
+                existed = add_service(component, name, service_type, endpoints)
+            except ServiceException as e:
                 raise CommandError(e.message)
-            name = r.name
-            if exists:
-                m = "Resource '%s' updated in database.\n" % (name)
-            else:
-                m = ("Resource '%s' created in database with default "
-                     "quota limit 0.\n" % (name))
+
+            m = "%s service %s.\n" % ("Updated" if existed else "Added", name)
             output.append(m)
 
         for line in output:
-            self.stdout.write(line)
+            write(line)

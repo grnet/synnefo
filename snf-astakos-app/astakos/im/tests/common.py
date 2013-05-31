@@ -60,7 +60,7 @@ from datetime import timedelta
 from astakos.im import messages
 from astakos.im import auth_providers
 from astakos.im import quotas
-from astakos.im import resources
+from astakos.im import register
 
 from django.conf import settings
 

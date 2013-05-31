@@ -44,7 +44,7 @@ from django.core.management import CommandError
 from synnefo.util import units
 from synnefo.lib.ordereddict import OrderedDict
 from astakos.im.models import AstakosUser
-from astakos.im.resources import get_resources
+from astakos.im.register import get_resources
 
 DEFAULT_CONTENT_TYPE = None
 

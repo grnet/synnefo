@@ -40,7 +40,7 @@ from snf_django.lib.db.transaction import commit_on_success_strict
 from snf_django.lib import api
 from snf_django.lib.api.faults import BadRequest, ItemNotFound
 
-from astakos.im.resources import get_resources
+from astakos.im.register import get_resources
 from astakos.im.quotas import get_user_quotas, service_get_quotas
 
 import astakos.quotaholder_app.exception as qh_exception

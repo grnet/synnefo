@@ -37,6 +37,7 @@ from synnefo.settings import (CYCLADES_ASTAKOS_SERVICE_TOKEN as ASTAKOS_TOKEN,
                               ASTAKOS_URL)
 from astakosclient import AstakosClient
 from astakosclient.errors import AstakosClientException, QuotaLimit
+from functools import wraps
 
 import logging
 log = logging.getLogger(__name__)
@@ -64,6 +65,19 @@ class Quotaholder(object):
         return cls._object
 
 
+def handle_astakosclient_error(func):
+    """Decorator for converting astakosclient errors to 500."""
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except AstakosClientException:
+            log.exception("Unexpected error")
+            raise faults.InternalServerError("Unexpected error")
+    return wrapper
+
+
+@handle_astakosclient_error
 def issue_commission(user, source, provisions,
                      force=False, auto_accept=False):
     """Issue a new commission to the quotaholder.
@@ -81,9 +95,6 @@ def issue_commission(user, source, provisions,
     except QuotaLimit as e:
         msg, details = render_overlimit_exception(e)
         raise faults.OverLimit(msg, details=details)
-    except AstakosClientException as e:
-        log.exception("Unexpected error")
-        raise
 
     if serial:
         return QuotaHolderSerial.objects.create(serial=serial)
@@ -99,6 +110,7 @@ def reject_commissions(rejected, strict=True):
     return resolve_commissions(reject=rejected, strict=strict)
 
 
+@handle_astakosclient_error
 def resolve_commissions(accept=None, reject=None, strict=True):
     if accept is None:
         accept = []

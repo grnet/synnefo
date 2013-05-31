@@ -116,7 +116,7 @@ def api_method(http_method=None, token_required=True, user_required=True,
                 return render_fault(request, fault)
             except:
                 logger.exception("Unexpected ERROR")
-                fault = faults.InternalServerError("Unexpected ERROR")
+                fault = faults.InternalServerError("Unexpected error")
                 return render_fault(request, fault)
         return wrapper
     return decorator

@@ -84,7 +84,7 @@ AUTHENTICATION_BACKENDS = (
     'astakos.im.auth_backends.EmailBackend',
     'astakos.im.auth_backends.TokenBackend')
 
-LOGIN_URL = '/im/'
+LOGIN_URL = '/ui/'
 
 CUSTOM_USER_MODEL = 'astakos.im.AstakosUser'
 

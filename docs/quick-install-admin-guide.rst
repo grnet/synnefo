@@ -611,9 +611,9 @@ Then edit ``/etc/synnefo/20-snf-astakos-app-cloudbar.conf`` :
 
     CLOUDBAR_LOCATION = 'https://node1.example.com/static/im/cloudbar/'
 
-    CLOUDBAR_SERVICES_URL = 'https://node1.example.com/im/get_services'
+    CLOUDBAR_SERVICES_URL = 'https://node1.example.com/ui/get_services'
 
-    CLOUDBAR_MENU_URL = 'https://node1.example.com/im/get_menu'
+    CLOUDBAR_MENU_URL = 'https://node1.example.com/ui/get_menu'
 
 Those settings have to do with the black cloudbar endpoints and will be
 described in more detail later on in this guide. For now, just edit the domain
@@ -766,7 +766,7 @@ Open your favorite browser and go to:
 
 ``http://node1.example.com/im``
 
-If this redirects you to ``https://node1.example.com/im/`` and you can see
+If this redirects you to ``https://node1.example.com/ui/`` and you can see
 the "welcome" door of Astakos, then you have successfully setup Astakos.
 
 Let's create our first user. At the homepage click the "CREATE ACCOUNT" button
@@ -797,7 +797,7 @@ documentation. In production, you can also manually activate a user, by sending
 him/her an activation email. See how to do this at the :ref:`User
 activation <user_activation>` section.
 
-Now let's go back to the homepage. Open ``http://node1.example.com/im/`` with
+Now let's go back to the homepage. Open ``http://node1.example.com/ui/`` with
 your browser again. Try to sign in using your new credentials. If the astakos
 menu appears and you can see your profile, then you have successfully setup
 Astakos.
@@ -890,7 +890,7 @@ Then we need to setup the web UI and connect it to astakos. To do so, edit
 
 .. code-block:: console
 
-    PITHOS_UI_LOGIN_URL = "https://node1.example.com/im/login?next="
+    PITHOS_UI_LOGIN_URL = "https://node1.example.com/ui/login?next="
     PITHOS_UI_FEEDBACK_URL = "https://node2.example.com/feedback"
 
 The ``PITHOS_UI_LOGIN_URL`` option tells the client where to redirect you, if
@@ -910,8 +910,8 @@ Pithos web UI with the astakos web UI (through the top cloudbar):
 
     CLOUDBAR_LOCATION = 'https://node1.example.com/static/im/cloudbar/'
     PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE = '3'
-    CLOUDBAR_SERVICES_URL = 'https://node1.example.com/im/get_services'
-    CLOUDBAR_MENU_URL = 'https://node1.example.com/im/get_menu'
+    CLOUDBAR_SERVICES_URL = 'https://node1.example.com/ui/get_services'
+    CLOUDBAR_MENU_URL = 'https://node1.example.com/ui/get_menu'
 
 The ``CLOUDBAR_LOCATION`` tells the client where to find the astakos common
 cloudbar.
@@ -1717,8 +1717,8 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-cloudbar.conf``:
 
    CLOUDBAR_LOCATION = 'https://node1.example.com/static/im/cloudbar/'
    CLOUDBAR_ACTIVE_SERVICE = '2'
-   CLOUDBAR_SERVICES_URL = 'https://node1.example.com/im/get_services'
-   CLOUDBAR_MENU_URL = 'https://account.node1.example.com/im/get_menu'
+   CLOUDBAR_SERVICES_URL = 'https://node1.example.com/ui/get_services'
+   CLOUDBAR_MENU_URL = 'https://account.node1.example.com/ui/get_menu'
 
 ``CLOUDBAR_LOCATION`` tells the client where to find the Astakos common
 cloudbar. The ``CLOUDBAR_SERVICES_URL`` and ``CLOUDBAR_MENU_URL`` options are
@@ -1765,8 +1765,8 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-ui.conf``:
 
 .. code-block:: console
 
-   UI_LOGIN_URL = "https://node1.example.com/im/login"
-   UI_LOGOUT_URL = "https://node1.example.com/im/logout"
+   UI_LOGIN_URL = "https://node1.example.com/ui/login"
+   UI_LOGOUT_URL = "https://node1.example.com/ui/logout"
 
 The ``UI_LOGIN_URL`` option tells the Cyclades Web UI where to redirect users,
 if they are not logged in. We point that to Astakos.

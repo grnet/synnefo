@@ -80,12 +80,12 @@ In `/etc/synnefo/webclient.conf` add:
 .. code-block:: console
 
     CLOUDBAR_LOCATION = 'https://accounts.example.com/static/im/cloudbar/'
-    CLOUDBAR_SERVICES_URL = 'https://accounts.example.com/im/get_services'
-    CLOUDBAR_MENU_URL = 'https://accounts.example.com/im/get_menu'
+    CLOUDBAR_SERVICES_URL = 'https://accounts.example.com/ui/get_services'
+    CLOUDBAR_MENU_URL = 'https://accounts.example.com/ui/get_menu'
 
     PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE = 'XXXXXXXX'
 
-    PITHOS_UI_LOGIN_URL = "https://accounts.example.com/im/login?next="
+    PITHOS_UI_LOGIN_URL = "https://accounts.example.com/ui/login?next="
 
     PITHOS_UI_FEEDBACK_URL = "/feedback"
 

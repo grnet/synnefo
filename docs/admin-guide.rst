@@ -56,7 +56,7 @@ Add in ``/etc/apache2/sites-available/synnefo-ssl``::
   ShibConfig /etc/shibboleth/shibboleth2.xml
   Alias      /shibboleth-sp /usr/share/shibboleth
 
-  <Location /im/login/shibboleth>
+  <Location /ui/login/shibboleth>
     AuthType shibboleth
     ShibRequireSession On
     ShibUseHeaders On

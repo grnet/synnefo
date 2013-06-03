@@ -31,11 +31,10 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-service = "astakos"
-
 resources = [
     {"desc": "Number of pending project applications",
      "name": "astakos.pending_app",
      "allow_in_projects": False,
+     "service_type": "account",
      }
 ]

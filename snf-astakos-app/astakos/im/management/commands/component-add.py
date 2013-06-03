@@ -1,4 +1,4 @@
-# Copyright 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,19 +31,35 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from astakos.im.models import Service
-from synnefo.webproject.management.commands import ListCommand
+from django.core.management.base import BaseCommand, CommandError
+from astakos.im.models import Component
 
 
-class Command(ListCommand):
-    help = "List services"
-    object_class = Service
+class Command(BaseCommand):
+    args = "<name> <component URL>"
+    help = "Register a component"
 
-    FIELDS = {
-        "id": ("id", "Service ID"),
-        "name": ("name", "Service Name"),
-        "component": ("component.name", "Service url"),
-        "type": ("type", "Service type"),
-    }
+    def handle(self, *args, **options):
+        if len(args) < 1:
+            raise CommandError("Invalid number of arguments")
 
-    fields = ["id", "name", "component", "type"]
+        name = args[0]
+        url = args[1]
+        try:
+            s = Component.objects.get(name=name)
+            m = "There already exists a component named '%s'." % name
+            raise CommandError(m)
+        except Component.DoesNotExist:
+            pass
+
+        components = list(Component.objects.filter(url=url))
+        if components:
+            m = "Component URL '%s' is registered for another service." % url
+            raise CommandError(m)
+
+        try:
+            c = Component.objects.create(name=name, url=url)
+        except BaseException:
+            raise CommandError("Failed to register component.")
+        else:
+            self.stdout.write('Token: %s\n' % c.auth_token)

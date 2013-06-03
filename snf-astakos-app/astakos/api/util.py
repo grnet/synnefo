@@ -39,7 +39,7 @@ from django.http import HttpResponse
 from django.utils import simplejson as json
 from django.template.loader import render_to_string
 
-from astakos.im.models import AstakosUser, Service
+from astakos.im.models import AstakosUser, Component
 from snf_django.lib.api import faults
 from snf_django.lib.api.utils import isoformat
 
@@ -126,11 +126,11 @@ def user_from_token(func):
     return wrapper
 
 
-def service_from_token(func):
-    """Decorator for authenticating service by it's token.
+def component_from_token(func):
+    """Decorator for authenticating component by its token.
 
-    Check that a service with the corresponding token exists. Also,
-    if service's token has an expiration token, check that it has not
+    Check that a component with the corresponding token exists. Also,
+    if component's token has an expiration token, check that it has not
     expired.
 
     """
@@ -144,18 +144,18 @@ def service_from_token(func):
         if not token:
             raise faults.Unauthorized("Invalid X-Auth-Token")
         try:
-            service = Service.objects.get(auth_token=token)
-        except Service.DoesNotExist:
+            component = Component.objects.get(auth_token=token)
+        except Component.DoesNotExist:
             raise faults.Unauthorized("Invalid X-Auth-Token")
 
         # Check if the token has expired
-        expiration_date = service.auth_token_expires
+        expiration_date = component.auth_token_expires
         if expiration_date:
             expires_at = mktime(expiration_date.timetuple())
             if time() > expires_at:
                 raise faults.Unauthorized("Authentication expired")
 
-        request.service_instance = service
+        request.component_instance = component
         return func(request, *args, **kwargs)
     return wrapper
 

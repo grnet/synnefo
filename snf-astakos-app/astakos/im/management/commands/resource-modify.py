@@ -37,7 +37,7 @@ from django.utils import simplejson as json
 
 from synnefo.webproject.management import utils
 from astakos.im.models import Resource
-from astakos.im.resources import update_resource
+from astakos.im.register import update_resource
 from ._common import show_resource_value, style_options, check_style, units
 
 

@@ -40,14 +40,14 @@ from snf_django.lib.db.transaction import commit_on_success_strict
 from snf_django.lib import api
 from snf_django.lib.api.faults import BadRequest, ItemNotFound
 
-from astakos.im.resources import get_resources
+from astakos.im.register import get_resources
 from astakos.im.quotas import get_user_quotas, service_get_quotas
 
 import astakos.quotaholder_app.exception as qh_exception
 import astakos.quotaholder_app.callpoint as qh
 
 from .util import (json_response, is_integer, are_integer,
-                   user_from_token, service_from_token)
+                   user_from_token, component_from_token)
 
 @api.api_method(http_method='GET', token_required=True, user_required=False)
 @user_from_token
@@ -57,11 +57,11 @@ def quotas(request):
 
 
 @api.api_method(http_method='GET', token_required=True, user_required=False)
-@service_from_token
+@component_from_token
 def service_quotas(request):
     user = request.GET.get('user')
     users = [user] if user is not None else None
-    result = service_get_quotas(request.service_instance, users=users)
+    result = service_get_quotas(request.component_instance, users=users)
 
     if user is not None and result == {}:
         raise ItemNotFound("No such user '%s'" % user)
@@ -87,10 +87,10 @@ def commissions(request):
 
 
 @api.api_method(http_method='GET', token_required=True, user_required=False)
-@service_from_token
+@component_from_token
 def get_pending_commissions(request):
     data = request.GET
-    client_key = str(request.service_instance)
+    client_key = str(request.component_instance)
 
     result = qh.get_pending_commissions(clientkey=client_key)
     return json_response(result)
@@ -115,7 +115,7 @@ def _provisions_to_list(provisions):
 
 @csrf_exempt
 @api.api_method(http_method='POST', token_required=True, user_required=False)
-@service_from_token
+@component_from_token
 def issue_commission(request):
     data = request.raw_post_data
     try:
@@ -123,7 +123,7 @@ def issue_commission(request):
     except json.JSONDecodeError:
         raise BadRequest("POST data should be in json format.")
 
-    client_key = str(request.service_instance)
+    client_key = str(request.component_instance)
     provisions = input_data.get('provisions')
     if provisions is None:
         raise BadRequest("Provisions are missing.")
@@ -205,7 +205,7 @@ def conflictingCF(serial):
 
 @csrf_exempt
 @api.api_method(http_method='POST', token_required=True, user_required=False)
-@service_from_token
+@component_from_token
 @commit_on_success_strict()
 def resolve_pending_commissions(request):
     data = request.raw_post_data
@@ -214,7 +214,7 @@ def resolve_pending_commissions(request):
     except json.JSONDecodeError:
         raise BadRequest("POST data should be in json format.")
 
-    client_key = str(request.service_instance)
+    client_key = str(request.component_instance)
     accept = input_data.get('accept', [])
     reject = input_data.get('reject', [])
 
@@ -241,10 +241,10 @@ def resolve_pending_commissions(request):
 
 
 @api.api_method(http_method='GET', token_required=True, user_required=False)
-@service_from_token
+@component_from_token
 def get_commission(request, serial):
     data = request.GET
-    client_key = str(request.service_instance)
+    client_key = str(request.component_instance)
     try:
         serial = int(serial)
     except ValueError:
@@ -261,7 +261,7 @@ def get_commission(request, serial):
 
 @csrf_exempt
 @api.api_method(http_method='POST', token_required=True, user_required=False)
-@service_from_token
+@component_from_token
 @commit_on_success_strict()
 def serial_action(request, serial):
     data = request.raw_post_data
@@ -275,7 +275,7 @@ def serial_action(request, serial):
     except ValueError:
         raise BadRequest("Serial should be an integer.")
 
-    client_key = str(request.service_instance)
+    client_key = str(request.component_instance)
 
     accept = 'accept' in input_data
     reject = 'reject' in input_data

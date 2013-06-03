@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -48,32 +48,36 @@ u = lambda url: ROOT + url
 class QuotaAPITest(TestCase):
     def test_0(self):
         client = Client()
+
+        component1 = Component.objects.create(name="comp1")
+        register.add_service(component1, "service1", "type1", [])
         # custom service resources
-        service1 = Service.objects.create(
-            name="service1", api_url="http://service1.api")
         resource11 = {"name": "service1.resource11",
                       "desc": "resource11 desc",
+                      "service_type": "type1",
                       "allow_in_projects": True}
-        r, _ = resources.add_resource(service1, resource11)
-        resources.update_resource(r, 100)
+        r, _ = register.add_resource(resource11)
+        register.update_resource(r, 100)
         resource12 = {"name": "service1.resource12",
                       "desc": "resource11 desc",
+                      "service_type": "type1",
                       "unit": "bytes"}
-        r, _ = resources.add_resource(service1, resource12)
-        resources.update_resource(r, 1024)
+        r, _ = register.add_resource(resource12)
+        register.update_resource(r, 1024)
 
         # create user
         user = get_local_user('test@grnet.gr')
         quotas.qh_sync_user(user)
 
+        component2 = Component.objects.create(name="comp2")
+        register.add_service(component2, "service2", "type2", [])
         # create another service
-        service2 = Service.objects.create(
-            name="service2", api_url="http://service2.api")
         resource21 = {"name": "service2.resource21",
                       "desc": "resource11 desc",
+                      "service_type": "type2",
                       "allow_in_projects": False}
-        r, _ = resources.add_resource(service2, resource21)
-        resources.update_resource(r, 3)
+        r, _ = register.add_resource(resource21)
+        register.update_resource(r, 3)
 
         resource_names = [r['name'] for r in
                           [resource11, resource12, resource21]]
@@ -101,7 +105,7 @@ class QuotaAPITest(TestCase):
         r = client.get(u('service_quotas'))
         self.assertEqual(r.status_code, 401)
 
-        s1_headers = {'HTTP_X_AUTH_TOKEN': service1.auth_token}
+        s1_headers = {'HTTP_X_AUTH_TOKEN': component1.auth_token}
         r = client.get(u('service_quotas'), **s1_headers)
         self.assertEqual(r.status_code, 200)
         body = json.loads(r.content)

@@ -89,11 +89,11 @@ Authenticate
 
 Authenticate API requests require a token. An application that wishes to connect to Astakos, but does not have a token, should redirect the user to ``/login``. (see :ref:`authentication-label`)
 
-============================= =========  ==================
-Uri                           Method     Description
-============================= =========  ==================
-``/astakos/api/authenticate`` GET        Authenticate user using token
-============================= =========  ==================
+============================== =========  ==================
+Uri                            Method     Description
+============================== =========  ==================
+``/account/v1.0/authenticate`` GET        Authenticate user using token
+============================== =========  ==================
 
 |
 
@@ -149,11 +149,11 @@ Send feedback
 
 Post user feedback.
 
-========================= =========  ==================
-Uri                       Method     Description
-========================= =========  ==================
-``/astakos/api/feedback``  POST       Send feedback
-========================= =========  ==================
+========================== =========  ==================
+Uri                        Method     Description
+========================== =========  ==================
+``/account/v1.0/feedback`` POST       Send feedback
+========================== =========  ==================
 
 |
 
@@ -192,11 +192,11 @@ Get User catalogs
 
 Return a json formatted dictionary containing information about a specific user
 
-================================ =========  ==================
-Uri                              Method     Description
-================================ =========  ==================
-``/astakos/api/user_catalogs``    POST       Get 2 catalogs containing uuid to displayname mapping and the opposite
-================================ =========  ==================
+=============================== =========  ==================
+Uri                             Method     Description
+=============================== =========  ==================
+``/account/v1.0/user_catalogs`` POST       Get 2 catalogs containing uuid to displayname mapping and the opposite
+=============================== =========  ==================
 
 |
 
@@ -253,11 +253,11 @@ Get User catalogs
 
 Return a json formatted dictionary containing information about a specific user
 
-====================================== =========  ==================
-Uri                                    Method     Description
-====================================== =========  ==================
-``/astakos/api/service/user_catalogs`` POST       Get 2 catalogs containing uuid to displayname mapping and the opposite
-====================================== =========  ==================
+======================================= =========  ==================
+Uri                                     Method     Description
+======================================= =========  ==================
+``/account/v1.0/service/user_catalogs`` POST       Get 2 catalogs containing uuid to displayname mapping and the opposite
+======================================= =========  ==================
 
 |
 

@@ -34,15 +34,14 @@
 from django.conf.urls.defaults import include, patterns
 from synnefo.lib import join_urls
 from astakos.im.settings import (
-    BASE_PATH, ACCOUNTS_PREFIX, VIEWS_PREFIX, KEYSTONE_PREFIX
-)
+    BASE_PATH, ACCOUNTS_PREFIX, VIEWS_PREFIX, KEYSTONE_PREFIX)
 from snf_django.lib.api.utils import prefix_pattern
 
 astakos_patterns = patterns(
     '',
     (prefix_pattern(VIEWS_PREFIX), include('astakos.im.urls')),
     (prefix_pattern(ACCOUNTS_PREFIX), include('astakos.api.urls')),
-    #(prefix_pattern(KEYSTONE_PREFIX), include('astakos.api.keystone_urls')),
+    (prefix_pattern(KEYSTONE_PREFIX), include('astakos.api.keystone_urls')),
 )
 
 # Compatibility: expose some API URLs at top-level

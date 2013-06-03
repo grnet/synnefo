@@ -16,10 +16,7 @@
     {% for s in d.access.serviceCatalog %}
         <service type="{{s.type}}" name="{{s.name}}" SNF:uiURL="{{s.component.url}}">
             {% for e in s.endpoints %}
-                <endpoint
-                    {% for k, v in e.items %}
-                        {{k}}="{{v}}"
-                    {% endfor %}
+            <endpoint {% for k, v in e.items %} {{k}}="{{v}}" {% endfor %} />
             {% endfor %}
         </service>
     {% endfor %}

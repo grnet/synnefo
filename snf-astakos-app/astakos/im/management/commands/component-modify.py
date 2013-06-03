@@ -56,6 +56,11 @@ class Command(BaseCommand):
                     dest='renew_token',
                     default=False,
                     help="Renew component auth token"),
+        make_option('--purge-services',
+                    action='store_true',
+                    dest='purge_services',
+                    default=False,
+                    help="Purge all services registered for this component"),
     )
 
     def handle(self, *args, **options):
@@ -77,6 +82,7 @@ class Command(BaseCommand):
         url = options.get('url')
         auth_token = options.get('auth_token')
         renew_token = options.get('renew_token')
+        purge_services = options.get('purge_services')
 
         if url:
             component.url = url
@@ -88,6 +94,9 @@ class Command(BaseCommand):
             component.renew_token()
 
         component.save()
+
+        if purge_services:
+            component.service_set.all().delete()
 
         if renew_token:
             self.stdout.write(

@@ -62,7 +62,7 @@ COMPUTE_URL = getattr(settings, 'CYCLADES_UI_COMPUTE_URL',
                       join_urls(BASE_PATH, cyclades.COMPUTE_PREFIX,
                                 'v1.1'))
 GLANCE_URL = getattr(settings, 'CYCLADES_UI_GLANCE_URL',
-                     join_urls(BASE_PATH, cyclades.PLANKTON_PREFIX))
+                     join_urls(BASE_PATH, cyclades.PLANKTON_PREFIX + '/v1'))
 USERDATA_URL = getattr(settings, 'CYCLADES_UI_USERDATA_URL',
                        join_urls(BASE_PATH, cyclades.USERDATA_PREFIX))
 LOGIN_URL = getattr(settings, 'CYCLADES_UI_LOGIN_URL',

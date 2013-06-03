@@ -36,9 +36,6 @@ from astakos.im.tests.common import *
 from django.test import TestCase
 from django.core.urlresolvers import reverse
 
-
-from urllib import quote
-from urlparse import urlparse, parse_qs
 #from xml.dom import minidom
 
 import json
@@ -553,96 +550,3 @@ class TokensApiTest(TestCase):
 #            body = minidom.parseString(r.content)
 #        except Exception, e:
 #            self.fail(e)
-
-    def test_get_endpoints(self):
-        client = Client()
-
-        # Check in active user token
-        inactive_user = AstakosUser.objects.create(email='test3')
-        url = '/astakos/api/tokens/%s/endpoints' % quote(
-            inactive_user.auth_token)
-        r = client.get(url)
-        self.assertEqual(r.status_code, 401)
-
-        # Check invalid user token in path
-        url = '/astakos/api/tokens/nouser/endpoints'
-        r = client.get(url)
-        self.assertEqual(r.status_code, 401)
-
-        # Check forbidden
-        url = '/astakos/api/tokens/%s/endpoints' % quote(self.user1.auth_token)
-        headers = {'HTTP_X_AUTH_TOKEN': AstakosUser.objects.create(
-            email='test4').auth_token}
-        r = client.get(url, **headers)
-        self.assertEqual(r.status_code, 401)
-
-        # Check bad request method
-        url = '/astakos/api/tokens/%s/endpoints' % quote(self.user1.auth_token)
-        r = client.post(url)
-        self.assertEqual(r.status_code, 400)
-
-        # Check forbidden
-        url = '/astakos/api/tokens/%s/endpoints' % quote(self.user1.auth_token)
-        headers = {'HTTP_X_AUTH_TOKEN': self.user2.auth_token}
-        r = client.get(url, **headers)
-        self.assertEqual(r.status_code, 403)
-
-        # Check belongsTo BadRequest
-        url = '/astakos/api/tokens/%s/endpoints?belongsTo=%s' % (
-            quote(self.user1.auth_token), quote(self.user2.uuid))
-        headers = {'HTTP_X_AUTH_TOKEN': self.user1.auth_token}
-        r = client.get(url, **headers)
-        self.assertEqual(r.status_code, 400)
-
-        # Check successful request
-        url = '/astakos/api/tokens/%s/endpoints' % quote(self.user1.auth_token)
-        headers = {'HTTP_X_AUTH_TOKEN': self.user1.auth_token}
-        r = client.get(url, **headers)
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r['Content-Type'], 'application/json; charset=UTF-8')
-        try:
-            body = json.loads(r.content)
-        except:
-            self.fail('json format expected')
-        endpoints = body.get('endpoints')
-        self.assertEqual(len(endpoints), 3)
-
-         # Check xml serialization
-        url = '/astakos/api/tokens/%s/endpoints?format=xml' %\
-            quote(self.user1.auth_token)
-        headers = {'HTTP_X_AUTH_TOKEN': self.user1.auth_token}
-        r = client.get(url, **headers)
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r['Content-Type'], 'application/xml; charset=UTF-8')
-#        try:
-#            body = minidom.parseString(r.content)
-#        except Exception, e:
-#            self.fail('xml format expected')
-        endpoints = body.get('endpoints')
-        self.assertEqual(len(endpoints), 3)
-
-        # Check limit
-        url = '/astakos/api/tokens/%s/endpoints?limit=2' %\
-            quote(self.user1.auth_token)
-        headers = {'HTTP_X_AUTH_TOKEN': self.user1.auth_token}
-        r = client.get(url, **headers)
-        self.assertEqual(r.status_code, 200)
-        body = json.loads(r.content)
-        endpoints = body.get('endpoints')
-        self.assertEqual(len(endpoints), 2)
-
-        endpoint_link = body.get('endpoint_links', [])[0]
-        next = endpoint_link.get('href')
-        p = urlparse(next)
-        params = parse_qs(p.query)
-        self.assertTrue('limit' in params)
-        self.assertTrue('marker' in params)
-        self.assertEqual(params['marker'][0], '2')
-
-        # Check marker
-        headers = {'HTTP_X_AUTH_TOKEN': self.user1.auth_token}
-        r = client.get(next, **headers)
-        self.assertEqual(r.status_code, 200)
-        body = json.loads(r.content)
-        endpoints = body.get('endpoints')
-        self.assertEqual(len(endpoints), 1)

@@ -20,6 +20,7 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
+0.14 (June 03, 2013)       Remove endpoint listing
 0.14 (May 28, 2013)        Extend token api with authenticate call
 0.14 (May 23, 2013)        Extend api to list endpoints
 0.14 (May 14, 2013)        Do not serve user quotas in :ref:`authenticate-api-label`
@@ -472,90 +473,5 @@ Return Code                 Description
 200 (OK)                    The request succeeded
 400 (Bad Request)           Method not allowed or invalid request format or missing expected input
 401 (Unauthorized)          Invalid token or invalid creadentials or tenantName does not comply with the provided token
-500 (Internal Server Error) The request cannot be completed because of an internal error
-=========================== =====================
-
-
-
-Get endpoints
-^^^^^^^^^^^^^
-
-Return a json (or xml) formatted dictionary containing information about registered endpoints
-
-========================================= =========  ==================
-Uri                                       Method     Description
-========================================= =========  ==================
-``/astakos/api/tokens/<token>/endpoints`` GET        Returns a list registered endpoints
-========================================= =========  ==================
-
-|
-
-====================  ============================
-Request Header Name   Value
-====================  ============================
-X-Auth-Token          User authentication token
-====================  ============================
-
-|
-
-======================  ============================
-Request Parameter Name  Value
-
-======================  ============================
-belongsTo               Check that the token belongs to a supplied user
-marker                  Return endpoints (ordered by ID) whose ID is higher than the marker
-limit                   Maximum number of endpoints to return
-======================  ============================
-
-|
-
-Example json reply:
-
-::
-
-    {"endpoints": [
-        {"name": "cyclades",
-         "region": "cyclades",
-         "internalURL": "https://node1.example.com/v1",
-         "adminURL": "https://node1.example.com/v1",
-         "type": null,
-         "id": 5,
-         "publicURL": "https://node1.example.com/vi/"},
-        {"name": "pithos",
-         "region": "pithos",
-         "internalURL": "https://node2.example.com/vi/",
-         "adminURL": "https://node2.example.com/v1",
-         "type": null,
-         "id": 6,
-         "publicURL": "https://node2.example.com/vi/"},
-    ],
-    "endpoint_links": [{
-        "href": "/astakos/api/tokens/0000/endpoints?marker=6&limit=10000",
-         "rel": "next"}]}
-
-
-Example xml reply:
-
-::
-
-    <?xml version="1.0" encoding="UTF-8"?>
-    <endpoints xmlns="http://docs.openstack.org/identity/api/v2.0">
-        <endpoint "name"="cyclades" "region"="cyclades" "internalURL"="https://node1.example.com/ui/" "adminURL"="https://node1.example.com/ui/" "id"="5" "publicURL"="https://node1.example.com/ui/" />
-        <endpoint "name"="pithos" "region"="pithos" "internalURL"="https://node2.example.com/ui/" "adminURL"="https://node2.example.com/v1" "id"="6" "publicURL"="https://node2.example.com/ui/" />
-    </endpoints>
-    <endpoint_links>
-            <endpoint_link "href"="/astakos/api/tokens/0000/endpoints?marker=6&amp;limit=10000" "rel"="next" />
-    </endpoint_links>
-
-
-|
-
-=========================== =====================
-Return Code                 Description
-=========================== =====================
-200 (OK)                    The request succeeded
-400 (Bad Request)           Method not allowed or token does not belong to the specific user
-401 (Unauthorized)          Missing or expired or invalid service token
-403 (Forbidden)             Path token does not comply with X-Auth-Token
 500 (Internal Server Error) The request cannot be completed because of an internal error
 =========================== =====================

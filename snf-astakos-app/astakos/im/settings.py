@@ -137,9 +137,10 @@ SHIBBOLETH_REQUIRE_NAME_INFO = getattr(settings,
                                        'ASTAKOS_SHIBBOLETH_REQUIRE_NAME_INFO',
                                        False)
 
-default_redirect_url = join_urls(BASE_URL, VIEWS_PREFIX, "landing")
+default_activation_redirect_url = join_urls('/', BASE_PATH, VIEWS_PREFIX,
+                                            "landing")
 ACTIVATION_REDIRECT_URL = getattr(settings, 'ASTAKOS_ACTIVATION_REDIRECT_URL',
-                                  default_redirect_url)
+                                  default_activation_redirect_url)
 
 # If true, this enables a ui compatibility layer for the introduction of UUIDs
 # in identity management. WARNING: Setting to True will break your installation.
@@ -163,9 +164,9 @@ LINKEDIN_TOKEN = getattr(settings, 'ASTAKOS_LINKEDIN_TOKEN', '')
 LINKEDIN_SECRET = getattr(settings, 'ASTAKOS_LINKEDIN_SECRET', '')
 
 # URL to redirect the user after successful login when no next parameter is set
-default_success_url = join_urls(BASE_URL, VIEWS_PREFIX, "landing")
+default_success_url = join_urls('/', BASE_PATH, VIEWS_PREFIX, "landing")
 LOGIN_SUCCESS_URL = getattr(settings, 'ASTAKOS_LOGIN_SUCCESS_URL',
-                            default_redirect_url)
+                            default_success_url)
 
 # Whether or not to display projects in astakos menu
 PROJECTS_VISIBLE = getattr(settings, 'ASTAKOS_PROJECTS_VISIBLE', False)

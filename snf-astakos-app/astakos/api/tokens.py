@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 from urlparse import urlunsplit, urlsplit
+from collections import defaultdict
 
 from django.http import urlencode
 from django.views.decorators.csrf import csrf_exempt
@@ -114,24 +115,29 @@ def authenticate(request):
         if user.uuid != uuid:
             raise faults.Unauthorized('Invalid credentials')
 
-    access = {}
-    access['token'] = {'id': user.auth_token,
-                       'expires': utils.isoformat(user.auth_token_expires),
-                       'tenant': {'id': user.uuid, 'name': user.realname}}
-    access['user'] = {'id': user.uuid, 'name': user.realname,
-                      'roles': list(user.groups.values('id', 'name')),
-                      'roles_links': []}
-    access['serviceCatalog'] = []
-    append = access['serviceCatalog'].append
-    for s in Service.objects.all().order_by('id'):
-        append({'name': s.name, 'type': s.type,
-                'endpoints': [{'adminURL': s.api_url,
-                               'publicURL': s.api_url,
-                               'internalURL': s.api_url,
-                               'SNF:uiURL': s.url,
-                               'region': s.name}]})
+    d = defaultdict(dict)
+    d["access"]["token"] = {
+        "id": user.auth_token,
+        "expires": utils.isoformat(user.auth_token_expires),
+        "tenant": {"id": user.uuid, "name": user.realname}}
+    d["access"]["user"] = {
+        "id": user.uuid, 'name': user.realname,
+        "roles": list(user.groups.values("id", "name")),
+        "roles_links": []}
+    d["access"]["serviceCatalog"] = []
+    append = d["access"]["serviceCatalog"].append
+    for s in Service.objects.all().order_by("id"):
+        endpoints = []
+        for l in [e.data.values('key', 'value') for e in s.endpoints.all()]:
+            endpoint = dict((d['key'], d['value']) for d in l)
+            endpoints.append(endpoint)
+        append({"name": s.name,
+                "type": s.type,
+                "SNF:uiURL": s.component.url,
+                "endpoints": endpoints,
+                "endpoints_links": []})
 
     if request.serialization == 'xml':
-        return xml_response({'access': access}, 'api/access.xml')
+        return xml_response({'d': d}, 'api/access.xml')
     else:
-        return json_response(access)
+        return json_response(d)

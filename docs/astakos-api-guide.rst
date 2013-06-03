@@ -310,14 +310,14 @@ Tokens API Operations
 Authenticate
 ^^^^^^^^^^^^
 
-Fallback call which receives the user token or the user uuid/token and returns
-back the token as well as information about the token holder and the services
-he/she can access.
+Fallback call which receives the user token or the user uuid/token pair and
+returns back the token as well as information about the token holder and the
+services he/she can access.
 
 ========================================= =========  ==================
 Uri                                       Method     Description
 ========================================= =========  ==================
-``/astakos/api/tokens/``                  POST       Checks whether the provided token is valid and conforms with the provided uuid (if present) and returns back information about the user
+``/identity/v2.0/tokens/``                POST       Checks whether the provided token is valid and conforms with the provided uuid (if present) and returns back information about the user
 ========================================= =========  ==================
 
 The input should be json formatted.
@@ -328,9 +328,8 @@ Example request:
 
     {
         "auth":{
-            "passwordCredentials":{
-                "username":"c18088be-16b1-4263-8180-043c54e22903",
-                "password":"CDEe2k0T/HdiJWBMMbHyOA=="
+            "token":{
+                "id":"CDEe2k0T/HdiJWBMMbHyOA=="
             },
             "tenantName":"c18088be-16b1-4263-8180-043c54e22903"
         }
@@ -342,8 +341,9 @@ or
 
     {
         "auth":{
-            "token":{
-                "id":"CDEe2k0T/HdiJWBMMbHyOA=="
+            "passwordCredentials":{
+                "username":"c18088be-16b1-4263-8180-043c54e22903",
+                "password":"CDEe2k0T/HdiJWBMMbHyOA=="
             },
             "tenantName":"c18088be-16b1-4263-8180-043c54e22903"
         }
@@ -359,36 +359,67 @@ Example json response:
 
 ::
 
-    {'serviceCatalog': [
-        {'endpoints': [{'SNF:uiURL': 'https://node1.example.com/ui/',
-                        'adminURL': 'https://node1.example.com/v1',
-                        'internalUrl': 'https://node1.example.com/v1',
-                        'publicURL': 'https://node1.example.com/v1',
-                        'region': 'cyclades'}],
-         'name': 'cyclades',
-         'type': 'compute'},
-       {'endpoints': [{'SNF:uiURL': 'https://node2.example.com/ui/',
-                      'adminURL': 'https://node2.example.com/v1',
-                      'internalUrl': 'https://node2.example.com/v1',
-                      'publicURL': 'https://node2.example.com/v1',
-                      'region': 'pithos'}],
-        'name': 'pithos',
-        'type': 'storage'}],
-     'token': {'expires': '2013-06-19T15:23:59.975572+00:00',
-               'id': 'CDEe2k0T/HdiJWBMMbHyOA==',
-               'tenant': {'id': 'c18088be-16b1-4263-8180-043c54e22903',
-                          'name': 'Firstname Lastname'}},
-     'user': {'id': 'c18088be-16b1-4263-8180-043c54e22903',
-              'name': 'Firstname Lastname',
-              'roles': [{'id': 1, 'name': 'default'}],
-              'roles_links': []}}
-
+    {"access": {
+        "serviceCatalog": [
+           {"SNF:uiURL": "https://node2.example.com/ui/",
+            "endpoints": [{
+                "publicURL": "https://object-store.example.synnefo.org/pithos/public/v2.0",
+                "versionId": "v2.0"}],
+            "endpoints_links": [],
+            "name": "pithos_public",
+            "type": "public"},
+           {"SNF:uiURL": "https://node2.example.com/ui/",
+            "endpoints": [{
+                "publicURL": "https://object-store.example.synnefo.org/pithos/object-store/v1",
+                "versionId": "v1"}],
+            "endpoints_links": [],
+            "name": "pithos_object-store",
+            "type": "object-store"},
+           {"SNF:uiURL": "https://node2.example.com/ui/",
+            "endpoints": [{
+                "publicURL": "https://object-store.example.synnefo.org/pithos/ui",
+                "versionId": ""}],
+            "endpoints_links": [],
+            "name": "pithos_ui",
+            "type": "pithos_ui"},
+           {"SNF:uiURL": "http://localhost:8080",
+            "endpoints": [{
+                "publicURL": "https://accounts.example.synnefo.org/ui/v1.0",
+                "versionId": "v1.0"}],
+            "endpoints_links": [],
+            "name": "astakos_ui",
+            "type": "astakos_ui"},
+           {"SNF:uiURL": "http://localhost:8080",
+            "endpoints": [{
+                "publicURL": "https://accounts.example.synnefo.org/account/v1.0",
+                "versionId": "v1.0"}],
+            "endpoints_links": [],
+            "name": "astakos_account",
+            "type": "account"},
+           {"SNF:uiURL": "http://localhost:8080",
+            "endpoints": [{
+                "publicURL": "https://accounts.example.synnefo.org/identity/v2.0",
+                "versionId": "v2.0"}],
+            "endpoints_links": [],
+            "name": "astakos_keystone",
+            "type": "identity"}],
+      "token": {
+          "expires": "2013-06-19T15:23:59.975572+00:00",
+           "id": "CDEe2k0T/HdiJWBMMbHyOA==",
+           "tenant": {"id": "c18088be-16b1-4263-8180-043c54e22903",
+            "name": "Firstname Lastname"}},
+      "user": {
+          "id": "c18088be-16b1-4263-8180-043c54e22903",
+           "name": "Firstname Lastname",
+           "roles": [{"id": 1, "name": "default"},
+           "roles_links": []}}}
 
 Example xml response:
 
 ::
 
     <?xml version="1.0" encoding="UTF-8"?>
+
     <access xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns="http://docs.openstack.org/identity/api/v2.0">
         <token id="CDEe2k0T/HdiJWBMMbHyOA==" expires="2013-06-19T15:23:59.975572+00:00">
@@ -400,22 +431,35 @@ Example xml response:
             </roles>
         </user>
         <serviceCatalog>
-            <service type="None" name="cyclades">
-                    <endpoint region="cyclades"
-                        publicURL="https://node1.example.com/v1"
-                        adminURL="https://node1.example.com/v1"
-                        internalURL="https://node1.example.com/v1"
-                        SNF:uiURL="https://node1.example.com/ui/">
-                </endpoint>
+            <service type="public" name="pithos_public" SNF:uiURL="">
+                    <endpoint
+                            versionId="v2.0"
+                            publicURL="https://object-store.example.synnefo.org/pithos/public/v2.0"
             </service>
-            <service type="None" name="pithos">
-                <endpoint
-                        region="pithos"
-                        publicURL="https://node2.example.com/v1"
-                        adminURL="https://node2.example.com/v1"
-                        internalURL="https://node2.example.com/v1"
-                        SNF:uiURL="https://node2.example.com/ui/">
-                </endpoint>
+            <service type="object-store" name="pithos_object-store" SNF:uiURL="">
+                    <endpoint
+                            versionId="v1"
+                            publicURL="https://object-store.example.synnefo.org/pithos/object-store/v1"
+            </service>
+            <service type="pithos_ui" name="pithos_ui" SNF:uiURL="">
+                    <endpoint
+                            versionId=""
+                            publicURL="https://object-store.example.synnefo.org/pithos/ui"
+            </service>
+            <service type="astakos_ui" name="astakos_ui" SNF:uiURL="">
+                    <endpoint
+                            versionId="v1.0"
+                            publicURL="https://accounts.example.synnefo.org/ui/v1.0"
+            </service>
+            <service type="account" name="astakos_account" SNF:uiURL="">
+                    <endpoint
+                            versionId="v1.0"
+                            publicURL="https://accounts.example.synnefo.org/account/v1.0"
+            </service>
+            <service type="identity" name="astakos_keystone" SNF:uiURL="">
+                    <endpoint
+                            versionId="v2.0"
+                            publicURL="https://accounts.example.synnefo.org/identity/v2.0"
             </service>
         </serviceCatalog>
     </access>

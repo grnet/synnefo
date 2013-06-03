@@ -84,6 +84,10 @@ class Command(BaseCommand):
         renew_token = options.get('renew_token')
         purge_services = options.get('purge_services')
 
+        if not any([url, auth_token, renew_token, purge_services]):
+            raise CommandError("No option specified.")
+
+
         if url:
             component.url = url
 

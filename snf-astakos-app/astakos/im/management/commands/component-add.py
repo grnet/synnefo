@@ -40,7 +40,7 @@ class Command(BaseCommand):
     help = "Register a component"
 
     def handle(self, *args, **options):
-        if len(args) < 1:
+        if len(args) < 2:
             raise CommandError("Invalid number of arguments")
 
         name = args[0]

@@ -25,3 +25,7 @@ ASTAKOS_IM_MODULES = ['local', 'shibboleth']
 
 CYCLADES_PROXY_USER_SERVICES = False
 PITHOS_PROXY_USER_SERVICES = False
+
+ASTAKOS_BASE_URL = 'http://accounts.example.synnefo.org/astakos/'
+COMPUTE_BASE_URL = 'http://compute.example.synnefo.org/cyclades/'
+PITHOS_BASE_URL = 'http://storage.example.synnefo.org/pithos/'

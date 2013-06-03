@@ -1,9 +1,9 @@
 .. _quick-install-admin-guide:
 
-Administrator's Quick Installation Guide
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Administrator's Installation Guide
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This is the Administrator's quick installation guide.
+This is the Administrator's installation guide.
 
 It describes how to install the whole synnefo stack on two (2) physical nodes,
 with minimum configuration. It installs synnefo from Debian packages, and

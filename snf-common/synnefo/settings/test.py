@@ -29,3 +29,7 @@ PITHOS_PROXY_USER_SERVICES = False
 ASTAKOS_BASE_URL = 'http://accounts.example.synnefo.org/astakos/'
 COMPUTE_BASE_URL = 'http://compute.example.synnefo.org/cyclades/'
 PITHOS_BASE_URL = 'http://storage.example.synnefo.org/pithos/'
+
+CLOUDBAR_LOCATION = '/static/im/cloudbar/'
+CLOUDBAR_SERVICES_URL = '/ui/get_services'
+CLOUDBAR_MENU_URL = '/ui/get_menu'

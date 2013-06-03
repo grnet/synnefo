@@ -40,7 +40,5 @@ class Command(NoArgsCommand):
     help = "Export Cyclades resources in JSON format."
 
     def handle(self, *args, **options):
-        data = {"service": resources.service,
-                "resources": resources.resources}
-        output = json.dumps(data, indent=4)
+        output = json.dumps(resources.resources, indent=4)
         self.stdout.write(output + "\n")

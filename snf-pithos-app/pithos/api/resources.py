@@ -31,11 +31,11 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-service = "pithos"
 
 resources = [
     {"desc": "Pithos account diskspace",
      "name": "pithos.diskspace",
      "unit": "bytes",
+     "service_type": "object-store",
      }
 ]

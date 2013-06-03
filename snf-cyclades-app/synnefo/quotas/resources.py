@@ -1,15 +1,24 @@
-service = "cyclades"
 
 resources =\
     [{"name": "cyclades.vm",
-      "desc": "Number of virtual machines"},
+      "desc": "Number of virtual machines",
+      "service_type": "compute",
+      },
      {"name": "cyclades.cpu",
-      "desc": "Number of virtual machine processors"},
+      "desc": "Number of virtual machine processors",
+      "service_type": "compute",
+      },
      {"name": "cyclades.ram",
       "desc": "Virtual machine memory size",
-      "unit": "bytes"},
+      "unit": "bytes",
+      "service_type": "compute",
+      },
      {"name": "cyclades.disk",
       "desc": "Virtual machine disk size",
-      "unit": "bytes"},
+      "unit": "bytes",
+      "service_type": "compute",
+      },
      {"name": "cyclades.network.private",
-      "desc": "Number of private networks"}]
+      "desc": "Number of private networks",
+      "service_type": "compute",
+      }]

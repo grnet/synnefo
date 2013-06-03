@@ -59,7 +59,7 @@ astakos_services = {
         'prefix': 'ui',
         'public': False,
         'endpoints': [
-            {'versionId': 'v1.0',
+            {'versionId': '',
              'publicURL': None},
         ]},
 }

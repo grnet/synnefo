@@ -31,6 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from copy import deepcopy
 from synnefo.lib import join_urls
 from synnefo.util.keypath import get_path, set_path
 
@@ -47,3 +48,11 @@ def fill_endpoints(services, base_url):
 
             publicURL = join_urls(base_url, prefix, version)
             set_path(endpoint, 'publicURL', publicURL)
+
+
+def filter_public(services):
+    public_services = {}
+    for name, service in services.iteritems():
+        if service.get('public', False):
+            public_services[name] = deepcopy(service)
+    return public_services

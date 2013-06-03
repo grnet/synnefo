@@ -57,7 +57,7 @@ pithos_services = {
         'type': 'pithos_ui',
         'component': 'pithos',
         'prefix': 'ui',
-        'public': True,
+        'public': False,
         'endpoints': [
             {'versionId': '',
              'publicURL': None},

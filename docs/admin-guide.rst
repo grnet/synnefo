@@ -13,8 +13,8 @@ General Synnefo Architecture
 The following graph shows the whole Synnefo architecture and how it interacts
 with multiple Ganeti clusters. We hope that after reading the Administrator's
 Guide you will be able to understand every component and all the interactions
-between them. It is a good idea to first go through the Quick Administrator's
-Guide before proceeding.
+between them. It is a good idea to first go through the Administrator's Guide
+before proceeding.
 
 .. image:: images/synnefo-arch2.png
    :width: 100%
@@ -466,17 +466,17 @@ requests to the Cyclades API, will retrieve the updated state from the DB.
 Prereqs
 -------
 
-Work in progress. Please refer to :ref:`quick administrator quide <quick-install-admin-guide>`.
+Work in progress. Please refer to :ref:`administrator's install quide <quick-install-admin-guide>`.
 
 Installation
 ------------
 
-Work in progress. Please refer to :ref:`quick administrator quide <quick-install-admin-guide>`.
+Work in progress. Please refer to :ref:`administrator's install quide <quick-install-admin-guide>`.
 
 Configuration
 -------------
 
-Work in progress. Please refer to :ref:`quick administrator quide <quick-install-admin-guide>`.
+Work in progress. Please refer to :ref:`administrator's install quide <quick-install-admin-guide>`.
 
 Working with Cyclades
 ---------------------
@@ -1513,7 +1513,7 @@ Scaling up to multiple nodes
 Here we will describe how should a large scale Synnefo deployment look like. Make
 sure you are familiar with Synnefo and Ganeti before proceeding with this section.
 This means you should at least have already set up successfully a working Synnefo
-deployment as described in the :ref:`Admin's Quick Installation Guide
+deployment as described in the :ref:`Admin's Installation Guide
 <quick-install-admin-guide>` and also read the Administrator's Guide until this
 section.
 

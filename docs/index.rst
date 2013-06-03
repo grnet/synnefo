@@ -75,7 +75,7 @@ There are 3 guides for Synnefo.
 .. times the prerequisites cannot be satisfied due to the underlying
 .. infrastructure complexity (especially as far as networks is concerned).
 
-The quick installation guide describes how to install the whole Synnefo stack
+The admin's installation guide describes how to install the whole Synnefo stack
 in just two physical nodes, for testing purposes. This guide is useful to those
 interested in deploying Synnefo in large scale, as a starting point that will
 help them get familiar with the Synnefo components and overall architecture, as
@@ -101,7 +101,7 @@ external world. Also documents all Synnefo external REST APIs.
 .. toctree::
    :maxdepth: 1
 
-   Quick Installation Guide (on two nodes) <quick-install-admin-guide>
+   Installation Guide (on two nodes) <quick-install-admin-guide>
 
 .. toctree::
    :maxdepth: 2

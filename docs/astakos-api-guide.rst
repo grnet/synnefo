@@ -38,7 +38,7 @@ Returns a json formatted list containing information about the supported cloud s
 ============================= =========  ==================
 Uri                           Method     Description
 ============================= =========  ==================
-``/im/get_services``          GET        Get cloud services
+``/ui/get_services``          GET        Get cloud services
 ============================= =========  ==================
 
 Example reply:
@@ -58,22 +58,22 @@ Returns a json formatted list containing the cloud bar links.
 ========================= =========  ==================
 Uri                       Method     Description
 ========================= =========  ==================
-``/im/get_menu``          GET        Get cloud bar menu
+``/ui/get_menu``          GET        Get cloud bar menu
 ========================= =========  ==================
 
 Example reply if request user is not authenticated:
 
 ::
 
-    [{"url": "/im/", "name": "Sign in"}]
+    [{"url": "/ui/", "name": "Sign in"}]
 
 Example reply if request user is authenticated:
 
 ::
 
-    [{"url": "/im/", "name": "user@example.com"},
-    {"url": "/im/landing", "name": "Dashboard"},
-    {"url": "/im/logout", "name": "Sign out"}]
+    [{"url": "/ui/", "name": "user@example.com"},
+    {"url": "/ui/landing", "name": "Dashboard"},
+    {"url": "/ui/logout", "name": "Sign out"}]
 
 
 User API Operations
@@ -141,7 +141,7 @@ Return Code                 Description
 500 (Internal Server Error) The request cannot be completed because of an internal error
 =========================== =====================
 
-.. warning:: The service is also available under ``/im/authenticate``.
+.. warning:: The service is also available under ``/ui/authenticate``.
      It  will be removed in the next version.
 
 

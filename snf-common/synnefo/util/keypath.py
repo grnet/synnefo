@@ -32,6 +32,15 @@
 # or implied, of GRNET S.A.
 
 
+import re
+integer_re = re.compile('-?[0-9]+')
+
+
+def join_path(sep, path):
+    iterable = ((str(n) if isinstance(n, (int, long)) else n) for n in path)
+    return sep.join(iterable)
+
+
 def lookup_path(container, path, sep='.', createpath=False):
     """
     return (['a','b'],
@@ -42,22 +51,37 @@ def lookup_path(container, path, sep='.', createpath=False):
     names = path.split(sep)
     dirnames = names[:-1]
     basename = names[-1]
+    if integer_re.match(basename):
+        basename = int(basename)
 
     node = container
     name_path = []
     node_path = [node]
     for name in dirnames:
         name_path.append(name)
-        if name not in node:
+
+        if integer_re.match(name):
+            name = int(name)
+
+        try:
+            node = node[name]
+        except KeyError as e:
             if not createpath:
-                m = "'{0}': path not found".format(sep.join(name_path))
+                m = "'{0}': path not found".format(join_path(sep, name_path))
                 raise KeyError(m)
             node[name] = {}
-        try:
+            node = node[name]
+        except IndexError as e:
+            if not createpath:
+                m = "'{0}': path not found: {1}".format(
+                    join_path(sep, name_path), e)
+                raise KeyError(m)
+            size = name if name > 0 else -name
+            node += (dict() for _ in xrange(len(node), size))
             node = node[name]
         except TypeError as e:
             m = "'{0}': cannot traverse path beyond this node: {1}"
-            m = m.format(sep.join(name_path), str(e))
+            m = m.format(join_path(sep, name_path), str(e))
             raise ValueError(m)
         node_path.append(node)
 
@@ -81,11 +105,13 @@ def list_paths(container, sep='.'):
     [('a.b.c', 'd'), ('a.e', 3)]
     >>> sorted(list_paths({'a': {'b': {'c': 'd'}, 'e': {'f': 3}}}))
     [('a.b.c', 'd'), ('a.e.f', 3)]
+    >>> sorted(list_paths({'a': [{'b': 3}, 2]}))
+    [('a', [{'b': 3}, 2])]
     >>> list_paths({})
     []
 
     """
-    return [(sep.join(name_path), node_path[-1])
+    return [(join_path(sep, name_path), node_path[-1])
             for name_path, node_path in walk_paths(container)]
 
 
@@ -113,7 +139,7 @@ def del_path(container, path, sep='.', collect=True):
             del lastnode[basename]
     except (TypeError, KeyError) as e:
         m = "'{0}': cannot traverse path beyond this node: {1}"
-        m = m.format(sep.join(name_path), str(e))
+        m = m.format(join_path(sep, name_path), str(e))
         raise ValueError(m)
 
     if collect:
@@ -139,6 +165,12 @@ def get_path(container, path, sep='.'):
     1
     >>> get_path({'a': {'b': {'c': 1}}}, 'a.b')
     {'c': 1}
+    >>> get_path({'a': [{'z': 1}]}, 'a.0')
+    {'z': 1}
+    >>> get_path({'a': [{'z': 1}]}, 'a.0.z')
+    1
+    >>> get_path({'a': [{'z': 1}]}, 'a.-1.z')
+    1
 
     """
     name_path, node_path, basename = \
@@ -150,11 +182,11 @@ def get_path(container, path, sep='.'):
         return node[basename]
     except TypeError as e:
         m = "'{0}': cannot traverse path beyond this node: {1}"
-        m = m.format(sep.join(name_path), str(e))
+        m = m.format(join_path(sep, name_path), str(e))
         raise ValueError(m)
     except KeyError as e:
         m = "'{0}': path not found: {1}"
-        m = m.format(sep.join(name_path), str(e))
+        m = m.format(join_path(sep, name_path), str(e))
         raise KeyError(m)
 
 
@@ -165,8 +197,7 @@ def set_path(container, path, value, sep='.',
 
     >>> set_path({'a': {'b': {'c': 'd'}}}, 'a.b.c.d', 1)
     Traceback (most recent call last):
-    ValueError: 'a.b.c.d': cannot traverse path beyond this node:\
- 'str' object does not support item assignment
+    ValueError: 'a.b.c.d': cannot index non-object node with string
     >>> set_path({'a': {'b': {'c': 'd'}}}, 'a.b.x.d', 1)
     Traceback (most recent call last):
     KeyError: "'a.b.x': path not found"
@@ -177,6 +208,15 @@ def set_path(container, path, value, sep='.',
     >>> set_path({'a': {'b': {'c': 'd'}}}, 'a.b.c', 1, overwrite=False)
     Traceback (most recent call last):
     ValueError: will not overwrite path 'a.b.c'
+    >>> d = {'a': [{'z': 1}]}; set_path(d, 'a.-2.1', 2, createpath=False)
+    Traceback (most recent call last):
+    KeyError: "'a.-2': path not found: list index out of range"
+    >>> d = {'a': [{'z': 1}]}; set_path(d, 'a.-2.1', 2, createpath=True)
+    Traceback (most recent call last):
+    ValueError: 'a.-2.1': will not index object node with integer
+    >>> d = {'a': [{'z': 1}]}; set_path(d, 'a.-2.z', 2, createpath=True); \
+ d['a'][-2]['z']
+    2
 
     """
     name_path, node_path, basename = \
@@ -188,11 +228,21 @@ def set_path(container, path, value, sep='.',
         m = "will not overwrite path '{0}'".format(path)
         raise ValueError(m)
 
+    is_object_node = hasattr(node, 'keys')
+    is_string_name = isinstance(basename, basestring)
+    if not is_string_name and is_object_node:
+        m = "'{0}': will not index object node with integer"
+        m = m.format(join_path(sep, name_path))
+        raise ValueError(m)
+    if is_string_name and not is_object_node:
+        m = "'{0}': cannot index non-object node with string"
+        m = m.format(join_path(sep, name_path))
+        raise ValueError(m)
     try:
         node[basename] = value
     except TypeError as e:
         m = "'{0}': cannot traverse path beyond this node: {1}"
-        m = m.format(sep.join(name_path), str(e))
+        m = m.format(join_path(sep, name_path), str(e))
         raise ValueError(m)
 
 

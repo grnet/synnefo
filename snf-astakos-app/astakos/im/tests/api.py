@@ -41,7 +41,8 @@ from xml.dom import minidom
 
 import json
 
-ROOT = '/astakos/api/'
+ROOT = "/%s/%s/" % (
+    astakos_settings.BASE_PATH, astakos_settings.ACCOUNTS_PREFIX)
 u = lambda url: ROOT + url
 
 

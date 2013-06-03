@@ -1,6 +1,6 @@
 #coding=utf8
 from django.conf import settings
-from synnefo.lib import parse_base_url
+from synnefo.lib import parse_base_url, join_urls
 from astakosclient import astakos_services
 from synnefo.lib.services import fill_endpoints
 from synnefo.util.keypath import get_path
@@ -30,10 +30,14 @@ CUSTOMIZE_ASTAKOS_SERVICES = \
 for path, value in CUSTOMIZE_ASTAKOS_SERVICES:
     set_path(astakos_services, path, value, createpath=True)
 
-ASTAKOS_ACCOUNT_PREFIX = get_path(astakos_services, 'astakos_account.prefix')
+ASTAKOS_ACCOUNTS_PREFIX = get_path(astakos_services, 'astakos_account.prefix')
+ASTAKOS_VIEWS_PREFIX = get_path(astakos_services, 'astakos_ui.prefix')
+ASTAKOS_KEYSTONE_PREFIX = get_path(astakos_services, 'astakos_keystone.prefix')
 
 BASE_ASTAKOS_PROXY_PATH = getattr(settings, 'PITHOS_BASE_ASTAKOS_PROXY_PATH',
                                   ASTAKOS_BASE_PATH)
+BASE_ASTAKOS_PROXY_PATH = join_urls(BASE_PATH, BASE_ASTAKOS_PROXY_PATH)
+BASE_ASTAKOS_PROXY_PATH = BASE_ASTAKOS_PROXY_PATH.strip('/')
 
 
 ASTAKOSCLIENT_POOLSIZE = getattr(settings, 'PITHOS_ASTAKOSCLIENT_POOLSIZE', 200)

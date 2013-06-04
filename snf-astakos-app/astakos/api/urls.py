@@ -45,17 +45,18 @@ astakos_account_v1_0 = patterns(
     url(r'^commissions/(?P<serial>\d+)/action/?$', 'serial_action'),
 )
 
-urlpatterns = patterns(
-    '',
-    url(r'^v1.0/', include(astakos_account_v1_0)),
-)
-
-urlpatterns += patterns(
+astakos_account_v1_0 += patterns(
     'astakos.api.user',
     url(r'^feedback/?$', 'send_feedback'),
     url(r'^user_catalogs/?$', 'get_uuid_displayname_catalogs'),
     url(r'^authenticate/?$', 'authenticate'),
 )
+
+urlpatterns = patterns(
+    '',
+    url(r'^v1.0/', include(astakos_account_v1_0)),
+)
+
 
 urlpatterns += patterns(
     'astakos.api.service',

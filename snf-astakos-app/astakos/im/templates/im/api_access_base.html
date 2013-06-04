@@ -1,0 +1,60 @@
+{% extends "im/account_base.html" %}
+{% load filters %}
+
+{% block page.body %}
+<div class="api-access-view">
+    <div class="subsection">
+    {% block page.body.title %}
+    <h2>API ACCESS</h2>
+    {% endblock %}
+    {% block page.body.description %}
+    <p>
+    <em>{{ BRANDING_SERVICE_NAME }} API</em> allows you complete access to all 
+    of your data stored accross the {{ BRANDING_SERVICE_NAME }} services.
+    </p>
+    {% endblock %}
+    </div>
+    
+    <div class="subsection">
+    {% block page.body.token %}
+    <h2>API details</h2>
+    <div class="token-view">
+        <div class="detail clearfix">
+            <span class="title">Account UUID</span>
+            <input type="text" value="{{ request.user.uuid }}" disabled />
+        </div>
+        <div class="detail small clearfix">
+            <span class="title">Authentication url</span>
+            <input type="text" value="{{ token_url }}" disabled />
+        </div>
+        <div class="detail clearfix">
+            <span class="title">API Token</span>
+            <input type="text" value="{{ request.user.auth_token }}" disabled />
+            <span class="expires">
+                <span class="date">
+                    expires in {{ request.user.auth_token_expires|timeuntil }}
+                    ({{ request.user.auth_token_expires|date }})
+                </span>
+            </span>
+<span class="extra-img" id="token-span">&nbsp;</span>
+        </div>
+        <p class="sub">Make sure to set the new token in any client you may be using each
+        time you renew your token.</p>
+    </div>
+    {% endblock %}
+</div>
+
+    <div class="subsection api-clients">
+    {% block page.body.clients %}
+    <h2>Command line client</h2>
+    <h3><a href="{{ client_url }}">Kamaki</a></h3>
+    <p>
+    Kamaki is a command line utility that fully supports the 
+    {{ BRANDNING_SERVICE_NAME }} API.
+    </p>
+    <p class="download">You can download kamaki 
+    from the <a href="{{ client_url }}">project homepage</a></p>
+    {% endblock %}
+</div>
+</div>
+{% endblock %}

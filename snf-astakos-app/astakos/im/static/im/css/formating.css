@@ -113,3 +113,53 @@ span.action-desc { display: block; color: #fff;}
 
 /* heading extra */
 h2 .header-actions { float: right; font-size: 0.8em;}
+
+.api-access-view div.detail .title {
+    float: left;
+    font-size: 0.8em;
+}
+
+.api-access-view div.detail input {
+    border: none;
+    text-decoration: none;
+    width: 80%;
+    font-family: monospace;
+    position: absolute;
+    left: 20%;
+    cursor: pointer;
+}
+
+.api-access-view div.detail {
+    display: block;
+    position: relative;
+    margin: 1em 0;
+    font-size: 1.3em;
+    cursor: pointer;
+    border-bottom: 1px solid #efefef;
+    padding-bottom: 0.2em;
+}
+
+.api-access-view div.detail.small {
+    padding-bottom: 0.9em;
+}
+
+.api-access-view div.detail .expires {
+    font-size: 9px;
+    font-family: 'Open Sans', sans-serif;
+    position: absolute;
+    right: 0;
+    bottom: 15px;
+}
+
+.api-access-view p.sub {
+    font-size: 0.7em;
+    text-align: right;
+}
+
+.api-access-view .api-clients h3 {
+    font-size: 1.2em;
+}
+
+.subsection {
+    margin-bottom: 4em;
+}

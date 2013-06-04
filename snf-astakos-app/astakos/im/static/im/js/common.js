@@ -87,6 +87,11 @@ if (navigator.userAgent.match(/iPhone/i)) {
  
 $(document).ready(function() {
 	
+    /* api access */
+    $(".token-view .detail").click(function() { 
+      $(this).find("input").select();
+    });
+	    
 	 
     setContainerMinHeight('.container .wrapper');
     //tableFixedCols('my-projects', 25);
@@ -404,8 +409,6 @@ $('#members-table tr .check input').click(function(e){
 /* end of project members page js */
 
 
-
-	    
 });
 	
 $(window).resize(function() {

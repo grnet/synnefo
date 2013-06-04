@@ -31,10 +31,10 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import patterns, url
+from django.conf.urls.defaults import patterns, url, include
 
 
-urlpatterns = patterns(
+astakos_account_v1_0 = patterns(
     'astakos.api.quotas',
     url(r'^quotas/?$', 'quotas', name="astakos-api-quotas"),
     url(r'^service_quotas/?$', 'service_quotas'),
@@ -43,6 +43,11 @@ urlpatterns = patterns(
     url(r'^commissions/action/?$', 'resolve_pending_commissions'),
     url(r'^commissions/(?P<serial>\d+)/?$', 'get_commission'),
     url(r'^commissions/(?P<serial>\d+)/action/?$', 'serial_action'),
+)
+
+urlpatterns = patterns(
+    '',
+    url(r'^v1.0/', include(astakos_account_v1_0)),
 )
 
 urlpatterns += patterns(

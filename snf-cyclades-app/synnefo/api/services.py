@@ -79,6 +79,7 @@ cyclades_services = {
             },
         },
     },
+
     'cyclades_plankton': {
         'type': 'image',
         'component': 'cyclades',

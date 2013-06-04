@@ -89,5 +89,5 @@ image_v1_patterns = patterns(
 
 urlpatterns = patterns(
     '',
-    (r'^v1/', include(image_v1_patterns)),
+    (r'^v1.0/', include(image_v1_patterns)),
 )

@@ -56,3 +56,26 @@ def filter_public(services):
         if service.get('public', False):
             public_services[name] = deepcopy(service)
     return public_services
+
+
+def get_public_endpoint(services, service_type, version=None):
+    found_endpoints = {}
+    for service_name, service in services.iteritems():
+        if service_type != service['type']:
+            continue
+
+        for endpoint in service['endpoints']:
+            endpoint_version = endpoint['versionId']
+            if version is not None:
+                if version != endpoint_version:
+                    continue
+            found_endpoints[endpoint_version] = endpoint
+
+    if not found_endpoints:
+        m = "No endpoint found for service type '{0}'".format(service_type)
+        if version is not None:
+            m += " and version '{0}'".format(version)
+        raise ValueError(m)
+
+    selected = sorted(found_endpoints.keys())[-1]
+    return found_endpoints[selected]['publicURL']

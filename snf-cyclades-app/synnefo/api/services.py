@@ -93,7 +93,7 @@ cyclades_services = {
     },
 
     'cyclades_vmapi': {
-        'type': 'cyclades_vmapi',
+        'type': 'vmapi',
         'component': 'cyclades',
         'prefix': 'vmapi',
         'public': True,

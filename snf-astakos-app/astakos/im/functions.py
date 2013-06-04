@@ -164,7 +164,8 @@ def send_invitation(invitation, template_name='im/invitation.txt'):
     Send invitation email.
     """
     subject = _(astakos_messages.INVITATION_EMAIL_SUBJECT)
-    url = '%s?code=%d' % (join_urls(settings.BASE_URL, reverse('index')), invitation.code)
+    url = '%s?code=%d' % (join_urls(settings.BASE_HOST,
+                                    reverse('index')), invitation.code)
     message = render_to_string(template_name, {
                                'invitation': invitation,
                                'url': url,
@@ -190,7 +191,8 @@ def send_greeting(user, email_template_name='im/welcome_email.txt'):
     subject = _(astakos_messages.GREETING_EMAIL_SUBJECT)
     message = render_to_string(email_template_name, {
                                'user': user,
-                               'url': join_urls(settings.BASE_URL, reverse('index')),
+                               'url': join_urls(settings.BASE_HOST,
+                                                reverse('index')),
                                'baseurl': settings.BASE_URL,
                                'site_name': settings.SITENAME,
                                'support': settings.CONTACT_EMAIL})

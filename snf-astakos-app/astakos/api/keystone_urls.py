@@ -35,5 +35,5 @@ from django.conf.urls.defaults import patterns, url
 
 urlpatterns = patterns(
     'astakos.api.tokens',
-    url(r'^v1.0/tokens/?$', 'authenticate'),
+    url(r'^v2.0/tokens/?$', 'authenticate'),
 )

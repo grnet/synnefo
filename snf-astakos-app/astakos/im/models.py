@@ -211,6 +211,7 @@ class Resource(models.Model):
     name = models.CharField(_('Name'), max_length=255, unique=True)
     desc = models.TextField(_('Description'), null=True)
     service_type = models.CharField(_('Type'), max_length=255)
+    service_origin = models.CharField(max_length=255, db_index=True)
     unit = models.CharField(_('Unit'), null=True, max_length=255)
     uplimit = intDecimalField(default=0)
     allow_in_projects = models.BooleanField(default=True)
@@ -224,7 +225,7 @@ class Resource(models.Model):
         return str(self)
 
     def get_info(self):
-        return {'service_type': self.service_type,
+        return {'service': self.service_origin,
                 'description': self.desc,
                 'unit': self.unit,
                 'allow_in_projects': self.allow_in_projects,

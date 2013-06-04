@@ -96,10 +96,10 @@ def get_user_quotas(user, resources=None, sources=None):
 
 
 def service_get_quotas(component, users=None):
-    type_values = Service.objects.filter(
-        component=component).values_list('type')
-    service_types = [t for (t,) in type_values]
-    resources = Resource.objects.filter(service_type__in=service_types)
+    name_values = Service.objects.filter(
+        component=component).values_list('name')
+    service_names = [t for (t,) in name_values]
+    resources = Resource.objects.filter(service_origin__in=service_names)
     resource_names = [r.name for r in resources]
     counters = qh.get_quota(holders=users, resources=resource_names)
     return transform_data(counters)

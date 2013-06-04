@@ -48,8 +48,15 @@ class ResourceException(Exception):
 def add_resource(resource_dict):
     name = resource_dict.get('name')
     service_type = resource_dict.get('service_type')
-    if not name or not service_type:
+    service_origin = resource_dict.get('service_origin')
+    if not name or not service_type or not service_origin:
         raise ResourceException("Malformed resource dict.")
+
+    try:
+        service = Service.objects.get(name=service_origin)
+    except Service.DoesNotExist:
+        m = "There is no service %s." % service_origin
+        raise ResourceException(m)
 
     try:
         r = Resource.objects.get_for_update(name=name)
@@ -58,10 +65,16 @@ def add_resource(resource_dict):
             m = ("There already exists a resource named %s with service "
                  "type %s." % (name, r.service_type))
             raise ResourceException(m)
+        if r.service_origin != service_origin:
+            m = ("There already exists a resource named %s registered for "
+                 "service %s." % (name, r.service_origin))
+            raise ResourceException(m)
+
     except Resource.DoesNotExist:
         r = Resource(name=name,
                      uplimit=0,
-                     service_type=service_type)
+                     service_type=service_type,
+                     service_origin=service_origin)
         exists = False
 
     for field in resource_fields:

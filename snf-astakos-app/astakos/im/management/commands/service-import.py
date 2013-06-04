@@ -40,6 +40,7 @@ from django.utils import simplejson as json
 from snf_django.lib.db.transaction import commit_on_success_strict
 from astakos.im.register import add_service, ServiceException
 from astakos.im.models import Component
+from ._common import read_from_file
 
 
 class Command(BaseCommand):
@@ -61,15 +62,15 @@ class Command(BaseCommand):
             raise CommandError(m)
 
         else:
-            with open(json_file) as file_data:
-                m = ('Input should be a JSON dict mapping service names '
-                     'to definitions.')
-                try:
-                    data = json.load(file_data)
-                except json.JSONDecodeError:
-                    raise CommandError(m)
-                if not isinstance(data, dict):
-                    raise CommandError(m)
+            data = read_from_file(json_file)
+            m = ('Input should be a JSON dict mapping service names '
+                 'to definitions.')
+            try:
+                data = json.loads(data)
+            except json.JSONDecodeError:
+                raise CommandError(m)
+            if not isinstance(data, dict):
+                raise CommandError(m)
         self.add_services(data)
 
     def add_services(self, data):

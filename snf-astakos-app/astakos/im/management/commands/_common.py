@@ -45,8 +45,21 @@ from synnefo.util import units
 from synnefo.lib.ordereddict import OrderedDict
 from astakos.im.models import AstakosUser
 from astakos.im.register import get_resources
+import sys
+
 
 DEFAULT_CONTENT_TYPE = None
+
+
+def read_from_file(f_name):
+    if f_name == '-':
+        return sys.stdin.read()
+    else:
+        try:
+            with open(f_name) as file_desc:
+                return file_desc.read()
+        except IOError as e:
+            raise CommandError(e)
 
 
 def get_user(email_or_id, **kwargs):

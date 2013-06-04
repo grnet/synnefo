@@ -38,11 +38,11 @@ import json
 import math
 import copy
 
-import time
 from datetime import datetime, timedelta
-from base64 import b64encode
+import base64
 from urllib import quote
 from random import randint
+import os
 
 from django.db import models, IntegrityError, transaction
 from django.contrib.auth.models import User, UserManager, Group, Permission
@@ -93,13 +93,9 @@ def get_content_type():
 inf = float('inf')
 
 
-def generate_token(*args):
-    md5 = hashlib.md5()
-    md5.update(settings.SECRET_KEY)
-    for arg in args:
-        md5.update(arg)
-    md5.update("%.15f" % time.time())
-    return b64encode(md5.digest())
+def generate_token():
+    s = os.urandom(32)
+    return base64.urlsafe_b64encode(s)
 
 
 class Component(models.Model):
@@ -107,7 +103,7 @@ class Component(models.Model):
                             db_index=True)
     url = models.CharField(_('Component url'), max_length=1024, null=True,
                            help_text=_("URL the component is accessible from"))
-    auth_token = models.CharField(_('Authentication Token'), max_length=32,
+    auth_token = models.CharField(_('Authentication Token'), max_length=64,
                                   null=True, blank=True, unique=True)
     auth_token_created = models.DateTimeField(_('Token creation date'),
                                               null=True)
@@ -116,10 +112,7 @@ class Component(models.Model):
 
     def renew_token(self, expiration_date=None):
         for i in range(10):
-            data = (self.name.encode('ascii', 'ignore'),)
-            if self.url is not None:
-                data += (self.url.encode('ascii', 'ignore'),)
-            new_token = generate_token(*data)
+            new_token = generate_token()
             count = Component.objects.filter(auth_token=new_token).count()
             if count == 0:
                 break
@@ -359,7 +352,7 @@ class AstakosUser(User):
         _('Invitations left'), default=astakos_settings.INVITATIONS_PER_LEVEL.get(user_level, 0))
 
     auth_token = models.CharField(_('Authentication Token'),
-                                  max_length=32,
+                                  max_length=64,
                                   unique=True,
                                   null=True,
                                   blank=True,
@@ -540,8 +533,7 @@ class AstakosUser(User):
 
     def renew_token(self, flush_sessions=False, current_key=None):
         for i in range(10):
-            data = (self.username, self.realname.encode('ascii', 'ignore'))
-            new_token = generate_token(*data)
+            new_token = generate_token()
             count = AstakosUser.objects.filter(auth_token=new_token).count()
             if count == 0:
                 break

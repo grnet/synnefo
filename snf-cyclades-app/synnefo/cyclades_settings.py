@@ -36,7 +36,7 @@ from synnefo.lib import join_urls, parse_base_url
 from synnefo.util.keypath import get_path
 from synnefo.api.services import cyclades_services as vanilla_cyclades_services
 from synnefo.lib.services import fill_endpoints
-from astakosclient import astakos_services
+from astakosclient import astakos_services as vanilla_astakos_services
 
 from copy import deepcopy
 
@@ -73,6 +73,9 @@ ASTAKOS_BASE_HOST, ASTAKOS_BASE_PATH = parse_base_url(ASTAKOS_BASE_URL)
 #astakos_services = deepcopy(vanilla_astakos_services)
 CUSTOMIZE_ASTAKOS_SERVICES = \
         getattr(settings, 'CYCLADES_CUSTOMIZE_ASTAKOS_SERVICES', ())
+
+astakos_services = deepcopy(vanilla_astakos_services)
+fill_endpoints(astakos_services, ASTAKOS_BASE_URL)
 for path, value in CUSTOMIZE_ASTAKOS_SERVICES:
     set_path(astakos_services, path, value, createpath=True)
 

@@ -57,6 +57,7 @@ def join_urls(a, b):
 # --------------------------------------------------------------------
 # Astakos API urls
 ACCOUNTS_PREFIX = get_path(astakos_services, 'astakos_account.prefix')
+ACCOUNTS_PREFIX = join_urls(ACCOUNTS_PREFIX, 'v1.0')
 API_AUTHENTICATE = join_urls(ACCOUNTS_PREFIX, "authenticate")
 API_USERCATALOGS = join_urls(ACCOUNTS_PREFIX, "user_catalogs")
 API_SERVICE_USERCATALOGS = join_urls(ACCOUNTS_PREFIX, "service/user_catalogs")

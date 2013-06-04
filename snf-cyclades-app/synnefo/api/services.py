@@ -51,7 +51,7 @@ cyclades_services = {
         'prefix': 'image',
         'public': True,
         'endpoints': [
-            {'versionId': 'v1',
+            {'versionId': 'v1.0',
              'publicURL': None}
         ]},
 

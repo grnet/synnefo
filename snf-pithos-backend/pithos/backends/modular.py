@@ -37,12 +37,27 @@ import logging
 import hashlib
 import binascii
 
-from astakosclient import AstakosClient
+try:
+    from astakosclient import AstakosClient
+except ImportError:
+    AstakosClient = None
 
 from base import (DEFAULT_ACCOUNT_QUOTA, DEFAULT_CONTAINER_QUOTA,
                   DEFAULT_CONTAINER_VERSIONING, NotAllowedError, QuotaError,
                   BaseBackend, AccountExists, ContainerExists, AccountNotEmpty,
                   ContainerNotEmpty, ItemNotExists, VersionNotExists)
+
+
+class DisabledAstakosClient(object):
+    def __init__(self, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
+
+    def __getattr__(self, name):
+        m = ("AstakosClient has been disabled, "
+             "yet an attempt to access it was made")
+        raise AssertionError(m)
+
 
 # Stripped-down version of the HashMap class found in tools.
 
@@ -237,10 +252,17 @@ class ModularBackend(BaseBackend):
 
         self.astakos_url = astakos_url
         self.service_token = service_token
-        self.astakosclient = AstakosClient(
-            astakos_url,
-            use_pool=True,
-            pool_size=astakosclient_poolsize)
+
+        if not astakos_url or not AstakosClient:
+            self.astakosclient = DisabledAstakosClient(
+                astakos_url,
+                use_pool=True,
+                pool_size=astakosclient_poolsize)
+        else:
+            self.astakosclient = AstakosClient(
+                astakos_url,
+                use_pool=True,
+                pool_size=astakosclient_poolsize)
 
         self.serials = []
         self.messages = []
@@ -251,7 +273,7 @@ class ModularBackend(BaseBackend):
 
     @property
     def using_external_quotaholder(self):
-        return True
+        return not isinstance(self.astakosclient, DisabledAstakosClient)
 
     @backend_method
     def list_accounts(self, user, marker=None, limit=10000):

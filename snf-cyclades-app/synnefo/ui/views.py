@@ -192,7 +192,7 @@ def home(request):
                'compute_api_url': json.dumps(uisettings.COMPUTE_URL),
                'user_catalog_url': json.dumps(uisettings.USER_CATALOG_URL),
                'feedback_post_url': json.dumps(uisettings.FEEDBACK_URL),
-               'accounts_api_url': json.dumps(uisettings.ACCOUNTS_URL),
+               'accounts_api_url': json.dumps(uisettings.ACCOUNT_URL),
                'logout_redirect': json.dumps(uisettings.LOGOUT_REDIRECT),
                'login_redirect': json.dumps(uisettings.LOGIN_URL),
                'glance_api_url': json.dumps(uisettings.GLANCE_URL),

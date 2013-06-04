@@ -33,39 +33,31 @@
 #
 
 import synnefo.cyclades_settings as cyclades
+from synnefo.cyclades_settings import cyclades_services, astakos_services
 
 from synnefo.lib import join_urls
+from synnefo.lib.services import get_public_endpoint
+
 from django.conf import settings
-
-
-ASTAKOS_VIEWS_URL = join_urls(cyclades.ASTAKOS_BASE_URL,
-                              cyclades.ASTAKOS_VIEWS_PREFIX)
-
-ASTAKOS_ACCOUNTS_URL = join_urls(cyclades.ASTAKOS_BASE_URL,
-                                 cyclades.ASTAKOS_ACCOUNTS_PREFIX)
-if cyclades.PROXY_USER_SERVICES:
-    ASTAKOS_ACCOUNTS_URL = join_urls('/', cyclades.BASE_ASTAKOS_PROXY_PATH,
-                                     cyclades.ASTAKOS_ACCOUNTS_PREFIX)
-
 
 BASE_PATH = cyclades.BASE_PATH
 if not BASE_PATH.startswith("/"):
     BASE_PATH = "/" + BASE_PATH
 
-ACCOUNTS_URL = getattr(settings, 'CYCLADES_UI_ACCOUNTS_URL',
-                       join_urls(ASTAKOS_ACCOUNTS_URL))
-USER_CATALOG_URL = getattr(settings, 'CYCLADES_UI_USER_CATALOG_URL',
-                           join_urls(ACCOUNTS_URL, 'user_catalogs'))
-FEEDBACK_URL = getattr(settings, 'CYCLADES_UI_FEEDBACK_URL',
-                       join_urls(ACCOUNTS_URL, 'feedback'))
-COMPUTE_URL = getattr(settings, 'CYCLADES_UI_COMPUTE_URL',
-                      join_urls(BASE_PATH, cyclades.COMPUTE_PREFIX,
-                                'v1.1'))
-GLANCE_URL = getattr(settings, 'CYCLADES_UI_GLANCE_URL',
-                     join_urls(BASE_PATH, cyclades.PLANKTON_PREFIX + '/v1'))
-USERDATA_URL = getattr(settings, 'CYCLADES_UI_USERDATA_URL',
-                       join_urls(BASE_PATH, cyclades.USERDATA_PREFIX))
-LOGIN_URL = getattr(settings, 'CYCLADES_UI_LOGIN_URL',
-                    join_urls(cyclades.ASTAKOS_BASE_URL,
-                              cyclades.ASTAKOS_VIEWS_PREFIX, 'login'))
-LOGOUT_REDIRECT = getattr(settings, 'CYCLADES_UI_LOGOUT_REDIRECT', LOGIN_URL)
+GLANCE_URL = get_public_endpoint(cyclades_services, 'image', 'v1.0')
+COMPUTE_URL = get_public_endpoint(cyclades_services, 'compute', 'v2.0')
+USERDATA_URL = get_public_endpoint(cyclades_services, 'cyclades_userdata', '')
+ASTAKOS_UI_URL = get_public_endpoint(astakos_services, 'astakos_ui', '')
+
+if cyclades.PROXY_USER_SERVICES:
+    ACCOUNT_URL = join_urls('/', cyclades.BASE_ASTAKOS_PROXY_PATH,
+                            cyclades.ASTAKOS_ACCOUNTS_PREFIX, 'v1.0')
+else:
+    ACCOUNT_URL = get_public_endpoint(astakos_services, 'account', 'v1.0')
+
+
+USER_CATALOG_URL = join_urls(ACCOUNT_URL, 'user_catalogs')
+FEEDBACK_URL = join_urls(ACCOUNT_URL, 'feedback')
+
+LOGIN_URL = join_urls(ASTAKOS_UI_URL, 'login')
+LOGOUT_REDIRECT = LOGIN_URL

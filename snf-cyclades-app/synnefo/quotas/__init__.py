@@ -98,7 +98,11 @@ def issue_commission(user, source, provisions,
         raise faults.OverLimit(msg, details=details)
 
     if serial:
-        return QuotaHolderSerial.objects.create(serial=serial)
+        serial_info = {"serial": serial}
+        if auto_accept:
+            serial_info["accept"] = True
+            serial_info["resolved"] = True
+        return QuotaHolderSerial.objects.create(**serial_info)
     else:
         raise Exception("No serial")
 

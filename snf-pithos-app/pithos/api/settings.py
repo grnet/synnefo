@@ -1,10 +1,10 @@
 #coding=utf8
 from django.conf import settings
 from synnefo.lib import parse_base_url, join_urls
-from astakosclient import astakos_services
 from synnefo.lib.services import fill_endpoints
-from synnefo.util.keypath import get_path
+from synnefo.util.keypath import get_path, set_path
 from pithos.api.services import pithos_services as vanilla_pithos_services
+from astakosclient import astakos_services as vanilla_astakos_services
 
 from copy import deepcopy
 
@@ -25,6 +25,8 @@ PITHOS_PREFIX = get_path(pithos_services, 'pithos_object-store.prefix')
 PUBLIC_PREFIX = get_path(pithos_services, 'pithos_public.prefix')
 UI_PREFIX = get_path(pithos_services, 'pithos_ui.prefix')
 
+astakos_services = deepcopy(vanilla_astakos_services)
+fill_endpoints(astakos_services, ASTAKOS_BASE_URL)
 CUSTOMIZE_ASTAKOS_SERVICES = \
         getattr(settings, 'PITHOS_CUSTOMIZE_ASTAKOS_SERVICES', ())
 for path, value in CUSTOMIZE_ASTAKOS_SERVICES:

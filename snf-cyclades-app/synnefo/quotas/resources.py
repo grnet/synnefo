@@ -32,6 +32,6 @@
 # or implied, of GRNET S.A.
 
 from synnefo.util.keypath import get_path
-from synnefo.api import cyclades_services
+from synnefo.api.services import cyclades_services
 
-resources = get_path('cyclades_compute.resources').values()
+resources = get_path(cyclades_services, 'cyclades_compute.resources').values()

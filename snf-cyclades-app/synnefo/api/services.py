@@ -78,7 +78,7 @@ cyclades_services = {
                 "service_origin": "cyclades_compute",
             },
         },
-
+    },
     'cyclades_plankton': {
         'type': 'image',
         'component': 'cyclades',

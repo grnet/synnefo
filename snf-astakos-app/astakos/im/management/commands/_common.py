@@ -31,18 +31,14 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from datetime import datetime
 import uuid
 
 from django.core.validators import validate_email
-from django.utils.timesince import timesince, timeuntil
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import FieldError
 from django.core.management import CommandError
 
 from synnefo.util import units
-from synnefo.lib.ordereddict import OrderedDict
 from astakos.im.models import AstakosUser
 from astakos.im.register import get_resources
 import sys
@@ -68,7 +64,7 @@ def get_user(email_or_id, **kwargs):
             return AstakosUser.objects.get(id=int(email_or_id))
         else:
             return AstakosUser.objects.get(email__iexact=email_or_id, **kwargs)
-    except AstakosUser.DoesNotExist, AstakosUser.MultipleObjectsReturned:
+    except (AstakosUser.DoesNotExist, AstakosUser.MultipleObjectsReturned):
         return None
 
 

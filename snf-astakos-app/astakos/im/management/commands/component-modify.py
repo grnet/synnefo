@@ -87,7 +87,6 @@ class Command(BaseCommand):
         if not any([url, auth_token, renew_token, purge_services]):
             raise CommandError("No option specified.")
 
-
         if url:
             component.url = url
 

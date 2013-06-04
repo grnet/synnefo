@@ -34,12 +34,10 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from django.db.utils import IntegrityError
 from django.utils import simplejson as json
 
 from snf_django.lib.db.transaction import commit_on_success_strict
 from astakos.im.register import add_resource, ResourceException
-from astakos.im.models import Service
 from ._common import read_from_file
 
 

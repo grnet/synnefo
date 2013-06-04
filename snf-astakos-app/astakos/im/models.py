@@ -105,7 +105,7 @@ def generate_token(*args):
 class Component(models.Model):
     name = models.CharField(_('Name'), max_length=255, unique=True,
                             db_index=True)
-    url = models.CharField(_('Component url'), max_length=255, null=True,
+    url = models.CharField(_('Component url'), max_length=1024, null=True,
                            help_text=_("URL the component is accessible from"))
     auth_token = models.CharField(_('Authentication Token'), max_length=32,
                                   null=True, blank=True, unique=True)

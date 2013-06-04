@@ -41,7 +41,16 @@ astakos_services = {
         'endpoints': [
             {'versionId': 'v1.0',
              'publicURL': None},
-        ]},
+        ],
+        'resources': {
+            'pending_app': {
+                'desc': "Number of pending project applications",
+                'name': "astakos.pending_app",
+                'service_type': "account",
+                'service_origin': "astakos_account",
+                'allow_in_projects': False},
+            },
+        },
 
     'astakos_keystone': {
         'type': 'identity',
@@ -51,7 +60,9 @@ astakos_services = {
         'endpoints': [
             {'versionId': 'v2.0',
              'publicURL': None},
-        ]},
+        ],
+        'resources': {},
+    },
 
     'astakos_ui': {
         'type': 'astakos_ui',
@@ -61,5 +72,6 @@ astakos_services = {
         'endpoints': [
             {'versionId': '',
              'publicURL': None},
-        ]},
+        ],
+    },
 }

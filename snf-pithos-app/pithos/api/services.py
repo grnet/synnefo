@@ -41,7 +41,17 @@ pithos_services = {
         'endpoints': [
             {'versionId': 'v1',
              'publicURL': None},
-        ]},
+        ],
+        'resources': {
+            'diskspace': {
+                "desc": "Pithos account diskspace",
+                "name": "pithos.diskspace",
+                "unit": "bytes",
+                "service_type": "object-store",
+                "service_origin": "pithos_object-store",
+            },
+        },
+    },
 
     'pithos_public': {
         'type': 'public',
@@ -51,7 +61,9 @@ pithos_services = {
         'endpoints': [
             {'versionId': 'v2.0',
              'publicURL': None},
-        ]},
+        ],
+        'resources': {},
+    },
 
     'pithos_ui': {
         'type': 'pithos_ui',
@@ -61,5 +73,7 @@ pithos_services = {
         'endpoints': [
             {'versionId': '',
              'publicURL': None},
-        ]},
+        ],
+        'resources': {},
+    },
 }

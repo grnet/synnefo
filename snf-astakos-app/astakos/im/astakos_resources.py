@@ -31,10 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-resources = [
-    {"desc": "Number of pending project applications",
-     "name": "astakos.pending_app",
-     "allow_in_projects": False,
-     "service_type": "account",
-     }
-]
+from astakos.im.settings import astakos_services
+from synnefo.util.keypath import get_path
+
+resources = get_path(astakos_services, 'astakos_account.resources').values()

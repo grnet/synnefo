@@ -43,7 +43,41 @@ cyclades_services = {
         'endpoints': [
             {'versionId': 'v2.0',
              'publicURL': None},
-        ]},
+        ],
+        'resources': {
+            'vm': {
+                "name": "cyclades.vm",
+                "desc": "Number of virtual machines",
+                "service_type": "compute",
+                "service_origin": "cyclades_compute",
+            },
+            'cpu': {
+                "name": "cyclades.cpu",
+                "desc": "Number of virtual machine processors",
+                "service_type": "compute",
+                "service_origin": "cyclades_compute",
+            },
+            'ram': {
+                "name": "cyclades.ram",
+                "desc": "Virtual machine memory size",
+                "unit": "bytes",
+                "service_type": "compute",
+                "service_origin": "cyclades_compute",
+            },
+            'disk': {
+                "name": "cyclades.disk",
+                "desc": "Virtual machine disk size",
+                "unit": "bytes",
+                "service_type": "compute",
+                "service_origin": "cyclades_compute",
+            },
+            'network-private': {
+                "name": "cyclades.network.private",
+                "desc": "Number of private networks",
+                "service_type": "compute",
+                "service_origin": "cyclades_compute",
+            },
+        },
 
     'cyclades_plankton': {
         'type': 'image',
@@ -52,8 +86,10 @@ cyclades_services = {
         'public': True,
         'endpoints': [
             {'versionId': 'v1.0',
-             'publicURL': None}
-        ]},
+             'publicURL': None},
+        ],
+        'resources': {},
+    },
 
     'cyclades_vmapi': {
         'type': 'cyclades_vmapi',
@@ -63,7 +99,9 @@ cyclades_services = {
         'endpoints': [
             {'versionId': 'v1.0',
              'publicURL': None},
-        ]},
+        ],
+        'resources': {},
+    },
 
     'cyclades_helpdesk': {
         'type': 'cyclades_helpdesk',
@@ -73,7 +111,8 @@ cyclades_services = {
         'endpoints': [
             {'versionId': '',
              'publicURL': None},
-        ]},
+        ],
+    },
 
     'cyclades_userdata': {
         'type': 'cyclades_userdata',
@@ -83,7 +122,9 @@ cyclades_services = {
         'endpoints': [
             {'versionId': '',
              'publicURL': None},
-        ]},
+        ],
+        'resources': {},
+    },
 
     'cyclades_ui': {
         'type': 'cyclades_ui',
@@ -93,5 +134,7 @@ cyclades_services = {
         'endpoints': [
             {'versionId': '',
              'publicURL': None},
-        ]},
+        ],
+        'resources': {},
+    },
 }

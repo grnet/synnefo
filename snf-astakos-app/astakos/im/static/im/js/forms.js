@@ -124,10 +124,10 @@
 
   };
   
-  var MIDDLEWARE_TOKEN_INPUT_NAME = window.MIDDLEWARE_TOKEN_INPUT_NAME || 'csrfmiddlewaretoken';
-  var CHANGE_TOKEN_URL = window.CHANGE_TOKEN_URL || '/im/profile/update_token';
 
   function renewToken() {
+    var MIDDLEWARE_TOKEN_INPUT_NAME = window.MIDDLEWARE_TOKEN_INPUT_NAME || 'csrfmiddlewaretoken';
+    var CHANGE_TOKEN_URL = window.CHANGE_TOKEN_URL;
     var csrf_value = $("input[name="+MIDDLEWARE_TOKEN_INPUT_NAME+"]").val();
     var url = CHANGE_TOKEN_URL;
     var form = $("<form>");

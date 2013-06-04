@@ -5,6 +5,9 @@
 {% block headjs %}
 	{{ block.super }}	 
 	<script src="{{ IM_STATIC_URL }}js/auth_methods.js"></script>	
+    <script>
+      var CHANGE_TOKEN_URL = '{% url update_token %}';
+    </script>	
 {% endblock %}	
 {% block body %}
 

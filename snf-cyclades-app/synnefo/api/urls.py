@@ -39,9 +39,9 @@ from synnefo.api.versions import versions_list, version_details
 
 
 #
-# The OpenStack Compute API v1.1
+# The OpenStack Compute API v2.0
 #
-api11_patterns = patterns(
+api20_patterns = patterns(
     '',
     (r'^servers', include(servers)),
     (r'^flavors', include(flavors)),
@@ -53,8 +53,8 @@ api11_patterns = patterns(
 urlpatterns = patterns(
     '',
     (r'^(?:.json|.xml|.atom)?$', versions_list),
-    (r'^v1.1/(?:.json|.xml|.atom)?$', version_details,
+    (r'^v2.0/(?:.json|.xml|.atom)?$', version_details,
         {'api_version': 'v1.1'}),
-    (r'^v1.1/', include(api11_patterns)),
+    (r'^v2.0/', include(api20_patterns)),
     (r'^.+', not_found),
 )

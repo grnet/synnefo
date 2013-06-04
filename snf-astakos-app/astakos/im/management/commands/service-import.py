@@ -37,7 +37,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.utils import simplejson as json
 
 from snf_django.lib.db.transaction import commit_on_success_strict
-from astakos.im.register import add_service, ServiceException
+from astakos.im.register import add_service, add_resource, RegisterException
 from astakos.im.models import Component
 from ._common import read_from_file
 
@@ -91,11 +91,30 @@ class Command(BaseCommand):
 
             try:
                 existed = add_service(component, name, service_type, endpoints)
-            except ServiceException as e:
+            except RegisterException as e:
                 raise CommandError(e.message)
 
             m = "%s service %s.\n" % ("Updated" if existed else "Added", name)
             output.append(m)
+
+            resources = service_dict.get('resources', {}).values()
+            for resource in resources:
+                if not isinstance(resource, dict):
+                    raise CommandError("Malformed resource dict.")
+
+                service_origin = resource.get('service_origin')
+                if name != service_origin:
+                    raise CommandError("service_origin mismatch.")
+                try:
+                    r, exists = add_resource(resource)
+                except RegisterException as e:
+                    raise CommandError(e.message)
+                if exists:
+                    m = "Resource '%s' updated in database.\n" % (r.name)
+                else:
+                    m = ("Resource '%s' created in database with default "
+                         "quota limit 0.\n" % (r.name))
+                output.append(m)
 
         for line in output:
             write(line)

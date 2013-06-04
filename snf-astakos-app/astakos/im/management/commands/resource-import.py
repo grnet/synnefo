@@ -37,7 +37,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.utils import simplejson as json
 
 from snf_django.lib.db.transaction import commit_on_success_strict
-from astakos.im.register import add_resource, ResourceException
+from astakos.im.register import add_resource, RegisterException
 from ._common import read_from_file
 
 
@@ -77,7 +77,7 @@ class Command(BaseCommand):
                 raise CommandError("Malformed resource dict.")
             try:
                 r, exists = add_resource(resource)
-            except ResourceException as e:
+            except RegisterException as e:
                 raise CommandError(e.message)
             name = r.name
             if exists:

@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 resource_fields = ['desc', 'unit', 'allow_in_projects']
 
 
-class ResourceException(Exception):
+class RegisterException(Exception):
     pass
 
 
@@ -50,13 +50,13 @@ def add_resource(resource_dict):
     service_type = resource_dict.get('service_type')
     service_origin = resource_dict.get('service_origin')
     if not name or not service_type or not service_origin:
-        raise ResourceException("Malformed resource dict.")
+        raise RegisterException("Malformed resource dict.")
 
     try:
         service = Service.objects.get(name=service_origin)
     except Service.DoesNotExist:
         m = "There is no service %s." % service_origin
-        raise ResourceException(m)
+        raise RegisterException(m)
 
     try:
         r = Resource.objects.get_for_update(name=name)
@@ -64,11 +64,11 @@ def add_resource(resource_dict):
         if r.service_type != service_type:
             m = ("There already exists a resource named %s with service "
                  "type %s." % (name, r.service_type))
-            raise ResourceException(m)
+            raise RegisterException(m)
         if r.service_origin != service_origin:
             m = ("There already exists a resource named %s registered for "
                  "service %s." % (name, r.service_origin))
-            raise ResourceException(m)
+            raise RegisterException(m)
 
     except Resource.DoesNotExist:
         r = Resource(name=name,
@@ -128,10 +128,6 @@ def add_endpoint(service, endpoint_dict):
             endpoint=endpoint, key=key, value=value)
 
 
-class ServiceException(Exception):
-    pass
-
-
 def add_service(component, name, service_type, endpoints):
     defaults = {'component': component,
                 'type': service_type,
@@ -143,7 +139,7 @@ def add_service(component, name, service_type, endpoints):
         if service.component != component:
             m = ("There is already a service named %s registered by %s." %
                  (name, service.component.name))
-            raise ServiceException(m)
+            raise RegisterException(m)
         service.endpoints.all().delete()
     else:
         service.component = component

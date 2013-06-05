@@ -52,13 +52,12 @@ astakos_account_v1_0 += patterns(
     url(r'^authenticate/?$', 'authenticate'),
 )
 
+astakos_account_v1_0 += patterns(
+    'astakos.api.service',
+    url(r'^service/user_catalogs/?$', 'get_uuid_displayname_catalogs'),
+)
+
 urlpatterns = patterns(
     '',
     url(r'^v1.0/', include(astakos_account_v1_0)),
-)
-
-
-urlpatterns += patterns(
-    'astakos.api.service',
-    url(r'^service/user_catalogs/?$', 'get_uuid_displayname_catalogs'),
 )

@@ -35,11 +35,13 @@ from django.conf.urls.defaults import *
 from django.conf import settings
 from snf_django.lib.api.proxy import proxy
 from snf_django.lib.api.utils import prefix_pattern
+from snf_django.utils.urls import extend_with_root_redirects
 from synnefo.cyclades_settings import (
     BASE_URL, BASE_HOST, BASE_PATH, COMPUTE_PREFIX, VMAPI_PREFIX,
     PLANKTON_PREFIX, HELPDESK_PREFIX, UI_PREFIX, ASTAKOS_BASE_URL,
     USERDATA_PREFIX, ASTAKOS_BASE_PATH, BASE_ASTAKOS_PROXY_PATH,
-    ASTAKOS_ACCOUNTS_PREFIX, ASTAKOS_VIEWS_PREFIX, PROXY_USER_SERVICES)
+    ASTAKOS_ACCOUNTS_PREFIX, ASTAKOS_VIEWS_PREFIX, PROXY_USER_SERVICES,
+    cyclades_services)
 
 from urlparse import urlparse
 from functools import partial
@@ -79,3 +81,7 @@ if PROXY_USER_SERVICES:
         '',
         (prefix_pattern(BASE_ASTAKOS_PROXY_PATH), include(proxy_patterns)),
     )
+
+# set utility redirects
+extend_with_root_redirects(urlpatterns, cyclades_services, 'cyclades_ui',
+                           BASE_PATH)

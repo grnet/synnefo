@@ -48,7 +48,6 @@ urlpatterns = patterns(
     url(r'^profile/update_token?$', 'update_token', {}, name='update_token'),
     url(r'^profile/?$','edit_profile', {}, name='edit_profile'),
     url(r'^api_access/?$','api_access', {}, name='api_access'),
-    url(r'^api_access/?$', 'api_access', {}, name='api_access'),
     url(r'^feedback/?$', 'feedback', {}, name='feedback'),
     url(r'^signup/?$', 'signup', {'on_success': 'index', 'extra_context': {'login_form': LoginForm()}}, name='signup'),
     url(r'^logout/?$', 'logout', {'template': 'im/login.html', 'extra_context': {'login_form': LoginForm()}}, name='logout'),

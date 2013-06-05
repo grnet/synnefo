@@ -21,3 +21,6 @@ dl.alt-style									{ width:auto; }
 #token-confirm									{ position:relative; top:8px; left:auto; }
 
 form.submit-inline .form-row.submit				{ position:static; margin-top:20px; }
+
+.token-view .actions 							{ left:0; position: relative; top:50px;}
+.api-access-view div.detail .expires			{ }

@@ -113,3 +113,76 @@ span.action-desc { display: block; color: #fff;}
 
 /* heading extra */
 h2 .header-actions { float: right; font-size: 0.8em;}
+
+.api-access-view div.detail .title {
+    float: left;
+    font-size: 0.8em;
+}
+
+.api-access-view div.detail input {
+    border: none;
+    text-decoration: none;
+    width: 80%;
+    font-family: monospace;
+    position: absolute;
+    left: 20%;
+    cursor: pointer;
+}
+
+.api-access-view div.detail {
+    display: block;
+    position: relative;
+    margin: 2em 0;
+    font-size: 1.3em; 
+    padding-bottom: 0.2em;
+}
+
+.api-access-view div.detail.small {
+    padding-bottom: 0.9em;
+}
+
+.api-access-view div.detail .expires {
+    font-size: 9px;
+    font-family: 'Open Sans', sans-serif;
+    position: absolute;
+    left: 20%;
+    top: 25px;
+    color:#b3b3b3;
+}
+
+.api-access-view p.sub {
+    font-size: 0.7em;
+    color:#b3b3b3;
+    padding-top:6px;
+}
+
+.api-access-view .api-clients h3 {
+    font-size: 1.2em;
+}
+
+.subsection {
+    margin-bottom: 4em;
+}
+
+.token-view .actions {
+    position: absolute;
+    right:0;
+    font-size:13px;
+    max-width: 230px;
+    overflow: hidden
+}
+
+.renew-token .confirm {
+    color:#3582AC;
+    margin:0 15px;
+}
+
+.renew-token .close {
+    color:#F24E53;
+}
+
+.renew-token .sub,
+.renew-token .confirm,
+.renew-token .close {
+    visibility: hidden;
+}

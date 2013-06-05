@@ -180,3 +180,7 @@ RESOURCES_META = getattr(settings, 'ASTAKOS_RESOURCES_META', {})
 # Do not require email verification for new users
 SKIP_EMAIL_VERIFICATION = getattr(settings,
                                   'ASTAKOS_SKIP_EMAIL_VERIFICATION', False)
+
+# Kamaki download url. Displayed in api access view
+API_CLIENT_URL = getattr(settings, 'ASTAKOS_API_CLIENT_URL',
+                         'https://pypi.python.org/pypi/kamaki')

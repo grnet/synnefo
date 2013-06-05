@@ -436,33 +436,22 @@ class ProfileForm(forms.ModelForm):
     """
     email = forms.EmailField(label='E-mail address', help_text='E-mail address')
     renew = forms.BooleanField(label='Renew token', required=False)
-    uuid = forms.CharField(label='User id', required=False)
 
     class Meta:
         model = AstakosUser
-        fields = ('email', 'first_name', 'last_name', 'auth_token',
-                  'auth_token_expires', 'uuid')
+        fields = ('email', 'first_name', 'last_name')
 
     def __init__(self, *args, **kwargs):
         self.session_key = kwargs.pop('session_key', None)
         super(ProfileForm, self).__init__(*args, **kwargs)
         instance = getattr(self, 'instance', None)
-        ro_fields = ('email', 'auth_token', 'auth_token_expires', 'uuid')
+        ro_fields = ('email',)
         if instance and instance.id:
             for field in ro_fields:
                 self.fields[field].widget.attrs['readonly'] = True
 
     def clean_email(self):
         return self.instance.email
-
-    def clean_auth_token(self):
-        return self.instance.auth_token
-
-    def clean_auth_token_expires(self):
-        return self.instance.auth_token_expires
-
-    def clean_uuid(self):
-        return self.instance.uuid
 
     def save(self, commit=True):
         user = super(ProfileForm, self).save(commit=False)
@@ -1024,14 +1013,11 @@ class ExtendedProfileForm(ProfileForm):
                 'new_email_address',
                 'first_name',
                 'last_name',
-                'auth_token',
-                'auth_token_expires',
                 'old_password',
                 'new_password1',
                 'new_password2',
                 'change_email',
                 'change_password',
-                'uuid'
         ]
 
         super(ExtendedProfileForm, self).__init__(*args, **kwargs)

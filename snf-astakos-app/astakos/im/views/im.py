@@ -51,6 +51,8 @@ from django.core.exceptions import PermissionDenied
 from django.views.decorators.http import require_http_methods
 from django.utils import simplejson as json
 
+from synnefo.lib import join_urls
+
 import astakos.im.messages as astakos_messages
 
 from astakos.im import activation_backends
@@ -126,7 +128,7 @@ def update_token(request):
     user.renew_token()
     user.save()
     messages.success(request, astakos_messages.TOKEN_UPDATED)
-    return HttpResponseRedirect(reverse('edit_profile'))
+    return HttpResponseRedirect(reverse('api_access'))
 
 
 @require_http_methods(["GET", "POST"])
@@ -200,6 +202,31 @@ def invite(request, template_name='im/invitations.html', extra_context=None):
     return render_response(template_name,
                            invitation_form=form,
                            context_instance=context)
+
+
+@require_http_methods(["GET", "POST"])
+@required_auth_methods_assigned()
+@login_required
+@cookie_fix
+@signed_terms_required
+def api_access(request, template_name='im/api_access.html',
+               extra_context=None):
+    """
+    API access view.
+    """
+    context = {}
+
+    token_url = join_urls(settings.BASE_URL, settings.BASE_PATH,
+                           reverse('tokens_authenticate'))
+    context['services'] = Component.catalog()
+    context['token_url'] = token_url
+    context['client_url'] = settings.API_CLIENT_URL
+
+    if extra_context:
+        context.update(extra_context)
+    context_instance = get_context(request, context)
+    return render_response(template_name,
+                           context_instance=context_instance)
 
 
 @require_http_methods(["GET", "POST"])
@@ -811,11 +838,6 @@ def landing(request):
         context_instance=get_context(request), **context)
 
 
-def api_access(request):
-    return render_response(
-        'im/api_access.html',
-        context_instance=get_context(request))
-
 @cookie_fix
 def get_menu(request, with_extra_links=False, with_signout=True):
     user = request.user
@@ -842,6 +864,9 @@ def get_menu(request, with_extra_links=False, with_signout=True):
             if settings.INVITATIONS_ENABLED:
                 append(item(url=request.build_absolute_uri(reverse('invite')),
                             name="Invitations"))
+
+            append(item(url=request.build_absolute_uri(reverse('api_access')),
+                        name="API access"))
 
             append(item(url=request.build_absolute_uri(reverse('resource_usage')),
                         name="Usage"))

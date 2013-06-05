@@ -87,6 +87,11 @@ if (navigator.userAgent.match(/iPhone/i)) {
  
 $(document).ready(function() {
 	
+    /* api access */
+    $(".token-view .detail").click(function() { 
+      $(this).find("input").select();
+    });
+	    
 	 
     setContainerMinHeight('.container .wrapper');
     //tableFixedCols('my-projects', 25);
@@ -403,9 +408,27 @@ $('#members-table tr .check input').click(function(e){
 
 /* end of project members page js */
 
+  $('.renew-token a.confirm').click(function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    renewToken();
+  });
+
+  $('.renew-token a.do').click(function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    var els = [$(".renew-token .sub"),$('.renew-token .confirm'), $('.renew-token .close')];
+    _.each(els, function (el) { el.css({'visibility':'visible'});})
+  })
+
+  $('.renew-token a.close').click(function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    var els = [$(".renew-token .sub"),$('.renew-token .confirm'), $('.renew-token .close')];
+    _.each(els, function (el) { el.css({'visibility':'hidden'});})
+  })
 
 
-	    
 });
 	
 $(window).resize(function() {

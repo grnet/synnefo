@@ -36,6 +36,8 @@ from synnefo.lib import join_urls
 from astakos.im.settings import (
     BASE_PATH, ACCOUNTS_PREFIX, VIEWS_PREFIX, KEYSTONE_PREFIX)
 from snf_django.lib.api.utils import prefix_pattern
+from snf_django.utils.urls import extend_with_root_redirects
+from astakos.im import settings
 
 astakos_patterns = patterns(
     '',
@@ -49,3 +51,7 @@ urlpatterns = patterns(
     '',
     (prefix_pattern(BASE_PATH), include(astakos_patterns)),
 )
+
+# set utility redirects
+extend_with_root_redirects(urlpatterns, settings.astakos_services,
+                           'astakos_ui', BASE_PATH)

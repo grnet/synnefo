@@ -44,17 +44,6 @@ astakos_patterns = patterns(
     (prefix_pattern(KEYSTONE_PREFIX), include('astakos.api.keystone_urls')),
 )
 
-# Compatibility: expose some API URLs at top-level
-compatibility_patterns = patterns(
-    'astakos',
-    (r'^login/?$', 'im.views.target.redirect.login'),
-    (r'^feedback/?$', 'api.user.send_feedback'),
-    (r'^user_catalogs/?$', 'api.user.get_uuid_displayname_catalogs'),
-    (r'^service/api/user_catalogs/?$',
-        'api.service.get_uuid_displayname_catalogs'),
-)
-
-astakos_patterns += compatibility_patterns
 
 urlpatterns = patterns(
     '',

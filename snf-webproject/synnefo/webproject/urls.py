@@ -38,7 +38,14 @@ from synnefo.util.entry_points import extend_urls
 from django.utils.importlib import import_module
 from django.conf import settings
 
-urlpatterns = patterns('',
+urlpatterns = patterns('')
+
+ROOT_REDIRECT = getattr(settings, 'WEBPROJECT_ROOT_REDIRECT', None)
+if ROOT_REDIRECT:
+    urlpatterns += patterns('django.views.generic.simple',
+                            url(r'^$', 'redirect_to', {'url': ROOT_REDIRECT}))
+
+urlpatterns += patterns('',
     (r'^lang/$', 'synnefo.webproject.i18n.set_language')
 )
 

@@ -5,91 +5,113 @@
 <div class="api-access-view">
     <div class="subsection">
     {% block page.body.title %}
-    <h2>API ACCESS</h2>
+        <h2>API ACCESS</h2>
     {% endblock %}
     {% block page.body.description %}
-    <p>
-    {{ BRANDING_SERVICE_NAME }} provides a complete REST API that allows you to access and
+        <div class="two-cols dotted clearfix">
+            <div class="rt">
+                <p>
+                If
+                you want to learn more about the specification of the REST API itself,
+                please take a look at the <a href="https://www.synnefo.org/docs" 
+                alt="Synnefo documentation">Synnefo documentation</a>. 
+                </p>
+            </div>
+            <div class="lt">
+                <p>{{ BRANDING_SERVICE_NAME }} provides a complete REST API that allows you to access and
     control your virtual resources programmatically. This means you can execute
     all the actions you do from the {{ BRANDING_SERVICE_NAME }} Web UI by using a command
-    line client or importing the corresponding library inside your own code. If
-    you want to learn more about the specification of the REST API itself,
-    please take a look at the <a href="https://www.synnefo.org/docs" 
-    alt="Synnefo documentation">Synnefo documentation</a>. 
-    </p>
+    line client or importing the corresponding library inside your own code.</p>
+            </div>
+
+        </div>
+    
     {% endblock %}
     </div>
     
-    <div class="subsection">
+    <div class="subsection dotted">
     {% block page.body.token %}
-    <h2>API details</h2>
-    <p>
+        <h2>API details</h2>
+        <p>
     To use {{ BRANDING_SERVICE_NAME }} via its REST API the only things you will need is your
     Authentication Token and the Identity Service's public URL, which you can
-    find right below.
-    <br />
-    <br />
-    </p>
-    <div class="token-view">
-        <div class="detail small clearfix">
-            <span class="title">Authentication url</span>
-            <input type="text" value="{{ token_url }}" disabled />
+    find right below.<br /><br />
+        </p>
+        <div class="token-view">
+            <div class="detail small clearfix">
+                <span class="title">Authentication url</span>
+                <input type="text" value="{{ token_url }}" disabled />
+            </div>
+            <div class="detail clearfix">
+                <div class="facts">
+                    <span class="title">API Token</span>
+                    <input type="text" value="{{ request.user.auth_token }}" disabled />
+                    <span class="expires">
+                        <span class="date">
+                            expires in {{ request.user.auth_token_expires|timeuntil }}
+                            ({{ request.user.auth_token_expires|date }})
+                        </span>
+                    </span>
+                </div>
+                <div class="actions">
+                    <div class="renew-token">
+                        <a href="#" class="do">renew token</a>
+                        <a href="#" class="confirm">confirm</a>
+                        <a href="#" class="close">x</a>
+                        <p class="sub">Make sure to set the new token in any client<br> you may be using each
+                time you renew your token.</p>
+                    </div>
+                </div>
+                
+                
+                <span class="extra-img" id="token-span">&nbsp;</span>
+            </div>
+            
         </div>
-        <div class="detail clearfix">
-            <span class="title">API Token</span>
-            <input type="text" value="{{ request.user.auth_token }}" disabled />
-            <span class="expires">
-                <span class="date">
-                    expires in {{ request.user.auth_token_expires|timeuntil }}
-                    ({{ request.user.auth_token_expires|date }})
-                </span>
-            </span>
-<span class="extra-img" id="token-span">&nbsp;</span>
-        </div>
-        <p class="sub">Make sure to set the new token in any client you may be using each
-        time you renew your token.</p>
+        {% endblock %}
     </div>
-    {% endblock %}
-</div>
 
-    <div class="subsection api-clients">
-    {% block page.body.clients %}
-    <h2>Kamaki</h2>
-    <p>
-    <a href="{{ client_url }}" alt="kamaki">Kamaki</a> is the official
+   
+    
+    <div class="two-cols dotted clearfix">
+        <div class="rt">
+            {% block page.body.api_advanced %}
+            <h2>API Advanced Usage</h2>
+            <p>
+            Apart from using the kamaki command line client, you can also import the
+            kamaki library inside your code and use it directly. More details on how
+            to do that on the corresponding kamaki 
+            <a href="{{ client_url }}">kamaki </a>page.</p> 
+            <p>You can also implement the REST API calls by yourself, without
+            using the official kamaki library if you feel confident with your
+            programming skills. To do so, you first need to get a good grasp of the
+            API itself; for more information take a look at the corresponding page
+            inside the 
+            <a href="https://synnefo.org/docs/">Synnefo documentation</a>.
+            </p>
+            {% endblock %}
+        </div>
+        <div class="lt">
+            {% block page.body.clients %}
+            <h2>Kamaki</h2>
+            <p><a href="{{ client_url }}" alt="kamaki">Kamaki</a> is the official
     {{ BRANDING_SERVICE_NAME }} command line client. You can use it to control your virtual
-    resources from the command line or use it inside your scripts. Kamaki allows
-    you to execute all the operations you do from the Web UI. You can use kamaki
-    to register images, spawn clusters of customized VMs, connect them to
-    Private Virtual Networks, have them executing computations dynamically and
-    many other neat things. Kamaki is available for most Linux distributions,
+    resources from the command line or use it inside your scripts.</p>
+            <p>Kamaki allows you to execute all the operations you do from the Web UI. You can use kamaki to<br><br>
+            - register images,<br>- spawn clusters of customized VMs,<br>- connect them to
+    Private Virtual Networks,<br>- have them executing computations dynamically and
+    many other neat things.</p>
+            <p> Kamaki is available for most Linux distributions,
     Windows and Mac OS X. To use it you will need to set it up using your
     Authentication Token and the Identity Service's public URL, found above. To
     learn more about kamaki and how to install, configure and use, take a look
-    at its <a href="http://www.synnefo.org/docs/kamaki/latest/index.html">corresponding page</a> </p>
-
-    <p class="download">You can download kamaki 
+    at its <a href="http://www.synnefo.org/docs/kamaki/latest/index.html">corresponding page</a>
+            </p>
+             <p class="download">You can download kamaki 
     from the <a href="{{ client_url }}">project homepage</a></p>
-    {% endblock %}
+    
+        </div>
+        {% endblock %}
     </div>
-
-    <div class="subsection api-advanced">
-    {% block page.body.api_advanced %}
-    <h2>API Advanced Usage</h2>
-    <p>
-    Apart from using the kamaki command line client, you can also import the
-    kamaki library inside your code and use it directly. More details on how
-    to do that on the corresponding kamaki 
-    <a href="{{ client_url }}">kamaki </a>page. 
-    You can also implement the REST API calls by yourself, without
-    using the official kamaki library if you feel confident with your
-    programming skills. To do so, you first need to get a good grasp of the
-    API itself; for more information take a look at the corresponding page
-    inside the 
-    <a href="https://synnefo.org/docs/">Synnefo documentation</a>.
-    </p>
-    {% endblock %}
-    </div>
-</div>
 </div>
 {% endblock %}

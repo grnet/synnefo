@@ -408,6 +408,18 @@ $('#members-table tr .check input').click(function(e){
 
 /* end of project members page js */
 
+  $('.renew-token a.do').click(function(e){
+    e.preventDefault();
+    var els = [$(".renew-token .sub"),$('.renew-token .confirm'), $('.renew-token .close')];
+    _.each(els, function (el) { el.show();})
+  })
+
+  $('.renew-token a.close').click(function(e){
+    e.preventDefault();
+    var els = [$(".renew-token .sub"),$('.renew-token .confirm'), $('.renew-token .close')];
+    _.each(els, function (el) { el.hide();})
+  })
+
 
 });
 	

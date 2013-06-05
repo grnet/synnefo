@@ -132,10 +132,8 @@ h2 .header-actions { float: right; font-size: 0.8em;}
 .api-access-view div.detail {
     display: block;
     position: relative;
-    margin: 1em 0;
-    font-size: 1.3em;
-    cursor: pointer;
-    border-bottom: 1px solid #efefef;
+    margin: 2em 0;
+    font-size: 1.3em; 
     padding-bottom: 0.2em;
 }
 
@@ -147,13 +145,15 @@ h2 .header-actions { float: right; font-size: 0.8em;}
     font-size: 9px;
     font-family: 'Open Sans', sans-serif;
     position: absolute;
-    right: 0;
-    bottom: 15px;
+    left: 20%;
+    top: 25px;
+    color:#b3b3b3;
 }
 
 .api-access-view p.sub {
     font-size: 0.7em;
-    text-align: right;
+    color:#b3b3b3;
+    padding-top:6px;
 }
 
 .api-access-view .api-clients h3 {
@@ -162,4 +162,25 @@ h2 .header-actions { float: right; font-size: 0.8em;}
 
 .subsection {
     margin-bottom: 4em;
+}
+
+.token-view .actions {
+    position: absolute;
+    left:50%;
+    font-size:13px;
+}
+
+.renew-token .confirm {
+    color:#3582AC;
+    margin:0 15px;
+}
+
+.renew-token .close {
+    color:#F24E53;
+}
+
+.renew-token .sub,
+.renew-token .confirm,
+.renew-token .close {
+    display: none
 }

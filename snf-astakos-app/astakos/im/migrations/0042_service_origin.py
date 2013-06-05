@@ -10,7 +10,7 @@ class Migration(DataMigration):
         services = {
             'account':      'astakos_account',
             'compute':      'cyclades_compute',
-            'object-store': 'pithos_objest-store',
+            'object-store': 'pithos_object-store',
             }
         resources = orm.Resource.objects.all()
         for resource in resources:

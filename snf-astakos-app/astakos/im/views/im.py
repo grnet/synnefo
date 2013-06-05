@@ -216,8 +216,7 @@ def api_access(request, template_name='im/api_access.html',
     """
     context = {}
 
-    token_url = join_urls(settings.BASE_URL, settings.BASE_PATH,
-                           reverse('tokens_authenticate'))
+    token_url = join_urls(settings.BASE_HOST, reverse('tokens_authenticate'))
     context['services'] = Component.catalog()
     context['token_url'] = token_url
     context['client_url'] = settings.API_CLIENT_URL

@@ -29,7 +29,7 @@ Installation of snf-deploy
 ==========================
 
 First of all we need to install the snf-deploy tool. To do so please add the
-following line in your ``sources.list`` file:
+following line in your ``/etc/apt/sources.list`` file:
 
 .. code-block:: console
 
@@ -61,14 +61,8 @@ If the following ends without errors, you have successfully installed Synnefo.
 Accessing the Synnefo installation
 ==================================
 
-If you want to access the installation from the same machine it runs on, just
-open a browser and point to:
-
-`https://accounts.<domain>/im/`
-
-The <domain> is automatically set to ``hostname -d``. If this doesn't return
-anything, it is set to ``synnefo.deploy.local``. A local BIND is already set up
-by `snf-deploy` to serve all FQDNs.
+Remote access
+-------------
 
 If you want to access the Synnefo installation from a remote machine, please
 first set your nameservers accordingly by adding the following line as your
@@ -81,10 +75,28 @@ first nameserver in ``/etc/resolv.conf``:
 The <IP> is the public IP of the machine that you deployed Synnefo on, and want
 to access.
 
+Then open a browser and point to:
+
+`https://accounts.synnefo.live/im/`
+
+Local access
+------------
+
+If you want to access the installation from the same machine it runs on, just
+open a browser and point to:
+
+`https://accounts.synnefo.live/im/`
+
+The <domain> is automatically set to ``synnefo.live``. A local BIND is already
+set up by `snf-deploy` to serve all FQDNs.
+
+Login
+-----
+
 Once you see the Login screen, go ahead and login using:
 
-| username: dimara@grnet.gr
-| password: lala
+| username: user@synnefo.org
+| password: 12345
 
 which is the default user. If you see the welcome screen, you have successfully
 installed Synnefo on a single node.
@@ -96,11 +108,11 @@ Caveats
 To be able to view all web pages make sure you have accepted all certificates
 for domains:
 
-* synnefo.deploy.local
-* accounts.synnefo.deploy.local
-* cyclades.synnefo.deploy.local
-* pithos.synnefo.deploy.local
-* cms.synnefo.deploy.local
+* synnefo.live
+* accounts.synnefo.live
+* cyclades.synnefo.live
+* pithos.synnefo.live
+* cms.synnefo.live
 
 
 Using the installation

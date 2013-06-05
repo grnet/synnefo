@@ -65,23 +65,23 @@ Synnefo running with two different storage backends.
 Synnefo Guides
 ==============
 
-There are 3 guides for Synnefo.
+There are 4 guides for Synnefo.
 
-.. For the really impatient snf-deploy tool allows you to install all software
-.. components from scratch (creating locally kvm based Virtual Machines) or to an
-.. existing cluster (in the same network subnet and domain, same network
-.. configuration, vanilla debian squeeze and installed ssh keys). Please note that
-.. this should be used only for testing or demo installations because most of the
-.. times the prerequisites cannot be satisfied due to the underlying
-.. infrastructure complexity (especially as far as networks is concerned).
+The Quick Installation guide describes how to install Synnefo on a single node
+in less than 10 minutes using the `snf-deploy` tool. This kind of installation
+is targeted for testing and demo environments rather than production usage
+deployments. It is the perfect way, even for an inexperienced user to have the
+whole Synnefo stack up and running and allows for a quick preview of the basic
+Synnefo features.
 
-The admin's installation guide describes how to install the whole Synnefo stack
-in just two physical nodes, for testing purposes. This guide is useful to those
-interested in deploying Synnefo in large scale, as a starting point that will
-help them get familiar with the Synnefo components and overall architecture, as
-well as the interconnection between different services. Such an installation,
-also provides a quick preview of the basic Synnefo features, although we like to
-think that Synnefo's real power unveils while scaling.
+The Admin's installation guide describes how to install the whole Synnefo stack
+in just two physical nodes. This guide is useful to those interested in
+deploying Synnefo in large scale, as a starting point that will help them get
+familiar with the Synnefo components and overall architecture, as well as the
+interconnection between different services. This guide explains the whole
+procedure step by step, without the use of the `snf-deploy` tool. Anyone
+familiar with this guide, will be able to easily install Synnefo in a larger
+number of nodes too, or even expand the two node installation dynamically.
 
 The Administrator's Guide targets system administrators, who want to dive into
 more details and common tasks regarding Synnefo. For the experienced Synnefo
@@ -101,6 +101,7 @@ external world. Also documents all Synnefo external REST APIs.
 .. toctree::
    :maxdepth: 1
 
+   Quick Installation Guide (single node) <quick-install-guide>
    Installation Guide (on two nodes) <quick-install-admin-guide>
 
 .. toctree::

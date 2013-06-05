@@ -166,8 +166,10 @@ h2 .header-actions { float: right; font-size: 0.8em;}
 
 .token-view .actions {
     position: absolute;
-    left:50%;
+    right:0;
     font-size:13px;
+    max-width: 230px;
+    overflow: hidden
 }
 
 .renew-token .confirm {
@@ -182,5 +184,5 @@ h2 .header-actions { float: right; font-size: 0.8em;}
 .renew-token .sub,
 .renew-token .confirm,
 .renew-token .close {
-    display: none
+    visibility: hidden;
 }

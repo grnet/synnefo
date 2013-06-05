@@ -411,13 +411,13 @@ $('#members-table tr .check input').click(function(e){
   $('.renew-token a.do').click(function(e){
     e.preventDefault();
     var els = [$(".renew-token .sub"),$('.renew-token .confirm'), $('.renew-token .close')];
-    _.each(els, function (el) { el.show();})
+    _.each(els, function (el) { el.css({'visibility':'visible'});})
   })
 
   $('.renew-token a.close').click(function(e){
     e.preventDefault();
     var els = [$(".renew-token .sub"),$('.renew-token .confirm'), $('.renew-token .close')];
-    _.each(els, function (el) { el.hide();})
+    _.each(els, function (el) { el.css({'visibility':'hidden'});})
   })
 
 

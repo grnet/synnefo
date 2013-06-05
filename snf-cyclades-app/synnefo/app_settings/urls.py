@@ -33,31 +33,49 @@
 
 from django.conf.urls.defaults import *
 from django.conf import settings
-from django.views.decorators.csrf import csrf_exempt
 from snf_django.lib.api.proxy import proxy
+from snf_django.lib.api.utils import prefix_pattern
+from synnefo.cyclades_settings import (
+    BASE_URL, BASE_HOST, BASE_PATH, COMPUTE_PREFIX, VMAPI_PREFIX,
+    PLANKTON_PREFIX, HELPDESK_PREFIX, UI_PREFIX, ASTAKOS_BASE_URL,
+    USERDATA_PREFIX, ASTAKOS_BASE_PATH, BASE_ASTAKOS_PROXY_PATH,
+    ASTAKOS_ACCOUNTS_PREFIX, ASTAKOS_VIEWS_PREFIX, PROXY_USER_SERVICES)
 
+from urlparse import urlparse
 from functools import partial
 
-astakos_proxy = partial(proxy, target=settings.ASTAKOS_URL)
 
-urlpatterns = patterns('',
-    (r'^ui/', include('synnefo.ui.urls')),
-    url(r'^machines/console$', 'synnefo.ui.views.machines_console',
-        name='ui_machines_console'),
-    url(r'^machines/connect$', 'synnefo.ui.views.machines_connect',
-        name='ui_machines_connect'),
-    (r'^vmapi/', include('synnefo.vmapi.urls')),
-    (r'^api/', include('synnefo.api.urls')),
-    (r'^plankton/', include('synnefo.plankton.urls')),
-    (r'^helpdesk/', include('synnefo.helpdesk.urls')),
+astakos_proxy = partial(proxy, proxy_base=BASE_ASTAKOS_PROXY_PATH,
+                        target_base=ASTAKOS_BASE_URL)
+
+cyclades_patterns = patterns('',
+    (prefix_pattern(UI_PREFIX), include('synnefo.ui.urls')),
+    (prefix_pattern(VMAPI_PREFIX), include('synnefo.vmapi.urls')),
+    (prefix_pattern(PLANKTON_PREFIX), include('synnefo.plankton.urls')),
+    (prefix_pattern(HELPDESK_PREFIX), include('synnefo.helpdesk.urls')),
+    (prefix_pattern(COMPUTE_PREFIX), include('synnefo.api.urls')),
+    (prefix_pattern(USERDATA_PREFIX), include('synnefo.userdata.urls')),
 )
 
-PROXY_USER_SERVICES = getattr(settings, 'CYCLADES_PROXY_USER_SERVICES', True)
+urlpatterns = patterns(
+    '',
+    (prefix_pattern(BASE_PATH), include(cyclades_patterns)),
+)
+
 if PROXY_USER_SERVICES:
+    astakos_proxy = partial(proxy, proxy_base=BASE_ASTAKOS_PROXY_PATH,
+                            target_base=ASTAKOS_BASE_URL)
+
+    proxy_patterns = patterns(
+        '',
+        (r'^login/?$', astakos_proxy),
+        (r'^feedback/?$', astakos_proxy),
+        (r'^user_catalogs/?$', astakos_proxy),
+        (prefix_pattern(ASTAKOS_VIEWS_PREFIX), astakos_proxy),
+        (prefix_pattern(ASTAKOS_ACCOUNTS_PREFIX), astakos_proxy),
+    )
+
     urlpatterns += patterns(
         '',
-        (r'^login/?$', csrf_exempt(astakos_proxy)),
-        (r'^feedback/?$', csrf_exempt(astakos_proxy)),
-        (r'^user_catalogs/?$', csrf_exempt(astakos_proxy)),
-        (r'^astakos/api/', csrf_exempt(astakos_proxy)),
+        (prefix_pattern(BASE_ASTAKOS_PROXY_PATH), include(proxy_patterns)),
     )

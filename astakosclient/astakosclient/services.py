@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright (C) 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,32 +31,47 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import BaseCommand, CommandError
-from django.db.utils import IntegrityError
 
-from astakos.im.models import Resource, Service
+astakos_services = {
+    'astakos_account': {
+        'type': 'account',
+        'component': 'astakos',
+        'prefix': 'account',
+        'public': True,
+        'endpoints': [
+            {'versionId': 'v1.0',
+             'publicURL': None},
+        ],
+        'resources': {
+            'pending_app': {
+                'desc': "Number of pending project applications",
+                'name': "astakos.pending_app",
+                'service_type': "account",
+                'service_origin': "astakos_account",
+                'allow_in_projects': False},
+            },
+        },
 
+    'astakos_identity': {
+        'type': 'identity',
+        'component': 'astakos',
+        'prefix': 'identity',
+        'public': True,
+        'endpoints': [
+            {'versionId': 'v2.0',
+             'publicURL': None},
+        ],
+        'resources': {},
+    },
 
-class Command(BaseCommand):
-    args = "<service> <resource> <desc> <unit>"
-    help = "Add a resource"
-
-    def handle(self, *args, **options):
-        if len(args) < 2:
-            raise CommandError("Invalid number of arguments")
-
-        service_name = args[0]
-        resource_name = args[1]
-
-        try:
-            service = Service.objects.get(name=service_name)
-        except Service.DoesNotExist:
-            raise CommandError("Invalid service name")
-        else:
-            try:
-                resource = Resource(name=resource_name, service=service)
-                resource.save()
-            except IntegrityError, e:
-                raise CommandError(e)
-            # else:
-#                 resource.meta.add(args[2:])
+    'astakos_ui': {
+        'type': 'astakos_ui',
+        'component': 'astakos',
+        'prefix': 'ui',
+        'public': False,
+        'endpoints': [
+            {'versionId': '',
+             'publicURL': None},
+        ],
+    },
+}

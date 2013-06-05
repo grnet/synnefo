@@ -536,13 +536,13 @@ class ExtendedPasswordResetForm(PasswordResetForm):
         """
         for user in self.users_cache:
             url = user.astakosuser.get_password_reset_url(token_generator)
-            url = join_urls(settings.BASEURL, url)
+            url = join_urls(settings.BASE_URL, url)
             c = {
                 'email': user.email,
                 'url': url,
                 'site_name': settings.SITENAME,
                 'user': user,
-                'baseurl': settings.BASEURL,
+                'baseurl': settings.BASE_URL,
                 'support': settings.CONTACT_EMAIL
             }
             message = render_to_string(email_template_name, c)

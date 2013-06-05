@@ -303,7 +303,7 @@ def redirect_back(request, default='index'):
     """
     referer = request.META.get('HTTP_REFERER')
 
-    safedomain = settings.BASEURL.replace("https://", "").replace(
+    safedomain = settings.BASE_URL.replace("https://", "").replace(
         "http://", "")
     safe = restrict_next(referer, safedomain)
     # avoid redirect loop

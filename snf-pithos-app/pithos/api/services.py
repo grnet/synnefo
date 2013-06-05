@@ -1,5 +1,4 @@
-#
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright (C) 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -32,24 +31,49 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import *
-from synnefo.ui.userdata import views
-from django.http import Http404
 
+pithos_services = {
+    'pithos_object-store': {
+        'type': 'object-store',
+        'component': 'pithos',
+        'prefix': 'object-store',
+        'public': True,
+        'endpoints': [
+            {'versionId': 'v1',
+             'publicURL': None},
+        ],
+        'resources': {
+            'diskspace': {
+                "desc": "Pithos account diskspace",
+                "name": "pithos.diskspace",
+                "unit": "bytes",
+                "service_type": "object-store",
+                "service_origin": "pithos_object-store",
+            },
+        },
+    },
 
-def index(request):
-    raise Http404
+    'pithos_public': {
+        'type': 'public',
+        'component': 'pithos',
+        'prefix': 'public',
+        'public': True,
+        'endpoints': [
+            {'versionId': 'v2.0',
+             'publicURL': None},
+        ],
+        'resources': {},
+    },
 
-urlpatterns = patterns('',
-    url(r'^$', index, name='ui_userdata'),
-    url(r'^keys$',
-        views.PublicKeyPairCollectionView.as_view('ui_keys_resource'),
-        name='ui_keys_collection'),
-    url(r'^keys/(?P<id>\d+)',
-    views.PublicKeyPairResourceView.as_view('ui_keys_resource'),
-        name="ui_keys_resource"),
-    url(r'keys/generate', views.generate_key_pair,
-        name="ui_generate_public_key"),
-    url(r'keys/download', views.download_private_key,
-        name="ui_download_public_key")
-)
+    'pithos_ui': {
+        'type': 'pithos_ui',
+        'component': 'pithos',
+        'prefix': 'ui',
+        'public': False,
+        'endpoints': [
+            {'versionId': '',
+             'publicURL': None},
+        ],
+        'resources': {},
+    },
+}

@@ -90,7 +90,7 @@ Cloud service user
 Alice requests a specific resource from a cloud service ex. Pithos. In the
 request supplies the `X-Auth-Token` to identify whether she is eligible to
 perform the specific task. The service contacts Astakos through its
-``/astakos/api/authenticate`` api call (see :ref:`authenticate-api-label`)
+``/account/v1.0/authenticate`` api call (see :ref:`authenticate-api-label`)
 providing the specific ``X-Auth-Token``. Astakos checkes whether the token
 belongs to an active user and it has not expired and returns a dictionary
 containing user related information. Finally the service uses the ``uniq``

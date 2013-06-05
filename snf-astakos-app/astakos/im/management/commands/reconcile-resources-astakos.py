@@ -37,7 +37,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from synnefo.webproject.management.utils import pprint_table
 from snf_django.lib.db.transaction import commit_on_success_strict
-from astakos.im.models import Service, AstakosUser
+from astakos.im.models import Component, AstakosUser
 from astakos.im.quotas import service_get_quotas, SYSTEM
 from astakos.im.functions import count_pending_app
 import astakos.quotaholder_app.callpoint as qh
@@ -74,9 +74,9 @@ class Command(BaseCommand):
         userid = options['userid']
 
         try:
-            astakos = Service.objects.get(name="astakos")
-        except Service.DoesNotExist:
-            raise CommandError("Service 'astakos' not found.")
+            astakos = Component.objects.get(name="astakos")
+        except Component.DoesNotExist:
+            raise CommandError("Component 'astakos' not found.")
 
         query = [userid] if userid is not None else None
         qh_holdings = service_get_quotas(astakos, query)

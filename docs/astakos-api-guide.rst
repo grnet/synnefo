@@ -20,6 +20,7 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
+0.14 (June 03, 2013)       Remove endpoint listing
 0.14 (May 28, 2013)        Extend token api with authenticate call
 0.14 (May 23, 2013)        Extend api to list endpoints
 0.14 (May 14, 2013)        Do not serve user quotas in :ref:`authenticate-api-label`
@@ -37,7 +38,7 @@ Returns a json formatted list containing information about the supported cloud s
 ============================= =========  ==================
 Uri                           Method     Description
 ============================= =========  ==================
-``/im/get_services``          GET        Get cloud services
+``/ui/get_services``          GET        Get cloud services
 ============================= =========  ==================
 
 Example reply:
@@ -57,22 +58,22 @@ Returns a json formatted list containing the cloud bar links.
 ========================= =========  ==================
 Uri                       Method     Description
 ========================= =========  ==================
-``/im/get_menu``          GET        Get cloud bar menu
+``/ui/get_menu``          GET        Get cloud bar menu
 ========================= =========  ==================
 
 Example reply if request user is not authenticated:
 
 ::
 
-    [{"url": "/im/", "name": "Sign in"}]
+    [{"url": "/ui/", "name": "Sign in"}]
 
 Example reply if request user is authenticated:
 
 ::
 
-    [{"url": "/im/", "name": "user@example.com"},
-    {"url": "/im/landing", "name": "Dashboard"},
-    {"url": "/im/logout", "name": "Sign out"}]
+    [{"url": "/ui/", "name": "user@example.com"},
+    {"url": "/ui/landing", "name": "Dashboard"},
+    {"url": "/ui/logout", "name": "Sign out"}]
 
 
 User API Operations
@@ -89,11 +90,11 @@ Authenticate
 
 Authenticate API requests require a token. An application that wishes to connect to Astakos, but does not have a token, should redirect the user to ``/login``. (see :ref:`authentication-label`)
 
-============================= =========  ==================
-Uri                           Method     Description
-============================= =========  ==================
-``/astakos/api/authenticate`` GET        Authenticate user using token
-============================= =========  ==================
+============================== =========  ==================
+Uri                            Method     Description
+============================== =========  ==================
+``/account/v1.0/authenticate`` GET        Authenticate user using token
+============================== =========  ==================
 
 |
 
@@ -140,7 +141,7 @@ Return Code                 Description
 500 (Internal Server Error) The request cannot be completed because of an internal error
 =========================== =====================
 
-.. warning:: The service is also available under ``/im/authenticate``.
+.. warning:: The service is also available under ``/ui/authenticate``.
      It  will be removed in the next version.
 
 
@@ -149,11 +150,11 @@ Send feedback
 
 Post user feedback.
 
-========================= =========  ==================
-Uri                       Method     Description
-========================= =========  ==================
-``/astakos/api/feedback``  POST       Send feedback
-========================= =========  ==================
+========================== =========  ==================
+Uri                        Method     Description
+========================== =========  ==================
+``/account/v1.0/feedback`` POST       Send feedback
+========================== =========  ==================
 
 |
 
@@ -192,11 +193,11 @@ Get User catalogs
 
 Return a json formatted dictionary containing information about a specific user
 
-================================ =========  ==================
-Uri                              Method     Description
-================================ =========  ==================
-``/astakos/api/user_catalogs``    POST       Get 2 catalogs containing uuid to displayname mapping and the opposite
-================================ =========  ==================
+=============================== =========  ==================
+Uri                             Method     Description
+=============================== =========  ==================
+``/account/v1.0/user_catalogs`` POST       Get 2 catalogs containing uuid to displayname mapping and the opposite
+=============================== =========  ==================
 
 |
 
@@ -253,11 +254,11 @@ Get User catalogs
 
 Return a json formatted dictionary containing information about a specific user
 
-====================================== =========  ==================
-Uri                                    Method     Description
-====================================== =========  ==================
-``/astakos/api/service/user_catalogs`` POST       Get 2 catalogs containing uuid to displayname mapping and the opposite
-====================================== =========  ==================
+======================================= =========  ==================
+Uri                                     Method     Description
+======================================= =========  ==================
+``/account/v1.0/service/user_catalogs`` POST       Get 2 catalogs containing uuid to displayname mapping and the opposite
+======================================= =========  ==================
 
 |
 
@@ -310,14 +311,14 @@ Tokens API Operations
 Authenticate
 ^^^^^^^^^^^^
 
-Fallback call which receives the user token or the user uuid/token and returns
-back the token as well as information about the token holder and the services
-he/she can access.
+Fallback call which receives the user token or the user uuid/token pair and
+returns back the token as well as information about the token holder and the
+services he/she can access.
 
 ========================================= =========  ==================
 Uri                                       Method     Description
 ========================================= =========  ==================
-``/astakos/api/tokens/``                  POST       Checks whether the provided token is valid and conforms with the provided uuid (if present) and returns back information about the user
+``/identity/v2.0/tokens/``                POST       Checks whether the provided token is valid and conforms with the provided uuid (if present) and returns back information about the user
 ========================================= =========  ==================
 
 The input should be json formatted.
@@ -328,9 +329,8 @@ Example request:
 
     {
         "auth":{
-            "passwordCredentials":{
-                "username":"c18088be-16b1-4263-8180-043c54e22903",
-                "password":"CDEe2k0T/HdiJWBMMbHyOA=="
+            "token":{
+                "id":"CDEe2k0T/HdiJWBMMbHyOA=="
             },
             "tenantName":"c18088be-16b1-4263-8180-043c54e22903"
         }
@@ -342,8 +342,9 @@ or
 
     {
         "auth":{
-            "token":{
-                "id":"CDEe2k0T/HdiJWBMMbHyOA=="
+            "passwordCredentials":{
+                "username":"c18088be-16b1-4263-8180-043c54e22903",
+                "password":"CDEe2k0T/HdiJWBMMbHyOA=="
             },
             "tenantName":"c18088be-16b1-4263-8180-043c54e22903"
         }
@@ -359,36 +360,67 @@ Example json response:
 
 ::
 
-    {'serviceCatalog': [
-        {'endpoints': [{'SNF:uiURL': 'https://node1.example.com/ui/',
-                        'adminURL': 'https://node1.example.com/v1',
-                        'internalUrl': 'https://node1.example.com/v1',
-                        'publicURL': 'https://node1.example.com/v1',
-                        'region': 'cyclades'}],
-         'name': 'cyclades',
-         'type': 'compute'},
-       {'endpoints': [{'SNF:uiURL': 'https://node2.example.com/ui/',
-                      'adminURL': 'https://node2.example.com/v1',
-                      'internalUrl': 'https://node2.example.com/v1',
-                      'publicURL': 'https://node2.example.com/v1',
-                      'region': 'pithos'}],
-        'name': 'pithos',
-        'type': 'storage'}],
-     'token': {'expires': '2013-06-19T15:23:59.975572+00:00',
-               'id': 'CDEe2k0T/HdiJWBMMbHyOA==',
-               'tenant': {'id': 'c18088be-16b1-4263-8180-043c54e22903',
-                          'name': 'Firstname Lastname'}},
-     'user': {'id': 'c18088be-16b1-4263-8180-043c54e22903',
-              'name': 'Firstname Lastname',
-              'roles': [{'id': 1, 'name': 'default'}],
-              'roles_links': []}}
-
+    {"access": {
+        "serviceCatalog": [
+           {"SNF:uiURL": "https://node2.example.com/ui/",
+            "endpoints": [{
+                "publicURL": "https://object-store.example.synnefo.org/pithos/public/v2.0",
+                "versionId": "v2.0"}],
+            "endpoints_links": [],
+            "name": "pithos_public",
+            "type": "public"},
+           {"SNF:uiURL": "https://node2.example.com/ui/",
+            "endpoints": [{
+                "publicURL": "https://object-store.example.synnefo.org/pithos/object-store/v1",
+                "versionId": "v1"}],
+            "endpoints_links": [],
+            "name": "pithos_object-store",
+            "type": "object-store"},
+           {"SNF:uiURL": "https://node2.example.com/ui/",
+            "endpoints": [{
+                "publicURL": "https://object-store.example.synnefo.org/pithos/ui",
+                "versionId": ""}],
+            "endpoints_links": [],
+            "name": "pithos_ui",
+            "type": "pithos_ui"},
+           {"SNF:uiURL": "http://localhost:8080",
+            "endpoints": [{
+                "publicURL": "https://accounts.example.synnefo.org/ui/v1.0",
+                "versionId": "v1.0"}],
+            "endpoints_links": [],
+            "name": "astakos_ui",
+            "type": "astakos_ui"},
+           {"SNF:uiURL": "http://localhost:8080",
+            "endpoints": [{
+                "publicURL": "https://accounts.example.synnefo.org/account/v1.0",
+                "versionId": "v1.0"}],
+            "endpoints_links": [],
+            "name": "astakos_account",
+            "type": "account"},
+           {"SNF:uiURL": "http://localhost:8080",
+            "endpoints": [{
+                "publicURL": "https://accounts.example.synnefo.org/identity/v2.0",
+                "versionId": "v2.0"}],
+            "endpoints_links": [],
+            "name": "astakos_identity",
+            "type": "identity"}],
+      "token": {
+          "expires": "2013-06-19T15:23:59.975572+00:00",
+           "id": "CDEe2k0T/HdiJWBMMbHyOA==",
+           "tenant": {"id": "c18088be-16b1-4263-8180-043c54e22903",
+            "name": "Firstname Lastname"}},
+      "user": {
+          "id": "c18088be-16b1-4263-8180-043c54e22903",
+           "name": "Firstname Lastname",
+           "roles": [{"id": 1, "name": "default"},
+           "roles_links": []}}}
 
 Example xml response:
 
 ::
 
     <?xml version="1.0" encoding="UTF-8"?>
+
     <access xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns="http://docs.openstack.org/identity/api/v2.0">
         <token id="CDEe2k0T/HdiJWBMMbHyOA==" expires="2013-06-19T15:23:59.975572+00:00">
@@ -400,22 +432,35 @@ Example xml response:
             </roles>
         </user>
         <serviceCatalog>
-            <service type="None" name="cyclades">
-                    <endpoint region="cyclades"
-                        publicURL="https://node1.example.com/v1"
-                        adminURL="https://node1.example.com/v1"
-                        internalURL="https://node1.example.com/v1"
-                        SNF:uiURL="https://node1.example.com/ui/">
-                </endpoint>
+            <service type="public" name="pithos_public" SNF:uiURL="">
+                    <endpoint
+                            versionId="v2.0"
+                            publicURL="https://object-store.example.synnefo.org/pithos/public/v2.0"
             </service>
-            <service type="None" name="pithos">
-                <endpoint
-                        region="pithos"
-                        publicURL="https://node2.example.com/v1"
-                        adminURL="https://node2.example.com/v1"
-                        internalURL="https://node2.example.com/v1"
-                        SNF:uiURL="https://node2.example.com/ui/">
-                </endpoint>
+            <service type="object-store" name="pithos_object-store" SNF:uiURL="">
+                    <endpoint
+                            versionId="v1"
+                            publicURL="https://object-store.example.synnefo.org/pithos/object-store/v1"
+            </service>
+            <service type="pithos_ui" name="pithos_ui" SNF:uiURL="">
+                    <endpoint
+                            versionId=""
+                            publicURL="https://object-store.example.synnefo.org/pithos/ui"
+            </service>
+            <service type="astakos_ui" name="astakos_ui" SNF:uiURL="">
+                    <endpoint
+                            versionId="v1.0"
+                            publicURL="https://accounts.example.synnefo.org/ui/v1.0"
+            </service>
+            <service type="account" name="astakos_account" SNF:uiURL="">
+                    <endpoint
+                            versionId="v1.0"
+                            publicURL="https://accounts.example.synnefo.org/account/v1.0"
+            </service>
+            <service type="identity" name="astakos_identity" SNF:uiURL="">
+                    <endpoint
+                            versionId="v2.0"
+                            publicURL="https://accounts.example.synnefo.org/identity/v2.0"
             </service>
         </serviceCatalog>
     </access>
@@ -428,90 +473,5 @@ Return Code                 Description
 200 (OK)                    The request succeeded
 400 (Bad Request)           Method not allowed or invalid request format or missing expected input
 401 (Unauthorized)          Invalid token or invalid creadentials or tenantName does not comply with the provided token
-500 (Internal Server Error) The request cannot be completed because of an internal error
-=========================== =====================
-
-
-
-Get endpoints
-^^^^^^^^^^^^^
-
-Return a json (or xml) formatted dictionary containing information about registered endpoints
-
-========================================= =========  ==================
-Uri                                       Method     Description
-========================================= =========  ==================
-``/astakos/api/tokens/<token>/endpoints`` GET        Returns a list registered endpoints
-========================================= =========  ==================
-
-|
-
-====================  ============================
-Request Header Name   Value
-====================  ============================
-X-Auth-Token          User authentication token
-====================  ============================
-
-|
-
-======================  ============================
-Request Parameter Name  Value
-
-======================  ============================
-belongsTo               Check that the token belongs to a supplied user
-marker                  Return endpoints (ordered by ID) whose ID is higher than the marker
-limit                   Maximum number of endpoints to return
-======================  ============================
-
-|
-
-Example json reply:
-
-::
-
-    {"endpoints": [
-        {"name": "cyclades",
-         "region": "cyclades",
-         "internalURL": "https://node1.example.com/v1",
-         "adminURL": "https://node1.example.com/v1",
-         "type": null,
-         "id": 5,
-         "publicURL": "https://node1.example.com/vi/"},
-        {"name": "pithos",
-         "region": "pithos",
-         "internalURL": "https://node2.example.com/vi/",
-         "adminURL": "https://node2.example.com/v1",
-         "type": null,
-         "id": 6,
-         "publicURL": "https://node2.example.com/vi/"},
-    ],
-    "endpoint_links": [{
-        "href": "/astakos/api/tokens/0000/endpoints?marker=6&limit=10000",
-         "rel": "next"}]}
-
-
-Example xml reply:
-
-::
-
-    <?xml version="1.0" encoding="UTF-8"?>
-    <endpoints xmlns="http://docs.openstack.org/identity/api/v2.0">
-        <endpoint "name"="cyclades" "region"="cyclades" "internalURL"="https://node1.example.com/ui/" "adminURL"="https://node1.example.com/ui/" "id"="5" "publicURL"="https://node1.example.com/ui/" />
-        <endpoint "name"="pithos" "region"="pithos" "internalURL"="https://node2.example.com/ui/" "adminURL"="https://node2.example.com/v1" "id"="6" "publicURL"="https://node2.example.com/ui/" />
-    </endpoints>
-    <endpoint_links>
-            <endpoint_link "href"="/astakos/api/tokens/0000/endpoints?marker=6&amp;limit=10000" "rel"="next" />
-    </endpoint_links>
-
-
-|
-
-=========================== =====================
-Return Code                 Description
-=========================== =====================
-200 (OK)                    The request succeeded
-400 (Bad Request)           Method not allowed or token does not belong to the specific user
-401 (Unauthorized)          Missing or expired or invalid service token
-403 (Forbidden)             Path token does not comply with X-Auth-Token
 500 (Internal Server Error) The request cannot be completed because of an internal error
 =========================== =====================

@@ -501,7 +501,7 @@ previously), by running:
 
 .. code-block:: console
 
-   # apt-get install snf-astakos-app snf-quotaholder-app snf-pithos-backend
+   # apt-get install snf-astakos-app snf-pithos-backend
 
 After successful installation of snf-astakos-app, make sure that also
 snf-webproject has been installed (marked as "Recommended" package). By default
@@ -581,10 +581,10 @@ For astakos specific configuration, edit the following options in
 
     ASTAKOS_COOKIE_DOMAIN = '.example.com'
 
-    ASTAKOS_BASEURL = 'https://node1.example.com'
+    ASTAKOS_BASE_URL = 'https://node1.example.com'
 
 The ``ASTAKOS_COOKIE_DOMAIN`` should be the base url of our domain (for all
-services). ``ASTAKOS_BASEURL`` is the astakos home page.
+services). ``ASTAKOS_BASE_URL`` is the astakos top-level URL.
 
 ``ASTAKOS_DEFAULT_ADMIN_EMAIL`` refers to the administrator's email.
 Every time a new account is created a notification is sent to this email.
@@ -611,9 +611,9 @@ Then edit ``/etc/synnefo/20-snf-astakos-app-cloudbar.conf`` :
 
     CLOUDBAR_LOCATION = 'https://node1.example.com/static/im/cloudbar/'
 
-    CLOUDBAR_SERVICES_URL = 'https://node1.example.com/im/get_services'
+    CLOUDBAR_SERVICES_URL = 'https://node1.example.com/ui/get_services'
 
-    CLOUDBAR_MENU_URL = 'https://node1.example.com/im/get_menu'
+    CLOUDBAR_MENU_URL = 'https://node1.example.com/ui/get_menu'
 
 Those settings have to do with the black cloudbar endpoints and will be
 described in more detail later on in this guide. For now, just edit the domain
@@ -710,6 +710,7 @@ for astakos:
 .. code-block:: console
 
     # snf-manage migrate im
+    # snf-manage migrate quotaholder_app
 
 Then, we load the pre-defined user groups
 
@@ -722,14 +723,28 @@ Then, we load the pre-defined user groups
 Services Registration
 ---------------------
 
-When the database is ready, we configure the elements of the Astakos cloudbar,
-to point to our future services:
+When the database is ready, we need to register the services. The following
+command will ask you to register the standard Synnefo services (astakos,
+cyclades, and pithos). Note that you have to register at least astakos in
+order to have a usable authentication system. For each service, you will be
+asked to provide the service URL (to appear in the Cloudbar) as well as its
+API URL. Moreover, the command will automatically register the resource
+definitions offered by the respective service.
 
 .. code-block:: console
 
-    # snf-manage service-add "~okeanos home" https://node1.example.com/im/ home-icon.png
-    # snf-manage service-add "cyclades" https://node1.example.com/ui/
-    # snf-manage service-add "pithos" https://node2.example.com/ui/
+    # snf-register-services
+
+Setting Default Base Quota for Resources
+----------------------------------------
+
+We now have to specify the limit on resources that each user can employ
+(exempting resources offered by projects).
+
+.. code-block:: console
+
+    # snf-manage resource-modify --limit-interactive
+
 
 Servers Initialization
 ----------------------
@@ -751,7 +766,7 @@ Open your favorite browser and go to:
 
 ``http://node1.example.com/im``
 
-If this redirects you to ``https://node1.example.com/im/`` and you can see
+If this redirects you to ``https://node1.example.com/ui/`` and you can see
 the "welcome" door of Astakos, then you have successfully setup Astakos.
 
 Let's create our first user. At the homepage click the "CREATE ACCOUNT" button
@@ -782,7 +797,7 @@ documentation. In production, you can also manually activate a user, by sending
 him/her an activation email. See how to do this at the :ref:`User
 activation <user_activation>` section.
 
-Now let's go back to the homepage. Open ``http://node1.example.com/im/`` with
+Now let's go back to the homepage. Open ``http://node1.example.com/ui/`` with
 your browser again. Try to sign in using your new credentials. If the astakos
 menu appears and you can see your profile, then you have successfully setup
 Astakos.
@@ -834,7 +849,7 @@ this options:
 
 .. code-block:: console
 
-   ASTAKOS_URL = 'https://node1.example.com/'
+   ASTAKOS_BASE_URL = 'https://node1.example.com/'
 
    PITHOS_BACKEND_DB_CONNECTION = 'postgresql://synnefo:example_passw0rd@node1.example.com:5432/snf_pithos'
    PITHOS_BACKEND_BLOCK_PATH = '/srv/pithos/data'
@@ -857,8 +872,8 @@ the Pithos backend data. Above we tell Pithos to store its data under
 ``/srv/pithos/data``, which is visible by both nodes. We have already setup this
 directory at node1's "Pithos data directory setup" section.
 
-The ``ASTAKOS_URL`` option tells to the Pithos app in which URI
-is available the astakos authentication api.
+The ``ASTAKOS_BASE_URL`` option informs the Pithos app where Astakos is.
+The Astakos service is used for user management (authentication, quotas, etc.)
 
 The ``PITHOS_SERVICE_TOKEN`` should be the Pithos token returned by running on
 the Astakos node (node1 in our case):
@@ -875,7 +890,7 @@ Then we need to setup the web UI and connect it to astakos. To do so, edit
 
 .. code-block:: console
 
-    PITHOS_UI_LOGIN_URL = "https://node1.example.com/im/login?next="
+    PITHOS_UI_LOGIN_URL = "https://node1.example.com/ui/login?next="
     PITHOS_UI_FEEDBACK_URL = "https://node2.example.com/feedback"
 
 The ``PITHOS_UI_LOGIN_URL`` option tells the client where to redirect you, if
@@ -895,8 +910,8 @@ Pithos web UI with the astakos web UI (through the top cloudbar):
 
     CLOUDBAR_LOCATION = 'https://node1.example.com/static/im/cloudbar/'
     PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE = '3'
-    CLOUDBAR_SERVICES_URL = 'https://node1.example.com/im/get_services'
-    CLOUDBAR_MENU_URL = 'https://node1.example.com/im/get_menu'
+    CLOUDBAR_SERVICES_URL = 'https://node1.example.com/ui/get_services'
+    CLOUDBAR_MENU_URL = 'https://node1.example.com/ui/get_menu'
 
 The ``CLOUDBAR_LOCATION`` tells the client where to find the astakos common
 cloudbar.
@@ -1682,19 +1697,17 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-api.conf``:
 
 .. code-block:: console
 
-   ASTAKOS_URL = 'https://node1.example.com/'
+   CYCLADES_BASE_URL = 'https://node1.example.com/cyclades'
+   ASTAKOS_BASE_URL = 'https://node1.example.com/astakos'
 
    # Set to False if astakos & cyclades are on the same host
    CYCLADES_PROXY_USER_SERVICES = False
 
-The ``ASTAKOS_URL`` denotes the authentication endpoint for Cyclades and is set
-to point to Astakos (this should have the same value with Pithos's
-``ASTAKOS_URL``, setup :ref:`previously <conf-pithos>`).
-
-.. warning::
-
-   All services must match the quotaholder token and url configured for
-   quotaholder.
+The ``ASTAKOS_BASE_URL`` denotes the Astakos endpoint for Cyclades,
+which is used for all user management, including authentication.
+Since our Astakos, Cyclades, and Pithos installations belong together,
+they should all have identical ``ASTAKOS_BASE_URL`` setting
+(see also, :ref:`previously <conf-pithos>`).
 
 TODO: Document the Network Options here
 
@@ -1704,8 +1717,8 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-cloudbar.conf``:
 
    CLOUDBAR_LOCATION = 'https://node1.example.com/static/im/cloudbar/'
    CLOUDBAR_ACTIVE_SERVICE = '2'
-   CLOUDBAR_SERVICES_URL = 'https://node1.example.com/im/get_services'
-   CLOUDBAR_MENU_URL = 'https://account.node1.example.com/im/get_menu'
+   CLOUDBAR_SERVICES_URL = 'https://node1.example.com/ui/get_services'
+   CLOUDBAR_MENU_URL = 'https://account.node1.example.com/ui/get_menu'
 
 ``CLOUDBAR_LOCATION`` tells the client where to find the Astakos common
 cloudbar. The ``CLOUDBAR_SERVICES_URL`` and ``CLOUDBAR_MENU_URL`` options are
@@ -1752,8 +1765,8 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-ui.conf``:
 
 .. code-block:: console
 
-   UI_LOGIN_URL = "https://node1.example.com/im/login"
-   UI_LOGOUT_URL = "https://node1.example.com/im/logout"
+   UI_LOGIN_URL = "https://node1.example.com/ui/login"
+   UI_LOGOUT_URL = "https://node1.example.com/ui/logout"
 
 The ``UI_LOGIN_URL`` option tells the Cyclades Web UI where to redirect users,
 if they are not logged in. We point that to Astakos.
@@ -1977,15 +1990,18 @@ and start the daemon:
 
 .. warning:: Make sure you start ``snf-ganeti-eventd`` *ONLY* on GANETI MASTER
 
-Apply Quotas
-------------
+Apply Quota
+-----------
+
+The following commands will check and fix the integrity of user quota.
+In a freshly installed system, these commands have no effect and can be
+skipped.
 
 .. code-block:: console
 
-   node1 # snf-manage astakos-init --load-service-resources
-   node1 # snf-manage quota --verify
    node1 # snf-manage quota --sync
-   node2 # snf-manage pithos-reset-usage
+   node1 # snf-manage reconcile-resources-astakos --fix
+   node2 # snf-manage reconcile-resources-pithos --fix
    node1 # snf-manage reconcile-resources-cyclades --fix
 
 If all the above return successfully, then you have finished with the Cyclades

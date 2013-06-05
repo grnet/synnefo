@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -34,46 +34,50 @@
 from astakos.im.tests.common import *
 
 from django.test import TestCase
+from django.core.urlresolvers import reverse
 
-from urllib import quote
-from urlparse import urlparse, parse_qs
-from xml.dom import minidom
+#from xml.dom import minidom
 
 import json
 
-ROOT = '/astakos/api/'
+ROOT = "/%s/%s/" % (
+    astakos_settings.BASE_PATH, astakos_settings.ACCOUNTS_PREFIX)
 u = lambda url: ROOT + url
 
 
 class QuotaAPITest(TestCase):
     def test_0(self):
         client = Client()
+
+        component1 = Component.objects.create(name="comp1")
+        register.add_service(component1, "service1", "type1", [])
         # custom service resources
-        service1 = Service.objects.create(
-            name="service1", api_url="http://service1.api")
         resource11 = {"name": "service1.resource11",
                       "desc": "resource11 desc",
+                      "service_type": "type1",
                       "allow_in_projects": True}
-        r, _ = resources.add_resource(service1, resource11)
-        resources.update_resource(r, 100)
+        r, _ = register.add_resource(resource11)
+        register.update_resource(r, 100)
         resource12 = {"name": "service1.resource12",
                       "desc": "resource11 desc",
+                      "service_type": "type1",
                       "unit": "bytes"}
-        r, _ = resources.add_resource(service1, resource12)
-        resources.update_resource(r, 1024)
+        r, _ = register.add_resource(resource12)
+        register.update_resource(r, 1024)
 
         # create user
         user = get_local_user('test@grnet.gr')
         quotas.qh_sync_user(user)
 
+        component2 = Component.objects.create(name="comp2")
+        register.add_service(component2, "service2", "type2", [])
         # create another service
-        service2 = Service.objects.create(
-            name="service2", api_url="http://service2.api")
         resource21 = {"name": "service2.resource21",
                       "desc": "resource11 desc",
+                      "service_type": "type2",
                       "allow_in_projects": False}
-        r, _ = resources.add_resource(service2, resource21)
-        resources.update_resource(r, 3)
+        r, _ = register.add_resource(resource21)
+        register.update_resource(r, 3)
 
         resource_names = [r['name'] for r in
                           [resource11, resource12, resource21]]
@@ -101,7 +105,7 @@ class QuotaAPITest(TestCase):
         r = client.get(u('service_quotas'))
         self.assertEqual(r.status_code, 401)
 
-        s1_headers = {'HTTP_X_AUTH_TOKEN': service1.auth_token}
+        s1_headers = {'HTTP_X_AUTH_TOKEN': component1.auth_token}
         r = client.get(u('service_quotas'), **s1_headers)
         self.assertEqual(r.status_code, 200)
         body = json.loads(r.content)
@@ -386,31 +390,46 @@ class TokensApiTest(TestCase):
         backend.activate_user(self.user2)
         assert self.user2.is_active is True
 
-        Service(name='service1', url='http://localhost/service1',
-                api_url='http://localhost/api/service1',
-                type='service1').save()
-        Service(name='service2', url='http://localhost/service2',
-                api_url='http://localhost/api/service2',
-                type='service2').save()
-        Service(name='service3', url='http://localhost/service3',
-                api_url='http://localhost/api/service3',
-                type='service3').save()
+        c1 = Component(name='component1', url='http://localhost/component1')
+        c1.save()
+        s1 = Service(component=c1, type='type1', name='service1')
+        s1.save()
+        e1 = Endpoint(service=s1)
+        e1.save()
+        e1.data.create(key='versionId', value='v1.0')
+        e1.data.create(key='publicURL', value='http://localhost:8000/s1/v1.0')
+
+        s2 = Service(component=c1, type='type2', name='service2')
+        s2.save()
+        e2 = Endpoint(service=s2)
+        e2.save()
+        e2.data.create(key='versionId', value='v1.0')
+        e2.data.create(key='publicURL', value='http://localhost:8000/s2/v1.0')
+
+        c2 = Component(name='component2', url='http://localhost/component2')
+        c2.save()
+        s3 = Service(component=c2, type='type3', name='service3')
+        s3.save()
+        e3 = Endpoint(service=s3)
+        e3.save()
+        e3.data.create(key='versionId', value='v2.0')
+        e3.data.create(key='publicURL', value='http://localhost:8000/s3/v2.0')
 
     def test_authenticate(self):
         client = Client()
 
         # Check not allowed method
-        url = '/astakos/api/tokens'
+        url = reverse('astakos.api.tokens.authenticate')
         r = client.get(url, post_data={})
         self.assertEqual(r.status_code, 400)
 
         # Malformed request
-        url = '/astakos/api/tokens'
+        url = reverse('astakos.api.tokens.authenticate')
         r = client.post(url, post_data={})
         self.assertEqual(r.status_code, 400)
 
         # Check unsupported xml input
-        url = '/astakos/api/tokens'
+        url = reverse('astakos.api.tokens.authenticate')
         post_data = """
             <?xml version="1.0" encoding="UTF-8"?>
                 <auth xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -426,7 +445,7 @@ class TokensApiTest(TestCase):
                          "Unsupported Content-type: 'application/xml'")
 
         # Check malformed request: missing password
-        url = '/astakos/api/tokens'
+        url = reverse('astakos.api.tokens.authenticate')
         post_data = """{"auth":{"passwordCredentials":{"username":"%s"},
                                 "tenantName":"%s"}}""" % (
             self.user1.uuid, self.user1.uuid)
@@ -437,7 +456,7 @@ class TokensApiTest(TestCase):
                          'Malformed request')
 
         # Check malformed request: missing username
-        url = '/astakos/api/tokens'
+        url = reverse('astakos.api.tokens.authenticate')
         post_data = """{"auth":{"passwordCredentials":{"password":"%s"},
                                 "tenantName":"%s"}}""" % (
             self.user1.auth_token, self.user1.uuid)
@@ -448,7 +467,7 @@ class TokensApiTest(TestCase):
                          'Malformed request')
 
         # Check invalid pass
-        url = '/astakos/api/tokens'
+        url = reverse('astakos.api.tokens.authenticate')
         post_data = """{"auth":{"passwordCredentials":{"username":"%s",
                                                        "password":"%s"},
                                 "tenantName":"%s"}}""" % (
@@ -460,7 +479,7 @@ class TokensApiTest(TestCase):
                          'Invalid token')
 
         # Check inconsistent pass
-        url = '/astakos/api/tokens'
+        url = reverse('astakos.api.tokens.authenticate')
         post_data = """{"auth":{"passwordCredentials":{"username":"%s",
                                                        "password":"%s"},
                                 "tenantName":"%s"}}""" % (
@@ -472,14 +491,14 @@ class TokensApiTest(TestCase):
                          'Invalid credentials')
 
         # Check invalid json data
-        url = '/astakos/api/tokens'
+        url = reverse('astakos.api.tokens.authenticate')
         r = client.post(url, "not json", content_type='application/json')
         self.assertEqual(r.status_code, 400)
         body = json.loads(r.content)
         self.assertEqual(body['badRequest']['message'], 'Invalid JSON data')
 
         # Check auth with token
-        url = '/astakos/api/tokens'
+        url = reverse('astakos.api.tokens.authenticate')
         post_data = """{"auth":{"token": {"id":"%s"},
                         "tenantName":"%s"}}""" % (
             self.user1.auth_token, self.user1.uuid)
@@ -492,7 +511,7 @@ class TokensApiTest(TestCase):
             self.fail(e)
 
         # Check successful json response
-        url = '/astakos/api/tokens'
+        url = reverse('astakos.api.tokens.authenticate')
         post_data = """{"auth":{"passwordCredentials":{"username":"%s",
                                                        "password":"%s"},
                                 "tenantName":"%s"}}""" % (
@@ -506,9 +525,9 @@ class TokensApiTest(TestCase):
             self.fail(e)
 
         try:
-            token = body['token']['id']
-            user = body['user']['id']
-            service_catalog = body['serviceCatalog']
+            token = body['access']['token']['id']
+            user = body['access']['user']['id']
+            service_catalog = body['access']['serviceCatalog']
         except KeyError:
             self.fail('Invalid response')
 
@@ -517,7 +536,7 @@ class TokensApiTest(TestCase):
         self.assertEqual(len(service_catalog), 3)
 
         # Check successful xml response
-        url = '/astakos/api/tokens'
+        url = reverse('astakos.api.tokens.authenticate')
         headers = {'HTTP_ACCEPT': 'application/xml'}
         post_data = """{"auth":{"passwordCredentials":{"username":"%s",
                                                        "password":"%s"},
@@ -531,96 +550,3 @@ class TokensApiTest(TestCase):
 #            body = minidom.parseString(r.content)
 #        except Exception, e:
 #            self.fail(e)
-
-    def test_get_endpoints(self):
-        client = Client()
-
-        # Check in active user token
-        inactive_user = AstakosUser.objects.create(email='test3')
-        url = '/astakos/api/tokens/%s/endpoints' % quote(
-            inactive_user.auth_token)
-        r = client.get(url)
-        self.assertEqual(r.status_code, 401)
-
-        # Check invalid user token in path
-        url = '/astakos/api/tokens/nouser/endpoints'
-        r = client.get(url)
-        self.assertEqual(r.status_code, 401)
-
-        # Check forbidden
-        url = '/astakos/api/tokens/%s/endpoints' % quote(self.user1.auth_token)
-        headers = {'HTTP_X_AUTH_TOKEN': AstakosUser.objects.create(
-            email='test4').auth_token}
-        r = client.get(url, **headers)
-        self.assertEqual(r.status_code, 401)
-
-        # Check bad request method
-        url = '/astakos/api/tokens/%s/endpoints' % quote(self.user1.auth_token)
-        r = client.post(url)
-        self.assertEqual(r.status_code, 400)
-
-        # Check forbidden
-        url = '/astakos/api/tokens/%s/endpoints' % quote(self.user1.auth_token)
-        headers = {'HTTP_X_AUTH_TOKEN': self.user2.auth_token}
-        r = client.get(url, **headers)
-        self.assertEqual(r.status_code, 403)
-
-        # Check belongsTo BadRequest
-        url = '/astakos/api/tokens/%s/endpoints?belongsTo=%s' % (
-            quote(self.user1.auth_token), quote(self.user2.uuid))
-        headers = {'HTTP_X_AUTH_TOKEN': self.user1.auth_token}
-        r = client.get(url, **headers)
-        self.assertEqual(r.status_code, 400)
-
-        # Check successful request
-        url = '/astakos/api/tokens/%s/endpoints' % quote(self.user1.auth_token)
-        headers = {'HTTP_X_AUTH_TOKEN': self.user1.auth_token}
-        r = client.get(url, **headers)
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r['Content-Type'], 'application/json; charset=UTF-8')
-        try:
-            body = json.loads(r.content)
-        except:
-            self.fail('json format expected')
-        endpoints = body.get('endpoints')
-        self.assertEqual(len(endpoints), 3)
-
-         # Check xml serialization
-        url = '/astakos/api/tokens/%s/endpoints?format=xml' %\
-            quote(self.user1.auth_token)
-        headers = {'HTTP_X_AUTH_TOKEN': self.user1.auth_token}
-        r = client.get(url, **headers)
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r['Content-Type'], 'application/xml; charset=UTF-8')
-#        try:
-#            body = minidom.parseString(r.content)
-#        except Exception, e:
-#            self.fail('xml format expected')
-        endpoints = body.get('endpoints')
-        self.assertEqual(len(endpoints), 3)
-
-        # Check limit
-        url = '/astakos/api/tokens/%s/endpoints?limit=2' %\
-            quote(self.user1.auth_token)
-        headers = {'HTTP_X_AUTH_TOKEN': self.user1.auth_token}
-        r = client.get(url, **headers)
-        self.assertEqual(r.status_code, 200)
-        body = json.loads(r.content)
-        endpoints = body.get('endpoints')
-        self.assertEqual(len(endpoints), 2)
-
-        endpoint_link = body.get('endpoint_links', [])[0]
-        next = endpoint_link.get('href')
-        p = urlparse(next)
-        params = parse_qs(p.query)
-        self.assertTrue('limit' in params)
-        self.assertTrue('marker' in params)
-        self.assertEqual(params['marker'][0], '2')
-
-        # Check marker
-        headers = {'HTTP_X_AUTH_TOKEN': self.user1.auth_token}
-        r = client.get(next, **headers)
-        self.assertEqual(r.status_code, 200)
-        body = json.loads(r.content)
-        endpoints = body.get('endpoints')
-        self.assertEqual(len(endpoints), 1)

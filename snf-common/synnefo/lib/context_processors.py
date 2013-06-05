@@ -30,16 +30,13 @@ def cloudbar(request):
     """
 
     CB_ACTIVE = getattr(settings, 'CLOUDBAR_ACTIVE', True)
-    CB_LOCATION = getattr(settings, 'CLOUDBAR_LOCATION',
-            'https://accounts.okeanos.grnet.gr/static/im/cloudbar/')
+    CB_LOCATION = getattr(settings, 'CLOUDBAR_LOCATION')
     CB_COOKIE_NAME = getattr(settings, 'CLOUDBAR_COOKIE_NAME',
             'okeanos_account')
     CB_ACTIVE_SERVICE = getattr(settings, 'CLOUDBAR_ACTIVE_SERVICE',
             'cloud')
-    CB_SERVICES_URL = getattr(settings, 'CLOUDBAR_SERVICES_URL',
-            'https://accounts.okeanos.grnet.gr/im/get_services')
-    CB_MENU_URL = getattr(settings, 'CLOUDBAR_MENU_URL',
-            'https://accounts.okeanos.grnet.gr/im/get_menu')
+    CB_SERVICES_URL = getattr(settings, 'CLOUDBAR_SERVICES_URL')
+    CB_MENU_URL = getattr(settings, 'CLOUDBAR_MENU_URL')
     CB_HEIGHT = getattr(settings, 'CLOUDBAR_HEIGHT',
             '35')
     CB_BGCOLOR = getattr(settings, 'CLOUDBAR_BACKGROUND_COLOR',

@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -40,19 +40,15 @@ class TestProjects(TestCase):
     """
     def setUp(self):
         # astakos resources
-        self.astakos_service = Service.objects.create(name="astakos",
-                                                      api_url="/astakos/api/")
         self.resource = Resource.objects.create(name="astakos.pending_app",
                                                 uplimit=0,
                                                 allow_in_projects=False,
-                                                service=self.astakos_service)
+                                                service_type="astakos")
 
         # custom service resources
-        self.service = Service.objects.create(name="service1",
-                                              api_url="http://service.api")
         self.resource = Resource.objects.create(name="service1.resource",
                                                 uplimit=100,
-                                                service=self.service)
+                                                service_type="service1")
         self.admin = get_local_user("projects-admin@synnefo.org")
         self.admin.uuid = 'uuid1'
         self.admin.save()

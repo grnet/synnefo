@@ -1,6 +1,6 @@
 import binascii
 
-from synnefo.ui.userdata.asn1 import DerObject, DerSequence
+from synnefo.userdata.asn1 import DerObject, DerSequence
 
 def exportKey(keyobj, format='PEM'):
     """Export the RSA key. A string is returned

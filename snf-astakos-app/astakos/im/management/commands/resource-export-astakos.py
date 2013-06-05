@@ -34,15 +34,12 @@
 from django.utils import simplejson as json
 from django.core.management.base import BaseCommand
 
-from astakos.im.astakos_resources import service, resources
+from astakos.im.astakos_resources import resources
 
 
 class Command(BaseCommand):
     help = "Export astakos resources in json format"
 
     def handle(self, *args, **options):
-        data = {'service': service,
-                'resources': resources,
-                }
-        output = json.dumps(data, indent=4)
+        output = json.dumps(resources, indent=4)
         self.stdout.write(output + '\n')

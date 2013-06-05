@@ -32,7 +32,7 @@
 # or implied, of GRNET S.A.
 
 from django.core.management.base import CommandError
-from astakos.im.models import Service
+from astakos.im.models import Service, EndpointData
 from synnefo.lib.ordereddict import OrderedDict
 from synnefo.webproject.management.commands import SynnefoCommand
 from synnefo.webproject.management import utils
@@ -62,13 +62,20 @@ class Command(SynnefoCommand):
             [
                 ('id', service.id),
                 ('name', service.name),
+                ('component', service.component),
                 ('type', service.type),
-                ('service URL', service.url),
-                ('API URL', service.api_url),
-                ('token', service.auth_token),
-                ('token created', service.auth_token_created),
-                ('token expires', service.auth_token_expires),
             ])
 
         utils.pprint_table(self.stdout, [kv.values()], kv.keys(),
                            options["output_format"], vertical=True)
+
+        self.stdout.write('\n')
+        endpoint_data = EndpointData.objects.filter(endpoint__service=service)
+        data = []
+        for ed in endpoint_data:
+            data.append((ed.endpoint_id, ed.key, ed.value))
+
+        labels = ('endpoint', 'key', 'value')
+        utils.pprint_table(self.stdout, data, labels,
+                           options["output_format"],
+                           title='Endpoints')

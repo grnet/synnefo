@@ -1,8 +1,47 @@
 #coding=utf8
 from django.conf import settings
+from synnefo.lib import parse_base_url, join_urls
+from synnefo.lib.services import fill_endpoints
+from synnefo.util.keypath import get_path, set_path
+from pithos.api.services import pithos_services as vanilla_pithos_services
+from astakosclient import astakos_services as vanilla_astakos_services
 
-ASTAKOS_URL = getattr(settings, "ASTAKOS_URL",
-                      "https://accounts.example.synnefo.org/")
+from copy import deepcopy
+
+# Top-level URL for Pithos. Must set.
+BASE_URL = getattr(settings, 'PITHOS_BASE_URL',
+                   "https://object-store.example.synnefo.org/pithos/")
+
+BASE_HOST, BASE_PATH = parse_base_url(BASE_URL)
+
+# Process Astakos settings
+ASTAKOS_BASE_URL = getattr(settings, 'ASTAKOS_BASE_URL',
+                           'https://accounts.example.synnefo.org/astakos/')
+ASTAKOS_BASE_HOST, ASTAKOS_BASE_PATH = parse_base_url(ASTAKOS_BASE_URL)
+
+pithos_services = deepcopy(vanilla_pithos_services)
+fill_endpoints(pithos_services, BASE_URL)
+PITHOS_PREFIX = get_path(pithos_services, 'pithos_object-store.prefix')
+PUBLIC_PREFIX = get_path(pithos_services, 'pithos_public.prefix')
+UI_PREFIX = get_path(pithos_services, 'pithos_ui.prefix')
+
+astakos_services = deepcopy(vanilla_astakos_services)
+fill_endpoints(astakos_services, ASTAKOS_BASE_URL)
+CUSTOMIZE_ASTAKOS_SERVICES = \
+        getattr(settings, 'PITHOS_CUSTOMIZE_ASTAKOS_SERVICES', ())
+for path, value in CUSTOMIZE_ASTAKOS_SERVICES:
+    set_path(astakos_services, path, value, createpath=True)
+
+ASTAKOS_ACCOUNTS_PREFIX = get_path(astakos_services, 'astakos_account.prefix')
+ASTAKOS_VIEWS_PREFIX = get_path(astakos_services, 'astakos_ui.prefix')
+ASTAKOS_KEYSTONE_PREFIX = get_path(astakos_services, 'astakos_identity.prefix')
+
+BASE_ASTAKOS_PROXY_PATH = getattr(settings, 'PITHOS_BASE_ASTAKOS_PROXY_PATH',
+                                  ASTAKOS_BASE_PATH)
+BASE_ASTAKOS_PROXY_PATH = join_urls(BASE_PATH, BASE_ASTAKOS_PROXY_PATH)
+BASE_ASTAKOS_PROXY_PATH = BASE_ASTAKOS_PROXY_PATH.strip('/')
+
+
 ASTAKOSCLIENT_POOLSIZE = getattr(settings, 'PITHOS_ASTAKOSCLIENT_POOLSIZE', 200)
 
 COOKIE_NAME = getattr(settings, 'PITHOS_ASTAKOS_COOKIE_NAME', '_pithos2_a')

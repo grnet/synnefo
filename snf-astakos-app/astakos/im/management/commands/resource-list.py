@@ -51,14 +51,15 @@ class Command(ListCommand):
     FIELDS = {
         "id": ("id", "ID"),
         "name": ("name", "Resource Name"),
-        "service": ("service", "Service"),
+        "service type": ("service_type", "Service type"),
+        "service origin": ("service_origin", "Service"),
         "limit": ("limit_with_unit", "Base Quota"),
         "description": ("desc", "Description"),
         "allow_in_projects": ("allow_in_projects",
                               "Make resource available in projects"),
     }
 
-    fields = ["id", "name", "service", "limit", "allow_in_projects",
+    fields = ["id", "name", "service origin", "limit",
               "description"]
 
     def show_limit(self, resource):

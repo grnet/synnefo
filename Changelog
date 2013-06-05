@@ -67,7 +67,7 @@ Astakos
 * API-related changes:
 
   * Implemented API calls for quota, resources, and commissions.
-  * Moved all API calls under '/astakos/api'. Kept also previous locations
+  * Moved all API calls under '/account/v1.0'. Kept also previous locations
     for backwards compatibility.
 
 * Changes in views:

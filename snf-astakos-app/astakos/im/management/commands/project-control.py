@@ -80,50 +80,34 @@ class Command(BaseCommand):
                           "e.g. when denying a project")),
     )
 
+    @commit_on_success_strict()
     def handle(self, *args, **options):
 
         message = options['message']
 
-        pid = options['terminate']
-        if pid is not None:
-            self.run_command(terminate, pid)
-            return
+        actions = {
+            'terminate': terminate,
+            'resume': resume,
+            'suspend': suspend,
+            'approve': approve_application,
+            'deny': lambda a: deny_application(a, reason=message),
+            'check_expired': lambda _: self.expire(execute=False),
+            'terminate_expired': lambda _: self.expire(execute=True),
+        }
 
-        pid = options['resume']
-        if pid is not None:
-            self.run_command(resume, pid)
-            return
+        opts = [(key, value)
+                for (key, value) in options.items()
+                if key in actions and value]
 
-        pid = options['suspend']
-        if pid is not None:
-            self.run_command(suspend, pid)
-            return
+        if len(opts) != 1:
+            raise CommandError("Specify exactly one operation.")
 
-        appid = options['approve']
-        if appid is not None:
-            self.run_command(approve_application, appid)
-            return
-
-        appid = options['deny']
-        if appid is not None:
-            self.run_command(deny_application, appid, reason=message)
-            return
-
-        if options['check_expired']:
-            self.expire(execute=False)
-            return
-
-        if options['terminate_expired']:
-            self.expire(execute=True)
-
-    def run_command(self, func, *args, **kwargs):
-        @commit_on_success_strict()
-        def inner():
-            try:
-                func(*args, **kwargs)
-            except BaseException as e:
-                raise CommandError(e)
-        inner()
+        key, value = opts[0]
+        action = actions[key]
+        try:
+            action(value)
+        except BaseException as e:
+            raise CommandError(e)
 
     def print_expired(self, projects, execute):
         length = len(projects)
@@ -152,10 +136,6 @@ class Command(BaseCommand):
                 self.stdout.write('%d projects have been terminated.\n' % (
                     length,))
 
-    @commit_on_success_strict()
     def expire(self, execute=False):
-        try:
-            projects = check_expiration(execute=execute)
-            self.print_expired(projects, execute)
-        except BaseException as e:
-            raise CommandError(e)
+        projects = check_expiration(execute=execute)
+        self.print_expired(projects, execute)

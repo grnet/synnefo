@@ -31,11 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-service = "pithos"
+from synnefo.util.keypath import get_path
+from pithos.api.settings import pithos_services
 
-resources = [
-    {"desc": "Pithos account diskspace",
-     "name": "pithos.diskspace",
-     "unit": "bytes",
-     }
-]
+resources = get_path(pithos_services, 'pithos_object-store.resources').values()

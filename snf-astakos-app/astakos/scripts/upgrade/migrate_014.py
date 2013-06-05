@@ -31,21 +31,31 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from subprocess import call
 import os
 os.environ['DJANGO_SETTINGS_MODULE'] = 'synnefo.settings'
 from astakos.im.models import UserSetting, AstakosUserQuota, Resource
 from astakos.im.quotas import qh_sync_users
 
+from optparse import OptionParser
+
+parser = OptionParser()
+parser.add_option("--usersetting", dest="usersetting",
+                  action="store_true", default=False,
+                  help="Only migrate user-specific settings",
+                  )
+
 SETTING = 'PENDING_APPLICATION_LIMIT'
 RESOURCE = 'astakos.pending_app'
 
 
-def main():
+def migrate_user_setting():
+    print 'Migrating user-specific settings...'
     try:
         resource = Resource.objects.get(name=RESOURCE)
     except Resource.DoesNotExist:
-        print "Resource 'astakos.pending_app' not found."
-        return
+        print "Resource '%s' not found." % RESOURCE
+        exit()
 
     users = set()
     settings = UserSetting.objects.filter(setting=SETTING)
@@ -62,6 +72,38 @@ def main():
         users.add(user)
 
     qh_sync_users(users)
+
+
+def modify_limit():
+    command = ['snf-manage', 'resource-modify',
+               RESOURCE, '--limit-interactive']
+    print 'Running "%s"...' % ' '.join(command)
+    r = call(command)
+
+    if r != 0:
+        print ('Setting resource limit failed. Have you registered '
+               'service astakos?')
+        print 'Aborting.'
+        exit()
+
+
+def reconcile():
+    command = ['snf-manage', 'reconcile-resources-astakos', '--fix']
+    print 'Running "%s"...' % ' '.join(command)
+    r = call(command)
+
+
+def main():
+    (options, args) = parser.parse_args()
+    usersetting = options.usersetting
+
+    if not usersetting:
+        modify_limit()
+        print
+    migrate_user_setting()
+    if not usersetting:
+        print
+        reconcile()
 
 
 if __name__ == '__main__':

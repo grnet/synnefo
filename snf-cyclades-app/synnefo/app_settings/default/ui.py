@@ -4,7 +4,7 @@
 ###################
 
 # API URL
-COMPUTE_API_URL = '/api/v1.1'
+#COMPUTE_API_URL = '/api/v1.1'
 
 # base url for ui static files
 # if not set, defaults to MEDIA_URL + 'snf-<latest_ui_version>/'
@@ -24,7 +24,7 @@ IMAGE_ICONS = ["redhat", "ubuntu", "debian", "windows", "gentoo", "archlinux",
 # How often should the UI request changes from the API
 UI_UPDATE_INTERVAL = 5000
 
-# Milieconds to increase the interval after 
+# Milieconds to increase the interval after
 # UI_UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT calls
 # of recurrent api requests
 UI_UPDATE_INTERVAL_INCREASE = UI_UPDATE_INTERVAL / 4
@@ -42,12 +42,6 @@ UI_CHANGES_SINCE_ALIGNMENT = 0
 
 # How often to check for user usage changes
 UI_QUOTAS_UPDATE_INTERVAL = 10000
-
-# URL to redirect not authenticated users
-UI_LOGIN_URL = "/im/login"
-
-# URL to redirect user to when he logs out from the ui
-UI_LOGOUT_URL = "/im/logout"
 
 # Cookie name to retrieve authentication data from
 UI_AUTH_COOKIE_NAME = '_pithos2_a'
@@ -79,10 +73,12 @@ VM_CREATE_SUGGESTED_FLAVORS = {
 
 # A list of metadata keys to clone from image
 # to the virtual machine on its creation.
-VM_IMAGE_COMMON_METADATA = ["OS", "loginname", "logindomain", "users", "remote"]
+VM_IMAGE_COMMON_METADATA = ["OS", "loginname", "logindomain", "users",
+                            "remote"]
 
 # A list of suggested vm roles to display to user on create wizard
-VM_CREATE_SUGGESTED_ROLES = ["Database server", "File server", "Mail server", "Web server", "Proxy"]
+VM_CREATE_SUGGESTED_ROLES = ["Database server", "File server", "Mail server",
+                             "Web server", "Proxy"]
 
 # Template to be used for suggesting the user a default name for newly created
 # vms. {0} gets replaced by the image OS value
@@ -149,7 +145,7 @@ UI_SUPPORT_SSH_OS_LIST = ['debian', 'fedora', 'okeanos', 'ubuntu', 'kubuntu',
 
 # OS/username map to identify default user name for the specified os
 UI_OS_DEFAULT_USER_MAP = {
-    'debian':'root', 'fedora': 'root', 'okeanos': 'root',
+    'debian': 'root', 'fedora': 'root', 'okeanos': 'root',
     'ubuntu': 'root', 'kubuntu': 'root', 'centos': 'root',
     'windows': 'Administrator'
 }
@@ -162,8 +158,8 @@ UI_OS_DEFAULT_USER_MAP = {
 # If only one set, no select options will be displayed
 UI_NETWORK_AVAILABLE_NETWORK_TYPES = {'MAC_FILTERED': 'mac-filtering'}
 
-# Suggested private networks to let the user choose from when creating a private
-# network with dhcp enabled
+# Suggested private networks to let the user choose from when creating a
+# private network with dhcp enabled
 UI_NETWORK_AVAILABLE_SUBNETS = ['10.0.0.0/24', '192.168.0.0/24']
 
 # UI will use this setting to find an available network subnet if user requests
@@ -188,9 +184,6 @@ UI_GROUPED_PUBLIC_NETWORK_NAME = 'Internet'
 ###############
 # UI EXTENSIONS
 ###############
-
-# Glance images API endpoint
-UI_GLANCE_API_URL = '/plankton'
 
 # Whether or not UI should display images from the Glance API
 # set in UI_GLANCE_API_URL, if setting is set to False, ui will

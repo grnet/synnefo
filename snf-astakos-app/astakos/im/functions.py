@@ -81,11 +81,12 @@ def send_verification(user, template_name='im/activation_email.txt'):
     """
     Send email to user to verify his/her email and activate his/her account.
     """
-    url = join_urls(settings.BASEURL, user.get_activation_url(nxt=reverse('index')))
+    url = join_urls(settings.BASE_HOST,
+                    user.get_activation_url(nxt=reverse('index')))
     message = render_to_string(template_name, {
                                'user': user,
                                'url': url,
-                               'baseurl': settings.BASEURL,
+                               'baseurl': settings.BASE_URL,
                                'site_name': settings.SITENAME,
                                'support': settings.CONTACT_EMAIL})
     sender = settings.SERVER_EMAIL
@@ -163,11 +164,12 @@ def send_invitation(invitation, template_name='im/invitation.txt'):
     Send invitation email.
     """
     subject = _(astakos_messages.INVITATION_EMAIL_SUBJECT)
-    url = '%s?code=%d' % (join_urls(settings.BASEURL, reverse('index')), invitation.code)
+    url = '%s?code=%d' % (join_urls(settings.BASE_HOST,
+                                    reverse('index')), invitation.code)
     message = render_to_string(template_name, {
                                'invitation': invitation,
                                'url': url,
-                               'baseurl': settings.BASEURL,
+                               'baseurl': settings.BASE_URL,
                                'site_name': settings.SITENAME,
                                'support': settings.CONTACT_EMAIL})
     sender = settings.SERVER_EMAIL
@@ -189,8 +191,9 @@ def send_greeting(user, email_template_name='im/welcome_email.txt'):
     subject = _(astakos_messages.GREETING_EMAIL_SUBJECT)
     message = render_to_string(email_template_name, {
                                'user': user,
-                               'url': join_urls(settings.BASEURL, reverse('index')),
-                               'baseurl': settings.BASEURL,
+                               'url': join_urls(settings.BASE_HOST,
+                                                reverse('index')),
+                               'baseurl': settings.BASE_URL,
                                'site_name': settings.SITENAME,
                                'support': settings.CONTACT_EMAIL})
     sender = settings.SERVER_EMAIL

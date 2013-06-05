@@ -34,5 +34,6 @@
 from django.conf.urls.defaults import patterns, url
 
 urlpatterns = patterns('synnefo.vmapi.views',
-                       url(r'^server-params/(?P<uuid>.*)$', 'server_params',
+                       url(r'^v1.0/server-params/(?P<uuid>.*)$',
+                           'server_params',
                            name="vmapi_server_params"),)

@@ -109,7 +109,6 @@ class Command(BaseCommand):
                 policy = policy.replace('unset_', '')
                 setattr(profile, policy, None)
 
-
         profile.save()
         if update:
             print "Profile updated"

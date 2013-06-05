@@ -39,12 +39,12 @@ In `/etc/synnefo/astakos.conf` add:
 .. code-block:: console
 
     CLOUDBAR_LOCATION = 'https://accounts.example.com/static/im/cloudbar/'
-    CLOUDBAR_SERVICES_URL = 'https://accounts.example.com/im/get_services'
-    CLOUDBAR_MENU_URL = 'https://accounts.example.com/im/get_menu'
+    CLOUDBAR_SERVICES_URL = 'https://accounts.example.com/ui/get_services'
+    CLOUDBAR_MENU_URL = 'https://accounts.example.com/ui/get_menu'
 
     ASTAKOS_IM_MODULES = ['local']
 
-    ASTAKOS_BASEURL = 'https://accounts.example.com'
+    ASTAKOS_BASE_URL = 'https://accounts.example.com'
 
     ASTAKOS_SITENAME = '~okeanos @ example.com'
     ASTAKOS_RECAPTCHA_PUBLIC_KEY = '6LeFidMSAAAAAM7Px7a96YQzsBcKYeXCI_sFz0Gk'

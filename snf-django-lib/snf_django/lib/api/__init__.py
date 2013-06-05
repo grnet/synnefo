@@ -89,7 +89,7 @@ def api_method(http_method=None, token_required=True, user_required=True,
                 # Authenticate
                 if user_required:
                     assert(token_required), "Can not get user without token"
-                    astakos = astakos_url or settings.ASTAKOS_URL
+                    astakos = astakos_url or settings.ASTAKOS_BASE_URL
                     astakos = AstakosClient(astakos,
                                             use_pool=True,
                                             logger=logger)

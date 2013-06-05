@@ -7,11 +7,7 @@
 DEBUG = False
 
 # Top-level URL for deployment. Numerous other URLs depend on this.
-APP_INSTALL_URL = "https://host:port"
-
-# The API implementation needs to accept and return absolute references
-# to its resources. Thus, it needs to know its public URL.
-API_ROOT_URL = APP_INSTALL_URL + '/api'
+CYCLADES_BASE_URL = "https://compute.example.synnefo.org/compute/"
 
 # The API will return HTTP Bad Request if the ?changes-since
 # parameter refers to a point in time more than POLL_LIMIT seconds ago.
@@ -95,8 +91,8 @@ GANETI_DISK_TEMPLATES = ('blockdev', 'diskless', 'drbd', 'file', 'plain',
                          'rbd',  'sharedfile')
 DEFAULT_GANETI_DISK_TEMPLATE = 'drbd'
 
-# The URL of an astakos instance that will be used for user authentication
-ASTAKOS_URL = 'https://accounts.synnefo.org/'
+# Top-level URL of the astakos instance to be used for user management
+ASTAKOS_BASE_URL = 'https://accounts.example.synnefo.org/'
 
 # Tune the size of the Astakos http client connection pool
 # This limit the number of concurrent requests to Astakos.

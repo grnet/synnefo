@@ -34,16 +34,15 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from django.db.utils import IntegrityError
 from django.utils import simplejson as json
 
 from snf_django.lib.db.transaction import commit_on_success_strict
-from astakos.im.resources import add_resource
-from astakos.im.models import Service
+from astakos.im.register import add_resource, RegisterException
+from ._common import read_from_file
 
 
 class Command(BaseCommand):
-    help = "Register service resources"
+    help = "Register resources"
 
     option_list = BaseCommand.option_list + (
         make_option('--json',
@@ -60,41 +59,33 @@ class Command(BaseCommand):
             raise CommandError(m)
 
         else:
-            with open(json_file) as file_data:
-                m = ('Input should be a JSON dict containing "service" '
-                     'and "resource" keys.')
-                try:
-                    data = json.load(file_data)
-                except json.JSONDecodeError:
-                    raise CommandError(m)
-                if not isinstance(data, dict):
-                    raise CommandError(m)
-                else:
-                    try:
-                        service = data['service']
-                        resources = data['resources']
-                    except KeyError:
-                        raise CommandError(m)
-
-        self.add_resources(service, resources)
-
+            data = read_from_file(json_file)
+            m = 'Input should be a JSON list.'
+            try:
+                data = json.loads(data)
+            except json.JSONDecodeError:
+                raise CommandError(m)
+            if not isinstance(data, list):
+                raise CommandError(m)
+        self.add_resources(data)
 
     @commit_on_success_strict()
-    def add_resources(self, service, resources):
-
-        try:
-            s = Service.objects.get(name=service)
-        except Service.DoesNotExist:
-            raise CommandError("Service '%s' is not registered." % (service))
-
+    def add_resources(self, resources):
+        output = []
         for resource in resources:
             if not isinstance(resource, dict):
                 raise CommandError("Malformed resource dict.")
-            r, exists = add_resource(s, resource)
+            try:
+                r, exists = add_resource(resource)
+            except RegisterException as e:
+                raise CommandError(e.message)
             name = r.name
             if exists:
                 m = "Resource '%s' updated in database.\n" % (name)
             else:
                 m = ("Resource '%s' created in database with default "
                      "quota limit 0.\n" % (name))
-            self.stdout.write(m)
+            output.append(m)
+
+        for line in output:
+            self.stdout.write(line)

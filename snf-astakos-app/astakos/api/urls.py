@@ -31,10 +31,10 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import patterns, url
+from django.conf.urls.defaults import patterns, url, include
 
 
-urlpatterns = patterns(
+astakos_account_v1_0 = patterns(
     'astakos.api.quotas',
     url(r'^quotas/?$', 'quotas', name="astakos-api-quotas"),
     url(r'^service_quotas/?$', 'service_quotas'),
@@ -45,20 +45,19 @@ urlpatterns = patterns(
     url(r'^commissions/(?P<serial>\d+)/action/?$', 'serial_action'),
 )
 
-urlpatterns += patterns(
+astakos_account_v1_0 += patterns(
     'astakos.api.user',
     url(r'^feedback/?$', 'send_feedback'),
     url(r'^user_catalogs/?$', 'get_uuid_displayname_catalogs'),
     url(r'^authenticate/?$', 'authenticate'),
 )
 
-urlpatterns += patterns(
+astakos_account_v1_0 += patterns(
     'astakos.api.service',
     url(r'^service/user_catalogs/?$', 'get_uuid_displayname_catalogs'),
 )
 
-urlpatterns += patterns(
-    'astakos.api.tokens',
-    url(r'tokens/?$', 'authenticate'),
-    url(r'tokens/(?P<token>.+?)/endpoints', 'get_endpoints'),
+urlpatterns = patterns(
+    '',
+    url(r'^v1.0/', include(astakos_account_v1_0)),
 )

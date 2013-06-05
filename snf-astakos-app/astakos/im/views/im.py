@@ -55,7 +55,7 @@ import astakos.im.messages as astakos_messages
 
 from astakos.im import activation_backends
 from astakos.im.models import AstakosUser, ApprovalTerms, EmailChange, \
-    AstakosUserAuthProvider, PendingThirdPartyUser, Service
+    AstakosUserAuthProvider, PendingThirdPartyUser, Component
 from astakos.im.util import get_context, prepare_response, get_query, \
     restrict_next
 from astakos.im.forms import LoginForm, InvitationForm, FeedbackForm, \
@@ -283,7 +283,7 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
     # providers that user can add
     user_available_providers = request.user.get_available_auth_providers()
 
-    extra_context['services'] = Service.catalog().values()
+    extra_context['services'] = Component.catalog().values()
     return render_response(template_name,
                            profile_form=form,
                            user_providers=user_providers,
@@ -805,7 +805,7 @@ def remove_auth_provider(request, pk):
 @cookie_fix
 @signed_terms_required
 def landing(request):
-    context = {'services': Service.catalog(orderfor='dashboard')}
+    context = {'services': Component.catalog(orderfor='dashboard')}
     return render_response(
         'im/landing.html',
         context_instance=get_context(request), **context)
@@ -908,7 +908,7 @@ class MenuItem(dict):
 def get_services(request):
     callback = request.GET.get('callback', None)
     mimetype = 'application/json'
-    data = json.dumps(Service.catalog().values())
+    data = json.dumps(Component.catalog().values())
 
     if callback:
         # Consume session messages. When get_services is loaded from an astakos

@@ -84,7 +84,7 @@
     <script>
         tmp_auth_client = new synnefo.auth.AstakosClient({
             cookie_name: '{{ auth_cookie_name }}',
-            login_url: '{{ login_redirect }}'
+            login_url: {{ login_redirect|safe }}
         });
         if (!tmp_auth_client.get_token()) { tmp_auth_client.redirect_to_login(); }
     </script>
@@ -608,7 +608,6 @@
                 'ERROR': ['image-error']
             };
 
-   			// TODO: make it dynamic
             synnefo.config.api_urls = {
                 'userdata': '{% url ui_userdata %}', 
                 'compute':  {{ compute_api_url|safe }}, 
@@ -630,13 +629,15 @@
             synnefo.config.use_glance = {{ use_glance }};
             synnefo.config.indicators_icons_url = '{{ SYNNEFO_IMAGES_URL }}icons/indicators/';
             synnefo.config.machines_icons_url = '{{ SYNNEFO_IMAGES_URL }}icons/machines/';
+            synnefo.config.ui_console_url = '{% url ui_machines_console %}';
+            synnefo.config.ui_connect_url = '{% url ui_machines_connect %}';
             synnefo.config.support_ssh_os_list = {{ support_ssh_os_list|safe }};
             synnefo.config.unknown_os = {{ unknown_os|safe }};
             synnefo.config.os_created_users = {{ os_created_users|safe }};
             synnefo.config.feedback_post_url = {{ feedback_post_url|safe }};
             
-            synnefo.config.logout_redirect = '{{ logout_redirect }}';
-            synnefo.config.login_redirect = '{{ login_redirect }}';
+            synnefo.config.logout_redirect = {{ logout_redirect|safe }};
+            synnefo.config.login_redirect = {{ login_redirect|safe }};
             synnefo.config.auth_cookie_name = '{{ auth_cookie_name }}';
 
             synnefo.config.translate_uuids = {{ translate_uuids|safe }};
@@ -657,6 +658,7 @@
                 login_url: synnefo.config.login_redirect,
                 logout_url: synnefo.config.logout_redirect,
                 cookie_name: synnefo.config.auth_cookie_name,
+                skip_redirects: {{ auth_skip_redirects|safe }},
                 logout_callback: function(client) {
                     Backbone.history.navigate(client.config.logout_url);
                     window.location = client.config.logout_url; 

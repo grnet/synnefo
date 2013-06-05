@@ -31,33 +31,53 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from astakos.im.models import Resource
+from astakos.im.models import Resource, Service, Endpoint, EndpointData
+
 from astakos.im.quotas import qh_add_resource_limit, qh_sync_new_resource
 import logging
 
 logger = logging.getLogger(__name__)
 
-fields = ['name', 'desc', 'unit', 'allow_in_projects']
+resource_fields = ['desc', 'unit', 'allow_in_projects']
 
 
-class ResourceException(Exception):
+class RegisterException(Exception):
     pass
 
 
-def add_resource(service, resource_dict):
+def add_resource(resource_dict):
     name = resource_dict.get('name')
-    if not name:
-        raise ResourceException("Malformed resource dict.")
+    service_type = resource_dict.get('service_type')
+    service_origin = resource_dict.get('service_origin')
+    if not name or not service_type or not service_origin:
+        raise RegisterException("Malformed resource dict.")
+
+    try:
+        service = Service.objects.get(name=service_origin)
+    except Service.DoesNotExist:
+        m = "There is no service %s." % service_origin
+        raise RegisterException(m)
 
     try:
         r = Resource.objects.get_for_update(name=name)
         exists = True
+        if r.service_type != service_type:
+            m = ("There already exists a resource named %s with service "
+                 "type %s." % (name, r.service_type))
+            raise RegisterException(m)
+        if r.service_origin != service_origin:
+            m = ("There already exists a resource named %s registered for "
+                 "service %s." % (name, r.service_origin))
+            raise RegisterException(m)
+
     except Resource.DoesNotExist:
-        r = Resource(uplimit=0)
+        r = Resource(name=name,
+                     uplimit=0,
+                     service_type=service_type,
+                     service_origin=service_origin)
         exists = False
 
-    r.service = service
-    for field in fields:
+    for field in resource_fields:
         value = resource_dict.get(field)
         if value is not None:
             setattr(r, field, value)
@@ -99,3 +119,34 @@ def get_resources(resources=None, services=None):
         resource_dict[r.full_name()] = r.get_info()
 
     return resource_dict
+
+
+def add_endpoint(service, endpoint_dict):
+    endpoint = Endpoint.objects.create(service=service)
+    for key, value in endpoint_dict.iteritems():
+        EndpointData.objects.create(
+            endpoint=endpoint, key=key, value=value)
+
+
+def add_service(component, name, service_type, endpoints):
+    defaults = {'component': component,
+                'type': service_type,
+                }
+    service, created = Service.objects.get_or_create(
+        name=name, defaults=defaults)
+
+    if not created:
+        if service.component != component:
+            m = ("There is already a service named %s registered by %s." %
+                 (name, service.component.name))
+            raise RegisterException(m)
+        service.endpoints.all().delete()
+    else:
+        service.component = component
+        service.type = service_type
+        service.save()
+
+    for endpoint in endpoints:
+        add_endpoint(service, endpoint)
+
+    return not created

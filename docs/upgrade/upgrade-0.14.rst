@@ -46,31 +46,53 @@ The bulk of the upgrade to v0.14 is about resource and quota migrations.
     cyclades-host$ snf-manage migrate
 
 
-3 Quota-related steps
-=====================
+2.3 Configure Base URL settings for all services
+------------------------------------------------
 
-Astakos and its resources should also get registered, so that they can
-be known to the quota system.
+In order to make all services' URLs configurable and discoverable from
+a single endpoint in Astakos through the Openstack Keystone API,
+every service has a ``XXXXX_BASE_URL`` setting, or it's old corresponding
+setting was renamed to this. Therefore:
+
+* Rename ``ASTAKOS_URL`` setting to ``ASTAKOS_BASE_URL``
+  everywhere in your settings, in all nodes and all config files.
+  This must point to the top-level Astakos URL.
+
+* In Cyclades settings, rename the ``APP_INSTALL_URL`` setting
+  to ``CYCLADES_BASE_URL``. If no such setting has been configured,
+  you must set it. It must point to the top-level Cyclades URL.
+
+* In Pithos settings, introduce a ``PITHOS_BASE_URL`` setting.
+  It must point to the top-level Pithos URL.
+
+3 Register astakos service and migrate quota
+============================================
+
+You need to register Astakos as a service. The following command will ask
+you to provide the service URL (to appear in the Cloudbar) as well as its
+API URL. It will also automatically register the resource definitions
+offered by astakos.
 
 Run::
 
-    astakos-host$ snf-manage service-add astakos service_url api_url
-    astakos-host$ snf-manage resource-export-astakos > astakos.json
-    astakos-host$ snf-manage resource-import --json astakos.json
+    astakos-host$ snf-register-services astakos
+
+.. note::
+
+   This command is equivalent to running:
+
+   .. code-block:: console
+     astakos-host$ snf-manage service-add astakos service_url api_url
+     astakos-host$ snf-manage resource-export-astakos > astakos.json
+     astakos-host$ snf-manage resource-import --json astakos.json
+
 
 The limit on pending project applications is since 0.14 handled as an
-Astakos resource, rather than a custom setting. In order to set this
-limit (replacing setting ASTAKOS_PENDING_APPLICATION_LIMIT) run::
-
-    astakos-host$ snf-manage resource-modify astakos.pending_app --limit <num>
-
-To take into account the user-specific limits we need a data migration. The
-following command populates the user-specific base quota for resource
-``astakos.pending_app`` using the deprecated user setting::
+Astakos resource, rather than a custom setting. Command::
 
     astakos-host$ astakos-migrate-0.14
 
-Finally, Astakos needs to inform the quota system for the current number
-of pending applications per user::
-
-    astakos-host$ snf-manage reconcile-resources-astakos --fix
+will prompt you to set this limit (replacing setting
+ASTAKOS_PENDING_APPLICATION_LIMIT) and then automatically migrate the
+user-specific base quota for the new resource ``astakos.pending_app`` using
+the deprecated user setting.

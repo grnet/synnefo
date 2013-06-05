@@ -43,22 +43,37 @@ from astakosclient.utils import \
 from astakosclient.errors import \
     AstakosClientException, Unauthorized, BadRequest, NotFound, Forbidden, \
     NoUserName, NoUUID, BadValue, QuotaLimit, InvalidResponse
+from .keypath import get_path
+from .services import astakos_services
 
+
+# Customize astakos_services here?
+
+
+def join_urls(a, b):
+    """join_urls from synnefo.lib"""
+    return a.rstrip("/") + "/" + b.lstrip("/")
 
 # --------------------------------------------------------------------
 # Astakos API urls
-API_AUTHENTICATE = "/astakos/api/authenticate"
-API_USERCATALOGS = "/astakos/api/user_catalogs"
-API_SERVICE_USERCATALOGS = "/astakos/api/service/user_catalogs"
-API_GETSERVICES = "/astakos/api/get_services"
-API_RESOURCES = "/astakos/api/resources"
-API_QUOTAS = "/astakos/api/quotas"
-API_SERVICE_QUOTAS = "/astakos/api/service_quotas"
-API_COMMISSIONS = "/astakos/api/commissions"
-API_COMMISSIONS_ACTION = API_COMMISSIONS + "/action"
-API_FEEDBACK = "/astakos/api/feedback"
-API_TOKENS = "/astakos/api/tokens"
-TOKENS_ENDPOINTS = "endpoints"
+ACCOUNTS_PREFIX = get_path(astakos_services, 'astakos_account.prefix')
+ACCOUNTS_PREFIX = join_urls(ACCOUNTS_PREFIX, 'v1.0')
+API_AUTHENTICATE = join_urls(ACCOUNTS_PREFIX, "authenticate")
+API_USERCATALOGS = join_urls(ACCOUNTS_PREFIX, "user_catalogs")
+API_SERVICE_USERCATALOGS = join_urls(ACCOUNTS_PREFIX, "service/user_catalogs")
+API_GETSERVICES = join_urls(ACCOUNTS_PREFIX, "get_services")
+API_RESOURCES = join_urls(ACCOUNTS_PREFIX, "resources")
+API_QUOTAS = join_urls(ACCOUNTS_PREFIX, "quotas")
+API_SERVICE_QUOTAS = join_urls(ACCOUNTS_PREFIX, "service_quotas")
+API_COMMISSIONS = join_urls(ACCOUNTS_PREFIX, "commissions")
+API_COMMISSIONS_ACTION = join_urls(API_COMMISSIONS, "action")
+API_FEEDBACK = join_urls(ACCOUNTS_PREFIX, "feedback")
+
+# --------------------------------------------------------------------
+# Astakos Keystone API urls
+IDENTITY_PREFIX = get_path(astakos_services, 'astakos_identity.prefix')
+API_TOKENS = join_urls(IDENTITY_PREFIX, "tokens")
+TOKENS_ENDPOINTS = join_urls(API_TOKENS, "endpoints")
 
 
 # --------------------------------------------------------------------

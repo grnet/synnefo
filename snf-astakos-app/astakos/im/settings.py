@@ -1,5 +1,25 @@
 from django.conf import settings
 from synnefo_branding import settings as synnefo_settings
+from synnefo.lib import parse_base_url
+from astakosclient import astakos_services as vanilla_astakos_services
+from synnefo.util.keypath import get_path
+from synnefo.lib import join_urls
+from synnefo.lib.services import fill_endpoints
+
+from copy import deepcopy
+
+
+BASE_URL = getattr(settings, 'ASTAKOS_BASE_URL',
+                   'https://accounts.example.synnefo.org')
+
+
+BASE_HOST, BASE_PATH = parse_base_url(BASE_URL)
+
+astakos_services = deepcopy(vanilla_astakos_services)
+fill_endpoints(astakos_services, BASE_URL)
+ACCOUNTS_PREFIX = get_path(astakos_services, 'astakos_account.prefix')
+VIEWS_PREFIX = get_path(astakos_services, 'astakos_ui.prefix')
+KEYSTONE_PREFIX = get_path(astakos_services, 'astakos_identity.prefix')
 
 # Set the expiration time of newly created auth tokens
 # to be this many hours after their creation time.
@@ -43,9 +63,6 @@ IM_STATIC_URL = getattr(settings, 'ASTAKOS_IM_STATIC_URL', '/static/im/')
 # If set to False and invitations not enabled newly created user
 # will be automatically accepted
 MODERATION_ENABLED = getattr(settings, 'ASTAKOS_MODERATION_ENABLED', True)
-
-# Set baseurl
-BASEURL = getattr(settings, 'ASTAKOS_BASEURL', 'https://accounts.example.synnefo.org')
 
 # Set service name
 SITENAME = getattr(settings, 'ASTAKOS_SITENAME', synnefo_settings.SERVICE_NAME)
@@ -120,9 +137,10 @@ SHIBBOLETH_REQUIRE_NAME_INFO = getattr(settings,
                                        'ASTAKOS_SHIBBOLETH_REQUIRE_NAME_INFO',
                                        False)
 
-ACTIVATION_REDIRECT_URL = getattr(settings,
-                                  'ASTAKOS_ACTIVATION_REDIRECT_URL',
-                                  "/im/landing")
+default_activation_redirect_url = join_urls('/', BASE_PATH, VIEWS_PREFIX,
+                                            "landing")
+ACTIVATION_REDIRECT_URL = getattr(settings, 'ASTAKOS_ACTIVATION_REDIRECT_URL',
+                                  default_activation_redirect_url)
 
 # If true, this enables a ui compatibility layer for the introduction of UUIDs
 # in identity management. WARNING: Setting to True will break your installation.
@@ -146,13 +164,15 @@ LINKEDIN_TOKEN = getattr(settings, 'ASTAKOS_LINKEDIN_TOKEN', '')
 LINKEDIN_SECRET = getattr(settings, 'ASTAKOS_LINKEDIN_SECRET', '')
 
 # URL to redirect the user after successful login when no next parameter is set
-LOGIN_SUCCESS_URL = getattr(settings, 'ASTAKOS_LOGIN_SUCCESS_URL','/im/landing')
+default_success_url = join_urls('/', BASE_PATH, VIEWS_PREFIX, "landing")
+LOGIN_SUCCESS_URL = getattr(settings, 'ASTAKOS_LOGIN_SUCCESS_URL',
+                            default_success_url)
 
 # Whether or not to display projects in astakos menu
 PROJECTS_VISIBLE = getattr(settings, 'ASTAKOS_PROJECTS_VISIBLE', False)
 
-# A way to extend the services presentation metadata
-SERVICES_META = getattr(settings, 'ASTAKOS_SERVICES_META', {})
+# A way to extend the components presentation metadata
+COMPONENTS_META = getattr(settings, 'ASTAKOS_COMPONENTS_META', {})
 
 # A way to extend the resources presentation metadata
 RESOURCES_META = getattr(settings, 'ASTAKOS_RESOURCES_META', {})

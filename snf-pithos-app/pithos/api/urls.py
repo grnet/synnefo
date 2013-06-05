@@ -32,18 +32,18 @@
 # or implied, of GRNET S.A.
 
 from functools import partial
-
 from django.conf.urls.defaults import include, patterns
-from django.views.decorators.csrf import csrf_exempt
-
 from snf_django.lib.api.proxy import proxy
+from snf_django.lib.api.utils import prefix_pattern
+from pithos.api.settings import (
+    BASE_PATH, ASTAKOS_BASE_URL, BASE_ASTAKOS_PROXY_PATH,
+    ASTAKOS_ACCOUNTS_PREFIX, PROXY_USER_SERVICES,
+    PITHOS_PREFIX, PUBLIC_PREFIX, UI_PREFIX)
+from urlparse import urlparse
 
-import pithos.api.settings as settings
-
-astakos_proxy = partial(proxy, target=settings.ASTAKOS_URL)
 
 # TODO: This only works when in this order.
-api_urlpatterns = patterns(
+pithos_api_patterns = patterns(
     'pithos.api.functions',
     (r'^$', 'top_demux'),
     (r'^(?P<v_account>.+?)/(?P<v_container>.+?)/(?P<v_object>.+?)$',
@@ -52,17 +52,31 @@ api_urlpatterns = patterns(
     'container_demux'),
     (r'^(?P<v_account>.+?)/?$', 'account_demux'))
 
+pithos_patterns = patterns(
+    '',
+    (r'{0}v1/'.format(prefix_pattern(PITHOS_PREFIX)),
+        include(pithos_api_patterns)),
+    (r'{0}(?P<v_public>.+?)/?$'.format(prefix_pattern(PUBLIC_PREFIX)),
+        'pithos.api.public.public_demux'))
+
 urlpatterns = patterns(
     '',
-    (r'^v1(?:$|/)', include(api_urlpatterns)),
-    (r'^v1\.0(?:$|/)', include(api_urlpatterns)),
-    (r'^public/(?P<v_public>.+?)/?$', 'pithos.api.public.public_demux'))
+    (prefix_pattern(BASE_PATH), include(pithos_patterns)),
+)
 
-if settings.PROXY_USER_SERVICES:
+if PROXY_USER_SERVICES:
+    astakos_proxy = partial(proxy, proxy_base=BASE_ASTAKOS_PROXY_PATH,
+                            target_base=ASTAKOS_BASE_URL)
+
+    proxy_patterns = patterns(
+        '',
+        (r'^login/?$', astakos_proxy),
+        (r'^feedback/?$', astakos_proxy),
+        (r'^user_catalogs/?$', astakos_proxy),
+        (prefix_pattern(ASTAKOS_ACCOUNTS_PREFIX), astakos_proxy),
+    )
+
     urlpatterns += patterns(
         '',
-        (r'^login/?$', csrf_exempt(astakos_proxy)),
-        (r'^feedback/?$', csrf_exempt(astakos_proxy)),
-        (r'^user_catalogs/?$', csrf_exempt(astakos_proxy)),
-        (r'^astakos/api/', csrf_exempt(astakos_proxy))
+        (prefix_pattern(BASE_ASTAKOS_PROXY_PATH), include(proxy_patterns)),
     )

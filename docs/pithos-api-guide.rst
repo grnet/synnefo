@@ -116,11 +116,11 @@ User feedback
 
 Client software using Pithos, should forward to the ``/feedback`` URI. The Pithos service, depending on its configuration will delegate the request to the appropriate identity management URI.
 
-========================= =========  ==================
-Uri                       Method     Description
-========================= =========  ==================
-``/feedback``             POST       Send feedback
-========================= =========  ==================
+============================ =========  ==================
+Uri                          Method     Description
+============================ =========  ==================
+``/pithos/astakos/feedback`` POST       Send feedback
+============================ =========  ==================
 
 |
 
@@ -156,11 +156,11 @@ User translation catalogs
 
 Client software using Pithos, should forward to the ``/user_catalogs`` URI to get uuid to displayname translations and vice versa. The Pithos service, depending on its configuration will delegate the request to the appropriate identity management URI.
 
-================================ =========  ==================
-Uri                              Method     Description
-================================ =========  ==================
-``/user_catalogs``               POST       Get 2 catalogs containing uuid to displayname mapping and the opposite
-================================ =========  ==================
+================================= =========  ==================
+Uri                               Method     Description
+================================= =========  ==================
+``/pithos/astakos/user_catalogs`` POST       Get 2 catalogs containing uuid to displayname mapping and the opposite
+================================= =========  ==================
 
 |
 
@@ -272,7 +272,7 @@ Example ``format=json`` reply:
 
 ::
 
-  [{"name": "user", "last_modified": "2011-12-02T08:10:41.565891+00:00"}, ...]
+  [{"name": "user-uuid", "last_modified": "2011-12-02T08:10:41.565891+00:00"}, ...]
 
 Example ``format=xml`` reply:
 
@@ -281,7 +281,7 @@ Example ``format=xml`` reply:
   <?xml version="1.0" encoding="UTF-8"?>
   <accounts>
     <account>
-      <name>user</name>
+      <name>user-uuid</name>
       <last_modified>2011-12-02T08:10:41.565891+00:00</last_modified>
     </account>
     <account>...</account>
@@ -405,7 +405,7 @@ Example ``format=xml`` reply:
 ::
 
   <?xml version="1.0" encoding="UTF-8"?>
-  <account name="user">
+  <account name="user-uuid">
     <container>
       <name>pithos</name>
       <bytes>62452</bytes>
@@ -584,7 +584,6 @@ x_object_modified_by        The user that committed the object's version
 x_object_sharing            Object permissions (optional)
 x_object_allowed_to         Allowed actions on object (optional)
 x_object_public             Object's publicly accessible URI (optional: present if the object is public and the request user is the object owner)
-
 ==========================  ======================================
 
 Sharing metadata and last modification timestamp will only be returned if there is no ``until`` parameter defined.
@@ -607,7 +606,7 @@ Example ``format=json`` reply:
     "x_object_uuid": "8ed9af1b-c948-4bb6-82b0-48344f5c822c",
     "x_object_version": 98,
     "x_object_version_timestamp": "1322813441.565891",
-    "x_object_modified_by": "user"}, ...]
+    "x_object_modified_by": "user-uuid"}, ...]
 
 Example ``format=xml`` reply:
 
@@ -625,7 +624,7 @@ Example ``format=xml`` reply:
       <x_object_uuid>8ed9af1b-c948-4bb6-82b0-48344f5c822c</x_object_uuid>
       <x_object_version>98</x_object_version>
       <x_object_version_timestamp>1322813441.565891</x_object_version_timestamp>
-      <x_object_modified_by>chazapis</x_object_modified_by>
+      <x_object_modified_by>user-uuid</x_object_modified_by>
     </object>
     <object>...</object>
   </container>
@@ -1088,7 +1087,7 @@ Return Code                     Description
 
 The ``POST`` method can also be used for creating an object via a standard HTML form. If the request ``Content-Type`` is ``multipart/form-data``, none of the above headers will be processed. The form should have an ``X-Object-Data`` field, as in the following example. The token is passed as a request parameter. ::
 
-  <form method="post" action="https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt?X-Auth-Token=0000" enctype="multipart/form-data">
+  <form method="post" action="https://storage.example.synnefo.org/pithos/object-store/v1.0/user-uuid/folder/EXAMPLE.txt?X-Auth-Token=0000" enctype="multipart/form-data">
     <input type="file" name="X-Object-Data">
     <input type="submit">
   </form>
@@ -1215,43 +1214,43 @@ Assuming an authentication token is obtained, the following high-level operation
 
     curl -X HEAD -D - \
          -H "X-Auth-Token: 0000" \
-         https://pithos.dev.grnet.gr/v1/user
+         https://storage.example.synnefo.org/pithos/object-store/v1.0/user-uuid
 
 * List available containers ::
 
     curl -X GET -D - \
          -H "X-Auth-Token: 0000" \
-         https://pithos.dev.grnet.gr/v1/user
+         https://storage.example.synnefo.org/pithos/object-store/v1.0/user-uuid
 
 * Get container information ::
 
     curl -X HEAD -D - \
          -H "X-Auth-Token: 0000" \
-         https://pithos.dev.grnet.gr/v1/user/pithos
+         https://storage.example.synnefo.org/pithos/object-store/v1.0/user-uuid/pithos
 
 * Add a new container ::
 
     curl -X PUT -D - \
          -H "X-Auth-Token: 0000" \
-         https://pithos.dev.grnet.gr/v1/user/test
+         https://storage.example.synnefo.org/pithos/object-store/v1.0/user-uuid/test
 
 * Delete a container ::
 
     curl -X DELETE -D - \
          -H "X-Auth-Token: 0000" \
-         https://pithos.dev.grnet.gr/v1/user/test
+         https://storage.example.synnefo.org/pithos/object-store/v1.0/user-uuid/test
 
 * List objects in a container ::
 
     curl -X GET -D - \
          -H "X-Auth-Token: 0000" \
-         https://pithos.dev.grnet.gr/v1/user/pithos
+         https://storage.example.synnefo.org/pithos/object-store/v1.0/user-uuid/pithos
 
 * List objects in a container (extended reply) ::
 
     curl -X GET -D - \
          -H "X-Auth-Token: 0000" \
-         https://pithos.dev.grnet.gr/v1/user/pithos?format=json
+         https://storage.example.synnefo.org/pithos/object-store/v1.0/user-uuid/pithos?format=json
 
   It is recommended that extended replies are cached and subsequent requests utilize the ``If-Modified-Since`` header.
 
@@ -1263,20 +1262,20 @@ Assuming an authentication token is obtained, the following high-level operation
 
     curl -X GET -D - \
          -H "X-Auth-Token: 0000" \
-         https://pithos.dev.grnet.gr/v1/user/pithos?meta=favorites
+         https://storage.example.synnefo.org/pithos/object-store/v1.0/user-uuid/pithos?meta=favorites
 
 * Retrieve an object ::
 
     curl -X GET -D - \
          -H "X-Auth-Token: 0000" \
-         https://pithos.dev.grnet.gr/v1/user/pithos/README.txt
+         https://storage.example.synnefo.org/pithos/object-store/v1.0/user-uuid/pithos/README.txt
 
 * Retrieve an object (specific ranges of data) ::
 
     curl -X GET -D - \
          -H "X-Auth-Token: 0000" \
          -H "Range: bytes=0-9" \
-         https://pithos.dev.grnet.gr/v1/user/pithos/README.txt
+         https://storage.example.synnefo.org/pithos/object-store/v1.0/user-uuid/pithos/README.txt
 
   This will return the first 10 bytes. To get the first 10, bytes 30-39 and the last 100 use ``Range: bytes=0-9,30-39,-100``.
 
@@ -1285,7 +1284,7 @@ Assuming an authentication token is obtained, the following high-level operation
     curl -X PUT -D - \
          -H "X-Auth-Token: 0000" \
          -H "Content-Type: application/directory" \
-         https://pithos.dev.grnet.gr/v1/user/pithos/folder
+         https://storage.example.synnefo.org/pithos/object-store/v1.0/user-uuid/pithos/folder
 
 * Add a new object ::
 
@@ -1293,7 +1292,7 @@ Assuming an authentication token is obtained, the following high-level operation
          -H "X-Auth-Token: 0000" \
          -H "Content-Type: text/plain" \
          -T EXAMPLE.txt
-         https://pithos.dev.grnet.gr/v1/user/pithos/folder/EXAMPLE.txt
+         https://storage.example.synnefo.org/pithos/object-store/v1.0/user-uuid/pithos/folder/EXAMPLE.txt
 
 * Update an object ::
 
@@ -1303,7 +1302,7 @@ Assuming an authentication token is obtained, the following high-level operation
          -H "Content-Type: application/octet-stream" \
          -H "Content-Range: bytes 10-19/*" \
          -d "0123456789" \
-         https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt
+         https://storage.example.synnefo.org/pithos/object-store/v1.0/user-uuid/folder/EXAMPLE.txt
 
   This will update bytes 10-19 with the data specified.
 
@@ -1315,7 +1314,7 @@ Assuming an authentication token is obtained, the following high-level operation
          -H "Content-Type: application/octet-stream" \
          -H "Content-Range: bytes */*" \
          -d "0123456789" \
-         https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt
+         https://storage.example.synnefo.org/pithos/object-store/v1.0/user-uuid/folder/EXAMPLE.txt
 
 * Update an object (truncate) ::
 
@@ -1324,7 +1323,7 @@ Assuming an authentication token is obtained, the following high-level operation
          -H "X-Source-Object: /folder/EXAMPLE.txt" \
          -H "Content-Range: bytes 0-0/*" \
          -H "X-Object-Bytes: 0" \
-         https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt
+         https://storage.example.synnefo.org/pithos/object-store/v1.0/user-uuid/folder/EXAMPLE.txt
 
   This will truncate the object to 0 bytes.
 
@@ -1334,14 +1333,14 @@ Assuming an authentication token is obtained, the following high-level operation
          -H "X-Auth-Token: 0000" \
          -H "X-Object-Meta-First: first_meta_value" \
          -H "X-Object-Meta-Second: second_meta_value" \
-         https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt
+         https://storage.example.synnefo.org/pithos/object-store/v1.0/user-uuid/folder/EXAMPLE.txt
 
 * Delete object metadata ::
 
     curl -X POST -D - \
          -H "X-Auth-Token: 0000" \
          -H "X-Object-Meta-First: first_meta_value" \
-         https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt
+         https://storage.example.synnefo.org/pithos/object-store/v1.0/user-uuid/folder/EXAMPLE.txt
 
   Metadata can only be "set". To delete ``X-Object-Meta-Second``, reset all metadata.
 
@@ -1349,4 +1348,4 @@ Assuming an authentication token is obtained, the following high-level operation
 
     curl -X DELETE -D - \
          -H "X-Auth-Token: 0000" \
-         https://pithos.dev.grnet.gr/v1/user/folder/EXAMPLE.txt
+         https://storage.example.synnefo.org/pithos/object-store/v1.0/user-uuid/folder/EXAMPLE.txt

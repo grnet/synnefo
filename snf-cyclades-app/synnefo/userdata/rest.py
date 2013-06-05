@@ -77,7 +77,7 @@ class View(object):
         Main entry point for a request-response process.
         """
         def view(request, *args, **kwargs):
-            get_user(request, settings.ASTAKOS_URL)
+            get_user(request, settings.ASTAKOS_BASE_URL)
             if not request.user_uniq:
                 return HttpResponse(status=401)
             self = cls(*initargs, **initkwargs)

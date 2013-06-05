@@ -34,6 +34,8 @@
 
 import os
 
+from urlparse import urlparse
+
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from django.template import loader
@@ -49,17 +51,17 @@ from synnefo.util.version import get_component_version
 from synnefo.lib import join_urls
 
 from snf_django.lib.astakos import get_user
+from synnefo import cyclades_settings
+from synnefo.ui import settings as uisettings
 
 SYNNEFO_JS_LIB_VERSION = get_component_version('app')
-
-# api configuration
-COMPUTE_API_URL = getattr(settings, 'COMPUTE_API_URL', '/api/v1.1')
 
 # UI preferences settings
 TIMEOUT = getattr(settings, "TIMEOUT", 10000)
 UPDATE_INTERVAL = getattr(settings, "UI_UPDATE_INTERVAL", 5000)
 CHANGES_SINCE_ALIGNMENT = getattr(settings, "UI_CHANGES_SINCE_ALIGNMENT", 0)
-UPDATE_INTERVAL_INCREASE = getattr(settings, "UI_UPDATE_INTERVAL_INCREASE", 500)
+UPDATE_INTERVAL_INCREASE = getattr(settings, "UI_UPDATE_INTERVAL_INCREASE",
+                                   500)
 UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT = \
     getattr(settings, "UI_UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT", 3)
 UPDATE_INTERVAL_FAST = getattr(settings, "UI_UPDATE_INTERVAL_FAST", 2500)
@@ -84,9 +86,11 @@ IMAGE_DELETED_SIZE_TITLE = \
 SUPPORT_SSH_OS_LIST = getattr(settings, "UI_SUPPORT_SSH_OS_LIST",)
 OS_CREATED_USERS = getattr(settings, "UI_OS_DEFAULT_USER_MAP")
 UNKNOWN_OS = getattr(settings, "UI_UNKNOWN_OS", "unknown")
-LOGOUT_URL = getattr(settings, "UI_LOGOUT_URL", '/im/authenticate')
-LOGIN_URL = getattr(settings, "UI_LOGIN_URL", '/im/login')
+
 AUTH_COOKIE_NAME = getattr(settings, "UI_AUTH_COOKIE_NAME", 'synnefo_user')
+
+# never change window location. Helpful in development environments
+AUTH_SKIP_REDIRECTS = getattr(settings, "UI_AUTH_SKIP_REDIRECTS", False)
 
 # UI behaviour settings
 DELAY_ON_BLUR = getattr(settings, "UI_DELAY_ON_BLUR", True)
@@ -130,7 +134,7 @@ UI_SYNNEFO_JS_WEB_URL = \
 
 # extensions
 ENABLE_GLANCE = getattr(settings, 'UI_ENABLE_GLANCE', True)
-GLANCE_API_URL = getattr(settings, 'UI_GLANCE_API_URL', '/glance')
+
 DIAGNOSTICS_UPDATE_INTERVAL = \
     getattr(settings, 'UI_DIAGNOSTICS_UPDATE_INTERVAL', 2000)
 
@@ -161,16 +165,6 @@ GROUP_PUBLIC_NETWORKS = getattr(settings, 'UI_GROUP_PUBLIC_NETWORKS', True)
 GROUPED_PUBLIC_NETWORK_NAME = \
     getattr(settings, 'UI_GROUPED_PUBLIC_NETWORK_NAME', 'Internet')
 
-ASTAKOS_BASE_URL = '/'
-ASTAKOS_API_URL = join_urls(ASTAKOS_BASE_URL, 'astakos/api')
-
-USER_CATALOG_URL = getattr(settings, 'UI_USER_CATALOG_URL',
-                           join_urls(ASTAKOS_API_URL, 'user_catalogs'))
-FEEDBACK_POST_URL = getattr(settings, 'UI_FEEDBACK_POST_URL',
-                            join_urls(ASTAKOS_API_URL, 'feedback'))
-ACCOUNTS_API_URL = getattr(settings, 'UI_ACCOUNTS_API_URL', ASTAKOS_API_URL)
-TRANSLATE_UUIDS = not getattr(settings, 'TRANSLATE_UUIDS', False)
-
 
 def template(name, request, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
@@ -195,11 +189,14 @@ def home(request):
                'project': '+nefo',
                'request': request,
                'current_lang': get_language() or 'en',
-               'compute_api_url': json.dumps(COMPUTE_API_URL),
-               'user_catalog_url': json.dumps(USER_CATALOG_URL),
-               'feedback_post_url': json.dumps(FEEDBACK_POST_URL),
-               'accounts_api_url': json.dumps(ACCOUNTS_API_URL),
-               'translate_uuids': json.dumps(TRANSLATE_UUIDS),
+               'compute_api_url': json.dumps(uisettings.COMPUTE_URL),
+               'user_catalog_url': json.dumps(uisettings.USER_CATALOG_URL),
+               'feedback_post_url': json.dumps(uisettings.FEEDBACK_URL),
+               'accounts_api_url': json.dumps(uisettings.ACCOUNT_URL),
+               'logout_redirect': json.dumps(uisettings.LOGOUT_REDIRECT),
+               'login_redirect': json.dumps(uisettings.LOGIN_URL),
+               'glance_api_url': json.dumps(uisettings.GLANCE_URL),
+               'translate_uuids': json.dumps(True),
                # update interval settings
                'update_interval': UPDATE_INTERVAL,
                'update_interval_increase': UPDATE_INTERVAL_INCREASE,
@@ -209,9 +206,8 @@ def home(request):
                'update_interval_max': UPDATE_INTERVAL_MAX,
                'changes_since_alignment': CHANGES_SINCE_ALIGNMENT,
                'image_icons': IMAGE_ICONS,
-               'logout_redirect': LOGOUT_URL,
-               'login_redirect': LOGIN_URL,
                'auth_cookie_name': AUTH_COOKIE_NAME,
+               'auth_skip_redirects': json.dumps(AUTH_SKIP_REDIRECTS),
                'suggested_flavors': json.dumps(SUGGESTED_FLAVORS),
                'suggested_roles': json.dumps(SUGGESTED_ROLES),
                'vm_image_common_metadata': json.dumps(VM_IMAGE_COMMON_METADATA),
@@ -228,7 +224,6 @@ def home(request):
                'os_created_users': json.dumps(OS_CREATED_USERS),
                'userdata_keys_limit': json.dumps(MAX_SSH_KEYS_PER_USER),
                'use_glance': json.dumps(ENABLE_GLANCE),
-               'glance_api_url': json.dumps(GLANCE_API_URL),
                'system_images_owners': json.dumps(SYSTEM_IMAGES_OWNERS),
                'custom_image_help_url': CUSTOM_IMAGE_HELP_URL,
                'image_deleted_title': json.dumps(IMAGE_DELETED_TITLE),
@@ -375,7 +370,7 @@ def machines_connect(request):
     # rdp param is set, the user requested rdp file
     # check if we are on windows
     if operating_system == 'windows' and request.GET.get("rdp", False):
-
+        extra_rdp_content = ''
         # UI sent domain info (from vm metadata) use this
         # otherwise use our default snf-<vm_id> domain
         EXTRA_RDP_CONTENT = getattr(settings, 'UI_EXTRA_RDP_CONTENT', '')
@@ -383,13 +378,14 @@ def machines_connect(request):
             extra_rdp_content = EXTRA_RDP_CONTENT(server_id, ip_address,
                                                   hostname, username)
         else:
-            extra_rdp_content = EXTRA_RDP_CONTENT % \
-                {
-                    'server_id': server_id,
-                    'ip_address': ip_address,
-                    'hostname': hostname,
-                    'user': username
-                  }
+            if EXTRA_RDP_CONTENT:
+                extra_rdp_content = EXTRA_RDP_CONTENT % \
+                    {
+                        'server_id': server_id,
+                        'ip_address': ip_address,
+                        'hostname': hostname,
+                        'user': username
+                      }
 
         rdp_context = {
             'username': username,

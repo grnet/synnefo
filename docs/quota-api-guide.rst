@@ -10,7 +10,7 @@ virtual machines offered by Cyclades.
 Get Resource List
 .................
 
-**GET** /astakos/api/resources
+**GET** /account/v1.0/resources
 
 This call returns a description for each resource available in the system.
 The response consists of a dictionary, indexed by the resource name, which
@@ -33,13 +33,13 @@ Status  Description
       "cyclades.vm": {
           "unit": null,
           "description": "Number of virtual machines",
-          "service": "cyclades",
+          "service": "cyclades_compute",
           "allow_in_projects": true
           },
       "cyclades.ram": {
           "unit": "bytes",
           "description": "Virtual machine memory",
-          "service": "cyclades",
+          "service": "cyclades_compute",
           "allow_in_projects": true
           }
   }
@@ -59,7 +59,7 @@ takes place.
 Get Quotas
 ..........
 
-**GET** /astakos/api/quotas
+**GET** /account/v1.0/quotas
 
 ====================  =========================
 Request Header Name   Value
@@ -119,7 +119,7 @@ Status  Description
 Get Quotas per Service
 ......................
 
-**GET** /astakos/api/service_quotas
+**GET** /account/v1.0/service_quotas
 
 ====================  ============================
 Request Header Name   Value
@@ -195,7 +195,7 @@ it (or *rejecting*, if the allocation did not actually take place).
 Issue Commission
 ................
 
-**POST** /astakos/api/commissions
+**POST** /account/v1.0/commissions
 
 ====================  ============================
 Request Header Name   Value
@@ -294,7 +294,7 @@ also included.
 Get Pending Commissions
 .......................
 
-**GET** /astakos/api/commissions
+**GET** /account/v1.0/commissions
 
 ====================  ============================
 Request Header Name   Value
@@ -326,7 +326,7 @@ Status  Description
 Get the Description of a Commission
 ...................................
 
-**GET** /astakos/api/commissions/<serial>
+**GET** /account/v1.0/commissions/<serial>
 
 ====================  ============================
 Request Header Name   Value
@@ -374,7 +374,7 @@ Status  Description
 Accept or Reject a Commission
 .............................
 
-**POST** /astakos/api/commissions/<serial>/action
+**POST** /account/v1.0/commissions/<serial>/action
 
 ====================  ============================
 Request Header Name   Value
@@ -416,7 +416,7 @@ Status  Description
 Accept or Reject Multiple Commissions
 .....................................
 
-**POST** /astakos/api/commissions/action
+**POST** /account/v1.0/commissions/action
 
 ====================  ============================
 Request Header Name   Value

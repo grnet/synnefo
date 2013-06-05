@@ -37,6 +37,7 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
+from synnefo.cyclades_settings import COMPUTE_ROOT_URL
 
 from snf_django.lib import api
 
@@ -51,7 +52,7 @@ VERSION_1_1 = {
     'links': [
         {
             'rel': 'self',
-            'href': settings.API_ROOT_URL,
+            'href': COMPUTE_ROOT_URL,
         }
     ]
 }

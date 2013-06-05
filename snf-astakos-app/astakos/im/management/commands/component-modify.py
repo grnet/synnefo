@@ -35,72 +35,73 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 
-from astakos.im.models import Service
+from astakos.im.models import Component
 
 
 class Command(BaseCommand):
-    args = "<service ID>"
-    help = "Modify service attributes"
+    args = "<component ID or name>"
+    help = "Modify component attributes"
 
     option_list = BaseCommand.option_list + (
         make_option('--url',
                     dest='url',
                     default=None,
-                    help="Set service url"),
-        make_option('--api-url',
-                    dest='api_url',
-                    default=None,
-                    help="Set service API url"),
+                    help="Set component url"),
         make_option('--auth-token',
                     dest='auth_token',
                     default=None,
-                    help="Set a custom service auth token"),
+                    help="Set a custom component auth token"),
         make_option('--renew-token',
                     action='store_true',
                     dest='renew_token',
                     default=False,
-                    help="Renew service auth token"),
-        make_option('--type',
-                    dest='type',
-                    default=None,
-                    help="Modify service type"),
+                    help="Renew component auth token"),
+        make_option('--purge-services',
+                    action='store_true',
+                    dest='purge_services',
+                    default=False,
+                    help="Purge all services registered for this component"),
     )
 
     def handle(self, *args, **options):
         if len(args) != 1:
-            raise CommandError("Please provide a service ID")
+            raise CommandError("Please provide a component ID or name")
 
+        ident = args[0]
         try:
-            service = Service.objects.get(id=int(args[0]))
-        except Service.DoesNotExist:
+            try:
+                ident = int(ident)
+                component = Component.objects.get(id=ident)
+            except ValueError:
+                component = Component.objects.get(name=ident)
+        except Component.DoesNotExist:
             raise CommandError(
-                "Service does not exist. You may run snf-manage "
-                "service-list for available service IDs.")
+                "Component does not exist. You may run snf-manage "
+                "component-list for available component IDs.")
 
-        api_url = options.get('api_url')
         url = options.get('url')
         auth_token = options.get('auth_token')
         renew_token = options.get('renew_token')
-        type = options.get('type')
+        purge_services = options.get('purge_services')
 
-        if api_url:
-            service.api_url = api_url
+        if not any([url, auth_token, renew_token, purge_services]):
+            raise CommandError("No option specified.")
 
         if url:
-            service.url = url
+            component.url = url
 
         if auth_token:
-            service.auth_token = auth_token
+            component.auth_token = auth_token
 
         if renew_token and not auth_token:
-            service.renew_token()
+            component.renew_token()
 
-        if type:
-            service.type = type
+        component.save()
 
-        service.save()
+        if purge_services:
+            component.service_set.all().delete()
 
         if renew_token:
             self.stdout.write(
-                'Service\'s new token: %s\n' % service.auth_token
+                'Component\'s new token: %s\n' % component.auth_token
             )

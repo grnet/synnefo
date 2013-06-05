@@ -31,57 +31,17 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from urlparse import urlunsplit, urlsplit
+from collections import defaultdict
 
-from django.http import urlencode
 from django.views.decorators.csrf import csrf_exempt
 
 from snf_django.lib.api import faults, utils, api_method
 
 from astakos.im.models import Service, AstakosUser
-from .util import user_from_token, json_response, xml_response, validate_user
+from .util import json_response, xml_response, validate_user
 
 import logging
 logger = logging.getLogger(__name__)
-
-
-@api_method(http_method="GET", token_required=True, user_required=False,
-            logger=logger)
-@user_from_token  # Authenticate user!!
-def get_endpoints(request, token):
-    if token != request.user.auth_token:
-        raise faults.Forbidden()
-
-    belongsTo = request.GET.get('belongsTo')
-    if belongsTo and belongsTo != request.user.uuid:
-        raise faults.BadRequest()
-
-    marker = request.GET.get('marker', 0)
-    limit = request.GET.get('limit', 10000)
-
-    endpoints = list(Service.objects.all().order_by('id').
-                     filter(id__gt=marker)[:limit].
-                     values('name', 'url', 'api_url', 'id', 'type'))
-    for e in endpoints:
-        e['publicURL'] = e['admiURL'] = e['internalURL'] = e['api_url']
-        e['SNF:uiURL'] = e['url']
-        e['region'] = e['name']
-        e.pop('api_url')
-
-    if endpoints:
-        parts = list(urlsplit(request.path))
-        params = {'marker': endpoints[-1]['id'], 'limit': limit}
-        parts[3] = urlencode(params)
-        next_page_url = urlunsplit(parts)
-        endpoint_links = [{'href': next_page_url, 'rel': 'next'}]
-    else:
-        endpoint_links = []
-
-    result = {'endpoints': endpoints, 'endpoint_links': endpoint_links}
-    if request.serialization == 'xml':
-        return xml_response(result, 'api/endpoints.xml')
-    else:
-        return json_response(result)
 
 
 @csrf_exempt
@@ -114,24 +74,29 @@ def authenticate(request):
         if user.uuid != uuid:
             raise faults.Unauthorized('Invalid credentials')
 
-    access = {}
-    access['token'] = {'id': user.auth_token,
-                       'expires': utils.isoformat(user.auth_token_expires),
-                       'tenant': {'id': user.uuid, 'name': user.realname}}
-    access['user'] = {'id': user.uuid, 'name': user.realname,
-                      'roles': list(user.groups.values('id', 'name')),
-                      'roles_links': []}
-    access['serviceCatalog'] = []
-    append = access['serviceCatalog'].append
-    for s in Service.objects.all().order_by('id'):
-        append({'name': s.name, 'type': s.type,
-                'endpoints': [{'adminURL': s.api_url,
-                               'publicURL': s.api_url,
-                               'internalURL': s.api_url,
-                               'SNF:uiURL': s.url,
-                               'region': s.name}]})
+    d = defaultdict(dict)
+    d["access"]["token"] = {
+        "id": user.auth_token,
+        "expires": utils.isoformat(user.auth_token_expires),
+        "tenant": {"id": user.uuid, "name": user.realname}}
+    d["access"]["user"] = {
+        "id": user.uuid, 'name': user.realname,
+        "roles": list(user.groups.values("id", "name")),
+        "roles_links": []}
+    d["access"]["serviceCatalog"] = []
+    append = d["access"]["serviceCatalog"].append
+    for s in Service.objects.all().order_by("id"):
+        endpoints = []
+        for l in [e.data.values('key', 'value') for e in s.endpoints.all()]:
+            endpoint = dict((d['key'], d['value']) for d in l)
+            endpoints.append(endpoint)
+        append({"name": s.name,
+                "type": s.type,
+                "SNF:uiURL": s.component.url,
+                "endpoints": endpoints,
+                "endpoints_links": []})
 
     if request.serialization == 'xml':
-        return xml_response({'access': access}, 'api/access.xml')
+        return xml_response({'d': d}, 'api/access.xml')
     else:
-        return json_response(access)
+        return json_response(d)

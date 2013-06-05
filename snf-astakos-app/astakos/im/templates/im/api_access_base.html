@@ -1,7 +1,15 @@
 {% extends "im/account_base.html" %}
 {% load filters %}
 
+{% block headjs %}
+	{{ block.super }}	 
+    <script>
+      var CHANGE_TOKEN_URL = '{% url update_token %}';
+    </script>	
+{% endblock %}	
+
 {% block page.body %}
+<form>{% csrf_token %}</form>
 <div class="api-access-view">
     <div class="subsection">
     {% block page.body.title %}

@@ -128,7 +128,7 @@ def update_token(request):
     user.renew_token()
     user.save()
     messages.success(request, astakos_messages.TOKEN_UPDATED)
-    return HttpResponseRedirect(reverse('edit_profile'))
+    return HttpResponseRedirect(reverse('api_access'))
 
 
 @require_http_methods(["GET", "POST"])

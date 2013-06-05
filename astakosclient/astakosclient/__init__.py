@@ -71,8 +71,8 @@ API_FEEDBACK = join_urls(ACCOUNTS_PREFIX, "feedback")
 
 # --------------------------------------------------------------------
 # Astakos Keystone API urls
-KEYSTONE_PREFIX = get_path(astakos_services, 'astakos_keystone.prefix')
-API_TOKENS = join_urls(KEYSTONE_PREFIX, "tokens")
+IDENTITY_PREFIX = get_path(astakos_services, 'astakos_identity.prefix')
+API_TOKENS = join_urls(IDENTITY_PREFIX, "tokens")
 TOKENS_ENDPOINTS = join_urls(API_TOKENS, "endpoints")
 
 

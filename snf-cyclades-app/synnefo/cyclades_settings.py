@@ -81,7 +81,7 @@ for path, value in CUSTOMIZE_ASTAKOS_SERVICES:
 
 ASTAKOS_ACCOUNTS_PREFIX = get_path(astakos_services, 'astakos_account.prefix')
 ASTAKOS_VIEWS_PREFIX = get_path(astakos_services, 'astakos_ui.prefix')
-ASTAKOS_KEYSTONE_PREFIX = get_path(astakos_services, 'astakos_keystone.prefix')
+ASTAKOS_KEYSTONE_PREFIX = get_path(astakos_services, 'astakos_identity.prefix')
 
 
 # Proxy Astakos settings

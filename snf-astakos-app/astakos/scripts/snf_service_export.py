@@ -25,7 +25,7 @@ astakos_services = {
         },
     },
 
-    'astakos_keystone': {
+    'astakos_identity': {
         'type': 'identity',
         'component': 'astakos',
         'prefix': 'identity',

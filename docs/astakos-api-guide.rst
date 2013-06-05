@@ -402,7 +402,7 @@ Example json response:
                 "publicURL": "https://accounts.example.synnefo.org/identity/v2.0",
                 "versionId": "v2.0"}],
             "endpoints_links": [],
-            "name": "astakos_keystone",
+            "name": "astakos_identity",
             "type": "identity"}],
       "token": {
           "expires": "2013-06-19T15:23:59.975572+00:00",
@@ -457,7 +457,7 @@ Example xml response:
                             versionId="v1.0"
                             publicURL="https://accounts.example.synnefo.org/account/v1.0"
             </service>
-            <service type="identity" name="astakos_keystone" SNF:uiURL="">
+            <service type="identity" name="astakos_identity" SNF:uiURL="">
                     <endpoint
                             versionId="v2.0"
                             publicURL="https://accounts.example.synnefo.org/identity/v2.0"

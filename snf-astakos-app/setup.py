@@ -199,7 +199,7 @@ setup(
 
     dependency_links=['http://www.synnefo.org/packages/pypi'],
 
-    scripts=['astakos/scripts/astakos-register-services'],
+    scripts=['astakos/scripts/snf-register-components'],
     entry_points={
         'synnefo': [
             'default_settings = astakos.synnefo_settings',
@@ -210,7 +210,8 @@ setup(
             'web_static = astakos.synnefo_settings:static_files'
         ],
         'console_scripts': [
-            'astakos-migrate-0.14 = astakos.scripts.upgrade.migrate_014:main'
+            'astakos-migrate-0.14 = astakos.scripts.upgrade.migrate_014:main',
+            'snf-service-export = astakos.scripts.snf_service_export:main',
         ],
     }
 )

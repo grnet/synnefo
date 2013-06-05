@@ -702,7 +702,9 @@ def object_list(request, v_account, v_container):
                     request.backend.get_object_permissions(
                         request.user_uniq, v_account, v_container, object)
 
-            if public_granted:
+            if request.user_uniq == v_account:
+                # Bring public information only if the request user
+                # is the object owner
                 for k, v in request.backend.list_object_public(
                         request.user_uniq, v_account,
                         v_container, prefix).iteritems():
@@ -744,7 +746,9 @@ def object_list(request, v_account, v_container):
                 update_sharing_meta(request, permissions, v_account,
                                     v_container, meta['name'], meta)
             public_url = object_public.get(meta['name'], None)
-            if public_granted:
+            if request.user_uniq == v_account:
+                # Return public information only if the request user
+                # is the object owner
                 update_public_meta(public_url, meta)
             object_meta.append(printable_header_dict(meta))
 

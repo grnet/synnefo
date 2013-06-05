@@ -583,7 +583,8 @@ x_object_version_timestamp  The object's version timestamp
 x_object_modified_by        The user that committed the object's version
 x_object_sharing            Object permissions (optional)
 x_object_allowed_to         Allowed actions on object (optional)
-x_object_public             Object's publicly accessible URI (optional)
+x_object_public             Object's publicly accessible URI (optional: present if the object is public and the request user is the object owner)
+
 ==========================  ======================================
 
 Sharing metadata and last modification timestamp will only be returned if there is no ``until`` parameter defined.
@@ -787,7 +788,7 @@ X-Object-Manifest           Object parts prefix in ``<container>/<object>`` form
 X-Object-Sharing            Object permissions (optional)
 X-Object-Shared-By          Object inheriting permissions (optional)
 X-Object-Allowed-To         Allowed actions on object (optional)
-X-Object-Public             Object's publicly accessible URI (optional)
+X-Object-Public             Object's publicly accessible URI (optional: present if the object is public and the request user is the object owner)
 X-Object-Meta-*             Optional user defined metadata
 ==========================  ===============================
 
@@ -884,7 +885,7 @@ X-Object-Manifest           Object parts prefix in ``<container>/<object>`` form
 X-Object-Sharing            Object permissions (optional)
 X-Object-Shared-By          Object inheriting permissions (optional)
 X-Object-Allowed-To         Allowed actions on object (optional)
-X-Object-Public             Object's publicly accessible URI (optional)
+X-Object-Public             Object's publicly accessible URI (optional: present if the object is public and the request user is the object owner)
 X-Object-Meta-*             Optional user defined metadata
 ==========================  ===============================
 

@@ -59,8 +59,8 @@ and are related to all the services (Astakos, Pithos, Cyclades).
 To be able to download all synnefo components you need to add the following
 lines in your ``/etc/apt/sources.list`` file:
 
-| ``deb http://apt2.dev.grnet.gr stable/``
-| ``deb-src http://apt2.dev.grnet.gr stable/``
+| ``deb http://apt.dev.grnet.gr squeeze/``
+| ``deb-src http://apt.dev.grnet.gr squeeze/``
 
 and import the repo's GPG key:
 

@@ -113,7 +113,7 @@ external world. Also documents all Synnefo external REST APIs.
 List of all Synnefo components
 ==============================
 
-They are also available from our apt repository: ``apt.okeanos.grnet.gr``
+They are also available from our apt repository: ``apt.dev.grnet.gr``
 
  * `snf-common <http://www.synnefo.org/docs/snf-common/latest/index.html>`_
  * `snf-webproject <http://www.synnefo.org/docs/snf-webproject/latest/index.html>`_

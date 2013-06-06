@@ -174,7 +174,7 @@ class BaseAPITest(TestCase):
         return response
 
     def assertSuccess(self, response):
-        self.assertTrue(response.status_code in [200, 203, 204])
+        self.assertTrue(response.status_code in [200, 202, 203, 204])
 
     def assertFault(self, response, status_code, name):
         self.assertEqual(response.status_code, status_code)

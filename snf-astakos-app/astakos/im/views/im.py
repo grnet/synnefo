@@ -104,7 +104,7 @@ def index(request, login_template_name='im/login.html', profile_template_name='i
     extra_context = extra_context or {}
     template_name = login_template_name
     if request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('astakos.im.views.edit_profile'))
+        return HttpResponseRedirect(reverse('landing'))
 
     third_party_token = request.GET.get('key', False)
     if third_party_token:

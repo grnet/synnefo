@@ -1050,11 +1050,12 @@ def get_pithos_usage(token):
 
 
 def api_method(http_method=None, user_required=True, logger=None,
-               format_allowed=False):
+               format_allowed=False, default_serialization="json"):
     def decorator(func):
         @api.api_method(http_method=http_method, user_required=user_required,
                         logger=logger, format_allowed=format_allowed,
-                        astakos_url=ASTAKOS_URL)
+                        astakos_url=ASTAKOS_URL,
+                        default_serialization=default_serialization)
         @wraps(func)
         def wrapper(request, *args, **kwargs):
             # The args variable may contain up to (account, container, object).

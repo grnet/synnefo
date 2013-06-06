@@ -341,7 +341,8 @@ def account_update(request, v_account):
     return HttpResponse(status=202)
 
 
-@api_method('GET', format_allowed=True, user_required=True, logger=logger)
+@api_method('GET', format_allowed=True, user_required=True, logger=logger,
+            default_serialization="text")
 def container_list(request, v_account):
     # Normal Response Codes: 200, 204
     # Error Response Codes: internalServerError (500),
@@ -587,7 +588,8 @@ def container_delete(request, v_account, v_container):
     return HttpResponse(status=204)
 
 
-@api_method('GET', format_allowed=True, user_required=True, logger=logger)
+@api_method('GET', format_allowed=True, user_required=True, logger=logger,
+            default_serialization="text")
 def object_list(request, v_account, v_container):
     # Normal Response Codes: 200, 204
     # Error Response Codes: internalServerError (500),

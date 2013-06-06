@@ -61,7 +61,8 @@ def get_token(request):
 
 
 def api_method(http_method=None, token_required=True, user_required=True,
-               logger=None, format_allowed=True, astakos_url=None):
+               logger=None, format_allowed=True, astakos_url=None,
+               default_serialization="json"):
     """Decorator function for views that implement an API method."""
     if not logger:
         logger = log
@@ -71,8 +72,8 @@ def api_method(http_method=None, token_required=True, user_required=True,
         def wrapper(request, *args, **kwargs):
             try:
                 # Get the requested serialization format
-                request.serialization = get_serialization(request,
-                                                          format_allowed)
+                request.serialization = get_serialization(
+                    request, format_allowed, default_serialization)
 
                 # Check HTTP method
                 if http_method and request.method != http_method:
@@ -123,7 +124,7 @@ def api_method(http_method=None, token_required=True, user_required=True,
     return decorator
 
 
-def get_serialization(request, format_allowed=True):
+def get_serialization(request, format_allowed=True, default_serialization="json"):
     """Return the serialization format requested.
 
     Valid formats are 'json' and 'xml' and 'text'
@@ -154,7 +155,7 @@ def get_serialization(request, format_allowed=True):
         elif accept == "application/xml":
             return "xml"
 
-    return "json"
+    return default_serialization
 
 
 def update_response_headers(request, response):

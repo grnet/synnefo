@@ -13,11 +13,11 @@ down_revision = '3dd56e750a3'
 from alembic import op
 from sqlalchemy.sql import table, column, literal, and_
 
-from pithos.api.settings import (SERVICE_TOKEN, ASTAKOS_URL)
+from pithos.api.settings import (SERVICE_TOKEN, ASTAKOS_BASE_URL)
 
 from astakosclient import AstakosClient
 from astakosclient.errors import NoUserName, NoUUID
-astakos_client = AstakosClient(ASTAKOS_URL, retry=3, use_pool=True)
+astakos_client = AstakosClient(ASTAKOS_BASE_URL, retry=3, use_pool=True)
 
 try:
     from progress.bar import IncrementalBar

@@ -234,7 +234,6 @@ def api_access(request, template_name='im/api_access.html',
 @cookie_fix
 @signed_terms_required
 def edit_profile(request, template_name='im/profile.html', extra_context=None):
-    print gsd
     """
     Allows a user to edit his/her profile.
 

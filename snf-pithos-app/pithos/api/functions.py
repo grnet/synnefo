@@ -63,6 +63,8 @@ from pithos.api.util import (
 from pithos.api.settings import (UPDATE_MD5, TRANSLATE_UUIDS,
                                  SERVICE_TOKEN, ASTAKOS_URL)
 
+from pithos.api import settings
+
 from pithos.backends.base import (
     NotAllowedError, QuotaError, ContainerNotEmpty, ItemNotExists,
     VersionNotExists, ContainerExists)
@@ -209,7 +211,7 @@ def account_list(request):
     marker = request.GET.get('marker')
     limit = get_int_parameter(request.GET.get('limit'))
     if not limit:
-        limit = 10000
+        limit = settings.API_LIST_LIMIT
 
     accounts = request.backend.list_accounts(request.user_uniq, marker, limit)
 
@@ -371,7 +373,7 @@ def container_list(request, v_account):
     marker = request.GET.get('marker')
     limit = get_int_parameter(request.GET.get('limit'))
     if not limit:
-        limit = 10000
+        limit = settings.API_LIST_LIMIT
 
     shared = False
     if 'shared' in request.GET:
@@ -639,7 +641,7 @@ def object_list(request, v_account, v_container):
     marker = request.GET.get('marker')
     limit = get_int_parameter(request.GET.get('limit'))
     if not limit:
-        limit = 10000
+        limit = settings.API_LIST_LIMIT
 
     keys = request.GET.get('meta')
     if keys:

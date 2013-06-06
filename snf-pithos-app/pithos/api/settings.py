@@ -66,3 +66,6 @@ PUBLIC_URL_ALPHABET =  getattr(
     'PITHOS_PUBLIC_URL_ALPHABET',
     '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 )
+
+# The maximum number or items returned by the listing api methods
+API_LIST_LIMIT = getattr(settings, 'PITHOS_API_LIST_LIMIT', 10000)

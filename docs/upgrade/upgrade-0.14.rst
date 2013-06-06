@@ -65,27 +65,35 @@ setting was renamed to this. Therefore:
 * In Pithos settings, introduce a ``PITHOS_BASE_URL`` setting.
   It must point to the top-level Pithos URL.
 
-3 Register astakos service and migrate quota
-============================================
+3 Register services and migrate quota
+=====================================
 
-You need to register Astakos as a service. The following command will ask
-you to provide the service URL (to appear in the Cloudbar) as well as its
-API URL. It will also automatically register the resource definitions
-offered by astakos.
+You need to register astakos as a component. Moreover you need to register
+all services provided by cyclades and pithos.
 
-Run::
+Running the following script you will be asked to provide the base
+installation URL for each component. You will also need to specify the URL
+where the astakos UI resides::
 
-    astakos-host$ snf-register-services astakos
+    astakos-host$ snf-register-components
 
 .. note::
 
-   This command is equivalent to running:
+   This command is equivalent to running the following series of commands;
+   in each host it exports the respective service definitions, copies the
+   exported json file to the astakos host, where it finally imports it:
 
-   .. code-block:: console
-     astakos-host$ snf-manage service-add astakos service_url api_url
-     astakos-host$ snf-manage resource-export-astakos > astakos.json
-     astakos-host$ snf-manage resource-import --json astakos.json
+    .. code-block:: console
 
+       astakos-host$ snf-manage component-add astakos ui_url
+       astakos-host$ snf-manage service-export-astakos > astakos.json
+       astakos-host$ snf-manage service-import --json astakos.json
+       cyclades-host$ snf-manage service-export-cyclades > cyclades.json
+       # copy the file to astakos-host
+       astakos-host$ snf-manage service-import --json cyclades.json
+       pithos-host$ snf-manage service-export-pithos > pithos.json
+       # copy the file to astakos-host
+       astakos-host$ snf-manage service-import --json pithos.json
 
 The limit on pending project applications is since 0.14 handled as an
 Astakos resource, rather than a custom setting. Command::

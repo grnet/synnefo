@@ -724,16 +724,38 @@ Services Registration
 ---------------------
 
 When the database is ready, we need to register the services. The following
-command will ask you to register the standard Synnefo services (astakos,
-cyclades, and pithos). Note that you have to register at least astakos in
-order to have a usable authentication system. For each service, you will be
-asked to provide the service URL (to appear in the Cloudbar) as well as its
-API URL. Moreover, the command will automatically register the resource
-definitions offered by the respective service.
+command will ask you to register the standard Synnefo components (astakos,
+cyclades, and pithos) along with the services they provide. Note that you
+have to register at least astakos in order to have a usable authentication
+system. For each component, you will be asked to provide its base
+installation URL as well as the UI URL (to appear in the Cloudbar).
+Moreover, the command will automatically register the resource definitions
+offered by the services.
 
 .. code-block:: console
 
-    # snf-register-services
+    # snf-register-components
+
+.. note::
+
+   This command is equivalent to running the following series of commands;
+   it registers the three components in astakos and then in each host it
+   exports the respective service definitions, copies the exported json file
+   to the astakos host, where it finally imports it:
+
+    .. code-block:: console
+
+       astakos-host$ snf-manage component-add astakos astakos_ui_url
+       astakos-host$ snf-manage component-add cyclades cyclades_ui_url
+       astakos-host$ snf-manage component-add pithos pithos_ui_url
+       astakos-host$ snf-manage service-export-astakos > astakos.json
+       astakos-host$ snf-manage service-import --json astakos.json
+       cyclades-host$ snf-manage service-export-cyclades > cyclades.json
+       # copy the file to astakos-host
+       astakos-host$ snf-manage service-import --json cyclades.json
+       pithos-host$ snf-manage service-export-pithos > pithos.json
+       # copy the file to astakos-host
+       astakos-host$ snf-manage service-import --json pithos.json
 
 Setting Default Base Quota for Resources
 ----------------------------------------

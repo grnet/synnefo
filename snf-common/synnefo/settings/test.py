@@ -8,8 +8,13 @@ TEST = True
 
 DATABASES = {
     'default': {
-        'ENGINE': 'sqlite3',
-        'NAME': '/tmp/synnefo_test_db.sqlite',
+        #'ENGINE': 'django.db.backends.sqlite3',
+        #'NAME': '/tmp/synnefo_test_db.sqlite',
+
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'pithos',
+        'USER': 'postgres',
+        'PORT': '5432',
     }
 }
 

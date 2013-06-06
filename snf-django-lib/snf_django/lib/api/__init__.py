@@ -41,6 +41,7 @@ from django.http import HttpResponse
 from django.utils import cache
 from django.utils import simplejson as json
 from django.template.loader import render_to_string
+from django.views.decorators import csrf
 
 from astakosclient import AstakosClient
 from astakosclient.errors import AstakosClientException
@@ -118,7 +119,7 @@ def api_method(http_method=None, token_required=True, user_required=True,
                 logger.exception("Unexpected ERROR")
                 fault = faults.InternalServerError("Unexpected error")
                 return render_fault(request, fault)
-        return wrapper
+        return csrf.csrf_exempt(wrapper)
     return decorator
 
 

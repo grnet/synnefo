@@ -33,8 +33,6 @@ def cloudbar(request):
     CB_LOCATION = getattr(settings, 'CLOUDBAR_LOCATION')
     CB_COOKIE_NAME = getattr(settings, 'CLOUDBAR_COOKIE_NAME',
             'okeanos_account')
-    CB_ACTIVE_SERVICE = getattr(settings, 'CLOUDBAR_ACTIVE_SERVICE',
-            'cloud')
     CB_SERVICES_URL = getattr(settings, 'CLOUDBAR_SERVICES_URL')
     CB_MENU_URL = getattr(settings, 'CLOUDBAR_MENU_URL')
     CB_HEIGHT = getattr(settings, 'CLOUDBAR_HEIGHT',
@@ -46,7 +44,6 @@ def cloudbar(request):
     <script type="text/javascript">
         var CLOUDBAR_LOCATION = "%(location)s";
         var CLOUDBAR_COOKIE_NAME = "%(cookie_name)s";
-        var CLOUDBAR_ACTIVE_SERVICE = "%(active_service)s";
         var GET_SERVICES_URL = "%(services_url)s";
         var GET_MENU_URL = "%(menu_url)s";
         var CLOUDBAR_HEIGHT = '%(height)s';
@@ -65,7 +62,6 @@ def cloudbar(request):
         }
     </style>
 """ % {'location': CB_LOCATION,
-       'active_service': CB_ACTIVE_SERVICE,
        'cookie_name': CB_COOKIE_NAME,
        'services_url': CB_SERVICES_URL,
        'menu_url': CB_MENU_URL,
@@ -78,7 +74,6 @@ def cloudbar(request):
         'CLOUDBAR_ACTIVE': CB_ACTIVE,
         'CLOUDBAR_LOCATION': CB_LOCATION,
         'CLOUDBAR_COOKIE_NAME': CB_COOKIE_NAME,
-        'CLOUDBAR_ACTIVE_SERVICE': CB_ACTIVE_SERVICE,
         'CLOUDBAR_SERVICES_URL': CB_SERVICES_URL,
         'CLOUDBAR_MENU_URL': CB_MENU_URL,
         'CLOUDBAR_CODE': CB_CODE

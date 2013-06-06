@@ -931,23 +931,11 @@ Pithos web UI with the astakos web UI (through the top cloudbar):
 .. code-block:: console
 
     CLOUDBAR_LOCATION = 'https://node1.example.com/static/im/cloudbar/'
-    PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE = '3'
     CLOUDBAR_SERVICES_URL = 'https://node1.example.com/ui/get_services'
     CLOUDBAR_MENU_URL = 'https://node1.example.com/ui/get_menu'
 
 The ``CLOUDBAR_LOCATION`` tells the client where to find the astakos common
 cloudbar.
-
-The ``PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE`` points to an already registered
-Astakos service. You can see all :ref:`registered services <services-reg>` by
-running on the Astakos node (node1):
-
-.. code-block:: console
-
-   # snf-manage service-list
-
-The value of ``PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE`` should be the pithos
-service's ``id`` as shown by the above command, in our case ``3``.
 
 The ``CLOUDBAR_SERVICES_URL`` and ``CLOUDBAR_MENU_URL`` options are used by the
 Pithos web client to get from astakos all the information needed to fill its
@@ -1738,7 +1726,6 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-cloudbar.conf``:
 .. code-block:: console
 
    CLOUDBAR_LOCATION = 'https://node1.example.com/static/im/cloudbar/'
-   CLOUDBAR_ACTIVE_SERVICE = '2'
    CLOUDBAR_SERVICES_URL = 'https://node1.example.com/ui/get_services'
    CLOUDBAR_MENU_URL = 'https://account.node1.example.com/ui/get_menu'
 
@@ -1749,17 +1736,6 @@ fill its own cloudbar. So, we put our Astakos deployment urls there. All the
 above should have the same values we put in the corresponding variables in
 ``/etc/synnefo/20-snf-pithos-webclient-cloudbar.conf`` on the previous
 :ref:`Pithos configuration <conf-pithos>` section.
-
-The ``CLOUDBAR_ACTIVE_SERVICE`` points to an already registered Astakos
-service. You can see all :ref:`registered services <services-reg>` by running
-on the Astakos node (node1):
-
-.. code-block:: console
-
-   # snf-manage service-list
-
-The value of ``CLOUDBAR_ACTIVE_SERVICE`` should be the cyclades service's
-``id`` as shown by the above command, in our case ``2``.
 
 Edit ``/etc/synnefo/20-snf-cyclades-app-plankton.conf``:
 

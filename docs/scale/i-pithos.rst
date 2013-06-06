@@ -83,8 +83,6 @@ In `/etc/synnefo/webclient.conf` add:
     CLOUDBAR_SERVICES_URL = 'https://accounts.example.com/ui/get_services'
     CLOUDBAR_MENU_URL = 'https://accounts.example.com/ui/get_menu'
 
-    PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE = 'XXXXXXXX'
-
     PITHOS_UI_LOGIN_URL = "https://accounts.example.com/ui/login?next="
 
     PITHOS_UI_FEEDBACK_URL = "/feedback"

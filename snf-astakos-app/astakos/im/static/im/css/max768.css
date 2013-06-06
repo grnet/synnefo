@@ -22,5 +22,7 @@ dl.alt-style									{ width:auto; }
 
 form.submit-inline .form-row.submit				{ position:static; margin-top:20px; }
 
-.token-view .actions 							{ left:0; position: relative; top:50px;}
-.api-access-view div.detail .expires			{ }
+.api-access-view div.detail .title				{ float:none;width:auto; }
+.api-access-view div.detail input				{ position: static; width: 100%; display: block;}
+.api-access-view div.detail .expires 			{ position: static;}
+.token-view .actions							{ position: static; }

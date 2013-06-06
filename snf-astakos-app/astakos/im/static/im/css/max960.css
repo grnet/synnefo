@@ -10,3 +10,8 @@
  
  
 .stats .bar								{ margin:0 25px; }
+
+
+.token-view .actions 							{ left:20%; position: relative; top:50px;}
+.api-access-view div.detail .expires			{ }
+.api-access-view div.detail .title				{ max-width: 120px; }

@@ -40,8 +40,8 @@ from django.core.urlresolvers import reverse
 
 import json
 
-ROOT = "/%s/%s/" % (
-    astakos_settings.BASE_PATH, astakos_settings.ACCOUNTS_PREFIX)
+ROOT = "/%s/%s/%s/" % (
+    astakos_settings.BASE_PATH, astakos_settings.ACCOUNTS_PREFIX, 'v1.0')
 u = lambda url: ROOT + url
 
 
@@ -55,12 +55,14 @@ class QuotaAPITest(TestCase):
         resource11 = {"name": "service1.resource11",
                       "desc": "resource11 desc",
                       "service_type": "type1",
+                      "service_origin": "service1",
                       "allow_in_projects": True}
         r, _ = register.add_resource(resource11)
         register.update_resource(r, 100)
         resource12 = {"name": "service1.resource12",
                       "desc": "resource11 desc",
                       "service_type": "type1",
+                      "service_origin": "service1",
                       "unit": "bytes"}
         r, _ = register.add_resource(resource12)
         register.update_resource(r, 1024)
@@ -75,6 +77,7 @@ class QuotaAPITest(TestCase):
         resource21 = {"name": "service2.resource21",
                       "desc": "resource11 desc",
                       "service_type": "type2",
+                      "service_origin": "service2",
                       "allow_in_projects": False}
         r, _ = register.add_resource(resource21)
         register.update_resource(r, 3)

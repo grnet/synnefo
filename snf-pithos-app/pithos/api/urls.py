@@ -35,6 +35,7 @@ from functools import partial
 from django.conf.urls.defaults import include, patterns
 from snf_django.lib.api.proxy import proxy
 from snf_django.lib.api.utils import prefix_pattern
+from snf_django.lib.api.urls import api_patterns
 from pithos.api.settings import (
     BASE_PATH, ASTAKOS_BASE_URL, BASE_ASTAKOS_PROXY_PATH,
     ASTAKOS_ACCOUNTS_PREFIX, PROXY_USER_SERVICES,
@@ -43,7 +44,7 @@ from urlparse import urlparse
 
 
 # TODO: This only works when in this order.
-pithos_api_patterns = patterns(
+pithos_api_patterns = api_patterns(
     'pithos.api.functions',
     (r'^$', 'top_demux'),
     (r'^(?P<v_account>.+?)/(?P<v_container>.+?)/(?P<v_object>.+?)$',
@@ -67,8 +68,8 @@ urlpatterns = patterns(
 if PROXY_USER_SERVICES:
     astakos_proxy = partial(proxy, proxy_base=BASE_ASTAKOS_PROXY_PATH,
                             target_base=ASTAKOS_BASE_URL)
-
-    proxy_patterns = patterns(
+        
+    proxy_patterns = api_patterns(
         '',
         (r'^login/?$', astakos_proxy),
         (r'^feedback/?$', astakos_proxy),

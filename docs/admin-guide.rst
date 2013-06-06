@@ -1047,11 +1047,45 @@ reconcile-resources-pithos    Detect unsynchronized usage between Astakos and Pi
 Cyclades snf-manage commands
 ----------------------------
 
-============================  ===========================
-Name                          Description
-============================  ===========================
-FIXME: list cyclades cmds
-============================  ===========================
+============================== ===========================
+Name                           Description
+============================== ===========================
+backend-add                    Add a new Ganeti backend
+backend-list                   List backends
+backend-modify                 Modify a backend
+backend-update-status          Update backend statistics for instance allocation
+backend-remove                 Remove a Ganeti backend
+server-create                  Create a new server
+server-show                    Show server details
+server-list                    List servers
+server-modify                  Modify a server
+server-import                  Import an existing Ganeti VM into synnefo
+server-inspect                 Inspect a server in DB and Ganeti
+network-create                 Create a new network
+network-list                   List networks
+network-modify                 Modify a network
+network-inspect                Inspect network state in DB and Ganeti
+network-remove                 Delete a network
+flavor-create                  Create a new flavor
+flavor-list                    List flavors
+flavor-modify                  Modify a flavor
+image-list                     List images
+image-show                     Show image details
+pool-create                    Create a bridge or mac-prefix pool
+pool-show                      Show pool details
+pool-list                      List pools
+pool-modify                    Modify a pool
+pool-remove                    Delete a pool
+queue-inspect                  Inspect the messages of a RabbitMQ queue
+queue-retry                    Resend messages from Dead Letter queues to original exchanges
+resource-export-cyclades       Export Cyclades resources in JSON format.
+service-export-cyclades        Export Cyclades services in JSON format.
+reconcile-servers              Reconcile servers of Synnefo DB with state of Ganeti backend
+reconcile-networks             Reconcile networks of Synnefo DB with state of Ganeti backend
+reconcile-pools                Check consistency of pool resources
+reconcile-commissions-cyclades Detect and resolve pending commissions to Quotaholder
+reconcile-resources-cyclades   Reconcile resource usage of Astakos with Cyclades DB.
+============================== ===========================
 
 Pithos managing accounts
 ========================

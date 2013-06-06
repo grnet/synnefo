@@ -336,8 +336,10 @@ class VirtualMachine(models.Model):
     # In the future they could be moved to a separate caching layer
     # and removed from the database.
     # [vkoukis] after discussion with [faidon].
-    action = models.CharField(choices=ACTIONS, max_length=30, null=True)
-    operstate = models.CharField(choices=OPER_STATES, max_length=30, null=True)
+    action = models.CharField(choices=ACTIONS, max_length=30, null=True,
+                              default=None)
+    operstate = models.CharField(choices=OPER_STATES, max_length=30,
+                                 null=False, default="BUILD")
     backendjobid = models.PositiveIntegerField(null=True)
     backendopcode = models.CharField(choices=BACKEND_OPCODES, max_length=30,
                                      null=True)
@@ -364,19 +366,6 @@ class VirtualMachine(models.Model):
     @staticmethod
     def put_client(client):
             put_rapi_client(client)
-
-    def __init__(self, *args, **kw):
-        """Initialize state for just created VM instances."""
-        super(VirtualMachine, self).__init__(*args, **kw)
-        # This gets called BEFORE an instance gets save()d for
-        # the first time.
-        if not self.pk:
-            self.action = None
-            self.backendjobid = None
-            self.backendjobstatus = None
-            self.backendopcode = None
-            self.backendlogmsg = None
-            self.operstate = 'BUILD'
 
     def save(self, *args, **kwargs):
         # Store hash for first time saved vm

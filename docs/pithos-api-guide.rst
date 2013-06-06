@@ -635,7 +635,7 @@ For more examples of container details returned in JSON/XML formats refer to the
 Return Code                  Description
 ===========================  ===============================
 200 (OK)                     The request succeeded
-204 (No Content)             The account has no containers (only for non-extended replies)
+204 (No Content)             The container has no objects (only for non-extended replies)
 304 (Not Modified)           The container has not been modified
 412 (Precondition Failed)    The condition set can not be satisfied
 ===========================  ===============================

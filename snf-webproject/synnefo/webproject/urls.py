@@ -36,6 +36,9 @@ import os
 from django.conf.urls.defaults import *
 from synnefo.util.entry_points import extend_urls
 from django.utils.importlib import import_module
+from django.views.decorators.csrf import requires_csrf_token
+from django.template import Context, loader, RequestContext
+from django import http
 from django.conf import settings
 
 urlpatterns = patterns('')
@@ -95,7 +98,20 @@ if getattr(settings, 'WEBPROJECT_SERVE_STATIC', settings.DEBUG):
           'show_indexes': getattr(settings,
               'WEBPROJECT_STATIC_SHOW_INDEXES', True)}))
 
-
-
 urlpatterns = extend_urls(urlpatterns, 'synnefo')
 
+
+# This can be called when CsrfViewMiddleware.process_view has not run,
+# therefore need @requires_csrf_token in case the template needs
+# {% csrf_token %}.
+@requires_csrf_token
+def handle500(request, template_name="500.html"):
+    t = loader.get_template(template_name)
+    context = Context({})
+    try:
+        context = RequestContext(request)
+    except:
+        pass
+    return http.HttpResponseServerError(t.render(context))
+
+handler500 = handle500

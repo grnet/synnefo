@@ -8,9 +8,6 @@ class Migration(SchemaMigration):
 
     def forwards(self, orm):
 
-        for (c,) in orm.ProjectApplication.objects.values_list('chain').distinct():
-            orm.Chain.objects.get_or_create(chain=c)
-
         # Changing field 'Project.id'
         db.alter_column('im_project', 'id', self.gf('django.db.models.fields.related.OneToOneField')(unique=True, primary_key=True, db_column='id', to=orm['im.Chain']))
 

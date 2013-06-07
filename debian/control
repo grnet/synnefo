@@ -71,6 +71,8 @@ Package: snf-astakos-app
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}
 Provides: ${python:Provides}
+Conflicts: snf-quotaholder-app
+Replaces: snf-quotaholder-app
 Recommends: snf-webproject
 XB-Python-Version: ${python:Versions}
 Description: Synnefo Identity management package

@@ -108,7 +108,7 @@ SECRET_ENCRYPTION_KEY = "Password Encryption Key"
 # Astakos service token
 # The token used for astakos service api calls (e.g. api to retrieve user email
 # using a user uuid)
-CYCLADES_ASTAKOS_SERVICE_TOKEN = '' 
+CYCLADES_SERVICE_TOKEN = '' 
 
 # Let cyclades proxy user specific api calls to astakos, via self served
 # endpoints. Set this to False if you deploy cyclades-app/astakos-app on the

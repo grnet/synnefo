@@ -61,6 +61,7 @@ setting was renamed to this. Therefore:
 * In Cyclades settings, rename the ``APP_INSTALL_URL`` setting
   to ``CYCLADES_BASE_URL``. If no such setting has been configured,
   you must set it. It must point to the top-level Cyclades URL.
+  Rename ``CYCLADES_ASTAKOS_SERVICE_TOKEN`` to ``CYCLADES_SERVICE_TOKEN``.
 
 * In Pithos settings, introduce a ``PITHOS_BASE_URL`` setting.
   It must point to the top-level Pithos URL.

@@ -52,11 +52,11 @@ def warn(*msgs):
     print "WARNING: %s" % ' '.join(msgs)
 
 get_displayname = functools.partial(astakos.get_displayname,
-                                 settings.CYCLADES_ASTAKOS_SERVICE_TOKEN,
+                                 settings.CYCLADES_SERVICE_TOKEN,
                                  url=settings.ASTAKOS_URL.replace('im/authenticate',
                                                                  'service/api/user_catalogs'))
 get_user_uuid = functools.partial(astakos.get_user_uuid,
-                                 settings.CYCLADES_ASTAKOS_SERVICE_TOKEN,
+                                 settings.CYCLADES_SERVICE_TOKEN,
                                  url=settings.ASTAKOS_URL.replace('im/authenticate',
                                                                  'service/api/user_catalogs'))
 

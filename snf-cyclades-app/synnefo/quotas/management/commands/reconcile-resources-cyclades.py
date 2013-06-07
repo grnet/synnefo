@@ -39,7 +39,7 @@ from synnefo import quotas
 from synnefo.quotas.util import (get_db_holdings, get_quotaholder_holdings,
                                  transform_quotas)
 from synnefo.webproject.management.utils import pprint_table
-from synnefo.settings import CYCLADES_ASTAKOS_SERVICE_TOKEN as ASTAKOS_TOKEN
+from synnefo.settings import CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN
 
 
 class Command(BaseCommand):

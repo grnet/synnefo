@@ -42,7 +42,7 @@ from synnefo.db.models import (Backend, BackendNetwork,
                                pooled_rapi_client)
 from synnefo.logic.rapi import GanetiApiError
 from snf_django.lib.astakos import UserCache
-from synnefo.settings import (CYCLADES_ASTAKOS_SERVICE_TOKEN as ASTAKOS_TOKEN,
+from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
                               ASTAKOS_BASE_URL)
 from util import pool_map_chunks
 

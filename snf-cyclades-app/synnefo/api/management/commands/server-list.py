@@ -37,7 +37,7 @@ from synnefo.webproject.management.commands import ListCommand
 from synnefo.db.models import VirtualMachine
 from synnefo.management.common import get_backend
 from synnefo.api.util import get_image
-from synnefo.settings import (CYCLADES_ASTAKOS_SERVICE_TOKEN as ASTAKOS_TOKEN,
+from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
                               ASTAKOS_BASE_URL)
 from logging import getLogger
 log = getLogger(__name__)

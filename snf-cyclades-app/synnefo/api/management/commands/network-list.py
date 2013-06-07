@@ -35,7 +35,7 @@ from optparse import make_option
 
 from synnefo.webproject.management.commands import ListCommand
 from synnefo.db.models import Network
-from synnefo.settings import (CYCLADES_ASTAKOS_SERVICE_TOKEN as ASTAKOS_TOKEN,
+from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
                               ASTAKOS_BASE_URL)
 
 from logging import getLogger

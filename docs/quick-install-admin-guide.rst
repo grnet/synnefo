@@ -867,7 +867,7 @@ this options:
    PITHOS_BACKEND_DB_CONNECTION = 'postgresql://synnefo:example_passw0rd@node1.example.com:5432/snf_pithos'
    PITHOS_BACKEND_BLOCK_PATH = '/srv/pithos/data'
 
-   PITHOS_SERVICE_TOKEN = 'pithos_service_token22w=='
+   PITHOS_SERVICE_TOKEN = 'pithos_service_token22w'
 
    # Set to False if astakos & pithos are on the same host
    #PITHOS_PROXY_USER_SERVICES = True
@@ -1707,7 +1707,7 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-api.conf``:
    # Set to False if astakos & cyclades are on the same host
    CYCLADES_PROXY_USER_SERVICES = False
 
-   CYCLADES_SERVICE_TOKEN = 'cyclades_service_token22w=='
+   CYCLADES_SERVICE_TOKEN = 'cyclades_service_token22w'
 
 The ``ASTAKOS_BASE_URL`` denotes the Astakos endpoint for Cyclades,
 which is used for all user management, including authentication.

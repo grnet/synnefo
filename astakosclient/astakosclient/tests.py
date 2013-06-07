@@ -341,7 +341,7 @@ def _mock_request(new_requests):
 
 # ----------------------------
 # Local users
-token_1 = "skzleaFlBl+fasFdaf24sx=="
+token_1 = "skzleaFlBl+fasFdaf24sx"
 user_1 = \
     {"username": "user1@example.com",
      "auth_token_created": 1359386939000,
@@ -370,7 +370,7 @@ user_1 = \
           "display_name": "Storage Space",
           "name": "pithos+.diskspace"}]}
 
-token_2 = "fasdfDSFdf98923DF+sdfk=="
+token_2 = "fasdfDSFdf98923DF+sdfk"
 user_2 = \
     {"username": "user2@example.com",
      "auth_token_created": 1358386938997,
@@ -581,7 +581,7 @@ class TestCallAstakos(unittest.TestCase):
     # ----------------------------------
     # Test the response we get if we send invalid token
     def _invalid_token(self, pool):
-        token = "skaksaFlBl+fasFdaf24sx=="
+        token = "skaksaFlBl+fasFdaf24sx"
         _mock_request([_request_ok])
         try:
             client = AstakosClient("https://example.com", use_pool=pool)
@@ -737,7 +737,7 @@ class TestAuthenticate(unittest.TestCase):
     # ----------------------------------
     # Test the response we get for invalid token
     def _invalid_token(self, pool):
-        token = "skaksaFlBl+fasFdaf24sx=="
+        token = "skaksaFlBl+fasFdaf24sx"
         _mock_request([_request_ok])
         try:
             client = AstakosClient("https://example.com", use_pool=pool)
@@ -824,7 +824,7 @@ class TestDisplayNames(unittest.TestCase):
     def test_invalid_token(self):
         """Test the response we get for invalid token (without pool)"""
         global user_1
-        token = "skaksaFlBl+fasFdaf24sx=="
+        token = "skaksaFlBl+fasFdaf24sx"
         _mock_request([_request_ok])
         try:
             client = AstakosClient("https://example.com")
@@ -889,7 +889,7 @@ class TestGetUUIDs(unittest.TestCase):
     def test_invalid_token(self):
         """Test the response we get for invalid token (using pool)"""
         global user_1
-        token = "skaksaFlBl+fasFdaf24sx=="
+        token = "skaksaFlBl+fasFdaf24sx"
         _mock_request([_request_ok])
         try:
             client = AstakosClient("https://example.com")

@@ -95,7 +95,7 @@ inf = float('inf')
 
 def generate_token():
     s = os.urandom(32)
-    return base64.urlsafe_b64encode(s)
+    return base64.urlsafe_b64encode(s).rstrip('=')
 
 
 class Component(models.Model):

@@ -39,7 +39,7 @@ demonstrates how to get user's info using ``astakosclient``.
     from astakosclient import AstakosClient
 
     client = AstakosClient("https://accounts.example.com")
-    user_info = client.get_user_info("UQpYas7ElzWGD5yCcEXtjw==")
+    user_info = client.get_user_info("UQpYas7ElzWGD5yCcEXtjw")
     print user_info['username']
 
 Another example where we ask for the username of a user with UUID:
@@ -50,7 +50,7 @@ Another example where we ask for the username of a user with UUID:
     from astakosclient import AstakosClient
 
     client = AstakosClient("https://accounts.example.com")
-    username = client.get_username("UQpYas7ElzWGD5yCcEXtjw==",
+    username = client.get_username("UQpYas7ElzWGD5yCcEXtjw",
                                    "b3de8eb0-3958-477e-als9-789af8dd352c")
     print username
 

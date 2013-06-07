@@ -330,7 +330,7 @@ Example request:
     {
         "auth":{
             "token":{
-                "id":"CDEe2k0T/HdiJWBMMbHyOA=="
+                "id":"CDEe2k0T/HdiJWBMMbHyOA"
             },
             "tenantName":"c18088be-16b1-4263-8180-043c54e22903"
         }
@@ -344,7 +344,7 @@ or
         "auth":{
             "passwordCredentials":{
                 "username":"c18088be-16b1-4263-8180-043c54e22903",
-                "password":"CDEe2k0T/HdiJWBMMbHyOA=="
+                "password":"CDEe2k0T/HdiJWBMMbHyOA"
             },
             "tenantName":"c18088be-16b1-4263-8180-043c54e22903"
         }
@@ -406,7 +406,7 @@ Example json response:
             "type": "identity"}],
       "token": {
           "expires": "2013-06-19T15:23:59.975572+00:00",
-           "id": "CDEe2k0T/HdiJWBMMbHyOA==",
+           "id": "CDEe2k0T/HdiJWBMMbHyOA",
            "tenant": {"id": "c18088be-16b1-4263-8180-043c54e22903",
             "name": "Firstname Lastname"}},
       "user": {
@@ -423,7 +423,7 @@ Example xml response:
 
     <access xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns="http://docs.openstack.org/identity/api/v2.0">
-        <token id="CDEe2k0T/HdiJWBMMbHyOA==" expires="2013-06-19T15:23:59.975572+00:00">
+        <token id="CDEe2k0T/HdiJWBMMbHyOA" expires="2013-06-19T15:23:59.975572+00:00">
             <tenant id="c18088be-16b1-4263-8180-043c54e22903" name="Firstname Lastname" />
         </token>
         <user id="c18088be-16b1-4263-8180-043c54e22903" name="Firstname Lastname">

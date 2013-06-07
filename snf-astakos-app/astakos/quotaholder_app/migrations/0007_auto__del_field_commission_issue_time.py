@@ -11,23 +11,11 @@ class Migration(SchemaMigration):
         # Deleting field 'Commission.issue_time'
         db.delete_column('quotaholder_app_commission', 'issue_time')
 
-        # Deleting field 'ProvisionLog.log_time'
-        db.delete_column('quotaholder_app_provisionlog', 'log_time')
-
-        # Deleting field 'ProvisionLog.issue_time'
-        db.delete_column('quotaholder_app_provisionlog', 'issue_time')
-
 
     def backwards(self, orm):
         
         # User chose to not deal with backwards NULL issues for 'Commission.issue_time'
         raise RuntimeError("Cannot reverse this migration. 'Commission.issue_time' and its values cannot be restored.")
-
-        # User chose to not deal with backwards NULL issues for 'ProvisionLog.log_time'
-        raise RuntimeError("Cannot reverse this migration. 'ProvisionLog.log_time' and its values cannot be restored.")
-
-        # User chose to not deal with backwards NULL issues for 'ProvisionLog.issue_time'
-        raise RuntimeError("Cannot reverse this migration. 'ProvisionLog.issue_time' and its values cannot be restored.")
 
 
     models = {
@@ -62,9 +50,9 @@ class Migration(SchemaMigration):
             'delta_quantity': ('snf_django.lib.db.fields.IntDecimalField', [], {'max_digits': '38', 'decimal_places': '0'}),
             'holder': ('django.db.models.fields.CharField', [], {'max_length': '4096'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'issue_datetime': ('django.db.models.fields.DateTimeField', [], {}),
+            'issue_time': ('django.db.models.fields.CharField', [], {'max_length': '4096'}),
             'limit': ('snf_django.lib.db.fields.IntDecimalField', [], {'max_digits': '38', 'decimal_places': '0'}),
-            'log_datetime': ('django.db.models.fields.DateTimeField', [], {}),
+            'log_time': ('django.db.models.fields.CharField', [], {'max_length': '4096'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '4096'}),
             'reason': ('django.db.models.fields.CharField', [], {'max_length': '4096'}),
             'resource': ('django.db.models.fields.CharField', [], {'max_length': '4096'}),

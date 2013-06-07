@@ -47,6 +47,10 @@ from astakos.quotaholder_app.models import (
     Holding, Commission, Provision, ProvisionLog)
 
 
+def format_datetime(d):
+    return d.strftime('%Y-%m-%dT%H:%M:%S.%f')[:24]
+
+
 def get_quota(holders=None, sources=None, resources=None):
     holdings = Holding.objects.all()
 
@@ -189,8 +193,8 @@ def _log_provision(commission, provision, holding, log_datetime, reason):
         'usage_min':           holding.usage_min,
         'usage_max':           holding.usage_max,
         'delta_quantity':      provision.quantity,
-        'issue_datetime':      commission.issue_datetime,
-        'log_datetime':        log_datetime,
+        'issue_time':          format_datetime(commission.issue_datetime),
+        'log_time':            format_datetime(log_datetime),
         'reason':              reason,
     }
 

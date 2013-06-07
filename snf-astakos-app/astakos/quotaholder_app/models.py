@@ -92,8 +92,8 @@ class ProvisionLog(Model):
 
     serial = BigIntegerField()
     name = CharField(max_length=4096)
-    issue_datetime = DateTimeField()
-    log_datetime = DateTimeField()
+    issue_time = CharField(max_length=4096)
+    log_time = CharField(max_length=4096)
     holder = CharField(max_length=4096)
     source = CharField(max_length=4096, null=True)
     resource = CharField(max_length=4096)

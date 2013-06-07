@@ -11,23 +11,11 @@ class Migration(SchemaMigration):
         # Adding field 'Commission.issue_datetime'
         db.add_column('quotaholder_app_commission', 'issue_datetime', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime(2013, 1, 1, 0, 0, 0)), keep_default=False)
 
-        # Adding field 'ProvisionLog.issue_datetime'
-        db.add_column('quotaholder_app_provisionlog', 'issue_datetime', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime(2013, 1, 1, 0, 0, 0)), keep_default=False)
-
-        # Adding field 'ProvisionLog.log_datetime'
-        db.add_column('quotaholder_app_provisionlog', 'log_datetime', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime(2013, 1, 1, 0, 0, 0)), keep_default=False)
-
 
     def backwards(self, orm):
         
         # Deleting field 'Commission.issue_datetime'
         db.delete_column('quotaholder_app_commission', 'issue_datetime')
-
-        # Deleting field 'ProvisionLog.issue_datetime'
-        db.delete_column('quotaholder_app_provisionlog', 'issue_datetime')
-
-        # Deleting field 'ProvisionLog.log_datetime'
-        db.delete_column('quotaholder_app_provisionlog', 'log_datetime')
 
 
     models = {
@@ -63,10 +51,8 @@ class Migration(SchemaMigration):
             'delta_quantity': ('snf_django.lib.db.fields.IntDecimalField', [], {'max_digits': '38', 'decimal_places': '0'}),
             'holder': ('django.db.models.fields.CharField', [], {'max_length': '4096'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'issue_datetime': ('django.db.models.fields.DateTimeField', [], {}),
             'issue_time': ('django.db.models.fields.CharField', [], {'max_length': '4096'}),
             'limit': ('snf_django.lib.db.fields.IntDecimalField', [], {'max_digits': '38', 'decimal_places': '0'}),
-            'log_datetime': ('django.db.models.fields.DateTimeField', [], {}),
             'log_time': ('django.db.models.fields.CharField', [], {'max_length': '4096'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '4096'}),
             'reason': ('django.db.models.fields.CharField', [], {'max_length': '4096'}),

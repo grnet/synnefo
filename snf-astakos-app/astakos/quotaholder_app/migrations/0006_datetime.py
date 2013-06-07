@@ -4,7 +4,6 @@ from south.db import db
 from south.v2 import DataMigration
 from django.db import models
 
-
 class Migration(DataMigration):
 
     def forwards(self, orm):
@@ -15,14 +14,6 @@ class Migration(DataMigration):
             dt = parse(commission.issue_time)
             commission.issue_datetime = dt
             commission.save()
-
-        plogs = orm.ProvisionLog.objects.all()
-        for plog in plogs:
-            issue_dt = parse(plog.issue_time)
-            plog.issue_datetime = issue_dt
-            log_dt = parse(plog.log_time)
-            plog.log_datetime = log_dt
-            plog.save()
 
     def backwards(self, orm):
         "Write your backwards methods here."
@@ -61,10 +52,8 @@ class Migration(DataMigration):
             'delta_quantity': ('snf_django.lib.db.fields.IntDecimalField', [], {'max_digits': '38', 'decimal_places': '0'}),
             'holder': ('django.db.models.fields.CharField', [], {'max_length': '4096'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'issue_datetime': ('django.db.models.fields.DateTimeField', [], {}),
             'issue_time': ('django.db.models.fields.CharField', [], {'max_length': '4096'}),
             'limit': ('snf_django.lib.db.fields.IntDecimalField', [], {'max_digits': '38', 'decimal_places': '0'}),
-            'log_datetime': ('django.db.models.fields.DateTimeField', [], {}),
             'log_time': ('django.db.models.fields.CharField', [], {'max_length': '4096'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '4096'}),
             'reason': ('django.db.models.fields.CharField', [], {'max_length': '4096'}),

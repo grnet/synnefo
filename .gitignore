@@ -1,4 +1,6 @@
 *.db
+*.egg
+*.tar.gz
 *.pyc
 *~
 *.*.swp

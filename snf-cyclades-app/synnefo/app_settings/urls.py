@@ -36,6 +36,7 @@ from django.conf import settings
 from snf_django.lib.api.proxy import proxy
 from snf_django.lib.api.utils import prefix_pattern
 from snf_django.utils.urls import extend_with_root_redirects
+from snf_django.lib.api.urls import api_patterns
 from synnefo.cyclades_settings import (
     BASE_URL, BASE_HOST, BASE_PATH, COMPUTE_PREFIX, VMAPI_PREFIX,
     PLANKTON_PREFIX, HELPDESK_PREFIX, UI_PREFIX, ASTAKOS_BASE_URL,
@@ -50,13 +51,16 @@ from functools import partial
 astakos_proxy = partial(proxy, proxy_base=BASE_ASTAKOS_PROXY_PATH,
                         target_base=ASTAKOS_BASE_URL)
 
-cyclades_patterns = patterns('',
-    (prefix_pattern(UI_PREFIX), include('synnefo.ui.urls')),
+cyclades_patterns = api_patterns('',
     (prefix_pattern(VMAPI_PREFIX), include('synnefo.vmapi.urls')),
     (prefix_pattern(PLANKTON_PREFIX), include('synnefo.plankton.urls')),
-    (prefix_pattern(HELPDESK_PREFIX), include('synnefo.helpdesk.urls')),
     (prefix_pattern(COMPUTE_PREFIX), include('synnefo.api.urls')),
     (prefix_pattern(USERDATA_PREFIX), include('synnefo.userdata.urls')),
+)
+
+cyclades_patterns += patterns('',
+    (prefix_pattern(UI_PREFIX), include('synnefo.ui.urls')),
+    (prefix_pattern(HELPDESK_PREFIX), include('synnefo.helpdesk.urls')),
 )
 
 urlpatterns = patterns(
@@ -68,12 +72,14 @@ if PROXY_USER_SERVICES:
     astakos_proxy = partial(proxy, proxy_base=BASE_ASTAKOS_PROXY_PATH,
                             target_base=ASTAKOS_BASE_URL)
 
-    proxy_patterns = patterns(
+    proxy_patterns = patterns('', 
+        (prefix_pattern(ASTAKOS_VIEWS_PREFIX), astakos_proxy),
+    )
+    proxy_patterns += api_patterns(
         '',
         (r'^login/?$', astakos_proxy),
         (r'^feedback/?$', astakos_proxy),
         (r'^user_catalogs/?$', astakos_proxy),
-        (prefix_pattern(ASTAKOS_VIEWS_PREFIX), astakos_proxy),
         (prefix_pattern(ASTAKOS_ACCOUNTS_PREFIX), astakos_proxy),
     )
 

@@ -566,7 +566,7 @@ uncomment and edit the ``DATABASES`` block to reflect our database:
 Edit ``/etc/synnefo/10-snf-webproject-deploy.conf``. Uncomment and edit
 ``SECRET_KEY``. This is a Django specific setting which is used to provide a
 seed in secret-key hashing algorithms. Set this to a random string of your
-choise and keep it private:
+choice and keep it private:
 
 .. code-block:: console
 
@@ -581,7 +581,7 @@ For astakos specific configuration, edit the following options in
 
     ASTAKOS_COOKIE_DOMAIN = '.example.com'
 
-    ASTAKOS_BASE_URL = 'https://node1.example.com'
+    ASTAKOS_BASE_URL = 'https://node1.example.com/astakos'
 
 The ``ASTAKOS_COOKIE_DOMAIN`` should be the base url of our domain (for all
 services). ``ASTAKOS_BASE_URL`` is the astakos top-level URL.
@@ -611,9 +611,9 @@ Then edit ``/etc/synnefo/20-snf-astakos-app-cloudbar.conf`` :
 
     CLOUDBAR_LOCATION = 'https://node1.example.com/static/im/cloudbar/'
 
-    CLOUDBAR_SERVICES_URL = 'https://node1.example.com/ui/get_services'
+    CLOUDBAR_SERVICES_URL = 'https://node1.example.com/astakos/ui/get_services'
 
-    CLOUDBAR_MENU_URL = 'https://node1.example.com/ui/get_menu'
+    CLOUDBAR_MENU_URL = 'https://node1.example.com/astakos/ui/get_menu'
 
 Those settings have to do with the black cloudbar endpoints and will be
 described in more detail later on in this guide. For now, just edit the domain
@@ -621,16 +621,6 @@ to point at node1 which is where we have installed Astakos.
 
 If you are an advanced user and want to use the Shibboleth Authentication
 method, read the relative :ref:`section <shibboleth-auth>`.
-
-.. note:: Because Cyclades and Astakos are running on the same machine
-    in our example, we have to deactivate the CSRF verification. We can do so
-    by adding to
-    ``/etc/synnefo/99-local.conf``:
-
-    .. code-block:: console
-
-        MIDDLEWARE_CLASSES.remove('django.middleware.csrf.CsrfViewMiddleware')
-        TEMPLATE_CONTEXT_PROCESSORS.remove('django.core.context_processors.csrf')
 
 Enable Pooling
 --------------
@@ -786,9 +776,9 @@ Testing of Astakos
 
 Open your favorite browser and go to:
 
-``http://node1.example.com/im``
+``http://node1.example.com/astakos``
 
-If this redirects you to ``https://node1.example.com/ui/`` and you can see
+If this redirects you to ``https://node1.example.com/astakos/ui/`` and you can see
 the "welcome" door of Astakos, then you have successfully setup Astakos.
 
 Let's create our first user. At the homepage click the "CREATE ACCOUNT" button
@@ -804,14 +794,14 @@ Now we need to activate that user. Return to a command prompt at node1 and run:
     root@node1:~ # snf-manage user-list
 
 This command should show you a list with only one user; the one we just created.
-This user should have an id with a value of ``1``. It should also have an
-"active" status with the value of ``0`` (inactive). Now run:
+This user should have an id with a value of ``1`` and flag "active" and
+"verified" set to False. Now run:
 
 .. code-block:: console
 
-    root@node1:~ # snf-manage user-update --set-active 1
+    root@node1:~ # snf-manage user-modify 1 --verify --accept
 
-This modifies the active value to ``1``, and actually activates the user.
+This verifies the user email and activates the user.
 When running in production, the activation is done automatically with different
 types of moderation, that Astakos supports. You can see the moderation methods
 (by invitation, whitelists, matching regexp, etc.) at the Astakos specific
@@ -819,7 +809,7 @@ documentation. In production, you can also manually activate a user, by sending
 him/her an activation email. See how to do this at the :ref:`User
 activation <user_activation>` section.
 
-Now let's go back to the homepage. Open ``http://node1.example.com/ui/`` with
+Now let's go back to the homepage. Open ``http://node1.example.com/astkos/ui/`` with
 your browser again. Try to sign in using your new credentials. If the astakos
 menu appears and you can see your profile, then you have successfully setup
 Astakos.
@@ -871,11 +861,11 @@ this options:
 
 .. code-block:: console
 
-   ASTAKOS_BASE_URL = 'https://node1.example.com/'
+   ASTAKOS_BASE_URL = 'https://node1.example.com/astakos'
 
+   PITHOS_BASE_URL = 'https://node2.example.com/pithos'
    PITHOS_BACKEND_DB_CONNECTION = 'postgresql://synnefo:example_passw0rd@node1.example.com:5432/snf_pithos'
    PITHOS_BACKEND_BLOCK_PATH = '/srv/pithos/data'
-
 
    PITHOS_SERVICE_TOKEN = 'pithos_service_token22w=='
 
@@ -897,12 +887,14 @@ directory at node1's "Pithos data directory setup" section.
 The ``ASTAKOS_BASE_URL`` option informs the Pithos app where Astakos is.
 The Astakos service is used for user management (authentication, quotas, etc.)
 
-The ``PITHOS_SERVICE_TOKEN`` should be the Pithos token returned by running on
-the Astakos node (node1 in our case):
+The ``PITHOS_BASE_URL`` setting must point to the top-level Pithos URL.
+
+The ``PITHOS_SERVICE_TOKEN`` is the token used for authentication with astakos.
+It can be retrieved by running on the Astakos node (node1 in our case):
 
 .. code-block:: console
 
-   # snf-manage service-list
+   # snf-manage component-list
 
 The token has been generated automatically during the :ref:`Pithos service
 registration <services-reg>`.
@@ -931,8 +923,8 @@ Pithos web UI with the astakos web UI (through the top cloudbar):
 .. code-block:: console
 
     CLOUDBAR_LOCATION = 'https://node1.example.com/static/im/cloudbar/'
-    CLOUDBAR_SERVICES_URL = 'https://node1.example.com/ui/get_services'
-    CLOUDBAR_MENU_URL = 'https://node1.example.com/ui/get_menu'
+    CLOUDBAR_SERVICES_URL = 'https://node1.example.com/astakos/ui/get_services'
+    CLOUDBAR_MENU_URL = 'https://node1.example.com/astakos/ui/get_menu'
 
 The ``CLOUDBAR_LOCATION`` tells the client where to find the astakos common
 cloudbar.
@@ -998,18 +990,20 @@ First, find the most recent revision in the migration history:
 .. code-block:: console
 
     root@node2:~ # pithos-migrate history
-    2a309a9a3438 -> 27381099d477 (head), alter public add column url
+
+    27381099d477 -> 4c8ccdc58192 (head), add attributes domain index
+    2a309a9a3438 -> 27381099d477, alter public add column url
     165ba3fbfe53 -> 2a309a9a3438, fix statistics negative population
     3dd56e750a3 -> 165ba3fbfe53, update account in paths
     230f8ce9c90f -> 3dd56e750a3, Fix latest_version
     8320b1c62d9 -> 230f8ce9c90f, alter nodes add column latest version
     None -> 8320b1c62d9, create index nodes.parent
 
-Finally, we stamp it with the one found in the previous step:
+Finally, we stamp it with the head found in the previous step:
 
 .. code-block:: console
 
-    root@node2:~ # pithos-migrate stamp 27381099d477
+    root@node2:~ # pithos-migrate stamp 4c8ccdc58192
 
 Servers Initialization
 ----------------------
@@ -1029,7 +1023,7 @@ Testing of Pithos
 
 Open your browser and go to the Astakos homepage:
 
-``http://node1.example.com/im``
+``http://node1.example.com/astakos``
 
 Login, and you will see your profile page. Now, click the "pithos" link on the
 top black cloudbar. If everything was setup correctly, this will redirect you
@@ -1713,11 +1707,23 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-api.conf``:
    # Set to False if astakos & cyclades are on the same host
    CYCLADES_PROXY_USER_SERVICES = False
 
+   CYCLADES_SERVICE_TOKEN = 'cyclades_service_token22w=='
+
 The ``ASTAKOS_BASE_URL`` denotes the Astakos endpoint for Cyclades,
 which is used for all user management, including authentication.
 Since our Astakos, Cyclades, and Pithos installations belong together,
 they should all have identical ``ASTAKOS_BASE_URL`` setting
 (see also, :ref:`previously <conf-pithos>`).
+
+The ``CYCLADES_SERVICE_TOKEN`` is the token used for authentication with astakos.
+It can be retrieved by running on the Astakos node (node1 in our case):
+
+.. code-block:: console
+
+   # snf-manage component-list
+
+The token has been generated automatically during the :ref:`Cyclades service
+registration <services-reg>`.
 
 TODO: Document the Network Options here
 
@@ -1726,8 +1732,8 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-cloudbar.conf``:
 .. code-block:: console
 
    CLOUDBAR_LOCATION = 'https://node1.example.com/static/im/cloudbar/'
-   CLOUDBAR_SERVICES_URL = 'https://node1.example.com/ui/get_services'
-   CLOUDBAR_MENU_URL = 'https://account.node1.example.com/ui/get_menu'
+   CLOUDBAR_SERVICES_URL = 'https://node1.example.com/astakos/ui/get_services'
+   CLOUDBAR_MENU_URL = 'https://account.node1.example.com/astakos/ui/get_menu'
 
 ``CLOUDBAR_LOCATION`` tells the client where to find the Astakos common
 cloudbar. The ``CLOUDBAR_SERVICES_URL`` and ``CLOUDBAR_MENU_URL`` options are
@@ -1777,7 +1783,6 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-vmapi.conf``:
 .. code-block:: console
 
    VMAPI_CACHE_BACKEND = "memcached://127.0.0.1:11211/?timeout=3600"
-   VMAPI_BASE_URL = "https://node1.example.com"
 
 Edit ``/etc/default/vncauthproxy``:
 
@@ -2018,7 +2023,7 @@ First of all we need to test that our Cyclades Web UI works correctly. Open your
 browser and go to the Astakos home page. Login and then click 'cyclades' on the
 top cloud bar. This should redirect you to:
 
- `http://node1.example.com/ui/`
+ `http://node1.example.com/cyclades/ui/`
 
 and the Cyclades home page should appear. If not, please go back and find what
 went wrong. Do not proceed if you don't see the Cyclades home page.
@@ -2176,7 +2181,7 @@ Spawn a VM from the Cyclades Web UI
 If the registration completes successfully, then go to the Cyclades Web UI from
 your browser at:
 
- `https://node1.example.com/ui/`
+ `https://node1.example.com/cyclades/ui/`
 
 Click on the 'New Machine' button and the first step of the wizard will appear.
 Click on 'My Images' (right after 'System' Images) on the left pane of the

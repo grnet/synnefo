@@ -64,6 +64,17 @@ astakos_services = {
         'resources': {},
     },
 
+    'astakos_weblogin': {
+        'type': 'astakos_weblogin',
+        'component': 'astakos',
+        'prefix': 'weblogin',
+        'public': True,
+        'endpoints': [
+            {'versionId': '',
+             'publicURL': None},
+        ],
+    },
+
     'astakos_ui': {
         'type': 'astakos_ui',
         'component': 'astakos',

@@ -42,7 +42,6 @@ from django.views.decorators.http import require_http_methods
 
 from urlparse import urlunsplit, urlsplit, parse_qsl
 
-from astakos.im import settings
 from astakos.im.util import restrict_next
 from astakos.im.functions import login as auth_login, logout
 from astakos.im.views.decorators import cookie_fix
@@ -54,7 +53,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-@require_http_methods(["GET", "POST"])
+@require_http_methods(["GET"])
 @cookie_fix
 def login(request):
     """
@@ -63,16 +62,16 @@ def login(request):
     If the request user is authenticated and has signed the approval terms,
     redirects to `next` request parameter. If not, redirects to approval terms
     in order to return back here after agreeing with the terms.
-    Otherwise, redirects to login in order to return back here after successful login.
+    Otherwise, redirects to login in order to return back here after successful
+    login.
     """
     next = request.GET.get('next')
     if not next:
         next = reverse('index')
 
-    if not restrict_next(
-        next, domain=settings.COOKIE_DOMAIN, allowed_schemes=('pithos',)
-    ):
-        return HttpResponseForbidden(_(astakos_messages.NOT_ALLOWED_NEXT_PARAM))
+    if not restrict_next(next, allowed_schemes=('pithos',)):
+        return HttpResponseForbidden(_(
+            astakos_messages.NOT_ALLOWED_NEXT_PARAM))
     force = request.GET.get('force', None)
     response = HttpResponse()
     if force == '' and request.user.is_authenticated():
@@ -85,7 +84,6 @@ def login(request):
             # first build next parameter
             parts = list(urlsplit(request.build_absolute_uri()))
             params = dict(parse_qsl(parts[3], keep_blank_values=True))
-            # delete force parameter
             parts[3] = urlencode(params)
             next = urlunsplit(parts)
 
@@ -143,4 +141,3 @@ def login(request):
         response['Location'] = url
         response.status_code = 302
         return response
-

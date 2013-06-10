@@ -956,7 +956,6 @@ def object_read(request, v_account, v_container, v_object):
         return response
 
     request.serialization = 'text'  # Unset.
-    response.override_serialization = True
     return object_data_response(request, sizes, hashmaps, meta)
 
 

@@ -921,6 +921,7 @@ def object_data_response(request, sizes, hashmaps, meta, public=False):
         boundary = ''
     wrapper = ObjectWrapper(request.backend, ranges, sizes, hashmaps, boundary)
     response = HttpResponse(wrapper, status=ret)
+    response.override_serialization = True
     put_object_headers(
         response, meta, restricted=public,
         token=getattr(request, 'token', None))

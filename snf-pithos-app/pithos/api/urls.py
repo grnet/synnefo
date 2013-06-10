@@ -40,7 +40,6 @@ from pithos.api.settings import (
     BASE_PATH, ASTAKOS_BASE_URL, BASE_ASTAKOS_PROXY_PATH,
     ASTAKOS_ACCOUNTS_PREFIX, PROXY_USER_SERVICES,
     PITHOS_PREFIX, PUBLIC_PREFIX, UI_PREFIX)
-from urlparse import urlparse
 
 
 # TODO: This only works when in this order.
@@ -53,12 +52,19 @@ pithos_api_patterns = api_patterns(
     'container_demux'),
     (r'^(?P<v_account>.+?)/?$', 'account_demux'))
 
+pithos_view_patterns = patterns(
+    'pithos.api.views',
+    (r'^(?P<v_account>.+?)/(?P<v_container>.+?)/(?P<v_object>.+?)$',
+    'object_read'))
+
 pithos_patterns = patterns(
     '',
     (r'{0}v1/'.format(prefix_pattern(PITHOS_PREFIX)),
         include(pithos_api_patterns)),
     (r'{0}(?P<v_public>.+?)/?$'.format(prefix_pattern(PUBLIC_PREFIX)),
-        'pithos.api.public.public_demux'))
+        'pithos.api.public.public_demux'),
+    (r'{0}v1/'.format(prefix_pattern(UI_PREFIX)),
+        include(pithos_view_patterns)))
 
 urlpatterns = patterns(
     '',

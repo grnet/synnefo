@@ -816,6 +816,10 @@ def object_meta(request, v_account, v_container, v_object):
 
 @api_method('GET', format_allowed=True, user_required=True, logger=logger)
 def object_read(request, v_account, v_container, v_object):
+    return _object_read(request, v_account, v_container, v_object)
+
+
+def _object_read(request, v_account, v_container, v_object):
     # Normal Response Codes: 200, 206
     # Error Response Codes: internalServerError (500),
     #                       rangeNotSatisfiable (416),

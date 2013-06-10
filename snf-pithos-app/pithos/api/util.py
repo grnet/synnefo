@@ -1091,3 +1091,32 @@ def api_method(http_method=None, user_required=True, logger=None,
                     request.backend.close()
         return wrapper
     return decorator
+
+
+def get_token_from_cookie(request):
+    assert(request.method == 'GET'),\
+        "Cookie based authentication is only allowed to GET requests"
+    token = None
+    if COOKIE_NAME in request.COOKIES:
+        cookie_value = unquote(request.COOKIES.get(COOKIE_NAME, ''))
+        account, sep, token = cookie_value.partition('|')
+    return token
+
+
+def view_method():
+    """Decorator function for views."""
+
+    def decorator(func):
+        @wraps(func)
+        def wrapper(request, *args, **kwargs):
+            request.META['HTTP_X_AUTH_TOKEN'] = get_token_from_cookie(request)
+            # Get the response object
+            response = func(request, *args, **kwargs)
+            # TODO: support additional success codes
+            if response.status_code == 200:
+                return response
+            else:
+                # TODO: raise more specific exceptions
+                raise Exception()
+        return wrapper
+    return decorator

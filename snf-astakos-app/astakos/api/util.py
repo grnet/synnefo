@@ -206,3 +206,21 @@ def rename_meta_key(d, old, new):
         return
     d[new] = d[old]
     del(d[old])
+
+
+def get_int_parameter(p):
+    if p is not None:
+        try:
+            p = int(p)
+        except ValueError:
+            return None
+        if p < 0:
+            return None
+    return p
+
+
+def get_content_length(request):
+    content_length = get_int_parameter(request.META.get('CONTENT_LENGTH'))
+    if content_length is None:
+        raise faults.LengthRequired('Missing or invalid Content-Length header')
+    return content_length

@@ -314,6 +314,9 @@ Authenticate
 Fallback call which receives the user token or the user uuid/token pair and
 returns back the token as well as information about the token holder and the
 services he/she can access.
+If not request body is provided (the request content length is missing or
+equals to 0) the response contains only non authentication protected
+information (the service catalog).
 
 ========================================= =========  ==================
 Uri                                       Method     Description
@@ -361,59 +364,69 @@ Example json response:
 ::
 
     {"access": {
+        "token": {
+            "expires": "2013-06-19T15:23:59.975572+00:00",
+            "id": "CDEe2k0T/HdiJWBMMbHyOA==",
+            "tenant": {
+                "id": "c18088be-16b1-4263-8180-043c54e22903",
+                "name": "Firstname Lastname"
+            }
+        },
         "serviceCatalog": [
-           {"SNF:uiURL": "https://node2.example.com/ui/",
-            "endpoints": [{
-                "publicURL": "https://object-store.example.synnefo.org/pithos/public/v2.0",
-                "versionId": "v2.0"}],
-            "endpoints_links": [],
-            "name": "pithos_public",
-            "type": "public"},
-           {"SNF:uiURL": "https://node2.example.com/ui/",
-            "endpoints": [{
-                "publicURL": "https://object-store.example.synnefo.org/pithos/object-store/v1",
-                "versionId": "v1"}],
-            "endpoints_links": [],
-            "name": "pithos_object-store",
-            "type": "object-store"},
-           {"SNF:uiURL": "https://node2.example.com/ui/",
-            "endpoints": [{
-                "publicURL": "https://object-store.example.synnefo.org/pithos/ui",
-                "versionId": ""}],
-            "endpoints_links": [],
-            "name": "pithos_ui",
-            "type": "pithos_ui"},
-           {"SNF:uiURL": "http://localhost:8080",
-            "endpoints": [{
-                "publicURL": "https://accounts.example.synnefo.org/ui/v1.0",
-                "versionId": "v1.0"}],
-            "endpoints_links": [],
-            "name": "astakos_ui",
-            "type": "astakos_ui"},
-           {"SNF:uiURL": "http://localhost:8080",
-            "endpoints": [{
-                "publicURL": "https://accounts.example.synnefo.org/account/v1.0",
-                "versionId": "v1.0"}],
-            "endpoints_links": [],
-            "name": "astakos_account",
-            "type": "account"},
-           {"SNF:uiURL": "http://localhost:8080",
-            "endpoints": [{
-                "publicURL": "https://accounts.example.synnefo.org/identity/v2.0",
-                "versionId": "v2.0"}],
-            "endpoints_links": [],
-            "name": "astakos_identity",
-            "type": "identity"}],
-      "token": {
-          "expires": "2013-06-19T15:23:59.975572+00:00",
-           "id": "CDEe2k0T/HdiJWBMMbHyOA",
-           "tenant": {"id": "c18088be-16b1-4263-8180-043c54e22903",
-            "name": "Firstname Lastname"}},
-      "user": {
-          "id": "c18088be-16b1-4263-8180-043c54e22903",
-           "name": "Firstname Lastname",
-           "roles": [{"id": 1, "name": "default"},
-           "roles_links": []}}}
+            {"endpoints_links": [],
+             "endpoints": [{
+                "SNF:uiURL": "https://accounts.example.synnefo.org/ui",
+                "versionId": "v1.0",
+                "publicURL": "https://accounts.example.synnefo.org/account/v1.0"}],
+             "type": "account",
+             "name": "astakos_account"},
+            {"endpoints_links": [],
+             "endpoints": [{
+                 "SNF:uiURL": "https://accounts.example.synnefo.org/ui",
+                 "versionId": "v2.0",
+                 "publicURL": "https://accounts.example.synnefo.org/account/v2.0"}],
+             "type": "identity",
+             "name": "astakos_identity"},
+            {"endpoints_links": [],
+             "endpoints": [{
+                 "SNF:uiURL": "https://cyclades.example.synnefo.org/ui",
+                 "versionId": "v2.0",
+                 "publicURL": "https://cyclades.example.synnefo.org/cyclades/compute/v2.0"}],
+             "type": "compute",
+             "name": "cyclades_compute"},
+            {"endpoints_links": [],
+             "endpoints": [{
+                 "SNF:uiURL": "https://cyclades.example.synnefo.org/ui",
+                 "versionId": "v1.0",
+                 "publicURL": "https://cyclades.example.synnefo.org/cyclades/vmapi/v1.0"}],
+             "type": "cyclades_vmapi",
+             "name": "cyclades_vmapi"},
+            {"endpoints_links": [],
+             "endpoints": [{
+                 "SNF:uiURL": "https://cyclades.example.synnefo.org/ui",
+                 "versionId": "v1.0",
+                 "publicURL": "https://cyclades.example.synnefo.org/cyclades/image/v1.0"}],
+             "type": "image",
+             "name": "cyclades_plankton"},
+            {"endpoints_links": [],
+             "endpoints": [{
+                 "SNF:uiURL": "https://object-store.example.synnefo.org/ui",
+                 "versionId": "v2.0",
+                 "publicURL": "https://object-store.example.synnefo.org/pithos/public/v2.0"}],
+             "type": "public",
+             "name": "pithos_public"},
+            {"endpoints_links": [],
+             "endpoints": [{
+                 "SNF:uiURL": "https://object-store.example.synnefo.org/ui",
+                 "versionId": "v1",
+                 "publicURL": "https://object-store.example.synnefo.org/pithos/object-store/v1"}],
+             "type": "object-store",
+             "name": "pithos_object-store"}],
+         "user": {
+             "roles_links": [],
+             "id": "c18088be-16b1-4263-8180-043c54e22903",
+             "roles": [{"id": 1, "name": "default"}],
+             "name": "Firstname Lastname"}}}
 
 Example xml response:
 
@@ -423,7 +436,7 @@ Example xml response:
 
     <access xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns="http://docs.openstack.org/identity/api/v2.0">
-        <token id="CDEe2k0T/HdiJWBMMbHyOA" expires="2013-06-19T15:23:59.975572+00:00">
+        <token id="CDEe2k0T/HdiJWBMMbHyOA==" expires="2013-06-19T15:23:59.975572+00:00">
             <tenant id="c18088be-16b1-4263-8180-043c54e22903" name="Firstname Lastname" />
         </token>
         <user id="c18088be-16b1-4263-8180-043c54e22903" name="Firstname Lastname">
@@ -432,36 +445,26 @@ Example xml response:
             </roles>
         </user>
         <serviceCatalog>
-            <service type="public" name="pithos_public" SNF:uiURL="">
-                    <endpoint
-                            versionId="v2.0"
-                            publicURL="https://object-store.example.synnefo.org/pithos/public/v2.0"
+            <service type="account" name="astakos_account">
+                <endpoint  SNF:uiURL="https://accounts.example.synnefo.org/ui"  versionId="v1.0"  publicURL="https://accounts.example.synnefo.org/account/v1.0"  />
             </service>
-            <service type="object-store" name="pithos_object-store" SNF:uiURL="">
-                    <endpoint
-                            versionId="v1"
-                            publicURL="https://object-store.example.synnefo.org/pithos/object-store/v1"
+            <service type="identity" name="astakos_identity">
+                <endpoint  SNF:uiURL="https://accounts.example.synnefo.org/ui"  versionId="v2.0"  publicURL="https://accounts.example.synnefo.org/account/v2.0"  />
             </service>
-            <service type="pithos_ui" name="pithos_ui" SNF:uiURL="">
-                    <endpoint
-                            versionId=""
-                            publicURL="https://object-store.example.synnefo.org/pithos/ui"
+            <service type="compute" name="cyclades_compute">
+                <endpoint  SNF:uiURL="https://cyclades.example.synnefo.org/ui"  versionId="v2.0"  publicURL="https://cyclades.example.synnefo.org/cyclades/compute/v2.0"  />
             </service>
-            <service type="astakos_ui" name="astakos_ui" SNF:uiURL="">
-                    <endpoint
-                            versionId="v1.0"
-                            publicURL="https://accounts.example.synnefo.org/ui/v1.0"
+            <service type="cyclades_vmapi" name="cyclades_vmapi">
+                <endpoint  SNF:uiURL="https://cyclades.example.synnefo.org/ui"  versionId="v1.0"  publicURL="https://cyclades.example.synnefo.org/cyclades/vmapi/v1.0"  />
             </service>
-            <service type="account" name="astakos_account" SNF:uiURL="">
-                    <endpoint
-                            versionId="v1.0"
-                            publicURL="https://accounts.example.synnefo.org/account/v1.0"
+            <service type="image" name="cyclades_plankton">
+                <endpoint  SNF:uiURL="https://cyclades.example.synnefo.org/ui"  versionId="v1.0"  publicURL="https://cyclades.example.synnefo.org/cyclades/image/v1.0"  />
             </service>
-            <service type="identity" name="astakos_identity" SNF:uiURL="">
-                    <endpoint
-                            versionId="v2.0"
-                            publicURL="https://accounts.example.synnefo.org/identity/v2.0"
+            <service type="public" name="pithos_public">
+                <endpoint  SNF:uiURL="https://object-store.example.synnefo.org/ui"  versionId="v2.0"  publicURL="https://object-store.example.synnefo.org/pithos/public/v2.0"  />
             </service>
+            <service type="object-store" name="pithos_object-store">
+                <endpoint  SNF:uiURL="https://object-store.example.synnefo.org/ui"  versionId="v1"  publicURL="https://object-store.example.synnefo.org/pithos/object-store/v1"  /> </service>
         </serviceCatalog>
     </access>
 

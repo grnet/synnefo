@@ -2,9 +2,12 @@
 {% load filters %}
 <access xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns="http://docs.openstack.org/identity/api/v2.0">
+    {% if d.access.token %}
     <token id="{{d.access.token.id}}" expires="{{d.access.token.expires}}">
         <tenant id="{{d.access.token.tenant.id}}" name="{{d.access.token.tenant.name}}" />
     </token>
+    {% endif %}
+    {% if d.access.user %}
     <user id="{{d.access.user.id}}" name="{{d.access.user.name}}">
         <roles>
             {% for r in d.access.user.roles %}
@@ -12,9 +15,10 @@
             {% endfor %}
         </roles>
     </user>
+    {% endif %}
     <serviceCatalog>
     {% for s in d.access.serviceCatalog %}
-        <service type="{{s.type}}" name="{{s.name}}" SNF:uiURL="{{s.component.url}}">
+        <service type="{{s.type}}" name="{{s.name}}">
             {% for e in s.endpoints %}
             <endpoint {% for k, v in e.items %} {{k}}="{{v}}" {% endfor %} />
             {% endfor %}

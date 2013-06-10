@@ -38,7 +38,8 @@ from django.views.decorators.csrf import csrf_exempt
 from snf_django.lib.api import faults, utils, api_method
 
 from astakos.im.models import Service, AstakosUser
-from .util import json_response, xml_response, validate_user
+from .util import json_response, xml_response, validate_user,\
+    get_content_length
 
 import logging
 logger = logging.getLogger(__name__)
@@ -48,41 +49,46 @@ logger = logging.getLogger(__name__)
 @api_method(http_method="POST", token_required=False, user_required=False,
             logger=logger)
 def authenticate(request):
-    req = utils.get_request_dict(request)
-
-    uuid = None
-    try:
-        token_id = req['auth']['token']['id']
-    except KeyError:
-        try:
-            token_id = req['auth']['passwordCredentials']['password']
-            uuid = req['auth']['passwordCredentials']['username']
-        except KeyError:
-            raise faults.BadRequest('Malformed request')
-
-    if token_id is None:
-        raise faults.BadRequest('Malformed request')
-
-    try:
-        user = AstakosUser.objects.get(auth_token=token_id)
-    except AstakosUser.DoesNotExist:
-        raise faults.Unauthorized('Invalid token')
-
-    validate_user(user)
-
-    if uuid is not None:
-        if user.uuid != uuid:
-            raise faults.Unauthorized('Invalid credentials')
+    content_length = get_content_length(request)
+    public_mode = True if not content_length else False
 
     d = defaultdict(dict)
-    d["access"]["token"] = {
-        "id": user.auth_token,
-        "expires": utils.isoformat(user.auth_token_expires),
-        "tenant": {"id": user.uuid, "name": user.realname}}
-    d["access"]["user"] = {
-        "id": user.uuid, 'name': user.realname,
-        "roles": list(user.groups.values("id", "name")),
-        "roles_links": []}
+    if not public_mode:
+        req = utils.get_request_dict(request)
+
+        uuid = None
+        try:
+            token_id = req['auth']['token']['id']
+        except KeyError:
+            try:
+                token_id = req['auth']['passwordCredentials']['password']
+                uuid = req['auth']['passwordCredentials']['username']
+            except KeyError:
+                raise faults.BadRequest('Malformed request')
+
+        if token_id is None:
+            raise faults.BadRequest('Malformed request')
+
+        try:
+            user = AstakosUser.objects.get(auth_token=token_id)
+        except AstakosUser.DoesNotExist:
+            raise faults.Unauthorized('Invalid token')
+
+        validate_user(user)
+
+        if uuid is not None:
+            if user.uuid != uuid:
+                raise faults.Unauthorized('Invalid credentials')
+
+        d["access"]["token"] = {
+            "id": user.auth_token,
+            "expires": utils.isoformat(user.auth_token_expires),
+            "tenant": {"id": user.uuid, "name": user.realname}}
+        d["access"]["user"] = {
+            "id": user.uuid, 'name': user.realname,
+            "roles": list(user.groups.values("id", "name")),
+            "roles_links": []}
+
     d["access"]["serviceCatalog"] = []
     append = d["access"]["serviceCatalog"].append
     for s in Service.objects.all().order_by("id"):

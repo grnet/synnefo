@@ -426,10 +426,17 @@ class TokensApiTest(TestCase):
         r = client.get(url, post_data={})
         self.assertEqual(r.status_code, 400)
 
-        # Malformed request
-        url = reverse('astakos.api.tokens.authenticate')
-        r = client.post(url, post_data={})
-        self.assertEqual(r.status_code, 400)
+        # check public mode
+        r = client.post(url, CONTENT_LENGTH=0)
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r['Content-Type'].startswith('application/json'))
+        try:
+            body = json.loads(r.content)
+        except Exception, e:
+            self.fail(e)
+        self.assertTrue('token' not in body.get('access'))
+        self.assertTrue('user' not in body.get('access'))
+        self.assertTrue('serviceCatalog' in body.get('access'))
 
         # Check unsupported xml input
         url = reverse('astakos.api.tokens.authenticate')
@@ -553,3 +560,5 @@ class TokensApiTest(TestCase):
 #            body = minidom.parseString(r.content)
 #        except Exception, e:
 #            self.fail(e)
+
+        # test public mode: json response

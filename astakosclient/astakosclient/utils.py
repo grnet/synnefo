@@ -53,7 +53,7 @@ def retry(func):
                     # In case of Unauthorized response
                     # or Not Found return immediately
                     raise err
-                self.logger.info("AstakosClient request failed..retrying")
+                self.logger.warning("AstakosClient request failed..retrying")
                 attemps += 1
     return decorator
 

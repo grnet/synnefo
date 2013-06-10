@@ -42,6 +42,7 @@ from django.utils.http import http_date, parse_etags
 from django.utils.encoding import smart_unicode, smart_str
 from django.core.files.uploadhandler import FileUploadHandler
 from django.core.files.uploadedfile import UploadedFile
+from django.core.urlresolvers import reverse
 
 from snf_django.lib.api.parsedate import parse_http_date_safe, parse_http_date
 from snf_django.lib import api
@@ -61,10 +62,14 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  RADOS_STORAGE, RADOS_POOL_BLOCKS,
                                  RADOS_POOL_MAPS, TRANSLATE_UUIDS,
                                  PUBLIC_URL_SECURITY,
-                                 PUBLIC_URL_ALPHABET)
+                                 PUBLIC_URL_ALPHABET,
+                                 COOKIE_NAME, BASE_URL)
 from pithos.api.resources import resources
 from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
                                   VersionNotExists)
+
+from synnefo.lib import join_urls
+
 from astakosclient import AstakosClient
 from astakosclient.errors import NoUserName, NoUUID
 
@@ -389,7 +394,8 @@ def update_sharing_meta(request, permissions, v_account,
 def update_public_meta(public, meta):
     if not public:
         return
-    meta['X-Object-Public'] = '/public/' + public
+    meta['X-Object-Public'] = join_urls(
+        BASE_URL, reverse('pithos.api.public.public_demux', args=(public,)))
 
 
 def validate_modification_preconditions(request, meta):

@@ -11,7 +11,7 @@ class Migration(DataMigration):
         try:
             s = orm.Service.objects.get(name='pithos+')
         except orm.Service.DoesNotExist:
-            print "No service named 'pithos+' found."
+            pass
         else:
             s.name = 'pithos'
             s.save()
@@ -46,7 +46,7 @@ class Migration(DataMigration):
         try:
             s = orm.Service.objects.get(name='pithos')
         except orm.Service.DoesNotExist:
-            print "No service named 'pithos' found."
+            pass
         else:
             s.name = 'pithos+'
             s.save()

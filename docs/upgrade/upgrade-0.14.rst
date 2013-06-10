@@ -76,7 +76,7 @@ Running the following script you will be asked to provide the base
 installation URL for each component. You will also need to specify the URL
 where the astakos UI resides::
 
-    astakos-host$ snf-register-components
+    astakos-host$ snf-component-register
 
 .. note::
 

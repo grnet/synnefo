@@ -724,7 +724,7 @@ offered by the services.
 
 .. code-block:: console
 
-    # snf-register-components
+    # snf-component-register
 
 .. note::
 

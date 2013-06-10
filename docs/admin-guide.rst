@@ -1095,7 +1095,7 @@ Running:
 
 .. code-block:: console
 
-   snf-register-components [<component_name>]
+   snf-component-register [<component_name>]
 
 automates the registration of the standard Synnefo components (astakos,
 cyclades, and pithos) in astakos database. It internally uses the script:

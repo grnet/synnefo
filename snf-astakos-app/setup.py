@@ -200,7 +200,7 @@ setup(
 
     dependency_links=['http://www.synnefo.org/packages/pypi'],
 
-    scripts=['astakos/scripts/snf-register-components'],
+    scripts=['astakos/scripts/snf-component-register'],
     entry_points={
         'synnefo': [
             'default_settings = astakos.synnefo_settings',

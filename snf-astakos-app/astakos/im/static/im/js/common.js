@@ -87,11 +87,26 @@ if (navigator.userAgent.match(/iPhone/i)) {
  
 $(document).ready(function() {
 	
+    var is_firefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+
     /* api access */
     $(".token-view .detail").click(function() { 
       $(this).find("input").select();
     });
 	    
+    $('#dummy_auth_token').html( $('.token-view input[name="auth_token"]').val());
+    $('#dummy_token_url').html( $('.token-view input[name="token_url"]').val())
+
+
+    if (is_firefox ){
+      $('.dummy-input').show();
+      $('.dummy-input').next('input').css('visibility','hidden');
+    }
+
+    /* api access test
+    
+    */
+
 	 
     setContainerMinHeight('.container .wrapper');
     //tableFixedCols('my-projects', 25);

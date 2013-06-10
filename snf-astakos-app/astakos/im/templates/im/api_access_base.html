@@ -45,14 +45,16 @@
 	and API token:<br /><br />
         </p>
         <div class="token-view">
-            <div class="detail small clearfix">
+            <div class="detail small clearfix"> 
                 <span class="title">Authentication URL</span>
-                <input type="text" value="{{ token_url }}" disabled />
+                <span id="dummy_token_url" class="dummy-input">&nbsp;</span>
+                <input value="{{ token_url }}" type="text" name="token_url" disabled />
             </div>
             <div class="detail clearfix">
                 <div class="facts clearfix">
                     <span class="title">API Token</span>
-                    <input type="text" value="{{ request.user.auth_token }}" disabled />
+                    <span id="dummy_auth_token" class="dummy-input">&nbsp;</span>
+                    <input value="{{ request.user.auth_token }}" type="text" name="auth_token" disabled/>
                     <span class="expires">
                         <span class="date">
                             expires in {{ request.user.auth_token_expires|timeuntil }}

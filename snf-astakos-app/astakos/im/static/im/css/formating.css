@@ -119,7 +119,9 @@ h2 .header-actions { float: right; font-size: 0.8em;}
     font-size: 0.8em;
 }
 
-.api-access-view div.detail input {
+.api-access-view div.detail .dummy-input,
+.api-access-view div.detail input
+ {
     border: none;
     text-decoration: none;
     width: 80%;
@@ -128,6 +130,8 @@ h2 .header-actions { float: right; font-size: 0.8em;}
     left: 20%;
     cursor: pointer;
 }
+
+.api-access-view div.detail .dummy-input { display: none;}
 
 .api-access-view div.detail {
     display: block;

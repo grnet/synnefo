@@ -41,13 +41,12 @@
     {% block page.body.token %}
         <h2>API details</h2>
         <p>
-    To use {{ BRANDING_SERVICE_NAME }} via its REST API the only things you will need is your
-    Authentication Token and the Identity Service's public URL, which you can
-    find right below.<br /><br />
+	To use {{ BRANDING_SERVICE_NAME }} via its REST API you will need the following Authentication URL
+	and API token:<br /><br />
         </p>
         <div class="token-view">
             <div class="detail small clearfix">
-                <span class="title">Authentication url</span>
+                <span class="title">Authentication URL</span>
                 <input type="text" value="{{ token_url }}" disabled />
             </div>
             <div class="detail clearfix">
@@ -66,8 +65,8 @@
                         <a href="#" class="do">renew token</a>
                         <a href="#" class="confirm">confirm</a>
                         <a href="#" class="close">x</a>
-                        <p class="sub">Make sure to set the new token in any client you may be using each
-                time you renew your token.</p>
+			<p class="sub">Every time you renew it, make sure to
+		update the clients you use with the new token.</p>
                     </div>
                 </div>
                 

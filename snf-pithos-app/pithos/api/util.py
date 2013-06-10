@@ -1061,10 +1061,11 @@ def get_pithos_usage(token):
     return quotas.popitem()[-1] # assume only one resource
 
 
-def api_method(http_method=None, user_required=True, logger=None,
+def api_method(http_method=None, token_required=True, user_required=True, logger=None,
                format_allowed=False, default_serialization="json"):
     def decorator(func):
-        @api.api_method(http_method=http_method, user_required=user_required,
+        @api.api_method(http_method=http_method, token_required=token_required,
+                        user_required=user_required,
                         logger=logger, format_allowed=format_allowed,
                         astakos_url=ASTAKOS_BASE_URL,
                         default_serialization=default_serialization)

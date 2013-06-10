@@ -57,13 +57,15 @@ def public_demux(request, v_public):
         return api.method_not_allowed(request)
 
 
-@api_method(http_method="HEAD", user_required=False, logger=logger)
+@api_method(http_method="HEAD", token_required=False, user_required=False,
+            logger=logger)
 def public_meta(request, v_public):
     # Normal Response Codes: 204
     # Error Response Codes: internalServerError (500),
     #                       itemNotFound (404),
     #                       badRequest (400)
 
+    request.user_uniq = None
     try:
         v_account, v_container, v_object = request.backend.get_public(
             request.user_uniq,
@@ -85,7 +87,8 @@ def public_meta(request, v_public):
     return response
 
 
-@api_method(http_method="GET", user_required=False, logger=logger)
+@api_method(http_method="GET", token_required=False, user_required=False,
+            logger=logger)
 def public_read(request, v_public):
     # Normal Response Codes: 200, 206
     # Error Response Codes: internalServerError (500),
@@ -95,6 +98,7 @@ def public_read(request, v_public):
     #                       badRequest (400),
     #                       notModified (304)
 
+    request.user_uniq = None
     try:
         v_account, v_container, v_object = request.backend.get_public(
             request.user_uniq,

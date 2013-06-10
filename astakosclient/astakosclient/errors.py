@@ -33,7 +33,7 @@
 
 
 class AstakosClientException(Exception):
-    def __init__(self, message='', details='', status=None):
+    def __init__(self, message='', details='', status=500):
         self.message = message
         self.details = details
         if not hasattr(self, 'status'):

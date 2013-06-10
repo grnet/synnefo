@@ -40,7 +40,7 @@ def camel_case(s):
 
 
 class Fault(Exception):
-    def __init__(self, message='', details='', name='', code=None):
+    def __init__(self, message='', details='', name='', code=500):
         self.message = message
         self.details = details
         if not hasattr(self, 'code'):

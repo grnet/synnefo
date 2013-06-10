@@ -149,28 +149,34 @@ def mocked_quotaholder(success=True):
 class BaseAPITest(TestCase):
     def get(self, url, user='user', *args, **kwargs):
         with astakos_user(user):
-            response = self.client.get(url, *args, **kwargs)
+            with mocked_quotaholder():
+                response = self.client.get(url, *args, **kwargs)
         return response
 
     def delete(self, url, user='user'):
         with astakos_user(user):
-            response = self.client.delete(url)
+            with mocked_quotaholder():
+                response = self.client.delete(url)
         return response
 
     def post(self, url, user='user', params={}, ctype='json', *args, **kwargs):
         if ctype == 'json':
             content_type = 'application/json'
         with astakos_user(user):
-            response = self.client.post(url, params, content_type=content_type,
-                                        *args, **kwargs)
+            with mocked_quotaholder():
+                response = self.client.post(url, params,
+                                            content_type=content_type,
+                                            *args, **kwargs)
         return response
 
     def put(self, url, user='user', params={}, ctype='json', *args, **kwargs):
         if ctype == 'json':
             content_type = 'application/json'
         with astakos_user(user):
-            response = self.client.put(url, params, content_type=content_type,
-                                       *args, **kwargs)
+            with mocked_quotaholder():
+                response = self.client.put(url, params,
+                                           content_type=content_type,
+                                           *args, **kwargs)
         return response
 
     def assertSuccess(self, response):

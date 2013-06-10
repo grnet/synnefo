@@ -1087,6 +1087,26 @@ reconcile-commissions-cyclades Detect and resolve pending commissions to Quotaho
 reconcile-resources-cyclades   Reconcile resource usage of Astakos with Cyclades DB.
 ============================== ===========================
 
+Astakos helper scripts
+======================
+
+Astakos includes two scripts to facilitate the installation procedure.
+Running:
+
+.. code-block:: console
+
+   snf-register-components [<component_name>]
+
+automates the registration of the standard Synnefo components (astakos,
+cyclades, and pithos) in astakos database. It internally uses the script:
+
+.. code-block:: console
+
+   snf-service-export <component_name> <base_url>
+
+which simulates the export of service and resource definitions of the
+standard Synnefo components.
+
 Pithos managing accounts
 ========================
 

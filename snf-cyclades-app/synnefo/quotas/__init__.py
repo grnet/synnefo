@@ -61,6 +61,7 @@ class Quotaholder(object):
             cls._object = AstakosClient(
                 ASTAKOS_BASE_URL,
                 use_pool=True,
+                retry=3,
                 logger=log)
         return cls._object
 

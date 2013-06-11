@@ -13,3 +13,4 @@ unittest2 python-unittest2
 alembic alembic
 snf-django-lib snf-django-lib
 snf-branding snf-branding
+snf-webproject snf-webproject

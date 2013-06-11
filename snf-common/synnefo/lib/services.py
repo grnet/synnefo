@@ -34,6 +34,7 @@
 from copy import deepcopy
 from synnefo.lib import join_urls
 from synnefo.util.keypath import get_path, set_path
+from urlparse import urlparse
 
 
 def fill_endpoints(services, base_url):
@@ -79,3 +80,8 @@ def get_public_endpoint(services, service_type, version=None):
 
     selected = sorted(found_endpoints.keys())[-1]
     return found_endpoints[selected]['publicURL']
+
+
+def get_service_path(services, service_type, version=None):
+    service_url = get_public_endpoint(services, service_type, version=version)
+    return urlparse(service_url).path.rstrip('/') + '/'

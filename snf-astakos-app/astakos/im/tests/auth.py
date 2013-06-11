@@ -465,7 +465,7 @@ class TestLocal(TestCase):
                 'password2': 'password', 'first_name': 'Kostas',
                 'last_name': 'Mitroglou', 'provider': 'local'}
         r = self.client.post(ui_url("signup"), data, follow=True)
-        self.assertRedirects(r, reverse('index'))
+        self.assertRedirects(r, reverse('login'))
         self.assertContains(r, messages.VERIFICATION_SENT)
 
         user = AstakosUser.objects.get()
@@ -517,7 +517,7 @@ class TestLocal(TestCase):
         user = AstakosUser.objects.get(pk=user.pk)
         self.assertEqual(len(get_mailbox(self.helpdesk_email)), 0)
         r = self.client.get(user.get_activation_url(), follow=True)
-        self.assertRedirects(r, reverse('index'))
+        self.assertRedirects(r, reverse('login'))
         # user sees that account is pending approval from admins
         self.assertContains(r, messages.NOTIFICATION_SENT)
         self.assertEqual(len(get_mailbox(self.helpdesk_email)), 1)
@@ -545,7 +545,8 @@ class TestLocal(TestCase):
         self.assertTrue(quote(user.auth_token) in
                         cookies.get('_pithos2_a').value)
         r = self.client.get(ui_url('logout'), follow=True)
-        r = self.client.get(ui_url(''))
+        r = self.client.get(ui_url(''), follow=True)
+        self.assertRedirects(r, ui_url('login'))
         # user logged out, token cookie removed
         self.assertFalse(r.context['request'].user.is_authenticated())
         self.assertFalse(self.client.cookies.get('_pithos2_a').value)
@@ -1325,7 +1326,7 @@ class TestWebloginRedirect(TestCase):
         # not authenticated, redirects to login which contains next param with
         # additional nested quoted next params
         r = self.client.get(valid_scheme, follow=True)
-        login_redirect = reverse('index') + '?next=' + \
+        login_redirect = reverse('login') + '?next=' + \
             urllib.quote_plus("http://testserver" + valid_scheme_quoted)
         self.assertRedirects(r, login_redirect)
 

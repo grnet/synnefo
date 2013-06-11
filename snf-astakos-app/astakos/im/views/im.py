@@ -79,42 +79,49 @@ logger = logging.getLogger(__name__)
 @require_http_methods(["GET", "POST"])
 @cookie_fix
 @signed_terms_required
-def index(request, login_template_name='im/login.html', profile_template_name='im/profile.html', extra_context=None):
+def login(request, template_name='im/login.html', extra_context=None):
     """
-    If there is logged on user renders the profile page otherwise renders login page.
+    Renders login page.
 
     **Arguments**
 
-    ``login_template_name``
+    ``template_name``
         A custom login template to use. This is optional; if not specified,
         this will default to ``im/login.html``.
 
-    ``profile_template_name``
-        A custom profile template to use. This is optional; if not specified,
-        this will default to ``im/profile.html``.
-
     ``extra_context``
         An dictionary of variables to add to the template context.
-
-    **Template:**
-
-    im/profile.html or im/login.html or ``template_name`` keyword argument.
-
     """
+
     extra_context = extra_context or {}
-    template_name = login_template_name
-    if request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('landing'))
 
     third_party_token = request.GET.get('key', False)
     if third_party_token:
         messages.info(request, astakos_messages.AUTH_PROVIDER_LOGIN_TO_ADD)
 
+    if request.user.is_authenticated():
+        return HttpResponseRedirect(reverse('landing'))
+
     return render_response(
         template_name,
-        login_form = LoginForm(request=request),
-        context_instance = get_context(request, extra_context)
+        login_form=LoginForm(request=request),
+        context_instance=get_context(request, extra_context)
     )
+
+
+@require_http_methods(["GET", "POST"])
+@cookie_fix
+@signed_terms_required
+def index(request, authenticated_redirect='landing',
+          anonymous_redirect='login', extra_context=None):
+    """
+    If user is authenticated redirect to ``authenticated_redirect`` url.
+    Otherwise redirects to ``anonymous_redirect`` url.
+
+    """
+    if request.user.is_authenticated():
+        return HttpResponseRedirect(reverse(authenticated_redirect))
+    return HttpResponseRedirect(reverse(anonymous_redirect))
 
 
 @require_http_methods(["POST"])

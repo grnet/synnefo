@@ -133,7 +133,7 @@ def login(request):
         next = urlunsplit(parts)
 
         # build url location
-        parts[2] = reverse('index')
+        parts[2] = reverse('login')
         params = {'next': next}
         parts[3] = urlencode(params)
         url = urlunsplit(parts)

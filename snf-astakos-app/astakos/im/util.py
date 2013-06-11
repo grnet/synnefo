@@ -112,9 +112,9 @@ def restrict_next(url, domain=None, allowed_schemes=()):
     redirect location of an http redirect response. The method parses the
     provided url and identifies if it conforms CORS against provided domain
     AND url scheme matches any of the schemes in `allowed_schemes` parameter.
-    If verirication succeeds sanitized safe url is returned so you must use
-    the method's response in the response location header and not the
-    originally provided url. If verification fails the method returns None.
+    If verirication succeeds sanitized safe url is returned. Consider using
+    the method's result in the response location header and not the originally
+    provided url. If verification fails the method returns None.
 
     >>> print restrict_next('/im/feedback', '.okeanos.grnet.gr')
     /im/feedback
@@ -162,6 +162,7 @@ def restrict_next(url, domain=None, allowed_schemes=()):
     if not domain and not allowed_schemes:
         return url
 
+    # domain validation
     if domain:
         if not parts.netloc:
             return url
@@ -170,6 +171,7 @@ def restrict_next(url, domain=None, allowed_schemes=()):
         else:
             return None
 
+    # scheme validation
     if allowed_schemes:
         if parts.scheme in allowed_schemes:
             return url

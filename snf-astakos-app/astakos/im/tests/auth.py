@@ -31,6 +31,9 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import urlparse
+import urllib
+
 from astakos.im.tests.common import *
 
 ui_url = lambda url: '/' + astakos_settings.BASE_PATH + '/ui/%s' % url
@@ -1297,3 +1300,58 @@ class TestActivationBackend(TestCase):
         self.assertTrue(user.moderated_at)
         self.assertEqual(user.email_verified, True)
         self.assertTrue(user.activation_sent)
+
+
+class TestWebloginRedirect(TestCase):
+
+    @with_settings(settings, COOKIE_DOMAIN='.astakos.synnefo.org')
+    def test_restricts_domains(self):
+        get_local_user('user1@synnefo.org')
+
+        # next url construct helpers
+        weblogin = lambda nxt: reverse('weblogin') + '?next=%s' % nxt
+        weblogin_quoted = lambda nxt: reverse('weblogin') + '?next=%s' % \
+            urllib.quote_plus(nxt)
+
+        # common cases
+        invalid_domain = weblogin("https://www.invaliddomain.synnefo.org")
+        invalid_scheme = weblogin("customscheme://localhost")
+        invalid_scheme_with_valid_domain = \
+                weblogin("http://www.invaliddomain.com")
+        valid_scheme = weblogin("pithos://localhost/")
+        # to be used in assertRedirects
+        valid_scheme_quoted = weblogin_quoted("pithos://localhost/")
+
+        # not authenticated, redirects to login which contains next param with
+        # additional nested quoted next params
+        r = self.client.get(valid_scheme, follow=True)
+        login_redirect = reverse('index') + '?next=' + \
+            urllib.quote_plus("http://testserver" + valid_scheme_quoted)
+        self.assertRedirects(r, login_redirect)
+
+        # authenticate client
+        self.client.login(username="user1@synnefo.org", password="password")
+
+        # valid scheme
+        r = self.client.get(valid_scheme, follow=True)
+        self.assertEqual(len(r.redirect_chain), 3)
+        url = r.redirect_chain[1][0]
+        # scheme preserved
+        self.assertTrue(url.startswith('pithos://localhost/'))
+        # redirect contains token param
+        params = urlparse.urlparse(urlparse.urlparse(url).path, 'https').query
+        params = urlparse.parse_qs(params)
+        self.assertEqual(params['token'][0],
+                         AstakosUser.objects.get().auth_token)
+        # does not contain uuid
+        self.assertFalse('uuid' in params)
+
+        # invalid cases
+        r = self.client.get(invalid_scheme, follow=True)
+        self.assertEqual(r.status_code, 403)
+
+        r = self.client.get(invalid_scheme_with_valid_domain, follow=True)
+        self.assertEqual(r.status_code, 403)
+
+        r = self.client.get(invalid_domain, follow=True)
+        self.assertEqual(r.status_code, 403)

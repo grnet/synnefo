@@ -34,5 +34,6 @@
 from django.conf.urls.defaults import patterns, url
 
 urlpatterns = (
-    url(r'^login$', 'astakos.im.views.target.redirect.login'),
+    url(r'^login$', 'astakos.im.views.target.redirect.login',
+        name="weblogin"),
 )

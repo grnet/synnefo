@@ -49,7 +49,11 @@ logger = logging.getLogger(__name__)
 @api_method(http_method="POST", token_required=False, user_required=False,
             logger=logger)
 def authenticate(request):
-    content_length = get_content_length(request)
+    try:
+        content_length = get_content_length(request)
+    except faults.LengthRequired:
+        content_length = None
+
     public_mode = True if not content_length else False
 
     d = defaultdict(dict)

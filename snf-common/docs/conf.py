@@ -40,7 +40,7 @@ html_static_path = ['_static']
 htmlhelp_basename = 'synnefodoc'
 
 intersphinx_mapping = {
-    'pithon': ('http://docs.python.org/', None),
+    'python': ('http://docs.python.org/', None),
     'django': ('https://docs.djangoproject.com/en/dev/',
                'https://docs.djangoproject.com/en/dev/_objects/')
 }

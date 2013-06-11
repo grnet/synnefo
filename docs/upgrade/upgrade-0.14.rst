@@ -1,13 +1,18 @@
 Upgrade to Synnefo v0.14
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-The bulk of the upgrade to v0.14 is about resource and quota migrations.
+The upgrade to v0.14 consists in three steps:
 
+1. Bring down services and backup databases.
+
+2. Upgrade packages, migrate the databases and configure settings.
+
+3. Register services to astakos and perform a quota-related data migration.
 
 .. warning::
 
     It is strongly suggested that you keep separate database backups
-    for each service after the completion of each of step.
+    for each service after the completion of each step.
 
 1. Bring web services down, backup databases
 ============================================
@@ -15,9 +20,9 @@ The bulk of the upgrade to v0.14 is about resource and quota migrations.
 1. All web services must be brought down so that the database maintains a
    predictable and consistent state during the migration process::
 
-    # service gunicorn stop
-    # service snf-dispatcher stop
-    # etc.
+    $ service gunicorn stop
+    $ service snf-dispatcher stop
+    etc.
 
 2. Backup databases for recovery to a pre-migration state.
 
@@ -27,8 +32,53 @@ The bulk of the upgrade to v0.14 is about resource and quota migrations.
 2. Upgrade Synnefo and configure settings
 =========================================
 
-2.2 Sync and migrate Django DB
-------------------------------
+2.1 Install the new versions of packages
+----------------------------------------
+
+::
+
+    astakos.host$ apt-get install \
+                            snf-common \
+                            astakosclient \
+                            snf-django-lib \
+                            snf-webproject \
+                            snf-branding \
+                            snf-astakos-app
+
+    cyclades.host$ apt-get install \
+                            snf-common \
+                            astakosclient \
+                            snf-django-lib \
+                            snf-webproject \
+                            snf-branding \
+                            snf-pithos-backend \
+                            snf-vncauthproxy \
+                            snf-cyclades-app
+
+    pithos.host$ apt-get install \
+                            snf-common \
+                            astakosclient \
+                            snf-django-lib \
+                            snf-webproject \
+                            snf-branding \
+                            snf-pithos-backend \
+                            snf-pithos-app \
+                            snf-pithos-webclient
+
+    ganeti.node$ apt-get install \
+                            snf-common \
+                            snf-network \
+                            snf-cyclades-gtools \
+                            snf-pithos-backend
+
+.. note::
+
+    Installing the packages will cause services to start. Make sure you bring
+    them down again (at least ``gunicorn``, ``snf-dispatcher``)
+
+
+2.2 Sync and migrate the database
+---------------------------------
 
 .. note::
 
@@ -45,6 +95,7 @@ The bulk of the upgrade to v0.14 is about resource and quota migrations.
     cyclades-host$ snf-manage syncdb
     cyclades-host$ snf-manage migrate
 
+    pithos-host$ pithos-migrate upgrade head
 
 2.3 Configure Base URL settings for all services
 ------------------------------------------------

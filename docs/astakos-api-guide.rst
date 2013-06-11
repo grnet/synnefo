@@ -421,7 +421,14 @@ Example json response:
                  "versionId": "v1",
                  "publicURL": "https://object-store.example.synnefo.org/pithos/object-store/v1"}],
              "type": "object-store",
-             "name": "pithos_object-store"}],
+             "name": "pithos_object-store"},
+            {"endpoints_links": [],
+             "endpoints": [{
+                 "SNF:uiURL": "https://accounts.example.synnefo.org/ui",
+                 "versionId": "",
+                 "publicURL": "https://accounts.example.synnefo.org/astakos/weblogin"}],
+             "type": "astakos_weblogin",
+             "name": "astakos_weblogin"}],
          "user": {
              "roles_links": [],
              "id": "c18088be-16b1-4263-8180-043c54e22903",
@@ -465,6 +472,8 @@ Example xml response:
             </service>
             <service type="object-store" name="pithos_object-store">
                 <endpoint  SNF:uiURL="https://object-store.example.synnefo.org/ui"  versionId="v1"  publicURL="https://object-store.example.synnefo.org/pithos/object-store/v1"  /> </service>
+            <service type="astakos_weblogin" name="astakos_weblogin">
+                <endpoint  SNF:uiURL="htftps://accounts.example.synnefo.org/ui"  versionId=""  publicURL="https://accounts.example.synnefo.org/astakos/weblogin"  />
         </serviceCatalog>
     </access>
 

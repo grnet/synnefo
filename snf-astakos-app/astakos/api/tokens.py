@@ -99,10 +99,10 @@ def authenticate(request):
         endpoints = []
         for l in [e.data.values('key', 'value') for e in s.endpoints.all()]:
             endpoint = dict((d['key'], d['value']) for d in l)
+            endpoint["SNF:uiURL"] = s.component.url
             endpoints.append(endpoint)
         append({"name": s.name,
                 "type": s.type,
-                "SNF:uiURL": s.component.url,
                 "endpoints": endpoints,
                 "endpoints_links": []})
 

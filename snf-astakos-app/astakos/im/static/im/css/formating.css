@@ -115,8 +115,10 @@ span.action-desc { display: block; color: #fff;}
 h2 .header-actions { float: right; font-size: 0.8em;}
 
 .api-access-view div.detail .title {
-    float: left;
+    display: block;
     font-size: 0.8em;
+    text-align: center;
+    margin-bottom: 1em;
 }
 
 .api-access-view div.detail .dummy-input,
@@ -124,11 +126,12 @@ h2 .header-actions { float: right; font-size: 0.8em;}
  {
     border: none;
     text-decoration: none;
-    width: 80%;
+    width: 100%;
     font-family: monospace;
-    position: absolute;
-    left: 20%;
     cursor: pointer;
+    color: #F24E53;
+    text-align: center;
+    display: block;
 }
 
 .api-access-view div.detail .dummy-input { display: none;}
@@ -148,16 +151,21 @@ h2 .header-actions { float: right; font-size: 0.8em;}
 .api-access-view div.detail .expires {
     font-size: 9px;
     font-family: 'Open Sans', sans-serif;
-    position: absolute;
-    left: 20%;
-    top: 25px;
+    text-align: center;
     color:#b3b3b3;
+    display: block;
 }
 
 .api-access-view p.sub {
     font-size: 0.7em;
     color:#b3b3b3;
     padding-top:6px;
+    text-align: center;
+}
+.api-access-view p.sub span {
+    max-width: 230px;
+    display: block;
+    margin:0 auto;
 }
 
 .api-access-view .api-clients h3 {
@@ -169,12 +177,10 @@ h2 .header-actions { float: right; font-size: 0.8em;}
 }
 
 .token-view .actions {
-    position: absolute;
-    right:0;
+    text-align: center;
     font-size:13px;
-    max-width: 230px;
-    overflow: hidden;
-    top:0;
+    width: 100%;
+    margin-top: 1em;
 }
 
 .renew-token .confirm {
@@ -189,5 +195,5 @@ h2 .header-actions { float: right; font-size: 0.8em;}
 .renew-token .sub,
 .renew-token .confirm,
 .renew-token .close {
-    visibility: hidden;
+    display: none;
 }

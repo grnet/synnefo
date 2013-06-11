@@ -21,8 +21,4 @@ dl.alt-style									{ width:auto; }
 #token-confirm									{ position:relative; top:8px; left:auto; }
 
 form.submit-inline .form-row.submit				{ position:static; margin-top:20px; }
-
-.api-access-view div.detail .title				{ float:none;width:auto; }
-.api-access-view div.detail input				{ position: static; width: 100%; display: block;}
-.api-access-view div.detail .expires 			{ position: static;}
-.token-view .actions							{ position: static; }
+ 

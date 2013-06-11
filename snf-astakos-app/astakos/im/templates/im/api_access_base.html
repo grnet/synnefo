@@ -11,39 +11,19 @@
 {% block page.body %}
 <form>{% csrf_token %}</form>
 <div class="api-access-view">
-    <div class="subsection">
+    <div>
     {% block page.body.title %}
-        <h2>API ACCESS</h2>
+        <h2>API details</h2>
     {% endblock %}
-    {% block page.body.description %}
-        <div class="two-cols dotted clearfix">
-            <div class="rt">
-                <p>
-                If
-                you want to learn more about the specification of the REST API itself,
-                please take a look at the <a href="https://www.synnefo.org/docs" 
-                alt="Synnefo documentation">Synnefo documentation</a>. 
-                </p>
-            </div>
-            <div class="lt">
-                <p>{{ BRANDING_SERVICE_NAME }} provides a complete REST API that allows you to access and
-    control your virtual resources programmatically. This means you can execute
-    all the actions you do from the {{ BRANDING_SERVICE_NAME }} Web UI by using a command
-    line client or importing the corresponding library inside your own code.</p>
-            </div>
-
-        </div>
-    
-    {% endblock %}
+        <p class="dotted">
+    To use {{ BRANDING_SERVICE_NAME }} via its REST API you will need the following Authentication URL
+    and API token:<br /><br />
+        </p>
     </div>
-    
     <div class="subsection dotted">
     {% block page.body.token %}
-        <h2>API details</h2>
-        <p>
-	To use {{ BRANDING_SERVICE_NAME }} via its REST API you will need the following Authentication URL
-	and API token:<br /><br />
-        </p>
+        
+        
         <div class="token-view">
             <div class="detail small clearfix"> 
                 <span class="title">Authentication URL</span>
@@ -67,8 +47,8 @@
                         <a href="#" class="do">renew token</a>
                         <a href="#" class="confirm">confirm</a>
                         <a href="#" class="close">x</a>
-			<p class="sub">Every time you renew it, make sure to
-		update the clients you use with the new token.</p>
+			<p class="sub"><span>Every time you renew it, make sure to
+		update the clients you use with the new token.</span></p>
                     </div>
                 </div>
                 
@@ -80,7 +60,31 @@
         {% endblock %}
     </div>
 
-   
+   <div class="subsection">
+     
+        <h2>GENERAL</h2>
+    
+    {% block page.body.description %}
+        <div class="two-cols dotted clearfix">
+            <div class="rt">
+                <p>
+                If
+                you want to learn more about the specification of the REST API itself,
+                please take a look at the <a href="https://www.synnefo.org/docs" 
+                alt="Synnefo documentation">Synnefo documentation</a>. 
+                </p>
+            </div>
+            <div class="lt">
+                <p>{{ BRANDING_SERVICE_NAME }} provides a complete REST API that allows you to access and
+    control your virtual resources programmatically. This means you can execute
+    all the actions you do from the {{ BRANDING_SERVICE_NAME }} Web UI by using a command
+    line client or importing the corresponding library inside your own code.</p>
+            </div>
+
+        </div>
+    
+    {% endblock %}
+    </div>
     
     <div class="two-cols dotted clearfix">
         <div class="rt">

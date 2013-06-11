@@ -432,15 +432,17 @@ $('#members-table tr .check input').click(function(e){
   $('.renew-token a.do').click(function(e){
     e.preventDefault();
     e.stopPropagation();
+    $(this).hide();
     var els = [$(".renew-token .sub"),$('.renew-token .confirm'), $('.renew-token .close')];
-    _.each(els, function (el) { el.css({'visibility':'visible'});})
+    _.each(els, function (el) { el.show();})
   })
 
   $('.renew-token a.close').click(function(e){
     e.preventDefault();
     e.stopPropagation();
     var els = [$(".renew-token .sub"),$('.renew-token .confirm'), $('.renew-token .close')];
-    _.each(els, function (el) { el.css({'visibility':'hidden'});})
+    _.each(els, function (el) { el.hide();})
+    $('.renew-token a.do').show();
   })
 
 

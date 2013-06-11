@@ -87,7 +87,7 @@ EXTRAS_REQUIRES = {
 }
 
 TESTS_REQUIRES = [
-    'factory_boy'
+    'factory_boy==2.1.0'
 ]
 
 

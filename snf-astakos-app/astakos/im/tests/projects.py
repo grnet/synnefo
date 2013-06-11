@@ -67,6 +67,8 @@ class TestProjects(TestCase):
     def tearDown(self):
         Service.objects.all().delete()
         ProjectApplication.objects.all().delete()
+        Project.objects.all().delete()
+        AstakosUser.objects.all().delete()
 
     @im_settings(PROJECT_ADMINS=['uuid1'])
     def test_application_limit(self):

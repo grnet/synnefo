@@ -37,11 +37,36 @@ from snf_django.utils.testing import BaseAPITest, mocked_quotaholder
 from synnefo.db.models import VirtualMachine, VirtualMachineMetadata
 from synnefo.db import models_factory as mfactory
 from synnefo.logic.utils import get_rsapi_state
+from synnefo.cyclades_settings import cyclades_services
+from synnefo.lib.services import get_service_path
+from synnefo.lib import join_urls
 
 from mock import patch
 
 
-class ServerAPITest(BaseAPITest):
+class ComputeAPITest(BaseAPITest):
+    def setUp(self, *args, **kwargs):
+        super(ComputeAPITest, self).setUp(*args, **kwargs)
+        self.compute_path = get_service_path(cyclades_services, 'compute',
+                                             version='v2.0')
+    def myget(self, path, *args, **kwargs):
+        path = join_urls(self.compute_path, path)
+        return self.get(path, *args, **kwargs)
+
+    def myput(self, path, *args, **kwargs):
+        path = join_urls(self.compute_path, path)
+        return self.put(path, *args, **kwargs)
+
+    def mypost(self, path, *args, **kwargs):
+        path = join_urls(self.compute_path, path)
+        return self.post(path, *args, **kwargs)
+
+    def mydelete(self, path, *args, **kwargs):
+        path = join_urls(self.compute_path, path)
+        return self.delete(path, *args, **kwargs)
+
+
+class ServerAPITest(ComputeAPITest):
     def setUp(self):
         self.user1 = 'user1'
         self.user2 = 'user2'
@@ -50,17 +75,18 @@ class ServerAPITest(BaseAPITest):
         self.vm3 = mfactory.VirtualMachineFactory(deleted=True,
                                                   userid=self.user1)
         self.vm4 = mfactory.VirtualMachineFactory(userid=self.user2)
+        super(ServerAPITest, self).setUp()
 
     def test_server_list_1(self):
         """Test if the expected list of servers is returned."""
-        response = self.get('/api/v1.1/servers')
+        response = self.myget('servers')
         self.assertSuccess(response)
         servers = json.loads(response.content)['servers']
         self.assertEqual(servers, [])
 
     def test_server_list_2(self):
         """Test if the expected list of servers is returned."""
-        response = self.get('/api/v1.1/servers', self.user1)
+        response = self.myget('servers', self.user1)
         self.assertSuccess(response)
         servers = json.loads(response.content)['servers']
         db_server = self.vm1
@@ -73,7 +99,7 @@ class ServerAPITest(BaseAPITest):
         user_vms = {self.vm2.id: self.vm2,
                     self.vm4.id: self.vm4}
 
-        response = self.get('/api/v1.1/servers/detail', user)
+        response = self.myget('servers/detail', user)
         servers = json.loads(response.content)['servers']
         self.assertEqual(len(servers), len(user_vms))
         for api_vm in servers:
@@ -95,7 +121,7 @@ class ServerAPITest(BaseAPITest):
 
         db_vm_meta = mfactory.VirtualMachineMetadataFactory(vm=db_vm)
 
-        response = self.get('/api/v1.1/servers/%d' % db_vm.id, user)
+        response = self.myget('servers/%d' % db_vm.id, user)
         server = json.loads(response.content)['server']
 
         self.assertEqual(server['flavor'], db_vm.flavor.id)
@@ -130,7 +156,7 @@ class ServerAPITest(BaseAPITest):
         mfactory.NetworkInterfaceFactory(machine=self.vm2, network=net3,
                                          state="BUILDING")
 
-        response = self.get('/api/v1.1/servers/%d' % db_vm.id, user)
+        response = self.myget('servers/%d' % db_vm.id, user)
         server = json.loads(response.content)['server']
         nics = server["attachments"]
         self.assertEqual(len(nics), 1)
@@ -140,33 +166,33 @@ class ServerAPITest(BaseAPITest):
         """Test 404 for detail of other user vm"""
         db_vm = self.vm2
 
-        response = self.get('/api/v1.1/servers/%d' % db_vm.id, 'wrong_user')
+        response = self.myget('servers/%d' % db_vm.id, 'wrong_user')
         self.assertItemNotFound(response)
 
     def test_wrong_server(self):
         """Test 404 response if server does not exist."""
-        response = self.get('/api/v1.1/servers/%d' % 5000)
+        response = self.myget('servers/%d' % 5000)
         self.assertItemNotFound(response)
 
     def test_create_server_empty(self):
         """Test if the create server call returns a 400 badRequest if
            no attributes are specified."""
 
-        response = self.post('/api/v1.1/servers', params={})
+        response = self.mypost('servers', params={})
         self.assertBadRequest(response)
 
     def test_rename_server(self):
         vm = self.vm2
         request = {'server': {'name': 'new_name'}}
-        response = self.put('/api/v1.1/servers/%d' % vm.id, vm.userid,
-                            json.dumps(request), 'json')
+        response = self.myput('servers/%d' % vm.id, vm.userid,
+                              json.dumps(request), 'json')
         self.assertSuccess(response)
         self.assertEqual(VirtualMachine.objects.get(id=vm.id).name, "new_name")
 
 
 @patch('synnefo.api.util.get_image')
 @patch('synnefo.logic.rapi_pool.GanetiRapiClient')
-class ServerCreateAPITest(BaseAPITest):
+class ServerCreateAPITest(ComputeAPITest):
     def test_create_server(self, mrapi, mimage):
         """Test if the create server call returns the expected response
            if a valid request has been speficied."""
@@ -195,8 +221,8 @@ class ServerCreateAPITest(BaseAPITest):
                     }
         }
         with mocked_quotaholder():
-            response = self.post('/api/v1.1/servers', 'test_user',
-                                     json.dumps(request), 'json')
+            response = self.mypost('servers', 'test_user',
+                                   json.dumps(request), 'json')
         self.assertEqual(response.status_code, 202)
         mrapi().CreateInstance.assert_called_once()
 
@@ -215,8 +241,8 @@ class ServerCreateAPITest(BaseAPITest):
         network.drained = True
         network.save()
         with mocked_quotaholder():
-            response = self.post('/api/v1.1/servers', 'test_user',
-                                     json.dumps(request), 'json')
+            response = self.mypost('servers', 'test_user',
+                                    json.dumps(request), 'json')
         self.assertEqual(response.status_code, 503, "serviceUnavailable")
 
     def test_create_server_no_flavor(self, mrapi, mimage):
@@ -232,36 +258,37 @@ class ServerCreateAPITest(BaseAPITest):
                         "personality": []
                     }
         }
-        response = self.post('/api/v1.1/servers', 'test_user',
-                                 json.dumps(request), 'json')
+        response = self.mypost('servers', 'test_user',
+                               json.dumps(request), 'json')
         self.assertItemNotFound(response)
 
 
 @patch('synnefo.logic.rapi_pool.GanetiRapiClient')
-class ServerDestroyAPITest(BaseAPITest):
+class ServerDestroyAPITest(ComputeAPITest):
     def test_delete_server(self, mrapi):
         vm = mfactory.VirtualMachineFactory()
-        response = self.delete('/api/v1.1/servers/%d' % vm.id, vm.userid)
+        response = self.mydelete('servers/%d' % vm.id, vm.userid)
         self.assertEqual(response.status_code, 204)
         mrapi().DeleteInstance.assert_called_once()
 
     def test_non_existing_delete_server(self, mrapi):
         vm = mfactory.VirtualMachineFactory()
-        response = self.delete('/api/v1.1/servers/%d' % 42, vm.userid)
+        response = self.mydelete('servers/%d' % 42, vm.userid)
         self.assertItemNotFound(response)
         self.assertFalse(mrapi.mock_calls)
 
 
-class ServerMetadataAPITest(BaseAPITest):
+class ServerMetadataAPITest(ComputeAPITest):
     def setUp(self):
         self.vm = mfactory.VirtualMachineFactory()
         self.metadata = mfactory.VirtualMachineMetadataFactory(vm=self.vm)
+        super(ServerMetadataAPITest, self).setUp()
 
     def test_get_metadata(self):
         vm = self.vm
         create_meta = lambda: mfactory.VirtualMachineMetadataFactory(vm=vm)
         metadata = [create_meta(), create_meta(), create_meta()]
-        response = self.get('/api/v1.1/servers/%d/metadata' % vm.id, vm.userid)
+        response = self.myget('servers/%d/metadata' % vm.id, vm.userid)
         self.assertTrue(response.status_code in [200, 203])
         api_metadata = json.loads(response.content)['metadata']
         self.assertEqual(len(api_metadata), len(metadata) + 1)
@@ -272,10 +299,10 @@ class ServerMetadataAPITest(BaseAPITest):
                         {'foo': 'bar'},
                         metadata[0].meta_key: 'bar2'
                   }
-        response = self.post('/api/v1.1/servers/%d/metadata' % vm.id,
+        response = self.mypost('servers/%d/metadata' % vm.id,
                              vm.userid, json.dumps(request), 'json')
         metadata2 = VirtualMachineMetadata.objects.filter(vm=vm)
-        response = self.get('/api/v1.1/servers/%d/metadata' % vm.id, vm.userid)
+        response = self.myget('servers/%d/metadata' % vm.id, vm.userid)
         self.assertTrue(response.status_code in [200, 203])
         api_metadata2 = json.loads(response.content)['metadata']
         self.assertTrue('foo' in api_metadata2.keys())
@@ -286,46 +313,41 @@ class ServerMetadataAPITest(BaseAPITest):
 
         # Create new meta
         request = {'meta': {'foo2': 'bar2'}}
-        response = self.put('/api/v1.1/servers/%d/metadata/foo2' % vm.id,
-                            vm.userid, json.dumps(request), 'json')
+        response = self.myput('servers/%d/metadata/foo2' % vm.id,
+                              vm.userid, json.dumps(request), 'json')
 
         # Get the new meta
-        response = self.get('/api/v1.1/servers/%d/metadata/foo2' % vm.id,
-                            vm.userid)
+        response = self.myget('servers/%d/metadata/foo2' % vm.id, vm.userid)
         meta = json.loads(response.content)['meta']
         self.assertEqual(meta['foo2'], 'bar2')
 
         # Delete the new meta
-        response = self.delete('/api/v1.1/servers/%d/metadata/foo2' % vm.id,
-                               vm.userid)
+        response = self.mydelete('servers/%d/metadata/foo2' % vm.id, vm.userid)
         self.assertEqual(response.status_code, 204)
 
         # Try to get the deleted meta: should raise 404
-        response = self.get('/api/v1.1/servers/%d/metadata/foo2' % vm.id,
-                            vm.userid)
+        response = self.myget('servers/%d/metadata/foo2' % vm.id, vm.userid)
         self.assertEqual(response.status_code, 404)
 
     def test_invalid_metadata(self):
         vm = self.vm
-        response = self.post('/api/v1.1/servers/%d/metadata' % vm.id,
-                             vm.userid)
+        response = self.mypost('servers/%d/metadata' % vm.id, vm.userid)
         self.assertBadRequest(response)
         self.assertEqual(len(vm.metadata.all()), 1)
 
     def test_invalid_metadata_server(self):
-        response = self.post('/api/v1.1/servers/42/metadata', 'user')
+        response = self.mypost('servers/42/metadata', 'user')
         self.assertItemNotFound(response)
 
     def test_get_meta_invalid_key(self):
         vm = self.vm
-        response = self.get('/api/v1.1/servers/%d/metadata/foo2' % vm.id,
-                            vm.userid)
+        response = self.myget('servers/%d/metadata/foo2' % vm.id, vm.userid)
         self.assertItemNotFound(response)
 
 
 @patch('synnefo.api.util.get_image')
 @patch('synnefo.logic.rapi_pool.GanetiRapiClient')
-class ServerActionAPITest(BaseAPITest):
+class ServerActionAPITest(ComputeAPITest):
     def test_actions(self, mrapi, mimage):
         actions = ['start', 'shutdown', 'reboot']
         vm = mfactory.VirtualMachineFactory()
@@ -334,8 +356,8 @@ class ServerActionAPITest(BaseAPITest):
         for action in actions:
             val = {'type': 'HARD'} if action == 'reboot' else {}
             request = {action: val}
-            response = self.post('/api/v1.1/servers/%d/action' % vm.id,
-                                vm.userid, json.dumps(request), 'json')
+            response = self.mypost('servers/%d/action' % vm.id,
+                                   vm.userid, json.dumps(request), 'json')
             self.assertEqual(response.status_code, 202)
             if action == 'shutdown':
                 self.assertEqual(VirtualMachine.objects.get(id=vm.id).action,
@@ -348,16 +370,15 @@ class ServerActionAPITest(BaseAPITest):
         """Test building in progress"""
         vm = mfactory.VirtualMachineFactory()
         request = {'start': '{}'}
-        response = self.post('/api/v1.1/servers/%d/action' % vm.id,
-                             vm.userid, json.dumps(request), 'json')
+        response = self.mypost('servers/%d/action' % vm.id,
+                               vm.userid, json.dumps(request), 'json')
         self.assertEqual(response.status_code, 409)
         self.assertFalse(mrapi.mock_calls)
 
     def test_destroy_build_vm(self, mrapi, mimage):
         """Test building in progress"""
         vm = mfactory.VirtualMachineFactory()
-        response = self.delete('/api/v1.1/servers/%d' % vm.id,
-                             vm.userid)
+        response = self.mydelete('servers/%d' % vm.id, vm.userid)
         self.assertSuccess(response)
         mrapi().RemoveInstance.assert_called_once()
 
@@ -366,8 +387,8 @@ class ServerActionAPITest(BaseAPITest):
         vm.operstate = "STOPPED"
         vm.save()
         request = {'firewallProfile': {'profile': 'PROTECTED'}}
-        response = self.post('/api/v1.1/servers/%d/action' % vm.id,
-                             vm.userid, json.dumps(request), 'json')
+        response = self.mypost('servers/%d/action' % vm.id,
+                               vm.userid, json.dumps(request), 'json')
         self.assertEqual(response.status_code, 202)
         mrapi().ModifyInstance.assert_called_once()
 
@@ -376,19 +397,19 @@ class ServerActionAPITest(BaseAPITest):
         vm.operstate = "STOPPED"
         vm.save()
         request = {'firewallProfile': {'profile': 'FOO'}}
-        response = self.post('/api/v1.1/servers/%d/action' % vm.id,
-                             vm.userid, json.dumps(request), 'json')
+        response = self.mypost('servers/%d/action' % vm.id,
+                               vm.userid, json.dumps(request), 'json')
         self.assertBadRequest(response)
         self.assertFalse(mrapi.mock_calls)
 
 
-class ServerVNCConsole(BaseAPITest):
+class ServerVNCConsole(ComputeAPITest):
     def test_not_active_server(self):
         """Test console req for not ACTIVE server returns badRequest"""
         vm = mfactory.VirtualMachineFactory()
         data = json.dumps({'console': {'type': 'vnc'}})
-        response = self.post('/api/v1.1/servers/%d/action' % vm.id,
-                             vm.userid, data, 'json')
+        response = self.mypost('servers/%d/action' % vm.id,
+                               vm.userid, data, 'json')
         self.assertBadRequest(response)
 
     def test_active_server(self):
@@ -398,8 +419,8 @@ class ServerVNCConsole(BaseAPITest):
         vm.save()
 
         data = json.dumps({'console': {'type': 'vnc'}})
-        response = self.post('/api/v1.1/servers/%d/action' % vm.id,
-                             vm.userid, data, 'json')
+        response = self.mypost('servers/%d/action' % vm.id,
+                               vm.userid, data, 'json')
         self.assertEqual(response.status_code, 200)
         reply = json.loads(response.content)
         self.assertEqual(reply.keys(), ['console'])
@@ -415,6 +436,6 @@ class ServerVNCConsole(BaseAPITest):
         vm.save()
 
         data = json.dumps({'console': {'type': 'foo'}})
-        response = self.post('/api/v1.1/servers/%d/action' % vm.id,
-                             vm.userid, data, 'json')
+        response = self.mypost('servers/%d/action' % vm.id,
+                               vm.userid, data, 'json')
         self.assertBadRequest(response)

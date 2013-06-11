@@ -63,7 +63,7 @@ pithos_patterns = patterns(
         include(pithos_api_patterns)),
     (r'{0}(?P<v_public>.+?)/?$'.format(prefix_pattern(PUBLIC_PREFIX)),
         'pithos.api.public.public_demux'),
-    (r'{0}/'.format(prefix_pattern(UI_PREFIX)),
+    (r'{0}'.format(prefix_pattern(UI_PREFIX)),
         include(pithos_view_patterns)))
 
 urlpatterns = patterns(

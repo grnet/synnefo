@@ -63,7 +63,7 @@ pithos_patterns = patterns(
         include(pithos_api_patterns)),
     (r'{0}(?P<v_public>.+?)/?$'.format(prefix_pattern(PUBLIC_PREFIX)),
         'pithos.api.public.public_demux'),
-    (r'{0}v1/'.format(prefix_pattern(UI_PREFIX)),
+    (r'{0}/'.format(prefix_pattern(UI_PREFIX)),
         include(pithos_view_patterns)))
 
 urlpatterns = patterns(
@@ -74,7 +74,7 @@ urlpatterns = patterns(
 if PROXY_USER_SERVICES:
     astakos_proxy = partial(proxy, proxy_base=BASE_ASTAKOS_PROXY_PATH,
                             target_base=ASTAKOS_BASE_URL)
-        
+
     proxy_patterns = api_patterns(
         '',
         (r'^login/?$', astakos_proxy),

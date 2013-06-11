@@ -35,7 +35,7 @@ from functools import wraps
 from datetime import datetime
 from urllib import quote, unquote
 
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404, HttpResponseForbidden
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 from django.utils.http import http_date, parse_etags
@@ -1113,11 +1113,13 @@ def view_method():
             request.META['HTTP_X_AUTH_TOKEN'] = get_token_from_cookie(request)
             # Get the response object
             response = func(request, *args, **kwargs)
-            # TODO: support additional success codes
             if response.status_code == 200:
                 return response
+            elif response.status_code == 404:
+                raise Http404()
+            elif response.status_code in [401, 403]:
+                return HttpResponseForbidden()
             else:
-                # TODO: raise more specific exceptions
-                raise Exception()
+                raise Exception(response)
         return wrapper
     return decorator

@@ -105,21 +105,33 @@ def get_invitation(request):
         raise ValueError(_(astakos_messages.EMAIL_RESERVED) % locals())
     return invitation
 
+
 def restrict_next(url, domain=None, allowed_schemes=()):
     """
-    Return url if having the supplied ``domain`` (if present) or one of the ``allowed_schemes``.
-    Otherwise return None.
+    Utility method to validate that provided url is safe to be used as the
+    redirect location of an http redirect response. The method parses the
+    provided url and identifies if it conforms CORS against provided domain
+    AND url scheme matches any of the schemes in `allowed_schemes` parameter.
+    If verirication succeeds sanitized safe url is returned so you must use
+    the method's response in the response location header and not the
+    originally provided url. If verification fails the method returns None.
 
     >>> print restrict_next('/im/feedback', '.okeanos.grnet.gr')
     /im/feedback
-    >>> print restrict_next('pithos.okeanos.grnet.gr/im/feedback', '.okeanos.grnet.gr')
+    >>> print restrict_next('pithos.okeanos.grnet.gr/im/feedback',
+    ...                     '.okeanos.grnet.gr')
     //pithos.okeanos.grnet.gr/im/feedback
-    >>> print restrict_next('https://pithos.okeanos.grnet.gr/im/feedback', '.okeanos.grnet.gr')
+    >>> print restrict_next('https://pithos.okeanos.grnet.gr/im/feedback',
+    ...                     '.okeanos.grnet.gr')
     https://pithos.okeanos.grnet.gr/im/feedback
     >>> print restrict_next('pithos://127.0.0.1', '.okeanos.grnet.gr')
     None
-    >>> print restrict_next('pithos://127.0.0.1', '.okeanos.grnet.gr', allowed_schemes=('pithos'))
-    pithos://127.0.0,1
+    >>> print restrict_next('pithos://127.0.0.1', '.okeanos.grnet.gr',
+    ...                     allowed_schemes=('pithos'))
+    None
+    >>> print restrict_next('pithos://127.0.0.1', '127.0.0.1',
+    ...                     allowed_schemes=('pithos'))
+    pithos://127.0.0.1
     >>> print restrict_next('node1.example.com', '.okeanos.grnet.gr')
     None
     >>> print restrict_next('//node1.example.com', '.okeanos.grnet.gr')
@@ -132,23 +144,38 @@ def restrict_next(url, domain=None, allowed_schemes=()):
     //node1.example.com
     >>> print restrict_next('node1.example.com')
     //node1.example.com
+    >>> print restrict_next('node1.example.com', allowed_schemes=('pithos',))
+    None
+    >>> print restrict_next('pithos://localhost', 'localhost',
+    ...                     allowed_schemes=('pithos',))
+    pithos://localhost
     """
     if not url:
-        return
+        return None
+
     parts = urlparse(url, scheme='http')
     if not parts.netloc and not parts.path.startswith('/'):
         # fix url if does not conforms RFC 1808
         url = '//%s' % url
         parts = urlparse(url, scheme='http')
-    # TODO more scientific checks?
-    if not parts.netloc:    # internal url
+
+    if not domain and not allowed_schemes:
         return url
-    elif not domain:
-        return url
-    elif parts.netloc.endswith(domain):
-        return url
-    elif parts.scheme in allowed_schemes:
-        return url
+
+    if domain:
+        if not parts.netloc:
+            return url
+        if parts.netloc.endswith(domain):
+            return url
+        else:
+            return None
+
+    if allowed_schemes:
+        if parts.scheme in allowed_schemes:
+            return url
+
+    return None
+
 
 def prepare_response(request, user, next='', renew=False):
     """Return the unique username and the token

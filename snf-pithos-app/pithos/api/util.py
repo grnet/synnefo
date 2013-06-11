@@ -63,7 +63,7 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  RADOS_POOL_MAPS, TRANSLATE_UUIDS,
                                  PUBLIC_URL_SECURITY,
                                  PUBLIC_URL_ALPHABET,
-                                 COOKIE_NAME, BASE_URL)
+                                 COOKIE_NAME, BASE_HOST)
 from pithos.api.resources import resources
 from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
                                   VersionNotExists)
@@ -395,7 +395,7 @@ def update_public_meta(public, meta):
     if not public:
         return
     meta['X-Object-Public'] = join_urls(
-        BASE_URL, reverse('pithos.api.public.public_demux', args=(public,)))
+        BASE_HOST, reverse('pithos.api.public.public_demux', args=(public,)))
 
 
 def validate_modification_preconditions(request, meta):

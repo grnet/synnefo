@@ -114,7 +114,6 @@ def login(request):
             logger.info('Token reset for %s' % user.username)
         parts = list(urlsplit(next))
         parts[3] = urlencode({
-            'user': request.user.uuid,
             'token': request.user.auth_token
         })
         url = urlunsplit(parts)

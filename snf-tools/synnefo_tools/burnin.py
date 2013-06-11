@@ -236,8 +236,12 @@ class ImagesTestCase(unittest.TestCase):
         log.info("Getting simple and detailed list of images")
         cls.client = ComputeClient(API, TOKEN)
         cls.plankton = ImageClient(PLANKTON, TOKEN)
-        cls.images = cls.plankton.list_public()
-        cls.dimages = cls.plankton.list_public(detail=True)
+        cls.images = \
+            filter(lambda x: not x['name'].startswith(SNF_TEST_PREFIX),
+                   cls.plankton.list_public())
+        cls.dimages = \
+            filter(lambda x: not x['name'].startswith(SNF_TEST_PREFIX),
+                   cls.plankton.list_public(detail=True))
         cls.result_dict = dict()
         # Get uniq user id
         cls.uuid = _get_user_id()

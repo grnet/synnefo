@@ -138,4 +138,16 @@ cyclades_services = {
         ],
         'resources': {},
     },
+
+    'cyclades_admin': {
+        'type': 'admin',
+        'component': 'cyclades',
+        'prefix': 'admin',
+        'public': True,
+        'endpoints': [
+            {'versionId': '',
+             'publicURL': None},
+        ],
+        'resources': {},
+    },
 }

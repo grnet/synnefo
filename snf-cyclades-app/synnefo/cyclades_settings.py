@@ -59,6 +59,7 @@ PLANKTON_PREFIX = get_path(cyclades_services, 'cyclades_plankton.prefix')
 HELPDESK_PREFIX = get_path(cyclades_services, 'cyclades_helpdesk.prefix')
 UI_PREFIX = get_path(cyclades_services, 'cyclades_ui.prefix')
 USERDATA_PREFIX = get_path(cyclades_services, 'cyclades_userdata.prefix')
+ADMIN_PREFIX = get_path(cyclades_services, 'cyclades_admin.prefix')
 
 COMPUTE_ROOT_URL = join_urls(BASE_URL, COMPUTE_PREFIX)
 

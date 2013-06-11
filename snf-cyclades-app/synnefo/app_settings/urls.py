@@ -40,11 +40,10 @@ from snf_django.lib.api.urls import api_patterns
 from synnefo.cyclades_settings import (
     BASE_URL, BASE_HOST, BASE_PATH, COMPUTE_PREFIX, VMAPI_PREFIX,
     PLANKTON_PREFIX, HELPDESK_PREFIX, UI_PREFIX, ASTAKOS_BASE_URL,
-    USERDATA_PREFIX, ASTAKOS_BASE_PATH, BASE_ASTAKOS_PROXY_PATH,
+    USERDATA_PREFIX, ADMIN_PREFIX, ASTAKOS_BASE_PATH, BASE_ASTAKOS_PROXY_PATH,
     ASTAKOS_ACCOUNTS_PREFIX, ASTAKOS_VIEWS_PREFIX, PROXY_USER_SERVICES,
     cyclades_services)
 
-from urlparse import urlparse
 from functools import partial
 
 
@@ -56,6 +55,7 @@ cyclades_patterns = api_patterns('',
     (prefix_pattern(PLANKTON_PREFIX), include('synnefo.plankton.urls')),
     (prefix_pattern(COMPUTE_PREFIX), include('synnefo.api.urls')),
     (prefix_pattern(USERDATA_PREFIX), include('synnefo.userdata.urls')),
+    (prefix_pattern(ADMIN_PREFIX), include('synnefo.admin.urls')),
 )
 
 cyclades_patterns += patterns('',

@@ -143,7 +143,7 @@ def allocate_floating_ip(request):
                                               deleted=False,
                                               floating_ip_pool=True)
 
-            except IndexError:
+            except Network.DoesNotExist:
                 raise faults.ItemNotFound("Pool '%s' does not exist." % pool)
             if address is None:
                 # User did not specified an IP address. Choose a random one

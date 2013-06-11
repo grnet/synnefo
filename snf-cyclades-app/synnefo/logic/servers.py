@@ -202,7 +202,7 @@ def create(userid, name, password, flavor, image, metadata={},
         vm.task_job_id = jobID
         vm.save()
         transaction.commit()
-        log.info("User %s created VM %s, NIC %s, Backend %s, JobID %s",
+        log.info("User %s created VM %s, NICs %s, Backend %s, JobID %s",
                  userid, vm, nics, backend, str(jobID))
     except GanetiApiError as e:
         log.exception("Can not communicate to backend %s: %s.",
@@ -249,9 +249,7 @@ def create_instance_nics(vm, userid, private_networks=[], floating_ips=[]):
                 address = util.get_network_free_address(network)
         attachments.append((network, address))
     for address in floating_ips:
-        floating_ip = add_floating_ip_to_vm(address=address,
-                                            user_id=userid,
-                                            vm=vm)
+        floating_ip = add_floating_ip_to_vm(vm=vm, address=address)
         network = floating_ip.network
         attachments.append((network, address))
     for network_id in private_networks:
@@ -423,7 +421,7 @@ def console(vm, console_type):
     return console
 
 
-@server_command("CONNECTING")
+@server_command("CONNECT")
 def add_floating_ip(vm, address):
     floating_ip = add_floating_ip_to_vm(vm, address)
     log.info("Connecting VM %s to floating IP %s", vm, floating_ip)
@@ -464,7 +462,7 @@ def add_floating_ip_to_vm(vm, address):
     return floating_ip
 
 
-@server_command("DISCONNECTING")
+@server_command("DISCONNECT")
 def remove_floating_ip(vm, address):
     user_id = vm.userid
     try:

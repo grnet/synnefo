@@ -296,7 +296,7 @@ class ServerCreateAPITest(ComputeAPITest):
         self.network.save()
         with mocked_quotaholder():
             response = self.mypost('servers', 'test_user',
-                                    json.dumps(self.request), 'json')
+                                   json.dumps(self.request), 'json')
         self.assertEqual(response.status_code, 503, "serviceUnavailable")
 
     def test_create_network_settings(self, mrapi):

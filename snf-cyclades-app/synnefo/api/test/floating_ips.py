@@ -287,6 +287,7 @@ class FloatingIPActionsTest(BaseAPITest):
         BackendNetworkFactory(network=ip1.network, backend=self.vm.backend,
                               operstate='ACTIVE')
         request = {"addFloatingIp": {"address": ip1.ipv4}}
+        mock().ModifyInstance.return_value = 1
         response = self.post(url, self.vm.userid, json.dumps(request), "json")
         self.assertEqual(response.status_code, 202)
         ip1_after = FloatingIP.objects.get(id=ip1.id)
@@ -309,6 +310,7 @@ class FloatingIPActionsTest(BaseAPITest):
         ip1 = FloatingIPFactory(userid=self.vm.userid, machine=self.vm)
         NetworkInterfaceFactory(machine=self.vm, ipv4=ip1.ipv4)
         request = {"removeFloatingIp": {"address": ip1.ipv4}}
+        mock().ModifyInstance.return_value = 2
         response = self.post(url, self.vm.userid, json.dumps(request), "json")
         self.assertEqual(response.status_code, 202)
         # Yet used. Wait for the callbacks

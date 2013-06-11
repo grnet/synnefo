@@ -295,7 +295,7 @@ def nics_changed(old_nics, new_nics):
 
 def release_instance_ips(vm, ganeti_nics):
     old_addresses = set(vm.nics.values_list("network", "ipv4"))
-    new_addresses = set(map(lambda nic: (nic["network"], nic["ipv4"]),
+    new_addresses = set(map(lambda nic: (nic["network"].id, nic["ipv4"]),
                             ganeti_nics))
     to_release = old_addresses - new_addresses
     for (network_id, ipv4) in to_release:

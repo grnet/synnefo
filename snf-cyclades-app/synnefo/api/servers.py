@@ -827,7 +827,7 @@ def remove(request, net, args):
     return HttpResponse(status=202)
 
 
-@server_action("addfloatingip")
+@server_action("addFloatingIp")
 def add_floating_ip(request, vm, args):
     address = args.get("address")
     if address is None:
@@ -837,7 +837,7 @@ def add_floating_ip(request, vm, args):
     return HttpResponse(status=202)
 
 
-@server_action("removefloatingip")
+@server_action("removeFloatingIp")
 def remove_floating_ip(request, vm, args):
     address = args.get("address")
     if address is None:

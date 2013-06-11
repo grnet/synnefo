@@ -34,13 +34,17 @@
 from django.utils import simplejson as json
 from django.test import TestCase
 from snf_django.utils.testing import astakos_user
+from synnefo.cyclades_settings import cyclades_services
+from synnefo.lib.services import get_service_path
 
 class APITest(TestCase):
     def test_api_version(self):
         """Check API version."""
+        path = get_service_path(cyclades_services,
+                                'compute', version='v2.0')
         with astakos_user('user'):
-            response = self.client.get('/api/v1.1/')
+            response = self.client.get(path)
         self.assertEqual(response.status_code, 200)
         api_version = json.loads(response.content)['version']
-        self.assertEqual(api_version['id'], 'v1.1')
+        self.assertEqual(api_version['id'], 'v2.0')
         self.assertEqual(api_version['status'], 'CURRENT')

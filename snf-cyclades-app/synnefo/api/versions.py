@@ -45,36 +45,42 @@ from snf_django.lib import api
 log = getLogger('synnefo.api')
 
 
-VERSION_1_1 = {
-    'id': 'v1.1',
-    'status': 'CURRENT',
-    'updated': '2011-04-01',
-    'links': [
+VERSION_2_0 = {
+    "id" : "v2.0",
+    "status" : "CURRENT",
+    "updated" : "2011-01-21T11:33:21-06:00",
+    "links": [
         {
-            'rel': 'self',
-            'href': COMPUTE_ROOT_URL,
-        }
-    ]
+            "rel" : "self",
+            "href" : COMPUTE_ROOT_URL,
+        },
+    ],
 }
 
-VERSIONS = [VERSION_1_1]
+VERSIONS = [VERSION_2_0]
 
 MEDIA_TYPES = [
-    {'base': 'application/xml',
-     'type': 'application/vnd.openstack.compute-v1.1+xml'},
-    {'base': 'application/json',
-     'type': 'application/vnd.openstack.compute-v1.1+json'}
+    {
+        "base" : "application/xml",
+        "type" : "application/vnd.openstack.compute.v2+xml"
+    },
+    {
+        "base" : "application/json",
+        "type" : "application/vnd.openstack.compute.v2+json"
+    }
 ]
 
 DESCRIBED_BY = [
-    {'rel': 'describedby',
-     'type': 'application/pdf',
-     'href': "http://docs.rackspacecloud.com/servers/api/"
-             "v1.1/cs-devguide-20110125.pdf"},
-    {'rel': 'describedby',
-     'type': 'application/vnd.sun.wadl+xml',
-     'href': "http://docs.rackspacecloud.com/servers/api/v1.1/"
-             "application.wadl"}
+    {
+        "rel" : "describedby",
+        "type" : "application/pdf",
+        "href" : "http://docs.rackspacecloud.com/servers/api/v2/cs-devguide-20110125.pdf"
+    },
+    {
+        "rel" : "describedby",
+        "type" : "application/vnd.sun.wadl+xml",
+        "href" : "http://docs.rackspacecloud.com/servers/api/v2/application.wadl"
+    }
 ]
 
 
@@ -101,8 +107,8 @@ def version_details(request, api_version):
     #                       overLimit(413)
 
     log.debug('version_details %s', api_version)
-    # We hardcode to v1.1 since it is the only one we support
-    version = VERSION_1_1.copy()
+    # We hardcode to v2.0 since it is the only one we support
+    version = VERSION_2_0.copy()
     version['links'] = version['links'] + DESCRIBED_BY
 
     if request.serialization == 'xml':

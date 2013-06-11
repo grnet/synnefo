@@ -58,6 +58,7 @@ INSTALL_REQUIRES = [
     'gdmodule',
     'py-rrdtool',
     'Django>=1.2, <1.3',
+    'snf-django-lib',
 ]
 
 setup(

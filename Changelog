@@ -40,15 +40,21 @@ Astakos
   * Removed settings ASTAKOS_QUOTAHOLDER_URL, ASTAKOS_QUOTAHOLDER_TOKEN,
     and ASTAKOS_QUOTAHOLDER_POOLSIZE.
 
+* API-related changes:
+
+  * Implemented API calls for quota, resources, and commissions.
+  * Moved all API calls under '/account/v1.0'.
+  * Implemented the keystone API call POST /tokens under '/identity/v2.0'.
+
 * Service and resource specification and handling:
 
-  * Specified a format for defining resources a service exposes. Migrated
-    internal resource name by prefixing it with service name (e.g. 'vm'
-    becomes 'cyclades.vm'); renamed registered service 'pithos+' to
-    'pithos'.
-  * Specified a procedure to register a service's resources in astakos and
-    set their respective default base quota limit. Removed resource
-    definitions from settings.
+  * Specified a format for defining services along with the API endpoints
+    and the resources they expose. Migrated internal resource name by
+    prefixing it with service name (e.g. 'vm' becomes 'cyclades.vm');
+    renamed registered service 'pithos+' to 'pithos'.
+  * Specified a procedure to register a Synnefo component, its services and
+    their resources in astakos and set the resources' default base quota
+    limit. Removed resource definitions from settings.
   * Moved service and resource presentation data out of the respective db
     models into a separate file of UI constants.
 
@@ -63,12 +69,6 @@ Astakos
     syncing to quotaholder.
   * When locking multiple rows (e.g. users or holdings) include an ORDER BY
     clause in the query to impose ordering on locking.
-
-* API-related changes:
-
-  * Implemented API calls for quota, resources, and commissions.
-  * Moved all API calls under '/account/v1.0'. Kept also previous locations
-    for backwards compatibility.
 
 * Changes in views:
 
@@ -98,15 +98,27 @@ Astakos
 
 * Management commands:
 
-  * Renamed command astakos-quota to quota; user-update to user-modify.
-  * Removed user-set-initial-quota; integrated its functionality in
-    user-modify and quota.
+  * Introduced new commands:
+     * authpolicy-{add, list, remove, set, show}
+     * group-{add, list}
+     * component-{add, list, modify, remove}
+     * reconcile-resources-astakos
+     * resource-{export-astakos, import, modify}
+     * service-{export-astakos, import, show}
+  * Renamed commands:
+     * astakos-quota to quota
+     * user-update to user-modify
+     * full-cleanup to cleanup-full
+  * Removed commands:
+     * astakos-init
+     * invitation-{details, list}
+     * project-sync
+     * resource-{add, remove}
+     * service-{add, remove, token-renew, update}
+     * user-invite
+     * user-set-initial-quota (integrated its functionality in user-modify and quota)
   * Added quota and project-related information in user-show command; added
     membership information in project-show.
-  * New commands introduced
-
-    * user-group-{add, list}
-    * user-auth-policy-{add, list, remove, set, show}
 
 Cyclades
 --------

@@ -104,12 +104,12 @@ def _ssh_execute(hostip, username, password, command):
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
         ssh.connect(hostip, username=username, password=password)
-    except socket.error:
-        raise AssertionError
+    except socket.error, err:
+        raise AssertionError(err)
     try:
         stdin, stdout, stderr = ssh.exec_command(command)
-    except paramiko.SSHException:
-        raise AssertionError
+    except paramiko.SSHException, err:
+        raise AssertionError(err)
     status = stdout.channel.recv_exit_status()
     output = stdout.readlines()
     ssh.close()
@@ -647,8 +647,8 @@ class SpawnServerTestCase(unittest.TestCase):
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             ssh.connect(hostip, username=username, password=password)
             ssh.close()
-        except socket.error:
-            raise AssertionError
+        except socket.error, err:
+            raise AssertionError(err)
 
         transport = paramiko.Transport((hostip, 22))
         transport.connect(username=username, password=password)

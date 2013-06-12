@@ -32,8 +32,10 @@
 # or implied, of GRNET S.A.
 
 from django.conf.urls.defaults import patterns, url
+from snf_django.lib.api import api_endpoint_not_found
 
 urlpatterns = patterns(
     'astakos.api.tokens',
     url(r'^v2.0/tokens/?$', 'authenticate', name='tokens_authenticate'),
+    url(r'^.*', api_endpoint_not_found),
 )

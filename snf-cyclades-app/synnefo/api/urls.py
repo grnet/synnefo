@@ -33,7 +33,7 @@
 
 from django.conf.urls.defaults import include, patterns
 
-from snf_django.lib.api import not_found
+from snf_django.lib.api import api_endpoint_not_found
 from synnefo.api import servers, flavors, images, networks
 from synnefo.api.versions import versions_list, version_details
 
@@ -56,5 +56,5 @@ urlpatterns = patterns(
     (r'^v2.0/(?:.json|.xml|.atom)?$', version_details,
         {'api_version': 'v1.1'}),
     (r'^v2.0/', include(api20_patterns)),
-    (r'^.+', not_found),
+    (r'^.*', api_endpoint_not_found),
 )

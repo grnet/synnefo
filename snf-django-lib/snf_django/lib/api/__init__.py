@@ -210,9 +210,11 @@ def render_fault(request, fault):
     return response
 
 
-def not_found(request):
-    raise faults.BadRequest('Not found.')
+@api_method(token_required=False, user_required=False)
+def api_endpoint_not_found(request):
+    raise faults.BadRequest("API endpoint not found")
 
 
-def method_not_allowed(request):
+@api_method(token_required=False, user_required=False)
+def api_method_not_allowed(request):
     raise faults.BadRequest('Method not allowed')

@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 from django.conf.urls.defaults import patterns, url, include
+from snf_django.lib.api import api_endpoint_not_found
 
 
 astakos_account_v1_0 = patterns(
@@ -60,4 +61,5 @@ astakos_account_v1_0 += patterns(
 urlpatterns = patterns(
     '',
     url(r'^v1.0/', include(astakos_account_v1_0)),
+    (r'^.*', api_endpoint_not_found),
 )

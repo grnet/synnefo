@@ -33,6 +33,7 @@
 
 from django.conf.urls.defaults import patterns, include
 from django.http import HttpResponseNotAllowed
+from snf_django.lib.api import api_endpoint_not_found
 
 from synnefo.plankton import views
 
@@ -90,4 +91,5 @@ image_v1_patterns = patterns(
 urlpatterns = patterns(
     '',
     (r'^v1.0/', include(image_v1_patterns)),
+    (r'^.*', api_endpoint_not_found),
 )

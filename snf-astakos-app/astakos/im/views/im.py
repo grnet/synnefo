@@ -262,9 +262,9 @@ def api_access(request, template_name='im/api_access.html',
     """
     context = {}
 
-    token_url = join_urls(settings.BASE_HOST, reverse('tokens_authenticate'))
+    url = get_public_endpoint(settings.astakos_services, 'identity')
     context['services'] = Component.catalog()
-    context['token_url'] = token_url
+    context['token_url'] = url
     context['client_url'] = settings.API_CLIENT_URL
 
     if extra_context:

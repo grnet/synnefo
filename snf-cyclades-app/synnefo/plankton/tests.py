@@ -261,3 +261,12 @@ class PlanktonTest(PlanktonAPITest):
         self.assertEqual(response.status_code, 204)
         backend.return_value.unregister.assert_called_once_with('123')
         backend.return_value._delete.assert_not_called()
+
+    @assert_backend_closed
+    def test_catch_wrong_api_paths(self, *args):
+        response = self.myget('nonexistent')
+        self.assertEqual(response.status_code, 400)
+        try:
+            error = json.loads(response.content)
+        except ValueError:
+            self.assertTrue(False)

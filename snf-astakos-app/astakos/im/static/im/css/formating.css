@@ -139,7 +139,7 @@ h2 .header-actions { float: right; font-size: 0.8em;}
 .api-access-view div.detail {
     display: block;
     position: relative;
-    margin: 2em 0;
+    margin: 2em 0 0;
     font-size: 1.3em; 
     padding-bottom: 0.2em;
 }
@@ -183,13 +183,22 @@ h2 .header-actions { float: right; font-size: 0.8em;}
     margin-top: 1em;
 }
 
+.token-view .renew-token .wrap  {
+    position: relative;
+}
+
 .renew-token .confirm {
     color:#3582AC;
-    margin:0 15px;
+    position: absolute;
+    left: 110px;
+    top:0;
 }
 
 .renew-token .close {
     color:#F24E53;
+    position: absolute;
+    left: 190px;
+    top: 0
 }
 
 .renew-token .sub,

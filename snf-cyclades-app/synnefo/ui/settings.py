@@ -54,7 +54,7 @@ if cyclades.PROXY_USER_SERVICES:
     ACCOUNT_URL = join_urls('/', cyclades.BASE_ASTAKOS_PROXY_PATH,
                             cyclades.ASTAKOS_ACCOUNTS_PREFIX, 'v1.0')
 else:
-    ACCOUNT_URL = get_public_endpoint(astakos_services, 'account', 'v1.0')
+    ACCOUNT_URL = endpoint(astakos_services, 'account', 'v1.0')
 
 
 USER_CATALOG_URL = join_urls(ACCOUNT_URL, 'user_catalogs')

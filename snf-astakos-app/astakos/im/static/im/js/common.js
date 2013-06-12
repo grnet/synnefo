@@ -99,7 +99,7 @@ $(document).ready(function() {
 
 
     if (is_firefox ){
-      $('.dummy-input').show();
+      $('.dummy-input').css('display','block');
       $('.dummy-input').next('input').css('visibility','hidden');
     }
 

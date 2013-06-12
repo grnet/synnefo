@@ -185,3 +185,7 @@ SKIP_EMAIL_VERIFICATION = getattr(settings,
 # Kamaki download url. Displayed in api access view
 API_CLIENT_URL = getattr(settings, 'ASTAKOS_API_CLIENT_URL',
                          'https://pypi.python.org/pypi/kamaki')
+
+KAMAKI_CONFIG_CLOUD_NAME = getattr(settings,
+                                   'ASTAKOS_KAMAKI_CONFIG_CLOUD_NAME',
+                                   None)

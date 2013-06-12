@@ -49,6 +49,10 @@ from django.utils.translation import ugettext as _
 from django.core.exceptions import PermissionDenied
 from django.views.decorators.http import require_http_methods
 from django.utils import simplejson as json
+from django.template import RequestContext
+
+from synnefo_branding import utils as branding
+from synnefo_branding import settings as branding_settings
 
 from synnefo.lib import join_urls
 
@@ -62,6 +66,7 @@ from astakos.im.util import get_context, prepare_response, get_query, \
 from astakos.im.forms import LoginForm, InvitationForm, FeedbackForm, \
     SignApprovalTermsForm, EmailChangeForm
 from astakos.im.forms import ExtendedProfileForm as ProfileForm
+from synnefo.lib.services import get_public_endpoint
 from astakos.im.functions import send_feedback, logout as auth_logout, \
     invite as invite_func
 from astakos.im import settings
@@ -210,7 +215,42 @@ def invite(request, template_name='im/invitations.html', extra_context=None):
                            context_instance=context)
 
 
+
 @require_http_methods(["GET", "POST"])
+@required_auth_methods_assigned()
+@login_required
+@cookie_fix
+@signed_terms_required
+def api_access_config(request, template_name='im/api_access_config.html',
+                      content_type='text/plain', extra_context=None,
+                      filename='.kamakirc'):
+
+    if settings.KAMAKI_CONFIG_CLOUD_NAME:
+        cloud_name = settings.KAMAKI_CONFIG_CLOUD_NAME
+    else:
+        cloud_name = branding_settings.SERVICE_NAME.replace(' ', '_').lower()
+
+    url = get_public_endpoint(settings.astakos_services, 'identity')
+
+    context = {
+        'user': request.user,
+        'services': Component.catalog(),
+        'token_url': url,
+        'cloud_name': cloud_name
+    }
+
+    extra_context = extra_context or {}
+    context.update(extra_context)
+    content = branding.render_to_string(template_name, context,
+                                        RequestContext(request))
+    response = HttpResponse()
+    response.status_code = 200
+    response.content_type = content_type
+    response['Content-Disposition'] = 'attachment; filename="%s"' % filename
+    response.content = content
+    return response
+
+
 @required_auth_methods_assigned()
 @login_required
 @cookie_fix

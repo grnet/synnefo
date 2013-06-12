@@ -56,6 +56,8 @@ def join_urls(*args):
     'http://www.test.org/a/b/c/d'
     >>> join_urls("http://www.test.org/a/b/", "/c/d")
     'http://www.test.org/a/b/c/d'
+    >>> join_urls("http://www.test.org/a/b/", "/c/d/", "/e/f/")
+    'http://www.test.org/a/b/c/d/e/f/'
     >>> join_urls("/path1", "/path")
     '/path1/path'
     >>> join_urls("path1", "/path")
@@ -78,20 +80,20 @@ def join_urls(*args):
         return args[0]
 
     return "/".join([args[0].rstrip("/")] +
-                    [a.lstrip("/") for a in args[1:-1]] +
+                    [a.strip("/") for a in args[1:-1]] +
                     [args[-1].lstrip("/")])
 
 
 def parse_base_url(base_url):
     """
     >>> parse_base_url("https://one.two.three/four/five")
-    ('https://one.two.three', '/four/five')
+    ('https://one.two.three', 'four/five')
     >>> parse_base_url("https://one.two.three/four/five/")
-    ('https://one.two.three', '/four/five/')
+    ('https://one.two.three', 'four/five')
     >>> parse_base_url("https://one.two.three/")
-    ('https://one.two.three', '/')
+    ('https://one.two.three', '')
     >>> parse_base_url("https://one.two.three")
-    ('https://one.two.three', '/')
+    ('https://one.two.three', '')
 
     """
     parsed = urlparse(base_url)

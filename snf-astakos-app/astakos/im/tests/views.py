@@ -31,7 +31,20 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from astakos.im.tests.auth import *
-from astakos.im.tests.projects import *
-from astakos.im.tests.api import *
-from astakos.im.tests.views import *
+from astakos.im.tests.common import *
+from django.core import urlresolvers
+
+
+class TestViews(TestCase):
+
+    def test_user_views(self):
+        user = get_local_user('user@synnefo.org')
+        r = self.client.get(reverse('api_access'), follow=True)
+        self.assertRedirects(r, reverse_with_next('api_access'))
+
+        self.client.login(username='user@synnefo.org', password='password')
+        r = self.client.get(reverse('api_access'), follow=True)
+        self.assertEqual(r.status_code, 200)
+
+        r = self.client.get(reverse('api_access_config'))
+        self.assertContains(r, user.auth_token)

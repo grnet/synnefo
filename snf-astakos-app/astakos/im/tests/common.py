@@ -175,3 +175,7 @@ def get_mailbox(email):
             if email in recipient:
                 mails.append(sent_email)
     return mails
+
+
+def reverse_with_next(next_reverse, base_reverse='login'):
+    return reverse(base_reverse) + '?next=%s' % reverse(next_reverse)

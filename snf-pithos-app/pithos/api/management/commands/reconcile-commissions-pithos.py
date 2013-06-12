@@ -68,7 +68,7 @@ class Command(NoArgsCommand):
                 return
 
             if options['fix']:
-                to_accept = b.commision_serials.lookup(pending_commissions)
+                to_accept = b.commission_serials.lookup(pending_commissions)
                 to_reject = list(set(pending_commissions) - set(to_accept))
                 response = b.astakosclient.resolve_commissions(
                     token=b.service_token,

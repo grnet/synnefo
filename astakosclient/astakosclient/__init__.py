@@ -56,12 +56,13 @@ def join_urls(a, b):
 
 # --------------------------------------------------------------------
 # Astakos API urls
+UI_PREFIX = get_path(astakos_services, 'astakos_ui.prefix')
 ACCOUNTS_PREFIX = get_path(astakos_services, 'astakos_account.prefix')
 ACCOUNTS_PREFIX = join_urls(ACCOUNTS_PREFIX, 'v1.0')
 API_AUTHENTICATE = join_urls(ACCOUNTS_PREFIX, "authenticate")
 API_USERCATALOGS = join_urls(ACCOUNTS_PREFIX, "user_catalogs")
 API_SERVICE_USERCATALOGS = join_urls(ACCOUNTS_PREFIX, "service/user_catalogs")
-API_GETSERVICES = join_urls(ACCOUNTS_PREFIX, "get_services")
+API_GETSERVICES = join_urls(UI_PREFIX, "get_services")
 API_RESOURCES = join_urls(ACCOUNTS_PREFIX, "resources")
 API_QUOTAS = join_urls(ACCOUNTS_PREFIX, "quotas")
 API_SERVICE_QUOTAS = join_urls(ACCOUNTS_PREFIX, "service_quotas")
@@ -72,8 +73,8 @@ API_FEEDBACK = join_urls(ACCOUNTS_PREFIX, "feedback")
 # --------------------------------------------------------------------
 # Astakos Keystone API urls
 IDENTITY_PREFIX = get_path(astakos_services, 'astakos_identity.prefix')
+IDENTITY_PREFIX = join_urls(IDENTITY_PREFIX, "v2.0")
 API_TOKENS = join_urls(IDENTITY_PREFIX, "tokens")
-TOKENS_ENDPOINTS = join_urls(API_TOKENS, "endpoints")
 
 
 # --------------------------------------------------------------------
@@ -362,40 +363,8 @@ class AstakosClient():
         self._call_astakos(token, path, None, req_body, "POST")
 
     # ----------------------------------
-    # do a GET to ``API_TOKENS``/<user_token>/``TOKENS_ENDPOINTS``
-    def get_endpoints(self, token, belongs_to=None, marker=None, limit=None):
-        """Request registered endpoints from astakos
-
-        keyword arguments:
-        token       -- user's token (string)
-        belongs_to  -- user's uuid (string)
-        marker      -- return endpoints whose ID is higher than marker's (int)
-        limit       -- maximum number of endpoints to return (int)
-
-        Return a json formatted dictionary containing information
-        about registered endpoints.
-
-        WARNING: This api call encodes the user's token inside the url.
-        It's thoughs security unsafe to use it (both astakosclient and
-        nginx tend to log requested urls).
-        Avoid the use of get_endpoints method and use
-        get_user_info_with_endpoints instead.
-
-        """
-        params = {}
-        if belongs_to is not None:
-            params['belongsTo'] = str(belongs_to)
-        if marker is not None:
-            params['marker'] = str(marker)
-        if limit is not None:
-            params['limit'] = str(limit)
-        path = API_TOKENS + "/" + token + "/" + \
-            TOKENS_ENDPOINTS + "?" + urllib.urlencode(params)
-        return self._call_astakos(token, path)
-
-    # ----------------------------------
     # do a POST to ``API_TOKENS``
-    def get_user_info_with_endpoints(self, token, uuid=None):
+    def get_endpoints(self, token, uuid=None):
         """ Fallback call for authenticate
 
         Keyword arguments:

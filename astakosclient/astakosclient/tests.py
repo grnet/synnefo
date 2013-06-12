@@ -40,6 +40,7 @@ the astakos client library
 
 """
 
+import re
 import sys
 import socket
 import simplejson
@@ -116,19 +117,23 @@ def _request_status_400(conn, method, url, **kwargs):
 
 def _request_ok(conn, method, url, **kwargs):
     """This request behaves like original Astakos does"""
-    if url.startswith(astakosclient.API_AUTHENTICATE):
+    if re.match('/?' + astakosclient.API_AUTHENTICATE, url) is not None:
+        print "here 1"
         return _req_authenticate(conn, method, url, **kwargs)
-    elif url.startswith(astakosclient.API_USERCATALOGS):
+    elif re.match('/?' + astakosclient.API_USERCATALOGS, url) is not None:
+        print "here 2"
         return _req_catalogs(conn, method, url, **kwargs)
-    elif url.startswith(astakosclient.API_RESOURCES):
+    elif re.match('/?' + astakosclient.API_RESOURCES, url) is not None:
+        print "here 3"
         return _req_resources(conn, method, url, **kwargs)
-    elif url.startswith(astakosclient.API_QUOTAS):
+    elif re.match('/?' + astakosclient.API_QUOTAS, url) is not None:
         return _req_quotas(conn, method, url, **kwargs)
-    elif url.startswith(astakosclient.API_COMMISSIONS):
+    elif re.match('/?' + astakosclient.API_COMMISSIONS, url) is not None:
         return _req_commission(conn, method, url, **kwargs)
-    elif url.startswith(astakosclient.API_TOKENS):
+    elif re.match('/?' + astakosclient.API_TOKENS, url) is not None:
         return _req_endpoints(conn, method, url, **kwargs)
     else:
+        print "here 4"
         return _request_status_404(conn, method, url, **kwargs)
 
 
@@ -242,7 +247,7 @@ def _req_commission(conn, method, url, **kwargs):
         if 'body' not in kwargs:
             return _request_status_400(conn, method, url, **kwargs)
         body = simplejson.loads(unicode(kwargs['body']))
-        if url == astakosclient.API_COMMISSIONS:
+        if re.match('/?'+astakosclient.API_COMMISSIONS+'$', url) is not None:
             # Issue Commission
             # Check if we have enough resources to give
             if body['provisions'][1]['quantity'] > 420000000:
@@ -270,12 +275,12 @@ def _req_commission(conn, method, url, **kwargs):
                 return ("", "", 200)
 
     elif method == "GET":
-        if url == astakosclient.API_COMMISSIONS:
+        if re.match('/?'+astakosclient.API_COMMISSIONS+'$', url) is not None:
             # Return pending commission
             return ("", simplejson.dumps(pending_commissions), 200)
         else:
             # Return commissions's description
-            serial = url[25:]
+            serial = re.sub('/?' + astakosclient.API_COMMISSIONS, '', url)[1:]
             if serial == str(57):
                 return ("", simplejson.dumps(commission_description), 200)
             else:
@@ -291,29 +296,20 @@ def _req_endpoints(conn, method, url, **kwargs):
     # Check input
     if conn.__class__.__name__ != "HTTPSConnection":
         return _request_status_302(conn, method, url, **kwargs)
+    if method != "POST":
+        return _request_status_400(conn, method, url, **kwargs)
 
     token_head = kwargs['headers'].get('X-Auth-Token')
-    if url == astakosclient.API_TOKENS:
-        if method != "POST":
-            return _request_status_400(conn, method, url, **kwargs)
-        body = simplejson.loads(kwargs['body'])
-        token = body['auth']['token']['id']
-        if token != token_1:
-            return _request_status_401(conn, method, url, **kwargs)
-        # Return
-        return ("", simplejson.dumps(user_info_endpoints), 200)
-
-    else:
-        if method != "GET":
-            return _request_status_400(conn, method, url, **kwargs)
-        url_split = url[len(astakosclient.API_TOKENS):].split('/')
-        token_url = url_split[1]
-        if token_head != token_url:
-            return _request_status_403(conn, method, url, **kwargs)
-        if token_url != token_1:
-            return _request_status_401(conn, method, url, **kwargs)
-        # Return
-        return ("", simplejson.dumps(endpoints), 200)
+    if method != "POST":
+        return _request_status_400(conn, method, url, **kwargs)
+    body = simplejson.loads(kwargs['body'])
+    token_body = body['auth']['token']['id']
+    if token_head != token_body:
+        return _request_status_403(conn, method, url, **kwargs)
+    if token_body != token_1:
+        return _request_status_401(conn, method, url, **kwargs)
+    # Return
+    return ("", simplejson.dumps(user_info_endpoints), 200)
 
 
 # ----------------------------
@@ -408,26 +404,6 @@ resources = {
         "unit": "bytes",
         "description": "Virtual machine memory",
         "service": "cyclades"}}
-
-endpoints = {
-    "endpoints": [
-        {"name": "cyclades",
-         "region": "cyclades",
-         "internalURL": "https://node1.example.com/ui/",
-         "adminURL": "https://node1.example.com/v1/",
-         "type": None,
-         "id": 5,
-         "publicURL": "https://node1.example.com/ui/"},
-        {"name": "pithos",
-         "region": "pithos",
-         "internalURL": "https://node2.example.com/ui/",
-         "adminURL": "https://node2.example.com/v1",
-         "type": None,
-         "id": 6,
-         "publicURL": "https://node2.example.com/ui/"}],
-    "endpoint_links": [
-        {"href": "/astakos/api/tokens/0000/endpoints?marker=4&limit=10000",
-         "rel": "next"}]}
 
 user_info_endpoints = \
     {'serviceCatalog': [
@@ -1178,38 +1154,11 @@ class TestEndPoints(unittest.TestCase):
     # ----------------------------------
     def test_get_endpoints(self):
         """Test function call of get_endpoints"""
-        global token_1, endpoints
-        _mock_request([_request_ok])
-        try:
-            client = AstakosClient("https://example.com")
-            response = client.get_endpoints(token_1)
-        except Exception as err:
-            self.fail("Shouldn't raise Exception %s" % err)
-        self.assertEqual(response, endpoints)
-
-    # ----------------------------------
-    def test_get_endpoints_wrong_token(self):
-        """Test function call of get_endpoints with wrong token"""
-        global token_2, endpoints
-        _mock_request([_request_ok])
-        try:
-            client = AstakosClient("https://example.com")
-            client.get_endpoints(token_2, marker=2, limit=100)
-        except Unauthorized:
-            pass
-        except Exception as err:
-            self.fail("Shouldn't raise Exception %s" % err)
-        else:
-            self.fail("Should have raised Unauthorized Exception")
-
-    # ----------------------------------
-    def test_get_user_info_with_endpoints(self):
-        """Test function call of get_user_info_with_endpoints"""
         global token_1, user_info_endpoints
         _mock_request([_request_ok])
         try:
             client = AstakosClient("https://example.com")
-            response = client.get_user_info_with_endpoints(token_1)
+            response = client.get_endpoints(token_1)
         except Exception as err:
             self.fail("Shouldn't raise Exception %s" % err)
         self.assertEqual(response, user_info_endpoints)

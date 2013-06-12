@@ -129,21 +129,7 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
         In case of success returns nothing.
         Otherwise raise an AstakosClientException exception.
 
-    **get_endpoints(**\ token, belongs_to, marker, limit\ **)**
-        Given a user's authentication token, request registered
-        endpoints from astakos service. If belongs_to is given (uuid)
-        check that the token belongs to this user. If marker is given
-        (int) return endpoints (ordered by ID) whose ID is higher than
-        the marker. Limit (int) specifies the maximum number of
-        endpoints to return. Return a json formatted dictionary containing
-        information about registered endpoints.
-
-        .. warning:: *get_endpoints* api call encodes the user's token inside
-            the url. It's security unsafe to use it (both astakosclient
-            and nginx tend to log requested urls). Use
-            get_user_info_with_endpoints instead.
-
-    **get_user_info_with_endpoints(**\ token, uuid=None\ **)**
+    **get_endpoints(**\ token, uuid=None\ **)**
         Fallback call which receives the user token or the user uuid/token
         and returns back the token as well as information about the token
         holder and the services he/seh can access.

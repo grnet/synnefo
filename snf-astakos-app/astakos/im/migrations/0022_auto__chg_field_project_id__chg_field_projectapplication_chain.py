@@ -8,6 +8,11 @@ class Migration(SchemaMigration):
 
     def forwards(self, orm):
 
+        if not db.dry_run:
+            objs = orm.ProjectApplication.objects
+            for (c,) in objs.values_list('chain').distinct():
+                orm.Chain.objects.get_or_create(chain=c)
+
         # Changing field 'Project.id'
         db.alter_column('im_project', 'id', self.gf('django.db.models.fields.related.OneToOneField')(unique=True, primary_key=True, db_column='id', to=orm['im.Chain']))
 
@@ -17,8 +22,9 @@ class Migration(SchemaMigration):
         # Changing field 'ProjectApplication.chain'
         db.alter_column('im_projectapplication', 'chain', self.gf('django.db.models.fields.related.ForeignKey')(db_column='chain', to=orm['im.Chain']))
 
-        # Adding index on 'ProjectApplication', fields ['chain']
-        db.create_index('im_projectapplication', ['chain'])
+        if db.backend_name != 'sqlite3':
+            # Adding index on 'ProjectApplication', fields ['chain']
+            db.create_index('im_projectapplication', ['chain'])
 
 
     def backwards(self, orm):

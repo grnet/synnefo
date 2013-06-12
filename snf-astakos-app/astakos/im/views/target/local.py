@@ -68,6 +68,9 @@ def login(request, on_failure='im/login.html'):
     """
     on_failure: the template name to render on login failure
     """
+    if request.method == 'GET':
+        return HttpResponseRedirect(reverse('login'))
+
     was_limited = getattr(request, 'limited', False)
     form = LoginForm(data=request.POST,
                      was_limited=was_limited,

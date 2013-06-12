@@ -217,6 +217,7 @@ def get_object_headers(request):
 def put_object_headers(response, meta, restricted=False, token=None):
     response['ETag'] = meta['checksum']
     response['Content-Length'] = meta['bytes']
+    response.override_serialization = True
     response['Content-Type'] = meta.get('type', 'application/octet-stream')
     response['Last-Modified'] = http_date(int(meta['modified']))
     if not restricted:
@@ -927,7 +928,6 @@ def object_data_response(request, sizes, hashmaps, meta, public=False):
         boundary = ''
     wrapper = ObjectWrapper(request.backend, ranges, sizes, hashmaps, boundary)
     response = HttpResponse(wrapper, status=ret)
-    response.override_serialization = True
     put_object_headers(
         response, meta, restricted=public,
         token=getattr(request, 'token', None))

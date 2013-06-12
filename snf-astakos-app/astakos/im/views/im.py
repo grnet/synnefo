@@ -265,6 +265,7 @@ def api_access(request, template_name='im/api_access.html',
     url = get_public_endpoint(settings.astakos_services, 'identity')
     context['services'] = Component.catalog()
     context['token_url'] = url
+    context['user'] = request.user
     context['client_url'] = settings.API_CLIENT_URL
 
     if extra_context:

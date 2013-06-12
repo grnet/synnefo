@@ -173,7 +173,7 @@ h2 .header-actions { float: right; font-size: 0.8em;}
 }
 
 .subsection {
-    margin-bottom: 4em;
+     
 }
 
 .token-view .actions {
@@ -206,3 +206,9 @@ h2 .header-actions { float: right; font-size: 0.8em;}
 .renew-token .close {
     display: none;
 }
+
+.api-access-view .user-data {
+    display: block;
+    color:#F24E53;
+    font-family: monospace;
+} 

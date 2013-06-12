@@ -37,8 +37,8 @@
                     <input value="{{ request.user.auth_token }}" type="text" name="auth_token" disabled/>
                     <span class="expires">
                         <span class="date">
-                            expires in {{ request.user.auth_token_expires|timeuntil }}
-                            ({{ request.user.auth_token_expires|date }})
+                            expires in {{ user.auth_token_expires|timeuntil }}
+                            ({{ user.auth_token_expires|date }})
                         </span>
                     </span>
                 </div>
@@ -64,23 +64,40 @@
 
    <div class="subsection">
      
-        <h2>GENERAL</h2>
+        
     
     {% block page.body.description %}
         <div class="two-cols dotted clearfix">
             <div class="rt">
+                {% block page.body.api_advanced %}
+                <h2>API Advanced Usage</h2>
                 <p>
+                Apart from using the kamaki command line client, you can also import the
+                kamaki library inside your code and use it directly. More details on how
+                to do that on the corresponding kamaki 
+                <a href="{{ client_url }}">kamaki </a>page.</p> 
+                <p>You can also implement the REST API calls by yourself, without
+                using the official kamaki library if you feel confident with your
+                programming skills. To do so, you first need to get a good grasp of the
+                API itself; for more information take a look at the corresponding page
+                inside the 
+                <a href="https://synnefo.org/docs/">Synnefo documentation</a>.
+                </p>
+                {% endblock %}
+            </div>
+            <div class="lt">
+                <h2>GENERAL</h2>
+                <p>{{ BRANDING_SERVICE_NAME }} provides a complete REST API that allows you to access and
+    control your virtual resources programmatically. This means you can execute
+    all the actions you do from the {{ BRANDING_SERVICE_NAME }} Web UI by using a command
+    line client or importing the corresponding library inside your own code.</p>
+    <p>
                 If
                 you want to learn more about the specification of the REST API itself,
                 please take a look at the <a href="https://www.synnefo.org/docs" 
                 alt="Synnefo documentation">Synnefo documentation</a>. 
                 </p>
-            </div>
-            <div class="lt">
-                <p>{{ BRANDING_SERVICE_NAME }} provides a complete REST API that allows you to access and
-    control your virtual resources programmatically. This means you can execute
-    all the actions you do from the {{ BRANDING_SERVICE_NAME }} Web UI by using a command
-    line client or importing the corresponding library inside your own code.</p>
+               
             </div>
 
         </div>
@@ -90,21 +107,17 @@
     
     <div class="two-cols dotted clearfix">
         <div class="rt">
-            {% block page.body.api_advanced %}
-            <h2>API Advanced Usage</h2>
-            <p>
-            Apart from using the kamaki command line client, you can also import the
-            kamaki library inside your code and use it directly. More details on how
-            to do that on the corresponding kamaki 
-            <a href="{{ client_url }}">kamaki </a>page.</p> 
-            <p>You can also implement the REST API calls by yourself, without
-            using the official kamaki library if you feel confident with your
-            programming skills. To do so, you first need to get a good grasp of the
-            API itself; for more information take a look at the corresponding page
-            inside the 
-            <a href="https://synnefo.org/docs/">Synnefo documentation</a>.
-            </p>
-            {% endblock %}
+           <h2>Other clients</h2>
+           <p>If you are using a client different from kamaki that supports the OpenStack
+APIs and needs a username/password combination to operate, please use
+the following:</p>
+
+<p>username:  <span class="user-data">{{ user.uuid }}</span>
+password:  <span class="user-data">{{ user.auth_token }}</span></p>
+
+<p>The username is your  {{ BRANDING_SERVICE_NAME }} user ID (UUID) and the password
+is your authentication token. As you can see, its the same shown in the
+previous section. </p>
         </div>
         <div class="lt">
             {% block page.body.clients %}
@@ -124,7 +137,13 @@
             </p>
              <p class="download">You can download kamaki 
     from the <a href="{{ client_url }}">project homepage</a></p>
-    
+             <p>If you are using kamaki, you can download a pre-configured .kamakirc
+file that contains your Authentication token and URL. Store this file
+under your home directory (~/.kamakirc) and kamaki will be able to
+access  {{ BRANDING_SERVICE_NAME }} automatically without the need of extra
+manual configuration.</p>
+
+<a href="{% url api_access_config %}" class="submit">Download your .kamakirc</a> 
         </div>
         {% endblock %}
     </div>

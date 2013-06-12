@@ -39,7 +39,6 @@ from django.utils.translation import ugettext as _
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.core.urlresolvers import reverse
-from django.contrib.auth.decorators import login_required
 
 import django.contrib.auth.views as django_auth_views
 
@@ -51,7 +50,7 @@ from astakos.im import settings
 import astakos.im.messages as astakos_messages
 from astakos.im import auth_providers as auth
 from astakos.im.views.decorators import cookie_fix, requires_anonymous, \
-    signed_terms_required, requires_auth_provider
+    signed_terms_required, requires_auth_provider, login_required
 
 from ratelimit.decorators import ratelimit
 

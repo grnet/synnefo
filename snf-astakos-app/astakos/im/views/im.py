@@ -40,7 +40,6 @@ from urllib import quote
 
 from django.shortcuts import get_object_or_404
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.db import transaction
@@ -71,7 +70,7 @@ from astakos.im import auth_providers as auth
 from astakos.im import quotas
 from astakos.im.views.util import render_response, _resources_catalog
 from astakos.im.views.decorators import cookie_fix, signed_terms_required,\
-    required_auth_methods_assigned, valid_astakos_user_required
+    required_auth_methods_assigned, valid_astakos_user_required, login_required
 
 logger = logging.getLogger(__name__)
 

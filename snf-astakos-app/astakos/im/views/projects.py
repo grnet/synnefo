@@ -40,7 +40,6 @@ from django_tables2 import RequestConfig
 
 from django.shortcuts import get_object_or_404
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
 from django.http import Http404
 from django.shortcuts import redirect
@@ -70,7 +69,7 @@ from astakos.im.util import redirect_back
 from astakos.im.views.util import render_response, _create_object, \
     _update_object, _resources_catalog, ExceptionHandler
 from astakos.im.views.decorators import cookie_fix, signed_terms_required,\
-    valid_astakos_user_required
+    valid_astakos_user_required, login_required
 
 logger = logging.getLogger(__name__)
 

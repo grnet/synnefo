@@ -84,8 +84,6 @@ AUTHENTICATION_BACKENDS = (
     'astakos.im.auth_backends.EmailBackend',
     'astakos.im.auth_backends.TokenBackend')
 
-LOGIN_URL = '/ui/'
-
 CUSTOM_USER_MODEL = 'astakos.im.AstakosUser'
 
 #SOUTH_TESTS_MIGRATE = False

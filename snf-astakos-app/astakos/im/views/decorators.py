@@ -33,15 +33,57 @@
 
 from functools import wraps
 
+from django.utils.http import urlquote
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
+from django.utils.decorators import available_attrs
 from django.utils.http import urlencode
 
 from astakos.im import auth_providers as auth
 from astakos.im.cookie import CookieHandler
+
+REDIRECT_FIELD_NAME = 'next'
+
+
+def user_passes_test(test_func, login_url=None,
+                     redirect_field_name=REDIRECT_FIELD_NAME):
+    """
+    Decorator for views that checks that the user passes the given test,
+    redirecting to the log-in page if necessary. The test should be a callable
+    that takes the user object and returns True if the user passes.
+    """
+    if not login_url:
+        from django.conf import settings
+        login_url = settings.LOGIN_URL
+
+    def decorator(view_func):
+        def _wrapped_view(request, *args, **kwargs):
+            if test_func(request.user):
+                return view_func(request, *args, **kwargs)
+            path = urlquote(request.get_full_path())
+            tup = reverse('login'), redirect_field_name, path
+            return HttpResponseRedirect('%s?%s=%s' % tup)
+        return wraps(view_func,
+                     assigned=available_attrs(view_func))(_wrapped_view)
+    return decorator
+
+
+def login_required(function=None, redirect_field_name=REDIRECT_FIELD_NAME,
+                   login_url=None):
+    """
+    Decorator for views that checks that the user is logged in, redirecting
+    to the log-in page if necessary.
+    """
+    actual_decorator = user_passes_test(
+        lambda u: u.is_authenticated(),
+        redirect_field_name=redirect_field_name,
+
+    )
+    if function:
+        return actual_decorator(function)
+    return actual_decorator
 
 
 def cookie_fix(func):
@@ -71,6 +113,8 @@ def cookie_fix(func):
 
 def requires_auth_provider(provider_id, **perms):
     """
+    View requires specified authentication module to be enabled in
+    ASTAKOS_IM_MODULES setting.
     """
     def decorator(func, *args, **kwargs):
         @wraps(func)

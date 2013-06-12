@@ -68,10 +68,13 @@ def authenticate(request):
                 token_id = req['auth']['passwordCredentials']['password']
                 uuid = req['auth']['passwordCredentials']['username']
             except KeyError:
-                raise faults.BadRequest('Malformed request')
+                raise faults.BadRequest(
+                    'Malformed request: missing credentials')
+
+        tenant = req['auth'].get('tenantName')
 
         if token_id is None:
-            raise faults.BadRequest('Malformed request')
+            raise faults.BadRequest('Malformed request: missing token')
 
         try:
             user = AstakosUser.objects.get(auth_token=token_id)
@@ -83,6 +86,10 @@ def authenticate(request):
         if uuid is not None:
             if user.uuid != uuid:
                 raise faults.Unauthorized('Invalid credentials')
+
+        if tenant is not None:
+            if user.uuid != tenant:
+                raise faults.BadRequest('Not conforming tenantName')
 
         d["access"]["token"] = {
             "id": user.auth_token,

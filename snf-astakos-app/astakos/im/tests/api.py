@@ -462,8 +462,8 @@ class TokensApiTest(TestCase):
         r = client.post(url, post_data, content_type='application/json')
         self.assertEqual(r.status_code, 400)
         body = json.loads(r.content)
-        self.assertEqual(body['badRequest']['message'],
-                         'Malformed request')
+        self.assertTrue(body['badRequest']['message'].
+                        startswith('Malformed request'))
 
         # Check malformed request: missing username
         url = reverse('astakos.api.tokens.authenticate')
@@ -473,8 +473,8 @@ class TokensApiTest(TestCase):
         r = client.post(url, post_data, content_type='application/json')
         self.assertEqual(r.status_code, 400)
         body = json.loads(r.content)
-        self.assertEqual(body['badRequest']['message'],
-                         'Malformed request')
+        self.assertTrue(body['badRequest']['message'].
+                        startswith('Malformed request'))
 
         # Check invalid pass
         url = reverse('astakos.api.tokens.authenticate')
@@ -520,6 +520,28 @@ class TokensApiTest(TestCase):
         except Exception, e:
             self.fail(e)
 
+        # Check malformed request: missing token
+        url = reverse('astakos.api.tokens.authenticate')
+        post_data = """{"auth":{"auth_token":{"id":"%s"},
+                                "tenantName":"%s"}}""" % (
+            self.user1.auth_token, self.user1.uuid)
+        r = client.post(url, post_data, content_type='application/json')
+        self.assertEqual(r.status_code, 400)
+        body = json.loads(r.content)
+        self.assertTrue(body['badRequest']['message'].
+                        startswith('Malformed request'))
+
+        # Check bad request: inconsistent tenant
+        url = reverse('astakos.api.tokens.authenticate')
+        post_data = """{"auth":{"token":{"id":"%s"},
+                                "tenantName":"%s"}}""" % (
+            self.user1.auth_token, self.user2.uuid)
+        r = client.post(url, post_data, content_type='application/json')
+        self.assertEqual(r.status_code, 400)
+        body = json.loads(r.content)
+        self.assertEqual(body['badRequest']['message'],
+                         'Not conforming tenantName')
+
         # Check successful json response
         url = reverse('astakos.api.tokens.authenticate')
         post_data = """{"auth":{"passwordCredentials":{"username":"%s",
@@ -560,5 +582,3 @@ class TokensApiTest(TestCase):
 #            body = minidom.parseString(r.content)
 #        except Exception, e:
 #            self.fail(e)
-
-        # test public mode: json response

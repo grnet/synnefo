@@ -484,7 +484,7 @@ Example xml response:
 Return Code                 Description
 =========================== =====================
 200 (OK)                    The request succeeded
-400 (Bad Request)           Method not allowed or invalid request format or missing expected input
+400 (Bad Request)           Method not allowed or invalid request format or missing expected input or not consistent tenantName
 401 (Unauthorized)          Invalid token or invalid creadentials or tenantName does not comply with the provided token
 500 (Internal Server Error) The request cannot be completed because of an internal error
 =========================== =====================

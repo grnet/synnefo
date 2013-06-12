@@ -189,6 +189,14 @@ class ServerAPITest(ComputeAPITest):
         self.assertSuccess(response)
         self.assertEqual(VirtualMachine.objects.get(id=vm.id).name, "new_name")
 
+    def test_catch_wrong_api_paths(self):
+        response = self.myget('nonexistent')
+        self.assertEqual(response.status_code, 400)
+        try:
+            error = json.loads(response.content)
+        except ValueError:
+            self.assertTrue(False)
+
 
 @patch('synnefo.api.util.get_image')
 @patch('synnefo.logic.rapi_pool.GanetiRapiClient')

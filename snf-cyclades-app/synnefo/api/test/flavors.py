@@ -136,3 +136,11 @@ class FlavorAPITest(BaseAPITest):
         # XXX: flavors/22 below fails for no apparent reason
         response = self.myget('flavors/%d' % 23)
         self.assertItemNotFound(response)
+
+    def test_catch_wrong_api_paths(self, *args):
+        response = self.myget('nonexistent')
+        self.assertEqual(response.status_code, 400)
+        try:
+            error = json.loads(response.content)
+        except ValueError:
+            self.assertTrue(False)

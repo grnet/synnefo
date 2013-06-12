@@ -433,3 +433,11 @@ class NetworkAPITest(ComputeAPITest):
         response = self.mypost('networks/%d/action' % net.id,
                                net.userid, json.dumps(request), 'json')
         self.assertBadRequest(response)
+
+    def test_catch_wrong_api_paths(self, *args):
+        response = self.myget('nonexistent')
+        self.assertEqual(response.status_code, 400)
+        try:
+            error = json.loads(response.content)
+        except ValueError:
+            self.assertTrue(False)

@@ -213,6 +213,15 @@ class ImageAPITest(ComputeAPITest):
         mimage.return_value.unregister.assert_called_once_with('42')
         mimage.return_value._delete.assert_not_called('42')
 
+    @assert_backend_closed
+    def test_catch_wrong_api_paths(self, *args):
+        response = self.myget('nonexistent')
+        self.assertEqual(response.status_code, 400)
+        try:
+            error = json.loads(response.content)
+        except ValueError:
+            self.assertTrue(False)
+
 
 @patch('synnefo.plankton.backend.ImageBackend')
 class ImageMetadataAPITest(ComputeAPITest):

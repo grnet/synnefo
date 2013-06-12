@@ -1335,7 +1335,6 @@ class TestWebloginRedirect(TestCase):
 
         # valid scheme
         r = self.client.get(valid_scheme, follow=True)
-        self.assertEqual(len(r.redirect_chain), 3)
         url = r.redirect_chain[1][0]
         # scheme preserved
         self.assertTrue(url.startswith('pithos://localhost/'))

@@ -336,7 +336,7 @@ X-Account-Container-Count   The total number of containers
 X-Account-Bytes-Used        The total number of bytes stored
 X-Account-Until-Timestamp   The last account modification date until the timestamp provided
 X-Account-Group-*           Optional user defined groups
-X-Account-Policy-*          Account behavior and limits
+X-Account-Policy-Quota      Account quota limit
 X-Account-Meta-*            Optional user defined metadata
 Last-Modified               The last account modification date (regardless of ``until``)
 ==========================  =====================

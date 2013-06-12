@@ -84,7 +84,7 @@ class Command(NoArgsCommand):
                 for i in failed:
                     self.stdout.write('%s\n' % i)
 
-                b.commision_serials.delete_many(accepted)
+                b.commission_serials.delete_many(accepted)
         except Exception, e:
             logger.exception(e)
             raise CommandError(e)

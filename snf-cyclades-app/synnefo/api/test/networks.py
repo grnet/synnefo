@@ -43,10 +43,11 @@ from synnefo.lib import join_urls
 
 
 class ComputeAPITest(BaseAPITest):
-    def setUp(self, *args, **kwargs):
-        super(ComputeAPITest, self).setUp(*args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super(ComputeAPITest, self).__init__(*args, **kwargs)
         self.compute_path = get_service_path(cyclades_services, 'compute',
                                              version='v2.0')
+
     def myget(self, path, *args, **kwargs):
         path = join_urls(self.compute_path, path)
         return self.get(path, *args, **kwargs)
@@ -372,7 +373,7 @@ class NetworkAPITest(ComputeAPITest):
         net = mfactory.NetworkFactory(state='PENDING', subnet='10.0.0.0/31',
                                       userid=user)
         request = {'add': {'serverRef': vm.id}}
-        response = self.mypost('/api/v1.1/networks/%d/action' % net.id,
+        response = self.mypost('networks/%d/action' % net.id,
                                net.userid, json.dumps(request), 'json')
         # Test that returns BuildInProgress
         self.assertEqual(response.status_code, 409)
@@ -400,7 +401,8 @@ class NetworkAPITest(ComputeAPITest):
 
     def test_remove_nic(self, mrapi):
         user = 'userr'
-        vm = mfactory.VirtualMachineFactory(name='yo', userid=user)
+        vm = mfactory.VirtualMachineFactory(name='yo', userid=user,
+                                            operstate="ACTIVE")
         net = mfactory.NetworkFactory(state='ACTIVE', userid=user)
         nic = mfactory.NetworkInterfaceFactory(machine=vm, network=net)
         mrapi().ModifyInstance.return_value = 1

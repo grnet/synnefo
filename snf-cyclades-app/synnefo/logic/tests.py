@@ -357,6 +357,8 @@ class UpdateDBTest(TestCase):
             db_vm = VirtualMachine.objects.get(id=vm.id)
             self.assertEqual(db_vm.operstate, vm.operstate)
         # Test intermediate states
+        vm.operstate = "STOPPED"
+        vm.save()
         for status in ["queued", "waiting", "running"]:
             msg = self.create_msg(operation='OP_INSTANCE_SET_PARAMS',
                                   instance=vm.backend_vm_id,
@@ -774,11 +776,11 @@ class ReconciliationTest(TestCase):
 
     def test_get_servers_from_db(self):
         """Test getting a dictionary from each server to its operstate"""
-        backend = 30000
+        backends = Backend.objects.all()
         vm1 = self.get_vm('STARTED')
         vm2 = self.get_vm('DESTROYED', deleted=True)
         vm3 = self.get_vm('STOPPED')
-        self.assertEquals(reconciliation.get_servers_from_db(),
+        self.assertEquals(reconciliation.get_servers_from_db(backends),
                     {vm1.id: VMState(state='STARTED', cpu=2, ram=1024, nics=[]),
                      vm3.id: VMState(state='STOPPED', cpu=2, ram=1024, nics=[])}
                     )

@@ -49,8 +49,8 @@ from mock import patch, Mock
 
 
 class ComputeAPITest(BaseAPITest):
-    def setUp(self, *args, **kwargs):
-        super(ComputeAPITest, self).setUp(*args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super(ComputeAPITest, self).__init__(*args, **kwargs)
         self.compute_path = get_service_path(cyclades_services, 'compute',
                                              version='v2.0')
 
@@ -80,7 +80,6 @@ class ServerAPITest(ComputeAPITest):
         self.vm3 = mfactory.VirtualMachineFactory(deleted=True,
                                                   userid=self.user1)
         self.vm4 = mfactory.VirtualMachineFactory(userid=self.user2)
-        super(ServerAPITest, self).setUp()
 
     def test_server_list_1(self):
         """Test if the expected list of servers is returned."""
@@ -275,7 +274,7 @@ class ServerCreateAPITest(ComputeAPITest):
         mrapi().CreateInstance.return_value = 12
         with override_settings(settings, DEFAULT_INSTANCE_NETWORKS=[]):
             with mocked_quotaholder():
-                response = self.mypost('/api/v1.1/servers', 'test_user',
+                response = self.mypost('servers', 'test_user',
                                        json.dumps(self.request), 'json')
         self.assertEqual(response.status_code, 202)
         mrapi().CreateInstance.assert_called_once()
@@ -318,7 +317,7 @@ class ServerCreateAPITest(ComputeAPITest):
                 DEFAULT_INSTANCE_NETWORKS=["public", bnet1.network.id,
                                            bnet2.network.id]):
             with mocked_quotaholder():
-                response = self.mypost('/api/v1.1/servers', 'test_user',
+                response = self.mypost('servers', 'test_user',
                                        json.dumps(request), 'json')
         self.assertEqual(response.status_code, 202)
         name, args, kwargs = mrapi().CreateInstance.mock_calls[0]
@@ -338,7 +337,7 @@ class ServerCreateAPITest(ComputeAPITest):
         with override_settings(settings,
                 DEFAULT_INSTANCE_NETWORKS=[bnet2.network.id]):
             with mocked_quotaholder():
-                response = self.mypost('/api/v1.1/servers', 'test_user',
+                response = self.mypost('servers', 'test_user',
                                        json.dumps(request), 'json')
         self.assertEqual(response.status_code, 202)
         name, args, kwargs = mrapi().CreateInstance.mock_calls[1]
@@ -352,7 +351,7 @@ class ServerCreateAPITest(ComputeAPITest):
 
         # test invalid network in DEFAULT_INSTANCE_NETWORKS
         with override_settings(settings, DEFAULT_INSTANCE_NETWORKS=[42]):
-            response = self.mypost('/api/v1.1/servers', 'test_user',
+            response = self.mypost('servers', 'test_user',
                                    json.dumps(request), 'json')
         self.assertFault(response, 500, "internalServerError")
 
@@ -360,7 +359,7 @@ class ServerCreateAPITest(ComputeAPITest):
         request = deepcopy(self.request)
         request["server"]["networks"] = [self.network.id]
         with override_settings(settings, DEFAULT_INSTANCE_NETWORKS=["public"]):
-            response = self.mypost('/api/v1.1/servers', 'test_user',
+            response = self.mypost('servers', 'test_user',
                                     json.dumps(request), 'json')
         self.assertFault(response, 403, "forbidden")
         # test wrong user
@@ -368,7 +367,7 @@ class ServerCreateAPITest(ComputeAPITest):
         request["server"]["networks"] = [bnet3.network.id]
         with override_settings(settings, DEFAULT_INSTANCE_NETWORKS=["public"]):
             with mocked_quotaholder():
-                response = self.mypost('/api/v1.1/servers', 'dummy_user',
+                response = self.mypost('servers', 'dummy_user',
                                        json.dumps(request), 'json')
         self.assertItemNotFound(response)
 
@@ -389,7 +388,7 @@ class ServerCreateAPITest(ComputeAPITest):
         with override_settings(settings,
                 DEFAULT_INSTANCE_NETWORKS=[bnet3.network.id]):
             with mocked_quotaholder():
-                response = self.post('/api/v1.1/servers', 'test_user',
+                response = self.mypost('servers', 'test_user',
                                      json.dumps(request), 'json')
         self.assertEqual(response.status_code, 202)
         api_server = json.loads(response.content)['server']
@@ -413,7 +412,7 @@ class ServerCreateAPITest(ComputeAPITest):
         request = deepcopy(self.request)
         request["server"]["flavorRef"] = 42
         with mocked_quotaholder():
-            response = self.mypost('/api/v1.1/servers', 'test_user',
+            response = self.mypost('servers', 'test_user',
                                    json.dumps(request), 'json')
         self.assertItemNotFound(response)
 
@@ -423,7 +422,7 @@ class ServerDestroyAPITest(ComputeAPITest):
     def test_delete_server(self, mrapi):
         vm = mfactory.VirtualMachineFactory()
         mrapi().DeleteInstance.return_value = 12
-        response = self.mydelete('/api/v1.1/servers/%d' % vm.id, vm.userid)
+        response = self.mydelete('servers/%d' % vm.id, vm.userid)
         self.assertEqual(response.status_code, 204)
         mrapi().DeleteInstance.assert_called_once()
 
@@ -539,7 +538,7 @@ class ServerActionAPITest(ComputeAPITest):
         vm = mfactory.VirtualMachineFactory(operstate="BUILD")
         request = {'start': {}}
         with mocked_quotaholder():
-            response = self.mypost('/api/v1.1/servers/%d/action' % vm.id,
+            response = self.mypost('servers/%d/action' % vm.id,
                                    vm.userid, json.dumps(request), 'json')
         self.assertEqual(response.status_code, 409)
         self.assertFalse(mrapi.mock_calls)
@@ -548,7 +547,7 @@ class ServerActionAPITest(ComputeAPITest):
         """Test building in progress"""
         vm = mfactory.VirtualMachineFactory()
         mrapi().DeleteInstance.return_value = 2
-        response = self.mydelete('/api/v1.1/servers/%d' % vm.id,
+        response = self.mydelete('servers/%d' % vm.id,
                                  vm.userid)
         self.assertSuccess(response)
         mrapi().RemoveInstance.assert_called_once()
@@ -578,13 +577,13 @@ class ServerActionAPITest(ComputeAPITest):
         # Check building VM
         vm = self.get_vm(flavor=flavor, operstate="BUILD")
         request = {'resize': {'flavorRef': flavor.id}}
-        response = self.post('/api/v1.1/servers/%d/action' % vm.id,
+        response = self.mypost('servers/%d/action' % vm.id,
                              vm.userid, json.dumps(request), 'json')
         self.assertFault(response, 409, "buildInProgress")
         # Check same Flavor
         vm = self.get_vm(flavor=flavor, operstate="STOPPED")
         request = {'resize': {'flavorRef': flavor.id}}
-        response = self.post('/api/v1.1/servers/%d/action' % vm.id,
+        response = self.mypost('servers/%d/action' % vm.id,
                              vm.userid, json.dumps(request), 'json')
         self.assertBadRequest(response)
         # Check flavor with different disk
@@ -592,14 +591,14 @@ class ServerActionAPITest(ComputeAPITest):
         flavor3 = mfactory.FlavorFactory(disk=2048)
         vm = self.get_vm(flavor=flavor2, operstate="STOPPED")
         request = {'resize': {'flavorRef': flavor3.id}}
-        response = self.post('/api/v1.1/servers/%d/action' % vm.id,
+        response = self.mypost('servers/%d/action' % vm.id,
                              vm.userid, json.dumps(request), 'json')
         self.assertBadRequest(response)
         flavor2 = mfactory.FlavorFactory(disk_template="foo")
         flavor3 = mfactory.FlavorFactory(disk_template="baz")
         vm = self.get_vm(flavor=flavor2, operstate="STOPPED")
         request = {'resize': {'flavorRef': flavor3.id}}
-        response = self.post('/api/v1.1/servers/%d/action' % vm.id,
+        response = self.mypost('servers/%d/action' % vm.id,
                              vm.userid, json.dumps(request), 'json')
         self.assertBadRequest(response)
         # Check success
@@ -609,7 +608,7 @@ class ServerActionAPITest(ComputeAPITest):
                                          cpu=4, ram=2048)
         request = {'resize': {'flavorRef': flavor4.id}}
         mrapi().ModifyInstance.return_value = 42
-        response = self.post('/api/v1.1/servers/%d/action' % vm.id,
+        response = self.mypost('servers/%d/action' % vm.id,
                              vm.userid, json.dumps(request), 'json')
         self.assertEqual(response.status_code, 202)
         vm = VirtualMachine.objects.get(id=vm.id)
@@ -625,13 +624,13 @@ class ServerActionAPITest(ComputeAPITest):
         vm.save()
         for action in VirtualMachine.ACTIONS:
             request = {action[0]: ""}
-            response = self.post('/api/v1.1/servers/%d/action' % vm.id,
+            response = self.mypost('servers/%d/action' % vm.id,
                                  vm.userid, json.dumps(request), 'json')
             self.assertBadRequest(response)
         # however you can destroy
         mrapi().DeleteInstance.return_value = 42
-        response = self.delete('/api/v1.1/servers/%d' % vm.id,
-                               vm.userid)
+        response = self.mydelete('servers/%d' % vm.id,
+                                 vm.userid)
         self.assertSuccess(response)
 
     def get_vm(self, flavor, operstate):
@@ -659,7 +658,7 @@ class ServerVNCConsole(ComputeAPITest):
 
         data = json.dumps({'console': {'type': 'vnc'}})
         with override_settings(settings, TEST=True):
-            response = self.mypost('/api/v1.1/servers/%d/action' % vm.id,
+            response = self.mypost('servers/%d/action' % vm.id,
                                    vm.userid, data, 'json')
         self.assertEqual(response.status_code, 200)
         reply = json.loads(response.content)

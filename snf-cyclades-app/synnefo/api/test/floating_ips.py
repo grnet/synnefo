@@ -42,8 +42,15 @@ from synnefo.db.models_factory import (FloatingIPFactory, NetworkFactory,
 from mock import patch, Mock
 from functools import partial
 
+from synnefo.cyclades_settings import cyclades_services
+from synnefo.lib.services import get_service_path
+from synnefo.lib import join_urls
 
-URL = "/api/v1.1/os-floating-ips"
+
+compute_path = get_service_path(cyclades_services, "compute", version="v2.0")
+URL = join_urls(compute_path, "os-floating-ips")
+NETWORKS_URL = join_urls(compute_path, "networks")
+SERVERS_URL = join_urls(compute_path, "servers")
 
 FloatingIPPoolFactory = partial(NetworkFactory, public=True, deleted=False,
                                 floating_ip_pool=True)
@@ -195,7 +202,7 @@ class FloatingIPAPITest(BaseAPITest):
         # Also send a notification to remove the NIC and assert that FIP is in
         # use until notification from ganeti arrives
         request = {"removeFloatingIp": {"address": ip.ipv4}}
-        url = "/api/v1.1/servers/%s/action" % vm.id
+        url = SERVERS_URL + "/%s/action" % vm.id
         with patch('synnefo.logic.rapi_pool.GanetiRapiClient') as c:
             c().ModifyInstance.return_value = 10
             response = self.post(url, vm.userid, json.dumps(request),
@@ -219,19 +226,19 @@ class FloatingIPAPITest(BaseAPITest):
         net = ip.network
         # Can not remove network with floating IPs
         with mocked_quotaholder():
-            response = self.delete("/api/v1.1/networks/%s" % net.id,
+            response = self.delete(NETWORKS_URL + "/%s" % net.id,
                                    net.userid)
         self.assertFault(response, 421, "networkInUse")
         # But we can with only deleted Floating Ips
         ip.deleted = True
         ip.save()
         with mocked_quotaholder():
-            response = self.delete("/api/v1.1/networks/%s" % net.id,
+            response = self.delete(NETWORKS_URL + "/%s" % net.id,
                                    net.userid)
         self.assertSuccess(response)
 
 
-POOLS_URL = "/api/v1.1/os-floating-ip-pools"
+POOLS_URL = join_urls(compute_path, "os-floating-ip-pools")
 
 
 class FloatingIPPoolsAPITest(BaseAPITest):
@@ -259,7 +266,7 @@ class FloatingIPActionsTest(BaseAPITest):
         self.vm = vm
 
     def test_bad_request(self):
-        url = "/api/v1.1/servers/%s/action" % self.vm.id
+        url = SERVERS_URL + "/%s/action" % self.vm.id
         response = self.post(url, self.vm.userid, json.dumps({}), "json")
         self.assertBadRequest(response)
         response = self.post(url, self.vm.userid,
@@ -270,7 +277,7 @@ class FloatingIPActionsTest(BaseAPITest):
     @patch('synnefo.logic.rapi_pool.GanetiRapiClient')
     def test_add_floating_ip(self, mock):
         # Not exists
-        url = "/api/v1.1/servers/%s/action" % self.vm.id
+        url = SERVERS_URL + "/%s/action" % self.vm.id
         request = {"addFloatingIp": {"address": "10.0.0.1"}}
         response = self.post(url, self.vm.userid, json.dumps(request), "json")
         self.assertItemNotFound(response)
@@ -297,7 +304,7 @@ class FloatingIPActionsTest(BaseAPITest):
     @patch('synnefo.logic.rapi_pool.GanetiRapiClient')
     def test_remove_floating_ip(self, mock):
         # Not exists
-        url = "/api/v1.1/servers/%s/action" % self.vm.id
+        url = SERVERS_URL + "/%s/action" % self.vm.id
         request = {"removeFloatingIp": {"address": "10.0.0.1"}}
         response = self.post(url, self.vm.userid, json.dumps(request), "json")
         self.assertItemNotFound(response)

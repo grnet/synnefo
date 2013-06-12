@@ -45,22 +45,22 @@ from synnefo.lib import join_urls
 class PlanktonAPITest(BaseAPITest):
     def setUp(self, *args, **kwargs):
         super(PlanktonAPITest, self).setUp(*args, **kwargs)
-        self.compute_path = get_service_path(cyclades_services, 'image',
+        self.api_path = get_service_path(cyclades_services, 'image',
                                              version='v1.0')
     def myget(self, path, *args, **kwargs):
-        path = join_urls(self.compute_path, path)
+        path = join_urls(self.api_path, path)
         return self.get(path, *args, **kwargs)
 
     def myput(self, path, *args, **kwargs):
-        path = join_urls(self.compute_path, path)
+        path = join_urls(self.api_path, path)
         return self.put(path, *args, **kwargs)
 
     def mypost(self, path, *args, **kwargs):
-        path = join_urls(self.compute_path, path)
+        path = join_urls(self.api_path, path)
         return self.post(path, *args, **kwargs)
 
     def mydelete(self, path, *args, **kwargs):
-        path = join_urls(self.compute_path, path)
+        path = join_urls(self.api_path, path)
         return self.delete(path, *args, **kwargs)
 
 

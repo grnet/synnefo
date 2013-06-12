@@ -20,6 +20,15 @@ Synnefo-wide
 * Create 'snf_django' Python package to hold common code for all Synnefo
   components.
 
+* Create a JSON-exportable definition document for each Synnefo Components
+  (Astakos, Cyclades, Pithos, etc.) that consolidates APIs (services),
+  resources, and other standardized properties (e.g. default URL prefixes).
+
+* Standardize URLs for Synnefo Components, impose structure and naming
+  conventions to related settings. Make each component deployable under
+  a user-configurable <COMPONENT>_BASE_URL. Each API (compute, image, etc.)
+  is deployable under a developer-configurable prefix beneath BASE_URL.
+
 Astakos
 -------
 

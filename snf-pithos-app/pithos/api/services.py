@@ -56,10 +56,10 @@ pithos_services = {
     'pithos_public': {
         'type': 'public',
         'component': 'pithos',
-        'prefix': 'public',
-        'public': True,
+        'prefix': 'pithos_public',
+        'public': False,
         'endpoints': [
-            {'versionId': 'v2.0',
+            {'versionId': 'v1.0',
              'publicURL': None},
         ],
         'resources': {},

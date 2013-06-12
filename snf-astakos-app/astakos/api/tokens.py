@@ -87,7 +87,7 @@ def authenticate(request):
             if user.uuid != uuid:
                 raise faults.Unauthorized('Invalid credentials')
 
-        if tenant is not None:
+        if tenant:
             if user.uuid != tenant:
                 raise faults.BadRequest('Not conforming tenantName')
 

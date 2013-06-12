@@ -542,6 +542,14 @@ class TokensApiTest(TestCase):
         self.assertEqual(body['badRequest']['message'],
                          'Not conforming tenantName')
 
+        # Check bad request: inconsistent tenant
+        url = reverse('astakos.api.tokens.authenticate')
+        post_data = """{"auth":{"token":{"id":"%s"},
+                                "tenantName":""}}""" % (
+            self.user1.auth_token)
+        r = client.post(url, post_data, content_type='application/json')
+        self.assertEqual(r.status_code, 200)
+
         # Check successful json response
         url = reverse('astakos.api.tokens.authenticate')
         post_data = """{"auth":{"passwordCredentials":{"username":"%s",

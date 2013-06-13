@@ -16,7 +16,11 @@
 {% endblock body.left %}
 
 {% block body.right %}
-<h2>{% trans "SIGN UP" %}</h2>
+<h2>
+	<span class="title">{% trans "SIGN UP" %}</span>
+	<span class="header-actions"><a href="{% url login %}">{% trans "Sign in" %}</a></span>
+
+</h2>
 {% if not third_party_token and not signup_form.errors %}
  
 <p>{% trans "Choose one of the following sign up methods." %}</p>

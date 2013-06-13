@@ -55,7 +55,8 @@ CLASSIFIERS = []
 
 # Package requirements
 INSTALL_REQUIRES = [
-    'objpool>=0.2'
+    'objpool>=0.2',
+    'python-dateutil>=1.4.1',
 ]
 
 EXTRAS_REQUIRES = {

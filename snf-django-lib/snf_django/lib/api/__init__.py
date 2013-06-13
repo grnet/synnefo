@@ -218,3 +218,23 @@ def api_endpoint_not_found(request):
 @api_method(token_required=False, user_required=False)
 def api_method_not_allowed(request):
     raise faults.BadRequest('Method not allowed')
+
+
+def allow_jsonp(key='callback'):
+    """
+    Wrapper to enable jsonp responses.
+    """
+    def wrapper(func):
+        def view_wrapper(request, *args, **kwargs):
+            response = func(request, *args, **kwargs)
+            if 'content-type' in response._headers and \
+               response._headers['content-type'][1] == 'application/json':
+                callback_name = request.GET.get(key, None)
+                if callback_name:
+                    response.content = "%s(%s)" % (callback_name,
+                                                   response.content)
+                    response._headers['content-type'] = ('Content-Type',
+                                                         'text/javascript')
+            return response
+        return view_wrapper
+    return wrapper

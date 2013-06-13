@@ -516,6 +516,8 @@ form input[type="text"]:-ms-input-placeholder,
 .stats .disk .img-wrap							{ background-image:url(../images/disk-stats.png) }
 .stats .diskspace .img-wrap						{ background-image:url(../images/storage-stats.png) }
 .stats .bandwidth .img-wrap						{ background-image:url(../images/bandwidth-stats.png) }
+.stats .project .img-wrap						{ background-image:url(../images/projects-stats.png) }
+.stats .projects .img-wrap						{ background-image:url(../images/projects-stats.png) }
 
 .stats .red .img-wrap							{ background-position: 15px 7px; }
 .stats .yellow .img-wrap						{ background-position: -124px 7px; }

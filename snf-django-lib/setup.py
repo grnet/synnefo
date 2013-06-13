@@ -63,6 +63,7 @@ INSTALL_REQUIRES = [
     'astakosclient',
     'snf-common',
     'python-dateutil>=1.4.1',
+    'objpool>=0.2',
 ]
 
 

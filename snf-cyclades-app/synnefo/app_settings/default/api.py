@@ -93,7 +93,7 @@ ASTAKOS_BASE_URL = 'https://accounts.example.synnefo.org/'
 
 # Tune the size of the Astakos http client connection pool
 # This limit the number of concurrent requests to Astakos.
-ASTAKOS_POOLSIZE = 50
+CYCLADES_ASTAKOSCLIENT_POOLSIZE = 50
 
 # Key for password encryption-decryption. After changing this setting, synnefo
 # will be unable to decrypt all existing Backend passwords. You will need to

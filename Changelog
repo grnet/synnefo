@@ -29,6 +29,10 @@ Synnefo-wide
   a user-configurable <COMPONENT>_BASE_URL. Each API (compute, image, etc.)
   is deployable under a developer-configurable prefix beneath BASE_URL.
 
+* Deprecate CLOUDBAR_ACTIVE_SERVICE setting from all apps. 
+
+* Common synnefo 404/500 templates (located in snf-webproject)
+
 Astakos
 -------
 
@@ -108,6 +112,20 @@ Astakos
     to moderate user explicitly using the `user-modify --accept` or
     `user-modify --reject` commands.
   * Improved logging throught out user activation procedures.
+
+* Remove deprecated AstakosUser model fields: `provider`,
+  `third_party_identifier`
+
+* Allow override of authentication provider messages using the following 
+  format in setting names: ``ASTAKOS_<PROVIDER_MODULE>_<MSGID>_MSG``
+
+* Cloudbar automatically tries to identify the active service based on window 
+  location.
+
+* Removing authentication provider view is now CSRF protected.
+
+* New `API access` view, containing useful information to users on how to 
+  access available Synnefo services API's.
 
 * Management commands:
 
@@ -240,6 +258,15 @@ Astakos
   * Project management UI
   * New Overview page
 
+* refactored/improved /login endpoint used by desktop/mobile clients.
+  * endpoint url is now exposed by `weblogin` service
+  * clients should use unauthenticated identity/tokens api to resolve the 
+    endpoint url
+  * view only allows redirects to `pithos://` scheme urls
+  * removed uuid from redirect parameters. Client should use authenticated 
+    request to identity/tokens to retrieve user uuid.
+
+
 Cyclades
 --------
 
@@ -266,6 +293,8 @@ UI
 * ``UI_LOGIN_URL``, ``UI_GLANCE_URL``, ``COMPUTE_URL`` settings no longer 
   required to be set and are dynamically computed based on ``ASTAKOS_BASE_URL``
   and ``CYCLADES_BASE_URL`` settings.
+* File group is no longer included in ssh keys personality metadata sent in 
+  create vm calls.
   
 
 Pithos
@@ -275,6 +304,9 @@ Pithos
 
   * new settings:
     PITHOS_RADOS_STORAGE, PITHOS_RADOS_POOL_BLOCKS, PITHOS_RADOS_POOL_MAPS
+
+* X-Object-Public now contains full url (domain + proper component prefix + 
+  file path)
 
 * Rewritten support for public URLs, with admin-selectable length
 

@@ -63,6 +63,7 @@ INSTALL_REQUIRES = [
     'objpool>=0.2',
     'astakosclient',
     'snf-django-lib',
+    'snf-webproject'
 ]
 
 EXTRAS_REQUIRES = {

@@ -76,6 +76,7 @@ INSTALL_REQUIRES = [
     'inflect',
     'snf-django-lib',
     'snf-branding',
+    'snf-webproject',
     'astakosclient',
 ]
 

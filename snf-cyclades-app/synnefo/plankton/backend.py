@@ -167,7 +167,9 @@ class ImageBackend(object):
         meta["created"] = versions[0][1]
 
         if PLANKTON_PREFIX + 'name' not in meta:
-            raise ImageNotFound("'%s' is not a Plankton image" % image_url)
+            logger.warning("Image without Plankton name! url %s meta %s",
+                           image_url, meta)
+            meta[PLANKTON_PREFIX + "name"] = ""
 
         permissions = self._get_permissions(image_url)
         return image_to_dict(image_url, meta, permissions)
@@ -436,7 +438,9 @@ def image_to_dict(image_url, meta, permissions):
 
     image = {}
     if PLANKTON_PREFIX + 'name' not in meta:
-        raise ImageNotFound("'%s' is not a Plankton image" % image_url)
+        logger.warning("Image without Plankton name!! url %s meta %s",
+                       image_url, meta)
+        image[PLANKTON_PREFIX + "name"] = ""
 
     image["id"] = meta["uuid"]
     image["location"] = image_url

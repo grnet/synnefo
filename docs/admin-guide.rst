@@ -1767,6 +1767,7 @@ Upgrade Notes
    :maxdepth: 1
 
    v0.12 -> v0.13 <upgrade/upgrade-0.13>
+   v0.13 -> v0.14 <upgrade/upgrade-0.14>
 
 
 Changelog, NEWS

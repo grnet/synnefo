@@ -95,6 +95,10 @@ Astakos
 * Removed explicit handling of SMTP errors on each email delivery. Exceptions 
   are now propagated to base django exception handler.
 
+* Email used in html/email tempaltes which prompt user to contact for service 
+  support prompts is now defined in ``CONTACT_EMAIL`` setting introduced in 
+  snf-common settings.
+
 * Improvements in user activation flow
 
   * User moderation now takes place after the user has verified his email

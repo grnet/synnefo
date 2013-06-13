@@ -1,6 +1,5 @@
 {% extends "im/email.txt" %}
 
-  
 {% block content %}
 User {{user}} requests to leave project {{object.name}}.
 {% endblock content %}

@@ -1,6 +1,5 @@
 {% extends "im/email.txt" %}
 
-  
 {% block content %}
 Your project application request ({{object.name}}) has been approved.
 {% endblock  %}

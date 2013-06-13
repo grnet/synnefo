@@ -56,9 +56,6 @@ GANETI_FIREWALL_PROTECTED_TAG = 'synnefo:network:0:limited'
 # The default firewall profile that will be in effect if no tags are defined
 DEFAULT_FIREWALL_PROFILE = 'DISABLED'
 
-# our REST API would prefer to be explicit about trailing slashes
-APPEND_SLASH = False
-
 # Fixed mapping of user VMs to a specific backend.
 # e.g. BACKEND_PER_USER = {'example@synnefo.org': 2}
 BACKEND_PER_USER = {}
@@ -108,7 +105,7 @@ SECRET_ENCRYPTION_KEY = "Password Encryption Key"
 # Astakos service token
 # The token used for astakos service api calls (e.g. api to retrieve user email
 # using a user uuid)
-CYCLADES_SERVICE_TOKEN = '' 
+CYCLADES_SERVICE_TOKEN = ''
 
 # Let cyclades proxy user specific api calls to astakos, via self served
 # endpoints. Set this to False if you deploy cyclades-app/astakos-app on the

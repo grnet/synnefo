@@ -258,6 +258,16 @@ Cyclades
 * Helpdesk actions are now logged using the synnefo's common login
   infrastructure
 
+UI
+^^
+* Removed feedback endpoint. Feedback requests delegate to astakos feedback
+  service. ``FEEDBACK_CONTACTS``, ``FEEDBACK_EMAIL_FROM`` settings removed, 
+  and no longer used.
+* ``UI_LOGIN_URL``, ``UI_GLANCE_URL``, ``COMPUTE_URL`` settings no longer 
+  required to be set and are dynamically computed based on ``ASTAKOS_BASE_URL``
+  and ``CYCLADES_BASE_URL`` settings.
+  
+
 Pithos
 ------
 

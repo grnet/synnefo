@@ -38,26 +38,28 @@ The upgrade to v0.14 consists in three steps:
 ::
 
     astakos.host$ apt-get install \
+                            python-objpool \
                             snf-common \
-                            astakosclient \
+                            python-astakosclient \
                             snf-django-lib \
                             snf-webproject \
                             snf-branding \
                             snf-astakos-app
 
     cyclades.host$ apt-get install \
+                            python-objpool \
                             snf-common \
-                            astakosclient \
+                            python-astakosclient \
                             snf-django-lib \
                             snf-webproject \
                             snf-branding \
                             snf-pithos-backend \
-                            snf-vncauthproxy \
                             snf-cyclades-app
 
     pithos.host$ apt-get install \
+                            python-objpool \
                             snf-common \
-                            astakosclient \
+                            python-astakosclient \
                             snf-django-lib \
                             snf-webproject \
                             snf-branding \
@@ -66,8 +68,8 @@ The upgrade to v0.14 consists in three steps:
                             snf-pithos-webclient
 
     ganeti.node$ apt-get install \
+                            python-objpool \
                             snf-common \
-                            snf-network \
                             snf-cyclades-gtools \
                             snf-pithos-backend
 
@@ -114,8 +116,15 @@ setting was renamed to this. Therefore:
   you must set it. It must point to the top-level Cyclades URL.
   Rename ``CYCLADES_ASTAKOS_SERVICE_TOKEN`` to ``CYCLADES_SERVICE_TOKEN``.
 
-* In Pithos settings, introduce a ``PITHOS_BASE_URL`` setting.
-  It must point to the top-level Pithos URL.
+* In Pithos settings, introduce a ``PITHOS_BASE_URL`` setting; it must point
+  to the top-level Pithos URL. Rename ``PITHOS_QUOTAHOLDER_POOLSIZE``, if
+  set, to ``PITHOS_ASTAKOSCLIENT_POOLSIZE``.
+
+* In all 20-<service>-cloudbar.conf files change setting
+  ``CLOUDBAR_SERVICES_URL`` to point to ``ASTAKOS_BASE_URL/ui/get_services``,
+  where ``ASTAKOS_BASE_URL`` as above. Similarly, set
+  ``CLOUDBAR_MENU_URL`` to ``ASTAKOS_BASE_URL/ui/get_menu``.
+
 
 3 Register services and migrate quota
 =====================================
@@ -128,6 +137,9 @@ installation URL for each component. You will also need to specify the URL
 where the astakos UI resides::
 
     astakos-host$ snf-component-register
+
+(proceed to the next step without running ``snf-manage resource-modify``
+suggested at the end of this command)
 
 .. note::
 

@@ -52,7 +52,7 @@ def extend_with_root_redirects(patterns_obj, filled_services, service_type,
     """
     service_url = get_public_endpoint(filled_services, service_type)
     root_url_entry = url('^$', 'redirect_to',
-                         {'url': join_urls('/', base_path)})
+                         {'url': join_urls('/', base_path.rstrip('/'), '/')})
     base_url_entry = url(prefix_pattern(base_path) + '$', 'redirect_to',
                          {'url': service_url})
     # urls order matter. Setting base_url_entry first allows us to avoid

@@ -314,12 +314,11 @@ def do_create_server(userid, name, password, flavor, image, metadata={},
     if provider:
         flavor.disk_template = disk_template
         flavor.disk_provider = provider
-        flavor.disk_origin = None
-        if provider == 'vlmc':
-            flavor.disk_origin = image['checksum']
-            image['backend_id'] = 'null'
+        flavor.disk_origin = image['checksum']
+        image['backend_id'] = 'null'
     else:
         flavor.disk_provider = None
+        flavor.disk_origin = None
 
     try:
         if network is None:

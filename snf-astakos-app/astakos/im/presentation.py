@@ -155,7 +155,7 @@ RESOURCES = {
                         'cyclades.network.private',
                         'astakos.pending_app'
                         ],
-    'exclude_from_usage': []
+    'exclude_from_usage': ['astakos.pending_app']
 }
 
 # extend from settings

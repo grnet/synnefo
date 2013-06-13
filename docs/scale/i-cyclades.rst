@@ -49,8 +49,6 @@ In `/etc/synnefo/cyclades.conf` add:
     NET_BAR_GRAPH_URL = 'https://cyclades.example.com/stats/%s/net-bar.png'
     NET_TIMESERIES_GRAPH_URL = 'https://cyclades.example.com/stats/%s/net-ts.png'
 
-    GANETI_DISK_TEMPLATES = ('blockdev', 'diskless', 'drbd', 'file', 'plain',
-                             'rbd',  'sharedfile', 'ext')
     ASTAKOS_BASE_URL = 'https://accounts.example.synnefo.org/'
 
     SECRET_ENCRYPTION_KEY= "oEs0pt7Di1mkxA0P6FiK"

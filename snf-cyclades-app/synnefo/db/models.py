@@ -55,8 +55,7 @@ class Flavor(models.Model):
     cpu = models.IntegerField('Number of CPUs', default=0)
     ram = models.IntegerField('RAM size in MiB', default=0)
     disk = models.IntegerField('Disk size in GiB', default=0)
-    disk_template = models.CharField('Disk template', max_length=32,
-                       default=settings.DEFAULT_GANETI_DISK_TEMPLATE)
+    disk_template = models.CharField('Disk template', max_length=32)
     deleted = models.BooleanField('Deleted', default=False)
 
     class Meta:

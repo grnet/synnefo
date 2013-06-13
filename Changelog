@@ -173,6 +173,8 @@ Cyclades
 * Remove obsolete setting 'API_ROOT_URL', since it is being covered by
   the use of CYCLADES_BASE_URL* Remove obsolete setting 'API_ROOT_URL', since
   it is being covered by 'CYCLADES_BASE_URL'.
+* Remove obsolete settings GANETI_DISK_TEMPLATES and
+  DEFAULT_GANETI_DISK_TEMPLATE
 
 Cyclades helpdesk
 -----------------

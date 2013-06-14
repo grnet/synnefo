@@ -104,8 +104,12 @@ def image_to_dict(image, detail=True):
         d['created'] = utils.isoformat(date_parse(image['created_at']))
         d['status'] = 'DELETED' if image['deleted_at'] else 'ACTIVE'
         d['progress'] = 100 if image['status'] == 'available' else 0
-        if image['properties']:
+        d['user_id'] = image['owner']
+        d['tenant_id'] = image['owner']
+        if image["properties"]:
             d['metadata'] = image['properties']
+        else:
+            d['metadata'] = {}
     return d
 
 

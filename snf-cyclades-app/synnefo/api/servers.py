@@ -128,6 +128,8 @@ def vm_to_dict(vm, detail=False):
     d = dict(id=vm.id, name=vm.name)
     d['links'] = util.vm_to_links(vm.id)
     if detail:
+        d['user_id'] = vm.userid
+        d['tenant_id'] = vm.userid
         d['status'] = get_rsapi_state(vm)
         d['progress'] = 100 if get_rsapi_state(vm) == 'ACTIVE' \
             else vm.buildpercentage

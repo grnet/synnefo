@@ -243,9 +243,8 @@ def api_access_config(request, template_name='im/api_access_config.html',
     context.update(extra_context)
     content = branding.render_to_string(template_name, context,
                                         RequestContext(request))
-    response = HttpResponse()
+    response = HttpResponse(content_type=content_type)
     response.status_code = 200
-    response.content_type = content_type
     response['Content-Disposition'] = 'attachment; filename="%s"' % filename
     response.content = content
     return response

@@ -51,6 +51,7 @@ from synnefo.db.models import VirtualMachine, NetworkInterface, Network
 # server actions specific imports
 from synnefo.api import servers
 from synnefo.logic import backend as servers_backend
+from synnefo.ui.views import UI_MEDIA_URL
 
 logger = logging.getLogger(__name__)
 
@@ -246,7 +247,8 @@ def account(request, search_query):
         'account_name': account_name,
         'token': request.user['auth_token'],
         'networks': networks,
-        'HELPDESK_MEDIA_URL': HELPDESK_MEDIA_URL
+        'HELPDESK_MEDIA_URL': HELPDESK_MEDIA_URL,
+        'UI_MEDIA_URL': UI_MEDIA_URL
     }
 
     return direct_to_template(request, "helpdesk/account.html",

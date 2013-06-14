@@ -127,6 +127,13 @@ Astakos
 * New `API access` view, containing useful information to users on how to 
   access available Synnefo services API's.
 
+* Remove of ASTAKOS_*_EMAIL_SUBJECT settings. All email subjects are now 
+  defined in astakos.im.messages module. Overriding default values can be 
+  achieved using custom gettext files or using astakos messages settings::
+	
+	#change of greeting email subject
+  	ASTAKOS_GREETING_EMAIL_SUBJECT_MESSAGE = 'Welcome to my cloud'
+
 * Management commands:
 
   * Introduced new commands:

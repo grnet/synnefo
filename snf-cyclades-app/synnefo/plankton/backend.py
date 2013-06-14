@@ -54,11 +54,14 @@ The Plankton attributes are the following:
 import json
 import warnings
 import logging
+import os
+
 from time import gmtime, strftime
 from functools import wraps
 from operator import itemgetter
 
 from django.conf import settings
+from django.utils import importlib
 from pithos.backends.base import NotAllowedError, VersionNotExists
 
 logger = logging.getLogger(__name__)
@@ -468,3 +471,59 @@ def image_to_dict(image_url, meta, permissions):
                 image[key] = val
 
     return image
+
+
+class JSONFileBackend(object):
+    """
+    A dummy image backend that loads available images from a file with json
+    formatted content.
+
+    usage:
+        PLANKTON_BACKEND_MODULE = 'synnefo.plankton.backend.JSONFileBackend'
+        PLANKTON_IMAGES_JSON_BACKEND_FILE = '/tmp/images.json'
+
+        # loading images from an existing plankton service
+        $ curl -H "X-Auth-Token: <MYTOKEN>" \
+                https://cyclades.synnefo.org/plankton/images/detail | \
+                python -m json.tool > /tmp/images.json
+    """
+    def __init__(self, userid):
+        self.images_file = getattr(settings,
+                                   'PLANKTON_IMAGES_JSON_BACKEND_FILE', '')
+        if not os.path.exists(self.images_file):
+            raise Exception("Invalid plankgon images json backend file: %s",
+                            self.images_file)
+        fp = file(self.images_file)
+        self.images = json.load(fp)
+        fp.close()
+
+    def iter(self, *args, **kwargs):
+        return self.images.__iter__()
+
+    def list_images(self, *args, **kwargs):
+        return self.images
+
+    def get_image(self, image_uuid):
+        try:
+            return filter(lambda i: i['id'] == image_uuid, self.images)[0]
+        except IndexError:
+            raise Exception("Unknown image uuid: %s" % image_uuid)
+
+    def close(self):
+        pass
+
+
+def get_backend():
+    backend_module = getattr(settings, 'PLANKTON_BACKEND_MODULE', None)
+    if not backend_module:
+        # no setting set
+        return ImageBackend
+
+    parts = backend_module.split(".")
+    module = ".".join(parts[:-1])
+    cls = parts[-1]
+    try:
+        return getattr(importlib.import_module(module), cls)
+    except (ImportError, AttributeError), e:
+        raise ImportError("Cannot import plankton module: %s (%s)" %
+                          (backend_module, e.message))

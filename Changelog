@@ -134,6 +134,10 @@ Astakos
 	#change of greeting email subject
   	ASTAKOS_GREETING_EMAIL_SUBJECT_MESSAGE = 'Welcome to my cloud'
 
+* Remove ``ASTAKOS_ACTIVATION_REDIRECT_URL`` and ``ASTAKOS_LOGIN_SUCCESS_URL`` 
+  from astakos .conf file. Settings are dynamically computed based on 
+  ``ASTAKOS_BASE_URL``.
+
 * Management commands:
 
   * Introduced new commands:

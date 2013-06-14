@@ -4,7 +4,7 @@
 {% block headjs %}
 	{{ block.super }}	 
     <script>
-      var CHANGE_TOKEN_URL = '{% url update_token %}';
+      var CHANGt_TOKEN_URL = '{% url update_token %}';
     </script>	
 {% endblock %}	
 
@@ -17,7 +17,7 @@
     {% endblock %}
         <p class="dotted">
     To use {{ BRANDING_SERVICE_NAME }} via its REST API you will need the following Authentication URL
-    and API token:<br /><br />
+    and Token:<br /><br />
         </p>
     </div>
     <div class="subsection dotted">
@@ -32,7 +32,7 @@
             </div>
             <div class="detail clearfix">
                 <div class="facts clearfix">
-                    <span class="title">API Token</span>
+                    <span class="title">Token</span>
                     <span id="dummy_auth_token" class="dummy-input">&nbsp;</span>
                     <input value="{{ request.user.auth_token }}" type="text" name="auth_token" disabled/>
                     <span class="expires">
@@ -70,23 +70,23 @@
         <div class="two-cols dotted clearfix">
             <div class="rt">
                 {% block page.body.api_advanced %}
-                <h2>API Advanced Usage</h2>
+                <h2>API advanced usage</h2>
                 <p>
                 Apart from using the kamaki command line client, you can also import the
                 kamaki library inside your code and use it directly. More details on how
-                to do that on the corresponding kamaki 
-                <a href="{{ client_url }}">kamaki </a>page.</p> 
+                to do that on the corresponding  
+                <a href="http://www.synnefo.org/docs/kamaki/latest/index.html">kamaki </a>page.</p> 
                 <p>You can also implement the REST API calls by yourself, without
                 using the official kamaki library if you feel confident with your
                 programming skills. To do so, you first need to get a good grasp of the
                 API itself; for more information take a look at the corresponding page
                 inside the 
-                <a href="https://synnefo.org/docs/">Synnefo documentation</a>.
+                <a href="http://www.synnefo.org/docs">Synnefo documentation</a>.
                 </p>
                 {% endblock %}
             </div>
             <div class="lt">
-                <h2>GENERAL</h2>
+                <h2>General</h2>
                 <p>{{ BRANDING_SERVICE_NAME }} provides a complete REST API that allows you to access and
     control your virtual resources programmatically. This means you can execute
     all the actions you do from the {{ BRANDING_SERVICE_NAME }} Web UI by using a command
@@ -94,7 +94,7 @@
     <p>
                 If
                 you want to learn more about the specification of the REST API itself,
-                please take a look at the <a href="https://www.synnefo.org/docs" 
+                please take a look at the <a href="http://www.synnefo.org/docs" 
                 alt="Synnefo documentation">Synnefo documentation</a>. 
                 </p>
                
@@ -116,7 +116,7 @@ the following:</p>
 password:  <span class="user-data">{{ user.auth_token }}</span></p>
 
 <p>The username is your  {{ BRANDING_SERVICE_NAME }} user ID (UUID) and the password
-is your authentication token. As you can see, its the same shown in the
+is your Token. As you can see, its the same shown in the
 previous section. </p>
         </div>
         <div class="lt">
@@ -131,14 +131,14 @@ previous section. </p>
     many other neat things.</p>
             <p> Kamaki is available for most Linux distributions,
     Windows and Mac OS X. To use it you will need to set it up using your
-    Authentication Token and the Identity Service's public URL, found above. To
+    Token and the Authentication URL, found above. To
     learn more about kamaki and how to install, configure and use, take a look
-    at its <a href="http://www.synnefo.org/docs/kamaki/latest/index.html">corresponding page</a>
+    at its <a href="http://www.synnefo.org/docs/kamaki/latest/index.html">corresponding page</a>.
             </p>
              <p class="download">You can download kamaki 
-    from the <a href="{{ client_url }}">project homepage</a></p>
+    from the <a href="http://www.synnefo.org/docs/kamaki/latest/index.html">project homepage</a>.</p>
              <p>If you are using kamaki, you can download a pre-configured .kamakirc
-file that contains your Authentication token and URL. Store this file
+file that contains your Authentication URL and Token. Store this file
 under your home directory (~/.kamakirc) and kamaki will be able to
 access  {{ BRANDING_SERVICE_NAME }} automatically without the need of extra
 manual configuration.</p>

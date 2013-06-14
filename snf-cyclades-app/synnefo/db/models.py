@@ -446,6 +446,8 @@ class Network(models.Model):
     ACTIONS = (
         ('CREATE', 'Create Network'),
         ('DESTROY', 'Destroy Network'),
+        ('ADD', 'Add server to Network'),
+        ('REMOVE', 'Remove server from Network'),
     )
 
     RSAPI_STATE_FROM_OPER_STATE = {

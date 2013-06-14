@@ -407,10 +407,7 @@ def demux_server_action(request, server_id):
     vm = util.get_vm(server_id, request.user_uniq, for_update=True,
                      non_deleted=True, non_suspended=True)
 
-    try:
-        action = req.keys()[0]
-    except KeyError:
-        raise faults.BadRequest("Unknown action")
+    action = req.keys()[0]
 
     if key_to_action(action) not in [x[0] for x in VirtualMachine.ACTIONS]:
         if action not in ARBITRARY_ACTIONS:

@@ -327,7 +327,8 @@ class NetworkAPITest(ComputeAPITest):
 
     def test_add_nic_to_deleted_network(self, mrapi):
         user = 'userr'
-        vm = mfactory.VirtualMachineFactory(name='yo', userid=user)
+        vm = mfactory.VirtualMachineFactory(name='yo', userid=user,
+                                            operstate="ACTIVE")
         net = mfactory.NetworkFactory(state='ACTIVE', userid=user,
                                       deleted=True)
         request = {'add': {'serverRef': vm.id}}

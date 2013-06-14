@@ -473,23 +473,23 @@ def get_existing_users():
 
 
 def vm_to_links(vm_id):
-    link = join_urls(SERVERS_URL, str(vm_id))
-    return [{"ref": rel, "link": link} for rel in ("self", "bookmark")]
+    href = join_urls(SERVERS_URL, str(vm_id))
+    return [{"rel": rel, "href": href} for rel in ("self", "bookmark")]
 
 
 def network_to_links(network_id):
-    link = join_urls(NETWORKS_URL, str(network_id))
-    return [{"ref": rel, "link": link} for rel in ("self", "bookmark")]
+    href = join_urls(NETWORKS_URL, str(network_id))
+    return [{"rel": rel, "href": href} for rel in ("self", "bookmark")]
 
 
 def flavor_to_links(flavor_id):
-    link = join_urls(FLAVORS_URL, str(flavor_id))
-    return [{"ref": rel, "link": link} for rel in ("self", "bookmark")]
+    href = join_urls(FLAVORS_URL, str(flavor_id))
+    return [{"rel": rel, "href": href} for rel in ("self", "bookmark")]
 
 
 def image_to_links(image_id):
-    link = join_urls(IMAGES_URL, str(image_id))
-    links = [{"ref": rel, "link": link} for rel in ("self", "bookmark")]
+    href = join_urls(IMAGES_URL, str(image_id))
+    links = [{"rel": rel, "href": href} for rel in ("self", "bookmark")]
     links.append({"rel": "alternate",
-                  "link": join_urls(IMAGES_PLANKTON_URL, str(image_id))})
+                  "href": join_urls(IMAGES_PLANKTON_URL, str(image_id))})
     return links

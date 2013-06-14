@@ -118,7 +118,8 @@ class ServerAPITest(ComputeAPITest):
         db_vm = self.vm2
         user = self.vm2.userid
         net = mfactory.NetworkFactory()
-        nic = mfactory.NetworkInterfaceFactory(machine=self.vm2, network=net)
+        nic = mfactory.NetworkInterfaceFactory(machine=self.vm2, network=net,
+                                              ipv6="::babe")
 
         db_vm_meta = mfactory.VirtualMachineMetadataFactory(vm=db_vm)
 
@@ -138,6 +139,10 @@ class ServerAPITest(ComputeAPITest):
         self.assertEqual(api_nic['ipv4'], nic.ipv4)
         self.assertEqual(api_nic['ipv6'], nic.ipv6)
         self.assertEqual(api_nic['id'], 'nic-%s-%s' % (db_vm.id, nic.index))
+        api_address = server["addresses"]
+        self.assertEqual(api_address[str(net.id)],
+                          [{"version": 4, "addr": nic.ipv4},
+                           {"version": 6, "addr": nic.ipv6}])
 
         metadata = server['metadata']
         self.assertEqual(len(metadata), 1)

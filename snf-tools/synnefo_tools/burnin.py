@@ -710,8 +710,8 @@ class SpawnServerTestCase(unittest.TestCase):
         log.info("Server id: " + str(server["id"]))
         log.info("Server password: " + server["adminPass"])
         self.assertEqual(server["name"], self.servername)
-        self.assertEqual(server["flavor"], self.flavorid)
-        self.assertEqual(server["image"], self.imageid)
+        self.assertEqual(server["flavor"]["id"], self.flavorid)
+        self.assertEqual(server["image"]["id"], self.imageid)
         self.assertEqual(server["status"], "BUILD")
 
         # Update class attributes to reflect data on building server
@@ -734,8 +734,8 @@ class SpawnServerTestCase(unittest.TestCase):
 
         server = servers[0]
         self.assertEqual(server["name"], self.servername)
-        self.assertEqual(server["flavor"], self.flavorid)
-        self.assertEqual(server["image"], self.imageid)
+        self.assertEqual(server["flavor"]["id"], self.flavorid)
+        self.assertEqual(server["image"]["id"], self.imageid)
         self.assertEqual(server["status"], "BUILD")
 
     def test_002b_server_is_building_in_details(self):
@@ -745,8 +745,8 @@ class SpawnServerTestCase(unittest.TestCase):
 
         server = self.cyclades_client.get_server_details(self.serverid)
         self.assertEqual(server["name"], self.servername)
-        self.assertEqual(server["flavor"], self.flavorid)
-        self.assertEqual(server["image"], self.imageid)
+        self.assertEqual(server["flavor"]["id"], self.flavorid)
+        self.assertEqual(server["image"]["id"], self.imageid)
         self.assertEqual(server["status"], "BUILD")
 
     def test_002c_set_server_metadata(self):
@@ -1073,8 +1073,8 @@ class NetworkTestCase(unittest.TestCase):
             self.servername, self.flavorid, self.imageid, personality=None)
 
         self.assertEqual(serverA["name"], self.servername)
-        self.assertEqual(serverA["flavor"], self.flavorid)
-        self.assertEqual(serverA["image"], self.imageid)
+        self.assertEqual(serverA["flavor"]["id"], self.flavorid)
+        self.assertEqual(serverA["image"]["id"], self.imageid)
         self.assertEqual(serverA["status"], "BUILD")
 
         # Update class attributes to reflect data on building server
@@ -1117,8 +1117,8 @@ class NetworkTestCase(unittest.TestCase):
             self.servername, self.flavorid, self.imageid, personality=None)
 
         self.assertEqual(serverB["name"], self.servername)
-        self.assertEqual(serverB["flavor"], self.flavorid)
-        self.assertEqual(serverB["image"], self.imageid)
+        self.assertEqual(serverB["flavor"]["id"], self.flavorid)
+        self.assertEqual(serverB["image"]["id"], self.imageid)
         self.assertEqual(serverB["status"], "BUILD")
 
         # Update class attributes to reflect data on building server

@@ -56,6 +56,7 @@ urlpatterns = patterns(
 
 def flavor_to_dict(flavor, detail=True):
     d = {'id': flavor.id, 'name': flavor.name}
+    d['links'] = util.flavor_to_links(flavor.id)
     if detail:
         d['ram'] = flavor.ram
         d['disk'] = flavor.disk

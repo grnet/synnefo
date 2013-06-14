@@ -66,6 +66,22 @@ from snf_django.lib.astakos import get_user
 from synnefo.plankton.utils import image_backend
 from synnefo.settings import MAX_CIDR_BLOCK
 
+from synnefo.cyclades_settings import cyclades_services, BASE_HOST
+from synnefo.lib.services import get_service_path
+from synnefo.lib import join_urls
+
+COMPUTE_URL = \
+    join_urls(BASE_HOST,
+              get_service_path(cyclades_services, "compute", version="v2.0"))
+SERVERS_URL = join_urls(COMPUTE_URL, "servers/")
+NETWORKS_URL = join_urls(COMPUTE_URL, "networks/")
+FLAVORS_URL = join_urls(COMPUTE_URL, "flavors/")
+IMAGES_URL = join_urls(COMPUTE_URL, "images/")
+PLANKTON_URL = \
+    join_urls(BASE_HOST,
+              get_service_path(cyclades_services, "image", version="v1.0"))
+IMAGES_PLANKTON_URL = join_urls(PLANKTON_URL, "images/")
+
 
 log = getLogger('synnefo.api')
 
@@ -454,3 +470,26 @@ def get_existing_users():
 
     return set(list(keypairusernames) + list(serverusernames) +
                list(networkusernames))
+
+
+def vm_to_links(vm_id):
+    link = join_urls(SERVERS_URL, str(vm_id))
+    return [{"ref": rel, "link": link} for rel in ("self", "bookmark")]
+
+
+def network_to_links(network_id):
+    link = join_urls(NETWORKS_URL, str(network_id))
+    return [{"ref": rel, "link": link} for rel in ("self", "bookmark")]
+
+
+def flavor_to_links(flavor_id):
+    link = join_urls(FLAVORS_URL, str(flavor_id))
+    return [{"ref": rel, "link": link} for rel in ("self", "bookmark")]
+
+
+def image_to_links(image_id):
+    link = join_urls(IMAGES_URL, str(image_id))
+    links = [{"ref": rel, "link": link} for rel in ("self", "bookmark")]
+    links.append({"rel": "alternate",
+                  "link": join_urls(IMAGES_PLANKTON_URL, str(image_id))})
+    return links

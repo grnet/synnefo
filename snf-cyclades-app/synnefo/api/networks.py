@@ -85,6 +85,7 @@ def network_demux(request, network_id):
 
 def network_to_dict(network, user_id, detail=True):
     d = {'id': str(network.id), 'name': network.name}
+    d['links'] = util.network_to_links(network.id)
     if detail:
         d['cidr'] = network.subnet
         d['cidr6'] = network.subnet6

@@ -90,8 +90,9 @@ class ServerAPITest(ComputeAPITest):
         self.assertSuccess(response)
         servers = json.loads(response.content)['servers']
         db_server = self.vm1
-        self.assertEqual(servers, [{'name': db_server.name,
-                                    'id': db_server.id}])
+        server = servers[0]
+        self.assertEqual(server["name"], db_server.name)
+        self.assertEqual(server["id"], db_server.id)
 
     def test_server_list_detail(self):
         """Test if the servers list details are returned."""
@@ -104,10 +105,10 @@ class ServerAPITest(ComputeAPITest):
         self.assertEqual(len(servers), len(user_vms))
         for api_vm in servers:
             db_vm = user_vms[api_vm['id']]
-            self.assertEqual(api_vm['flavor'], db_vm.flavor.id)
+            self.assertEqual(api_vm['flavor']["id"], db_vm.flavor.id)
             self.assertEqual(api_vm['hostId'], db_vm.hostid)
             self.assertEqual(api_vm['id'], db_vm.id)
-            self.assertEqual(api_vm['image'], db_vm.imageid)
+            self.assertEqual(api_vm['image']["id"], db_vm.imageid)
             self.assertEqual(api_vm['name'], db_vm.name)
             self.assertEqual(api_vm['status'], get_rsapi_state(db_vm))
             self.assertSuccess(response)
@@ -124,10 +125,10 @@ class ServerAPITest(ComputeAPITest):
         response = self.myget('servers/%d' % db_vm.id, user)
         server = json.loads(response.content)['server']
 
-        self.assertEqual(server['flavor'], db_vm.flavor.id)
+        self.assertEqual(server['flavor']["id"], db_vm.flavor.id)
         self.assertEqual(server['hostId'], db_vm.hostid)
         self.assertEqual(server['id'], db_vm.id)
-        self.assertEqual(server['image'], db_vm.imageid)
+        self.assertEqual(server['image']["id"], db_vm.imageid)
         self.assertEqual(server['name'], db_vm.name)
         self.assertEqual(server['status'], get_rsapi_state(db_vm))
         api_nic = server['attachments'][0]

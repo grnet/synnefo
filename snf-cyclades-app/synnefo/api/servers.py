@@ -126,6 +126,7 @@ def nic_to_dict(nic):
 
 def vm_to_dict(vm, detail=False):
     d = dict(id=vm.id, name=vm.name)
+    d['links'] = util.vm_to_links(vm.id)
     if detail:
         d['status'] = get_rsapi_state(vm)
         d['progress'] = 100 if get_rsapi_state(vm) == 'ACTIVE' \
@@ -133,13 +134,14 @@ def vm_to_dict(vm, detail=False):
         d['hostId'] = vm.hostid
         d['updated'] = utils.isoformat(vm.updated)
         d['created'] = utils.isoformat(vm.created)
-        d['flavor'] = vm.flavor.id
-        d['image'] = vm.imageid
+        d['flavor'] = {"id": vm.flavor.id,
+                       "links": util.flavor_to_links(vm.flavor.id)}
+        d['image'] = {"id": vm.imageid,
+                      "links": util.image_to_links(vm.imageid)}
         d['suspended'] = vm.suspended
 
         metadata = dict((m.meta_key, m.meta_value) for m in vm.metadata.all())
-        if metadata:
-            d['metadata'] = metadata
+        d['metadata'] = metadata
 
         vm_nics = vm.nics.filter(state="ACTIVE").order_by("index")
         attachments = map(nic_to_dict, vm_nics)
@@ -149,6 +151,8 @@ def vm_to_dict(vm, detail=False):
         diagnostic = vm.get_last_diagnostic()
         if diagnostic:
             d['diagnostics'] = diagnostics_to_dict([diagnostic])
+        else:
+            d['diagnostics'] = []
 
     return d
 

@@ -141,8 +141,8 @@ class ServerAPITest(ComputeAPITest):
         self.assertEqual(api_nic['id'], 'nic-%s-%s' % (db_vm.id, nic.index))
         api_address = server["addresses"]
         self.assertEqual(api_address[str(net.id)],
-                          [{"version": 4, "addr": nic.ipv4},
-                           {"version": 6, "addr": nic.ipv6}])
+               [{"version": 4, "addr": nic.ipv4, "OS-EXT-IPS:type": "fixed"},
+                {"version": 6, "addr": nic.ipv6, "OS-EXT-IPS:type": "fixed"}])
 
         metadata = server['metadata']
         self.assertEqual(len(metadata), 1)

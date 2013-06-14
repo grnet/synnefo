@@ -128,9 +128,13 @@ def nics_to_addresses(nics):
     addresses = {}
     for nic in nics:
         net_nics = []
-        net_nics.append({"version": 4, "addr": nic.ipv4})
+        net_nics.append({"version": 4,
+                         "addr": nic.ipv4,
+                         "OS-EXT-IPS:type": "fixed"})
         if nic.ipv6:
-            net_nics.append({"version": 6, "addr": nic.ipv6})
+            net_nics.append({"version": 6,
+                             "addr": nic.ipv6,
+                             "OS-EXT-IPS:type": "fixed"})
         addresses[nic.network.id] = net_nics
     return addresses
 
@@ -167,6 +171,12 @@ def vm_to_dict(vm, detail=False):
             d['diagnostics'] = diagnostics_to_dict([diagnostic])
         else:
             d['diagnostics'] = []
+        # Fixed
+        d["security_groups"] = [{"name": "default"}]
+        d["key_name"] = None
+        d["config_drive"] = ""
+        d["accessIPv4"] = ""
+        d["accessIPv6"] = ""
 
     return d
 

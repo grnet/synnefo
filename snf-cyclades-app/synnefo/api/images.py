@@ -106,6 +106,7 @@ def image_to_dict(image, detail=True):
         d['progress'] = 100 if image['status'] == 'available' else 0
         d['user_id'] = image['owner']
         d['tenant_id'] = image['owner']
+        d['links'] = util.image_to_links(image["id"])
         if image["properties"]:
             d['metadata'] = image['properties']
         else:

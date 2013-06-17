@@ -1078,12 +1078,50 @@ def api_method(http_method=None, token_required=True, user_required=True, logger
             try:
                 # Add a PithosBackend as attribute of the request object
                 request.backend = get_backend()
+                request.backend.lock_container_path = lock_container_path
+                request.backend.wrapper.execute()
+                request.backend.serials = []
+                request.backend.messages = []
+
                 # Many API method expect thet X-Auth-Token in request,token
                 request.token = request.x_auth_token
                 update_request_headers(request)
                 response = func(request, *args, **kwargs)
                 update_response_headers(request, response)
+
+                # send messages produced
+                for m in request.backend.messages:
+                    request.backend.queue.send(*m)
+
+                # register serials
+                if request.backend.serials:
+                    request.backend.commission_serials.insert_many(
+                        request.backend.serials)
+
+                    # commit to ensure that the serials are registered
+                    # even if resolve commission fails
+                    request.backend.wrapper.commit()
+
+                    # start new transaction
+                    request.backend.wrapper.execute()
+
+                    r = request.backend.astakosclient.resolve_commissions(
+                                token=request.backend.service_token,
+                                accept_serials=request.backend.serials,
+                                reject_serials=[])
+                    request.backend.commission_serials.delete_many(
+                        r['accepted'])
+
+                request.backend.wrapper.commit()
                 return response
+            except:
+                if request.backend.serials:
+                    request.backend.astakosclient.resolve_commissions(
+                        token=request.backend.service_token,
+                        accept_serials=[],
+                        reject_serials=request.backend.serials)
+                request.backend.wrapper.rollback()
+                raise
             finally:
                 # Always close PithosBackend connection
                 if getattr(request, "backend", None) is not None:

@@ -198,7 +198,7 @@ def password_change(request, template_name='registration/password_change_form.ht
             data=request.POST,
         )
         if not create_password:
-            form_kwargs['session_key'] = session_key=request.session.session_key
+            form_kwargs['session_key'] = request.session.session_key
 
         form = password_change_form(**form_kwargs)
         if form.is_valid():

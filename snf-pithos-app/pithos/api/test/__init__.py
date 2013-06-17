@@ -42,6 +42,9 @@ from snf_django.utils.testing import with_settings, astakos_user
 from pithos.backends.random_word import get_random_word
 from pithos.api import settings as pithos_settings
 
+from synnefo.lib.services import get_service_path
+from synnefo.lib import join_urls
+
 from django.test import TestCase
 from django.utils.http import urlencode
 from django.conf import settings
@@ -87,9 +90,11 @@ class PithosAPITest(TestCase):
     #TODO unauthorized request
     def setUp(self):
         pithos_settings.BACKEND_DB_MODULE = 'pithos.backends.lib.sqlalchemy'
-        pithos_settings.BACKEND_DB_CONNECTION = construct_db_connection()
+        pithos_settings.BACKEND_DB_CONNECTION = django_to_sqlalchemy()
         pithos_settings.BACKEND_POOL_SIZE = 1
         self.user = 'user'
+        self.pithos_path = join_urls(get_service_path(
+            pithos_settings.pithos_services, 'object-store'))
 
     def tearDown(self):
         #delete additionally created metadata
@@ -137,7 +142,8 @@ class PithosAPITest(TestCase):
     def update_account_meta(self, meta):
         kwargs = dict(
             ('HTTP_X_ACCOUNT_META_%s' % k, str(v)) for k, v in meta.items())
-        r = self.post('/v1/%s?update=' % self.user, **kwargs)
+        url = join_urls(self.pithos_path, self.user)
+        r = self.post('%s?update=' % url, **kwargs)
         self.assertEqual(r.status_code, 202)
         account_meta = self.get_account_meta()
         (self.assertTrue('X-Account-Meta-%s' % k in account_meta) for
@@ -148,7 +154,8 @@ class PithosAPITest(TestCase):
     def reset_account_meta(self, meta):
         kwargs = dict(
             ('HTTP_X_ACCOUNT_META_%s' % k, str(v)) for k, v in meta.items())
-        r = self.post('/v1/%s' % self.user, **kwargs)
+        url = join_urls(self.pithos_path, self.user)
+        r = self.post(url, **kwargs)
         self.assertEqual(r.status_code, 202)
         account_meta = self.get_account_meta()
         (self.assertTrue('X-Account-Meta-%s' % k in account_meta) for
@@ -159,7 +166,8 @@ class PithosAPITest(TestCase):
     def delete_account_meta(self, meta):
         transform = lambda k: 'HTTP_%s' % k.replace('-', '_').upper()
         kwargs = dict((transform(k), '') for k, v in meta.items())
-        r = self.post('/v1/%s?update=' % self.user, **kwargs)
+        url = join_urls(self.pithos_path, self.user)
+        r = self.post('%s?update=' % url, **kwargs)
         self.assertEqual(r.status_code, 202)
         account_meta = self.get_account_meta()
         (self.assertTrue('X-Account-Meta-%s' % k not in account_meta) for
@@ -167,12 +175,13 @@ class PithosAPITest(TestCase):
         return r
 
     def delete_account_groups(self, groups):
-        r = self.post('/v1/%s?update=' % self.user, **groups)
+        url = join_urls(self.pithos_path, self.user)
+        r = self.post('%s?update=' % url, **groups)
         self.assertEqual(r.status_code, 202)
         return r
 
     def get_account_info(self, until=None):
-        url = '/v1/%s' % self.user
+        url = join_urls(self.pithos_path, self.user)
         if until is not None:
             parts = list(urlsplit(url))
             parts[3] = urlencode({
@@ -200,8 +209,8 @@ class PithosAPITest(TestCase):
         return headers
 
     def list_containers(self, format='json', headers={}, **params):
-        url = '/v1/%s' % self.user
-        parts = list(urlsplit(url))
+        _url = join_urls(self.pithos_path, self.user)
+        parts = list(urlsplit(_url))
         params['format'] = format
         parts[3] = urlencode(params)
         url = urlunsplit(parts)
@@ -224,17 +233,20 @@ class PithosAPITest(TestCase):
             return minidom.parseString(r.content)
 
     def delete_container_content(self, cname):
-        r = self.delete('/v1/%s/%s?delimiter=/' % (self.user, cname))
+        url = join_urls(self.pithos_path, self.user, cname)
+        r = self.delete('%s?delimiter=/' % url)
         self.assertEqual(r.status_code, 204)
         return r
 
     def delete_container(self, cname):
-        r = self.delete('/v1/%s/%s' % (self.user, cname))
+        url = join_urls(self.pithos_path, self.user, cname)
+        r = self.delete(url)
         self.assertEqual(r.status_code, 204)
         return r
 
     def create_container(self, cname):
-        r = self.put('/v1/%s/%s' % (self.user, cname), data='')
+        url = join_urls(self.pithos_path, self.user, cname)
+        r = self.put(url, data='')
         self.assertTrue(r.status_code in (202, 201))
         return r
 
@@ -243,21 +255,21 @@ class PithosAPITest(TestCase):
         data = get_random_word(length=random.randint(1, 1024))
         headers = dict(('HTTP_X_OBJECT_META_%s' % k.upper(), v)
                        for k, v in meta.iteritems())
-        r = self.put('/v1/%s/%s/%s' % (
-            self.user, cname, oname), data=data, **headers)
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.put(url, data=data, **headers)
         self.assertEqual(r.status_code, 201)
         return oname, data, r
 
     def create_folder(self, cname, oname=get_random_word(8), **headers):
-        r = self.put('/v1/%s/%s/%s' % (
-            self.user, cname, oname), data='',
-            content_type='application/directory',
-            **headers)
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.put(url, data='', content_type='application/directory',
+                     **headers)
         self.assertEqual(r.status_code, 201)
         return oname, r
 
     def list_objects(self, cname):
-        r = self.get('/v1/%s/%s?format=json' % (self.user, cname))
+        url = join_urls(self.pithos_path, self.user, cname)
+        r = self.get('%s?format=json' % url)
         self.assertTrue(r.status_code in (200, 204))
         try:
             objects = json.loads(r.content)
@@ -331,19 +343,21 @@ django_sqlalchemy_engines = {
     'django.db.backends.oracle': 'oracle'}
 
 
-def construct_db_connection():
-    """Convert the django default database to an sqlalchemy connection
-       string"""
+def django_to_sqlalchemy():
+    """Convert the django default database to sqlalchemy connection string"""
+    # TODO support for more complex configuration
     db = settings.DATABASES['default']
+    name = db.get('TEST_NAME', 'test_%s' % db['NAME'])
     if db['ENGINE'] == 'django.db.backends.sqlite3':
-        return 'sqlite://'
+        db.get('TEST_NAME', db['NAME'])
+        return 'sqlite:///%s' % name
     else:
         d = dict(scheme=django_sqlalchemy_engines.get(db['ENGINE']),
                  user=db['USER'],
                  pwd=db['PASSWORD'],
                  host=db['HOST'].lower(),
                  port=int(db['PORT']) if db['PORT'] != '' else '',
-                 name=db['NAME'])
+                 name=name)
         return '%(scheme)s://%(user)s:%(pwd)s@%(host)s:%(port)s/%(name)s' % d
 
 

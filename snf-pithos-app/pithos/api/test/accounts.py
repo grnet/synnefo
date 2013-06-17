@@ -37,6 +37,8 @@
 from pithos.api.test import PithosAPITest, AssertMappingInvariant,\
     DATE_FORMATS
 
+from synnefo.lib import join_urls
+
 import time as _time
 import datetime
 
@@ -181,8 +183,9 @@ class AccountGet(PithosAPITest):
         t1_formats = map(t1.strftime, DATE_FORMATS)
 
         # Check not modified
+        url = join_urls(self.pithos_path, self.user)
         for t in t1_formats:
-            r = self.get('/v1/%s' % self.user, HTTP_IF_MODIFIED_SINCE=t)
+            r = self.get(url, HTTP_IF_MODIFIED_SINCE=t)
             self.assertEqual(r.status_code, 304)
 
         # modify account: add container
@@ -191,7 +194,7 @@ class AccountGet(PithosAPITest):
 
         # Check modified
         for t in t1_formats:
-            r = self.get('/v1/%s' % self.user, HTTP_IF_MODIFIED_SINCE=t)
+            r = self.get('%s' % url, HTTP_IF_MODIFIED_SINCE=t)
             self.assertEqual(r.status_code, 200)
             self.assertEqual(
                 r.content.split('\n')[:-1],
@@ -208,20 +211,22 @@ class AccountGet(PithosAPITest):
 
         # Check modified
         for t in t2_formats:
-            r = self.get('/v1/%s' % self.user, HTTP_IF_MODIFIED_SINCE=t)
+            r = self.get('%s' % url, HTTP_IF_MODIFIED_SINCE=t)
             self.assertEqual(r.status_code, 200)
             self.assertEqual(
                 r.content.split('\n')[:-1],
                 ['apples', 'bananas', 'c1', 'kiwis', 'oranges', 'pears'])
 
     def test_if_modified_since_invalid_date(self):
-        r = self.get('/v1/%s' % self.user, HTTP_IF_MODIFIED_SINCE='Monday')
+        url = join_urls(self.pithos_path, self.user)
+        r = self.get('%s' % url, HTTP_IF_MODIFIED_SINCE='Monday')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(
             r.content.split('\n')[:-1],
             ['apples', 'bananas', 'kiwis', 'oranges', 'pears'])
 
     def test_if_not_modified_since(self):
+        url = join_urls(self.pithos_path, self.user)
         account_info = self.get_account_info()
         last_modified = account_info['Last-Modified']
         t = datetime.datetime.strptime(last_modified, DATE_FORMATS[-1])
@@ -230,7 +235,7 @@ class AccountGet(PithosAPITest):
         t1 = t + datetime.timedelta(seconds=1)
         t1_formats = map(t1.strftime, DATE_FORMATS)
         for t in t1_formats:
-            r = self.get('/v1/%s' % self.user, HTTP_IF_UNMODIFIED_SINCE=t)
+            r = self.get(url, HTTP_IF_UNMODIFIED_SINCE=t)
             self.assertEqual(r.status_code, 200)
             self.assertEqual(
                 r.content.split('\n')[:-1],
@@ -248,7 +253,7 @@ class AccountGet(PithosAPITest):
 
         # Check modified
         for t in t2_formats:
-            r = self.get('/v1/%s' % self.user, HTTP_IF_UNMODIFIED_SINCE=t)
+            r = self.get(url, HTTP_IF_UNMODIFIED_SINCE=t)
             self.assertEqual(r.status_code, 412)
 
         # modify account: update account meta
@@ -263,11 +268,12 @@ class AccountGet(PithosAPITest):
 
         # Check modified
         for t in t3_formats:
-            r = self.get('/v1/%s' % self.user, HTTP_IF_UNMODIFIED_SINCE=t)
+            r = self.get(url, HTTP_IF_UNMODIFIED_SINCE=t)
             self.assertEqual(r.status_code, 412)
 
     def test_if_unmodified_since_invalid_date(self):
-        r = self.get('/v1/%s' % self.user, HTTP_IF_UNMODIFIED_SINCE='Monday')
+        url = join_urls(self.pithos_path, self.user)
+        r = self.get(url, HTTP_IF_UNMODIFIED_SINCE='Monday')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(
             r.content.split('\n')[:-1],
@@ -292,13 +298,14 @@ class AccountPost(PithosAPITest):
         self.update_account_meta({'foo': 'bar'})
 
     def test_update_meta(self):
+        url = join_urls(self.pithos_path, self.user)
         with AssertMappingInvariant(self.get_account_groups):
             initial = self.get_account_meta()
 
             meta = {'test': 'tost', 'ping': 'pong'}
             kwargs = dict(('HTTP_X_ACCOUNT_META_%s' % k, str(v))
                           for k, v in meta.items())
-            r = self.post('/v1/%s?update=' % self.user, **kwargs)
+            r = self.post('%s?update=' % url, **kwargs)
             self.assertEqual(r.status_code, 202)
 
             meta.update(initial)
@@ -309,6 +316,7 @@ class AccountPost(PithosAPITest):
                 k, v in meta.items())
 
     def test_reset_meta(self):
+        url = join_urls(self.pithos_path, self.user)
         with AssertMappingInvariant(self.get_account_groups):
             meta = {'test': 'tost', 'ping': 'pong'}
             self.update_account_meta(meta)
@@ -317,7 +325,7 @@ class AccountPost(PithosAPITest):
             kwargs = dict((
                 'HTTP_X_ACCOUNT_META_%s' % k, str(v)
             ) for k, v in new_meta.items())
-            r = self.post('/v1/%s' % self.user, **kwargs)
+            r = self.post(url, **kwargs)
             self.assertEqual(r.status_code, 202)
 
             account_meta = self.get_account_meta()
@@ -330,13 +338,14 @@ class AccountPost(PithosAPITest):
                 k in meta.keys())
 
     def test_delete_meta(self):
+        url = join_urls(self.pithos_path, self.user)
         with AssertMappingInvariant(self.get_account_groups):
             meta = {'test': 'tost', 'ping': 'pong'}
             self.update_account_meta(meta)
 
             kwargs = dict(
                 ('HTTP_X_ACCOUNT_META_%s' % k, '') for k, v in meta.items())
-            r = self.post('/v1/%s?update=' % self.user, **kwargs)
+            r = self.post('%s?update=' % url, **kwargs)
             self.assertEqual(r.status_code, 202)
 
             account_meta = self.get_account_meta()
@@ -345,11 +354,11 @@ class AccountPost(PithosAPITest):
                 k in meta.keys())
 
     def test_set_account_groups(self):
+        url = join_urls(self.pithos_path, self.user)
         with AssertMappingInvariant(self.get_account_meta):
             pithosdevs = ['verigak', 'gtsouk', 'chazapis']
-            r = self.post(
-                '/v1/%s?update=' % self.user,
-                HTTP_X_ACCOUNT_GROUP_PITHOSDEV=','.join(pithosdevs))
+            r = self.post('%s?update=' % url,
+                          HTTP_X_ACCOUNT_GROUP_PITHOSDEV=','.join(pithosdevs))
             self.assertEqual(r.status_code, 202)
 
             account_groups = self.get_account_groups()
@@ -360,9 +369,8 @@ class AccountPost(PithosAPITest):
                 ','.join(sorted(pithosdevs)))
 
             clientdevs = ['pkanavos', 'mvasilak']
-            r = self.post(
-                '/v1/%s?update=' % self.user,
-                HTTP_X_ACCOUNT_GROUP_CLIENTSDEV=','.join(clientdevs))
+            r = self.post('%s?update=' % url,
+                          HTTP_X_ACCOUNT_GROUP_CLIENTSDEV=','.join(clientdevs))
             self.assertEqual(r.status_code, 202)
 
             account_groups = self.get_account_groups()
@@ -378,9 +386,8 @@ class AccountPost(PithosAPITest):
                 ','.join(sorted(clientdevs)))
 
             clientdevs = ['mvasilak']
-            r = self.post(
-                '/v1/%s?update=' % self.user,
-                HTTP_X_ACCOUNT_GROUP_CLIENTSDEV=''.join(clientdevs))
+            r = self.post('%s?update=' % url,
+                          HTTP_X_ACCOUNT_GROUP_CLIENTSDEV=''.join(clientdevs))
             self.assertEqual(r.status_code, 202)
 
             account_groups = self.get_account_groups()
@@ -396,12 +403,13 @@ class AccountPost(PithosAPITest):
                 ','.join(sorted(clientdevs)))
 
     def test_reset_account_groups(self):
+        url = join_urls(self.pithos_path, self.user)
         with AssertMappingInvariant(self.get_account_meta):
             groups = {'pithosdev': ['verigak', 'gtsouk', 'chazapis'],
                       'clientsdev': ['pkanavos', 'mvasilak']}
             headers = dict(('HTTP_X_ACCOUNT_GROUP_%s' % k, ','.join(v))
                            for k, v in groups.iteritems())
-            r = self.post('/v1/%s?update=' % self.user, **headers)
+            r = self.post('%s?update=' % url, **headers)
             self.assertEqual(r.status_code, 202)
 
             groups = {'pithosdev': ['verigak',
@@ -413,7 +421,7 @@ class AccountPost(PithosAPITest):
             account_meta = self.get_account_meta()
             headers.update(dict(('HTTP_%s' % k.upper().replace('-', '_'), v)
                            for k, v in account_meta.iteritems()))
-            r = self.post('/v1/%s' % self.user, **headers)
+            r = self.post(url, **headers)
             self.assertEqual(r.status_code, 202)
 
             account_groups = self.get_account_groups()
@@ -426,16 +434,17 @@ class AccountPost(PithosAPITest):
                 ','.join(sorted(groups['pithosdev'])))
 
     def test_delete_account_groups(self):
+        url = join_urls(self.pithos_path, self.user)
         with AssertMappingInvariant(self.get_account_meta):
             groups = {'pithosdev': ['verigak', 'gtsouk', 'chazapis'],
                       'clientsdev': ['pkanavos', 'mvasilak']}
             headers = dict(('HTTP_X_ACCOUNT_GROUP_%s' % k, ','.join(v))
                            for k, v in groups.iteritems())
-            self.post('/v1/%s?update=' % self.user, **headers)
+            self.post('%s?update=' % url, **headers)
 
             kwargs = dict(('HTTP_X_ACCOUNT_GROUP_%s' % k, '')
                           for k, v in groups.items())
-            r = self.post('/v1/%s?update=' % self.user, **kwargs)
+            r = self.post('%s?update=' % url, **kwargs)
             self.assertEqual(r.status_code, 202)
 
             account_groups = self.get_account_groups()

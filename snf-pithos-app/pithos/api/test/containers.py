@@ -38,6 +38,8 @@ from pithos.api.test import PithosAPITest, DATE_FORMATS, o_names,\
     strnextling, pithos_settings, pithos_test_settings
 from pithos.backends.random_word import get_random_word
 
+from synnefo.lib import join_urls
+
 import django.utils.simplejson as json
 from django.http import urlencode
 
@@ -62,7 +64,8 @@ class ContainerHead(PithosAPITest):
             objects[name] = data
 
         t1 = datetime.datetime.utcnow()
-        r = self.head('/v1/%s/apples' % self.user)
+        url = join_urls(self.pithos_path, self.user, 'apples')
+        r = self.head(url)
         self.assertEqual(int(r['X-Container-Object-Count']), len(objects))
         self.assertEqual(int(r['X-Container-Bytes-Used']),
                          sum([len(i) for i in objects.values()]))
@@ -103,27 +106,27 @@ class ContainerGet(PithosAPITest):
         cname = self.cnames[0]
         onames = self.objects[cname].keys()
         oname = onames.pop()
-        r = self.post('/v1/%s/%s/%s' % (self.user, cname, oname),
-                      content_type='',
-                      HTTP_X_OBJECT_SHARING='read=*')
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_SHARING='read=*')
         self.assertEqual(r.status_code, 202)
 
         # publish another object
         other = onames.pop()
-        r = self.post('/v1/%s/%s/%s' % (self.user, cname, other),
-                      content_type='',
-                      HTTP_X_OBJECT_PUBLIC='true')
+        url = join_urls(self.pithos_path, self.user, cname, other)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='true')
         self.assertEqual(r.status_code, 202)
 
         # list shared and assert only the shared object is returned
-        r = self.get('/v1/%s/%s?shared=' % (self.user, cname))
+        url = join_urls(self.pithos_path, self.user, cname)
+        r = self.get('%s?shared=' % url)
         self.assertEqual(r.status_code, 200)
         objects = r.content.split('\n')
         objects.remove('')
         self.assertEqual([oname], objects)
 
         # list detailed shared and assert only the shared object is returned
-        r = self.get('/v1/%s/%s?shared=&format=json' % (self.user, cname))
+        url = join_urls(self.pithos_path, self.user, cname)
+        r = self.get('%s?shared=&format=json' % url)
         self.assertEqual(r.status_code, 200)
         try:
             objects = json.loads(r.content)
@@ -135,11 +138,11 @@ class ContainerGet(PithosAPITest):
 
         # publish the shared object and assert it is still listed in the
         # shared objects
-        r = self.post('/v1/%s/%s/%s' % (self.user, cname, oname),
-                      content_type='',
-                      HTTP_X_OBJECT_PUBLIC='true')
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='true')
         self.assertEqual(r.status_code, 202)
-        r = self.get('/v1/%s/%s?shared=&format=json' % (self.user, cname))
+        url = join_urls(self.pithos_path, self.user, cname)
+        r = self.get('%s?shared=&format=json' % url)
         self.assertEqual(r.status_code, 200)
         try:
             objects = json.loads(r.content)
@@ -154,7 +157,8 @@ class ContainerGet(PithosAPITest):
         descendant = strnextling(oname)
         self.upload_object(cname, descendant)
         # request shared and assert child obejct is not listed
-        r = self.get('/v1/%s/%s?shared=' % (self.user, cname))
+        url = join_urls(self.pithos_path, self.user, cname)
+        r = self.get('%s?shared=' % url)
         self.assertEqual(r.status_code, 200)
         objects = r.content.split('\n')
         objects.remove('')
@@ -167,7 +171,8 @@ class ContainerGet(PithosAPITest):
         descendant = '%s/%s' % (oname, get_random_word(8))
         self.upload_object(cname, descendant)
         # request shared
-        r = self.get('/v1/%s/%s?shared=' % (self.user, cname))
+        url = join_urls(self.pithos_path, self.user, cname)
+        r = self.get('%s?shared=' % url)
         self.assertEqual(r.status_code, 200)
         objects = r.content.split('\n')
         objects.remove('')
@@ -179,27 +184,27 @@ class ContainerGet(PithosAPITest):
         cname = self.cnames[0]
         onames = self.objects[cname].keys()
         oname = onames.pop()
-        r = self.post('/v1/%s/%s/%s' % (self.user, cname, oname),
-                      content_type='',
-                      HTTP_X_OBJECT_PUBLIC='true')
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='true')
         self.assertEqual(r.status_code, 202)
 
         # share another
         other = onames.pop()
-        r = self.post('/v1/%s/%s/%s' % (self.user, cname, other),
-                      content_type='',
-                      HTTP_X_OBJECT_SHARING='read=alice')
+        url = join_urls(self.pithos_path, self.user, cname, other)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_SHARING='read=alice')
         self.assertEqual(r.status_code, 202)
 
         # list public and assert only the public object is returned
-        r = self.get('/v1/%s/%s?public=' % (self.user, cname))
+        url = join_urls(self.pithos_path, self.user, cname)
+        r = self.get('%s?public=' % url)
         objects = r.content.split('\n')
         self.assertEqual(r.status_code, 200)
         self.assertTrue(oname in r.content.split('\n'))
         (self.assertTrue(o not in objects) for o in o_names[1:])
 
         # list detailed public and assert only the public object is returned
-        r = self.get('/v1/%s/%s?public=&format=json' % (self.user, cname))
+        url = join_urls(self.pithos_path, self.user, cname)
+        r = self.get('%s?public=&format=json' % url)
         self.assertEqual(r.status_code, 200)
         try:
             objects = json.loads(r.content)
@@ -211,11 +216,11 @@ class ContainerGet(PithosAPITest):
 
         # share the public object and assert it is still listed in the
         # public objects
-        r = self.post('/v1/%s/%s/%s' % (self.user, cname, oname),
-                      content_type='',
-                      HTTP_X_OBJECT_SHARING='read=alice')
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_SHARING='read=alice')
         self.assertEqual(r.status_code, 202)
-        r = self.get('/v1/%s/%s?public=&format=json' % (self.user, cname))
+        url = join_urls(self.pithos_path, self.user, cname)
+        r = self.get('%s?public=&format=json' % url)
         self.assertEqual(r.status_code, 200)
         try:
             objects = json.loads(r.content)
@@ -225,15 +230,15 @@ class ContainerGet(PithosAPITest):
         self.assertTrue('x_object_sharing' in objects[0])
         self.assertTrue('x_object_public' in objects[0])
 
+        url = join_urls(self.pithos_path, self.user, cname)
+
         # Assert listing the container public contents is forbidden to not
         # shared users
-        r = self.get('/v1/%s/%s?public=&format=json' % (
-            self.user, cname), user='bob')
+        r = self.get('%s?public=&format=json' % url, user='bob')
         self.assertEqual(r.status_code, 403)
 
         # Assert listing the container public contents to shared users
-        r = self.get('/v1/%s/%s?public=&format=json' % (
-            self.user, cname), user='alice')
+        r = self.get('%s?public=&format=json' % url, user='alice')
         self.assertEqual(r.status_code, 200)
         try:
             objects = json.loads(r.content)
@@ -249,7 +254,7 @@ class ContainerGet(PithosAPITest):
         descendant = strnextling(oname)
         self.upload_object(cname, descendant)
         # request public and assert child obejct is not listed
-        r = self.get('/v1/%s/%s?public=' % (self.user, cname))
+        r = self.get('%s?public=' % url)
         objects = r.content.split('\n')
         objects.remove('')
         self.assertEqual(r.status_code, 200)
@@ -262,7 +267,7 @@ class ContainerGet(PithosAPITest):
         descendant = '%s/%s' % (oname, get_random_word(8))
         self.upload_object(cname, descendant)
         # request public
-        r = self.get('/v1/%s/%s?public=' % (self.user, cname))
+        r = self.get('%s?public=' % url)
         self.assertEqual(r.status_code, 200)
         objects = r.content.split('\n')
         self.assertTrue(oname in objects)
@@ -341,7 +346,8 @@ class ContainerGet(PithosAPITest):
 #
 #
 #        o = self.upload_random_data(self.container[1], 'folder2/object')
-#        objs = self.client.list_objects(self.container[1], shared=True, public=True)
+#        objs = self.client.list_objects(
+#            self.container[1], shared=True, public=True)
 #        self.assertEqual(objs, ['folder1', 'folder1/object', 'folder2'])
 #        objs = cl.list_objects(
 #            self.container[1], shared=True, public=True, account=get_user()
@@ -350,7 +356,8 @@ class ContainerGet(PithosAPITest):
 #
     def test_list_objects(self):
         cname = self.cnames[0]
-        r = self.get('/v1/%s/%s' % (self.user, cname))
+        url = join_urls(self.pithos_path, self.user, cname)
+        r = self.get(url)
         self.assertTrue(r.status_code, 200)
         objects = r.content.split('\n')
         if '' in objects:
@@ -361,20 +368,22 @@ class ContainerGet(PithosAPITest):
         self.create_container('test')
         self.upload_object('test', '/objectname')
 
-        r = self.get('/v1/%s/test' % self.user)
+        url = join_urls(self.pithos_path, self.user, 'test')
+
+        r = self.get(url)
         objects = r.content.split('\n')
         if '' in objects:
             objects.remove('')
         self.assertEqual(objects, ['/objectname'])
 
-        r = self.get('/v1/%s/test?format=json' % self.user)
+        r = self.get('%s?format=json' % url)
         try:
             objects = json.loads(r.content)
         except:
             self.fail('json format expected')
         self.assertEqual([o['name'] for o in objects], ['/objectname'])
 
-        r = self.get('/v1/%s/test?format=xml' % self.user)
+        r = self.get('%s?format=xml' % url)
         try:
             objects = minidom.parseString(r.content)
         except:
@@ -385,10 +394,11 @@ class ContainerGet(PithosAPITest):
 
     def test_list_objects_with_limit_marker(self):
         cname = self.cnames[0]
-        r = self.get('/v1/%s/%s?limit=qwert' % (self.user, cname))
+        url = join_urls(self.pithos_path, self.user, cname)
+        r = self.get('%s?limit=qwert' % url)
         self.assertTrue(r.status_code != 500)
 
-        r = self.get('/v1/%s/%s?limit=2' % (self.user, cname))
+        r = self.get('%s?limit=2' % url)
         self.assertEqual(r.status_code, 200)
         objects = r.content.split('\n')
         if '' in objects:
@@ -401,8 +411,7 @@ class ContainerGet(PithosAPITest):
                    'moms_birthday.jpg']
         limit = 4
         for m in markers:
-            r = self.get('/v1/%s/%s?limit=%s&marker=%s' % (
-                self.user, cname, limit, m))
+            r = self.get('%s?limit=%s&marker=%s' % (url, limit, m))
             objects = r.content.split('\n')
             if '' in objects:
                 objects.remove('')
@@ -414,11 +423,12 @@ class ContainerGet(PithosAPITest):
     @pithos_test_settings(API_LIST_LIMIT=10)
     def test_list_limit_exceeds(self):
         self.create_container('container')
+        url = join_urls(self.pithos_path, self.user, 'container')
 
         for _ in range(pithos_settings.API_LIST_LIMIT + 1):
             self.upload_object('container')
 
-        r = self.get('/v1/%s/container?format=json' % self.user)
+        r = self.get('%s?format=json' % url)
         try:
             objects = json.loads(r.content)
         except:
@@ -427,7 +437,8 @@ class ContainerGet(PithosAPITest):
                          len(objects))
 
     def test_list_pseudo_hierarchical_folders(self):
-        r = self.get('/v1/%s/apples?prefix=photos&delimiter=/' % self.user)
+        url = join_urls(self.pithos_path, self.user, 'apples')
+        r = self.get('%s?prefix=photos&delimiter=/' % url)
         self.assertEqual(r.status_code, 200)
         objects = r.content.split('\n')
         if '' in objects:
@@ -436,24 +447,24 @@ class ContainerGet(PithosAPITest):
             ['photos/animals/', 'photos/me.jpg', 'photos/plants/'],
             objects)
 
-        r = self.get(
-            '/v1/%s/apples?prefix=photos/animals&delimiter=/' % self.user)
+        r = self.get('%s?prefix=photos/animals&delimiter=/' % url)
         objects = r.content.split('\n')
         if '' in objects:
             objects.remove('')
         self.assertEquals(
             ['photos/animals/cats/', 'photos/animals/dogs/'], objects)
 
-        r = self.get('/v1/%s/apples?path=photos' % self.user)
+        r = self.get('%s?path=photos' % url)
         objects = r.content.split('\n')
         if '' in objects:
             objects.remove('')
         self.assertEquals(['photos/me.jpg'], objects)
 
     def test_extended_list_json(self):
+        url = join_urls(self.pithos_path, self.user, 'apples')
         params = {'format': 'json', 'limit': 2, 'prefix': 'photos/animals',
                   'delimiter': '/'}
-        r = self.get('/v1/%s/apples?%s' % (self.user, urlencode(params)))
+        r = self.get('%s?%s' % (url, urlencode(params)))
         self.assertEqual(r.status_code, 200)
         try:
             objects = json.loads(r.content)
@@ -463,9 +474,10 @@ class ContainerGet(PithosAPITest):
         self.assertEqual(objects[1]['subdir'], 'photos/animals/dogs/')
 
     def test_extended_list_xml(self):
+        url = join_urls(self.pithos_path, self.user, 'apples')
         params = {'format': 'xml', 'limit': 4, 'prefix': 'photos',
                   'delimiter': '/'}
-        r = self.get('/v1/%s/apples?%s' % (self.user, urlencode(params)))
+        r = self.get('%s?%s' % (url, urlencode(params)))
         self.assertEqual(r.status_code, 200)
         try:
             xml = minidom.parseString(r.content)
@@ -484,43 +496,45 @@ class ContainerGet(PithosAPITest):
     def test_list_meta_double_matching(self):
         # update object meta
         cname = 'apples'
+        container_url = join_urls(self.pithos_path, self.user, cname)
         oname = self.objects[cname].keys().pop()
         meta = {'quality': 'aaa', 'stock': 'true'}
         headers = dict(('HTTP_X_OBJECT_META_%s' % k.upper(), v)
                        for k, v in meta.iteritems())
-        self.post('/v1/%s/%s/%s' % (self.user, cname, oname),
-                  content_type='', **headers)
+        object_url = join_urls(container_url, oname)
+        self.post(object_url, content_type='', **headers)
 
         # list objects that satisfy the criteria
-        r = self.get('/v1/%s/%s?meta=Quality,Stock' % (self.user, cname))
+        r = self.get('%s?meta=Quality,Stock' % container_url)
         self.assertEqual(r.status_code, 200)
         objects = r.content.split('\n')
         if '' in objects:
             objects.remove('')
         self.assertEqual(objects, [oname])
 
-    def tearDown(self):
-        pass
-
     def test_list_using_meta(self):
         # update object meta
         cname = 'apples'
+        container_url = join_urls(self.pithos_path, self.user, cname)
+
         oname1 = self.objects[cname].keys().pop()
-        self.post('/v1/%s/%s/%s' % (self.user, cname, oname1),
-                  content_type='', HTTP_X_OBJECT_META_QUALITY='aaa')
+        url = join_urls(container_url, oname1)
+        self.post(url, content_type='', HTTP_X_OBJECT_META_QUALITY='aaa')
+
         oname2 = self.objects[cname].keys().pop()
-        self.post('/v1/%s/%s/%s' % (self.user, cname, oname2),
-                  content_type='', HTTP_X_OBJECT_META_QUALITY='ab')
+        url = join_urls(container_url, cname, oname2)
+        self.post(url, content_type='', HTTP_X_OBJECT_META_QUALITY='ab')
 
         oname3 = self.objects[cname].keys().pop()
-        self.post('/v1/%s/%s/%s' % (self.user, cname, oname3),
-                  content_type='', HTTP_X_OBJECT_META_STOCK='100')
+        url = join_urls(container_url, oname3)
+        self.post(url, content_type='', HTTP_X_OBJECT_META_STOCK='100')
+
         oname4 = self.objects[cname].keys().pop()
-        self.post('/v1/%s/%s/%s' % (self.user, cname, oname4),
-                  content_type='', HTTP_X_OBJECT_META_STOCK='200')
+        url = join_urls(container_url, oname4)
+        self.post(url, content_type='', HTTP_X_OBJECT_META_STOCK='200')
 
         # test multiple existence criteria matches
-        r = self.get('/v1/%s/%s?meta=Quality,Stock' % (self.user, cname))
+        r = self.get('%s?meta=Quality,Stock' % container_url)
         self.assertEqual(r.status_code, 200)
         objects = r.content.split('\n')
         if '' in objects:
@@ -528,7 +542,7 @@ class ContainerGet(PithosAPITest):
         self.assertTrue(objects, sorted([oname1, oname2, oname3, oname4]))
 
         # list objects that satisfy the existence criteria
-        r = self.get('/v1/%s/%s?meta=Stock' % (self.user, cname))
+        r = self.get('%s?meta=Stock' % container_url)
         self.assertEqual(r.status_code, 200)
         objects = r.content.split('\n')
         if '' in objects:
@@ -536,7 +550,7 @@ class ContainerGet(PithosAPITest):
         self.assertTrue(objects, sorted([oname3, oname4]))
 
         # test case insensitive existence criteria matching
-        r = self.get('/v1/%s/%s?meta=quality' % (self.user, cname))
+        r = self.get('%s?meta=quality' % container_url)
         self.assertEqual(r.status_code, 200)
         objects = r.content.split('\n')
         if '' in objects:
@@ -544,7 +558,7 @@ class ContainerGet(PithosAPITest):
         self.assertTrue(objects, sorted([oname1, oname2]))
 
         # test do not all existencecriteria match
-        r = self.get('/v1/%s/%s?meta=Quality,Foo' % (self.user, cname))
+        r = self.get('%s?meta=Quality,Foo' % container_url)
         self.assertEqual(r.status_code, 200)
         objects = r.content.split('\n')
         if '' in objects:
@@ -552,8 +566,7 @@ class ContainerGet(PithosAPITest):
         self.assertTrue(objects, sorted([oname1, oname2]))
 
         # test equals criteria
-        r = self.get('/v1/%s/%s?meta=%s' % (self.user, cname,
-                     quote('Quality=aaa')))
+        r = self.get('%s?meta=%s' % (container_url, quote('Quality=aaa')))
         self.assertEqual(r.status_code, 200)
         objects = r.content.split('\n')
         if '' in objects:
@@ -561,8 +574,7 @@ class ContainerGet(PithosAPITest):
         self.assertTrue(objects, [oname1])
 
         # test not equals criteria
-        r = self.get('/v1/%s/%s?meta=%s' % (self.user, cname,
-                     urlencode('Quality!=aaa')))
+        r = self.get('%s?meta=%s' % (container_url, urlencode('Quality!=aaa')))
         self.assertEqual(r.status_code, 200)
         objects = r.content.split('\n')
         if '' in objects:
@@ -570,8 +582,7 @@ class ContainerGet(PithosAPITest):
         self.assertTrue(objects, [oname2])
 
         # test lte criteria
-        r = self.get('/v1/%s/%s?meta=%s' % (self.user, cname,
-                     urlencode('Stock<=120')))
+        r = self.get('%s?meta=%s' % (container_url, urlencode('Stock<=120')))
         self.assertEqual(r.status_code, 200)
         objects = r.content.split('\n')
         if '' in objects:
@@ -579,8 +590,7 @@ class ContainerGet(PithosAPITest):
         self.assertTrue(objects, [oname3])
 
         # test gte criteria
-        r = self.get('/v1/%s/%s?meta=%s' % (self.user, cname,
-                     urlencode('Stock>=200')))
+        r = self.get('%s?meta=%s' % (container_url, urlencode('Stock>=200')))
         self.assertEqual(r.status_code, 200)
         objects = r.content.split('\n')
         if '' in objects:
@@ -626,8 +636,8 @@ class ContainerGet(PithosAPITest):
 #        since = now + datetime.timedelta(1)
 #
 #        for f in DATE_FORMATS:
-#            obj = self.client.list_objects(self.container[0],
-#                                           if_unmodified_since=since.strftime(f))
+#            obj = self.client.list_objects(
+#                self.container[0], if_unmodified_since=since.strftime(f))
 #
 #            #assert unmodified
 #            self.assertEqual(obj, self.client.list_objects(self.container[0]))
@@ -676,7 +686,8 @@ class ContainerGet(PithosAPITest):
 #
 #        args = [self.containers[0], 'o1']
 #        kwargs = {'length':101}
-#        self.assert_raises_fault(413, self.upload_random_data, *args, **kwargs)
+#        self.assert_raises_fault(
+#            413, self.upload_random_data, *args, **kwargs)
 #
 #        #reset quota
 #        policy = {'quota':0}

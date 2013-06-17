@@ -78,7 +78,7 @@ def demux(request):
     elif request.method == 'POST':
         return create_server(request)
     else:
-        return api.method_not_allowed(request)
+        return api.api_method_not_allowed(request)
 
 
 def server_demux(request, server_id):
@@ -89,7 +89,7 @@ def server_demux(request, server_id):
     elif request.method == 'DELETE':
         return delete_server(request, server_id)
     else:
-        return api.method_not_allowed(request)
+        return api.api_method_not_allowed(request)
 
 
 def metadata_demux(request, server_id):
@@ -98,7 +98,7 @@ def metadata_demux(request, server_id):
     elif request.method == 'POST':
         return update_metadata(request, server_id)
     else:
-        return api.method_not_allowed(request)
+        return api.api_method_not_allowed(request)
 
 
 def metadata_item_demux(request, server_id, key):
@@ -109,7 +109,7 @@ def metadata_item_demux(request, server_id, key):
     elif request.method == 'DELETE':
         return delete_metadata_item(request, server_id, key)
     else:
-        return api.method_not_allowed(request)
+        return api.api_method_not_allowed(request)
 
 
 def nic_to_dict(nic):

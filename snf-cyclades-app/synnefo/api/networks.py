@@ -69,7 +69,7 @@ def demux(request):
     elif request.method == 'POST':
         return create_network(request)
     else:
-        return api.method_not_allowed(request)
+        return api.api_method_not_allowed(request)
 
 
 def network_demux(request, network_id):
@@ -80,7 +80,7 @@ def network_demux(request, network_id):
     elif request.method == 'DELETE':
         return delete_network(request, network_id)
     else:
-        return api.method_not_allowed(request)
+        return api.api_method_not_allowed(request)
 
 
 def network_to_dict(network, user_id, detail=True):

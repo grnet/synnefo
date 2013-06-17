@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2011-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,10 +31,30 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-# Import TestCases
-from synnefo.api.test.servers import *
-from synnefo.api.test.networks import *
-from synnefo.api.test.flavors import *
-from synnefo.api.test.images import *
-from synnefo.api.test.versions import *
-from synnefo.api.test.extensions import *
+from django.conf.urls.defaults import patterns
+from django.http import HttpResponse
+from django.utils import simplejson as json
+from snf_django.lib import api
+
+
+from logging import getLogger
+log = getLogger(__name__)
+
+urlpatterns = patterns(
+    'synnefo.api.extensions',
+    (r'^(?:/|.json|.xml)?$', 'demux'),
+)
+
+
+def demux(request):
+    if request.method == 'GET':
+        return list_extensions(request)
+    else:
+        return api.api_method_not_allowed(request)
+
+
+@api.api_method(http_method='GET', user_required=True, logger=log)
+def list_extensions(request, detail=False):
+    # Temporary return empty list. This will return the SNF: extension.
+    data = json.dumps(dict(extensions=[]))
+    return HttpResponse(data, status=200)

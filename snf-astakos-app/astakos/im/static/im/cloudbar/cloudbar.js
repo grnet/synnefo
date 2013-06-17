@@ -103,6 +103,7 @@ $(document).ready(function(){
                 li.append(link);
                 usermenu.append(li);
                 user.addClass('full');
+                $('body').addClass('user-authenticated');
             }
         });
     

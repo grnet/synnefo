@@ -148,7 +148,6 @@ class Component(models.Model):
             else:
                 metadata[component.name] = d
 
-
         def component_by_order(s):
             return s[1].get('order')
 
@@ -276,6 +275,7 @@ class Resource(models.Model):
             return '%ss' % self.display_name
         return self.display_name
 
+
 def get_resource_names():
     _RESOURCE_NAMES = []
     resources = Resource.objects.select_related('service').all()
@@ -320,7 +320,7 @@ class AstakosUserManager(UserManager):
         Returns a uuid to username mapping for the uuids appearing in l.
         If l is None returns the mapping for all existing users.
         """
-        q = self.filter(uuid__in=l) if l != None else self
+        q = self.filter(uuid__in=l) if l is not None else self
         return dict(q.values_list('uuid', 'username'))
 
     def displayname_catalog(self, l=None):
@@ -331,37 +331,39 @@ class AstakosUserManager(UserManager):
         if l is not None:
             lmap = dict((x.lower(), x) for x in l)
             q = self.filter(username__in=lmap.keys())
-            values = ((lmap[n], u) for n, u in q.values_list('username', 'uuid'))
+            values = ((lmap[n], u)
+                      for n, u in q.values_list('username', 'uuid'))
         else:
             q = self
             values = self.values_list('username', 'uuid')
         return dict(values)
 
 
-
 class AstakosUser(User):
     """
     Extends ``django.contrib.auth.models.User`` by defining additional fields.
     """
-    affiliation = models.CharField(_('Affiliation'), max_length=255, blank=True,
-                                   null=True)
+    affiliation = models.CharField(_('Affiliation'), max_length=255,
+                                   blank=True, null=True)
 
     #for invitations
     user_level = astakos_settings.DEFAULT_USER_LEVEL
     level = models.IntegerField(_('Inviter level'), default=user_level)
     invitations = models.IntegerField(
-        _('Invitations left'), default=astakos_settings.INVITATIONS_PER_LEVEL.get(user_level, 0))
+        _('Invitations left'),
+        default=astakos_settings.INVITATIONS_PER_LEVEL.get(user_level, 0))
 
-    auth_token = models.CharField(_('Authentication Token'),
-                                  max_length=64,
-                                  unique=True,
-                                  null=True,
-                                  blank=True,
-                                  help_text = _('Renew your authentication '
-                                                'token. Make sure to set the new '
-                                                'token in any client you may be '
-                                                'using, to preserve its '
-                                                'functionality.'))
+    auth_token = models.CharField(
+        _('Authentication Token'),
+        max_length=64,
+        unique=True,
+        null=True,
+        blank=True,
+        help_text=_('Renew your authentication '
+                    'token. Make sure to set the new '
+                    'token in any client you may be '
+                    'using, to preserve its '
+                    'functionality.'))
     auth_token_created = models.DateTimeField(_('Token creation date'),
                                               null=True)
     auth_token_expires = models.DateTimeField(
@@ -428,7 +430,7 @@ class AstakosUser(User):
         Resource, null=True, through='AstakosUserQuota')
 
     disturbed_quota = models.BooleanField(_('Needs quotaholder syncing'),
-                                           default=False, db_index=True)
+                                          default=False, db_index=True)
 
     objects = AstakosUserManager()
     forupdate = ForUpdateManager()
@@ -463,9 +465,9 @@ class AstakosUser(User):
         if self.has_perm(pname):
             return
         p, created = Permission.objects.get_or_create(
-                                    codename=pname,
-                                    name=pname.capitalize(),
-                                    content_type=get_content_type())
+            codename=pname,
+            name=pname.capitalize(),
+            content_type=get_content_type())
         self.user_permissions.add(p)
 
     def remove_permission(self, pname):
@@ -545,7 +547,7 @@ class AstakosUser(User):
         self.auth_token = new_token
         self.auth_token_created = datetime.now()
         self.auth_token_expires = self.auth_token_created + \
-                                  timedelta(hours=astakos_settings.AUTH_TOKEN_DURATION)
+            timedelta(hours=astakos_settings.AUTH_TOKEN_DURATION)
         if flush_sessions:
             self.flush_sessions(current_key)
         msg = 'Token renewed for %s' % self.log_display
@@ -605,7 +607,7 @@ class AstakosUser(User):
                 msg += " (manually accepted)"
             else:
                 msg += " (accepted policy: %s)" % \
-                        self.accepted_policy
+                    self.accepted_policy
         return msg
 
     @property
@@ -730,15 +732,15 @@ class AstakosUser(User):
 
     def get_activation_url(self, nxt=False):
         url = "%s?auth=%s" % (reverse('astakos.im.views.activate'),
-                                 quote(self.verification_code))
+                              quote(self.verification_code))
         if nxt:
             url += "&next=%s" % quote(nxt)
         return url
 
     def get_password_reset_url(self, token_generator=default_token_generator):
         return reverse('astakos.im.views.target.local.password_reset_confirm',
-                          kwargs={'uidb36':int_to_base36(self.id),
-                                  'token':token_generator.make_token(self)})
+                       kwargs={'uidb36': int_to_base36(self.id),
+                               'token': token_generator.make_token(self)})
 
     def get_inactive_message(self, provider_module, identifier=None):
         provider = self.get_auth_provider(provider_module, identifier)
@@ -758,8 +760,8 @@ class AstakosUser(User):
             message = msg_pending
             url = self.get_resend_activation_url()
             msg_extra = msg_pending_help + \
-                        u' ' + \
-                        '<a href="%s">%s?</a>' % (url, msg_resend)
+                u' ' + \
+                '<a href="%s">%s?</a>' % (url, msg_resend)
         else:
             if not self.moderated:
                 message = msg_pending_mod
@@ -930,17 +932,17 @@ class AstakosUserAuthProvider(models.Model):
     """
     Available user authentication methods.
     """
-    affiliation = models.CharField(_('Affiliation'), max_length=255, blank=True,
-                                   null=True, default=None)
+    affiliation = models.CharField(_('Affiliation'), max_length=255,
+                                   blank=True, null=True, default=None)
     user = models.ForeignKey(AstakosUser, related_name='auth_providers')
     module = models.CharField(_('Provider'), max_length=255, blank=False,
-                                default='local')
+                              default='local')
     identifier = models.CharField(_('Third-party identifier'),
-                                              max_length=255, null=True,
-                                              blank=True)
+                                  max_length=255, null=True,
+                                  blank=True)
     active = models.BooleanField(default=True)
     auth_backend = models.CharField(_('Backend'), max_length=255, blank=False,
-                                   default='astakos')
+                                    default='astakos')
     info_data = models.TextField(default="", null=True, blank=True)
     created = models.DateTimeField('Creation date', auto_now_add=True)
 
@@ -959,7 +961,7 @@ class AstakosUserAuthProvider(models.Model):
         except Exception, e:
             self.info = {}
 
-        for key,value in self.info.iteritems():
+        for key, value in self.info.iteritems():
             setattr(self, 'info_%s' % key, value)
 
     @property
@@ -977,10 +979,11 @@ class AstakosUserAuthProvider(models.Model):
 
         extra_data['instance'] = self
         return auth.get_provider(self.module, self.user,
-                                           self.identifier, **extra_data)
+                                 self.identifier, **extra_data)
 
     def __repr__(self):
-        return '<AstakosUserAuthProvider %s:%s>' % (self.module, self.identifier)
+        return '<AstakosUserAuthProvider %s:%s>' % (
+            self.module, self.identifier)
 
     def __unicode__(self):
         if self.identifier:
@@ -1055,7 +1058,8 @@ class Invitation(models.Model):
     code = models.BigIntegerField(_('Invitation code'), db_index=True)
     is_consumed = models.BooleanField(_('Consumed?'), default=False)
     created = models.DateTimeField(_('Creation date'), auto_now_add=True)
-    consumed = models.DateTimeField(_('Consumption date'), null=True, blank=True)
+    consumed = models.DateTimeField(_('Consumption date'),
+                                    null=True, blank=True)
 
     def __init__(self, *args, **kwargs):
         super(Invitation, self).__init__(*args, **kwargs)
@@ -1099,7 +1103,8 @@ class EmailChangeManager(models.Manager):
                 raise EmailChange.DoesNotExist
             # is there an active user with this address?
             try:
-                AstakosUser.objects.get(email__iexact=email_change.new_email_address)
+                AstakosUser.objects.get(
+                    email__iexact=email_change.new_email_address)
             except AstakosUser.DoesNotExist:
                 pass
             else:
@@ -1135,10 +1140,11 @@ class EmailChange(models.Model):
 
     def get_url(self):
         return reverse('email_change_confirm',
-                      kwargs={'activation_key': self.activation_key})
+                       kwargs={'activation_key': self.activation_key})
 
     def activation_key_expired(self):
-        expiration_date = timedelta(days=astakos_settings.EMAILCHANGE_ACTIVATION_DAYS)
+        expiration_date = timedelta(
+            days=astakos_settings.EMAILCHANGE_ACTIVATION_DAYS)
         return self.requested_at + expiration_date < datetime.now()
 
 
@@ -1173,7 +1179,8 @@ class PendingThirdPartyUser(models.Model):
     """
     Model for registring successful third party user authentications
     """
-    third_party_identifier = models.CharField(_('Third-party identifier'), max_length=255, null=True, blank=True)
+    third_party_identifier = models.CharField(
+        _('Third-party identifier'), max_length=255, null=True, blank=True)
     provider = models.CharField(_('Provider'), max_length=255, blank=True)
     email = models.EmailField(_('e-mail address'), blank=True, null=True)
     first_name = models.CharField(_('first name'), max_length=30, blank=True,
@@ -1182,8 +1189,10 @@ class PendingThirdPartyUser(models.Model):
                                  null=True)
     affiliation = models.CharField('Affiliation', max_length=255, blank=True,
                                    null=True)
-    username = models.CharField(_('username'), max_length=30, unique=True,
-                                help_text=_("Required. 30 characters or fewer. Letters, numbers and @/./+/-/_ characters"))
+    username = models.CharField(
+        _('username'), max_length=30, unique=True,
+        help_text=_("Required. 30 characters or fewer. "
+                    "Letters, numbers and @/./+/-/_ characters"))
     token = models.CharField(_('Token'), max_length=255, null=True, blank=True)
     created = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     info = models.TextField(default="", null=True, blank=True)
@@ -1211,7 +1220,7 @@ class PendingThirdPartyUser(models.Model):
 
     @property
     def realname(self):
-        return '%s %s' %(self.first_name, self.last_name)
+        return '%s %s' % (self.first_name, self.last_name)
 
     @realname.setter
     def realname(self, value):
@@ -1226,9 +1235,9 @@ class PendingThirdPartyUser(models.Model):
         if not self.id:
             # set username
             while not self.username:
-                username =  uuid.uuid4().hex[:30]
+                username = uuid.uuid4().hex[:30]
                 try:
-                    AstakosUser.objects.get(username = username)
+                    AstakosUser.objects.get(username=username)
                 except AstakosUser.DoesNotExist, e:
                     self.username = username
         super(PendingThirdPartyUser, self).save(**kwargs)
@@ -1239,8 +1248,9 @@ class PendingThirdPartyUser(models.Model):
         self.token = default_token_generator.make_token(self)
 
     def existing_user(self):
-        return AstakosUser.objects.filter(auth_providers__module=self.provider,
-                                         auth_providers__identifier=self.third_party_identifier)
+        return AstakosUser.objects.filter(
+            auth_providers__module=self.provider,
+            auth_providers__identifier=self.third_party_identifier)
 
     def get_provider(self, user):
         params = {
@@ -1249,6 +1259,7 @@ class PendingThirdPartyUser(models.Model):
         }
         return auth.get_provider(self.provider, user,
                                  self.third_party_identifier, **params)
+
 
 class SessionCatalog(models.Model):
     session_key = models.CharField(_('session key'), max_length=40)
@@ -1274,7 +1285,7 @@ class ChainManager(ForUpdateManager):
     def search_by_name(self, *search_strings):
         projects = Project.objects.search_by_name(*search_strings)
         chains = [p.id for p in projects]
-        apps  = ProjectApplication.objects.search_by_name(*search_strings)
+        apps = ProjectApplication.objects.search_by_name(*search_strings)
         apps = (app for app in apps if app.is_latest())
         app_chains = [app.chain for app in apps if app.chain not in chains]
         return chains + app_chains
@@ -1309,23 +1320,23 @@ class ChainManager(ForUpdateManager):
 
 
 class Chain(models.Model):
-    chain  =   models.AutoField(primary_key=True)
+    chain = models.AutoField(primary_key=True)
 
     def __str__(self):
         return "%s" % (self.chain,)
 
     objects = ChainManager()
 
-    PENDING            = 0
-    DENIED             = 3
-    DISMISSED          = 4
-    CANCELLED          = 5
+    PENDING = 0
+    DENIED = 3
+    DISMISSED = 4
+    CANCELLED = 5
 
-    APPROVED           = 10
-    APPROVED_PENDING   = 11
-    SUSPENDED          = 12
-    SUSPENDED_PENDING  = 13
-    TERMINATED         = 14
+    APPROVED = 10
+    APPROVED_PENDING = 11
+    SUSPENDED = 12
+    SUSPENDED_PENDING = 13
+    TERMINATED = 14
     TERMINATED_PENDING = 15
 
     PENDING_STATES = [PENDING,
@@ -1353,18 +1364,17 @@ class Chain(models.Model):
                    TERMINATED]
 
     STATE_DISPLAY = {
-        PENDING            : _("Pending"),
-        DENIED             : _("Denied"),
-        DISMISSED          : _("Dismissed"),
-        CANCELLED          : _("Cancelled"),
-        APPROVED           : _("Active"),
-        APPROVED_PENDING   : _("Active - Pending"),
-        SUSPENDED          : _("Suspended"),
-        SUSPENDED_PENDING  : _("Suspended - Pending"),
-        TERMINATED         : _("Terminated"),
-        TERMINATED_PENDING : _("Terminated - Pending"),
-        }
-
+        PENDING:             _("Pending"),
+        DENIED:              _("Denied"),
+        DISMISSED:           _("Dismissed"),
+        CANCELLED:           _("Cancelled"),
+        APPROVED:            _("Active"),
+        APPROVED_PENDING:    _("Active - Pending"),
+        SUSPENDED:           _("Suspended"),
+        SUSPENDED_PENDING:   _("Suspended - Pending"),
+        TERMINATED:          _("Terminated"),
+        TERMINATED_PENDING:  _("Terminated - Pending"),
+    }
 
     @classmethod
     def _chain_state(cls, project_state, app_state):
@@ -1420,7 +1430,8 @@ class ProjectApplicationManager(ForUpdateManager):
 
     def user_visible_by_chain(self, flt):
         model = self.model
-        pending = self.filter(model.Q_PENDING | model.Q_DENIED).values_list('chain')
+        pending = self.filter(
+            model.Q_PENDING | model.Q_DENIED).values_list('chain')
         approved = self.filter(model.Q_APPROVED).values_list('chain')
         by_chain = dict(pending.annotate(models.Max('id')))
         by_chain.update(approved.annotate(models.Max('id')))
@@ -1434,9 +1445,10 @@ class ProjectApplicationManager(ForUpdateManager):
             participates_filters = Q()
         else:
             participates_filters = Q(owner=user) | Q(applicant=user) | \
-                                   Q(project__projectmembership__person=user)
+                Q(project__projectmembership__person=user)
 
-        return self.user_visible_by_chain(participates_filters).order_by('issue_date').distinct()
+        return self.user_visible_by_chain(
+            participates_filters).order_by('issue_date').distinct()
 
     def search_by_name(self, *search_strings):
         q = Q()
@@ -1452,58 +1464,55 @@ class ProjectApplicationManager(ForUpdateManager):
 
 
 class ProjectApplication(models.Model):
-    applicant               =   models.ForeignKey(
-                                    AstakosUser,
-                                    related_name='projects_applied',
-                                    db_index=True)
+    applicant = models.ForeignKey(
+        AstakosUser,
+        related_name='projects_applied',
+        db_index=True)
 
-    PENDING     =    0
-    APPROVED    =    1
-    REPLACED    =    2
-    DENIED      =    3
-    DISMISSED   =    4
-    CANCELLED   =    5
+    PENDING = 0
+    APPROVED = 1
+    REPLACED = 2
+    DENIED = 3
+    DISMISSED = 4
+    CANCELLED = 5
 
-    state                   =   models.IntegerField(default=PENDING,
-                                                    db_index=True)
+    state = models.IntegerField(default=PENDING,
+                                db_index=True)
+    owner = models.ForeignKey(
+        AstakosUser,
+        related_name='projects_owned',
+        db_index=True)
+    chain = models.ForeignKey(Chain,
+                              related_name='chained_apps',
+                              db_column='chain')
+    precursor_application = models.ForeignKey('ProjectApplication',
+                                              null=True,
+                                              blank=True)
+    name = models.CharField(max_length=80)
+    homepage = models.URLField(max_length=255, null=True,
+                               verify_exists=False)
+    description = models.TextField(null=True, blank=True)
+    start_date = models.DateTimeField(null=True, blank=True)
+    end_date = models.DateTimeField()
+    member_join_policy = models.IntegerField()
+    member_leave_policy = models.IntegerField()
+    limit_on_members_number = models.PositiveIntegerField(null=True)
+    resource_grants = models.ManyToManyField(
+        Resource,
+        null=True,
+        blank=True,
+        through='ProjectResourceGrant')
+    comments = models.TextField(null=True, blank=True)
+    issue_date = models.DateTimeField(auto_now_add=True)
+    response_date = models.DateTimeField(null=True, blank=True)
+    response = models.TextField(null=True, blank=True)
 
-    owner                   =   models.ForeignKey(
-                                    AstakosUser,
-                                    related_name='projects_owned',
-                                    db_index=True)
-
-    chain                   =   models.ForeignKey(Chain,
-                                                  related_name='chained_apps',
-                                                  db_column='chain')
-    precursor_application   =   models.ForeignKey('ProjectApplication',
-                                                  null=True,
-                                                  blank=True)
-
-    name                    =   models.CharField(max_length=80)
-    homepage                =   models.URLField(max_length=255, null=True,
-                                                verify_exists=False)
-    description             =   models.TextField(null=True, blank=True)
-    start_date              =   models.DateTimeField(null=True, blank=True)
-    end_date                =   models.DateTimeField()
-    member_join_policy      =   models.IntegerField()
-    member_leave_policy     =   models.IntegerField()
-    limit_on_members_number =   models.PositiveIntegerField(null=True)
-    resource_grants         =   models.ManyToManyField(
-                                    Resource,
-                                    null=True,
-                                    blank=True,
-                                    through='ProjectResourceGrant')
-    comments                =   models.TextField(null=True, blank=True)
-    issue_date              =   models.DateTimeField(auto_now_add=True)
-    response_date           =   models.DateTimeField(null=True, blank=True)
-    response                =   models.TextField(null=True, blank=True)
-
-    objects                 =   ProjectApplicationManager()
+    objects = ProjectApplicationManager()
 
     # Compiled queries
-    Q_PENDING  = Q(state=PENDING)
+    Q_PENDING = Q(state=PENDING)
     Q_APPROVED = Q(state=APPROVED)
-    Q_DENIED   = Q(state=DENIED)
+    Q_DENIED = Q(state=DENIED)
 
     class Meta:
         unique_together = ("chain", "id")
@@ -1513,10 +1522,10 @@ class ProjectApplication(models.Model):
 
     # TODO: Move to a more suitable place
     APPLICATION_STATE_DISPLAY = {
-        PENDING  : _('Pending review'),
-        APPROVED : _('Approved'),
-        REPLACED : _('Replaced'),
-        DENIED   : _('Denied'),
+        PENDING:   _('Pending review'),
+        APPROVED:  _('Approved'),
+        REPLACED:  _('Replaced'),
+        DENIED:    _('Denied'),
         DISMISSED: _('Dismissed'),
         CANCELLED: _('Cancelled')
     }
@@ -1631,7 +1640,7 @@ class ProjectApplication(models.Model):
     def cancel(self):
         if not self.can_cancel():
             m = _("cannot cancel: application '%s' in state '%s'") % (
-                    self.id, self.state)
+                self.id, self.state)
             raise AssertionError(m)
 
         self.state = self.CANCELLED
@@ -1643,7 +1652,7 @@ class ProjectApplication(models.Model):
     def dismiss(self):
         if not self.can_dismiss():
             m = _("cannot dismiss: application '%s' in state '%s'") % (
-                    self.id, self.state)
+                self.id, self.state)
             raise AssertionError(m)
 
         self.state = self.DISMISSED
@@ -1655,7 +1664,7 @@ class ProjectApplication(models.Model):
     def deny(self, reason):
         if not self.can_deny():
             m = _("cannot deny: application '%s' in state '%s'") % (
-                    self.id, self.state)
+                self.id, self.state)
             raise AssertionError(m)
 
         self.state = self.DENIED
@@ -1669,8 +1678,8 @@ class ProjectApplication(models.Model):
     def approve(self, reason):
         if not self.can_approve():
             m = _("cannot approve: project '%s' in state '%s'") % (
-                    self.name, self.state)
-            raise AssertionError(m) # invalid argument
+                self.name, self.state)
+            raise AssertionError(m)  # invalid argument
 
         now = datetime.now()
         self.state = self.APPROVED
@@ -1698,13 +1707,14 @@ class ProjectApplication(models.Model):
         policy = self.member_leave_policy
         return presentation.PROJECT_MEMBER_LEAVE_POLICIES.get(policy)
 
+
 class ProjectResourceGrant(models.Model):
 
-    resource                =   models.ForeignKey(Resource)
-    project_application     =   models.ForeignKey(ProjectApplication,
-                                                  null=True)
-    project_capacity        =   intDecimalField(null=True)
-    member_capacity         =   intDecimalField(default=0)
+    resource = models.ForeignKey(Resource)
+    project_application = models.ForeignKey(ProjectApplication,
+                                            null=True)
+    project_capacity = intDecimalField(null=True)
+    member_capacity = intDecimalField(default=0)
 
     objects = ExtendedManager()
 
@@ -1750,7 +1760,7 @@ class ProjectResourceGrant(models.Model):
             if value == 1:
                 return '1 byte'
             else:
-               return '0'
+                return '0'
 
 
 class ProjectManager(ForUpdateManager):
@@ -1769,7 +1779,7 @@ class ProjectManager(ForUpdateManager):
 
     def expired_projects(self):
         q = (~Q(state=Project.TERMINATED) &
-              Q(application__end_date__lt=datetime.now()))
+             Q(application__end_date__lt=datetime.now()))
         return self.filter(q)
 
     def search_by_name(self, *search_strings):
@@ -1781,42 +1791,42 @@ class ProjectManager(ForUpdateManager):
 
 class Project(models.Model):
 
-    id                          =   models.OneToOneField(Chain,
-                                                      related_name='chained_project',
-                                                      db_column='id',
-                                                      primary_key=True)
+    id = models.OneToOneField(Chain,
+                              related_name='chained_project',
+                              db_column='id',
+                              primary_key=True)
 
-    application                 =   models.OneToOneField(
-                                            ProjectApplication,
-                                            related_name='project')
-    last_approval_date          =   models.DateTimeField(null=True)
+    application = models.OneToOneField(
+        ProjectApplication,
+        related_name='project')
+    last_approval_date = models.DateTimeField(null=True)
 
-    members                     =   models.ManyToManyField(
-                                            AstakosUser,
-                                            through='ProjectMembership')
+    members = models.ManyToManyField(
+        AstakosUser,
+        through='ProjectMembership')
 
-    deactivation_reason         =   models.CharField(max_length=255, null=True)
-    deactivation_date           =   models.DateTimeField(null=True)
+    deactivation_reason = models.CharField(max_length=255, null=True)
+    deactivation_date = models.DateTimeField(null=True)
 
-    creation_date               =   models.DateTimeField(auto_now_add=True)
-    name                        =   models.CharField(
-                                            max_length=80,
-                                            null=True,
-                                            db_index=True,
-                                            unique=True)
+    creation_date = models.DateTimeField(auto_now_add=True)
+    name = models.CharField(
+        max_length=80,
+        null=True,
+        db_index=True,
+        unique=True)
 
-    APPROVED    = 1
-    SUSPENDED   = 10
-    TERMINATED  = 100
+    APPROVED = 1
+    SUSPENDED = 10
+    TERMINATED = 100
 
-    state                       =   models.IntegerField(default=APPROVED,
-                                                        db_index=True)
+    state = models.IntegerField(default=APPROVED,
+                                db_index=True)
 
-    objects     =   ProjectManager()
+    objects = ProjectManager()
 
     # Compiled queries
-    Q_TERMINATED  = Q(state=TERMINATED)
-    Q_SUSPENDED   = Q(state=SUSPENDED)
+    Q_TERMINATED = Q(state=TERMINATED)
+    Q_SUSPENDED = Q(state=SUSPENDED)
     Q_DEACTIVATED = Q_TERMINATED | Q_SUSPENDED
 
     def __str__(self):
@@ -1829,10 +1839,10 @@ class Project(models.Model):
         return _("<project %s '%s'>") % (self.id, self.application.name)
 
     STATE_DISPLAY = {
-        APPROVED   : 'Active',
-        SUSPENDED  : 'Suspended',
-        TERMINATED : 'Terminated'
-        }
+        APPROVED:   'Active',
+        SUSPENDED:  'Suspended',
+        TERMINATED: 'Terminated'
+    }
 
     def state_display(self):
         return self.STATE_DISPLAY.get(self.state, _('Unknown'))
@@ -1902,7 +1912,6 @@ class Project(models.Model):
             return False
         return (len(self.approved_members) + adding > limit)
 
-
     ### Other
 
     def count_pending_memberships(self):
@@ -1930,29 +1939,29 @@ class Project(models.Model):
 
 
 CHAIN_STATE = {
-    (Project.APPROVED,   ProjectApplication.PENDING)  : Chain.APPROVED_PENDING,
-    (Project.APPROVED,   ProjectApplication.APPROVED) : Chain.APPROVED,
-    (Project.APPROVED,   ProjectApplication.DENIED)   : Chain.APPROVED,
-    (Project.APPROVED,   ProjectApplication.DISMISSED): Chain.APPROVED,
-    (Project.APPROVED,   ProjectApplication.CANCELLED): Chain.APPROVED,
+    (Project.APPROVED, ProjectApplication.PENDING):   Chain.APPROVED_PENDING,
+    (Project.APPROVED, ProjectApplication.APPROVED):  Chain.APPROVED,
+    (Project.APPROVED, ProjectApplication.DENIED):    Chain.APPROVED,
+    (Project.APPROVED, ProjectApplication.DISMISSED): Chain.APPROVED,
+    (Project.APPROVED, ProjectApplication.CANCELLED): Chain.APPROVED,
 
-    (Project.SUSPENDED,  ProjectApplication.PENDING)  : Chain.SUSPENDED_PENDING,
-    (Project.SUSPENDED,  ProjectApplication.APPROVED) : Chain.SUSPENDED,
-    (Project.SUSPENDED,  ProjectApplication.DENIED)   : Chain.SUSPENDED,
-    (Project.SUSPENDED,  ProjectApplication.DISMISSED): Chain.SUSPENDED,
-    (Project.SUSPENDED,  ProjectApplication.CANCELLED): Chain.SUSPENDED,
+    (Project.SUSPENDED, ProjectApplication.PENDING):   Chain.SUSPENDED_PENDING,
+    (Project.SUSPENDED, ProjectApplication.APPROVED):  Chain.SUSPENDED,
+    (Project.SUSPENDED, ProjectApplication.DENIED):    Chain.SUSPENDED,
+    (Project.SUSPENDED, ProjectApplication.DISMISSED): Chain.SUSPENDED,
+    (Project.SUSPENDED, ProjectApplication.CANCELLED): Chain.SUSPENDED,
 
-    (Project.TERMINATED, ProjectApplication.PENDING)  : Chain.TERMINATED_PENDING,
-    (Project.TERMINATED, ProjectApplication.APPROVED) : Chain.TERMINATED,
-    (Project.TERMINATED, ProjectApplication.DENIED)   : Chain.TERMINATED,
+    (Project.TERMINATED, ProjectApplication.PENDING): Chain.TERMINATED_PENDING,
+    (Project.TERMINATED, ProjectApplication.APPROVED):  Chain.TERMINATED,
+    (Project.TERMINATED, ProjectApplication.DENIED):    Chain.TERMINATED,
     (Project.TERMINATED, ProjectApplication.DISMISSED): Chain.TERMINATED,
     (Project.TERMINATED, ProjectApplication.CANCELLED): Chain.TERMINATED,
 
-    (None,               ProjectApplication.PENDING)  : Chain.PENDING,
-    (None,               ProjectApplication.DENIED)   : Chain.DENIED,
-    (None,               ProjectApplication.DISMISSED): Chain.DISMISSED,
-    (None,               ProjectApplication.CANCELLED): Chain.CANCELLED,
-    }
+    (None, ProjectApplication.PENDING):   Chain.PENDING,
+    (None, ProjectApplication.DENIED):    Chain.DENIED,
+    (None, ProjectApplication.DISMISSED): Chain.DISMISSED,
+    (None, ProjectApplication.CANCELLED): Chain.CANCELLED,
+}
 
 
 class ProjectMembershipManager(ForUpdateManager):
@@ -1971,59 +1980,60 @@ class ProjectMembershipManager(ForUpdateManager):
     def suspended(self):
         return self.filter(state=ProjectMembership.USER_SUSPENDED)
 
+
 class ProjectMembership(models.Model):
 
-    person              =   models.ForeignKey(AstakosUser)
-    request_date        =   models.DateTimeField(auto_now_add=True)
-    project             =   models.ForeignKey(Project)
+    person = models.ForeignKey(AstakosUser)
+    request_date = models.DateTimeField(auto_now_add=True)
+    project = models.ForeignKey(Project)
 
-    REQUESTED           =   0
-    ACCEPTED            =   1
-    LEAVE_REQUESTED     =   5
+    REQUESTED = 0
+    ACCEPTED = 1
+    LEAVE_REQUESTED = 5
     # User deactivation
-    USER_SUSPENDED      =   10
+    USER_SUSPENDED = 10
 
-    REMOVED             =   200
+    REMOVED = 200
 
-    ASSOCIATED_STATES   =   set([REQUESTED,
-                                 ACCEPTED,
-                                 LEAVE_REQUESTED,
-                                 USER_SUSPENDED,
-                                 ])
+    ASSOCIATED_STATES = set([REQUESTED,
+                             ACCEPTED,
+                             LEAVE_REQUESTED,
+                             USER_SUSPENDED,
+                             ])
 
-    ACCEPTED_STATES     =   set([ACCEPTED,
-                                 LEAVE_REQUESTED,
-                                 USER_SUSPENDED,
-                                 ])
+    ACCEPTED_STATES = set([ACCEPTED,
+                           LEAVE_REQUESTED,
+                           USER_SUSPENDED,
+                           ])
 
-    ACTUALLY_ACCEPTED   =   set([ACCEPTED, LEAVE_REQUESTED])
+    ACTUALLY_ACCEPTED = set([ACCEPTED, LEAVE_REQUESTED])
 
-    state               =   models.IntegerField(default=REQUESTED,
-                                                db_index=True)
-    acceptance_date     =   models.DateTimeField(null=True, db_index=True)
-    leave_request_date  =   models.DateTimeField(null=True)
+    state = models.IntegerField(default=REQUESTED,
+                                db_index=True)
+    acceptance_date = models.DateTimeField(null=True, db_index=True)
+    leave_request_date = models.DateTimeField(null=True)
 
-    objects     =   ProjectMembershipManager()
+    objects = ProjectMembershipManager()
 
     # Compiled queries
     Q_ACCEPTED_STATES = ~Q(state=REQUESTED) & ~Q(state=REMOVED)
     Q_ACTUALLY_ACCEPTED = Q(state=ACCEPTED) | Q(state=LEAVE_REQUESTED)
 
     MEMBERSHIP_STATE_DISPLAY = {
-        REQUESTED           : _('Requested'),
-        ACCEPTED            : _('Accepted'),
-        LEAVE_REQUESTED     : _('Leave Requested'),
-        USER_SUSPENDED      : _('Suspended'),
-        REMOVED             : _('Pending removal'),
-        }
+        REQUESTED:       _('Requested'),
+        ACCEPTED:        _('Accepted'),
+        LEAVE_REQUESTED: _('Leave Requested'),
+        USER_SUSPENDED:  _('Suspended'),
+        REMOVED:         _('Pending removal'),
+    }
 
     USER_FRIENDLY_STATE_DISPLAY = {
-        REQUESTED           : _('Join requested'),
-        ACCEPTED            : _('Accepted member'),
-        LEAVE_REQUESTED     : _('Requested to leave'),
-        USER_SUSPENDED      : _('Suspended member'),
-        REMOVED             : _('Pending removal'),
-        }
+        REQUESTED:       _('Join requested'),
+        ACCEPTED:        _('Accepted member'),
+        LEAVE_REQUESTED: _('Requested to leave'),
+        USER_SUSPENDED:  _('Suspended member'),
+        REMOVED:         _('Pending removal'),
+    }
 
     def state_display(self):
         return self.MEMBERSHIP_STATE_DISPLAY.get(self.state, _('Unknown'))
@@ -2036,8 +2046,8 @@ class ProjectMembership(models.Model):
         #index_together = [["project", "state"]]
 
     def __str__(self):
-        return uenc(_("<'%s' membership in '%s'>") % (
-                self.person.username, self.project))
+        return uenc(_("<'%s' membership in '%s'>") %
+                    (self.person.username, self.project))
 
     __repr__ = __str__
 
@@ -2050,11 +2060,11 @@ class ProjectMembership(models.Model):
             reason = ProjectMembershipHistory.reasons.get(reason, -1)
 
         history_item = ProjectMembershipHistory(
-                            serial=self.id,
-                            person=self.person_id,
-                            project=self.project_id,
-                            date=date or datetime.now(),
-                            reason=reason)
+            serial=self.id,
+            person=self.person_id,
+            project=self.project_id,
+            date=date or datetime.now(),
+            reason=reason)
         history_item.save()
         serial = history_item.id
 
@@ -2150,18 +2160,19 @@ class ProjectMembership(models.Model):
 
 
 class Serial(models.Model):
-    serial  =   models.AutoField(primary_key=True)
+    serial = models.AutoField(primary_key=True)
 
 
 class ProjectMembershipHistory(models.Model):
-    reasons_list    =   ['ACCEPT', 'REJECT', 'REMOVE']
-    reasons         =   dict((k, v) for v, k in enumerate(reasons_list))
+    reasons_list = ['ACCEPT', 'REJECT', 'REMOVE']
+    reasons = dict((k, v) for v, k in enumerate(reasons_list))
 
-    person  =   models.BigIntegerField()
-    project =   models.BigIntegerField()
-    date    =   models.DateTimeField(auto_now_add=True)
-    reason  =   models.IntegerField()
-    serial  =   models.BigIntegerField()
+    person = models.BigIntegerField()
+    project = models.BigIntegerField()
+    date = models.DateTimeField(auto_now_add=True)
+    reason = models.IntegerField()
+    serial = models.BigIntegerField()
+
 
 ### SIGNALS ###
 ################
@@ -2178,11 +2189,13 @@ def create_astakos_user(u):
     except BaseException, e:
         logger.exception(e)
 
+
 def fix_superusers():
     # Associate superusers with AstakosUser
     admins = User.objects.filter(is_superuser=True)
     for u in admins:
         create_astakos_user(u)
+
 
 def user_post_save(sender, instance, created, **kwargs):
     if not created:
@@ -2190,15 +2203,18 @@ def user_post_save(sender, instance, created, **kwargs):
     create_astakos_user(instance)
 post_save.connect(user_post_save, sender=User)
 
+
 def astakosuser_post_save(sender, instance, created, **kwargs):
     pass
 
 post_save.connect(astakosuser_post_save, sender=AstakosUser)
 
+
 def resource_post_save(sender, instance, created, **kwargs):
     pass
 
 post_save.connect(resource_post_save, sender=Resource)
+
 
 def renew_token(sender, instance, **kwargs):
     if not instance.auth_token:

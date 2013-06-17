@@ -286,7 +286,7 @@ class AuthProvider(object):
                     self.provider_details['info'] = \
                         json.loads(self.provider_details['info'])
                 for key, val in self.provider_details['info'].iteritems():
-                   params['provider_info_%s' % key.lower()] = val
+                    params['provider_info_%s' % key.lower()] = val
 
         # resolve username, handle unexisting defined username key
         if self.user and self.username_key in params:
@@ -440,8 +440,8 @@ class AuthProvider(object):
             })
         if self.identifier and self._instance:
             urls.update({
-                'switch': reverse(self.login_view) + '?switch_from=%d' % \
-                    self._instance.pk,
+                'switch': reverse(self.login_view) + '?switch_from=%d' %
+                self._instance.pk,
                 'remove': reverse('remove_auth_provider',
                                   kwargs={'pk': self._instance.pk})
             })

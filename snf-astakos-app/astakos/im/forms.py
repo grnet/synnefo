@@ -323,7 +323,8 @@ class InvitedThirdPartyUserCreationForm(ThirdPartyUserCreationForm):
             self.fields[f].widget.attrs['readonly'] = True
 
     def save(self, commit=True):
-        user = super(InvitedThirdPartyUserCreationForm, self).save(commit=False)
+        user = super(
+            InvitedThirdPartyUserCreationForm, self).save(commit=False)
         user.set_invitation_level()
         user.email_verified = True
         if commit:
@@ -340,7 +341,8 @@ class ShibbolethUserCreationForm(ThirdPartyUserCreationForm):
         # copy email value to additional_mail in case user will change it
         name = 'email'
         field = self.fields[name]
-        self.initial['additional_email'] = self.initial.get(name, field.initial)
+        self.initial['additional_email'] = self.initial.get(
+            name, field.initial)
         self.initial['email'] = None
 
 
@@ -359,8 +361,9 @@ class LoginForm(AuthenticationForm):
         was_limited = kwargs.get('was_limited', False)
         request = kwargs.get('request', None)
         if request:
-            self.ip = request.META.get('REMOTE_ADDR',
-                                       request.META.get('HTTP_X_REAL_IP', None))
+            self.ip = request.META.get(
+                'REMOTE_ADDR',
+                request.META.get('HTTP_X_REAL_IP', None))
 
         t = ('request', 'was_limited')
         for elem in t:
@@ -431,10 +434,11 @@ class ProfileForm(forms.ModelForm):
     Most of the fields are readonly since the user is not allowed to change
     them.
 
-    The class defines a save method which sets ``is_verified`` to True so as the
-    user during the next login will not to be redirected to profile page.
+    The class defines a save method which sets ``is_verified`` to True so as
+    the user during the next login will not to be redirected to profile page.
     """
-    email = forms.EmailField(label='E-mail address', help_text='E-mail address')
+    email = forms.EmailField(label='E-mail address',
+                             help_text='E-mail address')
     renew = forms.BooleanField(label='Renew token', required=False)
 
     class Meta:
@@ -464,7 +468,6 @@ class ProfileForm(forms.ModelForm):
         if commit:
             user.save()
         return user
-
 
 
 class FeedbackForm(forms.Form):
@@ -517,11 +520,13 @@ class ExtendedPasswordResetForm(PasswordResetForm):
             raise forms.ValidationError(_(astakos_messages.EMAIL_UNKNOWN))
         return email
 
-    def save(
-        self, domain_override=None, email_template_name='registration/password_reset_email.html',
-            use_https=False, token_generator=default_token_generator, request=None):
+    def save(self, domain_override=None,
+             email_template_name='registration/password_reset_email.html',
+             use_https=False, token_generator=default_token_generator,
+             request=None):
         """
-        Generates a one-use only link for resetting password and sends to the user.
+        Generates a one-use only link for resetting password and sends to the
+        user.
         """
         for user in self.users_cache:
             url = user.astakosuser.get_password_reset_url(token_generator)
@@ -555,7 +560,9 @@ class EmailChangeForm(forms.ModelForm):
             raise forms.ValidationError(_(astakos_messages.EMAIL_USED))
         return addr
 
-    def save(self, request, email_template_name='registration/email_change_email.txt', commit=True):
+    def save(self, request,
+             email_template_name='registration/email_change_email.txt',
+             commit=True):
         ec = super(EmailChangeForm, self).save(commit=False)
         ec.user = request.user
         # delete pending email changes
@@ -607,7 +614,8 @@ class InvitationForm(forms.ModelForm):
         username = self.cleaned_data['username']
         try:
             Invitation.objects.get(username=username)
-            raise forms.ValidationError(_(astakos_messages.INVITATION_EMAIL_EXISTS))
+            raise forms.ValidationError(
+                _(astakos_messages.INVITATION_EMAIL_EXISTS))
         except Invitation.DoesNotExist:
             pass
         return username
@@ -619,9 +627,10 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
     to optionally renew also the token.
     """
     if not settings.NEWPASSWD_INVALIDATE_TOKEN:
-        renew = forms.BooleanField(label='Renew token', required=False,
-                                   initial=True,
-                                   help_text='Unsetting this may result in security risk.')
+        renew = forms.BooleanField(
+            label='Renew token', required=False,
+            initial=True,
+            help_text='Unsetting this may result in security risk.')
 
     def __init__(self, user, *args, **kwargs):
         self.session_key = kwargs.pop('session_key', None)
@@ -637,6 +646,7 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
             # if user model does has not such methods
             pass
         return super(ExtendedPasswordChangeForm, self).save(commit=commit)
+
 
 class ExtendedSetPasswordForm(SetPasswordForm):
     """
@@ -670,69 +680,67 @@ class ExtendedSetPasswordForm(SetPasswordForm):
         return super(ExtendedSetPasswordForm, self).save(commit=commit)
 
 
-
-
-app_name_label       =  "Project name"
+app_name_label = "Project name"
 app_name_placeholder = _("myproject.mylab.ntua.gr")
-app_name_validator   =  validators.RegexValidator(
-                            DOMAIN_VALUE_REGEX,
-                            _(astakos_messages.DOMAIN_VALUE_ERR),
-                            'invalid')
-app_name_help        =  _("""
+app_name_validator = validators.RegexValidator(
+    DOMAIN_VALUE_REGEX,
+    _(astakos_messages.DOMAIN_VALUE_ERR),
+    'invalid')
+app_name_help = _("""
         The project's name should be in a domain format.
         The domain shouldn't neccessarily exist in the real
         world but is helpful to imply a structure.
         e.g.: myproject.mylab.ntua.gr or
         myservice.myteam.myorganization""")
-app_name_widget      =  forms.TextInput(
-                            attrs={'placeholder': app_name_placeholder})
+app_name_widget = forms.TextInput(
+    attrs={'placeholder': app_name_placeholder})
 
 
-app_home_label       =  "Homepage URL"
-app_home_placeholder =  'myinstitution.org/myproject/'
-app_home_help        =  _("""
+app_home_label = "Homepage URL"
+app_home_placeholder = 'myinstitution.org/myproject/'
+app_home_help = _("""
         URL pointing at your project's site.
         e.g.: myinstitution.org/myproject/.
         Leave blank if there is no website.""")
-app_home_widget      =  forms.TextInput(
-                            attrs={'placeholder': app_home_placeholder})
+app_home_widget = forms.TextInput(
+    attrs={'placeholder': app_home_placeholder})
 
-app_desc_label       =  _("Description")
-app_desc_help        =  _("""
+app_desc_label = _("Description")
+app_desc_help = _("""
         Please provide a short but descriptive abstract of your
         project, so that anyone searching can quickly understand
         what this project is about.""")
 
-app_comment_label    =  _("Comments for review (private)")
-app_comment_help     =  _("""
+app_comment_label = _("Comments for review (private)")
+app_comment_help = _("""
         Write down any comments you may have for the reviewer
         of this application (e.g. background and rationale to
         support your request).
         The comments are strictly for the review process
         and will not be made public.""")
 
-app_start_date_label =  _("Start date")
-app_start_date_help  =  _("""
+app_start_date_label = _("Start date")
+app_start_date_help = _("""
         Provide a date when your need your project to be created,
         and members to be able to join and get resources.
         This date is only a hint to help prioritize reviews.""")
 
-app_end_date_label   =  _("Termination date")
-app_end_date_help    =  _("""
+app_end_date_label = _("Termination date")
+app_end_date_help = _("""
         At this date, the project will be automatically terminated
         and its resource grants revoked from all members. If you are
         not certain, it is best to start with a conservative estimation.
         You can always re-apply for an extension, if you need.""")
 
-join_policy_label    =  _("Joining policy")
-app_member_join_policy_help    =  _("""
+join_policy_label = _("Joining policy")
+app_member_join_policy_help = _("""
         Select how new members are accepted into the project.""")
-leave_policy_label   =  _("Leaving policy")
-app_member_leave_policy_help    =  _("""
+leave_policy_label = _("Leaving policy")
+app_member_leave_policy_help = _("""
         Select how new members can leave the project.""")
 
-max_members_label    =  _("Maximum member count")
-max_members_help     =  _("""
+max_members_label = _("Maximum member count")
+max_members_help = _("""
         Specify the maximum number of members this project may have,
         including the owner. Beyond this number, no new members
         may join the project and be granted the project resources.
@@ -742,66 +750,67 @@ max_members_help     =  _("""
 join_policies = presentation.PROJECT_MEMBER_JOIN_POLICIES.items()
 leave_policies = presentation.PROJECT_MEMBER_LEAVE_POLICIES.items()
 
+
 class ProjectApplicationForm(forms.ModelForm):
 
     name = forms.CharField(
-        label     = app_name_label,
-        help_text = app_name_help,
-        widget    = app_name_widget,
-        validators = [app_name_validator])
+        label=app_name_label,
+        help_text=app_name_help,
+        widget=app_name_widget,
+        validators=[app_name_validator])
 
     homepage = forms.URLField(
-        label     = app_home_label,
-        help_text = app_home_help,
-        widget    = app_home_widget,
-        required  = False)
+        label=app_home_label,
+        help_text=app_home_help,
+        widget=app_home_widget,
+        required=False)
 
     description = forms.CharField(
-        label     = app_desc_label,
-        help_text = app_desc_help,
-        widget    = forms.Textarea,
-        required  = False)
+        label=app_desc_label,
+        help_text=app_desc_help,
+        widget=forms.Textarea,
+        required=False)
 
     comments = forms.CharField(
-        label     = app_comment_label,
-        help_text = app_comment_help,
-        widget    = forms.Textarea,
-        required  = False)
+        label=app_comment_label,
+        help_text=app_comment_help,
+        widget=forms.Textarea,
+        required=False)
 
     start_date = forms.DateTimeField(
-        label     = app_start_date_label,
-        help_text = app_start_date_help,
-        required  = False)
+        label=app_start_date_label,
+        help_text=app_start_date_help,
+        required=False)
 
     end_date = forms.DateTimeField(
-        label     = app_end_date_label,
-        help_text = app_end_date_help)
+        label=app_end_date_label,
+        help_text=app_end_date_help)
 
-    member_join_policy  = forms.TypedChoiceField(
-        label     = join_policy_label,
-        help_text = app_member_join_policy_help,
-        initial   = 2,
-        coerce    = int,
-        choices   = join_policies)
+    member_join_policy = forms.TypedChoiceField(
+        label=join_policy_label,
+        help_text=app_member_join_policy_help,
+        initial=2,
+        coerce=int,
+        choices=join_policies)
 
     member_leave_policy = forms.TypedChoiceField(
-        label     = leave_policy_label,
-        help_text = app_member_leave_policy_help,
-        coerce    = int,
-        choices   = leave_policies)
+        label=leave_policy_label,
+        help_text=app_member_leave_policy_help,
+        coerce=int,
+        choices=leave_policies)
 
     limit_on_members_number = forms.IntegerField(
-        label     = max_members_label,
-        help_text = max_members_help,
-        min_value = 0,
-        required  = False)
+        label=max_members_label,
+        help_text=max_members_help,
+        min_value=0,
+        required=False)
 
     class Meta:
         model = ProjectApplication
-        fields = ( 'name', 'homepage', 'description',
-                    'start_date', 'end_date', 'comments',
-                    'member_join_policy', 'member_leave_policy',
-                    'limit_on_members_number')
+        fields = ('name', 'homepage', 'description',
+                  'start_date', 'end_date', 'comments',
+                  'member_join_policy', 'member_leave_policy',
+                  'limit_on_members_number')
 
     def __init__(self, *args, **kwargs):
         instance = kwargs.get('instance')
@@ -820,7 +829,7 @@ class ProjectApplicationForm(forms.ModelForm):
             today = datetime(today.year, today.month, today.day)
             if start_date and (start_date - today).days < 0:
                 raise forms.ValidationError(
-                _(astakos_messages.INVALID_PROJECT_START_DATE))
+                    _(astakos_messages.INVALID_PROJECT_START_DATE))
         return start_date
 
     def clean_end_date(self):
@@ -867,9 +876,8 @@ class ProjectApplicationForm(forms.ModelForm):
                     raise forms.ValidationError("Resource %s does not exist" %
                                                 resource.name)
                 # keep only resource limits for selected resource groups
-                if self.data.get(
-                    'is_selected_%s' % resource.group, "0"
-                 ) == "1":
+                if self.data.get('is_selected_%s' %
+                                 resource.group, "0") == "1":
                     if not resource.allow_in_projects:
                         raise forms.ValidationError("Invalid resource %s" %
                                                     resource.name)
@@ -881,6 +889,7 @@ class ProjectApplicationForm(forms.ModelForm):
                     append(d)
 
         ordered_keys = presentation.RESOURCES['resources_order']
+
         def resource_order(r):
             if r['str_repr'] in ordered_keys:
                 return ordered_keys.index(r['str_repr'])
@@ -910,27 +919,33 @@ class ProjectSortForm(forms.Form):
                  ('issue_date', 'Sort by Issue date'),
                  ('start_date', 'Sort by Start Date'),
                  ('end_date', 'Sort by End Date'),
-#                  ('approved_members_num', 'Sort by Participants'),
+                 # ('approved_members_num', 'Sort by Participants'),
                  ('state', 'Sort by Status'),
-                 ('member_join_policy__description', 'Sort by Member Join Policy'),
-                 ('member_leave_policy__description', 'Sort by Member Leave Policy'),
+                 ('member_join_policy__description',
+                  'Sort by Member Join Policy'),
+                 ('member_leave_policy__description',
+                  'Sort by Member Leave Policy'),
                  ('-name', 'Sort by Name'),
                  ('-issue_date', 'Sort by Issue date'),
                  ('-start_date', 'Sort by Start Date'),
                  ('-end_date', 'Sort by End Date'),
-#                  ('-approved_members_num', 'Sort by Participants'),
+                 # ('-approved_members_num', 'Sort by Participants'),
                  ('-state', 'Sort by Status'),
-                 ('-member_join_policy__description', 'Sort by Member Join Policy'),
-                 ('-member_leave_policy__description', 'Sort by Member Leave Policy')
-        ),
+                 ('-member_join_policy__description',
+                  'Sort by Member Join Policy'),
+                 ('-member_leave_policy__description',
+                  'Sort by Member Leave Policy')
+                 ),
         required=True
     )
 
+
 class AddProjectMembersForm(forms.Form):
     q = forms.CharField(
-        widget=forms.Textarea(attrs={
-            'placeholder': astakos_messages.ADD_PROJECT_MEMBERS_Q_PLACEHOLDER}
-            ),
+        widget=forms.Textarea(
+            attrs={
+                'placeholder':
+                astakos_messages.ADD_PROJECT_MEMBERS_Q_PLACEHOLDER}),
         label=_('Add members'),
         help_text=_(astakos_messages.ADD_PROJECT_MEMBERS_Q_HELP),
         required=True,)
@@ -966,13 +981,14 @@ class AddProjectMembersForm(forms.Form):
         except:
             return ()
 
+
 class ProjectMembersSortForm(forms.Form):
     sorting = forms.ChoiceField(
         label='Sort by',
         choices=(('person__email', 'User Id'),
                  ('person__first_name', 'Name'),
                  ('acceptance_date', 'Acceptance date')
-        ),
+                 ),
         required=True
     )
 
@@ -1009,15 +1025,15 @@ class ExtendedProfileForm(ProfileForm):
     def __init__(self, *args, **kwargs):
         session_key = kwargs.get('session_key', None)
         self.fields_list = [
-                'email',
-                'new_email_address',
-                'first_name',
-                'last_name',
-                'old_password',
-                'new_password1',
-                'new_password2',
-                'change_email',
-                'change_password',
+            'email',
+            'new_email_address',
+            'first_name',
+            'last_name',
+            'old_password',
+            'new_password1',
+            'new_password2',
+            'change_email',
+            'change_password',
         ]
 
         super(ExtendedProfileForm, self).__init__(*args, **kwargs)
@@ -1043,15 +1059,15 @@ class ExtendedProfileForm(ProfileForm):
         self.success_messages = []
         self.fields.keyOrder = self.fields_list
 
-
     def _init_extra_form_fields(self):
         if self.email_change:
             self.fields.update(self.email_change_form.fields)
             self.fields['new_email_address'].required = False
-            self.fields['email'].help_text = _('Change the email associated with '
-                                               'your account. This email will '
-                                               'remain active until you verify '
-                                               'your new one.')
+            self.fields['email'].help_text = _(
+                'Change the email associated with '
+                'your account. This email will '
+                'remain active until you verify '
+                'your new one.')
 
         if self.password_change:
             self.fields.update(self.password_change_form.fields)
@@ -1070,8 +1086,9 @@ class ExtendedProfileForm(ProfileForm):
 
     def _init_extra_forms(self):
         self.email_change_form = EmailChangeForm(self.data)
-        self.password_change_form = ExtendedPasswordChangeForm(user=self.instance,
-                                   data=self.data, session_key=self.session_key)
+        self.password_change_form = ExtendedPasswordChangeForm(
+            user=self.instance,
+            data=self.data, session_key=self.session_key)
         self._init_extra_form_fields()
 
     def is_valid(self):
@@ -1099,4 +1116,3 @@ class ExtendedProfileForm(ProfileForm):
             self.password_change_form.save(*args, **kwargs)
             self.password_changed = True
         return super(ExtendedProfileForm, self).save(*args, **kwargs)
-

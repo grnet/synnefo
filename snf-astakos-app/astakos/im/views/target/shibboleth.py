@@ -66,10 +66,9 @@ class Tokens:
 @requires_auth_provider('shibboleth')
 @require_http_methods(["GET", "POST"])
 @cookie_fix
-def login(
-    request,
-    template='im/third_party_check_local.html',
-    extra_context=None):
+def login(request,
+          template='im/third_party_check_local.html',
+          extra_context=None):
 
     init_third_party_session(request)
     extra_context = extra_context or {}
@@ -103,7 +102,8 @@ def login(
         elif Tokens.SHIB_CN in tokens:
             realname = tokens[Tokens.SHIB_CN]
         elif Tokens.SHIB_NAME in tokens and Tokens.SHIB_SURNAME in tokens:
-            realname = tokens[Tokens.SHIB_NAME] + ' ' + tokens[Tokens.SHIB_SURNAME]
+            realname = tokens[Tokens.SHIB_NAME] + ' ' + \
+                tokens[Tokens.SHIB_SURNAME]
         else:
             if settings.SHIBBOLETH_REQUIRE_NAME_INFO:
                 raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_NAME))
@@ -120,7 +120,6 @@ def login(
     provider_info = {'eppn': eppn, 'email': email, 'name': realname}
     userid = eppn
 
-
     try:
         return handle_third_party_login(request, 'shibboleth',
                                         eppn, provider_info,
@@ -134,4 +133,3 @@ def login(
                                          user_info,
                                          template,
                                          extra_context)
-

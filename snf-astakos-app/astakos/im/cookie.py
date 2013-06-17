@@ -67,7 +67,8 @@ class CookieHandler():
 
     @property
     def is_valid(self):
-        cookie_attribute = 'uuid' if not settings.TRANSLATE_UUIDS else 'username'
+        cookie_attribute = ('uuid' if not settings.TRANSLATE_UUIDS
+                            else 'username')
         return (self.uuid == getattr(self.user, cookie_attribute, '') and
                 self.auth_token == getattr(self.user, 'auth_token', ''))
 
@@ -86,7 +87,8 @@ class CookieHandler():
         else:
             cookie_value = quote(user.uuid + '|' + user.auth_token)
         self.response.set_cookie(
-            settings.COOKIE_NAME, value=cookie_value, expires=expire_fmt, path='/',
+            settings.COOKIE_NAME, value=cookie_value, expires=expire_fmt,
+            path='/',
             domain=settings.COOKIE_DOMAIN, secure=settings.COOKIE_SECURE
         )
         msg = str(('Cookie [expiring %(auth_token_expires)s]',

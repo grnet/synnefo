@@ -50,10 +50,12 @@ class RecaptchaWidget(forms.Widget):
                           '</script>') % json.dumps(conf)
         custom_widget_html = render_to_string("im/captcha.html",
                                               {'conf': 'Bob'})
-        return mark_safe(recaptcha_conf +
-                         custom_widget_html +
-                         captcha.displayhtml(settings.RECAPTCHA_PUBLIC_KEY,
-                                             use_ssl=settings.RECAPTCHA_USE_SSL))
+        return mark_safe(
+            recaptcha_conf +
+            custom_widget_html +
+            captcha.displayhtml(
+                settings.RECAPTCHA_PUBLIC_KEY,
+                use_ssl=settings.RECAPTCHA_USE_SSL))
 
 
 class DummyWidget(forms.Widget):

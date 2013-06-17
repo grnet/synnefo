@@ -49,6 +49,7 @@ import astakos.quotaholder_app.callpoint as qh
 from .util import (json_response, is_integer, are_integer,
                    user_from_token, component_from_token)
 
+
 @api.api_method(http_method='GET', token_required=True, user_required=False)
 @user_from_token
 def quotas(request):

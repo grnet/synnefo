@@ -148,7 +148,8 @@ class RichLinkColumn(tables.TemplateColumn):
             return self.prompt(record, table)
         return self.prompt
 
-    def get_template_context(self, record, table, value, bound_column, **kwargs):
+    def get_template_context(self, record, table, value, bound_column,
+                             **kwargs):
         context = {'default': bound_column.default,
                    'record': record,
                    'value': value,
@@ -157,7 +158,7 @@ class RichLinkColumn(tables.TemplateColumn):
                    'prompt': self.get_prompt(record, table),
                    'action': self.get_action(record, table),
                    'confirm': self.get_confirm(record, table)
-                  }
+                   }
 
         # decide whether to return dict or a list of dicts in case we want to
         # display multiple actions within a cell.
@@ -248,11 +249,13 @@ class UserTable(tables.Table):
 
         super(UserTable, self).__init__(*args, **kwargs)
 
+
 def project_name_append(application, column):
     if application.has_pending_modifications():
-        return mark_safe("<br /><i class='tiny'>%s</i>" % \
-                             _('modifications pending'))
+        return mark_safe("<br /><i class='tiny'>%s</i>" %
+                         _('modifications pending'))
     return u''
+
 
 # Table classes
 class UserProjectApplicationsTable(UserTable):
@@ -262,17 +265,19 @@ class UserProjectApplicationsTable(UserTable):
                       coerce=lambda x: truncatename(x, 25),
                       append=project_name_append,
                       args=(A('chain'),))
-    issue_date = tables.DateColumn(verbose_name=_('Application'), format=DEFAULT_DATE_FORMAT)
+    issue_date = tables.DateColumn(verbose_name=_('Application'),
+                                   format=DEFAULT_DATE_FORMAT)
     start_date = tables.DateColumn(format=DEFAULT_DATE_FORMAT)
-    end_date = tables.DateColumn(verbose_name=_('Expiration'), format=DEFAULT_DATE_FORMAT)
+    end_date = tables.DateColumn(verbose_name=_('Expiration'),
+                                 format=DEFAULT_DATE_FORMAT)
     members_count = tables.Column(verbose_name=_("Members"), default=0,
                                   orderable=False)
-    membership_status = tables.Column(verbose_name=_("Status"), empty_values=(),
+    membership_status = tables.Column(verbose_name=_("Status"),
+                                      empty_values=(),
                                       orderable=False)
     project_action = RichLinkColumn(verbose_name=_('Action'),
                                     extra_context=action_extra_context,
                                     orderable=False)
-
 
     def render_membership_status(self, record, *args, **kwargs):
         if self.user.owns_application(record) or self.user.is_project_admin():
@@ -293,40 +298,49 @@ class UserProjectApplicationsTable(UserTable):
 
         c = project.count_pending_memberships()
         if c > 0:
-            pending_members_url = reverse('project_pending_members', 
+            pending_members_url = reverse(
+                'project_pending_members',
                 kwargs={'chain_id': application.chain})
 
-            pending_members = "<i class='tiny'> - %d %s</i>" % (c, _('pending'))
-            if self.user.owns_application(record) or self.user.is_project_admin():
-                pending_members = "<i class='tiny'>"+" - <a href='%s'>%d %s</a></i>" % (
-                    pending_members_url,c, _('pending'))
+            pending_members = "<i class='tiny'> - %d %s</i>" % (
+                c, _('pending'))
+            if (
+                self.user.owns_application(record) or
+                self.user.is_project_admin()
+            ):
+                pending_members = ("<i class='tiny'>" +
+                                   " - <a href='%s'>%d %s</a></i>" %
+                                   (pending_members_url, c, _('pending')))
             append = mark_safe(pending_members)
-        members_url = reverse('project_approved_members', 
-            kwargs={'chain_id': application.chain})
+        members_url = reverse('project_approved_members',
+                              kwargs={'chain_id': application.chain})
         members_count = record.members_count()
         if self.user.owns_application(record) or self.user.is_project_admin():
             members_count = '<a href="%s">%d</a>' % (members_url,
-                members_count)
+                                                     members_count)
         return mark_safe(str(members_count) + append)
-        
+
     class Meta:
         model = ProjectApplication
-        fields = ('name', 'membership_status', 'issue_date', 'end_date', 
+        fields = ('name', 'membership_status', 'issue_date', 'end_date',
                   'members_count')
         attrs = {'id': 'projects-list', 'class': 'my-projects alt-style'}
         template = "im/table_render.html"
         empty_text = _('No projects')
         exclude = ('start_date', )
 
+
 class ProjectModificationApplicationsTable(UserProjectApplicationsTable):
     name = LinkColumn('astakos.im.views.project_detail',
                       verbose_name=_('Action'),
-                      coerce= lambda x: 'review',
+                      coerce=lambda x: 'review',
                       args=(A('pk'),))
+
     class Meta:
         attrs = {'id': 'projects-list', 'class': 'my-projects alt-style'}
         fields = ('issue_date', 'membership_status')
         exclude = ('start_date', 'end_date', 'members_count', 'project_action')
+
 
 def member_action_extra_context(membership, table, col):
 
@@ -350,7 +364,6 @@ def member_action_extra_context(membership, table, col):
         prompts = [_('Are you sure you want to remove this member?')]
         confirms = [True, True]
 
-
     for i, url in enumerate(urls):
         context.append(dict(url=reverse(url, args=(table.project.pk,
                                                    membership.pk)),
@@ -358,15 +371,16 @@ def member_action_extra_context(membership, table, col):
                             confirm=confirms[i]))
     return context
 
+
 class ProjectMembersTable(UserTable):
     input = "<input type='checkbox' name='all-none'/>"
-    check = tables.Column(accessor="person.id",verbose_name =mark_safe(input), orderable=False)
-    email = tables.Column(accessor="person.email", verbose_name=_('Email'))    
+    check = tables.Column(accessor="person.id", verbose_name=mark_safe(input),
+                          orderable=False)
+    email = tables.Column(accessor="person.email", verbose_name=_('Email'))
     status = tables.Column(accessor="state", verbose_name=_('Status'))
     project_action = RichLinkColumn(verbose_name=_('Action'),
                                     extra_context=member_action_extra_context,
                                     orderable=False)
-
 
     def __init__(self, project, *args, **kwargs):
         self.project = project
@@ -375,8 +389,9 @@ class ProjectMembersTable(UserTable):
             self.exclude = ('project_action', )
 
     def render_check(self, value, record, *args, **kwargs):
-        checkbox = "<input type='checkbox' value='%d' name ='actions'>" % record.id
-        return  mark_safe(checkbox)
+        checkbox = ("<input type='checkbox' value='%d' name ='actions'>" %
+                    record.id)
+        return mark_safe(checkbox)
 
     def render_status(self, value, record, *args, **kwargs):
         return record.state_display()

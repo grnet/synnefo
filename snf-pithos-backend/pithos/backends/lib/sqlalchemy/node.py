@@ -574,7 +574,7 @@ class Node(DBWorker):
         while True:
             if node == ROOTNODE:
                 break
-            if recursion_depth and recursion_depth == i:
+            if recursion_depth and recursion_depth <= i:
                 break
             props = self.node_get_properties(node)
             if props is None:
@@ -615,7 +615,7 @@ class Node(DBWorker):
             filtered = filtered.where(self.versions.c.mtime < before)
         else:
             filtered = select([self.nodes.c.latest_version],
-                              self.versions.c.node == node)
+                              self.nodes.c.node == node)
         s = s.where(and_(self.versions.c.cluster != except_cluster,
                          self.versions.c.serial == filtered))
         r = self.conn.execute(s)
@@ -636,7 +636,7 @@ class Node(DBWorker):
             c1.where(self.versions.c.node == v.c.node)
         else:
             c1 = select([self.nodes.c.latest_version])
-            c1.where(self.nodes.c.node == v.c.node)
+            c1 = c1.where(self.nodes.c.node == v.c.node)
         c2 = select([self.nodes.c.node], self.nodes.c.parent == node)
         s = s.where(and_(v.c.serial == c1,
                          v.c.cluster != except_cluster,
@@ -661,7 +661,7 @@ class Node(DBWorker):
                         self.versions.c.node == v.c.node)
             c1 = c1.where(self.versions.c.mtime < before)
         else:
-            c1 = select([self.nodes.c.serial],
+            c1 = select([self.nodes.c.latest_version],
                         self.nodes.c.node == v.c.node)
         c2 = select([self.nodes.c.node], self.nodes.c.path.like(
             self.escape_like(path) + '%', escape=ESCAPE_CHAR))

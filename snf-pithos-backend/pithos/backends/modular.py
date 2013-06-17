@@ -302,13 +302,13 @@ class ModularBackend(BaseBackend):
         except NameError:
             props = None
             mtime = until
-        count, bytes, tstamp = self._get_statistics(node, until)
+        count, bytes, tstamp = self._get_statistics(node, until, compute=True)
         tstamp = max(tstamp, mtime)
         if until is None:
             modified = tstamp
         else:
             modified = self._get_statistics(
-                node)[2]  # Overall last modification.
+                node, compute=True)[2]  # Overall last modification.
             modified = max(modified, mtime)
 
         if user != account:
@@ -930,8 +930,7 @@ class ModularBackend(BaseBackend):
         if src_version_id is None:
             src_version_id = pre_version_id
         self._put_metadata_duplicate(
-            src_version_id, dest_version_id, domain, meta, replace_meta,
-            update_statistics_ancestors_depth=1)
+            src_version_id, dest_version_id, domain, meta, replace_meta)
 
         del_size = self._apply_versioning(account, container, pre_version_id,
                                           update_statistics_ancestors_depth=1)
@@ -943,7 +942,7 @@ class ModularBackend(BaseBackend):
                     self._get_policy(account_node, is_account_policy=True
                     )['quota']
                 )
-                account_usage = self._get_statistics(account_node)[1]
+                account_usage = self._get_statistics(account_node, compute=True)[1]
                 if (account_quota > 0 and account_usage > account_quota):
                     raise QuotaError(
                         'Account quota exceeded: limit: %s, usage: %s' % (
@@ -1230,8 +1229,7 @@ class ModularBackend(BaseBackend):
         path = '/'.join((path, name))
         node = self.node.node_lookup(path)
         if node is None:
-            node = self.node.node_create(parent, path,
-                                         update_statistics_ancestors_depth=1)
+            node = self.node.node_create(parent, path)
         return path, node
 
     def _put_path(self, user, parent, path,
@@ -1279,13 +1277,15 @@ class ModularBackend(BaseBackend):
             raise ItemNotExists('Path does not exist')
         return props
 
-    def _get_statistics(self, node, until=None):
+    def _get_statistics(self, node, until=None, compute=False):
         """Return count, sum of size and latest timestamp of everything under node."""
 
-        if until is None:
-            stats = self.node.statistics_get(node, CLUSTER_NORMAL)
-        else:
+        if until is not None:
             stats = self.node.statistics_latest(node, until, CLUSTER_DELETED)
+        elif compute:
+            stats = self.node.statistics_latest(node, except_cluster=CLUSTER_DELETED)
+        else:
+            stats = self.node.statistics_get(node, CLUSTER_NORMAL)
         if stats is None:
             stats = (0, 0, 0)
         return stats
@@ -1414,7 +1414,7 @@ class ModularBackend(BaseBackend):
             return
 
         account_node = self._lookup_account(account, True)[1]
-        total = self._get_statistics(account_node)[1]
+        total = self._get_statistics(account_node, compute=True)[1]
         details.update({'user': user, 'total': total})
         logger.debug(
             "_report_size_change: %s %s %s %s", user, account, size, details)

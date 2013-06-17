@@ -99,7 +99,7 @@ def top_demux(request):
                 return authenticate(request)
         return account_list(request)
     else:
-        return api.method_not_allowed(request)
+        return api.api_method_not_allowed(request)
 
 
 @csrf_exempt
@@ -118,7 +118,7 @@ def account_demux(request, v_account):
     elif request.method == 'GET':
         return container_list(request, v_account)
     else:
-        return api.method_not_allowed(request)
+        return api.api_method_not_allowed(request)
 
 
 @csrf_exempt
@@ -141,7 +141,7 @@ def container_demux(request, v_account, v_container):
     elif request.method == 'GET':
         return object_list(request, v_account, v_container)
     else:
-        return api.method_not_allowed(request)
+        return api.api_method_not_allowed(request)
 
 
 @csrf_exempt
@@ -173,7 +173,7 @@ def object_demux(request, v_account, v_container, v_object):
     elif request.method == 'DELETE':
         return object_delete(request, v_account, v_container, v_object)
     else:
-        return api.method_not_allowed(request)
+        return api.api_method_not_allowed(request)
 
 
 @api_method('GET', user_required=False, logger=logger)

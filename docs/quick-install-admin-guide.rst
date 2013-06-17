@@ -503,23 +503,6 @@ previously), by running:
 
    # apt-get install snf-astakos-app snf-pithos-backend
 
-After successful installation of snf-astakos-app, make sure that also
-snf-webproject has been installed (marked as "Recommended" package). By default
-Debian installs "Recommended" packages, but if you have changed your
-configuration and the package didn't install automatically, you should
-explicitly install it manually running:
-
-.. code-block:: console
-
-   # apt-get install snf-webproject
-
-The reason snf-webproject is "Recommended" and not a hard dependency, is to give
-the experienced administrator the ability to install Synnefo in a custom made
-`Django <https://www.djangoproject.com/>`_ project. This corner case
-concerns only very advanced users that know what they are doing and want to
-experiment with synnefo.
-
-
 .. _conf-astakos:
 
 Configuration of Astakos
@@ -828,10 +811,7 @@ previously), by running:
 
    # apt-get install snf-pithos-app snf-pithos-backend
 
-After successful installation of snf-pithos-app, make sure that also
-snf-webproject has been installed (marked as "Recommended" package). Refer to
-the "Installation of Astakos on node1" section, if you don't remember why this
-should happen. Now, install the pithos web interface:
+Now, install the pithos web interface:
 
 .. code-block:: console
 

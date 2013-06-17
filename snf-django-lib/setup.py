@@ -62,6 +62,8 @@ INSTALL_REQUIRES = [
     'simplejson>=2.1.1',
     'astakosclient',
     'snf-common',
+    'python-dateutil>=1.4.1',
+    'objpool>=0.2',
 ]
 
 

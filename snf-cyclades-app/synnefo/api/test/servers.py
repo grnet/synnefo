@@ -90,8 +90,9 @@ class ServerAPITest(ComputeAPITest):
         self.assertSuccess(response)
         servers = json.loads(response.content)['servers']
         db_server = self.vm1
-        self.assertEqual(servers, [{'name': db_server.name,
-                                    'id': db_server.id}])
+        server = servers[0]
+        self.assertEqual(server["name"], db_server.name)
+        self.assertEqual(server["id"], db_server.id)
 
     def test_server_list_detail(self):
         """Test if the servers list details are returned."""
@@ -104,10 +105,10 @@ class ServerAPITest(ComputeAPITest):
         self.assertEqual(len(servers), len(user_vms))
         for api_vm in servers:
             db_vm = user_vms[api_vm['id']]
-            self.assertEqual(api_vm['flavor'], db_vm.flavor.id)
+            self.assertEqual(api_vm['flavor']["id"], db_vm.flavor.id)
             self.assertEqual(api_vm['hostId'], db_vm.hostid)
             self.assertEqual(api_vm['id'], db_vm.id)
-            self.assertEqual(api_vm['image'], db_vm.imageid)
+            self.assertEqual(api_vm['image']["id"], db_vm.imageid)
             self.assertEqual(api_vm['name'], db_vm.name)
             self.assertEqual(api_vm['status'], get_rsapi_state(db_vm))
             self.assertSuccess(response)
@@ -117,17 +118,18 @@ class ServerAPITest(ComputeAPITest):
         db_vm = self.vm2
         user = self.vm2.userid
         net = mfactory.NetworkFactory()
-        nic = mfactory.NetworkInterfaceFactory(machine=self.vm2, network=net)
+        nic = mfactory.NetworkInterfaceFactory(machine=self.vm2, network=net,
+                                              ipv6="::babe")
 
         db_vm_meta = mfactory.VirtualMachineMetadataFactory(vm=db_vm)
 
         response = self.myget('servers/%d' % db_vm.id, user)
         server = json.loads(response.content)['server']
 
-        self.assertEqual(server['flavor'], db_vm.flavor.id)
+        self.assertEqual(server['flavor']["id"], db_vm.flavor.id)
         self.assertEqual(server['hostId'], db_vm.hostid)
         self.assertEqual(server['id'], db_vm.id)
-        self.assertEqual(server['image'], db_vm.imageid)
+        self.assertEqual(server['image']["id"], db_vm.imageid)
         self.assertEqual(server['name'], db_vm.name)
         self.assertEqual(server['status'], get_rsapi_state(db_vm))
         api_nic = server['attachments'][0]
@@ -137,6 +139,10 @@ class ServerAPITest(ComputeAPITest):
         self.assertEqual(api_nic['ipv4'], nic.ipv4)
         self.assertEqual(api_nic['ipv6'], nic.ipv6)
         self.assertEqual(api_nic['id'], 'nic-%s-%s' % (db_vm.id, nic.index))
+        api_address = server["addresses"]
+        self.assertEqual(api_address[str(net.id)],
+               [{"version": 4, "addr": nic.ipv4, "OS-EXT-IPS:type": "fixed"},
+                {"version": 6, "addr": nic.ipv6, "OS-EXT-IPS:type": "fixed"}])
 
         metadata = server['metadata']
         self.assertEqual(len(metadata), 1)
@@ -196,6 +202,33 @@ class ServerAPITest(ComputeAPITest):
             error = json.loads(response.content)
         except ValueError:
             self.assertTrue(False)
+
+    def test_method_not_allowed(self, *args):
+        # /servers/ allows only POST, GET
+        response = self.myput('servers', '', '')
+        self.assertMethodNotAllowed(response)
+        response = self.mydelete('servers')
+        self.assertMethodNotAllowed(response)
+
+        # /servers/<srvid>/ allows only GET, PUT, DELETE
+        response = self.mypost("servers/42")
+        self.assertMethodNotAllowed(response)
+
+        # /imags/<srvid>/metadata/ allows only POST, GET
+        response = self.myput('servers/42/metadata', '', '')
+        self.assertMethodNotAllowed(response)
+        response = self.mydelete('servers/42/metadata')
+        self.assertMethodNotAllowed(response)
+
+        # /imags/<srvid>/metadata/ allows only POST, GET
+        response = self.myput('servers/42/metadata', '', '')
+        self.assertMethodNotAllowed(response)
+        response = self.mydelete('servers/42/metadata')
+        self.assertMethodNotAllowed(response)
+
+        # /imags/<srvid>/metadata/<key> allows only PUT, GET, DELETE
+        response = self.mypost('servers/42/metadata/foo')
+        self.assertMethodNotAllowed(response)
 
 
 @patch('synnefo.api.util.get_image')

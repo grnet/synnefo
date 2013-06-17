@@ -134,8 +134,10 @@ PAGINATE_BY_ALL = getattr(settings, 'ASTAKOS_PAGINATE_BY_ALL', 50)
 NEWPASSWD_INVALIDATE_TOKEN = getattr(
     settings, 'ASTAKOS_NEWPASSWD_INVALIDATE_TOKEN', True)
 
-USAGE_UPDATE_INTERVAL = getattr(
-    settings, 'ASTAKOS_USAGE_UPDATE_INTERVAL', 5000)
+# Interval at which to update the user's available quota in astakos usage
+# profile view
+USAGE_UPDATE_INTERVAL = getattr(settings, 'ASTAKOS_USAGE_UPDATE_INTERVAL',
+                                5000)
 
 # Permit local account migration
 ENABLE_LOCAL_ACCOUNT_MIGRATION = getattr(

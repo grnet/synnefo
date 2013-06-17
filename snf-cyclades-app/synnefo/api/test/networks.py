@@ -441,3 +441,14 @@ class NetworkAPITest(ComputeAPITest):
             error = json.loads(response.content)
         except ValueError:
             self.assertTrue(False)
+
+    def test_method_not_allowed(self, *args):
+        # /networks/ allows only POST, GET
+        response = self.myput('networks', '', '')
+        self.assertMethodNotAllowed(response)
+        response = self.mydelete('networks')
+        self.assertMethodNotAllowed(response)
+
+        # /networks/<srvid>/ allows only GET, PUT, DELETE
+        response = self.mypost("networks/42")
+        self.assertMethodNotAllowed(response)

@@ -266,8 +266,7 @@ def get_properties(obj):
             if isinstance(get_class_attr(obj.__class__, i), property))
 
 
-def model_to_dict(obj, exclude=['AutoField', 'ForeignKey', 'OneToOneField'],
-                  include_empty=True):
+def model_to_dict(obj, exclude=None, include_empty=True):
     '''
         serialize model object to dict with related objects
 
@@ -275,6 +274,9 @@ def model_to_dict(obj, exclude=['AutoField', 'ForeignKey', 'OneToOneField'],
         date: January 31, 2011
         http://djangosnippets.org/snippets/2342/
     '''
+
+    if exclude is None:
+        exclude = ['AutoField', 'ForeignKey', 'OneToOneField']
     tree = {}
     for field_name in obj._meta.get_all_field_names():
         try:

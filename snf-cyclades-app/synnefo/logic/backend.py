@@ -396,9 +396,7 @@ def create_instance(vm, public_nic, flavor, image):
     provider = flavor.disk_provider
     if provider:
         kw['disks'][0]['provider'] = provider
-
-        if provider == 'vlmc':
-            kw['disks'][0]['origin'] = flavor.disk_origin
+        kw['disks'][0]['origin'] = flavor.disk_origin
 
     kw['nics'] = [public_nic]
     if vm.backend.use_hotplug():

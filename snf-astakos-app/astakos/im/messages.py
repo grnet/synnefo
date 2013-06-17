@@ -134,32 +134,39 @@ SHIBBOLETH_MISSING_EPPN = (
     ' for more information.')
 SHIBBOLETH_MISSING_NAME = 'This request is missing the user name.'
 
-SIGN_TERMS = 'Please, you need to \'Agree with the terms\' before proceeding.'
-CAPTCHA_VALIDATION_ERR = (
-    'You have not entered the correct words. Please try again.')
+SIGN_TERMS = "Please, you need to 'Agree with the terms' before proceeding."
+CAPTCHA_VALIDATION_ERR = "You have not entered the correct words. Please try again."
 SUSPENDED_LOCAL_ACC = (
-    'This account does not have a local password. '
-    'Please try logging in using an external login provider (e.g.: twitter)')
+    "This account does not have a local password. "
+    "Please try logging in using an external login provider (e.g.: twitter)"
+)
 EMAIL_UNKNOWN = (
-    'This email address doesn\'t have an associated user account. '
-    'Please make sure you have registered, before proceeding.')
-INVITATION_EMAIL_EXISTS = 'An invitation has already been sent to this email.'
-INVITATION_CONSUMED_ERR = 'Invitation is used.'
-UNKNOWN_USERS = 'Unknown users: %s'
+    "This email address doesn't have an associated user account. "
+    "Please make sure you have registered, before proceeding."
+)
+INVITATION_EMAIL_EXISTS = "An invitation has already been sent to this email."
+INVITATION_CONSUMED_ERR = "The invitation has already been used."
+UNKNOWN_USERS = "Unknown users: %s"
 UNIQUE_EMAIL_IS_ACTIVE_CONSTRAIN_ERR = (
-    'More than one account with the same email & \'is_active\' field. Error.')
-INVALID_ACTIVATION_KEY = 'Invalid activation key.'
+    "More than one account with the same email & 'is_active' field. Error."
+)
+INVALID_ACTIVATION_KEY =  "Invalid activation key."
 NEW_EMAIL_ADDR_RESERVED = (
-    'The new email address you requested is already used by another account. '
-    'Please provide a different one.')
-EMAIL_RESERVED = 'Email: %(email)s is already reserved.'
+    "The new email address you requested is already used by another account. "
+    "Please provide a different one."
+)
+EMAIL_RESERVED = "Email: %(email)s is already reserved."
 NO_LOCAL_AUTH = (
-    'Only external login providers are enabled for this account. '
-    'You can not login with a local password.')
-SWITCH_ACCOUNT_FAILURE = 'Account failed to switch. Invalid parameters.'
+    "Only external login providers are enabled for this account. "
+    "You can not login with a local password."
+)
+SWITCH_ACCOUNT_FAILURE = "Account failed to switch. Invalid parameters."
 SWITCH_ACCOUNT_SUCCESS_WITH_PROVIDER = (
-    'Account failed to switch to %(provider)s.')
-SWITCH_ACCOUNT_SUCCESS = 'Account successfully switched to %(provider)s.'
+    "Account failed to switch to %(provider)s."
+)
+SWITCH_ACCOUNT_SUCCESS = (
+    "Account successfully switched to %(provider)s."
+)
 
 # Field help text
 ADD_GROUP_MEMBERS_Q_HELP = (

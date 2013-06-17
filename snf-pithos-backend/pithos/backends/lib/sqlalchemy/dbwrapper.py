@@ -33,8 +33,7 @@
 
 from sqlalchemy import create_engine
 #from sqlalchemy.event import listen
-from sqlalchemy.engine import Engine
-from sqlalchemy.pool import NullPool, QueuePool
+from sqlalchemy.pool import NullPool
 from sqlalchemy.interfaces import PoolListener
 
 
@@ -45,16 +44,20 @@ class DBWrapper(object):
         if db.startswith('sqlite://'):
             class ForeignKeysListener(PoolListener):
                 def connect(self, dbapi_con, con_record):
-                    db_cursor = dbapi_con.execute('pragma foreign_keys=ON;')
-                    db_cursor = dbapi_con.execute(
-                        'pragma case_sensitive_like=ON;')
-            self.engine = create_engine(db, connect_args={'check_same_thread': False}, poolclass=NullPool, listeners=[ForeignKeysListener()])
+                    dbapi_con.execute('pragma foreign_keys=ON;')
+                    dbapi_con.execute('pragma case_sensitive_like=ON;')
+            self.engine = create_engine(
+                db, connect_args={'check_same_thread': False},
+                poolclass=NullPool, listeners=[ForeignKeysListener()],
+                isolation_level='SERIALIZABLE')
         #elif db.startswith('mysql://'):
         #    db = '%s?charset=utf8&use_unicode=0' %db
         #    self.engine = create_engine(db, convert_unicode=True)
         else:
             #self.engine = create_engine(db, pool_size=0, max_overflow=-1)
-            self.engine = create_engine(db, poolclass=NullPool)
+            self.engine = create_engine(
+                db, poolclass=NullPool, isolation_level='READ COMMITTED'
+        )
         self.engine.echo = False
         self.engine.echo_pool = False
         self.conn = self.engine.connect()

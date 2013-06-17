@@ -89,6 +89,40 @@ available at the destination::
 Finally, add 'shibboleth' in ``ASTAKOS_IM_MODULES`` list. The variable resides
 inside the file ``/etc/synnefo/20-snf-astakos-app-settings.conf``
 
+Twitter Authentication
+```````````````````````
+
+To enable twitter authentication while signed in under a Twitter account,
+visit dev.twitter.com/apps.
+
+Click Create an application.
+
+Fill the necessary information and for callback URL give::
+
+    https://node1.example.com/ui/login/twitter/authenticated
+
+Finally, add 'twitter' in ``ASTAKOS_IM_MODULES`` list. The variable resides
+inside the file ``/etc/synnefo/20-snf-astakos-app-settings.conf``
+
+
+Google Authentication
+`````````````````````
+
+To enable google authentication while signed in under a Google account,
+visit https://code.google.com/apis/console/.
+
+Under API Access select Create another client ID, select Web application,
+expand more options in Your site or hostname section and in Authorized
+Redirect URIs add:
+
+
+Fill the necessary information and for callback URL give::
+
+    https://node1.example.com/ui/login/google/authenticated
+
+Finally, add 'google' in ``ASTAKOS_IM_MODULES`` list. The variable resides
+inside the file ``/etc/synnefo/20-snf-astakos-app-settings.conf``
+
 Architecture
 ------------
 
@@ -1767,6 +1801,7 @@ Upgrade Notes
    :maxdepth: 1
 
    v0.12 -> v0.13 <upgrade/upgrade-0.13>
+   v0.13 -> v0.14 <upgrade/upgrade-0.14>
 
 
 Changelog, NEWS

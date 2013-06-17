@@ -1,5 +1,4 @@
 {% extends "im/email.txt" %}
-
   
 {% block content %}
 Dear {{ user.realname }},
@@ -12,7 +11,6 @@ address you provided during the signup process.
 Please click the link below to complete verification: 
 
 {{ url }}
-
 
 If you did not sign up for this account you can ignore this email and the 
 account will be deleted. 

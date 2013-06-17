@@ -1,8 +1,8 @@
 {% block content %} {% endblock %}
 
 {% block note %}{% endblock note %}
-For any remarks or problems you may contact {{ support }}.
+For any remarks or problems you may contact {{ support|safe }}.
 
-Thank you for participating in  {{ BRANDING_SERVICE_NAME }}.
+Thank you for participating in {{ BRANDING_SERVICE_NAME }}.
 
 {{ BRANDING_COMPANY_NAME }}

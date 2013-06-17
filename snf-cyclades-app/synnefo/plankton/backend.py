@@ -78,7 +78,7 @@ _pithos_backend_pool = \
         POOL_SIZE,
         astakos_url=settings.ASTAKOS_BASE_URL,
         service_token=settings.CYCLADES_SERVICE_TOKEN,
-        astakosclient_poolsize=settings.ASTAKOS_POOLSIZE,
+        astakosclient_poolsize=settings.CYCLADES_ASTAKOSCLIENT_POOLSIZE,
         db_connection=settings.BACKEND_DB_CONNECTION,
         block_path=settings.BACKEND_BLOCK_PATH)
 
@@ -167,7 +167,9 @@ class ImageBackend(object):
         meta["created"] = versions[0][1]
 
         if PLANKTON_PREFIX + 'name' not in meta:
-            raise ImageNotFound("'%s' is not a Plankton image" % image_url)
+            logger.warning("Image without Plankton name! url %s meta %s",
+                           image_url, meta)
+            meta[PLANKTON_PREFIX + "name"] = ""
 
         permissions = self._get_permissions(image_url)
         return image_to_dict(image_url, meta, permissions)
@@ -436,7 +438,9 @@ def image_to_dict(image_url, meta, permissions):
 
     image = {}
     if PLANKTON_PREFIX + 'name' not in meta:
-        raise ImageNotFound("'%s' is not a Plankton image" % image_url)
+        logger.warning("Image without Plankton name!! url %s meta %s",
+                       image_url, meta)
+        image[PLANKTON_PREFIX + "name"] = ""
 
     image["id"] = meta["uuid"]
     image["location"] = image_url

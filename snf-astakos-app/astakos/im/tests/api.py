@@ -596,7 +596,7 @@ class TokensApiTest(TestCase):
 
 
 class WrongPathAPITest(TestCase):
-    def test_catch_wrong_api_paths(self, *args):
+    def test_catch_wrong_account_paths(self, *args):
         path = get_service_path(astakos_services, 'account', 'v1.0')
         path = join_urls(BASE_HOST, path, 'nonexistent')
         response = self.client.get(path)
@@ -606,7 +606,7 @@ class WrongPathAPITest(TestCase):
         except ValueError:
             self.assertTrue(False)
 
-    def test_catch_wrong_api_paths(self, *args):
+    def test_catch_wrong_identity_paths(self, *args):
         path = get_service_path(astakos_services, 'identity', 'v2.0')
         path = join_urls(BASE_HOST, path, 'nonexistent')
         response = self.client.get(path)

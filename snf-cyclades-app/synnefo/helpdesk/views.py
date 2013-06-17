@@ -51,6 +51,7 @@ from synnefo.db.models import VirtualMachine, NetworkInterface, Network
 # server actions specific imports
 from synnefo.api import servers
 from synnefo.logic import backend as servers_backend
+from synnefo.ui.views import UI_MEDIA_URL
 
 logger = logging.getLogger(__name__)
 
@@ -172,6 +173,8 @@ def account(request, search_query):
     show_deleted = bool(int(request.GET.get('deleted', SHOW_DELETED_VMS)))
 
     account_exists = True
+    # flag to indicate successfull astakos calls
+    account_resolved = False
     vms = []
     networks = []
     is_ip = IP_SEARCH_REGEX.match(search_query)
@@ -204,20 +207,29 @@ def account(request, search_query):
                                                  retry=2, use_pool=True,
                                                  logger=logger)
 
+    account = None
     if is_uuid:
         account = search_query
-        account_name = astakos_client.get_username(auth_token, account)
+        try:
+            account_name = astakos_client.get_username(auth_token, account)
+        except:
+            logger.info("Failed to resolve '%s' into account" % account)
 
     if account_exists and not is_uuid:
         account_name = search_query
-        account = astakos_client.get_uuid(auth_token, account_name)
+        try:
+            account = astakos_client.get_uuid(auth_token, account_name)
+        except:
+            logger.info("Failed to resolve '%s' into account" % account_name)
 
     if not account:
         account_exists = False
+    else:
+        account_resolved = True
 
     filter_extra = {}
     if not show_deleted:
-        filter_extra['deleted'] = False
+        filter_extra['deleted'] = False,
 
     # all user vms
     vms = VirtualMachine.objects.filter(userid=account,
@@ -231,7 +243,8 @@ def account(request, search_query):
                                               **filter_extra).order_by('state')
     networks = list(public_networks) + list(private_networks)
 
-    if vms.count() == 0 and private_networks.count() == 0:
+    if vms.count() == 0 and private_networks.count() == 0 and not \
+            account_resolved:
         account_exists = False
 
     user_context = {
@@ -246,7 +259,8 @@ def account(request, search_query):
         'account_name': account_name,
         'token': request.user['auth_token'],
         'networks': networks,
-        'HELPDESK_MEDIA_URL': HELPDESK_MEDIA_URL
+        'HELPDESK_MEDIA_URL': HELPDESK_MEDIA_URL,
+        'UI_MEDIA_URL': UI_MEDIA_URL
     }
 
     return direct_to_template(request, "helpdesk/account.html",

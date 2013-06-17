@@ -32,3 +32,6 @@ DEFAULT_FROM_EMAIL = "synnefo <no-reply@synnefo.org>"
 
 # Email where users can contact for support
 CONTACT_EMAIL = "support@synnefo.org"
+
+# Email address the emails sent by the service will come from
+SERVER_EMAIL = "Synnefo cloud <cloud@synnefo.org>"

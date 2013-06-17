@@ -2047,6 +2047,12 @@
             if (!data['metadata']) {
                 data['metadata'] = {};
             }
+            
+            // v2.0 API returns objects
+            data.image_obj = data.image;
+            data.image = data.image_obj.id;
+            data.flavor_obj = data.flavor;
+            data.flavor = data.flavor_obj.id;
 
             return data;
         },

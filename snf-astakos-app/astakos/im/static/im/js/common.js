@@ -431,8 +431,7 @@ $('#members-table tr .check input').click(function(e){
 
   $('.renew-token a.do').click(function(e){
     e.preventDefault();
-    e.stopPropagation();
-    $(this).hide();
+    e.stopPropagation(); 
     var els = [$(".renew-token .sub"),$('.renew-token .confirm'), $('.renew-token .close')];
     _.each(els, function (el) { el.show();})
   })

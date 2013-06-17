@@ -103,6 +103,7 @@ class ImageAPITest(ComputeAPITest):
                    'status':'available',
                    'created_at': '2012-11-26 11:52:54',
                    'updated_at': '2012-12-26 11:52:54',
+                   'owner': 'user1',
                    'deleted_at': '',
                    'properties': {'foo':'bar'}},
                   {'id': 2,
@@ -110,6 +111,7 @@ class ImageAPITest(ComputeAPITest):
                    'status': 'deleted',
                    'created_at': '2012-11-26 11:52:54',
                    'updated_at': '2012-12-26 11:52:54',
+                   'owner': 'user1',
                    'deleted_at': '2012-12-27 11:52:54',
                    'properties': ''},
                   {'id': 3,
@@ -118,6 +120,7 @@ class ImageAPITest(ComputeAPITest):
                    'created_at': '2012-11-26 11:52:54',
                    'deleted_at': '',
                    'updated_at': '2012-12-26 11:52:54',
+                   'owner': 'user1',
                    'properties': ''}]
         result_images = [
                   {'id': 1,
@@ -126,24 +129,33 @@ class ImageAPITest(ComputeAPITest):
                    'progress': 100,
                    'created': '2012-11-26T11:52:54+00:00',
                    'updated': '2012-12-26T11:52:54+00:00',
+                   'user_id': 'user1',
+                   'tenant_id': 'user1',
                    'metadata': {'foo':'bar'}},
                   {'id': 2,
                    'name': 'image-2',
                    'status': 'DELETED',
                    'progress': 0,
+                   'user_id': 'user1',
+                   'tenant_id': 'user1',
                    'created': '2012-11-26T11:52:54+00:00',
-                   'updated': '2012-12-26T11:52:54+00:00'},
+                   'updated': '2012-12-26T11:52:54+00:00',
+                   'metadata': {}},
                   {'id': 3,
                    'name': 'image-3',
                    'status': 'ACTIVE',
                    'progress': 100,
+                   'user_id': 'user1',
+                   'tenant_id': 'user1',
                    'created': '2012-11-26T11:52:54+00:00',
-                   'updated': '2012-12-26T11:52:54+00:00'}]
+                   'updated': '2012-12-26T11:52:54+00:00',
+                   'metadata': {}}]
         mimage().list_images.return_value = images
         response = self.myget('images/detail', 'user')
         self.assertSuccess(response)
         api_images = json.loads(response.content)['images']
         self.assertEqual(len(result_images), len(api_images))
+        map(lambda image: image.pop("links"), api_images)
         self.assertEqual(result_images, api_images)
 
     @assert_backend_closed
@@ -161,11 +173,13 @@ class ImageAPITest(ComputeAPITest):
                    'created_at': old_time.isoformat(),
                    'deleted_at': '',
                    'updated_at': old_time.isoformat(),
+                   'owner': 'user1',
                    'properties': ''},
                   {'id': 2,
                    'name': 'image-2',
                    'status': 'deleted',
                    'progress': 0,
+                   'owner': 'user2',
                    'created_at': new_time.isoformat(),
                    'updated_at': new_time.isoformat(),
                    'deleted_at': new_time.isoformat(),
@@ -185,6 +199,7 @@ class ImageAPITest(ComputeAPITest):
                  'created_at': '2012-11-26 11:52:54',
                  'updated_at': '2012-12-26 11:52:54',
                  'deleted_at': '',
+                 'owner': 'user1',
                  'properties': {'foo': 'bar'}}
         result_image = \
                   {'id': 42,
@@ -193,11 +208,14 @@ class ImageAPITest(ComputeAPITest):
                    'progress': 100,
                    'created': '2012-11-26T11:52:54+00:00',
                    'updated': '2012-12-26T11:52:54+00:00',
+                   'user_id': 'user1',
+                   'tenant_id': 'user1',
                    'metadata': {'foo': 'bar'}}
         mimage.return_value.get_image.return_value = image
         response = self.myget('images/42', 'user')
         self.assertSuccess(response)
         api_image = json.loads(response.content)['image']
+        api_image.pop("links")
         self.assertEqual(api_image, result_image)
 
     @assert_backend_closed
@@ -221,6 +239,36 @@ class ImageAPITest(ComputeAPITest):
             error = json.loads(response.content)
         except ValueError:
             self.assertTrue(False)
+
+    @assert_backend_closed
+    def test_method_not_allowed(self, *args):
+        # /images/ allows only POST, GET
+        response = self.myput('images', '', '')
+        self.assertMethodNotAllowed(response)
+        response = self.mydelete('images')
+        self.assertMethodNotAllowed(response)
+
+        # /images/<imgid>/ allows only GET, DELETE
+        response = self.mypost("images/42")
+        self.assertMethodNotAllowed(response)
+        response = self.myput('images/42', '', '')
+        self.assertMethodNotAllowed(response)
+
+        # /images/<imgid>/metadata/ allows only POST, GET
+        response = self.myput('images/42/metadata', '', '')
+        self.assertMethodNotAllowed(response)
+        response = self.mydelete('images/42/metadata')
+        self.assertMethodNotAllowed(response)
+
+        # /images/<imgid>/metadata/ allows only POST, GET
+        response = self.myput('images/42/metadata', '', '')
+        self.assertMethodNotAllowed(response)
+        response = self.mydelete('images/42/metadata')
+        self.assertMethodNotAllowed(response)
+
+        # /images/<imgid>/metadata/<key> allows only PUT, GET, DELETE
+        response = self.mypost('images/42/metadata/foo')
+        self.assertMethodNotAllowed(response)
 
 
 @patch('synnefo.plankton.backend.ImageBackend')

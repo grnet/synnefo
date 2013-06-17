@@ -56,9 +56,6 @@ GANETI_FIREWALL_PROTECTED_TAG = 'synnefo:network:0:limited'
 # The default firewall profile that will be in effect if no tags are defined
 DEFAULT_FIREWALL_PROFILE = 'DISABLED'
 
-# our REST API would prefer to be explicit about trailing slashes
-APPEND_SLASH = False
-
 # Fixed mapping of user VMs to a specific backend.
 # e.g. BACKEND_PER_USER = {'example@synnefo.org': 2}
 BACKEND_PER_USER = {}
@@ -85,18 +82,13 @@ MAX_PERSONALITY = 5
 # The maximum size, in bytes, for each personality file
 MAX_PERSONALITY_SIZE = 10240
 
-# Available storage types to be used as disk templates
-# Use ext_<provider_name> to map specific provider for `ext` disk template.
-GANETI_DISK_TEMPLATES = ('blockdev', 'diskless', 'drbd', 'file', 'plain',
-                         'rbd',  'sharedfile')
-DEFAULT_GANETI_DISK_TEMPLATE = 'drbd'
 
 # Top-level URL of the astakos instance to be used for user management
 ASTAKOS_BASE_URL = 'https://accounts.example.synnefo.org/'
 
 # Tune the size of the Astakos http client connection pool
 # This limit the number of concurrent requests to Astakos.
-ASTAKOS_POOLSIZE = 50
+CYCLADES_ASTAKOSCLIENT_POOLSIZE = 50
 
 # Key for password encryption-decryption. After changing this setting, synnefo
 # will be unable to decrypt all existing Backend passwords. You will need to
@@ -108,7 +100,7 @@ SECRET_ENCRYPTION_KEY = "Password Encryption Key"
 # Astakos service token
 # The token used for astakos service api calls (e.g. api to retrieve user email
 # using a user uuid)
-CYCLADES_SERVICE_TOKEN = '' 
+CYCLADES_SERVICE_TOKEN = ''
 
 # Let cyclades proxy user specific api calls to astakos, via self served
 # endpoints. Set this to False if you deploy cyclades-app/astakos-app on the

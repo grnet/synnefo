@@ -51,11 +51,25 @@ def extend_with_root_redirects(patterns_obj, filled_services, service_type,
 
     """
     service_url = get_public_endpoint(filled_services, service_type)
-    root_url_entry = url('^$', 'redirect_to',
-                         {'url': join_urls('/', base_path)})
-    base_url_entry = url(prefix_pattern(base_path) + '$', 'redirect_to',
-                         {'url': service_url})
+    root_url_entry = None
+    if base_path and base_path != '/':
+        # redirect slash to /<base_path>/
+        root_url_entry = url('^$', 'redirect_to',
+                             {'url': join_urls('/', base_path.rstrip('/'),
+                                               '/')})
+
+    base_path_pattern = prefix_pattern(base_path) + '$'
+    base_path_pattern_no_slash = prefix_pattern(base_path).rstrip('/') + '$'
+
+    # redirect /<base_path> and /<base_path>/ to service_url public endpoint
+    base_url_entry = url(base_path_pattern, 'redirect_to', {'url':
+                                                            service_url})
+    base_url_entry_no_slash = url(base_path_pattern_no_slash,
+                                  'redirect_to', {'url': service_url})
     # urls order matter. Setting base_url_entry first allows us to avoid
     # redirect loops when base_path is empty or `/`
     patterns_obj += patterns('django.views.generic.simple',
-                             base_url_entry, root_url_entry)
+                             base_url_entry, base_url_entry_no_slash)
+    if root_url_entry:
+        # register root entry only for non root base_path deployments
+        patterns_obj += patterns('django.views.generic.simple', root_url_entry)

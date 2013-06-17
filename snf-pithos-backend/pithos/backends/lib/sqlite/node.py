@@ -203,9 +203,11 @@ class Node(DBWorker):
         props = (parent, path)
         return self.execute(q, props).lastrowid
 
-    def node_lookup(self, path):
+    def node_lookup(self, path, **kwargs):
         """Lookup the current node of the given path.
            Return None if the path is not found.
+
+           kwargs is not used: it is passed for conformance
         """
 
         q = "select node from nodes where path = ?"

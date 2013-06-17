@@ -78,7 +78,7 @@ def demux(request):
     elif request.method == 'POST':
         return create_server(request)
     else:
-        return api.method_not_allowed(request)
+        return api.api_method_not_allowed(request)
 
 
 def server_demux(request, server_id):
@@ -89,7 +89,7 @@ def server_demux(request, server_id):
     elif request.method == 'DELETE':
         return delete_server(request, server_id)
     else:
-        return api.method_not_allowed(request)
+        return api.api_method_not_allowed(request)
 
 
 def metadata_demux(request, server_id):
@@ -98,7 +98,7 @@ def metadata_demux(request, server_id):
     elif request.method == 'POST':
         return update_metadata(request, server_id)
     else:
-        return api.method_not_allowed(request)
+        return api.api_method_not_allowed(request)
 
 
 def metadata_item_demux(request, server_id, key):
@@ -109,7 +109,7 @@ def metadata_item_demux(request, server_id, key):
     elif request.method == 'DELETE':
         return delete_metadata_item(request, server_id, key)
     else:
-        return api.method_not_allowed(request)
+        return api.api_method_not_allowed(request)
 
 
 def nic_to_dict(nic):
@@ -124,31 +124,59 @@ def nic_to_dict(nic):
     return d
 
 
+def nics_to_addresses(nics):
+    addresses = {}
+    for nic in nics:
+        net_nics = []
+        net_nics.append({"version": 4,
+                         "addr": nic.ipv4,
+                         "OS-EXT-IPS:type": "fixed"})
+        if nic.ipv6:
+            net_nics.append({"version": 6,
+                             "addr": nic.ipv6,
+                             "OS-EXT-IPS:type": "fixed"})
+        addresses[nic.network.id] = net_nics
+    return addresses
+
+
 def vm_to_dict(vm, detail=False):
     d = dict(id=vm.id, name=vm.name)
+    d['links'] = util.vm_to_links(vm.id)
     if detail:
+        d['user_id'] = vm.userid
+        d['tenant_id'] = vm.userid
         d['status'] = get_rsapi_state(vm)
         d['progress'] = 100 if get_rsapi_state(vm) == 'ACTIVE' \
             else vm.buildpercentage
         d['hostId'] = vm.hostid
         d['updated'] = utils.isoformat(vm.updated)
         d['created'] = utils.isoformat(vm.created)
-        d['flavor'] = vm.flavor.id
-        d['image'] = vm.imageid
+        d['flavor'] = {"id": vm.flavor.id,
+                       "links": util.flavor_to_links(vm.flavor.id)}
+        d['image'] = {"id": vm.imageid,
+                      "links": util.image_to_links(vm.imageid)}
         d['suspended'] = vm.suspended
 
         metadata = dict((m.meta_key, m.meta_value) for m in vm.metadata.all())
-        if metadata:
-            d['metadata'] = metadata
+        d['metadata'] = metadata
 
         vm_nics = vm.nics.filter(state="ACTIVE").order_by("index")
         attachments = map(nic_to_dict, vm_nics)
         d['attachments'] = attachments
+        d['addresses'] = nics_to_addresses(vm_nics)
 
         # include the latest vm diagnostic, if set
         diagnostic = vm.get_last_diagnostic()
         if diagnostic:
             d['diagnostics'] = diagnostics_to_dict([diagnostic])
+        else:
+            d['diagnostics'] = []
+        # Fixed
+        d["security_groups"] = [{"name": "default"}]
+        d["key_name"] = None
+        d["config_drive"] = ""
+        d["accessIPv4"] = ""
+        d["accessIPv6"] = ""
 
     return d
 
@@ -293,7 +321,7 @@ def create_server(request):
 
 @transaction.commit_manually
 def do_create_server(userid, name, password, flavor, image, metadata={},
-                  personality=[], network=None, backend=None):
+                     personality=[], network=None, backend=None):
     if backend is None:
         # Allocate backend to host the server. Commit after allocation to
         # release the locks hold by the backend allocator.
@@ -314,12 +342,11 @@ def do_create_server(userid, name, password, flavor, image, metadata={},
     if provider:
         flavor.disk_template = disk_template
         flavor.disk_provider = provider
-        flavor.disk_origin = None
-        if provider == 'vlmc':
-            flavor.disk_origin = image['checksum']
-            image['backend_id'] = 'null'
+        flavor.disk_origin = image['checksum']
+        image['backend_id'] = 'null'
     else:
         flavor.disk_provider = None
+        flavor.disk_origin = None
 
     try:
         if network is None:
@@ -539,12 +566,13 @@ def list_addresses(request, server_id):
 
     log.debug('list_addresses %s', server_id)
     vm = util.get_vm(server_id, request.user_uniq)
-    addresses = [nic_to_dict(nic) for nic in vm.nics.all()]
+    attachments = [nic_to_dict(nic) for nic in vm.nics.all()]
+    addresses = nics_to_addresses(vm.nics.all())
 
     if request.serialization == 'xml':
         data = render_to_string('list_addresses.xml', {'addresses': addresses})
     else:
-        data = json.dumps({'addresses': addresses})
+        data = json.dumps({'addresses': addresses, 'attachments': attachments})
 
     return HttpResponse(data, status=200)
 
@@ -562,13 +590,13 @@ def list_addresses_by_network(request, server_id, network_id):
     log.debug('list_addresses_by_network %s %s', server_id, network_id)
     machine = util.get_vm(server_id, request.user_uniq)
     network = util.get_network(network_id, request.user_uniq)
-    nic = util.get_nic(machine, network)
-    address = nic_to_dict(nic)
+    nics = machine.nics.filter(network=network).all()
+    addresses = nics_to_addresses(nics)
 
     if request.serialization == 'xml':
-        data = render_to_string('address.xml', {'address': address})
+        data = render_to_string('address.xml', {'addresses': addresses})
     else:
-        data = json.dumps({'network': address})
+        data = json.dumps({'network': addresses})
 
     return HttpResponse(data, status=200)
 

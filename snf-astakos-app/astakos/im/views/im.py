@@ -244,9 +244,8 @@ def api_access_config(request, template_name='im/api_access_config.html',
     context.update(extra_context)
     content = branding.render_to_string(template_name, context,
                                         RequestContext(request))
-    response = HttpResponse()
+    response = HttpResponse(content_type=content_type)
     response.status_code = 200
-    response.content_type = content_type
     response['Content-Disposition'] = 'attachment; filename="%s"' % filename
     response.content = content
     return response
@@ -266,6 +265,7 @@ def api_access(request, template_name='im/api_access.html',
     url = get_public_endpoint(settings.astakos_services, 'identity')
     context['services'] = Component.catalog()
     context['token_url'] = url
+    context['user'] = request.user
     context['client_url'] = settings.API_CLIENT_URL
 
     if extra_context:

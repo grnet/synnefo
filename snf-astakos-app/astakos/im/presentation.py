@@ -155,7 +155,7 @@ RESOURCES = {
                         'cyclades.network.private',
                         'astakos.pending_app'
                         ],
-    'exclude_from_usage': []
+    'exclude_from_usage': ['astakos.pending_app']
 }
 
 # extend from settings
@@ -184,7 +184,6 @@ def component_defaults(service_name):
 
 COMPONENTS = {
     'astakos': {
-        'url': '/im/landing',
         'order': 1,
         'dashboard': {
             'order': 3,
@@ -200,7 +199,6 @@ COMPONENTS = {
         }
     },
     'pithos': {
-        'url': '/pithos/ui/',
         'order': 2,
         'dashboard': {
             'order': 1,
@@ -214,7 +212,6 @@ COMPONENTS = {
         }
     },
     'cyclades': {
-        'url': '/cyclades/ui/',
         'order': 3,
         'dashboard': {
             'order': 2,

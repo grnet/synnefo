@@ -69,7 +69,7 @@ def demux(request):
     elif request.method == 'POST':
         return create_network(request)
     else:
-        return api.method_not_allowed(request)
+        return api.api_method_not_allowed(request)
 
 
 def network_demux(request, network_id):
@@ -80,12 +80,15 @@ def network_demux(request, network_id):
     elif request.method == 'DELETE':
         return delete_network(request, network_id)
     else:
-        return api.method_not_allowed(request)
+        return api.api_method_not_allowed(request)
 
 
 def network_to_dict(network, user_id, detail=True):
     d = {'id': str(network.id), 'name': network.name}
+    d['links'] = util.network_to_links(network.id)
     if detail:
+        d['user_id'] = network.userid
+        d['tenant_id'] = network.userid
         d['cidr'] = network.subnet
         d['cidr6'] = network.subnet6
         d['gateway'] = network.gateway

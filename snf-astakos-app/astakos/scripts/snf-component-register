@@ -11,9 +11,9 @@ desc[cyclades]='compute component'
 desc[pithos]='file storage component'
 
 declare -A ex_url
-ex_url[astakos]='https://accounts.example.synnefo.org/'
-ex_url[cyclades]='https://compute.example.synnefo.org/compute/'
-ex_url[pithos]='https://object-store.example.synnefo.org/pithos/'
+ex_url[astakos]='https://accounts.example.synnefo.org/astakos/'
+ex_url[cyclades]='https://compute.example.synnefo.org/cyclades/'
+ex_url[pithos]='https://storage.example.synnefo.org/pithos/'
 
 
 register_services () {

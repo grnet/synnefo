@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,10 +31,29 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-# Import TestCases
-from synnefo.api.test.servers import *
-from synnefo.api.test.networks import *
-from synnefo.api.test.flavors import *
-from synnefo.api.test.images import *
-from synnefo.api.test.versions import *
-from synnefo.api.test.extensions import *
+import json
+
+from snf_django.utils.testing import BaseAPITest
+from synnefo.lib.services import get_service_path
+from synnefo.cyclades_settings import cyclades_services
+from synnefo.lib import join_urls
+
+COMPUTE_URL = get_service_path(cyclades_services, 'compute',
+                               version='v2.0')
+EXTENSIONS_URL = join_urls(COMPUTE_URL, "extensions/")
+
+
+class ExtensionsAPITest(BaseAPITest):
+    def test_list(self):
+        response = self.get(EXTENSIONS_URL, "user")
+        self.assertSuccess(response)
+        extensions = json.loads(response.content)["extensions"]
+        self.assertEqual(extensions, [])
+
+    def test_get(self):
+        response = self.get(join_urls(EXTENSIONS_URL, "SNF"), "user")
+        self.assertEqual(response.status_code, 404)
+        response = self.get(join_urls(EXTENSIONS_URL, "SNF_asfas_da"), "user")
+        self.assertEqual(response.status_code, 404)
+        response = self.get(join_urls(EXTENSIONS_URL, "SNF-AD"), "user")
+        self.assertEqual(response.status_code, 404)

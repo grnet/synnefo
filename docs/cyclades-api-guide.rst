@@ -14,7 +14,7 @@ This document's goals are:
 * Clarify the differences between Cyclades and OpenStack/Compute
 
 Users and developers who wish to access Cyclades through its REST API are
-advised to use the `kamaki <http://docs.dev.grnet.gr/kamaki>`_ command-line
+advised to use the `kamaki <http://www.synnefo.org/docs/kamaki/latest/index.html>`_ command-line
 client and associated python library, instead of making direct calls.
 
 Overview

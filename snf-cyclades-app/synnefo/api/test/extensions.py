@@ -44,8 +44,16 @@ EXTENSIONS_URL = join_urls(COMPUTE_URL, "extensions/")
 
 
 class ExtensionsAPITest(BaseAPITest):
-    def test_001(self):
+    def test_list(self):
         response = self.get(EXTENSIONS_URL, "user")
         self.assertSuccess(response)
         extensions = json.loads(response.content)["extensions"]
         self.assertEqual(extensions, [])
+
+    def test_get(self):
+        response = self.get(join_urls(EXTENSIONS_URL, "SNF"), "user")
+        self.assertEqual(response.status_code, 404)
+        response = self.get(join_urls(EXTENSIONS_URL, "SNF_asfas_da"), "user")
+        self.assertEqual(response.status_code, 404)
+        response = self.get(join_urls(EXTENSIONS_URL, "SNF-AD"), "user")
+        self.assertEqual(response.status_code, 404)

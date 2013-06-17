@@ -43,6 +43,7 @@ log = getLogger(__name__)
 urlpatterns = patterns(
     'synnefo.api.extensions',
     (r'^(?:/|.json|.xml)?$', 'demux'),
+    (r'^/([\w-]+)(?:/|.json|.xml)?$', 'demux_extension'),
 )
 
 
@@ -53,8 +54,20 @@ def demux(request):
         return api.api_method_not_allowed(request)
 
 
+def demux_extension(request, extension_alias):
+    if request.method == 'GET':
+        return get_extension(request, extension_alias)
+    else:
+        return api.api_method_not_allowed(request)
+
+
 @api.api_method(http_method='GET', user_required=True, logger=log)
 def list_extensions(request, detail=False):
     # Temporary return empty list. This will return the SNF: extension.
     data = json.dumps(dict(extensions=[]))
     return HttpResponse(data, status=200)
+
+
+@api.api_method(http_method='GET', user_required=True, logger=log)
+def get_extension(request, extension_alias):
+    return HttpResponse(status=404)

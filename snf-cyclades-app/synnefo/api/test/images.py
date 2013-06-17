@@ -130,12 +130,14 @@ class ImageAPITest(ComputeAPITest):
                    'created': '2012-11-26T11:52:54+00:00',
                    'updated': '2012-12-26T11:52:54+00:00',
                    'user_id': 'user1',
+                   'tenant_id': 'user1',
                    'metadata': {'foo':'bar'}},
                   {'id': 2,
                    'name': 'image-2',
                    'status': 'DELETED',
                    'progress': 0,
                    'user_id': 'user1',
+                   'tenant_id': 'user1',
                    'created': '2012-11-26T11:52:54+00:00',
                    'updated': '2012-12-26T11:52:54+00:00',
                    'metadata': {}},
@@ -144,6 +146,7 @@ class ImageAPITest(ComputeAPITest):
                    'status': 'ACTIVE',
                    'progress': 100,
                    'user_id': 'user1',
+                   'tenant_id': 'user1',
                    'created': '2012-11-26T11:52:54+00:00',
                    'updated': '2012-12-26T11:52:54+00:00',
                    'metadata': {}}]
@@ -152,6 +155,7 @@ class ImageAPITest(ComputeAPITest):
         self.assertSuccess(response)
         api_images = json.loads(response.content)['images']
         self.assertEqual(len(result_images), len(api_images))
+        map(lambda image: image.pop("links"), api_images)
         self.assertEqual(result_images, api_images)
 
     @assert_backend_closed
@@ -205,11 +209,13 @@ class ImageAPITest(ComputeAPITest):
                    'created': '2012-11-26T11:52:54+00:00',
                    'updated': '2012-12-26T11:52:54+00:00',
                    'user_id': 'user1',
+                   'tenant_id': 'user1',
                    'metadata': {'foo': 'bar'}}
         mimage.return_value.get_image.return_value = image
         response = self.myget('images/42', 'user')
         self.assertSuccess(response)
         api_image = json.loads(response.content)['image']
+        api_image.pop("links")
         self.assertEqual(api_image, result_image)
 
     @assert_backend_closed

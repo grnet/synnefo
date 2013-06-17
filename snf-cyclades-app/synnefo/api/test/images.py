@@ -240,6 +240,36 @@ class ImageAPITest(ComputeAPITest):
         except ValueError:
             self.assertTrue(False)
 
+    @assert_backend_closed
+    def test_method_not_allowed(self, *args):
+        # /images/ allows only POST, GET
+        response = self.myput('images', '', '')
+        self.assertMethodNotAllowed(response)
+        response = self.mydelete('images')
+        self.assertMethodNotAllowed(response)
+
+        # /images/<imgid>/ allows only GET, DELETE
+        response = self.mypost("images/42")
+        self.assertMethodNotAllowed(response)
+        response = self.myput('images/42', '', '')
+        self.assertMethodNotAllowed(response)
+
+        # /images/<imgid>/metadata/ allows only POST, GET
+        response = self.myput('images/42/metadata', '', '')
+        self.assertMethodNotAllowed(response)
+        response = self.mydelete('images/42/metadata')
+        self.assertMethodNotAllowed(response)
+
+        # /images/<imgid>/metadata/ allows only POST, GET
+        response = self.myput('images/42/metadata', '', '')
+        self.assertMethodNotAllowed(response)
+        response = self.mydelete('images/42/metadata')
+        self.assertMethodNotAllowed(response)
+
+        # /images/<imgid>/metadata/<key> allows only PUT, GET, DELETE
+        response = self.mypost('images/42/metadata/foo')
+        self.assertMethodNotAllowed(response)
+
 
 @patch('synnefo.plankton.backend.ImageBackend')
 class ImageMetadataAPITest(ComputeAPITest):

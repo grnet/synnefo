@@ -203,6 +203,33 @@ class ServerAPITest(ComputeAPITest):
         except ValueError:
             self.assertTrue(False)
 
+    def test_method_not_allowed(self, *args):
+        # /servers/ allows only POST, GET
+        response = self.myput('servers', '', '')
+        self.assertMethodNotAllowed(response)
+        response = self.mydelete('servers')
+        self.assertMethodNotAllowed(response)
+
+        # /servers/<srvid>/ allows only GET, PUT, DELETE
+        response = self.mypost("servers/42")
+        self.assertMethodNotAllowed(response)
+
+        # /imags/<srvid>/metadata/ allows only POST, GET
+        response = self.myput('servers/42/metadata', '', '')
+        self.assertMethodNotAllowed(response)
+        response = self.mydelete('servers/42/metadata')
+        self.assertMethodNotAllowed(response)
+
+        # /imags/<srvid>/metadata/ allows only POST, GET
+        response = self.myput('servers/42/metadata', '', '')
+        self.assertMethodNotAllowed(response)
+        response = self.mydelete('servers/42/metadata')
+        self.assertMethodNotAllowed(response)
+
+        # /imags/<srvid>/metadata/<key> allows only PUT, GET, DELETE
+        response = self.mypost('servers/42/metadata/foo')
+        self.assertMethodNotAllowed(response)
+
 
 @patch('synnefo.api.util.get_image')
 @patch('synnefo.logic.rapi_pool.GanetiRapiClient')

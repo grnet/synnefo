@@ -2048,7 +2048,7 @@ def parse_arguments(args):
 
     if not opts.show_stale:
         # `image-id' is mandatory
-        _mandatory_argument(opts.force_imageid, "--image_id")
+        _mandatory_argument(opts.force_imageid, "--image-id")
         if opts.force_imageid != 'all':
             try:
                 opts.force_imageid = str(opts.force_imageid)

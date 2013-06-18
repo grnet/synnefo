@@ -1,12 +1,12 @@
 PROJECTS="\
  snf-common\
- snf-webproject\
  astakosclient\
  snf-django-lib\
+ snf-webproject\
+ snf-branding\
  snf-astakos-app\
  snf-pithos-backend\
  snf-cyclades-gtools\
  snf-cyclades-app\
  snf-pithos-app\
- snf-quotaholder-app\
  snf-tools"

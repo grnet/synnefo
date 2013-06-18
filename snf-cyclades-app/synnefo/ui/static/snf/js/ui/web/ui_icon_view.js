@@ -437,7 +437,7 @@
         update_layout: function() {
 
             // api metadata object
-            var meta =  this.vm.get('metadata').values;
+            var meta =  this.vm.get('metadata');
 
             var i = 0;
             var cont = $(this.el).find(".items");

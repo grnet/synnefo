@@ -40,7 +40,7 @@ from django.core.urlresolvers import resolve
 from django.conf import settings
 from django.template import TemplateSyntaxError, Variable
 from django.utils.translation import ugettext as _
-from django.template.loader import render_to_string
+from synnefo_branding.utils import render_to_string
 from django.template import RequestContext
 from django.core.urlresolvers import reverse
 from django.utils.safestring import mark_safe
@@ -179,12 +179,11 @@ class MessagesNode(template.Node):
 @register.simple_tag
 def get_grant_value(rname, form):
     grants = form.instance.grants
-    service_name, resource_name = rname.split('.',1)
     try:
-        return form.instance.projectresourcegrant_set.get(resource__name=resource_name,
-                                                           resource__service__name=service_name).member_capacity
-    except:
-        return ''
+        r = form.instance.projectresourcegrant_set.get(resource__name=rname).member_capacity
+    except Exception, e:
+        r = ''
+    return r
 
 @register.tag(name="provider_login_url")
 @basictag(takes_context=True)
@@ -241,16 +240,28 @@ def confirm_link(context, title, prompt='', url=None, urlarg=None,
                  extracontent='',
                  confirm_prompt=None,
                  inline=True,
+                 cls='',
                  template="im/table_rich_link_column.html"):
 
     urlargs = None
     if urlarg:
-        urlargs = (urlarg,)
+        if isinstance(urlarg, basestring) and "," in urlarg:
+            args = urlarg.split(",")
+            for index, arg in enumerate(args):
+                if context.get(arg, None) is not None:
+                    args[index] = context.get(arg)
+            urlargs = args
+        else:
+            urlargs = (urlarg,)
 
     if CONFIRM_LINK_PROMPT_MAP.get(prompt, None):
         prompt = mark_safe(CONFIRM_LINK_PROMPT_MAP.get(prompt))
 
-    url = reverse(url, args=urlargs)
+    if url:
+        url = reverse(url, args=urlargs)
+    else:
+        url = None
+
     title = _(title)
     tpl_context = RequestContext(context.get('request'))
     tpl_context.update({
@@ -262,6 +273,7 @@ def confirm_link(context, title, prompt='', url=None, urlarg=None,
         'inline': inline,
         'url': url,
         'action': title,
+        'cls': cls,
         'prompt': prompt,
         'extra_form_content': EXTRA_CONTENT_MAP.get(extracontent, ''),
         'confirm': True
@@ -270,3 +282,35 @@ def confirm_link(context, title, prompt='', url=None, urlarg=None,
     content = render_to_string(template, tpl_context)
     return content
 
+
+@register.simple_tag
+def substract(arg1, arg2):
+    return arg1 - arg2
+
+
+class VerbatimNode(template.Node):
+
+    def __init__(self, text):
+        self.text = text
+
+    def render(self, context):
+        return self.text
+
+
+@register.tag
+def verbatim(parser, token):
+    text = []
+    while 1:
+        token = parser.tokens.pop(0)
+        if token.contents == 'endverbatim':
+            break
+        if token.token_type == template.TOKEN_VAR:
+            text.append('{{')
+        elif token.token_type == template.TOKEN_BLOCK:
+            text.append('{%')
+        text.append(token.contents)
+        if token.token_type == template.TOKEN_VAR:
+            text.append('}}')
+        elif token.token_type == template.TOKEN_BLOCK:
+            text.append('%}')
+    return VerbatimNode(''.join(text))

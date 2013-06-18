@@ -1,0 +1,1201 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2013-03-26 16:38+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: views.py:270
+msgid ""
+"A direct connection to this machine can be established using the <a target="
+"\"_blank\"\n"
+"href=\"http://en.wikipedia.org/wiki/Secure_Shell\">SSH Protocol</a>.\n"
+"To do so open a terminal and type the following at the prompt to connect to "
+"your machine:"
+msgstr ""
+
+#: views.py:273
+msgid ""
+"A direct connection to this machine can be\n"
+"established using <a target=\"_blank\" href=\"http://en.wikipedia.org/wiki/"
+"Remote_Desktop_Services\">Remote Desktop Service</a>.\n"
+"To do so, open the following file with an appropriate remote desktop "
+"client.\n"
+msgstr ""
+
+#: views.py:277
+msgid ""
+"If you don't have a Remote Desktop client already installed,\n"
+"we suggest the use of <a target=\"_blank\"\n"
+"href=\"http://sourceforge.net/projects/tsclient/files/latest/download?"
+"source=files\">tsclient</a>.<br\n"
+"/><span class=\"important\">IMPORTANT: It may take up to 15 minutes for your "
+"Windows VM to become available\n"
+"after its creation.</span>"
+msgstr ""
+
+#: views.py:282
+msgid ""
+"A direct connection to this machine can be established using the <a target="
+"\"_blank\"\n"
+"href=\"http://en.wikipedia.org/wiki/Secure_Shell\">SSH Protocol</a>.\n"
+"Open an ssh client such as PuTTY and type the following:"
+msgstr ""
+
+#: views.py:285
+msgid ""
+"If you do not have an ssh client already installed,\n"
+"<a target=\"_blank\" href=\"http://the.earth.li/~sgtatham/putty/latest/x86/"
+"putty.exe\">Download PuTTY</a>"
+msgstr ""
+
+#: views.py:288
+msgid ""
+"A direct connection to this machine can be\n"
+"established using Remote Desktop. Click on the following link, and if asked\n"
+"open it using \"Remote Desktop Connection\".\n"
+"<br /><span class=\"important\">IMPORTANT: It may take up to 15 minutes for "
+"your Windows VM to become available\n"
+"after its creation.</span>"
+msgstr ""
+
+#: views.py:293
+msgid "Save this file to disk for future use."
+msgstr ""
+
+#: views.py:406
+#, python-format
+msgid "Remote desktop to %s"
+msgstr ""
+
+#: views.py:416
+#, python-format
+msgid ""
+"You are trying to connect from a %(host_os)s machine to a %(os)s machine"
+msgstr ""
+
+#: templates/apps.html:38
+msgid "apps"
+msgstr ""
+
+#: templates/desktops.html:38
+msgid "desktops"
+msgstr ""
+
+#: templates/files.html:38
+msgid "files"
+msgstr ""
+
+#: templates/footer.html:5
+msgid "About"
+msgstr ""
+
+#: templates/footer.html:7
+msgid "Contact"
+msgstr ""
+
+#: templates/footer.html:9
+msgid "Support"
+msgstr ""
+
+#: templates/footer.html:12
+msgid "Terms"
+msgstr ""
+
+#: templates/footer.html:14
+msgid "Privacy"
+msgstr ""
+
+#: templates/home.html:108 templates/home.html.py:474
+msgid "Send feedback"
+msgstr ""
+
+#: templates/home.html:109
+msgid "API access"
+msgstr ""
+
+#: templates/home.html:110
+#, python-format
+msgid ""
+"The API key provides full access to your <em>%(BRANDING_SERVICE_NAME)s</em> "
+"account, so always keep it private."
+msgstr ""
+
+#: templates/home.html:113
+msgid "Unknown"
+msgstr ""
+
+#: templates/home.html:114 templates/home.html.py:122 templates/home.html:123
+#: templates/home.html.py:124
+msgid "Building..."
+msgstr ""
+
+#: templates/home.html:115
+msgid "Firewall change..."
+msgstr ""
+
+#: templates/home.html:116
+msgid "Rebooting..."
+msgstr ""
+
+#: templates/home.html:117
+msgid "Stopped"
+msgstr ""
+
+#: templates/home.html:118 templates/partials/machines_icon.html:41
+#: templates/partials/machines_single.html:11
+msgid "Running"
+msgstr ""
+
+#: templates/home.html:119 templates/home.html.py:142
+msgid "Error"
+msgstr ""
+
+#: templates/home.html:121
+msgid "Destroying..."
+msgstr ""
+
+#: templates/home.html:125
+msgid "Shutting down..."
+msgstr ""
+
+#: templates/home.html:126
+msgid "Starting..."
+msgstr ""
+
+#: templates/home.html:127
+msgid "Connecting..."
+msgstr ""
+
+#: templates/home.html:128
+msgid "Disconnecting..."
+msgstr ""
+
+#: templates/home.html:135
+msgid "Initializing..."
+msgstr ""
+
+#: templates/home.html:136
+msgid "{0} of {1} ({2}%)"
+msgstr ""
+
+#: templates/home.html:137
+msgid "Bulding image..."
+msgstr ""
+
+#: templates/home.html:144
+msgid ""
+"Could not contact the service. Please check your network connectivity and "
+"try again."
+msgstr ""
+
+#: templates/home.html:146
+msgid "Malformed request."
+msgstr ""
+
+#: templates/home.html:148
+msgid "Your request has failed. Resource not found."
+msgstr ""
+
+#: templates/home.html:150
+msgid ""
+"There has been an Internal Error. Our administrators have been notified."
+msgstr ""
+
+#: templates/home.html:152
+msgid "This server has not been implemented yet."
+msgstr ""
+
+#: templates/home.html:154
+msgid "Bad Gateway error."
+msgstr ""
+
+#: templates/home.html:156
+msgid "This service is unavailable right now, please try again later."
+msgstr ""
+
+#: templates/home.html:158
+msgid "Could not contact the server."
+msgstr ""
+
+#: templates/home.html:160
+msgid "Cannot show the Create machine wizard: No images found."
+msgstr ""
+
+#: templates/home.html:162
+msgid "Cannot show the Create machine wizard: No machine configurations found."
+msgstr ""
+
+#: templates/home.html:164
+msgid "Something seems to have gone wrong :( Here is what happened:"
+msgstr ""
+
+#: templates/home.html:166
+msgid "Νο advanced details provided"
+msgstr ""
+
+#: templates/home.html:168
+msgid ""
+"It seems the server takes too long to respond, please check your network "
+"connectivity"
+msgstr ""
+
+#: templates/home.html:175 templates/home.html.py:178
+msgid "Success"
+msgstr ""
+
+#: templates/home.html:176
+msgid "Your request has been succefully executed."
+msgstr ""
+
+#: templates/home.html:177
+msgid "Password:"
+msgstr ""
+
+#: templates/home.html:179 templates/partials/create_vm.html:338
+msgid "Your new machine is now buidling... (this might take a few minutes)"
+msgstr ""
+
+#: templates/home.html:180 templates/partials/create_vm.html:341
+msgid "Write down your password now:"
+msgstr ""
+
+#: templates/home.html:181 templates/partials/create_vm.html:346
+msgid "You will need this later to connect to your machine."
+msgstr ""
+
+#: templates/home.html:182
+msgid "After closing this window you will NOT be able to retrieve it again."
+msgstr ""
+
+#: templates/home.html:186 templates/partials/create_vm.html:67
+#: templates/partials/machines_icon.html:100
+#: templates/partials/machines_icon.html:107
+#: templates/partials/machines_icon.html:114
+#: templates/partials/machines_icon.html:121
+#: templates/partials/machines_icon.html:128
+#: templates/partials/machines_single.html:70
+#: templates/partials/machines_single.html:77
+#: templates/partials/machines_single.html:84
+#: templates/partials/machines_single.html:91
+#: templates/partials/machines_single.html:98
+#: templates/partials/networks.html:126 templates/partials/networks.html:143
+#: templates/partials/networks.html:210 templates/partials/networks.html:265
+msgid "Confirm"
+msgstr ""
+
+#: templates/home.html:187 templates/partials/custom_images.html:80
+#: templates/partials/networks.html:127 templates/partials/networks.html:144
+#: userdata/templates/userdata/public_keys_view.html:104
+msgid "Cancel"
+msgstr ""
+
+#: templates/home.html:188 templates/partials/networks.html:197
+msgid "Apply"
+msgstr ""
+
+#: templates/home.html:189 templates/partials/networks.html:178
+msgid "Off"
+msgstr ""
+
+#: templates/home.html:190
+msgid "On"
+msgstr ""
+
+#: templates/home.html:203
+msgid "send feedback..."
+msgstr ""
+
+#: templates/home.html:204
+msgid "API access..."
+msgstr ""
+
+#: templates/home.html:205
+msgid "ssh public keys..."
+msgstr ""
+
+#: templates/home.html:206
+msgid "custom images..."
+msgstr ""
+
+#: templates/home.html:207
+msgid "logout"
+msgstr ""
+
+#: templates/home.html:234 templates/partials/networks.html:92
+#: templates/partials/networks.html:241
+msgid "machines"
+msgstr ""
+
+#: templates/home.html:236
+msgid "manage your virtual machines"
+msgstr ""
+
+#: templates/home.html:239
+msgid "configure networking"
+msgstr ""
+
+#: templates/home.html:243
+msgid "manage your storage volumes"
+msgstr ""
+
+#: templates/home.html:409 templates/partials/create_vm.html:330
+#: templates/partials/machines_single.html:154
+msgid "next"
+msgstr ""
+
+#: templates/home.html:410 templates/partials/create_vm.html:331
+#: templates/partials/machines_single.html:148
+msgid "previous"
+msgstr ""
+
+#: templates/home.html:414
+msgid "Module"
+msgstr ""
+
+#: templates/home.html:417
+msgid "Code"
+msgstr ""
+
+#: templates/home.html:420
+msgid "Type"
+msgstr ""
+
+#: templates/home.html:423 templates/partials/machines_icon.html:138
+#: templates/partials/machines_single.html:109
+#: templates/partials/networks.html:133 templates/partials/networks.html:140
+#: templates/partials/networks.html:150 templates/partials/networks.html:269
+#: templates/partials/networks.html:275
+msgid "Details"
+msgstr ""
+
+#: templates/home.html:428
+msgid "next error"
+msgstr ""
+
+#: templates/home.html:429
+msgid "previous error"
+msgstr ""
+
+#: templates/home.html:437
+msgid "Show details"
+msgstr ""
+
+#: templates/home.html:438
+msgid "Hide details"
+msgstr ""
+
+#: templates/home.html:439
+msgid "Send report"
+msgstr ""
+
+#: templates/home.html:440
+msgid "Reload"
+msgstr ""
+
+#: templates/home.html:446
+#, python-format
+msgid ""
+"%(BRANDING_SERVICE_NAME)s is currently in alpha test and we would appreciate "
+"any kind of feedback.\n"
+"                We welcome any suggestions, questions and bug reports you "
+"may have."
+msgstr ""
+
+#: templates/home.html:452 templates/home.html.py:496
+msgid "thank you for submiting your feedback"
+msgstr ""
+
+#: templates/home.html:455 templates/home.html.py:499
+msgid ""
+"some error occured submiting submiting your feedback, please try again later"
+msgstr ""
+
+#: templates/home.html:458
+msgid "Sending feedback..."
+msgstr ""
+
+#: templates/home.html:463 templates/home.html.py:483
+msgid "Please describe your problem here, provide as many details as possible"
+msgstr ""
+
+#: templates/home.html:468
+msgid "send feedback"
+msgstr ""
+
+#: templates/home.html:480
+msgid ""
+"Synnefo is currently in alpha test and we would appreciate any kind of "
+"feedback.\n"
+"            We welcome any suggestions, questions and bug reports you may "
+"have."
+msgstr ""
+
+#: templates/home.html:485
+msgid "Please provide some feedback"
+msgstr ""
+
+#: templates/home.html:489
+msgid "submit feedback"
+msgstr ""
+
+#: templates/home.html:494
+msgid "submiting your data....."
+msgstr ""
+
+#: templates/home.html:497 templates/home.html.py:500
+msgid "close feedback"
+msgstr ""
+
+#: templates/home.html:522
+#, python-format
+msgid ""
+"Use the following API key along with the <a\n"
+"                href=\"%(EXTERNAL_CLIENT_URL)s\">./kamaki</a> client to "
+"manage\n"
+"            your cloud resources from outside this page."
+msgstr ""
+
+#: templates/home.html:531
+#, python-format
+msgid ""
+" The API key provides full access to your <em>%(BRANDING_SERVICE_NAME)s</em> "
+"account, so always keep it private."
+msgstr ""
+
+#: templates/home.html:601
+msgid "Running task 'MESSAGE'"
+msgstr ""
+
+#: templates/images.html:38
+msgid "images"
+msgstr ""
+
+#: templates/machines_console.html:41
+#: templates/partials/machines_icon.html:119
+#: templates/partials/machines_single.html:89
+msgid "Console"
+msgstr ""
+
+#: templates/machines_console.html:47
+msgid "machine"
+msgstr ""
+
+#: templates/machines_console.html:50
+msgid "IP"
+msgstr ""
+
+#: templates/machines_console.html:61
+msgid ""
+"This is a slow connection meant only for troubleshooting. For an optimal "
+"experience use the machine's Connect button on the main panel."
+msgstr ""
+
+#: templates/partials/create_vm.html:10 templates/partials/create_vm.html:258
+#: templates/partials/machines_icon.html:62
+msgid "Image"
+msgstr ""
+
+#: templates/partials/create_vm.html:14
+msgid "Select an OS"
+msgstr ""
+
+#: templates/partials/create_vm.html:17
+msgid "Choose your preferred image"
+msgstr ""
+
+#: templates/partials/create_vm.html:29 templates/partials/create_vm.html:286
+#: templates/partials/machines_list.html:22
+msgid "Flavor"
+msgstr ""
+
+#: templates/partials/create_vm.html:33
+msgid "Select CPUs, RAM and Disk Size"
+msgstr ""
+
+#: templates/partials/create_vm.html:36
+msgid "Available options are filtered based on the selected image"
+msgstr ""
+
+#: templates/partials/create_vm.html:48
+msgid "Personalize"
+msgstr ""
+
+#: templates/partials/create_vm.html:52 templates/partials/create_vm.html:55
+msgid "Virtual machine custom options"
+msgstr ""
+
+#: templates/partials/create_vm.html:71
+msgid "Confirm your settings"
+msgstr ""
+
+#: templates/partials/create_vm.html:74
+msgid "Confirm that the options you have selected are correct"
+msgstr ""
+
+#: templates/partials/create_vm.html:96
+msgid "clear categories"
+msgstr ""
+
+#: templates/partials/create_vm.html:97
+msgid "no categories available"
+msgstr ""
+
+#: templates/partials/create_vm.html:102
+msgid "Available images"
+msgstr ""
+
+#: templates/partials/create_vm.html:105
+msgid "create image"
+msgstr ""
+
+#: templates/partials/create_vm.html:111
+msgid "No images available"
+msgstr ""
+
+#: templates/partials/create_vm.html:116
+#, python-format
+msgid ""
+"\n"
+"                      Consult <a href=\"%(url)s\">this guide</a> if you want "
+"to create a custom OS image\n"
+"                      "
+msgstr ""
+
+#: templates/partials/create_vm.html:121
+msgid "loading..."
+msgstr ""
+
+#: templates/partials/create_vm.html:127 templates/partials/create_vm.html:264
+msgid "Description"
+msgstr ""
+
+#: templates/partials/create_vm.html:143
+msgid "Predefined"
+msgstr ""
+
+#: templates/partials/create_vm.html:152 templates/partials/create_vm.html:289
+#: templates/partials/machines_icon.html:57
+#: templates/partials/machines_single.html:33
+msgid "CPUs"
+msgstr ""
+
+#: templates/partials/create_vm.html:153
+msgid "Choose number of CPU cores"
+msgstr ""
+
+#: templates/partials/create_vm.html:159
+msgid "Memory size"
+msgstr ""
+
+#: templates/partials/create_vm.html:160
+msgid "Choose memory size"
+msgstr ""
+
+#: templates/partials/create_vm.html:166
+msgid "Disk size"
+msgstr ""
+
+#: templates/partials/create_vm.html:167
+msgid "Choose disk size"
+msgstr ""
+
+#: templates/partials/create_vm.html:173
+msgid "Storage"
+msgstr ""
+
+#: templates/partials/create_vm.html:174
+msgid "Select storage type"
+msgstr ""
+
+#: templates/partials/create_vm.html:193
+msgid "Machine name"
+msgstr ""
+
+#: templates/partials/create_vm.html:201
+msgid "Public SSH keys"
+msgstr ""
+
+#: templates/partials/create_vm.html:204
+msgid ""
+"\n"
+"                            Your account contains the following SSH public "
+"keys. \n"
+"                            Select one or more to activate in your new "
+"machine. \n"
+"                            You will then be able to ssh with the "
+"corresponding \n"
+"                            private key without a password.\"\n"
+"                            "
+msgstr ""
+
+#: templates/partials/create_vm.html:223
+msgid "Suggested tags"
+msgstr ""
+
+#: templates/partials/create_vm.html:230
+msgid "Role"
+msgstr ""
+
+#: templates/partials/create_vm.html:235
+msgid "Public key"
+msgstr ""
+
+#: templates/partials/create_vm.html:268
+#: templates/partials/machines_list.html:20
+msgid "OS"
+msgstr ""
+
+#: templates/partials/create_vm.html:272
+msgid "Size"
+msgstr ""
+
+#: templates/partials/create_vm.html:276
+msgid "GUI"
+msgstr ""
+
+#: templates/partials/create_vm.html:280
+msgid "Kernel"
+msgstr ""
+
+#: templates/partials/create_vm.html:293
+msgid "Memory"
+msgstr ""
+
+#: templates/partials/create_vm.html:297
+msgid "Disk"
+msgstr ""
+
+#: templates/partials/create_vm.html:301
+msgid "Storage type"
+msgstr ""
+
+#: templates/partials/create_vm.html:307
+msgid "Machine Tags"
+msgstr ""
+
+#: templates/partials/create_vm.html:310
+msgid "SSH Keys"
+msgstr ""
+
+#: templates/partials/create_vm.html:322
+#, python-format
+msgid ""
+"You have selected a user-provided Image, which is not\n"
+"  officially endorsed by %(BRANDING_SERVICE_NAME)s. Please make sure it is "
+"from a\n"
+"  trustworthy source."
+msgstr ""
+
+#: templates/partials/create_vm.html:329
+#: templates/partials/manage_metadata.html:17
+msgid "cancel"
+msgstr ""
+
+#: templates/partials/create_vm.html:332
+msgid "create machine"
+msgstr ""
+
+#: templates/partials/create_vm.html:347
+msgid ""
+"After closing this window you will <em>NOT</em> be able to retrieve it "
+"again\n"
+"        "
+msgstr ""
+
+#: templates/partials/create_vm.html:350
+msgid "view machine"
+msgstr ""
+
+#: templates/partials/custom_images.html:3
+#: userdata/templates/userdata/public_keys_view.html:3
+msgid "Loading..."
+msgstr ""
+
+#: templates/partials/custom_images.html:9
+msgid "My OS images"
+msgstr ""
+
+#: templates/partials/custom_images.html:11
+msgid "register new image"
+msgstr ""
+
+#: templates/partials/custom_images.html:13
+msgid "Custom images limit reached."
+msgstr ""
+
+#: templates/partials/custom_images.html:25
+msgid "No custom images registered"
+msgstr ""
+
+#: templates/partials/custom_images.html:31
+msgid "Register new image"
+msgstr ""
+
+#: templates/partials/custom_images.html:32
+msgid "Edit registered image"
+msgstr ""
+
+#: templates/partials/custom_images.html:39
+msgid "Image name"
+msgstr ""
+
+#: templates/partials/custom_images.html:43
+#: templates/partials/custom_images.html:59
+msgid "provide the image name"
+msgstr ""
+
+#: templates/partials/custom_images.html:46
+msgid "Image url"
+msgstr ""
+
+#: templates/partials/custom_images.html:50
+msgid "provide the image url"
+msgstr ""
+
+#: templates/partials/custom_images.html:55
+msgid "Image is public"
+msgstr ""
+
+#: templates/partials/custom_images.html:64
+msgid "Image format"
+msgstr ""
+
+#: templates/partials/custom_images.html:73
+msgid "select the image format"
+msgstr ""
+
+#: templates/partials/custom_images.html:79
+#: userdata/templates/userdata/public_keys_view.html:103
+msgid "Submit"
+msgstr ""
+
+#: templates/partials/disks.html:5 templates/partials/machines.html:5
+msgid "New Machine +"
+msgstr ""
+
+#: templates/partials/disks.html:10 templates/partials/machines.html:10
+msgid "Icon view"
+msgstr ""
+
+#: templates/partials/disks.html:11 templates/partials/machines.html:11
+msgid "icon"
+msgstr ""
+
+#: templates/partials/disks.html:13 templates/partials/machines.html:13
+msgid "List view"
+msgstr ""
+
+#: templates/partials/disks.html:14 templates/partials/machines.html:14
+msgid "list"
+msgstr ""
+
+#: templates/partials/disks.html:16 templates/partials/machines.html:16
+msgid "Single view"
+msgstr ""
+
+#: templates/partials/disks.html:17 templates/partials/machines.html:17
+msgid "single"
+msgstr ""
+
+#: templates/partials/invitations.html:9
+msgid "Send new intivations"
+msgstr ""
+
+#: templates/partials/invitations.html:10
+msgid "Add new invitation"
+msgstr ""
+
+#: templates/partials/invitations.html:23
+msgid "Remove invitation"
+msgstr ""
+
+#: templates/partials/invitations.html:26
+msgid "Sending..."
+msgstr ""
+
+#: templates/partials/invitations.html:35
+msgid "Intivations sent"
+msgstr ""
+
+#: templates/partials/invitations.html:41
+msgid "Resend invitation"
+msgstr ""
+
+#: templates/partials/invitations.html:42
+msgid "Invitation accepted"
+msgstr ""
+
+#: templates/partials/invitations.html:50
+msgid "Cannot display invitations history"
+msgstr ""
+
+#: templates/partials/machines_empty.html:4
+#, python-format
+msgid ""
+"\n"
+"    \t\tWelcome to %(BRANDING_SERVICE_NAME)s!\n"
+"    \t"
+msgstr ""
+
+
+#: templates/partials/machines_empty.html:10
+msgid "From this panel you will be able to manage your Virtual Machines (VMs)."
+msgstr ""
+
+#: templates/partials/machines_empty.html:10
+msgid "take the tour"
+msgstr ""
+
+#: templates/partials/machines_empty.html:13
+msgid ""
+"The panel is currently empty, because you don't have any VMs yet. Start by "
+"clicking the orange button on the top left. The wizard will guide you "
+"through the whole process."
+msgstr ""
+
+#: templates/partials/machines_empty.html:16
+msgid "For more information or help, click "
+msgstr ""
+
+#: templates/partials/machines_empty.html:16
+msgid "here"
+msgstr ""
+
+#: templates/partials/machines_icon.html:11
+#: templates/partials/machines_icon.html:12
+#: templates/partials/machines_single.html:7
+#: templates/partials/machines_single.html:8
+msgid "Connect to machine"
+msgstr ""
+
+#: templates/partials/machines_icon.html:36
+msgid "info"
+msgstr ""
+
+#: templates/partials/machines_icon.html:58
+msgid "RAM"
+msgstr ""
+
+#: templates/partials/machines_icon.html:59
+msgid "System Disk"
+msgstr ""
+
+#: templates/partials/machines_icon.html:63
+msgid "Image Size"
+msgstr ""
+
+#: templates/partials/machines_icon.html:67
+msgid "CPU"
+msgstr ""
+
+#: templates/partials/machines_icon.html:71
+#: templates/partials/machines_single.html:128
+msgid "Could not fetch CPU stats graph."
+msgstr ""
+
+#: templates/partials/machines_icon.html:73
+msgid "Net"
+msgstr ""
+
+#: templates/partials/machines_icon.html:77
+#: templates/partials/machines_single.html:138
+msgid "Could not fetch Net stats graph."
+msgstr ""
+
+#: templates/partials/machines_icon.html:79
+msgid "Full report"
+msgstr ""
+
+#: templates/partials/machines_icon.html:88
+#: templates/partials/machines_single.html:61
+msgid "Manage Tags"
+msgstr ""
+
+#: templates/partials/machines_icon.html:98
+#: templates/partials/machines_list.html:5
+#: templates/partials/machines_single.html:68
+msgid "Start"
+msgstr ""
+
+#: templates/partials/machines_icon.html:105
+#: templates/partials/machines_list.html:6
+#: templates/partials/machines_single.html:75
+msgid "Reboot"
+msgstr ""
+
+#: templates/partials/machines_icon.html:112
+#: templates/partials/machines_list.html:7
+#: templates/partials/machines_single.html:82
+msgid "Shutdown"
+msgstr ""
+
+#: templates/partials/machines_icon.html:126
+#: templates/partials/machines_list.html:9
+#: templates/partials/machines_single.html:96
+#: templates/partials/networks.html:208
+msgid "Destroy"
+msgstr ""
+
+#: templates/partials/machines_icon.html:134
+#: templates/partials/machines_single.html:105
+#: templates/partials/networks.html:130 templates/partials/networks.html:147
+#: templates/partials/networks.html:272
+msgid "<span>Error</span> on"
+msgstr ""
+
+#: templates/partials/machines_icon.html:134
+#: templates/partials/machines_single.html:105
+#: templates/partials/networks.html:130 templates/partials/networks.html:147
+#: templates/partials/networks.html:272
+msgid "error action"
+msgstr ""
+
+#: templates/partials/machines_list.html:21
+#: userdata/templates/userdata/public_keys_view.html:62
+msgid "Name"
+msgstr ""
+
+#: templates/partials/machines_list.html:24
+msgid "Group"
+msgstr ""
+
+#: templates/partials/machines_list.html:26
+msgid "Status"
+msgstr ""
+
+#: templates/partials/machines_list.html:33
+msgid "all"
+msgstr ""
+
+#: templates/partials/machines_list.html:34
+msgid "none"
+msgstr ""
+
+#: templates/partials/machines_list.html:35
+msgid "group"
+msgstr ""
+
+#: templates/partials/machines_single.html:34
+msgid "RAM (MB)"
+msgstr ""
+
+#: templates/partials/machines_single.html:35
+msgid "System Disk (GB)"
+msgstr ""
+
+#: templates/partials/machines_single.html:36
+msgid "Image Name"
+msgstr ""
+
+#: templates/partials/machines_single.html:37
+msgid "Image Size (MB)"
+msgstr ""
+
+#: templates/partials/machines_single.html:38
+msgid "Public IPv4"
+msgstr ""
+
+#: templates/partials/machines_single.html:39
+msgid "Public IPv6"
+msgstr ""
+
+#: templates/partials/machines_single.html:53
+msgid "tags"
+msgstr ""
+
+#: templates/partials/machines_single.html:118
+msgid "Hourly"
+msgstr ""
+
+#: templates/partials/machines_single.html:119
+msgid "Weekly"
+msgstr ""
+
+#: templates/partials/machines_single.html:123
+msgid "CPU Utilization"
+msgstr ""
+
+#: templates/partials/machines_single.html:133
+msgid "Network Utilization"
+msgstr ""
+
+#: templates/partials/manage_metadata.html:8
+msgid "Key"
+msgstr ""
+
+#: templates/partials/manage_metadata.html:12
+msgid "Value"
+msgstr ""
+
+#: templates/partials/manage_metadata.html:16
+msgid "save"
+msgstr ""
+
+#: templates/partials/networks.html:6
+msgid "New Network +"
+msgstr ""
+
+#: templates/partials/networks.html:13
+msgid "Select machines to add"
+msgstr ""
+
+#: templates/partials/networks.html:18
+msgid "No available machines to connect"
+msgstr ""
+
+#: templates/partials/networks.html:21
+msgid "connect machines"
+msgstr ""
+
+#: templates/partials/networks.html:47
+msgid ""
+"If you enable DHCP on the private network,\n"
+"                  connected virtual machines will automatically be assigned "
+"with \n"
+"                  an IP address based on the given subnet. You may disable "
+"this option\n"
+"                  if you want to manually assign IP addresses on the "
+"connected\n"
+"                  virtual machines. "
+msgstr ""
+
+#: templates/partials/networks.html:69
+msgid "create network"
+msgstr ""
+
+#: templates/partials/networks.html:87
+msgid "Internet"
+msgstr ""
+
+#: templates/partials/networks.html:112
+msgid "Public Network"
+msgstr ""
+
+#: templates/partials/networks.html:122 templates/partials/networks.html:206
+msgid "Add Machine"
+msgstr ""
+
+#: templates/partials/networks.html:154 templates/partials/networks.html:286
+msgid "IPv4"
+msgstr ""
+
+#: templates/partials/networks.html:158 templates/partials/networks.html:290
+msgid "IPv6"
+msgstr ""
+
+#: templates/partials/networks.html:177
+msgid "Firewall"
+msgstr ""
+
+#: templates/partials/networks.html:181
+msgid "updating firewall settings"
+msgstr ""
+
+#: templates/partials/networks.html:189
+msgid "Unprotected mode (Firewall off)"
+msgstr ""
+
+#: templates/partials/networks.html:192
+msgid "Fully protected mode (Firewall on)"
+msgstr ""
+
+#: templates/partials/networks.html:195
+msgid "Basically protected mode (Firewall on)"
+msgstr ""
+
+#: templates/partials/networks.html:216
+msgid "Private Network"
+msgstr ""
+
+#: templates/partials/networks.html:229
+msgid "My Network 1"
+msgstr ""
+
+#: templates/partials/networks.html:263
+msgid "Disconnect"
+msgstr ""
+
+#: templates/partials/networks.html:296
+msgid "Connect"
+msgstr ""
+
+#: templates/partials/networks.html:296
+msgid "to manage private IPs"
+msgstr ""
+
+#: templates/partials/vm_connect.html:4
+msgid "Cannot retrieve machine connection infromation"
+msgstr ""
+
+#: userdata/templates/userdata/public_keys_view.html:11
+msgid "SSH public keys list"
+msgstr ""
+
+#: userdata/templates/userdata/public_keys_view.html:13
+msgid "create/import new"
+msgstr ""
+
+#: userdata/templates/userdata/public_keys_view.html:14
+msgid "generate new"
+msgstr ""
+
+#: userdata/templates/userdata/public_keys_view.html:16
+msgid "SSH keys limit reached."
+msgstr ""
+
+#: userdata/templates/userdata/public_keys_view.html:25
+msgid "close"
+msgstr ""
+
+#: userdata/templates/userdata/public_keys_view.html:29
+msgid "Create a file with the following contents"
+msgstr ""
+
+#: userdata/templates/userdata/public_keys_view.html:35
+msgid "Your new public key has been added"
+msgstr ""
+
+#: userdata/templates/userdata/public_keys_view.html:39
+msgid " to download private key."
+msgstr ""
+
+#: userdata/templates/userdata/public_keys_view.html:63
+msgid "Public key ID"
+msgstr ""
+
+#: userdata/templates/userdata/public_keys_view.html:69
+msgid "No public keys exist"
+msgstr ""
+
+#: userdata/templates/userdata/public_keys_view.html:75
+msgid "Create new SSH public key"
+msgstr ""
+
+#: userdata/templates/userdata/public_keys_view.html:76
+msgid "Edit SSH public key"
+msgstr ""
+
+#: userdata/templates/userdata/public_keys_view.html:82
+msgid "Key name"
+msgstr ""
+
+#: userdata/templates/userdata/public_keys_view.html:87
+msgid "Key content"
+msgstr ""
+
+#: userdata/templates/userdata/public_keys_view.html:92
+msgid "Import from file"
+msgstr ""

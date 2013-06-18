@@ -35,8 +35,8 @@ from optparse import make_option
 
 from synnefo.webproject.management.commands import ListCommand
 from synnefo.db.models import Network
-from synnefo.settings import (CYCLADES_ASTAKOS_SERVICE_TOKEN as ASTAKOS_TOKEN,
-                              ASTAKOS_URL)
+from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
+                              ASTAKOS_BASE_URL)
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -61,7 +61,7 @@ class Command(ListCommand):
     object_class = Network
     deleted_field = "deleted"
     user_uuid_field = "userid"
-    astakos_url = ASTAKOS_URL
+    astakos_url = ASTAKOS_BASE_URL
     astakos_token = ASTAKOS_TOKEN
 
     def get_machines(network):
@@ -80,21 +80,22 @@ class Command(ListCommand):
         "dhcp": ("dhcp", "Whether network uses nfdhcpd or not"),
         "subnet.ipv4": ("subnet", "The IPv4 subnet of the network"),
         "gateway.ipv4": ("gateway", "The IPv4 gateway of the network"),
-        "subnet.ipv6": ("subnet", "The IPv6 subnet of the network"),
-        "gateway.ipv6": ("gateway", "The IPv6 gateway of the network"),
+        "subnet.ipv6": ("subnet6", "The IPv6 subnet of the network"),
+        "gateway.ipv6": ("gateway6", "The IPv6 gateway of the network"),
         "created": ("created", "The date the network was created"),
         "updated": ("updated", "The date the network was updated"),
         "deleted": ("deleted", "Whether the network is deleted or not"),
         "mode": ("mode", "The mode of the network"),
         "link": ("link", "The link of the network"),
         "mac_prefix": ("mac_prefix", "The network's MAC prefix"),
+        "drained": ("drained", "Whether network is drained or not"),
         "vms": (get_machines, "Number of connected servers"),
         "backends": (get_backends, "IDs of Ganeti backends that the network is"
                                    " connected to"),
     }
 
     fields = ["id", "name", "user.uuid", "state", "public", "subnet.ipv4",
-              "gateway.ipv4", "link", "mac_prefix"]
+              "gateway.ipv4", "link", "mac_prefix", "dhcp", "drained"]
 
     def handle_args(self, *args, **options):
         if options["public"]:

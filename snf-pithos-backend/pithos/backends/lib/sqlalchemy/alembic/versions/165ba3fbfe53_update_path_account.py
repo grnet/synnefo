@@ -13,9 +13,11 @@ down_revision = '3dd56e750a3'
 from alembic import op
 from sqlalchemy.sql import table, column, literal, and_
 
-from snf_django.lib.astakos import get_user_uuid, get_displayname as get_user_displayname
-from pithos.api.settings import (
-    SERVICE_TOKEN, USER_CATALOG_URL, AUTHENTICATION_USERS)
+from pithos.api.settings import (SERVICE_TOKEN, ASTAKOS_BASE_URL)
+
+from astakosclient import AstakosClient
+from astakosclient.errors import NoUserName, NoUUID
+astakos_client = AstakosClient(ASTAKOS_BASE_URL, retry=3, use_pool=True)
 
 try:
     from progress.bar import IncrementalBar
@@ -30,8 +32,6 @@ except ImportError:
         def finish(self):
             return
 
-USER_CATALOG_URL = USER_CATALOG_URL.replace('user_catalogs', 'service/api/user_catalogs')
-
 import sqlalchemy as sa
 
 catalog = {}
@@ -40,9 +40,12 @@ def get_uuid(account):
     if account in catalog:
         return catalog[account]
     try:
-        catalog[account] = get_user_uuid(
-            SERVICE_TOKEN, account, USER_CATALOG_URL, AUTHENTICATION_USERS)
+        catalog[account] = astakos_client.service_get_uuid(
+            SERVICE_TOKEN, account
+        )
         print '\n', account, '-->', catalog[account]
+    except NoUUID:
+        return None
     except:
         raise
     else:
@@ -54,9 +57,12 @@ def get_displayname(account):
     if account in inverse_catalog:
         return inverse_catalog[account]
     try:
-        inverse_catalog[account] = get_user_displayname(
-            SERVICE_TOKEN, account, USER_CATALOG_URL, AUTHENTICATION_USERS)
+        inverse_catalog[account] = astakos_client.service_get_username(
+            SERVICE_TOKEN, account
+        )
         print '\n', account, '-->', inverse_catalog[account]
+    except NoUserName:
+        return None
     except:
         raise
     else:

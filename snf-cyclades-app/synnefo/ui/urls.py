@@ -37,8 +37,10 @@ import os
 
 urlpatterns = patterns('',
     url(r'^$', 'synnefo.ui.views.home', name='ui_index'),
-    url(r'^userquota$', 'synnefo.ui.views.user_quota', name='ui_userquota'),
-    url(r'userdata/', include('synnefo.ui.userdata.urls'))
+    url(r'^machines/console$', 'synnefo.ui.views.machines_console',
+        name='ui_machines_console'),
+    url(r'^machines/connect$', 'synnefo.ui.views.machines_connect',
+        name='ui_machines_connect'),
 )
 
 if settings.DEBUG or settings.TEST:

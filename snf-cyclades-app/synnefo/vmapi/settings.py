@@ -32,11 +32,10 @@
 # or implied, of GRNET S.A.
 
 from django.conf import settings
+from synnefo.cyclades_settings import BASE_URL, BASE_HOST, BASE_PATH
 
 CACHE_BACKEND = getattr(settings, 'VMAPI_CACHE_BACKEND',
                         settings.CACHE_BACKEND)
 CACHE_KEY_PREFIX = getattr(settings, 'VMAPI_CACHE_KEY_PREFIX',
                            'vmapi')
 RESET_PARAMS = getattr(settings, 'VMAPI_RESET_PARAMS', True)
-BASE_URL = getattr(settings, 'VMAPI_BASE_URL',
-                   'https://cyclades.okeanos.grnet.gr/')

@@ -33,6 +33,7 @@
 
 from django.test import TestCase
 
+from synnefo import settings
 # Import pool tests
 from synnefo.db.pools.tests import *
 
@@ -42,6 +43,7 @@ from synnefo.db.pools import IPPool, EmptyPool
 
 from django.db import IntegrityError
 from django.core.exceptions import MultipleObjectsReturned
+from snf_django.utils.testing import override_settings
 from mock import patch
 
 
@@ -119,6 +121,37 @@ class BackendTest(TestCase):
         self.assertNotEqual(self.backend.password_hash, '123')
         self.assertNotEqual(self.backend.password_hash, password_hash)
         self.assertEqual(self.backend.password, '123')
+
+    def test_hypervisor(self):
+        from synnefo.db.models import snf_settings
+        kvm_backend = mfact.BackendFactory(hypervisor="kvm")
+        xen_pvm_backend = mfact.BackendFactory(hypervisor="xen-pvm")
+        xen_hvm_backend = mfact.BackendFactory(hypervisor="xen-hvm")
+        with override_settings(snf_settings, GANETI_USE_HOTPLUG=True):
+            self.assertTrue(kvm_backend.use_hotplug())
+            self.assertFalse(xen_pvm_backend.use_hotplug())
+            self.assertFalse(xen_hvm_backend.use_hotplug())
+        with override_settings(snf_settings, GANETI_USE_HOTPLUG=False):
+            self.assertFalse(kvm_backend.use_hotplug())
+            self.assertFalse(xen_pvm_backend.use_hotplug())
+            self.assertFalse(xen_hvm_backend.use_hotplug())
+        kwargs = {"os": "snf-image+default",
+                  "hvparams": {"kvm": {"foo1": "mpaz1"},
+                               "xen-pvm": {"foo2": "mpaz2"},
+                               "xen-hvm": {"foo3": "mpaz3"}}}
+        with override_settings(snf_settings,
+                               GANETI_CREATEINSTANCE_KWARGS=kwargs):
+            self.assertEqual(kvm_backend.get_create_params(),
+                    {"os": "snf-image+default",
+                     "hvparams": {"foo1": "mpaz1"}})
+            self.assertEqual(xen_pvm_backend.get_create_params(),
+                    {"os": "snf-image+default",
+                     "hvparams": {"foo2": "mpaz2"}})
+            self.assertEqual(xen_hvm_backend.get_create_params(),
+                    {"os": "snf-image+default",
+                     "hvparams": {"foo3": "mpaz3"}})
+        with override_settings(snf_settings, GANETI_CREATEINSTANCE_KWARGS={}):
+            self.assertEqual(kvm_backend.get_create_params(), {"hvparams": {}})
 
 
 class VirtualMachineTest(TestCase):

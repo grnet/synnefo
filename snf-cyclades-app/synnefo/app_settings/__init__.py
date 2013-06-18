@@ -6,8 +6,7 @@ synnefo_web_apps = [
     'synnefo.plankton',
     'synnefo.vmapi',
     'synnefo.helpdesk',
-    'synnefo.ui.userdata',
-    'synnefo.helpdesk',
+    'synnefo.userdata',
     'synnefo.quotas',
 ]
 

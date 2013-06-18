@@ -1,0 +1,12 @@
+The following account has been created:
+
+Email:          {{user.email}}
+First name:     {{user.first_name}}
+Last name:      {{user.last_name}}
+Is active:      {{user.is_active}}
+Level:          {{user.level}}
+Invitations:    {{user.invitations}}
+
+For its activation you can use the command line tool
+
+snf-manage user-modify {{ user.pk }} --accept

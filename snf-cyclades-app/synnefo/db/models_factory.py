@@ -53,7 +53,7 @@ def round_seq_first(x):
     return lambda n: x[int(n) % size][0]
 
 
-class FlavorFactory(factory.Factory):
+class FlavorFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.Flavor
 
     cpu = factory.Sequence(lambda n: n + 2, type=int)
@@ -63,7 +63,7 @@ class FlavorFactory(factory.Factory):
     deleted = False
 
 
-class BackendFactory(factory.Factory):
+class BackendFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.Backend
 
     clustername = factory.Sequence(prefix_seq('cluster'))
@@ -89,7 +89,7 @@ class OfflineBackend(BackendFactory):
     offline = True
 
 
-class VirtualMachineFactory(factory.Factory):
+class VirtualMachineFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.VirtualMachine
 
     name = factory.Sequence(prefix_seq('vm'))
@@ -126,7 +126,7 @@ class StopedVirtualMachine(VirtualMachineFactory):
     operstate = "STOPED"
 
 
-class VirtualMachineMetadataFactory(factory.Factory):
+class VirtualMachineMetadataFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.VirtualMachineMetadata
 
     meta_key = factory.Sequence(prefix_seq('key'))
@@ -134,7 +134,7 @@ class VirtualMachineMetadataFactory(factory.Factory):
     vm = factory.SubFactory(VirtualMachineFactory)
 
 
-class NetworkFactory(factory.Factory):
+class NetworkFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.Network
 
     name = factory.Sequence(prefix_seq('network'))
@@ -158,7 +158,7 @@ class DeletedNetwork(NetworkFactory):
     deleted = True
 
 
-class BackendNetworkFactory(factory.Factory):
+class BackendNetworkFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.BackendNetwork
 
     network = factory.SubFactory(NetworkFactory)
@@ -166,7 +166,7 @@ class BackendNetworkFactory(factory.Factory):
     operstate = factory.Sequence(round_seq_first(FACTORY_FOR.OPER_STATES))
 
 
-class NetworkInterfaceFactory(factory.Factory):
+class NetworkInterfaceFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.NetworkInterface
 
     machine = factory.SubFactory(VirtualMachineFactory)
@@ -181,18 +181,18 @@ class NetworkInterfaceFactory(factory.Factory):
         factory.Sequence(round_seq_first(FACTORY_FOR.FIREWALL_PROFILES))
 
 
-class BridgePoolTableFactory(factory.Factory):
+class BridgePoolTableFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.BridgePoolTable
 
     size = 20
     base = 'prv'
 
 
-class MacPrefixPoolTableFactory(factory.Factory):
+class MacPrefixPoolTableFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.MacPrefixPoolTable
     size = 100
     base = 'aa:00:0'
 
 
-class QuotaHolderSerialFactory(factory.Factory):
+class QuotaHolderSerialFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.QuotaHolderSerial

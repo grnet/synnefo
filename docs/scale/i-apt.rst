@@ -12,7 +12,6 @@ apt ||
 :ref:`apache <i-apache>` ||
 :ref:`webproject <i-webproject>` ||
 :ref:`astakos <i-astakos>` ||
-:ref:`qh <i-qh>` ||
 :ref:`cms <i-cms>` ||
 :ref:`pithos <i-pithos>` ||
 :ref:`cyclades <i-cyclades>` ||
@@ -29,10 +28,8 @@ lines in `/etc/apt/sources.list.d/synnefo.list` file:
 
 .. code-block:: console
 
-    deb http://apt.dev.grnet.gr squeeze main
-    deb-src http://apt.dev.grnet.gr squeeze main
-    deb http://apt.dev.grnet.gr squeeze-backports main
-    deb-src http://apt.dev.grnet.gr squeeze-backports main
+    deb http://apt2.dev.grnet.gr stable/
+    deb-src http://apt2.dev.grnet.gr stable/
     deb http://backports.debian.org/debian-backports squeeze-backports main
     deb http://www.rabbitmq.com/debian/ testing main
 

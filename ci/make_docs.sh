@@ -1,9 +1,10 @@
-#!/usr/bin/env sh
+#!/bin/sh
 set -e
 
 DOCS_DIR=$1
 
 cd docs
+make clean
 make html
 cd -
 

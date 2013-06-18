@@ -75,12 +75,14 @@ class Public(DBWorker):
             )
             q = "insert into public(path, active, url) values(?, 1, ?)"
             self.execute(q, (path, url))
-            logger.info('Public url: %s set for path: %s' % (url, path))
+            if sqlite3_changes() != 0:
+                logger.info('Public url set for path: %s' % path)
 
     def public_unset(self, path):
         q = "delete from public where path = ?"
-        self.execute(q, (path,))
-        logger.info('Public url unset for path: %s' % (path))
+        c = self.execute(q, (path,))
+        if c.rowcount != 0:
+            logger.info('Public url unset for path: %s' % path)
 
     def public_unset_bulk(self, paths):
         placeholders = ','.join('?' for path in paths)

@@ -41,6 +41,7 @@ from django.http import HttpResponse
 from django.utils import cache
 from django.utils import simplejson as json
 from django.template.loader import render_to_string
+from django.views.decorators import csrf
 
 from astakosclient import AstakosClient
 from astakosclient.errors import AstakosClientException
@@ -60,7 +61,8 @@ def get_token(request):
 
 
 def api_method(http_method=None, token_required=True, user_required=True,
-               logger=None, format_allowed=True):
+               logger=None, format_allowed=True, astakos_url=None,
+               default_serialization="json"):
     """Decorator function for views that implement an API method."""
     if not logger:
         logger = log
@@ -70,8 +72,8 @@ def api_method(http_method=None, token_required=True, user_required=True,
         def wrapper(request, *args, **kwargs):
             try:
                 # Get the requested serialization format
-                request.serialization = get_serialization(request,
-                                                          format_allowed)
+                request.serialization = get_serialization(
+                    request, format_allowed, default_serialization)
 
                 # Check HTTP method
                 if http_method and request.method != http_method:
@@ -89,15 +91,11 @@ def api_method(http_method=None, token_required=True, user_required=True,
                 # Authenticate
                 if user_required:
                     assert(token_required), "Can not get user without token"
-                    try:
-                        astakos = AstakosClient(settings.ASTAKOS_URL,
-                                                use_pool=True,
-                                                logger=logger)
-                        user_info = astakos.get_user_info(token)
-                    except AstakosClientException as err:
-                        raise faults.Fault(message=err.message,
-                                           details=err.details,
-                                           code=err.status)
+                    astakos = astakos_url or settings.ASTAKOS_BASE_URL
+                    astakos = AstakosClient(astakos,
+                                            use_pool=True,
+                                            logger=logger)
+                    user_info = astakos.get_user_info(token)
                     request.user_uniq = user_info["uuid"]
                     request.user = user_info
 
@@ -111,15 +109,22 @@ def api_method(http_method=None, token_required=True, user_required=True,
                 if fault.code >= 500:
                     logger.exception("API ERROR")
                 return render_fault(request, fault)
+            except AstakosClientException as err:
+                fault = faults.Fault(message=err.message,
+                                     details=err.details,
+                                     code=err.status)
+                if fault.code >= 500:
+                    logger.exception("Astakos ERROR")
+                return render_fault(request, fault)
             except:
                 logger.exception("Unexpected ERROR")
-                fault = faults.InternalServerError("Unexpected ERROR")
+                fault = faults.InternalServerError("Unexpected error")
                 return render_fault(request, fault)
-        return wrapper
+        return csrf.csrf_exempt(wrapper)
     return decorator
 
 
-def get_serialization(request, format_allowed=True):
+def get_serialization(request, format_allowed=True, default_serialization="json"):
     """Return the serialization format requested.
 
     Valid formats are 'json' and 'xml' and 'text'
@@ -147,14 +152,14 @@ def get_serialization(request, format_allowed=True):
         accept, sep, rest = item.strip().partition(";")
         if accept == "application/json":
             return "json"
-        elif accept == "applcation/xml":
+        elif accept == "application/xml":
             return "xml"
 
-    return "json"
+    return default_serialization
 
 
 def update_response_headers(request, response):
-    if not response.has_header("Content-Type"):
+    if not getattr(response, "override_serialization", False):
         serialization = request.serialization
         if serialization == "xml":
             response["Content-Type"] = "application/xml; charset=UTF-8"
@@ -166,7 +171,7 @@ def update_response_headers(request, response):
             raise ValueError("Unknown serialization format '%s'" %
                              serialization)
 
-    if settings.DEBUG or settings.TEST:
+    if settings.DEBUG or getattr(settings, "TEST", False):
         response["Date"] = format_date_time(time())
 
     if not response.has_header("Content-Length"):
@@ -182,7 +187,7 @@ def update_response_headers(request, response):
 def render_fault(request, fault):
     """Render an API fault to an HTTP response."""
     # If running in debug mode add exception information to fault details
-    if settings.DEBUG or settings.TEST:
+    if settings.DEBUG or getattr(settings, "TEST", False):
         fault.details = format_exc()
 
     try:
@@ -205,9 +210,31 @@ def render_fault(request, fault):
     return response
 
 
-def not_found(request):
-    raise faults.BadRequest('Not found.')
+@api_method(token_required=False, user_required=False)
+def api_endpoint_not_found(request):
+    raise faults.BadRequest("API endpoint not found")
 
 
-def method_not_allowed(request):
+@api_method(token_required=False, user_required=False)
+def api_method_not_allowed(request):
     raise faults.BadRequest('Method not allowed')
+
+
+def allow_jsonp(key='callback'):
+    """
+    Wrapper to enable jsonp responses.
+    """
+    def wrapper(func):
+        def view_wrapper(request, *args, **kwargs):
+            response = func(request, *args, **kwargs)
+            if 'content-type' in response._headers and \
+               response._headers['content-type'][1] == 'application/json':
+                callback_name = request.GET.get(key, None)
+                if callback_name:
+                    response.content = "%s(%s)" % (callback_name,
+                                                   response.content)
+                    response._headers['content-type'] = ('Content-Type',
+                                                         'text/javascript')
+            return response
+        return view_wrapper
+    return wrapper

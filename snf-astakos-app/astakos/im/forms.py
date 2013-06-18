@@ -30,49 +30,34 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
-from urlparse import urljoin
 from random import random
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from django import forms
 from django.utils.translation import ugettext as _
-from django.contrib.auth.forms import (
-    UserCreationForm, AuthenticationForm,
-    PasswordResetForm, PasswordChangeForm,
-    SetPasswordForm)
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm, \
+    PasswordResetForm, PasswordChangeForm, SetPasswordForm
 from django.core.mail import send_mail, get_connection
 from django.contrib.auth.tokens import default_token_generator
-from django.template import Context, loader
-from django.utils.http import int_to_base36
 from django.core.urlresolvers import reverse
 from django.utils.safestring import mark_safe
 from django.utils.encoding import smart_str
-from django.conf import settings
-from django.forms.models import fields_for_model
 from django.db import transaction
-from django.utils.encoding import smart_unicode
 from django.core import validators
-from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import PermissionDenied
 
-from astakos.im.models import (
-    AstakosUser, EmailChange, Invitation,
-    Resource, PendingThirdPartyUser, get_latest_terms, RESOURCE_SEPARATOR,
-    ProjectApplication, Project)
-from astakos.im.settings import (
-    INVITATIONS_PER_LEVEL, BASEURL, SITENAME, RECAPTCHA_PRIVATE_KEY,
-    RECAPTCHA_ENABLED, CONTACT_EMAIL, LOGGING_LEVEL,
-    PASSWORD_RESET_EMAIL_SUBJECT, NEWPASSWD_INVALIDATE_TOKEN,
-    MODERATION_ENABLED, PROJECT_MEMBER_JOIN_POLICIES,
-    PROJECT_MEMBER_LEAVE_POLICIES, EMAILCHANGE_ENABLED,
-    RESOURCES_PRESENTATION_DATA)
+from synnefo_branding.utils import render_to_string
+from synnefo.lib import join_urls
+from astakos.im.models import AstakosUser, EmailChange, Invitation, Resource, \
+    PendingThirdPartyUser, get_latest_terms, ProjectApplication, Project
+from astakos.im import presentation
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
-from astakos.im.functions import (
-    send_change_email, submit_application, accept_membership_checks)
+from astakos.im.functions import send_change_email, submit_application, \
+    accept_membership_checks
 
-from astakos.im.util import reserved_email, reserved_verified_email, \
-                            get_query, model_to_dict
+from astakos.im.util import reserved_verified_email, model_to_dict
 from astakos.im import auth_providers
+from astakos.im import settings
 
 import astakos.im.messages as astakos_messages
 
@@ -87,9 +72,10 @@ DOMAIN_VALUE_REGEX = re.compile(
     r'^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,6}$',
     re.IGNORECASE)
 
+
 class StoreUserMixin(object):
 
-    def store_user(self, user, request):
+    def store_user(self, user, request=None):
         """
         WARNING: this should be wrapped inside a transactional view/method.
         """
@@ -128,15 +114,22 @@ class LocalUserCreationForm(UserCreationForm, StoreUserMixin):
         Changes the order of fields, and removes the username field.
         """
         request = kwargs.pop('request', None)
+        provider = kwargs.pop('provider', 'local')
+
+        # we only use LocalUserCreationForm for local provider
+        if not provider == 'local':
+            raise Exception('Invalid provider')
+
         if request:
             self.ip = request.META.get('REMOTE_ADDR',
-                                       request.META.get('HTTP_X_REAL_IP', None))
+                                       request.META.get('HTTP_X_REAL_IP',
+                                                        None))
 
         super(LocalUserCreationForm, self).__init__(*args, **kwargs)
         self.fields.keyOrder = ['email', 'first_name', 'last_name',
                                 'password1', 'password2']
 
-        if RECAPTCHA_ENABLED:
+        if settings.RECAPTCHA_ENABLED:
             self.fields.keyOrder.extend(['recaptcha_challenge_field',
                                          'recaptcha_response_field', ])
         if get_latest_terms():
@@ -177,11 +170,13 @@ class LocalUserCreationForm(UserCreationForm, StoreUserMixin):
     def validate_captcha(self):
         rcf = self.cleaned_data['recaptcha_challenge_field']
         rrf = self.cleaned_data['recaptcha_response_field']
-        check = captcha.submit(rcf, rrf, RECAPTCHA_PRIVATE_KEY, self.ip)
+        check = captcha.submit(
+            rcf, rrf, settings.RECAPTCHA_PRIVATE_KEY, self.ip)
         if not check.is_valid:
-            raise forms.ValidationError(_(astakos_messages.CAPTCHA_VALIDATION_ERR))
+            raise forms.ValidationError(_(
+                astakos_messages.CAPTCHA_VALIDATION_ERR))
 
-    def post_store_user(self, user, request):
+    def post_store_user(self, user, request=None):
         """
         Interface method for descendant backends to be able to do stuff within
         the transaction enabled by store_user.
@@ -195,10 +190,11 @@ class LocalUserCreationForm(UserCreationForm, StoreUserMixin):
         save behavior is complete.
         """
         user = super(LocalUserCreationForm, self).save(commit=False)
+        user.date_signed_terms = datetime.now()
         user.renew_token()
         if commit:
             user.save()
-            logger.log(LOGGING_LEVEL, 'Created user %s' % user.email)
+            logger.info('Created user %s', user.log_display)
         return user
 
 
@@ -231,34 +227,32 @@ class InvitedLocalUserCreationForm(LocalUserCreationForm):
 
 
 class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
-    id = forms.CharField(
-        widget=forms.HiddenInput(),
-        label='',
-        required=False
-    )
-    third_party_identifier = forms.CharField(
-        widget=forms.HiddenInput(),
-        label=''
-    )
     email = forms.EmailField(
         label='Contact email',
-        help_text = 'This is needed for contact purposes. ' \
-        'It doesn&#39;t need to be the same with the one you ' \
+        help_text='This is needed for contact purposes. '
+        'It doesn&#39;t need to be the same with the one you '
         'provided to login previously. '
     )
 
     class Meta:
         model = AstakosUser
-        fields = ['id', 'email', 'third_party_identifier',
-                  'first_name', 'last_name', 'has_signed_terms']
+        fields = ['email', 'first_name', 'last_name', 'has_signed_terms']
 
     def __init__(self, *args, **kwargs):
         """
         Changes the order of fields, and removes the username field.
         """
-        self.request = kwargs.get('request', None)
-        if self.request:
-            kwargs.pop('request')
+
+        self.provider = kwargs.pop('provider', None)
+        if not self.provider or self.provider == 'local':
+            raise Exception('Invalid provider, %r' % self.provider)
+
+        # ThirdPartyUserCreationForm should always get instantiated with
+        # a third_party_token value
+        self.third_party_token = kwargs.pop('third_party_token', None)
+        if not self.third_party_token:
+            raise Exception('ThirdPartyUserCreationForm'
+                            ' requires third_party_token')
 
         super(ThirdPartyUserCreationForm, self).__init__(*args, **kwargs)
 
@@ -278,12 +272,12 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
         if not email:
             raise forms.ValidationError(_(astakos_messages.REQUIRED_FIELD))
         if reserved_verified_email(email):
-            provider_id = self.request.REQUEST.get('provider', 'local')
+            provider_id = self.provider
             provider = auth_providers.get_provider(provider_id)
             extra_message = provider.get_add_to_existing_account_msg
 
-            raise forms.ValidationError(mark_safe(_(astakos_messages.EMAIL_USED) + ' ' +
-                                        extra_message))
+            raise forms.ValidationError(mark_safe(
+                _(astakos_messages.EMAIL_USED) + ' ' + extra_message))
         return email
 
     def clean_has_signed_terms(self):
@@ -292,11 +286,11 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
             raise forms.ValidationError(_(astakos_messages.SIGN_TERMS))
         return has_signed_terms
 
-    def post_store_user(self, user, request):
-        pending = PendingThirdPartyUser.objects.get(
-            token=request.POST.get('third_party_token'),
-            third_party_identifier=
-            self.cleaned_data.get('third_party_identifier'))
+    def _get_pending_user(self):
+        return PendingThirdPartyUser.objects.get(token=self.third_party_token)
+
+    def post_store_user(self, user, request=None):
+        pending = self._get_pending_user()
         provider = pending.get_provider(user)
         provider.add_to_user()
         pending.delete()
@@ -305,9 +299,10 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
         user = super(ThirdPartyUserCreationForm, self).save(commit=False)
         user.set_unusable_password()
         user.renew_token()
+        user.date_signed_terms = datetime.now()
         if commit:
             user.save()
-            logger.log(LOGGING_LEVEL, 'Created user %s' % user.email)
+            logger.info('Created user %s' % user.log_display)
         return user
 
 
@@ -374,7 +369,7 @@ class LoginForm(AuthenticationForm):
         super(LoginForm, self).__init__(*args, **kwargs)
 
         self.fields.keyOrder = ['username', 'password']
-        if was_limited and RECAPTCHA_ENABLED:
+        if was_limited and settings.RECAPTCHA_ENABLED:
             self.fields.keyOrder.extend(['recaptcha_challenge_field',
                                          'recaptcha_response_field', ])
 
@@ -394,9 +389,11 @@ class LoginForm(AuthenticationForm):
     def validate_captcha(self):
         rcf = self.cleaned_data['recaptcha_challenge_field']
         rrf = self.cleaned_data['recaptcha_response_field']
-        check = captcha.submit(rcf, rrf, RECAPTCHA_PRIVATE_KEY, self.ip)
+        check = captcha.submit(
+            rcf, rrf, settings.RECAPTCHA_PRIVATE_KEY, self.ip)
         if not check.is_valid:
-            raise forms.ValidationError(_(astakos_messages.CAPTCHA_VALIDATION_ERR))
+            raise forms.ValidationError(_(
+                astakos_messages.CAPTCHA_VALIDATION_ERR))
 
     def clean(self):
         """
@@ -409,8 +406,8 @@ class LoginForm(AuthenticationForm):
                 user = AstakosUser.objects.get_by_identifier(username)
                 if not user.has_auth_provider('local'):
                     provider = auth_providers.get_provider('local', user)
-                    raise forms.ValidationError(
-                        provider.get_login_disabled_msg)
+                    msg = provider.get_login_disabled_msg
+                    raise forms.ValidationError(mark_safe(msg))
             except AstakosUser.DoesNotExist:
                 pass
 
@@ -439,33 +436,22 @@ class ProfileForm(forms.ModelForm):
     """
     email = forms.EmailField(label='E-mail address', help_text='E-mail address')
     renew = forms.BooleanField(label='Renew token', required=False)
-    uuid = forms.CharField(label='User id', required=False)
 
     class Meta:
         model = AstakosUser
-        fields = ('email', 'first_name', 'last_name', 'auth_token',
-                  'auth_token_expires', 'uuid')
+        fields = ('email', 'first_name', 'last_name')
 
     def __init__(self, *args, **kwargs):
         self.session_key = kwargs.pop('session_key', None)
         super(ProfileForm, self).__init__(*args, **kwargs)
         instance = getattr(self, 'instance', None)
-        ro_fields = ('email', 'auth_token', 'auth_token_expires', 'uuid')
+        ro_fields = ('email',)
         if instance and instance.id:
             for field in ro_fields:
                 self.fields[field].widget.attrs['readonly'] = True
 
     def clean_email(self):
         return self.instance.email
-
-    def clean_auth_token(self):
-        return self.instance.auth_token
-
-    def clean_auth_token_expires(self):
-        return self.instance.auth_token_expires
-
-    def clean_uuid(self):
-        return self.instance.uuid
 
     def save(self, commit=True):
         user = super(ProfileForm, self).save(commit=False)
@@ -515,16 +501,17 @@ class ExtendedPasswordResetForm(PasswordResetForm):
             user = AstakosUser.objects.get_by_identifier(email)
             self.users_cache = [user]
             if not user.is_active:
-                raise forms.ValidationError(user.get_inactive_message('local'))
+                msg = mark_safe(user.get_inactive_message('local'))
+                raise forms.ValidationError(msg)
 
             provider = auth_providers.get_provider('local', user)
             if not user.has_usable_password():
                 msg = provider.get_unusable_password_msg
-                raise forms.ValidationError(msg)
+                raise forms.ValidationError(mark_safe(msg))
 
             if not user.can_change_password():
                 msg = provider.get_cannot_change_password_msg
-                raise forms.ValidationError(msg)
+                raise forms.ValidationError(mark_safe(msg))
 
         except AstakosUser.DoesNotExist:
             raise forms.ValidationError(_(astakos_messages.EMAIL_UNKNOWN))
@@ -538,19 +525,19 @@ class ExtendedPasswordResetForm(PasswordResetForm):
         """
         for user in self.users_cache:
             url = user.astakosuser.get_password_reset_url(token_generator)
-            url = urljoin(BASEURL, url)
-            t = loader.get_template(email_template_name)
+            url = join_urls(settings.BASE_URL, url)
             c = {
                 'email': user.email,
                 'url': url,
-                'site_name': SITENAME,
+                'site_name': settings.SITENAME,
                 'user': user,
-                'baseurl': BASEURL,
-                'support': CONTACT_EMAIL
+                'baseurl': settings.BASE_URL,
+                'support': settings.CONTACT_EMAIL
             }
+            message = render_to_string(email_template_name, c)
             from_email = settings.SERVER_EMAIL
-            send_mail(_(PASSWORD_RESET_EMAIL_SUBJECT),
-                      t.render(Context(c)),
+            send_mail(_(astakos_messages.PASSWORD_RESET_EMAIL_SUBJECT),
+                      message,
                       from_email,
                       [user.email],
                       connection=get_connection())
@@ -597,6 +584,13 @@ class SignApprovalTermsForm(forms.ModelForm):
             raise forms.ValidationError(_(astakos_messages.SIGN_TERMS))
         return has_signed_terms
 
+    def save(self, commit=True):
+        user = super(SignApprovalTermsForm, self).save(commit)
+        user.date_signed_terms = datetime.now()
+        if commit:
+            user.save()
+        return user
+
 
 class InvitationForm(forms.ModelForm):
 
@@ -624,7 +618,7 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
     Extends PasswordChangeForm by enabling user
     to optionally renew also the token.
     """
-    if not NEWPASSWD_INVALIDATE_TOKEN:
+    if not settings.NEWPASSWD_INVALIDATE_TOKEN:
         renew = forms.BooleanField(label='Renew token', required=False,
                                    initial=True,
                                    help_text='Unsetting this may result in security risk.')
@@ -635,7 +629,8 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
 
     def save(self, commit=True):
         try:
-            if NEWPASSWD_INVALIDATE_TOKEN or self.cleaned_data.get('renew'):
+            if settings.NEWPASSWD_INVALIDATE_TOKEN or \
+                    self.cleaned_data.get('renew'):
                 self.user.renew_token()
             self.user.flush_sessions(current_key=self.session_key)
         except AttributeError:
@@ -648,7 +643,7 @@ class ExtendedSetPasswordForm(SetPasswordForm):
     Extends SetPasswordForm by enabling user
     to optionally renew also the token.
     """
-    if not NEWPASSWD_INVALIDATE_TOKEN:
+    if not settings.NEWPASSWD_INVALIDATE_TOKEN:
         renew = forms.BooleanField(
             label='Renew token',
             required=False,
@@ -662,7 +657,8 @@ class ExtendedSetPasswordForm(SetPasswordForm):
     def save(self, commit=True):
         try:
             self.user = AstakosUser.objects.get(id=self.user.id)
-            if NEWPASSWD_INVALIDATE_TOKEN or self.cleaned_data.get('renew'):
+            if settings.NEWPASSWD_INVALIDATE_TOKEN or \
+                    self.cleaned_data.get('renew'):
                 self.user.renew_token()
 
             provider = auth_providers.get_provider('local', self.user)
@@ -743,8 +739,8 @@ max_members_help     =  _("""
         If you are not certain, it is best to start with a conservative
         limit. You can always request a raise when you need it.""")
 
-join_policies = PROJECT_MEMBER_JOIN_POLICIES.iteritems()
-leave_policies = PROJECT_MEMBER_LEAVE_POLICIES.iteritems()
+join_policies = presentation.PROJECT_MEMBER_JOIN_POLICIES.items()
+leave_policies = presentation.PROJECT_MEMBER_LEAVE_POLICIES.items()
 
 class ProjectApplicationForm(forms.ModelForm):
 
@@ -813,8 +809,8 @@ class ProjectApplicationForm(forms.ModelForm):
         super(ProjectApplicationForm, self).__init__(*args, **kwargs)
         # in case of new application remove closed join policy
         if not instance:
-            policies = PROJECT_MEMBER_JOIN_POLICIES.copy()
-            policies.pop('3')
+            policies = presentation.PROJECT_MEMBER_JOIN_POLICIES.copy()
+            policies.pop(3)
             self.fields['member_join_policy'].choices = policies.iteritems()
 
     def clean_start_date(self):
@@ -842,6 +838,7 @@ class ProjectApplicationForm(forms.ModelForm):
 
     def clean(self):
         userid = self.data.get('user', None)
+        policies = self.resource_policies
         self.user = None
         if userid:
             try:
@@ -864,31 +861,47 @@ class ProjectApplicationForm(forms.ModelForm):
             if name.endswith('_uplimit'):
                 subs = name.split('_uplimit')
                 prefix, suffix = subs
-                s, sep, r = prefix.partition(RESOURCE_SEPARATOR)
-                resource = Resource.objects.get(service__name=s, name=r)
-
+                try:
+                    resource = Resource.objects.get(name=prefix)
+                except Resource.DoesNotExist:
+                    raise forms.ValidationError("Resource %s does not exist" %
+                                                resource.name)
                 # keep only resource limits for selected resource groups
                 if self.data.get(
                     'is_selected_%s' % resource.group, "0"
                  ) == "1":
+                    if not resource.allow_in_projects:
+                        raise forms.ValidationError("Invalid resource %s" %
+                                                    resource.name)
                     d = model_to_dict(resource)
                     if uplimit:
-                        d.update(dict(service=s, resource=r, uplimit=uplimit))
+                        d.update(dict(resource=prefix, uplimit=uplimit))
                     else:
-                        d.update(dict(service=s, resource=r, uplimit=None))
+                        d.update(dict(resource=prefix, uplimit=None))
                     append(d)
 
-        ordered_keys = RESOURCES_PRESENTATION_DATA['resources_order']
-        policies = sorted(policies, key=lambda r:ordered_keys.index(r['str_repr']))
+        ordered_keys = presentation.RESOURCES['resources_order']
+        def resource_order(r):
+            if r['str_repr'] in ordered_keys:
+                return ordered_keys.index(r['str_repr'])
+            else:
+                return -1
+
+        policies = sorted(policies, key=resource_order)
         return policies
+
+    def cleaned_resource_policies(self):
+        return [(d['name'], d['uplimit']) for d in self.resource_policies]
 
     def save(self, commit=True):
         data = dict(self.cleaned_data)
-        data['precursor_application'] = self.instance.id
+        data['precursor_id'] = self.instance.id
         is_new = self.instance.id is None
         data['owner'] = self.user if is_new else self.instance.owner
-        data['resource_policies'] = self.resource_policies
-        submit_application(data, request_user=self.user)
+        data['resource_policies'] = self.cleaned_resource_policies()
+        data['request_user'] = self.user
+        submit_application(**data)
+
 
 class ProjectSortForm(forms.Form):
     sorting = forms.ChoiceField(
@@ -915,8 +928,12 @@ class ProjectSortForm(forms.Form):
 
 class AddProjectMembersForm(forms.Form):
     q = forms.CharField(
-        max_length=800, widget=forms.Textarea, label=_('Add members'),
-        help_text=_(astakos_messages.ADD_PROJECT_MEMBERS_Q_HELP), required=True)
+        widget=forms.Textarea(attrs={
+            'placeholder': astakos_messages.ADD_PROJECT_MEMBERS_Q_PLACEHOLDER}
+            ),
+        label=_('Add members'),
+        help_text=_(astakos_messages.ADD_PROJECT_MEMBERS_Q_HELP),
+        required=True,)
 
     def __init__(self, *args, **kwargs):
         chain_id = kwargs.pop('chain_id', None)
@@ -996,14 +1013,11 @@ class ExtendedProfileForm(ProfileForm):
                 'new_email_address',
                 'first_name',
                 'last_name',
-                'auth_token',
-                'auth_token_expires',
                 'old_password',
                 'new_password1',
                 'new_password2',
                 'change_email',
                 'change_password',
-                'uuid'
         ]
 
         super(ExtendedProfileForm, self).__init__(*args, **kwargs)
@@ -1017,7 +1031,7 @@ class ExtendedProfileForm(ProfileForm):
             self.fields_list.remove('change_password')
             del self.fields['change_password']
 
-        if EMAILCHANGE_ENABLED and self.instance.can_change_email():
+        if settings.EMAILCHANGE_ENABLED and self.instance.can_change_email():
             self.email_change = True
         else:
             self.fields_list.remove('new_email_address')

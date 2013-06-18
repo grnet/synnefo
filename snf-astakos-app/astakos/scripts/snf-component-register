@@ -1,0 +1,125 @@
+#!/bin/bash
+
+declare -A types
+types[astakos]=identity
+types[cyclades]=compute
+types[pithos]=storage
+
+declare -A desc
+desc[astakos]='account management component'
+desc[cyclades]='compute component'
+desc[pithos]='file storage component'
+
+declare -A ex_url
+ex_url[astakos]='https://accounts.example.synnefo.org/astakos/'
+ex_url[cyclades]='https://compute.example.synnefo.org/cyclades/'
+ex_url[pithos]='https://storage.example.synnefo.org/pithos/'
+
+
+register_services () {
+    echo "Registering ${component}'s services and resources..."
+    snf-service-export $1 $2 | snf-manage service-import --json -
+}
+
+ex_ui_url () {
+    echo "$(echo $1 | sed -e 's/\/*$//g')/ui/"
+}
+
+changed=0
+
+decide () {
+    while true; do
+        echo -n "$1"
+        read response
+        case $response in
+            [Yy]* ) return 0;;
+            [Nn]* ) return 1;;
+            * ) echo "Please answer yes or no.";;
+        esac
+    done
+
+}
+
+register_component () {
+    component=$1
+    component_desc=${desc[$component]}
+    component_ex_url=${ex_url[$component]}
+    echo "Registering the $component_desc ($component):"
+    echo "Give the URL of $component base installation" \
+        "(e.g. $component_ex_url)"
+    echo -n 'Base URL: '
+    read base_url
+    echo "Give the URL of the $component UI" \
+        "(e.g. $(ex_ui_url $base_url))"
+    echo -n 'UI URL: '
+    read ui_url
+    decide "Register $component with the given URLs (y/n)? "
+    if [ $? -eq 0 ]; then
+        snf-manage component-add $component $ui_url
+        if [ $? -eq 0 ]; then
+            read -p "Please write down the token and press Enter to continue. "
+            register_services $component $base_url
+            changed=1
+            echo
+        fi
+    fi
+}
+
+register_comp_serv () {
+    component=$1
+    component_desc=${desc[$component]}
+    component_ex_url=${ex_url[$component]}
+    echo "Registering services for $component:"
+    echo "Give the URL of $component base installation" \
+        "(e.g. $component_ex_url)"
+    echo -n 'Base URL: '
+    read base_url
+    decide "Register ${component}'s services with the given URL (y/n)? "
+    if [ $? -eq 0 ]; then
+        register_services $component $base_url
+        echo
+    fi
+}
+
+components=(astakos cyclades pithos)
+registered=$(snf-manage component-list --output-format=csv --no-headers |
+    cut -d ',' -f 2)
+
+register_one () {
+    component=$1
+    echo $registered | grep -q -w $component
+    if [ $? -ne 0 ]; then
+        decide "Register the ${desc[$component]} ($component) (y/n)? "
+        if [ $? -eq 0 ]; then
+            register_component $component
+        fi
+    else
+        echo "The ${desc[$component]} ($component) is registered."
+        decide "Update its registered services (y/n)? "
+        if [ $? -eq 0 ]; then
+            register_comp_serv $component
+        fi
+    fi
+}
+
+# Attempt to register only the specified service
+if [[ $1 ]]; then
+    echo ${components[@]} | grep -q -w $1
+    if [ $? -ne 0 ]; then
+        echo $1 is not a recognized Synnefo component.
+        exit
+    fi
+    register_one $1
+else
+    for component in ${components[@]}; do
+        register_one $component
+    done
+fi
+
+if [ $changed -eq 1 ]; then
+    echo 'Done with registering services and their resources.'
+    echo 'Now run '
+    echo "  snf-manage resource-modify --limit-interactive"
+    echo 'to specify the default base quota for each resource provided by' \
+        'the services.'
+fi

@@ -59,12 +59,28 @@ from django.db.models import Q
 from snf_django.lib.api import faults
 from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
                                Network, BackendNetwork, NetworkInterface,
-                               BridgePoolTable, MacPrefixPoolTable)
+                               BridgePoolTable, MacPrefixPoolTable, Backend)
 from synnefo.db.pools import EmptyPool
 
 from snf_django.lib.astakos import get_user
 from synnefo.plankton.utils import image_backend
 from synnefo.settings import MAX_CIDR_BLOCK
+
+from synnefo.cyclades_settings import cyclades_services, BASE_HOST
+from synnefo.lib.services import get_service_path
+from synnefo.lib import join_urls
+
+COMPUTE_URL = \
+    join_urls(BASE_HOST,
+              get_service_path(cyclades_services, "compute", version="v2.0"))
+SERVERS_URL = join_urls(COMPUTE_URL, "servers/")
+NETWORKS_URL = join_urls(COMPUTE_URL, "networks/")
+FLAVORS_URL = join_urls(COMPUTE_URL, "flavors/")
+IMAGES_URL = join_urls(COMPUTE_URL, "images/")
+PLANKTON_URL = \
+    join_urls(BASE_HOST,
+              get_service_path(cyclades_services, "image", version="v1.0"))
+IMAGES_PLANKTON_URL = join_urls(PLANKTON_URL, "images/")
 
 
 log = getLogger('synnefo.api')
@@ -128,7 +144,7 @@ def get_vm(server_id, user_id, for_update=False, non_deleted=False,
             servers = servers.select_for_update()
         vm = servers.get(id=server_id, userid=user_id)
         if non_deleted and vm.deleted:
-            raise VirtualMachine.DeletedError
+            raise faults.BadRequest("Server has been deleted.")
         if non_suspended and vm.suspended:
             raise faults.Forbidden("Administratively Suspended VM")
         return vm
@@ -151,16 +167,15 @@ def get_image(image_id, user_id):
     """Return an Image instance or raise ItemNotFound."""
 
     with image_backend(user_id) as backend:
-        image = backend.get_image(image_id)
-        if not image:
-            raise faults.ItemNotFound('Image not found.')
-        return image
+        return backend.get_image(image_id)
 
 
 def get_image_dict(image_id, user_id):
     image = {}
     img = get_image(image_id, user_id)
     properties = img.get('properties', {})
+    image["id"] = img["id"]
+    image["name"] = img["name"]
     image['backend_id'] = img['location']
     image['format'] = img['disk_format']
     image['metadata'] = dict((key.upper(), val)
@@ -270,6 +285,12 @@ def get_public_ip(backend):
     This method should run inside a transaction.
 
     """
+
+    # Guarantee exclusive access to backend, because accessing the IP pools of
+    # the backend networks may result in a deadlock with backend allocator
+    # which also checks that backend networks have a free IP.
+    backend = Backend.objects.select_for_update().get(id=backend.id)
+
     address = None
     if settings.PUBLIC_USE_POOL:
         (network, address) = allocate_public_address(backend)
@@ -294,7 +315,8 @@ def backend_public_networks(backend):
     to the specified backend.
 
     """
-    for network in Network.objects.filter(public=True, deleted=False):
+    for network in Network.objects.filter(public=True, deleted=False,
+                                          drained=False):
         if BackendNetwork.objects.filter(network=network,
                                          backend=backend).exists():
             yield network
@@ -436,7 +458,7 @@ def get_existing_users():
     Retrieve user ids stored in cyclades user agnostic models.
     """
     # also check PublicKeys a user with no servers/networks exist
-    from synnefo.ui.userdata.models import PublicKeyPair
+    from synnefo.userdata.models import PublicKeyPair
     from synnefo.db.models import VirtualMachine, Network
 
     keypairusernames = PublicKeyPair.objects.filter().values_list('user',
@@ -448,3 +470,26 @@ def get_existing_users():
 
     return set(list(keypairusernames) + list(serverusernames) +
                list(networkusernames))
+
+
+def vm_to_links(vm_id):
+    href = join_urls(SERVERS_URL, str(vm_id))
+    return [{"rel": rel, "href": href} for rel in ("self", "bookmark")]
+
+
+def network_to_links(network_id):
+    href = join_urls(NETWORKS_URL, str(network_id))
+    return [{"rel": rel, "href": href} for rel in ("self", "bookmark")]
+
+
+def flavor_to_links(flavor_id):
+    href = join_urls(FLAVORS_URL, str(flavor_id))
+    return [{"rel": rel, "href": href} for rel in ("self", "bookmark")]
+
+
+def image_to_links(image_id):
+    href = join_urls(IMAGES_URL, str(image_id))
+    links = [{"rel": rel, "href": href} for rel in ("self", "bookmark")]
+    links.append({"rel": "alternate",
+                  "href": join_urls(IMAGES_PLANKTON_URL, str(image_id))})
+    return links

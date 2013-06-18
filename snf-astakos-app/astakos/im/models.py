@@ -38,23 +38,18 @@ import json
 import math
 import copy
 
-from time import asctime
 from datetime import datetime, timedelta
-from base64 import b64encode
-from urlparse import urlparse
+import base64
 from urllib import quote
 from random import randint
-from collections import defaultdict, namedtuple
+import os
 
 from django.db import models, IntegrityError, transaction
 from django.contrib.auth.models import User, UserManager, Group, Permission
 from django.utils.translation import ugettext as _
-from django.core.exceptions import ValidationError
-from django.db.models.signals import (
-    pre_save, post_save, post_syncdb, post_delete)
+from django.db.models.signals import pre_save, post_save
 from django.contrib.contenttypes.models import ContentType
 
-from django.dispatch import Signal
 from django.db.models import Q, Max
 from django.core.urlresolvers import reverse
 from django.utils.http import int_to_base36
@@ -62,34 +57,25 @@ from django.contrib.auth.tokens import default_token_generator
 from django.conf import settings
 from django.utils.importlib import import_module
 from django.utils.safestring import mark_safe
-from django.core.validators import email_re
-from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 
-from astakos.im.settings import (
-    DEFAULT_USER_LEVEL, INVITATIONS_PER_LEVEL,
-    AUTH_TOKEN_DURATION, EMAILCHANGE_ACTIVATION_DAYS, LOGGING_LEVEL,
-    SITENAME, SERVICES, MODERATION_ENABLED, RESOURCES_PRESENTATION_DATA,
-    PROJECT_MEMBER_JOIN_POLICIES, PROJECT_MEMBER_LEAVE_POLICIES, PROJECT_ADMINS)
+from synnefo.lib.utils import dict_merge
+
 from astakos.im import settings as astakos_settings
-from astakos.im.endpoints.qh import (
-    register_users, send_quotas, qh_check_users, qh_get_quotas,
-    register_services, register_resources, qh_add_quota, QuotaLimits,
-    qh_query_serials, qh_ack_serials,
-    QuotaValues, add_quota_values)
 from astakos.im import auth_providers as auth
 
 import astakos.im.messages as astakos_messages
-from astakos.im.lock import with_lock
-from synnefo.lib.db.managers import ForUpdateManager
+from snf_django.lib.db.managers import ForUpdateManager
+from synnefo.lib.ordereddict import OrderedDict
 
-from synnefo.lib.quotaholder.api import QH_PRACTICALLY_INFINITE
-from synnefo.lib.db.intdecimalfield import intDecimalField
+from snf_django.lib.db.fields import intDecimalField
 from synnefo.util.text import uenc, udec
+from astakos.im import presentation
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_CONTENT_TYPE = None
 _content_type = None
+
 
 def get_content_type():
     global _content_type
@@ -97,95 +83,168 @@ def get_content_type():
         return _content_type
 
     try:
-        content_type = ContentType.objects.get(app_label='im', model='astakosuser')
+        content_type = ContentType.objects.get(app_label='im',
+                                               model='astakosuser')
     except:
         content_type = DEFAULT_CONTENT_TYPE
     _content_type = content_type
     return content_type
 
-RESOURCE_SEPARATOR = '.'
-
 inf = float('inf')
 
-class Service(models.Model):
-    name = models.CharField(_('Name'), max_length=255, unique=True, db_index=True)
-    url = models.FilePathField()
-    icon = models.FilePathField(blank=True)
-    auth_token = models.CharField(_('Authentication Token'), max_length=32,
-                                  null=True, blank=True)
-    auth_token_created = models.DateTimeField(_('Token creation date'), null=True)
-    auth_token_expires = models.DateTimeField(
-        _('Token expiration date'), null=True)
-    order = models.PositiveIntegerField(default=0)
 
-    class Meta:
-        ordering = ('order', )
+def generate_token():
+    s = os.urandom(32)
+    return base64.urlsafe_b64encode(s).rstrip('=')
+
+
+class Component(models.Model):
+    name = models.CharField(_('Name'), max_length=255, unique=True,
+                            db_index=True)
+    url = models.CharField(_('Component url'), max_length=1024, null=True,
+                           help_text=_("URL the component is accessible from"))
+    auth_token = models.CharField(_('Authentication Token'), max_length=64,
+                                  null=True, blank=True, unique=True)
+    auth_token_created = models.DateTimeField(_('Token creation date'),
+                                              null=True)
+    auth_token_expires = models.DateTimeField(_('Token expiration date'),
+                                              null=True)
 
     def renew_token(self, expiration_date=None):
-        md5 = hashlib.md5()
-        md5.update(self.name.encode('ascii', 'ignore'))
-        md5.update(self.url.encode('ascii', 'ignore'))
-        md5.update(asctime())
+        for i in range(10):
+            new_token = generate_token()
+            count = Component.objects.filter(auth_token=new_token).count()
+            if count == 0:
+                break
+            continue
+        else:
+            raise ValueError('Could not generate a token')
 
-        self.auth_token = b64encode(md5.digest())
+        self.auth_token = new_token
         self.auth_token_created = datetime.now()
         if expiration_date:
             self.auth_token_expires = expiration_date
         else:
             self.auth_token_expires = None
+        msg = 'Token renewed for component %s' % self.name
+        logger.log(astakos_settings.LOGGING_LEVEL, msg)
 
     def __str__(self):
         return self.name
 
-    @property
-    def resources(self):
-        return self.resource_set.all()
+    @classmethod
+    def catalog(cls, orderfor=None):
+        catalog = {}
+        components = list(cls.objects.all())
+        default_metadata = presentation.COMPONENTS
+        metadata = {}
 
-    @resources.setter
-    def resources(self, resources):
-        for s in resources:
-            self.resource_set.create(**s)
+        for component in components:
+            d = {'url': component.url,
+                 'name': component.name}
+            if component.name in default_metadata:
+                metadata[component.name] = default_metadata.get(component.name)
+                metadata[component.name].update(d)
+            else:
+                metadata[component.name] = d
 
 
-class ResourceMetadata(models.Model):
-    key = models.CharField(_('Name'), max_length=255, unique=True, db_index=True)
-    value = models.CharField(_('Value'), max_length=255)
+        def component_by_order(s):
+            return s[1].get('order')
+
+        def component_by_dashboard_order(s):
+            return s[1].get('dashboard').get('order')
+
+        metadata = dict_merge(metadata,
+                              astakos_settings.COMPONENTS_META)
+
+        for component, info in metadata.iteritems():
+            default_meta = presentation.component_defaults(component)
+            base_meta = metadata.get(component, {})
+            settings_meta = astakos_settings.COMPONENTS_META.get(component, {})
+            component_meta = dict_merge(default_meta, base_meta)
+            meta = dict_merge(component_meta, settings_meta)
+            catalog[component] = meta
+
+        order_key = component_by_order
+        if orderfor == 'dashboard':
+            order_key = component_by_dashboard_order
+
+        ordered_catalog = OrderedDict(sorted(catalog.iteritems(),
+                                             key=order_key))
+        return ordered_catalog
+
 
 _presentation_data = {}
+
+
 def get_presentation(resource):
     global _presentation_data
-    presentation = _presentation_data.get(resource, {})
-    if not presentation:
-        resource_presentation = RESOURCES_PRESENTATION_DATA.get('resources', {})
-        presentation = resource_presentation.get(resource, {})
-        _presentation_data[resource] = presentation
-    return presentation
+    resource_presentation = _presentation_data.get(resource, {})
+    if not resource_presentation:
+        resources_presentation = presentation.RESOURCES.get('resources', {})
+        resource_presentation = resources_presentation.get(resource, {})
+        _presentation_data[resource] = resource_presentation
+    return resource_presentation
 
-class Resource(models.Model):
-    name = models.CharField(_('Name'), max_length=255)
-    meta = models.ManyToManyField(ResourceMetadata)
-    service = models.ForeignKey(Service)
-    desc = models.TextField(_('Description'), null=True)
-    unit = models.CharField(_('Name'), null=True, max_length=255)
-    group = models.CharField(_('Group'), null=True, max_length=255)
-    uplimit = intDecimalField(default=0)
+
+class Service(models.Model):
+    component = models.ForeignKey(Component)
+    name = models.CharField(max_length=255, unique=True)
+    type = models.CharField(max_length=255)
+
+
+class Endpoint(models.Model):
+    service = models.ForeignKey(Service, related_name='endpoints')
+
+
+class EndpointData(models.Model):
+    endpoint = models.ForeignKey(Endpoint, related_name='data')
+    key = models.CharField(max_length=255)
+    value = models.CharField(max_length=1024)
 
     class Meta:
-        unique_together = ("service", "name")
+        unique_together = (('endpoint', 'key'),)
+
+
+class Resource(models.Model):
+    name = models.CharField(_('Name'), max_length=255, unique=True)
+    desc = models.TextField(_('Description'), null=True)
+    service_type = models.CharField(_('Type'), max_length=255)
+    service_origin = models.CharField(max_length=255, db_index=True)
+    unit = models.CharField(_('Unit'), null=True, max_length=255)
+    uplimit = intDecimalField(default=0)
+    allow_in_projects = models.BooleanField(default=True)
+
+    objects = ForUpdateManager()
 
     def __str__(self):
-        return '%s%s%s' % (self.service, RESOURCE_SEPARATOR, self.name)
+        return self.name
 
     def full_name(self):
         return str(self)
 
+    def get_info(self):
+        return {'service': self.service_origin,
+                'description': self.desc,
+                'unit': self.unit,
+                'allow_in_projects': self.allow_in_projects,
+                }
+
+    @property
+    def group(self):
+        default = self.name
+        return get_presentation(str(self)).get('group', default)
+
     @property
     def help_text(self):
-        return get_presentation(str(self)).get('help_text', '')
+        default = "%s resource" % self.name
+        return get_presentation(str(self)).get('help_text', default)
 
     @property
     def help_text_input_each(self):
-        return get_presentation(str(self)).get('help_text_input_each', '')
+        default = "%s resource" % self.name
+        return get_presentation(str(self)).get('help_text_input_each', default)
 
     @property
     def is_abbreviation(self):
@@ -193,15 +252,16 @@ class Resource(models.Model):
 
     @property
     def report_desc(self):
-        return get_presentation(str(self)).get('report_desc', '')
+        default = "%s resource" % self.name
+        return get_presentation(str(self)).get('report_desc', default)
 
     @property
     def placeholder(self):
-        return get_presentation(str(self)).get('placeholder', '')
+        return get_presentation(str(self)).get('placeholder', self.unit)
 
     @property
     def verbose_name(self):
-        return get_presentation(str(self)).get('verbose_name', '')
+        return get_presentation(str(self)).get('verbose_name', self.name)
 
     @property
     def display_name(self):
@@ -215,65 +275,6 @@ class Resource(models.Model):
         if not self.unit:
             return '%ss' % self.display_name
         return self.display_name
-
-def load_service_resources():
-    ss = []
-    rs = []
-    counter = 0
-    for service_name, data in sorted(SERVICES.iteritems()):
-        url = data.get('url')
-        order = data.get('order', counter)
-        counter = order + 1
-        resources = data.get('resources') or ()
-        service, created = Service.objects.get_or_create(
-            name=service_name,
-            defaults={'url': url, 'order': order}
-        )
-        if not created and url is not None:
-            service.url = url
-            service.save()
-
-        ss.append(service)
-
-        for resource in resources:
-            try:
-                resource_name = resource.pop('name', '')
-                r, created = Resource.objects.get_or_create(
-                        service=service, name=resource_name,
-                        defaults=resource)
-                if not created:
-                    r.desc = resource['desc']
-                    r.unit = resource.get('unit', None)
-                    r.group = resource['group']
-                    r.uplimit = resource['uplimit']
-                    r.save()
-
-                rs.append(r)
-
-            except Exception, e:
-                print "Cannot create resource ", resource_name
-                import traceback; traceback.print_exc()
-                continue
-
-    register_services(ss)
-    register_resources(rs)
-
-def _quota_values(capacity):
-    return QuotaValues(
-        quantity = 0,
-        capacity = capacity,
-        import_limit = QH_PRACTICALLY_INFINITE,
-        export_limit = QH_PRACTICALLY_INFINITE)
-
-def get_default_quota():
-    _DEFAULT_QUOTA = {}
-    resources = Resource.objects.select_related('service').all()
-    for resource in resources:
-        capacity = resource.uplimit
-        limits = _quota_values(capacity)
-        _DEFAULT_QUOTA[resource.full_name()] = limits
-
-    return _DEFAULT_QUOTA
 
 def get_resource_names():
     _RESOURCE_NAMES = []
@@ -345,24 +346,15 @@ class AstakosUser(User):
     affiliation = models.CharField(_('Affiliation'), max_length=255, blank=True,
                                    null=True)
 
-    # DEPRECATED FIELDS: provider, third_party_identifier moved in
-    #                    AstakosUserProvider model.
-    provider = models.CharField(_('Provider'), max_length=255, blank=True,
-                                null=True)
-    # ex. screen_name for twitter, eppn for shibboleth
-    third_party_identifier = models.CharField(_('Third-party identifier'),
-                                              max_length=255, null=True,
-                                              blank=True)
-
-
     #for invitations
-    user_level = DEFAULT_USER_LEVEL
+    user_level = astakos_settings.DEFAULT_USER_LEVEL
     level = models.IntegerField(_('Inviter level'), default=user_level)
     invitations = models.IntegerField(
-        _('Invitations left'), default=INVITATIONS_PER_LEVEL.get(user_level, 0))
+        _('Invitations left'), default=astakos_settings.INVITATIONS_PER_LEVEL.get(user_level, 0))
 
     auth_token = models.CharField(_('Authentication Token'),
-                                  max_length=32,
+                                  max_length=64,
+                                  unique=True,
                                   null=True,
                                   blank=True,
                                   help_text = _('Renew your authentication '
@@ -376,33 +368,73 @@ class AstakosUser(User):
         _('Token expiration date'), null=True)
 
     updated = models.DateTimeField(_('Update date'))
-    is_verified = models.BooleanField(_('Is verified?'), default=False)
 
-    email_verified = models.BooleanField(_('Email verified?'), default=False)
+    # Arbitrary text to identify the reason user got deactivated.
+    # To be used as a reference from administrators.
+    deactivated_reason = models.TextField(
+        _('Reason the user was disabled for'),
+        default=None, null=True)
+    deactivated_at = models.DateTimeField(_('User deactivated at'), null=True,
+                                          blank=True)
 
     has_credits = models.BooleanField(_('Has credits?'), default=False)
-    has_signed_terms = models.BooleanField(
-        _('I agree with the terms'), default=False)
-    date_signed_terms = models.DateTimeField(
-        _('Signed terms date'), null=True, blank=True)
 
-    activation_sent = models.DateTimeField(
-        _('Activation sent data'), null=True, blank=True)
+    # this is set to True when user profile gets updated for the first time
+    is_verified = models.BooleanField(_('Is verified?'), default=False)
+
+    # user email is verified
+    email_verified = models.BooleanField(_('Email verified?'), default=False)
+
+    # unique string used in user email verification url
+    verification_code = models.CharField(max_length=255, null=True,
+                                         blank=False, unique=True)
+
+    # date user email verified
+    verified_at = models.DateTimeField(_('User verified email at'), null=True,
+                                       blank=True)
+
+    # email verification notice was sent to the user at this time
+    activation_sent = models.DateTimeField(_('Activation sent date'),
+                                           null=True, blank=True)
+
+    # user got rejected during moderation process
+    is_rejected = models.BooleanField(_('Account rejected'),
+                                      default=False)
+    # reason user got rejected
+    rejected_reason = models.TextField(_('User rejected reason'), null=True,
+                                       blank=True)
+    # moderation status
+    moderated = models.BooleanField(_('User moderated'), default=False)
+    # date user moderated (either accepted or rejected)
+    moderated_at = models.DateTimeField(_('Date moderated'), default=None,
+                                        blank=True, null=True)
+    # a snapshot of user instance the time got moderated
+    moderated_data = models.TextField(null=True, default=None, blank=True)
+    # a string which identifies how the user got moderated
+    accepted_policy = models.CharField(_('Accepted policy'), max_length=255,
+                                       default=None, null=True, blank=True)
+    # the email used to accept the user
+    accepted_email = models.EmailField(null=True, default=None, blank=True)
+
+    has_signed_terms = models.BooleanField(_('I agree with the terms'),
+                                           default=False)
+    date_signed_terms = models.DateTimeField(_('Signed terms date'),
+                                             null=True, blank=True)
+    # permanent unique user identifier
+    uuid = models.CharField(max_length=255, null=True, blank=False,
+                            unique=True)
 
     policy = models.ManyToManyField(
         Resource, null=True, through='AstakosUserQuota')
 
-    uuid = models.CharField(max_length=255, null=True, blank=False, unique=True)
-
-    __has_signed_terms = False
     disturbed_quota = models.BooleanField(_('Needs quotaholder syncing'),
                                            default=False, db_index=True)
 
     objects = AstakosUserManager()
+    forupdate = ForUpdateManager()
 
     def __init__(self, *args, **kwargs):
         super(AstakosUser, self).__init__(*args, **kwargs)
-        self.__has_signed_terms = self.has_signed_terms
         if not self.id:
             self.is_active = False
 
@@ -443,8 +475,12 @@ class AstakosUser(User):
                                    content_type=get_content_type())
         self.user_permissions.remove(p)
 
+    def add_group(self, gname):
+        group, _ = Group.objects.get_or_create(name=gname)
+        self.groups.add(group)
+
     def is_project_admin(self, application_id=None):
-        return self.uuid in PROJECT_ADMINS
+        return self.uuid in astakos_settings.PROJECT_ADMINS
 
     @property
     def invitation(self):
@@ -457,39 +493,8 @@ class AstakosUser(User):
     def policies(self):
         return self.astakosuserquota_set.select_related().all()
 
-    @policies.setter
-    def policies(self, policies):
-        for p in policies:
-            p.setdefault('resource', '')
-            p.setdefault('capacity', 0)
-            p.setdefault('quantity', 0)
-            p.setdefault('import_limit', 0)
-            p.setdefault('export_limit', 0)
-            p.setdefault('update', True)
-            self.add_resource_policy(**p)
-
-    def add_resource_policy(
-            self, resource, capacity, quantity, import_limit,
-            export_limit, update=True):
-        """Raises ObjectDoesNotExist, IntegrityError"""
-        s, sep, r = resource.partition(RESOURCE_SEPARATOR)
-        resource = Resource.objects.get(service__name=s, name=r)
-        if update:
-            AstakosUserQuota.objects.update_or_create(
-                user=self, resource=resource, defaults={
-                    'capacity':capacity,
-                    'quantity': quantity,
-                    'import_limit':import_limit,
-                    'export_limit':export_limit})
-        else:
-            q = self.astakosuserquota_set
-            q.create(
-                resource=resource, capacity=capacity, quanity=quantity,
-                import_limit=import_limit, export_limit=export_limit)
-
     def get_resource_policy(self, resource):
-        s, sep, r = resource.partition(RESOURCE_SEPARATOR)
-        resource = Resource.objects.get(service__name=s, name=r)
+        resource = Resource.objects.get(name=resource)
         default_capacity = resource.uplimit
         try:
             policy = AstakosUserQuota.objects.get(user=self, resource=resource)
@@ -497,14 +502,9 @@ class AstakosUser(User):
         except AstakosUserQuota.DoesNotExist:
             return None, default_capacity
 
-    def remove_resource_policy(self, service, resource):
-        """Raises ObjectDoesNotExist, IntegrityError"""
-        resource = Resource.objects.get(service__name=service, name=resource)
-        q = self.policies.get(resource=resource).delete()
-
     def update_uuid(self):
         while not self.uuid:
-            uuid_val =  str(uuid.uuid4())
+            uuid_val = str(uuid.uuid4())
             try:
                 AstakosUser.objects.get(uuid=uuid_val)
             except AstakosUser.DoesNotExist, e:
@@ -517,33 +517,42 @@ class AstakosUser(User):
                 self.date_joined = datetime.now()
             self.updated = datetime.now()
 
-        # update date_signed_terms if necessary
-        if self.__has_signed_terms != self.has_signed_terms:
-            self.date_signed_terms = datetime.now()
-
         self.update_uuid()
 
+        if not self.verification_code:
+            self.renew_verification_code()
+
+        # username currently matches email
         if self.username != self.email.lower():
-            # set username
             self.username = self.email.lower()
 
         super(AstakosUser, self).save(**kwargs)
 
-    def renew_token(self, flush_sessions=False, current_key=None):
-        md5 = hashlib.md5()
-        md5.update(settings.SECRET_KEY)
-        md5.update(self.username)
-        md5.update(self.realname.encode('ascii', 'ignore'))
-        md5.update(asctime())
+    def renew_verification_code(self):
+        self.verification_code = str(uuid.uuid4())
+        logger.info("Verification code renewed for %s" % self.log_display)
 
-        self.auth_token = b64encode(md5.digest())
+    def renew_token(self, flush_sessions=False, current_key=None):
+        for i in range(10):
+            new_token = generate_token()
+            count = AstakosUser.objects.filter(auth_token=new_token).count()
+            if count == 0:
+                break
+            continue
+        else:
+            raise ValueError('Could not generate a token')
+
+        self.auth_token = new_token
         self.auth_token_created = datetime.now()
         self.auth_token_expires = self.auth_token_created + \
-                                  timedelta(hours=AUTH_TOKEN_DURATION)
+                                  timedelta(hours=astakos_settings.AUTH_TOKEN_DURATION)
         if flush_sessions:
             self.flush_sessions(current_key)
-        msg = 'Token renewed for %s' % self.email
-        logger.log(LOGGING_LEVEL, msg)
+        msg = 'Token renewed for %s' % self.log_display
+        logger.log(astakos_settings.LOGGING_LEVEL, msg)
+
+    def token_expired(self):
+        return self.auth_token_expires < datetime.now()
 
     def flush_sessions(self, current_key=None):
         q = self.sessions
@@ -553,7 +562,7 @@ class AstakosUser(User):
         keys = q.values_list('session_key', flat=True)
         if keys:
             msg = 'Flushing sessions: %s' % ','.join(keys)
-            logger.log(LOGGING_LEVEL, msg, [])
+            logger.log(astakos_settings.LOGGING_LEVEL, msg, [])
         engine = import_module(settings.SESSION_ENGINE)
         for k in keys:
             s = engine.SessionStore(k)
@@ -571,6 +580,33 @@ class AstakosUser(User):
 
     def email_change_is_pending(self):
         return self.emailchanges.count() > 0
+
+    @property
+    def status_display(self):
+        msg = ""
+        append = None
+        if self.is_active:
+            msg = "Accepted/Active"
+        if self.is_rejected:
+            msg = "Rejected"
+            if self.rejected_reason:
+                msg += " (%s)" % self.rejected_reason
+        if not self.email_verified:
+            msg = "Pending email verification"
+        if not self.moderated:
+            msg = "Pending moderation"
+        if not self.is_active and self.email_verified:
+            msg = "Accepted/Inactive"
+            if self.deactivated_reason:
+                msg += " (%s)" % (self.deactivated_reason)
+
+        if self.moderated and not self.is_rejected:
+            if self.accepted_policy == 'manual':
+                msg += " (manually accepted)"
+            else:
+                msg += " (accepted policy: %s)" % \
+                        self.accepted_policy
+        return msg
 
     @property
     def signed_terms(self):
@@ -594,7 +630,7 @@ class AstakosUser(User):
         """
         level = self.invitation.inviter.level + 1
         self.level = level
-        self.invitations = INVITATIONS_PER_LEVEL.get(level, 0)
+        self.invitations = astakos_settings.INVITATIONS_PER_LEVEL.get(level, 0)
 
     def can_change_password(self):
         return self.has_auth_provider('local', auth_backend='astakos')
@@ -694,13 +730,13 @@ class AstakosUser(User):
 
     def get_activation_url(self, nxt=False):
         url = "%s?auth=%s" % (reverse('astakos.im.views.activate'),
-                                 quote(self.auth_token))
+                                 quote(self.verification_code))
         if nxt:
             url += "&next=%s" % quote(nxt)
         return url
 
     def get_password_reset_url(self, token_generator=default_token_generator):
-        return reverse('django.contrib.auth.views.password_reset_confirm',
+        return reverse('astakos.im.views.target.local.password_reset_confirm',
                           kwargs={'uidb36':int_to_base36(self.id),
                                   'token':token_generator.make_token(self)})
 
@@ -715,27 +751,25 @@ class AstakosUser(User):
         msg_pending_help = _(astakos_messages.ACCOUNT_PENDING_ACTIVATION_HELP)
         #msg_resend_prompt = _(astakos_messages.ACCOUNT_RESEND_ACTIVATION)
         msg_pending_mod = provider.get_pending_moderation_msg
+        msg_rejected = _(astakos_messages.ACCOUNT_REJECTED)
         msg_resend = _(astakos_messages.ACCOUNT_RESEND_ACTIVATION)
 
-        if self.activation_sent:
-            if self.email_verified:
-                message = msg_inactive
-            else:
-                message = msg_pending
-                url = self.get_resend_activation_url()
-                msg_extra = msg_pending_help + \
-                            u' ' + \
-                            '<a href="%s">%s?</a>' % (url, msg_resend)
+        if not self.email_verified:
+            message = msg_pending
+            url = self.get_resend_activation_url()
+            msg_extra = msg_pending_help + \
+                        u' ' + \
+                        '<a href="%s">%s?</a>' % (url, msg_resend)
         else:
-            if astakos_settings.MODERATION_ENABLED:
+            if not self.moderated:
                 message = msg_pending_mod
             else:
-                message = msg_pending
-                url = self.get_resend_activation_url()
-                msg_extra = '<a href="%s">%s?</a>' % (url, \
-                                msg_resend)
+                if self.is_rejected:
+                    message = msg_rejected
+                else:
+                    message = msg_inactive
 
-        return mark_safe(message + u' '+ msg_extra)
+        return mark_safe(message + u' ' + msg_extra)
 
     def owns_application(self, application):
         return application.owner == self
@@ -776,71 +810,6 @@ class AstakosUser(User):
         if project.is_deactivated():
             return False
         return True
-
-    def settings(self):
-        return UserSetting.objects.filter(user=self)
-
-    def all_quotas(self):
-        quotas = users_quotas([self])
-        try:
-            return quotas[self.uuid]
-        except:
-            raise ValueError("could not compute quotas")
-
-
-def initial_quotas(users):
-    initial = {}
-    default_quotas = get_default_quota()
-
-    for user in users:
-        uuid = user.uuid
-        initial[uuid] = dict(default_quotas)
-
-    objs = AstakosUserQuota.objects.select_related()
-    orig_quotas = objs.filter(user__in=users)
-    for user_quota in orig_quotas:
-        uuid = user_quota.user.uuid
-        user_init = initial.get(uuid, {})
-        resource = user_quota.resource.full_name()
-        user_init[resource] = user_quota.quota_values()
-        initial[uuid] = user_init
-
-    return initial
-
-
-def users_quotas(users, initial=None):
-    if initial is None:
-        quotas = initial_quotas(users)
-    else:
-        quotas = copy.deepcopy(initial)
-
-    objs = ProjectMembership.objects.select_related('application', 'person')
-    memberships = objs.filter(person__in=users, is_active=True)
-
-    apps = set(m.application for m in memberships if m.application is not None)
-    objs = ProjectResourceGrant.objects.select_related()
-    grants = objs.filter(project_application__in=apps)
-
-    for membership in memberships:
-        uuid = membership.person.uuid
-        userquotas = quotas.get(uuid, {})
-
-        application = membership.application
-        if application is None:
-            m = _("missing application for active membership %s"
-                  % (membership,))
-            raise AssertionError(m)
-
-        for grant in grants:
-            if grant.project_application_id != application.id:
-                continue
-            resource = grant.resource.full_name()
-            prev = userquotas.get(resource, 0)
-            new = add_quota_values(prev, grant.member_quota_values())
-            userquotas[resource] = new
-        quotas[uuid] = userquotas
-
-    return quotas
 
 
 class AstakosUserAuthProviderManager(models.Manager):
@@ -1058,21 +1027,11 @@ class ExtendedManager(models.Manager):
 class AstakosUserQuota(models.Model):
     objects = ExtendedManager()
     capacity = intDecimalField()
-    quantity = intDecimalField(default=0)
-    export_limit = intDecimalField(default=QH_PRACTICALLY_INFINITE)
-    import_limit = intDecimalField(default=QH_PRACTICALLY_INFINITE)
     resource = models.ForeignKey(Resource)
     user = models.ForeignKey(AstakosUser)
 
     class Meta:
         unique_together = ("resource", "user")
-
-    def quota_values(self):
-        return QuotaValues(
-            quantity = self.quantity,
-            capacity = self.capacity,
-            import_limit = self.import_limit,
-            export_limit = self.export_limit)
 
 
 class ApprovalTerms(models.Model):
@@ -1154,7 +1113,7 @@ class EmailChangeManager(models.Manager):
             msg = "User %s changed email from %s to %s" % (user.log_display,
                                                            old_email,
                                                            user.email)
-            logger.log(LOGGING_LEVEL, msg)
+            logger.log(astakos_settings.LOGGING_LEVEL, msg)
             return user
         except EmailChange.DoesNotExist:
             raise ValueError(_('Invalid activation key.'))
@@ -1179,7 +1138,7 @@ class EmailChange(models.Model):
                       kwargs={'activation_key': self.activation_key})
 
     def activation_key_expired(self):
-        expiration_date = timedelta(days=EMAILCHANGE_ACTIVATION_DAYS)
+        expiration_date = timedelta(days=astakos_settings.EMAILCHANGE_ACTIVATION_DAYS)
         return self.requested_at + expiration_date < datetime.now()
 
 
@@ -1233,12 +1192,19 @@ class PendingThirdPartyUser(models.Model):
         unique_together = ("provider", "third_party_identifier")
 
     def get_user_instance(self):
-        d = self.__dict__
+        """
+        Create a new AstakosUser instance based on details provided when user
+        initially signed up.
+        """
+        d = copy.copy(self.__dict__)
         d.pop('_state', None)
         d.pop('id', None)
         d.pop('token', None)
         d.pop('created', None)
         d.pop('info', None)
+        d.pop('affiliation', None)
+        d.pop('provider', None)
+        d.pop('third_party_identifier', None)
         user = AstakosUser(**d)
 
         return user
@@ -1302,118 +1268,6 @@ class UserSetting(models.Model):
 
 ### PROJECTS ###
 ################
-
-def synced_model_metaclass(class_name, class_parents, class_attributes):
-
-    new_attributes = {}
-    sync_attributes = {}
-
-    for name, value in class_attributes.iteritems():
-        sync, underscore, rest = name.partition('_')
-        if sync == 'sync' and underscore == '_':
-            sync_attributes[rest] = value
-        else:
-            new_attributes[name] = value
-
-    if 'prefix' not in sync_attributes:
-        m = ("you did not specify a 'sync_prefix' attribute "
-             "in class '%s'" % (class_name,))
-        raise ValueError(m)
-
-    prefix = sync_attributes.pop('prefix')
-    class_name = sync_attributes.pop('classname', prefix + '_model')
-
-    for name, value in sync_attributes.iteritems():
-        newname = prefix + '_' + name
-        if newname in new_attributes:
-            m = ("class '%s' was specified with prefix '%s' "
-                 "but it already has an attribute named '%s'"
-                 % (class_name, prefix, newname))
-            raise ValueError(m)
-
-        new_attributes[newname] = value
-
-    newclass = type(class_name, class_parents, new_attributes)
-    return newclass
-
-
-def make_synced(prefix='sync', name='SyncedState'):
-
-    the_name = name
-    the_prefix = prefix
-
-    class SyncedState(models.Model):
-
-        sync_classname      = the_name
-        sync_prefix         = the_prefix
-        __metaclass__       = synced_model_metaclass
-
-        sync_new_state      = models.BigIntegerField(null=True)
-        sync_synced_state   = models.BigIntegerField(null=True)
-        STATUS_SYNCED       = 0
-        STATUS_PENDING      = 1
-        sync_status         = models.IntegerField(db_index=True)
-
-        class Meta:
-            abstract = True
-
-        class NotSynced(Exception):
-            pass
-
-        def sync_init_state(self, state):
-            self.sync_synced_state = state
-            self.sync_new_state = state
-            self.sync_status = self.STATUS_SYNCED
-
-        def sync_get_status(self):
-            return self.sync_status
-
-        def sync_set_status(self):
-            if self.sync_new_state != self.sync_synced_state:
-                self.sync_status = self.STATUS_PENDING
-            else:
-                self.sync_status = self.STATUS_SYNCED
-
-        def sync_set_synced(self):
-            self.sync_synced_state = self.sync_new_state
-            self.sync_status = self.STATUS_SYNCED
-
-        def sync_get_synced_state(self):
-            return self.sync_synced_state
-
-        def sync_set_new_state(self, new_state):
-            self.sync_new_state = new_state
-            self.sync_set_status()
-
-        def sync_get_new_state(self):
-            return self.sync_new_state
-
-        def sync_set_synced_state(self, synced_state):
-            self.sync_synced_state = synced_state
-            self.sync_set_status()
-
-        def sync_get_pending_objects(self):
-            kw = dict((the_prefix + '_status', self.STATUS_PENDING))
-            return self.objects.filter(**kw)
-
-        def sync_get_synced_objects(self):
-            kw = dict((the_prefix + '_status', self.STATUS_SYNCED))
-            return self.objects.filter(**kw)
-
-        def sync_verify_get_synced_state(self):
-            status = self.sync_get_status()
-            state = self.sync_get_synced_state()
-            verified = (status == self.STATUS_SYNCED)
-            return state, verified
-
-        def sync_is_synced(self):
-            state, verified = self.sync_verify_get_synced_state()
-            return verified
-
-    return SyncedState
-
-SyncedState = make_synced(prefix='sync', name='SyncedState')
-
 
 class ChainManager(ForUpdateManager):
 
@@ -1672,13 +1526,6 @@ class ProjectApplication(models.Model):
         return "application %s (%s) for project %s" % (
             self.id, self.name, self.chain)
 
-    def get_project(self):
-        try:
-            project = Project.objects.get(id=self.chain, state=Project.APPROVED)
-            return Project
-        except Project.DoesNotExist, e:
-            return None
-
     def state_display(self):
         return self.APPLICATION_STATE_DISPLAY.get(self.state, _('Unknown'))
 
@@ -1689,10 +1536,10 @@ class ProjectApplication(models.Model):
         except Project.DoesNotExist:
             return self.state_display()
 
-    def add_resource_policy(self, service, resource, uplimit):
+    def add_resource_policy(self, resource, uplimit):
         """Raises ObjectDoesNotExist, IntegrityError"""
         q = self.projectresourcegrant_set
-        resource = Resource.objects.get(service__name=service, name=resource)
+        resource = Resource.objects.get(name=resource)
         q.create(resource=resource, member_capacity=uplimit)
 
     def members_count(self):
@@ -1700,20 +1547,16 @@ class ProjectApplication(models.Model):
 
     @property
     def grants(self):
-        return self.projectresourcegrant_set.values(
-            'member_capacity', 'resource__name', 'resource__service__name')
+        return self.projectresourcegrant_set.values('member_capacity',
+                                                    'resource__name')
 
     @property
     def resource_policies(self):
         return [str(rp) for rp in self.projectresourcegrant_set.all()]
 
-    @resource_policies.setter
-    def resource_policies(self, policies):
-        for p in policies:
-            service = p.get('service', None)
-            resource = p.get('resource', None)
-            uplimit = p.get('uplimit', 0)
-            self.add_resource_policy(service, resource, uplimit)
+    def set_resource_policies(self, policies):
+        for resource, uplimit in policies:
+            self.add_resource_policy(resource, uplimit)
 
     def pending_modifications_incl_me(self):
         q = self.chained_applications()
@@ -1782,14 +1625,6 @@ class ProjectApplication(models.Model):
     def project_exists(self):
         return self.get_project() is not None
 
-    def _get_project_for_update(self):
-        try:
-            objects = Project.objects
-            project = objects.get_for_update(id=self.chain)
-            return project
-        except Project.DoesNotExist:
-            return None
-
     def can_cancel(self):
         return self.state == self.PENDING
 
@@ -1831,86 +1666,50 @@ class ProjectApplication(models.Model):
     def can_approve(self):
         return self.state == self.PENDING
 
-    def approve(self, approval_user=None):
-        """
-        If approval_user then during owner membership acceptance
-        it is checked whether the request_user is eligible.
-
-        Raises:
-            PermissionDenied
-        """
-
-        if not transaction.is_managed():
-            raise AssertionError("NOPE")
-
-        new_project_name = self.name
+    def approve(self, reason):
         if not self.can_approve():
             m = _("cannot approve: project '%s' in state '%s'") % (
-                    new_project_name, self.state)
+                    self.name, self.state)
             raise AssertionError(m) # invalid argument
 
         now = datetime.now()
-        project = self._get_project_for_update()
-
-        try:
-            q = Q(name=new_project_name) & ~Q(state=Project.TERMINATED)
-            conflicting_project = Project.objects.get(q)
-            if (conflicting_project != project):
-                m = (_("cannot approve: project with name '%s' "
-                       "already exists (id: %s)") % (
-                        new_project_name, conflicting_project.id))
-                raise PermissionDenied(m) # invalid argument
-        except Project.DoesNotExist:
-            pass
-
-        new_project = False
-        if project is None:
-            new_project = True
-            project = Project(id=self.chain)
-
-        project.name = new_project_name
-        project.application = self
-        project.last_approval_date = now
-        if not new_project:
-            project.is_modified = True
-
-        project.save()
-
         self.state = self.APPROVED
         self.response_date = now
+        self.response = reason
         self.save()
+
+        project = self.get_project()
+        if project is None:
+            project = Project(id=self.chain)
+
+        project.name = self.name
+        project.application = self
+        project.last_approval_date = now
+        project.save()
+        return project
 
     @property
     def member_join_policy_display(self):
-        return PROJECT_MEMBER_JOIN_POLICIES.get(str(self.member_join_policy))
+        policy = self.member_join_policy
+        return presentation.PROJECT_MEMBER_JOIN_POLICIES.get(policy)
 
     @property
     def member_leave_policy_display(self):
-        return PROJECT_MEMBER_LEAVE_POLICIES.get(str(self.member_leave_policy))
+        policy = self.member_leave_policy
+        return presentation.PROJECT_MEMBER_LEAVE_POLICIES.get(policy)
 
 class ProjectResourceGrant(models.Model):
 
     resource                =   models.ForeignKey(Resource)
     project_application     =   models.ForeignKey(ProjectApplication,
                                                   null=True)
-    project_capacity        =   intDecimalField(default=QH_PRACTICALLY_INFINITE)
-    project_import_limit    =   intDecimalField(default=QH_PRACTICALLY_INFINITE)
-    project_export_limit    =   intDecimalField(default=QH_PRACTICALLY_INFINITE)
-    member_capacity         =   intDecimalField(default=QH_PRACTICALLY_INFINITE)
-    member_import_limit     =   intDecimalField(default=QH_PRACTICALLY_INFINITE)
-    member_export_limit     =   intDecimalField(default=QH_PRACTICALLY_INFINITE)
+    project_capacity        =   intDecimalField(null=True)
+    member_capacity         =   intDecimalField(default=0)
 
     objects = ExtendedManager()
 
     class Meta:
         unique_together = ("resource", "project_application")
-
-    def member_quota_values(self):
-        return QuotaValues(
-            quantity = 0,
-            capacity = self.member_capacity,
-            import_limit = self.member_import_limit,
-            export_limit = self.member_export_limit)
 
     def display_member_capacity(self):
         if self.member_capacity:
@@ -1964,23 +1763,9 @@ class ProjectManager(ForUpdateManager):
         q = ~self.model.Q_TERMINATED
         return self.filter(q)
 
-    def terminating_projects(self):
-        q = self.model.Q_TERMINATED & Q(is_active=True)
-        return self.filter(q)
-
     def deactivated_projects(self):
         q = self.model.Q_DEACTIVATED
         return self.filter(q)
-
-    def deactivating_projects(self):
-        q = self.model.Q_DEACTIVATED & Q(is_active=True)
-        return self.filter(q)
-
-    def modified_projects(self):
-        return self.filter(is_modified=True)
-
-    def reactivating_projects(self):
-        return self.filter(state=Project.APPROVED, is_active=False)
 
     def expired_projects(self):
         q = (~Q(state=Project.TERMINATED) &
@@ -2024,10 +1809,6 @@ class Project(models.Model):
     SUSPENDED   = 10
     TERMINATED  = 100
 
-    is_modified                 =   models.BooleanField(default=False,
-                                                        db_index=True)
-    is_active                   =   models.BooleanField(default=True,
-                                                        db_index=True)
     state                       =   models.IntegerField(default=APPROVED,
                                                         db_index=True)
 
@@ -2056,17 +1837,6 @@ class Project(models.Model):
     def state_display(self):
         return self.STATE_DISPLAY.get(self.state, _('Unknown'))
 
-    def admin_state_display(self):
-        s = self.state_display()
-        if self.sync_pending():
-            s += ' (sync pending)'
-        return s
-
-    def sync_pending(self):
-        if self.state != self.APPROVED:
-            return self.is_active
-        return not self.is_active or self.is_modified
-
     def expiration_info(self):
         return (str(self.id), self.name, self.state_display(),
                 str(self.application.end_date))
@@ -2077,41 +1847,24 @@ class Project(models.Model):
 
         return self.state != self.APPROVED
 
-    def is_deactivating(self, reason=None):
-        if not self.is_active:
-            return False
-
-        return self.is_deactivated(reason)
-
-    def is_deactivated_strict(self, reason=None):
-        if self.is_active:
-            return False
-
-        return self.is_deactivated(reason)
-
     ### Deactivation calls
-
-    def deactivate(self):
-        self.deactivation_date = datetime.now()
-        self.is_active = False
-
-    def reactivate(self):
-        self.deactivation_date = None
-        self.is_active = True
 
     def terminate(self):
         self.deactivation_reason = 'TERMINATED'
+        self.deactivation_date = datetime.now()
         self.state = self.TERMINATED
         self.name = None
         self.save()
 
     def suspend(self):
         self.deactivation_reason = 'SUSPENDED'
+        self.deactivation_date = datetime.now()
         self.state = self.SUSPENDED
         self.save()
 
     def resume(self):
         self.deactivation_reason = None
+        self.deactivation_date = None
         self.state = self.APPROVED
         self.save()
 
@@ -2123,9 +1876,6 @@ class Project(models.Model):
                  self.last_approval_date,
                  self.deactivation_date]
         return any([date > now for date in dates])
-
-    def is_active_strict(self):
-        return self.is_active and self.state == self.APPROVED
 
     def is_approved(self):
         return self.state == self.APPROVED
@@ -2160,6 +1910,12 @@ class Project(models.Model):
         memb_count = memb_set.filter(state=ProjectMembership.REQUESTED).count()
         return memb_count
 
+    def count_actually_accepted_memberships(self):
+        memb_set = self.projectmembership_set
+        memb_count = memb_set.filter(state=ProjectMembership.LEAVE_REQUESTED)
+        memb_count = memb_set.filter(state=ProjectMembership.ACCEPTED).count()
+        return memb_count
+
     def members_count(self):
         return self.approved_memberships.count()
 
@@ -2171,33 +1927,6 @@ class Project(models.Model):
     @property
     def approved_members(self):
         return [m.person for m in self.approved_memberships]
-
-    def add_member(self, user):
-        """
-        Raises:
-            django.exceptions.PermissionDenied
-            astakos.im.models.AstakosUser.DoesNotExist
-        """
-        if isinstance(user, (int, long)):
-            user = AstakosUser.objects.get(user=user)
-
-        m, created = ProjectMembership.objects.get_or_create(
-            person=user, project=self
-        )
-        m.accept()
-
-    def remove_member(self, user):
-        """
-        Raises:
-            django.exceptions.PermissionDenied
-            astakos.im.models.AstakosUser.DoesNotExist
-            astakos.im.models.ProjectMembership.DoesNotExist
-        """
-        if isinstance(user, (int, long)):
-            user = AstakosUser.objects.get(user=user)
-
-        m = ProjectMembership.objects.get(person=user, project=self)
-        m.remove()
 
 
 CHAIN_STATE = {
@@ -2226,15 +1955,10 @@ CHAIN_STATE = {
     }
 
 
-class PendingMembershipError(Exception):
-    pass
-
-
 class ProjectMembershipManager(ForUpdateManager):
 
     def any_accepted(self):
-        q = (Q(state=ProjectMembership.ACCEPTED) |
-             Q(state=ProjectMembership.PROJECT_DEACTIVATED))
+        q = self.model.Q_ACTUALLY_ACCEPTED
         return self.filter(q)
 
     def actually_accepted(self):
@@ -2250,7 +1974,7 @@ class ProjectMembershipManager(ForUpdateManager):
 class ProjectMembership(models.Model):
 
     person              =   models.ForeignKey(AstakosUser)
-    request_date        =   models.DateField(auto_now_add=True)
+    request_date        =   models.DateTimeField(auto_now_add=True)
     project             =   models.ForeignKey(Project)
 
     REQUESTED           =   0
@@ -2258,8 +1982,6 @@ class ProjectMembership(models.Model):
     LEAVE_REQUESTED     =   5
     # User deactivation
     USER_SUSPENDED      =   10
-    # Project deactivation
-    PROJECT_DEACTIVATED =   100
 
     REMOVED             =   200
 
@@ -2267,31 +1989,19 @@ class ProjectMembership(models.Model):
                                  ACCEPTED,
                                  LEAVE_REQUESTED,
                                  USER_SUSPENDED,
-                                 PROJECT_DEACTIVATED])
+                                 ])
 
     ACCEPTED_STATES     =   set([ACCEPTED,
                                  LEAVE_REQUESTED,
                                  USER_SUSPENDED,
-                                 PROJECT_DEACTIVATED])
+                                 ])
 
     ACTUALLY_ACCEPTED   =   set([ACCEPTED, LEAVE_REQUESTED])
 
     state               =   models.IntegerField(default=REQUESTED,
                                                 db_index=True)
-    is_pending          =   models.BooleanField(default=False, db_index=True)
-    is_active           =   models.BooleanField(default=False, db_index=True)
-    application         =   models.ForeignKey(
-                                ProjectApplication,
-                                null=True,
-                                related_name='memberships')
-    pending_application =   models.ForeignKey(
-                                ProjectApplication,
-                                null=True,
-                                related_name='pending_memberships')
-    pending_serial      =   models.BigIntegerField(null=True, db_index=True)
-
-    acceptance_date     =   models.DateField(null=True, db_index=True)
-    leave_request_date  =   models.DateField(null=True)
+    acceptance_date     =   models.DateTimeField(null=True, db_index=True)
+    leave_request_date  =   models.DateTimeField(null=True)
 
     objects     =   ProjectMembershipManager()
 
@@ -2304,7 +2014,6 @@ class ProjectMembership(models.Model):
         ACCEPTED            : _('Accepted'),
         LEAVE_REQUESTED     : _('Leave Requested'),
         USER_SUSPENDED      : _('Suspended'),
-        PROJECT_DEACTIVATED : _('Accepted'), # sic
         REMOVED             : _('Pending removal'),
         }
 
@@ -2313,7 +2022,6 @@ class ProjectMembership(models.Model):
         ACCEPTED            : _('Accepted member'),
         LEAVE_REQUESTED     : _('Requested to leave'),
         USER_SUSPENDED      : _('Suspended member'),
-        PROJECT_DEACTIVATED : _('Accepted member'), # sic
         REMOVED             : _('Pending removal'),
         }
 
@@ -2322,9 +2030,6 @@ class ProjectMembership(models.Model):
 
     def user_friendly_state_display(self):
         return self.USER_FRIENDLY_STATE_DISPLAY.get(self.state, _('Unknown'))
-
-    def get_combined_state(self):
-        return self.state, self.is_active, self.is_pending
 
     class Meta:
         unique_together = ("person", "project")
@@ -2357,10 +2062,6 @@ class ProjectMembership(models.Model):
         return self.state == self.REQUESTED
 
     def accept(self):
-        if self.is_pending:
-            m = _("%s: attempt to accept while is pending") % (self,)
-            raise AssertionError(m)
-
         if not self.can_accept():
             m = _("%s: attempt to accept in state '%s'") % (self, self.state)
             raise AssertionError(m)
@@ -2368,22 +2069,13 @@ class ProjectMembership(models.Model):
         now = datetime.now()
         self.acceptance_date = now
         self._set_history_item(reason='ACCEPT', date=now)
-        if self.project.is_approved():
-            self.state = self.ACCEPTED
-            self.is_pending = True
-        else:
-            self.state = self.PROJECT_DEACTIVATED
-
+        self.state = self.ACCEPTED
         self.save()
 
     def can_leave(self):
         return self.state in self.ACCEPTED_STATES
 
     def leave_request(self):
-        if self.is_pending:
-            m = _("%s: attempt to request to leave while is pending") % (self,)
-            raise AssertionError(m)
-
         if not self.can_leave():
             m = _("%s: attempt to request to leave in state '%s'") % (
                 self, self.state)
@@ -2397,11 +2089,6 @@ class ProjectMembership(models.Model):
         return self.state == self.LEAVE_REQUESTED
 
     def leave_request_deny(self):
-        if self.is_pending:
-            m = _("%s: attempt to deny leave request while is pending") % (
-                self,)
-            raise AssertionError(m)
-
         if not self.can_deny_leave():
             m = _("%s: attempt to deny leave request in state '%s'") % (
                 self, self.state)
@@ -2415,11 +2102,6 @@ class ProjectMembership(models.Model):
         return self.state == self.LEAVE_REQUESTED
 
     def leave_request_cancel(self):
-        if self.is_pending:
-            m = _("%s: attempt to cancel leave request while is pending") % (
-                self,)
-            raise AssertionError(m)
-
         if not self.can_cancel_leave():
             m = _("%s: attempt to cancel leave request in state '%s'") % (
                 self, self.state)
@@ -2433,27 +2115,17 @@ class ProjectMembership(models.Model):
         return self.state in self.ACCEPTED_STATES
 
     def remove(self):
-        if self.is_pending:
-            m = _("%s: attempt to remove while is pending") % (self,)
-            raise AssertionError(m)
-
         if not self.can_remove():
             m = _("%s: attempt to remove in state '%s'") % (self, self.state)
             raise AssertionError(m)
 
         self._set_history_item(reason='REMOVE')
-        self.state = self.REMOVED
-        self.is_pending = True
-        self.save()
+        self.delete()
 
     def can_reject(self):
         return self.state == self.REQUESTED
 
     def reject(self):
-        if self.is_pending:
-            m = _("%s: attempt to reject while is pending") % (self,)
-            raise AssertionError(m)
-
         if not self.can_reject():
             m = _("%s: attempt to reject in state '%s'") % (self, self.state)
             raise AssertionError(m)
@@ -2467,10 +2139,6 @@ class ProjectMembership(models.Model):
         return self.state == self.REQUESTED
 
     def cancel(self):
-        if self.is_pending:
-            m = _("%s: attempt to cancel while is pending") % (self,)
-            raise AssertionError(m)
-
         if not self.can_cancel():
             m = _("%s: attempt to cancel in state '%s'") % (self, self.state)
             raise AssertionError(m)
@@ -2480,338 +2148,10 @@ class ProjectMembership(models.Model):
         self._set_history_item(reason='CANCEL')
         self.delete()
 
-    def get_diff_quotas(self, sub_list=None, add_list=None):
-        if sub_list is None:
-            sub_list = []
-
-        if add_list is None:
-            add_list = []
-
-        sub_append = sub_list.append
-        add_append = add_list.append
-        holder = self.person.uuid
-
-        synced_application = self.application
-        if synced_application is not None:
-            cur_grants = synced_application.projectresourcegrant_set.all()
-            for grant in cur_grants:
-                sub_append(QuotaLimits(
-                               holder       = holder,
-                               resource     = str(grant.resource),
-                               capacity     = grant.member_capacity,
-                               import_limit = grant.member_import_limit,
-                               export_limit = grant.member_export_limit))
-
-        pending_application = self.pending_application
-        if pending_application is not None:
-            new_grants = pending_application.projectresourcegrant_set.all()
-            for new_grant in new_grants:
-                add_append(QuotaLimits(
-                               holder       = holder,
-                               resource     = str(new_grant.resource),
-                               capacity     = new_grant.member_capacity,
-                               import_limit = new_grant.member_import_limit,
-                               export_limit = new_grant.member_export_limit))
-
-        return (sub_list, add_list)
-
-    def set_sync(self):
-        if not self.is_pending:
-            m = _("%s: attempt to sync a non pending membership") % (self,)
-            raise AssertionError(m)
-
-        state = self.state
-        if state in self.ACTUALLY_ACCEPTED:
-            pending_application = self.pending_application
-            if pending_application is None:
-                m = _("%s: attempt to sync an empty pending application") % (
-                    self,)
-                raise AssertionError(m)
-
-            self.application = pending_application
-            self.is_active = True
-
-            self.pending_application = None
-            self.pending_serial = None
-
-            # project.application may have changed in the meantime,
-            # in which case we stay PENDING;
-            # we are safe to check due to select_for_update
-            if self.application == self.project.application:
-                self.is_pending = False
-            self.save()
-
-        elif state == self.PROJECT_DEACTIVATED:
-            if self.pending_application:
-                m = _("%s: attempt to sync in state '%s' "
-                      "with a pending application") % (self, state)
-                raise AssertionError(m)
-
-            self.application = None
-            self.is_active = False
-            self.pending_serial = None
-            self.is_pending = False
-            self.save()
-
-        elif state == self.REMOVED:
-            self.delete()
-
-        else:
-            m = _("%s: attempt to sync in state '%s'") % (self, state)
-            raise AssertionError(m)
-
-    def reset_sync(self):
-        if not self.is_pending:
-            m = _("%s: attempt to reset a non pending membership") % (self,)
-            raise AssertionError(m)
-
-        state = self.state
-        if state in [self.ACCEPTED, self.LEAVE_REQUESTED,
-                     self.PROJECT_DEACTIVATED, self.REMOVED]:
-            self.pending_application = None
-            self.pending_serial = None
-            self.save()
-        else:
-            m = _("%s: attempt to reset sync in state '%s'") % (self, state)
-            raise AssertionError(m)
 
 class Serial(models.Model):
     serial  =   models.AutoField(primary_key=True)
 
-def new_serial():
-    s = Serial.objects.create()
-    serial = s.serial
-    s.delete()
-    return serial
-
-class SyncError(Exception):
-    pass
-
-def reset_serials(serials):
-    objs = ProjectMembership.objects
-    q = objs.filter(pending_serial__in=serials).select_for_update()
-    memberships = list(q)
-
-    if memberships:
-        for membership in memberships:
-            membership.reset_sync()
-
-        transaction.commit()
-
-def sync_finish_serials(serials_to_ack=None):
-    if serials_to_ack is None:
-        serials_to_ack = qh_query_serials([])
-
-    serials_to_ack = set(serials_to_ack)
-    objs = ProjectMembership.objects
-    q = objs.filter(pending_serial__isnull=False).select_for_update()
-    memberships = list(q)
-
-    if memberships:
-        for membership in memberships:
-            serial = membership.pending_serial
-            if serial in serials_to_ack:
-                membership.set_sync()
-            else:
-                membership.reset_sync()
-
-        transaction.commit()
-
-    qh_ack_serials(list(serials_to_ack))
-    return len(memberships)
-
-def pre_sync_projects(sync=True):
-    ACCEPTED = ProjectMembership.ACCEPTED
-    LEAVE_REQUESTED = ProjectMembership.LEAVE_REQUESTED
-    PROJECT_DEACTIVATED = ProjectMembership.PROJECT_DEACTIVATED
-    objs = Project.objects
-
-    modified = list(objs.modified_projects().select_for_update())
-    if sync:
-        for project in modified:
-            objects = project.projectmembership_set
-
-            memberships = objects.actually_accepted().select_for_update()
-            for membership in memberships:
-                membership.is_pending = True
-                membership.save()
-
-    reactivating = list(objs.reactivating_projects().select_for_update())
-    if sync:
-        for project in reactivating:
-            objects = project.projectmembership_set
-
-            q = objects.filter(state=PROJECT_DEACTIVATED)
-            memberships = q.select_for_update()
-            for membership in memberships:
-                membership.is_pending = True
-                if membership.leave_request_date is None:
-                    membership.state = ACCEPTED
-                else:
-                    membership.state = LEAVE_REQUESTED
-                membership.save()
-
-    deactivating = list(objs.deactivating_projects().select_for_update())
-    if sync:
-        for project in deactivating:
-            objects = project.projectmembership_set
-
-            # Note: we keep a user-level deactivation
-            # (e.g. USER_SUSPENDED) intact
-            memberships = objects.actually_accepted().select_for_update()
-            for membership in memberships:
-                membership.is_pending = True
-                membership.state = PROJECT_DEACTIVATED
-                membership.save()
-
-#    transaction.commit()
-    return (modified, reactivating, deactivating)
-
-def set_sync_projects(exclude=None):
-
-    ACTUALLY_ACCEPTED = ProjectMembership.ACTUALLY_ACCEPTED
-    objects = ProjectMembership.objects
-
-    sub_quota, add_quota = [], []
-
-    serial = new_serial()
-
-    pending = objects.filter(is_pending=True).select_for_update()
-    for membership in pending:
-
-        if membership.pending_application:
-            m = "%s: impossible: pending_application is not None (%s)" % (
-                membership, membership.pending_application)
-            raise AssertionError(m)
-        if membership.pending_serial:
-            m = "%s: impossible: pending_serial is not None (%s)" % (
-                membership, membership.pending_serial)
-            raise AssertionError(m)
-
-        if exclude is not None:
-            uuid = membership.person.uuid
-            if uuid in exclude:
-                logger.warning("Excluded from sync: %s" % uuid)
-                continue
-
-        if membership.state in ACTUALLY_ACCEPTED:
-            membership.pending_application = membership.project.application
-
-        membership.pending_serial = serial
-        membership.get_diff_quotas(sub_quota, add_quota)
-        membership.save()
-
-    transaction.commit()
-    return serial, sub_quota, add_quota
-
-def do_sync_projects():
-    serial, sub_quota, add_quota = set_sync_projects()
-    r = qh_add_quota(serial, sub_quota, add_quota)
-    if not r:
-        return serial
-
-    m = "cannot sync serial: %d" % serial
-    logger.error(m)
-    logger.error("Failed: %s" % r)
-
-    reset_serials([serial])
-    uuids = set(uuid for (uuid, resource) in r)
-    serial, sub_quota, add_quota = set_sync_projects(exclude=uuids)
-    r = qh_add_quota(serial, sub_quota, add_quota)
-    if not r:
-        return serial
-
-    m = "cannot sync serial: %d" % serial
-    logger.error(m)
-    logger.error("Failed: %s" % r)
-    raise SyncError(m)
-
-def post_sync_projects():
-    PROJECT_DEACTIVATED = ProjectMembership.PROJECT_DEACTIVATED
-    Q_ACTUALLY_ACCEPTED = ProjectMembership.Q_ACTUALLY_ACCEPTED
-    objs = Project.objects
-
-    modified = objs.modified_projects().select_for_update()
-    for project in modified:
-        objects = project.projectmembership_set
-        q = objects.filter(Q_ACTUALLY_ACCEPTED & Q(is_pending=True))
-        memberships = list(q.select_for_update())
-        if not memberships:
-            project.is_modified = False
-            project.save()
-
-    reactivating = objs.reactivating_projects().select_for_update()
-    for project in reactivating:
-        objects = project.projectmembership_set
-        q = objects.filter(Q(state=PROJECT_DEACTIVATED) | Q(is_pending=True))
-        memberships = list(q.select_for_update())
-        if not memberships:
-            project.reactivate()
-            project.save()
-
-    deactivating = objs.deactivating_projects().select_for_update()
-    for project in deactivating:
-        objects = project.projectmembership_set
-        q = objects.filter(Q_ACTUALLY_ACCEPTED | Q(is_pending=True))
-        memberships = list(q.select_for_update())
-        if not memberships:
-            project.deactivate()
-            project.save()
-
-    transaction.commit()
-
-def sync_projects(sync=True, retries=3, retry_wait=1.0):
-    @with_lock(retries, retry_wait)
-    def _sync_projects(sync):
-        sync_finish_serials()
-        # Informative only -- no select_for_update()
-        pending = list(ProjectMembership.objects.filter(is_pending=True))
-
-        projects_log = pre_sync_projects(sync)
-        if sync:
-            serial = do_sync_projects()
-            sync_finish_serials([serial])
-            post_sync_projects()
-
-        return (pending, projects_log)
-    return _sync_projects(sync)
-
-
-
-def sync_users(users, sync=True, retries=3, retry_wait=1.0):
-    @with_lock(retries, retry_wait)
-    def _sync_users(users, sync):
-        sync_finish_serials()
-
-        info = {}
-        for user in users:
-            info[user.uuid] = user.email
-
-        existing, nonexisting = qh_check_users(users)
-        resources = get_resource_names()
-        qh_limits, qh_counters = qh_get_quotas(existing, resources)
-        astakos_initial = initial_quotas(users)
-        astakos_quotas = users_quotas(users, astakos_initial)
-
-        diff_quotas = {}
-        for holder, local in astakos_quotas.iteritems():
-            registered = qh_limits.get(holder, None)
-            if local != registered:
-                diff_quotas[holder] = dict(local)
-
-        if sync:
-            r = register_users(nonexisting)
-            r = send_quotas(diff_quotas)
-
-        return (existing, nonexisting,
-                qh_limits, qh_counters,
-                astakos_initial, diff_quotas, info)
-    return _sync_users(users, sync)
-
-
-def sync_all_users(sync=True, retries=3, retry_wait=1.0):
-    users = AstakosUser.objects.verified()
-    return sync_users(users, sync, retries, retry_wait)
 
 class ProjectMembershipHistory(models.Model):
     reasons_list    =   ['ACCEPT', 'REJECT', 'REMOVE']
@@ -2819,7 +2159,7 @@ class ProjectMembershipHistory(models.Model):
 
     person  =   models.BigIntegerField()
     project =   models.BigIntegerField()
-    date    =   models.DateField(auto_now_add=True)
+    date    =   models.DateTimeField(auto_now_add=True)
     reason  =   models.IntegerField()
     serial  =   models.BigIntegerField()
 
@@ -2864,4 +2204,4 @@ def renew_token(sender, instance, **kwargs):
     if not instance.auth_token:
         instance.renew_token()
 pre_save.connect(renew_token, sender=AstakosUser)
-pre_save.connect(renew_token, sender=Service)
+pre_save.connect(renew_token, sender=Component)

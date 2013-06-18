@@ -17,7 +17,6 @@ $(document).ready(function(){
     //  * Dual licensed under the MIT and GPL licenses
     var cookie=function(key,value,options){if(arguments.length>1&&(!/Object/.test(Object.prototype.toString.call(value))||value===null||value===undefined)){options=$.extend({},options);if(value===null||value===undefined){options.expires=-1}if(typeof options.expires==='number'){var days=options.expires,t=options.expires=new Date();t.setDate(t.getDate()+days)}value=String(value);return(document.cookie=[encodeURIComponent(key),'=',options.raw?value:encodeURIComponent(value),options.expires?'; expires='+options.expires.toUTCString():'',options.path?'; path='+options.path:'',options.domain?'; domain='+options.domain:'',options.secure?'; secure':''].join(''))}options=value||{};var decode=options.raw?function(s){return s}:decodeURIComponent;var pairs=document.cookie.split('; ');for(var i=0,pair;pair=pairs[i]&&pairs[i].split('=');i++){if(decode(pair[0])===key)return decode(pair[1]||'')}return null};
 
-    var ACTIVE_MENU = window.CLOUDBAR_ACTIVE_SERVICE || 'cloud';
     var USER_DATA = window.CLOUDBAR_USER_DATA || {'user': 'Not logged in', 'logged_in': false};
     var COOKIE_NAME = window.CLOUDBAR_COOKIE_NAME || '_pithos2_a';
 
@@ -39,7 +38,6 @@ $(document).ready(function(){
 
     if (!SKIP_ADDITIONAL_CSS) {
         var css = $("<link />");
-        css.attr({rel:'stylesheet', type:'text/css', href:cssloc + 'service_' + ACTIVE_MENU + '.css'});
         $("head").append(css);
     }
 
@@ -52,28 +50,41 @@ $(document).ready(function(){
     
     // create services links and set the active class to the current service
     $.getJSON(get_services_url + "?callback=?", function(data) {
+            var active_found = false;
             $.each(data, function(i, el){
-            var sli = $("<li>");
+            var sli = $("<li class='service-"+el.name+"'>");
             var slink = $("<a>");
-            if (el.icon) {
-                slink.append($('<img src="'+cssloc+el.icon+'"/>'));
+            if (!el.cloudbar) { el.cloudbar = {} }
+            var title = el.cloudbar.name || el.verbose_name || el.name;
+            if (!el.cloudbar.show) { return }
+            if (el.cloudbar.icon) {
+                var iconloc = el.cloudbar.icon;
+                if (el.cloudbar.icon.substring(0, 4) != 'http') {
+                  iconloc = cssloc + el.cloudbar.icon;
+                }
+                slink.append($('<img alt="'+title+'" src="'+iconloc+'"/>'));
                 slink.addClass("with-icon");
             } else {
-                slink.text(el.name);
+                slink.html(title);
             }
             slink.attr('href', el.url);
             slink.attr('title', el.name);
             sli.append(slink);
             services.append(sli);
-            if (el.id == ACTIVE_MENU || el.name == ACTIVE_MENU) {
-                sli.addClass("active");
+            var urlReg = new RegExp('^'+el.url+'.*');
+            if (urlReg.test(window.location.toString())) {
+              active_found = true;   
+              sli.addClass("active");
             }
         });
+        // no active service found, activate accounts
+        if (!active_found) {
+            $('.cloudbar .user').addClass("hover active");
+        }
       });
     
     // create profile links
     var user = $('<div class="user"></div>');    
-    if (ACTIVE_MENU == "accounts") { user.addClass("hover active")}
     var username = $('<a href="#"></a>');
     var usermenu = $("<ul>");
     var get_menu_url = (window.GET_MENU_URL || window.CLOUDBAR_MENU) + '?callback=?&location=' + window.location.toString().split("?")[0];
@@ -84,6 +95,7 @@ $(document).ready(function(){
                 username.html('<span>'+el.name+'</span>');
                 username.attr('href', el.url);
                 user.removeClass('full');
+                $('body').addClass('user-not-authenticated');
             }else{
                 var link = $("<a />");
                 link.text(el.name);
@@ -92,6 +104,7 @@ $(document).ready(function(){
                 li.append(link);
                 usermenu.append(li);
                 user.addClass('full');
+                $('body').removeClass('user-not-authenticated');
             }
         });
     

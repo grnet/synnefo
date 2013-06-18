@@ -43,20 +43,24 @@ from django.core.urlresolvers import reverse
 
 from urllib import unquote
 
-from snf_django.lib.astakos import get_user
-from synnefo.db.models import VirtualMachine, NetworkInterface, Network
+import astakosclient
 from snf_django.lib import astakos
+
+from synnefo.db.models import VirtualMachine, NetworkInterface, Network
 
 # server actions specific imports
 from synnefo.api import servers
 from synnefo.logic import backend as servers_backend
+from synnefo.ui.views import UI_MEDIA_URL
 
 logger = logging.getLogger(__name__)
+
+HELPDESK_MEDIA_URL = getattr(settings, 'HELPDESK_MEDIA_URL',
+                             settings.MEDIA_URL + 'helpdesk/')
 
 IP_SEARCH_REGEX = re.compile('([0-9]+)(?:\.[0-9]+){3}')
 UUID_SEARCH_REGEX = re.compile('([0-9a-z]{8}-([0-9a-z]{4}-){3}[0-9a-z]{12})')
 VM_SEARCH_REGEX = re.compile('vm(-){0,}(?P<vmid>[0-9]+)')
-
 
 
 def get_token_from_cookie(request, cookiename):
@@ -80,11 +84,6 @@ AUTH_COOKIE_NAME = getattr(settings, 'HELPDESK_AUTH_COOKIE_NAME',
                                    '_pithos2_a'))
 PERMITTED_GROUPS = getattr(settings, 'HELPDESK_PERMITTED_GROUPS', ['helpdesk'])
 SHOW_DELETED_VMS = getattr(settings, 'HELPDESK_SHOW_DELETED_VMS', False)
-
-# guess cyclades setting too
-USER_CATALOG_URL = getattr(settings, 'CYCLADES_USER_CATALOG_URL', None)
-USER_CATALOG_URL = getattr(settings, 'HELPDESK_USER_CATALOG_URL',
-                           USER_CATALOG_URL)
 
 
 def token_check(func):
@@ -115,12 +114,13 @@ def helpdesk_user_required(func, permitted_groups=PERMITTED_GROUPS):
             raise Http404
 
         token = get_token_from_cookie(request, AUTH_COOKIE_NAME)
-        get_user(request, settings.ASTAKOS_URL, fallback_token=token)
+        astakos.get_user(request, settings.ASTAKOS_BASE_URL,
+                         fallback_token=token, logger=logger)
         if hasattr(request, 'user') and request.user:
             groups = request.user.get('groups', [])
 
             if not groups:
-                logger.error("Failed to access helpdesk view %r",
+                logger.error("Failed to access helpdesk view. User: %r",
                              request.user_uniq)
                 raise PermissionDenied
 
@@ -136,7 +136,7 @@ def helpdesk_user_required(func, permitted_groups=PERMITTED_GROUPS):
                 raise PermissionDenied
         else:
             logger.error("Failed to access helpdesk view %r. No authenticated "
-                         "user found.")
+                         "user found.", request.user_uniq)
             raise PermissionDenied
 
         logging.info("User %s accessed helpdesk view (%s)", request.user_uniq,
@@ -158,7 +158,9 @@ def index(request):
                         search_query=account)
 
     # show index template
-    return direct_to_template(request, "helpdesk/index.html")
+    return direct_to_template(request, "helpdesk/index.html",
+                              extra_context={'HELPDESK_MEDIA_URL':
+                                             HELPDESK_MEDIA_URL})
 
 
 @helpdesk_user_required
@@ -171,6 +173,8 @@ def account(request, search_query):
     show_deleted = bool(int(request.GET.get('deleted', SHOW_DELETED_VMS)))
 
     account_exists = True
+    # flag to indicate successfull astakos calls
+    account_resolved = False
     vms = []
     networks = []
     is_ip = IP_SEARCH_REGEX.match(search_query)
@@ -199,22 +203,33 @@ def account(request, search_query):
             account = None
             search_query = vmid
 
+    astakos_client = astakosclient.AstakosClient(settings.ASTAKOS_BASE_URL,
+                                                 retry=2, use_pool=True,
+                                                 logger=logger)
+
+    account = None
     if is_uuid:
         account = search_query
-        account_name = astakos.get_displayname(auth_token, account,
-                                               USER_CATALOG_URL)
+        try:
+            account_name = astakos_client.get_username(auth_token, account)
+        except:
+            logger.info("Failed to resolve '%s' into account" % account)
 
     if account_exists and not is_uuid:
         account_name = search_query
-        account = astakos.get_user_uuid(auth_token, account_name,
-                                        USER_CATALOG_URL)
+        try:
+            account = astakos_client.get_uuid(auth_token, account_name)
+        except:
+            logger.info("Failed to resolve '%s' into account" % account_name)
 
     if not account:
         account_exists = False
+    else:
+        account_resolved = True
 
     filter_extra = {}
     if not show_deleted:
-        filter_extra['deleted'] = False
+        filter_extra['deleted'] = False,
 
     # all user vms
     vms = VirtualMachine.objects.filter(userid=account,
@@ -228,7 +243,8 @@ def account(request, search_query):
                                               **filter_extra).order_by('state')
     networks = list(public_networks) + list(private_networks)
 
-    if vms.count() == 0 and private_networks.count() == 0:
+    if vms.count() == 0 and private_networks.count() == 0 and not \
+            account_resolved:
         account_exists = False
 
     user_context = {
@@ -243,7 +259,8 @@ def account(request, search_query):
         'account_name': account_name,
         'token': request.user['auth_token'],
         'networks': networks,
-        'UI_MEDIA_URL': settings.UI_MEDIA_URL
+        'HELPDESK_MEDIA_URL': HELPDESK_MEDIA_URL,
+        'UI_MEDIA_URL': UI_MEDIA_URL
     }
 
     return direct_to_template(request, "helpdesk/account.html",

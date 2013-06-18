@@ -42,7 +42,8 @@ from django.http import HttpResponse
 
 from snf_django.lib import api
 from snf_django.lib.api import faults
-from synnefo.plankton.utils import plankton_method
+from synnefo.plankton.utils import image_backend
+from synnefo.plankton.backend import split_url
 
 
 FILTERS = ('name', 'container_format', 'disk_format', 'status', 'size_min',
@@ -117,7 +118,6 @@ def _get_image_headers(request):
 
 
 @api.api_method(http_method="POST", user_required=True, logger=log)
-@plankton_method
 def add_image(request):
     """Add a new virtual machine image
 
@@ -144,12 +144,17 @@ def add_image(request):
 
     name = params.pop('name')
     location = params.pop('location', None)
+    try:
+        split_url(location)
+    except AssertionError:
+        raise faults.BadRequest("Invalid location '%s'" % location)
 
     if location:
-        image = request.backend.register(name, location, params)
+        with image_backend(request.user_uniq) as backend:
+            image = backend.register(name, location, params)
     else:
         #f = StringIO(request.raw_post_data)
-        #image = request.backend.put(name, f, params)
+        #image = backend.put(name, f, params)
         return HttpResponse(status=501)     # Not Implemented
 
     if not image:
@@ -159,7 +164,6 @@ def add_image(request):
 
 
 @api.api_method(http_method="DELETE", user_required=True, logger=log)
-@plankton_method
 def delete_image(request, image_id):
     """Delete an Image.
 
@@ -173,13 +177,13 @@ def delete_image(request, image_id):
     """
     log.info("delete_image '%s'" % image_id)
     userid = request.user_uniq
-    request.backend.unregister(image_id)
+    with image_backend(userid) as backend:
+        backend.unregister(image_id)
     log.info("User '%s' deleted image '%s'" % (userid, image_id))
     return HttpResponse(status=204)
 
 
 @api.api_method(http_method="PUT", user_required=True, logger=log)
-@plankton_method
 def add_image_member(request, image_id, member):
     """Add a member to an image
 
@@ -191,12 +195,12 @@ def add_image_member(request, image_id, member):
     """
 
     log.debug('add_image_member %s %s', image_id, member)
-    request.backend.add_user(image_id, member)
+    with image_backend(request.user_uniq) as backend:
+        backend.add_user(image_id, member)
     return HttpResponse(status=204)
 
 
 @api.api_method(http_method="GET", user_required=True, logger=log)
-@plankton_method
 def get_image(request, image_id):
     """Retrieve a virtual machine image
 
@@ -208,12 +212,12 @@ def get_image(request, image_id):
         in memory.
     """
 
-    #image = request.backend.get_image(image_id)
+    #image = backend.get_image(image_id)
     #if not image:
     #    return HttpResponseNotFound()
     #
     #response = _create_image_response(image)
-    #data = request.backend.get_data(image)
+    #data = backend.get_data(image)
     #response.content = data
     #response['Content-Length'] = len(data)
     #response['Content-Type'] = 'application/octet-stream'
@@ -223,7 +227,6 @@ def get_image(request, image_id):
 
 
 @api.api_method(http_method="HEAD", user_required=True, logger=log)
-@plankton_method
 def get_image_meta(request, image_id):
     """Return detailed metadata on a specific image
 
@@ -231,14 +234,12 @@ def get_image_meta(request, image_id):
     3.4. Requesting Detailed Metadata on a Specific Image
     """
 
-    image = request.backend.get_image(image_id)
-    if not image:
-        raise faults.ItemNotFound()
+    with image_backend(request.user_uniq) as backend:
+        image = backend.get_image(image_id)
     return _create_image_response(image)
 
 
 @api.api_method(http_method="GET", user_required=True, logger=log)
-@plankton_method
 def list_image_members(request, image_id):
     """List image memberships
 
@@ -246,14 +247,15 @@ def list_image_members(request, image_id):
     3.7. Requesting Image Memberships
     """
 
-    members = [{'member_id': user, 'can_share': False}
-               for user in request.backend.list_users(image_id)]
+    with image_backend(request.user_uniq) as backend:
+        users = backend.list_users(image_id)
+
+    members = [{'member_id': u, 'can_share': False} for u in users]
     data = json.dumps({'members': members}, indent=settings.DEBUG)
     return HttpResponse(data)
 
 
 @api.api_method(http_method="GET", user_required=True, logger=log)
-@plankton_method
 def list_images(request, detail=False):
     """Return a list of available images.
 
@@ -293,7 +295,8 @@ def list_images(request, detail=False):
         except ValueError:
             raise faults.BadRequest("Malformed request.")
 
-    images = request.backend.list(filters, params)
+    with image_backend(request.user_uniq) as backend:
+        images = backend.list_images(filters, params)
 
     # Remove keys that should not be returned
     fields = DETAIL_FIELDS if detail else LIST_FIELDS
@@ -307,7 +310,6 @@ def list_images(request, detail=False):
 
 
 @api.api_method(http_method="GET", user_required=True, logger=log)
-@plankton_method
 def list_shared_images(request, member):
     """Request shared images
 
@@ -322,16 +324,16 @@ def list_shared_images(request, member):
     log.debug('list_shared_images %s', member)
 
     images = []
-    for image in request.backend.iter_shared(member=member):
-        image_id = image['id']
-        images.append({'image_id': image_id, 'can_share': False})
+    with image_backend(request.user_uniq) as backend:
+        for image in backend.list_shared_images(member=member):
+            image_id = image['id']
+            images.append({'image_id': image_id, 'can_share': False})
 
     data = json.dumps({'shared_images': images}, indent=settings.DEBUG)
     return HttpResponse(data)
 
 
 @api.api_method(http_method="DELETE", user_required=True, logger=log)
-@plankton_method
 def remove_image_member(request, image_id, member):
     """Remove a member from an image
 
@@ -340,12 +342,12 @@ def remove_image_member(request, image_id, member):
     """
 
     log.debug('remove_image_member %s %s', image_id, member)
-    request.backend.remove_user(image_id, member)
+    with image_backend(request.user_uniq) as backend:
+        backend.remove_user(image_id, member)
     return HttpResponse(status=204)
 
 
 @api.api_method(http_method="PUT", user_required=True, logger=log)
-@plankton_method
 def update_image(request, image_id):
     """Update an image
 
@@ -363,12 +365,12 @@ def update_image(request, image_id):
 
     assert set(meta.keys()).issubset(set(UPDATE_FIELDS))
 
-    image = request.backend.update(image_id, meta)
+    with image_backend(request.user_uniq) as backend:
+        image = backend.update_metadata(image_id, meta)
     return _create_image_response(image)
 
 
 @api.api_method(http_method="PUT", user_required=True, logger=log)
-@plankton_method
 def update_image_members(request, image_id):
     """Replace a membership list for an image
 
@@ -388,5 +390,6 @@ def update_image_members(request, image_id):
     except (ValueError, KeyError, TypeError):
         return HttpResponse(status=400)
 
-    request.backend.replace_users(image_id, members)
+    with image_backend(request.user_uniq) as backend:
+        backend.replace_users(image_id, members)
     return HttpResponse(status=204)

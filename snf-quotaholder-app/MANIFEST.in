@@ -1,3 +1,0 @@
-include README
-include distribute_setup.py
-recursive-include quotaholder_django/quotaholder_app/fixtures *.json

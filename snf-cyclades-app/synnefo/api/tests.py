@@ -37,3 +37,4 @@ from synnefo.api.test.networks import *
 from synnefo.api.test.flavors import *
 from synnefo.api.test.images import *
 from synnefo.api.test.versions import *
+from synnefo.api.test.extensions import *

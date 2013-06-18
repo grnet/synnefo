@@ -56,16 +56,13 @@ from lockfile import LockTimeout
 from signal import signal, SIGINT, SIGTERM
 import setproctitle
 
-from ganeti import utils
-from ganeti import jqueue
-from ganeti import constants
-from ganeti import serializer
+from ganeti import utils, jqueue, constants, serializer, cli
+from ganeti import errors as ganeti_errors
 from ganeti.ssconf import SimpleConfigReader
 
 
 from synnefo import settings
 from synnefo.lib.amqp import AMQPClient
-
 
 
 def get_time_from_status(op, job):
@@ -95,6 +92,61 @@ def get_time_from_status(op, job):
     return time and time or job.end_timestamp
 
     raise InvalidBackendStatus(status, job)
+
+
+def get_instance_nics(instance, logger):
+    """Query Ganeti to a get the instance's NICs.
+
+    Get instance's NICs from Ganeti configuration data. If running on master,
+    query Ganeti via Ganeti CLI client. Otherwise, get the nics from Ganeti
+    configuration file.
+
+    @type instance: string
+    @param instance: the name of the instance
+    @rtype: List of dicts
+    @return: Dictionary containing the instance's NICs. Each dictionary
+             contains the following keys: 'network', 'ip', 'mac', 'mode',
+             'link' and 'firewall'
+
+    """
+    try:
+        client = cli.GetClient()
+        fields = ["nic.networks", "nic.ips", "nic.macs", "nic.modes",
+                  "nic.links", "tags"]
+        info = client.QueryInstances([instance], fields, use_locking=False)
+        networks, ips, macs, modes, links, tags = info[0]
+        nic_keys = ["network", "ip", "mac", "mode", "link"]
+        nics = zip(networks, ips, macs, modes, links)
+        nics = map(lambda x: dict(zip(nic_keys, x)), nics)
+    except ganeti_errors.OpPrereqError:
+        # Not running on master! Load the conf file
+        raw_data = utils.ReadFile(constants.CLUSTER_CONF_FILE)
+        config = serializer.LoadJson(raw_data)
+        i = config["instances"][instance]
+        nics = []
+        for nic in i["nics"]:
+            params = nic.pop("nicparams")
+            nic["mode"] = params["mode"]
+            nic["link"] = params["link"]
+            nics.append(nic)
+        tags = i.get("tags", [])
+    # Get firewall from instance Tags
+    # Tags are of the form synnefo:network:N:firewall_mode
+    for tag in tags:
+        t = tag.split(":")
+        if t[0:2] == ["synnefo", "network"]:
+            if len(t) != 4:
+                logger.error("Malformed synefo tag %s", tag)
+                continue
+            try:
+                index = int(t[2])
+                nics[index]['firewall'] = t[3]
+            except ValueError:
+                logger.error("Malformed synnefo tag %s", tag)
+            except IndexError:
+                logger.error("Found tag %s for non-existent NIC %d",
+                             tag, index)
+    return nics
 
 
 class InvalidBackendStatus(Exception):
@@ -192,6 +244,12 @@ class JobFileHandler(pyinotify.ProcessEvent):
                         "logmsg": logmsg,
                         "jobId": job_id})
 
+            if op_id in ["OP_INSTANCE_CREATE", "OP_INSTANCE_SET_PARAMS",
+                         "OP_INSTANCE_STARTUP"]:
+                if op.status == "success":
+                    nics = get_instance_nics(msg["instance"], self.logger)
+                    msg["nics"] = nics
+
             msg = json.dumps(msg)
             self.logger.debug("Delivering msg: %s (key=%s)", msg, routekey)
 
@@ -213,8 +271,8 @@ class JobFileHandler(pyinotify.ProcessEvent):
             instances = get_field(input, 'instances')
             if not instances or len(instances) > 1:
                 # Do not publish messages for jobs with no or multiple
-                # instances.
-                # Currently snf-dispatcher can not normally handle these messages
+                # instances.  Currently snf-dispatcher can not normally handle
+                # these messages
                 return None, None
             else:
                 instances = instances[0]
@@ -255,11 +313,9 @@ class JobFileHandler(pyinotify.ProcessEvent):
                'group_name':   get_field(input, 'group_name')}
 
         if op_id == "OP_NETWORK_SET_PARAMS":
-            msg.update(
-                {'add_reserved_ips':    get_field(input, 'add_reserved_ips'),
-                 'remove_reserved_ips': get_field(input, 'remove_reserved_ips')
-                })
-
+            msg["add_reserved_ips"] = get_field(input, "add_reserved_ips")
+            msg["remove_reserved_ips"] = get_field(input,
+                                                   "remove_reserved_ips")
         routekey = "ganeti.%s.event.network" % prefix_from_name(network_name)
 
         return msg, routekey
@@ -270,7 +326,6 @@ class JobFileHandler(pyinotify.ProcessEvent):
 
     #     """
     #     return None, None
-
 
 
 def find_cluster_name():
@@ -284,13 +339,17 @@ def find_cluster_name():
 
     return name
 
+
 handler_logger = None
+
+
 def fatal_signal_handler(signum, frame):
     global handler_logger
 
     handler_logger.info("Caught fatal signal %d, will raise SystemExit",
                         signum)
     raise SystemExit
+
 
 def parse_arguments(args):
     from optparse import OptionParser
@@ -302,20 +361,20 @@ def parse_arguments(args):
                       default="/var/log/snf-ganeti-eventd.log",
                       metavar="FILE",
                       help="Write log to FILE instead of %s" %
-                          "/var/log/snf-ganeti-eventd.log")
+                           "/var/log/snf-ganeti-eventd.log")
     parser.add_option('--pid-file', dest="pid_file",
                       default="/var/run/snf-ganeti-eventd.pid",
                       metavar='PIDFILE',
                       help="Save PID to file (default: %s)" %
-                          "/var/run/snf-ganeti-eventd.pid")
+                           "/var/run/snf-ganeti-eventd.pid")
 
     return parser.parse_args(args)
+
 
 def main():
     global handler_logger
 
     (opts, args) = parse_arguments(sys.argv[1:])
-
 
     # Initialize logger
     lvl = logging.DEBUG if opts.debug else logging.INFO
@@ -348,11 +407,11 @@ def main():
     # early errors in the daemonization process [e.g., pidfile creation]
     # which will otherwise go to /dev/null.
     daemon_context = daemon.DaemonContext(
-            pidfile=pidf,
-            umask=022,
-            stdout=handler.stream,
-            stderr=handler.stream,
-            files_preserve=[handler.stream])
+        pidfile=pidf,
+        umask=022,
+        stdout=handler.stream,
+        stderr=handler.stream,
+        files_preserve=[handler.stream])
     try:
         daemon_context.open()
     except (daemon.pidlockfile.AlreadyLocked, LockTimeout):
@@ -368,8 +427,8 @@ def main():
 
     # Monitor the Ganeti job queue, create and push notifications
     wm = pyinotify.WatchManager()
-    mask = pyinotify.EventsCodes.ALL_FLAGS["IN_MOVED_TO"] | \
-           pyinotify.EventsCodes.ALL_FLAGS["IN_CLOSE_WRITE"]
+    mask = (pyinotify.EventsCodes.ALL_FLAGS["IN_MOVED_TO"] |
+            pyinotify.EventsCodes.ALL_FLAGS["IN_CLOSE_WRITE"])
 
     cluster_name = find_cluster_name()
 
@@ -382,8 +441,8 @@ def main():
         if res[constants.QUEUE_DIR] < 0:
             raise Exception("pyinotify add_watch returned negative descriptor")
 
-        logger.info("Now watching %s of %s" % (constants.QUEUE_DIR,
-                cluster_name))
+        logger.info("Now watching %s of %s" %
+                    (constants.QUEUE_DIR, cluster_name))
 
         while True:    # loop forever
             # process the queue of events as explained above

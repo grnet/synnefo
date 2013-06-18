@@ -1,8 +1,11 @@
-#!/usr/bin/env sh
+#!/bin/sh
 
 set -e
 
-TEST="$(which snf-manage) test api db logic plankton vmapi im helpdesk --settings=synnefo.settings.test"
+export SYNNEFO_SETTINGS_DIR='/tmp/snf-test-settings'
+
+APPS="api db logic plankton quotas vmapi im quotaholder_app helpdesk"
+TEST="$(which snf-manage) test $APPS --traceback --settings=synnefo.settings.test"
 
 if coverage >/dev/null 2>&1; then
   coverage run $TEST

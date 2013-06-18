@@ -219,9 +219,7 @@
                 this.type_select.append($('<option value='+value+' class="subnet">'+name+'</option>'));
             }, this);
             
-            this.disable_network_type = false;
             if (_.keys(synnefo.config.network_available_types).length <= 1) {
-                this.disable_network_type = true;
                 this.type_select.closest(".form-field").hide();
             }
 
@@ -338,8 +336,6 @@
             var dhcp = this.dhcp_select.is(":checked");
             var subnet = null;
             var type = this.type_select.val();
-
-            if (this.disable_network_type) { type = null };
 
             if (dhcp) {
                 if (this.subnet_select.val() == "custom") {

@@ -64,6 +64,8 @@ class AuthProviderBase(type):
             if type_id:
                 include = True
             if type_id in astakos_settings.IM_MODULES:
+                if astakos_settings.IM_MODULES.index(type_id) == 0:
+                    dct['is_primary'] = True
                 dct['module_enabled'] = True
 
         newcls = super(AuthProviderBase, cls).__new__(cls, name, bases, dct)
@@ -80,6 +82,7 @@ class AuthProvider(object):
 
     module = None
     module_enabled = False
+    is_primary = False
 
     message_tpls = OrderedDict((
         ('title', '{module_title}'),
@@ -173,6 +176,8 @@ class AuthProvider(object):
             setting_key = "%s_POLICY" % policy.upper()
             if self.has_setting(setting_key):
                 self.module_policies[policy] = self.get_setting(setting_key)
+            else:
+                self.module_policies[policy] = value
 
         # messages cache
         self.message_tpls_compiled = OrderedDict()
@@ -344,7 +349,8 @@ class AuthProvider(object):
         return self.get_username_msg
 
     def get_user_providers(self):
-        return self.user.auth_providers.active()
+        return self.user.auth_providers.active().filter(
+            module__in=astakos_settings.IM_MODULES)
 
     def get_user_module_providers(self):
         return self.user.auth_providers.active().filter(module=self.module)
@@ -553,7 +559,8 @@ class LocalAuthProvider(AuthProvider):
     }
 
     policies = {
-        'limit': 1
+        'limit': 1,
+        'switch': False
     }
 
     @property
@@ -579,8 +586,12 @@ class LocalAuthProvider(AuthProvider):
 
 class ShibbolethAuthProvider(AuthProvider):
     module = 'shibboleth'
-    login_view = 'astakos.im.target.shibboleth.login'
+    login_view = 'astakos.im.views.target.shibboleth.login'
     username_key = 'identifier'
+
+    policies = {
+        'switch': False
+    }
 
     messages = {
         'title': _('Academic'),
@@ -594,7 +605,7 @@ class ShibbolethAuthProvider(AuthProvider):
 
 class TwitterAuthProvider(AuthProvider):
     module = 'twitter'
-    login_view = 'astakos.im.target.twitter.login'
+    login_view = 'astakos.im.views.target.twitter.login'
     username_key = 'provider_info_screen_name'
 
     messages = {
@@ -605,7 +616,7 @@ class TwitterAuthProvider(AuthProvider):
 
 class GoogleAuthProvider(AuthProvider):
     module = 'google'
-    login_view = 'astakos.im.target.google.login'
+    login_view = 'astakos.im.views.target.google.login'
     username_key = 'provider_info_email'
 
     messages = {
@@ -616,7 +627,7 @@ class GoogleAuthProvider(AuthProvider):
 
 class LinkedInAuthProvider(AuthProvider):
     module = 'linkedin'
-    login_view = 'astakos.im.target.linkedin.login'
+    login_view = 'astakos.im.views.target.linkedin.login'
     username_key = 'provider_info_email'
 
     messages = {

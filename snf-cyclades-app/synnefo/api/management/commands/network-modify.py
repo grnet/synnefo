@@ -37,6 +37,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from synnefo.db.models import Network, pooled_rapi_client
 from synnefo.management.common import validate_network_info, get_network
+from synnefo.webproject.management.utils import parse_bool
 
 HELP_MSG = """Modify a network.
 
@@ -84,6 +85,8 @@ class Command(BaseCommand):
         make_option(
             '--dhcp',
             dest='dhcp',
+            metavar="True|False",
+            choices=["True", "False"],
             help="Set if network will use nfdhcp"),
         make_option(
             '--state',
@@ -106,7 +109,13 @@ class Command(BaseCommand):
             '--remove-reserved-ips',
             dest="remove_reserved_ips",
             help="Comma seperated list of IPs to externally release."),
-
+        make_option(
+            "--drained",
+            dest="drained",
+            metavar="True|False",
+            choices=["True", "False"],
+            help="Set as drained to exclude for IP allocation."
+                 " Only used for public networks.")
     )
 
     def handle(self, *args, **options):
@@ -127,11 +136,17 @@ class Command(BaseCommand):
                 msg = "Invalid state, must be one of %s" % ', '.join(allowed)
                 raise CommandError(msg)
 
+        dhcp = options.get("dhcp")
+        if dhcp:
+            options["dhcp"] = parse_bool(dhcp)
+        drained = options.get("drained")
+        if drained:
+            options["drained"] = parse_bool(drained)
         fields = ('name', 'userid', 'subnet', 'gateway', 'subnet6', 'gateway6',
-                  'dhcp', 'state', 'link', 'mac_prefix')
+                  'dhcp', 'state', 'link', 'mac_prefix', 'drained')
         for field in fields:
             value = options.get(field, None)
-            if value:
+            if value is not None:
                 network.__setattr__(field, value)
 
         add_reserved_ips = options.get('add_reserved_ips')

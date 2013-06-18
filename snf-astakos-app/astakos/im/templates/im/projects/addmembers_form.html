@@ -1,0 +1,10 @@
+<form action="{% url project_detail object.chain %}#members-table"
+    method="post" class="withlabels upperlabels" id="members-table" >
+    {% csrf_token %}
+    {% with addmembers_form as form %}
+    {% include "im/form_render.html" %}
+    {% endwith %}
+    <div class="form-row submit">
+      <input type="submit" class="submit altcol" value="ADD MEMBERS" />
+    </div>
+</form>

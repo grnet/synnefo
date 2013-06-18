@@ -65,8 +65,8 @@ urlpatterns = patterns(
     (r'^/(\d+)/action(?:.json|.xml)?$', 'server_action'),
     (r'^/(\d+)/ips(?:.json|.xml)?$', 'list_addresses'),
     (r'^/(\d+)/ips/(.+?)(?:.json|.xml)?$', 'list_addresses_by_network'),
-    (r'^/(\d+)/meta(?:.json|.xml)?$', 'metadata_demux'),
-    (r'^/(\d+)/meta/(.+?)(?:.json|.xml)?$', 'metadata_item_demux'),
+    (r'^/(\d+)/metadata(?:.json|.xml)?$', 'metadata_demux'),
+    (r'^/(\d+)/metadata/(.+?)(?:.json|.xml)?$', 'metadata_item_demux'),
     (r'^/(\d+)/stats(?:.json|.xml)?$', 'server_stats'),
     (r'^/(\d+)/diagnostics(?:.json)?$', 'get_server_diagnostics'),
 )
@@ -78,7 +78,7 @@ def demux(request):
     elif request.method == 'POST':
         return create_server(request)
     else:
-        return api.method_not_allowed(request)
+        return api.api_method_not_allowed(request)
 
 
 def server_demux(request, server_id):
@@ -89,7 +89,7 @@ def server_demux(request, server_id):
     elif request.method == 'DELETE':
         return delete_server(request, server_id)
     else:
-        return api.method_not_allowed(request)
+        return api.api_method_not_allowed(request)
 
 
 def metadata_demux(request, server_id):
@@ -98,7 +98,7 @@ def metadata_demux(request, server_id):
     elif request.method == 'POST':
         return update_metadata(request, server_id)
     else:
-        return api.method_not_allowed(request)
+        return api.api_method_not_allowed(request)
 
 
 def metadata_item_demux(request, server_id, key):
@@ -109,7 +109,7 @@ def metadata_item_demux(request, server_id, key):
     elif request.method == 'DELETE':
         return delete_metadata_item(request, server_id, key)
     else:
-        return api.method_not_allowed(request)
+        return api.api_method_not_allowed(request)
 
 
 def nic_to_dict(nic):
@@ -124,32 +124,59 @@ def nic_to_dict(nic):
     return d
 
 
+def nics_to_addresses(nics):
+    addresses = {}
+    for nic in nics:
+        net_nics = []
+        net_nics.append({"version": 4,
+                         "addr": nic.ipv4,
+                         "OS-EXT-IPS:type": "fixed"})
+        if nic.ipv6:
+            net_nics.append({"version": 6,
+                             "addr": nic.ipv6,
+                             "OS-EXT-IPS:type": "fixed"})
+        addresses[nic.network.id] = net_nics
+    return addresses
+
+
 def vm_to_dict(vm, detail=False):
     d = dict(id=vm.id, name=vm.name)
+    d['links'] = util.vm_to_links(vm.id)
     if detail:
+        d['user_id'] = vm.userid
+        d['tenant_id'] = vm.userid
         d['status'] = get_rsapi_state(vm)
         d['progress'] = 100 if get_rsapi_state(vm) == 'ACTIVE' \
             else vm.buildpercentage
         d['hostId'] = vm.hostid
         d['updated'] = utils.isoformat(vm.updated)
         d['created'] = utils.isoformat(vm.created)
-        d['flavorRef'] = vm.flavor.id
-        d['imageRef'] = vm.imageid
+        d['flavor'] = {"id": vm.flavor.id,
+                       "links": util.flavor_to_links(vm.flavor.id)}
+        d['image'] = {"id": vm.imageid,
+                      "links": util.image_to_links(vm.imageid)}
         d['suspended'] = vm.suspended
 
         metadata = dict((m.meta_key, m.meta_value) for m in vm.metadata.all())
-        if metadata:
-            d['metadata'] = {'values': metadata}
+        d['metadata'] = metadata
 
         vm_nics = vm.nics.filter(state="ACTIVE").order_by("index")
         attachments = map(nic_to_dict, vm_nics)
-        if attachments:
-            d['attachments'] = {'values': attachments}
+        d['attachments'] = attachments
+        d['addresses'] = nics_to_addresses(vm_nics)
 
         # include the latest vm diagnostic, if set
         diagnostic = vm.get_last_diagnostic()
         if diagnostic:
             d['diagnostics'] = diagnostics_to_dict([diagnostic])
+        else:
+            d['diagnostics'] = []
+        # Fixed
+        d["security_groups"] = [{"name": "default"}]
+        d["key_name"] = None
+        d["config_drive"] = ""
+        d["accessIPv4"] = ""
+        d["accessIPv6"] = ""
 
     return d
 
@@ -239,19 +266,13 @@ def list_servers(request, detail=False):
             'servers': servers,
             'detail': detail})
     else:
-        data = json.dumps({'servers': {'values': servers}})
+        data = json.dumps({'servers': servers})
 
     return HttpResponse(data, status=200)
 
 
 @api.api_method(http_method='POST', user_required=True, logger=log)
-# Use manual transactions. Backend and IP pool allocations need exclusive
-# access (SELECT..FOR UPDATE). Running create_server with commit_on_success
-# would result in backends and public networks to be locked until the job is
-# sent to the Ganeti backend.
-@quotas.uses_commission
-@transaction.commit_manually
-def create_server(serials, request):
+def create_server(request):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
     #                       serviceUnavailable (503),
@@ -261,90 +282,95 @@ def create_server(serials, request):
     #                       badRequest (400),
     #                       serverCapacityUnavailable (503),
     #                       overLimit (413)
-    try:
-        req = utils.get_request_dict(request)
-        log.info('create_server %s', req)
-        user_id = request.user_uniq
+    req = utils.get_request_dict(request)
+    log.info('create_server %s', req)
+    user_id = request.user_uniq
 
+    try:
+        server = req['server']
+        name = server['name']
+        metadata = server.get('metadata', {})
+        assert isinstance(metadata, dict)
+        image_id = server['imageRef']
+        flavor_id = server['flavorRef']
+        personality = server.get('personality', [])
+        assert isinstance(personality, list)
+    except (KeyError, AssertionError):
+        raise faults.BadRequest("Malformed request")
+
+    # Verify that personalities are well-formed
+    util.verify_personality(personality)
+    # Get image information
+    image = util.get_image_dict(image_id, user_id)
+    # Get flavor (ensure it is active)
+    flavor = util.get_flavor(flavor_id, include_deleted=False)
+    # Generate password
+    password = util.random_password()
+
+    vm = do_create_server(user_id, name, password, flavor, image,
+                          metadata=metadata, personality=personality)
+
+    server = vm_to_dict(vm, detail=True)
+    server['status'] = 'BUILD'
+    server['adminPass'] = password
+
+    response = render_server(request, server, status=202)
+
+    return response
+
+
+@transaction.commit_manually
+def do_create_server(userid, name, password, flavor, image, metadata={},
+                     personality=[], network=None, backend=None):
+    if backend is None:
+        # Allocate backend to host the server. Commit after allocation to
+        # release the locks hold by the backend allocator.
         try:
-            server = req['server']
-            name = server['name']
-            metadata = server.get('metadata', {})
-            assert isinstance(metadata, dict)
-            image_id = server['imageRef']
-            flavor_id = server['flavorRef']
-            personality = server.get('personality', [])
-            assert isinstance(personality, list)
-        except (KeyError, AssertionError):
-            raise faults.BadRequest("Malformed request")
-
-        # Verify that personalities are well-formed
-        util.verify_personality(personality)
-        # Get image information
-        image = util.get_image_dict(image_id, user_id)
-        # Get flavor (ensure it is active)
-        flavor = util.get_flavor(flavor_id, include_deleted=False)
-        # Allocate VM to backend
-        backend_allocator = BackendAllocator()
-        backend = backend_allocator.allocate(request.user_uniq, flavor)
-
-        if backend is None:
-            log.error("No available backends for VM with flavor %s", flavor)
-            raise faults.ServiceUnavailable("No available backends")
-    except:
-        transaction.rollback()
-        raise
-    else:
-        transaction.commit()
-
-    # Allocate IP from public network
-    try:
-        (network, address) = util.get_public_ip(backend)
-        nic = {'ip': address, 'network': network.backend_id}
-    except:
-        transaction.rollback()
-        raise
-    else:
-        transaction.commit()
+            backend_allocator = BackendAllocator()
+            backend = backend_allocator.allocate(userid, flavor)
+            if backend is None:
+                log.error("No available backend for VM with flavor %s", flavor)
+                raise faults.ServiceUnavailable("No available backends")
+        except:
+            transaction.rollback()
+            raise
+        else:
+            transaction.commit()
 
     # Fix flavor for archipelago
-    password = util.random_password()
     disk_template, provider = util.get_flavor_provider(flavor)
     if provider:
         flavor.disk_template = disk_template
         flavor.disk_provider = provider
-        flavor.disk_origin = None
-        if provider == 'vlmc':
-            flavor.disk_origin = image['checksum']
-            image['backend_id'] = 'null'
+        flavor.disk_origin = image['checksum']
+        image['backend_id'] = 'null'
     else:
         flavor.disk_provider = None
+        flavor.disk_origin = None
 
     try:
-        # Issue commission
-        serial = quotas.issue_vm_commission(user_id, flavor)
-        serials.append(serial)
-        # Make the commission accepted, since in the end of this
-        # transaction the VM will have been created in the DB.
-        serial.accepted = True
-        serial.save()
+        if network is None:
+            # Allocate IP from public network
+            (network, address) = util.get_public_ip(backend)
+            nic = {'ip': address, 'network': network.backend_id}
+        else:
+            address = util.get_network_free_address(network)
 
         # We must save the VM instance now, so that it gets a valid
         # vm.backend_vm_id.
         vm = VirtualMachine.objects.create(
             name=name,
             backend=backend,
-            userid=user_id,
-            imageid=image_id,
+            userid=userid,
+            imageid=image["id"],
             flavor=flavor,
-            action="CREATE",
-            serial=serial)
+            action="CREATE")
 
         # Create VM's public NIC. Do not wait notification form ganeti hooks to
         # create this NIC, because if the hooks never run (e.g. building error)
         # the VM's public IP address will never be released!
         NetworkInterface.objects.create(machine=vm, network=network, index=0,
-                                        ipv4=address, state="Buidling")
+                                        ipv4=address, state="BUILDING")
 
         log.info("Created entry in DB for VM '%s'", vm)
 
@@ -363,6 +389,10 @@ def create_server(serials, request):
                 meta_key=key,
                 meta_value=val,
                 vm=vm)
+        # Issue commission to Quotaholder and accept it since at the end of
+        # this transaction the VirtualMachine object will be created in the DB.
+        # Note: the following call does a commit!
+        quotas.issue_and_accept_commission(vm)
     except:
         transaction.rollback()
         raise
@@ -376,24 +406,23 @@ def create_server(serials, request):
         vm.save()
         transaction.commit()
         log.info("User %s created VM %s, NIC %s, Backend %s, JobID %s",
-                 user_id, vm, nic, backend, str(jobID))
+                 userid, vm, nic, backend, str(jobID))
     except GanetiApiError as e:
-        log.exception("Can not communicate to backend %s: %s. Deleting VM %s",
-                      backend, e, vm)
-        vm.delete()
-        transaction.commit()
+        log.exception("Can not communicate to backend %s: %s.",
+                      backend, e)
+        # Failed while enqueuing OP_INSTANCE_CREATE to backend. Restore
+        # already reserved quotas by issuing a negative commission
+        vm.operstate = "ERROR"
+        vm.backendlogmsg = "Can not communicate to backend."
+        vm.deleted = True
+        vm.save()
+        quotas.issue_and_accept_commission(vm, delete=True)
         raise
     except:
         transaction.rollback()
         raise
 
-    server = vm_to_dict(vm, detail=True)
-    server['status'] = 'BUILD'
-    server['adminPass'] = password
-
-    respsone = render_server(request, server, status=202)
-
-    return respsone
+    return vm
 
 
 @api.api_method(http_method='GET', user_required=True, logger=log)
@@ -537,12 +566,13 @@ def list_addresses(request, server_id):
 
     log.debug('list_addresses %s', server_id)
     vm = util.get_vm(server_id, request.user_uniq)
-    addresses = [nic_to_dict(nic) for nic in vm.nics.all()]
+    attachments = [nic_to_dict(nic) for nic in vm.nics.all()]
+    addresses = nics_to_addresses(vm.nics.all())
 
     if request.serialization == 'xml':
         data = render_to_string('list_addresses.xml', {'addresses': addresses})
     else:
-        data = json.dumps({'addresses': {'values': addresses}})
+        data = json.dumps({'addresses': addresses, 'attachments': attachments})
 
     return HttpResponse(data, status=200)
 
@@ -560,13 +590,13 @@ def list_addresses_by_network(request, server_id, network_id):
     log.debug('list_addresses_by_network %s %s', server_id, network_id)
     machine = util.get_vm(server_id, request.user_uniq)
     network = util.get_network(network_id, request.user_uniq)
-    nic = util.get_nic(machine, network)
-    address = nic_to_dict(nic)
+    nics = machine.nics.filter(network=network).all()
+    addresses = nics_to_addresses(nics)
 
     if request.serialization == 'xml':
-        data = render_to_string('address.xml', {'address': address})
+        data = render_to_string('address.xml', {'addresses': addresses})
     else:
-        data = json.dumps({'network': address})
+        data = json.dumps({'network': addresses})
 
     return HttpResponse(data, status=200)
 
@@ -583,7 +613,8 @@ def list_metadata(request, server_id):
     log.debug('list_server_metadata %s', server_id)
     vm = util.get_vm(server_id, request.user_uniq)
     metadata = dict((m.meta_key, m.meta_value) for m in vm.metadata.all())
-    return util.render_metadata(request, metadata, use_values=True, status=200)
+    return util.render_metadata(request, metadata, use_values=False,
+                                status=200)
 
 
 @api.api_method(http_method='POST', user_required=True, logger=log)

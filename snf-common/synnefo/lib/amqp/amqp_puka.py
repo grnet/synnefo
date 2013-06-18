@@ -49,7 +49,7 @@ from socket import error as socket_error
 from time import sleep
 from random import shuffle
 from functools import wraps
-from ordereddict import OrderedDict
+from synnefo.lib.ordereddict import OrderedDict
 from synnefo import settings
 
 

@@ -33,46 +33,54 @@
 
 from datetime import datetime, timedelta
 
-from astakos.im.models import AstakosUser, PendingMembershipError
+from django.core.exceptions import PermissionDenied
+from astakos.im.models import AstakosUser, ProjectApplication
 from astakos.im.functions import (join_project, leave_project,
-                                  submit_application, approve_application)
-from astakos.im.project_xctx import cmd_project_transaction_context
-from astakos.im.retry_xctx import RetryException
+                                  submit_application, approve_application,
+                                  get_user_by_id, check_pending_app_quota)
+from snf_django.lib.db.transaction import commit_on_success_strict
 
-@cmd_project_transaction_context(sync=True)
-def join(proj_id, user_id, ctx=None):
-    join_project(proj_id, user_id)
 
-@cmd_project_transaction_context(sync=True)
-def leave(proj_id, user_id, ctx=None):
-    try:
-        leave_project(proj_id, user_id)
-    except PendingMembershipError as e:
-        print e
-        raise RetryException()
+@commit_on_success_strict()
+def join(proj_id, user_id):
+    join_project(proj_id, get_user_by_id(user_id))
 
-@cmd_project_transaction_context()
-def submit(name, user_id, prec, ctx=None):
+
+@commit_on_success_strict()
+def leave(proj_id, user_id):
+    leave_project(proj_id, get_user_by_id(user_id))
+
+
+@commit_on_success_strict()
+def submit(name, user_id, prec):
     try:
         owner = AstakosUser.objects.get(id=user_id)
     except AstakosUser.DoesNotExist:
         raise AttributeError('user does not exist')
 
-    resource_policies = [{'service': 'cyclades',
-                          'resource': 'network.private',
-                          'uplimit': 5}]
+    precursor = (ProjectApplication.objects.get(id=prec)
+                 if prec is not None
+                 else None)
+
+    ok, limit = check_pending_app_quota(owner, precursor=precursor)
+    if not ok:
+        raise PermissionDenied('Limit %s reached', limit)
+
+    resource_policies = [('cyclades.network.private', 5)]
     data = {'owner': owner,
             'name': name,
-            'precursor_application': prec,
+            'precursor_id': prec,
             'end_date': datetime.now() + timedelta(days=1),
             'member_join_policy': 1,
             'member_leave_policy': 1,
             'resource_policies': resource_policies,
+            'request_user': owner
             }
 
-    app = submit_application(data, request_user=owner)
+    app = submit_application(**data)
     return app.id
 
-@cmd_project_transaction_context(sync=True)
-def approve(app_id, ctx=None):
+
+@commit_on_success_strict()
+def approve(app_id):
     approve_application(app_id)

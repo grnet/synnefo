@@ -15,7 +15,7 @@
 
 {% if not show_form %}
 <p>These are the specifications of the Project you want to create. If you hit the "Submit" button
-this form will be officially sent to GRNET for review. Please make sure the following reflect
+this form will be officially sent to {{ BRANDING_COMPANY_NAME }} for review. Please make sure the following reflect
 exactly your request.</p>
 {% endif %}
 
@@ -29,7 +29,7 @@ exactly your request.</p>
 		    	<em>more info</em>
                 <span> To create a new Project, first enter the following
                     required fields.  The information you enter, except
-                    <i>Comments for review</i>, will be visible to all ~okeanos
+                    <i>Comments for review</i>, will be visible to all {{ BRANDING_SERVICE_NAME }}
                     users. </span>
 	    	</span>    		
     	</legend>
@@ -113,12 +113,16 @@ exactly your request.</p>
 	    	</span>    
     	</legend>
     	<ul class="clearfix">
-    	    {% with object|resource_groups as groups %}
+            {% with object|resource_groups as groups %}
             {% for g, group_info in resource_groups.items %}
                 {% if g %}
 	    		<li>
-	    		    <a href="#{{ g }}" id="{{'group_'|add:g}}" {% if g in groups %}class="selected"{% endif %}><img src="/static/im/images/create-{{ g }}.png" alt="vm"/></a>
-	    			<input type="hidden" name="proxy_{{ 'is_selected_'|add:g }}"  id="proxy_{{ 'id_is_selected_'|add:g }}" {% if g in groups %}value="1"{% else %}value="0"{% endif %}>
+                <a href="#{{ g }}" 
+                    id="{{'group_'|add:g}}" 
+                    {% if g in groups %}class="selected"{% endif %}>
+                    <img src="{{ IM_STATIC_URL }}images/create-{{ g }}.png" alt="vm"/></a>
+                <input type="hidden" name="proxy_{{ 'is_selected_'|add:g }}" 
+                id="proxy_{{ 'id_is_selected_'|add:g }}" {% if g in groups %}value="1"{% else %}value="0"{% endif %}>
 	    			<input type="hidden" name="{{ 'is_selected_'|add:g }}"  id="{{ 'id_is_selected_'|add:g }}" {% if g in groups %}value="1"{% else %}value="0"{% endif %}>
 	                <p class="msg">{{ group_info.help_text }}</p>
 	    		</li>
@@ -132,7 +136,7 @@ exactly your request.</p>
     <div class="not-visible">
     	{% for gname, resources in resource_catalog %}
      	    <div class="group {{'group_'|add:gname}}" id="{{ gname }}">
-	    		<a href="#icons" class="delete">X remove resource</a>	
+                <a href="#icons" class="delete">X remove resource</a>	
 	    		{% for rdata in resources %}
                 {% with rdata.str_repr as rname %}
 	    		<fieldset class="quota">
@@ -167,8 +171,7 @@ exactly your request.</p>
 										{% else %}
 											value = "{% get_grant_value rname form %}"
 										{% endif %}
-			       						autocomplete="off"			
-							> 
+                                        autocomplete="off"> 
 			       			<span class="extra-img">&nbsp;</span>
 			         		<span class="info"><em>more info</em><span>{{ rdata.help_text_input_each }}</span></span>
 			    		</p>

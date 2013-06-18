@@ -32,8 +32,9 @@
 # or implied, of GRNET S.A.
 
 # Default setting for new accounts.
-DEFAULT_QUOTA = 0  # No quota.
-DEFAULT_VERSIONING = 'auto'
+DEFAULT_ACCOUNT_QUOTA = 0  # No quota.
+DEFAULT_CONTAINER_QUOTA = 0  # No quota.
+DEFAULT_CONTAINER_VERSIONING = 'auto'
 
 
 
@@ -84,7 +85,8 @@ class BaseBackend(object):
 
         'block_size': Suggested is 4MB
 
-        'default_policy': A dictionary with default policy settings
+        'default_account_policy': A dictionary with default account policy settings
+        'default_container_policy': A dictionary with default container policy settings
     """
 
     def close(self):

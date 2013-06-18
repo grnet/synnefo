@@ -3,5 +3,4 @@ recursive-include synnefo/admin/static *
 recursive-include synnefo/ui/static *
 recursive-include docs/ *.rst
 
-include README
 include distribute_setup.py

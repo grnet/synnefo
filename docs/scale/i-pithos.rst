@@ -13,7 +13,6 @@ Synnefo
 :ref:`apache <i-apache>` ||
 :ref:`webproject <i-webproject>` ||
 :ref:`astakos <i-astakos>` ||
-:ref:`qh <i-qh>` ||
 :ref:`cms <i-cms>` ||
 pithos ||
 :ref:`cyclades <i-cyclades>` ||
@@ -57,24 +56,15 @@ In `/etc/synnefo/pithos.conf` add:
 
 .. code-block:: console
 
-    PITHOS_AUTHENTICATION_URL = 'https:/accounts.example.com/im/authenticate'
-    PITHOS_AUTHENTICATION_USERS = None
-    PITHOS_USER_CATALOG_URL = 'https://accounts.example.com/user_catalogs'
-    PITHOS_USER_FEEDBACK_URL = 'https://accounts.example.com/feedback'
-    PITHOS_USER_LOGIN_URL = 'https://accounts.example.com/login'
+    ASTAKOS_BASE_URL = 'https://accounts.example.com/'
 
     PITHOS_BACKEND_DB_CONNECTION = 'postgresql://synnefo:example_passw0rd@db.example.com:5432/snf_pithos'
     PITHOS_BACKEND_BLOCK_PATH = '/srv/pithos/data'
-    PITHOS_BACKEND_QUOTA = 20 * 1024 * 1024 * 1024
     PITHOS_UPDATE_MD5 = False
     PITHOS_SERVICE_TOKEN = 'XXXXXXXXXXX'
 
-    PITHOS_QUOTAHOLDER_TOKEN = '1234'
-    PITHOS_QUOTAHOLDER_URL = 'https://qh.example.com/quotaholder/v'
-
     # Set False if astakos & pithos are on the same node
     PITHOS_PROXY_USER_SERVICES = True
-    PITHOS_USE_QUOTAHOLDER = True
 
 
 Install pithos web UI with:
@@ -89,17 +79,15 @@ In `/etc/synnefo/webclient.conf` add:
 .. code-block:: console
 
     CLOUDBAR_LOCATION = 'https://accounts.example.com/static/im/cloudbar/'
-    CLOUDBAR_SERVICES_URL = 'https://accounts.example.com/im/get_services'
-    CLOUDBAR_MENU_URL = 'https://accounts.example.com/im/get_menu'
+    CLOUDBAR_SERVICES_URL = 'https://accounts.example.com/ui/get_services'
+    CLOUDBAR_MENU_URL = 'https://accounts.example.com/ui/get_menu'
 
-    PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE = 'XXXXXXXX'
-
-    PITHOS_UI_LOGIN_URL = "https://accounts.example.com/im/login?next="
+    PITHOS_UI_LOGIN_URL = "https://accounts.example.com/ui/login?next="
 
     PITHOS_UI_FEEDBACK_URL = "/feedback"
 
 
-XXXXXXXXXXXXXX  should be the Pithos+ token and id found on astakos node by running:
+XXXXXXXXXXXXXX  should be the Pithos token and id found on astakos node by running:
 
 .. code-block:: console
 

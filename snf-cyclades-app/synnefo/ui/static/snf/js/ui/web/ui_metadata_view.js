@@ -88,7 +88,7 @@
         },
 
         get_meta: function() {
-            return this.current_vm.get('metadata').values;
+            return this.current_vm.get('metadata');
         },
         
         get_meta_el: function(key, value) {

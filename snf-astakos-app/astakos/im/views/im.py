@@ -409,11 +409,13 @@ def signup(request, template_name='im/signup.html', on_success='index',
     if request.user.is_authenticated():
         logger.info("%s already signed in, redirect to index",
                     request.user.log_display)
+        transaction.rollback()
         return HttpResponseRedirect(reverse('index'))
 
     provider = get_query(request).get('provider', 'local')
     if not auth.get_provider(provider).get_create_policy:
         logger.error("%s provider not available for signup", provider)
+        transaction.rollback()
         raise PermissionDenied
 
     instance = None
@@ -503,6 +505,8 @@ def signup(request, template_name='im/signup.html', on_success='index',
                 if not commited:
                     transaction.rollback()
                 raise
+    else:
+        transaction.commit()
 
     return render_response(template_name,
                            signup_form=form,
@@ -623,11 +627,13 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
     if request.user.is_authenticated():
         message = _(astakos_messages.LOGGED_IN_WARNING)
         messages.error(request, message)
+        transaction.rollback()
         return HttpResponseRedirect(reverse('index'))
 
     try:
         user = AstakosUser.objects.get(verification_code=token)
     except AstakosUser.DoesNotExist:
+        transaction.rollback()
         raise Http404
 
     if user.email_verified:

@@ -44,7 +44,7 @@ from setuptools import setup, find_packages
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 
 # Add astakosclient to sys.path and load version module
-sys.path.append("astakosclient")
+sys.path.insert(0, "astakosclient")
 from version import __version__
 
 # Package info

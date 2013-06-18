@@ -62,18 +62,30 @@ def get_token(request):
 
 def api_method(http_method=None, token_required=True, user_required=True,
                logger=None, format_allowed=True, astakos_url=None,
-               default_serialization="json"):
+               serializations=None, strict_serlization=False):
     """Decorator function for views that implement an API method."""
     if not logger:
         logger = log
+
+    serializations = serializations or ['json', 'xml']
 
     def decorator(func):
         @wraps(func)
         def wrapper(request, *args, **kwargs):
             try:
                 # Get the requested serialization format
-                request.serialization = get_serialization(
-                    request, format_allowed, default_serialization)
+                serialization = get_serialization(
+                    request, format_allowed, 'json')
+
+                # If guessed serialization is not supported, fallback to
+                # the default serialization or return an API error in case
+                # strict serialization flag is set.
+                if not serialization in serializations:
+                    if strict_serlization:
+                        raise faults.BadRequest(("%s serialization not "
+                                                "supported") % serialization)
+                    serialization = serializations[0]
+                request.serialization = serialization
 
                 # Check HTTP method
                 if http_method and request.method != http_method:

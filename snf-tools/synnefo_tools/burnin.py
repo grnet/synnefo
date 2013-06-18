@@ -1462,7 +1462,7 @@ class NetworkTestCase(unittest.TestCase):
 
         myPass = self.password['A']
 
-        cmd = "if ping -c 2 -w 3 %s >/dev/null; \
+        cmd = "if ping -c 7 -w 20 %s >/dev/null; \
                then echo \'True\'; fi;" % self.priv_ip["B"]
         lines, status = _ssh_execute(
             hostip, loginname, myPass, cmd)

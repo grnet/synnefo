@@ -1,3 +1,9 @@
+synnefo (0.14~rc2-1) squeeze; urgency=low
+
+  * New upstream version
+
+ -- Stratos Psomadakis <psomas@grnet.gr>  Tue, 18 Jun 2013 13:58:56 +0300
+
 synnefo (0.14~rc1-1~squeeze) squeeze; urgency=low
 
   * New upstream version

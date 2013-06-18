@@ -622,8 +622,16 @@
             this.view_id = "vm_{0}_details".format(vm.id);
             
             views.VMDetailsView.__super__.initialize.call(this);
-
+            
+            this.resize_actions = this.$(".trigger-resize");
+            this.init_handlers();
             this.update_layout();
+        },
+        
+        init_handlers: function() {
+          this.resize_actions.bind('click', _.bind(function(e){
+              ui.main.vm_resize_view.show(this.vm);
+          }, this));
         },
 
         update_layout: function() {

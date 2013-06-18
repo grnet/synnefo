@@ -1044,6 +1044,10 @@
             models.VM.__super__.unbind.apply(this, arguments);
         },
 
+        can_resize: function() {
+          return this.get('status') == 'STOPPED';
+        },
+
         handle_stats_error: function() {
             stats = {};
             _.each(['cpuBar', 'cpuTimeSeries', 'netBar', 'netTimeSeries'], function(k) {
@@ -1249,6 +1253,25 @@
             return flv;
         },
 
+        get_resize_flavors: function() {
+          var vm_flavor = this.get_flavor();
+          var flavors = synnefo.storage.flavors.filter(function(f){
+              return f.get('disk_template') ==
+              vm_flavor.get('disk_template') && f.get('disk') ==
+              vm_flavor.get('disk');
+          });
+          return flavors;
+        },
+
+        get_flavor_quotas: function() {
+          var flavor = this.get_flavor();
+          return {
+            cpu: flavor.get('cpu') + 1, 
+            ram: flavor.get_ram_size() + 1, 
+            disk:flavor.get_disk_size() + 1
+          }
+        },
+
         get_meta: function(key, deflt) {
             if (this.get('metadata') && this.get('metadata')) {
                 if (!this.get('metadata')[key]) { return deflt }
@@ -1435,6 +1458,29 @@
                         var cons_data = data.console;
                         success.apply(this, [cons_data]);
                     }, undefined, 'console', params)
+                    break;
+                case 'destroy':
+                    this.__make_api_call(this.url(), // vm actions url
+                                         "delete", // create so that sync later uses POST to make the call
+                                         undefined, // payload
+                                         function() {
+                                             // set state after successful call
+                                             self.state('DESTROY');
+                                             success.apply(this, arguments);
+                                             synnefo.storage.quotas.get('cyclades.vm').decrease();
+
+                                         },  
+                                         error, 'destroy', params);
+                    break;
+                case 'resize':
+                    this.__make_api_call(this.get_action_url(), // vm actions url
+                                         "create", // create so that sync later uses POST to make the call
+                                         {resize: {flavorRef:params.flavor}}, // payload
+                                         function() {
+                                             success.apply(this, arguments)
+                                             snf.api.trigger("call");
+                                         },  
+                                         error, 'resize', params);
                     break;
                 case 'destroy':
                     this.__make_api_call(this.url(), // vm actions url
@@ -1902,14 +1948,15 @@
         comparator: function(flv) {
             return flv.get("disk") * flv.get("cpu") * flv.get("ram");
         },
-
-        unavailable_values_for_quotas: function(quotas, flavors) {
+          
+        unavailable_values_for_quotas: function(quotas, flavors, extra) {
             var flavors = flavors || this.active();
             var index = {cpu:[], disk:[], ram:[]};
+            var extra = extra == undefined ? {cpu:0, disk:0, ram:0} : extra;
             
             _.each(flavors, function(el) {
 
-                var disk_available = quotas['disk'];
+                var disk_available = quotas['disk'] + extra.disk;
                 var disk_size = el.get_disk_size();
                 if (index.disk.indexOf(disk_size) == -1) {
                   var disk = el.disk_to_bytes();
@@ -1917,8 +1964,8 @@
                     index.disk.push(disk_size);
                   }
                 }
-
-                var ram_available = quotas['ram'];
+                
+                var ram_available = quotas['ram'] + extra.ram * 1024 * 1024;
                 var ram_size = el.get_ram_size();
                 if (index.ram.indexOf(ram_size) == -1) {
                   var ram = el.ram_to_bytes();
@@ -1928,8 +1975,8 @@
                 }
 
                 var cpu = el.get('cpu');
-                var cpu_available = quotas['cpu'];
-                if (index.ram.indexOf(cpu) == -1) {
+                var cpu_available = quotas['cpu'] + extra.cpu;
+                if (index.cpu.indexOf(cpu) == -1) {
                   if (cpu > cpu_available) {
                     index.cpu.push(el.get('cpu'))
                   }
@@ -1970,7 +2017,7 @@
         },
         
         get_data: function(lst) {
-            var data = {'cpu': [], 'mem':[], 'disk':[]};
+            var data = {'cpu': [], 'mem':[], 'disk':[], 'disk_template':[]};
 
             _.each(lst, function(flv) {
                 if (data.cpu.indexOf(flv.get("cpu")) == -1) {
@@ -1981,6 +2028,9 @@
                 }
                 if (data.disk.indexOf(flv.get("disk")) == -1) {
                     data.disk.push(flv.get("disk"));
+                }
+                if (data.disk_template.indexOf(flv.get("disk_template")) == -1) {
+                    data.disk_template.push(flv.get("disk_template"));
                 }
             })
             
@@ -2444,16 +2494,18 @@
             return this.get('resource').get('unit') == 'bytes';
         },
         
-        get_available: function() {
-            var value = this.get('limit') - this.get('usage');
+        get_available: function(active) {
+            suffix = '';
+            if (active) { suffix = '_active'}
+            var value = this.get('limit'+suffix) - this.get('usage'+suffix);
             if (value < 0) { return value }
             return value
         },
 
-        get_readable: function(key) {
+        get_readable: function(key, active) {
             var value;
             if (key == 'available') {
-                value = this.get_available();
+                value = this.get_available(active);
             } else {
                 value = this.get(key)
             }
@@ -2469,12 +2521,44 @@
         api_type: 'accounts',
         path: 'quotas',
         parse: function(resp) {
-            return _.map(resp.system, function(value, key) {
+            filtered = _.map(resp.system, function(value, key) {
                 var available = (value.limit - value.usage) || 0;
+                var available_active = available;
+                var keysplit = key.split(".");
+                var limit_active = value.limit;
+                var usage_active = value.usage;
+                keysplit[keysplit.length-1] = "active_" + keysplit[keysplit.length-1];
+                var activekey = keysplit.join(".");
+                var exists = resp.system[activekey];
+                if (exists) {
+                    available_active = exists.limit - exists.usage;
+                    limit_active = exists.limit;
+                    usage_active = exists.usage;
+                }
                 return _.extend(value, {'name': key, 'id': key, 
                           'available': available,
+                          'available_active': available_active,
+                          'limit_active': limit_active,
+                          'usage_active': usage_active,
                           'resource': snf.storage.resources.get(key)});
-            })
+            });
+            return filtered;
+        },
+        
+        get_by_id: function(k) {
+          return this.filter(function(q) { return q.get('name') == k})[0]
+        },
+
+        get_available_for_vm: function(active) {
+          var quotas = synnefo.storage.quotas;
+          var key = 'available';
+          if (active) { key = 'available_active'; }
+          var quota = {
+            'ram': quotas.get('cyclades.ram').get(key),
+            'cpu': quotas.get('cyclades.cpu').get(key),
+            'disk': quotas.get('cyclades.disk').get(key)
+          }
+          return quota;
         }
     })
 

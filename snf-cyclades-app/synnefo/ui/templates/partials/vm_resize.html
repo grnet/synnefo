@@ -1,0 +1,18 @@
+{% load i18n %}
+
+<div id="vm-resize-overlay-content" class="hidden vm-resize content create-vm">
+            <div class="warning hidden">
+                {% blocktrans %}
+                Machine resize is only available for machines in shutdown state.
+                {% endblocktrans %}
+            </div>
+            <div class="flavor-options-cont content-cont clearfix">
+                <div class="flavor-options-inner-cont clearfix"
+                    id="create-vm-flavor-options">
+                </div>
+                <div class="form-actions plain clearfix">
+                    <span class="form-action create">{% trans "resize machine" %}</span>
+                </div>
+            </div>
+</div>
+

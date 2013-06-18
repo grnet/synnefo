@@ -677,8 +677,8 @@
               image_excluded = storage.flavors.unavailable_values_for_image(this.current_image);
             }
 
-            quotas = this.get_vm_params_quotas();
-            user_excluded = storage.flavors.unavailable_values_for_quotas(quotas);
+            var quotas = synnefo.storage.quotas.get_available_for_vm({active: true});
+            var user_excluded = storage.flavors.unavailable_values_for_quotas(quotas);
 
             unavailable.disk = user_excluded.disk.concat(image_excluded.disk);
             unavailable.ram = user_excluded.ram.concat(image_excluded.ram);
@@ -687,16 +687,6 @@
             this.unavailable_values = unavailable;
         },
         
-        get_vm_params_quotas: function() {
-          var quotas = synnefo.storage.quotas;
-          var quota = {
-            'ram': quotas.get('cyclades.ram').get('available'),
-            'cpu': quotas.get('cyclades.cpu').get('available'),
-            'disk': quotas.get('cyclades.disk').get('available')
-          }
-          return quota;
-        },
-
         flavor_is_valid: function(flv) {
             if (!flv) { return false };
 
@@ -942,8 +932,10 @@
 
           var quotas = synnefo.storage.quotas;
           _.each(["disk", "ram", "cpu"], function(type) {
-            var available_dsp = quotas.get('cyclades.'+type).get_readable('available');
-            var available = quotas.get('cyclades.'+type).get('available');
+            var active = true;
+            var key = 'available';
+            var available_dsp = quotas.get('cyclades.'+type).get_readable(key, active);
+            var available = quotas.get('cyclades.'+type).get(key);
             var content = "({0} left)".format(available_dsp);
             if (available <= 0) { content = "(None left)" }
             

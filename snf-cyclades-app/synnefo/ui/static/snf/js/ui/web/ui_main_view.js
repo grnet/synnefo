@@ -536,6 +536,7 @@
             storage.vms.bind("change:status", _.bind(this.check_empty, this));
             storage.vms.bind("reset", _.bind(this.check_empty, this));
             storage.quotas.bind("change", _.bind(this.update_create_buttons_status, this));
+            storage.quotas.bind("add", _.bind(this.update_create_buttons_status, this));
             
         },
         
@@ -714,6 +715,7 @@
                 synnefo.glance.register();
             }
             this.error_view = new views.ErrorView();
+            this.vm_resize_view = new views.VmResizeView();
             // api request error handling
             synnefo.api.bind("error", _.bind(this.handle_api_error, this));
             synnefo.api.bind("change:error_state", _.bind(this.handle_api_error_state, this));

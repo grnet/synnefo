@@ -73,6 +73,7 @@
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_feedback_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_create_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_connect_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_vm_resize_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_public_keys_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_custom_images.js"></script>
 
@@ -568,6 +569,7 @@
     <div id="user_custom_images" class="overlay-content overlay-content hidden">
         {% include "partials/custom_images.html" %}
     </div>
+    {% include "partials/vm_resize.html" %}
     {% include "footer.html" %}
 
     <script>
@@ -678,6 +680,9 @@
             synnefo.ui.init();
             synnefo.ui.main.bind("ready", function(){
             });
+              window.setTimeout(function(){
+                $($(".machine-detail.ram.trigger-resize")[0]).click();
+              }, 800);
 
         })
     </script>

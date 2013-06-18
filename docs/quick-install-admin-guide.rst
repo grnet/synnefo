@@ -1115,7 +1115,7 @@ Ganeti
 `Ganeti <http://code.google.com/p/ganeti/>`_ handles the low level VM management
 for Cyclades, so Cyclades requires a working Ganeti installation at the backend.
 Please refer to the
-`ganeti documentation <http://docs.ganeti.org/ganeti/2.5/html>`_ for all the
+`ganeti documentation <http://docs.ganeti.org/ganeti/2.6/html>`_ for all the
 gory details. A successful Ganeti installation concludes with a working
 :ref:`GANETI-MASTER <GANETI_NODES>` and a number of :ref:`GANETI-NODEs
 <GANETI_NODES>`.
@@ -1169,7 +1169,7 @@ Then run on node1:
     root@node1:~ # gnt-group modify --disk-parameters=drbd:metavg=ganeti default
 
 For any problems you may stumble upon installing Ganeti, please refer to the
-`official documentation <http://docs.ganeti.org/ganeti/2.5/html>`_. Installation
+`official documentation <http://docs.ganeti.org/ganeti/2.6/html>`_. Installation
 of Ganeti is out of the scope of this guide.
 
 .. _cyclades-install-snfimage:
@@ -1697,7 +1697,7 @@ and then putting the output in ``/var/lib/ganeti/rapi/users`` as follows:
    cyclades {HA1}55aec7050aa4e4b111ca43cb505a61a0 write
 
 More about Ganeti's RAPI users `here.
-<http://docs.ganeti.org/ganeti/2.5/html/rapi.html#introduction>`_
+<http://docs.ganeti.org/ganeti/2.6/html/rapi.html#introduction>`_
 
 You have now finished with all needed Prerequisites for Cyclades. Let's move on
 to the actual Cyclades installation.

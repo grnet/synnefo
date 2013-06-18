@@ -244,6 +244,7 @@ class ImagesTestCase(unittest.TestCase):
         pithos_url = cls.astakos_client.\
             get_service_endpoints('object-store')['publicURL']
         cls.pithos_client = PithosClient(pithos_url, TOKEN)
+        cls.pithos_client.CONNECTION_RETRY_LIMIT = 2
 
         # Get images
         cls.images = \
@@ -452,6 +453,7 @@ class PithosTestCase(unittest.TestCase):
         pithos_url = cls.astakos_client.\
             get_service_endpoints('object-store')['publicURL']
         cls.pithos_client = PithosClient(pithos_url, TOKEN, cls.uuid)
+        cls.pithos_client.CONNECTION_RETRY_LIMIT = 2
 
         cls.containers = cls.pithos_client.list_containers()
         cls.result_dict = dict()

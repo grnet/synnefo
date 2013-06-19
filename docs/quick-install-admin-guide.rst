@@ -560,8 +560,6 @@ For astakos specific configuration, edit the following options in
 
 .. code-block:: console
 
-    ASTAKOS_DEFAULT_ADMIN_EMAIL = None
-
     ASTAKOS_COOKIE_DOMAIN = '.example.com'
 
     ASTAKOS_BASE_URL = 'https://node1.example.com/astakos'
@@ -570,12 +568,6 @@ The ``ASTAKOS_COOKIE_DOMAIN`` should be the base url of our domain (for all
 services). ``ASTAKOS_BASE_URL`` is the astakos top-level URL. Appending an
 extra path (``/astakos`` here) is recommended in order to distinguish
 components, if more than one are installed on the same machine.
-
-``ASTAKOS_DEFAULT_ADMIN_EMAIL`` refers to the administrator's email.
-Every time a new account is created a notification is sent to this email.
-For this we need access to a running mail server, so we have disabled
-it for now by setting its value to None. For more informations on this,
-read the relative :ref:`section <mail-server>`.
 
 .. note:: For the purpose of this guide, we don't enable recaptcha authentication.
     If you would like to enable it, you have to edit the following options:
@@ -606,6 +598,79 @@ to point at node1 which is where we have installed Astakos.
 
 If you are an advanced user and want to use the Shibboleth Authentication
 method, read the relative :ref:`section <shibboleth-auth>`.
+
+
+Email delivery configuration
+----------------------------
+
+Many of the ``astakos`` operations require server to notify service users and 
+administrators via email. e.g. right after the signup process the service sents 
+an email to the registered email address containing an email verification url, 
+after the user verifies the email address astakos once again needs to notify 
+administrators with a notice that a new account has just been verified.
+
+More specifically astakos sends emails in the following cases
+
+- An email containing a verification link after each signup process.
+- An email to the people listed in ``ADMINS`` setting after each email 
+  verification if ``ASTAKOS_MODERATION`` setting is ``True``. The email 
+  notifies administrators that an additional action is required in order to 
+  activate the user.
+- A welcome email to the user email and an admin notification to ``ADMINS`` 
+  right after each account activation.
+- Feedback messages submited from astakos contact view and astakos feedback 
+  API endpoint are sent to contacts listed in ``HELPDESK`` setting.
+- Project application request notifications to people included in ``HELPDESK`` 
+  and ``MANAGERS`` settings.
+- Notifications after each project members action (join request, membership 
+  accepted/declinde etc.) to project members or project owners.
+
+Astakos uses the Django internal email delivering mechanism to send email 
+notifications. A simple configuration, using an external smtp server to 
+deliver messages, is shown below. 
+
+.. code-block:: python
+    
+    # /etc/synnefo/10-snf-common-admins.conf
+    EMAIL_HOST = "mysmtp.server.synnefo.org"
+    EMAIL_HOST_USER = "<smtpuser>"
+    EMAIL_HOST_PASSWORD = "<smtppassword>"
+
+    # this gets appended in all email subjects
+    EMAIL_SUBJECT_PREFIX = "[example.synnefo.org] "
+    
+    # Address to use for outgoing emails
+    DEFAULT_FROM_EMAIL = "server@example.synnefo.org"
+
+    # Email where users can contact for support. This is used in html/email 
+    # templates.
+    CONTACT_EMAIL = "server@example.synnefo.org"
+
+    # The email address that error messages come from
+    SERVER_EMAIL = "server-errors@example.synnefo.org"
+
+Notice that since email settings might be required by applications other than
+astakos they are defined in a different configuration file than the one
+previously used to set astakos specific settings. 
+
+Refer to 
+`Django documentation <https://docs.djangoproject.com/en/1.2/topics/email/>`_
+for additional information on available email settings.
+
+As refered in the previous section, based on the operation that triggers 
+an email notification, the recipients list differs. Specifically for 
+emails whose recipients include contacts from your service team 
+(administrators, managers, helpdesk etc) synnefo provides the following 
+settings located in ``10-snf-common-admins.conf``:
+
+.. code-block:: python
+
+    ADMINS = (('Admin name', 'admin@example.synnefo.org'), 
+              ('Admin2 name', 'admin2@example.synnefo.org))
+    MANAGERS = (('Manager name', 'manager@example.synnefo.org'),)
+    HELPDESK = (('Helpdesk user name', 'helpdesk@example.synnefo.org'),)
+
+
 
 Enable Pooling
 --------------

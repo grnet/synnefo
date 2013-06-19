@@ -81,6 +81,11 @@ The upgrade to v0.14 consists in three steps:
 
 .. note::
 
+   Package `kamaki', installed on all nodes in version 0.13, is not required
+   any more and can safely be uninstalled.
+
+.. note::
+
     Installing the packages will cause services to start. Make sure you bring
     them down again (at least ``gunicorn``, ``snf-dispatcher``)
 

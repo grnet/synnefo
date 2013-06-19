@@ -245,6 +245,7 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
         """
 
         self.provider = kwargs.pop('provider', None)
+        self.request = kwargs.pop('request', None)
         if not self.provider or self.provider == 'local':
             raise Exception('Invalid provider, %r' % self.provider)
 

@@ -567,7 +567,9 @@ For astakos specific configuration, edit the following options in
     ASTAKOS_BASE_URL = 'https://node1.example.com/astakos'
 
 The ``ASTAKOS_COOKIE_DOMAIN`` should be the base url of our domain (for all
-services). ``ASTAKOS_BASE_URL`` is the astakos top-level URL.
+services). ``ASTAKOS_BASE_URL`` is the astakos top-level URL. Appending an
+extra path (``/astakos`` here) is recommended in order to distinguish
+components, if more than one are installed on the same machine.
 
 ``ASTAKOS_DEFAULT_ADMIN_EMAIL`` refers to the administrator's email.
 Every time a new account is created a notification is sent to this email.
@@ -700,9 +702,21 @@ When the database is ready, we need to register the services. The following
 command will ask you to register the standard Synnefo components (astakos,
 cyclades, and pithos) along with the services they provide. Note that you
 have to register at least astakos in order to have a usable authentication
-system. For each component, you will be asked to provide its base
-installation URL as well as the UI URL (to appear in the Cloudbar).
-Moreover, the command will automatically register the resource definitions
+system. For each component, you will be asked to provide two URLs: its base
+URL and its UI URL.
+
+The former is the location where the component resides; it should equal
+the ``<component_name>_BASE_URL`` as specified in the respective component
+settings. For example, the base URL for astakos would be
+``https://node1.example.com/astakos``.
+
+The latter is the URL that appears in the Cloudbar and leads to the
+component UI. If you want to follow the default setup, set
+the UI URL to ``<base_url>/ui/`` where ``base_url`` the component's base
+URL as explained before. (You can later change the UI URL with
+``snf-manage component-modify <component_name> --url new_ui_url``.)
+
+The command will also register automatically the resource definitions
 offered by the services.
 
 .. code-block:: console
@@ -1678,6 +1692,10 @@ which is used for all user management, including authentication.
 Since our Astakos, Cyclades, and Pithos installations belong together,
 they should all have identical ``ASTAKOS_BASE_URL`` setting
 (see also, :ref:`previously <conf-pithos>`).
+
+The ``CYCLADES_BASE_URL`` setting must point to the top-level Cyclades URL.
+Appending an extra path (``/cyclades`` here) is recommended in order to
+distinguish components, if more than one are installed on the same machine.
 
 The ``CYCLADES_SERVICE_TOKEN`` is the token used for authentication with astakos.
 It can be retrieved by running on the Astakos node (node1 in our case):

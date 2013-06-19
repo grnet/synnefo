@@ -131,10 +131,19 @@ setting was renamed to this. Therefore:
 
 You need to register astakos as a component. Moreover you need to register
 all services provided by cyclades and pithos.
-
 Running the following script you will be asked to provide the base
-installation URL for each component. You will also need to specify the URL
-where the astakos UI resides::
+installation URL for each component. You will also need to specify the UI
+URL for astakos.
+
+The former is the location where each component resides; it should equal
+the ``<component_name>_BASE_URL`` as specified in the respective component
+settings (see above).
+
+The latter is the URL that appears in the Cloudbar and leads to the
+component UI. If you want to follow the default setup, set
+the UI URL to ``<base_url>/ui/`` where ``base_url`` the component's base
+URL as explained before. (You can later change the UI URL with
+``snf-manage component-modify <component_name> --url new_ui_url``)::
 
     astakos-host$ snf-component-register
 

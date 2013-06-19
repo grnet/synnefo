@@ -37,7 +37,7 @@ from django.core.management.base import BaseCommand, CommandError
 from synnefo.management import common
 
 from synnefo.api import util
-from synnefo.api.servers import do_create_server
+from synnefo.logic import servers
 
 HELP_MSG = """
 
@@ -98,5 +98,5 @@ class Command(BaseCommand):
         if backend_id:
             backend = common.get_backend(backend_id)
 
-        do_create_server(user_id, name, password, flavor, image,
-                         backend=backend)
+        servers.create(user_id, name, password, flavor, image,
+                       backend=backend)

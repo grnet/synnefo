@@ -79,6 +79,17 @@ from synnefo.logic import utils
 
 log = logging.getLogger()
 
+try:
+    CHECK_INTERVAL = settings.RECONCILIATION_CHECK_INTERVAL
+except AttributeError:
+    CHECK_INTERVAL = 60
+
+
+def needs_reconciliation(vm):
+    now = datetime.now()
+    return (now > vm.updated + timedelta(seconds=CHECK_INTERVAL)) or\
+           (now > vm.backendtime + timedelta(seconds=2*CHECK_INTERVAL))
+
 
 def stale_servers_in_db(D, G):
     idD = set(D.keys())
@@ -88,8 +99,7 @@ def stale_servers_in_db(D, G):
     for i in idD - idG:
         if D[i] == 'BUILD':
             vm = VirtualMachine.objects.get(id=i)
-            # Check time to avoid many rapi calls
-            if datetime.now() > vm.backendtime + timedelta(seconds=5):
+            if needs_reconciliation(vm):
                 with pooled_rapi_client(vm) as c:
                     try:
                         job_status = c.GetJobStatus(vm.backendjobid)['status']
@@ -127,8 +137,7 @@ def unsynced_operstate(D, G):
             unsynced.add((i, D[i], G[i]))
         if not G[i] and D[i] == 'BUILD':
             vm = VirtualMachine.objects.get(id=i)
-            # Check time to avoid many rapi calls
-            if datetime.now() > vm.backendtime + timedelta(seconds=5):
+            if needs_reconciliation(vm):
                 with pooled_rapi_client(vm) as c:
                     try:
                         job_info = c.GetJobStatus(job_id=vm.backendjobid)
@@ -153,7 +162,7 @@ def instances_with_build_errors(D, G):
                     # If a job has not been enqueued after 2 minutues, then
                     # it must be a stale entry..
                     failed.add(i)
-            elif datetime.now() > vm.backendtime + timedelta(seconds=30):
+            elif needs_reconciliation(vm):
                 # Check time to avoid many rapi calls
                 with pooled_rapi_client(vm) as c:
                     try:

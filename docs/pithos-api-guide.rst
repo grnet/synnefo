@@ -108,7 +108,9 @@ renew                   Force token renewal (no value parameter)
 force                   Force logout current user (no value parameter)
 ======================  =========================
 
-When done with logging in, the service's login URI should redirect to the URI provided with ``next``, adding ``user`` and ``token`` parameters, which contain the account and token fields respectively.
+When done with logging in, the service's login URI should redirect to the URI provided with ``next``, adding the ``token`` parameters which contains authentication token.
+
+If ``next`` request parameter is missing the call fails with BadRequest (400) response status.
 
 A user management service that implements a login URI according to these conventions is Astakos (https://code.grnet.gr/projects/astakos), by GRNET.
 

@@ -67,9 +67,9 @@ def login(request):
     """
     next = request.GET.get('next')
     if not next:
-        next = reverse('index')
+        raise HttpResponseBadRequest('Missing next parameter')
 
-    if not restrict_next(next, allowed_schemes=('pithos',)):
+    if not restrict_next(next, allowed_schemes=('pithos', 'pithosdev')):
         return HttpResponseForbidden(_(
             astakos_messages.NOT_ALLOWED_NEXT_PARAM))
     force = request.GET.get('force', None)

@@ -34,7 +34,8 @@
 from django.core.management.base import CommandError
 from optparse import make_option
 
-from astakos.im.models import AstakosUser, get_latest_terms, Chain
+from django.db.models import Q
+from astakos.im.models import AstakosUser, get_latest_terms, Project
 from astakos.im.quotas import list_user_quotas
 
 from synnefo.lib.ordereddict import OrderedDict
@@ -166,39 +167,22 @@ def memberships(user):
 
 
 def ownerships(user):
-    chain_dict = Chain.objects.all_full_state()
-    chain_dict = filter_by(is_owner(user), chain_dict)
-    return chain_info(chain_dict)
+    chains = Project.objects.all_with_pending(Q(application__owner=user))
+    return chain_info(chains)
 
 
-def is_owner(user):
-    def f(state, project, app):
-        return user == app.owner
-    return f
-
-
-def filter_by(f, chain_dict):
-    d = {}
-    for chain, tpl in chain_dict.iteritems():
-        if f(*tpl):
-            d[chain] = tpl
-    return d
-
-
-def chain_info(chain_dict):
+def chain_info(chains):
     labels = ('project id', 'project name', 'status', 'pending app id')
     l = []
-    for chain, (state, project, app) in chain_dict.iteritems():
-        status = Chain.state_display(state)
-        if state in Chain.PENDING_STATES:
-            appid = str(app.id)
-        else:
-            appid = ""
+    for project, pending_app in chains:
+        status = project.state_display()
+        pending_appid = pending_app.id if pending_app is not None else ""
+        application = project.application
 
-        t = (chain,
-             project.application.name if project else app.name,
+        t = (project.pk,
+             application.name,
              status,
-             appid,
+             pending_appid,
              )
         l.append(t)
     return l, labels

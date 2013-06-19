@@ -47,7 +47,7 @@ os.environ['SYNNEFO_SETTINGS_DIR'] = path + '/settings'
 os.environ['DJANGO_SETTINGS_MODULE'] = 'synnefo.settings'
 
 from astakos.im.models import AstakosUser
-from astakos.im.functions import get_chain_of_application_id
+from astakos.im.functions import get_related_project_id
 from astakos.im import quotas
 from views import submit, approve, join, leave
 from snf_django.lib.db.transaction import commit_on_success_strict
@@ -132,7 +132,7 @@ def submit_and_approve(name, user_id, prec, repeat, prefix=""):
             continue
         try:
             now = datetime.datetime.now()
-            pid = get_chain_of_application_id(app_id)
+            pid = get_related_project_id(app_id)
             logger.info('%s%s: approving application %s of project %s'
                         % (prefix, now, app_id, pid))
             approve(app_id)

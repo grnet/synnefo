@@ -2,10 +2,10 @@
 {% load filters %}
   
 {% block content %}
-The following project has been created:
-
+The following project application has been submitted:
 
 Id:                             {{object.id}}
+Project:                        {{object.chain_id}}
 Name:                           {{object.name}}
 Issue date:                     {{object.issue_date|date:"d/m/Y"}}
 Start date:                     {{object.start_date|date:"d/m/Y"}}
@@ -22,5 +22,5 @@ Policies:
 {% endfor %}
 
 For approving it you can use the command line tool:
-snf-manage project-control --approve <id>
+snf-manage project-control --approve {{object.id}}
 {% endblock content %}

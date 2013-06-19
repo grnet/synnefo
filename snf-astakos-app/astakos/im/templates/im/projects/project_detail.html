@@ -119,7 +119,7 @@
     <h3>
       {% if owner_mode and project_view %}
           {% if object.project.is_alive %}
-           <a href="{% url project_members object.chain %}">MEMBERS </a>
+           <a href="{% url project_members object.chain_id %}">MEMBERS </a>
           {% else %}
           MEMBERS
           {% endif %}
@@ -147,7 +147,7 @@
       </dd>
        {% if owner_mode and project_view %}
           {% if object.project.is_alive %}
-      <dt><a href="{% url project_approved_members object.chain %}" title="view approved members">Approved members</a></dt>
+      <dt><a href="{% url project_approved_members object.chain_id %}" title="view approved members">Approved members</a></dt>
       <dd>{{ approved_members_count }}
         <span class="faint"> 
           {% if remaining_memberships_count != None %}
@@ -157,7 +157,7 @@
           {% else %}&nbsp;{% endif %} 
         </span>
       </dd>
-      <dt><a href="{% url project_pending_members object.chain %}" title="view pending members">Members pending approval</a></dt>
+      <dt><a href="{% url project_pending_members object.chain_id %}" title="view pending members">Members pending approval</a></dt>
       <dd>{{ pending_members_count }}</dd>
         {% if not project.is_deactivated %}
     </dl>    

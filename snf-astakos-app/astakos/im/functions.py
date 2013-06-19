@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 import logging
+from datetime import datetime
 
 from django.utils.translation import ugettext as _
 from django.core.mail import send_mail, get_connection
@@ -39,7 +40,6 @@ from django.core.urlresolvers import reverse
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
-from django.http import Http404
 
 from synnefo_branding.utils import render_to_string
 
@@ -251,30 +251,10 @@ CLOSED_POLICY = 3
 POLICIES = [AUTO_ACCEPT_POLICY, MODERATED_POLICY, CLOSED_POLICY]
 
 
-def get_project_by_application_id(project_application_id):
-    try:
-        return Project.objects.get(application__id=project_application_id)
-    except Project.DoesNotExist:
-        m = (_(astakos_messages.UNKNOWN_PROJECT_APPLICATION_ID) %
-             project_application_id)
-        raise IOError(m)
-
-
 def get_related_project_id(application_id):
     try:
         app = ProjectApplication.objects.get(id=application_id)
-        chain = app.chain
-        Project.objects.get(id=chain)
-        return chain
-    except (ProjectApplication.DoesNotExist, Project.DoesNotExist):
-        return None
-
-
-def get_chain_of_application_id(application_id):
-    try:
-        app = ProjectApplication.objects.get(id=application_id)
-        chain = app.chain
-        return chain.chain
+        return app.chain_id
     except ProjectApplication.DoesNotExist:
         return None
 
@@ -284,14 +264,6 @@ def get_project_by_id(project_id):
         return Project.objects.get(id=project_id)
     except Project.DoesNotExist:
         m = _(astakos_messages.UNKNOWN_PROJECT_ID) % project_id
-        raise IOError(m)
-
-
-def get_project_by_name(name):
-    try:
-        return Project.objects.get(name=name)
-    except Project.DoesNotExist:
-        m = _(astakos_messages.UNKNOWN_PROJECT_ID) % name
         raise IOError(m)
 
 
@@ -646,17 +618,25 @@ def submit_application(owner=None,
         comments=comments)
 
     if precursor is None:
-        application.chain = new_chain()
+        chain = new_chain()
+        application.chain_id = chain.chain
+        application.save()
+        Project.objects.create(id=chain.chain, application=application)
     else:
         chain = precursor.chain
         application.chain = chain
-        objs = ProjectApplication.objects
-        pending = objs.filter(chain=chain, state=ProjectApplication.PENDING)
+        application.save()
+        if chain.application.state != ProjectApplication.APPROVED:
+            chain.application = application
+            chain.save()
+
+        pending = ProjectApplication.objects.filter(
+            chain=chain,
+            state=ProjectApplication.PENDING).exclude(id=application.id)
         for app in pending:
             app.state = ProjectApplication.REPLACED
             app.save()
 
-    application.save()
     if resource_policies is not None:
         application.set_resource_policies(resource_policies)
     logger.info("User %s submitted %s." %
@@ -715,11 +695,7 @@ def deny_application(application_id, request_user=None, reason=""):
 
 
 def check_conflicting_projects(application):
-    try:
-        project = get_project_by_id(application.chain)
-    except IOError:
-        project = None
-
+    project = application.chain
     new_project_name = application.name
     try:
         q = Q(name=new_project_name) & ~Q(state=Project.TERMINATED)
@@ -732,12 +708,11 @@ def check_conflicting_projects(application):
     except Project.DoesNotExist:
         pass
 
-    return project
-
 
 def approve_application(app_id, request_user=None, reason=""):
     get_chain_of_application_for_update(app_id)
     application = get_application(app_id)
+    project = application.chain
 
     checkAllowed(application, request_user, admin_only=True)
 
@@ -746,11 +721,11 @@ def approve_application(app_id, request_user=None, reason=""):
               (application.id, application.state_display()))
         raise PermissionDenied(m)
 
-    project = check_conflicting_projects(application)
+    check_conflicting_projects(application)
 
     # Pre-lock members and owner together in order to impose an ordering
     # on locking users
-    members = members_to_sync(project) if project is not None else []
+    members = members_to_sync(project)
     uids_to_sync = [member.id for member in members]
     owner = application.owner
     uids_to_sync.append(owner.id)
@@ -758,6 +733,11 @@ def approve_application(app_id, request_user=None, reason=""):
 
     qh_release_pending_app(owner, locked=True)
     application.approve(reason)
+    project.application = application
+    project.name = application.name
+    project.save()
+    if project.is_deactivated():
+        project.resume()
     qh_sync_locked_users(members)
     logger.info("%s has been approved." % (application.log_display))
     application_approve_notify(application)
@@ -811,19 +791,6 @@ def resume(project_id, request_user=None):
     project.resume()
     qh_sync_project(project)
     logger.info("%s has been unsuspended." % (project))
-
-
-def get_by_chain_or_404(chain_id):
-    try:
-        project = Project.objects.get(id=chain_id)
-        application = project.application
-        return project, application
-    except:
-        application = ProjectApplication.objects.latest_of_chain(chain_id)
-        if application is None:
-            raise Http404
-        else:
-            return None, application
 
 
 def _partition_by(f, l):

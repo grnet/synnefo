@@ -16,6 +16,16 @@ Synnefo-wide
 
 * Integrate Pithos tests in continuous integration.
 
+Astakos
+-------
+
+* Changes in project schema:
+
+  * A Project entry is created when submitting an application for a new
+    project, rather than on approval. Its state is dependent on the state
+    of its `reference' application (current definition).
+
+
 Cyclades
 --------
 

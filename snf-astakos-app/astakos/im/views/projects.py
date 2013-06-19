@@ -55,14 +55,14 @@ from snf_django.lib.db.transaction import commit_on_success_strict
 import astakos.im.messages as astakos_messages
 
 from astakos.im import tables
-from astakos.im.models import ProjectApplication, ProjectMembership
+from astakos.im.models import ProjectApplication, ProjectMembership, Project
 from astakos.im.util import get_context, restrict_next
 from astakos.im.forms import ProjectApplicationForm, AddProjectMembersForm, \
     ProjectSearchForm
 from astakos.im.functions import check_pending_app_quota, accept_membership, \
     reject_membership, remove_membership, cancel_membership, leave_project, \
     join_project, enroll_member, can_join_request, can_leave_request, \
-    get_related_project_id, get_by_chain_or_404, approve_application, \
+    get_related_project_id, approve_application, \
     deny_application, cancel_application, dismiss_application
 from astakos.im import settings
 from astakos.im.util import redirect_back
@@ -307,7 +307,8 @@ def common_detail(request, chain_or_app_id, project_view=True,
         else:
             addmembers_form = AddProjectMembersForm()  # initialize form
 
-        project, application = get_by_chain_or_404(chain_id)
+        project = get_object_or_404(Project, pk=chain_id)
+        application = project.application
         if project:
             members = project.projectmembership_set
             approved_members_count = project.members_count()
@@ -690,7 +691,7 @@ def _project_app_dismiss(request, application_id):
 @valid_astakos_user_required
 def project_members(request, chain_id, members_status_filter=None,
                     template_name='im/projects/project_members.html'):
-    project, application = get_by_chain_or_404(chain_id)
+    project = get_object_or_404(Project, pk=chain_id)
 
     user = request.user
     if not user.owns_project(project) and not user.is_project_admin():
@@ -715,7 +716,7 @@ def project_members_action(request, chain_id, action=None, redirect_to=''):
         raise PermissionDenied
 
     member_ids = request.POST.getlist('members')
-    project, application = get_by_chain_or_404(chain_id)
+    project = get_object_or_404(Project, pk=chain_id)
 
     user = request.user
     if not user.owns_project(project) and not user.is_project_admin():

@@ -185,9 +185,9 @@ def action_extra_context(application, table, self):
     append_url = ''
 
     can_join = can_leave = can_cancel = False
-    project = application.get_project()
+    project = application.chain
 
-    if project and project.is_approved():
+    if project.is_active():
         try:
             join_project_checks(project)
             can_join = True
@@ -228,7 +228,7 @@ def action_extra_context(application, table, self):
         confirm = False
         url = None
 
-    url = reverse(url, args=(application.chain, )) + append_url if url else ''
+    url = reverse(url, args=(application.chain_id, )) + append_url if url else ''
 
     return {'action': action,
             'confirm': confirm,
@@ -264,7 +264,7 @@ class UserProjectApplicationsTable(UserTable):
     name = LinkColumn('astakos.im.views.project_detail',
                       coerce=lambda x: truncatename(x, 25),
                       append=project_name_append,
-                      args=(A('chain'),))
+                      args=(A('chain_id'),))
     issue_date = tables.DateColumn(verbose_name=_('Application'),
                                    format=DEFAULT_DATE_FORMAT)
     start_date = tables.DateColumn(format=DEFAULT_DATE_FORMAT)
@@ -292,7 +292,7 @@ class UserProjectApplicationsTable(UserTable):
     def render_members_count(self, record, *args, **kwargs):
         append = ""
         application = record
-        project = application.get_project()
+        project = application.chain
         if project is None:
             append = mark_safe("<i class='tiny'>%s</i>" % (_('pending'),))
 
@@ -300,7 +300,7 @@ class UserProjectApplicationsTable(UserTable):
         if c > 0:
             pending_members_url = reverse(
                 'project_pending_members',
-                kwargs={'chain_id': application.chain})
+                kwargs={'chain_id': application.chain_id})
 
             pending_members = "<i class='tiny'> - %d %s</i>" % (
                 c, _('pending'))
@@ -313,7 +313,7 @@ class UserProjectApplicationsTable(UserTable):
                                    (pending_members_url, c, _('pending')))
             append = mark_safe(pending_members)
         members_url = reverse('project_approved_members',
-                              kwargs={'chain_id': application.chain})
+                              kwargs={'chain_id': application.chain_id})
         members_count = record.members_count()
         if self.user.owns_application(record) or self.user.is_project_admin():
             members_count = '<a href="%s">%d</a>' % (members_url,

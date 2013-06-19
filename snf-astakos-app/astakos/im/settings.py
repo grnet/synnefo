@@ -192,3 +192,7 @@ API_CLIENT_URL = getattr(settings, 'ASTAKOS_API_CLIENT_URL',
 KAMAKI_CONFIG_CLOUD_NAME = getattr(settings,
                                    'ASTAKOS_KAMAKI_CONFIG_CLOUD_NAME',
                                    None)
+
+REDIRECT_ALLOWED_SCHEMES = getattr(settings,
+                                   'ASTAKOS_REDIRECT_ALLOWED_SCHEMES',
+                                   ('pithos',))

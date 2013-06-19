@@ -95,6 +95,7 @@ $(document).ready(function(){
                 username.html('<span>'+el.name+'</span>');
                 username.attr('href', el.url);
                 user.removeClass('full');
+                $('body').addClass('user-not-authenticated');
             }else{
                 var link = $("<a />");
                 link.text(el.name);
@@ -103,7 +104,7 @@ $(document).ready(function(){
                 li.append(link);
                 usermenu.append(li);
                 user.addClass('full');
-                $('body').addClass('user-authenticated');
+                $('body').removeClass('user-not-authenticated');
             }
         });
     

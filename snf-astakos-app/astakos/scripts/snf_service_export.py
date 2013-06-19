@@ -190,7 +190,7 @@ pithos_services = {
     'pithos_public': {
         'type': 'public',
         'component': 'pithos',
-        'prefix': 'pithos_public',
+        'prefix': 'public',
         'public': False,
         'endpoints': [
             {'versionId': 'v1.0',

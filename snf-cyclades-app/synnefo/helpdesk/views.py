@@ -229,7 +229,7 @@ def account(request, search_query):
 
     filter_extra = {}
     if not show_deleted:
-        filter_extra['deleted'] = False,
+        filter_extra['deleted'] = False
 
     # all user vms
     vms = VirtualMachine.objects.filter(userid=account,

@@ -342,7 +342,7 @@ def account_update(request, v_account):
 
 
 @api_method('GET', format_allowed=True, user_required=True, logger=logger,
-            default_serialization="text")
+            serializations=["text", "xml", "json"])
 def container_list(request, v_account):
     # Normal Response Codes: 200, 204
     # Error Response Codes: internalServerError (500),
@@ -589,7 +589,7 @@ def container_delete(request, v_account, v_container):
 
 
 @api_method('GET', format_allowed=True, user_required=True, logger=logger,
-            default_serialization="text")
+            serializations=["text", "xml", "json"])
 def object_list(request, v_account, v_container):
     # Normal Response Codes: 200, 204
     # Error Response Codes: internalServerError (500),

@@ -322,21 +322,6 @@ def create_server(request):
 @transaction.commit_manually
 def do_create_server(userid, name, password, flavor, image, metadata={},
                      personality=[], network=None, backend=None):
-    if backend is None:
-        # Allocate backend to host the server. Commit after allocation to
-        # release the locks hold by the backend allocator.
-        try:
-            backend_allocator = BackendAllocator()
-            backend = backend_allocator.allocate(userid, flavor)
-            if backend is None:
-                log.error("No available backend for VM with flavor %s", flavor)
-                raise faults.ServiceUnavailable("No available backends")
-        except:
-            transaction.rollback()
-            raise
-        else:
-            transaction.commit()
-
     # Fix flavor for archipelago
     disk_template, provider = util.get_flavor_provider(flavor)
     if provider:
@@ -349,6 +334,14 @@ def do_create_server(userid, name, password, flavor, image, metadata={},
         flavor.disk_origin = None
 
     try:
+        if backend is None:
+            # Allocate backend to host the server.
+            backend_allocator = BackendAllocator()
+            backend = backend_allocator.allocate(userid, flavor)
+            if backend is None:
+                log.error("No available backend for VM with flavor %s", flavor)
+                raise faults.ServiceUnavailable("No available backends")
+
         if network is None:
             # Allocate IP from public network
             (network, address) = util.get_public_ip(backend)

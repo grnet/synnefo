@@ -44,7 +44,7 @@ log = logging.getLogger(__name__)
 
 
 @api.api_method(http_method='GET', user_required=False, token_required=False,
-                logger=log)
+                logger=log, serializations=['json'])
 @api.allow_jsonp()
 def get_stats(request):
     stats = get_statistics()

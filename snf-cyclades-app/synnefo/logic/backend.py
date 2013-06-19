@@ -97,8 +97,7 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None):
         #
         if status == 'success' or (status == 'error' and
                                    vm.operstate == 'ERROR'):
-            release_instance_nics(vm)
-            vm.nics.all().delete()
+            _process_net_status(vm, etime, nics=[])
             vm.deleted = True
             vm.operstate = state_for_success
             vm.backendtime = etime
@@ -133,6 +132,11 @@ def _process_net_status(vm, etime, nics):
     ganeti_nics = process_ganeti_nics(nics)
     if not nics_changed(vm.nics.order_by('index'), ganeti_nics):
         log.debug("NICs for VM %s have not changed", vm)
+        return
+
+    # Get X-Lock on backend before getting X-Lock on network IP pools, to
+    # guarantee that no deadlock will occur with Backend allocator.
+    Backend.objects.select_for_update().get(id=vm.backend_id)
 
     release_instance_nics(vm)
 

@@ -376,14 +376,18 @@ def container_list(request, v_account):
     shared = False
     if 'shared' in request.GET:
         shared = True
-    public = False
-    if request.user_uniq == v_account and 'public' in request.GET:
-        public = True
+
+    public_requested = 'public' in request.GET
+    public_granted = public_requested and request.user_uniq == v_account
+
+    if public_requested and not public_granted:
+        raise faults.Forbidden(
+            'PUblic container listing is not allowed to non path owners')
 
     try:
         containers = request.backend.list_containers(
             request.user_uniq, v_account,
-            marker, limit, shared, until, public)
+            marker, limit, shared, until, public_granted)
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except NameError:
@@ -661,6 +665,10 @@ def object_list(request, v_account, v_container):
 
     public_requested = 'public' in request.GET
     public_granted = public_requested and request.user_uniq == v_account
+
+    if public_requested and not public_granted:
+        raise faults.Forbidden(
+            'PUblic object listing is not allowed to non path owners')
 
     if request.serialization == 'text':
         try:

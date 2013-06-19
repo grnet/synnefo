@@ -27,8 +27,9 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
+0.14 (Jun 18, 2013)        Forbidden response for public listing by non path owners
 0.13 (Mar 27, 2013)        Restrict public object listing only to the owner.
-                           Do not propagate public URL information in shared objects.
+\                          Do not propagate public URL information in shared objects.
 0.13 (Jan 21, 2013)        Proxy identity management services
 \                          UUID to displayname translation
 0.9 (Feb 17, 2012)         Change permissions model.
@@ -427,6 +428,7 @@ Return Code                  Description
 200 (OK)                     The request succeeded
 204 (No Content)             The account has no containers (only for non-extended replies)
 304 (Not Modified)           The account has not been modified
+403 (Forbidden)              Public is requested but the request user is not the path owner
 412 (Precondition Failed)    The condition set can not be satisfied
 ===========================  =====================
 
@@ -545,7 +547,7 @@ path                    Assume ``prefix=path`` and ``delimiter=/``
 format                  Optional extended reply type (can be ``json`` or ``xml``)
 meta                    Return objects that satisfy the key queries in the specified comma separated list (use ``<key>``, ``!<key>`` for existence queries, ``<key><op><value>`` for value queries, where ``<op>`` can be one of ``=``, ``!=``, ``<=``, ``>=``, ``<``, ``>``)
 shared                  Show only objects (no value parameter)
-public                  Show only public objects (no value parameter / avalaible only for owner reqeusts)
+public                  Show only public objects (no value parameter / avalaible only for owner requests)
 until                   Optional timestamp
 ======================  ===================================
 
@@ -637,6 +639,7 @@ Return Code                  Description
 200 (OK)                     The request succeeded
 204 (No Content)             The account has no containers (only for non-extended replies)
 304 (Not Modified)           The container has not been modified
+403 (Forbidden)              Public is requested but the request user is not the path owner
 412 (Precondition Failed)    The condition set can not be satisfied
 ===========================  ===============================
 

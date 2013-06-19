@@ -120,6 +120,7 @@ class LocalUserCreationForm(UserCreationForm, StoreUserMixin):
         if not provider == 'local':
             raise Exception('Invalid provider')
 
+        self.ip = None
         if request:
             self.ip = request.META.get('REMOTE_ADDR',
                                        request.META.get('HTTP_X_REAL_IP',

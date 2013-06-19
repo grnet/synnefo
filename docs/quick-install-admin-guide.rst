@@ -958,19 +958,6 @@ It can be retrieved by running on the Astakos node (node1 in our case):
 The token has been generated automatically during the :ref:`Pithos service
 registration <services-reg>`.
 
-Then we need to setup the web UI and connect it to astakos. To do so, edit
-``/etc/synnefo/20-snf-pithos-webclient-settings.conf``:
-
-.. code-block:: console
-
-    PITHOS_UI_LOGIN_URL = "https://node1.example.com/ui/login?next="
-    PITHOS_UI_FEEDBACK_URL = "https://node2.example.com/feedback"
-
-The ``PITHOS_UI_LOGIN_URL`` option tells the client where to redirect you, if
-you are not logged in. The ``PITHOS_UI_FEEDBACK_URL`` option points at the
-Pithos feedback form. Astakos already provides a generic feedback form for all
-services, so we use this one.
-
 The ``PITHOS_UPDATE_MD5`` option by default disables the computation of the
 object checksums. This results to improved performance during object uploading.
 However, if compatibility with the OpenStack Object Storage API is important

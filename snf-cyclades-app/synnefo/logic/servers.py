@@ -235,7 +235,7 @@ def create_instance_nics(vm, userid, private_networks=[], floating_ips=[]):
     for network_id in settings.DEFAULT_INSTANCE_NETWORKS:
         network, address = None, None
         if network_id == "public":
-            network, address = util.get_public_ip(backend=vm.backend)
+            network, address = util.allocate_public_address(backend=vm.backend)
         else:
             try:
                 network = Network.objects.get(id=network_id, deleted=False)

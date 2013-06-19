@@ -284,44 +284,13 @@ def validate_network_size(cidr_block):
 
 
 def allocate_public_address(backend):
-    """Allocate a public IP for a vm."""
-    for network in backend_public_networks(backend):
-        try:
-            address = get_network_free_address(network)
-        except faults.OverLimit:
-            pass
-        else:
-            return (network, address)
-    return (None, None)
-
-
-def get_public_ip(backend):
-    """Reserve an IP from a public network.
-
-    This method should run inside a transaction.
-
-    """
-
+    """Get a public IP for any available network of a backend."""
     # Guarantee exclusive access to backend, because accessing the IP pools of
     # the backend networks may result in a deadlock with backend allocator
     # which also checks that backend networks have a free IP.
     backend = Backend.objects.select_for_update().get(id=backend.id)
-
-    address = None
-    if settings.PUBLIC_USE_POOL:
-        (network, address) = allocate_public_address(backend)
-    else:
-        for net in list(backend_public_networks(backend)):
-            pool = net.get_pool()
-            if not pool.empty():
-                address = 'pool'
-                network = net
-                break
-    if address is None:
-        log.error("Public networks of backend %s are full", backend)
-        raise faults.OverLimit("Can not allocate IP for new machine."
-                        " Public networks are full.")
-    return (network, address)
+    public_networks = backend_public_networks(backend)
+    return get_free_ip(public_networks)
 
 
 def backend_public_networks(backend):
@@ -331,11 +300,23 @@ def backend_public_networks(backend):
     to the specified backend.
 
     """
-    for network in Network.objects.filter(public=True, deleted=False,
-                                          drained=False):
-        if BackendNetwork.objects.filter(network=network,
-                                         backend=backend).exists():
-            yield network
+    bnets = BackendNetwork.objects.filter(backend=backend,
+                                          network__public=True,
+                                          network__deleted=False,
+                                          network__drained=False)
+    return [b.network for b in bnets]
+
+
+def get_free_ip(networks):
+    for network in networks:
+        try:
+            address = get_network_free_address(network)
+            return network, address
+        except faults.OverLimit:
+            pass
+    msg = "Can not allocate public IP. Public networks are full."
+    log.error(msg)
+    raise faults.OverLimit(msg)
 
 
 def get_network_free_address(network):
@@ -346,26 +327,8 @@ def get_network_free_address(network):
         address = pool.get()
     except EmptyPool:
         raise faults.OverLimit("Network %s is full." % network.backend_id)
-        address = None
     pool.save()
     return address
-
-
-def allocate_public_ip(networks=None):
-    """Allocate an IP address from public networks."""
-    if networks is None:
-        networks = Network.objects.select_for_update().filter(public=True,
-                                                              deleted=False)
-    for network in networks:
-        try:
-            address = get_network_free_address(network)
-        except:
-            pass
-        else:
-            return network, address
-    msg = "Can not allocate public IP. Public networks are full."
-    log.error(msg)
-    raise faults.OverLimit(msg)
 
 
 def get_nic(machine, network):

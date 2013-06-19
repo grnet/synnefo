@@ -40,7 +40,6 @@ import bitarray
 
 from optparse import make_option
 
-from synnefo.settings import PUBLIC_USE_POOL
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
@@ -105,7 +104,6 @@ def reconcile_networks(conflicting_ips=False):
     for network in networks:
         ip_available_maps = []
         ip_reserved_maps = []
-        uses_pool = not network.public or PUBLIC_USE_POOL
         for bend in backends:
             bnet = get_backend_network(network, bend)
             gnet = ganeti_networks[bend].get(network.id)
@@ -150,13 +148,12 @@ def reconcile_networks(conflicting_ips=False):
                 # exists and is connected to all nodes so is must be active!
                 reconcile_unsynced_network(network, bend, bnet)
 
-            if uses_pool:
-                # Get ganeti IP Pools
-                available_map, reserved_map = get_network_pool(gnet)
-                ip_available_maps.append(available_map)
-                ip_reserved_maps.append(reserved_map)
+            # Get ganeti IP Pools
+            available_map, reserved_map = get_network_pool(gnet)
+            ip_available_maps.append(available_map)
+            ip_reserved_maps.append(reserved_map)
 
-        if uses_pool and (ip_available_maps or ip_reserved_maps):
+        if ip_available_maps or ip_reserved_maps:
             # CASE-5: Unsynced IP Pools
             reconcile_ip_pools(network, ip_available_maps, ip_reserved_maps)
 

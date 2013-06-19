@@ -135,7 +135,7 @@ def allocate_floating_ip(request):
     try:
         if pool is None:
             # User did not specified a pool. Choose a random public IP
-            network, address = util.allocate_public_ip(net_objects)
+            network, address = util.get_free_ip(net_objects)
         else:
             try:
                 network = Network.objects.select_for_update()\

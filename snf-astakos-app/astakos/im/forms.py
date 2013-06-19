@@ -527,7 +527,7 @@ class ExtendedPasswordResetForm(PasswordResetForm):
         """
         for user in self.users_cache:
             url = user.astakosuser.get_password_reset_url(token_generator)
-            url = join_urls(settings.BASE_URL, url)
+            url = join_urls(settings.BASE_HOST, url)
             c = {
                 'email': user.email,
                 'url': url,

@@ -75,7 +75,7 @@ def api_method(http_method=None, token_required=True, user_required=True,
             try:
                 # Get the requested serialization format
                 serialization = get_serialization(
-                    request, format_allowed, 'json')
+                    request, format_allowed, serializations[0])
 
                 # If guessed serialization is not supported, fallback to
                 # the default serialization or return an API error in case

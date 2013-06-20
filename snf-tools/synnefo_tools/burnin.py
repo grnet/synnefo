@@ -116,6 +116,7 @@ def _ssh_execute(hostip, username, password, command):
 def _get_user_id():
     """Authenticate to astakos and get unique users id"""
     astakos = AstakosClient(AUTH_URL, TOKEN)
+    astakos.CONNECTION_RETRY_LIMIT = 2
     authenticate = astakos.authenticate()
     return authenticate['access']['user']['id']
 
@@ -208,6 +209,7 @@ class UnauthorizedTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.astakos = AstakosClient(AUTH_URL, TOKEN)
+        cls.astakos.CONNECTION_RETRY_LIMIT = 2
         cls.compute_url = \
             cls.astakos.get_service_endpoints('compute')['publicURL']
         cls.result_dict = dict()
@@ -217,6 +219,7 @@ class UnauthorizedTestCase(unittest.TestCase):
         log.info("Authentication test")
         falseToken = '12345'
         c = ComputeClient(self.compute_url, falseToken)
+        c.CONNECTION_RETRY_LIMIT = 2
 
         with self.assertRaises(ClientError) as cm:
             c.list_servers()
@@ -232,14 +235,17 @@ class ImagesTestCase(unittest.TestCase):
         """Initialize kamaki, get (detailed) list of images"""
         log.info("Getting simple and detailed list of images")
         cls.astakos_client = AstakosClient(AUTH_URL, TOKEN)
+        cls.astakos_client.CONNECTION_RETRY_LIMIT = 2
         # Compute Client
         compute_url = \
             cls.astakos_client.get_service_endpoints('compute')['publicURL']
         cls.compute_client = ComputeClient(compute_url, TOKEN)
+        cls.compute_client.CONNECTION_RETRY_LIMIT = 2
         # Image Client
         image_url = \
             cls.astakos_client.get_service_endpoints('image')['publicURL']
         cls.image_client = ImageClient(image_url, TOKEN)
+        cls.image_client.CONNECTION_RETRY_LIMIT = 2
         # Pithos Client
         pithos_url = cls.astakos_client.\
             get_service_endpoints('object-store')['publicURL']
@@ -365,10 +371,12 @@ class FlavorsTestCase(unittest.TestCase):
         """Initialize kamaki, get (detailed) list of flavors"""
         log.info("Getting simple and detailed list of flavors")
         cls.astakos_client = AstakosClient(AUTH_URL, TOKEN)
+        cls.astakos_client.CONNECTION_RETRY_LIMIT = 2
         # Compute Client
         compute_url = \
             cls.astakos_client.get_service_endpoints('compute')['publicURL']
         cls.compute_client = ComputeClient(compute_url, TOKEN)
+        cls.compute_client.CONNECTION_RETRY_LIMIT = 2
         cls.flavors = cls.compute_client.list_flavors()
         cls.dflavors = cls.compute_client.list_flavors(detail=True)
         cls.result_dict = dict()
@@ -413,10 +421,12 @@ class ServersTestCase(unittest.TestCase):
         log.info("Getting simple and detailed list of servers")
 
         cls.astakos_client = AstakosClient(AUTH_URL, TOKEN)
+        cls.astakos_client.CONNECTION_RETRY_LIMIT = 2
         # Compute Client
         compute_url = \
             cls.astakos_client.get_service_endpoints('compute')['publicURL']
         cls.compute_client = ComputeClient(compute_url, TOKEN)
+        cls.compute_client.CONNECTION_RETRY_LIMIT = 2
         cls.servers = cls.compute_client.list_servers()
         cls.dservers = cls.compute_client.list_servers(detail=True)
         cls.result_dict = dict()
@@ -449,6 +459,7 @@ class PithosTestCase(unittest.TestCase):
         log.info("Getting list of containers")
 
         cls.astakos_client = AstakosClient(AUTH_URL, TOKEN)
+        cls.astakos_client.CONNECTION_RETRY_LIMIT = 2
         # Pithos Client
         pithos_url = cls.astakos_client.\
             get_service_endpoints('object-store')['publicURL']
@@ -530,10 +541,12 @@ class SpawnServerTestCase(unittest.TestCase):
         log.info("Spawning server for image `%s'" % cls.imagename)
 
         cls.astakos_client = AstakosClient(AUTH_URL, TOKEN)
+        cls.astakos_client.CONNECTION_RETRY_LIMIT = 2
         # Cyclades Client
         compute_url = \
             cls.astakos_client.get_service_endpoints('compute')['publicURL']
         cls.cyclades_client = CycladesClient(compute_url, TOKEN)
+        cls.cyclades_client.CONNECTION_RETRY_LIMIT = 2
 
         cls.result_dict = dict()
 
@@ -1011,10 +1024,12 @@ class NetworkTestCase(unittest.TestCase):
         "Initialize kamaki, get list of current networks"
 
         cls.astakos_client = AstakosClient(AUTH_URL, TOKEN)
+        cls.astakos_client.CONNECTION_RETRY_LIMIT = 2
         # Cyclades Client
         compute_url = \
             cls.astakos_client.get_service_endpoints('compute')['publicURL']
         cls.cyclades_client = CycladesClient(compute_url, TOKEN)
+        cls.cyclades_client.CONNECTION_RETRY_LIMIT = 2
 
         cls.servername = "%s%s for %s" % (SNF_TEST_PREFIX,
                                           TEST_RUN_ID,
@@ -1821,9 +1836,11 @@ def _spawn_network_test_case(**kwargs):
 def cleanup_servers(timeout, query_interval, delete_stale=False):
 
     astakos_client = AstakosClient(AUTH_URL, TOKEN)
+    astakos_client.CONNECTION_RETRY_LIMIT = 2
     # Compute Client
     compute_url = astakos_client.get_service_endpoints('compute')['publicURL']
     compute_client = ComputeClient(compute_url, TOKEN)
+    compute_client.CONNECTION_RETRY_LIMIT = 2
 
     servers = compute_client.list_servers()
     stale = [s for s in servers if s["name"].startswith(SNF_TEST_PREFIX)]
@@ -1866,9 +1883,11 @@ def cleanup_servers(timeout, query_interval, delete_stale=False):
 def cleanup_networks(action_timeout, query_interval, delete_stale=False):
 
     astakos_client = AstakosClient(AUTH_URL, TOKEN)
+    astakos_client.CONNECTION_RETRY_LIMIT = 2
     # Cyclades Client
     compute_url = astakos_client.get_service_endpoints('compute')['publicURL']
     cyclades_client = CycladesClient(compute_url, TOKEN)
+    cyclades_client.CONNECTION_RETRY_LIMIT = 2
 
     networks = cyclades_client.list_networks()
     stale = [n for n in networks if n["name"].startswith(SNF_TEST_PREFIX)]
@@ -2110,9 +2129,11 @@ def main():
 
     # Initialize a kamaki instance, get flavors, images
     astakos_client = AstakosClient(AUTH_URL, TOKEN)
+    astakos_client.CONNECTION_RETRY_LIMIT = 2
     # Compute Client
     compute_url = astakos_client.get_service_endpoints('compute')['publicURL']
     compute_client = ComputeClient(compute_url, TOKEN)
+    compute_client.CONNECTION_RETRY_LIMIT = 2
     DIMAGES = compute_client.list_images(detail=True)
     DFLAVORS = compute_client.list_flavors(detail=True)
 

@@ -647,61 +647,49 @@ def get_instances(backend, bulk, queue):
     queue.put(instances)
 
 
-def get_ganeti_instances(backend=None, bulk=False):
-    instances = []
-    backends = get_backends(backend)
-    queue = multiprocessing.Queue()
-    processes = []
-    for backend in backends:
-        p = multiprocessing.Process(target=get_instances,
-                                    args=(backend, bulk, queue))
-        processes.append(p)
-        p.start()
-    [p.join() for p in processes]
-    [instances.extend(queue.get()) for p in processes]
-    return instances
-
-
 def get_nodes(backend, bulk, queue):
     with pooled_rapi_client(backend) as client:
         nodes = client.GetNodes(bulk=bulk)
     queue.put(nodes)
 
 
-def get_ganeti_nodes(backend=None, bulk=False):
-    nodes = []
-    backends = get_backends(backend)
-    queue = multiprocessing.Queue()
-    processes = []
-    for backend in backends:
-        p = multiprocessing.Process(target=get_nodes,
-                                    args=(backend, bulk, queue))
-        processes.append(p)
-        p.start()
-    [p.join() for p in processes]
-    [nodes.extend(queue.get()) for p in processes]
-    return nodes
-
-
-def get_jobs(backend, queue):
+def get_jobs(backend, bulk, queue):
     with pooled_rapi_client(backend) as client:
-        jobs = client.GetJobs()
-    queue.put(jobs)
+        nodes = client.GetJobs()
+    queue.put(nodes)
+
+
+def get_ganeti_instances(backend=None, bulk=False):
+    backends = get_backends(backend)
+    return get_from_ganeti(backends, get_instances, bulk)
 
 
 def get_ganeti_jobs(backend=None, bulk=False):
-    jobs = []
     backends = get_backends(backend)
+    return get_from_ganeti(backends, get_jobs, bulk)
+
+
+def get_ganeti_nodes(backend=None, bulk=False):
+    backends = get_backends(backend)
+    return get_from_ganeti(backends, get_nodes, bulk)
+
+
+def get_from_ganeti(backends, callback, bulk):
     queue = multiprocessing.Queue()
     processes = []
     for backend in backends:
-        p = multiprocessing.Process(target=get_jobs,
-                                    args=(backend, queue))
-        processes.append(p)
+        p = multiprocessing.Process(target=callback,
+                                    args=(backend, bulk, queue))
+        processes.append((p, backend))
         p.start()
-    [p.join() for p in processes]
-    [jobs.extend(queue.get()) for p in processes]
-    return jobs
+    for (p, b) in processes:
+        p.join()
+        if p.exitcode != 0:
+            raise Exception("Error getting instances from backend %s" % b)
+    items = []
+    for p in processes:
+        items.extend(queue.get())
+    return items
 
 
 ##

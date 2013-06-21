@@ -31,7 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import json
+import multiprocessing
 
 from django.conf import settings
 from django.db import transaction
@@ -641,30 +641,68 @@ def set_firewall_profile(vm, profile):
                               os_name=os_name)
 
 
+def get_instances(backend, bulk, queue):
+    with pooled_rapi_client(backend) as client:
+        instances = client.GetInstances(bulk=bulk)
+    queue.put(instances)
+
+
 def get_ganeti_instances(backend=None, bulk=False):
     instances = []
-    for backend in get_backends(backend):
-        with pooled_rapi_client(backend) as client:
-            instances.append(client.GetInstances(bulk=bulk))
+    backends = get_backends(backend)
+    queue = multiprocessing.Queue()
+    processes = []
+    for backend in backends:
+        p = multiprocessing.Process(target=get_instances,
+                                    args=(backend, bulk, queue))
+        processes.append(p)
+        p.start()
+    [p.join() for p in processes]
+    [instances.extend(queue.get()) for p in processes]
+    return instances
 
-    return reduce(list.__add__, instances, [])
+
+def get_nodes(backend, bulk, queue):
+    with pooled_rapi_client(backend) as client:
+        nodes = client.GetNodes(bulk=bulk)
+    queue.put(nodes)
 
 
 def get_ganeti_nodes(backend=None, bulk=False):
     nodes = []
-    for backend in get_backends(backend):
-        with pooled_rapi_client(backend) as client:
-            nodes.append(client.GetNodes(bulk=bulk))
+    backends = get_backends(backend)
+    queue = multiprocessing.Queue()
+    processes = []
+    for backend in backends:
+        p = multiprocessing.Process(target=get_nodes,
+                                    args=(backend, bulk, queue))
+        processes.append(p)
+        p.start()
+    [p.join() for p in processes]
+    [nodes.extend(queue.get()) for p in processes]
+    return nodes
 
-    return reduce(list.__add__, nodes, [])
+
+def get_jobs(backend, queue):
+    with pooled_rapi_client(backend) as client:
+        jobs = client.GetJobs()
+    queue.put(jobs)
 
 
 def get_ganeti_jobs(backend=None, bulk=False):
     jobs = []
-    for backend in get_backends(backend):
-        with pooled_rapi_client(backend) as client:
-            jobs.append(client.GetJobs(bulk=bulk))
-    return reduce(list.__add__, jobs, [])
+    backends = get_backends(backend)
+    queue = multiprocessing.Queue()
+    processes = []
+    for backend in backends:
+        p = multiprocessing.Process(target=get_jobs,
+                                    args=(backend, queue))
+        processes.append(p)
+        p.start()
+    [p.join() for p in processes]
+    [jobs.extend(queue.get()) for p in processes]
+    return jobs
+
 
 ##
 ##

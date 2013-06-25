@@ -39,12 +39,12 @@ In `/etc/synnefo/astakos.conf` add:
 .. code-block:: console
 
     CLOUDBAR_LOCATION = 'https://accounts.example.com/static/im/cloudbar/'
-    CLOUDBAR_SERVICES_URL = 'https://accounts.example.com/im/get_services'
-    CLOUDBAR_MENU_URL = 'https://accounts.example.com/im/get_menu'
+    CLOUDBAR_SERVICES_URL = 'https://accounts.example.com/ui/get_services'
+    CLOUDBAR_MENU_URL = 'https://accounts.example.com/ui/get_menu'
 
     ASTAKOS_IM_MODULES = ['local']
 
-    ASTAKOS_BASEURL = 'https://accounts.example.com'
+    ASTAKOS_BASE_URL = 'https://accounts.example.com'
 
     ASTAKOS_SITENAME = '~okeanos @ example.com'
     ASTAKOS_RECAPTCHA_PUBLIC_KEY = '6LeFidMSAAAAAM7Px7a96YQzsBcKYeXCI_sFz0Gk'
@@ -61,64 +61,8 @@ In `/etc/synnefo/astakos.conf` add:
     ASTAKOS_GLOBAL_MESSAGES = []
 
     ASTAKOS_PROFILE_EXTRA_LINKS = []
-    ASTAKOS_INVITATION_EMAIL_SUBJECT = 'Invitation to %s' % ASTAKOS_SITENAME
-    ASTAKOS_GREETING_EMAIL_SUBJECT = 'Welcome to %s' % ASTAKOS_SITENAME
-    ASTAKOS_FEEDBACK_EMAIL_SUBJECT = 'Feedback from %s' % ASTAKOS_SITENAME
-    ASTAKOS_VERIFICATION_EMAIL_SUBJECT = '%s account activation is needed' % ASTAKOS_SITENAME
-    ASTAKOS_ADMIN_NOTIFICATION_EMAIL_SUBJECT = '%s account created (%%(user)s)' % ASTAKOS_SITENAME
-    ASTAKOS_HELPDESK_NOTIFICATION_EMAIL_SUBJECT = '%s account activated (%%(user)s)' % ASTAKOS_SITENAME
-    ASTAKOS_EMAIL_CHANGE_EMAIL_SUBJECT = 'Email change on %s' % ASTAKOS_SITENAME
-    ASTAKOS_PASSWORD_RESET_EMAIL_SUBJECT = 'Password reset on %s' % ASTAKOS_SITENAME
-
-    ASTAKOS_QUOTAHOLDER_TOKEN = '1234'
-    ASTAKOS_QUOTAHOLDER_URL = 'https://qh.example.com/quotaholder/v'
 
     EMAIL_BACKEND = 'django.core.mail.backends.dummy.EmailBackend'
-    ASTAKOS_SERVICES = {
-        'cyclades': {
-            'url': 'https://cyclades.example.com/ui/',
-            'resources': [{
-                'name':'disk',
-                'group':'compute',
-                'uplimit':30*1024*1024*1024,
-                'unit':'bytes',
-                'desc': 'Virtual machine disk size'
-                },{
-                'name':'cpu',
-                'group':'compute',
-                'uplimit':6,
-                'desc': 'Number of virtual machine processors'
-                },{
-                'name':'ram',
-                'group':'compute',
-                'uplimit':6*1024*1024*1024,
-                'unit':'bytes',
-                'desc': 'Virtual machines'
-                },{
-                'name':'vm',
-                'group':'compute',
-                'uplimit':2,
-                'desc': 'Number of virtual machines'
-                },{
-                'name':'network.private',
-                'group':'network',
-                'uplimit':1,
-                'desc': 'Private networks'
-                }
-            ]
-        },
-        'pithos+': {
-            'url': 'https://pithos.example.com/ui/',
-            'resources':[{
-                'name':'diskspace',
-                'group':'storage',
-                'uplimit':5 * 1024 * 1024 * 1024,
-                'unit':'bytes',
-                'desc': 'Pithos account diskspace'
-                }]
-        }
-    }
-
 
 If ``astakos`` is on the same node with ``cyclades`` or ``pithos``, add the following
 line in `/etc/synnefo/astakos.conf` but please note that your setup will be prone to
@@ -138,9 +82,9 @@ Then initialize the Database and register services with:
    # snf-manage loaddata groups
    # snf-manage service-add "home" https://cms.example.com/ home-icon.png
    # snf-manage service-add "cyclades" https://cyclades.example.com/ui/
-   # snf-manage service-add "pithos+" https://pithos.example.com/ui/
+   # snf-manage service-add "pithos" https://pithos.example.com/ui/
    # snf-manage astakos-init --load-service-resources
-   # snf-manage astakos-quota --sync
+   # snf-manage quota --sync
    # /etc/init.d/gunicorn restart
    # /etc/init.d/apache2 restart
 

@@ -56,8 +56,9 @@ class Command(BaseCommand):
             return
         bridges = []
         for i in xrange(0, bridge_pool.size()):
-            if not bridge_pool.is_available(i, index=True) and \
-                not bridge_pool.is_reserved(i, index=True):
+            used_bridge = not (bridge_pool.is_available(i, index=True) or
+                               bridge_pool.is_reserved(i, index=True))
+            if used_bridge:
                     bridges.append(bridge_pool.index_to_value(i))
 
         write("Used bridges from Pool: %d\n" % len(bridges))
@@ -95,8 +96,9 @@ class Command(BaseCommand):
 
         macs = []
         for i in xrange(1, macp_pool.size()):
-            if not macp_pool.is_available(i, index=True) and \
-               not macp_pool.is_reserved(i, index=True):
+            used_macp = not (macp_pool.is_available(i, index=True) or
+                             macp_pool.is_reserved(i, index=True))
+            if used_macp:
                 value = macp_pool.index_to_value(i)
                 macs.append(value)
 

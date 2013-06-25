@@ -1,59 +1,120 @@
-<div class="auth_methods">
-    <h2>LOGIN METHODS</h2>
+{% load i18n %}
+ <div class="auth_methods">
+   <h2>{% trans "LOGIN METHODS" %}</h2>
  
     <div class="assigned">
-        <h3>Enabled</h3>
+      <h3>{% trans "Enabled" %}</h3>
         <ul>
         	{% for userauthprovider in user_providers %}
-        	<li>
-        		{% if userauthprovider.can_remove %}
-        				<a href="#" class="canremove">
-		                  <img src="{{ userauthprovider.settings.get_icon_medium_url_display }}"
-                          alt="{{ userauthprovider.settings.get_title_display }}" />
-		                </a>
-		                
-		                <span  class="extra-message"><em><span>Remove authentication method</span></em></span>
-		                <span class="details">{{ userauthprovider.details_display }}</span>
-                      	<div class="dialog-wrap">
-                        	 
-				<p>Are you sure you want to remove {{ userauthprovider.settings.get_title_display }} from your authentication methods? </p>
- 
-							<p>
-								<a href="{% url remove_auth_provider userauthprovider.pk %}" class="submit">Yes</a>
-								<a href="#" class="no submit">No</a>
-							</p>
-                        </div>	
-
-                  {% else %}
-                  	<a href="javascript:void(0);" class="noaction">
-		                  <img src="{{ userauthprovider.settings.get_icon_medium_url_display }}"
-                          alt="{{ userauthprovider.settings.get_title_display }}" />
-		                </a>
-		                <span class="details">{{ userauthprovider.details_display }}</span>
-                      	 
-                                              
- 
-                  {% endif %}
+            <li>
+              {% if userauthprovider.get_remove_policy or userauthprovider.get_switch_policy %}
+              <a href="#" class="canremove">
+                <img src="{{ userauthprovider.get_module_medium_icon }}"
+                alt="{{ userauthprovider.settings.get_title_msg }}" />
+              </a>
+              
+              <span class="extra-message">
+                {% if userauthprovider.get_remove_policy %}
+                <em><span>Remove {{ userauthprovider.get_method_prompt_msg }}</span></em>
+                {% else %}
+                <em><span>Change {{ userauthprovider.get_method_prompt_msg }}</span></em>
+                {% endif %}
+              </span>
+              <span class="details">
+                {{ userauthprovider.get_method_details_msg }}
+              </span>
+              <div class="dialog-wrap">
+                {% if userauthprovider.get_remove_policy %}
+                <p>Are you sure you want to remove {{ userauthprovider.get_method_prompt_msg }}?</p> 
+                {% else %}
+                <p>Are you sure you want to change {{ userauthprovider.get_method_prompt_msg }}?</p> 
+                {% endif %}
+                {% if userauthprovider.get_remove_policy %}
+                <form action="{{ userauthprovider.get_remove_url }}" method="post">{% csrf_token %}
+                  <input type="submit" value="YES" />
+                </form>  
+                <a href="#" class="no submit">No</a>
+                {% else %}
+                <p><a href="{{ userauthprovider.get_switch_url }}"
+                  class="submit">Yes</a>
+                <a href="#" class="no submit">No</a>
+                </p>
+                {% endif %}
+              </div>	
+              {% else %}
+              <a href="javascript:void(0);" class="noaction" 
+                title="{{ userauthprovider.get_method_prompt_msg }} {% trans "cannot be removed" %}">
+                <img src="{{ userauthprovider.get_module_medium_icon }}"
+                    alt="{{ userauthprovider.get_title_msg }}" />
+                  </a>
+                <span class="details">
+                  {{ userauthprovider.get_method_details_msg }}
+                </span>
+              {% endif %}
         	</li>
         	{% empty %}
-        		No available providers 
+              {% trans "No available providers" %}
         	{% endfor %}
         </ul>
-    </div>
+      </div>
+    {% if user_disabled_providers %}
+    <div class="assigned">
+      <h3>{% trans "Disabled" %}</h3>
+        <ul>
+        	{% for userauthprovider in user_disabled_providers %}
+            <li>
+              {% if userauthprovider.get_remove_policy %}
+              <a href="#" class="canremove">
+                <img src="{{ userauthprovider.get_module_medium_icon }}"
+                alt="{{ userauthprovider.settings.get_title_msg }}" />
+              </a>
+              
+              <span class="extra-message">
+                <em><span>Remove {{ userauthprovider.get_method_prompt_msg }}</span></em>
+              </span>
+              <span class="details">
+                {{ userauthprovider.get_method_details_msg }}
+              </span>
+              <div class="dialog-wrap">
+                <p>Are you sure you want to remove {{ userauthprovider.get_method_prompt_msg }}?</p> 
+                <form action="{{ userauthprovider.get_remove_url }}" method="post">{% csrf_token %}
+                  <input type="submit" value="YES" />
+                </form>  
+                <a href="#" class="no submit">No</a>
+              </div>	
+              {% else %}
+              <a href="javascript:void(0);" class="noaction" 
+                title="{{ userauthprovider.get_method_prompt_msg }} {% trans "cannot be removed" %}">
+                <img src="{{ userauthprovider.get_module_medium_icon }}"
+                    alt="{{ userauthprovider.get_title_msg }}" />
+                  </a>
+                <span class="details">
+                  {{ userauthprovider.get_method_details_msg }}
+                </span>
+              {% endif %}
+        	</li>
+        	{% empty %}
+              {% trans "No available providers" %}
+        	{% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+      {% if user_available_providers %}
     <div class="notassigned">
         <h3>Available</h3>
         <ul>
         	{% for provider in user_available_providers %}
         	<li>
-        		<a href="{{ provider.add_url }}?force_login=1">
-                  <img src="{{ provider.get_icon_medium_url_display }}" alt="{{ provider.get_title_display }}" /></a>
-                <span  class="extra-message"><em><span>{{ provider.get_add_prompt_display }}</span></em></span>
+        		<a href="{{ provider.get_add_url }}?force_login=1">
+                  <img src="{{ provider.get_module_medium_icon }}" alt="{{ provider.get_title_msg }}" /></a>
+                <span  class="extra-message"><em><span>{{ provider.get_add_prompt_msg }}</span></em></span>
         	</li>
         	{% empty %}
         		No available providers 
         	{% endfor %}
         </ul>
-    </div>
+      </div>
+      {% endif %}
     
 </div>
 

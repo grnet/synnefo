@@ -24,12 +24,6 @@ case "$1" in
 
         echo "Updating rc.d links... "
         update-rc.d snf-dispatcher defaults
-        echo "Starting snf-dispatcher...\n"
-        if [ -x "/usr/sbin/invoke-rc.d" ]; then
-            invoke-rc.d snf-dispatcher start
-        else
-            /etc/init.d/snf-dispatcher start
-        fi
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

@@ -36,9 +36,18 @@ import os
 from django.conf.urls.defaults import *
 from synnefo.util.entry_points import extend_urls
 from django.utils.importlib import import_module
+from django.template import Context, loader, RequestContext
+from django import http
 from django.conf import settings
 
-urlpatterns = patterns('',
+urlpatterns = patterns('')
+
+ROOT_REDIRECT = getattr(settings, 'WEBPROJECT_ROOT_REDIRECT', None)
+if ROOT_REDIRECT:
+    urlpatterns += patterns('django.views.generic.simple',
+                            url(r'^$', 'redirect_to', {'url': ROOT_REDIRECT}))
+
+urlpatterns += patterns('',
     (r'^lang/$', 'synnefo.webproject.i18n.set_language')
 )
 
@@ -88,7 +97,16 @@ if getattr(settings, 'WEBPROJECT_SERVE_STATIC', settings.DEBUG):
           'show_indexes': getattr(settings,
               'WEBPROJECT_STATIC_SHOW_INDEXES', True)}))
 
-
-
 urlpatterns = extend_urls(urlpatterns, 'synnefo')
 
+
+def handle500(request, template_name="500.html"):
+    t = loader.get_template(template_name)
+    context = Context({})
+    try:
+        context = RequestContext(request)
+    except:
+        pass
+    return http.HttpResponseServerError(t.render(context))
+
+handler500 = handle500

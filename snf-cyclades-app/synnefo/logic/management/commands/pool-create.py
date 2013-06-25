@@ -33,6 +33,7 @@
 
 from django.core.management.base import BaseCommand, CommandError
 from optparse import make_option
+from synnefo.db.utils import validate_mac
 
 from util import pool_table_from_type
 
@@ -45,7 +46,8 @@ class Command(BaseCommand):
     option_list = BaseCommand.option_list + (
         make_option("--type", dest="type",
                     choices=POOL_CHOICES,
-                    help="Type of pool"
+                    help="Type of pool. Choices:"
+                         " %s" % ",".join(POOL_CHOICES)
                     ),
         make_option("--size", dest="size",
                     help="Size of the pool"),
@@ -68,6 +70,15 @@ class Command(BaseCommand):
             size = int(size)
         except ValueError:
             raise CommandError("Invalid size")
+
+        if type_ == "mac-prefix":
+            if base is None:
+                base = "aa:00:0"
+            try:
+                validate_mac(base + "0:00:00:00")
+            except:
+                raise CommandError("Invalid base. %s is not a"
+                                   " valid MAC prefix." % base)
 
         pool_table = pool_table_from_type(type_)
 

@@ -20,10 +20,10 @@
       </div>
   </form>
 </div>
-{% if auth_providers|length == 1 %}
+{% if auth_providers|length == 1 or provider_obj.is_primary %}
 <style>
   .two-cols .rt > p { display: none }
   .form-stacked { display: block !important }
-  a.submit.standalone { display: none !important }
+  a.submit.standalone.{{ provider_obj.module }}-provider { display: none !important }
 </style>
 {% endif %}

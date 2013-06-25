@@ -36,11 +36,14 @@ import json
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import get_network, UserCache, Omit
+from synnefo.management.common import get_network, Omit
 
 from synnefo.db.models import (Backend, BackendNetwork,
                                pooled_rapi_client)
 from synnefo.logic.rapi import GanetiApiError
+from snf_django.lib.astakos import UserCache
+from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
+                              ASTAKOS_BASE_URL)
 from util import pool_map_chunks
 
 
@@ -48,7 +51,8 @@ class Command(BaseCommand):
     help = "Inspect a network on DB and Ganeti."
 
     option_list = BaseCommand.option_list + (
-        make_option('--displayname',
+        make_option(
+            '--displayname',
             action='store_true',
             dest='displayname',
             default=False,
@@ -62,7 +66,7 @@ class Command(BaseCommand):
 
         net = get_network(args[0])
 
-        ucache = UserCache()
+        ucache = UserCache(ASTAKOS_BASE_URL, ASTAKOS_TOKEN)
 
         displayname = options['displayname']
 
@@ -80,7 +84,8 @@ class Command(BaseCommand):
         fields = filter(lambda x: x is not Omit,
                         [net.name, net.backend_id, net.state, uuid or '-',
                          dname or '-' if displayname else Omit,
-                         str(net.subnet), str(net.gateway), str(net.mac_prefix),
+                         str(net.subnet), str(net.gateway),
+                         str(net.mac_prefix),
                          str(net.link), str(net.public),  str(net.dhcp),
                          str(net.flavor), str(net.deleted), str(net.action),
                          str(splitPoolMap(net.get_pool().to_map(), 64))])

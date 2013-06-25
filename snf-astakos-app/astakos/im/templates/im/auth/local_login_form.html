@@ -1,4 +1,4 @@
-<form action="{% url astakos.im.target.local.login %}" method="post"class="login innerlabels">{% csrf_token %}
+<form action="{% url astakos.im.views.target.local.login %}" method="post"class="login innerlabels">{% csrf_token %}
     <p>
     {{ provider.get_primary_login_prompt_display }}
     </p>
@@ -17,6 +17,6 @@
     
     <div class="form-row submit clearfix">
         <input type="submit" class="submit altcol" value="SUBMIT" />
-        <a class="extra-link" href="{% url django.contrib.auth.views.password_reset %}">Forgot your password?</a>
+        <a class="extra-link" href="{% url astakos.im.views.target.local.password_reset %}">Forgot your password?</a>
     </div>
-</form> 
+</form>

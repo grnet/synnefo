@@ -48,7 +48,6 @@ from synnefo.versions.webproject import __version__
 
 # Package info
 VERSION = __version__
-README = open(os.path.join(HERE, 'README')).read()
 SHORT_DESCRIPTION = "Synnefo common infrastructure for Django"
 
 PACKAGES_ROOT = "."
@@ -60,7 +59,8 @@ CLASSIFIERS = []
 # Package requirements
 INSTALL_REQUIRES = [
         'Django >=1.2, <1.3',
-        'snf-common'
+        'snf-common',
+        'snf-django-lib',
 ]
 
 EXTRAS_REQUIRES = {
@@ -166,7 +166,6 @@ setup(
     license='BSD',
     url='http://www.synnefo.org/',
     description=SHORT_DESCRIPTION,
-    long_description=README,
     classifiers=CLASSIFIERS,
 
     author='Synnefo development team',

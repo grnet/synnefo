@@ -31,68 +31,73 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from datetime import datetime
 from logging import getLogger
 
 from django.conf import settings
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
+from synnefo.cyclades_settings import COMPUTE_ROOT_URL
 
-from synnefo.api.util import api_method, isoformat
+from snf_django.lib import api
 
 
 log = getLogger('synnefo.api')
 
 
-VERSION_1_1 = {
-    'id': 'v1.1',
-    'status': 'CURRENT',
-    'updated': '2011-04-01',
-    'links': [
+VERSION_2_0 = {
+    "id" : "v2.0",
+    "status" : "CURRENT",
+    "updated" : "2011-01-21T11:33:21-06:00",
+    "links": [
         {
-            'rel': 'self',
-            'href': settings.API_ROOT_URL,
-        }
-    ]
+            "rel" : "self",
+            "href" : COMPUTE_ROOT_URL,
+        },
+    ],
 }
 
-VERSIONS = [VERSION_1_1]
+VERSIONS = [VERSION_2_0]
 
 MEDIA_TYPES = [
-    {'base': 'application/xml', 'type': 'application/vnd.openstack.compute-v1.1+xml'},
-    {'base': 'application/json', 'type': 'application/vnd.openstack.compute-v1.1+json'}
+    {
+        "base" : "application/xml",
+        "type" : "application/vnd.openstack.compute.v2+xml"
+    },
+    {
+        "base" : "application/json",
+        "type" : "application/vnd.openstack.compute.v2+json"
+    }
 ]
 
 DESCRIBED_BY = [
     {
-        'rel' : 'describedby',
-        'type' : 'application/pdf',
-        'href' : 'http://docs.rackspacecloud.com/servers/api/v1.1/cs-devguide-20110125.pdf'
+        "rel" : "describedby",
+        "type" : "application/pdf",
+        "href" : "http://docs.rackspacecloud.com/servers/api/v2/cs-devguide-20110125.pdf"
     },
     {
-        'rel' : 'describedby',
-        'type' : 'application/vnd.sun.wadl+xml',
-        'href' : 'http://docs.rackspacecloud.com/servers/api/v1.1/application.wadl'
+        "rel" : "describedby",
+        "type" : "application/vnd.sun.wadl+xml",
+        "href" : "http://docs.rackspacecloud.com/servers/api/v2/application.wadl"
     }
 ]
 
-@api_method('GET', atom_allowed=True)
+
+@api.api_method(http_method='GET', user_required=True, logger=log)
 def versions_list(request):
     # Normal Response Codes: 200, 203
     # Error Response Codes: 400, 413, 500, 503
 
     if request.serialization == 'xml':
         data = render_to_string('versions_list.xml', {'versions': VERSIONS})
-    elif request.serialization == 'atom':
-        now = isoformat(datetime.now())
-        data = render_to_string('versions_list.atom', {'now': now,'versions': VERSIONS})
     else:
-        data = json.dumps({'versions': {'values': VERSIONS}})
+        data = json.dumps({'versions': VERSIONS})
 
     return HttpResponse(data)
 
-@api_method('GET', atom_allowed=True)
+
+@api.api_method('GET', user_required=True, logger=log)
 def version_details(request, api_version):
     # Normal Response Codes: 200, 203
     # Error Response Codes: computeFault (400, 500),
@@ -102,17 +107,13 @@ def version_details(request, api_version):
     #                       overLimit(413)
 
     log.debug('version_details %s', api_version)
-    # We hardcode to v1.1 since it is the only one we support
-    version = VERSION_1_1.copy()
+    # We hardcode to v2.0 since it is the only one we support
+    version = VERSION_2_0.copy()
     version['links'] = version['links'] + DESCRIBED_BY
 
     if request.serialization == 'xml':
         version['media_types'] = MEDIA_TYPES
         data = render_to_string('version_details.xml', {'version': version})
-    elif request.serialization == 'atom':
-        version['media_types'] = MEDIA_TYPES
-        now = isoformat(datetime.now())
-        data = render_to_string('version_details.atom', {'now': now,'version': version})
     else:
         version['media-types'] = MEDIA_TYPES
         data = json.dumps({'version': version})

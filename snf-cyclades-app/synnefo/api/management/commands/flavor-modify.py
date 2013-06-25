@@ -35,7 +35,11 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 from synnefo.management.common import get_flavor
+from synnefo.webproject.management.utils import parse_bool
 
+
+from logging import getLogger
+log = getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -43,26 +47,26 @@ class Command(BaseCommand):
     help = "Modify a flavor"
 
     option_list = BaseCommand.option_list + (
-        make_option('--set-deleted',
-            action='store_true',
-            dest='deleted',
-            help="Mark a server as deleted"),
-        make_option('--set-undeleted',
-            action='store_true',
-            dest='undeleted',
-            help="Mark a server as not deleted"),
-        )
+        make_option(
+            "--deleted",
+            dest="deleted",
+            metavar="True|False",
+            choices=["True", "False"],
+            default=None,
+            help="Mark/unmark a flavor as deleted"),
+    )
 
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a flavor ID")
 
-
         flavor = get_flavor(args[0])
 
-        if options.get('deleted'):
-            flavor.deleted = True
-        elif options.get('undeleted'):
-            flavor.deleted = False
-
-        flavor.save()
+        deleted = options['deleted']
+        if deleted:
+            deleted = parse_bool(deleted)
+            log.info("Marking flavor %s as deleted=%s", flavor, deleted)
+            flavor.deleted = deleted
+            flavor.save()
+        else:
+            log.info("Nothing changed!")

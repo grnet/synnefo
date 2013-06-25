@@ -74,7 +74,8 @@ def find_modules(name, path=None):
     """
 
     results = []
-    if path is None: path = sys.path
+    if path is None:
+        path = sys.path
     for p in path:
         importer = sys.path_importer_cache.get(p, None)
         if importer is None:
@@ -89,8 +90,9 @@ def find_modules(name, path=None):
         except ImportError:
             if sys.modules.get(name, None):
                 modpath = sys.modules[name].__path__
-                if isinstance(modpath, basestring) and not ('', modpath) in results:
-                    results.append(('', sys.modules[name].__path__))
+                if (isinstance(modpath, basestring)
+                    and not ('', modpath) in results):
+                        results.append(('', sys.modules[name].__path__))
                 else:
                     for mp in modpath:
                         if not ('', mp) in results:
@@ -101,6 +103,7 @@ def find_modules(name, path=None):
         raise ImportError("No module named %.200s" % name)
 
     return results
+
 
 def find_management_module(app_name):
     """
@@ -124,9 +127,9 @@ def find_management_module(app_name):
     try:
         modules = find_modules(part, paths)
         paths = [m[1] for m in modules]
-    except ImportError,e:
+    except ImportError:
         if os.path.basename(os.getcwd()) != part:
-            raise e
+            raise
 
     while parts:
         part = parts.pop()
@@ -186,7 +189,7 @@ def get_commands():
                 _commands.update(dict([(name, app_name)
                                        for name in find_commands(path)]))
             except ImportError:
-                pass # No management module - ignore this app
+                pass  # No management module - ignore this app
 
         if project_directory:
             # Remove the "startproject" command from self.commands, because
@@ -200,6 +203,7 @@ def get_commands():
             _commands['startapp'] = ProjectCommand(project_directory)
 
     return _commands
+
 
 class SynnefoManagementUtility(ManagementUtility):
     """
@@ -235,7 +239,7 @@ class SynnefoManagementUtility(ManagementUtility):
             options, args = parser.parse_args(self.argv)
             handle_default_options(options)
         except:
-            pass # Ignore any option errors at this point.
+            pass  # Ignore any option errors at this point.
 
         # user provides custom settings dir
         # set it as environmental variable and remove it from self.argv
@@ -248,10 +252,11 @@ class SynnefoManagementUtility(ManagementUtility):
         try:
             subcommand = self.argv[1]
         except IndexError:
-            subcommand = 'help' # Display help if no arguments were given.
+            subcommand = 'help'  # Display help if no arguments were given.
 
         # Encode stdout. This check is required because of the way python
-        # checks if something is tty: https://bugzilla.redhat.com/show_bug.cgi?id=841152
+        # checks if something is tty:
+        # https://bugzilla.redhat.com/show_bug.cgi?id=841152
         if not subcommand in ['test'] and not 'shell' in subcommand:
             sys.stdout = EncodedStdOut(sys.stdout)
 
@@ -277,7 +282,8 @@ class SynnefoManagementUtility(ManagementUtility):
         """
         Returns the script's main help text, as a string.
         """
-        usage = ['',"Type '%s help <subcommand>' for help on a specific subcommand." % self.prog_name,'']
+        usage = ['', ("Type '%s help <subcommand>' for help"
+                      "on a specific subcommand.") % self.prog_name, '']
         usage.append('Available subcommands:')
         commands = get_commands().keys()
         commands.sort()
@@ -294,8 +300,9 @@ class SynnefoManagementUtility(ManagementUtility):
         try:
             app_name = get_commands()[subcommand]
         except KeyError:
-            sys.stderr.write("Unknown command: %r\nType '%s help' for usage.\n" % \
-                (subcommand, self.prog_name))
+            sys.stderr.write(("Unknown command: %r\n"
+                              "Type '%s help' for usage.\n") %
+                             (subcommand, self.prog_name))
             sys.exit(1)
         if isinstance(app_name, BaseCommand):
             # If the command is already loaded, use it directly.

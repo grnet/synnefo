@@ -45,14 +45,14 @@
           <span class="extratitle">MODIFICATION OF </span>
         {% endif %}
       {% endif %}
-      {{ object.name|upper }}
+      {{ object.name|upper }} 
     </span>
     
     {% block project.actions %}
     {% include "im/projects/_project_detail_actions.html" %}
     {% endblock %}
   </h2>
-
+  {% block inner_project %}
   <div class="full-dotted">
     <h3>PROJECT DETAILS</h3>
     <dl class="alt-style">
@@ -60,7 +60,7 @@
       <dd>{{ object.name }}&nbsp;</dd>
       <dt>Homepage url</dt>
       <dd>
-        {% if object.homepage%}
+        {% if object.homepage %}
         <a href="{{ object.homepage }}">{{ object.homepage }}</a>
         {% else %}
         Not set yet
@@ -95,26 +95,7 @@
       </dd>
     </dl>
   </div>
-
-  <div class="full-dotted">
-    <h3>MEMBERSHIP OPTIONS</h3>
-    <dl class="alt-style">
-      <dt>Max participants</dt>
-      <dd>
-        {% if object.limit_on_members_number %}
-        {{object.limit_on_members_number}}
-        {% else %}&nbsp;{% endif %}
-      </dd>
-      <dt>Member join policy</dt>
-      <dd>
-        {{ object.member_join_policy_display|title }}
-      </dd>
-      <dt>Member leave policy</dt>
-      <dd>
-        {{ object.member_leave_policy_display|title }}
-      </dd>
-    </dl>
-  </div>
+ 
 
   <div class="full-dotted">
     <h3>RESOURCES</h3>
@@ -132,48 +113,66 @@
     {% endif %}
   </div>
 
-  {% if owner_mode and project_view %}
-    {% if object.project.is_alive %}
-      <div class="full-dotted">
-        <h3>MEMBERS</h3>
-        {% if members_table %}
-        {% render_table members_table %}
-        {% endif %}
-      </div>
+ 
+  <div class="full-dotted">
 
-      {% if not project.is_deactivated %}
-        <div class="full-dotted">
-          <form action="{% url project_detail object.chain %}#members-table"
-                method="post" class="withlabels" >
-            {% csrf_token %}
-            <h2>Enroll more members</h2>
-            {% with addmembers_form as form %}
-            {% include "im/form_render.html" %}
-            {% endwith %}
-            <div class="form-row submit">
-              <input type="submit" class="submit altcol" value="ADD MEMBERS" />
-            </div>
-          </form>
-        </div>
+    <h3>
+      {% if owner_mode and project_view %}
+          {% if object.project.is_alive %}
+           <a href="{% url project_members object.chain %}">MEMBERS </a>
+          {% else %}
+          MEMBERS
+          {% endif %}
+      {% else %}
+          MEMBERS
       {% endif %}
-    {% endif %}
 
-    {% comment %}
-      {% if modifications_table %}
-      <div class="full-dotted">
-        <h3>MODIFICATION REQUESTS</h3>
-        {% render_table modifications_table %}
-      </div>
-      {% endif %}
-    {% endcomment %}
+     
+    </h3>
+    
+    <dl class="alt-style">
+      <dt>Max participants</dt>
+      <dd>
+        {% if object.limit_on_members_number %}
+        {{object.limit_on_members_number}}
+        {% else %}Not set{% endif %}
+      </dd>
+      <dt>Member join policy</dt>
+      <dd>
+        {{ object.member_join_policy_display|title }}
+      </dd>
+      <dt>Member leave policy</dt>
+      <dd>
+        {{ object.member_leave_policy_display|title }}
+      </dd>
+       {% if owner_mode and project_view %}
+          {% if object.project.is_alive %}
+      <dt><a href="{% url project_approved_members object.chain %}" title="view approved members">Approved members</a></dt>
+      <dd>{{ approved_members_count }}
+        <span class="faint"> 
+          {% if object.limit_on_members_number %}
+          ({% substract object.limit_on_members_number approved_members_count%} memberships remain)
+          
+          {% else %}&nbsp;{% endif %} 
+        </span>
+      </dd>
+      <dt><a href="{% url project_pending_members object.chain %}" title="view pending members">Members pending approval</a></dt>
+      <dd>{{ pending_members_count }}</dd>
+        {% if not project.is_deactivated %}
+    </dl>    
+    {% include 'im/projects/addmembers_form.html' %}
+           
+            {% endif %}
+          {% endif %}
+       {% endif %}
 
-  {% endif %}
-
+  </div>
+{% endblock inner_project %}  
   <div class="full-dotted">
     <p>
-      <a href="{% url project_list %}">&lt; Back to Projects</a>
+      {% block bottom_link %}<a href="{% url project_list %}">&lt; Back to Projects</a>{% endblock bottom_link %}
     </p>
   </div>
-
+</div>
 {% endwith %}
 {% endblock %}

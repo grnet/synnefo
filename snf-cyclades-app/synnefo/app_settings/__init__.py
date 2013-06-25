@@ -1,5 +1,4 @@
 synnefo_web_apps = [
-    'synnefo.admin',
     'synnefo.api',
     'synnefo.ui',
     'synnefo.db',
@@ -7,8 +6,7 @@ synnefo_web_apps = [
     'synnefo.plankton',
     'synnefo.vmapi',
     'synnefo.helpdesk',
-    'synnefo.ui.userdata',
-    'synnefo.helpdesk',
+    'synnefo.userdata',
     'synnefo.quotas',
 ]
 
@@ -17,6 +15,5 @@ synnefo_web_context_processors = ['synnefo.lib.context_processors.cloudbar']
 
 synnefo_static_files = {
     'synnefo.ui': 'ui/static',
-    'synnefo.admin': 'admin',
     'synnefo.helpdesk': 'helpdesk',
 }

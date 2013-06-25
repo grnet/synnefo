@@ -37,16 +37,18 @@ from astakos.im.forms import (
     ExtendedPasswordResetForm,
     ExtendedPasswordChangeForm,
     ExtendedSetPasswordForm, LoginForm)
-from astakos.im.settings import IM_MODULES, INVITATIONS_ENABLED, EMAILCHANGE_ENABLED
+
+from astakos.im import settings
 
 urlpatterns = patterns(
     'astakos.im.views',
     url(r'^$', 'index', {}, name='index'),
-    url(r'^login/?$', 'index', {}, name='login'),
+    url(r'^login/?$', 'login', {}, name='login'),
     url(r'^landing/?$', 'landing', {}, name='landing'),
     url(r'^profile/update_token?$', 'update_token', {}, name='update_token'),
     url(r'^profile/?$','edit_profile', {}, name='edit_profile'),
-    url(r'^api_access/?$', 'api_access', {}, name='api_access'),
+    url(r'^api_access/?$','api_access', {}, name='api_access'),
+    url(r'^\.kamakirc/?$','api_access_config', {}, name='api_access_config'),
     url(r'^feedback/?$', 'feedback', {}, name='feedback'),
     url(r'^signup/?$', 'signup', {'on_success': 'index', 'extra_context': {'login_form': LoginForm()}}, name='signup'),
     url(r'^logout/?$', 'logout', {'template': 'im/login.html', 'extra_context': {'login_form': LoginForm()}}, name='logout'),
@@ -66,9 +68,21 @@ urlpatterns = patterns(
     url(r'^projects/(?P<chain_id>\d+)/join/?$', 'project_join', {}, name='project_join'),
     url(r'^projects/(?P<chain_id>\d+)/leave/?$', 'project_leave', {}, name='project_leave'),
     url(r'^projects/(?P<chain_id>\d+)/cancel/?$', 'project_cancel', {}, name='project_cancel'),
-    url(r'^projects/(?P<chain_id>\d+)/(?P<user_id>\d+)/accept/?$', 'project_accept_member', {}, name='project_accept_member'),
-    url(r'^projects/(?P<chain_id>\d+)/(?P<user_id>\d+)/reject/?$', 'project_reject_member', {}, name='project_reject_member'),
-    url(r'^projects/(?P<chain_id>\d+)/(?P<user_id>\d+)/remove/?$', 'project_remove_member', {}, name='project_remove_member'),
+    url(r'^projects/(?P<chain_id>\d+)/members/?$', 'project_members', {}, name='project_members'),
+    url(r'^projects/(?P<chain_id>\d+)/members/approved/?$', 'project_members', {'members_status_filter':1}, name='project_approved_members'),
+    url(r'^projects/(?P<chain_id>\d+)/members/accept/?$',
+        'project_members_action', {'action':'accept'},
+        name='project_members_accept'),
+    url(r'^projects/(?P<chain_id>\d+)/members/remove/?$',
+        'project_members_action', {'action':'remove'},
+        name='project_members_remove'),
+    url(r'^projects/(?P<chain_id>\d+)/members/reject/?$',
+        'project_members_action', {'action':'reject'},
+        name='project_members_reject'),
+    url(r'^projects/(?P<chain_id>\d+)/members/pending/?$', 'project_members', {'members_status_filter':0}, name='project_pending_members'),
+    url(r'^projects/(?P<chain_id>\d+)/(?P<memb_id>\d+)/accept/?$', 'project_accept_member', {}, name='project_accept_member'),
+    url(r'^projects/(?P<chain_id>\d+)/(?P<memb_id>\d+)/reject/?$', 'project_reject_member', {}, name='project_reject_member'),
+    url(r'^projects/(?P<chain_id>\d+)/(?P<memb_id>\d+)/remove/?$', 'project_remove_member', {}, name='project_remove_member'),
     url(r'^projects/app/(?P<application_id>\d+)/?$', 'project_app', {}, name='project_app'),
     url(r'^projects/app/(?P<application_id>\d+)/modify$', 'project_modify', {}, name='project_modify'),
     url(r'^projects/app/(?P<application_id>\d+)/approve$', 'project_app_approve', {}, name='project_app_approve'),
@@ -81,26 +95,24 @@ urlpatterns = patterns(
 )
 
 
-if EMAILCHANGE_ENABLED:
+if settings.EMAILCHANGE_ENABLED:
     urlpatterns += patterns(
         'astakos.im.views',
         url(r'^email_change/?$', 'change_email', {}, name='email_change'),
         url(r'^email_change/confirm/(?P<activation_key>\w+)/?$', 'change_email', {},
             name='email_change_confirm'))
 
-if 'local' in IM_MODULES:
+if 'local' in settings.IM_MODULES:
     urlpatterns += patterns(
-        'astakos.im.target',
-        url(r'^local/?$', 'local.login'),
-        url(r'^password_change/?$', 'local.password_change', {
+        'astakos.im.views.target.local',
+        url(r'^local/?$', 'login', name='local_login'),
+        url(r'^password_change/?$', 'password_change', {
             'post_change_redirect':'profile',
             'password_change_form':ExtendedPasswordChangeForm},
             name='password_change'),
-        url(r'^local/password_reset/done$', 'local.password_reset_done'),
+        url(r'^local/password_reset/done$', 'password_reset_done'),
         url(r'^local/reset/confirm/done$',
-            'local.password_reset_confirm_done')
-    )
-    urlpatterns += patterns('django.contrib.auth.views',
+            'password_reset_confirm_done'),
         url(r'^local/password_reset/?$', 'password_reset', {
             'email_template_name':'registration/password_email.txt',
             'password_reset_form':ExtendedPasswordResetForm,
@@ -113,48 +125,43 @@ if 'local' in IM_MODULES:
         url(r'^local/password/reset/complete/?$', 'password_reset_complete')
     )
 
-if INVITATIONS_ENABLED:
+if settings.INVITATIONS_ENABLED:
     urlpatterns += patterns(
         'astakos.im.views',
         url(r'^invite/?$', 'invite', {}, name='invite'))
 
-if 'shibboleth' in IM_MODULES:
+if 'shibboleth' in settings.IM_MODULES:
     urlpatterns += patterns(
-        'astakos.im.target',
+        'astakos.im.views.target',
         url(r'^login/shibboleth/?$', 'shibboleth.login'),
     )
 
-if 'twitter' in IM_MODULES:
+if 'twitter' in settings.IM_MODULES:
     urlpatterns += patterns(
-        'astakos.im.target',
+        'astakos.im.views.target',
         url(r'^login/twitter/?$', 'twitter.login'),
         url(r'^login/twitter/authenticated/?$',
             'twitter.authenticated'))
 
-if 'google' in IM_MODULES:
+if 'google' in settings.IM_MODULES:
     urlpatterns += patterns(
-        'astakos.im.target',
+        'astakos.im.views.target',
         url(r'^login/google/?$', 'google.login'),
         url(r'^login/google/authenticated/?$',
             'google.authenticated'))
 
-if 'linkedin' in IM_MODULES:
+if 'linkedin' in settings.IM_MODULES:
     urlpatterns += patterns(
-        'astakos.im.target',
+        'astakos.im.views.target',
         url(r'^login/linkedin/?$', 'linkedin.login'),
         url(r'^login/linkedin/authenticated/?$',
             'linkedin.authenticated'))
 
 urlpatterns += patterns(
-    'astakos.im.api',
-    url(r'^get_services/?$', 'get_services'),
-    url(r'^get_menu/?$', 'get_menu'))
+    'astakos.im.views',
+    url(r'^get_menu/?$', 'get_menu'),
+    url(r'^get_services/?$', 'get_services'))
 
 urlpatterns += patterns(
-    'astakos.im.api',
-    url(r'^get_services/?$', 'get_services'),
-    url(r'^get_menu/?$', 'get_menu'))
-
-urlpatterns += patterns(
-    'astakos.im.api.user',
+    'astakos.api.user',
     url(r'^authenticate/?$', 'authenticate'))

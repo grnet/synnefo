@@ -84,7 +84,7 @@
         // error list
         var el = $('<div class="form-error" />');
         errors.find("li").each(function(){
-            el.html(el.html() + $(this).text() + "<br />");
+            el.html(el.html() + $(this).html() + "<br />");
         })
         
         var formel = $this.find("input, select");
@@ -124,10 +124,10 @@
 
   };
   
-  var MIDDLEWARE_TOKEN_INPUT_NAME = window.MIDDLEWARE_TOKEN_INPUT_NAME || 'csrfmiddlewaretoken';
-  var CHANGE_TOKEN_URL = window.CHANGE_TOKEN_URL || '/im/profile/update_token';
 
   function renewToken() {
+    var MIDDLEWARE_TOKEN_INPUT_NAME = window.MIDDLEWARE_TOKEN_INPUT_NAME || 'csrfmiddlewaretoken';
+    var CHANGE_TOKEN_URL = window.CHANGE_TOKEN_URL;
     var csrf_value = $("input[name="+MIDDLEWARE_TOKEN_INPUT_NAME+"]").val();
     var url = CHANGE_TOKEN_URL;
     var form = $("<form>");

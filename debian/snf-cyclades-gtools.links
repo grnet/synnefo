@@ -1,6 +1,0 @@
-usr/sbin/snf-ganeti-hook etc/ganeti/hooks/instance-stop-post.d/snf-ganeti-hook
-usr/sbin/snf-ganeti-hook etc/ganeti/hooks/instance-reboot-post.d/snf-ganeti-hook
-usr/sbin/snf-ganeti-hook etc/ganeti/hooks/instance-modify-post.d/snf-ganeti-hook
-usr/sbin/snf-ganeti-hook etc/ganeti/hooks/instance-add-post.d/snf-ganeti-hook
-usr/sbin/snf-ganeti-hook etc/ganeti/hooks/instance-start-post.d/snf-ganeti-hook
-

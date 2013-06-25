@@ -31,9 +31,15 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import patterns
+from django.conf.urls.defaults import patterns, include
+from snf_django.lib.api.utils import prefix_pattern
+from synnefo_stats.stats_settings import BASE_PATH
 from synnefo_stats.grapher import grapher
 
+stats_patterns = patterns('',
+    (r'^(?P<hostname>\S+)/(?P<graph_type>\S+)/$', grapher),
+)
+
 urlpatterns = patterns('',
-    (r'^stats/(?P<hostname>\S+)/(?P<graph_type>\S+)/$', grapher),
+    (prefix_pattern(BASE_PATH), include(stats_patterns)),
 )

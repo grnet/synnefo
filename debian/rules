@@ -12,14 +12,18 @@ DESTDIR := ${CURDIR}/${BUILDDIR}
 PACKAGES = \
 	snf-astakos-app \
 	snf-common \
+	snf-branding \
 	snf-cyclades-app \
 	snf-cyclades-gtools \
-	snf-quotaholder-app \
 	snf-webproject \
 	snf-pithos-app \
 	snf-pithos-backend \
 	snf-tools \
-	snf-stats-app
+	snf-stats-app \
+	snf-django-lib
+
+PYTHON_PACKAGES = \
+	astakosclient
 
 %:
 	dh $@ --with python2
@@ -29,6 +33,11 @@ override_dh_auto_install:
 	for package in $(PACKAGES); do \
 		cd $$package ; \
 		python setup.py install --root=$(DESTDIR)/$$package --install-layout=deb ; \
+		cd - ; \
+	done
+	for package in $(PYTHON_PACKAGES); do \
+		cd $$package ; \
+		python setup.py install --root=$(DESTDIR)/python-$$package --install-layout=deb ; \
 		cd - ; \
 	done
 	-for py in $(shell pyversions -vr debian/control); do \

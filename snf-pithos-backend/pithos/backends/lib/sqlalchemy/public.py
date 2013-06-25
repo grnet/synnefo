@@ -39,6 +39,8 @@ from sqlalchemy.exc import NoSuchTableError
 
 from pithos.backends.random_word import get_random_word
 
+from dbworker import ESCAPE_CHAR
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -95,13 +97,15 @@ class Public(DBWorker):
             s = s.values(path=path, active=True, url=url)
             r = self.conn.execute(s)
             r.close()
-            logger.info('Public url: %s set for path: %s' % (url, path))
+            logger.info('Public url set for path: %s' % path)
 
     def public_unset(self, path):
         s = self.public.delete()
         s = s.where(self.public.c.path == path)
-        self.conn.execute(s).close()
-        logger.info('Public url unset for path: %s' % (path))
+        r = self.conn.execute(s)
+        if r.rowcount != 0:
+            logger.info('Public url unset for path: %s' % path)
+        r.close()
 
     def public_unset_bulk(self, paths):
         if not paths:
@@ -124,7 +128,7 @@ class Public(DBWorker):
     def public_list(self, prefix):
         s = select([self.public.c.path, self.public.c.url])
         s = s.where(self.public.c.path.like(
-            self.escape_like(prefix) + '%', escape='\\'))
+            self.escape_like(prefix) + '%', escape=ESCAPE_CHAR))
         s = s.where(self.public.c.active == True)
         r = self.conn.execute(s)
         rows = r.fetchall()

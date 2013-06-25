@@ -105,7 +105,7 @@ def get_available_backends():
 
 
 def filter_archipelagos_backends(available_backends, disk_template):
-    if disk_template.startswith("ext_"):
+    if disk_template == "ext":
         available_backends = filter(lambda x: x.id in ARCHIPELAGO_BACKENDS,
                                     available_backends)
     else:

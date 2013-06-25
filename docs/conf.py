@@ -1,6 +1,10 @@
 import sys, os
 
 sys.path.insert(0, os.path.abspath('../snf-cyclades-app'))
+import synnefo
+reload(synnefo)
+import synnefo.versions
+reload(synnefo.versions)
 from synnefo.versions.app import __version__
 
 project = u'synnefo'
@@ -46,13 +50,14 @@ intersphinx_mapping = {
                    'https://docs.djangoproject.com/en/dev/_objects/')
 }
 
-SYNNEFO_DOCS_BASE_URL = 'http://docs.dev.grnet.gr/'
+SYNNEFO_DOCS_BASE_URL = 'http://www.synnefo.org/docs'
 SYNNEFO_PROJECTS = {
     'synnefo': 'dev',
     'pithos': 'dev',
     'snf-webproject': 'dev',
     'snf-common': 'dev',
     'snf-image': 'dev',
+    'snf-astakos-client': 'dev',
     'snf-cyclades-app': 'dev'
 }
 

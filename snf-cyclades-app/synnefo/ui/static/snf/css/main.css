@@ -20,8 +20,11 @@ body {
     background: url("../images/body-bg.png") repeat-x #FFFFFF;
     text-align:center;
     font-size: 16px;
-    background-position: 0px 34px; 
     overflow-y: scroll;
+}
+
+body#app {
+    background-position: 0px 34px; 
 }
 
 a, a:hover, a:active, a:focus, div:focus, span:focus, li:focus {
@@ -325,6 +328,11 @@ div.css-panes {
 
 .header-logo {
     padding-top: 28px;
+}
+
+.header-logo img {
+    max-width:100%;
+    max-height:64px;
 }
 
 div#footer-text a {
@@ -3805,6 +3813,11 @@ div.single div.column3 div.server-name:hover {
     padding-top: 16px;
     margin-left: 30px;
     position: fixed;
+}
+
+.console-header-logo img {
+    max-width:100%;
+    max-height:65px;
 }
 
 #console-header div.help-text {

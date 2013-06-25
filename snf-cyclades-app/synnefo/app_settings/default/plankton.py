@@ -18,7 +18,3 @@ DEFAULT_CONTAINER_FORMAT = 'bare'
 
 # The owner of the images that will be marked as "system images" by the UI
 SYSTEM_IMAGES_OWNER = 'okeanos'
-
-# If true, this enables a ui compatibility layer for the introduction of UUIDs
-# in identity management. WARNING: Setting to True will break your installation.
-TRANSLATE_UUIDS = False

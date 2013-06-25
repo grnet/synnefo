@@ -87,9 +87,29 @@ if (navigator.userAgent.match(/iPhone/i)) {
  
 $(document).ready(function() {
 	
+    var is_firefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+
+    /* api access */
+    $(".token-view .detail").click(function() { 
+      $(this).find("input").select();
+    });
+	    
+    $('#dummy_auth_token').html( $('.token-view input[name="auth_token"]').val());
+    $('#dummy_token_url').html( $('.token-view input[name="token_url"]').val())
+
+
+    if (is_firefox ){
+      $('.dummy-input').css('display','block');
+      $('.dummy-input').next('input').css('visibility','hidden');
+    }
+
+    /* api access test
+    
+    */
+
 	 
     setContainerMinHeight('.container .wrapper');
-    tableFixedCols('my-projects', 25);
+    //tableFixedCols('my-projects', 25);
 	
     $('.show-extra').click(function(e) {
         e.preventDefault();
@@ -228,6 +248,9 @@ $(document).ready(function() {
 			}
 		});
 	
+
+
+
  
 	$("input.leave, input.join").click(function (e) {
         e.preventDefault();
@@ -235,6 +258,9 @@ $(document).ready(function() {
         var dialog = $(this).parents('.msg-wrap').find('.dialog');
 
 		$('.dialog').hide();
+    if ($(this).parents('.form-actions').hasClass('inactive')) {
+      return false;
+    }
 		$(this).parents('.msg-wrap').find('.dialog').show();
         var offset = dialog.offset();
 
@@ -255,10 +281,16 @@ $(document).ready(function() {
     });
     
      $('.msg-wrap .no').click( function(e){
-		e.preventDefault();
-		$(this).parents('.dialog').hide();
-	})
-    
+    		e.preventDefault();
+    		$(this).parents('.dialog').hide();
+        e.stopPropagation();
+    	})
+
+      $(document).click(function() {
+        $('.msg-wrap .dialog').hide();
+      });
+
+     
     $('.msg-wrap .yes').click( function(e){
 		e.preventDefault();
         var dialog = $(this).parents('.msg-wrap').find('.dialog');
@@ -297,71 +329,122 @@ $(document).ready(function() {
 	
 	
 	
-	
-	$('.landing-page .cms').hover(
-      function () {
-      	 el = $('.cloudbar ul.services li').first();
-      	 var offset = el.offset();
-      	 positionX = offset.left;
-      	 $('#hand').css('left',positionX);  		 
-         $('#hand').show();
-      }, 
-      function () {
+	// landing-page initialization
+    if ($('.landing-page').length > 0) {
+      var wrapper = $(".landing-page");
+      var services = wrapper.find(".landing-service");
+      services.hover(function(e) {
+        var cls, service_cls, cloudbar_li, offset, positionX;
+        cls = _.filter($(this).attr("class").split(" "), function(cls) {
+          return cls.indexOf("service-") == 0
+        });
+        if (!cls.length) { return }
+        service_cls = $.trim(cls[0]);
+        extra = 0;
+        if (service_cls == 'service-astakos') {
+          cloudbar_li = $(".cloudbar .profile");
+          extra = 50;
+        } else {
+          cloudbar_li = $(".cloudbar ul.services li." + service_cls);
+          if (cloudbar_li.index() != 0) {
+            extra = 20;
+          }
+        }
+      	offset = cloudbar_li.offset();
+        if (!offset) { return }
+      	positionX = offset.left + extra;
+      	$('#hand').css('left',positionX + 'px');
+        $('#hand').show();
+      }, function (e) {
       	$('#hand').hide();
-    
-    });  
-    
-    $('.landing-page .pithos').hover(
-      function () {
-      	 el = $('.cloudbar ul.services li:nth-child(3)');
-      	 var offset = el.offset();
-      	 positionX = offset.left;
-      	 left = parseInt(positionX) +20;
-      	 $('#hand').css('left',left+'px');  		 
-         $('#hand').show();
-      }, 
-      function () {
-      	$('#hand').hide();
-    
-    });  
-    
-    $('.landing-page .cyclades').hover(
-      function () {
-      	 el = $('.cloudbar ul.services li:nth-child(2)').first();
-      	 var offset = el.offset();
-      	 positionX = offset.left;
-      	 left = parseInt(positionX) +20;
-      	 $('#hand').css('left',left+'px');  		 
-         $('#hand').show();
-      }, 
-      function () {
-      	$('#hand').hide();
-    
-    });  
-    
-    
-    $('.landing-page .dashboard').hover(
-      function () {
-      	 el = $('.cloudbar .profile');
-      	 var offset = el.offset();
-      	 positionX = offset.left +50;
-      	 $('#hand').css('left',positionX);  		 
-         $('#hand').show();
-      }, 
-      function () {
-      	$('#hand').hide();
-    
-    });  
-    
+      });
+    }
+
     $('.pagination a.disabled').click(function(e){
     	e.preventDefault();
     });
 	  
 	// fix for recaptcha fields
 	$('#okeanos_recaptcha').parents('.form-row').find('.extra-img').hide();	  
-     
-	 
-	    
+   
+   check_form_actions_inactive();  
+/* project members page js */	 
+function check_form_actions_inactive(){
+   if ( $('#members-table tbody td.check input:checked').length >0 ) {
+    $('.projects .form-actions').removeClass('inactive');
+  } else {
+    $('.projects .form-actions').addClass('inactive');
+  }
+
+  // updating form data
+  var forms = $("form.link-like:has('input.members-batch-action')");
+  forms.each(function(index, form){
+    var member_ids, checked;
+    form = $(form);
+    form.find("input.member-option").remove();
+    checked = $('#members-table tbody td.check input:checked');
+    member_ids = _.map(checked, function(el) {
+      return parseInt($(el).val());
+    });
+    
+    _.each(member_ids, function(id) {
+      var newel;
+      newel = $("<input name='members' class='member-option' type='hidden' value='"+id+"'>");
+      form.append(newel);
+    });
+  })
+}
+
+$('#members-table td.email').click(function(e){
+  var that = $(this).parent('tr').find('.check').find('input[type="checkbox"]')
+  if(that.is(":checked")){
+    that.removeAttr('checked');
+  } else {
+    that.attr('checked', 'checked');
+  }
+  check_form_actions_inactive();
+
+})
+
+
+
+
+$('#members-table tr th.check input').click(function(e){
+  if($(this).is(":checked")){
+    $('#members-table tbody td.check input').attr('checked', 'checked');
+  } else {
+    $('#members-table tbody td.check input').removeAttr('checked');
+  } 
+});
+
+$('#members-table tr .check input').click(function(e){
+  check_form_actions_inactive()
+});
+
+/* end of project members page js */
+
+  $('.renew-token a.confirm').click(function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    renewToken();
+  });
+
+  $('.renew-token a.do').click(function(e){
+    e.preventDefault();
+    e.stopPropagation(); 
+    var els = [$(".renew-token .sub"),$('.renew-token .confirm'), $('.renew-token .close')];
+    _.each(els, function (el) { el.show();})
+  })
+
+  $('.renew-token a.close').click(function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    var els = [$(".renew-token .sub"),$('.renew-token .confirm'), $('.renew-token .close')];
+    _.each(els, function (el) { el.hide();})
+    $('.renew-token a.do').show();
+  })
+
+
 });
 	
 $(window).resize(function() {

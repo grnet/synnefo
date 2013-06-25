@@ -1,7 +1,5 @@
---- A translation in English follows ---
+{% extends "im/email.txt" %}
 
-Tο project {{object.name}} έχει ανασταλεί.
-
---
-
+{% block content %}
 Your project application request ({{object.name}}) has been suspended.
+{% endblock content %}

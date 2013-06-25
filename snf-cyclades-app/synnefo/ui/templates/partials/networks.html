@@ -40,15 +40,15 @@
           </div>
           <div class="col-fields clearfix bordered">
             <div class="form-field fixpos">
-                <label for="network-create-dhcp">Automatically assign ips:</label>
+                <label for="network-create-dhcp">Assign IP addresses automatically:</label>
                 <input type="checkbox" class="use-dhcp" name="network-create-dhcp"
                   id="network-create-dhcp" checked />
                   <p class="description noborder fields-desc">
                   {% blocktrans %}If you enable DHCP on the private network,
-                  connected virtual machines will automatically be assigned with 
+                  connected virtual machines will automatically be assigned
                   an IP address based on the given subnet. You may disable this option
-                  if you want to manually assign IP addresses on the connected
-                  virtual machines. {% endblocktrans %}
+                  if you want to assign IP addresses to the connected
+                  virtual machines manually. {% endblocktrans %}
             </p>
             </div>
             <div id="network-create-dhcp-fields">

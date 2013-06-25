@@ -1,74 +1,69 @@
 {% extends "im/account_base.html" %}
 
-{% load filters %}
+{% load filters astakos_tags %}
 
 {% block headjs %}
 {{ block.super }}
 <script src="{{ IM_STATIC_URL }}js/usage.js"></script>	
 {% endblock %}
 
-{% block page.body %}
-<div class="maincol {% block innerpage.class %}{% endblock %}"> 
+{% block page.title %}Usage{% endblock %}
 
-	<h2>RESOURCE USAGE</h2>
-	<div class="stats clearfix">
-		<ul>
-			{% for rdata in resource_usage %}
-            <li class="clearfix  {{ rdata.load_class }} {{ rdata.name|get_value_after_dot }}" 
-                    data-resourcekey="{{ rdata.name }}" data-units="{{ rdata.unit }}">
-		 			<div class="img-wrap">&nbsp;</div>
-                    <div class="info" data-currvalue="{{ rdata.currValue }}"
-                                      data-maxvalue="{{ rdata.maxValue }}">
-						<h3>{{ rdata.report_desc }}</h3>
-						<p>							
-						{% if rdata.unit == 'bytes' %}
-                        <span class="currValue">
-                            {{ rdata.currValue }}
-                        </span> out of  
-                        <span class="maxValue">
-                            {{ rdata.maxValue }}
-                        </span>
-                        {% else %}
-                        <span class="currValue">
-                            <span class="value">{{ rdata.currValue }}</span>
-                        </span>
-                        out of  
-                        <span class="maxValue">
-                            <span class="value">{{ rdata.maxValue }}</span>
-                            <span class="unit">{{ rdata.unit }}</span>
-                        </span>
-						{% endif %}
-                        {{rdata.pluralized_display_name}}
-						</p>
-					</div>
-					<div class="bar" data-steps="">
-						<div>
-							
-							<span style="width:{{ rdata.ratio_limited|floatformat }}%;" {% if rdata.ratio > 22 %}class="hovered"{% endif %}>
-                               
-							</span>
-							  <em data-value="{{ rdata.ratio }}" class="value">{{ rdata.ratio|floatformat }}&#37; &nbsp;&nbsp;</em>	
-						</div>
-					</div>
-		 		</li>
-		 	{% endfor%}
-		</ul>
-			 
-	</div>    
+{% block page.body %}
+
+<script id="quotaTpl" type="text/template">
+  {% verbatim %}
+  {{#resources}}
+  <li class="clearfix {{ resource_name }} {{ usage.cls }}" 
+      data-resource="{{ name }}">
+  <div class="img-wrap">&nbsp;</div>
+  <div class="info" data-currvalue="" data-maxvalue="">
+    <h3>{{ report_desc }}</h3>
+    <p>
+      <span class="currValue">{{ usage.curr }}</span> out of 
+      <span class="maxValue">{{ usage.max }}</span> {{ report_desc }}
+    </p>
+  </div>
+  <div class="bar">
+    <div>
+        <span style="width:{{ usage.perc }}%"></span>
+        <em 
+            class="value" 
+            style="left: {{ usage.label_left }}%; color: {{ usage.label_color }}">
+            {{ usage.perc }} %
+        </em>
+    </div>
+  </div>
+  </li>
+  {{/resources}}
+  {% endverbatim %}
+</script>
+
+<div class="maincol {% block innerpage.class %}{% endblock %}"> 
+    <h2>RESOURCE USAGE</h2>
+    <div id="quota-container">
+    </div>
 </div>
 <script>
-    $(document).ready(function(){
-        var usageClient = new UsageClient({
-            'url': '{% url resource_usage %}?json=1',
-            'dataType': 'json',
-            'container': 'div.stats'
-        });
-        
-        window.setInterval(function() {
-            usageClient.load();
-        }, {{ usage_update_interval }});
-        usageClient.load();
-    })
+$(document).ready(function(){
+  var usageView = new UsageView({
+    'url': '{% url astakos-api-quotas %}',
+    'cookie_name': '{{ token_cookie_name|safe }}',
+    'dataType': 'json',
+    'container': '#quota-container',
+    'quotas': {{ current_usage|safe }},
+    'meta': {
+      'resources': {{ resource_catalog|safe }},
+      'groups': {{ resource_groups|safe }},
+      'resources_order': {{ resources_order|safe }}
+    }
+  });
+  window.usageView = usageView;
 
+  window.setInterval(function(){
+    window.usageView.updateQuotas();
+  }, {{ usage_update_interval }});
+
+})
 </script>
 {% endblock %}

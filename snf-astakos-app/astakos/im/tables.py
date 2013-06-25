@@ -31,8 +31,6 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from collections import defaultdict
-
 from django.utils.translation import ugettext as _
 from django.utils.safestring import mark_safe
 from django.template import Context, Template
@@ -44,9 +42,8 @@ import django_tables2 as tables
 
 from astakos.im.models import *
 from astakos.im.templatetags.filters import truncatename
-from astakos.im.functions import (join_project_checks,
-                                  can_leave_request,
-                                  cancel_membership_checks)
+from astakos.im.functions import join_project_checks, can_leave_request, \
+    cancel_membership_checks
 
 DEFAULT_DATE_FORMAT = "d/m/Y"
 
@@ -289,21 +286,33 @@ class UserProjectApplicationsTable(UserTable):
 
     def render_members_count(self, record, *args, **kwargs):
         append = ""
-	application = record
+        application = record
         project = application.get_project()
         if project is None:
             append = mark_safe("<i class='tiny'>%s</i>" % (_('pending'),))
 
         c = project.count_pending_memberships()
         if c > 0:
-            append = mark_safe("<i class='tiny'> - %d %s</i>"
-                                % (c, _('pending')))
+            pending_members_url = reverse('project_pending_members', 
+                kwargs={'chain_id': application.chain})
 
-        return mark_safe(str(record.members_count()) + append)
+            pending_members = "<i class='tiny'> - %d %s</i>" % (c, _('pending'))
+            if self.user.owns_application(record) or self.user.is_project_admin():
+                pending_members = "<i class='tiny'>"+" - <a href='%s'>%d %s</a></i>" % (
+                    pending_members_url,c, _('pending'))
+            append = mark_safe(pending_members)
+        members_url = reverse('project_approved_members', 
+            kwargs={'chain_id': application.chain})
+        members_count = record.members_count()
+        if self.user.owns_application(record) or self.user.is_project_admin():
+            members_count = '<a href="%s">%d</a>' % (members_url,
+                members_count)
+        return mark_safe(str(members_count) + append)
         
     class Meta:
         model = ProjectApplication
-        fields = ('name', 'membership_status', 'issue_date', 'end_date', 'members_count')
+        fields = ('name', 'membership_status', 'issue_date', 'end_date', 
+                  'members_count')
         attrs = {'id': 'projects-list', 'class': 'my-projects alt-style'}
         template = "im/table_render.html"
         empty_text = _('No projects')
@@ -344,12 +353,14 @@ def member_action_extra_context(membership, table, col):
 
     for i, url in enumerate(urls):
         context.append(dict(url=reverse(url, args=(table.project.pk,
-                                                   membership.person.pk)),
+                                                   membership.pk)),
                             action=actions[i], prompt=prompts[i],
                             confirm=confirms[i]))
     return context
 
 class ProjectMembersTable(UserTable):
+    input = "<input type='checkbox' name='all-none'/>"
+    check = tables.Column(accessor="person.id",verbose_name =mark_safe(input), orderable=False)
     email = tables.Column(accessor="person.email", verbose_name=_('Email'))    
     status = tables.Column(accessor="state", verbose_name=_('Status'))
     project_action = RichLinkColumn(verbose_name=_('Action'),
@@ -363,6 +374,10 @@ class ProjectMembersTable(UserTable):
         if not self.user.owns_project(self.project):
             self.exclude = ('project_action', )
 
+    def render_check(self, value, record, *args, **kwargs):
+        checkbox = "<input type='checkbox' value='%d' name ='actions'>" % record.id
+        return  mark_safe(checkbox)
+
     def render_status(self, value, record, *args, **kwargs):
         return record.state_display()
 
@@ -370,4 +385,3 @@ class ProjectMembersTable(UserTable):
         template = "im/table_render.html"
         attrs = {'id': 'members-table', 'class': 'members-table alt-style'}
         empty_text = _('No members')
-

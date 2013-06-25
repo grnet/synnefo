@@ -3,7 +3,7 @@
 
 {% load i18n %}
 <head>
-    <title>~okeanos</title>
+    <title>{{ BRANDING_SERVICE_NAME }}</title>
     
     <!--<meta http-equiv="X-UA-Compatible" content="IE=7">-->
     <meta http-equiv="content-type" content="text/html; charset=UTF-8">
@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css?family=Ubuntu&subset=latin,greek" rel="stylesheet" type="text/css" >
     <link href='https://fonts.googleapis.com/css?family=Open+Sans&subset=latin,greek' rel='stylesheet' type='text/css'>
 
-    <link rel="shortcut icon" href="{{ SYNNEFO_IMAGES_URL }}favicon.ico" />
+    <link rel="shortcut icon" href="{{ BRANDING_FAVICON_URL }}" />
 
     {% comment %}
     <script type="text/javascript" src="{% url javascript_catalog %}"></script> 
@@ -84,7 +84,7 @@
     <script>
         tmp_auth_client = new synnefo.auth.AstakosClient({
             cookie_name: '{{ auth_cookie_name }}',
-            login_url: '{{ login_redirect }}'
+            login_url: {{ login_redirect|safe }}
         });
         if (!tmp_auth_client.get_token()) { tmp_auth_client.redirect_to_login(); }
     </script>
@@ -104,10 +104,8 @@
         var SKIP_TIMEOUTS = {{ skip_timeouts }};
         var UPDATE_INTERVAL = {{ update_interval }};
         var APP_DEBUG = {% if DEBUG %}true{% else %}false{% endif %};
-        var FEEDBACK_URL = "{% url ui_feedback %}";
-        var FEEDBACK_TITLE = "{% trans "Send feedback" %}";
         var API_OVERLAY_TITLE = "{% trans "API access" %}";
-        var API_OVERLAY_SUBCONTENT = "{% trans "The API key provides full access to your <em>~okeanos</em> account, so always keep it private." %}";
+        var API_OVERLAY_SUBCONTENT = "{% blocktrans %}The API key provides full access to your <em>{{ BRANDING_SERVICE_NAME}}</em> account, so always keep it private.{% endblocktrans %}";
 
         STATE_TEXTS = {
             'UNKNOWN': '{% trans "Unknown" %}',
@@ -194,7 +192,6 @@
 </head>
 
 <body id="app">
-    <!--<img id="okeanos-image" src="{{ SYNNEFO_IMAGES_URL }}body-bg2.png" />-->
     <div id="container">
         <div id="header">
             <div id="user">
@@ -222,8 +219,8 @@
                 </div>
             </div>
             <div class="header-logo">
-                <a href="/">
-                    <img src="{{ SYNNEFO_IMAGES_URL }}okeanos-logo-alpha.png" alt="okeanos (alpha)"/>
+                <a href="/" title="{{ BRANDING_SERVICE_NAME }} Compute">
+                     <img src="{{ BRANDING_COMPUTE_LOGO_URL }}" alt="{{ BRANDING_SERVICE_NAME }}"/>  
                 </a>
             </div>
         </div>
@@ -261,8 +258,7 @@
                     <div class="confirm_multiple clearfix" id="multiple_actions_container">
                         <div class="confirm_multiple_actions confirm-all-cont global hidden confirm_multiple_cont clearfix">
                             <div class="confirm-all msg">
-                                <p>You requested multiple actions to execute (<span
-                                    class="show">show all</span>)</p>
+                                <p>You requested multiple actions to execute (<span class="show">show all</span>)</p>
                                 <button class="yes">Confirm all</button>
                                 <button class="no">Cancel all</button>
                             </div>
@@ -445,7 +441,7 @@
     <div id="feedback-overlay-content" class="hidden overlay-content feedback-form">
         <div class="description">
             <p>
-                {% blocktrans %}~okeanos is currently in alpha test and we would appreciate any kind of feedback.
+                {% blocktrans %}{{ BRANDING_SERVICE_NAME }} is currently in alpha test and we would appreciate any kind of feedback.
                 We welcome any suggestions, questions and bug reports you may have.{% endblocktrans %}
             </p>
         </div>
@@ -479,7 +475,7 @@
         <div class="popup-body-inner">
           <div class="form-container">
             <p class="feedback-intro">
-            {% blocktrans %}~okeanos is currently in alpha test and we would appreciate any kind of feedback.
+            {% blocktrans %}Synnefo is currently in alpha test and we would appreciate any kind of feedback.
             We welcome any suggestions, questions and bug reports you may have.{% endblocktrans %}</p>
             <form id="feedback-form">
               <label for="feedback-msg">{% trans "Please describe your problem here, provide as many details as possible" %}</label>
@@ -530,7 +526,7 @@
         </div>
         <div class="description subinfo">
             <p>
-            {% trans "The API key provides full access to your <em>~okeanos</em> account, so always keep it private." %}
+            {% blocktrans %} The API key provides full access to your <em>{{ BRANDING_SERVICE_NAME }}</em> account, so always keep it private.{% endblocktrans %}
             </p>
         </div>
     </div>
@@ -560,6 +556,8 @@
     <div id="loading-view" class="hidden clearfix">
         <div class="header clearfix images off">Loading images...<span></span></div>
         <div class="header clearfix flavors off">Loading flavors...<span></span></div>
+        <div class="header clearfix resources off">Loading resources...<span></span></div>
+        <div class="header clearfix quotas off">Loading quotas...<span></span></div>
         <div class="header clearfix vms off">Loading machines...<span></span></div>
         <div class="header clearfix networks off">Loading networks...<span></span></div>
         <div class="header clearfix layout off">Rendering layout...<span></span></div>
@@ -610,14 +608,14 @@
                 'ERROR': ['image-error']
             };
 
-   			// TODO: make it dynamic
             synnefo.config.api_urls = {
+                'userdata': '{% url ui_userdata %}', 
                 'compute':  {{ compute_api_url|safe }}, 
-                'glance': {{ glance_api_url|safe }}
+                'glance': {{ glance_api_url|safe }},
+                'accounts': {{ accounts_api_url|safe }},
             };
             
             // TODO: configurable userdata urls in models.js
-            synnefo.config.userdata_url = '/ui/userdata';
             synnefo.config.userdata_keys_url = '{% url ui_keys_collection %}';
             synnefo.config.userdata_keys_limit = {{ userdata_keys_limit }};
             
@@ -631,11 +629,15 @@
             synnefo.config.use_glance = {{ use_glance }};
             synnefo.config.indicators_icons_url = '{{ SYNNEFO_IMAGES_URL }}icons/indicators/';
             synnefo.config.machines_icons_url = '{{ SYNNEFO_IMAGES_URL }}icons/machines/';
+            synnefo.config.ui_console_url = '{% url ui_machines_console %}';
+            synnefo.config.ui_connect_url = '{% url ui_machines_connect %}';
             synnefo.config.support_ssh_os_list = {{ support_ssh_os_list|safe }};
+            synnefo.config.unknown_os = {{ unknown_os|safe }};
             synnefo.config.os_created_users = {{ os_created_users|safe }};
+            synnefo.config.feedback_post_url = {{ feedback_post_url|safe }};
             
-            synnefo.config.logout_redirect = '{{ logout_redirect }}';
-            synnefo.config.login_redirect = '{{ login_redirect }}';
+            synnefo.config.logout_redirect = {{ logout_redirect|safe }};
+            synnefo.config.login_redirect = {{ login_redirect|safe }};
             synnefo.config.auth_cookie_name = '{{ auth_cookie_name }}';
 
             synnefo.config.translate_uuids = {{ translate_uuids|safe }};
@@ -650,14 +652,13 @@
             synnefo.config.grouped_public_network_name = {{ grouped_public_network_name|safe }};
             synnefo.config.vm_hostname_format = {{ vm_hostname_format|safe }};
             synnefo.config.automatic_network_range_format = {{ automatic_network_range_format|safe }};
-            synnefo.config.quota_url = '{% url synnefo.ui.views.user_quota %}';
             synnefo.config.custom_image_help_url = '{{ custom_image_help_url|safe }}';
-            synnefo.config.quotas_update_interval = {{ quotas_update_interval }};
             
             synnefo.auth_client = new synnefo.auth.AstakosClient({
                 login_url: synnefo.config.login_redirect,
                 logout_url: synnefo.config.logout_redirect,
                 cookie_name: synnefo.config.auth_cookie_name,
+                skip_redirects: {{ auth_skip_redirects|safe }},
                 logout_callback: function(client) {
                     Backbone.history.navigate(client.config.logout_url);
                     window.location = client.config.logout_url; 

@@ -74,12 +74,9 @@ except ImportError:
 
 # --------------------------------------------------------------------
 # Global Variables
-API = None
+AUTH_URL = None
 TOKEN = None
-PLANKTON = None
 PLANKTON_USER = None
-PITHOS = None
-ASTAKOS = None
 NO_IPV6 = None
 DEFAULT_PLANKTON_USER = "images@okeanos.grnet.gr"
 NOFAILFAST = None
@@ -104,12 +101,12 @@ def _ssh_execute(hostip, username, password, command):
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
         ssh.connect(hostip, username=username, password=password)
-    except socket.error:
-        raise AssertionError
+    except socket.error, err:
+        raise AssertionError(err)
     try:
         stdin, stdout, stderr = ssh.exec_command(command)
-    except paramiko.SSHException:
-        raise AssertionError
+    except paramiko.SSHException, err:
+        raise AssertionError(err)
     status = stdout.channel.recv_exit_status()
     output = stdout.readlines()
     ssh.close()
@@ -118,12 +115,9 @@ def _ssh_execute(hostip, username, password, command):
 
 def _get_user_id():
     """Authenticate to astakos and get unique users id"""
-    astakos = AstakosClient(ASTAKOS, TOKEN)
+    astakos = AstakosClient(AUTH_URL, TOKEN)
     authenticate = astakos.authenticate()
-    if 'uuid' in authenticate:
-        return authenticate['uuid']
-    else:
-        return authenticate['uniq']
+    return authenticate['access']['user']['id']
 
 
 # --------------------------------------------------------------------
@@ -213,13 +207,16 @@ class UnauthorizedTestCase(unittest.TestCase):
     """Test unauthorized access"""
     @classmethod
     def setUpClass(cls):
+        cls.astakos = AstakosClient(AUTH_URL, TOKEN)
+        cls.compute_url = \
+            cls.astakos.get_service_endpoints('compute')['publicURL']
         cls.result_dict = dict()
 
     def test_unauthorized_access(self):
         """Test access without a valid token fails"""
         log.info("Authentication test")
         falseToken = '12345'
-        c = ComputeClient(API, falseToken)
+        c = ComputeClient(self.compute_url, falseToken)
 
         with self.assertRaises(ClientError) as cm:
             c.list_servers()
@@ -234,10 +231,28 @@ class ImagesTestCase(unittest.TestCase):
     def setUpClass(cls):
         """Initialize kamaki, get (detailed) list of images"""
         log.info("Getting simple and detailed list of images")
-        cls.client = ComputeClient(API, TOKEN)
-        cls.plankton = ImageClient(PLANKTON, TOKEN)
-        cls.images = cls.plankton.list_public()
-        cls.dimages = cls.plankton.list_public(detail=True)
+        cls.astakos_client = AstakosClient(AUTH_URL, TOKEN)
+        # Compute Client
+        compute_url = \
+            cls.astakos_client.get_service_endpoints('compute')['publicURL']
+        cls.compute_client = ComputeClient(compute_url, TOKEN)
+        # Image Client
+        image_url = \
+            cls.astakos_client.get_service_endpoints('image')['publicURL']
+        cls.image_client = ImageClient(image_url, TOKEN)
+        # Pithos Client
+        pithos_url = cls.astakos_client.\
+            get_service_endpoints('object-store')['publicURL']
+        cls.pithos_client = PithosClient(pithos_url, TOKEN)
+        cls.pithos_client.CONNECTION_RETRY_LIMIT = 2
+
+        # Get images
+        cls.images = \
+            filter(lambda x: not x['name'].startswith(SNF_TEST_PREFIX),
+                   cls.image_client.list_public())
+        cls.dimages = \
+            filter(lambda x: not x['name'].startswith(SNF_TEST_PREFIX),
+                   cls.image_client.list_public(detail=True))
         cls.result_dict = dict()
         # Get uniq user id
         cls.uuid = _get_user_id()
@@ -276,19 +291,21 @@ class ImagesTestCase(unittest.TestCase):
         dnames = sorted(map(lambda x: x["name"], self.dimages))
         self.assertEqual(names, dnames)
 
-    def test_004_unique_image_names(self):
-        """Test system images have unique names"""
-        sys_images = filter(lambda x: x['owner'] == PLANKTON_USER,
-                            self.dimages)
-        names = sorted(map(lambda x: x["name"], sys_images))
-        self.assertEqual(sorted(list(set(names))), names)
+# XXX: Find a way to resolve owner's uuid to username.
+#      (maybe use astakosclient)
+#    def test_004_unique_image_names(self):
+#        """Test system images have unique names"""
+#        sys_images = filter(lambda x: x['owner'] == PLANKTON_USER,
+#                            self.dimages)
+#        names = sorted(map(lambda x: x["name"], sys_images))
+#        self.assertEqual(sorted(list(set(names))), names)
 
     def test_005_image_metadata(self):
         """Test every image has specific metadata defined"""
         keys = frozenset(["osfamily", "root_partition"])
-        details = self.client.list_images(detail=True)
+        details = self.compute_client.list_images(detail=True)
         for i in details:
-            self.assertTrue(keys.issubset(i["metadata"]["values"].keys()))
+            self.assertTrue(keys.issubset(i["metadata"].keys()))
 
     def test_006_download_image(self):
         """Download image from pithos+"""
@@ -299,31 +316,31 @@ class ImagesTestCase(unittest.TestCase):
             image['location'].replace("://", " ").replace("/", " ").split()
         log.info("Download image, with owner %s\n\tcontainer %s, and name %s"
                  % (image_location[1], image_location[2], image_location[3]))
-        pithos_client = PithosClient(PITHOS, TOKEN, image_location[1])
-        pithos_client.container = image_location[2]
+        self.pithos_client.account = image_location[1]
+        self.pithos_client.container = image_location[2]
         temp_file = os.path.join(self.temp_dir, self.temp_image_name)
         with open(temp_file, "wb+") as f:
-            pithos_client.download_object(image_location[3], f)
+            self.pithos_client.download_object(image_location[3], f)
 
     def test_007_upload_image(self):
         """Upload and register image"""
         temp_file = os.path.join(self.temp_dir, self.temp_image_name)
         log.info("Upload image to pithos+")
         # Create container `images'
-        pithos_client = PithosClient(PITHOS, TOKEN, self.uuid)
-        pithos_client.container = "images"
-        pithos_client.container_put()
+        self.pithos_client.account = self.uuid
+        self.pithos_client.container = "images"
+        self.pithos_client.container_put()
         with open(temp_file, "rb+") as f:
-            pithos_client.upload_object(self.temp_image_name, f)
+            self.pithos_client.upload_object(self.temp_image_name, f)
         log.info("Register image to plankton")
         location = "pithos://" + self.uuid + \
             "/images/" + self.temp_image_name
         params = {'is_public': True}
         properties = {'OSFAMILY': "linux", 'ROOT_PARTITION': 1}
-        self.plankton.register(self.temp_image_name, location,
-                               params, properties)
+        self.image_client.register(
+            self.temp_image_name, location, params, properties)
         # Get image id
-        details = self.plankton.list_public(detail=True)
+        details = self.image_client.list_public(detail=True)
         detail = filter(lambda x: x['location'] == location, details)
         self.assertEqual(len(detail), 1)
         cls = type(self)
@@ -334,9 +351,9 @@ class ImagesTestCase(unittest.TestCase):
         """Cleanup image test"""
         log.info("Cleanup image test")
         # Remove image from pithos+
-        pithos_client = PithosClient(PITHOS, TOKEN, self.uuid)
-        pithos_client.container = "images"
-        pithos_client.del_object(self.temp_image_name)
+        self.pithos_client.account = self.uuid
+        self.pithos_client.container = "images"
+        self.pithos_client.del_object(self.temp_image_name)
 
 
 # --------------------------------------------------------------------
@@ -347,9 +364,13 @@ class FlavorsTestCase(unittest.TestCase):
     def setUpClass(cls):
         """Initialize kamaki, get (detailed) list of flavors"""
         log.info("Getting simple and detailed list of flavors")
-        cls.client = ComputeClient(API, TOKEN)
-        cls.flavors = cls.client.list_flavors()
-        cls.dflavors = cls.client.list_flavors(detail=True)
+        cls.astakos_client = AstakosClient(AUTH_URL, TOKEN)
+        # Compute Client
+        compute_url = \
+            cls.astakos_client.get_service_endpoints('compute')['publicURL']
+        cls.compute_client = ComputeClient(compute_url, TOKEN)
+        cls.flavors = cls.compute_client.list_flavors()
+        cls.dflavors = cls.compute_client.list_flavors(detail=True)
         cls.result_dict = dict()
 
     def test_001_list_flavors(self):
@@ -376,7 +397,7 @@ class FlavorsTestCase(unittest.TestCase):
         Where xx is vCPU count, yy is RAM in MiB, zz is Disk in GiB
         """
         for f in self.dflavors:
-            flavor = (f["cpu"], f["ram"], f["disk"], f["SNF:disk_template"])
+            flavor = (f["vcpus"], f["ram"], f["disk"], f["SNF:disk_template"])
             self.assertEqual("C%dR%dD%d%s" % flavor,
                              f["name"],
                              "Flavor %s does not match its specs." % f["name"])
@@ -391,9 +412,13 @@ class ServersTestCase(unittest.TestCase):
         """Initialize kamaki, get (detailed) list of servers"""
         log.info("Getting simple and detailed list of servers")
 
-        cls.client = ComputeClient(API, TOKEN)
-        cls.servers = cls.client.list_servers()
-        cls.dservers = cls.client.list_servers(detail=True)
+        cls.astakos_client = AstakosClient(AUTH_URL, TOKEN)
+        # Compute Client
+        compute_url = \
+            cls.astakos_client.get_service_endpoints('compute')['publicURL']
+        cls.compute_client = ComputeClient(compute_url, TOKEN)
+        cls.servers = cls.compute_client.list_servers()
+        cls.dservers = cls.compute_client.list_servers(detail=True)
         cls.result_dict = dict()
 
     # def test_001_list_servers(self):
@@ -422,8 +447,15 @@ class PithosTestCase(unittest.TestCase):
         cls.uuid = _get_user_id()
         log.info("Uniq user id = %s" % cls.uuid)
         log.info("Getting list of containers")
-        cls.client = PithosClient(PITHOS, TOKEN, cls.uuid)
-        cls.containers = cls.client.list_containers()
+
+        cls.astakos_client = AstakosClient(AUTH_URL, TOKEN)
+        # Pithos Client
+        pithos_url = cls.astakos_client.\
+            get_service_endpoints('object-store')['publicURL']
+        cls.pithos_client = PithosClient(pithos_url, TOKEN, cls.uuid)
+        cls.pithos_client.CONNECTION_RETRY_LIMIT = 2
+
+        cls.containers = cls.pithos_client.list_containers()
         cls.result_dict = dict()
 
     def test_001_list_containers(self):
@@ -445,10 +477,10 @@ class PithosTestCase(unittest.TestCase):
             rand_num = randint(1000, 9999)
             rand_name = "%s%s" % (SNF_TEST_PREFIX, rand_num)
         # Create container
-        self.client.container = rand_name
-        self.client.container_put()
+        self.pithos_client.container = rand_name
+        self.pithos_client.container_put()
         # Get list of containers
-        new_containers = self.client.list_containers()
+        new_containers = self.pithos_client.list_containers()
         new_container_names = [n['name'] for n in new_containers]
         self.assertIn(rand_name, new_container_names)
 
@@ -459,7 +491,7 @@ class PithosTestCase(unittest.TestCase):
             f.write("This is a temp file")
             f.seek(0, 0)
             # Where to save file
-            self.client.upload_object("test.txt", f)
+            self.pithos_client.upload_object("test.txt", f)
 
     def test_005_download(self):
         """Test download something from pithos+"""
@@ -467,7 +499,7 @@ class PithosTestCase(unittest.TestCase):
         tmp_dir = tempfile.mkdtemp()
         tmp_file = os.path.join(tmp_dir, "test.txt")
         with open(tmp_file, "wb+") as f:
-            self.client.download_object("test.txt", f)
+            self.pithos_client.download_object("test.txt", f)
             # Read file
             f.seek(0, 0)
             content = f.read()
@@ -479,11 +511,11 @@ class PithosTestCase(unittest.TestCase):
 
     def test_006_remove(self):
         """Test removing files and containers"""
-        cont_name = self.client.container
-        self.client.del_object("test.txt")
-        self.client.purge_container()
+        cont_name = self.pithos_client.container
+        self.pithos_client.del_object("test.txt")
+        self.pithos_client.purge_container()
         # List containers
-        containers = self.client.list_containers()
+        containers = self.pithos_client.list_containers()
         cont_names = [n['name'] for n in containers]
         self.assertNotIn(cont_name, cont_names)
 
@@ -496,18 +528,23 @@ class SpawnServerTestCase(unittest.TestCase):
     def setUpClass(cls):
         """Initialize a kamaki instance"""
         log.info("Spawning server for image `%s'" % cls.imagename)
-        cls.client = ComputeClient(API, TOKEN)
-        cls.cyclades = CycladesClient(API, TOKEN)
+
+        cls.astakos_client = AstakosClient(AUTH_URL, TOKEN)
+        # Cyclades Client
+        compute_url = \
+            cls.astakos_client.get_service_endpoints('compute')['publicURL']
+        cls.cyclades_client = CycladesClient(compute_url, TOKEN)
+
         cls.result_dict = dict()
 
     def _get_ipv4(self, server):
         """Get the public IPv4 of a server from the detailed server info"""
 
-        nics = server["attachments"]["values"]
+        nics = server["attachments"]
 
         for nic in nics:
             net_id = nic["network_id"]
-            if self.cyclades.get_network_details(net_id)["public"]:
+            if self.cyclades_client.get_network_details(net_id)["public"]:
                 public_addrs = nic["ipv4"]
 
         self.assertTrue(public_addrs is not None)
@@ -517,11 +554,11 @@ class SpawnServerTestCase(unittest.TestCase):
     def _get_ipv6(self, server):
         """Get the public IPv6 of a server from the detailed server info"""
 
-        nics = server["attachments"]["values"]
+        nics = server["attachments"]
 
         for nic in nics:
             net_id = nic["network_id"]
-            if self.cyclades.get_network_details(net_id)["public"]:
+            if self.cyclades_client.get_network_details(net_id)["public"]:
                 public_addrs = nic["ipv6"]
 
         self.assertTrue(public_addrs is not None)
@@ -539,7 +576,7 @@ class SpawnServerTestCase(unittest.TestCase):
 
     def _verify_server_status(self, current_status, new_status):
         """Verify a server has switched to a specified status"""
-        server = self.client.get_server_details(self.serverid)
+        server = self.cyclades_client.get_server_details(self.serverid)
         if server["status"] not in (current_status, new_status):
             return None  # Do not raise exception, return so the test fails
         self.assertEquals(server["status"], new_status)
@@ -567,7 +604,7 @@ class SpawnServerTestCase(unittest.TestCase):
 
     def _ping_once(self, ipv6, ip):
         """Test server responds to a single IPv4 or IPv6 ping"""
-        cmd = "ping%s -c 2 -w 3 %s" % ("6" if ipv6 else "", ip)
+        cmd = "ping%s -c 7 -w 20 %s" % ("6" if ipv6 else "", ip)
         ping = subprocess.Popen(cmd, shell=True,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (stdout, stderr) = ping.communicate()
@@ -620,7 +657,7 @@ class SpawnServerTestCase(unittest.TestCase):
                                         msg, self._verify_server_status,
                                         current_status, new_status)
         # Ensure the status is actually the expected one
-        server = self.client.get_server_details(self.serverid)
+        server = self.cyclades_client.get_server_details(self.serverid)
         self.assertEquals(server["status"], new_status)
 
     def _insist_on_ssh_hostname(self, hostip, username, password):
@@ -643,8 +680,8 @@ class SpawnServerTestCase(unittest.TestCase):
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             ssh.connect(hostip, username=username, password=password)
             ssh.close()
-        except socket.error:
-            raise AssertionError
+        except socket.error, err:
+            raise AssertionError(err)
 
         transport = paramiko.Transport((hostip, 22))
         transport.connect(username=username, password=password)
@@ -669,14 +706,14 @@ class SpawnServerTestCase(unittest.TestCase):
         """Test submit create server request"""
 
         log.info("Submit new server request")
-        server = self.client.create_server(self.servername, self.flavorid,
-                                           self.imageid, self.personality)
+        server = self.cyclades_client.create_server(
+            self.servername, self.flavorid, self.imageid, self.personality)
 
         log.info("Server id: " + str(server["id"]))
         log.info("Server password: " + server["adminPass"])
         self.assertEqual(server["name"], self.servername)
-        self.assertEqual(server["flavorRef"], self.flavorid)
-        self.assertEqual(server["imageRef"], self.imageid)
+        self.assertEqual(server["flavor"]["id"], self.flavorid)
+        self.assertEqual(server["image"]["id"], self.imageid)
         self.assertEqual(server["status"], "BUILD")
 
         # Update class attributes to reflect data on building server
@@ -694,13 +731,13 @@ class SpawnServerTestCase(unittest.TestCase):
 
         self.result_dict.clear()
 
-        servers = self.client.list_servers(detail=True)
+        servers = self.cyclades_client.list_servers(detail=True)
         servers = filter(lambda x: x["name"] == self.servername, servers)
 
         server = servers[0]
         self.assertEqual(server["name"], self.servername)
-        self.assertEqual(server["flavorRef"], self.flavorid)
-        self.assertEqual(server["imageRef"], self.imageid)
+        self.assertEqual(server["flavor"]["id"], self.flavorid)
+        self.assertEqual(server["image"]["id"], self.imageid)
         self.assertEqual(server["status"], "BUILD")
 
     def test_002b_server_is_building_in_details(self):
@@ -708,20 +745,20 @@ class SpawnServerTestCase(unittest.TestCase):
 
         log.info("Server in BUILD state in details")
 
-        server = self.client.get_server_details(self.serverid)
+        server = self.cyclades_client.get_server_details(self.serverid)
         self.assertEqual(server["name"], self.servername)
-        self.assertEqual(server["flavorRef"], self.flavorid)
-        self.assertEqual(server["imageRef"], self.imageid)
+        self.assertEqual(server["flavor"]["id"], self.flavorid)
+        self.assertEqual(server["image"]["id"], self.imageid)
         self.assertEqual(server["status"], "BUILD")
 
     def test_002c_set_server_metadata(self):
 
         log.info("Creating server metadata")
 
-        image = self.client.get_image_details(self.imageid)
-        os_value = image["metadata"]["values"]["os"]
-        users = image["metadata"]["values"].get("users", None)
-        self.client.update_server_metadata(self.serverid, OS=os_value)
+        image = self.cyclades_client.get_image_details(self.imageid)
+        os_value = image["metadata"]["os"]
+        users = image["metadata"].get("users", None)
+        self.cyclades_client.update_server_metadata(self.serverid, OS=os_value)
 
         userlist = users.split()
 
@@ -743,8 +780,8 @@ class SpawnServerTestCase(unittest.TestCase):
 
         log.info("Verifying image metadata")
 
-        servermeta = self.client.get_server_metadata(self.serverid)
-        imagemeta = self.client.get_image_metadata(self.imageid)
+        servermeta = self.cyclades_client.get_server_metadata(self.serverid)
+        imagemeta = self.cyclades_client.get_image_metadata(self.imageid)
 
         self.assertEqual(servermeta["OS"], imagemeta["os"])
 
@@ -763,7 +800,7 @@ class SpawnServerTestCase(unittest.TestCase):
         http://www.realvnc.com/docs/rfbproto.pdf.
 
         """
-        console = self.cyclades.get_server_console(self.serverid)
+        console = self.cyclades_client.get_server_console(self.serverid)
         self.assertEquals(console['type'], "vnc")
         sock = self._insist_on_tcp_connection(
             socket.AF_INET, console["host"], console["port"])
@@ -799,7 +836,7 @@ class SpawnServerTestCase(unittest.TestCase):
 
         log.info("Validate server's IPv4")
 
-        server = self.client.get_server_details(self.serverid)
+        server = self.cyclades_client.get_server_details(self.serverid)
         ipv4 = self._get_ipv4(server)
 
         self.result_dict.clear()
@@ -813,7 +850,7 @@ class SpawnServerTestCase(unittest.TestCase):
 
         log.info("Validate server's IPv6")
 
-        server = self.client.get_server_details(self.serverid)
+        server = self.cyclades_client.get_server_details(self.serverid)
         ipv6 = self._get_ipv6(server)
 
         self.result_dict.clear()
@@ -827,7 +864,7 @@ class SpawnServerTestCase(unittest.TestCase):
         log.info("Testing if server responds to pings in IPv4")
         self.result_dict.clear()
 
-        server = self.client.get_server_details(self.serverid)
+        server = self.cyclades_client.get_server_details(self.serverid)
         ip = self._get_ipv4(server)
         self._try_until_timeout_expires(self.action_timeout,
                                         self.action_timeout,
@@ -840,7 +877,7 @@ class SpawnServerTestCase(unittest.TestCase):
         self._skipIf(NO_IPV6, "--no-ipv6 flag enabled")
         log.info("Testing if server responds to pings in IPv6")
 
-        server = self.client.get_server_details(self.serverid)
+        server = self.cyclades_client.get_server_details(self.serverid)
         ip = self._get_ipv6(server)
         self._try_until_timeout_expires(self.action_timeout,
                                         self.action_timeout,
@@ -853,7 +890,7 @@ class SpawnServerTestCase(unittest.TestCase):
 
         log.info("Shutting down server")
 
-        self.cyclades.shutdown_server(self.serverid)
+        self.cyclades_client.shutdown_server(self.serverid)
 
     def test_009_server_becomes_stopped(self):
         """Test server becomes STOPPED"""
@@ -867,7 +904,7 @@ class SpawnServerTestCase(unittest.TestCase):
 
         log.info("Starting server")
 
-        self.cyclades.start_server(self.serverid)
+        self.cyclades_client.start_server(self.serverid)
 
     def test_011_server_becomes_active(self):
         """Test server becomes ACTIVE again"""
@@ -887,7 +924,7 @@ class SpawnServerTestCase(unittest.TestCase):
         """Test SSH to server public IPv4 works, verify hostname"""
 
         self._skipIf(self.is_windows, "only valid for Linux servers")
-        server = self.client.get_server_details(self.serverid)
+        server = self.cyclades_client.get_server_details(self.serverid)
         self._insist_on_ssh_hostname(self._get_ipv4(server),
                                      self.username, self.passwd)
 
@@ -896,14 +933,14 @@ class SpawnServerTestCase(unittest.TestCase):
         self._skipIf(self.is_windows, "only valid for Linux servers")
         self._skipIf(NO_IPV6, "--no-ipv6 flag enabled")
 
-        server = self.client.get_server_details(self.serverid)
+        server = self.cyclades_client.get_server_details(self.serverid)
         self._insist_on_ssh_hostname(self._get_ipv6(server),
                                      self.username, self.passwd)
 
     def test_014_rdp_to_server_IPv4(self):
         "Test RDP connection to server public IPv4 works"""
         self._skipIf(not self.is_windows, "only valid for Windows servers")
-        server = self.client.get_server_details(self.serverid)
+        server = self.cyclades_client.get_server_details(self.serverid)
         ipv4 = self._get_ipv4(server)
         sock = self._insist_on_tcp_connection(socket.AF_INET, ipv4, 3389)
 
@@ -917,7 +954,7 @@ class SpawnServerTestCase(unittest.TestCase):
         self._skipIf(not self.is_windows, "only valid for Windows servers")
         self._skipIf(NO_IPV6, "--no-ipv6 flag enabled")
 
-        server = self.client.get_server_details(self.serverid)
+        server = self.cyclades_client.get_server_details(self.serverid)
         ipv6 = self._get_ipv6(server)
         sock = self._get_tcp_connection(socket.AF_INET6, ipv6, 3389)
 
@@ -932,7 +969,7 @@ class SpawnServerTestCase(unittest.TestCase):
 
         log.info("Trying to inject file for personality enforcement")
 
-        server = self.client.get_server_details(self.serverid)
+        server = self.cyclades_client.get_server_details(self.serverid)
 
         for inj_file in self.personality:
             equal_files = self._check_file_through_ssh(self._get_ipv4(server),
@@ -947,7 +984,7 @@ class SpawnServerTestCase(unittest.TestCase):
 
         log.info("Deleting server")
 
-        self.client.delete_server(self.serverid)
+        self.cyclades_client.delete_server(self.serverid)
 
     def test_018_server_becomes_deleted(self):
         """Test server becomes DELETED"""
@@ -962,7 +999,7 @@ class SpawnServerTestCase(unittest.TestCase):
 
         log.info("Test if server is no longer listed")
 
-        servers = self.client.list_servers()
+        servers = self.cyclades_client.list_servers()
         self.assertNotIn(self.serverid, [s["id"] for s in servers])
 
 
@@ -973,8 +1010,11 @@ class NetworkTestCase(unittest.TestCase):
     def setUpClass(cls):
         "Initialize kamaki, get list of current networks"
 
-        cls.client = CycladesClient(API, TOKEN)
-        cls.compute = ComputeClient(API, TOKEN)
+        cls.astakos_client = AstakosClient(AUTH_URL, TOKEN)
+        # Cyclades Client
+        compute_url = \
+            cls.astakos_client.get_service_endpoints('compute')['publicURL']
+        cls.cyclades_client = CycladesClient(compute_url, TOKEN)
 
         cls.servername = "%s%s for %s" % (SNF_TEST_PREFIX,
                                           TEST_RUN_ID,
@@ -995,11 +1035,11 @@ class NetworkTestCase(unittest.TestCase):
     def _get_ipv4(self, server):
         """Get the public IPv4 of a server from the detailed server info"""
 
-        nics = server["attachments"]["values"]
+        nics = server["attachments"]
 
         for nic in nics:
             net_id = nic["network_id"]
-            if self.client.get_network_details(net_id)["public"]:
+            if self.cyclades_client.get_network_details(net_id)["public"]:
                 public_addrs = nic["ipv4"]
 
         self.assertTrue(public_addrs is not None)
@@ -1018,7 +1058,7 @@ class NetworkTestCase(unittest.TestCase):
     def _ping_once(self, ip):
 
         """Test server responds to a single IPv4 or IPv6 ping"""
-        cmd = "ping -c 2 -w 3 %s" % (ip)
+        cmd = "ping -c 7 -w 20 %s" % (ip)
         ping = subprocess.Popen(cmd, shell=True,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (stdout, stderr) = ping.communicate()
@@ -1031,12 +1071,12 @@ class NetworkTestCase(unittest.TestCase):
 
         log.info("Creating test server A")
 
-        serverA = self.client.create_server(self.servername, self.flavorid,
-                                            self.imageid, personality=None)
+        serverA = self.cyclades_client.create_server(
+            self.servername, self.flavorid, self.imageid, personality=None)
 
         self.assertEqual(serverA["name"], self.servername)
-        self.assertEqual(serverA["flavorRef"], self.flavorid)
-        self.assertEqual(serverA["imageRef"], self.imageid)
+        self.assertEqual(serverA["flavor"]["id"], self.flavorid)
+        self.assertEqual(serverA["image"]["id"], self.imageid)
         self.assertEqual(serverA["status"], "BUILD")
 
         # Update class attributes to reflect data on building server
@@ -1058,7 +1098,7 @@ class NetworkTestCase(unittest.TestCase):
 
         fail_tmout = time.time() + self.action_timeout
         while True:
-            d = self.client.get_server_details(self.serverid['A'])
+            d = self.cyclades_client.get_server_details(self.serverid['A'])
             status = d['status']
             if status == 'ACTIVE':
                 active = True
@@ -1075,12 +1115,12 @@ class NetworkTestCase(unittest.TestCase):
 
         log.info("Creating test server B")
 
-        serverB = self.client.create_server(self.servername, self.flavorid,
-                                            self.imageid, personality=None)
+        serverB = self.cyclades_client.create_server(
+            self.servername, self.flavorid, self.imageid, personality=None)
 
         self.assertEqual(serverB["name"], self.servername)
-        self.assertEqual(serverB["flavorRef"], self.flavorid)
-        self.assertEqual(serverB["imageRef"], self.imageid)
+        self.assertEqual(serverB["flavor"]["id"], self.flavorid)
+        self.assertEqual(serverB["image"]["id"], self.imageid)
         self.assertEqual(serverB["status"], "BUILD")
 
         # Update class attributes to reflect data on building server
@@ -1103,7 +1143,7 @@ class NetworkTestCase(unittest.TestCase):
 
         fail_tmout = time.time() + self.action_timeout
         while True:
-            d = self.client.get_server_details(self.serverid['B'])
+            d = self.cyclades_client.get_server_details(self.serverid['B'])
             status = d['status']
             if status == 'ACTIVE':
                 active = True
@@ -1123,8 +1163,8 @@ class NetworkTestCase(unittest.TestCase):
 
         name = SNF_TEST_PREFIX + TEST_RUN_ID
         #previous_num = len(self.client.list_networks())
-        network = self.client.create_network(name, cidr='10.0.1.0/28',
-                                             dhcp=True)
+        network = self.cyclades_client.create_network(
+            name, cidr='10.0.1.0/28', dhcp=True)
 
         #Test if right name is assigned
         self.assertEqual(network['name'], name)
@@ -1138,7 +1178,7 @@ class NetworkTestCase(unittest.TestCase):
 
         #Test if new network is created
         while True:
-            d = self.client.get_network_details(network['id'])
+            d = self.cyclades_client.get_network_details(network['id'])
             if d['status'] == 'ACTIVE':
                 connected = True
                 break
@@ -1158,8 +1198,8 @@ class NetworkTestCase(unittest.TestCase):
         log.info("Connect VMs to private network")
         self.result_dict.clear()
 
-        self.client.connect_server(self.serverid['A'], self.networkid)
-        self.client.connect_server(self.serverid['B'], self.networkid)
+        self.cyclades_client.connect_server(self.serverid['A'], self.networkid)
+        self.cyclades_client.connect_server(self.serverid['B'], self.networkid)
 
         #Insist on connecting until action timeout
         fail_tmout = time.time() + self.action_timeout
@@ -1167,11 +1207,11 @@ class NetworkTestCase(unittest.TestCase):
         while True:
 
             netsA = [x['network_id']
-                     for x in self.client.get_server_details(
-                         self.serverid['A'])['attachments']['values']]
+                     for x in self.cyclades_client.get_server_details(
+                         self.serverid['A'])['attachments']]
             netsB = [x['network_id']
-                     for x in self.client.get_server_details(
-                         self.serverid['B'])['attachments']['values']]
+                     for x in self.cyclades_client.get_server_details(
+                         self.serverid['B'])['attachments']]
 
             if (self.networkid in netsA) and (self.networkid in netsB):
                 conn_exists = True
@@ -1185,10 +1225,10 @@ class NetworkTestCase(unittest.TestCase):
         cls = type(self)
         cls.priv_ip = dict()
 
-        nicsA = self.client.get_server_details(
-            self.serverid['A'])['attachments']['values']
-        nicsB = self.client.get_server_details(
-            self.serverid['B'])['attachments']['values']
+        nicsA = self.cyclades_client.get_server_details(
+            self.serverid['A'])['attachments']
+        nicsB = self.cyclades_client.get_server_details(
+            self.serverid['B'])['attachments']
 
         if conn_exists:
             for nic in nicsA:
@@ -1210,11 +1250,11 @@ class NetworkTestCase(unittest.TestCase):
 
         log.info("Rebooting server A")
 
-        self.client.shutdown_server(self.serverid['A'])
+        self.cyclades_client.shutdown_server(self.serverid['A'])
 
         fail_tmout = time.time() + self.action_timeout
         while True:
-            d = self.client.get_server_details(self.serverid['A'])
+            d = self.cyclades_client.get_server_details(self.serverid['A'])
             status = d['status']
             if status == 'STOPPED':
                 break
@@ -1223,10 +1263,10 @@ class NetworkTestCase(unittest.TestCase):
             else:
                 time.sleep(self.query_interval)
 
-        self.client.start_server(self.serverid['A'])
+        self.cyclades_client.start_server(self.serverid['A'])
 
         while True:
-            d = self.client.get_server_details(self.serverid['A'])
+            d = self.cyclades_client.get_server_details(self.serverid['A'])
             status = d['status']
             if status == 'ACTIVE':
                 active = True
@@ -1244,7 +1284,7 @@ class NetworkTestCase(unittest.TestCase):
         log.info("Testing if server A responds to IPv4 pings ")
         self.result_dict.clear()
 
-        server = self.client.get_server_details(self.serverid['A'])
+        server = self.cyclades_client.get_server_details(self.serverid['A'])
         ip = self._get_ipv4(server)
 
         fail_tmout = time.time() + self.action_timeout
@@ -1273,11 +1313,11 @@ class NetworkTestCase(unittest.TestCase):
         log.info("Rebooting server B")
         self.result_dict.clear()
 
-        self.client.shutdown_server(self.serverid['B'])
+        self.cyclades_client.shutdown_server(self.serverid['B'])
 
         fail_tmout = time.time() + self.action_timeout
         while True:
-            d = self.client.get_server_details(self.serverid['B'])
+            d = self.cyclades_client.get_server_details(self.serverid['B'])
             status = d['status']
             if status == 'STOPPED':
                 break
@@ -1286,10 +1326,10 @@ class NetworkTestCase(unittest.TestCase):
             else:
                 time.sleep(self.query_interval)
 
-        self.client.start_server(self.serverid['B'])
+        self.cyclades_client.start_server(self.serverid['B'])
 
         while True:
-            d = self.client.get_server_details(self.serverid['B'])
+            d = self.cyclades_client.get_server_details(self.serverid['B'])
             status = d['status']
             if status == 'ACTIVE':
                 active = True
@@ -1307,7 +1347,7 @@ class NetworkTestCase(unittest.TestCase):
         log.info("Testing if server B responds to IPv4 pings")
         self.result_dict.clear()
 
-        server = self.client.get_server_details(self.serverid['B'])
+        server = self.cyclades_client.get_server_details(self.serverid['B'])
         ip = self._get_ipv4(server)
 
         fail_tmout = time.time() + self.action_timeout
@@ -1337,11 +1377,11 @@ class NetworkTestCase(unittest.TestCase):
         log.info("Setting up interface eth1 for server A")
         self.result_dict.clear()
 
-        server = self.client.get_server_details(self.serverid['A'])
-        image = self.client.get_image_details(self.imageid)
-        os_value = image['metadata']['values']['os']
+        server = self.cyclades_client.get_server_details(self.serverid['A'])
+        image = self.cyclades_client.get_image_details(self.imageid)
+        os_value = image['metadata']['os']
 
-        users = image["metadata"]["values"].get("users", None)
+        users = image["metadata"].get("users", None)
         userlist = users.split()
 
         if "root" in userlist:
@@ -1371,11 +1411,11 @@ class NetworkTestCase(unittest.TestCase):
 
         log.info("Setting up interface eth1 for server B")
 
-        server = self.client.get_server_details(self.serverid['B'])
-        image = self.client.get_image_details(self.imageid)
-        os_value = image['metadata']['values']['os']
+        server = self.cyclades_client.get_server_details(self.serverid['B'])
+        image = self.cyclades_client.get_image_details(self.imageid)
+        os_value = image['metadata']['os']
 
-        users = image["metadata"]["values"].get("users", None)
+        users = image["metadata"].get("users", None)
         userlist = users.split()
 
         if "root" in userlist:
@@ -1405,12 +1445,12 @@ class NetworkTestCase(unittest.TestCase):
 
         log.info("Testing if server A is actually connected to server B")
 
-        server = self.client.get_server_details(self.serverid['A'])
-        image = self.client.get_image_details(self.imageid)
-        os_value = image['metadata']['values']['os']
+        server = self.cyclades_client.get_server_details(self.serverid['A'])
+        image = self.cyclades_client.get_image_details(self.imageid)
+        os_value = image['metadata']['os']
         hostip = self._get_ipv4(server)
 
-        users = image["metadata"]["values"].get("users", None)
+        users = image["metadata"].get("users", None)
         userlist = users.split()
 
         if "root" in userlist:
@@ -1422,7 +1462,7 @@ class NetworkTestCase(unittest.TestCase):
 
         myPass = self.password['A']
 
-        cmd = "if ping -c 2 -w 3 %s >/dev/null; \
+        cmd = "if ping -c 7 -w 20 %s >/dev/null; \
                then echo \'True\'; fi;" % self.priv_ip["B"]
         lines, status = _ssh_execute(
             hostip, loginname, myPass, cmd)
@@ -1439,36 +1479,36 @@ class NetworkTestCase(unittest.TestCase):
 
         log.info("Disconnecting servers from private network")
 
-        prev_state = self.client.get_network_details(self.networkid)
-        prev_nics = prev_state['attachments']['values']
+        prev_state = self.cyclades_client.get_network_details(self.networkid)
+        prev_nics = prev_state['attachments']
         #prev_conn = len(prev_nics)
 
         nicsA = [x['id']
-                 for x in self.client.get_server_details(
-                     self.serverid['A'])['attachments']['values']]
+                 for x in self.cyclades_client.get_server_details(
+                     self.serverid['A'])['attachments']]
         nicsB = [x['id']
-                 for x in self.client.get_server_details(
-                     self.serverid['B'])['attachments']['values']]
+                 for x in self.cyclades_client.get_server_details(
+                     self.serverid['B'])['attachments']]
 
         for nic in prev_nics:
             if nic in nicsA:
-                self.client.disconnect_server(self.serverid['A'], nic)
+                self.cyclades_client.disconnect_server(self.serverid['A'], nic)
             if nic in nicsB:
-                self.client.disconnect_server(self.serverid['B'], nic)
+                self.cyclades_client.disconnect_server(self.serverid['B'], nic)
 
         #Insist on deleting until action timeout
         fail_tmout = time.time() + self.action_timeout
 
         while True:
             netsA = [x['network_id']
-                     for x in self.client.get_server_details(
-                         self.serverid['A'])['attachments']['values']]
+                     for x in self.cyclades_client.get_server_details(
+                         self.serverid['A'])['attachments']]
             netsB = [x['network_id']
-                     for x in self.client.get_server_details(
-                         self.serverid['B'])['attachments']['values']]
+                     for x in self.cyclades_client.get_server_details(
+                         self.serverid['B'])['attachments']]
 
             #connected = (self.client.get_network_details(self.networkid))
-            #connections = connected['attachments']['values']
+            #connections = connected['attachments']
             if (self.networkid not in netsA) and (self.networkid not in netsB):
                 conn_exists = False
                 break
@@ -1484,14 +1524,14 @@ class NetworkTestCase(unittest.TestCase):
 
         log.info("Submitting delete network request")
 
-        self.client.delete_network(self.networkid)
+        self.cyclades_client.delete_network(self.networkid)
 
         fail_tmout = time.time() + self.action_timeout
 
         while True:
 
             curr_net = []
-            networks = self.client.list_networks()
+            networks = self.cyclades_client.list_networks()
 
             for net in networks:
                 curr_net.append(net['id'])
@@ -1511,8 +1551,8 @@ class NetworkTestCase(unittest.TestCase):
 
         log.info("Delete servers created for this test")
 
-        self.compute.delete_server(self.serverid['A'])
-        self.compute.delete_server(self.serverid['B'])
+        self.cyclades_client.delete_server(self.serverid['A'])
+        self.cyclades_client.delete_server(self.serverid['B'])
 
         fail_tmout = time.time() + self.action_timeout
 
@@ -1520,9 +1560,11 @@ class NetworkTestCase(unittest.TestCase):
         status = dict()
 
         while True:
-            details = self.compute.get_server_details(self.serverid['A'])
+            details = \
+                self.cyclades_client.get_server_details(self.serverid['A'])
             status['A'] = details['status']
-            details = self.compute.get_server_details(self.serverid['B'])
+            details = \
+                self.cyclades_client.get_server_details(self.serverid['B'])
             status['B'] = details['status']
             if (status['A'] == 'DELETED') and (status['B'] == 'DELETED'):
                 deleted = True
@@ -1778,9 +1820,12 @@ def _spawn_network_test_case(**kwargs):
 # Clean up servers/networks functions
 def cleanup_servers(timeout, query_interval, delete_stale=False):
 
-    c = ComputeClient(API, TOKEN)
+    astakos_client = AstakosClient(AUTH_URL, TOKEN)
+    # Compute Client
+    compute_url = astakos_client.get_service_endpoints('compute')['publicURL']
+    compute_client = ComputeClient(compute_url, TOKEN)
 
-    servers = c.list_servers()
+    servers = compute_client.list_servers()
     stale = [s for s in servers if s["name"].startswith(SNF_TEST_PREFIX)]
 
     if len(stale) == 0:
@@ -1798,10 +1843,10 @@ def cleanup_servers(timeout, query_interval, delete_stale=False):
         print >> sys.stderr, "Deleting %d stale servers:" % len(stale)
         fail_tmout = time.time() + timeout
         for s in stale:
-            c.delete_server(s["id"])
+            compute_client.delete_server(s["id"])
         # Wait for all servers to be deleted
         while True:
-            servers = c.list_servers()
+            servers = compute_client.list_servers()
             stale = [s for s in servers
                      if s["name"].startswith(SNF_TEST_PREFIX)]
             if len(stale) == 0:
@@ -1820,9 +1865,12 @@ def cleanup_servers(timeout, query_interval, delete_stale=False):
 
 def cleanup_networks(action_timeout, query_interval, delete_stale=False):
 
-    c = CycladesClient(API, TOKEN)
+    astakos_client = AstakosClient(AUTH_URL, TOKEN)
+    # Cyclades Client
+    compute_url = astakos_client.get_service_endpoints('compute')['publicURL']
+    cyclades_client = CycladesClient(compute_url, TOKEN)
 
-    networks = c.list_networks()
+    networks = cyclades_client.list_networks()
     stale = [n for n in networks if n["name"].startswith(SNF_TEST_PREFIX)]
 
     if len(stale) == 0:
@@ -1840,10 +1888,10 @@ def cleanup_networks(action_timeout, query_interval, delete_stale=False):
         print >> sys.stderr, "Deleting %d stale networks:" % len(stale)
         fail_tmout = time.time() + action_timeout
         for n in stale:
-            c.delete_network(n["id"])
+            cyclades_client.delete_network(n["id"])
         # Wait for all networks to be deleted
         while True:
-            networks = c.list_networks()
+            networks = cyclades_client.list_networks()
             stale = [n for n in networks
                      if n["name"].startswith(SNF_TEST_PREFIX)]
             if len(stale) == 0:
@@ -1885,26 +1933,14 @@ def parse_arguments(args):
     parser = OptionParser(**kw)
     parser.disable_interspersed_args()
 
-    parser.add_option("--api",
-                      action="store", type="string", dest="api",
-                      help="The API URI to use to reach the Synnefo API",
-                      default=None)
-    parser.add_option("--plankton",
-                      action="store", type="string", dest="plankton",
-                      help="The API URI to use to reach the Plankton API",
+    parser.add_option("--auth-url",
+                      action="store", type="string", dest="auth_url",
+                      help="The AUTH URI to use to reach the Synnefo API",
                       default=None)
     parser.add_option("--plankton-user",
                       action="store", type="string", dest="plankton_user",
                       help="Owner of system images",
                       default=DEFAULT_PLANKTON_USER)
-    parser.add_option("--pithos",
-                      action="store", type="string", dest="pithos",
-                      help="The API URI to use to reach the Pithos API",
-                      default=None)
-    parser.add_option("--astakos",
-                      action="store", type="string", dest="astakos",
-                      help="The API URI to use to reach the Astakos API",
-                      default=None)
     parser.add_option("--token",
                       action="store", type="string", dest="token",
                       help="The token to use for authentication to the API")
@@ -2009,12 +2045,12 @@ def parse_arguments(args):
 
     # `token' is mandatory
     _mandatory_argument(opts.token, "--token")
-    # `api' is mandatory
-    _mandatory_argument(opts.api, "--api")
+    # `auth_url' is mandatory
+    _mandatory_argument(opts.auth_url, "--auth-url")
 
     if not opts.show_stale:
         # `image-id' is mandatory
-        _mandatory_argument(opts.force_imageid, "--image_id")
+        _mandatory_argument(opts.force_imageid, "--image-id")
         if opts.force_imageid != 'all':
             try:
                 opts.force_imageid = str(opts.force_imageid)
@@ -2024,18 +2060,12 @@ def parse_arguments(args):
                     "--image-id. Use a valid id, or `all'." + \
                     normal
                 sys.exit(1)
-        # `pithos' is mandatory
-        _mandatory_argument(opts.pithos, "--pithos")
-        # `astakos' is mandatory
-        _mandatory_argument(opts.astakos, "--astakos")
-        # `plankton' is mandatory
-        _mandatory_argument(opts.plankton, "--plankton")
 
     return (opts, args)
 
 
 def _mandatory_argument(Arg, Str):
-    if not Arg:
+    if (Arg is None) or (Arg == ""):
         print >>sys.stderr, red + \
             "The " + Str + " argument is mandatory.\n" + \
             normal
@@ -2059,14 +2089,11 @@ def main():
     (opts, args) = parse_arguments(sys.argv[1:])
 
     # Some global variables
-    global API, TOKEN, PLANKTON, PLANKTON_USER
-    global PITHOS, ASTAKOS, NO_IPV6, VERBOSE, NOFAILFAST
-    API = opts.api
+    global AUTH_URL, TOKEN, PLANKTON_USER
+    global NO_IPV6, VERBOSE, NOFAILFAST
+    AUTH_URL = opts.auth_url
     TOKEN = opts.token
-    PLANKTON = opts.plankton
     PLANKTON_USER = opts.plankton_user
-    PITHOS = opts.pithos
-    ASTAKOS = opts.astakos
     NO_IPV6 = opts.no_ipv6
     VERBOSE = opts.verbose
     NOFAILFAST = opts.nofailfast
@@ -2082,9 +2109,12 @@ def main():
         return 0
 
     # Initialize a kamaki instance, get flavors, images
-    c = ComputeClient(API, TOKEN)
-    DIMAGES = c.list_images(detail=True)
-    DFLAVORS = c.list_flavors(detail=True)
+    astakos_client = AstakosClient(AUTH_URL, TOKEN)
+    # Compute Client
+    compute_url = astakos_client.get_service_endpoints('compute')['publicURL']
+    compute_client = ComputeClient(compute_url, TOKEN)
+    DIMAGES = compute_client.list_images(detail=True)
+    DFLAVORS = compute_client.list_flavors(detail=True)
 
     # FIXME: logging, log, LOG PID, TEST_RUN_ID, arguments
     # Run them: FIXME: In parallel, FAILEARLY, catchbreak?

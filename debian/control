@@ -32,6 +32,13 @@ Provides: ${python:Provides}
 XB-Python-Version: ${python:Versions}
 Description: Synnefo webproject package (common settings mechanism)
 
+Package: snf-branding
+Architecture: all
+Depends: ${python:Depends}
+Provides: ${python:Provides}
+XB-Python-Version: ${python:Versions}
+Description: Synnefo Branding package for user interface and message customization.
+
 Package: snf-cyclades-app
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}, snf-common,
@@ -64,6 +71,8 @@ Package: snf-astakos-app
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}
 Provides: ${python:Provides}
+Conflicts: snf-quotaholder-app
+Replaces: snf-quotaholder-app
 Recommends: snf-webproject
 XB-Python-Version: ${python:Versions}
 Description: Synnefo Identity management package
@@ -105,13 +114,6 @@ Description: Synnefo generic additional tools (burnin)
  This package contains additional tools that supplement a Synnefo
  installation. Currently, this package contains only the burnin tool.
 
-Package: snf-quotaholder-app
-Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}
-Provides: ${python:Provides}
-XB-Python-Version: ${python:Versions}
-Description: Synnefo quota enforcement service
-
 Package: snf-stats-app
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}, snf-common
@@ -121,3 +123,20 @@ Suggests: gunicorn, collectd, python-gevent (>=0.13)
 XB-Python-Version: ${python:Versions}
 Description: Synnefo Stats
  Synnefo Stats
+
+Package: python-astakosclient
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}
+Provides: ${python:Provides}
+XB-Python-Version: ${python:Versions}
+Description: Synnefo Astakos Client
+ Python client for Astakos, the Synnefo identity management service.
+
+Package: snf-django-lib
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}, snf-common
+Provides: ${python:Provides}
+Recommends: snf-webproject
+XB-Python-Version: ${python:Versions}
+Description: Synnefo Django library
+ Synnefo Django library

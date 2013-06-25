@@ -31,8 +31,9 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import patterns
+from django.conf.urls.defaults import patterns, include
 from django.http import HttpResponseNotAllowed
+from snf_django.lib.api import api_endpoint_not_found
 
 from synnefo.plankton import views
 
@@ -47,14 +48,16 @@ def demux(request):
 
 
 def demux_image(request, image_id):
-    if request.method == 'GET':
+    if request.method == "GET":
         return views.get_image(request, image_id)
-    elif request.method == 'HEAD':
+    elif request.method == "HEAD":
         return views.get_image_meta(request, image_id)
-    elif request.method == 'PUT':
+    elif request.method == "PUT":
         return views.update_image(request, image_id)
+    elif request.method == "DELETE":
+        return views.delete_image(request, image_id)
     else:
-        return HttpResponseNotAllowed(['GET', 'HEAD', 'PUT'])
+        return HttpResponseNotAllowed(["GET", "HEAD", "PUT", "DELETE"])
 
 
 def demux_image_members(request, image_id):
@@ -75,12 +78,18 @@ def demux_members(request, image_id, member):
         return HttpResponseNotAllowed(['DELETE', 'PUT'])
 
 
-urlpatterns = patterns(
+image_v1_patterns = patterns(
     '',
     (r'^images/$', demux),
     (r'^images/detail$', views.list_images, {'detail': True}),
     (r'^images/([\w-]+)$', demux_image),
     (r'^images/([\w-]+)/members$', demux_image_members),
     (r'^images/([\w-]+)/members/([\w@._-]+)$', demux_members),
-    (r'^shared-images/([\w@._-]+)$', views.list_shared_images)
+    (r'^shared-images/([\w@._-]+)$', views.list_shared_images),
+)
+
+urlpatterns = patterns(
+    '',
+    (r'^v1.0/', include(image_v1_patterns)),
+    (r'^.*', api_endpoint_not_found),
 )

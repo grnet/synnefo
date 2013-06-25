@@ -33,13 +33,14 @@
 
 from optparse import make_option
 
-from django.core.management.base import NoArgsCommand
+from synnefo.webproject.management.commands import SynnefoCommand, CommandError
 
 from astakos.im.models import Chain
-from ._common import format, shortened
+from synnefo.webproject.management import utils
+from ._common import is_uuid, is_email
 
 
-class Command(NoArgsCommand):
+class Command(SynnefoCommand):
     help = """
     List projects and project status.
 
@@ -69,7 +70,7 @@ class Command(NoArgsCommand):
                            by a new project
 """
 
-    option_list = NoArgsCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option('--all',
                     action='store_true',
                     dest='all',
@@ -96,21 +97,15 @@ class Command(NoArgsCommand):
                     dest='skip',
                     default=False,
                     help="Skip cancelled and terminated projects"),
-        make_option('--full',
-                    action='store_true',
-                    dest='full',
-                    default=False,
-                    help="Do not shorten long names"),
-        make_option('-c',
-                    action='store_true',
-                    dest='csv',
-                    default=False,
-                    help="Use pipes to separate values"),
+        make_option('--name',
+                    dest='name',
+                    help='Filter projects by name'),
+        make_option('--owner',
+                    dest='owner',
+                    help='Filter projects by owner\'s email or uuid'),
     )
 
-    def handle_noargs(self, **options):
-        allow_shorten = not options['full']
-        csv = options['csv']
+    def handle(self, *args, **options):
 
         chain_dict = Chain.objects.all_full_state()
 
@@ -128,53 +123,52 @@ class Command(NoArgsCommand):
                     f_states = Chain.RELEVANT_STATES
 
             if f_states:
-                chain_dict = filter_by_state(chain_dict, f_states)
+                chain_dict = filter_by(in_states(f_states), chain_dict)
 
-        self.show(csv, allow_shorten, chain_dict)
+            name = options['name']
+            if name:
+                chain_dict = filter_by(is_name(name), chain_dict)
 
-    def show(self, csv, allow_shorten, chain_dict):
+            owner = options['owner']
+            if owner:
+                chain_dict = filter_by(is_owner(owner), chain_dict)
+
         labels = ('ProjID', 'Name', 'Owner', 'Email', 'Status', 'AppID')
-        columns = (7, 23, 20, 20, 17, 7)
 
-        if not csv:
-            line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
-            self.stdout.write(line + '\n')
-            sep = '-' * len(line)
-            self.stdout.write(sep + '\n')
-
-        for info in chain_info(chain_dict):
-
-            fields = [
-                (info['projectid'], False),
-                (info['name'], True),
-                (info['owner'], True),
-                (info['email'], True),
-                (info['status'], False),
-                (info['appid'], False),
-            ]
-
-            fields = [(format(elem), flag) for (elem, flag) in fields]
-
-            if csv:
-                line = '|'.join(fields)
-            else:
-                output = []
-                for (field, shorten), width in zip(fields, columns):
-                    s = (shortened(field, width) if shorten and allow_shorten
-                         else field)
-                    s = s.rjust(width)
-                    output.append(s)
-
-                line = ' '.join(output)
-
-            self.stdout.write(line + '\n')
+        info = chain_info(chain_dict)
+        utils.pprint_table(self.stdout, info, labels,
+                           options["output_format"])
 
 
-def filter_by_state(chain_dict, states):
+def is_name(name):
+    def f(state, project, app):
+        n = project.application.name if project else app.name
+        return name == n
+    return f
+
+
+def in_states(states):
+    def f(state, project, app):
+        return state in states
+    return f
+
+
+def is_owner(s):
+    def f(state, project, app):
+        owner = app.owner
+        if is_email(s):
+            return owner.email == s
+        if is_uuid(s):
+            return owner.uuid == s
+        raise CommandError("Expecting either email or uuid.")
+    return f
+
+
+def filter_by(f, chain_dict):
     d = {}
-    for chain, (state, project, app) in chain_dict.iteritems():
-        if state in states:
-            d[chain] = (state, project, app)
+    for chain, tpl in chain_dict.iteritems():
+        if f(*tpl):
+            d[chain] = tpl
     return d
 
 
@@ -187,13 +181,12 @@ def chain_info(chain_dict):
         else:
             appid = ""
 
-        d = {
-            'projectid': str(chain),
-            'name': project.application.name if project else app.name,
-            'owner': app.owner.realname,
-            'email': app.owner.email,
-            'status': status,
-            'appid': appid,
-        }
-        l.append(d)
+        t = (chain,
+             project.application.name if project else app.name,
+             app.owner.realname,
+             app.owner.email,
+             status,
+             appid,
+             )
+        l.append(t)
     return l

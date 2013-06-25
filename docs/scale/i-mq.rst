@@ -11,7 +11,6 @@ mq ||
 :ref:`gunicorn <i-gunicorn>` ||
 :ref:`apache <i-apache>` ||
 :ref:`astakos <i-astakos>` ||
-:ref:`qh <i-qh>` ||
 :ref:`cms <i-cms>` ||
 :ref:`pithos <i-pithos>` ||
 :ref:`cyclades <i-cyclades>` ||

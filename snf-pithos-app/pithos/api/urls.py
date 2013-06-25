@@ -31,12 +31,20 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from functools import partial
 from django.conf.urls.defaults import include, patterns
+from snf_django.lib.api.proxy import proxy
+from snf_django.lib.api.utils import prefix_pattern
+from snf_django.lib.api.urls import api_patterns
+from snf_django.lib.api import api_endpoint_not_found
+from pithos.api.settings import (
+    BASE_PATH, ASTAKOS_BASE_URL, BASE_ASTAKOS_PROXY_PATH,
+    ASTAKOS_ACCOUNTS_PREFIX, PROXY_USER_SERVICES,
+    PITHOS_PREFIX, PUBLIC_PREFIX, UI_PREFIX)
 
-import pithos.api.settings as settings
 
 # TODO: This only works when in this order.
-api_urlpatterns = patterns(
+pithos_api_patterns = api_patterns(
     'pithos.api.functions',
     (r'^$', 'top_demux'),
     (r'^(?P<v_account>.+?)/(?P<v_container>.+?)/(?P<v_object>.+?)$',
@@ -45,15 +53,40 @@ api_urlpatterns = patterns(
     'container_demux'),
     (r'^(?P<v_account>.+?)/?$', 'account_demux'))
 
+pithos_view_patterns = patterns(
+    'pithos.api.views',
+    (r'^view/(?P<v_account>.+?)/(?P<v_container>.+?)/(?P<v_object>.+?)$',
+    'object_read'))
+
+pithos_patterns = patterns(
+    '',
+    (r'{0}v1/'.format(prefix_pattern(PITHOS_PREFIX)),
+        include(pithos_api_patterns)),
+    (r'{0}.*'.format(prefix_pattern(PITHOS_PREFIX)),
+        api_endpoint_not_found),
+    (r'{0}(?P<v_public>.+?)/?$'.format(prefix_pattern(PUBLIC_PREFIX)),
+        'pithos.api.public.public_demux'),
+    (r'{0}'.format(prefix_pattern(UI_PREFIX)),
+        include(pithos_view_patterns)))
+
 urlpatterns = patterns(
     '',
-    (r'^v1(?:$|/)', include(api_urlpatterns)),
-    (r'^v1\.0(?:$|/)', include(api_urlpatterns)),
-    (r'^public/(?P<v_public>.+?)/?$', 'pithos.api.public.public_demux'))
+    (prefix_pattern(BASE_PATH), include(pithos_patterns)),
+)
 
-if settings.PROXY_USER_SERVICES:
+if PROXY_USER_SERVICES:
+    astakos_proxy = partial(proxy, proxy_base=BASE_ASTAKOS_PROXY_PATH,
+                            target_base=ASTAKOS_BASE_URL)
+
+    proxy_patterns = api_patterns(
+        '',
+        (r'^login/?$', astakos_proxy),
+        (r'^feedback/?$', astakos_proxy),
+        (r'^user_catalogs/?$', astakos_proxy),
+        (prefix_pattern(ASTAKOS_ACCOUNTS_PREFIX), astakos_proxy),
+    )
+
     urlpatterns += patterns(
         '',
-        (r'^login/?$', 'pithos.api.delegate.delegate_to_login_service'),
-        (r'^feedback/?$', 'pithos.api.delegate.delegate_to_feedback_service'),
-        (r'^user_catalogs/?$', 'pithos.api.delegate.delegate_to_user_catalogs_service'))
+        (prefix_pattern(BASE_ASTAKOS_PROXY_PATH), include(proxy_patterns)),
+    )

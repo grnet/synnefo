@@ -47,7 +47,6 @@ from synnefo.versions.app import __version__
 
 # Package info
 VERSION = __version__
-README = open(os.path.join(HERE, 'README')).read()
 SHORT_DESCRIPTION = 'Synnefo Compute, Network and Image component'
 
 PACKAGES_ROOT = '.'
@@ -74,7 +73,13 @@ INSTALL_REQUIRES = [
     'lockfile>=0.8, <0.9',
     'ipaddr',
     'setproctitle>=1.0.1',
-    'bitarray>=0.8'
+    'bitarray>=0.8',
+    'objpool>=0.2',
+    'astakosclient',
+    'snf-django-lib',
+    'snf-branding',
+    'snf-webproject',
+    'multiprocessing',
 ]
 
 EXTRAS_REQUIRES = {
@@ -84,7 +89,7 @@ EXTRAS_REQUIRES = {
 }
 
 TESTS_REQUIRES = [
-    'factory_boy'
+    'factory_boy==2.1.0'
 ]
 
 
@@ -184,7 +189,6 @@ setup(
     license = 'BSD',
     url = 'http://www.synnefo.org/',
     description = SHORT_DESCRIPTION,
-    long_description=README,
     classifiers = CLASSIFIERS,
 
     author='Synnefo development team',

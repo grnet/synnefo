@@ -120,6 +120,7 @@ class LocalUserCreationForm(UserCreationForm, StoreUserMixin):
         if not provider == 'local':
             raise Exception('Invalid provider')
 
+        self.ip = None
         if request:
             self.ip = request.META.get('REMOTE_ADDR',
                                        request.META.get('HTTP_X_REAL_IP',
@@ -244,6 +245,7 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
         """
 
         self.provider = kwargs.pop('provider', None)
+        self.request = kwargs.pop('request', None)
         if not self.provider or self.provider == 'local':
             raise Exception('Invalid provider, %r' % self.provider)
 
@@ -525,7 +527,7 @@ class ExtendedPasswordResetForm(PasswordResetForm):
         """
         for user in self.users_cache:
             url = user.astakosuser.get_password_reset_url(token_generator)
-            url = join_urls(settings.BASE_URL, url)
+            url = join_urls(settings.BASE_HOST, url)
             c = {
                 'email': user.email,
                 'url': url,

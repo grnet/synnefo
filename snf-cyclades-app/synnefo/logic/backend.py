@@ -32,6 +32,8 @@
 # or implied, of GRNET S.A.
 
 import json
+import multiprocessing
+import itertools
 
 from django.conf import settings
 from django.db import transaction
@@ -641,13 +643,25 @@ def set_firewall_profile(vm, profile):
                               os_name=os_name)
 
 
+def get_instances(backend, bulk, queue):
+    with pooled_rapi_client(backend) as client:
+        instances = client.GetInstances(bulk=bulk)
+    queue.put(instances)
+
+
 def get_ganeti_instances(backend=None, bulk=False):
     instances = []
-    for backend in get_backends(backend):
-        with pooled_rapi_client(backend) as client:
-            instances.append(client.GetInstances(bulk=bulk))
-
-    return reduce(list.__add__, instances, [])
+    backends = get_backends(backend)
+    queue = multiprocessing.Queue()
+    processes = []
+    for backend in backends:
+        p = multiprocessing.Process(target=get_instances,
+                                    args=(backend, bulk, queue))
+        processes.append(p)
+        p.start()
+    [p.join() for p in processes]
+    [instances.extend(queue.get()) for p in processes]
+    return instances
 
 
 def get_ganeti_nodes(backend=None, bulk=False):

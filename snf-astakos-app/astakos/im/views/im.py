@@ -452,7 +452,7 @@ def signup(request, template_name='im/signup.html', on_success='index',
     if not activation_backend:
         activation_backend = activation_backends.get_backend()
 
-    form_kwargs = {'instance': instance}
+    form_kwargs = {'instance': instance, 'request': request}
     if third_party_token:
         form_kwargs['third_party_token'] = third_party_token
 

@@ -94,7 +94,6 @@ In `/etc/synnefo/cyclades.conf` add:
     }
 
     CACHE_BACKEND = 'memcached://127.0.0.1:11211/'
-    VMAPI_BASE_URL = 'https://cyclades.example.com/'
 
     CYCLADES_SERVICE_TOKEN = "XXXXXXXXXX"
 

@@ -1,3 +1,9 @@
+synnefo (0.14-1~squeeze) squeeze; urgency=low
+
+  * New upstream version
+
+ -- Christos Stavrakakis <cstavr@grnet.gr>  Tue, 25 Jun 2013 14:27:19 +0300
+
 synnefo (0.13-1) stable; urgency=low
 
   * New upstream version

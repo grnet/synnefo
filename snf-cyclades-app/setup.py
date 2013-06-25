@@ -79,7 +79,6 @@ INSTALL_REQUIRES = [
     'snf-django-lib',
     'snf-branding',
     'snf-webproject',
-    'multiprocessing',
 ]
 
 EXTRAS_REQUIRES = {

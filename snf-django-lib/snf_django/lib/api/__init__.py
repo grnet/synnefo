@@ -106,6 +106,7 @@ def api_method(http_method=None, token_required=True, user_required=True,
                     astakos = astakos_url or settings.ASTAKOS_BASE_URL
                     astakos = AstakosClient(astakos,
                                             use_pool=True,
+                                            retry=2,
                                             logger=logger)
                     user_info = astakos.get_user_info(token)
                     request.user_uniq = user_info["uuid"]

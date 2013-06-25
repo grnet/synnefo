@@ -1037,11 +1037,6 @@ def update_request_headers(request):
 
 
 def update_response_headers(request, response):
-    if (not response.has_header('Content-Length') and
-        not (response.has_header('Content-Type') and
-             response['Content-Type'].startswith('multipart/byteranges'))):
-        response['Content-Length'] = len(response.content)
-
     # URL-encode unicode in headers.
     meta = response.items()
     for k, v in meta:

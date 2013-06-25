@@ -15,18 +15,51 @@ Released: UNRELEASED
 
 Synnefo-wide
 ------------
+* Standardize URLs for Synnefo Components:
+
+  * impose structure and naming conventions to all URL related settings. Make
+    each component deployable under a user-configurable <COMPONENT>_BASE_URL.
+    Each API (compute, image, etc.) is deployable under a
+    developer-configurable prefix beneath BASE_URL.
+
+* Branding customization support across synnefo frontend components:
+
+  * ability to adapt the Astakos, Pithos and Cyclades Web UI to a company’s
+    visual identity. This is possible using the snf-branding component, which
+    is automatically installed on the nodes running the API servers for
+    Astakos, Pithos and Cyclades.
+
+
+* Create a JSON-exportable definition document for each Synnefo Components
+  (Astakos, Cyclades, Pithos, etc.) that consolidates APIs (services),
+  resources, and other standardized properties (e.g. default URL prefixes).
+* Implement common client for communication with Astakos and proper error
+  handling.
 
 Astakos
 -------
+* Redesign of the accounting system (quotaholder) and integration into
+  Astakos.
+* Implemented the keystone API call POST /tokens
+
+  * Specified the API call allong with a procedure to register a Synnefo
+    component (e.g. cyclades) along with the services it provides (e.g.
+    compute, plankton) and the resources it handles (e.g. vm, cpu).
+
+* All API calls are moved under '/account/v1.0'.
+* Support API calls for quotas, commissions and resources.
+* Improved user activation process
+* Improve limit of pending applications by making it a quotable resource.
+* Added fine grain user auth provider's policies.
+* Overhauling of Astakos management commands for usability and uniformity.
 
 Cyclades
 --------
-
-Pithos
-------
-
-Tools
------
+* Speed up private network creation, by creating a network to a Ganeti backend
+  only when a server connects to that network.
+* Rename management commands for commissions and resources for uniformity with
+  other services.
+* Synchronize Cyclades API with Openstack Compute v2.0 API.
 
 
 .. _NEWS-0.13:

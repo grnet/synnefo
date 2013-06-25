@@ -135,6 +135,10 @@ setting was renamed to this. Therefore:
   where ``ASTAKOS_BASE_URL`` as above. Similarly, set
   ``CLOUDBAR_MENU_URL`` to ``ASTAKOS_BASE_URL/ui/get_menu``.
 
+If two or more services are installed on the same machine, make sure their
+base URLs do not clash. You can distinguish them with a suffix, e.g.
+``ASTAKOS_BASE_URL = "https://node1.example.com/astakos"`` and
+``CYCLADES_BASE_URL = "https://node1.example.com/cyclades"``.
 
 3 Register services and migrate quota
 =====================================
@@ -152,12 +156,11 @@ settings (see above).
 The latter is the URL that appears in the Cloudbar and leads to the
 component UI. If you want to follow the default setup, set
 the UI URL to ``<base_url>/ui/`` where ``base_url`` is the component's base
-URL as explained before. (You can later change the UI URL with
-``snf-manage component-modify <component_name> --url new_ui_url``).
+URL as explained before.
 
 For example, for Astakos, if
 ``BASE_URL = https://accounts.example.synnefo.org/astakos``,
-then ``UI_URL = https://accounts.example.synnefo.org/astakos/ui``)::
+then ``UI_URL = https://accounts.example.synnefo.org/astakos/ui/``)::
 
     astakos-host$ snf-component-register
 
@@ -181,6 +184,16 @@ then ``UI_URL = https://accounts.example.synnefo.org/astakos/ui``)::
        pithos-host$ snf-manage service-export-pithos > pithos.json
        # copy the file to astakos-host
        astakos-host$ snf-manage service-import --json pithos.json
+
+Run::
+
+   astakos-host$ snf-manage component-list
+
+to make sure that all UI URLs are set to the correct value (``<base_url>/ui/``
+as explained above). If you have changed some ``<component_name>_BASE_URL``
+in the previous step, you will need to update the UI URL with::
+
+   snf-manage component-modify <component_name> --url new_ui_url
 
 The limit on the pending project applications is since 0.14 handled as an
 Astakos resource, rather than a custom setting. So, as a last step we need

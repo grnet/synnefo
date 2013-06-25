@@ -32,27 +32,20 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 
 from synnefo.lib.ordereddict import OrderedDict
+from synnefo.webproject.management.commands import SynnefoCommand
+from synnefo.webproject.management import utils
 from astakos.im.models import Chain, ProjectApplication
+from ._common import show_resource_value, style_options, check_style
 
-from ._common import format
 
+class Command(SynnefoCommand):
+    args = "<id>"
+    help = "Show details for project (or application) <id>"
 
-class Command(BaseCommand):
-    args = "<id or name>"
-    help = """
-    Show project details.
-
-    Command comes in two forms:
-        project-show <id>    Look up project by id
-
-        project-show <name>  Look up all projects whose name
-                             contains the given string
-"""
-
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option('--app',
                     action='store_true',
                     dest='app',
@@ -63,103 +56,136 @@ class Command(BaseCommand):
                     action='store_true',
                     dest='pending',
                     default=False,
-                    help=("For a given project, show also pending modifications "
-                          "(applications), if any")
+                    help=("For a given project, show also pending "
+                          "modifications (applications), if any")
                     ),
-        )
+        make_option('--members',
+                    action='store_true',
+                    dest='members',
+                    default=False,
+                    help=("Show a list of project memberships")
+                    ),
+        make_option('--unit-style',
+                    default='mb',
+                    help=("Specify display unit for resource values "
+                          "(one of %s); defaults to mb") % style_options),
+    )
 
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide project ID or name")
 
-        show_pending = bool(options['pending'])
-        search_apps  = options['app']
+        self.unit_style = options['unit_style']
+        check_style(self.unit_style)
 
-        name_or_id = args[0]
-        is_id = name_or_id.isdigit()
-        if is_id:
-            name_or_id = int(name_or_id)
+        show_pending = bool(options['pending'])
+        show_members = bool(options['members'])
+        search_apps = options['app']
+        self.output_format = options['output_format']
+
+        id_ = args[0]
+        try:
+            id_ = int(id_)
+        except ValueError:
+            raise CommandError("id should be an integer value.")
 
         if search_apps:
-            infolist = app_info(name_or_id, is_id)
+            app = get_app(id_)
+            self.print_app(app)
         else:
-            chains = get_chains(name_or_id, is_id)
-            infolist = collect_info(chains, show_pending)
+            state, project, app = get_chain_state(id_)
+            self.print_project(state, project, app)
+            if show_members and project is not None:
+                self.stdout.write("\n")
+                fields, labels = members_fields(project)
+                self.pprint_table(fields, labels, title="Members")
+            if show_pending and state in Chain.PENDING_STATES:
+                self.stdout.write("\n")
+                self.print_app(app)
 
-        if not infolist:
-            kind = 'project application' if search_apps else 'project'
-            field = 'id' if is_id else 'name'
-            msg = "Unknown %s with %s '%s'" % (kind, field, name_or_id)
-            raise CommandError(msg)
+    def pprint_dict(self, d, vertical=True):
+        utils.pprint_table(self.stdout, [d.values()], d.keys(),
+                           self.output_format, vertical=vertical)
 
-        for info in infolist:
-            self.show_info(info)
+    def pprint_table(self, tbl, labels, title=None):
+        utils.pprint_table(self.stdout, tbl, labels,
+                           self.output_format, title=title)
 
-    def show_info(self, info):
-        for key, val in info.items():
-            line = '%s: %s\n' % (key.rjust(22), format(val))
-            self.stdout.write(line)
-        self.stdout.write('\n')
+    def print_app(self, app):
+        app_info = app_fields(app)
+        self.pprint_dict(app_info)
+        self.print_resources(app)
+
+    def print_project(self, state, project, app):
+        if project is None:
+            self.print_app(app)
+        else:
+            self.pprint_dict(project_fields(state, project, app))
+            self.print_resources(project.application)
+
+    def print_resources(self, app):
+        fields, labels = resource_fields(app, self.unit_style)
+        if fields:
+            self.stdout.write("\n")
+            self.pprint_table(fields, labels, title="Resource limits")
 
 
-def app_info(name_or_id, is_id):
+def get_app(app_id):
     try:
-        apps = ([ProjectApplication.objects.get(id=name_or_id)]
-                if is_id
-                else ProjectApplication.objects.search_by_name(name_or_id))
-        return [app_fields(app) for app in apps]
+        return ProjectApplication.objects.get(id=app_id)
     except ProjectApplication.DoesNotExist:
-            return []
+        raise CommandError("Application with id %s not found." % app_id)
 
-def get_chains(name_or_id, is_id):
-    if is_id:
-        try:
-            return [Chain.objects.get(chain=name_or_id)]
-        except Chain.DoesNotExist:
-            return []
+
+def get_chain_state(project_id):
+    try:
+        chain = Chain.objects.get(chain=project_id)
+        return chain.full_state()
+    except Chain.DoesNotExist:
+        raise CommandError("Project with id %s not found." % project_id)
+
+
+def chain_fields(state, project, app):
+    if project is not None:
+        return project_fields(state, project, app)
     else:
-        return Chain.objects.search_by_name(name_or_id)
+        return app_fields(app)
 
-def collect_info(chains, pending):
-    states = [chain.full_state() for chain in chains]
 
-    infolist = []
-    for state in states:
-        infolist += (chain_fields(state, pending))
-    return infolist
+def resource_fields(app, style):
+    labels = ('name', 'description', 'max per member')
+    policies = app.projectresourcegrant_set.all()
+    collect = []
+    for policy in policies:
+        name = policy.resource.name
+        desc = policy.resource.desc
+        capacity = policy.member_capacity
+        collect.append((name, desc,
+                        show_resource_value(capacity, name, style)))
+    return collect, labels
 
-def chain_fields((s, project, app), request=False):
-    l = []
-    if project:
-        l = [project_fields(s, project, app)]
-        if request and s in Chain.PENDING_STATES:
-            l.append(app_fields(app))
-    else:
-        l = [app_fields(app)]
-    return l
 
 def app_fields(app):
     mem_limit = app.limit_on_members_number
     mem_limit_show = mem_limit if mem_limit is not None else "unlimited"
 
     d = OrderedDict([
-            ('project id', app.chain),
-            ('application id', app.id),
-            ('name', app.name),
-            ('status', app.state_display()),
-            ('owner', app.owner),
-            ('applicant', app.applicant),
-            ('homepage', app.homepage),
-            ('description', app.description),
-            ('comments for review', app.comments),
-            ('request issue date', app.issue_date),
-            ('request start date', app.start_date),
-            ('request end date', app.end_date),
-            ('resources', app.resource_policies),
-            ('join policy', app.member_join_policy_display),
-            ('leave policy', app.member_leave_policy_display),
-            ('max members', mem_limit_show),
-            ])
+        ('project id', app.chain),
+        ('application id', app.id),
+        ('name', app.name),
+        ('status', app.state_display()),
+        ('owner', app.owner),
+        ('applicant', app.applicant),
+        ('homepage', app.homepage),
+        ('description', app.description),
+        ('comments for review', app.comments),
+        ('request issue date', app.issue_date),
+        ('request start date', app.start_date),
+        ('request end date', app.end_date),
+        ('join policy', app.member_join_policy_display),
+        ('leave policy', app.member_leave_policy_display),
+        ('max members', mem_limit_show),
+    ])
 
     return d
 
@@ -168,11 +194,11 @@ def project_fields(s, project, last_app):
     app = project.application
 
     d = OrderedDict([
-            ('project id', project.id),
-            ('application id', app.id),
-            ('name', app.name),
-            ('status', Chain.state_display(s)),
-            ])
+        ('project id', project.id),
+        ('application id', app.id),
+        ('name', app.name),
+        ('status', Chain.state_display(s)),
+    ])
     if s in Chain.PENDING_STATES:
         d.update([('pending application', last_app.id)])
 
@@ -195,25 +221,24 @@ def project_fields(s, project, last_app):
     mem_limit_show = mem_limit if mem_limit is not None else "unlimited"
 
     d.update([
-            ('resources', app.resource_policies),
             ('join policy', app.member_join_policy_display),
             ('leave policy', app.member_leave_policy_display),
             ('max members', mem_limit_show),
             ('total members', project.members_count()),
-            ])
-
-    memberships = project.projectmembership_set
-    accepted  = [str(m.person) for m in memberships.any_accepted()]
-    requested = [str(m.person) for m in memberships.requested()]
-    suspended = [str(m.person) for m in memberships.suspended()]
-
-    if accepted:
-        d['accepted members'] = ', '.join(accepted)
-
-    if suspended:
-        d['suspended members'] = ', '.join(suspended)
-
-    if requested:
-        d['membership requests'] = ', '.join(requested)
+    ])
 
     return d
+
+
+def members_fields(project):
+    labels = ('member uuid', 'email', 'status')
+    objs = project.projectmembership_set.select_related('person')
+    memberships = objs.all().order_by('state', 'person__email')
+    collect = []
+    for m in memberships:
+        user = m.person
+        collect.append((user.uuid,
+                       user.email,
+                       m.state_display()))
+
+    return collect, labels

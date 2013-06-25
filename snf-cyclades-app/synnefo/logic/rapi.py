@@ -1707,9 +1707,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
       }
 
     if depends:
-      body['depends'] = []
-      for d in depends:
-        body['depends'].append([d, ["success"]])
+      body['depends'] = depends
 
     query = []
     _AppendDryRunIf(query, dry_run)
@@ -1728,9 +1726,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
       }
 
     if depends:
-      body['depends'] = []
-      for d in depends:
-        body['depends'].append([d, ["success"]])
+      body['depends'] = depends
 
     query = []
     _AppendDryRunIf(query, dry_run)
@@ -1769,9 +1765,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
     """
     body = {}
     if depends:
-      body['depends'] = []
-      for d in depends:
-        body['depends'].append([d, ["success"]])
+      body['depends'] = depends
 
     query = []
     _AppendDryRunIf(query, dry_run)

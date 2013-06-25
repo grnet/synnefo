@@ -32,6 +32,8 @@
 # or implied, of GRNET S.A.
 
 import json
+import multiprocessing
+import itertools
 
 from django.conf import settings
 from django.db import transaction
@@ -39,11 +41,11 @@ from datetime import datetime
 
 from synnefo.db.models import (Backend, VirtualMachine, Network,
                                BackendNetwork, BACKEND_STATUSES,
-                               pooled_rapi_client, BridgePoolTable,
-                               MacPrefixPoolTable, VirtualMachineDiagnostic)
+                               pooled_rapi_client, VirtualMachineDiagnostic)
 from synnefo.logic import utils
 from synnefo import quotas
 from synnefo.api.util import release_resource
+from synnefo.util.mac2eui64 import mac2eui64
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -57,9 +59,8 @@ _firewall_tags = {
 _reverse_tags = dict((v.split(':')[3], k) for k, v in _firewall_tags.items())
 
 
-@quotas.uses_commission
 @transaction.commit_on_success
-def process_op_status(serials, vm, etime, jobid, opcode, status, logmsg):
+def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None):
     """Process a job progress notification from the backend
 
     Process an incoming message from the backend (currently Ganeti).
@@ -82,6 +83,10 @@ def process_op_status(serials, vm, etime, jobid, opcode, status, logmsg):
     if status == 'success' and state_for_success is not None:
         vm.operstate = state_for_success
 
+    # Update the NICs of the VM
+    if status == "success" and nics is not None:
+        _process_net_status(vm, etime, nics)
+
     # Special case: if OP_INSTANCE_CREATE fails --> ERROR
     if opcode == 'OP_INSTANCE_CREATE' and status in ('canceled', 'error'):
         vm.operstate = 'ERROR'
@@ -94,18 +99,12 @@ def process_op_status(serials, vm, etime, jobid, opcode, status, logmsg):
         #
         if status == 'success' or (status == 'error' and
                                    vm.operstate == 'ERROR'):
-            # Issue commission
-            serial = quotas.issue_vm_commission(vm.userid, vm.flavor,
-                                                delete=True)
-            serials.append(serial)
-            vm.serial = serial
-            serial.accepted = True
-            serial.save()
-            release_instance_nics(vm)
-            vm.nics.all().delete()
+            _process_net_status(vm, etime, nics=[])
             vm.deleted = True
             vm.operstate = state_for_success
             vm.backendtime = etime
+            # Issue and accept commission to Quotaholder
+            quotas.issue_and_accept_commission(vm, delete=True)
 
     # Update backendtime only for jobs that have been successfully completed,
     # since only these jobs update the state of the VM. Else a "race condition"
@@ -119,6 +118,11 @@ def process_op_status(serials, vm, etime, jobid, opcode, status, logmsg):
 
 @transaction.commit_on_success
 def process_net_status(vm, etime, nics):
+    """Wrap _process_net_status inside transaction."""
+    _process_net_status(vm, etime, nics)
+
+
+def _process_net_status(vm, etime, nics):
     """Process a net status notification from the backend
 
     Process an incoming message from the Ganeti backend,
@@ -130,6 +134,11 @@ def process_net_status(vm, etime, nics):
     ganeti_nics = process_ganeti_nics(nics)
     if not nics_changed(vm.nics.order_by('index'), ganeti_nics):
         log.debug("NICs for VM %s have not changed", vm)
+        return
+
+    # Get X-Lock on backend before getting X-Lock on network IP pools, to
+    # guarantee that no deadlock will occur with Backend allocator.
+    Backend.objects.select_for_update().get(id=vm.backend_id)
 
     release_instance_nics(vm)
 
@@ -162,7 +171,10 @@ def process_ganeti_nics(ganeti_nics):
         # Get the new nic info
         mac = new_nic.get('mac', '')
         ipv4 = new_nic.get('ip', '')
-        ipv6 = new_nic.get('ipv6', '')
+        if net.subnet6:
+            ipv6 = mac2eui64(mac, net.subnet6)
+        else:
+            ipv6 = ''
 
         firewall = new_nic.get('firewall', '')
         firewall_profile = _reverse_tags.get(firewall, '')
@@ -175,7 +187,8 @@ def process_ganeti_nics(ganeti_nics):
             'mac': mac,
             'ipv4': ipv4,
             'ipv6': ipv6,
-            'firewall_profile': firewall_profile}
+            'firewall_profile': firewall_profile,
+            'state': 'ACTIVE'}
 
         new_nics.append(nic)
     return new_nics
@@ -185,14 +198,11 @@ def nics_changed(old_nics, new_nics):
     """Return True if NICs have changed in any way."""
     if len(old_nics) != len(new_nics):
         return True
+    fields = ["ipv4", "ipv6", "mac", "firewall_profile", "index", "network"]
     for old_nic, new_nic in zip(old_nics, new_nics):
-        if not (old_nic.ipv4 == new_nic['ipv4'] and
-                old_nic.ipv6 == new_nic['ipv6'] and
-                old_nic.mac == new_nic['mac'] and
-                old_nic.firewall_profile == new_nic['firewall_profile'] and
-                old_nic.index == new_nic['index'] and
-                old_nic.network == new_nic['network']):
-            return True
+        for field in fields:
+            if getattr(old_nic, field) != new_nic[field]:
+                return True
     return False
 
 
@@ -238,24 +248,45 @@ def process_network_status(back_network, etime, jobid, opcode, status, logmsg):
     update_network_state(back_network.network)
 
 
-@quotas.uses_commission
-def update_network_state(serials, network):
-    old_state = network.state
+def update_network_state(network):
+    """Update the state of a Network based on BackendNetwork states.
 
-    backend_states = [s.operstate for s in
-                      network.backend_networks.filter(backend__offline=False)]
-    if not backend_states:
-        network.state = 'PENDING'
-        network.save()
+    Update the state of a Network based on the operstate of the networks in the
+    backends that network exists.
+
+    The state of the network is:
+    * ACTIVE: If it is 'ACTIVE' in at least one backend.
+    * DELETED: If it is is 'DELETED' in all backends that have been created.
+
+    This function also releases the resources (MAC prefix or Bridge) and the
+    quotas for the network.
+
+    """
+    if network.deleted:
+        # Network has already been deleted. Just assert that state is also
+        # DELETED
+        if not network.state == "DELETED":
+            network.state = "DELETED"
+            network.save()
         return
 
-    all_equal = len(set(backend_states)) <= 1
-    network.state = all_equal and backend_states[0] or 'PENDING'
+    backend_states = [s.operstate for s in network.backend_networks.all()]
+    if not backend_states and network.action != "DESTROY":
+        if network.state != "ACTIVE":
+            network.state = "ACTIVE"
+            network.save()
+            return
+
+    # Network is deleted when all BackendNetworks go to "DELETED" operstate
+    deleted = reduce(lambda x, y: x == y and "DELETED", backend_states,
+                     "DELETED")
+
     # Release the resources on the deletion of the Network
-    if old_state != 'DELETED' and network.state == 'DELETED':
+    if deleted:
         log.info("Network %r deleted. Releasing link %r mac_prefix %r",
                  network.id, network.mac_prefix, network.link)
         network.deleted = True
+        network.state = "DELETED"
         if network.mac_prefix:
             if network.FLAVORS[network.flavor]["mac_prefix"] == "pool":
                 release_resource(res_type="mac_prefix",
@@ -266,12 +297,7 @@ def update_network_state(serials, network):
 
         # Issue commission
         if network.userid:
-            serial = quotas.issue_network_commission(network.userid,
-                                                     delete=True)
-            serials.append(serial)
-            network.serial = serial
-            serial.accepted = True
-            serial.save()
+            quotas.issue_and_accept_commission(network, delete=True)
         elif not network.public:
             log.warning("Network %s does not have an owner!", network.id)
     network.save()
@@ -366,7 +392,7 @@ def create_instance(vm, public_nic, flavor, image):
     # arguments, such as the disk template to use, name of os provider
     # and hypervisor-specific parameters at will (see Synnefo #785, #835).
     #
-    kw = settings.GANETI_CREATEINSTANCE_KWARGS
+    kw = vm.backend.get_create_params()
     kw['mode'] = 'create'
     kw['name'] = vm.backend_vm_id
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
@@ -376,12 +402,10 @@ def create_instance(vm, public_nic, flavor, image):
     provider = flavor.disk_provider
     if provider:
         kw['disks'][0]['provider'] = provider
-
-        if provider == 'vlmc':
-            kw['disks'][0]['origin'] = flavor.disk_origin
+        kw['disks'][0]['origin'] = flavor.disk_origin
 
     kw['nics'] = [public_nic]
-    if settings.GANETI_USE_HOTPLUG:
+    if vm.backend.use_hotplug():
         kw['hotplug'] = True
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
     # kw['os'] = settings.GANETI_OS_PROVIDER
@@ -455,7 +479,7 @@ def get_instance_console(vm):
     with pooled_rapi_client(vm) as client:
         i = client.GetInstance(vm.backend_vm_id)
 
-    if i['hvparams']['serial_console']:
+    if vm.backend.hypervisor == "kvm" and i['hvparams']['serial_console']:
         raise Exception("hv parameter serial_console cannot be true")
     console['host'] = i['pnode']
     console['port'] = i['network_port']
@@ -468,17 +492,17 @@ def get_instance_info(vm):
         return client.GetInstanceInfo(vm.backend_vm_id)
 
 
-def create_network(network, backends=None, connect=True):
-    """Create and connect a network."""
-    if not backends:
-        backends = Backend.objects.exclude(offline=True)
+def create_network(network, backend, connect=True):
+    """Create a network in a Ganeti backend"""
+    log.debug("Creating network %s in backend %s", network, backend)
 
-    log.debug("Creating network %s in backends %s", network, backends)
+    job_id = _create_network(network, backend)
 
-    for backend in backends:
-        create_jobID = _create_network(network, backend)
-        if connect:
-            connect_network(network, backend, create_jobID)
+    if connect:
+        job_ids = connect_network(network, backend, depends=[job_id])
+        return job_ids
+    else:
+        return [job_id]
 
 
 def _create_network(network, backend):
@@ -514,7 +538,7 @@ def _create_network(network, backend):
                                     tags=tags)
 
 
-def connect_network(network, backend, depend_job=None, group=None):
+def connect_network(network, backend, depends=[], group=None):
     """Connect a network to nodegroups."""
     log.debug("Connecting network %s to backend %s", network, backend)
 
@@ -523,58 +547,65 @@ def connect_network(network, backend, depend_job=None, group=None):
     else:
         conflicts_check = False
 
-    depend_jobs = [depend_job] if depend_job else []
+    depends = [[job, ["success", "error", "canceled"]] for job in depends]
     with pooled_rapi_client(backend) as client:
-        if group:
-            client.ConnectNetwork(network.backend_id, group, network.mode,
-                                  network.link, conflicts_check, depend_jobs)
-        else:
-            for group in client.GetGroups():
-                client.ConnectNetwork(network.backend_id, group, network.mode,
-                                      network.link, conflicts_check,
-                                      depend_jobs)
+        groups = [group] if group is not None else client.GetGroups()
+        job_ids = []
+        for group in groups:
+            job_id = client.ConnectNetwork(network.backend_id, group,
+                                           network.mode, network.link,
+                                           conflicts_check,
+                                           depends=depends)
+            job_ids.append(job_id)
+    return job_ids
 
 
-def delete_network(network, backends=None, disconnect=True):
-    if not backends:
-        backends = Backend.objects.exclude(offline=True)
+def delete_network(network, backend, disconnect=True):
+    log.debug("Deleting network %s from backend %s", network, backend)
 
-    log.debug("Deleting network %s from backends %s", network, backends)
-
-    for backend in backends:
-        disconnect_jobIDs = []
-        if disconnect:
-            disconnect_jobIDs = disconnect_network(network, backend)
-        _delete_network(network, backend, disconnect_jobIDs)
+    depends = []
+    if disconnect:
+        depends = disconnect_network(network, backend)
+    _delete_network(network, backend, depends=depends)
 
 
-def _delete_network(network, backend, depend_jobs=[]):
+def _delete_network(network, backend, depends=[]):
+    depends = [[job, ["success", "error", "canceled"]] for job in depends]
     with pooled_rapi_client(backend) as client:
-        return client.DeleteNetwork(network.backend_id, depend_jobs)
+        return client.DeleteNetwork(network.backend_id, depends)
 
 
 def disconnect_network(network, backend, group=None):
     log.debug("Disconnecting network %s to backend %s", network, backend)
 
     with pooled_rapi_client(backend) as client:
-        if group:
-            return [client.DisconnectNetwork(network.backend_id, group)]
-        else:
-            jobs = []
-            for group in client.GetGroups():
-                job = client.DisconnectNetwork(network.backend_id, group)
-                jobs.append(job)
-            return jobs
+        groups = [group] if group is not None else client.GetGroups()
+        job_ids = []
+        for group in groups:
+            job_id = client.DisconnectNetwork(network.backend_id, group)
+            job_ids.append(job_id)
+    return job_ids
 
 
 def connect_to_network(vm, network, address=None):
+    backend = vm.backend
+    network = Network.objects.select_for_update().get(id=network.id)
+    bnet, created = BackendNetwork.objects.get_or_create(backend=backend,
+                                                         network=network)
+    depend_jobs = []
+    if bnet.operstate != "ACTIVE":
+        depend_jobs = create_network(network, backend, connect=True)
+
+    depends = [[job, ["success", "error", "canceled"]] for job in depend_jobs]
+
     nic = {'ip': address, 'network': network.backend_id}
 
     log.debug("Connecting vm %s to network %s(%s)", vm, network, address)
 
     with pooled_rapi_client(vm) as client:
         return client.ModifyInstance(vm.backend_vm_id, nics=[('add',  nic)],
-                                     hotplug=settings.GANETI_USE_HOTPLUG,
+                                     hotplug=vm.backend.use_hotplug(),
+                                     depends=depends,
                                      dry_run=settings.TEST)
 
 
@@ -585,7 +616,7 @@ def disconnect_from_network(vm, nic):
 
     with pooled_rapi_client(vm) as client:
         return client.ModifyInstance(vm.backend_vm_id, nics=op,
-                                     hotplug=settings.GANETI_USE_HOTPLUG,
+                                     hotplug=vm.backend.use_hotplug(),
                                      dry_run=settings.TEST)
 
 
@@ -612,13 +643,25 @@ def set_firewall_profile(vm, profile):
                               os_name=os_name)
 
 
+def get_instances(backend, bulk, queue):
+    with pooled_rapi_client(backend) as client:
+        instances = client.GetInstances(bulk=bulk)
+    queue.put(instances)
+
+
 def get_ganeti_instances(backend=None, bulk=False):
     instances = []
-    for backend in get_backends(backend):
-        with pooled_rapi_client(backend) as client:
-            instances.append(client.GetInstances(bulk=bulk))
-
-    return reduce(list.__add__, instances, [])
+    backends = get_backends(backend)
+    queue = multiprocessing.Queue()
+    processes = []
+    for backend in backends:
+        p = multiprocessing.Process(target=get_instances,
+                                    args=(backend, bulk, queue))
+        processes.append(p)
+        p.start()
+    [p.join() for p in processes]
+    [instances.extend(queue.get()) for p in processes]
+    return instances
 
 
 def get_ganeti_nodes(backend=None, bulk=False):

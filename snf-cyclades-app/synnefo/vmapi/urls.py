@@ -32,7 +32,10 @@
 # or implied, of GRNET S.A.
 
 from django.conf.urls.defaults import patterns, url
+from snf_django.lib.api import api_endpoint_not_found
 
 urlpatterns = patterns('synnefo.vmapi.views',
-                       url(r'^server-params/(?P<uuid>.*)$', 'server_params',
-                           name="vmapi_server_params"),)
+                       url(r'^v1.0/server-params/(?P<uuid>.*)$',
+                           'server_params',
+                           name="vmapi_server_params"),
+                       (r'^.*', api_endpoint_not_found),)

@@ -44,7 +44,7 @@ or request a specific version as ``snf-cyclades-app==x.y.z``.
 
 .. code-block:: console
 
-   $ pip install snf-cyclades-app -f https://docs.dev.grnet.gr/pypi
+   $ pip install snf-cyclades-app -f https://www.synnefo.org/packages/pypi
 
 On Debian Squeeze, install the ``snf-cyclades-app`` Debian package.
 

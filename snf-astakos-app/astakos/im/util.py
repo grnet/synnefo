@@ -39,17 +39,19 @@ import urllib
 from urlparse import urlparse
 from datetime import tzinfo, timedelta
 
-from django.http import HttpResponse, HttpResponseBadRequest, urlencode
+from django.http import HttpResponse, HttpResponseBadRequest, urlencode, \
+                        HttpResponseRedirect
 from django.template import RequestContext
 from django.contrib.auth import authenticate
 from django.core.urlresolvers import reverse
+from django.shortcuts import redirect
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.utils.translation import ugettext as _
+from django.core.urlresolvers import reverse
 
 from astakos.im.models import AstakosUser, Invitation
-from astakos.im.settings import (
-    COOKIE_DOMAIN, FORCE_PROFILE_UPDATE, LOGIN_SUCCESS_URL)
 from astakos.im.functions import login
+from astakos.im import settings
 
 import astakos.im.messages as astakos_messages
 
@@ -103,21 +105,33 @@ def get_invitation(request):
         raise ValueError(_(astakos_messages.EMAIL_RESERVED) % locals())
     return invitation
 
+
 def restrict_next(url, domain=None, allowed_schemes=()):
     """
-    Return url if having the supplied ``domain`` (if present) or one of the ``allowed_schemes``.
-    Otherwise return None.
+    Utility method to validate that provided url is safe to be used as the
+    redirect location of an http redirect response. The method parses the
+    provided url and identifies if it conforms CORS against provided domain
+    AND url scheme matches any of the schemes in `allowed_schemes` parameter.
+    If verirication succeeds sanitized safe url is returned. Consider using
+    the method's result in the response location header and not the originally
+    provided url. If verification fails the method returns None.
 
     >>> print restrict_next('/im/feedback', '.okeanos.grnet.gr')
     /im/feedback
-    >>> print restrict_next('pithos.okeanos.grnet.gr/im/feedback', '.okeanos.grnet.gr')
+    >>> print restrict_next('pithos.okeanos.grnet.gr/im/feedback',
+    ...                     '.okeanos.grnet.gr')
     //pithos.okeanos.grnet.gr/im/feedback
-    >>> print restrict_next('https://pithos.okeanos.grnet.gr/im/feedback', '.okeanos.grnet.gr')
+    >>> print restrict_next('https://pithos.okeanos.grnet.gr/im/feedback',
+    ...                     '.okeanos.grnet.gr')
     https://pithos.okeanos.grnet.gr/im/feedback
     >>> print restrict_next('pithos://127.0.0.1', '.okeanos.grnet.gr')
     None
-    >>> print restrict_next('pithos://127.0.0.1', '.okeanos.grnet.gr', allowed_schemes=('pithos'))
-    pithos://127.0.0,1
+    >>> print restrict_next('pithos://127.0.0.1', '.okeanos.grnet.gr',
+    ...                     allowed_schemes=('pithos'))
+    None
+    >>> print restrict_next('pithos://127.0.0.1', '127.0.0.1',
+    ...                     allowed_schemes=('pithos'))
+    pithos://127.0.0.1
     >>> print restrict_next('node1.example.com', '.okeanos.grnet.gr')
     None
     >>> print restrict_next('//node1.example.com', '.okeanos.grnet.gr')
@@ -130,23 +144,40 @@ def restrict_next(url, domain=None, allowed_schemes=()):
     //node1.example.com
     >>> print restrict_next('node1.example.com')
     //node1.example.com
+    >>> print restrict_next('node1.example.com', allowed_schemes=('pithos',))
+    None
+    >>> print restrict_next('pithos://localhost', 'localhost',
+    ...                     allowed_schemes=('pithos',))
+    pithos://localhost
     """
     if not url:
-        return
+        return None
+
     parts = urlparse(url, scheme='http')
     if not parts.netloc and not parts.path.startswith('/'):
         # fix url if does not conforms RFC 1808
         url = '//%s' % url
         parts = urlparse(url, scheme='http')
-    # TODO more scientific checks?
-    if not parts.netloc:    # internal url
+
+    if not domain and not allowed_schemes:
         return url
-    elif not domain:
-        return url
-    elif parts.netloc.endswith(domain):
-        return url
-    elif parts.scheme in allowed_schemes:
-        return url
+
+    # domain validation
+    if domain:
+        if not parts.netloc:
+            return url
+        if parts.netloc.endswith(domain):
+            return url
+        else:
+            return None
+
+    # scheme validation
+    if allowed_schemes:
+        if parts.scheme in allowed_schemes:
+            return url
+
+    return None
+
 
 def prepare_response(request, user, next='', renew=False):
     """Return the unique username and the token
@@ -159,7 +190,7 @@ def prepare_response(request, user, next='', renew=False):
        or user has not a valid token.
     """
     renew = renew or (not user.auth_token)
-    renew = renew or (user.auth_token_expires < datetime.datetime.now())
+    renew = renew or user.token_expired()
     if renew:
         user.renew_token(
             flush_sessions=True,
@@ -170,9 +201,10 @@ def prepare_response(request, user, next='', renew=False):
         except ValidationError, e:
             return HttpResponseBadRequest(e)
 
-    next = restrict_next(next, domain=COOKIE_DOMAIN)
+    next = restrict_next(next, domain=settings.COOKIE_DOMAIN)
 
-    if FORCE_PROFILE_UPDATE and not user.is_verified and not user.is_superuser:
+    if settings.FORCE_PROFILE_UPDATE and \
+            not user.is_verified and not user.is_superuser:
         params = ''
         if next:
             params = '?' + urlencode({'next': next})
@@ -186,7 +218,7 @@ def prepare_response(request, user, next='', renew=False):
     request.session.set_expiry(user.auth_token_expires)
 
     if not next:
-        next = LOGIN_SUCCESS_URL
+        next = settings.LOGIN_SUCCESS_URL
 
     response['Location'] = next
     response.status_code = 302
@@ -232,8 +264,7 @@ def get_properties(obj):
     return (i for i in vars(obj.__class__) \
         if isinstance(get_class_attr(obj.__class__, i), property))
 
-def model_to_dict(obj, exclude=['AutoField', 'ForeignKey', 'OneToOneField'],
-                  include_empty=True):
+def model_to_dict(obj, exclude=None, include_empty=True):
     '''
         serialize model object to dict with related objects
 
@@ -241,6 +272,9 @@ def model_to_dict(obj, exclude=['AutoField', 'ForeignKey', 'OneToOneField'],
         date: January 31, 2011
         http://djangosnippets.org/snippets/2342/
     '''
+
+    if exclude is None:
+        exclude = ['AutoField', 'ForeignKey', 'OneToOneField']
     tree = {}
     for field_name in obj._meta.get_all_field_names():
         try:
@@ -292,3 +326,19 @@ def login_url(request):
         if val:
             attrs[attr] = val
     return "%s?%s" % (reverse('login'), urllib.urlencode(attrs))
+
+
+def redirect_back(request, default='index'):
+    """
+    Redirect back to referer if safe and possible.
+    """
+    referer = request.META.get('HTTP_REFERER')
+
+    safedomain = settings.BASE_URL.replace("https://", "").replace(
+        "http://", "")
+    safe = restrict_next(referer, safedomain)
+    # avoid redirect loop
+    loops = referer == request.get_full_path()
+    if referer and safe and not loops:
+        return redirect(referer)
+    return redirect(reverse(default))

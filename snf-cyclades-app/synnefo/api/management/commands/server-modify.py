@@ -44,35 +44,42 @@ class Command(BaseCommand):
     help = "Modify a server"
 
     option_list = BaseCommand.option_list + (
-        make_option('--name',
+        make_option(
+            '--name',
             dest='name',
             metavar='NAME',
             help="Set server's name"),
-        make_option('--owner',
+        make_option(
+            '--owner',
             dest='owner',
             metavar='USER_ID',
             help="Set server's owner"),
-        make_option('--state',
+        make_option(
+            '--state',
             dest='state',
             metavar='STATE',
             help="Set server's state"),
-        make_option('--set-deleted',
+        make_option(
+            '--set-deleted',
             action='store_true',
             dest='deleted',
             help="Mark a server as deleted"),
-        make_option('--set-undeleted',
+        make_option(
+            '--set-undeleted',
             action='store_true',
             dest='undeleted',
             help="Mark a server as not deleted"),
-        make_option('--set-suspended',
+        make_option(
+            '--set-suspended',
             action='store_true',
             dest='suspended',
             help="Mark a server as suspended"),
-        make_option('--set-unsuspended',
+        make_option(
+            '--set-unsuspended',
             action='store_true',
             dest='unsuspended',
             help="Mark a server as not suspended")
-        )
+    )
 
     def handle(self, *args, **options):
         if len(args) != 1:

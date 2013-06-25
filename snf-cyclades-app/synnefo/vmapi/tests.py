@@ -35,10 +35,37 @@
 from django.test import TestCase
 from django.utils import simplejson as json
 
+from synnefo.lib import join_urls
 from synnefo.vmapi import settings
 
+from synnefo.cyclades_settings import cyclades_services, BASE_HOST
+from synnefo.lib.services import get_service_path
+from synnefo.lib import join_urls
 
-class TestServerParams(TestCase):
+
+class VMAPITest(TestCase):
+    def setUp(self, *args, **kwargs):
+        super(VMAPITest, self).setUp(*args, **kwargs)
+        self.api_path = get_service_path(cyclades_services, 'vmapi',
+                                         version='v1.0')
+    def myget(self, path, *args, **kwargs):
+        path = join_urls(self.api_path, path)
+        return self.client.get(path, *args, **kwargs)
+
+    def myput(self, path, *args, **kwargs):
+        path = join_urls(self.api_path, path)
+        return self.client.put(path, *args, **kwargs)
+
+    def mypost(self, path, *args, **kwargs):
+        path = join_urls(self.api_path, path)
+        return self.client.post(path, *args, **kwargs)
+
+    def mydelete(self, path, *args, **kwargs):
+        path = join_urls(self.api_path, path)
+        return self.client.delete(path, *args, **kwargs)
+
+
+class TestServerParams(VMAPITest):
 
     def test_cache_backend(self):
         from synnefo.vmapi import backend
@@ -66,8 +93,9 @@ class TestServerParams(TestCase):
         params = {'password': 'X^942Jjfdsa', 'personality': {}}
         uuid = create_server_params(sender=vm, created_vm_params=params)
 
-        self.assertEqual(vm.config_url, settings.BASE_URL +
-                         '/vmapi/server-params/%s' % uuid)
+        self.assertEqual(vm.config_url,
+                         join_urls(BASE_HOST, self.api_path,
+                                   'server-params/%s' % uuid))
         key = "vmapi_%s" % uuid
         self.assertEqual(type(backend.get(key)), str)
         data = json.loads(backend.get(key))
@@ -75,7 +103,7 @@ class TestServerParams(TestCase):
         self.assertEqual('personality' in data, True)
         self.assertEqual(data.get('password'), 'X^942Jjfdsa')
 
-        response = self.client.get('/vmapi/server-params/%s' % uuid)
+        response = self.myget('server-params/%s' % uuid)
         self.assertEqual(response.status_code, 200)
-        response = self.client.get('/vmapi/server-params/%s' % uuid)
+        response = self.myget('server-params/%s' % uuid)
         self.assertEqual(response.status_code, 404)

@@ -33,133 +33,92 @@
 
 from optparse import make_option
 
-from django.core.management.base import NoArgsCommand
-
-from astakos.im.models import AstakosUser, AstakosUserAuthProvider
-
-from ._common import format, filter_results
+from astakos.im.models import AstakosUser
+from synnefo.webproject.management.commands import ListCommand
 
 
-class Command(NoArgsCommand):
+def get_providers(user):
+    return ','.join(
+        [unicode(auth) for auth in user.auth_providers.filter(active=True)]
+    )
+
+
+def get_groups(user):
+    return ','.join(user.groups.all().values_list('name', flat=True))
+
+
+class Command(ListCommand):
     help = "List users"
 
-    FIELDS = AstakosUser._meta.get_all_field_names()
+    object_class = AstakosUser
 
-    option_list = NoArgsCommand.option_list + (
-        make_option('-c',
+    FIELDS = {
+        'id': ('id', ('The id of the user')),
+        'real name': ('realname', 'The name of the user'),
+        'active': ('is_active', 'Whether the user is active or not'),
+        'verified':
+        ('email_verified', 'Whether the user has a verified email address'),
+        'moderated':
+        ('moderated', 'Account moderated'),
+        'admin': ('is_superuser', 'Whether the user is admin or not'),
+        'uuid': ('uuid', 'The uuid of the user'),
+        'providers': (get_providers,
+                      'The authentication providers of the user'),
+        'activation_sent': ('activation_sent',
+                            'The date activation sent to the user'),
+        'displayname': ('username', 'The display name of the user'),
+        'groups': (get_groups, 'The groups of the user')
+    }
+
+    fields = ['id', 'real name', 'active', 'verified', 'moderated', 'admin',
+              'uuid']
+
+    option_list = ListCommand.option_list + (
+        make_option('--auth-providers',
                     action='store_true',
-                    dest='csv',
+                    dest='auth_providers',
                     default=False,
-                    help="Use pipes to separate values"),
-        make_option('-p',
-                    action='store_true',
-                    dest='pending',
-                    default=False,
-                    help="List only users pending activation"),
-        make_option('-n',
-                    action='store_true',
-                    dest='pending_send_mail',
-                    default=False,
-                    help="List only users who have not received activation"),
-        make_option('--uuid',
-                    action='store_true',
-                    dest='only_uuid',
-                    default=False,
-                    help="Only display user uuid (default)"),
-        make_option('--displayname',
-                    action='store_true',
-                    dest='displayname',
-                    default=False,
-                    help="Display both uuid and display name"),
+                    help="Display user authentication providers"),
+        make_option('--group',
+                    action='append',
+                    dest='groups',
+                    default=None,
+                    help="Only show users that belong to the specified goups"),
         make_option('--active',
                     action='store_true',
                     dest='active',
                     default=False,
                     help="Display only active users"),
-        make_option('--filter-by',
-                    dest='filter_by',
-                    help="Filter results. Comma seperated list of key `cond`"
-                    " val pairs that displayed entries must satisfy. e.g."
-                    " --filter-by \"is_active=True,email_verified=True\"."
-                    " Available keys are: %s" % ", ".join(FIELDS)),
-
+        make_option('--pending-moderation',
+                    action='store_true',
+                    dest='pending_moderation',
+                    default=False,
+                    help="Display unmoderated users"),
+        make_option('--pending-verification',
+                    action='store_true',
+                    dest='pending_verification',
+                    default=False,
+                    help="Display unverified users"),
+        make_option("--displayname",
+                    dest="displayname",
+                    action="store_true",
+                    default=False,
+                    help="Display user displayname")
     )
 
-    def handle_noargs(self, **options):
-        users = AstakosUser.objects.all().order_by('id')
-        if options['pending']:
-            users = users.filter(is_active=False)
-        elif options['pending_send_mail']:
-            users = users.filter(is_active=False, activation_sent=None)
+    def handle_args(self, *args, **options):
+        if options['active']:
+            self.filters['is_active'] = True
 
-        active_only = options['active']
-        if active_only:
-            users = filter_results(users, "is_active=True")
+        if options['pending_moderation']:
+            self.filters['email_verified'] = True
+            self.filters['moderated'] = False
 
-        filter_by = options['filter_by']
-        if filter_by:
-            users = filter_results(users, filter_by)
+        if options['pending_verification']:
+            self.filters['email_verified'] = False
 
-        displayname = options['displayname']
+        if options['auth_providers']:
+            self.fields.extend(['providers'])
 
-        ids = [user.id for user in users]
-        auths = AstakosUserAuthProvider.objects.filter(
-            user__in=ids, active=True)
-
-        all_auth = partition_by(lambda a: a.user_id, auths)
-
-        labels = filter(lambda x: x is not Omit,
-                        [('id', 3),
-                         ('display name', 24) if displayname else Omit,
-                         ('real name', 24),
-                         ('active', 6),
-                         ('admin', 5),
-                         ('uuid', 36),
-                         ('providers', 24),
-                         ])
-
-        columns = [c for (l, c) in labels]
-
-        if not options['csv']:
-            line = ' '.join(l.rjust(w) for l, w in labels)
-            self.stdout.write(line + '\n')
-            sep = '-' * len(line)
-            self.stdout.write(sep + '\n')
-
-        for user in users:
-            id = str(user.id)
-            active = user.is_active
-            admin = user.is_superuser
-            uuid = user.uuid or ''
-            auths = all_auth[user.id]
-            auth_display = ",".join(unicode(auth) for auth in auths)
-
-            elems = filter(lambda x: x is not Omit,
-                           [id,
-                            user.username if displayname else Omit,
-                            user.realname,
-                            active, admin, uuid,
-                            auth_display,
-                            ])
-            fields = (format(elem) for elem in elems)
-
-            if options['csv']:
-                line = '|'.join(fields)
-            else:
-                line = ' '.join(f.rjust(w) for f, w in zip(fields, columns))
-
-            self.stdout.write(line + '\n')
-
-
-class Omit(object):
-    pass
-
-
-def partition_by(f, l):
-    d = {}
-    for x in l:
-        group = f(x)
-        group_l = d.get(group, [])
-        group_l.append(x)
-        d[group] = group_l
-    return d
+        if options['displayname']:
+            self.fields.extend(['displayname'])

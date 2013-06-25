@@ -31,28 +31,28 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from logging import getLogger
 
-from django.conf.urls.defaults import patterns
 from django.conf import settings
-from django.db.models import Q
+from django.conf.urls.defaults import patterns
 from django.db import transaction
+from django.db.models import Q
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
+from snf_django.lib import api
+from snf_django.lib.api import faults, utils
 from synnefo.api import util
 from synnefo.api.actions import network_actions
-from synnefo.api.common import method_not_allowed
-from synnefo.api.faults import (ServiceUnavailable, BadRequest, Forbidden,
-                                NetworkInUse, OverLimit)
 from synnefo import quotas
 from synnefo.db.models import Network
+from synnefo.db.utils import validate_mac
 from synnefo.db.pools import EmptyPool
 from synnefo.logic import backend
 
 
-log = getLogger('synnefo.api')
+from logging import getLogger
+log = getLogger(__name__)
 
 urlpatterns = patterns(
     'synnefo.api.networks',
@@ -69,7 +69,7 @@ def demux(request):
     elif request.method == 'POST':
         return create_network(request)
     else:
-        return method_not_allowed(request)
+        return api.api_method_not_allowed(request)
 
 
 def network_demux(request, network_id):
@@ -80,27 +80,31 @@ def network_demux(request, network_id):
     elif request.method == 'DELETE':
         return delete_network(request, network_id)
     else:
-        return method_not_allowed(request)
+        return api.api_method_not_allowed(request)
 
 
 def network_to_dict(network, user_id, detail=True):
     d = {'id': str(network.id), 'name': network.name}
+    d['links'] = util.network_to_links(network.id)
     if detail:
+        d['user_id'] = network.userid
+        d['tenant_id'] = network.userid
         d['cidr'] = network.subnet
         d['cidr6'] = network.subnet6
         d['gateway'] = network.gateway
         d['gateway6'] = network.gateway6
         d['dhcp'] = network.dhcp
         d['type'] = network.flavor
-        d['updated'] = util.isoformat(network.updated)
-        d['created'] = util.isoformat(network.created)
+        d['updated'] = utils.isoformat(network.updated)
+        d['created'] = utils.isoformat(network.created)
         d['status'] = network.state
         d['public'] = network.public
 
         attachments = [util.construct_nic_id(nic)
                        for nic in network.nics.filter(machine__userid=user_id)
+                                              .filter(state="ACTIVE")
                                               .order_by('machine')]
-        d['attachments'] = {'values': attachments}
+        d['attachments'] = attachments
     return d
 
 
@@ -112,7 +116,7 @@ def render_network(request, networkdict, status=200):
     return HttpResponse(data, status=status)
 
 
-@util.api_method('GET')
+@api.api_method(http_method='GET', user_required=True, logger=log)
 def list_networks(request, detail=False):
     # Normal Response Codes: 200, 203
     # Error Response Codes: computeFault (400, 500),
@@ -122,7 +126,7 @@ def list_networks(request, detail=False):
     #                       overLimit (413)
 
     log.debug('list_networks detail=%s', detail)
-    since = util.isoparse(request.GET.get('changes-since'))
+    since = utils.isoparse(request.GET.get('changes-since'))
     user_networks = Network.objects.filter(Q(userid=request.user_uniq) |
                                            Q(public=True))
 
@@ -141,15 +145,14 @@ def list_networks(request, detail=False):
             'networks': networks,
             'detail': detail})
     else:
-        data = json.dumps({'networks': {'values': networks}})
+        data = json.dumps({'networks': networks})
 
     return HttpResponse(data, status=200)
 
 
-@util.api_method('POST')
-@quotas.uses_commission
+@api.api_method(http_method='POST', user_required=True, logger=log)
 @transaction.commit_manually
-def create_network(serials, request):
+def create_network(request):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
     #                       serviceUnavailable (503),
@@ -160,45 +163,44 @@ def create_network(serials, request):
     #                       overLimit (413)
 
     try:
-        req = util.get_request_dict(request)
+        req = utils.get_request_dict(request)
         log.info('create_network %s', req)
 
+        user_id = request.user_uniq
         try:
             d = req['network']
             name = d['name']
-            # TODO: Fix this temp values:
-            subnet = d.get('cidr', '192.168.1.0/24')
-            subnet6 = d.get('cidr6', None)
-            gateway = d.get('gateway', None)
-            gateway6 = d.get('gateway6', None)
-            flavor = d.get('type', 'MAC_FILTERED')
-            public = d.get('public', False)
-            dhcp = d.get('dhcp', True)
-        except (KeyError, ValueError):
-            raise BadRequest('Malformed request.')
+        except KeyError:
+            raise faults.BadRequest("Malformed request")
 
+        # Get and validate flavor. Flavors are still exposed as 'type' in the
+        # API.
+        flavor = d.get("type", None)
+        if flavor is None:
+            raise faults.BadRequest("Missing request parameter 'type'")
+        elif flavor not in Network.FLAVORS.keys():
+            raise faults.BadRequest("Invalid network type '%s'" % flavor)
+        elif flavor not in settings.API_ENABLED_NETWORK_FLAVORS:
+            raise faults.Forbidden("Can not create network of type '%s'" %
+                                   flavor)
+
+        public = d.get("public", False)
         if public:
-            raise Forbidden('Can not create a public network.')
+            raise faults.Forbidden("Can not create a public network.")
 
-        if flavor not in Network.FLAVORS.keys():
-            raise BadRequest("Invalid network flavors %s" % flavor)
+        dhcp = d.get('dhcp', True)
 
-        if flavor not in settings.API_ENABLED_NETWORK_FLAVORS:
-            raise Forbidden("Can not create %s network" % flavor)
-
+        # Get and validate network parameters
+        subnet = d.get('cidr', '192.168.1.0/24')
+        subnet6 = d.get('cidr6', None)
+        gateway = d.get('gateway', None)
+        gateway6 = d.get('gateway6', None)
         # Check that user provided a valid subnet
         util.validate_network_params(subnet, gateway, subnet6, gateway6)
 
-        user_id = request.user_uniq
-        serial = quotas.issue_network_commission(user_id)
-        serials.append(serial)
-        # Make the commission accepted, since in the end of this
-        # transaction the Network will have been created in the DB.
-        serial.accepted = True
-        serial.save()
-
         try:
             mode, link, mac_prefix, tags = util.values_from_flavor(flavor)
+            validate_mac(mac_prefix + "0:00:00:00")
             network = Network.objects.create(
                 name=name,
                 userid=user_id,
@@ -213,23 +215,22 @@ def create_network(serials, request):
                 mac_prefix=mac_prefix,
                 tags=tags,
                 action='CREATE',
-                state='PENDING',
-                serial=serial)
+                state='ACTIVE')
         except EmptyPool:
             log.error("Failed to allocate resources for network of type: %s",
                       flavor)
-            raise ServiceUnavailable("Failed to allocate network resources")
+            raise faults.ServiceUnavailable("Failed to allocate network"
+                                            " resources")
 
-        # Create BackendNetwork entries for each Backend
-        network.create_backend_network()
+        # Issue commission to Quotaholder and accept it since at the end of
+        # this transaction the Network object will be created in the DB.
+        # Note: the following call does a commit!
+        quotas.issue_and_accept_commission(network)
     except:
         transaction.rollback()
         raise
     else:
         transaction.commit()
-
-    # Create the network in the actual backends
-    backend.create_network(network)
 
     networkdict = network_to_dict(network, request.user_uniq)
     response = render_network(request, networkdict, status=202)
@@ -237,7 +238,7 @@ def create_network(serials, request):
     return response
 
 
-@util.api_method('GET')
+@api.api_method(http_method='GET', user_required=True, logger=log)
 def get_network_details(request, network_id):
     # Normal Response Codes: 200, 203
     # Error Response Codes: computeFault (400, 500),
@@ -253,7 +254,7 @@ def get_network_details(request, network_id):
     return render_network(request, netdict)
 
 
-@util.api_method('PUT')
+@api.api_method(http_method='PUT', user_required=True, logger=log)
 def update_network_name(request, network_id):
     # Normal Response Code: 204
     # Error Response Codes: computeFault (400, 500),
@@ -265,25 +266,25 @@ def update_network_name(request, network_id):
     #                       itemNotFound (404),
     #                       overLimit (413)
 
-    req = util.get_request_dict(request)
+    req = utils.get_request_dict(request)
     log.info('update_network_name %s', network_id)
 
     try:
         name = req['network']['name']
     except (TypeError, KeyError):
-        raise BadRequest('Malformed request.')
+        raise faults.BadRequest('Malformed request.')
 
     net = util.get_network(network_id, request.user_uniq)
     if net.public:
-        raise Forbidden('Can not rename the public network.')
+        raise faults.Forbidden('Can not rename the public network.')
     if net.deleted:
-        raise Network.DeletedError
+        raise faults.BadRequest("Network has been deleted.")
     net.name = name
     net.save()
     return HttpResponse(status=204)
 
 
-@util.api_method('DELETE')
+@api.api_method(http_method='DELETE', user_required=True, logger=log)
 @transaction.commit_on_success
 def delete_network(request, network_id):
     # Normal Response Code: 204
@@ -297,33 +298,37 @@ def delete_network(request, network_id):
     log.info('delete_network %s', network_id)
     net = util.get_network(network_id, request.user_uniq, for_update=True)
     if net.public:
-        raise Forbidden('Can not delete the public network.')
+        raise faults.Forbidden('Can not delete the public network.')
 
     if net.deleted:
-        raise Network.DeletedError
+        raise faults.BadRequest("Network has been deleted.")
 
     if net.machines.all():  # Nics attached on network
-        raise NetworkInUse('Machines are connected to network.')
+        raise faults.NetworkInUse('Machines are connected to network.')
 
     net.action = 'DESTROY'
     net.save()
 
-    backend.delete_network(net)
+    backend_networks = net.backend_networks.exclude(operstate="DELETED")
+    for bnet in backend_networks:
+        backend.delete_network(net, bnet.backend)
+    if not backend_networks:
+        backend.update_network_state(net)
     return HttpResponse(status=204)
 
 
-@util.api_method('POST')
+@api.api_method(http_method='POST', user_required=True, logger=log)
 def network_action(request, network_id):
-    req = util.get_request_dict(request)
+    req = utils.get_request_dict(request)
     log.debug('network_action %s %s', network_id, req)
     if len(req) != 1:
-        raise BadRequest('Malformed request.')
+        raise faults.BadRequest('Malformed request.')
 
     net = util.get_network(network_id, request.user_uniq)
     if net.public:
-        raise Forbidden('Can not modify the public network.')
+        raise faults.Forbidden('Can not modify the public network.')
     if net.deleted:
-        raise Network.DeletedError
+        raise faults.BadRequest("Network has been deleted.")
 
     try:
         key = req.keys()[0]
@@ -331,6 +336,6 @@ def network_action(request, network_id):
         assert isinstance(val, dict)
         return network_actions[key](request, net, req[key])
     except KeyError:
-        raise BadRequest('Unknown action.')
+        raise faults.BadRequest('Unknown action.')
     except AssertionError:
-        raise BadRequest('Invalid argument.')
+        raise faults.BadRequest('Invalid argument.')

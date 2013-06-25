@@ -6,6 +6,208 @@ Unified Changelog file for Synnefo versions >= 0.13
 Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
+
+.. _Changelog-0.13next:
+
+v0.13next
+=========
+
+Released: UNRELEASED
+
+Synnefo-wide
+------------
+
+* Create 'snf_django' Python package to hold common code for all Synnefo
+  components.
+
+* Create a JSON-exportable definition document for each Synnefo Components
+  (Astakos, Cyclades, Pithos, etc.) that consolidates APIs (services),
+  resources, and other standardized properties (e.g. default URL prefixes).
+
+* Standardize URLs for Synnefo Components, impose structure and naming
+  conventions to related settings. Make each component deployable under
+  a user-configurable <COMPONENT>_BASE_URL. Each API (compute, image, etc.)
+  is deployable under a developer-configurable prefix beneath BASE_URL.
+
+* Deprecate CLOUDBAR_ACTIVE_SERVICE setting from all apps. 
+
+* Common synnefo 404/500 templates (located in snf-webproject)
+
+Astakos
+-------
+
+* Redesign of the accounting system (quotaholder) and integration into
+  Astakos.
+
+  * Simplified the quotaholder model; removed tables Entity and Policy; now
+    table Holding contains limit and usage for every holding.
+  * Extended table Holding, so that we can keep track of quota for every
+    valid combination of holder (e.g. user), resource, and source (e.g. the
+    default system or some specific project).
+  * Refactored code for issuing and resolving commissions for robustness;
+    added a 'force' option to bypass the upper limit check when issuing a
+    commission.
+  * Simplified syncing to the quotaholder; removed fields from models
+    Project and ProjectMembership, previously needed for syncing; removed
+    state PROJECT_DEACTIVATED from ProjectMembership.
+  * Removed settings ASTAKOS_QUOTAHOLDER_URL, ASTAKOS_QUOTAHOLDER_TOKEN,
+    and ASTAKOS_QUOTAHOLDER_POOLSIZE.
+
+* API-related changes:
+
+  * Implemented API calls for quota, resources, and commissions.
+  * Moved all API calls under '/account/v1.0'.
+  * Implemented the keystone API call POST /tokens under '/identity/v2.0'.
+
+* Service and resource specification and handling:
+
+  * Specified a format for defining services along with the API endpoints
+    and the resources they expose. Migrated internal resource name by
+    prefixing it with service name (e.g. 'vm' becomes 'cyclades.vm');
+    renamed registered service 'pithos+' to 'pithos'.
+  * Specified a procedure to register a Synnefo component, its services and
+    their resources in astakos and set the resources' default base quota
+    limit. Removed resource definitions from settings.
+  * Moved service and resource presentation data out of the respective db
+    models into a separate file of UI constants.
+
+* Converted the limit on pending applications from a setting to a quotable
+  resource. Converted the related user setting to a user-specific base quota
+  limit. Deprecated model UserSetting; removed setting
+  ASTAKOS_PENDING_APPLICATION_LIMIT.
+
+* Changes in locking strategy:
+
+  * Lock only project's chain for all project operations; lock user before
+    syncing to quotaholder.
+  * When locking multiple rows (e.g. users or holdings) include an ORDER BY
+    clause in the query to impose ordering on locking.
+
+* Changes in views:
+
+  * Replaced custom transaction context with a simple decorator for managing
+    transactions and a context 'ExceptionHandler', which logs and suppresses
+    exceptions
+
+* Added fine grain user auth provider's policies.
+
+  * Administrator can override default auth provider policies to a specific 
+    user or group of users.
+  * Optionally a user can be assigned to a list of groups, based on the
+    authentication method he choosed to signup.
+
+* Removed explicit handling of SMTP errors on each email delivery. Exceptions 
+  are now propagated to base django exception handler.
+
+* Email used in html/email tempaltes which prompt user to contact for service 
+  support prompts is now defined in ``CONTACT_EMAIL`` setting introduced in 
+  snf-common settings.
+
+* Improvements in user activation flow
+
+  * User moderation now takes place after the user has verified his email
+    address.
+  * User model enriched with additional user state fields
+  * Split activation email from moderation process. Administrator is required 
+    to moderate user explicitly using the `user-modify --accept` or
+    `user-modify --reject` commands.
+  * Improved logging throught out user activation procedures.
+
+* Remove deprecated AstakosUser model fields: `provider`,
+  `third_party_identifier`
+
+* Allow override of authentication provider messages using the following 
+  format in setting names: ``ASTAKOS_<PROVIDER_MODULE>_<MSGID>_MSG``
+
+* Cloudbar automatically tries to identify the active service based on window 
+  location.
+
+* Removing authentication provider view is now CSRF protected.
+
+* New `API access` view, containing useful information to users on how to 
+  access available Synnefo services API's.
+
+* Remove of ASTAKOS_*_EMAIL_SUBJECT settings. All email subjects are now 
+  defined in astakos.im.messages module. Overriding default values can be 
+  achieved using custom gettext files or using astakos messages settings::
+	
+	#change of greeting email subject
+  	ASTAKOS_GREETING_EMAIL_SUBJECT_MESSAGE = 'Welcome to my cloud'
+
+* Remove ``ASTAKOS_ACTIVATION_REDIRECT_URL`` and ``ASTAKOS_LOGIN_SUCCESS_URL`` 
+  from astakos .conf file. Settings are dynamically computed based on 
+  ``ASTAKOS_BASE_URL``.
+
+* Management commands:
+
+  * Introduced new commands:
+     * authpolicy-{add, list, remove, set, show}
+     * group-{add, list}
+     * component-{add, list, modify, remove}
+     * reconcile-resources-astakos
+     * resource-{export-astakos, import, modify}
+     * service-{export-astakos, import, show}
+  * Renamed commands:
+     * astakos-quota to quota
+     * user-update to user-modify
+     * full-cleanup to cleanup-full
+  * Removed commands:
+     * astakos-init
+     * invitation-{details, list}
+     * project-sync
+     * resource-{add, remove}
+     * service-{add, remove, token-renew, update}
+     * user-invite
+     * user-set-initial-quota (integrated its functionality in user-modify and quota)
+  * Added quota and project-related information in user-show command; added
+    membership information in project-show.
+
+Cyclades
+--------
+
+* Make 'type' attribute required for network create API request.
+* Networks not created to all Ganeti backends upon creation, they are instead
+  created to a backend only when a VM connects to the network.
+* Add 'CYCLADES_ASTAKOSCLIENT_POOLSIZE' setting which tunes the size of the
+  http connection pool to astakos.
+* Remove 'CYCLADES_USER_CATALOG_URL' and 'CYCLADES_USER_FEEDBACK_URL' settings
+* Remove CYCLADES_USE_QUOTAHOLDER, CYCLADES_QUOTAHOLDER_TOKEN,
+  CYCLADES_QUOTAHOLDER_URL, CYCLADES_QUOTAHOLDER_POOLSIZE settings
+* Rename 'cyclades-usage-verify' management command to
+  'reconcile-resources-cyclades'. Also, remove 'cyclades-usage-reset' command,
+  which is equivalent to 'reconcile-resources-cyclades --fix'.
+* Rename 'cyclades-reconcile-commissions' management command to
+  'reconcile-commissions-cyclades'.
+* Remove obsolete 'MAX_VMS_PER_USER', 'MAX_NETWORKS_PER_USER',
+  "VMS_USER_QUOTA" and "NETWORKS_USER_QUOTA" settings, since their usage
+  is covered by Quotaholder.
+* Remove obsolete setting 'API_ROOT_URL', since it is being covered by
+  the use of CYCLADES_BASE_URL* Remove obsolete setting 'API_ROOT_URL', since
+  it is being covered by 'CYCLADES_BASE_URL'.
+* Remove obsolete settings GANETI_DISK_TEMPLATES and
+  DEFAULT_GANETI_DISK_TEMPLATE
+
+Cyclades helpdesk
+-----------------
+
+* Additional start/stop vm action
+* Display extend backend info in vm's view
+* Fixed IP lookup
+
+Pithos
+------
+
+* Remove PITHOS_AUTHENTICATION_USERS setting, which was used to override
+  astakos users.
+* Remove 'PITHOS_USER_CATALOG_URL', 'PITHOS_USER_FEEDBACK_URL' and
+  'PITHOS_USER_LOGIN_URL' settings.
+* Remove PITHOS_USE_QUOTAHOLDER, PITHOS_QUOTAHOLDER_URL,
+  PITHOS_QUOTAHOLDER_TOKEN and PITHOS_ASTAKOSCLIENT_POOLSIZE
+
+Tools
+-----
+
+
 .. _Changelog-0.13:
 
 v0.13
@@ -69,6 +271,15 @@ Astakos
   * Project management UI
   * New Overview page
 
+* refactored/improved /login endpoint used by desktop/mobile clients.
+  * endpoint url is now exposed by `weblogin` service
+  * clients should use unauthenticated identity/tokens api to resolve the 
+    endpoint url
+  * view only allows redirects to `pithos://` scheme urls
+  * removed uuid from redirect parameters. Client should use authenticated 
+    request to identity/tokens to retrieve user uuid.
+
+
 Cyclades
 --------
 
@@ -87,6 +298,18 @@ Cyclades
 * Helpdesk actions are now logged using the synnefo's common login
   infrastructure
 
+UI
+^^
+* Removed feedback endpoint. Feedback requests delegate to astakos feedback
+  service. ``FEEDBACK_CONTACTS``, ``FEEDBACK_EMAIL_FROM`` settings removed, 
+  and no longer used.
+* ``UI_LOGIN_URL``, ``UI_GLANCE_URL``, ``COMPUTE_URL`` settings no longer 
+  required to be set and are dynamically computed based on ``ASTAKOS_BASE_URL``
+  and ``CYCLADES_BASE_URL`` settings.
+* File group is no longer included in ssh keys personality metadata sent in 
+  create vm calls.
+  
+
 Pithos
 ------
 
@@ -94,6 +317,9 @@ Pithos
 
   * new settings:
     PITHOS_RADOS_STORAGE, PITHOS_RADOS_POOL_BLOCKS, PITHOS_RADOS_POOL_MAPS
+
+* X-Object-Public now contains full url (domain + proper component prefix + 
+  file path)
 
 * Rewritten support for public URLs, with admin-selectable length
 

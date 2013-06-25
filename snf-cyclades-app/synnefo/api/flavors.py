@@ -38,6 +38,7 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 
+from snf_django.lib import api
 from synnefo.api import util
 from synnefo.db.models import Flavor
 
@@ -55,15 +56,16 @@ urlpatterns = patterns(
 
 def flavor_to_dict(flavor, detail=True):
     d = {'id': flavor.id, 'name': flavor.name}
+    d['links'] = util.flavor_to_links(flavor.id)
     if detail:
         d['ram'] = flavor.ram
         d['disk'] = flavor.disk
-        d['cpu'] = flavor.cpu
+        d['vcpus'] = flavor.cpu
         d['SNF:disk_template'] = flavor.disk_template
     return d
 
 
-@util.api_method('GET')
+@api.api_method(http_method='GET', user_required=True, logger=log)
 def list_flavors(request, detail=False):
     # Normal Response Codes: 200, 203
     # Error Response Codes: computeFault (400, 500),
@@ -82,12 +84,12 @@ def list_flavors(request, detail=False):
             'flavors': flavors,
             'detail': detail})
     else:
-        data = json.dumps({'flavors': {'values': flavors}})
+        data = json.dumps({'flavors': flavors})
 
     return HttpResponse(data, status=200)
 
 
-@util.api_method('GET')
+@api.api_method(http_method='GET', user_required=True, logger=log)
 def get_flavor_details(request, flavor_id):
     # Normal Response Codes: 200, 203
     # Error Response Codes: computeFault (400, 500),

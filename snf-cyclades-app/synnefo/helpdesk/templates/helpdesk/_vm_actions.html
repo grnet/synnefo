@@ -1,0 +1,27 @@
+<div class="vm-suspend-form vm-action {% if vm.suspended %}inactive{% endif %}">
+{% if vm.suspended %}
+<form method="post" action="{% url helpdesk-suspend-vm-release vm_id=vm.pk %}">
+  <input type="hidden" name="token" value="{{ token }}" />
+  <input type="submit" value="RELEASE SUSPENSION" />
+</form>
+{% else %}
+<form method="post" action="{% url helpdesk-suspend-vm vm_id=vm.pk %}">
+  <input type="hidden" name="token" value="{{ token }}" />
+  <input type="submit" value="SUSPEND" />
+</form>
+{% endif %}
+</div>
+<div class="vm-shutdown-form vm-action {% if vm.operstate == 'STOPPED' %}inactive{% endif %}">
+{% if vm.operstate == 'STARTED' %}
+<form method="post" action="{% url helpdesk-vm-shutdown vm_id=vm.pk %}">
+  <input type="hidden" name="token" value="{{ token }}" />
+  <input type="submit" value="SHUTDOWN" />
+</form>
+{% endif %}
+{% if vm.operstate == 'STOPPED' %}
+<form method="post" action="{% url helpdesk-vm-start vm_id=vm.pk %}">
+  <input type="hidden" name="token" value="{{ token }}" />
+  <input type="submit" value="START" />
+</form>
+{% endif %}
+</div>

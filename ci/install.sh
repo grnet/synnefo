@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/sh
 
 if [ -n $VIRTUAL_ENV ]; then
   OPTIONS=--script-dir=$VIRTUAL_ENV/bin/

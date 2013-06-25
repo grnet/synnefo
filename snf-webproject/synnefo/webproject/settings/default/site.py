@@ -24,4 +24,4 @@ MEDIA_ROOT = '/usr/share/synnefo/static/'
 # Examples: "http://media.lawrence.com", "http://example.com/media/"
 MEDIA_URL = '/static/'
 
-STATIC_FILES = {}
+STATIC_FILES = {'synnefo.webproject': ''}

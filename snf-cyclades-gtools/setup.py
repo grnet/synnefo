@@ -66,7 +66,6 @@ setup(
     entry_points={
      'console_scripts': [
          'snf-ganeti-eventd = synnefo.ganeti.eventd:main',
-         'snf-ganeti-hook = synnefo.ganeti.hook:main',
          'snf-progress-monitor = synnefo.ganeti.progress_monitor:main'
          ],
      'synnefo': [

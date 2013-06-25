@@ -34,7 +34,7 @@
 from django.contrib.auth.backends import ModelBackend
 
 from astakos.im.models import AstakosUser
-from astakos.im.settings import LOGGING_LEVEL
+from astakos.im import settings
 
 import logging
 
@@ -54,7 +54,7 @@ class TokenBackend(ModelBackend):
             return None
         else:
             msg = 'Invalid token during authentication for %s' % email
-            logger._log(LOGGING_LEVEL, msg, [])
+            logger._log(settings.LOGGING_LEVEL, msg, [])
 
     def get_user(self, user_id):
         try:
@@ -81,7 +81,7 @@ class EmailBackend(ModelBackend):
             return user
         else:
             msg = 'Invalid password during authentication for %s' % username
-            logger._log(LOGGING_LEVEL, msg, [])
+            logger._log(settings.LOGGING_LEVEL, msg, [])
 
 
     def get_user(self, user_id):

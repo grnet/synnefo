@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,33 +31,15 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import os
+from django.conf.urls.defaults import url, patterns
+from synnefo.admin import views
+from django.http import Http404
 
-from django.conf.urls.defaults import patterns
 
+def index(request):
+    raise Http404
 
-urlpatterns = patterns('synnefo.admin.views',
-    (r'^/?$', 'index'),
-    (r'^/flavors/?$', 'flavors_list'),
-    (r'^/flavors/create/?$', 'flavors_create'),
-    (r'^/flavors/(\d+)/?$', 'flavors_info'),
-    (r'^/flavors/(\d+)/modify/?$', 'flavors_modify'),
-    (r'^/flavors/(\d+)/delete/?$', 'flavors_delete'),
-    
-    (r'^/images/?$', 'images_list'),
-    (r'^/images/register/?$', 'images_register'),
-    (r'^/images/(\d+)/?$', 'images_info'),
-    (r'^/images/(\d+)/modify/?$', 'images_modify'),
-
-    (r'^/servers/?$', 'servers_list'),
-)
-
-urlpatterns += patterns('synnefo.admin.api',
-    (r'^/api/servers/(\d+)$', 'servers_info'),
-    (r'^/api/users/(\d+)$', 'users_info'),
-)
-
-urlpatterns += patterns('',
-    (r'^/static/(?P<path>.*)$', 'django.views.static.serve', {
-        'document_root': os.path.join(os.path.dirname(__file__), 'static')})
+urlpatterns = patterns('',
+    url(r'^$', index),
+    url(r'^stats$', views.get_stats),
 )

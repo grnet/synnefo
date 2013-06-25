@@ -13,8 +13,8 @@ General Synnefo Architecture
 The following graph shows the whole Synnefo architecture and how it interacts
 with multiple Ganeti clusters. We hope that after reading the Administrator's
 Guide you will be able to understand every component and all the interactions
-between them. It is a good idea to first go through the Quick Administrator's
-Guide before proceeding.
+between them. It is a good idea to first go through the Administrator's Guide
+before proceeding.
 
 .. image:: images/synnefo-arch2.png
    :width: 100%
@@ -56,7 +56,7 @@ Add in ``/etc/apache2/sites-available/synnefo-ssl``::
   ShibConfig /etc/shibboleth/shibboleth2.xml
   Alias      /shibboleth-sp /usr/share/shibboleth
 
-  <Location /im/login/shibboleth>
+  <Location /ui/login/shibboleth>
     AuthType shibboleth
     ShibRequireSession On
     ShibUseHeaders On
@@ -89,6 +89,40 @@ available at the destination::
 Finally, add 'shibboleth' in ``ASTAKOS_IM_MODULES`` list. The variable resides
 inside the file ``/etc/synnefo/20-snf-astakos-app-settings.conf``
 
+Twitter Authentication
+```````````````````````
+
+To enable twitter authentication while signed in under a Twitter account,
+visit dev.twitter.com/apps.
+
+Click Create an application.
+
+Fill the necessary information and for callback URL give::
+
+    https://node1.example.com/ui/login/twitter/authenticated
+
+Finally, add 'twitter' in ``ASTAKOS_IM_MODULES`` list. The variable resides
+inside the file ``/etc/synnefo/20-snf-astakos-app-settings.conf``
+
+
+Google Authentication
+`````````````````````
+
+To enable google authentication while signed in under a Google account,
+visit https://code.google.com/apis/console/.
+
+Under API Access select Create another client ID, select Web application,
+expand more options in Your site or hostname section and in Authorized
+Redirect URIs add:
+
+
+Fill the necessary information and for callback URL give::
+
+    https://node1.example.com/ui/login/google/authenticated
+
+Finally, add 'google' in ``ASTAKOS_IM_MODULES`` list. The variable resides
+inside the file ``/etc/synnefo/20-snf-astakos-app-settings.conf``
+
 Architecture
 ------------
 
@@ -104,68 +138,188 @@ Configuration
 Working with Astakos
 --------------------
 
-User activation methods
-~~~~~~~~~~~~~~~~~~~~~~~
+User registration
+~~~~~~~~~~~~~~~~~
 
-When a new user signs up, he/she is not marked as active. You can see his/her
-state by running (on the machine that runs the Astakos app):
+When a new user signs up, he/she is not directly marked as active. You can see 
+his/her state by running (on the machine that runs the Astakos app):
 
 .. code-block:: console
 
    $ snf-manage user-list
 
-There are two different ways to activate a new user. Both need access to a
-running :ref:`mail server <mail-server>`.
-
-Manual activation
-`````````````````
-
-You can manually activate a new user that has already signed up, by sending
-him/her an activation email. The email will contain an approriate activation
-link, which will complete the activation process if followed. You can send the
-email by running:
+More detailed user status is provided in the `status` field of the `user-show` 
+command:
 
 .. code-block:: console
 
-   $ snf-manage user-activation-send <user ID or email>
+  $ snf-manage user-show <user-id>
 
-Be sure to have already setup your mail server and defined it in your Synnefo
-settings, before running the command.
+  id                  : 6
+  uuid                : 78661411-5eed-412f-a9ea-2de24f542c2e
+  status              : Accepted/Active (accepted policy: manual)
+  email               : user@synnefo.org
+  ....
 
-Automatic activation
+
+Based on how your configuration of `astakos-app`, there are several ways for a 
+user to get activated and be able to login. We discuss the user activation 
+flow in the following section.
+
+
+User activation flow
 ````````````````````
 
-FIXME: Describe Regex activation method
+A user can register for an account using the astakos signup form. Once the form
+is submited successfully a user entry is created in astakos database. That entry
+is passed through the astakos activation backend which handles whether the user
+should be automatically verified and activated.
+
+
+Email verification
+``````````````````
+
+The verification process takes place in order to ensure that the user owns the
+email provided during the signup process. By default, after each successful
+signup astakos notifies user with an verification url via email. 
+
+At this stage:
+
+    * subsequent registrations invalidate and delete the previous registrations 
+      of the same email address.
+
+    * in case user misses the initial notification, additional emails can be
+      send either via the url which is prompted to the user if he tries to
+      login, or by the administrator using the ``snf-manage user-activation-send
+      <userid>`` command.
+
+    * administrator may also enforce a user to get verified using the
+      ``snf-manage user-modify --verify <userid>`` command.
+
+
+Account activation
+``````````````````
+
+Once user gets verified it is time for astakos to decide whether or not to
+proceed through user activation process. If ``ASTAKOS_MODERATION_ENABLED``
+setting is set to ``False`` (default value) user gets activated automatically. 
+
+In case the moderation is enabled astakos may still automatically activate the
+user in the following cases:
+
+    * User email matches any of the regular expressions defined in
+      ``ASTAKOS_RE_USER_EMAIL_PATTERNS`` (defaults to ``[]``)
+    * User used a signup method (e.g. ``shibboleth``) for which automatic
+      activation is enabled (see 
+      :ref:`authentication methods policies <auth_methods_policies>`).
+
+If all of the above fail to trigger automatic activation, an email is sent 
+to the persons listed in ``HELPDESK``, ``MANAGERS`` and ``ADMINS`` settings, 
+notifing that there is a new user pending for moderation and that it's 
+up to the administrator to decide if the user should be activated, using the 
+``user-modify`` command.
+
+.. code-block:: console
+
+    # command to activate a pending user
+    $ snf-manage user-modify --accept <userid>
+
+    # command to reject a pending user
+    $ snf-manage user-modify --reject --reject-reason="spammer" <userid>
+
+Once activation process finish, a greeting message is sent to the user email
+address and a notification for the activation to the persons listed in 
+``HELPDESK``, ``MANAGERS`` and ``ADMINS`` settings. Once activated the user is 
+able to login and access the synnefo services.
+
+
+Additional authentication methods
+`````````````````````````````````
+
+Astakos supports third party logins from external identity providers. This
+can be usefull since it allows users to use their existing credentials to 
+login to astakos service.
+
+Currently astakos supports the following identity providers:
+
+    * `Shibboleth <http://www.internet2.edu/shibboleth>`_ (module name
+      ``shibboleth``)
+    * `Google <https://developers.google.com/accounts/docs/OAuth2>`_ (module
+      name ``google``)
+    * `Twitter <https://dev.twitter.com/docs/auth>`_ (module name ``twitter``)
+    * `LinkedIn <http://developer.linkedin.com/documents/authentication>`_
+      (module name ``linkedin``)
+
+To enable any of the above modules (by default only ``local`` accounts are
+allowed), retrieve and set the required provider settings and append the 
+module name in ``ASTAKOS_IM_MODULES``.
+
+.. code-block:: python
+
+    # settings from https://code.google.com/apis/console/
+    ASTAKOS_GOOGLE_CLIENT_ID = '1111111111-epi60tvimgha63qqnjo40cljkojcann3.apps.googleusercontent.com'
+    ASTAKOS_GOOGLE_SECRET = 'tNDQqTDKlTf7_LaeUcWTWwZM'
+    
+    # let users signup and login using their google account
+    ASTAKOS_IM_MODULES = ['local', 'google']
+
+
+.. _auth_methods_policies:
+
+Authentication method policies
+``````````````````````````````
+
+Astakos allows you to override the default policies for each enabled provider 
+separately by adding the approriate settings in your ``.conf`` files in the 
+following format:
+
+**ASTAKOS_AUTH_PROVIDER_<module>_<policy>_POLICY**
+
+Available policies are:
+
+    * **CREATE** Users can signup using that provider (default: ``True``) 
+    * **REMOVE/ADD** Users can remove/add login method from their profile 
+      (default: ``True``)
+    * **AUTOMODERATE** Automatically activate users that signup using that
+      provider (default: ``False``)
+    * **LOGIN** Whether or not users can use the provider to login (default:
+      ``True``).
+
+e.g. to enable automatic activation for your academic users, while keeping 
+locally signed up users under moderation you can apply the following settings.
+
+.. code-block:: python
+
+    ASTAKOS_AUTH_PROVIDER_SHIBBOLETH_AUTOMODERATE_POLICY = True
+    ASTAKOS_AUTH_PROVIDER_SHIBBOLETH_REMOVE_POLICY = False
+
 
 Setting quota limits
 ~~~~~~~~~~~~~~~~~~~~
 
-Set default quotas
-``````````````````
+Set default quota
+`````````````````
 
 In 20-snf-astakos-app-settings.conf, 
 uncomment the default setting ``ASTAKOS_SERVICES``
 and customize the ``'uplimit'`` values.
-These are the default base quotas for all users.
+These are the default base quota for all users.
 
 To apply your configuration run::
 
     # snf-manage astakos-init --load-service-resources
-    # snf-manage astakos-quota --sync
+    # snf-manage quota --sync
 
-Set base quotas for individual users
-````````````````````````````````````
+Set base quota for individual users
+```````````````````````````````````
 
-For individual users that need different quotas than the default
+For individual users that need different quota than the default
 you can set it for each resource like this::
 
-    # use this to display quotas / uuid
-    # snf-manage user-show 'uuid or email'
+    # use this to display quota / uuid
+    # snf-manage user-show 'uuid or email' --quota
 
-    # snf-manage user-set-initial-quota --set-capacity 'user-uuid' 'cyclades.vm' 10
-
-    # this applies the configuration
-    # snf-manage astakos-quota --sync --user 'user-uuid'
+    # snf-manage user-modify 'user-uuid' --set-base-quota 'cyclades.vm' 10
 
 
 Enable the Projects feature
@@ -175,15 +329,17 @@ If you want to enable the projects feature so that users may apply
 on their own for resources by creating and joining projects,
 in ``20-snf-astakos-app-settings.conf`` set::
 
-    # this will allow at most one pending project application per user
-    ASTAKOS_PENDING_APPLICATION_LIMIT = 1
     # this will make the 'projects' page visible in the dashboard
     ASTAKOS_PROJECTS_VISIBLE = True
 
-You can specify a user-specific limit on pending project applications
-with::
+You can change the maximum allowed number of pending project applications
+per user with::
 
-    # snf-manage user-update <user id> --max-pending-projects=2
+    # snf-manage resource-modify astakos.pending_app --limit <number>
+
+You can also set a user-specific limit with::
+
+    # snf-manage user-modify 'user-uuid' --set-base-quota 'astakos.pending_app' 5
 
 When users apply for projects they are not automatically granted
 the resources. They must first be approved by the administrator.
@@ -344,17 +500,17 @@ requests to the Cyclades API, will retrieve the updated state from the DB.
 Prereqs
 -------
 
-Work in progress. Please refer to :ref:`quick administrator quide <quick-install-admin-guide>`.
+Work in progress. Please refer to :ref:`administrator's install quide <quick-install-admin-guide>`.
 
 Installation
 ------------
 
-Work in progress. Please refer to :ref:`quick administrator quide <quick-install-admin-guide>`.
+Work in progress. Please refer to :ref:`administrator's install quide <quick-install-admin-guide>`.
 
 Configuration
 -------------
 
-Work in progress. Please refer to :ref:`quick administrator quide <quick-install-admin-guide>`.
+Work in progress. Please refer to :ref:`administrator's install quide <quick-install-admin-guide>`.
 
 Working with Cyclades
 ---------------------
@@ -827,86 +983,510 @@ The ``vlmc`` tool provides a way to interact with archipelago volumes
   must be used to break the lock.
 
 
+Synnefo management commands ("snf-manage")
+==========================================
+
+Each Synnefo service, Astakos, Pithos and Cyclades are controlled by the
+administrator using the "snf-manage" admin tool. This tool is an extension of
+the Django command-line management utility. It is run on the host that runs
+each service and provides different types of commands depending the services
+running on the host. If you are running more than one service on the same host
+"snf-manage" adds all the corresponding commands for each service dynamically,
+providing a unified admin environment.
+
+To run "snf-manage" you just type:
+
+.. code-block:: console
+
+   # snf-manage <command> [arguments]
+
+on the corresponding host that runs the service. For example, if you have all
+services running on different physical hosts you would do:
+
+.. code-block:: console
+
+   root@astakos-host # snf-manage <astakos-command> [argument]
+   root@pithos-host # snf-manage <pithos-command> [argument]
+   root@cyclades-host # snf-manage <cyclades-command> [argument]
+
+If you have all services running on the same host you would do:
+
+.. code-block:: console
+
+   root@synnefo-host # snf-manage <{astakos,pithos,cyclades}-command> [argument]
+
+Note that you cannot execute a service's command on a host that is not running
+this service. For example, the following will return an error if Astakos and
+Cyclades are installed on different physical hosts:
+
+.. code-block:: console
+
+   root@astakos-host # snf-manage <cyclades-command> [argument]
+   Unknown command: 'cyclades-command'
+   Type 'snf-manage help' for usage.
+
+This is the complete list of "snf-manage" commands for each service.
+
+Astakos snf-manage commands
+---------------------------
+
+============================  ===========================
+Name                          Description
+============================  ===========================
+fix-superusers                Transform superusers created by syncdb into AstakosUser instances
+cleanup-full                  Cleanup sessions and session catalog
+commission-list               List pending commissions
+commission-show               Show details for a pending commission
+component-add                 Register a component
+component-list                List components
+component-modify              Modify component attributes
+project-control               Manage projects and applications
+project-list                  List projects
+project-show                  Show project details
+quota                         List and check the integrity of user quota
+reconcile-resources-astakos   Reconcile resource usage of Quotaholder with Astakos DB
+resource-export-astakos       Export astakos resources in json format
+resource-import               Register resources
+resource-list                 List resources
+resource-modify               Modify a resource's default base quota and boolean flags
+service-import                Register services
+service-list                  List services
+service-show                  Show service details
+term-add                      Add approval terms
+user-activation-send          Send user activation
+user-add                      Add user
+authpolicy-add                Create a new authentication provider policy profile
+authpolicy-list               List existing authentication provider policy profiles
+authpolicy-remove             Remove an authentication provider policy
+authpolicy-set                Assign an existing authentication provider policy profile to a user or group
+authpolicy-show               Show authentication provider profile details
+group-add                     Create a group with the given name
+group-list                    List available groups
+user-list                     List users
+user-modify                   Modify user
+user-show                     Show user details
+============================  ===========================
+
+Pithos snf-manage commands
+--------------------------
+
+============================  ===========================
+Name                          Description
+============================  ===========================
+reconcile-commissions-pithos  Display unresolved commissions and trigger their recovery
+resource-export-pithos        Export pithos resources in json format
+reconcile-resources-pithos    Detect unsynchronized usage between Astakos and Pithos DB resources and synchronize them if specified so.
+============================  ===========================
+
+Cyclades snf-manage commands
+----------------------------
+
+============================== ===========================
+Name                           Description
+============================== ===========================
+backend-add                    Add a new Ganeti backend
+backend-list                   List backends
+backend-modify                 Modify a backend
+backend-update-status          Update backend statistics for instance allocation
+backend-remove                 Remove a Ganeti backend
+server-create                  Create a new server
+server-show                    Show server details
+server-list                    List servers
+server-modify                  Modify a server
+server-import                  Import an existing Ganeti VM into synnefo
+server-inspect                 Inspect a server in DB and Ganeti
+network-create                 Create a new network
+network-list                   List networks
+network-modify                 Modify a network
+network-inspect                Inspect network state in DB and Ganeti
+network-remove                 Delete a network
+flavor-create                  Create a new flavor
+flavor-list                    List flavors
+flavor-modify                  Modify a flavor
+image-list                     List images
+image-show                     Show image details
+pool-create                    Create a bridge or mac-prefix pool
+pool-show                      Show pool details
+pool-list                      List pools
+pool-modify                    Modify a pool
+pool-remove                    Delete a pool
+queue-inspect                  Inspect the messages of a RabbitMQ queue
+queue-retry                    Resend messages from Dead Letter queues to original exchanges
+resource-export-cyclades       Export Cyclades resources in JSON format.
+service-export-cyclades        Export Cyclades services in JSON format.
+reconcile-servers              Reconcile servers of Synnefo DB with state of Ganeti backend
+reconcile-networks             Reconcile networks of Synnefo DB with state of Ganeti backend
+reconcile-pools                Check consistency of pool resources
+reconcile-commissions-cyclades Detect and resolve pending commissions to Quotaholder
+reconcile-resources-cyclades   Reconcile resource usage of Astakos with Cyclades DB.
+============================== ===========================
+
+Astakos helper scripts
+======================
+
+Astakos includes two scripts to facilitate the installation procedure.
+Running:
+
+.. code-block:: console
+
+   snf-component-register [<component_name>]
+
+automates the registration of the standard Synnefo components (astakos,
+cyclades, and pithos) in astakos database. It internally uses the script:
+
+.. code-block:: console
+
+   snf-service-export <component_name> <base_url>
+
+which simulates the export of service and resource definitions of the
+standard Synnefo components.
+
+Pithos managing accounts
+========================
+
+Pithos provides a utility tool for managing accounts.
+To run you just type:
+
+.. code-block:: console
+
+   # pithos-manage-accounts <command> [arguments]
+
+This is the list of the available commands:
+
+============================  ===========================
+Name                          Description
+============================  ===========================
+delete                        Remove an account from the Pithos DB
+export-quota                  Export account quota in a file
+list                          List existing/dublicate accounts
+merge                         Move an account contents in another account
+set-container-quota           Set container quota for all or a specific account
+============================  ===========================
+
+
 The "kamaki" API client
 =======================
 
 To upload, register or modify an image you will need the **kamaki** tool.
 Before proceeding make sure that it is configured properly. Verify that
-*image_url*, *storage_url*, and *token* are set as needed:
+*image.url*, *file.url*, *user.url* and *token* are set as needed:
 
 .. code-block:: console
 
    $ kamaki config list
 
-To chage a setting use ``kamaki config set``:
+To change a setting use ``kamaki config set``:
 
 .. code-block:: console
 
-   $ kamaki config set image_url https://cyclades.example.com/plankton
-   $ kamaki config set storage_url https://pithos.example.com/v1
+   $ kamaki config set image.url https://cyclades.example.com/image
+   $ kamaki config set file.url https://pithos.example.com/v1
+   $ kamaki config set user.url https://accounts.example.com
    $ kamaki config set token ...
+
+To test that everything works, try authenticating the current account with
+kamaki:
+
+.. code-block:: console
+
+  $ kamaki user authenticate
+
+This will output user information.
 
 Upload Image
 ------------
 
-As a shortcut, you can configure a default account and container that will be
-used by the ``kamaki store`` commands:
+By convention, images are stored in a container called ``images``. Check if the
+container exists, by listing all containers in your account:
 
 .. code-block:: console
 
-   $ kamaki config set storage_account images@example.com
-   $ kamaki config set storage_container images
+   $ kamaki file list
 
-If the container does not exist, you will have to create it before uploading
-any images:
+If the container ``images`` does not exist, create it:
 
 .. code-block:: console
 
-   $ kamaki store create images
+  $ kamaki file create images
 
-You are now ready to upload an image. You can upload it with a Pithos+ client,
-or use kamaki directly:
+You are now ready to upload an image to container ``images``. You can upload it
+with a Pithos client, or use kamaki directly:
 
 .. code-block:: console
 
-   $ kamaki store upload ubuntu.iso
+   $ kamaki file upload ubuntu.iso images
 
-You can use any Pithos+ client to verify that the image was uploaded correctly.
+You can use any Pithos client to verify that the image was uploaded correctly,
+or you can list the contents of the container with kamaki:
+
+.. code-block:: console
+
+  $ kamaki file list images
+
 The full Pithos URL for the previous example will be
-``pithos://images@example.com/images/ubuntu.iso``.
-
+``pithos://u53r-un1qu3-1d/images/ubuntu.iso`` where ``u53r-un1qu3-1d`` is the
+unique user id (uuid).
 
 Register Image
 --------------
 
-To register an image you will need to use the full Pithos+ URL. To register as
+To register an image you will need to use the full Pithos URL. To register as
 a public image the one from the previous example use:
 
 .. code-block:: console
 
-   $ kamaki glance register Ubuntu pithos://images@example.com/images/ubuntu.iso --public
+   $ kamaki image register Ubuntu pithos://u53r-un1qu3-1d/images/ubuntu.iso --public
 
 The ``--public`` flag is important, if missing the registered image will not
-be listed by ``kamaki glance list``.
+be listed by ``kamaki image list``.
 
-Use ``kamaki glance register`` with no arguments to see a list of available
+Use ``kamaki image register`` with no arguments to see a list of available
 options. A more complete example would be the following:
 
 .. code-block:: console
 
-   $ kamaki glance register Ubuntu pithos://images@example.com/images/ubuntu.iso \
+   $ kamaki image register Ubuntu pithos://u53r-un1qu3-1d/images/ubuntu.iso \
             --public --disk-format diskdump --property kernel=3.1.2
 
 To verify that the image was registered successfully use:
 
 .. code-block:: console
 
-   $ kamaki glance list -l
-
+   $ kamaki image list --name-like=ubuntu
 
 
 Miscellaneous
 =============
+
+.. _branding:
+
+Branding
+--------
+
+Since Synnefo v0.14, you are able to adapt the Astakos, Pithos and Cyclades Web
+UI to your company’s visual identity. This is possible using the snf-branding
+component, which is automatically installed on the nodes running the API
+servers for Astakos, Pithos and Cyclades. 
+
+Configuration
+~~~~~~~~~~~~~
+
+This can be done by modifing the settings provided by the snf-branding component
+to match your service identity. The settings for the snf-branding application
+can be found inside the configuration file ``/etc/synnefo/15-snf-branding.conf``
+on the nodes that have Astakos, Pithos and Cyclades installed.
+
+By default, the global service name is "Synnefo" and the company name is
+"GRNET". These names and their respective logos and URLs are used throughout
+the Astakos, Pithos and Cyclades UI.
+
+**Names and URLs:**
+
+The first group of branding customization refers to the service's and company's
+information.
+
+You can overwrite the company and the service name and URL respectively by
+uncommenting and setting the following:
+
+.. code-block:: python
+  
+  # setting used in Astakos Dashboard/Projects pages
+  BRANDING_SERVICE_NAME = 'My cloud'
+  BRANDING_SERVICE_URL = 'http://www.mycloud.synnefo.org/'
+
+  # settings used in Astakos, Pithos, Cyclades footer only if 
+  # BRANDING_SHOW_COPYRIGHT is set to True
+  BRANDING_SHOW_COPYRIGHT = True
+  BRANDING_COMPANY_NAME = 'Company LTD'
+  BRANDING_COMPANY_URL = 'https://www.company-ltd.synnefo.org/'
+
+
+**Copyright options:**
+
+By default, no Copyright message is shown in the UI footer. If you want to make
+it visible in the footer of Astakos, Pithos and Cyclades UI, you can uncomment
+and set to ``True`` the ``BRANDING_SHOW_COPYRIGHT`` setting:
+
+.. code-block:: python
+
+  #BRANDING_SHOW_COPYRIGHT = False
+
+Copyright message defaults to 'Copyright (c) 2011-<current_year>
+<BRANDING_COMPANY_NAME>.' but you can overwrite it to a completely custom one by
+setting the following option:
+
+.. code-block:: python
+
+  BRANDING_COPYRIGHT_MESSAGE = 'Copyright (c) 2011-2013 GRNET'
+
+
+**Images:**
+
+The Astakos, Pithos and Cyclades Web UI has some logos and images.
+ 
+The branding-related images are presented in  the following table:
+
+===============  ============================  =========
+Image            Name/extension  convention    Usage
+===============  ============================  =========
+Favicon          favicon.ico                   Favicon for all services
+Dashboard logo   dashboard_logo.png            Visible in all Astakos UI pages
+Compute logo     compute_logo.png              Visible in all Cyclades UI pages
+Console logo     console_logo.png              Visible in the Cyclades Console Window
+Storage logo     storage_logo.png              Visible in all Pithos UI pages
+===============  ============================  =========
+
+There are two methods  available for replacing all, or individual, 
+branding-related images:
+
+1. Create a new directory inside ``/usr/share/synnefo/static/`` (e.g.
+   ``mybranding``) and place there some or all of your images.
+
+   If you want to replace all of your images, keep the name/extension
+   conventions as indicated in the above table and change the
+   ``BRANDING_IMAGE_MEDIA_URL`` setting accordingly:
+
+   .. code-block:: python
+        
+      # using relative path
+      BRANDING_IMAGE_MEDIA_URL= '/static/mybranding/images/' 
+
+      # or if you already host them in a separate domain (e.g. cdn)
+      BRANDING_IMAGE_MEDIA_URL= 'https://cdn.synnefo.org/branding/images/'
+
+
+   If you wish to replace individual images, **do not uncomment**
+   ``BRANDING_IMAGE_MEDIA_URL``, but instead provide a relative path, pointing to
+   the file inside your directory for each ``BRANDING_<image>_URL`` that you wish
+   to replace.
+
+2. Upload some or all of your images to a server and replace each 
+   ``BRANDING_<image>_URL`` with the absolute url of the image (i.e.
+   ``BRANDING_DASHBOARD_URL = 'https://www.synnefo.com/images/my_dashboard.jpg'``).
+
+   Note that the alternative text  for each image tag inside html documents is 
+   alt=“BRANDING_SERVICE_NAME {Dashboard, Compute. Console, Storage}” respectively.
+
+.. note:: Retina optimized images:
+
+   Synnefo UI is optimized for Retina displays. As far as images are concerned,  
+   `retina.js <http://retinajs.com/>`_ is used.
+
+   Retina.js checks each image on a page to see if there is a high-resolution 
+   version of that image on your server. If a high-resolution variant exists, 
+   the script will swap in that image in-place.
+
+   The script assumes you use  `Apple's prescribed high-resolution modifier (@2x)
+   <http://developer.apple.com/library/ios/#documentation/2DDrawing/Conceptual/
+   DrawingPrintingiOS/SupportingHiResScreensInViews/SupportingHiResScreensInViews
+   .html#//apple_ref/doc/uid/TP40010156-CH15-SW1>`_ to denote high-resolution 
+   image variants on your server.
+
+   For each of the images that you wish the script to  replace, you must have a 
+   high-resolution variant in the same folder  named correctly and it will be 
+   detected automatically. For example if your image is in <my_directory> and is 
+   named "my_image.jpg" the script will look in the same directory for an image 
+   named "my_image@2x.jpg".
+
+   In case that you don’t want to use a high-resolution image, the 
+   normal-resolution image will be visible.
+
+More branding
+~~~~~~~~~~~~~
+
+Although, it is not 100% branding-related, further verbal customization is
+feasible. 
+
+**EMAILS**
+
+The output of all email `*`.txt files will be already customized to contain your
+company and service names but you can further alter their content if you feel it
+best fits your needs as simple as creasynnefo template.    
+
+In order to overwrite one or more email-templates you need to place your 
+modified <email-file>.txt files respecting the following structure:
+  
+  **/etc/synnefo/templates/**
+      **im/**
+          | activation_email.txt
+          | email.txt
+          | invitation.txt
+          | switch_accounts_email.txt
+          | welcome_email.txt
+          **projects/**
+              | project_approval_notification.txt
+              | project_denial_notification.txt    
+              | project_membership_change_notification.txt
+              | project_membership_enroll_notification.txt
+              | project_membership_leave_request_notification.txt
+              | project_membership_request_notification.txt
+              | project_suspension_notification.txt
+              | project_termination_notification.txt
+      **registration/**
+          | email_change_email.txt
+          | password_email.txt
+
+Feel free to omit any of the above files you do not wish to overwrite.
+
+Below is a list of all emails sent by Synnefo to users along with a short 
+description and a link to their content:
+
+* ``snf-astakos-app/astakos/im/templates/im/email.txt``
+  Base email template. Contains a contact email and a “thank you” message.
+  (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/email.txt>`_)
+* ``snf-astakos-app/astakos/im/templates/im/activation_email.txt`` Email sent to
+  user that prompts  him/her to click on a link provided to activate the account.
+  Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/activation_email.txt>`_)
+* ``snf-astakos-app/astakos/im/templates/im/invitation.txt`` Email sent to an
+  invited user. He/she has to click on a link provided to activate the account.
+  Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/invitation.txt>`_)
+* ``snf-astakos-app/astakos/im/templates/im/switch_accounts_email.txt`` Email
+  sent to user upon his/her request to associate this email address with a
+  shibboleth account. He/she has to click on a link provided to activate the
+  association. Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/switch_accounts_email.txt>`_)
+* ``snf-astakos-app/astakos/im/templates/im/welcome_email.txt`` Email sent to
+  inform the user that his/ her account has been activated. Extends “email.txt”
+  (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/welcome_email.txt>`_)
+* ``snf-astakos-app/astakos/im/templates/registration/email_change_email.txt``
+  Email sent to user when he/she has requested new email address assignment. The
+  user has to click on a link provided to validate this action. Extends
+  “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/registration/email_change_email.txt>`_)
+* ``snf-astakos-app/astakos/im/templates/registration/password_email.txt`` Email
+  sent for resetting password purpose. The user has to click on a link provided
+  to validate this action. Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/registration/password_email.txt>`_)
+* ``snf-astakos-app/astakos/im/templates/im/projects/project_approval_notification.txt``
+  Informs  the project owner that his/her project has been approved. Extends
+  “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_approval_notification.txt>`_)
+* ``snf-astakos-app/astakos/im/templates/im/projects/project_denial_notification.txt``
+  Informs the project owner that his/her  project application has been denied
+  explaining the reasons. Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_denial_notification.txt>`_)
+* ``snf-astakos-app/astakos/im/templates/im/projects/project_membership_change_notification.txt``
+  An email is sent to a user containing information about his project membership
+  (whether he has been accepted, rejected or removed). Extends “email.txt” (`Link
+  <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_membership_change_notification.txt>`_)
+* ``snf-astakos-app/astakos/im/templates/im/projects/project_membership_enroll_notification.txt``
+  Informs a user that he/she  has been enrolled to a project. Extends
+  “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_membership_enroll_notification.txt>`_)
+* ``snf-astakos-app/astakos/im/templates/im/projects/project_membership_leave_request_notification.txt``
+  An email is sent to the project owner to make him aware of a  user having
+  requested to leave his project. Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_membership_leave_request_notification.txt>`_)
+* ``snf-astakos-app/astakos/im/templates/im/projects/project_membership_request_notification.txt``
+  An email is sent to the project owner to make him/her aware of a user having
+  requested to join  his project. Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_membership_request_notification.txt>`_)
+* ``snf-astakos-app/astakos/im/templates/im/projects/project_suspension_notification.txt``
+  An email is sent to the project owner to make him/her aware of his/her project
+  having been suspended. Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_suspension_notification.txt>`_)
+* ``snf-astakos-app/astakos/im/templates/im/projects/project_termination_notification.txt``
+  An email is sent to the project owner to make him/her aware of his/her project
+  having been terminated. Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_termination_notification.txt>`_)
+
+.. warning:: Django templates language:
+
+  If you choose to  overwrite these email templates, be mindful of the necessary 
+  information contained in django template variables that must not be omitted, 
+  such as the activation link for activating one’s account and many more. 
+  These variables are contained into {{}} inside the templates.
+
 
 .. RabbitMQ
 
@@ -991,24 +1571,6 @@ You can verify that the cluster is set up correctly by running:
   root@node2: rabbitmqctl cluster_status
 
 
-
-
-
-Admin tool: snf-manage
-----------------------
-
-``snf-manage`` is a tool used to perform various administrative tasks. It needs
-to be able to access the django database, so the following should be able to
-import the Django settings.
-
-Additionally, administrative tasks can be performed via the admin web interface
-located in /admin. Only users of type ADMIN can access the admin pages. To
-change the type of a user to ADMIN, snf-manage can be used:
-
-.. code-block:: console
-
-   $ snf-manage user-modify 42 --type ADMIN
-
 Logging
 -------
 
@@ -1040,7 +1602,7 @@ Scaling up to multiple nodes
 Here we will describe how should a large scale Synnefo deployment look like. Make
 sure you are familiar with Synnefo and Ganeti before proceeding with this section.
 This means you should at least have already set up successfully a working Synnefo
-deployment as described in the :ref:`Admin's Quick Installation Guide
+deployment as described in the :ref:`Admin's Installation Guide
 <quick-install-admin-guide>` and also read the Administrator's Guide until this
 section.
 
@@ -1239,6 +1801,7 @@ Upgrade Notes
    :maxdepth: 1
 
    v0.12 -> v0.13 <upgrade/upgrade-0.13>
+   v0.13 -> v0.14 <upgrade/upgrade-0.14>
 
 
 Changelog, NEWS

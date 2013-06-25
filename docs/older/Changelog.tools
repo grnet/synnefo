@@ -4,13 +4,13 @@ snf-tools (0.13.0)
 	* Add more tests for Images
 	  - Download image from pithos+
 	  - Upload and register image
-	* Add tests for Pithos+
+	* Add tests for Pithos
 	  - Test container list actually returns containers
 	  - Test if containers have unique names
 	  - Create e new container
-	  - Upload something to pithos+
-	  - Download something from pithos+
-	  - Remove files/containers from pithos+
+	  - Upload something to Pithos
+	  - Download something from Pithos
+	  - Remove files/containers from Pithos
 	* Add two (mandatory) flags
 	  - `--pithos' for specifing pithos url
 	  - `--astakos' for specifing astakos url

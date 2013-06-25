@@ -219,3 +219,7 @@ form .refresh.open input:hover + span.extra-img			{ background-position: -33px 0
 form .refresh.open p:hover span.extra-img:hover		{ background-position: -33px -54px; cursor:pointer; }
 .hidden-form-rows									{ display:none; }
 .signup .form-row.with-checkbox						{ margin-top:1em; }
+
+
+form.withlabels.upperlabels label 					{ text-transform: uppercase;}
+form.withlabels.upperlabels textarea				{ margin-top:10px;}

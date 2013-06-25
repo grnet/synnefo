@@ -34,16 +34,41 @@
 import json
 from mock import patch
 
-from synnefo.api.tests import BaseAPITest
+from snf_django.utils.testing import BaseAPITest, mocked_quotaholder
 from synnefo.db.models import Network, NetworkInterface
 from synnefo.db import models_factory as mfactory
+from synnefo.cyclades_settings import cyclades_services
+from synnefo.lib.services import get_service_path
+from synnefo.lib import join_urls
+
+
+class ComputeAPITest(BaseAPITest):
+    def setUp(self, *args, **kwargs):
+        super(ComputeAPITest, self).setUp(*args, **kwargs)
+        self.compute_path = get_service_path(cyclades_services, 'compute',
+                                             version='v2.0')
+    def myget(self, path, *args, **kwargs):
+        path = join_urls(self.compute_path, path)
+        return self.get(path, *args, **kwargs)
+
+    def myput(self, path, *args, **kwargs):
+        path = join_urls(self.compute_path, path)
+        return self.put(path, *args, **kwargs)
+
+    def mypost(self, path, *args, **kwargs):
+        path = join_urls(self.compute_path, path)
+        return self.post(path, *args, **kwargs)
+
+    def mydelete(self, path, *args, **kwargs):
+        path = join_urls(self.compute_path, path)
+        return self.delete(path, *args, **kwargs)
 
 
 @patch('synnefo.logic.rapi_pool.GanetiRapiClient')
-class NetworkAPITest(BaseAPITest):
+class NetworkAPITest(ComputeAPITest):
     def setUp(self):
         self.mac_prefixes = mfactory.MacPrefixPoolTableFactory()
-        self.bridges = mfactory.BridgePoolTableFactory()
+        self.bridges = mfactory.BridgePoolTableFactory(base="link")
         self.user = 'dummy-user'
         self.net1 = mfactory.NetworkFactory(userid=self.user)
         self.vm1 = mfactory.VirtualMachineFactory(userid=self.user)
@@ -53,6 +78,7 @@ class NetworkAPITest(BaseAPITest):
                                                      machine=self.vm1)
         self.net2 = mfactory.NetworkFactory(userid=self.user)
         self.nic3 = mfactory.NetworkInterfaceFactory(network=self.net2)
+        super(NetworkAPITest, self).setUp()
 
     def assertNetworksEqual(self, db_net, api_net, detail=False):
         self.assertEqual(str(db_net.id), api_net["id"])
@@ -68,14 +94,15 @@ class NetworkAPITest(BaseAPITest):
             self.assertEqual(db_net.public, api_net['public'])
             db_nics = ["nic-%d-%d" % (nic.machine.id, nic.index) for nic in
                        db_net.nics.filter(machine__userid=db_net.userid)]
-            self.assertEqual(db_nics, api_net['attachments']['values'])
+            self.assertEqual(db_nics, api_net['attachments'])
 
     def test_create_network_1(self, mrapi):
         request = {
-            'network': {'name': 'foo'}
-            }
-        response = self.post('/api/v1.1/networks/', 'user1',
-                             json.dumps(request), 'json')
+            'network': {'name': 'foo', "type": "MAC_FILTERED"}
+        }
+        with mocked_quotaholder():
+            response = self.mypost('networks/', 'user1',
+                                   json.dumps(request), 'json')
         self.assertEqual(response.status_code, 202)
         db_networks = Network.objects.filter(userid='user1')
         self.assertEqual(len(db_networks), 1)
@@ -90,27 +117,31 @@ class NetworkAPITest(BaseAPITest):
         request = {
             'network': {'name': 'foo', 'type': 'LoLo'}
             }
-        response = self.post('/api/v1.1/networks/', 'user1',
-                             json.dumps(request), 'json')
+        response = self.mypost('networks/', 'user1',
+                               json.dumps(request), 'json')
         self.assertBadRequest(response)
         self.assertEqual(len(Network.objects.filter(userid='user1')), 0)
 
     def test_invalid_data_2(self, mrapi):
-        """Test invalid subnet"""
+        """Test invalid data/subnet"""
         request = {
-            'network': {'name': 'foo', 'cidr': '10.0.0.0/8'}
-            }
-        response = self.post('/api/v1.1/networks/', 'user1',
-                             json.dumps(request), 'json')
+            'network': {'name': 'foo',
+                        'cidr': '10.0.0.0/8', "type":
+                        "MAC_FILTERED"}
+        }
+        response = self.mypost('networks/', 'user1',
+                               json.dumps(request), 'json')
         self.assertFault(response, 413, "overLimit")
 
     def test_invalid_data_3(self, mrapi):
         """Test unauthorized to create public network"""
         request = {
-                'network': {'name': 'foo', 'public': True}
+                'network': {'name': 'foo',
+                            "public": "True",
+                            "type": "MAC_FILTERED"}
             }
-        response = self.post('/api/v1.1/networks/', 'user1',
-                             json.dumps(request), 'json')
+        response = self.mypost('networks/', 'user1',
+                               json.dumps(request), 'json')
         self.assertFault(response, 403, "forbidden")
 
     def test_invalid_data_4(self, mrapi):
@@ -118,17 +149,19 @@ class NetworkAPITest(BaseAPITest):
         request = {
                 'network': {'name': 'foo', 'type': 'CUSTOM'}
             }
-        response = self.post('/api/v1.1/networks/', 'user1',
-                             json.dumps(request), 'json')
+        response = self.mypost('networks/', 'user1',
+                               json.dumps(request), 'json')
         self.assertFault(response, 403, "forbidden")
 
     def test_invalid_subnet(self, mrapi):
         """Test invalid subnet"""
         request = {
-            'network': {'name': 'foo', 'cidr': '10.0.0.10/27'}
-            }
-        response = self.post('/api/v1.1/networks/', 'user1',
-                             json.dumps(request), 'json')
+            'network': {'name': 'foo',
+                        'cidr': '10.0.0.10/27',
+                        "type": "MAC_FILTERED"}
+        }
+        response = self.mypost('networks/', 'user1',
+                               json.dumps(request), 'json')
         self.assertBadRequest(response)
 
     def test_invalid_gateway_1(self, mrapi):
@@ -137,8 +170,8 @@ class NetworkAPITest(BaseAPITest):
                         'cidr': '10.0.0.0/28',
                         'gateway': '10.0.0.0.300'}
         }
-        response = self.post('/api/v1.1/networks/', 'user1',
-                             json.dumps(request), 'json')
+        response = self.mypost('networks/', 'user1',
+                               json.dumps(request), 'json')
         self.assertBadRequest(response)
 
     def test_invalid_gateway_2(self, mrapi):
@@ -147,8 +180,8 @@ class NetworkAPITest(BaseAPITest):
                         'cidr': '10.0.0.0/28',
                         'gateway': '10.2.0.1'}
         }
-        response = self.post('/api/v1.1/networks/', 'user1',
-                             json.dumps(request), 'json')
+        response = self.mypost('networks/', 'user1',
+                               json.dumps(request), 'json')
         self.assertBadRequest(response)
 
     def test_invalid_network6(self, mrapi):
@@ -158,8 +191,8 @@ class NetworkAPITest(BaseAPITest):
                         'subnet6': '10.0.0.0/28',
                         'gateway': '10.2.0.1'}
         }
-        response = self.post('/api/v1.1/networks/', 'user1',
-                             json.dumps(request), 'json')
+        response = self.mypost('networks/', 'user1',
+                               json.dumps(request), 'json')
         self.assertBadRequest(response)
 
     def test_invalid_gateway6(self, mrapi):
@@ -169,8 +202,8 @@ class NetworkAPITest(BaseAPITest):
                         'subnet6': '2001:0db8:0123:4567:89ab:cdef:1234:5678',
                         'gateway': '10.2.0.1'}
         }
-        response = self.post('/api/v1.1/networks/', 'user1',
-                             json.dumps(request), 'json')
+        response = self.mypost('networks/', 'user1',
+                               json.dumps(request), 'json')
         self.assertBadRequest(response)
 
     def test_list_networks(self, mrapi):
@@ -178,11 +211,11 @@ class NetworkAPITest(BaseAPITest):
         # Create a deleted network
         mfactory.NetworkFactory(userid=self.user, deleted=True)
 
-        response = self.get('/api/v1.1/networks/', self.user)
+        response = self.myget('networks/', self.user)
         self.assertSuccess(response)
 
         db_nets = Network.objects.filter(userid=self.user, deleted=False)
-        api_nets = json.loads(response.content)["networks"]["values"]
+        api_nets = json.loads(response.content)["networks"]
 
         self.assertEqual(len(db_nets), len(api_nets))
         for api_net in api_nets:
@@ -194,11 +227,11 @@ class NetworkAPITest(BaseAPITest):
         # Create a deleted network
         mfactory.NetworkFactory(userid=self.user, deleted=True)
 
-        response = self.get('/api/v1.1/networks/detail', self.user)
+        response = self.myget('networks/detail', self.user)
         self.assertSuccess(response)
 
         db_nets = Network.objects.filter(userid=self.user, deleted=False)
-        api_nets = json.loads(response.content)["networks"]["values"]
+        api_nets = json.loads(response.content)["networks"]
 
         self.assertEqual(len(db_nets), len(api_nets))
         for api_net in api_nets:
@@ -206,50 +239,59 @@ class NetworkAPITest(BaseAPITest):
             self.assertNetworksEqual(Network.objects.get(id=net_id), api_net,
                                      detail=True)
 
+    def test_get_network_building_nics(self, mrapi):
+        net = mfactory.NetworkFactory()
+        machine = mfactory.VirtualMachineFactory(userid=net.userid)
+        mfactory.NetworkInterfaceFactory(network=net, machine=machine,
+                                         state="BUILDING")
+        response = self.myget('networks/%d' % net.id, net.userid)
+        self.assertSuccess(response)
+        api_net = json.loads(response.content)["network"]
+        self.assertEqual(len(api_net["attachments"]), 0)
+
     def test_network_details_1(self, mrapi):
         """Test that expected details for a network are returned"""
-        response = self.get('/api/v1.1/networks/%d' % self.net1.id,
-                            self.net1.userid)
+        response = self.myget('networks/%d' % self.net1.id, self.net1.userid)
         self.assertSuccess(response)
         api_net = json.loads(response.content)["network"]
         self.assertNetworksEqual(self.net1, api_net, detail=True)
 
     def test_invalid_network(self, mrapi):
         """Test details for non-existing network."""
-        response = self.get('/api/v1.1/networks/%d' % 42,
-                            self.net1.userid)
+        response = self.myget('networks/%d' % 42, self.net1.userid)
         self.assertItemNotFound(response)
 
     def test_rename_network(self, mrapi):
         request = {'network': {'name': "new_name"}}
-        response = self.put('/api/v1.1/networks/%d' % self.net2.id,
-                            self.net2.userid, json.dumps(request), 'json')
+        response = self.myput('networks/%d' % self.net2.id,
+                              self.net2.userid, json.dumps(request), 'json')
         self.assertEqual(response.status_code, 204)
         self.assertEqual(Network.objects.get(id=self.net2.id).name, "new_name")
         # Check invalid
         request = {'name': "new_name"}
-        response = self.put('/api/v1.1/networks/%d' % self.net2.id,
-                            self.net2.userid, json.dumps(request), 'json')
+        response = self.myput('networks/%d' % self.net2.id,
+                              self.net2.userid, json.dumps(request), 'json')
         self.assertBadRequest(response)
 
     def test_rename_deleted_network(self, mrapi):
         net = mfactory.NetworkFactory(deleted=True)
         request = {'network': {'name': "new_name"}}
-        response = self.put('/api/v1.1/networks/%d' % net.id,
-                            net.userid, json.dumps(request), 'json')
+        response = self.myput('networks/%d' % net.id,
+                              net.userid, json.dumps(request), 'json')
         self.assertBadRequest(response)
 
     def test_rename_public_network(self, mrapi):
         net = mfactory.NetworkFactory(public=True)
         request = {'network': {'name': "new_name"}}
-        response = self.put('/api/v1.1/networks/%d' % net.id,
-                            self.net2.userid, json.dumps(request), 'json')
+        response = self.myput('networks/%d' % net.id,
+                              self.net2.userid, json.dumps(request), 'json')
         self.assertFault(response, 403, 'forbidden')
 
     def test_delete_network(self, mrapi):
-        net = mfactory.NetworkFactory()
-        response = self.delete('/api/v1.1/networks/%d' % net.id,
-                                net.userid)
+        net = mfactory.NetworkFactory(deleted=False, state='ACTIVE',
+                                      link="link-10")
+        with mocked_quotaholder():
+            response = self.mydelete('networks/%d' % net.id, net.userid)
         self.assertEqual(response.status_code, 204)
         net = Network.objects.get(id=net.id, userid=net.userid)
         self.assertEqual(net.action, 'DESTROY')
@@ -257,21 +299,18 @@ class NetworkAPITest(BaseAPITest):
 
     def test_delete_public_network(self, mrapi):
         net = mfactory.NetworkFactory(public=True)
-        response = self.delete('/api/v1.1/networks/%d' % net.id,
-                                self.net2.userid)
+        response = self.mydelete('networks/%d' % net.id, self.net2.userid)
         self.assertFault(response, 403, 'forbidden')
         self.assertFalse(mrapi.called)
 
     def test_delete_deleted_network(self, mrapi):
         net = mfactory.NetworkFactory(deleted=True)
-        response = self.delete('/api/v1.1/networks/%d' % net.id,
-                                net.userid)
+        response = self.mydelete('networks/%d' % net.id, net.userid)
         self.assertBadRequest(response)
 
     def test_delete_network_in_use(self, mrapi):
         net = self.net1
-        response = self.delete('/api/v1.1/networks/%d' % net.id,
-                                net.userid)
+        response = self.mydelete('networks/%d' % net.id, net.userid)
         self.assertFault(response, 421, 'networkInUse')
         self.assertFalse(mrapi.called)
 
@@ -280,8 +319,8 @@ class NetworkAPITest(BaseAPITest):
         vm = mfactory.VirtualMachineFactory(name='yo', userid=user)
         net = mfactory.NetworkFactory(state='ACTIVE', userid=user)
         request = {'add': {'serverRef': vm.id}}
-        response = self.post('/api/v1.1/networks/%d/action' % net.id,
-                             net.userid, json.dumps(request), 'json')
+        response = self.mypost('networks/%d/action' % net.id,
+                               net.userid, json.dumps(request), 'json')
         self.assertEqual(response.status_code, 202)
 
     def test_add_nic_to_deleted_network(self, mrapi):
@@ -290,8 +329,8 @@ class NetworkAPITest(BaseAPITest):
         net = mfactory.NetworkFactory(state='ACTIVE', userid=user,
                                       deleted=True)
         request = {'add': {'serverRef': vm.id}}
-        response = self.post('/api/v1.1/networks/%d/action' % net.id,
-                             net.userid, json.dumps(request), 'json')
+        response = self.mypost('networks/%d/action' % net.id,
+                               net.userid, json.dumps(request), 'json')
         self.assertBadRequest(response)
         self.assertFalse(mrapi.called)
 
@@ -300,8 +339,8 @@ class NetworkAPITest(BaseAPITest):
         vm = mfactory.VirtualMachineFactory(name='yo', userid=user)
         net = mfactory.NetworkFactory(state='ACTIVE', userid=user, public=True)
         request = {'add': {'serverRef': vm.id}}
-        response = self.post('/api/v1.1/networks/%d/action' % net.id,
-                             net.userid, json.dumps(request), 'json')
+        response = self.mypost('networks/%d/action' % net.id,
+                               net.userid, json.dumps(request), 'json')
         self.assertFault(response, 403, 'forbidden')
         self.assertFalse(mrapi.called)
 
@@ -310,8 +349,8 @@ class NetworkAPITest(BaseAPITest):
         vm = mfactory.VirtualMachineFactory(name='yo', userid=user)
         net = mfactory.NetworkFactory(state='ACTIVE', userid=user)
         request = {'add': {'serveRef': vm.id}}
-        response = self.post('/api/v1.1/networks/%d/action' % net.id,
-                             net.userid, json.dumps(request), 'json')
+        response = self.mypost('networks/%d/action' % net.id,
+                               net.userid, json.dumps(request), 'json')
         self.assertBadRequest(response)
         self.assertFalse(mrapi.called)
 
@@ -320,8 +359,8 @@ class NetworkAPITest(BaseAPITest):
         vm = mfactory.VirtualMachineFactory(name='yo', userid=user)
         net = mfactory.NetworkFactory(state='ACTIVE', userid=user)
         request = {'add': {'serveRef': [vm.id, 22]}}
-        response = self.post('/api/v1.1/networks/%d/action' % net.id,
-                             net.userid, json.dumps(request), 'json')
+        response = self.mypost('networks/%d/action' % net.id,
+                               net.userid, json.dumps(request), 'json')
         self.assertBadRequest(response)
         self.assertFalse(mrapi.called)
 
@@ -332,8 +371,8 @@ class NetworkAPITest(BaseAPITest):
         net = mfactory.NetworkFactory(state='PENDING', subnet='10.0.0.0/31',
                                       userid=user)
         request = {'add': {'serveRef': vm.id}}
-        response = self.post('/api/v1.1/networks/%d/action' % net.id,
-                             net.userid, json.dumps(request), 'json')
+        response = self.mypost('networks/%d/action' % net.id,
+                               net.userid, json.dumps(request), 'json')
         # Test that returns BuildInProgress
         self.assertEqual(response.status_code, 409)
         self.assertFalse(mrapi.called)
@@ -351,8 +390,8 @@ class NetworkAPITest(BaseAPITest):
         pool = net.get_pool()
         self.assertTrue(pool.empty())
         request = {'add': {'serverRef': vm.id}}
-        response = self.post('/api/v1.1/networks/%d/action' % net.id,
-                             net.userid, json.dumps(request), 'json')
+        response = self.mypost('networks/%d/action' % net.id,
+                               net.userid, json.dumps(request), 'json')
         # Test that returns OverLimit
         self.assertEqual(response.status_code, 413)
         self.assertFalse(mrapi.called)
@@ -363,13 +402,13 @@ class NetworkAPITest(BaseAPITest):
         net = mfactory.NetworkFactory(state='ACTIVE', userid=user)
         nic = mfactory.NetworkInterfaceFactory(machine=vm, network=net)
         request = {'remove': {'attachment': 'nic-%s-%s' % (vm.id, nic.index)}}
-        response = self.post('/api/v1.1/networks/%d/action' % net.id,
-                             net.userid, json.dumps(request), 'json')
+        response = self.mypost('networks/%d/action' % net.id,
+                               net.userid, json.dumps(request), 'json')
         self.assertEqual(response.status_code, 202)
         self.assertTrue(NetworkInterface.objects.get(id=nic.id).dirty)
         # Remove dirty nic
-        response = self.post('/api/v1.1/networks/%d/action' % net.id,
-                             net.userid, json.dumps(request), 'json')
+        response = self.mypost('networks/%d/action' % net.id,
+                               net.userid, json.dumps(request), 'json')
         self.assertFault(response, 409, 'buildInProgress')
 
     def test_remove_nic_malformed(self, mrapi):
@@ -380,8 +419,8 @@ class NetworkAPITest(BaseAPITest):
         request = {'remove':
                     {'att234achment': 'nic-%s-%s' % (vm.id, nic.index)}
                   }
-        response = self.post('/api/v1.1/networks/%d/action' % net.id,
-                             net.userid, json.dumps(request), 'json')
+        response = self.mypost('networks/%d/action' % net.id,
+                               net.userid, json.dumps(request), 'json')
         self.assertBadRequest(response)
 
     def test_remove_nic_malformed_2(self, mrapi):
@@ -391,6 +430,25 @@ class NetworkAPITest(BaseAPITest):
         request = {'remove':
                     {'attachment': 'nic-%s' % vm.id}
                   }
-        response = self.post('/api/v1.1/networks/%d/action' % net.id,
-                             net.userid, json.dumps(request), 'json')
+        response = self.mypost('networks/%d/action' % net.id,
+                               net.userid, json.dumps(request), 'json')
         self.assertBadRequest(response)
+
+    def test_catch_wrong_api_paths(self, *args):
+        response = self.myget('nonexistent')
+        self.assertEqual(response.status_code, 400)
+        try:
+            error = json.loads(response.content)
+        except ValueError:
+            self.assertTrue(False)
+
+    def test_method_not_allowed(self, *args):
+        # /networks/ allows only POST, GET
+        response = self.myput('networks', '', '')
+        self.assertMethodNotAllowed(response)
+        response = self.mydelete('networks')
+        self.assertMethodNotAllowed(response)
+
+        # /networks/<srvid>/ allows only GET, PUT, DELETE
+        response = self.mypost("networks/42")
+        self.assertMethodNotAllowed(response)

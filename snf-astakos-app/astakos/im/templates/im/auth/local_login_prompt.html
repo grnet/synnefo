@@ -1,7 +1,7 @@
-<form action="{% url astakos.im.target.local.login %}" method="post" 
+<form action="{% url astakos.im.views.target.local.login %}" method="post" 
   class="login-form login innerlabels">{% csrf_token %}
   <p>
-    {{ provider.get_login_prompt_display }}
+    {{ provider.get_login_prompt_msg }}
   </p>
   <Br />
   <div class="login-form" style="display:block">
@@ -20,11 +20,18 @@
     
     <div class="form-row submit clearfix">
         <input type="submit" class="submit altcol" value="SUBMIT" />
-        <a class="extra-link" href="{% url django.contrib.auth.views.password_reset %}">Forgot your password?</a>
+        <a class="extra-link" href="{% url astakos.im.views.target.local.password_reset %}">Forgot your password?</a>
       </div>
     </div>
   </form>
   <br> 
-  {% if not forloop.last %}
+  {% if not forloop.last and not is_master %}
   LOGIN using &nbsp;&nbsp;
+  {% endif %}
+  {% if is_master %}
+  {% with auth_providers|length as l %}
+  {% if l > 1 %}
+  LOGIN using &nbsp;&nbsp;
+  {% endif %}
+  {% endwith %}
   {% endif %}

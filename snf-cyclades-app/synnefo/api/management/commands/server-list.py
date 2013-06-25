@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -33,144 +33,99 @@
 
 from optparse import make_option
 
-from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import (format_vm_state, get_backend, Omit,
-                                       filter_results, pprint_table, UserCache)
-from synnefo.api.util import get_image
+from synnefo.webproject.management.commands import ListCommand
 from synnefo.db.models import VirtualMachine
+from synnefo.management.common import get_backend
+from synnefo.api.util import get_image
+from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
+                              ASTAKOS_BASE_URL)
+from logging import getLogger
+log = getLogger(__name__)
 
-import logging
-log = logging.getLogger(__name__)
 
-FIELDS = VirtualMachine._meta.get_all_field_names()
-
-
-class Command(BaseCommand):
+class Command(ListCommand):
     help = "List servers"
 
-    option_list = BaseCommand.option_list + (
-        make_option('-c',
-            action='store_true',
-            dest='csv',
-            default=False,
-            help="Use pipes to separate values"),
-        make_option('--suspended',
+    option_list = ListCommand.option_list + (
+        make_option(
+            '--suspended',
             action='store_true',
             dest='suspended',
             default=False,
             help="List only suspended servers"),
-        make_option('--build',
-            action='store_true',
-            dest='build',
-            default=False,
-            help="List only servers in the building state"),
-        make_option('--deleted',
-            action='store_true',
-            dest='deleted',
-            default=False,
-            help="Include deleted servers"),
-        make_option('--backend-id',
+        make_option(
+            '--backend-id',
             dest='backend_id',
             help="List only servers of the specified backend"),
-        make_option('--user',
-            dest='user',
-            help="List only servers of the specified user (uuid or email)"),
-        make_option('--filter-by',
-            dest='filter_by',
-            help="Filter results. Comma seperated list of key `cond` val pairs"
-                 " that displayed entries must satisfy. e.g."
-                 " --filter-by \"operstate=STARTED,id>=22\"."
-                 " Available keys are: %s" % ", ".join(FIELDS)),
-        make_option('--displayname',
-            action='store_true',
-            dest='displayname',
+        make_option(
+            "--build",
+            action="store_true",
+            dest="build",
             default=False,
-            help="Display both uuid and display name"),
+            help="List only servers in the building state"),
+        make_option(
+            "--image-name",
+            action="store_true",
+            dest="image_name",
+            default=False,
+            help="Display image name instead of image ID"),
     )
 
-    def handle(self, *args, **options):
-        if args:
-            raise CommandError("Command doesn't accept any arguments")
+    object_class = VirtualMachine
+    deleted_field = "deleted"
+    user_uuid_field = "userid"
+    astakos_url = ASTAKOS_BASE_URL
+    astakos_token = ASTAKOS_TOKEN
 
-        ucache = UserCache()
+    def get_public_ip(vm):
+        try:
+            return vm.nics.all()[0].ipv4
+        except IndexError:
+            return None
 
-        if options['backend_id']:
-            backend = get_backend(options['backend_id'])
-            servers = backend.virtual_machines
+    def format_vm_state(vm):
+        if vm.operstate == "BUILD":
+            return "BUILD(" + str(vm.buildpercentage) + "%)"
         else:
-            servers = VirtualMachine.objects
+            return vm.operstate
 
-        if options['deleted']:
-            servers = servers.all()
-        else:
-            servers = servers.filter(deleted=False)
+    FIELDS = {
+        "id": ("id", "ID of the server"),
+        "name": ("name", "Name of the server"),
+        "user.uuid": ("userid", "The UUID of the server's owner"),
+        "flavor": ("flavor.name", "The name of the server's flavor"),
+        "backend": ("backend", "The Ganeti backend that hosts the VM"),
+        "image.id": ("imageid", "The ID of the server's image"),
+        "image.name": ("image", "The name of the server's image"),
+        "state": (format_vm_state, "The current state of the server"),
+        "ip": (get_public_ip, "The public IP of the server"),
+        "created": ("created", "The date the server was created"),
+        "deleted": ("deleted", "Whether the server is deleted or not"),
+        "suspended": ("suspended", "Whether the server is administratively"
+                      " suspended"),
+    }
 
-        if options['suspended']:
-            servers = servers.filter(suspended=True)
+    fields = ["id", "name", "user.uuid", "state", "flavor", "image.id",
+              "backend"]
 
-        if options['build']:
-            servers = servers.filter(operstate='BUILD')
+    def handle_args(self, *args, **options):
+        if options["suspended"]:
+            self.filters["suspended"] = True
 
-        user = options['user']
-        if user:
-            if '@' in user:
-                user = ucache.get_uuid(user)
-            servers = servers.filter(userid=user)
+        if options["backend_id"]:
+            backend = get_backend(options["backend_id"])
+            self.filters["backend"] = backend.id
 
-        filter_by = options['filter_by']
-        if filter_by:
-            servers = filter_results(servers, filter_by)
+        if options["build"]:
+            self.filters["operstate"] = "BUILD"
 
-        displayname = options['displayname']
+        if options["image_name"]:
+            self.fields.replace("image.id", "image.name")
 
-        cache = ImageCache()
-
-        headers = filter(lambda x: x is not Omit,
-                         ['id',
-                          'name',
-                          'owner_uuid',
-                          'owner_name' if displayname else Omit,
-                          'flavor',
-                          'image',
-                          'state',
-                          'backend',
-                          ])
-
-        if displayname:
-            uuids = list(set([server.userid for server in servers]))
-            ucache.fetch_names(uuids)
-
-        table = []
-        for server in servers.order_by('id'):
-            try:
-                name = server.name.decode('utf8')
-            except UnicodeEncodeError:
-                name = server.name
-
-            flavor = server.flavor.name
-
-            image = cache.get_image(server.imageid, server.userid)
-
-            state = format_vm_state(server)
-
-            uuid = server.userid
-            if displayname:
-                dname = ucache.get_name(server.userid)
-
-            fields = filter(lambda x: x is not Omit,
-                            [str(server.id),
-                             name,
-                             uuid,
-                             dname if displayname else Omit,
-                             flavor,
-                             image,
-                             state,
-                             str(server.backend),
-                             ])
-            table.append(fields)
-
-        separator = " | " if options['csv'] else None
-        pprint_table(self.stdout, table, headers, separator)
+    def handle_db_objects(self, rows, *args, **kwargs):
+        icache = ImageCache()
+        for vm in rows:
+            vm.image = icache.get_image(vm.imageid, vm.userid)
 
 
 class ImageCache(object):

@@ -31,10 +31,15 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import copy
+import json
+
+from synnefo.lib.ordereddict import OrderedDict
 
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext as _
-from django.utils.datastructures import SortedDict
+from django.contrib.auth.models import Group
+from django import template
 
 from django.conf import settings
 
@@ -42,13 +47,13 @@ from astakos.im import settings as astakos_settings
 from astakos.im import messages as astakos_messages
 
 import logging
-import urllib
 
 logger = logging.getLogger(__name__)
 
 # providers registry
 PROVIDERS = {}
 REQUIRED_PROVIDERS = {}
+
 
 class AuthProviderBase(type):
 
@@ -59,12 +64,14 @@ class AuthProviderBase(type):
             if type_id:
                 include = True
             if type_id in astakos_settings.IM_MODULES:
+                if astakos_settings.IM_MODULES.index(type_id) == 0:
+                    dct['is_primary'] = True
                 dct['module_enabled'] = True
 
         newcls = super(AuthProviderBase, cls).__new__(cls, name, bases, dct)
         if include:
             PROVIDERS[type_id] = newcls
-            if newcls().is_required():
+            if newcls().get_required_policy:
                 REQUIRED_PROVIDERS[type_id] = newcls
         return newcls
 
@@ -74,218 +81,567 @@ class AuthProvider(object):
     __metaclass__ = AuthProviderBase
 
     module = None
-    module_active = False
     module_enabled = False
-    one_per_user = True
-    login_prompt = _('Login using ')
-    primary_login_prompt = _('Login using ')
-    login_message = None
-    logout_message = 'You may still be logged in %(provider)s though. Consider logging out from there too.'
+    is_primary = False
+
+    message_tpls = OrderedDict((
+        ('title', '{module_title}'),
+        ('login_title', '{title} LOGIN'),
+        ('method_prompt', '{title} login'),
+        ('account_prompt', '{title} account'),
+        ('signup_title', '{title}'),
+        ('profile_title', '{title}'),
+        ('method_details', '{account_prompt}: {identifier}'),
+        ('primary_login_prompt', 'Login using '),
+        ('required', '{title} is required. You can assign it '
+                     'from your profile page'),
+        ('login_prompt', ''),
+        ('add_prompt', 'Allows you to login using {title}'),
+        ('login_extra', ''),
+        ('username', '{username}'),
+        ('disabled_for_create', '{title} is not available for signup.'),
+        ('switch_success', 'Account changed successfully.'),
+        ('cannot_login', '{title} is not available for login. '
+                         'Please use one of your other available methods '
+                         'to login ({available_methods_links}'),
+
+        # icons should end with _icon
+        ('module_medium_icon', 'im/auth/icons-medium/{module}.png'),
+        ('module_icon', 'im/auth/icons/{module}.png'))
+    )
+
+    messages = {}
+    module_urls = {}
+
     remote_authenticate = True
     remote_logout_url = None
-    logout_from_provider_text = None
-    icon_url = None
-    icon_medium_url = None
-    method_prompt = None
 
-    def get_message(self, msg, **kwargs):
-        params = kwargs
-        params.update({'provider': self.get_title_display})
+    # templates
+    primary_login_template = 'im/auth/generic_primary_login.html'
+    login_template = 'im/auth/generic_login.html'
+    signup_template = 'im/signup.html'
+    login_prompt_template = 'im/auth/generic_login_prompt.html'
+    signup_prompt_template = 'im/auth/signup_prompt.html'
 
-        override_msg = getattr(self, 'get_%s_message_display' % msg.lower(), None)
-        msg = 'AUTH_PROVIDER_%s' % msg
-        return override_msg or getattr(astakos_messages, msg, msg) % params
+    default_policies = {
+        'login': True,
+        'create': True,
+        'add': True,
+        'remove': True,
+        'limit': 1,
+        'switch': True,
+        'add_groups': [],
+        'creation_groups': [],
+        'required': False,
+        'automoderate': not astakos_settings.MODERATION_ENABLED
+    }
+
+    policies = {}
+
+    def __init__(self, user=None, identifier=None, **provider_params):
+        """
+        3 ways to initialize (no args, user, user and identifier).
+
+        no args: Used for anonymous unauthenticated users.
+        >>> p = auth_providers.get_provider('local')
+        >>> # check that global settings allows us to create a new account
+        >>> # using `local` provider.
+        >>> print p.is_available_for_create()
+
+        user and identifier: Used to provide details about a user's specific
+        login method.
+        >>> p = auth_providers.get_provider('google', user,
+        >>>                                 identifier='1421421')
+        >>> # provider (google) details prompt
+        >>> print p.get_method_details()
+        "Google account: 1421421"
+        """
+
+        # handle AnonymousUser instance
+        self.user = None
+        if user and hasattr(user, 'pk') and user.pk:
+            self.user = user
+
+        self.identifier = identifier
+        self._instance = None
+        if 'instance' in provider_params:
+            self._instance = provider_params['instance']
+            del provider_params['instance']
+
+        # initialize policies
+        self.module_policies = copy.copy(self.default_policies)
+        self.module_policies['automoderate'] = not \
+            astakos_settings.MODERATION_ENABLED
+        for policy, value in self.policies.iteritems():
+            setting_key = "%s_POLICY" % policy.upper()
+            if self.has_setting(setting_key):
+                self.module_policies[policy] = self.get_setting(setting_key)
+            else:
+                self.module_policies[policy] = value
+
+        # messages cache
+        self.message_tpls_compiled = OrderedDict()
+
+        # module specific messages
+        self.message_tpls = OrderedDict(self.message_tpls)
+        for key, value in self.messages.iteritems():
+            self.message_tpls[key] = value
+
+        self._provider_details = provider_params
+
+        self.resolve_available_methods = True
+
+    def get_provider_model(self):
+        from astakos.im.models import AstakosUserAuthProvider as AuthProvider
+        return AuthProvider
+
+    def remove_from_user(self):
+        if not self.get_remove_policy:
+            raise Exception("Provider cannot be removed")
+
+        for group_name in self.get_add_groups_policy:
+            group = Group.objects.get(name=group_name)
+            self.user.groups.remove(group)
+            self.log('removed from group due to add_groups_policy %s',
+                     group.name)
+
+        self._instance.delete()
+        self.log('removed')
+
+    def add_to_user(self, **params):
+        if self._instance:
+            raise Exception("Cannot add an existing provider")
+
+        create = False
+        if self.get_user_providers().count() == 0:
+            create = True
+
+        if create and not self.get_create_policy:
+            raise Exception("Provider not available for create")
+
+        if not self.get_add_policy:
+            raise Exception("Provider cannot be added")
+
+        if create:
+            for group_name in self.get_creation_groups_policy:
+                group, created = Group.objects.get_or_create(name=group_name)
+                self.user.groups.add(group)
+                self.log("added to %s group due to creation_groups_policy",
+                         group_name)
+
+        for group_name in self.get_add_groups_policy:
+            group, created = Group.objects.get_or_create(name=group_name)
+            self.user.groups.add(group)
+            self.log("added to %s group due to add_groups_policy",
+                     group_name)
+
+        if self.identifier:
+            pending = self.get_provider_model().objects.unverified(
+                self.module, identifier=self.identifier)
+
+            if pending:
+                pending._instance.delete()
+
+        create_params = {
+            'module': self.module,
+            'info_data': json.dumps(self.provider_details.get('info', {})),
+            'active': True,
+            'identifier': self.identifier
+        }
+        if 'info' in self.provider_details:
+            del self.provider_details['info']
+
+        create_params.update(self.provider_details)
+        create_params.update(params)
+        create = self.user.auth_providers.create(**create_params)
+        self.log("created %r" % create_params)
+        return create
+
+    def __repr__(self):
+        r = "'%s' module" % self.__class__.__name__
+        if self.user:
+            r += ' (user: %s)' % self.user
+        if self.identifier:
+            r += '(identifier: %s)' % self.identifier
+        return r
+
+    def _message_params(self, **extra_params):
+        """
+        Retrieve message formating parameters.
+        """
+        params = {'module': self.module, 'module_title': self.module.title()}
+        if self.identifier:
+            params['identifier'] = self.identifier
+
+        if self.user:
+            for key, val in self.user.__dict__.iteritems():
+                params["user_%s" % key.lower()] = val
+
+        if self.provider_details:
+            for key, val in self.provider_details.iteritems():
+                params["provider_%s" % key.lower()] = val
+
+            if 'info' in self.provider_details:
+                if isinstance(self.provider_details['info'], basestring):
+                    self.provider_details['info'] = \
+                        json.loads(self.provider_details['info'])
+                for key, val in self.provider_details['info'].iteritems():
+                   params['provider_info_%s' % key.lower()] = val
+
+        # resolve username, handle unexisting defined username key
+        if self.user and self.username_key in params:
+            params['username'] = params[self.username_key]
+        else:
+            params['username'] = self.identifier
+
+        if not self.message_tpls_compiled:
+            for key, message_tpl in self.message_tpls.iteritems():
+                msg = self.messages.get(key, self.message_tpls.get(key))
+                override_in_settings = self.get_setting(key)
+                if override_in_settings is not None:
+                    msg = override_in_settings
+                try:
+                    self.message_tpls_compiled[key] = msg.format(**params)
+                    params.update(self.message_tpls_compiled)
+                except KeyError, e:
+                    continue
+        else:
+            params.update(self.message_tpls_compiled)
+
+        for key, value in self.urls.iteritems():
+            params['%s_url' % key] = value
+
+        if self.user and self.resolve_available_methods:
+            available_providers = self.user.get_enabled_auth_providers()
+            for p in available_providers:
+                p.resolve_available_methods = False
+                if p.module == self.module and p.identifier == self.identifier:
+                    available_providers.remove(p)
+
+            get_msg = lambda p: p.get_method_prompt_msg
+            params['available_methods'] = \
+                ','.join(map(get_msg, available_providers))
+
+            get_msg = lambda p: "<a href='%s'>%s</a>" % \
+                (p.get_login_url, p.get_method_prompt_msg)
+
+            params['available_methods_links'] = \
+                ','.join(map(get_msg, available_providers))
+
+        params.update(extra_params)
+        return params
+
+    def get_template(self, tpl):
+        tpls = ['im/auth/%s_%s.html' % (self.module, tpl),
+                getattr(self, '%s_template' % tpl)]
+        found = None
+        for tpl in tpls:
+            try:
+                found = template.loader.get_template(tpl)
+                return tpl
+            except template.TemplateDoesNotExist:
+                continue
+        if not found:
+            raise template.TemplateDoesNotExist
+        return tpl
+
+    def get_username(self):
+        return self.get_username_msg
+
+    def get_user_providers(self):
+        return self.user.auth_providers.active().filter(
+            module__in=astakos_settings.IM_MODULES)
+
+    def get_user_module_providers(self):
+        return self.user.auth_providers.active().filter(module=self.module)
+
+    def get_existing_providers(self):
+        return ""
+
+    def verified_exists(self):
+        return self.get_provider_model().objects.verified(
+            self.module, identifier=self.identifier)
+
+    def resolve_policy(self, policy, default=None):
+
+        if policy == 'switch' and default and not self.get_add_policy:
+            return not self.get_policy('remove')
+
+        if not self.user:
+            return default
+
+        if policy == 'remove' and default is True:
+            return self.get_user_providers().count() > 1
+
+        if policy == 'add' and default is True:
+            limit = self.get_policy('limit')
+            if limit <= self.get_user_module_providers().count():
+                return False
+
+            if self.identifier:
+                if self.verified_exists():
+                    return False
+
+        return default
+
+    def get_user_policies(self):
+        from astakos.im.models import AuthProviderPolicyProfile
+        return AuthProviderPolicyProfile.objects.for_user(self.user,
+                                                          self.module)
+
+    def get_policy(self, policy):
+        module_default = self.module_policies.get(policy)
+        settings_key = '%s_POLICY' % policy.upper()
+        settings_default = self.get_setting(settings_key, module_default)
+
+        if self.user:
+            user_policies = self.get_user_policies()
+            settings_default = user_policies.get(policy, settings_default)
+
+        return self.resolve_policy(policy, settings_default)
+
+    def get_message(self, msg, **extra_params):
+        """
+        Retrieve an auth provider message
+        """
+        if msg.endswith('_msg'):
+            msg = msg.replace('_msg', '')
+        params = self._message_params(**extra_params)
+
+        # is message ???
+        tpl = self.message_tpls_compiled.get(msg.lower(), None)
+        if not tpl:
+            msg_key = 'AUTH_PROVIDER_%s' % msg.upper()
+            try:
+                tpl = getattr(astakos_messages, msg_key)
+            except AttributeError, e:
+                try:
+                    msg_key = msg.upper()
+                    tpl = getattr(astakos_messages, msg_key)
+                except AttributeError, e:
+                    tpl = ''
+
+        in_settings = self.get_setting(msg)
+        if in_settings:
+            tpl = in_settings
+
+        return tpl.format(**params)
 
     @property
-    def add_url(self):
-        return reverse(self.login_view)
+    def urls(self):
+        urls = {
+            'login': reverse(self.login_view),
+            'add': reverse(self.login_view),
+            'profile': reverse('edit_profile'),
+        }
+        if self.user:
+            urls.update({
+                'resend_activation': self.user.get_resend_activation_url(),
+            })
+        if self.identifier and self._instance:
+            urls.update({
+                'switch': reverse(self.login_view) + '?switch_from=%d' % \
+                    self._instance.pk,
+                'remove': reverse('remove_auth_provider',
+                                  kwargs={'pk': self._instance.pk})
+            })
+        urls.update(self.module_urls)
+        return urls
+
+    def get_setting_key(self, name):
+        return 'ASTAKOS_AUTH_PROVIDER_%s_%s' % (self.module.upper(),
+                                                name.upper())
+
+    def get_global_setting_key(self, name):
+        return 'ASTAKOS_AUTH_PROVIDERS_%s' % name.upper()
+
+    def has_global_setting(self, name):
+        return hasattr(settings, self.get_global_setting_key(name))
+
+    def has_setting(self, name):
+        return hasattr(settings, self.get_setting_key(name))
+
+    def get_setting(self, name, default=None):
+        attr = self.get_setting_key(name)
+        if not self.has_setting(name):
+            return self.get_global_setting(name, default)
+        return getattr(settings, attr, default)
+
+    def get_global_setting(self, name, default=None):
+        attr = self.get_global_setting_key(name)
+        if not self.has_global_setting(name):
+            return default
+        return getattr(settings, attr, default)
 
     @property
     def provider_details(self):
-        if self.user:
+        if self._provider_details:
+            return self._provider_details
+
+        self._provider_details = {}
+
+        if self._instance:
+            self._provider_details = self._instance.__dict__
+
+        if self.user and self.identifier:
             if self.identifier:
-                self._provider_details = \
-                    self.user.get_auth_providers().get(module=self.module,
-                                                       identifier=self.identifier).__dict__
-            else:
-                self._provider_details = self.user.get(module=self.module).__dict__
+                try:
+                    self._provider_details = \
+                        self.user.get_auth_providers().get(
+                            module=self.module,
+                            identifier=self.identifier).__dict__
+                except Exception:
+                    return {}
         return self._provider_details
-
-    def __init__(self, user=None, identifier=None, provider_details=None):
-        self.user = user
-        self.identifier = identifier
-
-        self._provider_details = None
-        if provider_details:
-            self._provider_details = provider_details
-
-        for tpl in ['login_prompt', 'login', 'signup_prompt']:
-            tpl_name = '%s_%s' % (tpl, 'template')
-            override = self.get_setting(tpl_name)
-            if override:
-                setattr(self, tpl_name, override)
-
-        for key in ['one_per_user']:
-            override = self.get_setting(key)
-            if override != None:
-                setattr(self, key, override)
-
-        self.login_message = self.login_message or self.get_title_display
-        if self.logout_message and "%" in self.logout_message:
-            logout_text_display = self.logout_from_provider_text or 'at %s' % self.get_title_display
-            self.logout_message = self.logout_message % {'provider':
-                                                         logout_text_display}
-        else:
-            self.logout_message = self.logout_message or ''
-
-        if not self.icon_url:
-            self.icon_url = '%s%s' % (settings.MEDIA_URL, 'im/auth/icons/%s.png' %
-                                       self.module.lower())
-
-        if not self.icon_medium_url:
-            self.icon_medium_url = '%s%s' % (settings.MEDIA_URL, 'im/auth/icons-medium/%s.png' %
-                                       self.module.lower())
-
-        if not self.method_prompt:
-            self.method_prompt = _('%s login method') % self.get_title_display
 
     def __getattr__(self, key):
         if not key.startswith('get_'):
             return super(AuthProvider, self).__getattribute__(key)
 
-        if key.endswith('_display') or key.endswith('template'):
-            attr = key.replace('_display', '').replace('get_','')
-            settings_attr = self.get_setting(attr.upper())
-            if not settings_attr:
-                return getattr(self, attr)
-            return _(settings_attr)
-        else:
-            return super(AuthProvider, self).__getattr__(key)
+        key = key.replace('get_', '')
+        if key.endswith('_msg'):
+            return self.get_message(key)
 
-    def get_logout_message(self):
-        content = ''
-        if self.remote_logout_url:
-            content = '<a href="%s" title="Logout from %%s"></a>' % self.remote_logou_url
-        return content % (self.get_logout_message_display % self.get_title_display)
+        if key.endswith('_policy'):
+            return self.get_policy(key.replace('_policy', ''))
 
-    def get_setting(self, name, default=None):
-        attr = 'ASTAKOS_AUTH_PROVIDER_%s_%s' % (self.module.upper(), name.upper())
-        attr_sec = 'ASTAKOS_%s_%s' % (self.module.upper(), name.upper())
-        if not hasattr(settings, attr):
-            return getattr(settings, attr_sec, default)
+        if key.endswith('_url'):
+            key = key.replace('_url', '')
+            return self.urls.get(key)
 
-        return getattr(settings, attr, default)
+        if key.endswith('_icon'):
+            key = key.replace('_msg', '_icon')
+            return settings.MEDIA_URL + self.get_message(key)
 
-    def is_available_for_remove(self):
-        return self.is_active() and self.get_setting('CAN_REMOVE', True)
+        if key.endswith('_setting'):
+            key = key.replace('_setting', '')
+            return self.get_message(key)
 
-    def is_available_for_login(self):
-        """ A user can login using authentication provider"""
-        return self.is_active() and self.get_setting('CAN_LOGIN',
-                                                     self.is_active())
+        if key.endswith('_template'):
+            key = key.replace('_template', '')
+            return self.get_template(key)
 
-    def is_available_for_create(self):
-        """ A user can create an account using this provider"""
-        return self.is_active() and self.get_setting('CAN_CREATE',
-                                                   self.is_active())
-
-    def is_available_for_add(self):
-        """ A user can assign provider authentication method"""
-        return self.is_active() and self.get_setting('CAN_ADD',
-                                                   self.is_active())
-
-    def is_required(self):
-        """Provider required (user cannot remove the last one)"""
-        return self.is_active() and self.get_setting('REQUIRED', False)
+        return super(AuthProvider, self).__getattribute__(key)
 
     def is_active(self):
-        return self.module in astakos_settings.IM_MODULES
+        return self.module_enabled
+
+    @property
+    def log_display(self):
+        dsp = "%sAuth" % self.module.title()
+        if self.user:
+            dsp += "[%s]" % self.user.log_display
+            if self.identifier:
+                dsp += '[%s]' % self.identifier
+                if self._instance and self._instance.pk:
+                    dsp += '[%d]' % self._instance.pk
+        return dsp
+
+    def log(self, msg, *args, **kwargs):
+        level = kwargs.pop('level', logging.INFO)
+        message = '%s: %s' % (self.log_display, msg)
+        logger.log(level, message, *args, **kwargs)
 
 
 class LocalAuthProvider(AuthProvider):
     module = 'local'
-    title = _('Local password')
-    description = _('Create a local password for your account')
-    add_prompt =  _('Enable Classic login for your account')
-    details_tpl = _('Username: %(username)s')
-    login_prompt = _('Classic login (username/password)')
-    signup_prompt = _('New to ~okeanos ?')
-    signup_link_prompt = _('create an account now')
+
     login_view = 'password_change'
     remote_authenticate = False
-    logout_message = ''
+    username_key = 'user_email'
 
-    one_per_user = True
+    messages = {
+        'title': _('Classic'),
+        'login_prompt': _('Classic login (username/password)'),
+        'login_success': _('Logged in successfully.'),
+        'method_details': 'Username: {username}',
+        'logout_success_extra': ' '
+    }
 
-    login_template = 'im/auth/local_login_form.html'
-    login_prompt_template = 'im/auth/local_login_prompt.html'
-    signup_prompt_template = 'im/auth/local_signup_prompt.html'
+    policies = {
+        'limit': 1,
+        'switch': False
+    }
 
     @property
-    def extra_actions(self):
-        return [(_('Change password'), reverse('password_change')), ]
+    def urls(self):
+        urls = super(LocalAuthProvider, self).urls
+        urls['change_password'] = reverse('password_change')
+        if self.user:
+            urls['add'] = reverse('password_change')
+        if self._instance:
+            urls.update({
+                'remove': reverse('remove_auth_provider',
+                                  kwargs={'pk': self._instance.pk})
+            })
+            if 'switch' in urls:
+                del urls['switch']
+        return urls
+
+    def remove_from_user(self):
+        super(LocalAuthProvider, self).remove_from_user()
+        self.user.set_unusable_password()
+        self.user.save()
 
 
 class ShibbolethAuthProvider(AuthProvider):
     module = 'shibboleth'
-    title = _('Academic account')
-    add_prompt = _('Enable Academic login for your account')
-    details_tpl = _('Identifier: %(identifier)s')
-    user_title = _('Academic account (%(identifier)s)')
-    primary_login_prompt = _('If you are a student, professor or researcher you '
-                             'can login using your academic account.')
-    login_view = 'astakos.im.target.shibboleth.login'
+    login_view = 'astakos.im.views.target.shibboleth.login'
+    username_key = 'identifier'
 
-    login_template = 'im/auth/shibboleth_login.html'
-    login_prompt_template = 'im/auth/third_party_provider_generic_login_prompt.html'
-    logout_from_provider_text = 'Please close all browser windows to complete logout from your Academic account, too.'
-    logout_message = logout_from_provider_text
+    policies = {
+        'switch': False
+    }
 
-    method_prompt = _('Academic account')
+    messages = {
+        'title': _('Academic'),
+        'login_description': _('If you are a student, professor or researcher'
+                               ' you can login using your academic account.'),
+        'method_details': 'Account: {username}',
+        'logout_extra': _('Please close all browser windows to complete '
+                          'logout from your Academic account, too.')
+    }
 
 
 class TwitterAuthProvider(AuthProvider):
     module = 'twitter'
-    title = _('Twitter')
-    add_prompt = _('Enable Twitter login for your account')
-    details_tpl = _('Username: %(info_screen_name)s')
-    user_title = _('Twitter (%(info_screen_name)s)')
-    login_view = 'astakos.im.target.twitter.login'
+    login_view = 'astakos.im.views.target.twitter.login'
+    username_key = 'provider_info_screen_name'
 
-    login_template = 'im/auth/third_party_provider_generic_login.html'
-    login_prompt_template = 'im/auth/third_party_provider_generic_login_prompt.html'
+    messages = {
+        'title': _('Twitter'),
+        'method_details': 'Screen name: {username}',
+    }
 
 
 class GoogleAuthProvider(AuthProvider):
     module = 'google'
-    title = _('Google')
-    add_prompt = _('Enable Google login for your account')
-    details_tpl = _('Email: %(info_email)s')
-    user_title = _('Google (%(info_email)s)')
-    login_view = 'astakos.im.target.google.login'
+    login_view = 'astakos.im.views.target.google.login'
+    username_key = 'provider_info_email'
 
-    login_template = 'im/auth/third_party_provider_generic_login.html'
-    login_prompt_template = 'im/auth/third_party_provider_generic_login_prompt.html'
+    messages = {
+        'title': _('Google'),
+        'method_details': 'Email: {username}',
+    }
 
 
 class LinkedInAuthProvider(AuthProvider):
     module = 'linkedin'
-    title = _('LinkedIn')
-    add_prompt = _('Enable LinkedIn login for your account')
-    details_tpl = _('Email: %(info_emailAddress)s')
-    user_title = _('LinkedIn (%(info_emailAddress)s)')
-    login_view = 'astakos.im.target.linkedin.login'
+    login_view = 'astakos.im.views.target.linkedin.login'
+    username_key = 'provider_info_email'
 
-    login_template = 'im/auth/third_party_provider_generic_login.html'
-    login_prompt_template = 'im/auth/third_party_provider_generic_login_prompt.html'
+    messages = {
+        'title': _('LinkedIn'),
+        'method_details': 'Email: {username}',
+    }
 
 
-def get_provider(id, user_obj=None, default=None, identifier=None, provider_details={}):
+# Utility method
+def get_provider(module, user_obj=None, identifier=None, **params):
     """
     Return a provider instance from the auth providers registry.
     """
-    if not id in PROVIDERS:
-        raise Exception('Invalid auth provider requested "%s"' % id)
+    if not module in PROVIDERS:
+        raise Exception('Invalid auth provider "%s"' % id)
 
-    return PROVIDERS.get(id, default)(user_obj, identifier, provider_details)
-
+    return PROVIDERS.get(module)(user_obj, identifier, **params)

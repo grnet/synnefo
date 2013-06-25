@@ -156,31 +156,30 @@ discarding data from all but one.
                             snf-common \
                             snf-webproject \
                             snf-quotaholder-app \
-                            snf-astakos-app \
+                            snf-astakos-app
 
 
     cyclades.host$ apt-get install \
                             kamaki \
                             snf-common \
-                            snf-webproject
+                            snf-webproject \
                             snf-pithos-backend \
-                            snf-cyclades-app \
+                            snf-cyclades-app
 
-                           
     pithos.host$ apt-get install \
                             kamaki \
                             snf-common \
-                            snf-webproject
+                            snf-webproject \
                             snf-pithos-backend \
                             snf-pithos-app \
-                            snf-pithos-webclient \
+                            snf-pithos-webclient
 
 
     ganeti.node$ apt-get install \
                             kamaki \
                             snf-common \
                             snf-cyclades-gtools \
-                            snf-pithos-backend \
+                            snf-pithos-backend
 
 .. note::
 
@@ -285,10 +284,9 @@ On the Pithos host, edit ``/etc/synnefo/20-snf-pithos-app-settings.conf``:
 
         RewriteRule ^/login(.*) /im/login/redirect$1 [PT,NE]
 
-    (see `<http://docs.dev.grnet.gr/synnefo/latest/quick-install-admin-guide.html#apache2-setup>`_)
+  (see `<http://www.synnefo.org/docs/synnefo/latest/quick-install-admin-guide.html#apache2-setup>`_)
 
-- Enable users to change their contact email. Edit
-``/etc/synnefo/20-snf-astakos-app-settings.conf`` ::
+- Enable users to change their contact email. Edit ``/etc/synnefo/20-snf-astakos-app-settings.conf`` ::
 
     ASTAKOS_EMAILCHANGE_ENABLED = True
 
@@ -314,7 +312,7 @@ On the Pithos host, edit ``/etc/synnefo/20-snf-pithos-app-settings.conf``:
 .. note::
 
     The ``SERVER_EMAIL`` and ``ADMINS`` settings are Django-specific.
-    As such they will be the shared for any two (or more) services that happen
+    As such they will be shared among any two (or more) services that happen
     to be collocated within the same application server (e.g. astakos &
     cyclades within the same gunicorn)
 
@@ -480,7 +478,7 @@ and associated default limits into Astakos. On the Astakos host run ::
     there were per-service settings).
     However, limits to the new resources must also be set.
 
-    If the intetion is to keep a resource unlimited, (counting on that VM
+    If the intention is to keep a resource unlimited, (counting on that VM
     creation will be limited by other resources' limit) it is best to calculate
     a value that is too large to be reached because of other limits (and
     available flavours), but not much larger than needed because this might
@@ -643,7 +641,7 @@ nothing of the current resource usage. Therefore, each service must send it in.
 
 ::
 
-    pithos.host$ snf-manage pithos-reset-usage
+    pithos.host$ snf-manage pithos-usage --reset
 
 9.2 Initialize Cyclades resource usage
 --------------------------------------
@@ -662,7 +660,7 @@ a management command has to be run periodically
 
 A list of expired projects can be extracted with::
 
-    astakos.host$ snf-manage project-control --list-expired
+    astakos.host$ snf-manage project-control --check-expired
 
 
 11. Restart all services

@@ -29,21 +29,14 @@
 #
 
 from django.core.management.base import BaseCommand, CommandError
-from optparse import make_option
 
-from synnefo.plankton.backend import ImageBackend
-from pprint import pprint
+from synnefo.plankton.utils import image_backend
+from synnefo.webproject.management import utils
 
 
 class Command(BaseCommand):
     args = "<image_id>"
     help = "Display available information about an image"
-    option_list = BaseCommand.option_list + (
-        make_option(
-            '--user-id',
-            dest='userid',
-            help="The ID of the owner of the Image."),
-    )
 
     def handle(self, *args, **options):
 
@@ -51,11 +44,11 @@ class Command(BaseCommand):
             raise CommandError("Please provide an image ID")
         image_id = args[0]
 
-        userid = options['userid']
-        c = ImageBackend(userid) if userid else ImageBackend("")
-
-        image = c.get_image(image_id)
-        if not image:
-            raise CommandError("Image not Found")
-
-        pprint(image, stream=self.stdout)
+        with image_backend(None) as backend:
+            images = backend._list_images(None)
+            try:
+                image = filter(lambda x: x["id"] == image_id, images)[0]
+            except IndexError:
+                raise CommandError("Image not found. Use snf-manage image-list"
+                                   " to get the list of all images.")
+        utils.pprint_table(out=self.stdout, table=[image.values()], headers=image.keys(), vertical=True)

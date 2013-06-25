@@ -11,9 +11,9 @@ You can use `snf-deploy` to deploy Synnefo, in two ways:
 
 Currently, `snf-deploy` is mostly useful for testing/demo installations and is
 not recommended for production environment Synnefo deployments. If you want to
-deploy Synnefo in production, please read first the :ref:`Admin's quick
-installation guide <quick-install-admin-guide>` and then the :ref:`Admin's
-guide <admin-guide>`.
+deploy Synnefo in production, please read first the :ref:`Admin's installation
+guide <quick-install-admin-guide>` and then the :ref:`Admin's guide
+<admin-guide>`.
 
 If you use `snf-deploy` you will setup an up-and-running Synnefo installation,
 but the end-to-end functionality will depend on your underlying infrastracture

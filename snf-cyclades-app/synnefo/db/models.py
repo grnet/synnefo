@@ -29,6 +29,7 @@
 
 import datetime
 
+from copy import deepcopy
 from django.conf import settings
 from django.db import models
 from django.db import IntegrityError
@@ -36,7 +37,7 @@ from django.db import IntegrityError
 import utils
 from contextlib import contextmanager
 from hashlib import sha1
-from synnefo.api.faults import ServiceUnavailable
+from snf_django.lib.api import faults
 from synnefo import settings as snf_settings
 from aes_encrypt import encrypt_db_charfield, decrypt_db_charfield
 
@@ -54,8 +55,7 @@ class Flavor(models.Model):
     cpu = models.IntegerField('Number of CPUs', default=0)
     ram = models.IntegerField('RAM size in MiB', default=0)
     disk = models.IntegerField('Disk size in GiB', default=0)
-    disk_template = models.CharField('Disk template', max_length=32,
-                       default=settings.DEFAULT_GANETI_DISK_TEMPLATE)
+    disk_template = models.CharField('Disk template', max_length=32)
     deleted = models.BooleanField('Deleted', default=False)
 
     class Meta:
@@ -87,6 +87,9 @@ class Backend(models.Model):
                                         default=0)
     drained = models.BooleanField('Drained', default=False, null=False)
     offline = models.BooleanField('Offline', default=False, null=False)
+    # Type of hypervisor
+    hypervisor = models.CharField('Hypervisor', max_length=32, default="kvm",
+                                  null=False)
     # Last refresh of backend resources
     updated = models.DateTimeField(auto_now_add=True)
     # Backend resources
@@ -100,6 +103,12 @@ class Backend(models.Model):
                                          default=0, null=False)
     # Custom object manager to protect from cascade delete
     objects = ProtectedDeleteManager()
+
+    HYPERVISORS = (
+        ("kvm", "Linux KVM hypervisor"),
+        ("xen-pvm", "Xen PVM hypervisor"),
+        ("xen-hvm", "Xen KVM hypervisor"),
+    )
 
     class Meta:
         verbose_name = u'Backend'
@@ -115,7 +124,7 @@ class Backend(models.Model):
     def get_client(self):
         """Get or create a client. """
         if self.offline:
-            raise ServiceUnavailable
+            raise faults.ServiceUnavailable
         return get_rapi_client(self.id, self.hash,
                                self.clustername,
                                self.port,
@@ -179,6 +188,15 @@ class Backend(models.Model):
             except IndexError:
                 raise Exception("Can not create more than 16 backends")
 
+    def use_hotplug(self):
+        return self.hypervisor == "kvm" and snf_settings.GANETI_USE_HOTPLUG
+
+    def get_create_params(self):
+        params = deepcopy(snf_settings.GANETI_CREATEINSTANCE_KWARGS)
+        params["hvparams"] = params.get("hvparams", {})\
+                                   .get(self.hypervisor, {})
+        return params
+
 
 # A backend job may be in one of the following possible states
 BACKEND_STATUSES = (
@@ -193,19 +211,25 @@ BACKEND_STATUSES = (
 
 
 class QuotaHolderSerial(models.Model):
+    """Model representing a serial for a Quotaholder Commission.
+
+    serial:   The serial that Quotaholder assigned to this commission
+    pending:  Whether it has been decided to accept or reject this commission
+    accept:   If pending is False, this attribute indicates whether to accept
+              or reject this commission
+    resolved: Whether this commission has been accepted or rejected to
+              Quotaholder.
+
+    """
     serial = models.BigIntegerField(null=False, primary_key=True,
                                     db_index=True)
     pending = models.BooleanField(default=True, db_index=True)
-    accepted = models.BooleanField(default=False)
-    rejected = models.BooleanField(default=False)
+    accept = models.BooleanField(default=False)
+    resolved = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = u'Quota Serial'
         ordering = ["serial"]
-
-    def save(self, *args, **kwargs):
-        self.pending = not (self.accepted or self.rejected)
-        super(QuotaHolderSerial, self).save(*args, **kwargs)
 
 
 class VirtualMachine(models.Model):
@@ -326,7 +350,7 @@ class VirtualMachine(models.Model):
         if self.backend:
             return self.backend.get_client()
         else:
-            raise ServiceUnavailable
+            raise faults.ServiceUnavailable
 
     def get_last_diagnostic(self, **filters):
         try:
@@ -395,12 +419,6 @@ class VirtualMachine(models.Model):
         def __str__(self):
             return repr(str(self._action))
 
-    class DeletedError(Exception):
-        pass
-
-    class BuildingError(Exception):
-        pass
-
 
 class VirtualMachineMetadata(models.Model):
     meta_key = models.CharField(max_length=50)
@@ -417,7 +435,7 @@ class VirtualMachineMetadata(models.Model):
 
 class Network(models.Model):
     OPER_STATES = (
-        ('PENDING', 'Pending'),
+        ('PENDING', 'Pending'),  # Unused because of lazy networks
         ('ACTIVE', 'Active'),
         ('DELETED', 'Deleted'),
         ('ERROR', 'Error')
@@ -493,6 +511,7 @@ class Network(models.Model):
                                       through='NetworkInterface')
     action = models.CharField(choices=ACTIONS, max_length=32, null=True,
                               default=None)
+    drained = models.BooleanField("Drained", default=False, null=False)
 
     pool = models.OneToOneField('IPPoolTable', related_name='network',
                 default=lambda: IPPoolTable.objects.create(available_map='',
@@ -578,12 +597,6 @@ class Network(models.Model):
         def __str__(self):
             return repr(str(self._action))
 
-    class DeletedError(Exception):
-        pass
-
-    class BuildingError(Exception):
-        pass
-
 
 class BackendNetwork(models.Model):
     OPER_STATES = (
@@ -655,6 +668,9 @@ class BackendNetwork(models.Model):
                                               mac_prefix)
             self.mac_prefix = mac_prefix
 
+    def __unicode__(self):
+        return '<%s@%s>' % (self.network, self.backend)
+
 
 class NetworkInterface(models.Model):
     FIREWALL_PROFILES = (
@@ -663,17 +679,24 @@ class NetworkInterface(models.Model):
         ('PROTECTED', 'Protected')
     )
 
+    STATES = (
+        ("ACTIVE", "Active"),
+        ("BUILDING", "Building"),
+    )
+
     machine = models.ForeignKey(VirtualMachine, related_name='nics')
     network = models.ForeignKey(Network, related_name='nics')
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     index = models.IntegerField(null=False)
-    mac = models.CharField(max_length=32, null=False, unique=True)
+    mac = models.CharField(max_length=32, null=True, unique=True)
     ipv4 = models.CharField(max_length=15, null=True)
     ipv6 = models.CharField(max_length=100, null=True)
     firewall_profile = models.CharField(choices=FIREWALL_PROFILES,
                                         max_length=30, null=True)
     dirty = models.BooleanField(default=False)
+    state = models.CharField(max_length=32, null=False, default="ACTIVE",
+                             choices=STATES)
 
     def __unicode__(self):
         return '%s@%s' % (self.machine.name, self.network.name)
@@ -726,7 +749,8 @@ def pooled_rapi_client(obj):
             backend = obj
 
         if backend.offline:
-            raise ServiceUnavailable
+            log.warning("Trying to connect with offline backend: %s", backend)
+            raise faults.ServiceUnavailable
 
         b = backend
         client = get_rapi_client(b.id, b.hash, b.clustername, b.port,

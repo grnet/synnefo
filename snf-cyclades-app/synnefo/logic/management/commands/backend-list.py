@@ -31,40 +31,52 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
-from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import pprint_table
-
-from synnefo.db.models import Backend
+from synnefo.db.models import Backend, IPPoolTable
+from synnefo.webproject.management.commands import ListCommand
 
 
-class Command(BaseCommand):
-    help = "List backends"
+class Command(ListCommand):
+    help = "List Ganeti backends"
+    object_class = Backend
 
-    option_list = BaseCommand.option_list + (
-        make_option('-c',
-                    action='store_true',
-                    dest='csv',
-                    default=False,
-                    help="Use pipes to separate values"),
-    )
+    def get_vms(backend):
+        return backend.virtual_machines.filter(deleted=False).count()
 
-    def handle(self, *args, **options):
-        if args:
-            raise CommandError("Command doesn't accept any arguments")
+    def get_mem(backend):
+        return "%s/%s" % (backend.mfree, backend.mtotal)
 
-        backends = Backend.objects.order_by('id')
+    def get_disk(backend):
+        return "%s/%s" % (backend.dfree, backend.dtotal)
 
-        headers = ('id', 'clustername', 'port', 'username', "VMs", 'drained',
-                   'offline')
-        table = []
-        for backend in backends:
-            id = str(backend.id)
-            vms = str(backend.virtual_machines.filter(deleted=False).count())
-            fields = (id, backend.clustername, str(backend.port),
-                      backend.username, vms, str(backend.drained),
-                      str(backend.offline))
-            table.append(fields)
+    def get_ips(backend):
+        free_ips = 0
+        total_ips = 0
+        for bnet in backend.networks.filter(deleted=False,
+                                            network__drained=False,
+                                            network__public=True,
+                                            network__deleted=False):
+            network = bnet.network
+            try:
+                pool = IPPoolTable.objects.get(id=network.pool_id).pool
+                free_ips += pool.count_available()
+                total_ips += pool.pool_size
+            except IPPoolTable.DoesNotExist:
+                pass
+        return "%s/%s" % (free_ips, total_ips)
 
-        separator = " | " if options['csv'] else None
-        pprint_table(self.stdout, table, headers, separator)
+    FIELDS = {
+        "id": ("id", "Backend's unique ID"),
+        "clustername": ("clustername", "The name of the Ganeti cluster"),
+        "port": ("port", ""),
+        "username": ("username", "The RAPI user"),
+        "drained": ("drained", "Whether backend is marked as drained"),
+        "offline": ("offline", "Whether backend if marked as offline"),
+        "vms": (get_vms, "Number of VMs that this backend hosts"),
+        "ips": (get_ips, "free/total number of public IPs"),
+        "mem": (get_mem, "free/total memory (MB)"),
+        "disk": (get_mem, "free/total disk (GB)"),
+        "hypervisor": ("hypervisor", "The hypervisor the backend is using"),
+    }
+
+    fields = ["id", "clustername", "port", "username", "drained", "offline",
+              "vms", "hypervisor", "ips"]

@@ -5,6 +5,30 @@ Unified NEWS file for Synnefo versions >= 0.13
 
 Since v0.13 all Synnefo components have been merged into a single repository.
 
+
+.. _NEWS-0.13next:
+
+v0.13next
+=========
+
+Released: UNRELEASED
+
+Synnefo-wide
+------------
+
+Astakos
+-------
+
+Cyclades
+--------
+
+Pithos
+------
+
+Tools
+-----
+
+
 .. _NEWS-0.13:
 
 v0.13

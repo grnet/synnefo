@@ -45,7 +45,6 @@ from synnefo_stats.version import __version__
 
 # Package info
 VERSION = __version__
-README = open(os.path.join(HERE, 'README')).read()
 SHORT_DESCRIPTION = 'Synnefo graphic statistics component'
 
 PACKAGES_ROOT = '.'
@@ -59,6 +58,7 @@ INSTALL_REQUIRES = [
     'gdmodule',
     'py-rrdtool',
     'Django>=1.2, <1.3',
+    'snf-django-lib',
 ]
 
 setup(
@@ -67,7 +67,6 @@ setup(
     license='BSD',
     url='http://www.synnefo.org/',
     description=SHORT_DESCRIPTION,
-    long_description=README,
     classifiers=CLASSIFIERS,
 
     author='Synnefo development team',

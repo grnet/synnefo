@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,64 +31,28 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
-
-from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import (format_bool, filter_results,
-                                       pprint_table)
-
-from synnefo.db.models import Flavor
-
-FIELDS = Flavor._meta.get_all_field_names()
+from synnefo.webproject.management.commands import ListCommand
+from synnefo.db.models import Flavor, VirtualMachine
 
 
-class Command(BaseCommand):
-    help = "List flavors"
+class Command(ListCommand):
+    help = "List available server flavors"
 
-    option_list = BaseCommand.option_list + (
-        make_option('-c',
-            action='store_true',
-            dest='csv',
-            default=False,
-            help="Use pipes to separate values"),
-        make_option('--deleted',
-            action='store_true',
-            dest='deleted',
-            default=False,
-            help="Include deleted flavors"),
-         make_option('--filter-by',
-            dest='filter_by',
-            help="Filter results. Comma seperated list of key=val pairs"
-                 " that displayed entries must satisfy. e.g."
-                 " --filter-by \"cpu=1,ram!=1024\"."
-                 "Available keys are: %s" % ", ".join(FIELDS))
-        )
+    object_class = Flavor
+    deleted_field = "deleted"
 
-    def handle(self, *args, **options):
-        if args:
-            raise CommandError("Command doesn't accept any arguments")
+    def get_vms(flavor):
+        return VirtualMachine.objects.filter(flavor=flavor, deleted=False)\
+                                     .count()
 
-        if options['deleted']:
-            flavors = Flavor.objects.all()
-        else:
-            flavors = Flavor.objects.filter(deleted=False)
+    FIELDS = {
+        "id": ("id", "Flavor's unique ID"),
+        "name": ("name", "Flavor's unique name"),
+        "cpu": ("cpu", "Number of CPUs"),
+        "ram": ("ram", "Size(MB) of RAM"),
+        "disk": ("disk", "Size(GB) of disk"),
+        "template": ("disk_template", "Disk template"),
+        "vms": (get_vms, "Number of active servers using this flavor")
+    }
 
-        filter_by = options['filter_by']
-        if filter_by:
-            flavors = filter_results(flavors, filter_by)
-
-        headers = ('id', 'name', 'cpus', 'ram', 'disk', 'template', 'deleted')
-        table = []
-        for flavor in flavors.order_by('id'):
-            id = str(flavor.id)
-            cpu = str(flavor.cpu)
-            ram = str(flavor.ram)
-            disk = str(flavor.disk)
-            deleted = format_bool(flavor.deleted)
-            fields = (id, flavor.name, cpu, ram, disk, flavor.disk_template,
-                      deleted)
-
-            table.append(fields)
-
-        separator = " | " if options['csv'] else None
-        pprint_table(self.stdout, table, headers, separator)
+    fields = ["id", "name", "cpu", "ram", "disk", "template", "vms"]

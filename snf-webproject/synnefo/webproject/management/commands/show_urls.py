@@ -53,7 +53,7 @@ class Command(BaseCommand):
             for (func, regex) in view_functions:
                 func_name = hasattr(func, '__name__') and func.__name__ or repr(func)
                 views.append("%(url)s\t%(module)s.%(name)s" % {'name': style.MODULE_NAME(func_name),
-                                       'module': style.MODULE(func.__module__),
+                                       'module': style.MODULE(getattr(func, '__module__', '<no module>')),
                                        'url': style.URL(simplify_regex(regex))})
 
         return "\n".join([v for v in views])

@@ -33,8 +33,11 @@
 
 from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import (get_backend, check_backend_credentials,
-                                       parse_bool)
+from synnefo.db.models import Backend
+from synnefo.webproject.management.utils import parse_bool
+from synnefo.management.common import (get_backend, check_backend_credentials)
+
+HYPERVISORS = [h[0] for h in Backend.HYPERVISORS]
 
 
 class Command(BaseCommand):
@@ -61,6 +64,12 @@ class Command(BaseCommand):
                     metavar="True|False",
                     help="Set the backend as drained to exclude from"
                          " allocation operations"),
+        make_option('--hypervisor',
+                    dest='hypervisor',
+                    default=None,
+                    choices=HYPERVISORS,
+                    metavar="|".join(HYPERVISORS),
+                    help="The hypervisor that the Ganeti backend uses"),
         make_option('--offline',
                     dest='offline',
                     choices=["True", "False"],
@@ -89,8 +98,11 @@ class Command(BaseCommand):
                 check_backend_credentials(backend.clustername, backend.port,
                                           backend.username, backend.password)
         if options['drained']:
-            backend.drained = parse_bool(options['drained'])
+            backend.drained = parse_bool(options['drained'], strict=True)
         if options['offline']:
-            backend.offline = parse_bool(options['offline'])
+            backend.offline = parse_bool(options['offline'], strict=True)
+        hypervisor = options["hypervisor"]
+        if hypervisor:
+            backend.hypervisor = hypervisor
 
         backend.save()

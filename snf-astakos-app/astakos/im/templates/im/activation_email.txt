@@ -1,22 +1,19 @@
 {% extends "im/email.txt" %}
-
-{% block gr_content %}
-Αγαπητέ/η {{ user.realname }},
-
-Έπειτα από αίτημα σας έχει δημιουργηθεί ο λογαρισμός σας για την υπηρεσία {{ site_name }} της ΕΔΕΤ κατά την alpha2 (δεύτερη δοκιμαστική) φάση λειτουργίας της.
-
-Για να τον ενεργοποιήσετε, χρησιμοποιήστε το σύνδεσμο: {{ url }}
-{% endblock %}
-
-{% block gr_note %} {% endblock%}
-
-
-{% block en_content %}
+  
+{% block content %}
 Dear {{ user.realname }},
 
-After your request a new account for GRNET's {{ site_name }} service has been created for its alpha2 testing phase.
+After your request a new account for {{ BRANDING_COMPANY_NAME|upper }}'s {{ BRANDING_SERVICE_NAME }} service has been created.
 
-To activate the account, please use the link: {{ url }}
+To proceed with your account activation we require you to verify the email 
+address you provided during the signup process.
+
+Please click the link below to complete verification: 
+
+{{ url }}
+
+If you did not sign up for this account you can ignore this email and the 
+account will be deleted. 
 {% endblock %}
 
-{% block en_note %} {% endblock%}
+{% block note %} {% endblock%}

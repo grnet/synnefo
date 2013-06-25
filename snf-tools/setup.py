@@ -47,7 +47,6 @@ from synnefo_tools.version import __version__
 
 # Package info
 VERSION = __version__
-README = open(os.path.join(HERE, 'README')).read()
 SHORT_DESCRIPTION = 'Integration testing tool for a running Synnefo deployment'
 
 PACKAGES_ROOT = '.'
@@ -63,7 +62,7 @@ INSTALL_REQUIRES = [
     "python-prctl",
     "paramiko",
     "vncauthproxy",
-    "kamaki >= 0.6.2"]
+    "kamaki >= 0.9"]
 
 setup(
     name='snf-tools',
@@ -71,7 +70,6 @@ setup(
     license='BSD',
     url='http://www.synnefo.org/',
     description=SHORT_DESCRIPTION,
-    long_description=README,
     classifiers=CLASSIFIERS,
 
     author='Synnefo development team',

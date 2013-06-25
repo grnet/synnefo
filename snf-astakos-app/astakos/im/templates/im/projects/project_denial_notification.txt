@@ -1,10 +1,9 @@
---- A translation in English follows ---
+{% extends "im/email.txt" %}
 
-Η αίτησή σας για το project {{object.name}} έχει απορριφθεί.
-
---
-
+{% block content %}
 Your project application request ({{object.name}}) has been denied.
 
 Comment:
 {{object.response}}
+
+{% endblock content %}

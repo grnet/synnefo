@@ -599,6 +599,7 @@ to point at node1 which is where we have installed Astakos.
 If you are an advanced user and want to use the Shibboleth Authentication
 method, read the relative :ref:`section <shibboleth-auth>`.
 
+.. _email-configuration:
 
 Email delivery configuration
 ----------------------------

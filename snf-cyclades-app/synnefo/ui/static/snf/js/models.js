@@ -773,6 +773,7 @@
             
             // handle progress message on instance change
             this.bind("change", _.bind(this.update_status_message, this));
+            this.bind("change:task_state", _.bind(this.update_status, this));
             // force update of progress message
             this.update_status_message(true);
             
@@ -790,6 +791,10 @@
             if (!st) { return this.get("status")}
             return this.set({status:st});
         },
+        
+        update_status: function() {
+            this.set_status(this.get('status'));
+        },
 
         set_status: function(st) {
             var new_state = this.state_for_api_status(st);
@@ -802,7 +807,8 @@
             }
             
             // call it silently to avoid double change trigger
-            this.set({'state': this.state_for_api_status(st)}, {silent: true});
+            var state = this.state_for_api_status(st);
+            this.set({'state': state}, {silent: true});
             
             // trigger transition
             if (transition && models.VM.TRANSITION_STATES.indexOf(new_state) == -1) { 
@@ -1206,11 +1212,6 @@
             return this.state_transition(this.state(), status);
         },
         
-        // vm state equals vm api status
-        state_is_status: function(state) {
-            return models.VM.STATUSES.indexOf(state) != -1;
-        },
-        
         // get transition state for the corresponging api status
         state_transition: function(state, new_status) {
             var statuses = models.VM.STATES_TRANSITIONS[state];
@@ -1477,7 +1478,8 @@
                                          "create", // create so that sync later uses POST to make the call
                                          {resize: {flavorRef:params.flavor}}, // payload
                                          function() {
-                                             success.apply(this, arguments)
+                                             self.state('RESIZE');
+                                             success.apply(this, arguments);
                                              snf.api.trigger("call");
                                          },  
                                          error, 'resize', params);
@@ -1568,25 +1570,35 @@
         'shutdown',
         'reboot',
         'console',
-        'destroy'
+        'destroy',
+        'resize'
     ]
 
+    models.VM.TASK_STATE_STATUS_MAP = {
+      'BULDING': 'BUILD',
+      'REBOOTING': 'REBOOT',
+      'STOPPING': 'SHUTDOWN',
+      'STARTING': 'START',
+      'RESIZING': 'RESIZE',
+      'CONNECTING': 'CONNECT',
+      'DISCONNECTING': 'DISCONNECT',
+      'DESTROYING': 'DESTROY'
+    }
+
     models.VM.AVAILABLE_ACTIONS = {
-        'UNKNWON'       : ['destroy'],
-        'BUILD'         : ['destroy'],
-        'REBOOT'        : ['shutdown', 'destroy', 'console'],
+        'UNKNWON'       : [],
+        'BUILD'         : [],
+        'REBOOT'        : [],
         'STOPPED'       : ['start', 'destroy'],
         'ACTIVE'        : ['shutdown', 'destroy', 'reboot', 'console'],
         'ERROR'         : ['destroy'],
-        'DELETED'        : [],
+        'DELETED'       : [],
         'DESTROY'       : [],
-        'BUILD_INIT'    : ['destroy'],
-        'BUILD_COPY'    : ['destroy'],
-        'BUILD_FINAL'   : ['destroy'],
-        'SHUTDOWN'      : ['destroy'],
+        'SHUTDOWN'      : [],
         'START'         : [],
         'CONNECT'       : [],
-        'DISCONNECT'    : []
+        'DISCONNECT'    : [],
+        'RESIZE'        : []
     }
 
     // api status values
@@ -1597,7 +1609,8 @@
         'STOPPED',
         'ACTIVE',
         'ERROR',
-        'DELETED'
+        'DELETED',
+        'RESIZE'
     ]
 
     // api status values
@@ -1610,14 +1623,12 @@
     // vm states
     models.VM.STATES = models.VM.STATUSES.concat([
         'DESTROY',
-        'BUILD_INIT',
-        'BUILD_COPY',
-        'BUILD_FINAL',
         'SHUTDOWN',
         'START',
         'CONNECT',
         'DISCONNECT',
-        'FIREWALL'
+        'FIREWALL',
+        'RESIZE'
     ]);
     
     models.VM.STATES_TRANSITIONS = {
@@ -1628,9 +1639,7 @@
         'START': ['ERROR', 'ACTIVE', 'DESTROY'],
         'REBOOT': ['ERROR', 'ACTIVE', 'STOPPED', 'DESTROY'],
         'BUILD': ['ERROR', 'ACTIVE', 'DESTROY'],
-        'BUILD_COPY': ['ERROR', 'ACTIVE', 'BUILD_FINAL', 'DESTROY'],
-        'BUILD_FINAL': ['ERROR', 'ACTIVE', 'DESTROY'],
-        'BUILD_INIT': ['ERROR', 'ACTIVE', 'BUILD_COPY', 'BUILD_FINAL', 'DESTROY']
+        'RESIZE': ['ERROR', 'STOPPED']
     }
 
     models.VM.TRANSITION_STATES = [
@@ -1638,17 +1647,17 @@
         'SHUTDOWN',
         'START',
         'REBOOT',
-        'BUILD'
+        'BUILD',
+        'RESIZE'
     ]
 
     models.VM.ACTIVE_STATES = [
         'BUILD', 'REBOOT', 'ACTIVE',
-        'BUILD_INIT', 'BUILD_COPY', 'BUILD_FINAL',
         'SHUTDOWN', 'CONNECT', 'DISCONNECT'
     ]
 
     models.VM.BUILDING_STATES = [
-        'BUILD', 'BUILD_INIT', 'BUILD_COPY', 'BUILD_FINAL'
+        'BUILD'
     ]
 
     models.Networks = models.Collection.extend({
@@ -2061,6 +2070,14 @@
             if (data.status && data.status == "DELETED") {
                 if (!this.get(data.id)) {
                     return false;
+                }
+            }
+            
+            if ('SNF:task_state' in data) { 
+                data['task_state'] = data['SNF:task_state'];
+                if (data['task_state']) {
+                    var status = models.VM.TASK_STATE_STATUS_MAP[data['task_state']];
+                    if (status) { data['status'] = status }
                 }
             }
 

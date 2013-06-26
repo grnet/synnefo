@@ -15,7 +15,6 @@ Member Leave Policy:            {{object.member_leave_policy_display}}
 Owner:                          {{object.owner}}
 Applicant:                      {{object.applicant}}
 Maximum participant number:     {{object.limit_on_members_number}}
-Precursor:                      {{object.precursor_application.id}}
 Policies:
 {% for rp in object.projectresourcegrant_set.all %}
     {{rp}}

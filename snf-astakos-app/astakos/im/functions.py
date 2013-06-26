@@ -573,7 +573,7 @@ def join_project(project_id, request_user):
 
 def submit_application(owner=None,
                        name=None,
-                       precursor_id=None,
+                       project_id=None,
                        homepage=None,
                        description=None,
                        start_date=None,
@@ -585,20 +585,20 @@ def submit_application(owner=None,
                        resource_policies=None,
                        request_user=None):
 
-    precursor = None
-    if precursor_id is not None:
-        get_chain_of_application_for_update(precursor_id)
-        precursor = ProjectApplication.objects.get(id=precursor_id)
+    project = None
+    if project_id is not None:
+        get_chain_for_update(project_id)
+        project = Project.objects.get(id=project_id)
 
         if (request_user and
-            (not precursor.owner == request_user and
+            (not project.application.owner == request_user and
              not request_user.is_superuser
              and not request_user.is_project_admin())):
             m = _(astakos_messages.NOT_ALLOWED)
             raise PermissionDenied(m)
 
     force = request_user.is_project_admin()
-    ok, limit = qh_add_pending_app(owner, precursor, force)
+    ok, limit = qh_add_pending_app(owner, project, force)
     if not ok:
         m = _(astakos_messages.REACHED_PENDING_APPLICATION_LIMIT) % limit
         raise PermissionDenied(m)
@@ -607,7 +607,6 @@ def submit_application(owner=None,
         applicant=request_user,
         owner=owner,
         name=name,
-        precursor_application_id=precursor_id,
         homepage=homepage,
         description=description,
         start_date=start_date,
@@ -617,21 +616,20 @@ def submit_application(owner=None,
         limit_on_members_number=limit_on_members_number,
         comments=comments)
 
-    if precursor is None:
+    if project is None:
         chain = new_chain()
         application.chain_id = chain.chain
         application.save()
         Project.objects.create(id=chain.chain, application=application)
     else:
-        chain = precursor.chain
-        application.chain = chain
+        application.chain = project
         application.save()
-        if chain.application.state != ProjectApplication.APPROVED:
-            chain.application = application
-            chain.save()
+        if project.application.state != ProjectApplication.APPROVED:
+            project.application = application
+            project.save()
 
         pending = ProjectApplication.objects.filter(
-            chain=chain,
+            chain=project,
             state=ProjectApplication.PENDING).exclude(id=application.id)
         for app in pending:
             app.state = ProjectApplication.REPLACED
@@ -816,26 +814,25 @@ def count_pending_app(users):
     return usage
 
 
-def get_pending_app_diff(user, precursor):
-    if precursor is None:
+def get_pending_app_diff(user, project):
+    if project is None:
         diff = 1
     else:
-        chain = precursor.chain
         objs = ProjectApplication.objects
-        q = objs.filter(chain=chain, state=ProjectApplication.PENDING)
+        q = objs.filter(chain=project, state=ProjectApplication.PENDING)
         count = q.count()
         diff = 1 - count
     return diff
 
 
-def qh_add_pending_app(user, precursor=None, force=False):
+def qh_add_pending_app(user, project=None, force=False):
     user = AstakosUser.forupdate.get_for_update(id=user.id)
-    diff = get_pending_app_diff(user, precursor)
+    diff = get_pending_app_diff(user, project)
     return register_pending_apps(user, diff, force)
 
 
-def check_pending_app_quota(user, precursor=None):
-    diff = get_pending_app_diff(user, precursor)
+def check_pending_app_quota(user, project=None):
+    diff = get_pending_app_diff(user, project)
     quota = get_pending_app_quota(user)
     limit = quota['limit']
     usage = quota['usage']

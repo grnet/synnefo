@@ -906,8 +906,8 @@ class ProjectApplicationForm(forms.ModelForm):
 
     def save(self, commit=True):
         data = dict(self.cleaned_data)
-        data['precursor_id'] = self.instance.id
         is_new = self.instance.id is None
+        data['project_id'] = self.instance.chain.id if not is_new else None
         data['owner'] = self.user if is_new else self.instance.owner
         data['resource_policies'] = self.cleaned_resource_policies()
         data['request_user'] = self.user

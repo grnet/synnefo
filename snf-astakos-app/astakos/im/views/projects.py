@@ -205,7 +205,7 @@ def project_modify(request, application_id):
 
     if not user.is_project_admin():
         owner = app.owner
-        ok, limit = check_pending_app_quota(owner, precursor=app)
+        ok, limit = check_pending_app_quota(owner, project=app.chain)
         if not ok:
             m = _(astakos_messages.PENDING_APPLICATION_LIMIT_MODIFY) % limit
             messages.error(request, m)

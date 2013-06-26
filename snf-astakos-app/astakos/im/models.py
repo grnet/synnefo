@@ -1356,9 +1356,6 @@ class ProjectApplication(models.Model):
     chain = models.ForeignKey('Project',
                               related_name='chained_apps',
                               db_column='chain')
-    precursor_application = models.ForeignKey('ProjectApplication',
-                                              null=True,
-                                              blank=True)
     name = models.CharField(max_length=80)
     homepage = models.URLField(max_length=255, null=True,
                                verify_exists=False)

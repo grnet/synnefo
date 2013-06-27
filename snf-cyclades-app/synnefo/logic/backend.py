@@ -30,9 +30,6 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
-
-import multiprocessing
-
 from django.conf import settings
 from django.db import transaction
 from datetime import datetime
@@ -641,68 +638,19 @@ def set_firewall_profile(vm, profile):
                               os_name=os_name)
 
 
-def get_instances(backend, bulk, queue):
-    with pooled_rapi_client(backend) as client:
-        instances = client.GetInstances(bulk=bulk)
-    queue.put(instances)
+def get_instances(backend, bulk=True):
+    with pooled_rapi_client(backend) as c:
+        return c.GetInstances(bulk=bulk)
 
 
-def get_nodes(backend, bulk, queue):
-    with pooled_rapi_client(backend) as client:
-        nodes = client.GetNodes(bulk=bulk)
-    queue.put(nodes)
+def get_nodes(backend, bulk=True):
+    with pooled_rapi_client(backend) as c:
+        return c.GetNodes(bulk=bulk)
 
 
-def get_jobs(backend, bulk, queue):
-    with pooled_rapi_client(backend) as client:
-        nodes = client.GetJobs()
-    queue.put(nodes)
-
-
-def get_ganeti_instances(backend=None, bulk=False):
-    backends = get_backends(backend)
-    return get_from_ganeti(backends, get_instances, bulk)
-
-
-def get_ganeti_jobs(backend=None, bulk=False):
-    backends = get_backends(backend)
-    return get_from_ganeti(backends, get_jobs, bulk)
-
-
-def get_ganeti_nodes(backend=None, bulk=False):
-    backends = get_backends(backend)
-    return get_from_ganeti(backends, get_nodes, bulk)
-
-
-def get_from_ganeti(backends, callback, bulk):
-    queue = multiprocessing.Queue()
-    processes = []
-    for backend in backends:
-        p = multiprocessing.Process(target=callback,
-                                    args=(backend, bulk, queue))
-        processes.append((p, backend))
-        p.start()
-    for (p, b) in processes:
-        p.join()
-        if p.exitcode != 0:
-            raise Exception("Error getting instances from backend %s" % b)
-    items = []
-    for p in processes:
-        items.extend(queue.get())
-    return items
-
-
-##
-##
-##
-
-
-def get_backends(backend=None):
-    if backend:
-        if backend.offline:
-            return []
-        return [backend]
-    return Backend.objects.filter(offline=False)
+def get_jobs(backend):
+    with pooled_rapi_client(backend) as c:
+        return c.GetJobs()
 
 
 def get_physical_resources(backend):
@@ -711,7 +659,7 @@ def get_physical_resources(backend):
     Get the resources of a backend as reported by the backend (not the db).
 
     """
-    nodes = get_ganeti_nodes(backend, bulk=True)
+    nodes = get_nodes(backend, bulk=True)
     attr = ['mfree', 'mtotal', 'dfree', 'dtotal', 'pinst_cnt', 'ctotal']
     res = {}
     for a in attr:

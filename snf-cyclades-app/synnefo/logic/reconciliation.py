@@ -73,7 +73,7 @@ from datetime import datetime, timedelta
 
 from synnefo.db.models import (VirtualMachine, pooled_rapi_client)
 from synnefo.logic.rapi import GanetiApiError
-from synnefo.logic.backend import get_ganeti_instances, get_backends
+from synnefo.logic.backend import get_instances
 from synnefo.logic import utils
 
 
@@ -166,14 +166,16 @@ def instances_with_build_errors(D, G):
     return failed
 
 
-def get_servers_from_db(backend=None):
-    backends = get_backends(backend)
+def get_servers_from_db(backends):
     vms = VirtualMachine.objects.filter(deleted=False, backend__in=backends)
     return dict(map(lambda x: (x.id, x.operstate), vms))
 
 
-def get_instances_from_ganeti(backend=None):
-    ganeti_instances = get_ganeti_instances(backend=backend, bulk=True)
+def get_instances_from_ganeti(backends):
+    instances = []
+    for backend in backends:
+        instances.append(get_instances(backend))
+    ganeti_instances = reduce(list.__add__, instances, [])
     snf_instances = {}
     snf_nics = {}
 
@@ -201,11 +203,14 @@ def get_instances_from_ganeti(backend=None):
 #
 # Nics
 #
-def get_nics_from_ganeti(backend=None):
+def get_nics_from_ganeti(backends):
     """Get network interfaces for each ganeti instance.
 
     """
-    instances = get_ganeti_instances(backend=backend, bulk=True)
+    instances = []
+    for backend in backends:
+        instances.append(get_instances(backend))
+    instances = reduce(list.__add__, instances, [])
     prefix = settings.BACKEND_PREFIX_ID
 
     snf_instances_nics = {}
@@ -240,11 +245,10 @@ def get_nics_from_instance(i):
     return nics
 
 
-def get_nics_from_db(backend=None):
+def get_nics_from_db(backends):
     """Get network interfaces for each vm in DB.
 
     """
-    backends = get_backends(backend)
     instances = VirtualMachine.objects.filter(deleted=False,
                                               backend__in=backends)
     instances_nics = {}

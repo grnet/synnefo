@@ -41,7 +41,8 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 
-from synnefo.db.models import VirtualMachine, Network, pooled_rapi_client
+from synnefo.db.models import (Backend, VirtualMachine, Network,
+                               pooled_rapi_client)
 from synnefo.logic import reconciliation, utils
 from synnefo.logic import backend as backend_mod
 from synnefo.util.mac2eui64 import mac2eui64
@@ -117,12 +118,15 @@ class Command(BaseCommand):
         verbosity = int(options['verbosity'])
         self._process_args(options)
         backend_id = options['backend-id']
-        backend = get_backend(backend_id) if backend_id else None
+        if backend_id:
+            backends = [get_backend(backend_id)]
+        else:
+            backends = Backend.objects.filter(offline=False)
 
-        D = reconciliation.get_servers_from_db(backend)
-        G, GNics = reconciliation.get_instances_from_ganeti(backend)
+        D = reconciliation.get_servers_from_db(backends)
+        G, GNics = reconciliation.get_instances_from_ganeti(backends)
 
-        DBNics = reconciliation.get_nics_from_db(backend)
+        DBNics = reconciliation.get_nics_from_db(backends)
 
         #
         # Detect problems

@@ -275,6 +275,12 @@ def addmembers(request, chain_id, addmembers_form):
             messages.error(request, e)
 
 
+MEMBERSHIP_STATUS_FILTER = {
+    0: lambda x: x.requested(),
+    1: lambda x: x.any_accepted(),
+}
+
+
 def common_detail(request, chain_or_app_id, project_view=True,
                   template_name='im/projects/project_detail.html',
                   members_status_filter=None):
@@ -302,13 +308,13 @@ def common_detail(request, chain_or_app_id, project_view=True,
         remaining_memberships_count = 0
         project, application = get_by_chain_or_404(chain_id)
         if project:
-            members = project.projectmembership_set.select_related()
-            approved_members_count = \
-                    project.count_actually_accepted_memberships()
+            members = project.projectmembership_set
+            approved_members_count = project.members_count()
             pending_members_count = project.count_pending_memberships()
-            if members_status_filter in (ProjectMembership.REQUESTED,
-                ProjectMembership.ACCEPTED):
-                members = members.filter(state=members_status_filter)
+            flt = MEMBERSHIP_STATUS_FILTER.get(members_status_filter)
+            if flt is not None:
+                members = flt(members)
+            members = members.select_related()
             members_table = tables.ProjectMembersTable(project,
                                                        members,
                                                        user=request.user,

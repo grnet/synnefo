@@ -723,6 +723,7 @@
 
             this.feedback_view = new views.FeedbackView();
             this.public_keys_view = new views.PublicKeysOverlay();
+            this.public_ips_view = new views.PublicIPsOverlay();
             
             if (synnefo.config.use_glance) {
                 this.custom_images_view = new views.CustomImagesOverlay();
@@ -792,6 +793,10 @@
             $(".usermenu .public_keys").click(_.bind(function(e){
                 e.preventDefault();
                 this.public_keys_view.show();
+            }, this));
+            $(".usermenu .public_ips").click(_.bind(function(e){
+                e.preventDefault();
+                this.public_ips_view.show();
             }, this));
 
             if (snf.glance) {

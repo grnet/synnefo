@@ -2555,7 +2555,7 @@ div.list table thead .vmname {
 }
 
 .hidden {
-    display:none;
+    display:none !important; 
 }
 
 div.actions a.selected, div.actions a.selected:hover, div.machine-actions a.selected, div.machine-actions a.selected:hover {
@@ -6760,7 +6760,9 @@ input.has-errors {
     background-image: url("../images/plus-8-dark.png");
 }
 
-.models-view .model-list ul li.model-item .item-action.remove {
+.models-view .model-list ul li.model-item .item-action.remove,
+.models-view .model-list ul li.model-item .item-action.disconnect
+{
     background-image: url("../images/option-action-remove.png");
 }
 
@@ -6771,7 +6773,9 @@ input.has-errors {
 .models-view .model-list ul li.model-item .item-action.edit {
     background-image: url("../images/option-action-edit.png");
 }
-.models-view .model-list ul li.model-item .item-action.remove:hover {
+.models-view .model-list ul li.model-item .item-action.remove:hover,
+.models-view .model-list ul li.model-item .item-action.disconnect:hover
+{
     background-color: #880000 !important;
     border-color: #800 !important;
 }
@@ -6800,6 +6804,13 @@ input.has-errors {
     background-repeat: no-repeat;
     background-position: right center;
     border-right: 5px solid transparent;
+}
+
+.models-view .model-list ul li.model-item.in-progress .item-action {
+  display: none !important;
+}
+.models-view .model-list ul li.model-item.in-progress:hover .item-action {
+  display: none !important;
 }
 
 .models-view .model-list h3 {
@@ -6898,7 +6909,8 @@ input.has-errors {
 }
 
 #user_custom_images,
-#user_public_keys {
+#user_public_keys,
+#user_public_ips {
     font-size: 0.7em;
 }
 
@@ -6994,7 +7006,7 @@ input.has-errors {
     border-color: #782421;
 }
 
-#user_public_keys .limit-msg {
+.models-view .limit-msg {
     color: #800;
     position: absolute;
     right: 20px;
@@ -7095,7 +7107,6 @@ input.has-errors {
   display: none !important;
 }
 
-
 .trigger-resize {
     background-image: url("../images/pencil-disabled.png");
     background-position: right 2px;
@@ -7124,4 +7135,43 @@ input.has-errors {
   background-color: #ddd;
   color: #aaa;
   border-color: #999;
+}
+
+.overlay.connect-ip .form-actions {
+  display: none;
+}
+
+.overlay.connect-ip li.options-object .options-object-cont {
+  background-image: none !important; 
+}
+
+#user_public_ips li.connected:hover .item-action.remove {
+  display: none;
+}
+
+#user_public_ips li.connected:hover .item-action.connect {
+  display: none;
+}
+
+#user_public_ips li.connected:hover .item-action.disconnect {
+  display: block;
+}
+
+#user_public_ips li:hover .item-action.disconnect {
+  display: none;
+}
+
+#user_public_ips li .progress-msg {
+  display: none;
+}
+
+#user_public_ips li.in-progress .progress-msg {
+  display: block !important;  
+}
+
+#user_public_ips li.in-progress {
+  background-color: #C6CFD2;
+  background-image: url("../images/icons/indicators/small/progress.gif");
+  background-position: 530px center;
+  background-repeat: no-repeat;
 }

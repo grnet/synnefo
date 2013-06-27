@@ -219,7 +219,6 @@
                         return;
                     }
                 }
-                
                 last_ajax = this.fetch(params);
             }, this);
             handler_options.callback = callback;
@@ -688,7 +687,7 @@
         get_connectable_vms: function() {
             return storage.vms.filter(function(vm){
                 return !vm.in_error_state() && !vm.is_building();
-            })
+            });
         },
 
         state_message: function() {
@@ -1455,7 +1454,9 @@
                                          error, 'shutdown', params);
                     break;
                 case 'console':
-                    this.__make_api_call(this.url() + "/action", "create", {'console': {'type':'vnc'}}, function(data) {
+                    this.__make_api_call(this.url() + "/action", "create", 
+                                         {'console': {'type':'vnc'}}, 
+                                         function(data) {
                         var cons_data = data.console;
                         success.apply(this, [cons_data]);
                     }, undefined, 'console', params)
@@ -1484,6 +1485,28 @@
                                          },  
                                          error, 'resize', params);
                     break;
+                case 'addFloatingIp':
+                    this.__make_api_call(this.get_action_url(), // vm actions url
+                                         "create", // create so that sync later uses POST to make the call
+                                         {addFloatingIp: {address:params.address}}, // payload
+                                         function() {
+                                             self.state('CONNECT');
+                                             success.apply(this, arguments);
+                                             snf.api.trigger("call");
+                                         },  
+                                         error, 'addFloatingIp', params);
+                    break;
+                case 'removeFloatingIp':
+                    this.__make_api_call(this.get_action_url(), // vm actions url
+                                         "create", // create so that sync later uses POST to make the call
+                                         {removeFloatingIp: {address:params.address}}, // payload
+                                         function() {
+                                             self.state('DISCONNECT');
+                                             success.apply(this, arguments);
+                                             snf.api.trigger("call");
+                                         },  
+                                         error, 'addFloatingIp', params);
+                    break;
                 case 'destroy':
                     this.__make_api_call(this.url(), // vm actions url
                                          "delete", // create so that sync later uses POST to make the call
@@ -1502,7 +1525,8 @@
             }
         },
         
-        __make_api_call: function(url, method, data, success, error, action, extra_params) {
+        __make_api_call: function(url, method, data, success, error, action, 
+                                  extra_params) {
             var self = this;
             error = error || function(){};
             success = success || function(){};
@@ -1510,17 +1534,22 @@
             var params = {
                 url: url,
                 data: data,
-                success: function(){ self.handle_action_succeed.apply(self, arguments); success.apply(this, arguments)},
+                success: function() { 
+                  self.handle_action_succeed.apply(self, arguments); 
+                  success.apply(this, arguments)
+                },
                 error: function(){ self.handle_action_fail.apply(self, arguments); error.apply(this, arguments)},
                 error_params: { ns: "Machines actions", 
                                 title: "'" + this.get("name") + "'" + " " + action + " failed", 
-                                extra_details: { 'Machine ID': this.id, 'URL': url, 'Action': action || "undefined" },
+                                extra_details: {'Machine ID': this.id, 
+                                                'URL': url, 
+                                                'Action': action || "undefined" },
                                 allow_reload: false
                               },
                 display: false,
                 critical: false
             }
-            _.extend(params, extra_params)
+            _.extend(params, extra_params);
             this.sync(method, this, params);
         },
 
@@ -2244,6 +2273,12 @@
           _(missing_ids).each(function(imgid){
             synnefo.storage.images.update_unknown_id(imgid, check);
           });
+        },
+
+        get_connectable: function() {
+            return storage.vms.filter(function(vm){
+                return !vm.in_error_state() && !vm.is_building();
+            });
         }
     })
     
@@ -2425,6 +2460,45 @@
 
     })
     
+    models.PublicIP = models.Model.extend({
+        path: 'os-floating-ips',
+        has_status: false,
+        
+        initialize: function() {
+            models.PublicIP.__super__.initialize.apply(this, arguments);
+            this.bind('change:instance_id', _.bind(this.handle_status_change, this));
+        },
+
+        handle_status_change: function() {
+            this.set({state: null});
+        },
+
+        get_vm: function() {
+            if (this.get('instance_id')) {
+                return synnefo.storage.vms.get(parseInt(this.get('instance_id')));
+            }
+            return null;
+        },
+
+        connect_to: function(vm) {
+        }
+    });
+
+    models.PublicIPs = models.Collection.extend({
+        model: models.PublicIP,
+        path: 'os-floating-ips',
+        api_type: 'compute',
+        noUpdate: true,
+
+        parse: function(resp) {
+            resp = _.map(resp.floating_ips, function(ip) {
+              return ip;
+            });
+
+            return resp;
+        }
+    });
+
     models.PublicKeys = models.Collection.extend({
         model: models.PublicKey,
         details: false,
@@ -2605,5 +2679,6 @@
     snf.storage.nics = new models.NICs();
     snf.storage.resources = new models.Resources();
     snf.storage.quotas = new models.Quotas();
+    snf.storage.public_ips = new models.PublicIPs();
 
 })(this);

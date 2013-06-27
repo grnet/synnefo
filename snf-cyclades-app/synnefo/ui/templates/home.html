@@ -75,6 +75,7 @@
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_connect_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_vm_resize_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_public_keys_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_public_ips_view.js"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_custom_images.js"></script>
 
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_router.js"></script>
@@ -199,6 +200,7 @@
                     <ul class="useractions">
                         <!--<li class="feedback"><a class="action" href="#">{% trans "send feedback..." %}</a></li>-->
                         <li class="api"><a class="action" href="#">{% trans "API access..." %}</a></li>
+                        <li class="public_ips"><a class="action" href="#">{% trans "public ips..." %}</a></li>
                         <li class="public_keys"><a class="action" href="#">{% trans "ssh public keys..." %}</a></li>
                         <!--<li class="custom_images"><a class="action" href="#">{% trans "custom images..." %}</a></li>-->
                         <!--<li class="logout last"><a class="action" href="#">{% trans "logout" %}</a></li>-->
@@ -564,6 +566,9 @@
     <div id="user_public_keys" class="overlay-content overlay-content hidden">
         {% include "userdata/public_keys_view.html" %}
     </div>
+    <div id="user_public_ips" class="overlay-content overlay-content hidden">
+        {% include "partials/ips.html" %}
+    </div>
     <div id="user_custom_images" class="overlay-content overlay-content hidden">
         {% include "partials/custom_images.html" %}
     </div>
@@ -678,9 +683,9 @@
             synnefo.ui.init();
             synnefo.ui.main.bind("ready", function(){
             });
-              window.setTimeout(function(){
-                $($(".machine-detail.ram.trigger-resize")[0]).click();
-              }, 800);
+            window.setTimeout(function(){
+                $(".public_ips a").click();
+            }, 800);
 
         })
     </script>

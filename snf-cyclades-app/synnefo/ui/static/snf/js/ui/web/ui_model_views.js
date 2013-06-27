@@ -61,6 +61,7 @@
         
         force_reset_before_fetch: true,
         auto_append_actions: true,
+        fetch_params: {},
 
         initialize: function(options) {
             views.CollectionView.__super__.initialize.apply(this, arguments);
@@ -85,7 +86,10 @@
         },
         
         update_models: function() {
-            this.collection.fetch({success:this.handle_reset});
+            var params = {};
+            _.extend(params, this.fetch_params);
+            params['success'] = this.handle_reset;
+            this.collection.fetch(params);
         },
         
         init_handlers: function() {
@@ -337,8 +341,7 @@
                     var form_error = resp_error != "" ? 
                                 this.create_failed_msg + " ({0})".format(resp_error) : 
                                 this.create_failed_msg;
-
-                    this.show_form_errors({'': form_error || 'Entry submition failed'})
+                    this.show_form_errors({'': form_error || this.submit_failed_msg || 'Entry submition failed'})
                 }, this),
 
                 complete: _.bind(function(){

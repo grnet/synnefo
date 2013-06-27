@@ -1,0 +1,37 @@
+{% load i18n %}
+<div class="public-ips-view clearfix">
+  <div class="loading-models">{% trans "Loading..." %}</div>
+  <div class="models-view">
+    <div class="list-wrapper model-list">
+      <h3 class="list-title">{% trans "IP addresses list" %}</h3>
+      <div class="top-actions clearfix">
+        <div class="collection-action add add-new">{% trans "new " %}
+          <span class="quotas">(<span class="available"></span> left)</span></div>
+      </div>
+      <div class="limit-msg">{% trans "IP's limit reached." %}</div>
+      <div class="model-description">
+        <p>Public IP's description here.....................</p>
+      </div>
+      <div class="list-messages">
+      </div>
+      <br />
+      <div class="hidden ips-key-item clearfix" id="model-item-tpl">
+        <div class="param address"></div>
+        <div class="param vm-name"></div>
+        <div class="param progress-msg"><span></span></div>
+        <div class="param publicid hidden">
+          <div class="param-content">
+            <textarea></textarea>
+          </div>
+        </div>
+      </div>
+      <ul class="items-list">
+        <li class="items-empty-msg hidden msg">
+        <div class="title">
+          {% trans "No public IP's exist" %} <span class="quick-add">allocate one</span> now
+        </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>

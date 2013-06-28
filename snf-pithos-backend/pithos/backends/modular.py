@@ -1592,14 +1592,15 @@ class ModularBackend(BaseBackend):
 
     @backend_method
     def get_domain_objects(self, domain, user=None):
-        obj_list = self.node.domain_object_list(domain, CLUSTER_NORMAL)
-        if user != None:
-            obj_list = [t for t in obj_list \
-                if self._has_read_access(user, t[0])]
+        allowed_paths = self.permissions.access_list_paths(user)
+        if not allowed_paths:
+            return []
+        obj_list = self.node.domain_object_list(
+            domain, allowed_paths, CLUSTER_NORMAL)
         return [(path,
                  self._build_metadata(props, user_defined_meta),
-                 self.permissions.access_get(path)) \
-            for path, props, user_defined_meta in obj_list]
+                 self.permissions.access_get(path)) for
+                path, props, user_defined_meta in obj_list]
 
     # util functions
 

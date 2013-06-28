@@ -513,7 +513,7 @@ def leave_project_checks(project):
 
 def can_leave_request(project, user):
     try:
-        leave_project_checks(project, user)
+        leave_project_checks(project)
     except PermissionDenied:
         return False
     m = user.get_membership(project)

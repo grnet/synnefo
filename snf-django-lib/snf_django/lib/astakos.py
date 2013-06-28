@@ -99,7 +99,7 @@ class UserCache(object):
         if not name in self.users:
             try:
                 self.users[name] = \
-                    self.astakos.service.get_uuid(
+                    self.astakos.service_get_uuid(
                         self.astakos_token, name)
             except:
                 self.users[name] = name
@@ -112,7 +112,7 @@ class UserCache(object):
         if not uuid in self.users:
             try:
                 self.users[uuid] = \
-                    self.astakos.get_username(
+                    self.astakos.service_get_username(
                         self.astakos_token, uuid)
             except:
                 self.users[uuid] = "-"

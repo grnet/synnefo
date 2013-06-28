@@ -120,7 +120,8 @@ class Command(ListCommand):
             self.filters["operstate"] = "BUILD"
 
         if options["image_name"]:
-            self.fields.replace("image.id", "image.name")
+            self.fields = ["id", "name", "user.uuid", "state", "flavor",
+                           "image.name", "backend"]
 
     def handle_db_objects(self, rows, *args, **kwargs):
         icache = ImageCache()

@@ -1167,7 +1167,7 @@ class Node(DBWorker):
         r.close()
         return l
 
-    def domain_object_list(self, domain, cluster=None):
+    def domain_object_list(self, domain, paths, cluster=None):
         """Return a list of (path, property list, attribute dictionary)
            for the objects in the specific domain and cluster.
         """
@@ -1185,6 +1185,8 @@ class Node(DBWorker):
             s = s.where(v.c.cluster == cluster)
         s = s.where(v.c.serial == a.c.serial)
         s = s.where(a.c.domain == domain)
+        if paths:
+            s = s.where(n.c.path.in_(paths))
 
         r = self.conn.execute(s)
         rows = r.fetchall()

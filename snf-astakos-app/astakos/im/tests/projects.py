@@ -144,17 +144,23 @@ class TestProjects(TestCase):
         self.assertContains(r, "The project application has been received")
         self.assertRedirects(r, reverse('project_list'))
         self.assertEqual(ProjectApplication.objects.count(), 1)
-        app1_id = ProjectApplication.objects.filter().order_by('pk')[0].pk
+        app1 = ProjectApplication.objects.filter().order_by('pk')[0]
+        app1_id = app1.pk
+        project1_id = app1.chain_id
 
         # create another one
         application_data['name'] = 'project2.synnefo.org'
         r = self.user_client.post(post_url, data=application_data, follow=True)
-        app2_id = ProjectApplication.objects.filter().order_by('pk')[1].pk
+        app2 = ProjectApplication.objects.filter().order_by('pk')[1]
+        project2_id = app2.chain_id
 
         # no more applications (LIMIT is 2)
         r = self.user_client.get(reverse('project_add'), follow=True)
         self.assertRedirects(r, reverse('project_list'))
         self.assertContains(r, "You are not allowed to create a new project")
+
+        # one project per application
+        self.assertEqual(Project.objects.count(), 2)
 
         # login
         self.admin_client.get(reverse("edit_profile"))
@@ -164,19 +170,18 @@ class TestProjects(TestCase):
                                    follow=True)
         self.assertEqual(r.status_code, 200)
 
-        # project created
-        self.assertEqual(Project.objects.count(), 1)
+        Q_ACTIVE = Project.o_state_q(Project.O_ACTIVE)
+        self.assertEqual(Project.objects.filter(Q_ACTIVE).count(), 1)
 
         # login
         self.member_client.get(reverse("edit_profile"))
-        # cannot join app2 (not approved yet)
-        join_url = reverse("project_join", kwargs={'chain_id': app2_id})
+        # cannot join project2 (not approved yet)
+        join_url = reverse("project_join", kwargs={'chain_id': project2_id})
         r = self.member_client.post(join_url, follow=True)
-        self.assertEqual(r.status_code, 403)
 
-        # can join app1
+        # can join project1
         self.member_client.get(reverse("edit_profile"))
-        join_url = reverse("project_join", kwargs={'chain_id': app1_id})
+        join_url = reverse("project_join", kwargs={'chain_id': project1_id})
         r = self.member_client.post(join_url, follow=True)
         self.assertEqual(r.status_code, 200)
 
@@ -185,11 +190,9 @@ class TestProjects(TestCase):
         memb_id = memberships[0].id
 
         reject_member_url = reverse('project_reject_member',
-                                    kwargs={'chain_id': app1_id, 'memb_id':
-                                            memb_id})
+                                    kwargs={'memb_id': memb_id})
         accept_member_url = reverse('project_accept_member',
-                                    kwargs={'chain_id': app1_id, 'memb_id':
-                                            memb_id})
+                                    kwargs={'memb_id': memb_id})
 
         # only project owner is allowed to reject
         r = self.member_client.post(reject_member_url, follow=True)
@@ -198,18 +201,18 @@ class TestProjects(TestCase):
 
         # user (owns project) rejects membership
         r = self.user_client.post(reject_member_url, follow=True)
-        self.assertEqual(ProjectMembership.objects.count(), 0)
+        self.assertEqual(ProjectMembership.objects.any_accepted().count(), 0)
 
         # user rejoins
         self.member_client.get(reverse("edit_profile"))
         join_url = reverse("project_join", kwargs={'chain_id': app1_id})
         r = self.member_client.post(join_url, follow=True)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(ProjectMembership.objects.count(), 1)
+        self.assertEqual(ProjectMembership.objects.requested().count(), 1)
 
         # user (owns project) accepts membership
         r = self.user_client.post(accept_member_url, follow=True)
-        self.assertEqual(ProjectMembership.objects.count(), 1)
+        self.assertEqual(ProjectMembership.objects.any_accepted().count(), 1)
         membership = ProjectMembership.objects.get()
         self.assertEqual(membership.state, ProjectMembership.ACCEPTED)
 
@@ -220,8 +223,7 @@ class TestProjects(TestCase):
         self.assertEqual(newlimit, 200)
 
         remove_member_url = reverse('project_remove_member',
-                                    kwargs={'chain_id': app1_id, 'memb_id':
-                                            membership.id})
+                                    kwargs={'memb_id': membership.id})
         r = self.user_client.post(remove_member_url, follow=True)
         self.assertEqual(r.status_code, 200)
 

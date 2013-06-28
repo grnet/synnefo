@@ -554,7 +554,8 @@ class ReconciliationTest(TestCase):
 
     def test_get_servers_from_db(self):
         """Test getting a dictionary from each server to its operstate"""
-        self.assertEquals(reconciliation.get_servers_from_db(),
+        backend = 30000
+        self.assertEquals(reconciliation.get_servers_from_db(backends=[backend]),
                           {30000: 'STARTED', 30001: 'STOPPED', 30002: 'BUILD'})
 
     def test_stale_servers_in_db(self):

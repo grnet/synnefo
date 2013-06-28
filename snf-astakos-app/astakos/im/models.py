@@ -1915,15 +1915,7 @@ class Project(models.Model):
     ### Other
 
     def count_pending_memberships(self):
-        memb_set = self.projectmembership_set
-        memb_count = memb_set.filter(state=ProjectMembership.REQUESTED).count()
-        return memb_count
-
-    def count_actually_accepted_memberships(self):
-        memb_set = self.projectmembership_set
-        memb_count = memb_set.filter(state=ProjectMembership.LEAVE_REQUESTED)
-        memb_count = memb_set.filter(state=ProjectMembership.ACCEPTED).count()
-        return memb_count
+        return self.projectmembership_set.requested().count()
 
     def members_count(self):
         return self.approved_memberships.count()
@@ -1967,7 +1959,7 @@ CHAIN_STATE = {
 class ProjectMembershipManager(ForUpdateManager):
 
     def any_accepted(self):
-        q = self.model.Q_ACTUALLY_ACCEPTED
+        q = self.model.Q_ACCEPTED_STATES
         return self.filter(q)
 
     def actually_accepted(self):
@@ -2016,7 +2008,7 @@ class ProjectMembership(models.Model):
     objects = ProjectMembershipManager()
 
     # Compiled queries
-    Q_ACCEPTED_STATES = ~Q(state=REQUESTED) & ~Q(state=REMOVED)
+    Q_ACCEPTED_STATES = Q(state__in=ACCEPTED_STATES)
     Q_ACTUALLY_ACCEPTED = Q(state=ACCEPTED) | Q(state=LEAVE_REQUESTED)
 
     MEMBERSHIP_STATE_DISPLAY = {

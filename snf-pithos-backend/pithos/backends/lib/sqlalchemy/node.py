@@ -483,7 +483,6 @@ class Node(DBWorker):
             or_(self.nodes.c.parent.in_(select_children),
                 self.nodes.c.node.in_(select_children)))
         s = select([func.sum(self.versions.c.size)])
-        s = s.group_by(self.versions.c.cluster)
         s = s.where(self.nodes.c.node == self.versions.c.node)
         s = s.where(self.nodes.c.node.in_(select_descendants))
         s = s.where(self.versions.c.cluster == cluster)

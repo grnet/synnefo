@@ -47,6 +47,7 @@ from astakos.im.functions import login as auth_login, logout
 from astakos.im.views.decorators import cookie_fix
 
 import astakos.im.messages as astakos_messages
+from astakos.im.settings import REDIRECT_ALLOWED_SCHEMES
 
 import logging
 
@@ -69,7 +70,7 @@ def login(request):
     if not next:
         raise HttpResponseBadRequest('Missing next parameter')
 
-    if not restrict_next(next, allowed_schemes=('pithos', 'pithosdev')):
+    if not restrict_next(next, allowed_schemes=REDIRECT_ALLOWED_SCHEMES):
         return HttpResponseForbidden(_(
             astakos_messages.NOT_ALLOWED_NEXT_PARAM))
     force = request.GET.get('force', None)

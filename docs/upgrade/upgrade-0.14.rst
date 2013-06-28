@@ -9,6 +9,8 @@ The upgrade to v0.14 consists in three steps:
 
 3. Register services to astakos and perform a quota-related data migration.
 
+4. Bring up all services.
+
 .. warning::
 
     It is strongly suggested that you keep separate database backups
@@ -22,7 +24,7 @@ The upgrade to v0.14 consists in three steps:
 
     $ service gunicorn stop
     $ service snf-dispatcher stop
-    etc.
+    $ service snf-ganeti-eventd stop
 
 2. Backup databases for recovery to a pre-migration state.
 
@@ -75,9 +77,17 @@ The upgrade to v0.14 consists in three steps:
 
 .. note::
 
+   Make sure `snf-webproject' has the same version with snf-common
+
+.. note::
+
+   Package `kamaki', installed on all nodes in version 0.13, is not required
+   any more and can safely be uninstalled.
+
+.. note::
+
     Installing the packages will cause services to start. Make sure you bring
     them down again (at least ``gunicorn``, ``snf-dispatcher``)
-
 
 2.2 Sync and migrate the database
 ---------------------------------
@@ -125,21 +135,37 @@ setting was renamed to this. Therefore:
   where ``ASTAKOS_BASE_URL`` as above. Similarly, set
   ``CLOUDBAR_MENU_URL`` to ``ASTAKOS_BASE_URL/ui/get_menu``.
 
+If two or more services are installed on the same machine, make sure their
+base URLs do not clash. You can distinguish them with a suffix, e.g.
+``ASTAKOS_BASE_URL = "https://node1.example.com/astakos"`` and
+``CYCLADES_BASE_URL = "https://node1.example.com/cyclades"``.
 
 3 Register services and migrate quota
 =====================================
 
 You need to register astakos as a component. Moreover you need to register
 all services provided by cyclades and pithos.
-
 Running the following script you will be asked to provide the base
-installation URL for each component. You will also need to specify the URL
-where the astakos UI resides::
+installation URL for each component. You will also need to specify the UI
+URL for astakos.
+
+The former is the location where each component resides; it should equal
+the ``<component_name>_BASE_URL`` as specified in the respective component
+settings (see above).
+
+The latter is the URL that appears in the Cloudbar and leads to the
+component UI. If you want to follow the default setup, set
+the UI URL to ``<base_url>/ui/`` where ``base_url`` is the component's base
+URL as explained before.
+
+For example, for Astakos, if
+``BASE_URL = https://accounts.example.synnefo.org/astakos``,
+then ``UI_URL = https://accounts.example.synnefo.org/astakos/ui/``)::
 
     astakos-host$ snf-component-register
 
-(proceed to the next step without running ``snf-manage resource-modify``
-suggested at the end of this command)
+(ATTENTION: make sure to go to the next step *WITHOUT* running
+``snf-manage resource-modify``, suggested at the end of this command)
 
 .. note::
 
@@ -159,12 +185,46 @@ suggested at the end of this command)
        # copy the file to astakos-host
        astakos-host$ snf-manage service-import --json pithos.json
 
-The limit on pending project applications is since 0.14 handled as an
-Astakos resource, rather than a custom setting. Command::
+Run::
+
+   astakos-host$ snf-manage component-list
+
+to make sure that all UI URLs are set to the correct value (``<base_url>/ui/``
+as explained above). If you have changed some ``<component_name>_BASE_URL``
+in the previous step, you will need to update the UI URL with::
+
+   snf-manage component-modify <component_name> --url new_ui_url
+
+The limit on the pending project applications is since 0.14 handled as an
+Astakos resource, rather than a custom setting. So, as a last step we need
+to run::
 
     astakos-host$ astakos-migrate-0.14
 
-will prompt you to set this limit (replacing setting
-ASTAKOS_PENDING_APPLICATION_LIMIT) and then automatically migrate the
+This will prompt you to set this limit (replacing setting
+``ASTAKOS_PENDING_APPLICATION_LIMIT``) and then automatically migrate the
 user-specific base quota for the new resource ``astakos.pending_app`` using
 the deprecated user setting.
+
+You are now done migrating from Synnefo v0.13 to v0.14. Please test your
+installation to make sure everything works as expected.
+
+4. Update astakos email notification settings
+=============================================
+
+Make sure to update your configuration to include settings refered in the 
+updated :ref:`Email delivery configuration <email-configuration>` section 
+of the quick installation admin guide. 
+
+5. Bring all services up
+========================
+
+After the upgrade is finished, we bring up all services:
+
+.. code-block:: console
+
+    astakos.host  # service gunicorn start
+    cyclades.host # service gunicorn start
+    pithos.host   # service gunicorn start
+
+    cyclades.host # service snf-dispatcher start

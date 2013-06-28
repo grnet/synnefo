@@ -617,7 +617,7 @@ class SpawnServerTestCase(unittest.TestCase):
 
     def _ping_once(self, ipv6, ip):
         """Test server responds to a single IPv4 or IPv6 ping"""
-        cmd = "ping%s -c 2 -w 3 %s" % ("6" if ipv6 else "", ip)
+        cmd = "ping%s -c 7 -w 20 %s" % ("6" if ipv6 else "", ip)
         ping = subprocess.Popen(cmd, shell=True,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (stdout, stderr) = ping.communicate()
@@ -1073,7 +1073,7 @@ class NetworkTestCase(unittest.TestCase):
     def _ping_once(self, ip):
 
         """Test server responds to a single IPv4 or IPv6 ping"""
-        cmd = "ping -c 2 -w 3 %s" % (ip)
+        cmd = "ping -c 7 -w 20 %s" % (ip)
         ping = subprocess.Popen(cmd, shell=True,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         (stdout, stderr) = ping.communicate()

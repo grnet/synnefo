@@ -194,21 +194,21 @@ class Command(BaseCommand):
             raise CommandError("Can not create network."
                                " No connectivity link or mode")
         netinfo = {
-           "name": name,
-           "userid": options["owner"],
-           "subnet": subnet,
-           "gateway": gateway,
-           "gateway6": gateway6,
-           "subnet6": subnet6,
-           "dhcp": options["dhcp"],
-           "flavor": flavor,
-           "public": public,
-           "mode": mode,
-           "link": link,
-           "mac_prefix": mac_prefix,
-           "tags": tags,
-           "floating_ip_pool": floating_ip_pool,
-           "state": "ACTIVE"}
+            "name": name,
+            "userid": options["owner"],
+            "subnet": subnet,
+            "gateway": gateway,
+            "gateway6": gateway6,
+            "subnet6": subnet6,
+            "dhcp": options["dhcp"],
+            "flavor": flavor,
+            "public": public,
+            "mode": mode,
+            "link": link,
+            "mac_prefix": mac_prefix,
+            "tags": tags,
+            "floating_ip_pool": floating_ip_pool,
+            "state": "ACTIVE"}
 
         if dry_run:
             self.stdout.write("Creating network:\n")
@@ -232,6 +232,6 @@ class Command(BaseCommand):
             self.stdout.write("Trying to connect network to backend '%s'\n" %
                               backend)
             jobs = create_network(network=network, backend=backend,
-                                   connect=True)
+                                  connect=True)
             self.stdout.write("Successfully issued jobs: %s\n" %
                               ",".join(jobs))

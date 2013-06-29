@@ -142,9 +142,10 @@ def allocate_floating_ip(request):
         else:
             try:
                 network_id = int(pool)
-            except ValueErrorx:
+            except ValueError:
                 raise faults.BadRequest("Invalid pool ID.")
-            network = next((n for n in net_objects if n.id==pool), None)
+            network = next((n for n in net_objects if n.id == network_id),
+                           None)
             if network is None:
                 raise faults.ItemNotFound("Pool '%s' does not exist." % pool)
             if address is None:
@@ -169,7 +170,7 @@ def allocate_floating_ip(request):
                 # If address is not available, check that it belongs to the
                 # same user
                 elif not network.nics.filter(ipv4=address,
-                                            machine__userid=userid).exists():
+                                             machine__userid=userid).exists():
                         msg = "Address '%s' is already in use" % address
                         raise faults.Conflict(msg)
         floating_ip = FloatingIP.objects.create(ipv4=address, network=network,

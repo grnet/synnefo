@@ -31,21 +31,13 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import datetime
 import ipaddr
 
 from base64 import b64encode, b64decode
-from datetime import timedelta, tzinfo
-from functools import wraps
 from hashlib import sha256
 from logging import getLogger
 from random import choice
 from string import digits, lowercase, uppercase
-from time import time
-from traceback import format_exc
-from wsgiref.handlers import format_date_time
-
-import dateutil.parser
 
 from Crypto.Cipher import AES
 
@@ -53,7 +45,6 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
-from django.utils.cache import add_never_cache_headers
 from django.db.models import Q
 
 from snf_django.lib.api import faults
@@ -63,7 +54,6 @@ from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
                                FloatingIP)
 from synnefo.db.pools import EmptyPool
 
-from snf_django.lib.astakos import get_user
 from synnefo.plankton.utils import image_backend
 from synnefo.settings import MAX_CIDR_BLOCK
 
@@ -251,8 +241,8 @@ def validate_network_params(subnet, gateway=None, subnet6=None, gateway6=None):
     # Check that network size is allowed!
     if not validate_network_size(network.prefixlen):
         raise faults.OverLimit(message="Unsupported network size",
-                        details="Network mask must be in range (%s, 29]" %
-                                MAX_CIDR_BLOCK)
+                               details="Network mask must be in range"
+                                       " (%s, 29]" % MAX_CIDR_BLOCK)
 
     # Check that gateway belongs to network
     if gateway:
@@ -366,6 +356,7 @@ def render_metadata(request, metadata, use_values=False, status=200):
 
 def render_meta(request, meta, status=200):
     if request.serialization == 'xml':
+        key, val = meta.items()[0]
         data = render_to_string('meta.xml', dict(key=key, val=val))
     else:
         data = json.dumps(dict(meta=meta))
@@ -380,7 +371,7 @@ def verify_personality(personality):
     """Verify that a a list of personalities is well formed"""
     if len(personality) > settings.MAX_PERSONALITY:
         raise faults.OverLimit("Maximum number of personalities"
-                        " exceeded")
+                               " exceeded")
     for p in personality:
         # Verify that personalities are well-formed
         try:
@@ -489,6 +480,7 @@ def image_to_links(image_id):
     links.append({"rel": "alternate",
                   "href": join_urls(IMAGES_PLANKTON_URL, str(image_id))})
     return links
+
 
 def start_action(vm, action, jobId):
     vm.action = action

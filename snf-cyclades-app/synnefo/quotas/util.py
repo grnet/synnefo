@@ -57,7 +57,7 @@ def get_db_holdings(user=None):
                                                  disk=Sum("flavor__disk"))
     vm_active_resources = \
         vms.values("userid")\
-           .filter(Q(operstate="STARTED") | Q(operstate="BUILD") |\
+           .filter(Q(operstate="STARTED") | Q(operstate="BUILD") |
                    Q(operstate="ERROR"))\
            .annotate(active_ram=Sum("flavor__ram"),
                      active_cpu=Sum("flavor__cpu"))

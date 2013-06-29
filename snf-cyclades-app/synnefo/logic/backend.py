@@ -239,7 +239,6 @@ def _process_net_status(vm, etime, nics):
         if ipv4:
             net.reserve_address(ipv4)
 
-        nic['dirty'] = False
         vm.nics.create(**nic)
         # Dummy save the network, because UI uses changed-since for VMs
         # and Networks in order to show the VM NICs
@@ -512,7 +511,9 @@ def create_instance(vm, nics, flavor, image):
         kw['disks'][0]['provider'] = provider
         kw['disks'][0]['origin'] = flavor.disk_origin
 
-    kw['nics'] = [{"network": nic.network.backend_id, "ip": nic.ipv4}
+    kw['nics'] = [{"name": nic.backend_uuid,
+                   "network": nic.network.backend_id,
+                   "ip": nic.ipv4}
                   for nic in nics]
     backend = vm.backend
     depend_jobs = []
@@ -779,9 +780,11 @@ def connect_to_network(vm, nic):
 
     depends = [[job, ["success", "error", "canceled"]] for job in depend_jobs]
 
-    nic = {'ip': nic.ipv4, 'network': network.backend_id}
+    nic = {'name': nic.backend_uuid,
+           'network': network.backend_id,
+           'ip': nic.ipv4}
 
-    log.debug("Connecting NIC %s to VM %s", nic, vm)
+    log.debug("Adding NIC %s to VM %s", nic, vm)
 
     kwargs = {
         "instance": vm.backend_vm_id,
@@ -798,7 +801,7 @@ def connect_to_network(vm, nic):
 
 
 def disconnect_from_network(vm, nic):
-    log.debug("Removing nic of VM %s, with index %s", vm, str(nic.index))
+    log.debug("Removing NIC %s of VM %s", nic, vm)
 
     kwargs = {
         "instance": vm.backend_vm_id,

@@ -154,7 +154,7 @@ def vm_to_dict(vm, detail=False):
         metadata = dict((m.meta_key, m.meta_value) for m in vm.metadata.all())
         d['metadata'] = metadata
 
-        vm_nics = vm.nics.filter(state="ACTIVE").order_by("index")
+        vm_nics = vm.nics.filter(state="ACTIVE").order_by("id")
         attachments = map(nic_to_dict, vm_nics)
         d['attachments'] = attachments
         d['addresses'] = attachments_to_addresses(attachments)
@@ -515,7 +515,7 @@ def list_addresses_by_network(request, server_id, network_id):
     log.debug('list_addresses_by_network %s %s', server_id, network_id)
     machine = util.get_vm(server_id, request.user_uniq)
     network = util.get_network(network_id, request.user_uniq)
-    nics = machine.nics.filter(network=network, state="ACTIVE").all()
+    nics = machine.nics.filter(network=network, state="ACTIVE")
     addresses = attachments_to_addresses(map(nic_to_dict, nics))
 
     if request.serialization == 'xml':
@@ -871,15 +871,16 @@ def remove(request, net, args):
     if attachment is None:
         raise faults.BadRequest("Missing 'attachment' attribute.")
     try:
-        # attachment string: nic-<vm-id>-<nic-index>
-        _, server_id, nic_index = attachment.split("-", 2)
+        # attachment string: nic-<vm-id>-<nic-id>
+        _, server_id, nic_id = attachment.split("-", 2)
         server_id = int(server_id)
-        nic_index = int(nic_index)
+        nic_id = int(nic_id)
     except (ValueError, TypeError):
         raise faults.BadRequest("Invalid 'attachment' attribute.")
 
     vm = util.get_vm(server_id, request.user_uniq, non_suspended=True)
-    servers.disconnect(vm, nic_index=nic_index)
+    nic = util.get_nic(vm, nic_id)
+    servers.disconnect(vm, nic)
 
     return HttpResponse(status=202)
 

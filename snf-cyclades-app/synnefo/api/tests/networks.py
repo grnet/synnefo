@@ -93,7 +93,7 @@ class NetworkAPITest(ComputeAPITest):
             self.assertEqual(db_net.gateway6, api_net['gateway6'])
             self.assertEqual(db_net.dhcp, api_net['dhcp'])
             self.assertEqual(db_net.public, api_net['public'])
-            db_nics = ["nic-%d-%d" % (nic.machine.id, nic.index) for nic in
+            db_nics = ["nic-%d-%d" % (nic.machine.id, nic.id) for nic in
                        db_net.nics.filter(machine__userid=db_net.userid)]
             self.assertEqual(db_nics, api_net['attachments'])
 
@@ -407,18 +407,13 @@ class NetworkAPITest(ComputeAPITest):
         net = mfactory.NetworkFactory(state='ACTIVE', userid=user)
         nic = mfactory.NetworkInterfaceFactory(machine=vm, network=net)
         mrapi().ModifyInstance.return_value = 1
-        request = {'remove': {'attachment': 'nic-%s-%s' % (vm.id, nic.index)}}
+        request = {'remove': {'attachment': 'nic-%s-%s' % (vm.id, nic.id)}}
         response = self.mypost('networks/%d/action' % net.id,
                                net.userid, json.dumps(request), 'json')
         self.assertEqual(response.status_code, 202)
-        self.assertTrue(NetworkInterface.objects.get(id=nic.id).dirty)
         vm.task = None
         vm.task_job_id = None
         vm.save()
-        # Remove dirty nic
-        response = self.mypost('networks/%d/action' % net.id,
-                               net.userid, json.dumps(request), 'json')
-        self.assertFault(response, 409, 'buildInProgress')
 
     def test_remove_nic_malformed(self, mrapi):
         user = 'userr'
@@ -426,7 +421,7 @@ class NetworkAPITest(ComputeAPITest):
         net = mfactory.NetworkFactory(state='ACTIVE', userid=user)
         nic = mfactory.NetworkInterfaceFactory(machine=vm, network=net)
         request = {'remove':
-                    {'att234achment': 'nic-%s-%s' % (vm.id, nic.index)}
+                    {'att234achment': 'nic-%s-%s' % (vm.id, nic.id)}
                   }
         response = self.mypost('networks/%d/action' % net.id,
                                net.userid, json.dumps(request), 'json')

@@ -355,28 +355,16 @@ def connect(vm, network):
     if network.subnet is not None and network.dhcp:
         # Get a free IP from the address pool.
         address = util.get_network_free_address(network)
-
-    log.info("Connecting VM %s to Network %s(%s)", vm, network, address)
-
-    nic = NetworkInterface.objects.create(machine=vm,
-                                          network=network,
-                                          ipv4=address,
-                                          state="BUILDING")
+    nic = NetworkInterface.objects.create(machine=vm, network=network,
+                                          ipv4=address, state="BUILDING")
+    log.info("Connecting VM %s to Network %s. NIC: %s", vm, network, nic)
 
     return backend.connect_to_network(vm, nic)
 
 
 @server_command("DISCONNECT")
-def disconnect(vm, nic_index):
-    nic = util.get_nic_from_index(vm, nic_index)
-
-    log.info("Removing NIC %s from VM %s", str(nic.index), vm)
-
-    if nic.dirty:
-        raise faults.BuildInProgress('Machine is busy.')
-    else:
-        vm.nics.all().update(dirty=True)
-
+def disconnect(vm, nic):
+    log.info("Removing NIC %s from VM %s", nic, vm)
     return backend.disconnect_from_network(vm, nic)
 
 

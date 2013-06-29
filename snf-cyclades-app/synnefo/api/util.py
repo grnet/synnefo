@@ -285,25 +285,11 @@ def get_network_free_address(network):
     return address
 
 
-def get_nic(machine, network):
+def get_nic(vm, nic_id):
     try:
-        return NetworkInterface.objects.get(machine=machine, network=network)
+        return vm.nics.get(id=nic_id)
     except NetworkInterface.DoesNotExist:
         raise faults.ItemNotFound('Server not connected to this network.')
-
-
-def get_nic_from_index(vm, nic_index):
-    """Returns the nic_index-th nic of a vm
-       Error Response Codes: itemNotFound (404), badMediaType (415)
-    """
-    matching_nics = vm.nics.filter(index=nic_index)
-    matching_nics_len = len(matching_nics)
-    if matching_nics_len < 1:
-        raise faults.ItemNotFound('NIC not found on VM')
-    elif matching_nics_len > 1:
-        raise faults.BadMediaType('NIC index conflict on VM')
-    nic = matching_nics[0]
-    return nic
 
 
 def render_metadata(request, metadata, use_values=False, status=200):
@@ -328,7 +314,7 @@ def render_meta(request, meta, status=200):
 
 
 def construct_nic_id(nic):
-    return "-".join(["nic", unicode(nic.machine.id), unicode(nic.index)])
+    return "-".join(["nic", unicode(nic.machine.id), unicode(nic.id)])
 
 
 def verify_personality(personality):

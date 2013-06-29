@@ -374,7 +374,7 @@ class VirtualMachine(models.Model):
         get_latest_by = 'created'
 
     def __unicode__(self):
-        return "<vm: %s>" % str(self.id)
+        return u"<vm:%s@backend:%s>" % (self.id, self.backend_id)
 
     # Error classes
     class InvalidBackendIdError(Exception):
@@ -687,13 +687,17 @@ class NetworkInterface(models.Model):
     ipv6 = models.CharField(max_length=100, null=True)
     firewall_profile = models.CharField(choices=FIREWALL_PROFILES,
                                         max_length=30, null=True)
-    dirty = models.BooleanField(default=False)
     state = models.CharField(max_length=32, null=False, default="ACTIVE",
                              choices=STATES)
 
+    @property
+    def backend_uuid(self):
+        """Return the backend id by prepending backend-prefix."""
+        return "%snic-%s" % (settings.BACKEND_PREFIX_ID, str(self.id))
+
     def __unicode__(self):
         return "<%s:vm:%s network:%s ipv4:%s ipv6:%s>" % \
-            (self.index, self.machine_id, self.network_id, self.ipv4,
+            (self.id, self.machine_id, self.network_id, self.ipv4,
              self.ipv6)
 
     @property

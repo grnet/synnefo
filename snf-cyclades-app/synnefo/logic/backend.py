@@ -32,10 +32,9 @@
 # or implied, of GRNET S.A.
 from django.conf import settings
 from django.db import transaction
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from synnefo.db.models import (Backend, VirtualMachine, Network,
-                               FloatingIP,
                                BackendNetwork, BACKEND_STATUSES,
                                pooled_rapi_client, VirtualMachineDiagnostic,
                                Flavor)
@@ -55,6 +54,9 @@ _firewall_tags = {
     'PROTECTED': settings.GANETI_FIREWALL_PROTECTED_TAG}
 
 _reverse_tags = dict((v.split(':')[3], k) for k, v in _firewall_tags.items())
+
+
+NIC_FIELDS = ["state", "mac", "ipv4", "ipv6", "network", "firewall_profile"]
 
 
 def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields):
@@ -165,10 +167,12 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
         # See ticket #799 for all the details.
         if status == 'success' or (status == 'error' and
                                    not vm_exists_in_backend(vm)):
-            # VM has been deleted. Release the instance IPs
-            release_instance_ips(vm, [])
-            # And delete the releated NICs (must be performed after release!)
-            vm.nics.all().delete()
+            # VM has been deleted
+            for nic in vm.nics.all():
+                # Release the IP
+                release_nic_address(nic)
+                # And delete the NIC.
+                nic.delete()
             vm.deleted = True
             vm.operstate = state_for_success
             vm.backendtime = etime
@@ -217,104 +221,110 @@ def _process_net_status(vm, etime, nics):
     detailing the NIC configuration of a VM instance.
 
     Update the state of the VM in the DB accordingly.
-    """
 
+    """
     ganeti_nics = process_ganeti_nics(nics)
-    if not nics_changed(vm.nics.order_by('index'), ganeti_nics):
-        log.debug("NICs for VM %s have not changed", vm)
-        return
+    db_nics = dict([(nic.id, nic) for nic in vm.nics.all()])
 
     # Get X-Lock on backend before getting X-Lock on network IP pools, to
     # guarantee that no deadlock will occur with Backend allocator.
     Backend.objects.select_for_update().get(id=vm.backend_id)
 
-    # NICs have changed. Release the instance IPs
-    release_instance_ips(vm, ganeti_nics)
-    # And delete the releated NICs (must be performed after release!)
-    vm.nics.all().delete()
+    for nic_name in set(db_nics.keys()) | set(ganeti_nics.keys()):
+        db_nic = db_nics.get(nic_name)
+        ganeti_nic = ganeti_nics.get(nic_name)
+        if ganeti_nic is None:
+            # NIC exists in DB but not in Ganeti. If the NIC is in 'building'
+            # state for more than 5 minutes, then we remove the NIC.
+            # TODO: This is dangerous as the job may be stack in the queue, and
+            # releasing the IP may lead to duplicate IP use.
+            if nic.state != "BUILDING" or (nic.state == "BUILDING" and
+               etime > nic.created + timedelta(minutes=5)):
+                release_nic_address(nic)
+                nic.delete()
+            else:
+                log.warning("Ignoring recent building NIC: %s", nic)
+        elif db_nic is None:
+            # NIC exists in Ganeti but not in DB
+            if ganeti_nic["ipv4"]:
+                network = ganeti_nic["network"]
+                network.reserve_address(ganeti_nic["ipv4"])
+            vm.nics.create(**ganeti_nic)
+        elif not nics_are_equal(db_nic, ganeti_nic):
+            # Special case where the IPv4 address has changed, because you
+            # need to release the old IPv4 address and reserve the new one
+            if db_nic.ipv4 != ganeti_nic["ipv4"]:
+                release_nic_address(db_nic)
+                if ganeti_nic["ipv4"]:
+                    ganeti_nic["network"].reserve_address(ganeti_nic["ipv4"])
 
-    for nic in ganeti_nics:
-        ipv4 = nic["ipv4"]
-        net = nic['network']
-        if ipv4:
-            net.reserve_address(ipv4)
+            # Update the NIC in DB with the values from Ganeti NIC
+            [setattr(db_nic, f, ganeti_nic[f]) for f in NIC_FIELDS]
+            db_nic.save()
 
-        vm.nics.create(**nic)
-        # Dummy save the network, because UI uses changed-since for VMs
-        # and Networks in order to show the VM NICs
-        net.save()
+            # Dummy update the network, to work with 'changed-since'
+            db_nic.network.save()
 
     vm.backendtime = etime
     vm.save()
 
 
-def process_ganeti_nics(ganeti_nics):
-    """Process NIC dict from ganeti hooks."""
-    new_nics = []
-    for i, new_nic in enumerate(ganeti_nics):
-        network = new_nic.get('network', '')
-        n = str(network)
-        pk = utils.id_from_network_name(n)
+def nics_are_equal(db_nic, gnt_nic):
+    for field in NIC_FIELDS:
+        if getattr(db_nic, field) != gnt_nic[field]:
+            return False
+    return True
 
-        net = Network.objects.get(pk=pk)
+
+def process_ganeti_nics(ganeti_nics):
+    """Process NIC dict from ganeti"""
+    new_nics = []
+    for index, gnic in enumerate(ganeti_nics):
+        nic_name = gnic.get("name", None)
+        if nic_name is not None:
+            nic_id = utils.id_from_nic_name(nic_name)
+        else:
+            # Put as default value the index. If it is an unknown NIC to
+            # synnefo it will be created automaticaly.
+            nic_id = "unknown-" + str(index)
+        network_name = gnic.get('network', '')
+        network_id = utils.id_from_network_name(network_name)
+        network = Network.objects.get(id=network_id)
 
         # Get the new nic info
-        mac = new_nic.get('mac')
-        ipv4 = new_nic.get('ip')
-        ipv6 = mac2eui64(mac, net.subnet6) if net.subnet6 is not None else None
+        mac = gnic.get('mac')
+        ipv4 = gnic.get('ip')
+        ipv6 = mac2eui64(mac, network.subnet6)\
+            if network.subnet6 is not None else None
 
-        firewall = new_nic.get('firewall')
+        firewall = gnic.get('firewall')
         firewall_profile = _reverse_tags.get(firewall)
-        if not firewall_profile and net.public:
+        if not firewall_profile and network.public:
             firewall_profile = settings.DEFAULT_FIREWALL_PROFILE
 
-        nic = {
-            'index': i,
-            'network': net,
+        nic_info = {
+            'index': index,
+            'network': network,
             'mac': mac,
             'ipv4': ipv4,
             'ipv6': ipv6,
             'firewall_profile': firewall_profile,
             'state': 'ACTIVE'}
 
-        new_nics.append(nic)
-    return new_nics
+        new_nics.append((nic_id, nic_info))
+    return dict(new_nics)
 
 
-def nics_changed(old_nics, new_nics):
-    """Return True if NICs have changed in any way."""
-    if len(old_nics) != len(new_nics):
-        return True
-    fields = ["ipv4", "ipv6", "mac", "firewall_profile", "index", "network"]
-    for old_nic, new_nic in zip(old_nics, new_nics):
-        for field in fields:
-            if getattr(old_nic, field) != new_nic[field]:
-                return True
-    return False
+def release_nic_address(nic):
+    """Release the IPv4 address of a NIC.
 
+    Check if an instance's NIC has an IPv4 address and release it if it is not
+    a Floating IP.
 
-def release_instance_ips(vm, ganeti_nics):
-    old_addresses = set(vm.nics.values_list("network", "ipv4"))
-    new_addresses = set(map(lambda nic: (nic["network"].id, nic["ipv4"]),
-                            ganeti_nics))
-    to_release = old_addresses - new_addresses
-    for (network_id, ipv4) in to_release:
-        if ipv4:
-            # Get X-Lock before searching floating IP, to exclusively search
-            # and release floating IP. Otherwise you may release a floating IP
-            # that has been just reserved.
-            net = Network.objects.select_for_update().get(id=network_id)
-            if net.floating_ip_pool:
-                try:
-                    floating_ip = net.floating_ips.select_for_update()\
-                                                  .get(ipv4=ipv4, machine=vm,
-                                                       deleted=False)
-                    floating_ip.machine = None
-                    floating_ip.save()
-                except FloatingIP.DoesNotExist:
-                    net.release_address(ipv4)
-            else:
-                net.release_address(ipv4)
+    """
+
+    if nic.ipv4 and not nic.ip_type == "FLOATING":
+        nic.network.release_address(nic.ipv4)
 
 
 @transaction.commit_on_success

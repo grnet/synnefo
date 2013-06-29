@@ -122,8 +122,9 @@ class ServerReconciliationTest(TestCase):
              "mtime": time(),
              "disk.sizes": [],
              "nic.ips": [],
+             "nic.names": [],
              "nic.macs": [],
-             "nic.networks": [],
+             "nic.networks.names": [],
              "tags": []}]
         self.reconciler.reconcile()
         cmrapi.DeleteInstance\
@@ -142,8 +143,9 @@ class ServerReconciliationTest(TestCase):
              "mtime": time(),
              "disk.sizes": [],
              "nic.ips": [],
+             "nic.names": [],
              "nic.macs": [],
-             "nic.networks": [],
+             "nic.networks.names": [],
              "tags": []}]
         with mocked_quotaholder():
             self.reconciler.reconcile()
@@ -168,8 +170,9 @@ class ServerReconciliationTest(TestCase):
              "mtime": time(),
              "disk.sizes": [],
              "nic.ips": [],
+             "nic.names": [],
              "nic.macs": [],
-             "nic.networks": [],
+             "nic.networks.names": [],
              "tags": []}]
         with mocked_quotaholder():
             self.reconciler.reconcile()
@@ -183,8 +186,8 @@ class ServerReconciliationTest(TestCase):
         vm1 = mfactory.VirtualMachineFactory(backend=self.backend,
                                              deleted=False,
                                              operstate="STOPPED")
-        mfactory.NetworkInterfaceFactory(machine=vm1, network=network1,
-                                         ipv4="10.0.0.0")
+        nic = mfactory.NetworkInterfaceFactory(machine=vm1, network=network1,
+                                               ipv4="10.0.0.0")
         mrapi().GetInstances.return_value =\
             [{"name": vm1.backend_vm_id,
              "beparams": {"maxmem": 2048,
@@ -193,9 +196,10 @@ class ServerReconciliationTest(TestCase):
              "oper_state": True,
              "mtime": time(),
              "disk.sizes": [],
+             "nic.names": [nic.backend_uuid],
              "nic.ips": ["192.168.2.1"],
              "nic.macs": ["aa:00:bb:cc:dd:ee"],
-             "nic.networks": [network2.backend_id],
+             "nic.networks.names": [network2.backend_id],
              "tags": []}]
         with mocked_quotaholder():
             self.reconciler.reconcile()
@@ -227,7 +231,9 @@ class NetworkReconciliationTest(TestCase):
         # Test creation if exists in Ganeti
         self.assertEqual(net1.backend_networks.count(), 0)
         mrapi().GetNetworks.return_value = [{"name": net1.backend_id,
-                                             "group_list": ["default"],
+                                             "group_list": [["default",
+                                                             "bridged",
+                                                             "prv0"]],
                                              "network": net1.subnet,
                                              "map": "....",
                                              "external_reservations": ""}]

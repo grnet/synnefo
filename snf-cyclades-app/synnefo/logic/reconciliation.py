@@ -288,11 +288,21 @@ class BackendReconciler(object):
         db_nics = db_server.nics.order_by("index")
         gnt_nics = gnt_server["nics"]
         gnt_nics_parsed = backend_mod.process_ganeti_nics(gnt_nics)
-        if backend_mod.nics_changed(db_nics, gnt_nics_parsed):
-            msg = "Found unsynced NICs for server '%s'.\n\t"\
-                  "DB: %s\n\tGaneti: %s"
-            db_nics_str = ", ".join(map(format_db_nic, db_nics))
-            gnt_nics_str = ", ".join(map(format_gnt_nic, gnt_nics_parsed))
+        nics_changed = len(db_nics) != len(gnt_nics)
+        for db_nic, gnt_nic in zip(db_nics, sorted(gnt_nics_parsed.items())):
+            gnt_nic_id, gnt_nic = gnt_nic
+            if (db_nic.id == gnt_nic_id) and\
+               backend_mod.nics_are_equal(db_nic, gnt_nic):
+                continue
+            else:
+                nics_changed = True
+                break
+        if nics_changed:
+            msg = "Found unsynced NICs for server '%s'.\n"\
+                  "\tDB:\n\t\t%s\n\tGaneti:\n\t\t%s"
+            db_nics_str = "\n\t\t".join(map(format_db_nic, db_nics))
+            gnt_nics_str = "\n\t\t".join(map(format_gnt_nic,
+                                         gnt_nics_parsed.items()))
             self.log.info(msg, server_id, db_nics_str, gnt_nics_str)
             if self.options["fix_unsynced_nics"]:
                 backend_mod.process_net_status(vm=db_server,
@@ -322,15 +332,19 @@ class BackendReconciler(object):
                 self.log.info("Cleared pending task for server '%s", server_id)
 
 
+NIC_MSG = ": %s\t".join(["ID", "State", "IP", "Network", "MAC", "Firewall"])\
+    + ": %s"
+
+
 def format_db_nic(nic):
-    return "Index: %s, IP: %s Network: %s MAC: %s Firewall: %s" % (nic.index,
-           nic.ipv4, nic.network_id, nic.mac, nic.firewall_profile)
+    return NIC_MSG % (nic.id, nic.state, nic.ipv4, nic.network_id, nic.mac,
+                      nic.firewall_profile)
 
 
 def format_gnt_nic(nic):
-    return "Index: %s IP: %s Network: %s MAC: %s Firewall: %s" %\
-           (nic["index"], nic["ipv4"], nic["network"], nic["mac"],
-            nic["firewall_profile"])
+    nic_name, nic = nic
+    return NIC_MSG % (nic_name, nic["state"], nic["ipv4"], nic["network"],
+                      nic["mac"], nic["firewall_profile"])
 
 
 #
@@ -420,12 +434,13 @@ def parse_gnt_instance(instance):
 
 def nics_from_instance(i):
     ips = zip(itertools.repeat('ip'), i['nic.ips'])
+    names = zip(itertools.repeat('name'), i['nic.names'])
     macs = zip(itertools.repeat('mac'), i['nic.macs'])
-    networks = zip(itertools.repeat('network'), i['nic.networks'])
+    networks = zip(itertools.repeat('network'), i['nic.networks.names'])
     # modes = zip(itertools.repeat('mode'), i['nic.modes'])
     # links = zip(itertools.repeat('link'), i['nic.links'])
     # nics = zip(ips,macs,modes,networks,links)
-    nics = zip(ips, macs, networks)
+    nics = zip(ips, names, macs, networks)
     nics = map(lambda x: dict(x), nics)
     #nics = dict(enumerate(nics))
     tags = i["tags"]

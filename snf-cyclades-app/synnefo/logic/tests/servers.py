@@ -128,8 +128,9 @@ class ServerTest(TransactionTestCase):
         nics = kwargs["nics"][0]
         self.assertEqual(kwargs["instance"], vm.backend_vm_id)
         self.assertEqual(nics[0], "add")
-        self.assertEqual(nics[1]["ip"], "192.168.2.2")
-        self.assertEqual(nics[1]["network"], net.backend_id)
+        self.assertEqual(nics[1], "-1")
+        self.assertEqual(nics[2]["ip"], "192.168.2.2")
+        self.assertEqual(nics[2]["network"], net.backend_id)
 
         # No dhcp
         vm = mfactory.VirtualMachineFactory(operstate="STARTED")
@@ -145,8 +146,9 @@ class ServerTest(TransactionTestCase):
         nics = kwargs["nics"][0]
         self.assertEqual(kwargs["instance"], vm.backend_vm_id)
         self.assertEqual(nics[0], "add")
-        self.assertEqual(nics[1]["ip"], None)
-        self.assertEqual(nics[1]["network"], net.backend_id)
+        self.assertEqual(nics[1], "-1")
+        self.assertEqual(nics[2]["ip"], None)
+        self.assertEqual(nics[2]["network"], net.backend_id)
 
         # Test connect to IPv6 only network
         vm = mfactory.VirtualMachineFactory(operstate="STARTED")
@@ -159,8 +161,9 @@ class ServerTest(TransactionTestCase):
         nics = kwargs["nics"][0]
         self.assertEqual(kwargs["instance"], vm.backend_vm_id)
         self.assertEqual(nics[0], "add")
-        self.assertEqual(nics[1]["ip"], None)
-        self.assertEqual(nics[1]["network"], net.backend_id)
+        self.assertEqual(nics[1], "-1")
+        self.assertEqual(nics[2]["ip"], None)
+        self.assertEqual(nics[2]["network"], net.backend_id)
 
 
 @patch("synnefo.logic.rapi_pool.GanetiRapiClient")

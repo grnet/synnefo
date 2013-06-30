@@ -300,22 +300,21 @@ def release_instance_ips(vm, ganeti_nics):
     to_release = old_addresses - new_addresses
     for (network_id, ipv4) in to_release:
         if ipv4:
-            net = Network.objects.get(id=network_id)
-            # Important: Take exclusive lock in pool before checking if there
-            # is a floating IP with this ipv4 address, otherwise there is a
-            # race condition, where you may release a floating IP that has been
-            # created after search floating IPs and before you get exclusively
-            # the pool
-            pool = net.get_pool()
-            try:
-                floating_ip = net.floating_ips.select_for_update()\
-                                              .get(ipv4=ipv4, machine=vm,
-                                                   deleted=False)
-                floating_ip.machine = None
-                floating_ip.save()
-            except FloatingIP.DoesNotExist:
+            # Get X-Lock before searching floating IP, to exclusively search
+            # and release floating IP. Otherwise you may release a floating IP
+            # that has been just reserved.
+            net = Network.objects.select_for_update().get(id=network_id)
+            if net.floating_ip_pool:
+                try:
+                    floating_ip = net.floating_ips.select_for_update()\
+                                                  .get(ipv4=ipv4, machine=vm,
+                                                       deleted=False)
+                    floating_ip.machine = None
+                    floating_ip.save()
+                except FloatingIP.DoesNotExist:
+                    net.release_address(ipv4)
+            else:
                 net.release_address(ipv4)
-                pool.save()
 
 
 @transaction.commit_on_success

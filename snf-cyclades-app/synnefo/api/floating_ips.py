@@ -138,12 +138,11 @@ def allocate_floating_ip(request):
             network, address = util.get_free_ip(net_objects)
         else:
             try:
-                network = Network.objects.select_for_update()\
-                                         .get(id=pool, public=True,
-                                              deleted=False,
-                                              floating_ip_pool=True)
-
-            except Network.DoesNotExist:
+                network_id = int(pool)
+            except ValueErrorx:
+                raise faults.BadRequest("Invalid pool ID.")
+            network = next((n for n in net_objects if n.id==pool), None)
+            if network is None:
                 raise faults.ItemNotFound("Pool '%s' does not exist." % pool)
             if address is None:
                 # User did not specified an IP address. Choose a random one

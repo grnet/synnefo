@@ -268,7 +268,7 @@ class UpdateDBTest(TestCase):
         self.assertFalse(db_vm.nics.all())
         self.assertTrue(nic.network.get_pool().is_available(nic.ipv4))
         vm2 = mfactory.VirtualMachineFactory()
-        network = mfactory.NetworkFactory()
+        network = mfactory.NetworkFactory(floating_ip_pool=True)
         fp1 = mfactory.FloatingIPFactory(machine=vm2, network=network)
         fp2 = mfactory.FloatingIPFactory(machine=vm2, network=network)
         mfactory.NetworkInterfaceFactory(machine=vm2, network=network,

@@ -708,6 +708,15 @@ class NetworkInterface(models.Model):
             (self.index, self.machine_id, self.network_id, self.ipv4,
              self.ipv6)
 
+    @property
+    def is_floating_ip(self):
+        network = self.network
+        if self.ipv4 and network.floating_ip_pool:
+            return network.floating_ips.filter(machine=self.machine,
+                                               ipv4=self.ipv4,
+                                               deleted=False).exists()
+        return False
+
 
 class FloatingIP(models.Model):
     userid = models.CharField("UUID of the owner", max_length=128,

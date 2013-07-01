@@ -207,18 +207,20 @@ def action_extra_context(project, table, self):
     membership = user.get_membership(project)
     if membership is not None:
         if can_leave and membership.can_leave():
-            url = 'astakos.im.views.project_leave'
+            url = reverse('astakos.im.views.project_leave',
+                          args=(membership.id,))
             action = _('Leave')
             confirm = True
             prompt = _('Are you sure you want to leave from the project?')
         elif can_cancel and membership.can_cancel():
-            url = 'astakos.im.views.project_cancel'
+            url = reverse('astakos.im.views.project_cancel_member',
+                          args=(membership.id,))
             action = _('Cancel')
             confirm = True
             prompt = _('Are you sure you want to cancel the join request?')
 
     elif can_join:
-        url = 'astakos.im.views.project_join'
+        url = reverse('astakos.im.views.project_join', args=(project.id,))
         action = _('Join')
         confirm = True
         prompt = _('Are you sure you want to join this project?')
@@ -226,8 +228,6 @@ def action_extra_context(project, table, self):
         action = ''
         confirm = False
         url = None
-
-    url = reverse(url, args=(project.id, )) + append_url if url else ''
 
     return {'action': action,
             'confirm': confirm,
@@ -351,8 +351,7 @@ def member_action_extra_context(membership, table, col):
         confirms = [True, True]
 
     for i, url in enumerate(urls):
-        context.append(dict(url=reverse(url, args=(table.project.pk,
-                                                   membership.pk)),
+        context.append(dict(url=reverse(url, args=(membership.pk,)),
                             action=actions[i], prompt=prompts[i],
                             confirm=confirms[i]))
     return context

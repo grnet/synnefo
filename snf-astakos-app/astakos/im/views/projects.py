@@ -354,6 +354,8 @@ def common_detail(request, chain_or_app_id, project_view=True,
         m = _(astakos_messages.NOT_ALLOWED)
         raise PermissionDenied(m)
 
+    membership = user.get_membership(project) if project else None
+    membership_id = membership.id if membership else None
     mem_display = user.membership_display(project) if project else None
     can_join_req = can_join_request(project, user) if project else False
     can_leave_req = can_leave_request(project, user) if project else False
@@ -374,6 +376,7 @@ def common_detail(request, chain_or_app_id, project_view=True,
             'owner_mode': is_owner,
             'admin_mode': is_project_admin,
             'mem_display': mem_display,
+            'membership_id': membership_id,
             'can_join_request': can_join_req,
             'can_leave_request': can_leave_req,
             'members_status_filter': members_status_filter,
@@ -462,23 +465,23 @@ def _project_join(request, chain_id):
 @require_http_methods(["POST"])
 @cookie_fix
 @valid_astakos_user_required
-def project_leave(request, chain_id):
+def project_leave(request, memb_id):
     next = request.GET.get('next')
     if not next:
         next = reverse('astakos.im.views.project_list')
 
     with ExceptionHandler(request):
-        _project_leave(request, chain_id)
+        _project_leave(request, memb_id)
 
     next = restrict_next(next, domain=settings.COOKIE_DOMAIN)
     return redirect(next)
 
 
 @commit_on_success_strict()
-def _project_leave(request, chain_id):
+def _project_leave(request, memb_id):
     try:
-        chain_id = int(chain_id)
-        auto_accepted = leave_project(chain_id, request.user)
+        memb_id = int(memb_id)
+        auto_accepted = leave_project(memb_id, request.user)
         if auto_accepted:
             m = _(astakos_messages.USER_LEFT_PROJECT)
         else:
@@ -491,23 +494,22 @@ def _project_leave(request, chain_id):
 @require_http_methods(["POST"])
 @cookie_fix
 @valid_astakos_user_required
-def project_cancel(request, chain_id):
+def project_cancel_member(request, memb_id):
     next = request.GET.get('next')
     if not next:
         next = reverse('astakos.im.views.project_list')
 
     with ExceptionHandler(request):
-        _project_cancel(request, chain_id)
+        _project_cancel_member(request, memb_id)
 
     next = restrict_next(next, domain=settings.COOKIE_DOMAIN)
     return redirect(next)
 
 
 @commit_on_success_strict()
-def _project_cancel(request, chain_id):
+def _project_cancel_member(request, memb_id):
     try:
-        chain_id = int(chain_id)
-        cancel_membership(chain_id, request.user)
+        cancel_membership(memb_id, request.user)
         m = _(astakos_messages.USER_REQUEST_CANCELLED)
         messages.success(request, m)
     except (IOError, PermissionDenied), e:
@@ -517,20 +519,19 @@ def _project_cancel(request, chain_id):
 @require_http_methods(["POST"])
 @cookie_fix
 @valid_astakos_user_required
-def project_accept_member(request, chain_id, memb_id):
+def project_accept_member(request, memb_id):
 
     with ExceptionHandler(request):
-        _project_accept_member(request, chain_id, memb_id)
+        _project_accept_member(request, memb_id)
 
     return redirect_back(request, 'project_list')
 
 
 @commit_on_success_strict()
-def _project_accept_member(request, chain_id, memb_id):
+def _project_accept_member(request, memb_id):
     try:
-        chain_id = int(chain_id)
         memb_id = int(memb_id)
-        m = accept_membership(chain_id, memb_id, request.user)
+        m = accept_membership(memb_id, request.user)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
 
@@ -543,20 +544,19 @@ def _project_accept_member(request, chain_id, memb_id):
 @require_http_methods(["POST"])
 @cookie_fix
 @valid_astakos_user_required
-def project_remove_member(request, chain_id, memb_id):
+def project_remove_member(request, memb_id):
 
     with ExceptionHandler(request):
-        _project_remove_member(request, chain_id, memb_id)
+        _project_remove_member(request, memb_id)
 
     return redirect_back(request, 'project_list')
 
 
 @commit_on_success_strict()
-def _project_remove_member(request, chain_id, memb_id):
+def _project_remove_member(request, memb_id):
     try:
-        chain_id = int(chain_id)
         memb_id = int(memb_id)
-        m = remove_membership(chain_id, memb_id, request.user)
+        m = remove_membership(memb_id, request.user)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
     else:
@@ -568,20 +568,19 @@ def _project_remove_member(request, chain_id, memb_id):
 @require_http_methods(["POST"])
 @cookie_fix
 @valid_astakos_user_required
-def project_reject_member(request, chain_id, memb_id):
+def project_reject_member(request, memb_id):
 
     with ExceptionHandler(request):
-        _project_reject_member(request, chain_id, memb_id)
+        _project_reject_member(request, memb_id)
 
     return redirect_back(request, 'project_list')
 
 
 @commit_on_success_strict()
-def _project_reject_member(request, chain_id, memb_id):
+def _project_reject_member(request, memb_id):
     try:
-        chain_id = int(chain_id)
         memb_id = int(memb_id)
-        m = reject_membership(chain_id, memb_id, request.user)
+        m = reject_membership(memb_id, request.user)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
     else:
@@ -722,6 +721,6 @@ def project_members_action(request, chain_id, action=None, redirect_to=''):
     for member_id in member_ids:
         member_id = int(member_id)
         with ExceptionHandler(request):
-            action_func(request, chain_id, member_id)
+            action_func(request, member_id)
 
     return redirect_back(request, 'project_list')

@@ -104,29 +104,31 @@ def metadata_item_demux(request, server_id, key):
 
 
 def nic_to_dict(nic):
+    ip_type = "floating" if nic.is_floating_ip else "fixed"
     d = {'id': util.construct_nic_id(nic),
          'network_id': str(nic.network.id),
          'mac_address': nic.mac,
          'ipv4': nic.ipv4 if nic.ipv4 else None,
-         'ipv6': nic.ipv6 if nic.ipv6 else None}
+         'ipv6': nic.ipv6 if nic.ipv6 else None,
+         'OS-EXT-IPS:type': ip_type}
 
     if nic.firewall_profile:
         d['firewallProfile'] = nic.firewall_profile
     return d
 
 
-def nics_to_addresses(nics):
+def attachments_to_addresses(attachments):
     addresses = {}
-    for nic in nics:
+    for nic in attachments:
         net_nics = []
         net_nics.append({"version": 4,
-                         "addr": nic.ipv4,
-                         "OS-EXT-IPS:type": "fixed"})
-        if nic.ipv6:
+                         "addr": nic["ipv4"],
+                         "OS-EXT-IPS:type": nic["OS-EXT-IPS:type"]})
+        if nic["ipv6"]:
             net_nics.append({"version": 6,
-                             "addr": nic.ipv6,
-                             "OS-EXT-IPS:type": "fixed"})
-        addresses[nic.network.id] = net_nics
+                             "addr": nic["ipv6"],
+                             "OS-EXT-IPS:type": nic["OS-EXT-IPS:type"]})
+        addresses[nic["network_id"]] = net_nics
     return addresses
 
 
@@ -154,7 +156,7 @@ def vm_to_dict(vm, detail=False):
         vm_nics = vm.nics.filter(state="ACTIVE").order_by("index")
         attachments = map(nic_to_dict, vm_nics)
         d['attachments'] = attachments
-        d['addresses'] = nics_to_addresses(vm_nics)
+        d['addresses'] = attachments_to_addresses(attachments)
 
         # include the latest vm diagnostic, if set
         diagnostic = vm.get_last_diagnostic()
@@ -432,7 +434,7 @@ def list_addresses(request, server_id):
     log.debug('list_addresses %s', server_id)
     vm = util.get_vm(server_id, request.user_uniq)
     attachments = [nic_to_dict(nic) for nic in vm.nics.all()]
-    addresses = nics_to_addresses(vm.nics.all())
+    addresses = attachments_to_addresses(attachments)
 
     if request.serialization == 'xml':
         data = render_to_string('list_addresses.xml', {'addresses': addresses})
@@ -456,7 +458,7 @@ def list_addresses_by_network(request, server_id, network_id):
     machine = util.get_vm(server_id, request.user_uniq)
     network = util.get_network(network_id, request.user_uniq)
     nics = machine.nics.filter(network=network).all()
-    addresses = nics_to_addresses(nics)
+    addresses = attachments_to_addresses(map(nic_to_dict, nics))
 
     if request.serialization == 'xml':
         data = render_to_string('address.xml', {'addresses': addresses})

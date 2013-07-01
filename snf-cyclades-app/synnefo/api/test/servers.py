@@ -142,6 +142,7 @@ class ServerAPITest(ComputeAPITest):
         self.assertEqual(api_nic['firewallProfile'], nic.firewall_profile)
         self.assertEqual(api_nic['ipv4'], nic.ipv4)
         self.assertEqual(api_nic['ipv6'], nic.ipv6)
+        self.assertEqual(api_nic['OS-EXT-IPS:type'],"fixed")
         self.assertEqual(api_nic['id'], 'nic-%s-%s' % (db_vm.id, nic.index))
         api_address = server["addresses"]
         self.assertEqual(api_address[str(net.id)],

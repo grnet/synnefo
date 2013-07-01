@@ -85,7 +85,8 @@ def ip_to_dict(floating_ip):
             "pool": str(floating_ip.network_id)}
 
 
-@api.api_method(http_method="GET", user_required=True, logger=log)
+@api.api_method(http_method="GET", user_required=True, logger=log,
+                serializations=["json"])
 def list_floating_ips(request):
     """Return user reserved floating IPs"""
     log.debug("list_floating_ips")
@@ -102,7 +103,8 @@ def list_floating_ips(request):
     return HttpResponse(data, status=200)
 
 
-@api.api_method(http_method="GET", user_required=True, logger=log)
+@api.api_method(http_method="GET", user_required=True, logger=log,
+                serializations=["json"])
 def get_floating_ip(request, floating_ip_id):
     """Return information for a floating IP."""
     userid = request.user_uniq
@@ -118,7 +120,8 @@ def get_floating_ip(request, floating_ip_id):
     return HttpResponse(data, status=200)
 
 
-@api.api_method(http_method='POST', user_required=True, logger=log)
+@api.api_method(http_method='POST', user_required=True, logger=log,
+                serializations=["json"])
 @transaction.commit_manually
 def allocate_floating_ip(request):
     """Allocate a floating IP."""
@@ -185,7 +188,8 @@ def allocate_floating_ip(request):
     return HttpResponse(data, status=200)
 
 
-@api.api_method(http_method='DELETE', user_required=True, logger=log)
+@api.api_method(http_method='DELETE', user_required=True, logger=log,
+                serializations=["json"])
 @transaction.commit_on_success
 def release_floating_ip(request, floating_ip_id):
     """Release a floating IP."""
@@ -223,7 +227,8 @@ def release_floating_ip(request, floating_ip_id):
     return HttpResponse(status=204)
 
 
-@api.api_method(http_method='GET', user_required=True, logger=log)
+@api.api_method(http_method='GET', user_required=True, logger=log,
+                serializations=["json"])
 def list_floating_ip_pools(request):
     networks = Network.objects.filter(public=True, deleted=False,
                                       floating_ip_pool=True)

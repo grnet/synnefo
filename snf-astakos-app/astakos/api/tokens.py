@@ -107,6 +107,7 @@ def authenticate(request):
         for l in [e.data.values('key', 'value') for e in s.endpoints.all()]:
             endpoint = dict((d['key'], d['value']) for d in l)
             endpoint["SNF:uiURL"] = s.component.url
+            endpoint["Region"] = "defaultRegion"
             if s.name == 'astakos_weblogin':
                 endpoint["SNF:webloginURL"] = endpoint["publicURL"]
             endpoints.append(endpoint)

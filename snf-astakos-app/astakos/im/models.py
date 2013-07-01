@@ -1316,44 +1316,7 @@ def new_chain():
 
 
 class ProjectApplicationManager(ForUpdateManager):
-
-    def user_visible_projects(self, *filters, **kw_filters):
-        model = self.model
-        return self.filter(model.Q_PENDING | model.Q_APPROVED)
-
-    def user_visible_by_chain(self, flt):
-        model = self.model
-        pending = self.filter(
-            model.Q_PENDING | model.Q_DENIED).values_list('chain')
-        approved = self.filter(model.Q_APPROVED).values_list('chain')
-        by_chain = dict(pending.annotate(models.Max('id')))
-        by_chain.update(approved.annotate(models.Max('id')))
-        return self.filter(flt, id__in=by_chain.values())
-
-    def user_accessible_projects(self, user):
-        """
-        Return projects accessed by specified user.
-        """
-        if user.is_project_admin():
-            participates_filters = Q()
-        else:
-            participates_filters = Q(owner=user) | Q(applicant=user) | \
-                Q(project__projectmembership__person=user)
-
-        return self.user_visible_by_chain(
-            participates_filters).order_by('issue_date').distinct()
-
-    def search_by_name(self, *search_strings):
-        q = Q()
-        for s in search_strings:
-            q = q | Q(name__icontains=s)
-        return self.filter(q)
-
-    def latest_of_chain(self, chain_id):
-        try:
-            return self.filter(chain=chain_id).order_by('-id')[0]
-        except IndexError:
-            return None
+    pass
 
 
 class ProjectApplication(models.Model):
@@ -1428,21 +1391,11 @@ class ProjectApplication(models.Model):
     def state_display(self):
         return self.APPLICATION_STATE_DISPLAY.get(self.state, _('Unknown'))
 
-    def project_state_display(self):
-        try:
-            project = self.project
-            return project.state_display()
-        except Project.DoesNotExist:
-            return self.state_display()
-
     def add_resource_policy(self, resource, uplimit):
         """Raises ObjectDoesNotExist, IntegrityError"""
         q = self.projectresourcegrant_set
         resource = Resource.objects.get(name=resource)
         q.create(resource=resource, member_capacity=uplimit)
-
-    def members_count(self):
-        return self.project.approved_memberships.count()
 
     @property
     def grants(self):
@@ -1457,26 +1410,6 @@ class ProjectApplication(models.Model):
         for resource, uplimit in policies:
             self.add_resource_policy(resource, uplimit)
 
-    def pending_modifications_incl_me(self):
-        q = self.chained_applications()
-        q = q.filter(Q(state=self.PENDING))
-        return q
-
-    def last_pending_incl_me(self):
-        try:
-            return self.pending_modifications_incl_me().order_by('-id')[0]
-        except IndexError:
-            return None
-
-    def pending_modifications(self):
-        return self.pending_modifications_incl_me().filter(~Q(id=self.id))
-
-    def last_pending(self):
-        try:
-            return self.pending_modifications().order_by('-id')[0]
-        except IndexError:
-            return None
-
     def is_modification(self):
         # if self.state != self.PENDING:
         #     return False
@@ -1486,12 +1419,6 @@ class ProjectApplication(models.Model):
 
     def chained_applications(self):
         return ProjectApplication.objects.filter(chain=self.chain)
-
-    def is_latest(self):
-        return self.chained_applications().order_by('-id')[0] == self
-
-    def has_pending_modifications(self):
-        return bool(self.last_pending())
 
     def denied_modifications(self):
         q = self.chained_applications()
@@ -1507,13 +1434,6 @@ class ProjectApplication(models.Model):
 
     def has_denied_modifications(self):
         return bool(self.last_denied())
-
-    def is_applied(self):
-        try:
-            self.project
-            return True
-        except Project.DoesNotExist:
-            return False
 
     def can_cancel(self):
         return self.state == self.PENDING
@@ -1670,6 +1590,31 @@ class ProjectManager(ForUpdateManager):
              Q(application__end_date__lt=datetime.now()))
         return self.filter(q)
 
+    def user_accessible_projects(self, user):
+        """
+        Return projects accessible by specified user.
+        """
+        model = self.model
+        if user.is_project_admin():
+            flt = Q()
+        else:
+            membs = user.projectmembership_set.associated()
+            memb_projects = membs.values_list("project", flat=True)
+            flt = (Q(application__owner=user) |
+                   Q(application__applicant=user) |
+                   Q(id__in=memb_projects))
+
+        relevant = model.o_states_q(model.RELEVANT_STATES)
+        return self.filter(flt, relevant).order_by(
+            'application__issue_date').select_related(
+                'application', 'application__owner', 'application__applicant')
+
+    def search_by_name(self, *search_strings):
+        q = Q()
+        for s in search_strings:
+            q = q | Q(name__icontains=s)
+        return self.filter(q)
+
 
 class Project(models.Model):
 
@@ -1747,6 +1692,10 @@ class Project(models.Model):
         p_state, a_state = cls.OVERALL_STATE_INV[o_state]
         return Q(state=p_state, application__state=a_state)
 
+    @classmethod
+    def o_states_q(cls, o_states):
+        return reduce(lambda x, y: x | y, map(cls.o_state_q, o_states), Q())
+
     INITIALIZED_STATES = [O_ACTIVE,
                           O_SUSPENDED,
                           O_TERMINATED,
@@ -1777,6 +1726,16 @@ class Project(models.Model):
         if apps:
             return apps[0]
         return None
+
+    def last_pending_modification(self):
+        last_pending = self.last_pending_application()
+        if last_pending == self.application:
+            return None
+        return last_pending
+
+    def has_pending_modifications(self):
+        last_pending = self.last_pending_modification()
+        return last_pending is not None
 
     def state_display(self):
         return self.O_STATE_DISPLAY.get(self.overall_state(), _('Unknown'))
@@ -1879,6 +1838,9 @@ class ProjectMembershipManager(ForUpdateManager):
 
     def suspended(self):
         return self.filter(state=ProjectMembership.USER_SUSPENDED)
+
+    def associated(self):
+        return self.filter(state__in=ProjectMembership.ASSOCIATED_STATES)
 
 
 class ProjectMembership(models.Model):

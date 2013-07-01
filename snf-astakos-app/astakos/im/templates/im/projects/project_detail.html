@@ -3,15 +3,16 @@
 {% load astakos_tags filters django_tables2 %}
 
 {% block page.body %}
-{% with object.project as project %}
+{% with object.chain as project %}
 <div class="projects">
   <h2>
     <em>
       {% if owner_mode or admin_mode %}
         {% if project_view %}
-           PROJECT {{ object.project_state_display|upper }}
-          {% if object.has_pending_modifications %} -
-             <a href="{% url astakos.im.views.project_app object.last_pending.pk %}">
+           PROJECT {{ project.state_display|upper }}
+          {% with project.last_pending_modification as last_pending %}
+          {% if last_pending != None %} -
+             <a href="{% url astakos.im.views.project_app last_pending.pk %}">
                MODIFICATION PENDING</a>
           {% else %}
              <!-- note that pending modifications have priority -->
@@ -20,6 +21,7 @@
                MODIFICATION DENIED</a>
              {% endif %}
           {% endif %}
+          {% endwith %}
         {% else %}
           <!-- application view -->
            PROJECT {% if object.is_modification %} MODIFICATION {% endif %}
@@ -29,8 +31,6 @@
       {% else %}
         <!-- third user -->
         <!-- assert in project view -->
-        <!-- there is always a project, may be deactivated -->
-        
         {% if project.is_deactivated %}
         PROJECT {{ project.state_display|upper }} -
         {% endif %}
@@ -118,7 +118,7 @@
 
     <h3>
       {% if owner_mode and project_view %}
-          {% if object.project.is_alive %}
+          {% if project.is_alive %}
            <a href="{% url project_members object.chain_id %}">MEMBERS </a>
           {% else %}
           MEMBERS
@@ -146,7 +146,7 @@
         {{ object.member_leave_policy_display|title }}
       </dd>
        {% if owner_mode and project_view %}
-          {% if object.project.is_alive %}
+          {% if project.is_alive %}
       <dt><a href="{% url project_approved_members object.chain_id %}" title="view approved members">Approved members</a></dt>
       <dd>{{ approved_members_count }}
         <span class="faint"> 

@@ -135,10 +135,10 @@ def project_add(request):
 @cookie_fix
 @valid_astakos_user_required
 def project_list(request):
-    projects = ProjectApplication.objects.user_accessible_projects(
+    projects = Project.objects.user_accessible_projects(
         request.user).select_related()
-    table = tables.UserProjectApplicationsTable(projects, user=request.user,
-                                                prefix="my_projects_")
+    table = tables.UserProjectsTable(projects, user=request.user,
+                                     prefix="my_projects_")
     RequestConfig(request,
                   paginate={"per_page": settings.PAGINATE_BY}).configure(table)
 
@@ -320,6 +320,8 @@ def common_detail(request, chain_or_app_id, project_view=True,
             flt = MEMBERSHIP_STATUS_FILTER.get(members_status_filter)
             if flt is not None:
                 members = flt(members)
+            else:
+                members = members.associated()
             members = members.select_related()
             members_table = tables.ProjectMembersTable(project,
                                                        members,
@@ -338,8 +340,6 @@ def common_detail(request, chain_or_app_id, project_view=True,
         members_table = None
         addmembers_form = None
 
-    modifications_table = None
-
     user = request.user
     is_project_admin = user.is_project_admin(application_id=application.id)
     is_owner = user.owns_application(application)
@@ -353,13 +353,6 @@ def common_detail(request, chain_or_app_id, project_view=True,
     ):
         m = _(astakos_messages.NOT_ALLOWED)
         raise PermissionDenied(m)
-
-    following_applications = list(application.pending_modifications())
-    following_applications.reverse()
-    modifications_table = (
-        tables.ProjectModificationApplicationsTable(following_applications,
-                                                    user=request.user,
-                                                    prefix="modifications_"))
 
     mem_display = user.membership_display(project) if project else None
     can_join_req = can_join_request(project, user) if project else False
@@ -380,7 +373,6 @@ def common_detail(request, chain_or_app_id, project_view=True,
             'members_table': members_table,
             'owner_mode': is_owner,
             'admin_mode': is_project_admin,
-            'modifications_table': modifications_table,
             'mem_display': mem_display,
             'can_join_request': can_join_req,
             'can_leave_request': can_leave_req,
@@ -405,17 +397,18 @@ def project_search(request):
             q = None
 
     if q is None:
-        projects = ProjectApplication.objects.none()
+        projects = Project.objects.none()
     else:
-        accepted_projects = request.user.projectmembership_set.filter(
-            ~Q(acceptance_date__isnull=True)).values_list('project', flat=True)
-        projects = ProjectApplication.objects.search_by_name(q)
-        projects = projects.filter(
-            ~Q(project__last_approval_date__isnull=True))
-        projects = projects.exclude(project__in=accepted_projects)
+        accepted = request.user.projectmembership_set.filter(
+            state__in=ProjectMembership.ACCEPTED_STATES).values_list(
+                'project', flat=True)
 
-    table = tables.UserProjectApplicationsTable(projects, user=request.user,
-                                                prefix="my_projects_")
+        projects = Project.objects.search_by_name(q)
+        projects = projects.filter(Project.o_state_q(Project.O_ACTIVE))
+        projects = projects.exclude(id__in=accepted)
+
+    table = tables.UserProjectsTable(projects, user=request.user,
+                                     prefix="my_projects_")
     if request.method == "POST":
         table.caption = _('SEARCH RESULTS')
     else:

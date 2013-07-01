@@ -179,13 +179,12 @@ class RichLinkColumn(tables.TemplateColumn):
         return contexts
 
 
-def action_extra_context(application, table, self):
+def action_extra_context(project, table, self):
     user = table.user
     url, action, confirm, prompt = '', '', True, ''
     append_url = ''
 
     can_join = can_leave = can_cancel = False
-    project = application.chain
 
     if project.is_active():
         try:
@@ -228,7 +227,7 @@ def action_extra_context(application, table, self):
         confirm = False
         url = None
 
-    url = reverse(url, args=(application.chain_id, )) + append_url if url else ''
+    url = reverse(url, args=(project.id, )) + append_url if url else ''
 
     return {'action': action,
             'confirm': confirm,
@@ -250,26 +249,31 @@ class UserTable(tables.Table):
         super(UserTable, self).__init__(*args, **kwargs)
 
 
-def project_name_append(application, column):
-    if application.has_pending_modifications():
+def project_name_append(project, column):
+    if project.has_pending_modifications():
         return mark_safe("<br /><i class='tiny'>%s</i>" %
                          _('modifications pending'))
     return u''
 
 
 # Table classes
-class UserProjectApplicationsTable(UserTable):
+class UserProjectsTable(UserTable):
     caption = _('My projects')
 
     name = LinkColumn('astakos.im.views.project_detail',
                       coerce=lambda x: truncatename(x, 25),
                       append=project_name_append,
-                      args=(A('chain_id'),))
+                      args=(A('id'),),
+                      accessor='application.name')
+
     issue_date = tables.DateColumn(verbose_name=_('Application'),
-                                   format=DEFAULT_DATE_FORMAT)
-    start_date = tables.DateColumn(format=DEFAULT_DATE_FORMAT)
+                                   format=DEFAULT_DATE_FORMAT,
+                                   accessor='application.issue_date')
+    start_date = tables.DateColumn(format=DEFAULT_DATE_FORMAT,
+                                   accessor='application.start_date')
     end_date = tables.DateColumn(verbose_name=_('Expiration'),
-                                 format=DEFAULT_DATE_FORMAT)
+                                 format=DEFAULT_DATE_FORMAT,
+                                 accessor='application.end_date')
     members_count = tables.Column(verbose_name=_("Members"), default=0,
                                   orderable=False)
     membership_status = tables.Column(verbose_name=_("Status"),
@@ -280,19 +284,14 @@ class UserProjectApplicationsTable(UserTable):
                                     orderable=False)
 
     def render_membership_status(self, record, *args, **kwargs):
-        if self.user.owns_application(record) or self.user.is_project_admin():
-            return record.project_state_display()
+        if self.user.owns_project(record) or self.user.is_project_admin():
+            return record.state_display()
         else:
-            try:
-                project = record.project
-                return self.user.membership_display(project)
-            except Project.DoesNotExist:
-                return _("Unknown")
+            return self.user.membership_display(record)
 
     def render_members_count(self, record, *args, **kwargs):
         append = ""
-        application = record
-        project = application.chain
+        project = record
         if project is None:
             append = mark_safe("<i class='tiny'>%s</i>" % (_('pending'),))
 
@@ -300,12 +299,12 @@ class UserProjectApplicationsTable(UserTable):
         if c > 0:
             pending_members_url = reverse(
                 'project_pending_members',
-                kwargs={'chain_id': application.chain_id})
+                kwargs={'chain_id': record.id})
 
             pending_members = "<i class='tiny'> - %d %s</i>" % (
                 c, _('pending'))
             if (
-                self.user.owns_application(record) or
+                self.user.owns_project(record) or
                 self.user.is_project_admin()
             ):
                 pending_members = ("<i class='tiny'>" +
@@ -313,33 +312,20 @@ class UserProjectApplicationsTable(UserTable):
                                    (pending_members_url, c, _('pending')))
             append = mark_safe(pending_members)
         members_url = reverse('project_approved_members',
-                              kwargs={'chain_id': application.chain_id})
+                              kwargs={'chain_id': record.id})
         members_count = record.members_count()
-        if self.user.owns_application(record) or self.user.is_project_admin():
+        if self.user.owns_project(record) or self.user.is_project_admin():
             members_count = '<a href="%s">%d</a>' % (members_url,
                                                      members_count)
         return mark_safe(str(members_count) + append)
 
     class Meta:
-        model = ProjectApplication
-        fields = ('name', 'membership_status', 'issue_date', 'end_date',
-                  'members_count')
+        sequence = ('name', 'membership_status', 'issue_date', 'end_date',
+                    'members_count', 'project_action')
         attrs = {'id': 'projects-list', 'class': 'my-projects alt-style'}
         template = "im/table_render.html"
         empty_text = _('No projects')
         exclude = ('start_date', )
-
-
-class ProjectModificationApplicationsTable(UserProjectApplicationsTable):
-    name = LinkColumn('astakos.im.views.project_detail',
-                      verbose_name=_('Action'),
-                      coerce=lambda x: 'review',
-                      args=(A('pk'),))
-
-    class Meta:
-        attrs = {'id': 'projects-list', 'class': 'my-projects alt-style'}
-        fields = ('issue_date', 'membership_status')
-        exclude = ('start_date', 'end_date', 'members_count', 'project_action')
 
 
 def member_action_extra_context(membership, table, col):

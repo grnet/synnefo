@@ -1800,19 +1800,6 @@ The above settings denote the Message Queue. Those settings should have the same
 values as in ``/etc/synnefo/10-snf-cyclades-gtools-backend.conf`` file, and
 reflect our :ref:`Message Queue setup <rabbitmq-setup>`.
 
-Edit ``/etc/synnefo/20-snf-cyclades-app-ui.conf``:
-
-.. code-block:: console
-
-   UI_LOGIN_URL = "https://node1.example.com/ui/login"
-   UI_LOGOUT_URL = "https://node1.example.com/ui/logout"
-
-The ``UI_LOGIN_URL`` option tells the Cyclades Web UI where to redirect users,
-if they are not logged in. We point that to Astakos.
-
-The ``UI_LOGOUT_URL`` option tells the Cyclades Web UI where to redirect the
-user when he/she logs out. We point that to Astakos, too.
-
 Edit ``/etc/synnefo/20-snf-cyclades-app-vmapi.conf``:
 
 .. code-block:: console

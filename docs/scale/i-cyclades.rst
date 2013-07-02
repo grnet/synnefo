@@ -72,8 +72,6 @@ In `/etc/synnefo/cyclades.conf` add:
     FEEDBACK_CONTACTS = (
         ('feedback@example.com', 'feedback@example.com'),
     )
-    UI_LOGIN_URL = "https://accounts.example.com/im/login"
-    UI_LOGOUT_URL = "https://accounts.example.com/im/logout"
     UI_FLAVORS_DISK_TEMPLATES_INFO = {
         'rbd': {'name': 'Rbd',
                'description': 'Volumes residing inside a RADOS cluster'},

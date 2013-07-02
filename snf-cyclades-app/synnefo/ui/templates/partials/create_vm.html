@@ -5,7 +5,7 @@
             id="vm-create-step-history-1">
             <div class="steps-history-step clearfix">
                 <span class="header-step step-1 clearfix">
-                    <span class="num">1<span class="subnum">/3</span></span>
+                    <span class="num">1<span class="subnum">/5</span></span>
                     <span class="title">
                         {% trans "Image" %}
                     </span>
@@ -24,7 +24,7 @@
            id="vm-create-step-history-2" >
             <div class="steps-history-step clearfix">
                 <span class="header-step step-2 clearfix">
-                    <span class="num">2<span class="subnum">/3</span></span>
+                    <span class="num">2<span class="subnum">/5</span></span>
                     <span class="title">
                         {% trans "Flavor" %}
                     </span>
@@ -43,7 +43,26 @@
             <div class="steps-history-step clearfix"
                 id="vm-create-step-history-3">
                 <span class="header-step step-3 clearfix">
-                    <span class="num">3<span class="subnum">/3</span></span>
+                    <span class="num">3<span class="subnum">/5</span></span>
+                    <span class="title">
+                        {% trans "Networking" %}
+                    </span>
+                    <div class="info">
+                        <span class="subtitle">
+                            {% trans "Virtual machine networking configuration" %}
+                        </span>
+                        <span class="description">
+                            {% trans "Select machine IP address and private networks" %}
+                        </span>
+                    </div>
+                </span>
+            </div>
+        </div>
+        <div class="steps-history-cont step4h step-header">
+            <div class="steps-history-step clearfix"
+                id="vm-create-step-history-4">
+                <span class="header-step step-4 clearfix">
+                    <span class="num">4<span class="subnum">/5</span></span>
                     <span class="title">
                         {% trans "Personalize" %}
                     </span>
@@ -58,11 +77,11 @@
                 </span>
             </div>
         </div>
-        <div class="steps-history-cont step4h last step-header">
+        <div class="steps-history-cont step5h last step-header">
             <div class="steps-history-step clearfix"
-                id="vm-create-step-history-4">
-                <span class="header-step step-4 clearfix">
-                    <span class="num">4<span class="subnum">/3</span></span>
+                id="vm-create-step-history-5">
+                <span class="header-step step-5 clearfix">
+                    <span class="num">5<span class="subnum">/5</span></span>
                     <span class="title">
                         {% trans "Confirm" %}
                     </span>
@@ -186,7 +205,15 @@
                 </div>
             </div>
         </div>
-        <div class="step-3 vm-personalize create-step-cont clearfix">
+        <div class="step-3 vm-network create-step-cont clearfix">
+            <div class="clearfix step-header">
+            </div>
+            <div class="step-cont clearfix">
+                    <div class="personalize-conts clearfix">
+                    </div>
+            </div>
+        </div>
+        <div class="step-4 vm-personalize create-step-cont clearfix">
             <div class="clearfix step-header">
             </div>
             <div class="step-cont clearfix">
@@ -245,7 +272,7 @@
                 </div>
             </div>
     </div>
-        <div class="step-4 vm-confirm create-step-cont clearfix">
+        <div class="step-5 vm-confirm create-step-cont clearfix">
             <div class="clearfix step-header">
             </div>
             <div class="step-cont clearfix">
@@ -305,13 +332,19 @@
                                     <span class="value"></span>
                                 </li>
                             </ul>
-                        </div>
-                        <div class="list-cont confirm-cont meta">
                             <h4>{% trans "Machine Tags" %}</h4>
                             <ul class="confirm-params meta">
                             </ul>
+                        </div>
+                        <div class="list-cont confirm-cont meta">
                             <h4>{% trans "SSH Keys" %}</h4>
                             <ul class="confirm-params ssh">
+                            </ul>
+                            <h4>{% trans "IP Addresses" %}</h4>
+                            <ul class="confirm-params ip-addresses">
+                            </ul>
+                            <h4>{% trans "Private networks" %}</h4>
+                            <ul class="confirm-params private-networks">
                             </ul>
                         </div>
                     </div>

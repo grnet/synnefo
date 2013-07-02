@@ -684,9 +684,11 @@
             synnefo.ui.main.bind("ready", function(){
             });
             window.setTimeout(function(){
-                $(".public_ips a").click();
+              $("#create").click();
+              window.setTimeout(function() {
+                //synnefo.ui.main.create_vm_view.show_step(3);
+              }, 100)
             }, 800);
-
         })
     </script>
 </body>

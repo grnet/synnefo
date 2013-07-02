@@ -2555,7 +2555,7 @@ div.list table thead .vmname {
 }
 
 .hidden {
-    display:none !important; 
+    display:none; 
 }
 
 div.actions a.selected, div.actions a.selected:hover, div.machine-actions a.selected, div.machine-actions a.selected:hover {
@@ -5157,6 +5157,28 @@ table.list-machines .wave {
     width: 624px !important;
 }
 
+.create-vm .vm-network .list-cont.personalize-cont:last-child .confirm-params {
+  margin-right: 0!important;
+}
+
+.create-vm .vm-network .list-cont.personalize-cont:last-child {
+  border-right: none;
+  margin-right: 0;
+  width: 298px;
+}
+
+.create-vm .vm-network .list-cont.personalize-cont .confirm-params {
+  max-height: 240px;
+}
+
+.create-vm .vm-network .list-cont.personalize-cont {
+  height: 330px;
+}
+
+.create-vm .vm-network .list-cont.personalize-cont {
+    width: 47%;
+}
+
 .create-vm .header-step.current {
     font-weight: bold;
 }
@@ -5381,6 +5403,7 @@ table.list-machines .wave {
 }
 
 .create-vm .create-step-cont li.ssh-key-option.selected,
+.create-vm .create-step-cont li.list-item-option.selected,
 .create-vm ul li.selected {
     background-color: #FF7F2A;
     background-image:linear-gradient(top, #FF9955, #E88B4D);
@@ -5927,7 +5950,7 @@ table.list-machines .wave {
 .create-vm .steps-history .steps-history-cont.current {
     background-color: #A1C8DB;
     color: #fff;
-    width: 468px;
+    width: 416px;
 }
 
 .create-vm .steps-history-step {
@@ -6186,7 +6209,8 @@ table.list-machines .wave {
     margin-right: 10px;
 }
 
-.create-vm .create-step-cont li.ssh-key-option .check {
+.create-vm .create-step-cont li.ssh-key-option .check,
+.create-vm .create-step-cont li.list-item-option .check {
     float: right;
     margin-right: 5px;
     margin-top: 0px;
@@ -6194,18 +6218,21 @@ table.list-machines .wave {
 
 .create-vm .create-step-cont li.ssh-key-option.selected {
 }
-.create-vm .create-step-cont li.ssh-key-option.selected:hover {
+.create-vm .create-step-cont li.ssh-key-option.selected:hover,
+.create-vm .create-step-cont li.list-item-option.selected:hover {
     background-color: #F95;
 }
 
-.create-vm .create-step-cont li.ssh-key-option:hover {
+.create-vm .create-step-cont li.ssh-key-option:hover,
+.create-vm .create-step-cont li.list-item-option:hover {
     background-color: #eee;
 }
 
 .create-vm .create-step-cont li.ssh-key-option.selected {
 }
 
-.create-vm .create-step-cont li.ssh-key-option {
+.create-vm .create-step-cont li.ssh-key-option,
+.create-vm .create-step-cont li.list-item-option {
     padding: 6px !important;
 }
 
@@ -6809,6 +6836,7 @@ input.has-errors {
 .models-view .model-list ul li.model-item.in-progress .item-action {
   display: none !important;
 }
+
 .models-view .model-list ul li.model-item.in-progress:hover .item-action {
   display: none !important;
 }
@@ -7174,4 +7202,9 @@ input.has-errors {
   background-image: url("../images/icons/indicators/small/progress.gif");
   background-position: 530px center;
   background-repeat: no-repeat;
+}
+
+#user_public_ips .param.address {
+  font-weight: bold;
+  margin-right: 10px;
 }

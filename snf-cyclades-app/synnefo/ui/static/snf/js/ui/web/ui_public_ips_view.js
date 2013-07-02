@@ -253,6 +253,7 @@
         subtitle: "IP addresses",
 
         initialize: function(options) {
+            var self = this;
             views.PublicIPsOverlay.__super__.initialize.apply(this, arguments);
             this.subview = new views.PublicIPsView({el:this.$(".public-ips-view")});
             this.fetcher_params = [snf.config.update_interval, 
@@ -262,9 +263,19 @@
                                   snf.config.update_interval_max || 20000,
                                   true, 
                                   {is_recurrent: true, update: true}]
+            this.$(".previous-view-link").live('click', function(){
+                self.hide();
+            })
         },
 
         show: function(view) {
+            this.from_view = view || undefined;
+            
+            if (this.from_view) {
+                this.$(".previous-view-link").show();
+            } else {
+                this.$(".previous-view-link").hide();
+            }
             if (!this.fetcher) {
               this.fetcher = snf.storage.public_ips.get_fetcher.apply(snf.storage.public_ips, 
                                                         _.clone(this.fetcher_params));
@@ -281,6 +292,12 @@
         onClose: function() {
             if (this.fetcher) {
                 this.fetcher.stop();
+            }
+            if (this.from_view) {
+                this.hiding = true;
+                this.from_view.skip_reset_on_next_open = true;
+                this.from_view.show();
+                this.from_view = undefined;
             }
         }
         

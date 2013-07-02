@@ -1760,8 +1760,6 @@ It can be retrieved by running on the Astakos node (node1 in our case):
 The token has been generated automatically during the :ref:`Cyclades service
 registration <services-reg>`.
 
-TODO: Document the Network Options here
-
 Edit ``/etc/synnefo/20-snf-cyclades-app-cloudbar.conf``:
 
 .. code-block:: console

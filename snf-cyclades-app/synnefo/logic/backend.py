@@ -359,6 +359,7 @@ def process_create_progress(vm, etime, progress):
     vm.save()
 
 
+@transaction.commit_on_success
 def create_instance_diagnostic(vm, message, source, level="DEBUG", etime=None,
                                details=None):
     """

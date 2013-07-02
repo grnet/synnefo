@@ -35,15 +35,14 @@ from django.utils.translation import ugettext as _
 from django.utils.safestring import mark_safe
 from django.template import Context, Template
 from django.template.loader import render_to_string
-from django.core.exceptions import PermissionDenied
 
 from django_tables2 import A
 import django_tables2 as tables
 
 from astakos.im.models import *
 from astakos.im.templatetags.filters import truncatename
-from astakos.im.functions import join_project_checks, can_leave_request, \
-    cancel_membership_checks
+from astakos.im.functions import can_join_request, membership_allowed_actions
+
 
 DEFAULT_DATE_FORMAT = "d/m/Y"
 
@@ -184,50 +183,27 @@ def action_extra_context(project, table, self):
     url, action, confirm, prompt = '', '', True, ''
     append_url = ''
 
-    can_join = can_leave = can_cancel = False
-
-    if project.is_active():
-        try:
-            join_project_checks(project)
-            can_join = True
-        except PermissionDenied, e:
-            pass
-
-        try:
-            can_leave = can_leave_request(project, user)
-        except PermissionDenied:
-            pass
-
-        try:
-            cancel_membership_checks(project)
-            can_cancel = True
-        except PermissionDenied:
-            pass
-
     membership = user.get_membership(project)
     if membership is not None:
-        if can_leave and membership.can_leave():
+        allowed = membership_allowed_actions(membership, user)
+        if 'leave' in allowed:
             url = reverse('astakos.im.views.project_leave',
                           args=(membership.id,))
             action = _('Leave')
             confirm = True
             prompt = _('Are you sure you want to leave from the project?')
-        elif can_cancel and membership.can_cancel():
+        elif 'cancel' in allowed:
             url = reverse('astakos.im.views.project_cancel_member',
                           args=(membership.id,))
             action = _('Cancel')
             confirm = True
             prompt = _('Are you sure you want to cancel the join request?')
 
-    elif can_join:
+    if can_join_request(project, user):
         url = reverse('astakos.im.views.project_join', args=(project.id,))
         action = _('Join')
         confirm = True
         prompt = _('Are you sure you want to join this project?')
-    else:
-        action = ''
-        confirm = False
-        url = None
 
     return {'action': action,
             'confirm': confirm,

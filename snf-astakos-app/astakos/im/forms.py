@@ -53,7 +53,7 @@ from astakos.im.models import AstakosUser, EmailChange, Invitation, Resource, \
 from astakos.im import presentation
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
 from astakos.im.functions import send_change_email, submit_application, \
-    accept_membership_checks
+    accept_membership_project_checks
 
 from astakos.im.util import reserved_verified_email, model_to_dict
 from astakos.im import auth_providers
@@ -961,7 +961,7 @@ class AddProjectMembersForm(forms.Form):
 
     def clean(self):
         try:
-            accept_membership_checks(self.project, self.request_user)
+            accept_membership_project_checks(self.project, self.request_user)
         except PermissionDenied, e:
             raise forms.ValidationError(e)
 

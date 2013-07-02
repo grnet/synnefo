@@ -59,7 +59,8 @@ from django.db.models import Q
 from snf_django.lib.api import faults
 from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
                                Network, BackendNetwork, NetworkInterface,
-                               BridgePoolTable, MacPrefixPoolTable, Backend)
+                               BridgePoolTable, MacPrefixPoolTable, Backend,
+                               FloatingIP)
 from synnefo.db.pools import EmptyPool
 
 from snf_django.lib.astakos import get_user
@@ -213,7 +214,7 @@ def get_flavor_provider(flavor):
     return disk_template, provider
 
 
-def get_network(network_id, user_id, for_update=False):
+def get_network(network_id, user_id, for_update=False, non_deleted=False):
     """Return a Network instance or raise ItemNotFound."""
 
     try:
@@ -221,9 +222,23 @@ def get_network(network_id, user_id, for_update=False):
         objects = Network.objects
         if for_update:
             objects = objects.select_for_update()
-        return objects.get(Q(userid=user_id) | Q(public=True), id=network_id)
+        network = objects.get(Q(userid=user_id) | Q(public=True),
+                              id=network_id)
+        if non_deleted and network.deleted:
+            raise faults.BadRequest("Network has been deleted.")
+        return network
     except (ValueError, Network.DoesNotExist):
         raise faults.ItemNotFound('Network not found.')
+
+
+def get_floating_ip(user_id, ipv4, for_update=False):
+    try:
+        objects = FloatingIP.objects
+        if for_update:
+            objects = objects.select_for_update()
+        return objects.get(userid=user_id, ipv4=ipv4, deleted=False)
+    except FloatingIP.DoesNotExist:
+        raise faults.ItemNotFound("Floating IP does not exist.")
 
 
 def validate_network_params(subnet, gateway=None, subnet6=None, gateway6=None):
@@ -269,43 +284,13 @@ def validate_network_size(cidr_block):
 
 
 def allocate_public_address(backend):
-    """Allocate a public IP for a vm."""
-    for network in backend_public_networks(backend):
-        try:
-            address = get_network_free_address(network)
-            return (network, address)
-        except EmptyPool:
-            pass
-    return (None, None)
-
-
-def get_public_ip(backend):
-    """Reserve an IP from a public network.
-
-    This method should run inside a transaction.
-
-    """
-
+    """Get a public IP for any available network of a backend."""
     # Guarantee exclusive access to backend, because accessing the IP pools of
     # the backend networks may result in a deadlock with backend allocator
     # which also checks that backend networks have a free IP.
     backend = Backend.objects.select_for_update().get(id=backend.id)
-
-    address = None
-    if settings.PUBLIC_USE_POOL:
-        (network, address) = allocate_public_address(backend)
-    else:
-        for net in list(backend_public_networks(backend)):
-            pool = net.get_pool()
-            if not pool.empty():
-                address = 'pool'
-                network = net
-                break
-    if address is None:
-        log.error("Public networks of backend %s are full", backend)
-        raise faults.OverLimit("Can not allocate IP for new machine."
-                        " Public networks are full.")
-    return (network, address)
+    public_networks = backend_public_networks(backend)
+    return get_free_ip(public_networks)
 
 
 def backend_public_networks(backend):
@@ -315,22 +300,33 @@ def backend_public_networks(backend):
     to the specified backend.
 
     """
-    for network in Network.objects.filter(public=True, deleted=False,
-                                          drained=False):
-        if BackendNetwork.objects.filter(network=network,
-                                         backend=backend).exists():
-            yield network
+    bnets = BackendNetwork.objects.filter(backend=backend,
+                                          network__public=True,
+                                          network__deleted=False,
+                                          network__drained=False)
+    return [b.network for b in bnets]
+
+
+def get_free_ip(networks):
+    for network in networks:
+        try:
+            address = get_network_free_address(network)
+            return network, address
+        except faults.OverLimit:
+            pass
+    msg = "Can not allocate public IP. Public networks are full."
+    log.error(msg)
+    raise faults.OverLimit(msg)
 
 
 def get_network_free_address(network):
-    """Reserve an IP address from the IP Pool of the network.
-
-    Raises EmptyPool
-
-    """
+    """Reserve an IP address from the IP Pool of the network."""
 
     pool = network.get_pool()
-    address = pool.get()
+    try:
+        address = pool.get()
+    except EmptyPool:
+        raise faults.OverLimit("Network %s is full." % network.backend_id)
     pool.save()
     return address
 
@@ -493,3 +489,11 @@ def image_to_links(image_id):
     links.append({"rel": "alternate",
                   "href": join_urls(IMAGES_PLANKTON_URL, str(image_id))})
     return links
+
+def start_action(vm, action, jobId):
+    vm.action = action
+    vm.backendjobid = jobId
+    vm.backendopcode = None
+    vm.backendjobstatus = None
+    vm.backendlogmsg = None
+    vm.save()

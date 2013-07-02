@@ -146,10 +146,10 @@ def import_server(instance_name, backend_id, flavor_id, image_id, user_id,
     if new_public_nic:
         remove_instance_nics(instance, backend_client,
                              stream=stream)
-        (network, address) = allocate_public_address(backend)
-        if address is None:
-            raise CommandError("Can not allocate a public address."
-                               " No available public network.")
+        try:
+            (network, address) = allocate_public_address(backend)
+        except Exception as e:
+            raise CommandError(e)
         nic = {'ip': address, 'network': network.backend_id}
         add_public_nic(instance_name, nic, backend_client,
                        stream=stream)

@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,30 +31,30 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from synnefo.db.models import FloatingIP
+from synnefo.webproject.management.commands import ListCommand
+from synnefo.settings import (CYCLADES_ASTAKOS_SERVICE_TOKEN as ASTAKOS_TOKEN,
+                              ASTAKOS_URL)
 from logging import getLogger
-
-from django.utils import simplejson as json
-from django.core.urlresolvers import reverse
-
-from synnefo.lib import join_urls
-
-from synnefo.logic.servers import server_created
-from synnefo.vmapi import backend, get_key, get_uuid, settings
-
-log = getLogger('synnefo.vmapi')
+log = getLogger(__name__)
 
 
-def create_server_params(sender, created_vm_params, **kwargs):
-    json_value = json.dumps(created_vm_params)
-    uuid = get_uuid()
-    key = get_key(uuid)
-    log.info("Setting vmapi params with key %s for %s", key, sender)
-    backend.set(key, json_value)
+class Command(ListCommand):
+    help = "List Floating IPs"
+    object_class = FloatingIP
+    deleted_field = "deleted"
+    user_uuid_field = "userid"
+    astakos_url = ASTAKOS_URL
+    astakos_token = ASTAKOS_TOKEN
 
-    path = reverse("vmapi_server_params", args=[uuid]).lstrip('/')
-    config_url = join_urls(settings.BASE_HOST, path)
-    # inject sender (vm) with its configuration url
-    setattr(sender, 'config_url', config_url)
-    return uuid
+    FIELDS = {
+        "id": ("id", "Floating IP UUID"),
+        "user.uuid": ("userid", "The UUID of the server's owner"),
+        "address": ("ipv4", "IPv4 Address"),
+        "pool": ("network", "Floating IP Pool (network)"),
+        "machine": ("machine", "VM using this Floating IP"),
+        "created": ("created", "Datetime this IP was reserved"),
+        "deleted": ("deleted", "If the floating IP is deleted"),
+    }
 
-server_created.connect(create_server_params)
+    fields = ["id", "address", "pool", "user.uuid", "machine", "created"]

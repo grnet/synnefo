@@ -181,6 +181,16 @@ class NetworkInterfaceFactory(factory.DjangoModelFactory):
         factory.Sequence(round_seq_first(FACTORY_FOR.FIREWALL_PROFILES))
 
 
+class FloatingIPFactory(factory.DjangoModelFactory):
+    FACTORY_FOR = models.FloatingIP
+
+    machine = factory.SubFactory(VirtualMachineFactory)
+    network = factory.SubFactory(NetworkFactory, public=False, deleted=False,
+                                 floating_ip_pool=True)
+    ipv4 = factory.LazyAttributeSequence(lambda a, n: a.network.subnet[:-4] +
+                                         '{0}'.format(int(n) + 2))
+
+
 class BridgePoolTableFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.BridgePoolTable
 
@@ -196,3 +206,4 @@ class MacPrefixPoolTableFactory(factory.DjangoModelFactory):
 
 class QuotaHolderSerialFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.QuotaHolderSerial
+    serial = factory.Sequence(lambda x: x, type=int)

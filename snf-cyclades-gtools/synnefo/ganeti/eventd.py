@@ -244,6 +244,9 @@ class JobFileHandler(pyinotify.ProcessEvent):
                         "logmsg": logmsg,
                         "jobId": job_id})
 
+            if op.status == "success":
+                msg["result"] = op.result
+
             if op_id in ["OP_INSTANCE_CREATE", "OP_INSTANCE_SET_PARAMS",
                          "OP_INSTANCE_STARTUP"]:
                 if op.status == "success":
@@ -283,6 +286,11 @@ class JobFileHandler(pyinotify.ProcessEvent):
         msg = {"type": "ganeti-op-status",
                "instance": instances,
                "operation": op_id}
+
+        if op_id == "OP_INSTANCE_SET_PARAMS":
+            beparams = get_field(input, "beparams")
+            if beparams:
+                msg["beparams"] = beparams
 
         routekey = "ganeti.%s.event.op" % prefix_from_name(instances)
 

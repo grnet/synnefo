@@ -42,7 +42,6 @@ In `/etc/synnefo/cyclades.conf` add:
 .. code-block:: console
 
     MAX_CIDR_BLOCK = 21
-    PUBLIC_USE_POOL = True
 
     CPU_BAR_GRAPH_URL = 'https://cyclades.example.com/stats/%s/cpu-bar.png'
     CPU_TIMESERIES_GRAPH_URL = 'https://cyclades.example.com/stats/%s/cpu-ts.png'

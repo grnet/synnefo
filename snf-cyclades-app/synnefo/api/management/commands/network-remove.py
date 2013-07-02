@@ -51,7 +51,10 @@ class Command(BaseCommand):
         self.stdout.write('Trying to remove network: %s\n' % str(network))
 
         if network.machines.exists():
-            raise CommandError('Network is not empty. Can not delete')
+            raise CommandError('Can not delete: Network has connected VMs.')
+        if network.floating_ips.filter(deleted=False).exists():
+            raise CommandError("Can not delete: Network has reserved floating"
+                               " IP addresses.")
 
         network.action = 'DESTROY'
         network.save()

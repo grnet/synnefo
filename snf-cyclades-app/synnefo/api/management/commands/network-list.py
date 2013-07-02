@@ -94,10 +94,12 @@ class Command(ListCommand):
         "vms": (get_machines, "Number of connected servers"),
         "backends": (get_backends, "IDs of Ganeti backends that the network is"
                                    " connected to"),
+        "pool": ("floating_ip_pool", "Whether the network is a floating"
+                                     " IP pool"),
     }
 
     fields = ["id", "name", "user.uuid", "state", "public", "subnet.ipv4",
-              "gateway.ipv4", "link", "mac_prefix", "dhcp", "drained"]
+              "gateway.ipv4", "link", "mac_prefix", "dhcp", "drained", "pool"]
 
     def handle_args(self, *args, **options):
         if options["public"]:

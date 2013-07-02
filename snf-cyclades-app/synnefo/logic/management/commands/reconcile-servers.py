@@ -71,6 +71,9 @@ class Command(BaseCommand):
         make_option('--detect-unsynced-nics', action='store_true',
                     dest='detect_unsynced_nics', default=False,
                     help='Detect unsynced nics between DB and Ganeti'),
+        make_option('--detect-unsynced-flavors', action='store_true',
+                    dest='detect_unsynced_flavors', default=False,
+                    help='Detect unsynced flavors between DB and Ganeti'),
         make_option('--detect-all', action='store_true',
                     dest='detect_all',
                     default=False, help='Enable all --detect-* arguments'),
@@ -87,6 +90,9 @@ class Command(BaseCommand):
         make_option('--fix-unsynced-nics', action='store_true',
                     dest='fix_unsynced_nics', default=False,
                     help='Fix unsynced nics between DB and Ganeti'),
+        make_option('--fix-unsynced-flavors', action='store_true',
+                    dest='fix_unsynced_flavors', default=False,
+                    help='Fix unsynced flavors between DB and Ganeti'),
         make_option('--fix-all', action='store_true', dest='fix_all',
                     default=False, help='Enable all --fix-* arguments'),
         make_option('--backend-id', default=None, dest='backend-id',
@@ -123,16 +129,16 @@ class Command(BaseCommand):
         else:
             backends = Backend.objects.filter(offline=False)
 
-        D = reconciliation.get_servers_from_db(backends)
-        G, GNics = reconciliation.get_instances_from_ganeti(backends)
+        with_nics = options["detect_unsynced_nics"]
 
-        DBNics = reconciliation.get_nics_from_db(backends)
+        DBVMs = reconciliation.get_servers_from_db(backend, with_nics)
+        GanetiVMs = reconciliation.get_instances_from_ganeti(backend)
 
         #
         # Detect problems
         #
         if options['detect_stale']:
-            stale = reconciliation.stale_servers_in_db(D, G)
+            stale = reconciliation.stale_servers_in_db(DBVMs, GanetiVMs)
             if len(stale) > 0:
                 print >> sys.stderr, "Found the following stale server IDs: "
                 print "    " + "\n    ".join(
@@ -141,7 +147,8 @@ class Command(BaseCommand):
                 print >> sys.stderr, "Found no stale server IDs in DB."
 
         if options['detect_orphans']:
-            orphans = reconciliation.orphan_instances_in_ganeti(D, G)
+            orphans = reconciliation.orphan_instances_in_ganeti(DBVMs,
+                                                                GanetiVMs)
             if len(orphans) > 0:
                 print >> sys.stderr, "Found orphan Ganeti instances with IDs: "
                 print "    " + "\n    ".join(
@@ -150,7 +157,7 @@ class Command(BaseCommand):
                 print >> sys.stderr, "Found no orphan Ganeti instances."
 
         if options['detect_unsynced']:
-            unsynced = reconciliation.unsynced_operstate(D, G)
+            unsynced = reconciliation.unsynced_operstate(DBVMs, GanetiVMs)
             if len(unsynced) > 0:
                 print >> sys.stderr, "The operstate of the following server" \
                                      " IDs is out-of-sync:"
@@ -162,7 +169,8 @@ class Command(BaseCommand):
                 print >> sys.stderr, "The operstate of all servers is in sync."
 
         if options['detect_build_errors']:
-            build_errors = reconciliation.instances_with_build_errors(D, G)
+            build_errors = reconciliation.\
+                instances_with_build_errors(DBVMs, GanetiVMs)
             if len(build_errors) > 0:
                 msg = "The os for the following server IDs was not build"\
                       " successfully:"
@@ -181,7 +189,7 @@ class Command(BaseCommand):
                           ': MAC: %s, IP: %s, Network: %s' % \
                           (info['mac'], info['ipv4'], info['network'])
 
-            unsynced_nics = reconciliation.unsynced_nics(DBNics, GNics)
+            unsynced_nics = reconciliation.unsynced_nics(DBVMs, GanetiVMs)
             if len(unsynced_nics) > 0:
                 msg = "The NICs of the servers with the following IDs are"\
                       " unsynced:"
@@ -194,6 +202,19 @@ class Command(BaseCommand):
                     pretty_print_nics(nics[1])
             elif verbosity == 2:
                 print >> sys.stderr, "All instance nics are synced."
+
+        if options["detect_unsynced_flavors"]:
+            unsynced_flavors = reconciliation.unsynced_flavors(DBVMs,
+                                                               GanetiVMs)
+            if len(unsynced_flavors) > 0:
+                print >> sys.stderr, "The flavor of the following server" \
+                                     " IDs is out-of-sync:"
+                print "    " + "\n    ".join(
+                    ["%d is %s in DB, %s in Ganeti" %
+                     (x[0], x[1], x[2])
+                     for x in unsynced_flavors])
+            elif verbosity == 2:
+                print >> sys.stderr, "All instance flavors are synced."
 
         #
         # Then fix them
@@ -281,4 +302,26 @@ class Command(BaseCommand):
                 event_time = datetime.datetime.now()
                 backend_mod.process_net_status(vm=vm, etime=event_time,
                                                nics=final_nics)
+            print >> sys.stderr, "    ...done"
+        if options["fix_unsynced_flavors"] and len(unsynced_flavors) > 0:
+            print >> sys.stderr, "Setting the flavor of %d unsynced VMs:" % \
+                len(unsynced_flavors)
+            for id, db_flavor, gnt_flavor in unsynced_flavors:
+                vm = VirtualMachine.objects.get(pk=id)
+                old_state = vm.operstate
+                opcode = "OP_INSTANCE_SET_PARAMS"
+                beparams = {"vcpus": gnt_flavor.cpu,
+                            "minmem": gnt_flavor.ram,
+                            "maxmem": gnt_flavor.ram}
+                event_time = datetime.datetime.now()
+                backend_mod.process_op_status(
+                    vm=vm, etime=event_time, jobid=-0,
+                    opcode=opcode, status='success',
+                    beparams=beparams,
+                    logmsg='Reconciliation: simulated Ganeti event')
+                # process_op_status with beparams will set the vmstate to
+                # shutdown. Fix this be returning it to old state
+                vm = VirtualMachine.objects.get(pk=id)
+                vm.operstate = old_state
+                vm.save()
             print >> sys.stderr, "    ...done"

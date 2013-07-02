@@ -587,7 +587,7 @@ form.withlabels.hidden-submit					{ margin-bottom:4em; }
 */
 .right-align									{ text-align:right; }			
 
-.auth_methods h3								{ float:left; width:224px; font-size:1.077em;}
+.auth_methods h3								{ float:left; width:224px; font-size:1.077em; padding-top:13px;}
 .auth_methods ul								{ overflow:hidden; padding:0; }
 .auth_methods ul li								{ list-style:none outside none; padding:0; margin:0 0 5px 0; position:relative;}
 .auth_methods ul li a							{ display:inline-block; height:50px; overflow:hidden; vertical-align:middle; }

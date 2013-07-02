@@ -234,7 +234,7 @@ def create_instance_nics(vm, userid, private_networks=[], floating_ips=[]):
     attachments = []
     for network_id in settings.DEFAULT_INSTANCE_NETWORKS:
         network, address = None, None
-        if network_id == "public":
+        if network_id == "SNF:ANY_PUBLIC":
             network, address = util.allocate_public_address(backend=vm.backend)
         else:
             try:

@@ -315,7 +315,7 @@ class ServerCreateAPITest(ComputeAPITest):
         request = deepcopy(self.request)
         request["server"]["networks"] = [bnet3.network.id, bnet4.network.id]
         with override_settings(settings,
-                DEFAULT_INSTANCE_NETWORKS=["public", bnet1.network.id,
+                DEFAULT_INSTANCE_NETWORKS=["SNF:ANY_PUBLIC", bnet1.network.id,
                                            bnet2.network.id]):
             with mocked_quotaholder():
                 response = self.mypost('servers', 'test_user',
@@ -359,14 +359,16 @@ class ServerCreateAPITest(ComputeAPITest):
         # test connect to public netwok
         request = deepcopy(self.request)
         request["server"]["networks"] = [self.network.id]
-        with override_settings(settings, DEFAULT_INSTANCE_NETWORKS=["public"]):
+        with override_settings(settings,
+                               DEFAULT_INSTANCE_NETWORKS=["SNF:ANY_PUBLIC"]):
             response = self.mypost('servers', 'test_user',
                                     json.dumps(request), 'json')
         self.assertFault(response, 403, "forbidden")
         # test wrong user
         request = deepcopy(self.request)
         request["server"]["networks"] = [bnet3.network.id]
-        with override_settings(settings, DEFAULT_INSTANCE_NETWORKS=["public"]):
+        with override_settings(settings,
+                               DEFAULT_INSTANCE_NETWORKS=["SNF:ANY_PUBLIC"]):
             with mocked_quotaholder():
                 response = self.mypost('servers', 'dummy_user',
                                        json.dumps(request), 'json')

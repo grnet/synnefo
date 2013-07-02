@@ -17,6 +17,12 @@ POLL_LIMIT = 3600
 # Network Configuration
 #
 
+# List of network IDs. All created instances will get a NIC connected to each
+# network of this list. If the special network ID "SNF:ANY_PUBLIC" is used,
+# Cyclades will automatically choose a public network and connect the server to
+# it.
+DEFAULT_INSTANCE_NETWORKS=["SNF:ANY_PUBLIC"]
+
 # Maximum allowed network size for private networks.
 MAX_CIDR_BLOCK = 22
 

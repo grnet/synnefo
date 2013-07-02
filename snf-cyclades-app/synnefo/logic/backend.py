@@ -516,8 +516,9 @@ def create_instance(vm, nics, flavor, image):
                                                              network=network)
         if bnet.operstate != "ACTIVE":
             if network.public:
-                # TODO: What to raise here ?
-                raise Exception("LALA")
+                msg = "Can not connect instance to network %s. Network is not"\
+                      " ACTIVE in backend %s." % (network, backend)
+                raise Exception(msg)
             else:
                 depend_jobs.append(create_network(network, backend,
                                                   connect=True))

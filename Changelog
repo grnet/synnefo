@@ -23,7 +23,8 @@ Astakos
 
   * A Project entry is created when submitting an application for a new
     project, rather than on approval. Its state is dependent on the state
-    of its `reference' application (current definition).
+    of its `reference' application (current definition). Lock Project rather
+    than Chain (the latter is semantically obsolete).
 
   * Improve recording of membership actions.
 

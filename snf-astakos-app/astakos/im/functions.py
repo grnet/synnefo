@@ -45,7 +45,7 @@ from synnefo_branding.utils import render_to_string
 
 from synnefo.lib import join_urls
 from astakos.im.models import AstakosUser, Invitation, ProjectMembership, \
-    ProjectApplication, Project, Chain, new_chain
+    ProjectApplication, Project, new_chain
 from astakos.im.quotas import qh_sync_user, get_pending_app_quota, \
     register_pending_apps, qh_sync_project, qh_sync_locked_users, \
     get_users_for_update, members_to_sync
@@ -267,17 +267,17 @@ def get_project_by_id(project_id):
         raise IOError(m)
 
 
-def get_chain_for_update(chain_id):
+def get_project_for_update(project_id):
     try:
-        return Chain.objects.get_for_update(chain=chain_id)
-    except Chain.DoesNotExist:
-        m = _(astakos_messages.UNKNOWN_PROJECT_ID) % chain_id
+        return Project.objects.get_for_update(id=project_id)
+    except Project.DoesNotExist:
+        m = _(astakos_messages.UNKNOWN_PROJECT_ID) % project_id
         raise IOError(m)
 
 
-def get_chain_of_application_for_update(app_id):
+def get_project_of_application_for_update(app_id):
     app = get_application(app_id)
-    return Chain.objects.get_for_update(chain=app.chain_id)
+    return get_project_for_update(app.chain_id)
 
 
 def get_application(application_id):
@@ -288,9 +288,9 @@ def get_application(application_id):
         raise IOError(m)
 
 
-def get_chain_of_membership_for_update(memb_id):
+def get_project_of_membership_for_update(memb_id):
     m = get_membership_by_id(memb_id)
-    return get_chain_for_update(m.project_id)
+    return get_project_for_update(m.project_id)
 
 
 def get_user_by_id(user_id):
@@ -367,13 +367,12 @@ def accept_membership_checks(project, request_user):
 
 
 def accept_membership(memb_id, request_user=None):
-    get_chain_of_membership_for_update(memb_id)
+    project = get_project_of_membership_for_update(memb_id)
     membership = get_membership_by_id(memb_id)
     if not membership.can_accept():
         m = _(astakos_messages.NOT_MEMBERSHIP_REQUEST)
         raise PermissionDenied(m)
 
-    project = membership.project
     accept_membership_checks(project, request_user)
     user = membership.person
     membership.accept()
@@ -391,13 +390,12 @@ def reject_membership_checks(project, request_user):
 
 
 def reject_membership(memb_id, request_user=None):
-    get_chain_of_membership_for_update(memb_id)
+    project = get_project_of_membership_for_update(memb_id)
     membership = get_membership_by_id(memb_id)
     if not membership.can_reject():
         m = _(astakos_messages.NOT_MEMBERSHIP_REQUEST)
         raise PermissionDenied(m)
 
-    project = membership.project
     reject_membership_checks(project, request_user)
     user = membership.person
     membership.reject()
@@ -413,7 +411,7 @@ def cancel_membership_checks(project):
 
 
 def cancel_membership(memb_id, request_user):
-    get_chain_of_membership_for_update(memb_id)
+    project = get_project_of_membership_for_update(memb_id)
 
     membership = get_membership_by_id(memb_id)
     if not membership.can_cancel():
@@ -441,13 +439,12 @@ def remove_membership_checks(project, request_user=None):
 
 
 def remove_membership(memb_id, request_user=None):
-    get_chain_of_membership_for_update(memb_id)
+    project = get_project_of_membership_for_update(memb_id)
     membership = get_membership_by_id(memb_id)
     if not membership.can_remove():
         m = _(astakos_messages.NOT_ACCEPTED_MEMBERSHIP)
         raise PermissionDenied(m)
 
-    project = membership.project
     remove_membership_checks(project, request_user)
     user = membership.person
     membership.remove()
@@ -460,8 +457,7 @@ def remove_membership(memb_id, request_user=None):
 
 
 def enroll_member(project_id, user, request_user=None):
-    get_chain_for_update(project_id)
-    project = get_project_by_id(project_id)
+    project = get_project_for_update(project_id)
     accept_membership_checks(project, request_user)
 
     try:
@@ -503,7 +499,7 @@ def can_leave_request(project, user):
 
 
 def leave_project(memb_id, request_user):
-    get_chain_of_membership_for_update(memb_id)
+    project = get_project_of_membership_for_update(memb_id)
 
     membership = get_membership_by_id(memb_id)
     if not membership.can_leave():
@@ -560,8 +556,7 @@ def new_membership(project, user):
 
 
 def join_project(project_id, request_user):
-    get_chain_for_update(project_id)
-    project = get_project_by_id(project_id)
+    project = get_project_for_update(project_id)
     join_project_checks(project)
 
     try:
@@ -605,8 +600,7 @@ def submit_application(owner=None,
 
     project = None
     if project_id is not None:
-        get_chain_for_update(project_id)
-        project = Project.objects.get(id=project_id)
+        project = get_project_for_update(project_id)
 
         if (request_user and
             (not project.application.owner == request_user and
@@ -662,7 +656,7 @@ def submit_application(owner=None,
 
 
 def cancel_application(application_id, request_user=None, reason=""):
-    get_chain_of_application_for_update(application_id)
+    get_project_of_application_for_update(application_id)
     application = get_application(application_id)
     checkAllowed(application, request_user)
 
@@ -678,7 +672,7 @@ def cancel_application(application_id, request_user=None, reason=""):
 
 
 def dismiss_application(application_id, request_user=None, reason=""):
-    get_chain_of_application_for_update(application_id)
+    get_project_of_application_for_update(application_id)
     application = get_application(application_id)
     checkAllowed(application, request_user)
 
@@ -692,7 +686,7 @@ def dismiss_application(application_id, request_user=None, reason=""):
 
 
 def deny_application(application_id, request_user=None, reason=""):
-    get_chain_of_application_for_update(application_id)
+    get_project_of_application_for_update(application_id)
     application = get_application(application_id)
 
     checkAllowed(application, request_user, admin_only=True)
@@ -726,9 +720,8 @@ def check_conflicting_projects(application):
 
 
 def approve_application(app_id, request_user=None, reason=""):
-    get_chain_of_application_for_update(app_id)
+    project = get_project_of_application_for_update(app_id)
     application = get_application(app_id)
-    project = application.chain
 
     checkAllowed(application, request_user, admin_only=True)
 
@@ -770,8 +763,7 @@ def check_expiration(execute=False):
 
 
 def terminate(project_id, request_user=None):
-    get_chain_for_update(project_id)
-    project = get_project_by_id(project_id)
+    project = get_project_for_update(project_id)
     checkAllowed(project, request_user, admin_only=True)
     checkAlive(project)
 
@@ -783,8 +775,7 @@ def terminate(project_id, request_user=None):
 
 
 def suspend(project_id, request_user=None):
-    get_chain_for_update(project_id)
-    project = get_project_by_id(project_id)
+    project = get_project_for_update(project_id)
     checkAllowed(project, request_user, admin_only=True)
     checkAlive(project)
 
@@ -796,8 +787,7 @@ def suspend(project_id, request_user=None):
 
 
 def resume(project_id, request_user=None):
-    get_chain_for_update(project_id)
-    project = get_project_by_id(project_id)
+    project = get_project_for_update(project_id)
     checkAllowed(project, request_user, admin_only=True)
 
     if not project.is_suspended:

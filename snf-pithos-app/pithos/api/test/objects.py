@@ -247,7 +247,7 @@ class ObjectGet(PithosAPITest):
         r = self.get(url, HTTP_RANGE=ranges)
         self.assertEqual(r.status_code, 416)
 
-    def test_get_with_if_match_with_md5(self):
+    def test_get_with_if_match(self):
         cname = self.containers[0]
         oname, odata = self.upload_object(cname, length=1024)[:-1]
 
@@ -267,7 +267,7 @@ class ObjectGet(PithosAPITest):
         # assert response content
         self.assertEqual(r.content, odata)
 
-    def test_get_with_if_match_star_with_md5(self):
+    def test_get_with_if_match_star(self):
         cname = self.containers[0]
         oname, odata = self.upload_object(cname, length=1024)[:-1]
 
@@ -281,7 +281,7 @@ class ObjectGet(PithosAPITest):
         # assert response content
         self.assertEqual(r.content, odata)
 
-    def test_get_with_multiple_if_match_without_md5(self):
+    def test_get_with_multiple_if_match(self):
         cname = self.containers[0]
         oname, odata = self.upload_object(cname, length=1024)[:-1]
 
@@ -311,7 +311,7 @@ class ObjectGet(PithosAPITest):
         r = self.get(url, HTTP_IF_MATCH=get_random_data(8))
         self.assertEqual(r.status_code, 412)
 
-    def test_if_none_match_without_md5(self):
+    def test_if_none_match(self):
         # upload object
         cname = self.containers[0]
         oname, odata = self.upload_object(cname, length=1024)[:-1]
@@ -339,7 +339,7 @@ class ObjectGet(PithosAPITest):
         # assert get success
         self.assertEqual(r.status_code, 200)
 
-    def test_if_none_match_star_without_md5(self):
+    def test_if_none_match_star(self):
         # upload object
         cname = self.containers[0]
         oname, odata = self.upload_object(cname, length=1024)[:-1]
@@ -1123,7 +1123,8 @@ class ObjectPost(PithosAPITest):
         # update zero length object
         url = join_urls(self.pithos_path, self.user, self.container, dest)
         length = random.randint(1, 1024)
-        r = self.put(url, data=get_random_data(length))
+        initial_data = get_random_data(length)
+        r = self.put(url, data=initial_data)
         self.assertEqual(r.status_code, 201)
 
         offset = random.randint(1, length - 2)
@@ -1135,10 +1136,9 @@ class ObjectPost(PithosAPITest):
 
         r = self.get(url)
         content = r.content
-        self.assertEqual(content[:offset], source_data[:offset])
-        self.assertEqual(content[offset:upto + 1],
-                         source_data[:upto - offset + 1])
-        self.assertEqual(content[upto + 1:], source_data[upto + 1:])
+        self.assertEqual(content, (initial_data[:offset] +
+                                   source_data[:upto - offset + 1] +
+                                   initial_data[upto + 1:]))
 
 
 class ObjectDelete(PithosAPITest):

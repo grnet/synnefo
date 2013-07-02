@@ -138,7 +138,7 @@ def astakos_user(user):
                     "system": {
                         "pithos.diskspace": {
                             "usage": 0,
-                            "limit": 1073741824,
+                            "limit": 1073741824,  # 1GB
                             "pending": 0
                         }
                     }

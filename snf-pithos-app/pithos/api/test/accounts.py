@@ -135,6 +135,50 @@ class AccountGet(PithosAPITest):
         self.assertEquals(containers,
                           ['apples', 'bananas', 'kiwis', 'oranges', 'pears'])
 
+    def test_list_shared(self):
+        # upload and publish object
+        oname, data, resp = self.upload_object('apples')
+        url = join_urls(self.pithos_path, self.user, 'apples', oname)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='true')
+        self.assertEqual(r.status_code, 202)
+
+        # upload and share object
+        other, data, resp = self.upload_object('bananas')
+        url = join_urls(self.pithos_path, self.user, 'bananas', other)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_SHARING='read=alice')
+        self.assertEqual(r.status_code, 202)
+
+        url = join_urls(self.pithos_path, self.user)
+
+        # list shared containers
+        r = self.get('%s?public=' % url)
+        objects = r.content.split('\n')
+        if '' in objects:
+            objects.remove('')
+        self.assertEqual(objects, ['apples'])
+
+        # list shared containers
+        r = self.get('%s?shared=' % url)
+        objects = r.content.split('\n')
+        if '' in objects:
+            objects.remove('')
+        self.assertEqual(objects, ['bananas'])
+
+        # list public and shared containers
+        r = self.get('%s?public=&shared=' % url)
+        objects = r.content.split('\n')
+        if '' in objects:
+            objects.remove('')
+        self.assertEqual(objects, ['apples', 'bananas'])
+
+        # assert forbidden public container listing
+        r = self.get('%s?public=' % url, user='alice')
+        self.assertEqual(r.status_code, 403)
+
+        # assert forbidden shared & public container listing
+        r = self.get('%s?public=&shared=' % url, user='alice')
+        self.assertEqual(r.status_code, 403)
+
     def test_list_with_limit(self):
         containers = self.list_containers(format=None, limit=2)
         self.assertEquals(len(containers), 2)
@@ -194,7 +238,7 @@ class AccountGet(PithosAPITest):
 
         # Check modified
         for t in t1_formats:
-            r = self.get('%s' % url, HTTP_IF_MODIFIED_SINCE=t)
+            r = self.get(url, HTTP_IF_MODIFIED_SINCE=t)
             self.assertEqual(r.status_code, 200)
             self.assertEqual(
                 r.content.split('\n')[:-1],
@@ -211,7 +255,7 @@ class AccountGet(PithosAPITest):
 
         # Check modified
         for t in t2_formats:
-            r = self.get('%s' % url, HTTP_IF_MODIFIED_SINCE=t)
+            r = self.get(url, HTTP_IF_MODIFIED_SINCE=t)
             self.assertEqual(r.status_code, 200)
             self.assertEqual(
                 r.content.split('\n')[:-1],
@@ -219,7 +263,7 @@ class AccountGet(PithosAPITest):
 
     def test_if_modified_since_invalid_date(self):
         url = join_urls(self.pithos_path, self.user)
-        r = self.get('%s' % url, HTTP_IF_MODIFIED_SINCE='Monday')
+        r = self.get(url, HTTP_IF_MODIFIED_SINCE='Monday')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(
             r.content.split('\n')[:-1],

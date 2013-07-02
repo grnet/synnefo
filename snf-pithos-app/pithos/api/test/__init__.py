@@ -39,8 +39,8 @@ from xml.dom import minidom
 
 from snf_django.utils.testing import with_settings, astakos_user
 
-from pithos.backends.random_word import get_random_word
 from pithos.api import settings as pithos_settings
+from pithos.api.test.util import is_date, get_random_data
 
 from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
@@ -51,10 +51,10 @@ from django.conf import settings
 
 import django.utils.simplejson as json
 
-import re
 import random
 import threading
 import functools
+
 
 pithos_test_settings = functools.partial(with_settings, pithos_settings)
 
@@ -87,7 +87,6 @@ return_codes = (400, 401, 403, 404, 503)
 
 
 class PithosAPITest(TestCase):
-    #TODO unauthorized request
     def setUp(self):
         pithos_settings.BACKEND_DB_MODULE = 'pithos.backends.lib.sqlalchemy'
         pithos_settings.BACKEND_DB_CONNECTION = django_to_sqlalchemy()
@@ -212,6 +211,38 @@ class PithosAPITest(TestCase):
                 if not k.startswith('X-Account-Group-')])
         return headers
 
+    def get_container_info(self, container, until=None):
+        url = join_urls(self.pithos_path, self.user, container)
+        if until is not None:
+            parts = list(urlsplit(url))
+            parts[3] = urlencode({
+                'until': until
+            })
+            url = urlunsplit(parts)
+        r = self.head(url)
+        self.assertEqual(r.status_code, 204)
+        return r
+
+    def get_container_meta(self, container, until=None):
+        r = self.get_container_info(container, until=until)
+        headers = dict(r._headers.values())
+        map(headers.pop,
+            [k for k in headers.keys()
+                if not k.startswith('X-Container-Meta-')])
+        return headers
+
+    def update_container_meta(self, container, meta):
+        kwargs = dict(
+            ('HTTP_X_CONTAINER_META_%s' % k, str(v)) for k, v in meta.items())
+        url = join_urls(self.pithos_path, self.user, container)
+        r = self.post('%s?update=' % url, **kwargs)
+        self.assertEqual(r.status_code, 202)
+        container_meta = self.get_container_meta(container)
+        (self.assertTrue('X-Container-Meta-%s' % k in container_meta) for
+            k in meta.keys())
+        (self.assertEqual(container_meta['X-Container-Meta-%s' % k], v) for
+            k, v in meta.items())
+
     def list_containers(self, format='json', headers={}, **params):
         _url = join_urls(self.pithos_path, self.user)
         parts = list(urlsplit(_url))
@@ -254,32 +285,97 @@ class PithosAPITest(TestCase):
         self.assertTrue(r.status_code in (202, 201))
         return r
 
-    def upload_object(self, cname, oname=None, **meta):
-        oname = oname or get_random_word(8)
-        data = get_random_word(length=random.randint(1, 1024))
+    def upload_object(self, cname, oname=None, length=1024, verify=True,
+                      **meta):
+        oname = oname or get_random_data(8)
+        length = length or random.randint(1, 1024)
+        data = get_random_data(length=length)
         headers = dict(('HTTP_X_OBJECT_META_%s' % k.upper(), v)
                        for k, v in meta.iteritems())
         url = join_urls(self.pithos_path, self.user, cname, oname)
         r = self.put(url, data=data, **headers)
-        self.assertEqual(r.status_code, 201)
+        if verify:
+            self.assertEqual(r.status_code, 201)
         return oname, data, r
 
-    def create_folder(self, cname, oname=get_random_word(8), **headers):
+    def update_object_data(self, cname, oname=None, length=None,
+                           content_type=None, content_range=None,
+                           verify=True, **meta):
+        oname = oname or get_random_data(8)
+        length = length or random.randint(1, 1024)
+        content_type = content_type or 'application/octet-stream'
+        data = get_random_data(length=length)
+        headers = dict(('HTTP_X_OBJECT_META_%s' % k.upper(), v)
+                       for k, v in meta.iteritems())
+        if content_range:
+            headers['HTTP_CONTENT_RANGE'] = content_range
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.post(url, data=data, content_type=content_type, **headers)
+        if verify:
+            self.assertEqual(r.status_code, 204)
+        return oname, data, r
+
+    def append_object_data(self, cname, oname=None, length=None,
+                           content_type=None):
+        return self.update_object_data(cname, oname=oname,
+                                       length=length,
+                                       content_type=content_type,
+                                       content_range='bytes */*')
+
+    def create_folder(self, cname, oname=None, **headers):
+        oname = oname or get_random_data(8)
         url = join_urls(self.pithos_path, self.user, cname, oname)
         r = self.put(url, data='', content_type='application/directory',
                      **headers)
         self.assertEqual(r.status_code, 201)
         return oname, r
 
-    def list_objects(self, cname):
+    def list_objects(self, cname, prefix=None):
         url = join_urls(self.pithos_path, self.user, cname)
-        r = self.get('%s?format=json' % url)
+        path = '%s?format=json' % url
+        if prefix is not None:
+            path = '%s&prefix=%s' % (path, prefix)
+        r = self.get(path)
         self.assertTrue(r.status_code in (200, 204))
         try:
             objects = json.loads(r.content)
         except:
             self.fail('json format expected')
         return objects
+
+    def get_object_info(self, container, object, version=None, until=None):
+        url = join_urls(self.pithos_path, self.user, container, object)
+        if until is not None:
+            parts = list(urlsplit(url))
+            parts[3] = urlencode({
+                'until': until
+            })
+            url = urlunsplit(parts)
+        if version:
+            url = '%s?version=%s' % (url, version)
+        r = self.head(url)
+        self.assertEqual(r.status_code, 200)
+        return r
+
+    def get_object_meta(self, container, object, version=None, until=None):
+        r = self.get_object_info(container, object, version, until=until)
+        headers = dict(r._headers.values())
+        map(headers.pop,
+            [k for k in headers.keys()
+                if not k.startswith('X-Object-Meta-')])
+        return headers
+
+    def update_object_meta(self, container, object, meta):
+        kwargs = dict(
+            ('HTTP_X_OBJECT_META_%s' % k, str(v)) for k, v in meta.items())
+        url = join_urls(self.pithos_path, self.user, container, object)
+        r = self.post('%s?update=' % url, content_type='', **kwargs)
+        self.assertEqual(r.status_code, 202)
+        object_meta = self.get_object_meta(container, object)
+        (self.assertTrue('X-Objecr-Meta-%s' % k in object_meta) for
+            k in meta.keys())
+        (self.assertEqual(object_meta['X-Object-Meta-%s' % k], v) for
+            k, v in meta.items())
 
     def assert_status(self, status, codes):
         l = [elem for elem in return_codes]
@@ -339,6 +435,26 @@ class AssertMappingInvariant(object):
             assert(k in map), '%s not in map' % k
             assert v == map[k]
 
+
+class AssertUUidInvariant(object):
+    def __init__(self, callable, *args, **kwargs):
+        self.callable = callable
+        self.args = args
+        self.kwargs = kwargs
+
+    def __enter__(self):
+        self.map = self.callable(*self.args, **self.kwargs)
+        assert('x-object-uuid' in self.map)
+        self.uuid = self.map['x-object-uuid']
+        return self.map
+
+    def __exit__(self, type, value, tb):
+        map = self.callable(*self.args, **self.kwargs)
+        assert('x-object-uuid' in self.map)
+        uuid = map['x-object-uuid']
+        assert(uuid == self.uuid)
+
+
 django_sqlalchemy_engines = {
     'django.db.backends.postgresql_psycopg2': 'postgresql+psycopg2',
     'django.db.backends.postgresql': 'postgresql',
@@ -363,47 +479,6 @@ def django_to_sqlalchemy():
                  port=int(db['PORT']) if db['PORT'] != '' else '',
                  name=name)
         return '%(scheme)s://%(user)s:%(pwd)s@%(host)s:%(port)s/%(name)s' % d
-
-
-def is_date(date):
-    __D = r'(?P<day>\d{2})'
-    __D2 = r'(?P<day>[ \d]\d)'
-    __M = r'(?P<mon>\w{3})'
-    __Y = r'(?P<year>\d{4})'
-    __Y2 = r'(?P<year>\d{2})'
-    __T = r'(?P<hour>\d{2}):(?P<min>\d{2}):(?P<sec>\d{2})'
-    RFC1123_DATE = re.compile(r'^\w{3}, %s %s %s %s GMT$' % (
-        __D, __M, __Y, __T))
-    RFC850_DATE = re.compile(r'^\w{6,9}, %s-%s-%s %s GMT$' % (
-        __D, __M, __Y2, __T))
-    ASCTIME_DATE = re.compile(r'^\w{3} %s %s %s %s$' % (
-        __M, __D2, __T, __Y))
-    for regex in RFC1123_DATE, RFC850_DATE, ASCTIME_DATE:
-        m = regex.match(date)
-        if m is not None:
-            return True
-    return False
-
-
-def strnextling(prefix):
-    """Return the first unicode string
-       greater than but not starting with given prefix.
-       strnextling('hello') -> 'hellp'
-    """
-    if not prefix:
-        ## all strings start with the null string,
-        ## therefore we have to approximate strnextling('')
-        ## with the last unicode character supported by python
-        ## 0x10ffff for wide (32-bit unicode) python builds
-        ## 0x00ffff for narrow (16-bit unicode) python builds
-        ## We will not autodetect. 0xffff is safe enough.
-        return unichr(0xffff)
-    s = prefix[:-1]
-    c = ord(prefix[-1])
-    if c >= 0xffff:
-        raise RuntimeError
-    s += unichr(c + 1)
-    return s
 
 
 def test_concurrently(times=2):

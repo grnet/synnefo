@@ -88,7 +88,7 @@ class HashMap(list):
             self.size += len(block)
 
 
-def merkle(path, blocksize=4194304, blockhash='sha256'):
+def merkle(fp, blocksize=4194304, blockhash='sha256'):
     hashes = HashMap(blocksize, blockhash)
-    hashes.load(open(path))
+    hashes.load(fp)
     return hexlify(hashes.hash())

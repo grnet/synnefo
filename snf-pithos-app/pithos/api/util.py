@@ -1081,7 +1081,6 @@ def api_method(http_method=None, token_required=True, user_required=True, logger
             try:
                 # Add a PithosBackend as attribute of the request object
                 request.backend = get_backend()
-                request.backend.lock_container_path = lock_container_path
                 request.backend.wrapper.execute()
                 request.backend.serials = []
                 request.backend.messages = []

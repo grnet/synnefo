@@ -341,7 +341,7 @@ class ImagesTestCase(unittest.TestCase):
         log.info("Register image to plankton")
         location = "pithos://" + self.uuid + \
             "/images/" + self.temp_image_name
-        params = {'is_public': True}
+        params = {'is_public': False}
         properties = {'OSFAMILY': "linux", 'ROOT_PARTITION': 1}
         self.image_client.register(
             self.temp_image_name, location, params, properties)

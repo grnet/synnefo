@@ -1401,7 +1401,7 @@ def object_update(request, v_account, v_container, v_object):
                     'Content length does not match range length')
     if (total is not None
             and (total != size or offset >= size
-                 or (length > 0 and offset + length >= size))):
+                 or (length > 0 and offset + length > size))):
         raise faults.RangeNotSatisfiable(
             'Supplied range will change provided object limits')
 

@@ -176,7 +176,7 @@ def object_demux(request, v_account, v_container, v_object):
         return api.api_method_not_allowed(request)
 
 
-@api_method('GET', user_required=False, logger=logger)
+@api_method('GET', token_required=False, user_required=False, logger=logger)
 def authenticate(request):
     # Normal Response Codes: 204
     # Error Response Codes: internalServerError (500),

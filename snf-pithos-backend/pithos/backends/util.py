@@ -43,6 +43,7 @@ USAGE_LIMIT = 500
 class PithosBackendPool(ObjectPool):
     def __init__(self, size=None, db_module=None, db_connection=None,
                  block_module=None, block_path=None, block_umask=None,
+                 block_size=None, hash_algorithm=None,
                  queue_module=None, queue_hosts=None,
                  queue_exchange=None, free_versioning=True,
                  astakos_url=None, service_token=None,
@@ -60,6 +61,8 @@ class PithosBackendPool(ObjectPool):
         self.block_module = block_module
         self.block_path = block_path
         self.block_umask = block_umask
+        self.block_size = block_size
+        self.hash_algorithm = hash_algorithm
         self.queue_module = queue_module
         self.block_params = block_params
         self.queue_hosts = queue_hosts
@@ -81,6 +84,8 @@ class PithosBackendPool(ObjectPool):
                 block_module=self.block_module,
                 block_path=self.block_path,
                 block_umask=self.block_umask,
+                block_size = self.block_size,
+                hash_algorithm = self.hash_algorithm,
                 queue_module=self.queue_module,
                 block_params=self.block_params,
                 queue_hosts=self.queue_hosts,

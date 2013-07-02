@@ -92,6 +92,10 @@ class PithosAPITest(TestCase):
         pithos_settings.BACKEND_DB_MODULE = 'pithos.backends.lib.sqlalchemy'
         pithos_settings.BACKEND_DB_CONNECTION = django_to_sqlalchemy()
         pithos_settings.BACKEND_POOL_SIZE = 1
+
+        # Override default block size to spead up tests
+        pithos_settings.BACKEND_BLOCK_SIZE = 1024
+
         self.user = 'user'
         self.pithos_path = join_urls(get_service_path(
             pithos_settings.pithos_services, 'object-store'))

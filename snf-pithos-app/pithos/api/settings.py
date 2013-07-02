@@ -108,3 +108,11 @@ PUBLIC_URL_ALPHABET =  getattr(
 
 # The maximum number or items returned by the listing api methods
 API_LIST_LIMIT = getattr(settings, 'PITHOS_API_LIST_LIMIT', 10000)
+
+# The backend block size
+BACKEND_BLOCK_SIZE = getattr(
+    settings, 'PITHOS_BACKEND_BLOCK_SIZE', 4 * 1024 * 1024)
+
+# The backend block hash algorithm
+BACKEND_HASH_ALGORITHM = getattr(
+    settings, 'PITHOS_BACKEND_HASH_ALGORITHM', 'sha256')

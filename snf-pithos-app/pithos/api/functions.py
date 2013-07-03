@@ -1444,7 +1444,8 @@ def object_update(request, v_account, v_container, v_object):
             offset += bytes
             data = data[bytes:]
         if len(data) > 0:
-            put_object_block(request, hashmap, data, offset)
+            bytes = put_object_block(request, hashmap, data, offset)
+            offset += bytes
 
     if offset > size:
         size = offset

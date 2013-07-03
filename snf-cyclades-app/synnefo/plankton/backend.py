@@ -54,7 +54,7 @@ The Plankton attributes are the following:
 import json
 import warnings
 import logging
-from time import gmtime, strftime
+from time import time, gmtime, strftime
 from functools import wraps
 from operator import itemgetter
 
@@ -69,7 +69,7 @@ PLANKTON_PREFIX = 'plankton:'
 PROPERTY_PREFIX = 'property:'
 
 PLANKTON_META = ('container_format', 'disk_format', 'name', 'properties',
-                 'status')
+                 'status', 'created_at')
 
 from pithos.backends.util import PithosBackendPool
 POOL_SIZE = 8
@@ -151,20 +151,18 @@ class ImageBackend(object):
         Get all available information about an Image.
         """
         account, container, name = split_url(image_url)
-        versions = self.backend.list_versions(self.user, account, container,
-                                              name)
-        if not versions:
-            raise Exception("Image without versions %s" % image_url)
         try:
             meta = self._get_meta(image_url)
             meta["deleted"] = ""
         except NameError:
+            versions = self.backend.list_versions(self.user, account,
+                                                  container, name)
+            if not versions:
+                raise Exception("Image without versions %s" % image_url)
             # Object was deleted, use the latest version
             version, timestamp = versions[-1]
             meta = self._get_meta(image_url, version)
             meta["deleted"] = timestamp
-
-        meta["created"] = versions[0][1]
 
         if PLANKTON_PREFIX + 'name' not in meta:
             logger.warning("Image without Plankton name! url %s meta %s",
@@ -364,6 +362,9 @@ class ImageBackend(object):
         # Update rest metadata
         meta = {}
         meta['properties'] = metadata.pop('properties', {})
+        # Add creation(register) timestamp as a metadata, to avoid extra
+        # queries when retrieving the list of images.
+        meta['created_at'] = time()
         meta.update(name=name, status='available', **metadata)
 
         # Do the actualy update in the Pithos backend
@@ -394,8 +395,6 @@ class ImageBackend(object):
         for (location, meta, permissions) in _images:
             image_url = "pithos://" + location
             meta["modified"] = meta["version_timestamp"]
-            # TODO: Create metadata when registering an Image
-            meta["created"] = meta["version_timestamp"]
             images.append(image_to_dict(image_url, meta, permissions))
 
         if params is None:
@@ -445,7 +444,8 @@ def image_to_dict(image_url, meta, permissions):
     image["id"] = meta["uuid"]
     image["location"] = image_url
     image["checksum"] = meta["hash"]
-    image["created_at"] = format_timestamp(meta["created"])
+    created = meta.get("created_at", meta["modified"])
+    image["created_at"] = format_timestamp(created)
     deleted = meta.get("deleted", None)
     image["deleted_at"] = format_timestamp(deleted) if deleted else ""
     image["updated_at"] = format_timestamp(meta["modified"])
@@ -465,6 +465,10 @@ def image_to_dict(image_url, meta, permissions):
             if key in PLANKTON_META:
                 if key == "properties":
                     val = json.loads(val)
-                image[key] = val
+                elif key == "created_at":
+                    # created timestamp is return in 'created_at' field
+                    pass
+                else:
+                    image[key] = val
 
     return image

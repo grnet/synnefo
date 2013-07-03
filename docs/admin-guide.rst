@@ -1807,4 +1807,5 @@ Upgrade Notes
 Changelog, NEWS
 ===============
 
+* v0.14 :ref:`Changelog <Changelog-0.14>`, :ref:`NEWS <NEWS-0.14>`
 * v0.13 :ref:`Changelog <Changelog-0.13>`, :ref:`NEWS <NEWS-0.13>`

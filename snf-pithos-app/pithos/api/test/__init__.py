@@ -85,6 +85,9 @@ details = {'container': ('name', 'count', 'bytes', 'last_modified',
 
 return_codes = (400, 401, 403, 404, 503)
 
+TEST_BLOCK_SIZE = 1024
+TEST_HASH_ALGORITHM = 'sha256'
+
 
 class PithosAPITest(TestCase):
     def setUp(self):
@@ -93,7 +96,8 @@ class PithosAPITest(TestCase):
         pithos_settings.BACKEND_POOL_SIZE = 1
 
         # Override default block size to spead up tests
-        pithos_settings.BACKEND_BLOCK_SIZE = 1024
+        pithos_settings.BACKEND_BLOCK_SIZE = TEST_BLOCK_SIZE
+        pithos_settings.BACKEND_HASH_ALGORITHM = TEST_HASH_ALGORITHM
 
         self.user = 'user'
         self.pithos_path = join_urls(get_service_path(
@@ -285,10 +289,10 @@ class PithosAPITest(TestCase):
         self.assertTrue(r.status_code in (202, 201))
         return r
 
-    def upload_object(self, cname, oname=None, length=1024, verify=True,
+    def upload_object(self, cname, oname=None, length=None, verify=True,
                       **meta):
         oname = oname or get_random_data(8)
-        length = length or random.randint(1, 1024)
+        length = length or random.randint(TEST_BLOCK_SIZE, 2 * TEST_BLOCK_SIZE)
         data = get_random_data(length=length)
         headers = dict(('HTTP_X_OBJECT_META_%s' % k.upper(), v)
                        for k, v in meta.iteritems())
@@ -302,7 +306,7 @@ class PithosAPITest(TestCase):
                            content_type=None, content_range=None,
                            verify=True, **meta):
         oname = oname or get_random_data(8)
-        length = length or random.randint(1, 1024)
+        length = length or random.randint(TEST_BLOCK_SIZE, 2 * TEST_BLOCK_SIZE)
         content_type = content_type or 'application/octet-stream'
         data = get_random_data(length=length)
         headers = dict(('HTTP_X_OBJECT_META_%s' % k.upper(), v)

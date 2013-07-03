@@ -22,6 +22,8 @@ LOGIN_URL = 'http://host:port/'
 SOUTH_TESTS_MIGRATE = bool(int(os.environ.get('SOUTH_TESTS_MIGRATE', True)))
 SNF_TEST_USE_POSTGRES = bool(int(os.environ.get('SNF_TEST_USE_POSTGRES',
                                                 False)))
+SNF_TEST_PITHOS_UPDATE_MD5 = bool(int(os.environ.get(
+    'SNF_TEST_PITHOS_UPDATE_MD5', False)))
 
 # override default database
 if SNF_TEST_USE_POSTGRES:
@@ -32,6 +34,11 @@ if SNF_TEST_USE_POSTGRES:
         'USER': 'postgres',
         'PORT': '5432',
     }
+
+if SNF_TEST_PITHOS_UPDATE_MD5:
+    PITHOS_UPDATE_MD5 = True
+else:
+    PITHOS_UPDATE_MD5 = False
 
 ASTAKOS_IM_MODULES = ['local', 'shibboleth']
 

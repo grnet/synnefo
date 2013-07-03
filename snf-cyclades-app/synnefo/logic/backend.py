@@ -115,7 +115,7 @@ def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields):
 
 @transaction.commit_on_success
 def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
-                      beparams=None):
+                      job_fields=None):
     """Process a job progress notification from the backend
 
     Process an incoming message from the backend (currently Ganeti).
@@ -137,12 +137,15 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
         vm.save()
         return
 
+    if job_fields is None:
+        job_fields = {}
     state_for_success = VirtualMachine.OPER_STATE_FROM_OPCODE.get(opcode)
 
     # Notifications of success change the operating state
     if status == "success":
         if state_for_success is not None:
             vm.operstate = state_for_success
+        beparams = job_fields.get("beparams", None)
         if beparams:
             # Change the flavor of the VM
             _process_resize(vm, beparams)
@@ -180,9 +183,9 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
 
     if status in ["success", "error", "canceled"]:
         # Job is finalized: Handle quotas/commissioning
-        job_fields = {"nics": nics, "beparams": beparams}
+        fields = {"nics": nics, "beparams": beparams}
         vm = handle_vm_quotas(vm, job_id=jobid, job_opcode=opcode,
-                              job_status=status, job_fields=job_fields)
+                              job_status=status, job_fields=fields)
         # and clear task fields
         if vm.task_job_id == jobid:
             vm.task = None
@@ -424,7 +427,7 @@ def update_network_state(network):
 
 @transaction.commit_on_success
 def process_network_modify(back_network, etime, jobid, opcode, status,
-                           add_reserved_ips):
+                           job_fields):
     assert (opcode == "OP_NETWORK_SET_PARAMS")
     if status not in [x[0] for x in BACKEND_STATUSES]:
         raise Network.InvalidBackendMsgError(opcode, status)
@@ -433,6 +436,7 @@ def process_network_modify(back_network, etime, jobid, opcode, status,
     back_network.backendjobstatus = status
     back_network.opcode = opcode
 
+    add_reserved_ips = job_fields.get("add_reserved_ips")
     if add_reserved_ips:
         net = back_network.network
         pool = net.get_pool()

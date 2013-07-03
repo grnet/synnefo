@@ -274,7 +274,7 @@ class BackendReconciler(object):
                 backend_mod.process_op_status(
                     vm=db_server, etime=self.event_time, jobid=-0,
                     opcode=opcode, status='success',
-                    beparams=beparams,
+                    job_fields={"beparams": beparams},
                     logmsg='Reconciliation: simulated Ganeti event')
                 # process_op_status with beparams will set the vmstate to
                 # shutdown. Fix this be returning it to old state

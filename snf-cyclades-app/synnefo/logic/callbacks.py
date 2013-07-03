@@ -171,12 +171,12 @@ def update_db(vm, msg, event_time):
         log.error("Message is of unknown type %s.", msg['type'])
         return
 
-    nics = msg.get("nics", None)
-    beparams = msg.get("beparams", None)
+    nics = msg.get("instance_nics", None)
+    job_fields = msg.get("job_fields", {})
     backend_mod.process_op_status(vm, event_time, msg['jobId'],
                                   msg['operation'], msg['status'],
                                   msg['logmsg'], nics=nics,
-                                  beparams=beparams)
+                                  job_fields=job_fields)
 
     log.debug("Done processing ganeti-op-status msg for vm %s.",
               msg['instance'])
@@ -195,10 +195,11 @@ def update_network(network, msg, event_time):
     opcode = msg['operation']
     status = msg['status']
     jobid = msg['jobId']
+    job_fields = msg.get('job_fields', {})
 
     if opcode == "OP_NETWORK_SET_PARAMS":
         backend_mod.process_network_modify(network, event_time, jobid, opcode,
-                                           status, msg['add_reserved_ips'])
+                                           status, job_fields)
     else:
         backend_mod.process_network_status(network, event_time, jobid, opcode,
                                            status, msg['logmsg'])

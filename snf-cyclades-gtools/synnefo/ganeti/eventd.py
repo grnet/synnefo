@@ -282,14 +282,22 @@ class JobFileHandler(pyinotify.ProcessEvent):
         self.logger.debug("Job: %d: %s(%s) %s", job_id, op_id,
                           instances, op.status)
 
+        job_fields = {}
+        if op_id in ["OP_INSTANCE_SET_PARAMS", "OP_INSTANCE_CREATE"]:
+            job_fields = {"nics": get_field(input, "nics"),
+                          "disks": get_field(input, "disks"),
+                          "beparams": get_field(input, "beparams")}
+
         msg = {"type": "ganeti-op-status",
                "instance": instances,
-               "operation": op_id}
+               "operation": op_id,
+               "job_fields": job_fields}
 
-        if op_id == "OP_INSTANCE_SET_PARAMS":
-            beparams = get_field(input, "beparams")
-            if beparams:
-                msg["beparams"] = beparams
+        if op_id in ["OP_INSTANCE_CREATE", "OP_INSTANCE_SET_PARAMS",
+                     "OP_INSTANCE_STARTUP"]:
+            if op.status == "success":
+                nics = get_instance_nics(msg["instance"], self.logger)
+                msg["instance_nics"] = nics
 
         routekey = "ganeti.%s.event.op" % prefix_from_name(instances)
 
@@ -310,19 +318,20 @@ class JobFileHandler(pyinotify.ProcessEvent):
         self.logger.debug("Job: %d: %s(%s) %s", job_id, op_id,
                           network_name, op.status)
 
+        job_fields = {
+            'subnet': get_field(input, 'network'),
+            'gateway': get_field(input, 'gateway'),
+            "add_reserved_ips": get_field(input, "add_reserved_ips"),
+            "remove_reserved_ips": get_field(input, "remove_reserved_ips"),
+            # 'network_mode': get_field(input, 'network_mode'),
+            # 'network_link': get_field(input, 'network_link'),
+            'group_name': get_field(input, 'group_name')}
+
         msg = {'operation':    op_id,
                'type':         "ganeti-network-status",
                'network':      network_name,
-               'subnet':       get_field(input, 'network'),
-               # 'network_mode': get_field(input, 'network_mode'),
-               # 'network_link': get_field(input, 'network_link'),
-               'gateway':      get_field(input, 'gateway'),
-               'group_name':   get_field(input, 'group_name')}
+               'job_fields':   job_fields}
 
-        if op_id == "OP_NETWORK_SET_PARAMS":
-            msg["add_reserved_ips"] = get_field(input, "add_reserved_ips")
-            msg["remove_reserved_ips"] = get_field(input,
-                                                   "remove_reserved_ips")
         routekey = "ganeti.%s.event.network" % prefix_from_name(network_name)
 
         return msg, routekey

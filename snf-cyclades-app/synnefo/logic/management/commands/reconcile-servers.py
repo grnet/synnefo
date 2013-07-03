@@ -131,8 +131,8 @@ class Command(BaseCommand):
 
         with_nics = options["detect_unsynced_nics"]
 
-        DBVMs = reconciliation.get_servers_from_db(backend, with_nics)
-        GanetiVMs = reconciliation.get_instances_from_ganeti(backend)
+        DBVMs = reconciliation.get_servers_from_db(backends, with_nics)
+        GanetiVMs = reconciliation.get_instances_from_ganeti(backends)
 
         #
         # Detect problems

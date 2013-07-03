@@ -62,4 +62,5 @@ class Command(BaseCommand):
         for bnet in network.backend_networks.exclude(operstate="DELETED"):
             delete_network(network, bnet.backend)
 
-        self.stdout.write('Successfully removed network.\n')
+        self.stdout.write("Successfully submitted Ganeti jobs to"
+                          " remove network %s" % network.backend_id)

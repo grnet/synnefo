@@ -925,9 +925,10 @@ class ModularBackend(BaseBackend):
             raise ie
 
         hash = map.hash()
-        dest_version_id = self._update_object_hash(user, account, container, name, size, type, binascii.hexlify(hash), checksum, domain, meta, replace_meta, permissions)
+        hexlified = binascii.hexlify(hash)
+        dest_version_id = self._update_object_hash(user, account, container, name, size, type, hexlified, checksum, domain, meta, replace_meta, permissions)
         self.store.map_put(hash, map)
-        return dest_version_id
+        return dest_version_id, hexlified
 
     def update_object_checksum(self, user, account, container, name, version, checksum):
         """Update an object's checksum."""

@@ -195,7 +195,7 @@ class ManageAccountsTests(unittest.TestCase):
                                                    'object1',
                                                    'application/octet-stream',
                                                    data))
-        self.assertEquals(sorted(versions[:-1]),
+        self.assertEquals(sorted([i[0] for i in versions[:-1]]),
                           self.utils.list_past_versions('account1',
                                                         'container1',
                                                         'object1'))
@@ -226,7 +226,7 @@ class ManageAccountsTests(unittest.TestCase):
                                dry=False, silent=True)
 
         expected = {'meta': meta,
-                    'versions': versions[:-1],
+                    'versions': [i[0] for i in versions[:-1]],
                     'permissions': permissions}
         self._verify_object('account1', 'container1', 'object1', expected)
 
@@ -275,7 +275,7 @@ class ManageAccountsTests(unittest.TestCase):
                     'permissions': permissions}
         for c, o_dict in versions.iteritems():
             for o, versions in o_dict.iteritems():
-                expected['versions'] = versions[:-1]
+                expected['versions'] = [i[0] for i in versions[:-1]]
                 self._verify_object('account1', c, o, expected)
 
     def test_merge_existing_dest_container(self):
@@ -314,7 +314,7 @@ class ManageAccountsTests(unittest.TestCase):
             self.fail(e)
 
         expected = {'meta': meta,
-                    'versions': versions[:-1],
+                    'versions': [i[0] for i in versions[:-1]],
                     'permissions': permissions}
         self._verify_object('account1', 'container1', 'object1', expected)
 
@@ -361,7 +361,7 @@ class ManageAccountsTests(unittest.TestCase):
 
         expected = {'meta': meta,
                     'permissions': permissions,
-                    'versions': versions[:-1]}
+                    'versions': [i[0] for i in versions[:-1]]}
         self._verify_object('account1', container, object, expected,
                             strict=False)
 

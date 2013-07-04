@@ -1205,18 +1205,24 @@
                 item_cls: views.CreateColumnIPOptionView,
                 empty_msg: 'No IP addresses available. <span><a href="">Create a new IP address.</a></span>',
                 select_first_as_default: true,
-                filter_items: function(model) { return !model.get_vm() },
+                filter_items: function(model) { return model.get_vm() && model.get('state')},
                 init_events: function() {
+                  var msg = this.$(".empty span a");
                   this.$(".create-ip-address").click(function() {
                       snf.ui.main.public_ips_view.show(create_view);
                   });
                   this.$(".empty a").bind('click', function(e) {
                       e.preventDefault();
+                      msg.text("Creating...");
                       synnefo.storage.public_ips.create({address:undefined, pool: undefined}, {
                         error: function() {
                           alert("Cannot create new ip address");
                         },
-                        skip_api_errors: true,
+                        complete: function() {
+                          msg.text("Create a new IP address.");
+                          msg.show();
+                        },
+                        skip_api_error: true,
                       })
                   });
                 }

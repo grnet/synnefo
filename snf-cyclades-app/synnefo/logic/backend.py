@@ -92,8 +92,9 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None):
         # when no instance exists at the Ganeti backend.
         # See ticket #799 for all the details.
         #
-        if status == 'success' or (status == 'error' and
-                                   vm.operstate == 'ERROR'):
+        if (status == 'success' or
+           (status == 'error' and (vm.operstate == 'ERROR' or
+                                   vm.action == 'DESTROY'))):
             _process_net_status(vm, etime, nics=[])
             vm.deleted = True
             vm.operstate = state_for_success

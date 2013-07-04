@@ -33,12 +33,13 @@ following line in your ``/etc/apt/sources.list`` file:
 
 .. code-block:: console
 
-   deb http://apt.dev.grnet.gr unstable/
+   deb http://apt.dev.grnet.gr stable/
 
 Then run:
 
 .. code-block:: console
 
+   # curl https://dev.grnet.gr/files/apt-grnetdev.pub | apt-key add -
    # apt-get update
    # apt-get install snf-deploy
 

@@ -1391,12 +1391,6 @@ class ProjectApplication(models.Model):
     def state_display(self):
         return self.APPLICATION_STATE_DISPLAY.get(self.state, _('Unknown'))
 
-    def add_resource_policy(self, resource, uplimit):
-        """Raises ObjectDoesNotExist, IntegrityError"""
-        q = self.projectresourcegrant_set
-        resource = Resource.objects.get(name=resource)
-        q.create(resource=resource, member_capacity=uplimit)
-
     @property
     def grants(self):
         return self.projectresourcegrant_set.values('member_capacity',
@@ -1405,10 +1399,6 @@ class ProjectApplication(models.Model):
     @property
     def resource_policies(self):
         return [str(rp) for rp in self.projectresourcegrant_set.all()]
-
-    def set_resource_policies(self, policies):
-        for resource, uplimit in policies:
-            self.add_resource_policy(resource, uplimit)
 
     def is_modification(self):
         # if self.state != self.PENDING:

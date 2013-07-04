@@ -45,7 +45,7 @@ from synnefo_branding.utils import render_to_string
 
 from synnefo.lib import join_urls
 from astakos.im.models import AstakosUser, Invitation, ProjectMembership, \
-    ProjectApplication, Project, new_chain
+    ProjectApplication, Project, new_chain, Resource
 from astakos.im.quotas import qh_sync_user, get_pending_app_quota, \
     register_pending_apps, qh_sync_project, qh_sync_locked_users, \
     get_users_for_update, members_to_sync
@@ -620,7 +620,7 @@ def submit_application(owner=None,
                        member_leave_policy=None,
                        limit_on_members_number=None,
                        comments=None,
-                       resource_policies=None,
+                       resources=None,
                        request_user=None):
 
     project = None
@@ -633,6 +633,8 @@ def submit_application(owner=None,
              and not request_user.is_project_admin())):
             m = _(astakos_messages.NOT_ALLOWED)
             raise PermissionDenied(m)
+
+    policies = validate_resource_policies(resources)
 
     force = request_user.is_project_admin()
     ok, limit = qh_add_pending_app(owner, project, force)
@@ -672,12 +674,48 @@ def submit_application(owner=None,
             app.state = ProjectApplication.REPLACED
             app.save()
 
-    if resource_policies is not None:
-        application.set_resource_policies(resource_policies)
+    if policies is not None:
+        set_resource_policies(application, policies)
     logger.info("User %s submitted %s." %
                 (request_user.log_display, application.log_display))
     application_submit_notify(application)
     return application
+
+
+def validate_resource_policies(policies):
+    if not isinstance(policies, dict):
+        raise ProjectBadRequest("Malformed resource policies")
+
+    resource_names = policies.keys()
+    resources = Resource.objects.filter(name__in=resource_names)
+    resource_d = {}
+    for resource in resources:
+        resource_d[resource.name] = resource
+
+    found = resource_d.keys()
+    nonex = [name for name in resource_names if name not in found]
+    if nonex:
+        raise ValueError("Malformed resource policies")
+
+    pols = []
+    for resource_name, specs in policies.iteritems():
+        p_capacity = specs.get("project_capacity")
+        m_capacity = specs.get("member_capacity")
+
+        if p_capacity is not None and not isinstance(p_capacity, (int, long)):
+            raise ValueError("Malformed resource policies")
+        if not isinstance(m_capacity, (int, long)):
+            raise ValueError("Malformed resource policies")
+        pols.append((resource_d[resource_name], m_capacity, p_capacity))
+    return pols
+
+
+def set_resource_policies(application, policies):
+    for resource, m_capacity, p_capacity in policies:
+        g = application.projectresourcegrant_set
+        g.create(resource=resource,
+                 member_capacity=m_capacity,
+                 project_capacity=p_capacity)
 
 
 def cancel_application(application_id, request_user=None, reason=""):

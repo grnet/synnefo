@@ -885,7 +885,7 @@ class ProjectApplicationForm(forms.ModelForm):
                                                     resource.name)
                     d = model_to_dict(resource)
                     if uplimit:
-                        d.update(dict(resource=prefix, uplimit=uplimit))
+                        d.update(dict(resource=prefix, uplimit=long(uplimit)))
                     else:
                         d.update(dict(resource=prefix, uplimit=None))
                     append(d)
@@ -902,14 +902,21 @@ class ProjectApplicationForm(forms.ModelForm):
         return policies
 
     def cleaned_resource_policies(self):
-        return [(d['name'], d['uplimit']) for d in self.resource_policies]
+        policies = {}
+        for d in self.resource_policies:
+            policies[d["name"]] = {
+                "project_capacity": None,
+                "member_capacity": d["uplimit"]
+            }
+
+        return policies
 
     def save(self, commit=True):
         data = dict(self.cleaned_data)
         is_new = self.instance.id is None
         data['project_id'] = self.instance.chain.id if not is_new else None
         data['owner'] = self.user if is_new else self.instance.owner
-        data['resource_policies'] = self.cleaned_resource_policies()
+        data['resources'] = self.cleaned_resource_policies()
         data['request_user'] = self.user
         submit_application(**data)
 

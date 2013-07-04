@@ -765,87 +765,210 @@ class UpdateBuildProgressTest(TestCase):
             self.assertEqual(vm.buildpercentage, old)
 
 
-from synnefo.logic.reconciliation import VMState
+import logging
+from datetime import timedelta
+
+
+@patch("synnefo.logic.rapi_pool.GanetiRapiClient")
 class ReconciliationTest(TestCase):
-    def get_vm(self, operstate, deleted=False):
-        flavor = mfactory.FlavorFactory(cpu=2, ram=1024)
-        vm = mfactory.VirtualMachineFactory(deleted=deleted, flavor=flavor)
-        vm.operstate = operstate
-        vm.save()
-        return vm
+    @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
+    def setUp(self, mrapi):
+        self.backend = mfactory.BackendFactory()
+        log = logging.getLogger()
+        options = {"fix_unsynced": True,
+                   "fix_stale": True,
+                   "fix_orphans": True,
+                   "fix_unsynced_nics": True,
+                   "fix_unsynced_flavors": True}
+        self.reconciler = reconciliation.BackendReconciler(self.backend,
+                                                           options=options,
+                                                           logger=log)
 
-    def test_get_servers_from_db(self):
-        """Test getting a dictionary from each server to its operstate"""
-        backends = Backend.objects.all()
-        vm1 = self.get_vm('STARTED')
-        vm2 = self.get_vm('DESTROYED', deleted=True)
-        vm3 = self.get_vm('STOPPED')
-        self.assertEquals(reconciliation.get_servers_from_db(backends),
-                    {vm1.id: VMState(state='STARTED', cpu=2, ram=1024, nics=[]),
-                     vm3.id: VMState(state='STOPPED', cpu=2, ram=1024, nics=[])}
-                    )
+    def test_building_vm(self, mrapi):
+        mrapi = self.reconciler.client
+        vm1 = mfactory.VirtualMachineFactory(backend=self.backend,
+                                             backendjobid=None,
+                                             operstate="BUILD")
+        self.reconciler.reconcile()
+        # Assert not deleted
+        vm1 = VirtualMachine.objects.get(id=vm1.id)
+        self.assertFalse(vm1.deleted)
+        self.assertEqual(vm1.operstate, "BUILD")
 
-    def test_stale_servers_in_db(self):
-        """Test discovery of stale entries in DB"""
+        vm1.created = vm1.created - timedelta(seconds=120)
+        vm1.save()
+        with mocked_quotaholder():
+            self.reconciler.reconcile()
+        vm1 = VirtualMachine.objects.get(id=vm1.id)
+        self.assertEqual(vm1.operstate, "ERROR")
 
-        D = {1: None, 2: 'None', 3: None, 30000: 'BUILD',
-             30002: 'None'}
-        G = {1: True, 3: True, 30000: True}
-        self.assertEquals(reconciliation.stale_servers_in_db(D, G),
-                          set([2, 30002]))
+        vm1 = mfactory.VirtualMachineFactory(backend=self.backend,
+                                             backendjobid=1,
+                                             deleted=False,
+                                             operstate="BUILD")
+        vm1.backendtime = vm1.created - timedelta(seconds=120)
+        vm1.backendjobid = 10
+        vm1.save()
+        for status in ["queued", "waiting", "running"]:
+            mrapi.GetJobStatus.return_value = {"status": status}
+            with mocked_quotaholder():
+                self.reconciler.reconcile()
+            vm1 = VirtualMachine.objects.get(id=vm1.id)
+            self.assertFalse(vm1.deleted)
+            self.assertEqual(vm1.operstate, "BUILD")
 
-    @patch("synnefo.db.models.get_rapi_client")
-    def test_stale_building_vm(self, client):
-        vm = mfactory.VirtualMachineFactory()
-        vm.state = 'BUILD'
-        vm.backendjobid = 42
-        vm.save()
-        D = {vm.id: 'BUILD'}
-        G = {}
-        for status in ['queued', 'waiting', 'running']:
-            client.return_value.GetJobStatus.return_value = {'status': status}
-            self.assertEqual(reconciliation.stale_servers_in_db(D, G), set([]))
-            client.return_value.GetJobStatus\
-                               .assert_called_once_with(vm.backendjobid)
-            client.reset_mock()
-        for status in ['success', 'error', 'canceled']:
-            client.return_value.GetJobStatus.return_value = {'status': status}
-            self.assertEqual(reconciliation.stale_servers_in_db(D, G), set([]))
-            client.return_value.GetInstance\
-                               .assert_called_once_with(vm.backend_vm_id)
-            client.return_value.GetJobStatus\
-                               .assert_called_once_with(vm.backendjobid)
-            client.reset_mock()
-        from synnefo.logic.rapi import GanetiApiError
-        client.return_value.GetJobStatus.side_effect = GanetiApiError('Foo')
-        self.assertEqual(reconciliation.stale_servers_in_db(D, G),
-                         set([vm.id]))
+        mrapi.GetJobStatus.return_value = {"status": "error"}
+        with mocked_quotaholder():
+            self.reconciler.reconcile()
+        vm1 = VirtualMachine.objects.get(id=vm1.id)
+        self.assertFalse(vm1.deleted)
+        self.assertEqual(vm1.operstate, "ERROR")
 
-    def test_orphan_instances_in_ganeti(self):
-        """Test discovery of orphan instances in Ganeti, without a DB entry"""
+        for status in ["success", "cancelled"]:
+            vm1.deleted = False
+            vm1.save()
+            mrapi.GetJobStatus.return_value = {"status": status}
+            with mocked_quotaholder():
+                self.reconciler.reconcile()
+            vm1 = VirtualMachine.objects.get(id=vm1.id)
+            self.assertTrue(vm1.deleted)
+            self.assertEqual(vm1.operstate, "DESTROYED")
 
-        G = {1: True, 2: False, 3: False, 4: True, 50: True}
-        D = {1: True, 3: False}
-        self.assertEquals(reconciliation.orphan_instances_in_ganeti(D, G),
-                          set([2, 4, 50]))
+        vm1 = mfactory.VirtualMachineFactory(backend=self.backend,
+                                             backendjobid=1,
+                                             operstate="BUILD")
+        vm1.backendtime = vm1.created - timedelta(seconds=120)
+        vm1.backendjobid = 10
+        vm1.save()
+        cmrapi = self.reconciler.client
+        cmrapi.GetInstances.return_value = \
+            [{"name": vm1.backend_vm_id,
+             "beparams": {"maxmem": 1024,
+                          "minmem": 1024,
+                          "vcpus": 4},
+             "oper_state": False,
+             "mtime": time(),
+             "disk.sizes": [],
+             "nic.ips": [],
+             "nic.macs": [],
+             "nic.networks": [],
+             "tags": []}]
+        mrapi.GetJobStatus.return_value = {"status": "running"}
+        with mocked_quotaholder():
+            self.reconciler.reconcile()
+        vm1 = VirtualMachine.objects.get(id=vm1.id)
+        self.assertEqual(vm1.operstate, "BUILD")
+        mrapi.GetJobStatus.return_value = {"status": "error"}
+        with mocked_quotaholder():
+            self.reconciler.reconcile()
+        vm1 = VirtualMachine.objects.get(id=vm1.id)
+        self.assertEqual(vm1.operstate, "ERROR")
 
-    def test_unsynced_operstate(self):
-        """Test discovery of unsynced operstate between the DB and Ganeti"""
-        mkstate = lambda state: VMState(state=state, cpu=1, ram=1024, nics=[])
-        vm1 = self.get_vm("STARTED")
-        vm2 = self.get_vm("STARTED")
-        vm3= self.get_vm("BUILD")
-        vm4 = self.get_vm("STARTED")
-        vm5 = self.get_vm("BUILD")
+    def test_stale_server(self, mrapi):
+        mrapi.GetInstances = []
+        vm1 = mfactory.VirtualMachineFactory(backend=self.backend,
+                                             deleted=False,
+                                             operstate="ERROR")
+        with mocked_quotaholder():
+            self.reconciler.reconcile()
+        vm1 = VirtualMachine.objects.get(id=vm1.id)
+        self.assertTrue(vm1.deleted)
 
-        D = {1: mkstate("STARTED"), 2: mkstate("STARTED"), 3: mkstate("BUILD"),
-             4: mkstate("STARTED"), 50: mkstate("BUILD")}
-        G = {vm1.id: mkstate(True), vm2.id: mkstate(False),
-             vm4.id: mkstate(True), vm4.id: mkstate(False),
-             vm5.id: mkstate(False)}
-        self.assertEquals(reconciliation.unsynced_operstate(D, G),
-                          set([(vm2.id, "STARTED", False),
-                               (vm4.id, "STARTED", False)]))
+    def test_orphan_server(self, mrapi):
+        cmrapi = self.reconciler.client
+        mrapi().GetInstances.return_value =\
+            [{"name": "%s22" % settings.BACKEND_PREFIX_ID,
+             "beparams": {"maxmem": 1024,
+                          "minmem": 1024,
+                          "vcpus": 4},
+             "oper_state": True,
+             "mtime": time(),
+             "disk.sizes": [],
+             "nic.ips": [],
+             "nic.macs": [],
+             "nic.networks": [],
+             "tags": []}]
+        self.reconciler.reconcile()
+        cmrapi.DeleteInstance.assert_called_once_with(
+                "%s22" % settings.BACKEND_PREFIX_ID)
+
+    def test_unsynced_operstate(self, mrapi):
+        vm1 = mfactory.VirtualMachineFactory(backend=self.backend,
+                                             deleted=False,
+                                             operstate="STOPPED")
+        mrapi().GetInstances.return_value =\
+            [{"name": vm1.backend_vm_id,
+             "beparams": {"maxmem": 1024,
+                          "minmem": 1024,
+                          "vcpus": 4},
+             "oper_state": True,
+             "mtime": time(),
+             "disk.sizes": [],
+             "nic.ips": [],
+             "nic.macs": [],
+             "nic.networks": [],
+             "tags": []}]
+        with mocked_quotaholder():
+            self.reconciler.reconcile()
+        vm1 = VirtualMachine.objects.get(id=vm1.id)
+        self.assertEqual(vm1.operstate, "STARTED")
+
+    def test_unsynced_flavor(self, mrapi):
+        flavor1 = mfactory.FlavorFactory(cpu=2, ram=1024, disk=1,
+                                         disk_template="drbd")
+        flavor2 = mfactory.FlavorFactory(cpu=4, ram=2048, disk=1,
+                                         disk_template="drbd")
+        vm1 = mfactory.VirtualMachineFactory(backend=self.backend,
+                                             deleted=False,
+                                             flavor=flavor1,
+                                             operstate="STARTED")
+        mrapi().GetInstances.return_value =\
+            [{"name": vm1.backend_vm_id,
+             "beparams": {"maxmem": 2048,
+                          "minmem": 2048,
+                          "vcpus": 4},
+             "oper_state": True,
+             "mtime": time(),
+             "disk.sizes": [],
+             "nic.ips": [],
+             "nic.macs": [],
+             "nic.networks": [],
+             "tags": []}]
+        with mocked_quotaholder():
+            self.reconciler.reconcile()
+        vm1 = VirtualMachine.objects.get(id=vm1.id)
+        self.assertEqual(vm1.flavor, flavor2)
+        self.assertEqual(vm1.operstate, "STARTED")
+
+    def test_unsynced_nics(self, mrapi):
+        network1 = mfactory.NetworkFactory(subnet="10.0.0.0/24")
+        network2 = mfactory.NetworkFactory(subnet="192.168.2.0/24")
+        vm1 = mfactory.VirtualMachineFactory(backend=self.backend,
+                                             deleted=False,
+                                             operstate="STOPPED")
+        mfactory.NetworkInterfaceFactory(machine=vm1, network=network1,
+                                         ipv4="10.0.0.0")
+        mrapi().GetInstances.return_value =\
+            [{"name": vm1.backend_vm_id,
+             "beparams": {"maxmem": 2048,
+                          "minmem": 2048,
+                          "vcpus": 4},
+             "oper_state": True,
+             "mtime": time(),
+             "disk.sizes": [],
+             "nic.ips": ["192.168.2.1"],
+             "nic.macs": ["aa:00:bb:cc:dd:ee"],
+             "nic.networks": [network2.backend_id],
+             "tags": []}]
+        with mocked_quotaholder():
+            self.reconciler.reconcile()
+        vm1 = VirtualMachine.objects.get(id=vm1.id)
+        self.assertEqual(vm1.operstate, "STARTED")
+        nic = vm1.nics.all()[0]
+        self.assertEqual(nic.network, network2)
+        self.assertEqual(nic.ipv4, "192.168.2.1")
+        self.assertEqual(nic.mac, "aa:00:bb:cc:dd:ee")
+
 
 from synnefo.logic.test.rapi_pool_tests import *
 from synnefo.logic.test.utils_tests import *

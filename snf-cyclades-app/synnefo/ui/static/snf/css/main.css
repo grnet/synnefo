@@ -6776,6 +6776,10 @@ input.has-errors {
     display: block;
 }
 
+.models-view .model-list ul li.model-item .item-action.connect {
+    background-image: url("../images/option-action-connect.png");
+}
+
 .models-view .model-list ul li.model-item .item-action.hide {
     background-image: url("../images/minus-8.png");
 }

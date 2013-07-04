@@ -279,13 +279,19 @@ def addmembers(request, chain_id, addmembers_form):
             messages.error(request, e)
 
 
+MEMBERSHIP_STATUS_FILTER = {
+    0: lambda x: x.requested(),
+    1: lambda x: x.any_accepted(),
+}
+
+
 def common_detail(request, chain_or_app_id, project_view=True,
                   template_name='im/projects/project_detail.html',
                   members_status_filter=None):
     project = None
     approved_members_count = 0
     pending_members_count = 0
-    remaining_memberships_count = 0
+    remaining_memberships_count = None
     if project_view:
         chain_id = chain_or_app_id
         if request.method == 'POST':
@@ -301,18 +307,19 @@ def common_detail(request, chain_or_app_id, project_view=True,
         else:
             addmembers_form = AddProjectMembersForm()  # initialize form
 
-        approved_members_count = 0
-        pending_members_count = 0
-        remaining_memberships_count = 0
         project, application = get_by_chain_or_404(chain_id)
         if project:
-            members = project.projectmembership_set.select_related()
-            approved_members_count = \
-                project.count_actually_accepted_memberships()
+            members = project.projectmembership_set
+            approved_members_count = project.members_count()
             pending_members_count = project.count_pending_memberships()
-            if members_status_filter in (ProjectMembership.REQUESTED,
-                                         ProjectMembership.ACCEPTED):
-                members = members.filter(state=members_status_filter)
+            _limit = application.limit_on_members_number
+            if _limit is not None:
+                remaining_memberships_count = \
+                    max(0, _limit - approved_members_count)
+            flt = MEMBERSHIP_STATUS_FILTER.get(members_status_filter)
+            if flt is not None:
+                members = flt(members)
+            members = members.select_related()
             members_table = tables.ProjectMembersTable(project,
                                                        members,
                                                        user=request.user,
@@ -377,8 +384,8 @@ def common_detail(request, chain_or_app_id, project_view=True,
             'can_join_request': can_join_req,
             'can_leave_request': can_leave_req,
             'members_status_filter': members_status_filter,
-        })
-
+            'remaining_memberships_count': remaining_memberships_count,
+            })
 
 @require_http_methods(["GET", "POST"])
 @cookie_fix

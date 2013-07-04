@@ -47,6 +47,7 @@ from astakos.im.functions import login as auth_login, logout
 from astakos.im.views.decorators import cookie_fix
 
 import astakos.im.messages as astakos_messages
+from astakos.im.settings import REDIRECT_ALLOWED_SCHEMES
 
 import logging
 
@@ -67,9 +68,9 @@ def login(request):
     """
     next = request.GET.get('next')
     if not next:
-        next = reverse('index')
+        raise HttpResponseBadRequest('Missing next parameter')
 
-    if not restrict_next(next, allowed_schemes=('pithos',)):
+    if not restrict_next(next, allowed_schemes=REDIRECT_ALLOWED_SCHEMES):
         return HttpResponseForbidden(_(
             astakos_messages.NOT_ALLOWED_NEXT_PARAM))
     force = request.GET.get('force', None)
@@ -114,6 +115,7 @@ def login(request):
             logger.info('Token reset for %s' % user.username)
         parts = list(urlsplit(next))
         parts[3] = urlencode({
+            'uuid': request.user.uuid,
             'token': request.user.auth_token
         })
         url = urlunsplit(parts)

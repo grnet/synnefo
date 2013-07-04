@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -30,16 +30,15 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
-
-import json
-
 from django.conf import settings
 from django.db import transaction
 from datetime import datetime
 
 from synnefo.db.models import (Backend, VirtualMachine, Network,
+                               FloatingIP,
                                BackendNetwork, BACKEND_STATUSES,
-                               pooled_rapi_client, VirtualMachineDiagnostic)
+                               pooled_rapi_client, VirtualMachineDiagnostic,
+                               Flavor)
 from synnefo.logic import utils
 from synnefo import quotas
 from synnefo.api.util import release_resource
@@ -57,8 +56,61 @@ _firewall_tags = {
 _reverse_tags = dict((v.split(':')[3], k) for k, v in _firewall_tags.items())
 
 
+def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields):
+    """Handle quotas for updated VirtualMachine.
+
+    Update quotas for the updated VirtualMachine based on the job that run on
+    the Ganeti backend. If a commission has been already issued for this job,
+    then this commission is just accepted or rejected based on the job status.
+    Otherwise, a new commission for the given change is issued, that is also in
+    force and auto-accept mode. In this case, previous commissions are
+    rejected, since they reflect a previous state of the VM.
+
+    """
+    if job_status not in ["success", "error", "canceled"]:
+        return
+
+    # Check successful completion of a job will trigger any quotable change in
+    # the VM state.
+    action = utils.get_action_from_opcode(job_opcode, job_fields)
+    commission_info = quotas.get_commission_info(vm, action=action,
+                                                 action_fields=job_fields)
+
+    if vm.task_job_id == job_id and vm.serial is not None:
+        # Commission for this change has already been issued. So just
+        # accept/reject it
+        serial = vm.serial
+        if job_status == "success":
+            quotas.accept_serial(serial)
+        elif job_status in ["error", "canceled"]:
+            log.debug("Job %s failed. Rejecting related serial %s", job_id,
+                      serial)
+            quotas.reject_serial(serial)
+        vm.serial = None
+    elif job_status == "success" and commission_info is not None:
+        log.debug("Expected job was %s. Processing job %s. Commission for"
+                  " this job: %s", vm.task_job_id, job_id, commission_info)
+        # Commission for this change has not been issued, or the issued
+        # commission was unaware of the current change. Reject all previous
+        # commissions and create a new one in forced mode!
+        previous_serial = vm.serial
+        if previous_serial and not previous_serial.resolved:
+            quotas.resolve_vm_commission(previous_serial)
+        serial = quotas.issue_commission(user=vm.userid,
+                                         source=quotas.DEFAULT_SOURCE,
+                                         provisions=commission_info,
+                                         force=True,
+                                         auto_accept=True)
+        # Clear VM's serial. Expected job may arrive later. However correlated
+        # serial must not be accepted, since it reflects a previous VM state
+        vm.serial = None
+
+    return vm
+
+
 @transaction.commit_on_success
-def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None):
+def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
+                      beparams=None):
     """Process a job progress notification from the backend
 
     Process an incoming message from the backend (currently Ganeti).
@@ -76,14 +128,27 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None):
     vm.backendopcode = opcode
     vm.backendlogmsg = logmsg
 
-    # Notifications of success change the operating state
-    state_for_success = VirtualMachine.OPER_STATE_FROM_OPCODE.get(opcode, None)
-    if status == 'success' and state_for_success is not None:
-        vm.operstate = state_for_success
+    if status in ["queued", "waiting", "running"]:
+        vm.save()
+        return
 
-    # Update the NICs of the VM
-    if status == "success" and nics is not None:
-        _process_net_status(vm, etime, nics)
+    state_for_success = VirtualMachine.OPER_STATE_FROM_OPCODE.get(opcode)
+    # Notifications of success change the operating state
+    if status == "success":
+        if state_for_success is not None:
+            vm.operstate = state_for_success
+        if nics is not None:
+            # Update the NICs of the VM
+            _process_net_status(vm, etime, nics)
+        if beparams:
+            # Change the flavor of the VM
+            _process_resize(vm, beparams)
+        # Update backendtime only for jobs that have been successfully
+        # completed, since only these jobs update the state of the VM. Else a
+        # "race condition" may occur when a successful job (e.g.
+        # OP_INSTANCE_REMOVE) completes before an error job and messages arrive
+        # in reversed order.
+        vm.backendtime = etime
 
     # Special case: if OP_INSTANCE_CREATE fails --> ERROR
     if opcode == 'OP_INSTANCE_CREATE' and status in ('canceled', 'error'):
@@ -94,23 +159,44 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None):
         # Special case: OP_INSTANCE_REMOVE fails for machines in ERROR,
         # when no instance exists at the Ganeti backend.
         # See ticket #799 for all the details.
-        #
         if status == 'success' or (status == 'error' and
                                    vm.operstate == 'ERROR'):
-            _process_net_status(vm, etime, nics=[])
+            # VM has been deleted. Release the instance IPs
+            release_instance_ips(vm, [])
+            # And delete the releated NICs (must be performed after release!)
+            vm.nics.all().delete()
             vm.deleted = True
             vm.operstate = state_for_success
             vm.backendtime = etime
-            # Issue and accept commission to Quotaholder
-            quotas.issue_and_accept_commission(vm, delete=True)
+            status = "success"
 
-    # Update backendtime only for jobs that have been successfully completed,
-    # since only these jobs update the state of the VM. Else a "race condition"
-    # may occur when a successful job (e.g. OP_INSTANCE_REMOVE) completes
-    # before an error job and messages arrive in reversed order.
-    if status == 'success':
-        vm.backendtime = etime
+    if status in ["success", "error", "canceled"]:
+        # Job is finalized: Handle quotas/commissioning
+        job_fields = {"nics": nics, "beparams": beparams}
+        vm = handle_vm_quotas(vm, job_id=jobid, job_opcode=opcode,
+                              job_status=status, job_fields=job_fields)
+        # and clear task fields
+        if vm.task_job_id == jobid:
+            vm.task = None
+            vm.task_job_id = None
 
+    vm.save()
+
+
+def _process_resize(vm, beparams):
+    """Change flavor of a VirtualMachine based on new beparams."""
+    old_flavor = vm.flavor
+    vcpus = beparams.get("vcpus", old_flavor.cpu)
+    ram = beparams.get("maxmem", old_flavor.ram)
+    if vcpus == old_flavor.cpu and ram == old_flavor.ram:
+        return
+    try:
+        new_flavor = Flavor.objects.get(cpu=vcpus, ram=ram,
+                                        disk=old_flavor.disk,
+                                        disk_template=old_flavor.disk_template)
+    except Flavor.DoesNotExist:
+        raise Exception("Can not find flavor for VM")
+    vm.flavor = new_flavor
     vm.save()
 
 
@@ -138,7 +224,10 @@ def _process_net_status(vm, etime, nics):
     # guarantee that no deadlock will occur with Backend allocator.
     Backend.objects.select_for_update().get(id=vm.backend_id)
 
-    release_instance_nics(vm)
+    # NICs have changed. Release the instance IPs
+    release_instance_ips(vm, ganeti_nics)
+    # And delete the releated NICs (must be performed after release!)
+    vm.nics.all().delete()
 
     for nic in ganeti_nics:
         ipv4 = nic.get('ipv4', '')
@@ -204,13 +293,28 @@ def nics_changed(old_nics, new_nics):
     return False
 
 
-def release_instance_nics(vm):
-    for nic in vm.nics.all():
-        net = nic.network
-        if nic.ipv4:
-            net.release_address(nic.ipv4)
-        nic.delete()
-        net.save()
+def release_instance_ips(vm, ganeti_nics):
+    old_addresses = set(vm.nics.values_list("network", "ipv4"))
+    new_addresses = set(map(lambda nic: (nic["network"].id, nic["ipv4"]),
+                            ganeti_nics))
+    to_release = old_addresses - new_addresses
+    for (network_id, ipv4) in to_release:
+        if ipv4:
+            # Get X-Lock before searching floating IP, to exclusively search
+            # and release floating IP. Otherwise you may release a floating IP
+            # that has been just reserved.
+            net = Network.objects.select_for_update().get(id=network_id)
+            if net.floating_ip_pool:
+                try:
+                    floating_ip = net.floating_ips.select_for_update()\
+                                                  .get(ipv4=ipv4, machine=vm,
+                                                       deleted=False)
+                    floating_ip.machine = None
+                    floating_ip.save()
+                except FloatingIP.DoesNotExist:
+                    net.release_address(ipv4)
+            else:
+                net.release_address(ipv4)
 
 
 @transaction.commit_on_success
@@ -377,7 +481,7 @@ def create_instance_diagnostic(vm, message, source, level="DEBUG", etime=None,
                                                    details=details)
 
 
-def create_instance(vm, public_nic, flavor, image):
+def create_instance(vm, nics, flavor, image):
     """`image` is a dictionary which should contain the keys:
             'backend_id', 'format' and 'metadata'
 
@@ -402,7 +506,25 @@ def create_instance(vm, public_nic, flavor, image):
         kw['disks'][0]['provider'] = provider
         kw['disks'][0]['origin'] = flavor.disk_origin
 
-    kw['nics'] = [public_nic]
+    kw['nics'] = [{"network": nic.network.backend_id, "ip": nic.ipv4}
+                  for nic in nics]
+    backend = vm.backend
+    depend_jobs = []
+    for nic in nics:
+        network = Network.objects.select_for_update().get(id=nic.network.id)
+        bnet, created = BackendNetwork.objects.get_or_create(backend=backend,
+                                                             network=network)
+        if bnet.operstate != "ACTIVE":
+            if network.public:
+                msg = "Can not connect instance to network %s. Network is not"\
+                      " ACTIVE in backend %s." % (network, backend)
+                raise Exception(msg)
+            else:
+                depend_jobs.append(create_network(network, backend,
+                                                  connect=True))
+    kw["depends"] = [[job, ["success", "error", "canceled"]]
+                     for job in depend_jobs]
+
     if vm.backend.use_hotplug():
         kw['hotplug'] = True
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
@@ -455,6 +577,14 @@ def startup_instance(vm):
 def shutdown_instance(vm):
     with pooled_rapi_client(vm) as client:
         return client.ShutdownInstance(vm.backend_vm_id, dry_run=settings.TEST)
+
+
+def resize_instance(vm, vcpus, memory):
+    beparams = {"vcpus": int(vcpus),
+                "minmem": int(memory),
+                "maxmem": int(memory)}
+    with pooled_rapi_client(vm) as client:
+        return client.ModifyInstance(vm.backend_vm_id, beparams=beparams)
 
 
 def get_instance_console(vm):
@@ -639,44 +769,22 @@ def set_firewall_profile(vm, profile):
         os_name = settings.GANETI_CREATEINSTANCE_KWARGS['os']
         client.ModifyInstance(vm.backend_vm_id,
                               os_name=os_name)
+    return None
 
 
-def get_ganeti_instances(backend=None, bulk=False):
-    instances = []
-    for backend in get_backends(backend):
-        with pooled_rapi_client(backend) as client:
-            instances.append(client.GetInstances(bulk=bulk))
-
-    return reduce(list.__add__, instances, [])
+def get_instances(backend, bulk=True):
+    with pooled_rapi_client(backend) as c:
+        return c.GetInstances(bulk=bulk)
 
 
-def get_ganeti_nodes(backend=None, bulk=False):
-    nodes = []
-    for backend in get_backends(backend):
-        with pooled_rapi_client(backend) as client:
-            nodes.append(client.GetNodes(bulk=bulk))
-
-    return reduce(list.__add__, nodes, [])
+def get_nodes(backend, bulk=True):
+    with pooled_rapi_client(backend) as c:
+        return c.GetNodes(bulk=bulk)
 
 
-def get_ganeti_jobs(backend=None, bulk=False):
-    jobs = []
-    for backend in get_backends(backend):
-        with pooled_rapi_client(backend) as client:
-            jobs.append(client.GetJobs(bulk=bulk))
-    return reduce(list.__add__, jobs, [])
-
-##
-##
-##
-
-
-def get_backends(backend=None):
-    if backend:
-        if backend.offline:
-            return []
-        return [backend]
-    return Backend.objects.filter(offline=False)
+def get_jobs(backend):
+    with pooled_rapi_client(backend) as c:
+        return c.GetJobs()
 
 
 def get_physical_resources(backend):
@@ -685,7 +793,7 @@ def get_physical_resources(backend):
     Get the resources of a backend as reported by the backend (not the db).
 
     """
-    nodes = get_ganeti_nodes(backend, bulk=True)
+    nodes = get_nodes(backend, bulk=True)
     attr = ['mfree', 'mtotal', 'dfree', 'dtotal', 'pinst_cnt', 'ctotal']
     res = {}
     for a in attr:

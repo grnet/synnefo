@@ -94,6 +94,8 @@ DEFAULT_DB_CONNECTION = 'sqlite:///backend.db'
 DEFAULT_BLOCK_MODULE = 'pithos.backends.lib.hashfiler'
 DEFAULT_BLOCK_PATH = 'data/'
 DEFAULT_BLOCK_UMASK = 0o022
+DEFAULT_BLOCK_SIZE = 4 * 1024 * 1024  # 4MB
+DEFAULT_HASH_ALGORITHM = 'sha256'
 #DEFAULT_QUEUE_MODULE = 'pithos.backends.lib.rabbitmq'
 DEFAULT_BLOCK_PARAMS = { 'mappool': None, 'blockpool': None }
 #DEFAULT_QUEUE_HOSTS = '[amqp://guest:guest@localhost:5672]'
@@ -126,6 +128,7 @@ class ModularBackend(BaseBackend):
 
     def __init__(self, db_module=None, db_connection=None,
                  block_module=None, block_path=None, block_umask=None,
+                 block_size=None, hash_algorithm=None,
                  queue_module=None, queue_hosts=None, queue_exchange=None,
                  astakos_url=None, service_token=None,
                  astakosclient_poolsize=None,
@@ -141,6 +144,8 @@ class ModularBackend(BaseBackend):
         block_path = block_path or DEFAULT_BLOCK_PATH
         block_umask = block_umask or DEFAULT_BLOCK_UMASK
         block_params = block_params or DEFAULT_BLOCK_PARAMS
+        block_size = block_size or DEFAULT_BLOCK_SIZE
+        hash_algorithm = hash_algorithm or DEFAULT_HASH_ALGORITHM
         #queue_module = queue_module or DEFAULT_QUEUE_MODULE
         account_quota_policy = account_quota_policy or DEFAULT_ACCOUNT_QUOTA
         container_quota_policy = container_quota_policy \
@@ -156,11 +161,13 @@ class ModularBackend(BaseBackend):
         #queue_hosts = queue_hosts or DEFAULT_QUEUE_HOSTS
         #queue_exchange = queue_exchange or DEFAULT_QUEUE_EXCHANGE
 
-        self.public_url_security = public_url_security or DEFAULT_PUBLIC_URL_SECURITY
-        self.public_url_alphabet = public_url_alphabet or DEFAULT_PUBLIC_URL_ALPHABET
+        self.public_url_security = (public_url_security or
+            DEFAULT_PUBLIC_URL_SECURITY)
+        self.public_url_alphabet = (public_url_alphabet or
+            DEFAULT_PUBLIC_URL_ALPHABET)
 
-        self.hash_algorithm = 'sha256'
-        self.block_size = 4 * 1024 * 1024  # 4MB
+        self.hash_algorithm = hash_algorithm
+        self.block_size = block_size
         self.free_versioning = free_versioning
 
         def load_module(m):
@@ -918,9 +925,10 @@ class ModularBackend(BaseBackend):
             raise ie
 
         hash = map.hash()
-        dest_version_id = self._update_object_hash(user, account, container, name, size, type, binascii.hexlify(hash), checksum, domain, meta, replace_meta, permissions)
+        hexlified = binascii.hexlify(hash)
+        dest_version_id = self._update_object_hash(user, account, container, name, size, type, hexlified, checksum, domain, meta, replace_meta, permissions)
         self.store.map_put(hash, map)
-        return dest_version_id
+        return dest_version_id, hexlified
 
     def update_object_checksum(self, user, account, container, name, version, checksum):
         """Update an object's checksum."""
@@ -1508,14 +1516,15 @@ class ModularBackend(BaseBackend):
     # Domain functions
 
     def get_domain_objects(self, domain, user=None):
-        obj_list = self.node.domain_object_list(domain, CLUSTER_NORMAL)
-        if user != None:
-            obj_list = [t for t in obj_list \
-                if self._has_read_access(user, t[0])]
+        allowed_paths = self.permissions.access_list_paths(user)
+        if not allowed_paths:
+            return []
+        obj_list = self.node.domain_object_list(
+            domain, allowed_paths, CLUSTER_NORMAL)
         return [(path,
                  self._build_metadata(props, user_defined_meta),
-                 self.permissions.access_get(path)) \
-            for path, props, user_defined_meta in obj_list]
+                 self.permissions.access_get(path)) for
+                path, props, user_defined_meta in obj_list]
 
     # util functions
 

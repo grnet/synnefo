@@ -69,7 +69,7 @@ class Flavor(models.Model):
                                  self.disk_template)
 
     def __unicode__(self):
-        return str(self.id)
+        return "<%s:%s>" % (str(self.id), self.name)
 
 
 class Backend(models.Model):
@@ -231,6 +231,9 @@ class QuotaHolderSerial(models.Model):
         verbose_name = u'Quota Serial'
         ordering = ["serial"]
 
+    def __unicode__(self):
+        return u"<serial: %s>" % self.serial
+
 
 class VirtualMachine(models.Model):
     # The list of possible actions for a VM
@@ -240,7 +243,10 @@ class VirtualMachine(models.Model):
         ('STOP', 'Shutdown VM'),
         ('SUSPEND', 'Admin Suspend VM'),
         ('REBOOT', 'Reboot VM'),
-        ('DESTROY', 'Destroy VM')
+        ('DESTROY', 'Destroy VM'),
+        ('RESIZE', 'Resize a VM'),
+        ('ADDFLOATINGIP', 'Add floating IP to VM'),
+        ('REMOVEFLOATINGIP', 'Add floating IP to VM'),
     )
 
     # The internal operating state of a VM
@@ -249,7 +255,8 @@ class VirtualMachine(models.Model):
         ('ERROR', 'Creation failed'),
         ('STOPPED', 'Stopped'),
         ('STARTED', 'Started'),
-        ('DESTROYED', 'Destroyed')
+        ('DESTROYED', 'Destroyed'),
+        ('RESIZE', 'Resizing')
     )
 
     # The list of possible operations on the backend
@@ -304,7 +311,8 @@ class VirtualMachine(models.Model):
         "ERROR": "ERROR",
         "STOPPED": "STOPPED",
         "STARTED": "ACTIVE",
-        "DESTROYED": "DELETED"
+        'RESIZE': 'RESIZE',
+        'DESTROYED': 'DELETED',
     }
 
     name = models.CharField('Virtual Machine Name', max_length=255)
@@ -333,8 +341,10 @@ class VirtualMachine(models.Model):
     # In the future they could be moved to a separate caching layer
     # and removed from the database.
     # [vkoukis] after discussion with [faidon].
-    action = models.CharField(choices=ACTIONS, max_length=30, null=True)
-    operstate = models.CharField(choices=OPER_STATES, max_length=30, null=True)
+    action = models.CharField(choices=ACTIONS, max_length=30, null=True,
+                              default=None)
+    operstate = models.CharField(choices=OPER_STATES, max_length=30,
+                                 null=False, default="BUILD")
     backendjobid = models.PositiveIntegerField(null=True)
     backendopcode = models.CharField(choices=BACKEND_OPCODES, max_length=30,
                                      null=True)
@@ -343,6 +353,11 @@ class VirtualMachine(models.Model):
     backendlogmsg = models.TextField(null=True)
     buildpercentage = models.IntegerField(default=0)
     backendtime = models.DateTimeField(default=datetime.datetime.min)
+
+    # Latest action and corresponding Ganeti job ID, for actions issued
+    # by the API
+    task = models.CharField(max_length=64, null=True)
+    task_job_id = models.BigIntegerField(max_length=64, null=True)
 
     objects = ForUpdateManager()
 
@@ -361,19 +376,6 @@ class VirtualMachine(models.Model):
     @staticmethod
     def put_client(client):
             put_rapi_client(client)
-
-    def __init__(self, *args, **kw):
-        """Initialize state for just created VM instances."""
-        super(VirtualMachine, self).__init__(*args, **kw)
-        # This gets called BEFORE an instance gets save()d for
-        # the first time.
-        if not self.pk:
-            self.action = None
-            self.backendjobid = None
-            self.backendjobstatus = None
-            self.backendopcode = None
-            self.backendlogmsg = None
-            self.operstate = 'BUILD'
 
     def save(self, *args, **kwargs):
         # Store hash for first time saved vm
@@ -444,6 +446,8 @@ class Network(models.Model):
     ACTIONS = (
         ('CREATE', 'Create Network'),
         ('DESTROY', 'Destroy Network'),
+        ('ADD', 'Add server to Network'),
+        ('REMOVE', 'Remove server from Network'),
     )
 
     RSAPI_STATE_FROM_OPER_STATE = {
@@ -512,7 +516,8 @@ class Network(models.Model):
     action = models.CharField(choices=ACTIONS, max_length=32, null=True,
                               default=None)
     drained = models.BooleanField("Drained", default=False, null=False)
-
+    floating_ip_pool = models.BooleanField('Floating IP Pool', null=False,
+                                          default=False)
     pool = models.OneToOneField('IPPoolTable', related_name='network',
                 default=lambda: IPPoolTable.objects.create(available_map='',
                                                            reserved_map='',
@@ -699,7 +704,43 @@ class NetworkInterface(models.Model):
                              choices=STATES)
 
     def __unicode__(self):
-        return '%s@%s' % (self.machine.name, self.network.name)
+        return "<%s:vm:%s network:%s ipv4:%s ipv6:%s>" % \
+            (self.index, self.machine_id, self.network_id, self.ipv4,
+             self.ipv6)
+
+    @property
+    def is_floating_ip(self):
+        network = self.network
+        if self.ipv4 and network.floating_ip_pool:
+            return network.floating_ips.filter(machine=self.machine,
+                                               ipv4=self.ipv4,
+                                               deleted=False).exists()
+        return False
+
+
+class FloatingIP(models.Model):
+    userid = models.CharField("UUID of the owner", max_length=128,
+                              null=False, db_index=True)
+    ipv4 = models.IPAddressField(null=False, unique=True, db_index=True)
+    network = models.ForeignKey(Network, related_name="floating_ips",
+                                null=False)
+    machine = models.ForeignKey(VirtualMachine, related_name="floating_ips",
+                                null=True)
+    created = models.DateTimeField(auto_now_add=True)
+    deleted = models.BooleanField(default=False, null=False)
+    serial = models.ForeignKey(QuotaHolderSerial,
+                               related_name="floating_ips", null=True)
+
+    objects = ForUpdateManager()
+
+    def __unicode__(self):
+        return "<%s@%s>" % (self.ipv4, self.network.id)
+
+    def in_use(self):
+        if self.machine is None:
+            return False
+        else:
+            return (not self.machine.deleted)
 
 
 class PoolTable(models.Model):

@@ -1336,12 +1336,14 @@ class TestWebloginRedirect(TestCase):
         # scheme preserved
         self.assertTrue(url.startswith('pithos://localhost/'))
         # redirect contains token param
-        params = urlparse.urlparse(urlparse.urlparse(url).path, 'https').query
+        params = urlparse.urlparse(url.replace('pithos', 'https'),
+                                   scheme='https').query
         params = urlparse.parse_qs(params)
         self.assertEqual(params['token'][0],
                          AstakosUser.objects.get().auth_token)
         # does not contain uuid
-        self.assertFalse('uuid' in params)
+        # reverted for 0.14.2 to support old pithos desktop clients
+        #self.assertFalse('uuid' in params)
 
         # invalid cases
         r = self.client.get(invalid_scheme, follow=True)

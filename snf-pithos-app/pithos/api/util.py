@@ -59,11 +59,11 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_ACCOUNT_QUOTA, BACKEND_CONTAINER_QUOTA,
                                  BACKEND_VERSIONING,
                                  BACKEND_FREE_VERSIONING, BACKEND_POOL_SIZE,
+                                 BACKEND_BLOCK_SIZE, BACKEND_HASH_ALGORITHM,
                                  RADOS_STORAGE, RADOS_POOL_BLOCKS,
                                  RADOS_POOL_MAPS, TRANSLATE_UUIDS,
-                                 PUBLIC_URL_SECURITY,
-                                 PUBLIC_URL_ALPHABET,
-                                 COOKIE_NAME, BASE_HOST)
+                                 PUBLIC_URL_SECURITY, PUBLIC_URL_ALPHABET,
+                                 COOKIE_NAME, BASE_HOST, UPDATE_MD5)
 from pithos.api.resources import resources
 from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
                                   VersionNotExists)
@@ -215,7 +215,7 @@ def get_object_headers(request):
 
 
 def put_object_headers(response, meta, restricted=False, token=None):
-    response['ETag'] = meta['checksum']
+    response['ETag'] = meta['hash'] if not UPDATE_MD5 else meta['checksum']
     response['Content-Length'] = meta['bytes']
     response.override_serialization = True
     response['Content-Type'] = meta.get('type', 'application/octet-stream')
@@ -259,11 +259,11 @@ def update_manifest_meta(request, v_account, meta):
                 request.user_uniq, v_account,
                 src_container, prefix=src_name, virtual=False)
             for x in objects:
-                src_meta = request.backend.get_object_meta(request.user_uniq,
-                                                           v_account,
-                                                           src_container,
-                                                           x[0], 'pithos', x[1])
-                etag += src_meta['checksum']
+                src_meta = request.backend.get_object_meta(
+                    request.user_uniq, v_account, src_container, x[0],
+                    'pithos', x[1])
+                etag += (src_meta['hash'] if not UPDATE_MD5 else
+                         src_meta['checksum'])
                 bytes += src_meta['bytes']
         except:
             # Ignore errors.
@@ -423,7 +423,7 @@ def validate_modification_preconditions(request, meta):
 def validate_matching_preconditions(request, meta):
     """Check that the ETag conforms with the preconditions set."""
 
-    etag = meta['checksum']
+    etag = meta['hash'] if not UPDATE_MD5 else meta['checksum']
     if not etag:
         etag = None
 
@@ -772,12 +772,12 @@ class SaveToBackendHandler(FileUploadHandler):
         if len(self.data) >= length:
             block = self.data[:length]
             self.file.hashmap.append(self.backend.put_block(block))
-            self.md5.update(block)
+            self.checksum_compute.update(block)
             self.data = self.data[length:]
 
     def new_file(self, field_name, file_name, content_type,
                  content_length, charset=None):
-        self.md5 = hashlib.md5()
+        self.checksum_compute = NoChecksum() if not UPDATE_MD5 else Checksum()
         self.data = ''
         self.file = UploadedFile(
             name=file_name, content_type=content_type, charset=charset)
@@ -794,7 +794,7 @@ class SaveToBackendHandler(FileUploadHandler):
         l = len(self.data)
         if l > 0:
             self.put_data(l)
-        self.file.etag = self.md5.hexdigest().lower()
+        self.file.etag = self.checksum_compute.hexdigest()
         return self.file
 
 
@@ -999,6 +999,8 @@ _pithos_backend_pool = PithosBackendPool(
         block_module=BACKEND_BLOCK_MODULE,
         block_path=BACKEND_BLOCK_PATH,
         block_umask=BACKEND_BLOCK_UMASK,
+        block_size=BACKEND_BLOCK_SIZE,
+        hash_algorithm=BACKEND_HASH_ALGORITHM,
         queue_module=BACKEND_QUEUE_MODULE,
         queue_hosts=BACKEND_QUEUE_HOSTS,
         queue_exchange=BACKEND_QUEUE_EXCHANGE,
@@ -1037,11 +1039,6 @@ def update_request_headers(request):
 
 
 def update_response_headers(request, response):
-    if (not response.has_header('Content-Length') and
-        not (response.has_header('Content-Type') and
-             response['Content-Type'].startswith('multipart/byteranges'))):
-        response['Content-Length'] = len(response.content)
-
     # URL-encode unicode in headers.
     meta = response.items()
     for k, v in meta:
@@ -1164,3 +1161,21 @@ def view_method():
                 raise Exception(response)
         return wrapper
     return decorator
+
+
+class Checksum:
+    def __init__(self):
+        self.md5 = hashlib.md5()
+
+    def update(self, data):
+        self.md5.update(data)
+
+    def hexdigest(self):
+        return self.md5.hexdigest().lower()
+
+class NoChecksum:
+    def update(self, data):
+        pass
+
+    def hexdigest(self):
+        return ''

@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,7 +31,30 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-# Import TestCases
-from pithos.api.test.accounts import *
-from pithos.api.test.containers import *
-from pithos.api.test.objects import *
+from synnefo.db.models import FloatingIP
+from synnefo.webproject.management.commands import ListCommand
+from synnefo.settings import (CYCLADES_ASTAKOS_SERVICE_TOKEN as ASTAKOS_TOKEN,
+                              ASTAKOS_URL)
+from logging import getLogger
+log = getLogger(__name__)
+
+
+class Command(ListCommand):
+    help = "List Floating IPs"
+    object_class = FloatingIP
+    deleted_field = "deleted"
+    user_uuid_field = "userid"
+    astakos_url = ASTAKOS_URL
+    astakos_token = ASTAKOS_TOKEN
+
+    FIELDS = {
+        "id": ("id", "Floating IP UUID"),
+        "user.uuid": ("userid", "The UUID of the server's owner"),
+        "address": ("ipv4", "IPv4 Address"),
+        "pool": ("network", "Floating IP Pool (network)"),
+        "machine": ("machine", "VM using this Floating IP"),
+        "created": ("created", "Datetime this IP was reserved"),
+        "deleted": ("deleted", "If the floating IP is deleted"),
+    }
+
+    fields = ["id", "address", "pool", "user.uuid", "machine", "created"]

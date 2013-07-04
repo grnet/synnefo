@@ -171,7 +171,7 @@ class VirtualMachineTest(TestCase):
         client.assert_called_once_with(id_, hash_, name, port, user, passwd)
 
     def test_create(self):
-        vm = mfact.VirtualMachineFactory()
+        vm = VirtualMachine()
         self.assertEqual(vm.action, None)
         self.assertEqual(vm.backendjobid, None)
         self.assertEqual(vm.backendjobstatus, None)

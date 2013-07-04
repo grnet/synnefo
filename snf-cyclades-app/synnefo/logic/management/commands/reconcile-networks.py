@@ -40,8 +40,8 @@ import bitarray
 
 from optparse import make_option
 
-from synnefo.settings import PUBLIC_USE_POOL
 from django.core.management.base import BaseCommand
+from django.db import transaction
 
 from synnefo.db.models import Backend, Network, BackendNetwork
 from synnefo.db.pools import IPPool
@@ -104,17 +104,21 @@ def reconcile_networks(conflicting_ips=False):
     for network in networks:
         ip_available_maps = []
         ip_reserved_maps = []
-        uses_pool = not network.public or PUBLIC_USE_POOL
         for bend in backends:
             bnet = get_backend_network(network, bend)
             gnet = ganeti_networks[bend].get(network.id)
-            if not (bnet or gnet):
-                # Network does not exist either in Ganeti nor in BD.
-                continue
-            if not bnet and gnet:
-                # Network exists in Ganeti and not in DB.
-                if network.action != "DESTROY" and not network.public:
-                    reconcile_parted_network(network, bend)
+            if not bnet:
+                if network.floating_ip_pool:
+                    # Network is a floating IP pool and does not exist in
+                    # backend. We need to create it
+                    bnet = reconcile_parted_network(network, bend)
+                elif not gnet:
+                    # Network does not exist either in Ganeti nor in BD.
+                    continue
+                else:
+                    # Network exists in Ganeti and not in DB.
+                    if network.action != "DESTROY" and not network.public:
+                        bnet = reconcile_parted_network(network, bend)
 
             if not gnet:
                 # Network does not exist in Ganeti. If the network action is
@@ -144,13 +148,12 @@ def reconcile_networks(conflicting_ips=False):
                 # exists and is connected to all nodes so is must be active!
                 reconcile_unsynced_network(network, bend, bnet)
 
-            if uses_pool:
-                # Get ganeti IP Pools
-                available_map, reserved_map = get_network_pool(gnet)
-                ip_available_maps.append(available_map)
-                ip_reserved_maps.append(reserved_map)
+            # Get ganeti IP Pools
+            available_map, reserved_map = get_network_pool(gnet)
+            ip_available_maps.append(available_map)
+            ip_reserved_maps.append(reserved_map)
 
-        if uses_pool and (ip_available_maps or ip_reserved_maps):
+        if ip_available_maps or ip_reserved_maps:
             # CASE-5: Unsynced IP Pools
             reconcile_ip_pools(network, ip_available_maps, ip_reserved_maps)
 
@@ -221,24 +224,34 @@ def reconcile_unsynced_network(network, backend, backend_network):
                                            "Reconciliation simulated eventd")
 
 
+@transaction.commit_on_success
 def reconcile_ip_pools(network, available_maps, reserved_maps):
     available_map = reduce(lambda x, y: x & y, available_maps)
     reserved_map = reduce(lambda x, y: x & y, reserved_maps)
 
     pool = network.get_pool()
-    if pool.available != available_map:
+    # Temporary release unused floating IPs
+    temp_pool = network.get_pool()
+    used_ips = network.nics.values_list("ipv4", flat=True)
+    unused_static_ips = network.floating_ips.exclude(ipv4__in=used_ips)
+    map(lambda ip: temp_pool.put(ip.ipv4), unused_static_ips)
+    if temp_pool.available != available_map:
         write("D: Unsynced available map of network %s:\n"
               "\tDB: %r\n\tGB: %r\n" %
-              (network, pool.available.to01(), available_map.to01()))
+              (network, temp_pool.available.to01(), available_map.to01()))
         if fix:
             pool.available = available_map
+            # Release unsued floating IPs, as they are not included in the
+            # available map
+            map(lambda ip: pool.reserve(ip.ipv4), unused_static_ips)
+            pool.save()
     if pool.reserved != reserved_map:
         write("D: Unsynced reserved map of network %s:\n"
               "\tDB: %r\n\tGB: %r\n" %
               (network, pool.reserved.to01(), reserved_map.to01()))
         if fix:
             pool.reserved = reserved_map
-    pool.save()
+            pool.save()
 
 
 def detect_conflicting_ips(network):

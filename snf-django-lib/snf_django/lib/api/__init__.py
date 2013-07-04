@@ -48,6 +48,7 @@ from astakosclient.errors import AstakosClientException
 from django.conf import settings
 from snf_django.lib.api import faults
 
+import itertools
 
 log = getLogger(__name__)
 
@@ -75,7 +76,7 @@ def api_method(http_method=None, token_required=True, user_required=True,
             try:
                 # Get the requested serialization format
                 serialization = get_serialization(
-                    request, format_allowed, 'json')
+                    request, format_allowed, serializations[0])
 
                 # If guessed serialization is not supported, fallback to
                 # the default serialization or return an API error in case
@@ -106,6 +107,7 @@ def api_method(http_method=None, token_required=True, user_required=True,
                     astakos = astakos_url or settings.ASTAKOS_BASE_URL
                     astakos = AstakosClient(astakos,
                                             use_pool=True,
+                                            retry=2,
                                             logger=logger)
                     user_info = astakos.get_user_info(token)
                     request.user_uniq = user_info["uuid"]
@@ -187,7 +189,17 @@ def update_response_headers(request, response):
         response["Date"] = format_date_time(time())
 
     if not response.has_header("Content-Length"):
-        response["Content-Length"] = len(response.content)
+        # compatibility code for django 1.4
+        _is_string = getattr(response, '_is_string', None)
+        _base_content_is_iter = getattr(response, '_base_content_is_iter', None)
+        if (_is_string is not None and _is_string) or\
+                (_base_content_is_iter is not None and
+                    not _base_content_is_iter):
+            response["Content-Length"] = len(response.content)
+        else:
+            # save response content from been consumed if it is an iterator
+            response._container, data = itertools.tee(response._container)
+            response["Content-Length"] = len(str(data))
 
     cache.add_never_cache_headers(response)
     # Fix Vary and Cache-Control Headers. Issue: #3448

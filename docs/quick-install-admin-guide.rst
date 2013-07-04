@@ -560,20 +560,14 @@ For astakos specific configuration, edit the following options in
 
 .. code-block:: console
 
-    ASTAKOS_DEFAULT_ADMIN_EMAIL = None
-
     ASTAKOS_COOKIE_DOMAIN = '.example.com'
 
     ASTAKOS_BASE_URL = 'https://node1.example.com/astakos'
 
 The ``ASTAKOS_COOKIE_DOMAIN`` should be the base url of our domain (for all
-services). ``ASTAKOS_BASE_URL`` is the astakos top-level URL.
-
-``ASTAKOS_DEFAULT_ADMIN_EMAIL`` refers to the administrator's email.
-Every time a new account is created a notification is sent to this email.
-For this we need access to a running mail server, so we have disabled
-it for now by setting its value to None. For more informations on this,
-read the relative :ref:`section <mail-server>`.
+services). ``ASTAKOS_BASE_URL`` is the astakos top-level URL. Appending an
+extra path (``/astakos`` here) is recommended in order to distinguish
+components, if more than one are installed on the same machine.
 
 .. note:: For the purpose of this guide, we don't enable recaptcha authentication.
     If you would like to enable it, you have to edit the following options:
@@ -604,6 +598,80 @@ to point at node1 which is where we have installed Astakos.
 
 If you are an advanced user and want to use the Shibboleth Authentication
 method, read the relative :ref:`section <shibboleth-auth>`.
+
+.. _email-configuration:
+
+Email delivery configuration
+----------------------------
+
+Many of the ``astakos`` operations require server to notify service users and 
+administrators via email. e.g. right after the signup process the service sents 
+an email to the registered email address containing an email verification url, 
+after the user verifies the email address astakos once again needs to notify 
+administrators with a notice that a new account has just been verified.
+
+More specifically astakos sends emails in the following cases
+
+- An email containing a verification link after each signup process.
+- An email to the people listed in ``ADMINS`` setting after each email 
+  verification if ``ASTAKOS_MODERATION`` setting is ``True``. The email 
+  notifies administrators that an additional action is required in order to 
+  activate the user.
+- A welcome email to the user email and an admin notification to ``ADMINS`` 
+  right after each account activation.
+- Feedback messages submited from astakos contact view and astakos feedback 
+  API endpoint are sent to contacts listed in ``HELPDESK`` setting.
+- Project application request notifications to people included in ``HELPDESK`` 
+  and ``MANAGERS`` settings.
+- Notifications after each project members action (join request, membership 
+  accepted/declinde etc.) to project members or project owners.
+
+Astakos uses the Django internal email delivering mechanism to send email 
+notifications. A simple configuration, using an external smtp server to 
+deliver messages, is shown below. 
+
+.. code-block:: python
+    
+    # /etc/synnefo/10-snf-common-admins.conf
+    EMAIL_HOST = "mysmtp.server.synnefo.org"
+    EMAIL_HOST_USER = "<smtpuser>"
+    EMAIL_HOST_PASSWORD = "<smtppassword>"
+
+    # this gets appended in all email subjects
+    EMAIL_SUBJECT_PREFIX = "[example.synnefo.org] "
+    
+    # Address to use for outgoing emails
+    DEFAULT_FROM_EMAIL = "server@example.synnefo.org"
+
+    # Email where users can contact for support. This is used in html/email 
+    # templates.
+    CONTACT_EMAIL = "server@example.synnefo.org"
+
+    # The email address that error messages come from
+    SERVER_EMAIL = "server-errors@example.synnefo.org"
+
+Notice that since email settings might be required by applications other than
+astakos they are defined in a different configuration file than the one
+previously used to set astakos specific settings. 
+
+Refer to 
+`Django documentation <https://docs.djangoproject.com/en/1.2/topics/email/>`_
+for additional information on available email settings.
+
+As refered in the previous section, based on the operation that triggers 
+an email notification, the recipients list differs. Specifically for 
+emails whose recipients include contacts from your service team 
+(administrators, managers, helpdesk etc) synnefo provides the following 
+settings located in ``10-snf-common-admins.conf``:
+
+.. code-block:: python
+
+    ADMINS = (('Admin name', 'admin@example.synnefo.org'), 
+              ('Admin2 name', 'admin2@example.synnefo.org))
+    MANAGERS = (('Manager name', 'manager@example.synnefo.org'),)
+    HELPDESK = (('Helpdesk user name', 'helpdesk@example.synnefo.org'),)
+
+
 
 Enable Pooling
 --------------
@@ -700,9 +768,21 @@ When the database is ready, we need to register the services. The following
 command will ask you to register the standard Synnefo components (astakos,
 cyclades, and pithos) along with the services they provide. Note that you
 have to register at least astakos in order to have a usable authentication
-system. For each component, you will be asked to provide its base
-installation URL as well as the UI URL (to appear in the Cloudbar).
-Moreover, the command will automatically register the resource definitions
+system. For each component, you will be asked to provide two URLs: its base
+URL and its UI URL.
+
+The former is the location where the component resides; it should equal
+the ``<component_name>_BASE_URL`` as specified in the respective component
+settings. For example, the base URL for astakos would be
+``https://node1.example.com/astakos``.
+
+The latter is the URL that appears in the Cloudbar and leads to the
+component UI. If you want to follow the default setup, set
+the UI URL to ``<base_url>/ui/`` where ``base_url`` the component's base
+URL as explained before. (You can later change the UI URL with
+``snf-manage component-modify <component_name> --url new_ui_url``.)
+
+The command will also register automatically the resource definitions
 offered by the services.
 
 .. code-block:: console
@@ -850,7 +930,7 @@ this options:
    PITHOS_SERVICE_TOKEN = 'pithos_service_token22w'
 
    # Set to False if astakos & pithos are on the same host
-   #PITHOS_PROXY_USER_SERVICES = True
+   PITHOS_PROXY_USER_SERVICES = True
 
 
 The ``PITHOS_BACKEND_DB_CONNECTION`` option tells to the Pithos app where to
@@ -878,19 +958,6 @@ It can be retrieved by running on the Astakos node (node1 in our case):
 
 The token has been generated automatically during the :ref:`Pithos service
 registration <services-reg>`.
-
-Then we need to setup the web UI and connect it to astakos. To do so, edit
-``/etc/synnefo/20-snf-pithos-webclient-settings.conf``:
-
-.. code-block:: console
-
-    PITHOS_UI_LOGIN_URL = "https://node1.example.com/ui/login?next="
-    PITHOS_UI_FEEDBACK_URL = "https://node2.example.com/feedback"
-
-The ``PITHOS_UI_LOGIN_URL`` option tells the client where to redirect you, if
-you are not logged in. The ``PITHOS_UI_FEEDBACK_URL`` option points at the
-Pithos feedback form. Astakos already provides a generic feedback form for all
-services, so we use this one.
 
 The ``PITHOS_UPDATE_MD5`` option by default disables the computation of the
 object checksums. This results to improved performance during object uploading.
@@ -1036,7 +1103,7 @@ Ganeti
 `Ganeti <http://code.google.com/p/ganeti/>`_ handles the low level VM management
 for Cyclades, so Cyclades requires a working Ganeti installation at the backend.
 Please refer to the
-`ganeti documentation <http://docs.ganeti.org/ganeti/2.5/html>`_ for all the
+`ganeti documentation <http://docs.ganeti.org/ganeti/2.6/html>`_ for all the
 gory details. A successful Ganeti installation concludes with a working
 :ref:`GANETI-MASTER <GANETI_NODES>` and a number of :ref:`GANETI-NODEs
 <GANETI_NODES>`.
@@ -1090,7 +1157,7 @@ Then run on node1:
     root@node1:~ # gnt-group modify --disk-parameters=drbd:metavg=ganeti default
 
 For any problems you may stumble upon installing Ganeti, please refer to the
-`official documentation <http://docs.ganeti.org/ganeti/2.5/html>`_. Installation
+`official documentation <http://docs.ganeti.org/ganeti/2.6/html>`_. Installation
 of Ganeti is out of the scope of this guide.
 
 .. _cyclades-install-snfimage:
@@ -1618,7 +1685,7 @@ and then putting the output in ``/var/lib/ganeti/rapi/users`` as follows:
    cyclades {HA1}55aec7050aa4e4b111ca43cb505a61a0 write
 
 More about Ganeti's RAPI users `here.
-<http://docs.ganeti.org/ganeti/2.5/html/rapi.html#introduction>`_
+<http://docs.ganeti.org/ganeti/2.6/html/rapi.html#introduction>`_
 
 You have now finished with all needed Prerequisites for Cyclades. Let's move on
 to the actual Cyclades installation.
@@ -1678,6 +1745,10 @@ which is used for all user management, including authentication.
 Since our Astakos, Cyclades, and Pithos installations belong together,
 they should all have identical ``ASTAKOS_BASE_URL`` setting
 (see also, :ref:`previously <conf-pithos>`).
+
+The ``CYCLADES_BASE_URL`` setting must point to the top-level Cyclades URL.
+Appending an extra path (``/cyclades`` here) is recommended in order to
+distinguish components, if more than one are installed on the same machine.
 
 The ``CYCLADES_SERVICE_TOKEN`` is the token used for authentication with astakos.
 It can be retrieved by running on the Astakos node (node1 in our case):

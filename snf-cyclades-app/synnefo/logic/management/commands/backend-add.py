@@ -63,6 +63,10 @@ class Command(BaseCommand):
             choices=HYPERVISORS,
             metavar="|".join(HYPERVISORS),
             help="The hypervisor that the Ganeti backend uses"),
+        make_option(
+            '--no-init', action='store_false',
+            dest='init', default=True,
+            help="Do not perform initialization of the Backend Model")
     )
 
     def handle(self, *args, **options):
@@ -110,3 +114,36 @@ class Command(BaseCommand):
         pprint_table(self.stdout, table, attr)
 
         update_resources(backend, resources)
+
+        if not options['init']:
+            return
+
+        networks = Network.objects.filter(deleted=False, floating_ip_pool=True)
+        if not networks:
+            return
+
+        self.stdout.write('\nCreating the follow networks:\n')
+        headers = ('Name', 'Subnet', 'Gateway', 'Mac Prefix', 'Public')
+        table = []
+
+        for net in networks:
+            table.append((net.backend_id, str(net.subnet), str(net.gateway),
+                         str(net.mac_prefix), str(net.public)))
+        pprint_table(self.stdout, table, headers)
+
+        for net in networks:
+            net.create_backend_network(backend)
+            result = create_network_synced(net, backend)
+            if result[0] != "success":
+                self.stdout.write('\nError Creating Network %s: %s\n' %
+                                  (net.backend_id, result[1]))
+            else:
+                self.stdout.write('Successfully created Network: %s\n' %
+                                  net.backend_id)
+            result = connect_network_synced(network=net, backend=backend)
+            if result[0] != "success":
+                self.stdout.write('\nError Connecting Network %s: %s\n' %
+                                  (net.backend_id, result[1]))
+            else:
+                self.stdout.write('Successfully connected Network: %s\n' %
+                                  net.backend_id)

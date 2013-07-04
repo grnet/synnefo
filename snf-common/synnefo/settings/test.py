@@ -8,7 +8,7 @@ TEST = True
 
 DATABASES = {
     'default': {
-        'ENGINE': 'sqlite3',
+        'ENGINE': 'django.db.backends.sqlite3',
         'NAME': '/tmp/synnefo_test_db.sqlite',
     }
 }
@@ -20,6 +20,25 @@ LOGIN_URL = 'http://host:port/'
 
 
 SOUTH_TESTS_MIGRATE = bool(int(os.environ.get('SOUTH_TESTS_MIGRATE', True)))
+SNF_TEST_USE_POSTGRES = bool(int(os.environ.get('SNF_TEST_USE_POSTGRES',
+                                                False)))
+SNF_TEST_PITHOS_UPDATE_MD5 = bool(int(os.environ.get(
+    'SNF_TEST_PITHOS_UPDATE_MD5', False)))
+
+# override default database
+if SNF_TEST_USE_POSTGRES:
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'pithos',
+        'TEST_NAME': 'test_pithos',
+        'USER': 'postgres',
+        'PORT': '5432',
+    }
+
+if SNF_TEST_PITHOS_UPDATE_MD5:
+    PITHOS_UPDATE_MD5 = True
+else:
+    PITHOS_UPDATE_MD5 = False
 
 ASTAKOS_IM_MODULES = ['local', 'shibboleth']
 

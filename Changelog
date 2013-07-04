@@ -6,13 +6,28 @@ Unified Changelog file for Synnefo versions >= 0.13
 Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
+.. _Changelog-0.14next:
 
-.. _Changelog-0.13next:
-
-v0.13next
+v0.14next
 =========
 
 Released: UNRELEASED
+
+Cyclades
+--------
+
+* Obsolete PUBLIC_USE_POOL setting, since Cyclades manages IP pool for all
+type of networks.
+
+Synnefo-wide
+------------
+
+.. _Changelog-0.14:
+
+v0.14
+=====
+
+Released: Tue Jun 25 14:01:19 EEST 2013
 
 Synnefo-wide
 ------------

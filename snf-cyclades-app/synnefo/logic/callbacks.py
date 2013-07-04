@@ -171,8 +171,10 @@ def update_db(vm, msg, event_time):
         return
 
     nics = msg.get("nics", None)
+    beparams = msg.get("beparams", None)
     backend.process_op_status(vm, event_time, msg['jobId'], msg['operation'],
-                              msg['status'], msg['logmsg'], nics)
+                              msg['status'], msg['logmsg'], nics=nics,
+                              beparams=beparams)
 
     log.debug("Done processing ganeti-op-status msg for vm %s.",
               msg['instance'])

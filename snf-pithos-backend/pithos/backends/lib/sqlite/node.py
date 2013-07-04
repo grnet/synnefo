@@ -1052,7 +1052,7 @@ class Node(DBWorker):
              "n.latest_version = v.serial and "
              "v.serial = a.serial and "
              "a.domain = ? and "
-             "n.path in (%s)" % ','.join(['?' for _ in range(len(paths))))
+             "n.path in (%s)") % ','.join('?' for _ in paths)
         args = [domain]
         map(args.append, paths)
         if cluster != None:

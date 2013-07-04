@@ -30,9 +30,6 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
-
-import json
-
 from django.conf import settings
 from django.db import transaction
 from datetime import datetime
@@ -223,6 +220,8 @@ def process_network_status(back_network, etime, jobid, opcode, status, logmsg):
     back_network.backendopcode = opcode
     back_network.backendlogmsg = logmsg
 
+    network = back_network.network
+
     # Notifications of success change the operating state
     state_for_success = BackendNetwork.OPER_STATE_FROM_OPCODE.get(opcode, None)
     if status == 'success' and state_for_success is not None:
@@ -233,8 +232,9 @@ def process_network_status(back_network, etime, jobid, opcode, status, logmsg):
         back_network.backendtime = etime
 
     if opcode == 'OP_NETWORK_REMOVE':
-        if status == 'success' or (status == 'error' and
-                                   back_network.operstate == 'ERROR'):
+        if (status == 'success' or
+           (status == 'error' and (back_network.operstate == 'ERROR' or
+                                   network.action == 'DESTROY'))):
             back_network.operstate = state_for_success
             back_network.deleted = True
             back_network.backendtime = etime
@@ -243,7 +243,7 @@ def process_network_status(back_network, etime, jobid, opcode, status, logmsg):
         back_network.backendtime = etime
     back_network.save()
     # Also you must update the state of the Network!!
-    update_network_state(back_network.network)
+    update_network_state(network)
 
 
 def update_network_state(network):

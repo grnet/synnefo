@@ -1,7 +1,6 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -56,9 +55,6 @@ For G, the operating state is True if the machine is up, False otherwise.
 
 """
 
-import logging
-import sys
-import itertools
 
 from django.core.management import setup_environ
 try:
@@ -69,17 +65,18 @@ except ImportError:
 setup_environ(settings)
 
 
+import logging
+import itertools
 from datetime import datetime, timedelta
-from collections import namedtuple
 
-from synnefo.db.models import (VirtualMachine, NetworkInterface, Flavor,
+from django.db import transaction
+from synnefo.db.models import (Backend, VirtualMachine, Flavor,
                                pooled_rapi_client)
+from synnefo.logic import utils, backend as backend_mod
 from synnefo.logic.rapi import GanetiApiError
-from synnefo.logic.backend import get_instances
-from synnefo.logic import utils
 
-
-log = logging.getLogger()
+logger = logging.getLogger()
+logging.basicConfig()
 
 try:
     CHECK_INTERVAL = settings.RECONCILIATION_CHECK_INTERVAL
@@ -87,253 +84,234 @@ except AttributeError:
     CHECK_INTERVAL = 60
 
 
-def needs_reconciliation(vm):
-    now = datetime.now()
-    return (now > vm.updated + timedelta(seconds=CHECK_INTERVAL)) or\
-           (now > vm.backendtime + timedelta(seconds=2*CHECK_INTERVAL))
-
-VMState = namedtuple("VMState", ["state", "cpu", "ram", "nics"])
-
-
-def stale_servers_in_db(D, G):
-    idD = set(D.keys())
-    idG = set(G.keys())
-
-    stale = set()
-    for i in idD - idG:
-        if D[i] == 'BUILD':
-            vm = VirtualMachine.objects.get(id=i)
-            if needs_reconciliation(vm):
-                with pooled_rapi_client(vm) as c:
-                    try:
-                        job_status = c.GetJobStatus(vm.backendjobid)['status']
-                        if job_status in ('queued', 'waiting', 'running'):
-                            # Server is still building in Ganeti
-                            continue
-                        else:
-                            c.GetInstance(utils.id_to_instance_name(i))
-                            # Server has just been created in Ganeti
-                            continue
-                    except GanetiApiError:
-                        stale.add(i)
+class BackendReconciler(object):
+    def __init__(self, backend, logger, options=None):
+        self.backend = backend
+        self.log = logger
+        self.client = backend.get_client()
+        if options is None:
+            self.options = {}
         else:
-            stale.add(i)
+            self.options = options
 
-    return stale
+    def close(self):
+        self.backend.put_client(self.client)
 
+    @transaction.commit_on_success
+    def reconcile(self):
+        log = self.log
+        backend = self.backend
+        log.debug("Reconciling backend %s", backend)
 
-def orphan_instances_in_ganeti(D, G):
-    idD = set(D.keys())
-    idG = set(G.keys())
+        self.db_servers = get_database_servers(backend)
+        self.db_servers_keys = set(self.db_servers.keys())
+        log.debug("Got servers info from database.")
 
-    return idG - idD
+        self.gnt_servers = get_ganeti_servers(backend)
+        self.gnt_servers_keys = set(self.gnt_servers.keys())
+        log.debug("Got servers info from Ganeti backend.")
 
+        self.event_time = datetime.now()
 
-def unsynced_operstate(D, G):
-    unsynced = set()
-    idD = set(D.keys())
-    idG = set(G.keys())
+        self.stale_servers = self.reconcile_stale_servers()
+        self.orphan_servers = self.reconcile_orphan_servers()
+        self.unsynced_servers = self.reconcile_unsynced_servers()
+        self.close()
 
-    for i in idD & idG:
-        dbstate = D[i].state
-        gntstate = G[i].state
-        vm_unsynced = (gntstate and dbstate != "STARTED") or\
-            (not gntstate and dbstate not in ('BUILD', 'ERROR', 'STOPPED'))
-        if vm_unsynced:
-            unsynced.add((i, dbstate, gntstate))
-        if not gntstate and dbstate == 'BUILD':
-            vm = VirtualMachine.objects.get(id=i)
-            if needs_reconciliation(vm):
-                with pooled_rapi_client(vm) as c:
-                    try:
-                        job_info = c.GetJobStatus(job_id=vm.backendjobid)
-                        if job_info['status'] == 'success':
-                            unsynced.add((i, dbstate, gntstate))
-                    except GanetiApiError:
-                        pass
+    def get_build_status(self, db_server):
+        job = db_server.backendjobid
+        if job is None:
+            created = db_server.created
+            # Job has not yet been enqueued.
+            if self.event_time < created + timedelta(seconds=60):
+                return "RUNNING"
+            else:
+                return "ERROR"
+        else:
+            updated = db_server.backendtime
+            if self.event_time >= updated + timedelta(seconds=60):
+                try:
+                    job_info = self.client.GetJobStatus(job_id=job)
+                    finalized = ["success", "error", "cancelled"]
+                    if job_info["status"] == "error":
+                        return "ERROR"
+                    elif job_info["status"] not in finalized:
+                        return "RUNNING"
+                    else:
+                        return "FINALIZED"
+                except GanetiApiError:
+                    return "ERROR"
+            else:
+                self.log.debug("Pending build for server '%s'", db_server.id)
+                return "RUNNING"
 
-    return unsynced
+    def reconcile_stale_servers(self):
+        # Detect stale servers
+        stale = []
+        stale_keys = self.db_servers_keys - self.gnt_servers_keys
+        for server_id in stale_keys:
+            db_server = self.db_servers[server_id]
+            if db_server.operstate == "BUILD":
+                build_status = self.get_build_status(db_server)
+                if build_status == "ERROR":
+                    # Special handling of BUILD eerrors
+                    self.reconcile_building_server(db_server)
+                elif build_status != "RUNNING":
+                    stale.append(server_id)
+            else:
+                stale.append(server_id)
 
+        # Report them
+        if stale:
+            self.log.info("Found stale servers %s at backend %s",
+                          ", ".join(map(str, stale)), self.backend)
+        else:
+            self.log.debug("No stale servers at backend %s", self.backend)
 
-def unsynced_flavors(D, G):
-    unsynced = set()
-    idD = set(D.keys())
-    idG = set(G.keys())
+        # Fix them
+        if stale and self.options["fix_stale"]:
+            for server_id in stale:
+                db_server = self.db_servers[server_id]
+                backend_mod.process_op_status(
+                    vm=db_server,
+                    etime=self.event_time,
+                    jobid=-0,
+                    opcode='OP_INSTANCE_REMOVE', status='success',
+                    logmsg='Reconciliation: simulated Ganeti event')
+            self.log.debug("Simulated Ganeti removal for stale servers.")
 
-    for i in idD & idG:
-        if D[i].ram != G[i].ram or D[i].cpu != G[i].cpu:
-            db_flavor = VirtualMachine.objects.get(id=i).flavor
+    def reconcile_orphan_servers(self):
+        orphans = self.gnt_servers_keys - self.db_servers_keys
+        if orphans:
+            self.log.info("Found orphan servers %s at backend %s",
+                          ", ".join(map(str, orphans)), self.backend)
+        else:
+            self.log.debug("No orphan servers at backend %s", self.backend)
+
+        if orphans and self.options["fix_orphans"]:
+            for server_id in orphans:
+                server_name = utils.id_to_instance_name(server_id)
+                self.client.DeleteInstance(server_name)
+            self.log.debug("Issued OP_INSTANCE_REMOVE for orphan servers.")
+
+    def reconcile_unsynced_servers(self):
+        #log = self.log
+        for server_id in self.db_servers_keys & self.gnt_servers_keys:
+            db_server = self.db_servers[server_id]
+            gnt_server = self.gnt_servers[server_id]
+            if db_server.operstate == "BUILD":
+                build_status = self.get_build_status(db_server)
+                if build_status == "RUNNING":
+                    # Do not reconcile building VMs
+                    continue
+                elif build_status == "ERROR":
+                    # Special handling of build errors
+                    self.reconcile_building_server(db_server)
+                    continue
+
+            self.reconcile_unsynced_operstate(server_id, db_server,
+                                              gnt_server)
+            self.reconcile_unsynced_flavor(server_id, db_server,
+                                           gnt_server)
+            self.reconcile_unsynced_nics(server_id, db_server, gnt_server)
+            self.reconcile_unsynced_disks(server_id, db_server, gnt_server)
+
+    def reconcile_building_server(self, db_server):
+        self.log.info("Server '%s' is BUILD in DB, but 'ERROR' in Ganeti.",
+                      db_server.id)
+        if self.options["fix_unsynced"]:
+            fix_opcode = "OP_INSTANCE_CREATE"
+            backend_mod.process_op_status(
+                vm=db_server,
+                etime=self.event_time,
+                jobid=-0,
+                opcode=fix_opcode, status='error',
+                logmsg='Reconciliation: simulated Ganeti event')
+            self.log.debug("Simulated Ganeti error build event for"
+                           " server '%s'", db_server.id)
+
+    def reconcile_unsynced_operstate(self, server_id, db_server, gnt_server):
+        if db_server.operstate != gnt_server["state"]:
+            self.log.info("Server '%s' is '%s' in DB and '%s' in Ganeti.",
+                          server_id, db_server.operstate, gnt_server["state"])
+            if self.options["fix_unsynced"]:
+                fix_opcode = \
+                    "OP_INSTANCE_STARTUP" if gnt_server["state"] == "STARTED"\
+                    else "OP_INSTANCE_SHUTDOWN"
+                backend_mod.process_op_status(
+                    vm=db_server,
+                    etime=self.event_time,
+                    jobid=-0,
+                    opcode=fix_opcode, status='success',
+                    logmsg='Reconciliation: simulated Ganeti event')
+                self.log.debug("Simulated Ganeti state event for server '%s'",
+                               server_id)
+
+    def reconcile_unsynced_flavor(self, server_id, db_server, gnt_server):
+        db_flavor = db_server.flavor
+        gnt_flavor = gnt_server["flavor"]
+        if (db_flavor.ram != gnt_flavor["ram"] or
+            db_flavor.cpu != gnt_flavor["vcpus"]):
             try:
                 gnt_flavor = Flavor.objects.get(
-                                    ram=G[i].ram, cpu=G[i].cpu,
-                                    disk=db_flavor.disk,
-                                    disk_template=db_flavor.disk_template)
+                    ram=gnt_flavor["ram"],
+                    cpu=gnt_flavor["vcpus"],
+                    disk=db_flavor.disk,
+                    disk_template=db_flavor.disk_template)
             except Flavor.DoesNotExist:
-                gnt_flavor = None
-            unsynced.add((i, db_flavor, gnt_flavor))
-    return unsynced
+                self.log.warning("Server '%s' has unknown flavor.", server_id)
+                return
+
+            self.log.info("Server '%s' has flavor '%' in DB and '%s' in"
+                          " Ganeti", server_id, db_flavor, gnt_flavor)
+            if self.options["fix_unsynced_flavors"]:
+                old_state = db_server.operstate
+                opcode = "OP_INSTANCE_SET_PARAMS"
+                beparams = {"vcpus": gnt_flavor.cpu,
+                            "minmem": gnt_flavor.ram,
+                            "maxmem": gnt_flavor.ram}
+                backend_mod.process_op_status(
+                    vm=db_server, etime=self.event_time, jobid=-0,
+                    opcode=opcode, status='success',
+                    beparams=beparams,
+                    logmsg='Reconciliation: simulated Ganeti event')
+                # process_op_status with beparams will set the vmstate to
+                # shutdown. Fix this be returning it to old state
+                vm = VirtualMachine.objects.get(pk=server_id)
+                vm.operstate = old_state
+                vm.save()
+                self.log.debug("Simulated Ganeti flavor event for server '%s'",
+                               server_id)
+
+    def reconcile_unsynced_nics(self, server_id, db_server, gnt_server):
+        db_nics = db_server.nics.order_by("index")
+        gnt_nics = gnt_server["nics"]
+        gnt_nics_parsed = backend_mod.process_ganeti_nics(gnt_nics)
+        if backend_mod.nics_changed(db_nics, gnt_nics_parsed):
+            msg = "Found unsynced NICs for server '%s'.\n\t"\
+                  "DB: %s\n\tGaneti: %s"
+            db_nics_str = ", ".join(map(format_db_nic, db_nics))
+            gnt_nics_str = ", ".join(map(format_gnt_nic, gnt_nics_parsed))
+            self.log.info(msg, server_id, db_nics_str, gnt_nics_str)
+            if self.options["fix_unsynced_nics"]:
+                backend_mod.process_net_status(vm=db_server,
+                                               etime=self.event_time,
+                                               nics=gnt_nics)
+
+    def reconcile_unsynced_disks(self, server_id, db_server, gnt_server):
+        pass
 
 
-def instances_with_build_errors(D, G):
-    failed = set()
-    idD = set(D.keys())
-    idG = set(G.keys())
-
-    for i in idD & idG:
-        if not G[i] and D[i] == 'BUILD':
-            vm = VirtualMachine.objects.get(id=i)
-            if not vm.backendjobid:  # VM has not been enqueued in the backend
-                if datetime.now() > vm.created + timedelta(seconds=120):
-                    # If a job has not been enqueued after 2 minutues, then
-                    # it must be a stale entry..
-                    failed.add(i)
-            elif needs_reconciliation(vm):
-                # Check time to avoid many rapi calls
-                with pooled_rapi_client(vm) as c:
-                    try:
-                        job_info = c.GetJobStatus(job_id=vm.backendjobid)
-                        if job_info['status'] == 'error':
-                            failed.add(i)
-                    except GanetiApiError:
-                        failed.add(i)
-
-    return failed
+def format_db_nic(nic):
+    return "Index: %s IP: %s Network: %s MAC: %s Firewall: %s" % (nic.index,
+           nic.ipv4, nic.network_id, nic.mac, nic.firewall_profile)
 
 
-def get_servers_from_db(backends, with_nics=True):
-    vms = VirtualMachine.objects.filter(deleted=False, backend__in=backends)
-    vm_info = vms.values_list("id", "operstate", "flavor__cpu", "flavor__ram")
-    if with_nics:
-        nics = NetworkInterface.objects.filter(machine__in=vms)\
-                               .order_by("machine")\
-                               .values_list("machine", "index", "mac", "ipv4",
-                                            "network")
-        vm_nics = {}
-        for machine, machine_nics in itertools.groupby(nics,
-                                                       lambda nic: nic[0]):
-            vm_nics[machine] = {}
-            for machine, index, mac, ipv4, network in machine_nics:
-                nic = {'mac':      mac,
-                       'network':  utils.id_to_network_name(network),
-                       'ipv4':     ipv4 if ipv4 != '' else None
-                       }
-                vm_nics[machine][index] = nic
-    servers = dict([(vm_id, VMState(state=state,
-                                    cpu=cpu,
-                                    ram=ram,
-                                    nics=vm_nics.get(vm_id, [])))
-                    for vm_id, state, cpu, ram in vm_info])
-    return servers
+def format_gnt_nic(nic):
+    return "Index: %s IP: %s Network: %s MAC: %s Firewall: %s" %\
+           (nic["index"], nic["ipv4"], nic["network"], nic["mac"],
+            nic["firewall_profile"])
 
-
-def get_instances_from_ganeti(backends):
-    instances = []
-    for backend in backends:
-        instances.append(get_instances(backend))
-    ganeti_instances = reduce(list.__add__, instances, [])
-    snf_instances = {}
-
-    prefix = settings.BACKEND_PREFIX_ID
-    for i in ganeti_instances:
-        if i['name'].startswith(prefix):
-            try:
-                id = utils.id_from_instance_name(i['name'])
-            except Exception:
-                log.error("Ignoring instance with malformed name %s",
-                          i['name'])
-                continue
-
-            if id in snf_instances:
-                log.error("Ignoring instance with duplicate Synnefo id %s",
-                          i['name'])
-                continue
-
-            nics = get_nics_from_instance(i)
-            beparams = i["beparams"]
-            vcpus = beparams["vcpus"]
-            ram = beparams["maxmem"]
-            snf_instances[id] = VMState(state=i["oper_state"],
-                                        cpu=vcpus,
-                                        ram=ram,
-                                        nics=nics)
-
-    return snf_instances
-
-
-#
-# Nics
-#
-def get_nics_from_ganeti(backends):
-    """Get network interfaces for each ganeti instance.
-
-    """
-    instances = []
-    for backend in backends:
-        instances.append(get_instances(backend))
-    instances = reduce(list.__add__, instances, [])
-    prefix = settings.BACKEND_PREFIX_ID
-
-    snf_instances_nics = {}
-    for i in instances:
-        if i['name'].startswith(prefix):
-            try:
-                id = utils.id_from_instance_name(i['name'])
-            except Exception:
-                log.error("Ignoring instance with malformed name %s",
-                          i['name'])
-                continue
-            if id in snf_instances_nics:
-                log.error("Ignoring instance with duplicate Synnefo id %s",
-                          i['name'])
-                continue
-
-            snf_instances_nics[id] = get_nics_from_instance(i)
-
-    return snf_instances_nics
-
-
-def get_nics_from_instance(i):
-    ips = zip(itertools.repeat('ipv4'), i['nic.ips'])
-    macs = zip(itertools.repeat('mac'), i['nic.macs'])
-    networks = zip(itertools.repeat('network'), i['nic.networks'])
-    # modes = zip(itertools.repeat('mode'), i['nic.modes'])
-    # links = zip(itertools.repeat('link'), i['nic.links'])
-    # nics = zip(ips,macs,modes,networks,links)
-    nics = zip(ips, macs, networks)
-    nics = map(lambda x: dict(x), nics)
-    nics = dict(enumerate(nics))
-    return nics
-
-
-def unsynced_nics(DBVMs, GanetiVMs):
-    """Find unsynced network interfaces between DB and Ganeti.
-
-    @ rtype: dict; {instance_id: ganeti_nics}
-    @ return Dictionary containing the instances ids that have unsynced network
-    interfaces between DB and Ganeti and the network interfaces in Ganeti.
-
-    """
-    idD = set(DBVMs.keys())
-    idG = set(GanetiVMs.keys())
-
-    unsynced = {}
-    for i in idD & idG:
-        nicsD = DBVMs[i].nics
-        nicsG = GanetiVMs[i].nics
-        if len(nicsD) != len(nicsG):
-            unsynced[i] = (nicsD, nicsG)
-            continue
-        for index in nicsG.keys():
-            nicD = nicsD[index]
-            nicG = nicsG[index]
-            diff = (nicD['ipv4'] != nicG['ipv4'] or
-                    nicD['mac'] != nicG['mac'] or
-                    nicD['network'] != nicG['network'])
-            if diff:
-                    unsynced[i] = (nicsD, nicsG)
-                    break
-
-    return unsynced
 
 #
 # Networks
@@ -375,10 +353,80 @@ def hanging_networks(backend, GNets):
     return hanging
 
 
-# Only for testing this module individually
-def main():
-    print get_instances_from_ganeti()
+def get_online_backends():
+    return Backend.objects.filter(offline=False)
 
 
-if __name__ == "__main__":
-    sys.exit(main())
+def get_database_servers(backend):
+    servers = backend.virtual_machines.select_related("nics", "flavor")\
+                                      .filter(deleted=False)
+    return dict([(s.id, s) for s in servers])
+
+
+def get_ganeti_servers(backend):
+    gnt_instances = backend_mod.get_instances(backend)
+    # Filter out non-synnefo instances
+    snf_backend_prefix = settings.BACKEND_PREFIX_ID
+    gnt_instances = filter(lambda i: i["name"].startswith(snf_backend_prefix),
+                           gnt_instances)
+    gnt_instances = map(parse_gnt_instance, gnt_instances)
+    return dict([(i["id"], i) for i in gnt_instances if i["id"] is not None])
+
+
+def parse_gnt_instance(instance):
+    try:
+        instance_id = utils.id_from_instance_name(instance['name'])
+    except Exception:
+        logger.error("Ignoring instance with malformed name %s",
+                     instance['name'])
+        return (None, None)
+
+    beparams = instance["beparams"]
+
+    vcpus = beparams["vcpus"]
+    ram = beparams["maxmem"]
+    state = instance["oper_state"] and "STARTED" or "STOPPED"
+
+    return {
+        "id": instance_id,
+        "state": state,  # FIX
+        "updated": datetime.fromtimestamp(instance["mtime"]),
+        "disks": disks_from_instance(instance),
+        "nics": nics_from_instance(instance),
+        "flavor": {"vcpus": vcpus,
+                   "ram": ram},
+        "tags": instance["tags"]
+    }
+
+
+def nics_from_instance(i):
+    ips = zip(itertools.repeat('ip'), i['nic.ips'])
+    macs = zip(itertools.repeat('mac'), i['nic.macs'])
+    networks = zip(itertools.repeat('network'), i['nic.networks'])
+    # modes = zip(itertools.repeat('mode'), i['nic.modes'])
+    # links = zip(itertools.repeat('link'), i['nic.links'])
+    # nics = zip(ips,macs,modes,networks,links)
+    nics = zip(ips, macs, networks)
+    nics = map(lambda x: dict(x), nics)
+    #nics = dict(enumerate(nics))
+    tags = i["tags"]
+    for tag in tags:
+        t = tag.split(":")
+        if t[0:2] == ["synnefo", "network"]:
+            if len(t) != 4:
+                logger.error("Malformed synefo tag %s", tag)
+                continue
+            try:
+                index = int(t[2])
+                nics[index]['firewall'] = t[3]
+            except ValueError:
+                logger.error("Malformed synnefo tag %s", tag)
+            except IndexError:
+                logger.error("Found tag %s for non-existent NIC %d",
+                             tag, index)
+    return nics
+
+
+def disks_from_instance(i):
+    return dict([(index, {"size": size})
+                 for index, size in enumerate(i["disk.sizes"])])

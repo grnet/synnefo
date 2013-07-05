@@ -135,7 +135,9 @@ SHIBBOLETH_MISSING_EPPN = (
 SHIBBOLETH_MISSING_NAME = 'This request is missing the user name.'
 
 SIGN_TERMS = "Please, you need to 'Agree with the terms' before proceeding."
-CAPTCHA_VALIDATION_ERR = "You have not entered the correct words. Please try again."
+CAPTCHA_VALIDATION_ERR = (
+    "You have not entered the correct words. Please try again."
+)
 SUSPENDED_LOCAL_ACC = (
     "This account does not have a local password. "
     "Please try logging in using an external login provider (e.g.: twitter)"
@@ -150,7 +152,7 @@ UNKNOWN_USERS = "Unknown users: %s"
 UNIQUE_EMAIL_IS_ACTIVE_CONSTRAIN_ERR = (
     "More than one account with the same email & 'is_active' field. Error."
 )
-INVALID_ACTIVATION_KEY =  "Invalid activation key."
+INVALID_ACTIVATION_KEY = "Invalid activation key."
 NEW_EMAIL_ADDR_RESERVED = (
     "The new email address you requested is already used by another account. "
     "Please provide a different one."

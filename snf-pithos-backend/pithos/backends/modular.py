@@ -228,6 +228,43 @@ class ModularBackend(BaseBackend):
         self.serials = []
         self.messages = []
 
+    def pre_exec(self):
+        self.wrapper.execute()
+
+    def post_exec(self, success_status=True):
+        if success_status:
+            # send messages produced
+            for m in self.messages:
+                self.queue.send(*m)
+
+            # register serials
+            if self.serials:
+                self.commission_serials.insert_many(
+                    self.serials)
+
+                # commit to ensure that the serials are registered
+                # even if resolve commission fails
+                self.wrapper.commit()
+
+                # start new transaction
+                self.wrapper.execute()
+
+                r = self.astakosclient.resolve_commissions(
+                            token=self.service_token,
+                            accept_serials=self.serials,
+                            reject_serials=[])
+                self.commission_serials.delete_many(
+                    r['accepted'])
+
+            self.wrapper.commit()
+        else:
+            if self.serials:
+                self.astakosclient.resolve_commissions(
+                    token=self.service_token,
+                    accept_serials=[],
+                    reject_serials=self.serials)
+            self.wrapper.rollback()
+
     def close(self):
         self.wrapper.close()
         self.queue.close()

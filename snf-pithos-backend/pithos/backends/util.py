@@ -120,13 +120,18 @@ class PithosBackendPool(ObjectPool):
 
         try:
             fd = conn.connection.connection.fileno()
-            r, w, x = select([fd], (), (), 0)
-            if r:
-                conn.close()
+        except AttributeError:
+            # probably sqlite, assume success
+            pass
+        else:
+            try:
+                r, w, x = select([fd], (), (), 0)
+                if r:
+                    conn.close()
+                    return False
+            except:
+                print_exc()
                 return False
-        except:
-            print_exc()
-            return False
 
         return True
 

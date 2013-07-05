@@ -47,7 +47,6 @@ from synnefo.lib import join_urls
 
 from django.test import TestCase
 from django.utils.http import urlencode
-from django.conf import settings
 
 import django.utils.simplejson as json
 
@@ -91,10 +90,6 @@ TEST_HASH_ALGORITHM = 'sha256'
 
 class PithosAPITest(TestCase):
     def setUp(self):
-        pithos_settings.BACKEND_DB_MODULE = 'pithos.backends.lib.sqlalchemy'
-        pithos_settings.BACKEND_DB_CONNECTION = django_to_sqlalchemy()
-        pithos_settings.BACKEND_POOL_SIZE = 1
-
         # Override default block size to spead up tests
         pithos_settings.BACKEND_BLOCK_SIZE = TEST_BLOCK_SIZE
         pithos_settings.BACKEND_HASH_ALGORITHM = TEST_HASH_ALGORITHM
@@ -457,33 +452,6 @@ class AssertUUidInvariant(object):
         assert('x-object-uuid' in self.map)
         uuid = map['x-object-uuid']
         assert(uuid == self.uuid)
-
-
-django_sqlalchemy_engines = {
-    'django.db.backends.postgresql_psycopg2': 'postgresql+psycopg2',
-    'django.db.backends.postgresql': 'postgresql',
-    'django.db.backends.mysql': '',
-    'django.db.backends.sqlite3': 'mssql',
-    'django.db.backends.oracle': 'oracle'}
-
-
-def django_to_sqlalchemy():
-    """Convert the django default database to sqlalchemy connection string"""
-    # TODO support for more complex configuration
-    db = settings.DATABASES['default']
-    name = db.get('TEST_NAME', 'test_%s' % db['NAME'])
-    if db['ENGINE'] == 'django.db.backends.sqlite3':
-        db.get('TEST_NAME', db['NAME'])
-        return 'sqlite:///%s' % name
-    else:
-        d = dict(scheme=django_sqlalchemy_engines.get(db['ENGINE']),
-                 user=db['USER'],
-                 pwd=db['PASSWORD'],
-                 host=db['HOST'].lower(),
-                 port=int(db['PORT']) if db['PORT'] != '' else '',
-                 name=name)
-        return '%(scheme)s://%(user)s:%(pwd)s@%(host)s:%(port)s/%(name)s' % d
-
 
 def test_concurrently(times=2):
     """

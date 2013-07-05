@@ -863,7 +863,7 @@ class ModularBackend(BaseBackend):
         if src_version_id is None:
             src_version_id = pre_version_id
         self._put_metadata_duplicate(
-            src_version_id, dest_version_id, domain, meta, replace_meta)
+            src_version_id, dest_version_id, domain, node, meta, replace_meta)
 
         del_size = self._apply_versioning(account, container, pre_version_id,
                                           update_statistics_ancestors_depth=1)
@@ -1277,19 +1277,23 @@ class ModularBackend(BaseBackend):
         dest_version_id, mtime = self.node.version_create(
             node, hash, size, type, src_version_id, user, uuid, checksum,
             cluster, update_statistics_ancestors_depth)
+
+        self.node.attribute_unset_is_latest(node, dest_version_id)
+
         return pre_version_id, dest_version_id
 
-    def _put_metadata_duplicate(self, src_version_id, dest_version_id, domain, meta, replace=False):
+    def _put_metadata_duplicate(self, src_version_id, dest_version_id, domain,
+                                node, meta, replace=False):
         if src_version_id is not None:
             self.node.attribute_copy(src_version_id, dest_version_id)
         if not replace:
             self.node.attribute_del(dest_version_id, domain, (
                 k for k, v in meta.iteritems() if v == ''))
-            self.node.attribute_set(dest_version_id, domain, (
+            self.node.attribute_set(dest_version_id, domain, node, (
                 (k, v) for k, v in meta.iteritems() if v != ''))
         else:
             self.node.attribute_del(dest_version_id, domain)
-            self.node.attribute_set(dest_version_id, domain, ((
+            self.node.attribute_set(dest_version_id, domain, node, ((
                 k, v) for k, v in meta.iteritems()))
 
     def _put_metadata(self, user, node, domain, meta, replace=False,
@@ -1300,7 +1304,7 @@ class ModularBackend(BaseBackend):
             user, node,
             update_statistics_ancestors_depth=update_statistics_ancestors_depth)
         self._put_metadata_duplicate(
-            src_version_id, dest_version_id, domain, meta, replace)
+            src_version_id, dest_version_id, domain, node, meta, replace)
         return src_version_id, dest_version_id
 
     def _list_limits(self, listing, marker, limit):

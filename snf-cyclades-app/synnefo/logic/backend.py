@@ -520,8 +520,11 @@ def create_instance(vm, nics, flavor, image):
                       " ACTIVE in backend %s." % (network, backend)
                 raise Exception(msg)
             else:
-                depend_jobs.append(create_network(network, backend,
-                                                  connect=True))
+                jobs = create_network(network, backend, connect=True)
+                if isinstance(jobs, list):
+                    depend_jobs.extend(jobs)
+                else:
+                    depend_jobs.append(jobs)
     kw["depends"] = [[job, ["success", "error", "canceled"]]
                      for job in depend_jobs]
 

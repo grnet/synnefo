@@ -573,7 +573,6 @@ def join_project(project_id, request_user):
     except IOError:
         membership = new_membership(project, request_user)
 
-    auto_accepted = False
     join_policy = project.application.member_join_policy
     if (join_policy == AUTO_ACCEPT_POLICY and (
             not project.violates_members_limit(adding=1))):
@@ -581,12 +580,11 @@ def join_project(project_id, request_user):
         qh_sync_user(request_user)
         logger.info("User %s joined %s." %
                     (request_user.log_display, project))
-        auto_accepted = True
     else:
         membership_request_notify(project, membership.person)
         logger.info("User %s requested to join %s." %
                     (request_user.log_display, project))
-    return auto_accepted
+    return membership
 
 
 MEMBERSHIP_ACTION_CHECKS = {

@@ -464,7 +464,7 @@ def image_to_dict(image_url, meta, permissions):
             # Keep only those in plankton meta
             if key in PLANKTON_META:
                 if key == "properties":
-                    val = json.loads(val)
+                    image[key] = json.loads(val)
                 elif key == "created_at":
                     # created timestamp is return in 'created_at' field
                     pass

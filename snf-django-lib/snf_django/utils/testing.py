@@ -116,6 +116,8 @@ def with_settings(settings, prefix='', **override):
         return inner
     return wrapper
 
+serial = 0
+
 
 @contextmanager
 def astakos_user(user):
@@ -131,9 +133,39 @@ def astakos_user(user):
         get_token.return_value = "DummyToken"
         with patch('astakosclient.AstakosClient.get_user_info') as m:
             m.return_value = {"uuid": user}
-            yield
+            with patch('astakosclient.AstakosClient.get_quotas') as m2:
+                m2.return_value = {
+                    "system": {
+                        "pithos.diskspace": {
+                            "usage": 0,
+                            "limit": 1073741824,  # 1GB
+                            "pending": 0
+                        }
+                    }
+                }
+                with patch('astakosclient.AstakosClient.issue_one_commission') as m3:
+                    serials = []
+                    append = serials.append
 
-serial = 0
+                    def get_serial(*args, **kwargs):
+                        global serial
+                        serial += 1
+                        append(serial)
+                        return serial
+
+                    m3.side_effect = get_serial
+                    with patch('astakosclient.AstakosClient.resolve_commissions') as m4:
+                        m4.return_value = {'accepted': serials,
+                                           'rejected': [],
+                                           'failed': []}
+                        with patch('astakosclient.AstakosClient.get_usernames') as m5:
+
+                            def get_usernames(*args, **kwargs):
+                                uuids = args[-1]
+                                return dict((uuid, uuid) for uuid in uuids)
+
+                            m5.side_effect = get_usernames
+                            yield
 
 
 @contextmanager

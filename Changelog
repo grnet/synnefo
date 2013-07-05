@@ -19,8 +19,18 @@ Cyclades
 * Obsolete PUBLIC_USE_POOL setting, since Cyclades manages IP pool for all
 type of networks.
 
+Pithos
+------
+
+* Refactor metadata schema (table attributes) in Pithos DB to speedup current
+objects by domain attribute. This is used by Plankton for listing VM images.
+
+* Enforce container-level atomicity in (most) Pithos API calls.
+
 Synnefo-wide
 ------------
+
+* Integrate Pithos tests in continuous integration.
 
 .. _Changelog-0.14:
 

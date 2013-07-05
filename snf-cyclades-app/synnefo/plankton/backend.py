@@ -119,6 +119,21 @@ def handle_backend_exceptions(func):
     return wrapper
 
 
+def commit_on_success(func):
+    def wrapper(self, *args, **kwargs):
+        backend = self.backend
+        backend.pre_exec()
+        try:
+            ret = func(self, *args, **kwargs)
+        except:
+            backend.post_exec(False)
+            raise
+        else:
+            backend.post_exec(True)
+        return ret
+    return wrapper
+
+
 class ImageBackend(object):
     """A wrapper arround the pithos backend to simplify image handling."""
 
@@ -135,6 +150,7 @@ class ImageBackend(object):
         self.backend.close()
 
     @handle_backend_exceptions
+    @commit_on_success
     def get_image(self, image_uuid):
         """Retrieve information about an image."""
         image_url = self._get_image_url(image_uuid)
@@ -216,6 +232,7 @@ class ImageBackend(object):
                      self.user, image_url, permissions)
 
     @handle_backend_exceptions
+    @commit_on_success
     def unregister(self, image_uuid):
         """Unregister an image.
 
@@ -232,6 +249,7 @@ class ImageBackend(object):
         logger.debug("User '%s' deleted image '%s'", self.user, image_url)
 
     @handle_backend_exceptions
+    @commit_on_success
     def add_user(self, image_uuid, add_user):
         """Add a user as an image member.
 
@@ -248,6 +266,7 @@ class ImageBackend(object):
         self._update_permissions(image_url, permissions)
 
     @handle_backend_exceptions
+    @commit_on_success
     def remove_user(self, image_uuid, remove_user):
         """Remove the user from image members.
 
@@ -267,6 +286,7 @@ class ImageBackend(object):
         self._update_permissions(image_url, permissions)
 
     @handle_backend_exceptions
+    @commit_on_success
     def replace_users(self, image_uuid, replace_users):
         """Replace image members.
 
@@ -284,6 +304,7 @@ class ImageBackend(object):
         self._update_permissions(image_url, permissions)
 
     @handle_backend_exceptions
+    @commit_on_success
     def list_users(self, image_uuid):
         """List the image members.
 
@@ -297,6 +318,7 @@ class ImageBackend(object):
         return [user for user in permissions.get('read', []) if user != '*']
 
     @handle_backend_exceptions
+    @commit_on_success
     def update_metadata(self, image_uuid, metadata):
         """Update Image metadata."""
         image_url = self._get_image_url(image_uuid)
@@ -317,9 +339,11 @@ class ImageBackend(object):
         meta.update(**metadata)
 
         self._update_meta(image_url, meta)
-        return self.get_image(image_uuid)
+        image_url = self._get_image_url(image_uuid)
+        return self._get_image(image_url)
 
     @handle_backend_exceptions
+    @commit_on_success
     def register(self, name, image_url, metadata):
         # Validate that metadata are allowed
         if "id" in metadata:
@@ -404,16 +428,19 @@ class ImageBackend(object):
         images.sort(key=key, reverse=reverse)
         return images
 
+    @commit_on_success
     def list_images(self, filters=None, params=None):
         return self._list_images(user=self.user, filters=filters,
                                  params=params)
 
+    @commit_on_success
     def list_shared_images(self, member, filters=None, params=None):
         images = self._list_images(user=self.user, filters=filters,
                                    params=params)
         is_shared = lambda img: not img["is_public"] and img["owner"] == member
         return filter(is_shared, images)
 
+    @commit_on_success
     def list_public_images(self, filters=None, params=None):
         images = self._list_images(user=None, filters=filters, params=params)
         return filter(lambda img: img["is_public"], images)

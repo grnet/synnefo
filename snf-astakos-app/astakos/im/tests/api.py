@@ -423,9 +423,9 @@ class TokensApiTest(TestCase):
 
     def test_authenticate(self):
         client = Client()
+        url = reverse('astakos.api.tokens.authenticate')
 
         # Check not allowed method
-        url = reverse('astakos.api.tokens.authenticate')
         r = client.get(url, post_data={})
         self.assertEqual(r.status_code, 400)
 
@@ -442,7 +442,6 @@ class TokensApiTest(TestCase):
         self.assertTrue('serviceCatalog' in body.get('access'))
 
         # Check unsupported xml input
-        url = reverse('astakos.api.tokens.authenticate')
         post_data = """
             <?xml version="1.0" encoding="UTF-8"?>
                 <auth xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -458,7 +457,6 @@ class TokensApiTest(TestCase):
                          "Unsupported Content-type: 'application/xml'")
 
         # Check malformed request: missing password
-        url = reverse('astakos.api.tokens.authenticate')
         post_data = """{"auth":{"passwordCredentials":{"username":"%s"},
                                 "tenantName":"%s"}}""" % (
             self.user1.uuid, self.user1.uuid)
@@ -469,7 +467,6 @@ class TokensApiTest(TestCase):
                         startswith('Malformed request'))
 
         # Check malformed request: missing username
-        url = reverse('astakos.api.tokens.authenticate')
         post_data = """{"auth":{"passwordCredentials":{"password":"%s"},
                                 "tenantName":"%s"}}""" % (
             self.user1.auth_token, self.user1.uuid)
@@ -480,7 +477,6 @@ class TokensApiTest(TestCase):
                         startswith('Malformed request'))
 
         # Check invalid pass
-        url = reverse('astakos.api.tokens.authenticate')
         post_data = """{"auth":{"passwordCredentials":{"username":"%s",
                                                        "password":"%s"},
                                 "tenantName":"%s"}}""" % (
@@ -492,7 +488,6 @@ class TokensApiTest(TestCase):
                          'Invalid token')
 
         # Check inconsistent pass
-        url = reverse('astakos.api.tokens.authenticate')
         post_data = """{"auth":{"passwordCredentials":{"username":"%s",
                                                        "password":"%s"},
                                 "tenantName":"%s"}}""" % (
@@ -504,14 +499,12 @@ class TokensApiTest(TestCase):
                          'Invalid credentials')
 
         # Check invalid json data
-        url = reverse('astakos.api.tokens.authenticate')
         r = client.post(url, "not json", content_type='application/json')
         self.assertEqual(r.status_code, 400)
         body = json.loads(r.content)
         self.assertEqual(body['badRequest']['message'], 'Invalid JSON data')
 
         # Check auth with token
-        url = reverse('astakos.api.tokens.authenticate')
         post_data = """{"auth":{"token": {"id":"%s"},
                         "tenantName":"%s"}}""" % (
             self.user1.auth_token, self.user1.uuid)
@@ -524,7 +517,6 @@ class TokensApiTest(TestCase):
             self.fail(e)
 
         # Check malformed request: missing token
-        url = reverse('astakos.api.tokens.authenticate')
         post_data = """{"auth":{"auth_token":{"id":"%s"},
                                 "tenantName":"%s"}}""" % (
             self.user1.auth_token, self.user1.uuid)
@@ -535,7 +527,6 @@ class TokensApiTest(TestCase):
                         startswith('Malformed request'))
 
         # Check bad request: inconsistent tenant
-        url = reverse('astakos.api.tokens.authenticate')
         post_data = """{"auth":{"token":{"id":"%s"},
                                 "tenantName":"%s"}}""" % (
             self.user1.auth_token, self.user2.uuid)
@@ -546,7 +537,6 @@ class TokensApiTest(TestCase):
                          'Not conforming tenantName')
 
         # Check bad request: inconsistent tenant
-        url = reverse('astakos.api.tokens.authenticate')
         post_data = """{"auth":{"token":{"id":"%s"},
                                 "tenantName":""}}""" % (
             self.user1.auth_token)
@@ -554,7 +544,6 @@ class TokensApiTest(TestCase):
         self.assertEqual(r.status_code, 200)
 
         # Check successful json response
-        url = reverse('astakos.api.tokens.authenticate')
         post_data = """{"auth":{"passwordCredentials":{"username":"%s",
                                                        "password":"%s"},
                                 "tenantName":"%s"}}""" % (
@@ -579,7 +568,6 @@ class TokensApiTest(TestCase):
         self.assertEqual(len(service_catalog), 3)
 
         # Check successful xml response
-        url = reverse('astakos.api.tokens.authenticate')
         headers = {'HTTP_ACCEPT': 'application/xml'}
         post_data = """{"auth":{"passwordCredentials":{"username":"%s",
                                                        "password":"%s"},
@@ -612,6 +600,6 @@ class WrongPathAPITest(TestCase):
         response = self.client.get(path)
         self.assertEqual(response.status_code, 400)
         try:
-            error = json.loads(response.content)
+            json.loads(response.content)
         except ValueError:
             self.assertTrue(False)

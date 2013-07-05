@@ -31,10 +31,10 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from pithos.api.util import get_backend, split_container_object_string
-
+from pithos.api.util import (
+    get_backend, split_container_object_string, Checksum, NoChecksum
+)
 import re
-import hashlib
 import os
 
 
@@ -307,18 +307,22 @@ class ManageAccounts():
         return self.backend._lookup_account(account, create=True)
 
     def create_update_object(self, account, container, name, content_type,
-                             data, meta=None, permissions=None, request_user=None):
+                             data, meta=None, permissions=None,
+                             request_user=None,
+                             checksum_compute_class=NoChecksum):
         meta = meta or {}
         permissions = permissions or {}
-        md5 = hashlib.md5()
+
+        assert checksum_compute_class in (NoChecksum, Checksum), 'Invalid checksum_compute_class'
+        checksum_compute = checksum_compute_class()
         size = 0
         hashmap = []
         for block_data in data_read_iterator(data, self.backend.block_size):
             size += len(block_data)
             hashmap.append(self.backend.put_block(block_data))
-            md5.update(block_data)
+            checksum_compute.update(block_data)
 
-        checksum = md5.hexdigest().lower()
+        checksum = checksum_compute.hexdigest()
 
         request_user = request_user or account
         return self.backend.update_object_hashmap(request_user, account,

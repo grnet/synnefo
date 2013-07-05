@@ -318,7 +318,7 @@ def resize(vm, flavor):
 
     log.info("Resizing VM from flavor '%s' to '%s", old_flavor, flavor)
     commission_info = {"cyclades.cpu": flavor.cpu - old_flavor.cpu,
-                       "cyclades.ram": flavor.ram - old_flavor.ram}
+                       "cyclades.ram": 1048576 * (flavor.ram - old_flavor.ram)}
     # Save serial to VM, since it is needed by server_command decorator
     vm.serial = quotas.issue_commission(user=vm.userid,
                                         source=quotas.DEFAULT_SOURCE,

@@ -58,13 +58,15 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  ASTAKOS_BASE_URL,
                                  BACKEND_ACCOUNT_QUOTA, BACKEND_CONTAINER_QUOTA,
                                  BACKEND_VERSIONING,
-                                 BACKEND_FREE_VERSIONING, BACKEND_POOL_SIZE,
+                                 BACKEND_FREE_VERSIONING,
+                                 BACKEND_POOL_ENABLED, BACKEND_POOL_SIZE,
                                  BACKEND_BLOCK_SIZE, BACKEND_HASH_ALGORITHM,
                                  RADOS_STORAGE, RADOS_POOL_BLOCKS,
                                  RADOS_POOL_MAPS, TRANSLATE_UUIDS,
                                  PUBLIC_URL_SECURITY, PUBLIC_URL_ALPHABET,
                                  COOKIE_NAME, BASE_HOST, UPDATE_MD5)
 from pithos.api.resources import resources
+from pithos.backends import connect_backend
 from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
                                   VersionNotExists)
 
@@ -991,33 +993,38 @@ else:
     BLOCK_PARAMS = {'mappool': None,
                     'blockpool': None, }
 
+BACKEND_KWARGS = dict(
+    db_module=BACKEND_DB_MODULE,
+    db_connection=BACKEND_DB_CONNECTION,
+    block_module=BACKEND_BLOCK_MODULE,
+    block_path=BACKEND_BLOCK_PATH,
+    block_umask=BACKEND_BLOCK_UMASK,
+    block_size=BACKEND_BLOCK_SIZE,
+    hash_algorithm=BACKEND_HASH_ALGORITHM,
+    queue_module=BACKEND_QUEUE_MODULE,
+    queue_hosts=BACKEND_QUEUE_HOSTS,
+    queue_exchange=BACKEND_QUEUE_EXCHANGE,
+    astakos_url=ASTAKOS_BASE_URL,
+    service_token=SERVICE_TOKEN,
+    astakosclient_poolsize=ASTAKOSCLIENT_POOLSIZE,
+    free_versioning=BACKEND_FREE_VERSIONING,
+    block_params=BLOCK_PARAMS,
+    public_url_security=PUBLIC_URL_SECURITY,
+    public_url_alphabet=PUBLIC_URL_ALPHABET,
+    account_quota_policy=BACKEND_ACCOUNT_QUOTA,
+    container_quota_policy=BACKEND_CONTAINER_QUOTA,
+    container_versioning_policy=BACKEND_VERSIONING)
 
-_pithos_backend_pool = PithosBackendPool(
-        size=BACKEND_POOL_SIZE,
-        db_module=BACKEND_DB_MODULE,
-        db_connection=BACKEND_DB_CONNECTION,
-        block_module=BACKEND_BLOCK_MODULE,
-        block_path=BACKEND_BLOCK_PATH,
-        block_umask=BACKEND_BLOCK_UMASK,
-        block_size=BACKEND_BLOCK_SIZE,
-        hash_algorithm=BACKEND_HASH_ALGORITHM,
-        queue_module=BACKEND_QUEUE_MODULE,
-        queue_hosts=BACKEND_QUEUE_HOSTS,
-        queue_exchange=BACKEND_QUEUE_EXCHANGE,
-        astakos_url=ASTAKOS_BASE_URL,
-        service_token=SERVICE_TOKEN,
-        astakosclient_poolsize=ASTAKOSCLIENT_POOLSIZE,
-        free_versioning=BACKEND_FREE_VERSIONING,
-        block_params=BLOCK_PARAMS,
-        public_url_security=PUBLIC_URL_SECURITY,
-        public_url_alphabet=PUBLIC_URL_ALPHABET,
-        account_quota_policy=BACKEND_ACCOUNT_QUOTA,
-        container_quota_policy=BACKEND_CONTAINER_QUOTA,
-        container_versioning_policy=BACKEND_VERSIONING)
+_pithos_backend_pool = PithosBackendPool(size=BACKEND_POOL_SIZE,
+                                         **BACKEND_KWARGS)
 
 
 def get_backend():
-    backend = _pithos_backend_pool.pool_get()
+    if BACKEND_POOL_ENABLED:
+        backend = _pithos_backend_pool.pool_get()
+    else:
+        backend = connect_backend(**BACKEND_KWARGS)
+    backend.serials = []
     backend.messages = []
     return backend
 

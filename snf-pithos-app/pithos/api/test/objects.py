@@ -422,7 +422,7 @@ class ObjectGet(PithosAPITest):
             r = self.get(url, HTTP_IF_UNMODIFIED_SINCE=t)
             self.assertEqual(r.status_code, 412)
 
-        # modify account: update account meta
+        # modify account: update object meta
         _time.sleep(1)
         self.update_object_meta(cname, oname, {'foo': 'bar'})
 

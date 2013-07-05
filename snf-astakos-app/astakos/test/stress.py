@@ -47,11 +47,10 @@ os.environ['SYNNEFO_SETTINGS_DIR'] = path + '/settings'
 os.environ['DJANGO_SETTINGS_MODULE'] = 'synnefo.settings'
 
 from astakos.im.models import AstakosUser
-from astakos.im.functions import get_related_project_id
+from astakos.im.functions import get_related_project_id, ProjectError
 from astakos.im import quotas
 from views import submit, approve, join, leave
 from snf_django.lib.db.transaction import commit_on_success_strict
-from django.core.exceptions import PermissionDenied
 
 USERS = {}
 PROJECTS = {}
@@ -125,7 +124,7 @@ def submit_and_approve(name, user_id, prec, repeat, prefix=""):
                         % (prefix, now, prec))
             app_id = submit(name, user_id, prec)
             prec = app_id
-        except PermissionDenied as e:
+        except ProjectError as e:
             logger.info('Limit reached')
         except Exception as e:
             logger.exception(e)
@@ -167,7 +166,7 @@ def join_and_leave(proj_id, user_id, repeat, prefix=""):
             logger.info('%s%s: user %s joining project %s'
                         % (prefix, now, user_id, proj_id))
             join(proj_id, user_id)
-        except PermissionDenied as e:
+        except ProjectError as e:
             logger.info('Membership already exists')
         except Exception as e:
             logger.exception(e)
@@ -177,7 +176,7 @@ def join_and_leave(proj_id, user_id, repeat, prefix=""):
             logger.info('%s%s: user %s leaving project %s'
                         % (prefix, now, user_id, proj_id))
             leave(proj_id, user_id)
-        except IOError as e:
+        except ProjectError as e:
             logger.info('No such membership')
         except Exception as e:
             logger.exception(e)

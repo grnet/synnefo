@@ -44,7 +44,6 @@ from django.utils.safestring import mark_safe
 from django.utils.encoding import smart_str
 from django.db import transaction
 from django.core import validators
-from django.core.exceptions import PermissionDenied
 
 from synnefo_branding.utils import render_to_string
 from synnefo.lib import join_urls
@@ -53,7 +52,7 @@ from astakos.im.models import AstakosUser, EmailChange, Invitation, Resource, \
 from astakos.im import presentation
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
 from astakos.im.functions import send_change_email, submit_application, \
-    accept_membership_project_checks
+    accept_membership_project_checks, ProjectError
 
 from astakos.im.util import reserved_verified_email, model_to_dict
 from astakos.im import auth_providers
@@ -969,7 +968,7 @@ class AddProjectMembersForm(forms.Form):
     def clean(self):
         try:
             accept_membership_project_checks(self.project, self.request_user)
-        except PermissionDenied, e:
+        except ProjectError as e:
             raise forms.ValidationError(e)
 
         q = self.cleaned_data.get('q') or ''

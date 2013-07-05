@@ -63,7 +63,7 @@ from astakos.im.functions import check_pending_app_quota, accept_membership, \
     reject_membership, remove_membership, cancel_membership, leave_project, \
     join_project, enroll_member, can_join_request, can_leave_request, \
     get_related_project_id, approve_application, \
-    deny_application, cancel_application, dismiss_application
+    deny_application, cancel_application, dismiss_application, ProjectError
 from astakos.im import settings
 from astakos.im.util import redirect_back
 from astakos.im.views.util import render_response, _create_object, \
@@ -135,7 +135,7 @@ def create_app_object(request, extra_context=None):
             form_class=ProjectApplicationForm,
             msg=_("The %(verbose_name)s has been received and "
                   "is under consideration."))
-    except (IOError, PermissionDenied) as e:
+    except ProjectError as e:
         messages.error(request, e)
 
 
@@ -187,7 +187,7 @@ def _project_app_cancel(request, application_id):
         application_id = int(application_id)
         chain_id = get_related_project_id(application_id)
         cancel_application(application_id, request.user)
-    except (IOError, PermissionDenied), e:
+    except ProjectError as e:
         messages.error(request, e)
 
     else:
@@ -265,7 +265,7 @@ def update_app_object(request, object_id, extra_context=None):
             form_class=ProjectApplicationForm,
             msg=_("The %(verbose_name)s has been received and is under "
                   "consideration."))
-    except (IOError, PermissionDenied) as e:
+    except ProjectError as e:
         messages.error(request, e)
 
 
@@ -292,7 +292,7 @@ def addmembers(request, chain_id, addmembers_form):
                                         u,
                                         request_user=request.user),
                 addmembers_form.valid_users)
-        except (IOError, PermissionDenied), e:
+        except ProjectError as e:
             messages.error(request, e)
 
 
@@ -475,7 +475,7 @@ def _project_join(request, chain_id):
         else:
             m = _(astakos_messages.USER_JOIN_REQUEST_SUBMITTED)
         messages.success(request, m)
-    except (IOError, PermissionDenied), e:
+    except ProjectError as e:
         messages.error(request, e)
 
 
@@ -504,7 +504,7 @@ def _project_leave(request, memb_id):
         else:
             m = _(astakos_messages.USER_LEAVE_REQUEST_SUBMITTED)
         messages.success(request, m)
-    except (IOError, PermissionDenied), e:
+    except ProjectError as e:
         messages.error(request, e)
 
 
@@ -529,7 +529,7 @@ def _project_cancel_member(request, memb_id):
         cancel_membership(memb_id, request.user)
         m = _(astakos_messages.USER_REQUEST_CANCELLED)
         messages.success(request, m)
-    except (IOError, PermissionDenied), e:
+    except ProjectError as e:
         messages.error(request, e)
 
 
@@ -549,7 +549,7 @@ def _project_accept_member(request, memb_id):
     try:
         memb_id = int(memb_id)
         m = accept_membership(memb_id, request.user)
-    except (IOError, PermissionDenied), e:
+    except ProjectError as e:
         messages.error(request, e)
 
     else:
@@ -574,7 +574,7 @@ def _project_remove_member(request, memb_id):
     try:
         memb_id = int(memb_id)
         m = remove_membership(memb_id, request.user)
-    except (IOError, PermissionDenied), e:
+    except ProjectError as e:
         messages.error(request, e)
     else:
         email = escape(m.person.email)
@@ -598,7 +598,7 @@ def _project_reject_member(request, memb_id):
     try:
         memb_id = int(memb_id)
         m = reject_membership(memb_id, request.user)
-    except (IOError, PermissionDenied), e:
+    except ProjectError as e:
         messages.error(request, e)
     else:
         email = escape(m.person.email)

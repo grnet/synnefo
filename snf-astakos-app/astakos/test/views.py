@@ -33,11 +33,11 @@
 
 from datetime import datetime, timedelta
 
-from django.core.exceptions import PermissionDenied
 from astakos.im.models import AstakosUser, ProjectApplication
 from astakos.im.functions import (join_project, leave_project,
                                   submit_application, approve_application,
-                                  get_user_by_id, check_pending_app_quota)
+                                  get_user_by_id, check_pending_app_quota,
+                                  ProjectForbidden)
 from snf_django.lib.db.transaction import commit_on_success_strict
 
 
@@ -64,7 +64,7 @@ def submit(name, user_id, prec):
 
     ok, limit = check_pending_app_quota(owner, precursor=precursor)
     if not ok:
-        raise PermissionDenied('Limit %s reached', limit)
+        raise ProjectForbidden('Limit %s reached', limit)
 
     resource_policies = [('cyclades.network.private', 5)]
     data = {'owner': owner,

@@ -33,7 +33,6 @@
 
 from django.contrib import messages
 from django.contrib.auth.views import redirect_to_login
-from django.core.exceptions import PermissionDenied
 from django.core.xheaders import populate_xheaders
 from django.http import HttpResponse
 from django.shortcuts import redirect
@@ -86,7 +85,6 @@ def render_response(template, tab=None, status=200, context_instance=None,
     return response
 
 
-@commit_on_success_strict()
 def _create_object(request, model=None, template_name=None,
                    template_loader=template_loader, extra_context=None,
                    post_save_redirect=None, login_required=False,
@@ -95,55 +93,47 @@ def _create_object(request, model=None, template_name=None,
     Based of django.views.generic.create_update.create_object which displays a
     summary page before creating the object.
     """
-    response = None
 
     if extra_context is None:
         extra_context = {}
     if login_required and not request.user.is_authenticated():
         return redirect_to_login(request.path)
-    try:
 
-        model, form_class = get_model_and_form_class(model, form_class)
-        extra_context['edit'] = 0
-        if request.method == 'POST':
-            form = form_class(request.POST, request.FILES)
-            if form.is_valid():
-                verify = request.GET.get('verify')
-                edit = request.GET.get('edit')
-                if verify == '1':
-                    extra_context['show_form'] = False
-                    extra_context['form_data'] = form.cleaned_data
-                elif edit == '1':
-                    extra_context['show_form'] = True
-                else:
-                    new_object = form.save()
-                    if not msg:
-                        msg = _(
-                            "The %(verbose_name)s was created successfully.")
-                    msg = msg % model._meta.__dict__
-                    messages.success(request, msg, fail_silently=True)
-                    response = redirect(post_save_redirect, new_object)
-        else:
-            form = form_class()
-    except (IOError, PermissionDenied), e:
-        messages.error(request, e)
-        return None
+    model, form_class = get_model_and_form_class(model, form_class)
+    extra_context['edit'] = 0
+    if request.method == 'POST':
+        form = form_class(request.POST, request.FILES)
+        if form.is_valid():
+            verify = request.GET.get('verify')
+            edit = request.GET.get('edit')
+            if verify == '1':
+                extra_context['show_form'] = False
+                extra_context['form_data'] = form.cleaned_data
+            elif edit == '1':
+                extra_context['show_form'] = True
+            else:
+                new_object = form.save()
+                if not msg:
+                    msg = _(
+                        "The %(verbose_name)s was created successfully.")
+                msg = msg % model._meta.__dict__
+                messages.success(request, msg, fail_silently=True)
+                return redirect(post_save_redirect, new_object)
     else:
-        if response is None:
-            # Create the template, context, response
-            if not template_name:
-                template_name = "%s/%s_form.html" % \
-                    (model._meta.app_label, model._meta.object_name.lower())
-            t = template_loader.get_template(template_name)
-            c = RequestContext(request, {
-                'form': form
-            }, context_processors)
-            apply_extra_context(extra_context, c)
-            response = HttpResponse(t.render(c))
-        return response
+        form = form_class()
+
+    # Create the template, context, response
+    if not template_name:
+        template_name = "%s/%s_form.html" % \
+            (model._meta.app_label, model._meta.object_name.lower())
+    t = template_loader.get_template(template_name)
+    c = RequestContext(request, {
+        'form': form
+    }, context_processors)
+    apply_extra_context(extra_context, c)
+    return HttpResponse(t.render(c))
 
 
-@commit_on_success_strict()
 def _update_object(request, model=None, object_id=None, slug=None,
                    slug_field='slug', template_name=None,
                    template_loader=template_loader, extra_context=None,
@@ -154,55 +144,49 @@ def _update_object(request, model=None, object_id=None, slug=None,
     Based of django.views.generic.create_update.update_object which displays a
     summary page before updating the object.
     """
-    response = None
 
     if extra_context is None:
         extra_context = {}
     if login_required and not request.user.is_authenticated():
         return redirect_to_login(request.path)
 
-    try:
-        model, form_class = get_model_and_form_class(model, form_class)
-        obj = lookup_object(model, object_id, slug, slug_field)
+    model, form_class = get_model_and_form_class(model, form_class)
+    obj = lookup_object(model, object_id, slug, slug_field)
 
-        if request.method == 'POST':
-            form = form_class(request.POST, request.FILES, instance=obj)
-            if form.is_valid():
-                verify = request.GET.get('verify')
-                edit = request.GET.get('edit')
-                if verify == '1':
-                    extra_context['show_form'] = False
-                    extra_context['form_data'] = form.cleaned_data
-                elif edit == '1':
-                    extra_context['show_form'] = True
-                else:
-                    obj = form.save()
-                    if not msg:
-                        msg = _(
-                            "The %(verbose_name)s was created successfully.")
-                    msg = msg % model._meta.__dict__
-                    messages.success(request, msg, fail_silently=True)
-                    response = redirect(post_save_redirect, obj)
-        else:
-            form = form_class(instance=obj)
-    except (IOError, PermissionDenied), e:
-        messages.error(request, e)
-        return None
+    if request.method == 'POST':
+        form = form_class(request.POST, request.FILES, instance=obj)
+        if form.is_valid():
+            verify = request.GET.get('verify')
+            edit = request.GET.get('edit')
+            if verify == '1':
+                extra_context['show_form'] = False
+                extra_context['form_data'] = form.cleaned_data
+            elif edit == '1':
+                extra_context['show_form'] = True
+            else:
+                obj = form.save()
+                if not msg:
+                    msg = _(
+                        "The %(verbose_name)s was created successfully.")
+                msg = msg % model._meta.__dict__
+                messages.success(request, msg, fail_silently=True)
+                return redirect(post_save_redirect, obj)
     else:
-        if response is None:
-            if not template_name:
-                template_name = "%s/%s_form.html" % \
-                    (model._meta.app_label, model._meta.object_name.lower())
-            t = template_loader.get_template(template_name)
-            c = RequestContext(request, {
-                'form': form,
-                template_object_name: obj,
-            }, context_processors)
-            apply_extra_context(extra_context, c)
-            response = HttpResponse(t.render(c))
-            populate_xheaders(request, response, model,
-                              getattr(obj, obj._meta.pk.attname))
-        return response
+        form = form_class(instance=obj)
+
+    if not template_name:
+        template_name = "%s/%s_form.html" % \
+            (model._meta.app_label, model._meta.object_name.lower())
+    t = template_loader.get_template(template_name)
+    c = RequestContext(request, {
+        'form': form,
+        template_object_name: obj,
+    }, context_processors)
+    apply_extra_context(extra_context, c)
+    response = HttpResponse(t.render(c))
+    populate_xheaders(request, response, model,
+                      getattr(obj, obj._meta.pk.attname))
+    return response
 
 
 def _resources_catalog(for_project=False, for_usage=False):

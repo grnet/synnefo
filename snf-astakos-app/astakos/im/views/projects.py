@@ -114,14 +114,7 @@ def project_add(request):
 
     response = None
     with ExceptionHandler(request):
-        response = _create_object(
-            request,
-            template_name='im/projects/projectapplication_form.html',
-            extra_context=extra_context,
-            post_save_redirect=reverse('project_list'),
-            form_class=ProjectApplicationForm,
-            msg=_("The %(verbose_name)s has been received and "
-                  "is under consideration."))
+        response = create_app_object(request, extra_context=extra_context)
 
     if response is not None:
         return response
@@ -129,6 +122,21 @@ def project_add(request):
     next = reverse('astakos.im.views.project_list')
     next = restrict_next(next, domain=settings.COOKIE_DOMAIN)
     return redirect(next)
+
+
+@commit_on_success_strict()
+def create_app_object(request, extra_context=None):
+    try:
+        return _create_object(
+            request,
+            template_name='im/projects/projectapplication_form.html',
+            extra_context=extra_context,
+            post_save_redirect=reverse('project_list'),
+            form_class=ProjectApplicationForm,
+            msg=_("The %(verbose_name)s has been received and "
+                  "is under consideration."))
+    except (IOError, PermissionDenied) as e:
+        messages.error(request, e)
 
 
 @require_http_methods(["GET"])
@@ -234,15 +242,8 @@ def project_modify(request, application_id):
 
     response = None
     with ExceptionHandler(request):
-        response = _update_object(
-            request,
-            object_id=application_id,
-            template_name='im/projects/projectapplication_form.html',
-            extra_context=extra_context,
-            post_save_redirect=reverse('project_list'),
-            form_class=ProjectApplicationForm,
-            msg=_("The %(verbose_name)s has been received and is under "
-                  "consideration."))
+        response = update_app_object(request, application_id,
+                                     extra_context=extra_context)
 
     if response is not None:
         return response
@@ -250,6 +251,22 @@ def project_modify(request, application_id):
     next = reverse('astakos.im.views.project_list')
     next = restrict_next(next, domain=settings.COOKIE_DOMAIN)
     return redirect(next)
+
+
+@commit_on_success_strict()
+def update_app_object(request, object_id, extra_context=None):
+    try:
+        return _update_object(
+            request,
+            object_id=object_id,
+            template_name='im/projects/projectapplication_form.html',
+            extra_context=extra_context,
+            post_save_redirect=reverse('project_list'),
+            form_class=ProjectApplicationForm,
+            msg=_("The %(verbose_name)s has been received and is under "
+                  "consideration."))
+    except (IOError, PermissionDenied) as e:
+        messages.error(request, e)
 
 
 @require_http_methods(["GET", "POST"])

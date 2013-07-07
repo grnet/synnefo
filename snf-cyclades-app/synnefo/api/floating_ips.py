@@ -92,8 +92,8 @@ def list_floating_ips(request):
     log.debug("list_floating_ips")
 
     userid = request.user_uniq
-    floating_ips = FloatingIP.objects.filter(userid=userid, deleted=False)\
-                                     .order_by("id")
+    floating_ips = FloatingIP.objects.filter(userid=userid).order_by("id")
+    floating_ips = utils.filter_modified_since(request, objects=floating_ips)
 
     floating_ips = map(ip_to_dict, floating_ips)
 
@@ -231,8 +231,8 @@ def release_floating_ip(request, floating_ip_id):
 @api.api_method(http_method='GET', user_required=True, logger=log,
                 serializations=["json"])
 def list_floating_ip_pools(request):
-    networks = Network.objects.filter(public=True, deleted=False,
-                                      floating_ip_pool=True)
+    networks = Network.objects.filter(public=True, floating_ip_pool=True)
+    networks = utils.filter_modified_since(request, objects=networks)
     pools = [{"name": str(net.id)} for net in networks]
     request.serialization = "json"
     data = json.dumps({"floating_ip_pools": pools})

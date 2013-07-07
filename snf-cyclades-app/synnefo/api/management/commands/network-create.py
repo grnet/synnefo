@@ -234,4 +234,4 @@ class Command(BaseCommand):
             jobs = create_network(network=network, backend=backend,
                                   connect=True)
             self.stdout.write("Successfully issued jobs: %s\n" %
-                              ",".join(jobs))
+                              ",".join(map(str, jobs)))

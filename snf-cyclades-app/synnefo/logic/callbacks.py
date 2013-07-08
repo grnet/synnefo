@@ -91,7 +91,7 @@ def instance_from_msg(func):
             log.error("VM for instance %s with id %d not found in DB.",
                       msg['instance'], vm_id)
         except Network.InvalidBackendIdError, Network.DoesNotExist:
-            log.error("Invalid message", msg)
+            log.error("Invalid message, can not find network. msg: %s", msg)
     return wrapper
 
 

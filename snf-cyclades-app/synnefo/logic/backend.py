@@ -546,10 +546,9 @@ def create_instance(vm, nics, flavor, image):
         'memory': flavor.ram}
 
     kw['osparams'] = {
+        'config_url': vm.config_url,
         # Store image id and format to Ganeti
-        'img_id': 'debian_base-6.0-10-x86_64',
-        'img_passwd': '12345',
-        'img_properties': json.dumps({'OSFAMILY': 'linux', 'ROOT_PARTITION':'1'}),
+        'img_id': image['backend_id'],
         'img_format': image['format']}
 
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS

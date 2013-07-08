@@ -271,11 +271,6 @@
         show: function(view) {
             this.from_view = view || undefined;
             
-            if (this.from_view) {
-                this.$(".previous-view-link").show();
-            } else {
-                this.$(".previous-view-link").hide();
-            }
             if (!this.fetcher) {
               this.fetcher = snf.storage.public_ips.get_fetcher.apply(snf.storage.public_ips, 
                                                         _.clone(this.fetcher_params));
@@ -284,6 +279,14 @@
             this.subview.reset();
             this.subview.update_models();
             views.PublicIPsOverlay.__super__.show.apply(this, arguments);
+
+            if (this.from_view) {
+                this.$(".previous-view-link").show();
+                $(this.subview.el).addClass("from-create");
+            } else {
+                this.$(".previous-view-link").hide();
+                $(this.subview.el).removeClass("from-create");
+            }
         },
         
         init_handlers: function() {

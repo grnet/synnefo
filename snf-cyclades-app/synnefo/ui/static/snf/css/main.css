@@ -6780,6 +6780,11 @@ input.has-errors {
     background-image: url("../images/option-action-connect.png");
 }
 
+.from-create .models-view .item-action.connect,
+.from-create .models-view .item-action.connect:hover {
+    display: none !important;
+}
+
 .models-view .model-list ul li.model-item .item-action.hide {
     background-image: url("../images/minus-8.png");
 }

@@ -242,14 +242,7 @@ def list_servers(request, detail=False):
     log.debug('list_servers detail=%s', detail)
     user_vms = VirtualMachine.objects.filter(userid=request.user_uniq)
 
-    since = utils.isoparse(request.GET.get('changes-since'))
-
-    if since:
-        user_vms = user_vms.filter(updated__gte=since)
-        if not user_vms:
-            return HttpResponse(status=304)
-    else:
-        user_vms = user_vms.filter(deleted=False)
+    user_vms = utils.filter_modified_since(request, objects=user_vms)
 
     servers_dict = [vm_to_dict(server, detail)
                     for server in user_vms.order_by('id')]

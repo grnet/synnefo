@@ -34,6 +34,7 @@
 import datetime
 from dateutil.parser import parse as date_parse
 from django.utils import simplejson as json
+from django.http import HttpResponse
 
 from django.conf import settings
 from snf_django.lib.api import faults
@@ -104,7 +105,8 @@ def get_request_dict(request):
         except ValueError:
             raise faults.BadRequest("Invalid JSON data")
     else:
-        raise faults.BadRequest("Unsupported Content-type: '%s'" % content_type)
+        raise faults.BadRequest("Unsupported Content-type: '%s'" %
+                                content_type)
 
 
 def prefix_pattern(prefix):
@@ -114,3 +116,21 @@ def prefix_pattern(prefix):
         prefix += '/'
     pattern = '^' + prefix
     return pattern
+
+
+def filter_modified_since(request, objects):
+    """Filter DB objects based on 'changes-since' request parameter.
+
+    Parse request for 'changes-since' parameter and get only the DB objects
+    that have been updated after that time. Otherwise, return the non-deleted
+    objects.
+
+    """
+    since = isoparse(request.GET.get("changes-since"))
+    if since:
+        modified_objs = objects.filter(updated__gte=since)
+        if not modified_objs:
+            return HttpResponse(status=304)
+        return modified_objs
+    else:
+        return objects.filter(deleted=False)

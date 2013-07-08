@@ -120,16 +120,9 @@ def list_networks(request, detail=False):
     #                       overLimit (413)
 
     log.debug('list_networks detail=%s', detail)
-    since = utils.isoparse(request.GET.get('changes-since'))
     user_networks = Network.objects.filter(Q(userid=request.user_uniq) |
                                            Q(public=True))
-
-    if since:
-        user_networks = user_networks.filter(updated__gte=since)
-        if not user_networks:
-            return HttpResponse(status=304)
-    else:
-        user_networks = user_networks.filter(deleted=False)
+    user_networks = utils.filter_modified_since(request, objects=user_networks)
 
     networks_dict = [network_to_dict(network, request.user_uniq, detail)
                      for network in user_networks.order_by('id')]

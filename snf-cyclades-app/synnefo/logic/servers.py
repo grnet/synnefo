@@ -142,6 +142,11 @@ def create(userid, name, password, flavor, image, metadata={},
         else:
             transaction.commit()
 
+    if private_networks is None:
+        private_networks = []
+    if floating_ips is None:
+        floating_ips = []
+
     # Fix flavor for archipelago
     disk_template, provider = util.get_flavor_provider(flavor)
     if provider:

@@ -50,7 +50,8 @@ from functools import partial
 astakos_proxy = partial(proxy, proxy_base=BASE_ASTAKOS_PROXY_PATH,
                         target_base=ASTAKOS_BASE_URL)
 
-cyclades_patterns = api_patterns('',
+cyclades_patterns = api_patterns(
+    '',
     (prefix_pattern(VMAPI_PREFIX), include('synnefo.vmapi.urls')),
     (prefix_pattern(PLANKTON_PREFIX), include('synnefo.plankton.urls')),
     (prefix_pattern(COMPUTE_PREFIX), include('synnefo.api.urls')),
@@ -58,7 +59,8 @@ cyclades_patterns = api_patterns('',
     (prefix_pattern(ADMIN_PREFIX), include('synnefo.admin.urls')),
 )
 
-cyclades_patterns += patterns('',
+cyclades_patterns += patterns(
+    '',
     (prefix_pattern(UI_PREFIX), include('synnefo.ui.urls')),
     (prefix_pattern(HELPDESK_PREFIX), include('synnefo.helpdesk.urls')),
 )
@@ -72,7 +74,8 @@ if PROXY_USER_SERVICES:
     astakos_proxy = partial(proxy, proxy_base=BASE_ASTAKOS_PROXY_PATH,
                             target_base=ASTAKOS_BASE_URL)
 
-    proxy_patterns = patterns('', 
+    proxy_patterns = patterns(
+        '',
         (prefix_pattern(ASTAKOS_VIEWS_PREFIX), astakos_proxy),
     )
     proxy_patterns += api_patterns(

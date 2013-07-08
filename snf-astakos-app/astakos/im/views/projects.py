@@ -385,7 +385,8 @@ def common_detail(request, chain_or_app_id, project_view=True,
             'can_leave_request': can_leave_req,
             'members_status_filter': members_status_filter,
             'remaining_memberships_count': remaining_memberships_count,
-            })
+        })
+
 
 @require_http_methods(["GET", "POST"])
 @cookie_fix

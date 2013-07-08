@@ -49,9 +49,12 @@ def retry(func):
                 is_last_attempt = attemps == self.retry
                 if is_last_attempt:
                     raise err
-                if err.status == 401 or err.status == 404:
+                if err.status == 401 or \
+                   err.status == 404 or \
+                   err.status == 413:
                     # In case of Unauthorized response
-                    # or Not Found return immediately
+                    # or Not Found or Request Entity Too Large
+                    # return immediately
                     raise err
                 self.logger.warning("AstakosClient request failed..retrying")
                 attemps += 1

@@ -8,7 +8,7 @@ TEST = True
 
 DATABASES = {
     'default': {
-        'ENGINE': 'sqlite3',
+        'ENGINE': 'django.db.backends.sqlite3',
         'NAME': '/tmp/synnefo_test_db.sqlite',
     }
 }
@@ -20,6 +20,35 @@ LOGIN_URL = 'http://host:port/'
 
 
 SOUTH_TESTS_MIGRATE = bool(int(os.environ.get('SOUTH_TESTS_MIGRATE', True)))
+SNF_TEST_USE_POSTGRES = bool(int(os.environ.get('SNF_TEST_USE_POSTGRES',
+                                                False)))
+SNF_TEST_PITHOS_UPDATE_MD5 = bool(int(os.environ.get(
+    'SNF_TEST_PITHOS_UPDATE_MD5', False)))
+SNF_TEST_PITHOS_SQLITE_MODULE = bool(int(os.environ.get(
+    'SNF_TEST_PITHOS_SQLITE_MODULE', False)))
+
+
+# override default database
+if SNF_TEST_USE_POSTGRES:
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'synnefo_db',
+        'TEST_NAME': 'test_synnefo_db',
+        'USER': 'postgres',
+        'PORT': '5432',
+    }
+    PITHOS_BACKEND_DB_CONNECTION = (
+        'postgresql://%(USER)s@:%(PORT)s/%(TEST_NAME)s' % DATABASES['default'])
+elif SNF_TEST_PITHOS_SQLITE_MODULE:
+    PITHOS_BACKEND_POOL_ENABLED = False
+    PITHOS_BACKEND_DB_MODULE = 'pithos.backends.lib.sqlite'
+    PITHOS_BACKEND_DB_CONNECTION = DATABASES['default']['NAME']
+
+if SNF_TEST_PITHOS_UPDATE_MD5:
+    PITHOS_UPDATE_MD5 = True
+else:
+    PITHOS_UPDATE_MD5 = False
+
 
 ASTAKOS_IM_MODULES = ['local', 'shibboleth']
 

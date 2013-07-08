@@ -183,9 +183,8 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
 
     if status in ["success", "error", "canceled"]:
         # Job is finalized: Handle quotas/commissioning
-        fields = {"nics": nics, "beparams": beparams}
         vm = handle_vm_quotas(vm, job_id=jobid, job_opcode=opcode,
-                              job_status=status, job_fields=fields)
+                              job_status=status, job_fields=job_fields)
         # and clear task fields
         if vm.task_job_id == jobid:
             vm.task = None

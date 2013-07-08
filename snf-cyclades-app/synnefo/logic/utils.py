@@ -162,8 +162,16 @@ def get_action_from_opcode(opcode, job_fields):
         nics = job_fields.get("nics")
         beparams = job_fields.get("beparams")
         if nics:
-            #TODO: check the nic format
-            return "CONNECT" or "DISCONNECT"
+            try:
+                nic_action = nics[0][0]
+                if nic_action == "add":
+                    return "CONNECT"
+                elif nic_action == "remove":
+                    return "DISCONNECT"
+                else:
+                    return None
+            except:
+                return None
         elif beparams:
             return "RESIZE"
         else:

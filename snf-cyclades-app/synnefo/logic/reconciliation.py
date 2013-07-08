@@ -235,13 +235,18 @@ class BackendReconciler(object):
             self.log.info("Server '%s' is '%s' in DB and '%s' in Ganeti.",
                           server_id, db_server.operstate, gnt_server["state"])
             if self.options["fix_unsynced"]:
-                fix_opcode = \
-                    "OP_INSTANCE_STARTUP" if gnt_server["state"] == "STARTED"\
+                # If server is in building state, you will have first to
+                # reconcile it's creation, to avoid wrong quotas
+                if db_server.operstate == "BUILD":
+                    backend_mod.process_op_status(
+                        vm=db_server, etime=self.event_time, jobid=-0,
+                        opcode="OP_INSTANCE_CREATE", status='success',
+                        logmsg='Reconciliation: simulated Ganeti event')
+                fix_opcode = "OP_INSTANCE_STARTUP"\
+                    if gnt_server["state"] == "STARTED"\
                     else "OP_INSTANCE_SHUTDOWN"
                 backend_mod.process_op_status(
-                    vm=db_server,
-                    etime=self.event_time,
-                    jobid=-0,
+                    vm=db_server, etime=self.event_time, jobid=-0,
                     opcode=fix_opcode, status='success',
                     logmsg='Reconciliation: simulated Ganeti event')
                 self.log.debug("Simulated Ganeti state event for server '%s'",
@@ -251,7 +256,7 @@ class BackendReconciler(object):
         db_flavor = db_server.flavor
         gnt_flavor = gnt_server["flavor"]
         if (db_flavor.ram != gnt_flavor["ram"] or
-            db_flavor.cpu != gnt_flavor["vcpus"]):
+           db_flavor.cpu != gnt_flavor["vcpus"]):
             try:
                 gnt_flavor = Flavor.objects.get(
                     ram=gnt_flavor["ram"],

@@ -239,7 +239,7 @@ def get_nics_from_ganeti(backend=None):
 def get_nics_from_instance(i):
     ips = zip(itertools.repeat('ipv4'), i['nic.ips'])
     macs = zip(itertools.repeat('mac'), i['nic.macs'])
-    networks = zip(itertools.repeat('network'), i['nic.networks'])
+    networks = zip(itertools.repeat('network'), i['nic.networks.names'])
     # modes = zip(itertools.repeat('mode'), i['nic.modes'])
     # links = zip(itertools.repeat('link'), i['nic.links'])
     # nics = zip(ips,macs,modes,networks,links)

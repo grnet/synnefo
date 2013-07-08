@@ -111,7 +111,7 @@ def get_instance_nics(instance, logger):
     """
     try:
         client = cli.GetClient()
-        fields = ["nic.networks", "nic.ips", "nic.macs", "nic.modes",
+        fields = ["nic.networks.names", "nic.ips", "nic.macs", "nic.modes",
                   "nic.links", "tags"]
         info = client.QueryInstances([instance], fields, use_locking=False)
         networks, ips, macs, modes, links, tags = info[0]

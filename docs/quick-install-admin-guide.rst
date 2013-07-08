@@ -2092,13 +2092,12 @@ installation. We do this by running:
 
 .. code-block:: console
 
-   $ kamaki config set user.url "https://node1.example.com"
-   $ kamaki config set compute.url "https://node1.example.com/api/v1.1"
-   $ kamaki config set image.url "https://node1.example.com/image"
-   $ kamaki config set file.url "https://node2.example.com/v1"
-   $ kamaki config set token USER_TOKEN
+   $ kamaki config set cloud.default.url \
+       "https://node1.example.com/astakos/identity/v2.0"
+   $ kamaki config set cloud.default.token USER_TOKEN
 
-The USER_TOKEN appears on the user's `Profile` web page on the Astakos Web UI.
+Both the Authentication URL and the USER_TOKEN appear on the user's
+`API access` web page on the Astakos Web UI.
 
 You can see that the new configuration options have been applied correctly,
 either by checking the editable file ``~/.kamakirc`` or by running:

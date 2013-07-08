@@ -1205,7 +1205,9 @@
                 item_cls: views.CreateColumnIPOptionView,
                 empty_msg: 'No IP addresses available. <span><a href="">Create a new IP address.</a></span>',
                 select_first_as_default: true,
-                filter_items: function(model) { return model.get_vm() && model.get('state')},
+                filter_items: function(model) { 
+                  return !(model.get_vm() || model.get('state'))
+                },
                 init_events: function() {
                   var msg = this.$(".empty span a");
                   this.$(".create-ip-address").click(function() {
@@ -1728,6 +1730,9 @@
                 extra['floating_ips'] = _.map(data.addresses, function(ip) { return ip.get('ip') });
                 storage.vms.create(data.name, data.image, data.flavor, 
                                    meta, extra, _.bind(function(data){
+                    _.each(data.addresses, function(ip) {
+                      ip.set({'status': 'connecting'});
+                    });
                     this.close_all();
                     this.password_view.show(data.server.adminPass, 
                                             data.server.id);

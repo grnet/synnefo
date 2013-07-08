@@ -1615,19 +1615,19 @@
     }
 
     models.VM.AVAILABLE_ACTIONS = {
-        'UNKNWON'       : [],
-        'BUILD'         : [],
-        'REBOOT'        : [],
+        'UNKNWON'       : ['destroy'],
+        'BUILD'         : ['destroy'],
+        'REBOOT'        : ['destroy'],
         'STOPPED'       : ['start', 'destroy'],
         'ACTIVE'        : ['shutdown', 'destroy', 'reboot', 'console'],
         'ERROR'         : ['destroy'],
-        'DELETED'       : [],
-        'DESTROY'       : [],
-        'SHUTDOWN'      : [],
-        'START'         : [],
-        'CONNECT'       : [],
-        'DISCONNECT'    : [],
-        'RESIZE'        : []
+        'DELETED'       : ['destroy'],
+        'DESTROY'       : ['destroy'],
+        'SHUTDOWN'      : ['destroy'],
+        'START'         : ['destroy'],
+        'CONNECT'       : ['destroy'],
+        'DISCONNECT'    : ['destroy'],
+        'RESIZE'        : ['destroy']
     }
 
     // api status values

@@ -233,7 +233,7 @@ MEMBER_JOIN_POLICY_CLOSED = 'The Project\'s member join policy is closed.'
 MEMBER_LEAVE_POLICY_CLOSED = 'The project\'s member leave policy is closed.'
 NOT_MEMBERSHIP_REQUEST = 'This is not a valid membership request.'
 NOT_ACCEPTED_MEMBERSHIP = 'This is not an accepted membership.'
-MEMBERSHIP_REQUEST_EXISTS = 'The membership request already exists.'
+MEMBERSHIP_ACCEPTED = 'Membership already exists.'
 NO_APPLICANT = (
     'Project application requires at least one applicant. None found.')
 INVALID_PROJECT_START_DATE = (

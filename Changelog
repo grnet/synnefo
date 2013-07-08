@@ -25,6 +25,7 @@ Astakos
     project, rather than on approval. Its state is dependent on the state
     of its `reference' application (current definition).
 
+  * Improve recording of membership actions.
 
 Cyclades
 --------

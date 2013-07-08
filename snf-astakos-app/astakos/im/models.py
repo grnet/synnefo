@@ -98,6 +98,28 @@ def generate_token():
     return base64.urlsafe_b64encode(s).rstrip('=')
 
 
+def _partition_by(f, l):
+    d = {}
+    for x in l:
+        group = f(x)
+        group_l = d.get(group, [])
+        group_l.append(x)
+        d[group] = group_l
+    return d
+
+
+def first_of_group(f, l):
+    Nothing = type("Nothing", (), {})
+    last_group = Nothing
+    d = {}
+    for x in l:
+        group = f(x)
+        if group != last_group:
+            last_group = group
+            d[group] = x
+    return d
+
+
 class Component(models.Model):
     name = models.CharField(_('Name'), max_length=255, unique=True,
                             db_index=True)
@@ -1862,7 +1884,6 @@ class ProjectMembershipManager(ForUpdateManager):
 class ProjectMembership(models.Model):
 
     person = models.ForeignKey(AstakosUser)
-    request_date = models.DateTimeField(auto_now_add=True)
     project = models.ForeignKey(Project)
 
     REQUESTED = 0
@@ -1870,7 +1891,8 @@ class ProjectMembership(models.Model):
     LEAVE_REQUESTED = 5
     # User deactivation
     USER_SUSPENDED = 10
-
+    REJECTED = 100
+    CANCELLED = 101
     REMOVED = 200
 
     ASSOCIATED_STATES = set([REQUESTED,
@@ -1888,8 +1910,6 @@ class ProjectMembership(models.Model):
 
     state = models.IntegerField(default=REQUESTED,
                                 db_index=True)
-    acceptance_date = models.DateTimeField(null=True, db_index=True)
-    leave_request_date = models.DateTimeField(null=True)
 
     objects = ProjectMembershipManager()
 
@@ -1902,7 +1922,9 @@ class ProjectMembership(models.Model):
         ACCEPTED:        _('Accepted'),
         LEAVE_REQUESTED: _('Leave Requested'),
         USER_SUSPENDED:  _('Suspended'),
-        REMOVED:         _('Pending removal'),
+        REJECTED:        _('Rejected'),
+        CANCELLED:       _('Cancelled'),
+        REMOVED:         _('Removed'),
     }
 
     USER_FRIENDLY_STATE_DISPLAY = {
@@ -1910,7 +1932,9 @@ class ProjectMembership(models.Model):
         ACCEPTED:        _('Accepted member'),
         LEAVE_REQUESTED: _('Requested to leave'),
         USER_SUSPENDED:  _('Suspended member'),
-        REMOVED:         _('Pending removal'),
+        REJECTED:        _('Request rejected'),
+        CANCELLED:       _('Request cancelled'),
+        REMOVED:         _('Removed member'),
     }
 
     def state_display(self):
@@ -1929,22 +1953,34 @@ class ProjectMembership(models.Model):
 
     __repr__ = __str__
 
-    def __init__(self, *args, **kwargs):
-        self.state = self.REQUESTED
-        super(ProjectMembership, self).__init__(*args, **kwargs)
+    def latest_log(self):
+        logs = self.log.all()
+        logs_d = _partition_by(lambda l: l.to_state, logs)
+        for s, s_logs in logs_d.iteritems():
+            logs_d[s] = max(s_logs, key=(lambda l: l.date))
+        return logs_d
 
-    def _set_history_item(self, reason, date=None):
-        if isinstance(reason, basestring):
-            reason = ProjectMembershipHistory.reasons.get(reason, -1)
+    def _log_create(self, from_state, to_state, actor=None, reason=None,
+                    comments=None):
+        now = datetime.now()
+        self.log.create(from_state=from_state, to_state=to_state, date=now,
+                        actor=actor, reason=reason, comments=comments)
 
-        history_item = ProjectMembershipHistory(
-            serial=self.id,
-            person=self.person_id,
-            project=self.project_id,
-            date=date or datetime.now(),
-            reason=reason)
-        history_item.save()
-        serial = history_item.id
+    def set_state(self, to_state, actor=None, reason=None, comments=None):
+        self._log_create(self.state, to_state, actor=actor, reason=reason,
+                         comments=comments)
+        self.state = to_state
+        self.save()
+
+    def can_join(self):
+        return self.state not in self.ASSOCIATED_STATES
+
+    def join(self):
+        if not self.can_join():
+            m = _("%s: attempt to join in state '%s'") % (self, self.state)
+            raise AssertionError(m)
+
+        self.set_state(self.REQUESTED)
 
     def can_accept(self):
         return self.state == self.REQUESTED
@@ -1954,11 +1990,10 @@ class ProjectMembership(models.Model):
             m = _("%s: attempt to accept in state '%s'") % (self, self.state)
             raise AssertionError(m)
 
-        now = datetime.now()
-        self.acceptance_date = now
-        self._set_history_item(reason='ACCEPT', date=now)
-        self.state = self.ACCEPTED
-        self.save()
+        self.set_state(self.ACCEPTED)
+
+    def can_enroll(self):
+        return self.state not in self.ACCEPTED_STATES
 
     def can_leave(self):
         return self.state in self.ACCEPTED_STATES
@@ -1969,9 +2004,7 @@ class ProjectMembership(models.Model):
                 self, self.state)
             raise AssertionError(m)
 
-        self.leave_request_date = datetime.now()
-        self.state = self.LEAVE_REQUESTED
-        self.save()
+        self.set_state(self.LEAVE_REQUESTED)
 
     def can_deny_leave(self):
         return self.state == self.LEAVE_REQUESTED
@@ -1982,9 +2015,7 @@ class ProjectMembership(models.Model):
                 self, self.state)
             raise AssertionError(m)
 
-        self.leave_request_date = None
-        self.state = self.ACCEPTED
-        self.save()
+        self.set_state(self.ACCEPTED)
 
     def can_cancel_leave(self):
         return self.state == self.LEAVE_REQUESTED
@@ -1995,9 +2026,7 @@ class ProjectMembership(models.Model):
                 self, self.state)
             raise AssertionError(m)
 
-        self.leave_request_date = None
-        self.state = self.ACCEPTED
-        self.save()
+        self.set_state(self.ACCEPTED)
 
     def can_remove(self):
         return self.state in self.ACCEPTED_STATES
@@ -2007,8 +2036,7 @@ class ProjectMembership(models.Model):
             m = _("%s: attempt to remove in state '%s'") % (self, self.state)
             raise AssertionError(m)
 
-        self._set_history_item(reason='REMOVE')
-        self.delete()
+        self.set_state(self.REMOVED)
 
     def can_reject(self):
         return self.state == self.REQUESTED
@@ -2018,10 +2046,7 @@ class ProjectMembership(models.Model):
             m = _("%s: attempt to reject in state '%s'") % (self, self.state)
             raise AssertionError(m)
 
-        # rejected requests don't need sync,
-        # because they were never effected
-        self._set_history_item(reason='REJECT')
-        self.delete()
+        self.set_state(self.REJECTED)
 
     def can_cancel(self):
         return self.state == self.REQUESTED
@@ -2031,25 +2056,33 @@ class ProjectMembership(models.Model):
             m = _("%s: attempt to cancel in state '%s'") % (self, self.state)
             raise AssertionError(m)
 
-        # rejected requests don't need sync,
-        # because they were never effected
-        self._set_history_item(reason='CANCEL')
-        self.delete()
+        self.set_state(self.CANCELLED)
 
 
 class Serial(models.Model):
     serial = models.AutoField(primary_key=True)
 
 
-class ProjectMembershipHistory(models.Model):
-    reasons_list = ['ACCEPT', 'REJECT', 'REMOVE']
-    reasons = dict((k, v) for v, k in enumerate(reasons_list))
+class ProjectMembershipLogManager(models.Manager):
+    def last_logs(self, memberships):
+        logs = self.filter(membership__in=memberships).order_by("-date")
+        logs = _partition_by(lambda l: l.membership_id, logs)
 
-    person = models.BigIntegerField()
-    project = models.BigIntegerField()
-    date = models.DateTimeField(auto_now_add=True)
-    reason = models.IntegerField()
-    serial = models.BigIntegerField()
+        for memb_id, m_logs in logs.iteritems():
+            logs[memb_id] = first_of_group(lambda l: l.to_state, m_logs)
+        return logs
+
+
+class ProjectMembershipLog(models.Model):
+    membership = models.ForeignKey(ProjectMembership, related_name="log")
+    from_state = models.IntegerField(null=True)
+    to_state = models.IntegerField()
+    date = models.DateTimeField()
+    actor = models.ForeignKey(AstakosUser, null=True)
+    reason = models.TextField(null=True)
+    comments = models.TextField(null=True)
+
+    objects = ProjectMembershipLogManager()
 
 
 ### SIGNALS ###

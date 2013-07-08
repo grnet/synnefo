@@ -459,13 +459,14 @@ def enroll_member(project_id, user, request_user=None):
     project = get_project_by_id(project_id)
     accept_membership_checks(project, request_user)
 
-    membership, created = ProjectMembership.objects.get_or_create(
-        project=project,
-        person=user)
-
-    if not membership.can_accept():
-        m = _(astakos_messages.NOT_MEMBERSHIP_REQUEST)
-        raise PermissionDenied(m)
+    try:
+        membership = get_membership(project_id, user.id)
+        if not membership.can_enroll():
+            m = _(astakos_messages.MEMBERSHIP_ACCEPTED)
+            raise PermissionDenied(m)
+        membership.join()
+    except IOError:
+        membership = new_membership(project, user)
 
     membership.accept()
     qh_sync_user(user)
@@ -539,7 +540,15 @@ def can_join_request(project, user):
         return False
 
     m = user.get_membership(project)
-    return not(m)
+    if not m:
+        return True
+    return m.can_join()
+
+
+def new_membership(project, user):
+    m = ProjectMembership.objects.create(project=project, person=user)
+    m._log_create(None, ProjectMembership.REQUESTED)
+    return m
 
 
 def join_project(project_id, request_user):
@@ -547,13 +556,14 @@ def join_project(project_id, request_user):
     project = get_project_by_id(project_id)
     join_project_checks(project)
 
-    membership, created = ProjectMembership.objects.get_or_create(
-        project=project,
-        person=request_user)
-
-    if not created:
-        msg = _(astakos_messages.MEMBERSHIP_REQUEST_EXISTS)
-        raise PermissionDenied(msg)
+    try:
+        membership = get_membership(project.id, request_user.id)
+        if not membership.can_join():
+            msg = _(astakos_messages.MEMBERSHIP_REQUEST_EXISTS)
+            raise PermissionDenied(msg)
+        membership.join()
+    except IOError:
+        membership = new_membership(project, request_user)
 
     auto_accepted = False
     join_policy = project.application.member_join_policy

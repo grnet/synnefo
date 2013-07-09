@@ -346,23 +346,48 @@ def get_membership_by_id(memb_id):
         raise ProjectNotFound(m)
 
 
-def checkAllowed(entity, request_user, admin_only=False):
-    if isinstance(entity, Project):
-        application = entity.application
-    elif isinstance(entity, ProjectApplication):
-        application = entity
-    else:
-        m = "%s not a Project nor a ProjectApplication" % (entity,)
-        raise ValueError(m)
+ALLOWED_CHECKS = [
+    (lambda u, a: not u or u.is_project_admin()),
+    (lambda u, a: a.owner == u),
+    (lambda u, a: a.applicant == u),
+    (lambda u, a: a.chain.overall_state() == Project.O_ACTIVE
+     or bool(a.chain.projectmembership_set.any_accepted().filter(person=u))),
+]
 
-    if not request_user or request_user.is_project_admin():
-        return
+ADMIN_LEVEL = 0
+OWNER_LEVEL = 1
+APPLICANT_LEVEL = 2
+ANY_LEVEL = 3
 
-    if not admin_only and application.owner == request_user:
-        return
+
+def _check_yield(b, silent=False):
+    if b:
+        return True
+
+    if silent:
+        return False
 
     m = _(astakos_messages.NOT_ALLOWED)
     raise ProjectForbidden(m)
+
+
+def membership_check_allowed(membership, request_user,
+                             level=OWNER_LEVEL, silent=False):
+    r = project_check_allowed(
+        membership.project, request_user, level, silent=True)
+
+    return _check_yield(r or membership.person == request_user, silent)
+
+
+def project_check_allowed(project, request_user,
+                          level=OWNER_LEVEL, silent=False):
+    return app_check_allowed(project.application, request_user, level, silent)
+
+
+def app_check_allowed(application, request_user,
+                      level=OWNER_LEVEL, silent=False):
+    checks = (f(request_user, application) for f in ALLOWED_CHECKS[:level+1])
+    return _check_yield(any(checks), silent)
 
 
 def checkAlive(project):
@@ -372,7 +397,7 @@ def checkAlive(project):
 
 
 def accept_membership_project_checks(project, request_user):
-    checkAllowed(project, request_user)
+    project_check_allowed(project, request_user)
     checkAlive(project)
 
     join_policy = project.application.member_join_policy
@@ -414,7 +439,7 @@ def reject_membership_checks(membership, request_user):
         raise ProjectConflict(m)
 
     project = membership.project
-    checkAllowed(project, request_user)
+    project_check_allowed(project, request_user)
     checkAlive(project)
 
 
@@ -436,10 +461,7 @@ def cancel_membership_checks(membership, request_user):
         m = _(astakos_messages.NOT_MEMBERSHIP_REQUEST)
         raise ProjectConflict(m)
 
-    if membership.person != request_user:
-        msg = _(astakos_messages.NOT_ALLOWED)
-        raise ProjectForbidden(msg)
-
+    membership_check_allowed(membership, request_user, level=ADMIN_LEVEL)
     project = membership.project
     checkAlive(project)
 
@@ -459,7 +481,7 @@ def remove_membership_checks(membership, request_user=None):
         raise ProjectConflict(m)
 
     project = membership.project
-    checkAllowed(project, request_user)
+    project_check_allowed(project, request_user)
     checkAlive(project)
 
     leave_policy = project.application.member_leave_policy
@@ -513,10 +535,7 @@ def leave_project_checks(membership, request_user):
         m = _(astakos_messages.NOT_ACCEPTED_MEMBERSHIP)
         raise ProjectConflict(m)
 
-    if membership.person != request_user:
-        msg = _(astakos_messages.NOT_ALLOWED)
-        raise ProjectForbidden(msg)
-
+    membership_check_allowed(membership, request_user, level=ADMIN_LEVEL)
     project = membership.project
     checkAlive(project)
 
@@ -649,13 +668,7 @@ def submit_application(owner=None,
     project = None
     if project_id is not None:
         project = get_project_for_update(project_id)
-
-        if (request_user and
-            (not project.application.owner == request_user and
-             not request_user.is_superuser
-             and not request_user.is_project_admin())):
-            m = _(astakos_messages.NOT_ALLOWED)
-            raise ProjectForbidden(m)
+        project_check_allowed(project, request_user, level=APPLICANT_LEVEL)
 
     policies = validate_resource_policies(resources)
 
@@ -744,7 +757,7 @@ def set_resource_policies(application, policies):
 def cancel_application(application_id, request_user=None, reason=""):
     get_project_of_application_for_update(application_id)
     application = get_application(application_id)
-    checkAllowed(application, request_user)
+    app_check_allowed(application, request_user, level=APPLICANT_LEVEL)
 
     if not application.can_cancel():
         m = _(astakos_messages.APPLICATION_CANNOT_CANCEL %
@@ -760,7 +773,7 @@ def cancel_application(application_id, request_user=None, reason=""):
 def dismiss_application(application_id, request_user=None, reason=""):
     get_project_of_application_for_update(application_id)
     application = get_application(application_id)
-    checkAllowed(application, request_user)
+    app_check_allowed(application, request_user, level=APPLICANT_LEVEL)
 
     if not application.can_dismiss():
         m = _(astakos_messages.APPLICATION_CANNOT_DISMISS %
@@ -775,7 +788,7 @@ def deny_application(application_id, request_user=None, reason=""):
     get_project_of_application_for_update(application_id)
     application = get_application(application_id)
 
-    checkAllowed(application, request_user, admin_only=True)
+    app_check_allowed(application, request_user, level=ADMIN_LEVEL)
 
     if not application.can_deny():
         m = _(astakos_messages.APPLICATION_CANNOT_DENY %
@@ -809,7 +822,7 @@ def approve_application(app_id, request_user=None, reason=""):
     project = get_project_of_application_for_update(app_id)
     application = get_application(app_id)
 
-    checkAllowed(application, request_user, admin_only=True)
+    app_check_allowed(application, request_user, level=ADMIN_LEVEL)
 
     if not application.can_approve():
         m = _(astakos_messages.APPLICATION_CANNOT_APPROVE %
@@ -850,7 +863,7 @@ def check_expiration(execute=False):
 
 def terminate(project_id, request_user=None):
     project = get_project_for_update(project_id)
-    checkAllowed(project, request_user, admin_only=True)
+    project_check_allowed(project, request_user, level=ADMIN_LEVEL)
     checkAlive(project)
 
     project.terminate()
@@ -862,7 +875,7 @@ def terminate(project_id, request_user=None):
 
 def suspend(project_id, request_user=None):
     project = get_project_for_update(project_id)
-    checkAllowed(project, request_user, admin_only=True)
+    project_check_allowed(project, request_user, level=ADMIN_LEVEL)
     checkAlive(project)
 
     project.suspend()
@@ -874,7 +887,7 @@ def suspend(project_id, request_user=None):
 
 def resume(project_id, request_user=None):
     project = get_project_for_update(project_id)
-    checkAllowed(project, request_user, admin_only=True)
+    project_check_allowed(project, request_user, level=ADMIN_LEVEL)
 
     if not project.is_suspended:
         m = _(astakos_messages.NOT_SUSPENDED_PROJECT) % project.id

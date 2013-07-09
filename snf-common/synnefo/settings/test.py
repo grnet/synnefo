@@ -10,6 +10,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': '/tmp/synnefo_test_db.sqlite',
+        'TEST_NAME': '/tmp/synnefo_test_db.sqlite',
     }
 }
 
@@ -37,12 +38,9 @@ if SNF_TEST_USE_POSTGRES:
         'USER': 'postgres',
         'PORT': '5432',
     }
-    PITHOS_BACKEND_DB_CONNECTION = (
-        'postgresql://%(USER)s@:%(PORT)s/%(TEST_NAME)s' % DATABASES['default'])
 elif SNF_TEST_PITHOS_SQLITE_MODULE:
     PITHOS_BACKEND_POOL_ENABLED = False
     PITHOS_BACKEND_DB_MODULE = 'pithos.backends.lib.sqlite'
-    PITHOS_BACKEND_DB_CONNECTION = DATABASES['default']['NAME']
 
 if SNF_TEST_PITHOS_UPDATE_MD5:
     PITHOS_UPDATE_MD5 = True

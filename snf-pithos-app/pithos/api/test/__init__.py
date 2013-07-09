@@ -88,6 +88,32 @@ return_codes = (400, 401, 403, 404, 503)
 TEST_BLOCK_SIZE = 1024
 TEST_HASH_ALGORITHM = 'sha256'
 
+BACKEND_DB_CONNECTION = None
+
+
+def django_to_sqlalchemy():
+    """Convert the django default database to sqlalchemy connection string"""
+
+    global BACKEND_DB_CONNECTION
+    if BACKEND_DB_CONNECTION:
+        return BACKEND_DB_CONNECTION
+
+    # TODO support for more complex configuration
+    db = settings.DATABASES['default']
+    name = db.get('TEST_NAME', 'test_%s' % db['NAME'])
+    if db['ENGINE'] == 'django.db.backends.sqlite3':
+        BACKEND_DB_CONNECTION = 'sqlite:///%s' % name
+    else:
+        d = dict(scheme=django_sqlalchemy_engines.get(db['ENGINE']),
+                 user=db['USER'],
+                 pwd=db['PASSWORD'],
+                 host=db['HOST'].lower(),
+                 port=int(db['PORT']) if db['PORT'] != '' else '',
+                 name=name)
+        BACKEND_DB_CONNECTION = (
+            '%(scheme)s://%(user)s:%(pwd)s@%(host)s:%(port)s/%(name)s' % d)
+    return BACKEND_DB_CONNECTION
+
 
 class PithosAPITest(TestCase):
     def setUp(self):
@@ -115,6 +141,11 @@ class PithosAPITest(TestCase):
 
         self._clean_account()
 
+    def _clean_account(self):
+        for c in self.list_containers():
+            self.delete_container_content(c['name'])
+            self.delete_container(c['name'])
+
     def head(self, url, user='user', *args, **kwargs):
         with astakos_user(user):
             response = self.client.head(url, *args, **kwargs)
@@ -141,11 +172,6 @@ class PithosAPITest(TestCase):
             kwargs.setdefault('content_type', 'application/octet-stream')
             response = self.client.put(url, *args, **kwargs)
         return response
-
-    def _clean_account(self):
-        for c in self.list_containers():
-            self.delete_container_content(c['name'])
-            self.delete_container(c['name'])
 
     def update_account_meta(self, meta):
         kwargs = dict(
@@ -466,24 +492,6 @@ django_sqlalchemy_engines = {
     'django.db.backends.mysql': '',
     'django.db.backends.sqlite3': 'mssql',
     'django.db.backends.oracle': 'oracle'}
-
-
-def django_to_sqlalchemy():
-    """Convert the django default database to sqlalchemy connection string"""
-    # TODO support for more complex configuration
-    db = settings.DATABASES['default']
-    name = db.get('TEST_NAME', 'test_%s' % db['NAME'])
-    if db['ENGINE'] == 'django.db.backends.sqlite3':
-        db.get('TEST_NAME', db['NAME'])
-        return 'sqlite:///%s' % name
-    else:
-        d = dict(scheme=django_sqlalchemy_engines.get(db['ENGINE']),
-                 user=db['USER'],
-                 pwd=db['PASSWORD'],
-                 host=db['HOST'].lower(),
-                 port=int(db['PORT']) if db['PORT'] != '' else '',
-                 name=name)
-        return '%(scheme)s://%(user)s:%(pwd)s@%(host)s:%(port)s/%(name)s' % d
 
 
 def test_concurrently(times=2):

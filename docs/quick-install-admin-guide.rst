@@ -533,7 +533,7 @@ uncomment and edit the ``DATABASES`` block to reflect our database:
     DATABASES = {
      'default': {
          # 'postgresql_psycopg2', 'postgresql','mysql', 'sqlite3' or 'oracle'
-         'ENGINE': 'postgresql_psycopg2',
+         'ENGINE': 'django.db.backends.postgresql_psycopg2',
          # ATTENTION: This *must* be the absolute path if using sqlite3.
          # See: http://docs.djangoproject.com/en/dev/ref/settings/#name
          'NAME': 'snf_apps',
@@ -720,7 +720,7 @@ file that looks like this:
     DATABASES = {
      'default': {
          # 'postgresql_psycopg2', 'postgresql','mysql', 'sqlite3' or 'oracle'
-         'ENGINE': 'postgresql_psycopg2',
+         'ENGINE': 'django.db.backends.postgresql_psycopg2',
          'OPTIONS': {'synnefo_poolsize': 8},
 
          # ATTENTION: This *must* be the absolute path if using sqlite3.

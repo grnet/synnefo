@@ -587,7 +587,7 @@ class LocalAuthProvider(AuthProvider):
 class ShibbolethAuthProvider(AuthProvider):
     module = 'shibboleth'
     login_view = 'astakos.im.views.target.shibboleth.login'
-    username_key = 'identifier'
+    username_key = 'provider_info_eppn'
 
     policies = {
         'switch': False

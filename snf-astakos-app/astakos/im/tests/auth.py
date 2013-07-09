@@ -131,13 +131,14 @@ class ShibbolethTests(TestCase):
         # provider info stored
         provider = AstakosUserAuthProvider.objects.get(module="shibboleth")
         self.assertEqual(provider.affiliation, 'Test Affiliation')
-        self.assertEqual(provider.info, {u'email': u'kpap@synnefo.org',
-                                         u'eppn': u'kpapeppn',
-                                         u'name': u'Kostas Papadimitriou'})
+        self.assertEqual(provider.info['email'], u'kpap@synnefo.org')
+        self.assertEqual(provider.info['eppn'], u'kpapeppn')
+        self.assertEqual(provider.info['name'], u'Kostas Papadimitriou')
+        self.assertTrue('headers' in provider.info)
 
         # login (not activated yet)
         client.set_tokens(mail="kpap@synnefo.org", eppn="kpapeppn",
-                          cn="Kostas Papadimitriou", )
+                          cn="Kostas Papadimitriou")
         r = client.get(ui_url("login/shibboleth?"), follow=True)
         self.assertContains(r, 'is pending moderation')
 

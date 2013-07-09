@@ -31,10 +31,10 @@ for component in $TEST_COMPONENTS; do
     if [ "$component" = "astakos" ]; then
         runtest $ASTAKOS_APPS
     elif [ "$component" = "cyclades" ]; then
-        SYNNEFO_EXCLUDE_PACKAGES="$SYNNEFO_EXCLUDE_PACKAGES snf-pithos-app" \
-            runtest $CYCLADES_APPS
+        export SYNNEFO_EXCLUDE_PACKAGES="snf-pithos-app"
+        runtest $CYCLADES_APPS
     elif [ "$component" = "pithos" ]; then
-        SYNNEFO_EXCLUDE_PACKAGES="$SYNNEFO_EXCLUDE_PACKAGES snf-cyclades-app" \
-            runtest $PITHOS_APPS
+        export SYNNEFO_EXCLUDE_PACKAGES="snf-cyclades-app"
+        runtest $PITHOS_APPS
     fi
 done

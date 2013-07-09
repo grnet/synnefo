@@ -34,18 +34,20 @@
 from xfeatures import XFeatures
 from groups import Groups
 from public import Public
+from node import Node
 
 
 READ = 0
 WRITE = 1
 
 
-class Permissions(XFeatures, Groups, Public):
+class Permissions(XFeatures, Groups, Public, Node):
 
     def __init__(self, **params):
         XFeatures.__init__(self, **params)
         Groups.__init__(self, **params)
         Public.__init__(self, **params)
+        Node.__init__(self, **params)
 
     def access_grant(self, path, access, members=()):
         """Grant members with access to path.
@@ -151,8 +153,17 @@ class Permissions(XFeatures, Groups, Public):
                 valid.append(subp + '/')
         return [x for x in valid if self.xfeature_get(x)]
 
-    def access_list_paths(self, member, prefix=None):
-        """Return the list of paths granted to member."""
+    def access_list_paths(self, member, prefix=None, include_owned=False,
+                          include_containers=True):
+        """Return the list of paths granted to member.
+
+        Keyword arguments:
+        prefix -- return only paths starting with prefix (default None)
+        include_owned -- return also paths owned by member (default False)
+        include_containers -- return also container paths owned by member
+                              (default True)
+
+        """
 
         q = ("select distinct path from xfeatures inner join "
              "   (select distinct feature_id, key from xfeaturevals inner join "
@@ -165,7 +176,20 @@ class Permissions(XFeatures, Groups, Public):
             q += " where path like ? escape '\\'"
             p += (self.escape_like(prefix) + '%',)
         self.execute(q, p)
-        return [r[0] for r in self.fetchall()]
+
+        l = [r[0] for r in self.fetchall()]
+        if include_owned:
+            node = self.node_lookup(member)
+            select_containers = "select node from nodes where parent = ? "
+            q = ("select path from nodes where parent in (%s) " %
+                 select_containers)
+            args = [node]
+            if include_containers:
+                q += ("or node in (%s)" % select_containers)
+                args += [node]
+            self.execute(q, args)
+            l += [r[0] for r in self.fetchall() if r[0] not in l]
+        return l
 
     def access_list_shared(self, prefix=''):
         """Return the list of shared paths."""

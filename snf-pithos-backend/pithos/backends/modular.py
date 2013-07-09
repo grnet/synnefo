@@ -1596,7 +1596,8 @@ class ModularBackend(BaseBackend):
 
     @backend_method
     def get_domain_objects(self, domain, user=None):
-        allowed_paths = self.permissions.access_list_paths(user)
+        allowed_paths = self.permissions.access_list_paths(
+            user, include_owned=user is not None, include_containers=False)
         if not allowed_paths:
             return []
         obj_list = self.node.domain_object_list(

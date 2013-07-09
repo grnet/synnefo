@@ -34,7 +34,6 @@
 import datetime
 from dateutil.parser import parse as date_parse
 from django.utils import simplejson as json
-from django.http import HttpResponse
 
 from django.conf import settings
 from snf_django.lib.api import faults
@@ -130,7 +129,7 @@ def filter_modified_since(request, objects):
     if since:
         modified_objs = objects.filter(updated__gte=since)
         if not modified_objs:
-            return HttpResponse(status=304)
+            raise faults.NotModified()
         return modified_objs
     else:
         return objects.filter(deleted=False)

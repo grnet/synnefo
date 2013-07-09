@@ -321,6 +321,17 @@ class ShibbolethTests(TestCase):
         self.assertTrue(user.has_auth_provider('shibboleth'))
         self.assertTrue(user.check_password('111'))
         self.assertTrue(user.has_usable_password())
+
+        # change password via profile form
+        r = client.post(ui_url("profile"), {
+            'old_password': '111',
+            'new_password': '',
+            'new_password2': '',
+            'change_password': 'on',
+        }, follow=False)
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(r.context['profile_form'].is_valid())
+
         self.client.logout()
 
         # now we can login

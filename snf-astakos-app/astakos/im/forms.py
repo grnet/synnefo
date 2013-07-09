@@ -1080,7 +1080,8 @@ class ExtendedProfileForm(ProfileForm):
         password, email = True, True
         profile = super(ExtendedProfileForm, self).is_valid()
         if profile and self.cleaned_data.get('change_password', None):
-
+            self.password_change_form.fields['new_password1'].required = True
+            self.password_change_form.fields['new_password2'].required = True
             password = self.password_change_form.is_valid()
             self.save_extra_forms.append('password')
         if profile and self.cleaned_data.get('change_email'):

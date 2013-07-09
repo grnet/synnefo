@@ -209,6 +209,7 @@
         check_limit: function() {
             var can_create = true;
             var resource = synnefo.storage.quotas.get('cyclades.floating_ip');
+            var pools = synnefo.storage.public_pools.models.length;
             if (!resource) { 
               can_create = true 
             } else {
@@ -219,6 +220,7 @@
               var left = limit - synnefo.storage.public_ips.length;
               this.$(".quotas .available").text(left);
             };
+            if (!pools) { can_create = false }
             if (can_create) {
               this.$(".limit-msg").hide();
               this.$(".top-actions .collection-action").show();
@@ -265,17 +267,24 @@
                                   {is_recurrent: true, update: true}]
             this.$(".previous-view-link").live('click', function(){
                 self.hide();
-            })
+            });
+            this.fetchers_set = false;
         },
 
         show: function(view) {
             this.from_view = view || undefined;
             
-            if (!this.fetcher) {
-              this.fetcher = snf.storage.public_ips.get_fetcher.apply(snf.storage.public_ips, 
+            if (!this.fetchers_set) {
+              this.fetcher_ips = snf.storage.public_ips.get_fetcher.apply(snf.storage.public_ips, 
                                                         _.clone(this.fetcher_params));
+              this.fetcher_pools = snf.storage.public_pools.get_fetcher.apply(snf.storage.public_pools, 
+                                                        _.clone(this.fetcher_params));
+              this.fetchers_set = true;
             }
-            this.fetcher.start();
+
+            this.fetcher_ips.start();
+            this.fetcher_pools.start();
+
             this.subview.reset();
             this.subview.update_models();
             views.PublicIPsOverlay.__super__.show.apply(this, arguments);
@@ -294,7 +303,8 @@
 
         onClose: function() {
             if (this.fetcher) {
-                this.fetcher.stop();
+                this.fetcher_ips.stop();
+                this.fetcher_pools.stop();
             }
             if (this.from_view) {
                 this.hiding = true;

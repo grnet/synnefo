@@ -2488,6 +2488,21 @@
 
     })
     
+    models.PublicPool = models.Model.extend({});
+    models.PublicPools = models.Collection.extend({
+      model: models.PublicPool,
+      path: 'os-floating-ip-pools',
+      api_type: 'compute',
+      noUpdate: true,
+
+      parse: function(data) {
+        return _.map(data.floating_ip_pools, function(pool) {
+          pool.id = pool.name;
+          return pool;
+        });
+      }
+    });
+
     models.PublicIP = models.Model.extend({
         path: 'os-floating-ips',
         has_status: false,
@@ -2708,5 +2723,6 @@
     snf.storage.resources = new models.Resources();
     snf.storage.quotas = new models.Quotas();
     snf.storage.public_ips = new models.PublicIPs();
+    snf.storage.public_pools = new models.PublicPools();
 
 })(this);

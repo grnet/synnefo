@@ -108,9 +108,13 @@ def handle_third_party_signup(request, userid, provider_module,
     provider = auth.get_provider(provider_module, request.user, userid,
                                  **provider_data)
 
+    from_login = request.REQUEST.get('from_login', False)
+    if from_login:
+        messages.error(request, provider.get_invalid_login_msg)
+        return HttpResponseRedirect(reverse('login'))
+
     # user wants to add another third party login method
     if third_party_key:
-        messages.error(request, provider.get_invalid_login_msg)
         return HttpResponseRedirect(reverse('login') + "?key=%s" %
                                     third_party_key)
 

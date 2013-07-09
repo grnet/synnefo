@@ -14,8 +14,9 @@ class Migration(SchemaMigration):
         # Changing field 'Project.id'
         db.alter_column('im_project', 'id', self.gf('django.db.models.fields.BigIntegerField')(primary_key=True, db_column='id'))
 
-        # Removing index on 'Project', fields ['id']
-        db.delete_index('im_project', ['id'])
+        if db.backend_name != 'sqlite3':
+            # Removing index on 'Project', fields ['id']
+            db.delete_index('im_project', ['id'])
     
     
     def backwards(self, orm):

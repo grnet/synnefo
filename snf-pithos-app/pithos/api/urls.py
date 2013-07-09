@@ -48,15 +48,15 @@ pithos_api_patterns = api_patterns(
     'pithos.api.functions',
     (r'^$', 'top_demux'),
     (r'^(?P<v_account>.+?)/(?P<v_container>.+?)/(?P<v_object>.+?)$',
-    'object_demux'),
+     'object_demux'),
     (r'^(?P<v_account>.+?)/(?P<v_container>.+?)/?$',
-    'container_demux'),
+     'container_demux'),
     (r'^(?P<v_account>.+?)/?$', 'account_demux'))
 
 pithos_view_patterns = patterns(
     'pithos.api.views',
     (r'^view/(?P<v_account>.+?)/(?P<v_container>.+?)/(?P<v_object>.+?)$',
-    'object_read'))
+     'object_read'))
 
 pithos_patterns = patterns(
     '',

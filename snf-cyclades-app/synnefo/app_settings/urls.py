@@ -32,15 +32,14 @@
 # or implied, of GRNET S.A.
 
 from django.conf.urls.defaults import *
-from django.conf import settings
 from snf_django.lib.api.proxy import proxy
 from snf_django.lib.api.utils import prefix_pattern
 from snf_django.utils.urls import extend_with_root_redirects
 from snf_django.lib.api.urls import api_patterns
 from synnefo.cyclades_settings import (
-    BASE_URL, BASE_HOST, BASE_PATH, COMPUTE_PREFIX, VMAPI_PREFIX,
+    BASE_PATH, COMPUTE_PREFIX, VMAPI_PREFIX,
     PLANKTON_PREFIX, HELPDESK_PREFIX, UI_PREFIX, ASTAKOS_BASE_URL,
-    USERDATA_PREFIX, ADMIN_PREFIX, ASTAKOS_BASE_PATH, BASE_ASTAKOS_PROXY_PATH,
+    USERDATA_PREFIX, ADMIN_PREFIX, BASE_ASTAKOS_PROXY_PATH,
     ASTAKOS_ACCOUNTS_PREFIX, ASTAKOS_VIEWS_PREFIX, PROXY_USER_SERVICES,
     cyclades_services)
 

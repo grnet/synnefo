@@ -40,15 +40,18 @@ from synnefo_stats.stats_settings import BASE_PATH
 from synnefo_stats.grapher import grapher
 
 graph_types_re = '((cpu|net)-(bar|(ts(-w)?)))'
-stats_v1_patterns = patterns('',
+stats_v1_patterns = patterns(
+    '',
     (r'^(?P<graph_type>%s)/(?P<hostname>[^ /]+)$' % graph_types_re, grapher),
 )
 
-stats_patterns = patterns('',
+stats_patterns = patterns(
+    '',
     (r'^v1.0/', include(stats_v1_patterns)),
     (r'^.*', api_endpoint_not_found),
 )
 
-urlpatterns = patterns('',
+urlpatterns = patterns(
+    '',
     (prefix_pattern(BASE_PATH), include(stats_patterns)),
 )

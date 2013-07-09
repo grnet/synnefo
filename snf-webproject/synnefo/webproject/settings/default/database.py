@@ -8,8 +8,8 @@ DATABASES = {
         # 'sqlite3' or 'oracle'
         'ENGINE': 'sqlite3',
 
-         # ATTENTION: This *must* be the absolute path if using sqlite3.
-         # See: http://docs.djangoproject.com/en/dev/ref/settings/#name
+        # ATTENTION: This *must* be the absolute path if using sqlite3.
+        # See: http://docs.djangoproject.com/en/dev/ref/settings/#name
         'NAME': '/usr/share/synnefo/synnefo_database.sqlite',
 
         'USER': '',                      # Not used with sqlite3.
@@ -29,4 +29,3 @@ DATABASES = {
         #}
     }
 }
-

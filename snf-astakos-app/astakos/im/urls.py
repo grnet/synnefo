@@ -65,8 +65,8 @@ urlpatterns = patterns(
         name='send_activation'),
     url(r'^resources/?$', 'resource_usage', {}, name='resource_usage'),
 
-#    url(r'^billing/?$', 'billing', {}, name='billing'),
-#    url(r'^timeline/?$', 'timeline', {}, name='timeline'),
+    # url(r'^billing/?$', 'billing', {}, name='billing'),
+    # url(r'^timeline/?$', 'timeline', {}, name='timeline'),
 
     url(r'^projects/add/?$', 'project_add', {}, name='project_add'),
     url(r'^projects/?$', 'project_list', {}, name='project_list'),

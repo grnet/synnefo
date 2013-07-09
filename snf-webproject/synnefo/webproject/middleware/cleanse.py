@@ -42,7 +42,8 @@ import re
 HIDDEN_ALL = settings.HIDDEN_COOKIES + settings.HIDDEN_HEADERS
 
 
-def mail_admins_safe(subject, message, fail_silently=False, connection=None):
+def mail_admins_safe(subject, message, fail_silently=False,
+                     connection=None, html_message=None):
     '''
     Wrapper function to cleanse email body from sensitive content before
     sending it

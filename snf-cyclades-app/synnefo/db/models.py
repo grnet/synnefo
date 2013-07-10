@@ -517,12 +517,13 @@ class Network(models.Model):
                               default=None)
     drained = models.BooleanField("Drained", default=False, null=False)
     floating_ip_pool = models.BooleanField('Floating IP Pool', null=False,
-                                          default=False)
+                                           default=False)
     pool = models.OneToOneField('IPPoolTable', related_name='network',
-                default=lambda: IPPoolTable.objects.create(available_map='',
-                                                           reserved_map='',
-                                                           size=0),
-                null=True)
+                                default=lambda: IPPoolTable.objects.create(
+                                                            available_map='',
+                                                            reserved_map='',
+                                                            size=0),
+                                null=True)
     serial = models.ForeignKey(QuotaHolderSerial, related_name='network',
                                null=True)
 
@@ -551,8 +552,8 @@ class Network(models.Model):
     def create_backend_network(self, backend=None):
         """Create corresponding BackendNetwork entries."""
 
-        backends = [backend] if backend\
-                             else Backend.objects.filter(offline=False)
+        backends = [backend] if backend else\
+            Backend.objects.filter(offline=False)
         for backend in backends:
             backend_exists =\
                 BackendNetwork.objects.filter(backend=backend, network=self)\
@@ -560,14 +561,16 @@ class Network(models.Model):
             if not backend_exists:
                 BackendNetwork.objects.create(backend=backend, network=self)
 
-    def get_pool(self):
+    def get_pool(self, with_lock=True):
         if not self.pool_id:
             self.pool = IPPoolTable.objects.create(available_map='',
                                                    reserved_map='',
                                                    size=0)
             self.save()
-        return IPPoolTable.objects.select_for_update().get(id=self.pool_id)\
-                                                      .pool
+        objects = IPPoolTable.objects
+        if with_lock:
+            objects = objects.select_for_update()
+        return objects.get(id=self.pool_id).pool
 
     def reserve_address(self, address):
         pool = self.get_pool()

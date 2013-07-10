@@ -139,8 +139,8 @@ class ServerCommandTest(TestCase):
             try:
                 servers.start(vm)
             except:
-                m.resolve_commissions.assert_called_once_with('', [],
-                                                            [vm.serial.serial])
+                m.resolve_commissions\
+                 .assert_called_once_with('', [], [vm.serial.serial])
 
     def test_task_after(self, mrapi):
         return
@@ -148,29 +148,26 @@ class ServerCommandTest(TestCase):
         mrapi().StartupInstance.return_value = 1
         mrapi().ShutdownInstance.return_value = 2
         mrapi().RebootInstance.return_value = 2
-        with mocked_quotaholder() as m:
+        with mocked_quotaholder():
             vm.task = None
             vm.operstate = "STOPPED"
             servers.start(vm)
             self.assertEqual(vm.task, "START")
             self.assertEqual(vm.task_job_id, 1)
-        with mocked_quotaholder() as m:
+        with mocked_quotaholder():
             vm.task = None
             vm.operstate = "STARTED"
             servers.stop(vm)
             self.assertEqual(vm.task, "STOP")
             self.assertEqual(vm.task_job_id, 2)
-        with mocked_quotaholder() as m:
+        with mocked_quotaholder():
             vm.task = None
             servers.reboot(vm)
             self.assertEqual(vm.task, "REBOOT")
             self.assertEqual(vm.task_job_id, 3)
 
 
-
 ## Test Callbacks
-
-
 @patch('synnefo.lib.amqp.AMQPClient')
 class UpdateDBTest(TestCase):
     def create_msg(self, **kwargs):
@@ -272,9 +269,9 @@ class UpdateDBTest(TestCase):
         fp1 = mfactory.FloatingIPFactory(machine=vm2, network=network)
         fp2 = mfactory.FloatingIPFactory(machine=vm2, network=network)
         mfactory.NetworkInterfaceFactory(machine=vm2, network=network,
-                ipv4=fp1.ipv4)
+                                         ipv4=fp1.ipv4)
         mfactory.NetworkInterfaceFactory(machine=vm2, network=network,
-                ipv4=fp2.ipv4)
+                                         ipv4=fp2.ipv4)
         pool = network.get_pool()
         pool.reserve(fp1.ipv4)
         pool.reserve(fp2.ipv4)
@@ -461,7 +458,7 @@ class UpdateNetTest(TestCase):
     def test_empty_nic(self, client):
         vm = mfactory.VirtualMachineFactory(operstate='ERROR')
         for public in [True, False]:
-            net = mfactory.NetworkFactory(public=public)
+            net = mfactory.NetworkFactory(public=public, subnet6=None)
             msg = self.create_msg(nics=[{'network': net.backend_id}],
                                   instance=vm.backend_vm_id)
             update_db(client, msg)
@@ -481,7 +478,7 @@ class UpdateNetTest(TestCase):
 
     def test_full_nic(self, client):
         vm = mfactory.VirtualMachineFactory(operstate='ERROR')
-        net = mfactory.NetworkFactory(subnet='10.0.0.0/24')
+        net = mfactory.NetworkFactory(subnet='10.0.0.0/24', subnet6=None)
         pool = net.get_pool()
         self.assertTrue(pool.is_available('10.0.0.22'))
         pool.save()
@@ -573,8 +570,8 @@ class UpdateNetworkTest(TestCase):
         """Test network creation when a backend is offline"""
         net = mfactory.NetworkFactory(state='ACTIVE')
         bn1 = mfactory.BackendNetworkFactory(network=net)
-        bn2 = mfactory.BackendNetworkFactory(network=net,
-                                             backend__offline=True)
+        mfactory.BackendNetworkFactory(network=net,
+                                       backend__offline=True)
         msg = self.create_msg(operation='OP_NETWORK_CONNECT',
                               network=net.backend_id,
                               cluster=bn1.backend.clustername)
@@ -889,8 +886,8 @@ class ReconciliationTest(TestCase):
              "nic.networks": [],
              "tags": []}]
         self.reconciler.reconcile()
-        cmrapi.DeleteInstance.assert_called_once_with(
-                "%s22" % settings.BACKEND_PREFIX_ID)
+        cmrapi.DeleteInstance\
+              .assert_called_once_with("%s22" % settings.BACKEND_PREFIX_ID)
 
     def test_unsynced_operstate(self, mrapi):
         vm1 = mfactory.VirtualMachineFactory(backend=self.backend,
@@ -972,3 +969,5 @@ class ReconciliationTest(TestCase):
 
 from synnefo.logic.test.rapi_pool_tests import *
 from synnefo.logic.test.utils_tests import *
+from synnefo.logic.test.networks import *
+from synnefo.logic.test.servers import *

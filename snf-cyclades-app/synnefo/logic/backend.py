@@ -231,7 +231,7 @@ def _process_net_status(vm, etime, nics):
     vm.nics.all().delete()
 
     for nic in ganeti_nics:
-        ipv4 = nic.get('ipv4', '')
+        ipv4 = nic["ipv4"]
         net = nic['network']
         if ipv4:
             net.reserve_address(ipv4)
@@ -257,15 +257,12 @@ def process_ganeti_nics(ganeti_nics):
         net = Network.objects.get(pk=pk)
 
         # Get the new nic info
-        mac = new_nic.get('mac', '')
-        ipv4 = new_nic.get('ip', '')
-        if net.subnet6:
-            ipv6 = mac2eui64(mac, net.subnet6)
-        else:
-            ipv6 = ''
+        mac = new_nic.get('mac')
+        ipv4 = new_nic.get('ip')
+        ipv6 = mac2eui64(mac, net.subnet6) if net.subnet6 is not None else None
 
-        firewall = new_nic.get('firewall', '')
-        firewall_profile = _reverse_tags.get(firewall, '')
+        firewall = new_nic.get('firewall')
+        firewall_profile = _reverse_tags.get(firewall)
         if not firewall_profile and net.public:
             firewall_profile = settings.DEFAULT_FIREWALL_PROFILE
 

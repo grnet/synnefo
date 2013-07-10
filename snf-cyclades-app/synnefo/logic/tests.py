@@ -470,14 +470,14 @@ class UpdateNetTest(TestCase):
             nics = db_vm.nics.all()
             self.assertEqual(len(nics), 1)
             self.assertEqual(nics[0].index, 0)
-            self.assertEqual(nics[0].ipv4, '')
-            self.assertEqual(nics[0].ipv6, '')
-            self.assertEqual(nics[0].mac, '')
+            self.assertEqual(nics[0].ipv4, None)
+            self.assertEqual(nics[0].ipv6, None)
+            self.assertEqual(nics[0].mac, None)
             if public:
                 self.assertEqual(nics[0].firewall_profile,
                                  settings.DEFAULT_FIREWALL_PROFILE)
             else:
-                self.assertEqual(nics[0].firewall_profile, '')
+                self.assertEqual(nics[0].firewall_profile, None)
 
     def test_full_nic(self, client):
         vm = mfactory.VirtualMachineFactory(operstate='ERROR')
@@ -496,7 +496,7 @@ class UpdateNetTest(TestCase):
         self.assertEqual(len(nics), 1)
         self.assertEqual(nics[0].index, 0)
         self.assertEqual(nics[0].ipv4, '10.0.0.22')
-        self.assertEqual(nics[0].ipv6, '')
+        self.assertEqual(nics[0].ipv6, None)
         self.assertEqual(nics[0].mac, 'aa:bb:cc:00:11:22')
         pool = net.get_pool()
         self.assertFalse(pool.is_available('10.0.0.22'))

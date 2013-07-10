@@ -108,8 +108,8 @@ def nic_to_dict(nic):
     d = {'id': util.construct_nic_id(nic),
          'network_id': str(nic.network.id),
          'mac_address': nic.mac,
-         'ipv4': nic.ipv4 if nic.ipv4 else None,
-         'ipv6': nic.ipv6 if nic.ipv6 else None,
+         'ipv4': nic.ipv4,
+         'ipv6': nic.ipv6,
          'OS-EXT-IPS:type': ip_type}
 
     if nic.firewall_profile:

@@ -149,6 +149,9 @@ class Command(BaseCommand):
         dry_run = options["dry_run"]
         name = options['name']
         subnet = options['subnet']
+        gateway = options['gateway']
+        subnet6 = options['subnet6']
+        gateway6 = options['gateway6']
         backend_id = options['backend_id']
         public = options['public']
         flavor = options['flavor']
@@ -160,11 +163,17 @@ class Command(BaseCommand):
         floating_ip_pool = parse_bool(options["floating_ip_pool"])
 
         if not name:
-            raise CommandError("Name is required")
-        if not subnet:
-            raise CommandError("Subnet is required")
+            raise CommandError("name is required")
         if not flavor:
-            raise CommandError("Flavor is required")
+            raise CommandError("flavor is required")
+
+        if (subnet is None) and (subnet6 is None):
+            raise CommandError("subnet or subnet6 is required")
+        if subnet is None and gateway is not None:
+            raise CommandError("Can not use gateway without subnet")
+        if subnet6 is None and gateway6 is not None:
+            raise CommandError("Can not use gateway6 without subnet6")
+
         if public and not (backend_id or floating_ip_pool):
             raise CommandError("backend-id is required")
         if not userid and not public:

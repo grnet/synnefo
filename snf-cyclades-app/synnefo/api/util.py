@@ -231,27 +231,30 @@ def get_floating_ip(user_id, ipv4, for_update=False):
         raise faults.ItemNotFound("Floating IP does not exist.")
 
 
-def validate_network_params(subnet, gateway=None, subnet6=None, gateway6=None):
-    try:
-        # Use strict option to not all subnets with host bits set
-        network = ipaddr.IPv4Network(subnet, strict=True)
-    except ValueError:
-        raise faults.BadRequest("Invalid network IPv4 subnet")
+def validate_network_params(subnet=None, gateway=None, subnet6=None,
+                            gateway6=None):
+    if (subnet is None) and (subnet6 is None):
+        raise faults.BadRequest("subnet or subnet6 is required")
 
-    # Check that network size is allowed!
-    if not validate_network_size(network.prefixlen):
-        raise faults.OverLimit(message="Unsupported network size",
-                               details="Network mask must be in range"
-                                       " (%s, 29]" % MAX_CIDR_BLOCK)
-
-    # Check that gateway belongs to network
-    if gateway:
+    if subnet:
         try:
-            gateway = ipaddr.IPv4Address(gateway)
+            # Use strict option to not all subnets with host bits set
+            network = ipaddr.IPv4Network(subnet, strict=True)
         except ValueError:
-            raise faults.BadRequest("Invalid network IPv4 gateway")
-        if not gateway in network:
-            raise faults.BadRequest("Invalid network IPv4 gateway")
+            raise faults.BadRequest("Invalid network IPv4 subnet")
+
+        # Check that network size is allowed!
+        if not validate_network_size(network.prefixlen):
+            raise faults.OverLimit(message="Unsupported network size",
+                                   details="Network mask must be in range"
+                                           " (%s, 29]" % MAX_CIDR_BLOCK)
+        if gateway:  # Check that gateway belongs to network
+            try:
+                gateway = ipaddr.IPv4Address(gateway)
+            except ValueError:
+                raise faults.BadRequest("Invalid network IPv4 gateway")
+            if not gateway in network:
+                raise faults.BadRequest("Invalid network IPv4 gateway")
 
     if subnet6:
         try:
@@ -292,6 +295,7 @@ def backend_public_networks(backend):
     """
     bnets = BackendNetwork.objects.filter(backend=backend,
                                           network__public=True,
+                                          network__subnet__isnull=False,
                                           network__deleted=False,
                                           network__drained=False)
     return [b.network for b in bnets]

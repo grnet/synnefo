@@ -125,8 +125,8 @@ def server_command(action):
 
 @transaction.commit_manually
 def create(userid, name, password, flavor, image, metadata={},
-           personality=[], network=None, private_networks=None,
-           floating_ips=None, use_backend=None):
+           personality=[], private_networks=None, floating_ips=None,
+           use_backend=None):
     if use_backend is None:
         # Allocate backend to host the server. Commit after allocation to
         # release the locks hold by the backend allocator.
@@ -250,7 +250,7 @@ def create_instance_nics(vm, userid, private_networks=[], floating_ips=[]):
                       " network '%s'" % network_id
                 log.error(msg)
                 raise Exception(msg)
-            if network.dhcp:
+            if network.subnet is not None and network.dhcp:
                 address = util.get_network_free_address(network)
         attachments.append((network, address))
     for address in floating_ips:
@@ -347,7 +347,7 @@ def connect(vm, network):
         raise faults.BuildInProgress('Network not active yet')
 
     address = None
-    if network.dhcp:
+    if network.subnet is not None and network.dhcp:
         # Get a free IP from the address pool.
         address = util.get_network_free_address(network)
 

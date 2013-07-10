@@ -652,6 +652,14 @@ def _create_network(network, backend):
     else:
         conflicts_check = False
 
+    # Use a dummy network subnet for IPv6 only networks. Currently Ganeti does
+    # not support IPv6 only networks. To bypass this limitation, we create the
+    # network with a dummy network subnet, and make Cyclades connect instances
+    # to such networks, with address=None.
+    subnet = network.subnet
+    if subnet is None:
+        subnet = "10.0.0.0/24"
+
     try:
         bn = BackendNetwork.objects.get(network=network, backend=backend)
         mac_prefix = bn.mac_prefix
@@ -661,7 +669,7 @@ def _create_network(network, backend):
 
     with pooled_rapi_client(backend) as client:
         return client.CreateNetwork(network_name=network.backend_id,
-                                    network=network.subnet,
+                                    network=subnet,
                                     network6=network.subnet6,
                                     gateway=network.gateway,
                                     gateway6=network.gateway6,

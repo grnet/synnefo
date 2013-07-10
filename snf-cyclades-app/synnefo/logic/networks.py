@@ -62,23 +62,38 @@ def network_command(action):
 
 
 @transaction.commit_on_success
-def create(user_id, name, flavor, subnet, gateway=None, subnet6=None,
-           gateway6=None, public=False, dhcp=True):
+def create(user_id, name, flavor, subnet=None, gateway=None, subnet6=None,
+           gateway6=None, public=False, dhcp=True, link=None, mac_prefix=None,
+           mode=None, floating_ip_pool=False, tags=None):
     if flavor is None:
         raise faults.BadRequest("Missing request parameter 'type'")
     elif flavor not in Network.FLAVORS.keys():
         raise faults.BadRequest("Invalid network type '%s'" % flavor)
 
+    if mac_prefix is not None and flavor == "MAC_FILTERED":
+        raise faults.BadRequest("Can not override MAC_FILTERED mac-prefix")
+    if link is not None and flavor == "PHYSICAL_VLAN":
+        raise faults.BadRequest("Can not override PHYSICAL_VLAN link")
+
+    if subnet is None and floating_ip_pool:
+        raise faults.BadRequest("IPv6 only networks can not be"
+                                " pools.")
     # Check that network parameters are valid
     util.validate_network_params(subnet, gateway, subnet6, gateway6)
 
     try:
-        mode, link, mac_prefix, tags = util.values_from_flavor(flavor)
+        fmode, flink, fmac_prefix, ftags = util.values_from_flavor(flavor)
     except EmptyPool:
         log.error("Failed to allocate resources for network of type: %s",
                   flavor)
         msg = "Failed to allocate resources for network."
         raise faults.ServiceUnavailable(msg)
+
+    mode = mode or fmode
+    link = link or flink
+    mac_prefix = mac_prefix or fmac_prefix
+    tags = tags or ftags
+
     validate_mac(mac_prefix + "0:00:00:00")
 
     network = Network.objects.create(
@@ -94,6 +109,8 @@ def create(user_id, name, flavor, subnet, gateway=None, subnet6=None,
         link=link,
         mac_prefix=mac_prefix,
         tags=tags,
+        public=public,
+        floating_ip_pool=floating_ip_pool,
         action='CREATE',
         state='ACTIVE')
 

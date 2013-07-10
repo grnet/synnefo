@@ -70,6 +70,7 @@ class Command(BaseCommand):
                     help="Password for the new server")
     )
 
+    @common.convert_api_faults
     def handle(self, *args, **options):
         if args:
             raise CommandError("Command doesn't accept any arguments")

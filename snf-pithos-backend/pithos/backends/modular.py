@@ -228,7 +228,8 @@ class ModularBackend(BaseBackend):
         self.serials = []
         self.messages = []
 
-    def pre_exec(self):
+    def pre_exec(self, lock_container_path=False):
+        self.lock_container_path = lock_container_path
         self.wrapper.execute()
 
     def post_exec(self, success_status=True):

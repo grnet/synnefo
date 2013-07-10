@@ -14,6 +14,7 @@ def update_md5(m):
         return
 
     backend = get_backend()
+    backend.pre_exec()
 
     path = m['value']
     account, container, name = path.split('/', 2)
@@ -32,6 +33,7 @@ def update_md5(m):
     except Exception, e:
         print 'WARNING: Can not update checksum for path "%s" (%s)' % (path, e)
 
+    backend.post_exec()
     backend.close()
 
 

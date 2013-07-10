@@ -1089,8 +1089,7 @@ def api_method(http_method=None, token_required=True, user_required=True,
             try:
                 # Add a PithosBackend as attribute of the request object
                 request.backend = get_backend()
-                request.backend.lock_container_path = lock_container_path
-                request.backend.pre_exec()
+                request.backend.pre_exec(lock_container_path)
 
                 # Many API method expect thet X-Auth-Token in request,token
                 request.token = request.x_auth_token

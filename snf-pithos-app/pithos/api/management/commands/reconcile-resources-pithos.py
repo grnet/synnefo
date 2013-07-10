@@ -70,6 +70,7 @@ class Command(NoArgsCommand):
 
     def handle_noargs(self, **options):
         try:
+            backend.pre_exec()
             qh_result = backend.astakosclient.service_get_quotas(
                 backend.service_token)
 
@@ -142,6 +143,7 @@ class Command(NoArgsCommand):
                             "Reconciling failed because a limit has been "
                             "reached. Use --force to ignore the check.\n")
                         return
+                    self.stdout.write("Fixed unsynced resources\n")
 
             if pending_exists:
                 self.stdout.write(
@@ -150,6 +152,10 @@ class Command(NoArgsCommand):
                 )
             elif not (unsynced or unknown_user_exists):
                 self.stdout.write("Everything in sync.\n")
+        except:
+            backend.post_exec(False)
+        else:
+            backend.post_exec(True)
         finally:
             backend.close()
 

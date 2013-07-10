@@ -228,12 +228,19 @@ def release_floating_ip(request, floating_ip_id):
     return HttpResponse(status=204)
 
 
+def network_to_pool(network):
+    pool = network.get_pool(with_lock=False)
+    return {"name": str(network.id),
+            "size": pool.pool_size,
+            "free": pool.count_available()}
+
+
 @api.api_method(http_method='GET', user_required=True, logger=log,
                 serializations=["json"])
 def list_floating_ip_pools(request):
     networks = Network.objects.filter(public=True, floating_ip_pool=True)
     networks = utils.filter_modified_since(request, objects=networks)
-    pools = [{"name": str(net.id)} for net in networks]
+    pools = map(network_to_pool, networks)
     request.serialization = "json"
     data = json.dumps({"floating_ip_pools": pools})
     request.serialization = "json"

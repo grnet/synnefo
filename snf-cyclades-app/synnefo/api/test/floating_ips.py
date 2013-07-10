@@ -248,14 +248,15 @@ class FloatingIPPoolsAPITest(BaseAPITest):
         self.assertEqual(json.loads(response.content)["floating_ip_pools"], [])
 
     def test_list_pools(self):
-        net = FloatingIPPoolFactory()
+        net = FloatingIPPoolFactory(subnet="192.168.0.0/30",
+                                    gateway="192.168.0.1")
         NetworkFactory(public=True, deleted=True)
         NetworkFactory(public=False, deleted=False)
         NetworkFactory(public=True, deleted=False)
         response = self.get(POOLS_URL)
         self.assertSuccess(response)
         self.assertEqual(json.loads(response.content)["floating_ip_pools"],
-                        [{"name": str(net.id)}])
+                         [{"name": str(net.id), "size": 4, "free": 1}])
 
 
 class FloatingIPActionsTest(BaseAPITest):

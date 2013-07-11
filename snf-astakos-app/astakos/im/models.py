@@ -1924,91 +1924,47 @@ class ProjectMembership(models.Model):
         self.state = to_state
         self.save()
 
-    def can_join(self):
-        return self.state not in self.ASSOCIATED_STATES
+    ACTION_CHECKS = {
+        "join": lambda m: m.state not in m.ASSOCIATED_STATES,
+        "accept": lambda m: m.state == m.REQUESTED,
+        "enroll": lambda m: m.state not in m.ACCEPTED_STATES,
+        "leave": lambda m: m.state in m.ACCEPTED_STATES,
+        "leave_request": lambda m: m.state in m.ACCEPTED_STATES,
+        "deny_leave": lambda m: m.state == m.LEAVE_REQUESTED,
+        "cancel_leave": lambda m: m.state == m.LEAVE_REQUESTED,
+        "remove": lambda m: m.state in m.ACCEPTED_STATES,
+        "reject": lambda m: m.state == m.REQUESTED,
+        "cancel": lambda m: m.state == m.REQUESTED,
+    }
 
-    def join(self):
-        if not self.can_join():
-            m = _("%s: attempt to join in state '%s'") % (self, self.state)
+    ACTION_STATES = {
+        "join":          REQUESTED,
+        "accept":        ACCEPTED,
+        "leave_request": LEAVE_REQUESTED,
+        "deny_leave":    ACCEPTED,
+        "cancel_leave":  ACCEPTED,
+        "remove":        REMOVED,
+        "reject":        REJECTED,
+        "cancel":        CANCELLED,
+    }
+
+    def check_action(self, action):
+        try:
+            check = self.ACTION_CHECKS[action]
+        except KeyError:
+            raise ValueError("No check found for action '%s'" % action)
+        return check(self)
+
+    def perform_action(self, action):
+        if not self.check_action(action):
+            m = _("%s: attempted action '%s' in state '%s'") % (
+                self, action, self.state)
             raise AssertionError(m)
-
-        self.set_state(self.REQUESTED)
-
-    def can_accept(self):
-        return self.state == self.REQUESTED
-
-    def accept(self):
-        if not self.can_accept():
-            m = _("%s: attempt to accept in state '%s'") % (self, self.state)
-            raise AssertionError(m)
-
-        self.set_state(self.ACCEPTED)
-
-    def can_enroll(self):
-        return self.state not in self.ACCEPTED_STATES
-
-    def can_leave(self):
-        return self.state in self.ACCEPTED_STATES
-
-    def leave_request(self):
-        if not self.can_leave():
-            m = _("%s: attempt to request to leave in state '%s'") % (
-                self, self.state)
-            raise AssertionError(m)
-
-        self.set_state(self.LEAVE_REQUESTED)
-
-    def can_deny_leave(self):
-        return self.state == self.LEAVE_REQUESTED
-
-    def leave_request_deny(self):
-        if not self.can_deny_leave():
-            m = _("%s: attempt to deny leave request in state '%s'") % (
-                self, self.state)
-            raise AssertionError(m)
-
-        self.set_state(self.ACCEPTED)
-
-    def can_cancel_leave(self):
-        return self.state == self.LEAVE_REQUESTED
-
-    def leave_request_cancel(self):
-        if not self.can_cancel_leave():
-            m = _("%s: attempt to cancel leave request in state '%s'") % (
-                self, self.state)
-            raise AssertionError(m)
-
-        self.set_state(self.ACCEPTED)
-
-    def can_remove(self):
-        return self.state in self.ACCEPTED_STATES
-
-    def remove(self):
-        if not self.can_remove():
-            m = _("%s: attempt to remove in state '%s'") % (self, self.state)
-            raise AssertionError(m)
-
-        self.set_state(self.REMOVED)
-
-    def can_reject(self):
-        return self.state == self.REQUESTED
-
-    def reject(self):
-        if not self.can_reject():
-            m = _("%s: attempt to reject in state '%s'") % (self, self.state)
-            raise AssertionError(m)
-
-        self.set_state(self.REJECTED)
-
-    def can_cancel(self):
-        return self.state == self.REQUESTED
-
-    def cancel(self):
-        if not self.can_cancel():
-            m = _("%s: attempt to cancel in state '%s'") % (self, self.state)
-            raise AssertionError(m)
-
-        self.set_state(self.CANCELLED)
+        try:
+            s = self.ACTION_STATES[action]
+        except KeyError:
+            raise ValueError("No such action '%s'" % action)
+        return self.set_state(s)
 
 
 class Serial(models.Model):

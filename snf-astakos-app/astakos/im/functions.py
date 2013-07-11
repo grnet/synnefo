@@ -411,7 +411,7 @@ def accept_membership_project_checks(project, request_user):
 
 
 def accept_membership_checks(membership, request_user):
-    if not membership.can_accept():
+    if not membership.check_action("accept"):
         m = _(astakos_messages.NOT_MEMBERSHIP_REQUEST)
         raise ProjectConflict(m)
 
@@ -424,7 +424,7 @@ def accept_membership(memb_id, request_user=None):
     membership = get_membership_by_id(memb_id)
     accept_membership_checks(membership, request_user)
     user = membership.person
-    membership.accept()
+    membership.perform_action("accept")
     qh_sync_user(user)
     logger.info("User %s has been accepted in %s." %
                 (user.log_display, project))
@@ -434,7 +434,7 @@ def accept_membership(memb_id, request_user=None):
 
 
 def reject_membership_checks(membership, request_user):
-    if not membership.can_reject():
+    if not membership.check_action("reject"):
         m = _(astakos_messages.NOT_MEMBERSHIP_REQUEST)
         raise ProjectConflict(m)
 
@@ -448,7 +448,7 @@ def reject_membership(memb_id, request_user=None):
     membership = get_membership_by_id(memb_id)
     reject_membership_checks(membership, request_user)
     user = membership.person
-    membership.reject()
+    membership.perform_action("reject")
     logger.info("Request of user %s for %s has been rejected." %
                 (user.log_display, project))
 
@@ -457,7 +457,7 @@ def reject_membership(memb_id, request_user=None):
 
 
 def cancel_membership_checks(membership, request_user):
-    if not membership.can_cancel():
+    if not membership.check_action("cancel"):
         m = _(astakos_messages.NOT_MEMBERSHIP_REQUEST)
         raise ProjectConflict(m)
 
@@ -470,13 +470,13 @@ def cancel_membership(memb_id, request_user):
     project = get_project_of_membership_for_update(memb_id)
     membership = get_membership_by_id(memb_id)
     cancel_membership_checks(membership, request_user)
-    membership.cancel()
+    membership.perform_action("cancel")
     logger.info("Request of user %s for %s has been cancelled." %
                 (membership.person.log_display, project))
 
 
 def remove_membership_checks(membership, request_user=None):
-    if not membership.can_remove():
+    if not membership.check_action("remove"):
         m = _(astakos_messages.NOT_ACCEPTED_MEMBERSHIP)
         raise ProjectConflict(m)
 
@@ -495,7 +495,7 @@ def remove_membership(memb_id, request_user=None):
     membership = get_membership_by_id(memb_id)
     remove_membership_checks(membership, request_user)
     user = membership.person
-    membership.remove()
+    membership.perform_action("remove")
     qh_sync_user(user)
     logger.info("User %s has been removed from %s." %
                 (user.log_display, project))
@@ -514,14 +514,14 @@ def enroll_member(project_id, user, request_user=None):
 
     try:
         membership = get_membership(project_id, user.id)
-        if not membership.can_enroll():
+        if not membership.check_action("enroll"):
             m = _(astakos_messages.MEMBERSHIP_ACCEPTED)
             raise ProjectConflict(m)
-        membership.join()
+        membership.perform_action("join")
     except ProjectNotFound:
         membership = new_membership(project, user)
 
-    membership.accept()
+    membership.perform_action("accept")
     qh_sync_user(user)
     logger.info("User %s has been enrolled in %s." %
                 (membership.person.log_display, project))
@@ -531,7 +531,7 @@ def enroll_member(project_id, user, request_user=None):
 
 
 def leave_project_checks(membership, request_user):
-    if not membership.can_leave():
+    if not membership.check_action("leave"):
         m = _(astakos_messages.NOT_ACCEPTED_MEMBERSHIP)
         raise ProjectConflict(m)
 
@@ -564,13 +564,13 @@ def leave_project(memb_id, request_user):
     auto_accepted = False
     leave_policy = project.application.member_leave_policy
     if leave_policy == AUTO_ACCEPT_POLICY:
-        membership.remove()
+        membership.perform_action("remove")
         qh_sync_user(request_user)
         logger.info("User %s has left %s." %
                     (request_user.log_display, project))
         auto_accepted = True
     else:
-        membership.leave_request()
+        membership.perform_action("leave_request")
         logger.info("User %s requested to leave %s." %
                     (request_user.log_display, project))
         membership_leave_request_notify(project, membership.person)
@@ -595,7 +595,7 @@ def can_join_request(project, user):
     m = user.get_membership(project)
     if not m:
         return True
-    return m.can_join()
+    return m.check_action("join")
 
 
 def new_membership(project, user):
@@ -610,17 +610,17 @@ def join_project(project_id, request_user):
 
     try:
         membership = get_membership(project.id, request_user.id)
-        if not membership.can_join():
+        if not membership.check_action("join"):
             msg = _(astakos_messages.MEMBERSHIP_ASSOCIATED)
             raise ProjectConflict(msg)
-        membership.join()
+        membership.perform_action("join")
     except ProjectNotFound:
         membership = new_membership(project, request_user)
 
     join_policy = project.application.member_join_policy
     if (join_policy == AUTO_ACCEPT_POLICY and (
             not project.violates_members_limit(adding=1))):
-        membership.accept()
+        membership.perform_action("accept")
         qh_sync_user(request_user)
         logger.info("User %s joined %s." %
                     (request_user.log_display, project))

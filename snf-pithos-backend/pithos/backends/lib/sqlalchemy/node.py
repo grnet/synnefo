@@ -918,17 +918,20 @@ class Node(DBWorker):
         attributes = rp.fetchall()
         rp.close()
         for dest, domain, node, k, v in attributes:
+            select_src_node = select(
+                [self.versions.c.node],
+                self.versions.c.serial == dest)
             # insert or replace
             s = self.attributes.update().where(and_(
                 self.attributes.c.serial == dest,
                 self.attributes.c.domain == domain,
                 self.attributes.c.key == k))
-            s = s.values(value=v)
+            s = s.values(node = select_src_node, value=v)
             rp = self.conn.execute(s)
             rp.close()
             if rp.rowcount == 0:
                 s = self.attributes.insert()
-                s = s.values(serial=dest, domain=domain, node=node,
+                s = s.values(serial=dest, domain=domain, node=select_src_node,
                              is_latest=True, key=k, value=v)
             self.conn.execute(s).close()
 

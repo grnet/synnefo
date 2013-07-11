@@ -1955,7 +1955,7 @@ class ProjectMembership(models.Model):
             raise ValueError("No check found for action '%s'" % action)
         return check(self)
 
-    def perform_action(self, action):
+    def perform_action(self, action, actor=None, reason=None):
         if not self.check_action(action):
             m = _("%s: attempted action '%s' in state '%s'") % (
                 self, action, self.state)
@@ -1964,7 +1964,7 @@ class ProjectMembership(models.Model):
             s = self.ACTION_STATES[action]
         except KeyError:
             raise ValueError("No such action '%s'" % action)
-        return self.set_state(s)
+        return self.set_state(s, actor=actor, reason=reason)
 
 
 class Serial(models.Model):

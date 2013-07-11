@@ -419,12 +419,12 @@ def accept_membership_checks(membership, request_user):
     accept_membership_project_checks(project, request_user)
 
 
-def accept_membership(memb_id, request_user=None):
+def accept_membership(memb_id, request_user=None, reason=None):
     project = get_project_of_membership_for_update(memb_id)
     membership = get_membership_by_id(memb_id)
     accept_membership_checks(membership, request_user)
     user = membership.person
-    membership.perform_action("accept")
+    membership.perform_action("accept", actor=request_user, reason=reason)
     qh_sync_user(user)
     logger.info("User %s has been accepted in %s." %
                 (user.log_display, project))
@@ -443,12 +443,12 @@ def reject_membership_checks(membership, request_user):
     checkAlive(project)
 
 
-def reject_membership(memb_id, request_user=None):
+def reject_membership(memb_id, request_user=None, reason=None):
     project = get_project_of_membership_for_update(memb_id)
     membership = get_membership_by_id(memb_id)
     reject_membership_checks(membership, request_user)
     user = membership.person
-    membership.perform_action("reject")
+    membership.perform_action("reject", actor=request_user, reason=reason)
     logger.info("Request of user %s for %s has been rejected." %
                 (user.log_display, project))
 
@@ -466,11 +466,11 @@ def cancel_membership_checks(membership, request_user):
     checkAlive(project)
 
 
-def cancel_membership(memb_id, request_user):
+def cancel_membership(memb_id, request_user, reason=None):
     project = get_project_of_membership_for_update(memb_id)
     membership = get_membership_by_id(memb_id)
     cancel_membership_checks(membership, request_user)
-    membership.perform_action("cancel")
+    membership.perform_action("cancel", actor=request_user, reason=reason)
     logger.info("Request of user %s for %s has been cancelled." %
                 (membership.person.log_display, project))
 
@@ -490,12 +490,12 @@ def remove_membership_checks(membership, request_user=None):
         raise ProjectConflict(m)
 
 
-def remove_membership(memb_id, request_user=None):
+def remove_membership(memb_id, request_user=None, reason=None):
     project = get_project_of_membership_for_update(memb_id)
     membership = get_membership_by_id(memb_id)
     remove_membership_checks(membership, request_user)
     user = membership.person
-    membership.perform_action("remove")
+    membership.perform_action("remove", actor=request_user, reason=reason)
     qh_sync_user(user)
     logger.info("User %s has been removed from %s." %
                 (user.log_display, project))
@@ -504,7 +504,7 @@ def remove_membership(memb_id, request_user=None):
     return membership
 
 
-def enroll_member(project_id, user, request_user=None):
+def enroll_member(project_id, user, request_user=None, reason=None):
     project = get_project_for_update(project_id)
     try:
         project = get_project_for_update(project_id)
@@ -517,11 +517,11 @@ def enroll_member(project_id, user, request_user=None):
         if not membership.check_action("enroll"):
             m = _(astakos_messages.MEMBERSHIP_ACCEPTED)
             raise ProjectConflict(m)
-        membership.perform_action("join")
+        membership.perform_action("join", actor=request_user, reason=reason)
     except ProjectNotFound:
-        membership = new_membership(project, user)
+        membership = new_membership(project, user, actor=request_user)
 
-    membership.perform_action("accept")
+    membership.perform_action("accept", actor=request_user, reason=reason)
     qh_sync_user(user)
     logger.info("User %s has been enrolled in %s." %
                 (membership.person.log_display, project))
@@ -556,7 +556,7 @@ def can_leave_request(project, user):
     return True
 
 
-def leave_project(memb_id, request_user):
+def leave_project(memb_id, request_user, reason=None):
     project = get_project_of_membership_for_update(memb_id)
     membership = get_membership_by_id(memb_id)
     leave_project_checks(membership, request_user)
@@ -564,13 +564,14 @@ def leave_project(memb_id, request_user):
     auto_accepted = False
     leave_policy = project.application.member_leave_policy
     if leave_policy == AUTO_ACCEPT_POLICY:
-        membership.perform_action("remove")
+        membership.perform_action("remove", actor=request_user, reason=reason)
         qh_sync_user(request_user)
         logger.info("User %s has left %s." %
                     (request_user.log_display, project))
         auto_accepted = True
     else:
-        membership.perform_action("leave_request")
+        membership.perform_action("leave_request", actor=request_user,
+                                  reason=reason)
         logger.info("User %s requested to leave %s." %
                     (request_user.log_display, project))
         membership_leave_request_notify(project, membership.person)
@@ -598,13 +599,14 @@ def can_join_request(project, user):
     return m.check_action("join")
 
 
-def new_membership(project, user):
+def new_membership(project, user, actor=None, reason=None):
     m = ProjectMembership.objects.create(project=project, person=user)
-    m._log_create(None, ProjectMembership.REQUESTED)
+    m._log_create(None, ProjectMembership.REQUESTED, actor=actor,
+                  reason=reason)
     return m
 
 
-def join_project(project_id, request_user):
+def join_project(project_id, request_user, reason=None):
     project = get_project_for_update(project_id)
     join_project_checks(project)
 
@@ -613,14 +615,15 @@ def join_project(project_id, request_user):
         if not membership.check_action("join"):
             msg = _(astakos_messages.MEMBERSHIP_ASSOCIATED)
             raise ProjectConflict(msg)
-        membership.perform_action("join")
+        membership.perform_action("join", actor=request_user, reason=reason)
     except ProjectNotFound:
-        membership = new_membership(project, request_user)
+        membership = new_membership(project, request_user, actor=request_user,
+                                    reason=reason)
 
     join_policy = project.application.member_join_policy
     if (join_policy == AUTO_ACCEPT_POLICY and (
             not project.violates_members_limit(adding=1))):
-        membership.perform_action("accept")
+        membership.perform_action("accept", actor=request_user, reason=reason)
         qh_sync_user(request_user)
         logger.info("User %s joined %s." %
                     (request_user.log_display, project))

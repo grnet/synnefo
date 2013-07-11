@@ -134,6 +134,22 @@ to:
     'no_install': False,  
 
 
+Networks
+--------
+In order to create private networks, you have to edit
+``/etc/synnefo/cyclades.conf`` and change line 3 from:
+
+.. code-block:: console  
+
+    PRIVATE_MAC_FILTERED_BRIDGE = 'br0'
+
+to:
+
+.. code-block:: console  
+    
+    DEFAULT_MAC_FILTERED_BRIDGE = 'br0'
+
+
 Using the installation
 ======================
 

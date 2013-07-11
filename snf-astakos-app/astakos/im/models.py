@@ -1359,6 +1359,12 @@ class ProjectApplication(models.Model):
     issue_date = models.DateTimeField(auto_now_add=True)
     response_date = models.DateTimeField(null=True, blank=True)
     response = models.TextField(null=True, blank=True)
+    response_actor = models.ForeignKey(AstakosUser, null=True,
+                                       related_name='responded_apps')
+    waive_date = models.DateTimeField(null=True, blank=True)
+    waive_reason = models.TextField(null=True, blank=True)
+    waive_actor = models.ForeignKey(AstakosUser, null=True,
+                                    related_name='waived_apps')
 
     objects = ProjectApplicationManager()
 
@@ -1428,31 +1434,37 @@ class ProjectApplication(models.Model):
     def can_cancel(self):
         return self.state == self.PENDING
 
-    def cancel(self):
+    def cancel(self, actor=None, reason=None):
         if not self.can_cancel():
             m = _("cannot cancel: application '%s' in state '%s'") % (
                 self.id, self.state)
             raise AssertionError(m)
 
         self.state = self.CANCELLED
+        self.waive_date = datetime.now()
+        self.waive_reason = reason
+        self.waive_actor = actor
         self.save()
 
     def can_dismiss(self):
         return self.state == self.DENIED
 
-    def dismiss(self):
+    def dismiss(self, actor=None, reason=None):
         if not self.can_dismiss():
             m = _("cannot dismiss: application '%s' in state '%s'") % (
                 self.id, self.state)
             raise AssertionError(m)
 
         self.state = self.DISMISSED
+        self.waive_date = datetime.now()
+        self.waive_reason = reason
+        self.waive_actor = actor
         self.save()
 
     def can_deny(self):
         return self.state == self.PENDING
 
-    def deny(self, reason):
+    def deny(self, actor=None, reason=None):
         if not self.can_deny():
             m = _("cannot deny: application '%s' in state '%s'") % (
                 self.id, self.state)
@@ -1461,12 +1473,13 @@ class ProjectApplication(models.Model):
         self.state = self.DENIED
         self.response_date = datetime.now()
         self.response = reason
+        self.response_actor = actor
         self.save()
 
     def can_approve(self):
         return self.state == self.PENDING
 
-    def approve(self, reason):
+    def approve(self, actor=None, reason=None):
         if not self.can_approve():
             m = _("cannot approve: project '%s' in state '%s'") % (
                 self.name, self.state)
@@ -1476,6 +1489,7 @@ class ProjectApplication(models.Model):
         self.state = self.APPROVED
         self.response_date = now
         self.response = reason
+        self.response_actor = actor
         self.save()
 
     @property
@@ -1613,14 +1627,10 @@ class Project(models.Model):
     application = models.OneToOneField(
         ProjectApplication,
         related_name='project')
-    last_approval_date = models.DateTimeField(null=True)
 
     members = models.ManyToManyField(
         AstakosUser,
         through='ProjectMembership')
-
-    deactivation_reason = models.CharField(max_length=255, null=True)
-    deactivation_date = models.DateTimeField(null=True)
 
     creation_date = models.DateTimeField(auto_now_add=True)
     name = models.CharField(
@@ -1632,6 +1642,8 @@ class Project(models.Model):
     NORMAL = 1
     SUSPENDED = 10
     TERMINATED = 100
+
+    DEACTIVATED_STATES = [SUSPENDED, TERMINATED]
 
     state = models.IntegerField(default=NORMAL,
                                 db_index=True)
@@ -1734,6 +1746,13 @@ class Project(models.Model):
         return (str(self.id), self.name, self.state_display(),
                 str(self.application.end_date))
 
+    def last_deactivation(self):
+        objs = self.log.filter(to_state__in=self.DEACTIVATED_STATES)
+        ls = objs.order_by("-date")
+        if not ls:
+            return None
+        return ls[0]
+
     def is_deactivated(self, reason=None):
         if reason is not None:
             return self.state == reason
@@ -1748,33 +1767,30 @@ class Project(models.Model):
 
     ### Deactivation calls
 
-    def terminate(self):
-        self.deactivation_reason = 'TERMINATED'
-        self.deactivation_date = datetime.now()
-        self.state = self.TERMINATED
+    def _log_create(self, from_state, to_state, actor=None, reason=None,
+                    comments=None):
+        now = datetime.now()
+        self.log.create(from_state=from_state, to_state=to_state, date=now,
+                        actor=actor, reason=reason, comments=comments)
+
+    def set_state(self, to_state, actor=None, reason=None, comments=None):
+        self._log_create(self.state, to_state, actor=actor, reason=reason,
+                         comments=comments)
+        self.state = to_state
+        self.save()
+
+    def terminate(self, actor=None, reason=None):
+        self.set_state(self.TERMINATED, actor=actor, reason=reason)
         self.name = None
         self.save()
 
-    def suspend(self):
-        self.deactivation_reason = 'SUSPENDED'
-        self.deactivation_date = datetime.now()
-        self.state = self.SUSPENDED
-        self.save()
+    def suspend(self, actor=None, reason=None):
+        self.set_state(self.SUSPENDED, actor=actor, reason=reason)
 
-    def resume(self):
-        self.deactivation_reason = None
-        self.deactivation_date = None
-        self.state = self.NORMAL
-        self.save()
+    def resume(self, actor=None, reason=None):
+        self.set_state(self.NORMAL, actor=actor, reason=reason)
 
     ### Logical checks
-
-    def is_inconsistent(self):
-        now = datetime.now()
-        dates = [self.creation_date,
-                 self.last_approval_date,
-                 self.deactivation_date]
-        return any([date > now for date in dates])
 
     @property
     def is_alive(self):
@@ -1811,6 +1827,26 @@ class Project(models.Model):
     @property
     def approved_members(self):
         return [m.person for m in self.approved_memberships]
+
+
+class ProjectLogManager(models.Manager):
+    def last_deactivations(self, projects):
+        logs = self.filter(
+            project__in=projects,
+            to_state__in=Project.DEACTIVATED_STATES).order_by("-date")
+        return first_of_group(lambda l: l.project_id, logs)
+
+
+class ProjectLog(models.Model):
+    project = models.ForeignKey(Project, related_name="log")
+    from_state = models.IntegerField(null=True)
+    to_state = models.IntegerField()
+    date = models.DateTimeField()
+    actor = models.ForeignKey(AstakosUser, null=True)
+    reason = models.TextField(null=True)
+    comments = models.TextField(null=True)
+
+    objects = ProjectLogManager()
 
 
 class ProjectMembershipManager(ForUpdateManager):

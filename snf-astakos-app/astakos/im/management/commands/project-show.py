@@ -206,9 +206,9 @@ def project_fields(project, pending_app):
               ('request end date', app.end_date),
               ])
 
-    deact_date = project.deactivation_date
-    if deact_date is not None:
-        d['deactivation date'] = deact_date
+    deact = project.last_deactivation()
+    if deact is not None:
+        d['deactivation date'] = deact.date
 
     mem_limit = app.limit_on_members_number
     mem_limit_show = mem_limit if mem_limit is not None else "unlimited"

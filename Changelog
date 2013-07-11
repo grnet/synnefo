@@ -26,7 +26,7 @@ Astakos
     of its `reference' application (current definition). Lock Project rather
     than Chain (the latter is semantically obsolete).
 
-  * Improve recording of membership actions.
+  * Improve recording of project, application, and membership actions.
 
 Cyclades
 --------

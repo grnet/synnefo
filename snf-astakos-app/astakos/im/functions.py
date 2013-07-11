@@ -769,7 +769,7 @@ def cancel_application(application_id, request_user=None, reason=""):
 
     qh_release_pending_app(application.owner)
 
-    application.cancel()
+    application.cancel(actor=request_user, reason=reason)
     logger.info("%s has been cancelled." % (application.log_display))
 
 
@@ -783,7 +783,7 @@ def dismiss_application(application_id, request_user=None, reason=""):
               (application.id, application.state_display()))
         raise ProjectConflict(m)
 
-    application.dismiss()
+    application.dismiss(actor=request_user, reason=reason)
     logger.info("%s has been dismissed." % (application.log_display))
 
 
@@ -800,7 +800,7 @@ def deny_application(application_id, request_user=None, reason=""):
 
     qh_release_pending_app(application.owner)
 
-    application.deny(reason)
+    application.deny(actor=request_user, reason=reason)
     logger.info("%s has been denied with reason \"%s\"." %
                 (application.log_display, reason))
     application_deny_notify(application)
@@ -843,7 +843,7 @@ def approve_application(app_id, request_user=None, reason=""):
     get_users_for_update(uids_to_sync)
 
     qh_release_pending_app(owner, locked=True)
-    application.approve(reason)
+    application.approve(actor=request_user, reason=reason)
     project.application = application
     project.name = application.name
     project.save()
@@ -864,31 +864,31 @@ def check_expiration(execute=False):
     return [project.expiration_info() for project in expired]
 
 
-def terminate(project_id, request_user=None):
+def terminate(project_id, request_user=None, reason=None):
     project = get_project_for_update(project_id)
     project_check_allowed(project, request_user, level=ADMIN_LEVEL)
     checkAlive(project)
 
-    project.terminate()
+    project.terminate(actor=request_user, reason=reason)
     qh_sync_project(project)
     logger.info("%s has been terminated." % (project))
 
     project_termination_notify(project)
 
 
-def suspend(project_id, request_user=None):
+def suspend(project_id, request_user=None, reason=None):
     project = get_project_for_update(project_id)
     project_check_allowed(project, request_user, level=ADMIN_LEVEL)
     checkAlive(project)
 
-    project.suspend()
+    project.suspend(actor=request_user, reason=reason)
     qh_sync_project(project)
     logger.info("%s has been suspended." % (project))
 
     project_suspension_notify(project)
 
 
-def resume(project_id, request_user=None):
+def resume(project_id, request_user=None, reason=None):
     project = get_project_for_update(project_id)
     project_check_allowed(project, request_user, level=ADMIN_LEVEL)
 
@@ -896,7 +896,7 @@ def resume(project_id, request_user=None):
         m = _(astakos_messages.NOT_SUSPENDED_PROJECT) % project.id
         raise ProjectConflict(m)
 
-    project.resume()
+    project.resume(actor=request_user, reason=reason)
     qh_sync_project(project)
     logger.info("%s has been unsuspended." % (project))
 

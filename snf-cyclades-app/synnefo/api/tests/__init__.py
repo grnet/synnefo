@@ -32,10 +32,10 @@
 # or implied, of GRNET S.A.
 
 # Import TestCases
-from synnefo.api.test.servers import *
-from synnefo.api.test.networks import *
-from synnefo.api.test.flavors import *
-from synnefo.api.test.images import *
-from synnefo.api.test.versions import *
-from synnefo.api.test.extensions import *
-from synnefo.api.test.floating_ips import *
+from .servers import *
+from .networks import *
+from .flavors import *
+from .images import *
+from .versions import *
+from .extensions import *
+from .floating_ips import *

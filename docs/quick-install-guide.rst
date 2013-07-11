@@ -106,6 +106,8 @@ installed Synnefo on a single node.
 Caveats
 =======
 
+Certificates
+------------
 To be able to view all web pages make sure you have accepted all certificates
 for domains:
 
@@ -114,6 +116,22 @@ for domains:
 * cyclades.synnefo.live
 * pithos.synnefo.live
 * cms.synnefo.live
+
+
+Spawning VMs
+------------
+By default, snf-deploy can't spawn VMs. To be able to do so, edit 
+``/etc/synnefo/cyclades.conf`` and change line 29 from:
+
+.. code-block:: console  
+    
+    'no_install': True,
+
+to:
+
+.. code-block:: console                                                         
+
+    'no_install': False,  
 
 
 Using the installation

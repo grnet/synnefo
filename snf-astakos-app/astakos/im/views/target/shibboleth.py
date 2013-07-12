@@ -61,6 +61,7 @@ class Tokens:
     SHIB_EP_AFFILIATION = "HTTP_SHIB_EP_AFFILIATION"
     SHIB_SESSION_ID = "HTTP_SHIB_SESSION_ID"
     SHIB_MAIL = "HTTP_SHIB_MAIL"
+    SHIB_REMOTE_USER = "HTTP_REMOTE_USER"
 
 
 @requires_auth_provider('shibboleth')
@@ -79,7 +80,9 @@ def login(request,
     shibboleth_headers = {}
     for token in dir(Tokens):
         if token == token.upper():
-            shibboleth_headers[token] = request.META.get(token, 'NOT_SET')
+            shibboleth_headers[token] = request.META.get(getattr(Tokens,
+                                                                 token),
+                                                         'NOT_SET')
 
     # log shibboleth headers
     # TODO: info -> debug
@@ -87,6 +90,7 @@ def login(request,
 
     try:
         eppn = tokens.get(Tokens.SHIB_EPPN)
+
         if global_settings.DEBUG and not eppn:
             eppn = getattr(global_settings, 'SHIBBOLETH_TEST_EPPN', None)
             realname = getattr(global_settings, 'SHIBBOLETH_TEST_REALNAME',
@@ -117,7 +121,9 @@ def login(request,
 
     affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, 'Shibboleth')
     email = tokens.get(Tokens.SHIB_MAIL, '')
-    provider_info = {'eppn': eppn, 'email': email, 'name': realname}
+    eppn_info = tokens.get(Tokens.SHIB_EPPN)
+    provider_info = {'eppn': eppn_info, 'email': email, 'name': realname,
+                     'headers': shibboleth_headers}
     userid = eppn
 
     try:

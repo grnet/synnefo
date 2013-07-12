@@ -33,12 +33,13 @@ following line in your ``/etc/apt/sources.list`` file:
 
 .. code-block:: console
 
-   deb http://apt.dev.grnet.gr unstable/
+   deb http://apt.dev.grnet.gr stable/
 
 Then run:
 
 .. code-block:: console
 
+   # curl https://dev.grnet.gr/files/apt-grnetdev.pub | apt-key add -
    # apt-get update
    # apt-get install snf-deploy
 
@@ -105,6 +106,8 @@ installed Synnefo on a single node.
 Caveats
 =======
 
+Certificates
+------------
 To be able to view all web pages make sure you have accepted all certificates
 for domains:
 
@@ -113,6 +116,38 @@ for domains:
 * cyclades.synnefo.live
 * pithos.synnefo.live
 * cms.synnefo.live
+
+
+Spawning VMs
+------------
+By default, snf-deploy can't spawn VMs. To be able to do so, edit 
+``/etc/synnefo/cyclades.conf`` and change line 29 from:
+
+.. code-block:: console  
+    
+    'no_install': True,
+
+to:
+
+.. code-block:: console                                                         
+
+    'no_install': False,  
+
+
+Networks
+--------
+In order to create private networks, you have to edit
+``/etc/synnefo/cyclades.conf`` and change line 3 from:
+
+.. code-block:: console  
+
+    PRIVATE_MAC_FILTERED_BRIDGE = 'br0'
+
+to:
+
+.. code-block:: console  
+    
+    DEFAULT_MAC_FILTERED_BRIDGE = 'br0'
 
 
 Using the installation

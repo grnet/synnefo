@@ -159,8 +159,9 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
         # Special case: OP_INSTANCE_REMOVE fails for machines in ERROR,
         # when no instance exists at the Ganeti backend.
         # See ticket #799 for all the details.
-        if status == 'success' or (status == 'error' and
-                                   vm.operstate == 'ERROR'):
+        if (status == 'success' or
+           (status == 'error' and (vm.operstate == 'ERROR' or
+                                   vm.action == 'DESTROY'))):
             # VM has been deleted. Release the instance IPs
             release_instance_ips(vm, [])
             # And delete the releated NICs (must be performed after release!)
@@ -327,6 +328,8 @@ def process_network_status(back_network, etime, jobid, opcode, status, logmsg):
     back_network.backendopcode = opcode
     back_network.backendlogmsg = logmsg
 
+    network = back_network.network
+
     # Notifications of success change the operating state
     state_for_success = BackendNetwork.OPER_STATE_FROM_OPCODE.get(opcode, None)
     if status == 'success' and state_for_success is not None:
@@ -337,8 +340,9 @@ def process_network_status(back_network, etime, jobid, opcode, status, logmsg):
         back_network.backendtime = etime
 
     if opcode == 'OP_NETWORK_REMOVE':
-        if status == 'success' or (status == 'error' and
-                                   back_network.operstate == 'ERROR'):
+        if (status == 'success' or
+           (status == 'error' and (back_network.operstate == 'ERROR' or
+                                   network.action == 'DESTROY'))):
             back_network.operstate = state_for_success
             back_network.deleted = True
             back_network.backendtime = etime
@@ -347,7 +351,7 @@ def process_network_status(back_network, etime, jobid, opcode, status, logmsg):
         back_network.backendtime = etime
     back_network.save()
     # Also you must update the state of the Network!!
-    update_network_state(back_network.network)
+    update_network_state(network)
 
 
 def update_network_state(network):
@@ -463,6 +467,7 @@ def process_create_progress(vm, etime, progress):
     vm.save()
 
 
+@transaction.commit_on_success
 def create_instance_diagnostic(vm, message, source, level="DEBUG", etime=None,
                                details=None):
     """

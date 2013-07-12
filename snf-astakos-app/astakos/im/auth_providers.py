@@ -46,6 +46,8 @@ from django.conf import settings
 from astakos.im import settings as astakos_settings
 from astakos.im import messages as astakos_messages
 
+from synnefo_branding import utils as branding_utils
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -99,7 +101,10 @@ class AuthProvider(object):
         ('add_prompt', 'Allows you to login using {title}'),
         ('login_extra', ''),
         ('username', '{username}'),
-        ('disabled_for_create', '{title} is not available for signup.'),
+        ('disabled_for_create', 'It seems this is the first time you\'re '
+                                'trying to access {service_name}. '
+                                'Unfortunately, we are not accepting new '
+                                'users at this point.'),
         ('switch_success', 'Account changed successfully.'),
         ('cannot_login', '{title} is not available for login. '
                          'Please use one of your other available methods '
@@ -293,6 +298,10 @@ class AuthProvider(object):
             params['username'] = params[self.username_key]
         else:
             params['username'] = self.identifier
+
+        branding_params = dict(map(lambda k: (k[0].lower(), k[1]),
+            branding_utils.get_branding_dict().iteritems()))
+        params.update(branding_params)
 
         if not self.message_tpls_compiled:
             for key, message_tpl in self.message_tpls.iteritems():
@@ -587,7 +596,7 @@ class LocalAuthProvider(AuthProvider):
 class ShibbolethAuthProvider(AuthProvider):
     module = 'shibboleth'
     login_view = 'astakos.im.views.target.shibboleth.login'
-    username_key = 'identifier'
+    username_key = 'provider_info_eppn'
 
     policies = {
         'switch': False
@@ -597,9 +606,13 @@ class ShibbolethAuthProvider(AuthProvider):
         'title': _('Academic'),
         'login_description': _('If you are a student, professor or researcher'
                                ' you can login using your academic account.'),
+        'add_prompt': _('Allows you to login using your Academic '
+                        'account'),
         'method_details': 'Account: {username}',
-        'logout_extra': _('Please close all browser windows to complete '
-                          'logout from your Academic account, too.')
+        'logout_success_extra': _('You may still be logged in at your Academic'
+                                  ' account though. Consider logging out '
+                                  'from there too by closing all browser '
+                                  'windows')
     }
 
 

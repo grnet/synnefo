@@ -13,6 +13,12 @@ v0.14next
 
 Released: UNRELEASED
 
+
+Synnefo-wide
+------------
+
+* Integrate Pithos tests in continuous integration.
+
 Cyclades
 --------
 
@@ -27,10 +33,19 @@ objects by domain attribute. This is used by Plankton for listing VM images.
 
 * Enforce container-level atomicity in (most) Pithos API calls.
 
-Synnefo-wide
-------------
+.. _Changelog-0.14.2:
 
-* Integrate Pithos tests in continuous integration.
+Released: Fri Jul 12 13:13:32 EEST 2013
+
+v0.14.2
+=======
+
+Cyclades
+--------
+
+* Add new setting PITHOS_BACKEND_POOL_SIZE, which configures the size
+  of the pool of Pithos backends that are used by plankton.
+
 
 .. _Changelog-0.14:
 

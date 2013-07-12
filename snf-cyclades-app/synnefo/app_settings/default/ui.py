@@ -17,9 +17,9 @@ TIMEOUT = 10 * 1000
 DEFAULT_KEYWORDS = ["OS", "Role", "Location", "Owner"]
 
 # A list of allowed icons for OS Images
-IMAGE_ICONS = ["redhat", "ubuntu", "debian", "windows", "gentoo", "archlinux",
+IMAGE_ICONS = ["rhel", "ubuntu", "debian", "windows", "gentoo", "archlinux",
                "centos", "fedora", "freebsd", "netbsd", "openbsd", "slackware",
-               "suse", "kubuntu"]
+               "sles", "opensuse", "kubuntu"]
 
 # How often should the UI request changes from the API
 UI_UPDATE_INTERVAL = 5000

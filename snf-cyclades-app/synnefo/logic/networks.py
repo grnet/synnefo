@@ -117,7 +117,8 @@ def create(user_id, name, flavor, subnet=None, gateway=None, subnet6=None,
     # Issue commission to Quotaholder and accept it since at the end of
     # this transaction the Network object will be created in the DB.
     # Note: the following call does a commit!
-    quotas.issue_and_accept_commission(network)
+    if not public:
+        quotas.issue_and_accept_commission(network)
     return network
 
 

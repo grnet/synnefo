@@ -766,7 +766,7 @@ def check_expiration(execute=False):
     expired = objects.expired_projects()
     if execute:
         for project in expired:
-            terminate(project.id)
+            terminate(project.pk)
 
     return [project.expiration_info() for project in expired]
 

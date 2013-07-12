@@ -88,7 +88,7 @@ def modify_limit():
 
 
 def reconcile():
-    command = ['snf-manage', 'reconcile-resources-astakos', '--fix']
+    command = ['snf-manage', 'reconcile-resources-astakos', '--fix', '--force']
     print 'Running "%s"...' % ' '.join(command)
     r = call(command)
 

@@ -307,7 +307,14 @@
             try {
               var users = this.get_meta('users').split(" ");
             } catch (err) { users = null }
-            if (!users) { users = [synnefo.config.os_created_users[this.get_os()] || "root"]}
+            if (!users) {
+                var osfamily = this.get_meta('osfamily');
+                if (osfamily == 'windows') { 
+                  users = ['Administrator'];
+                } else {
+                  users = ['root'];
+                }
+            }
             return users;
         },
 
@@ -1498,14 +1505,35 @@
             return this.url() + "/diagnostics";
         },
 
+        get_users: function() {
+            var image;
+            var users = [];
+            try {
+              var users = this.get_meta('users').split(" ");
+            } catch (err) { users = null }
+            if (!users) {
+              image = this.get_image();
+              if (image) {
+                  users = image.get_created_users();
+              }
+            }
+            return users;
+        },
+
         get_connection_info: function(host_os, success, error) {
             var url = synnefo.config.ui_connect_url;
+            var users = this.get_users();
+
             params = {
                 ip_address: this.get_public_nic().get('ipv4'),
                 hostname: this.get_hostname(),
                 os: this.get_os(),
                 host_os: host_os,
                 srv: this.id
+            }
+            
+            if (users.length) { 
+                params['username'] = _.last(users)
             }
 
             url = url + "?" + $.param(params);

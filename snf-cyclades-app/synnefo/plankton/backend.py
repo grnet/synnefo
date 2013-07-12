@@ -72,10 +72,9 @@ PLANKTON_META = ('container_format', 'disk_format', 'name', 'properties',
                  'status')
 
 from pithos.backends.util import PithosBackendPool
-POOL_SIZE = 8
 _pithos_backend_pool = \
     PithosBackendPool(
-        POOL_SIZE,
+        settings.PITHOS_BACKEND_POOL_SIZE,
         astakos_url=settings.ASTAKOS_BASE_URL,
         service_token=settings.CYCLADES_SERVICE_TOKEN,
         astakosclient_poolsize=settings.CYCLADES_ASTAKOSCLIENT_POOLSIZE,

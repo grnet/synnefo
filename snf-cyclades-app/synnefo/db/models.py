@@ -796,7 +796,8 @@ def pooled_rapi_client(obj):
 
         if backend.offline:
             log.warning("Trying to connect with offline backend: %s", backend)
-            raise faults.ServiceUnavailable
+            raise faults.ServiceUnavailable("Can not connect to offline"
+                                            " backend: %s" % backend)
 
         b = backend
         client = get_rapi_client(b.id, b.hash, b.clustername, b.port,

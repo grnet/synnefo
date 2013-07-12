@@ -43,13 +43,13 @@ from setuptools import setup, find_packages
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 
-from astakosclient.version import __version__
+# Add astakosclient to sys.path and load version module
+sys.path.insert(0, "astakosclient")
+from version import __version__
 
 # Package info
 VERSION = __version__
-README = open(os.path.join(HERE, 'README')).read()
-CHANGES = open(os.path.join(HERE, 'Changelog')).read()
-SHORT_DESCRIPTION = 'A set of tools to ease versioning and use of git flow.'
+SHORT_DESCRIPTION = 'A client for the astakos authentication service.'
 
 PACKAGES_ROOT = '.'
 PACKAGES = find_packages(PACKAGES_ROOT)
@@ -162,7 +162,6 @@ setup(
     license='BSD',
     url='http://www.synnefo.org/',
     description=SHORT_DESCRIPTION,
-    long_description=README + '\n\n' + CHANGES,
     classifiers=CLASSIFIERS,
 
     author='Synnefo development team',

@@ -4,7 +4,7 @@
 ###################
 
 # API URL
-COMPUTE_API_URL = '/api/v1.1'
+#COMPUTE_API_URL = '/api/v1.1'
 
 # base url for ui static files
 # if not set, defaults to MEDIA_URL + 'snf-<latest_ui_version>/'
@@ -17,14 +17,15 @@ TIMEOUT = 10 * 1000
 DEFAULT_KEYWORDS = ["OS", "Role", "Location", "Owner"]
 
 # A list of allowed icons for OS Images
-IMAGE_ICONS = ["redhat", "ubuntu", "debian", "windows", "gentoo", "archlinux",
+IMAGE_ICONS = ["rhel", "ubuntu", "debian", "windows", "gentoo", "archlinux",
                "centos", "fedora", "freebsd", "netbsd", "openbsd", "slackware",
-               "suse", "kubuntu"]
+               "sles", "opensuse", "kubuntu"]
 
 # How often should the UI request changes from the API
 UI_UPDATE_INTERVAL = 5000
 
-# Milieconds to increase the interval after UI_UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT calls
+# Milieconds to increase the interval after
+# UI_UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT calls
 # of recurrent api requests
 UI_UPDATE_INTERVAL_INCREASE = UI_UPDATE_INTERVAL / 4
 UI_UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT = 4
@@ -41,12 +42,6 @@ UI_CHANGES_SINCE_ALIGNMENT = 0
 
 # How often to check for user usage changes
 UI_QUOTAS_UPDATE_INTERVAL = 10000
-
-# URL to redirect not authenticated users
-UI_LOGIN_URL = "/im/login"
-
-# URL to redirect user to when he logs out from the ui
-UI_LOGOUT_URL = "/im/logout"
 
 # Cookie name to retrieve authentication data from
 UI_AUTH_COOKIE_NAME = '_pithos2_a'
@@ -78,17 +73,19 @@ VM_CREATE_SUGGESTED_FLAVORS = {
 
 # A list of metadata keys to clone from image
 # to the virtual machine on its creation.
-VM_IMAGE_COMMON_METADATA = ["OS", "loginname", "logindomain", "users", "remote"]
+VM_IMAGE_COMMON_METADATA = ["OS", "loginname", "logindomain", "users",
+                            "remote"]
 
 # A list of suggested vm roles to display to user on create wizard
-VM_CREATE_SUGGESTED_ROLES = ["Database server", "File server", "Mail server", "Web server", "Proxy"]
+VM_CREATE_SUGGESTED_ROLES = ["Database server", "File server", "Mail server",
+                             "Web server", "Proxy"]
 
 # Template to be used for suggesting the user a default name for newly created
 # vms. {0} gets replaced by the image OS value
 VM_CREATE_NAME_TPL = "My {0} server"
 
 # Template to use to build vm hostname
-UI_VM_HOSTNAME_FORMAT = 'snf-%(id)s.vm.okeanos.grnet.gr'
+UI_VM_HOSTNAME_FORMAT = 'snf-%(id)s.vm.synnefo.org'
 
 # Name/description metadata for the available flavor disk templates
 # Dict key is the disk_template value as stored in database
@@ -148,7 +145,7 @@ UI_SUPPORT_SSH_OS_LIST = ['debian', 'fedora', 'okeanos', 'ubuntu', 'kubuntu',
 
 # OS/username map to identify default user name for the specified os
 UI_OS_DEFAULT_USER_MAP = {
-    'debian':'root', 'fedora': 'root', 'okeanos': 'root',
+    'debian': 'root', 'fedora': 'root', 'okeanos': 'root',
     'ubuntu': 'root', 'kubuntu': 'root', 'centos': 'root',
     'windows': 'Administrator'
 }
@@ -161,8 +158,8 @@ UI_OS_DEFAULT_USER_MAP = {
 # If only one set, no select options will be displayed
 UI_NETWORK_AVAILABLE_NETWORK_TYPES = {'MAC_FILTERED': 'mac-filtering'}
 
-# Suggested private networks to let the user choose from when creating a private
-# network with dhcp enabled
+# Suggested private networks to let the user choose from when creating a
+# private network with dhcp enabled
 UI_NETWORK_AVAILABLE_SUBNETS = ['10.0.0.0/24', '192.168.0.0/24']
 
 # UI will use this setting to find an available network subnet if user requests
@@ -188,9 +185,6 @@ UI_GROUPED_PUBLIC_NETWORK_NAME = 'Internet'
 # UI EXTENSIONS
 ###############
 
-# Glance images API endpoint
-UI_GLANCE_API_URL = '/plankton'
-
 # Whether or not UI should display images from the Glance API
 # set in UI_GLANCE_API_URL, if setting is set to False, ui will
 # request images from Compute API
@@ -199,9 +193,6 @@ UI_ENABLE_GLANCE = True
 # a dict of image owner ids and their associate name
 # to be displayed on images list
 UI_SYSTEM_IMAGES_OWNERS = {
-    'admin@synnefo.gr': 'system',
-    'images@synnefo.gr': 'system'
+    'admin@synnefo.org': 'system',
+    'images@synnefo.org': 'system'
 }
-
-# Astakos feedback endpoint. UI uses this setting to post error feedbacks
-CYCLADES_USER_FEEDBACK_URL = 'https://accounts.synnefo.org/feedback'

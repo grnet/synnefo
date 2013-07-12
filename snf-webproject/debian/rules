@@ -1,0 +1,26 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@ --with python2
+
+package=snf-webproject
+default_settings_dir=synnefo/webproject/settings/default/
+config_lvl=10
+
+override_dh_install:
+	dh_install
+	chmod 644 debian/$(package)/etc/bash_completion.d/snf_manage_bash_completion
+
+override_dh_auto_install:
+	dh_auto_install
+	
+	for py in $(shell pyversions -vr debian/control); do \
+		rm debian/$(package)/usr/lib/python$$py/*-packages/*-nspkg.pth; \
+	done
+
+	mkdir -p debian/$(package)/etc/synnefo
+	for f in apps deploy site database; do \
+		cp $(default_settings_dir)$$f.py \
+			debian/$(package)/etc/synnefo/$(config_lvl)-$(package)-$$f.conf;  \
+	done;
+	sed -i 's/^/#/' debian/$(package)/etc/synnefo/*.conf;

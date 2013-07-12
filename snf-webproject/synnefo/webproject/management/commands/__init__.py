@@ -104,6 +104,8 @@ class ListCommand(BaseCommand):
     # Default filters and excludes
     filters = {}
     excludes = {}
+    # Order results
+    order_by = None
 
     # Fields used only with user_user_field
     astakos_url = None
@@ -240,6 +242,9 @@ class ListCommand(BaseCommand):
         except Exception as e:
             raise CommandError("Can not filter results: %s" % e)
 
+        order_key = self.order_by if self.order_by is not None else 'pk'
+        objects = objects.order_by(order_key)
+
         # --display-mails option
         display_mails = options.get("display_mails")
         if display_mails:
@@ -257,7 +262,8 @@ class ListCommand(BaseCommand):
                 obj.user_email = ucache.get_name(uuid)
 
         # Special handling of DB results
-        self.handle_db_objects(objects)
+        objects = list(objects)
+        self.handle_db_objects(objects, **options)
 
         headers = self.fields
         columns = [self.FIELDS[key][0] for key in headers]
@@ -288,7 +294,7 @@ class ListCommand(BaseCommand):
     def handle_args(self, *args, **kwargs):
         pass
 
-    def handle_db_objects(self, objects):
+    def handle_db_objects(self, objects, **options):
         pass
 
     def handle_output(self, table, headers):

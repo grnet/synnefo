@@ -1,0 +1,33 @@
+{% extends "im/account_base.html" %}
+
+{% load filters %}
+{% block page.title %}Overview{% endblock %}
+
+{% block page.body %}
+<div class="landing-page">
+    {% for id, service in services.items %}
+    {% if service.dashboard.show %}
+      <div class="two-cols clearfix dotted {{ id }} service-{{ id }}
+        landing-service">
+            <div class="rt">
+                {% if service.url %}
+                <a href="{{ service.url }}">
+                {% endif %}
+                <img class="pic" src="{% if service.dashboard.icon %}{{ service.dashboard.icon }}{% else %}{{ IM_STATIC_URL }}images/landing-{{ id }}.png{% endif %}" />
+                {% if service.url %}
+                </a>
+                {% endif %}
+            </div>
+            <div class="lt">
+                {{ service.dashboard.description }}
+            </div>
+        </div>
+    {% endif %}
+    {% endfor %}
+</div>
+<script type="text/javascript">
+	$(document).ready(function() {
+		$('body').append('<div id="hand">&nbsp;</div>');
+	});
+</script>	
+{% endblock %}

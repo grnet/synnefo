@@ -39,7 +39,7 @@ from time import sleep
 import logging
 import socket
 from synnefo import settings
-from ordereddict import OrderedDict
+from synnefo.lib.ordereddict import OrderedDict
 import gevent
 from gevent import monkey
 from functools import wraps

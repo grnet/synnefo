@@ -1,2 +1,3 @@
 snf-webproject/conf/* etc/synnefo
 snf-webproject/extras/snf_manage_bash_completion etc/bash_completion.d/
+snf-webproject/synnefo/webproject/static/webproject/js usr/share/synnefo/static/webproject

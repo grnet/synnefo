@@ -31,24 +31,27 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from astakos.im.settings import (
-    IM_MODULES, INVITATIONS_ENABLED, IM_STATIC_URL,
-    LOGIN_MESSAGES, SIGNUP_MESSAGES, PROFILE_MESSAGES,
-    GLOBAL_MESSAGES, PROFILE_EXTRA_LINKS,
-    PROJECT_MEMBER_JOIN_POLICIES, PROJECT_MEMBER_LEAVE_POLICIES)
-from astakos.im.api import get_menu
+from astakos.im import settings
+from astakos.im import presentation
+from astakos.im.views import get_menu
 from astakos.im.util import get_query
 from astakos.im.auth_providers import PROVIDERS as AUTH_PROVIDERS
 
 from django.utils import simplejson as json
 
+GLOBAL_MESSAGES = settings.GLOBAL_MESSAGES
+SIGNUP_MESSAGES = settings.SIGNUP_MESSAGES
+LOGIN_MESSAGES = settings.LOGIN_MESSAGES
+PROFILE_MESSAGES = settings.PROFILE_MESSAGES
+PROFILE_EXTRA_LINKS = settings.PROFILE_EXTRA_LINKS
+
 
 def im_modules(request):
-    return {'im_modules': IM_MODULES}
+    return {'im_modules': settings.IM_MODULES}
 
 def auth_providers(request):
     active_auth_providers = []
-    for module in IM_MODULES:
+    for module in settings.IM_MODULES:
         provider = AUTH_PROVIDERS.get(module, None)
         if provider:
             active_auth_providers.append(provider(request.user))
@@ -67,11 +70,11 @@ def last_login_method(request):
     return {'last_login_method': request.COOKIES.get('astakos_last_login_method', None)}
 
 def invitations(request):
-    return {'invitations_enabled': INVITATIONS_ENABLED}
+    return {'invitations_enabled': settings.INVITATIONS_ENABLED}
 
 
 def media(request):
-    return {'IM_STATIC_URL': IM_STATIC_URL}
+    return {'IM_STATIC_URL': settings.IM_STATIC_URL}
 
 
 def custom_messages(request):
@@ -110,6 +113,6 @@ def menu(request):
         return {'menu': menu_items}
 
 def membership_policies(request):
-    return {'join_policies':PROJECT_MEMBER_JOIN_POLICIES,
-            'leave_policies':PROJECT_MEMBER_LEAVE_POLICIES}
+    return {'join_policies': presentation.PROJECT_MEMBER_JOIN_POLICIES,
+            'leave_policies': presentation.PROJECT_MEMBER_LEAVE_POLICIES}
 

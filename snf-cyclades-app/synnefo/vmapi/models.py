@@ -36,6 +36,8 @@ from logging import getLogger
 from django.utils import simplejson as json
 from django.core.urlresolvers import reverse
 
+from synnefo.lib import join_urls
+
 from synnefo.api.servers import server_created
 from synnefo.vmapi import backend, get_key, get_uuid, settings
 
@@ -49,10 +51,10 @@ def create_server_params(sender, created_vm_params, **kwargs):
     log.info("Setting vmapi params with key %s for %s", key, sender)
     backend.set(key, json_value)
 
+    path = reverse("vmapi_server_params", args=[uuid]).lstrip('/')
+    config_url = join_urls(settings.BASE_HOST, path)
     # inject sender (vm) with its configuration url
-    setattr(sender, 'config_url', "%s%s" % (settings.BASE_URL,
-                                            reverse('vmapi_server_params',
-                                                    args=[uuid])))
+    setattr(sender, 'config_url', config_url)
     return uuid
 
 server_created.connect(create_server_params)

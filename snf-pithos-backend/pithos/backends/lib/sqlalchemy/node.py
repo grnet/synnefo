@@ -32,7 +32,11 @@
 # or implied, of GRNET S.A.
 
 from time import time
-from sqlalchemy import Table, Integer, BigInteger, DECIMAL, Column, String, MetaData, ForeignKey
+from operator import itemgetter
+from itertools import groupby
+
+from sqlalchemy import (Table, Integer, BigInteger, DECIMAL, Boolean,
+                        Column, String, MetaData, ForeignKey)
 from sqlalchemy.types import Text
 from sqlalchemy.schema import Index, Sequence
 from sqlalchemy.sql import func, and_, or_, not_, null, select, bindparam, text, exists
@@ -40,7 +44,7 @@ from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.engine.reflection import Inspector
 from sqlalchemy.exc import NoSuchTableError
 
-from dbworker import DBWorker
+from dbworker import DBWorker, ESCAPE_CHAR
 
 from pithos.backends.filter import parse_filters
 
@@ -177,7 +181,11 @@ def create_tables(engine):
     columns.append(Column('domain', String(256), primary_key=True))
     columns.append(Column('key', String(128), primary_key=True))
     columns.append(Column('value', String(256)))
+    columns.append(Column('node', Integer, nullable=False, default=0))
+    columns.append(Column('is_latest', Boolean, nullable=False, default=True))
     attributes = Table('attributes', metadata, *columns, mysql_engine='InnoDB')
+    Index('idx_attributes_domain', attributes.c.domain)
+    Index('idx_attributes_serial_node', attributes.c.serial, attributes.c.node)
 
     metadata.create_all(engine)
     return metadata.sorted_tables
@@ -206,13 +214,18 @@ class Node(DBWorker):
 
         s = self.nodes.select().where(and_(self.nodes.c.node == ROOTNODE,
                                            self.nodes.c.parent == ROOTNODE))
-        rp = self.conn.execute(s)
-        r = rp.fetchone()
-        rp.close()
-        if not r:
-            s = self.nodes.insert(
-            ).values(node=ROOTNODE, parent=ROOTNODE, path='')
-            self.conn.execute(s)
+        wrapper = self.wrapper
+        wrapper.execute()
+        try:
+            rp = self.conn.execute(s)
+            r = rp.fetchone()
+            rp.close()
+            if not r:
+                s = self.nodes.insert(
+                ).values(node=ROOTNODE, parent=ROOTNODE, path='')
+                self.conn.execute(s)
+        finally:
+            wrapper.commit()
 
     def node_create(self, parent, path):
         """Create a new node from the given properties.
@@ -225,14 +238,14 @@ class Node(DBWorker):
         r.close()
         return inserted_primary_key
 
-    def node_lookup(self, path):
+    def node_lookup(self, path, for_update=False):
         """Lookup the current node of the given path.
            Return None if the path is not found.
         """
 
         # Use LIKE for comparison to avoid MySQL problems with trailing spaces.
         s = select([self.nodes.c.node], self.nodes.c.path.like(
-            self.escape_like(path), escape='\\'))
+            self.escape_like(path), escape=ESCAPE_CHAR), for_update=for_update)
         r = self.conn.execute(s)
         row = r.fetchone()
         r.close()
@@ -306,7 +319,8 @@ class Node(DBWorker):
         r.close()
         return row[0]
 
-    def node_purge_children(self, parent, before=inf, cluster=0):
+    def node_purge_children(self, parent, before=inf, cluster=0,
+                            update_statistics_ancestors_depth=None):
         """Delete all versions with the specified
            parent and cluster, and return
            the hashes, the total size and the serials of versions deleted.
@@ -331,7 +345,8 @@ class Node(DBWorker):
         nr, size = row[0], row[1] if row[1] else 0
         mtime = time()
         self.statistics_update(parent, -nr, -size, mtime, cluster)
-        self.statistics_update_ancestors(parent, -nr, -size, mtime, cluster)
+        self.statistics_update_ancestors(parent, -nr, -size, mtime, cluster,
+                                         update_statistics_ancestors_depth)
 
         s = select([self.versions.c.hash, self.versions.c.serial])
         s = s.where(where_clause)
@@ -362,7 +377,8 @@ class Node(DBWorker):
 
         return hashes, size, serials
 
-    def node_purge(self, node, before=inf, cluster=0):
+    def node_purge(self, node, before=inf, cluster=0,
+                   update_statistics_ancestors_depth=None):
         """Delete all versions with the specified
            node and cluster, and return
            the hashes and size of versions deleted.
@@ -385,7 +401,8 @@ class Node(DBWorker):
         if not nr:
             return (), 0, ()
         mtime = time()
-        self.statistics_update_ancestors(node, -nr, -size, mtime, cluster)
+        self.statistics_update_ancestors(node, -nr, -size, mtime, cluster,
+                                         update_statistics_ancestors_depth)
 
         s = select([self.versions.c.hash, self.versions.c.serial])
         s = s.where(where_clause)
@@ -416,7 +433,7 @@ class Node(DBWorker):
 
         return hashes, size, serials
 
-    def node_remove(self, node):
+    def node_remove(self, node, update_statistics_ancestors_depth=None):
         """Remove the node specified.
            Return false if the node has children or is not found.
         """
@@ -433,18 +450,50 @@ class Node(DBWorker):
         r = self.conn.execute(s)
         for population, size, cluster in r.fetchall():
             self.statistics_update_ancestors(
-                node, -population, -size, mtime, cluster)
+                node, -population, -size, mtime, cluster,
+                update_statistics_ancestors_depth)
         r.close()
 
         s = self.nodes.delete().where(self.nodes.c.node == node)
         self.conn.execute(s).close()
         return True
 
-    def node_accounts(self):
-        s = select([self.nodes.c.path])
-        s = s.where(and_(self.nodes.c.node != 0, self.nodes.c.parent == 0))
-        account_nodes = self.conn.execute(s).fetchall()
-        return sorted(i[0] for i in account_nodes)
+    def node_accounts(self, accounts=()):
+        s = select([self.nodes.c.path, self.nodes.c.node])
+        s = s.where(and_(self.nodes.c.node != 0,
+                         self.nodes.c.parent == 0))
+        if accounts:
+            s = s.where(self.nodes.c.path.in_(accounts))
+        r = self.conn.execute(s)
+        rows = r.fetchall()
+        r.close()
+        return rows
+
+    def node_account_quotas(self):
+        s = select([self.nodes.c.path, self.policy.c.value])
+        s = s.where(and_(self.nodes.c.node != 0,
+                         self.nodes.c.parent == 0))
+        s = s.where(self.nodes.c.node == self.policy.c.node)
+        s = s.where(self.policy.c.key == 'quota')
+        r = self.conn.execute(s)
+        rows = r.fetchall()
+        r.close()
+        return dict(rows)
+
+    def node_account_usage(self, account_node, cluster):
+        select_children = select(
+            [self.nodes.c.node]).where(self.nodes.c.parent == account_node)
+        select_descendants = select([self.nodes.c.node]).where(
+            or_(self.nodes.c.parent.in_(select_children),
+                self.nodes.c.node.in_(select_children)))
+        s = select([func.sum(self.versions.c.size)])
+        s = s.where(self.nodes.c.node == self.versions.c.node)
+        s = s.where(self.nodes.c.node.in_(select_descendants))
+        s = s.where(self.versions.c.cluster == cluster)
+        r = self.conn.execute(s)
+        usage = r.fetchone()[0]
+        r.close()
+        return usage
 
     def policy_get(self, node):
         s = select([self.policy.c.key, self.policy.c.value],
@@ -516,14 +565,19 @@ class Node(DBWorker):
                              mtime=mtime, cluster=cluster)
             self.conn.execute(ins).close()
 
-    def statistics_update_ancestors(self, node, population, size, mtime, cluster=0):
+    def statistics_update_ancestors(self, node, population, size, mtime,
+                                    cluster=0, recursion_depth=None):
         """Update the statistics of the given node's parent.
-           Then recursively update all parents up to the root.
+           Then recursively update all parents up to the root
+           or up to the ``recursion_depth`` (if not None).
            Population is not recursive.
         """
 
+        i = 0
         while True:
             if node == ROOTNODE:
+                break
+            if recursion_depth and recursion_depth <= i:
                 break
             props = self.node_get_properties(node)
             if props is None:
@@ -532,6 +586,7 @@ class Node(DBWorker):
             self.statistics_update(parent, population, size, mtime, cluster)
             node = parent
             population = 0  # Population isn't recursive
+            i += 1
 
     def statistics_latest(self, node, before=inf, except_cluster=0):
         """Return population, total size and last mtime
@@ -563,7 +618,7 @@ class Node(DBWorker):
             filtered = filtered.where(self.versions.c.mtime < before)
         else:
             filtered = select([self.nodes.c.latest_version],
-                              self.versions.c.node == node)
+                              self.nodes.c.node == node)
         s = s.where(and_(self.versions.c.cluster != except_cluster,
                          self.versions.c.serial == filtered))
         r = self.conn.execute(s)
@@ -584,7 +639,7 @@ class Node(DBWorker):
             c1.where(self.versions.c.node == v.c.node)
         else:
             c1 = select([self.nodes.c.latest_version])
-            c1.where(self.nodes.c.node == v.c.node)
+            c1 = c1.where(self.nodes.c.node == v.c.node)
         c2 = select([self.nodes.c.node], self.nodes.c.parent == node)
         s = s.where(and_(v.c.serial == c1,
                          v.c.cluster != except_cluster,
@@ -609,10 +664,10 @@ class Node(DBWorker):
                         self.versions.c.node == v.c.node)
             c1 = c1.where(self.versions.c.mtime < before)
         else:
-            c1 = select([self.nodes.c.serial],
+            c1 = select([self.nodes.c.latest_version],
                         self.nodes.c.node == v.c.node)
         c2 = select([self.nodes.c.node], self.nodes.c.path.like(
-            self.escape_like(path) + '%', escape='\\'))
+            self.escape_like(path) + '%', escape=ESCAPE_CHAR))
         s = s.where(and_(v.c.serial == c1,
                          v.c.cluster != except_cluster,
                          v.c.node.in_(c2)))
@@ -630,7 +685,9 @@ class Node(DBWorker):
         s = s.values(latest_version=serial)
         self.conn.execute(s).close()
 
-    def version_create(self, node, hash, size, type, source, muser, uuid, checksum, cluster=0):
+    def version_create(self, node, hash, size, type, source, muser, uuid,
+                       checksum, cluster=0,
+                       update_statistics_ancestors_depth=None):
         """Create a new version from the given properties.
            Return the (serial, mtime) of the new version.
         """
@@ -640,7 +697,8 @@ class Node(DBWorker):
         ).values(node=node, hash=hash, size=size, type=type, source=source,
                  mtime=mtime, muser=muser, uuid=uuid, checksum=checksum, cluster=cluster)
         serial = self.conn.execute(s).inserted_primary_key[0]
-        self.statistics_update_ancestors(node, 1, size, mtime, cluster)
+        self.statistics_update_ancestors(node, 1, size, mtime, cluster,
+                                         update_statistics_ancestors_depth)
 
         self.nodes_set_latest_version(node, serial)
 
@@ -741,7 +799,8 @@ class Node(DBWorker):
         s = s.values(**{key: value})
         self.conn.execute(s).close()
 
-    def version_recluster(self, serial, cluster):
+    def version_recluster(self, serial, cluster,
+                          update_statistics_ancestors_depth=None):
         """Move the version into another cluster."""
 
         props = self.version_get_properties(serial)
@@ -754,15 +813,17 @@ class Node(DBWorker):
             return
 
         mtime = time()
-        self.statistics_update_ancestors(node, -1, -size, mtime, oldcluster)
-        self.statistics_update_ancestors(node, 1, size, mtime, cluster)
+        self.statistics_update_ancestors(node, -1, -size, mtime, oldcluster,
+                                         update_statistics_ancestors_depth)
+        self.statistics_update_ancestors(node, 1, size, mtime, cluster,
+                                         update_statistics_ancestors_depth)
 
         s = self.versions.update()
         s = s.where(self.versions.c.serial == serial)
         s = s.values(cluster=cluster)
         self.conn.execute(s).close()
 
-    def version_remove(self, serial):
+    def version_remove(self, serial, update_statistics_ancestors_depth=None):
         """Remove the serial specified."""
 
         props = self.version_get_properties(serial)
@@ -774,7 +835,8 @@ class Node(DBWorker):
         cluster = props[CLUSTER]
 
         mtime = time()
-        self.statistics_update_ancestors(node, -1, -size, mtime, cluster)
+        self.statistics_update_ancestors(node, -1, -size, mtime, cluster,
+                                         update_statistics_ancestors_depth)
 
         s = self.versions.delete().where(self.versions.c.serial == serial)
         self.conn.execute(s).close()
@@ -807,7 +869,7 @@ class Node(DBWorker):
         r.close()
         return l
 
-    def attribute_set(self, serial, domain, items):
+    def attribute_set(self, serial, domain, node, items, is_latest=True):
         """Set the attributes of the version specified by serial.
            Receive attributes as an iterable of (key, value) pairs.
         """
@@ -823,7 +885,8 @@ class Node(DBWorker):
             rp.close()
             if rp.rowcount == 0:
                 s = self.attributes.insert()
-                s = s.values(serial=serial, domain=domain, key=k, value=v)
+                s = s.values(serial=serial, domain=domain, node=node,
+                             is_latest=is_latest, key=k, value=v)
                 self.conn.execute(s).close()
 
     def attribute_del(self, serial, domain, keys=()):
@@ -848,25 +911,36 @@ class Node(DBWorker):
 
     def attribute_copy(self, source, dest):
         s = select(
-            [dest, self.attributes.c.domain,
-                self.attributes.c.key, self.attributes.c.value],
+            [dest, self.attributes.c.domain, self.attributes.c.node,
+             self.attributes.c.key, self.attributes.c.value],
             self.attributes.c.serial == source)
         rp = self.conn.execute(s)
         attributes = rp.fetchall()
         rp.close()
-        for dest, domain, k, v in attributes:
-            #insert or replace
+        for dest, domain, node, k, v in attributes:
+            select_src_node = select(
+                [self.versions.c.node],
+                self.versions.c.serial == dest)
+            # insert or replace
             s = self.attributes.update().where(and_(
                 self.attributes.c.serial == dest,
                 self.attributes.c.domain == domain,
                 self.attributes.c.key == k))
-            rp = self.conn.execute(s, value=v)
+            s = s.values(node = select_src_node, value=v)
+            rp = self.conn.execute(s)
             rp.close()
             if rp.rowcount == 0:
                 s = self.attributes.insert()
-                values = {'serial': dest, 'domain': domain,
-                          'key': k, 'value': v}
-                self.conn.execute(s, values).close()
+                s = s.values(serial=dest, domain=domain, node=select_src_node,
+                             is_latest=True, key=k, value=v)
+            self.conn.execute(s).close()
+
+    def attribute_unset_is_latest(self, node, exclude):
+        u = self.attributes.update().where(and_(
+            self.attributes.c.node == node,
+                     self.attributes.c.serial != exclude)).values(
+                             {'is_latest': False})
+        self.conn.execute(u)
 
     def latest_attribute_keys(self, parent, domain, before=inf, except_cluster=0, pathq=None):
         """Return a list with all keys pairs defined
@@ -899,7 +973,11 @@ class Node(DBWorker):
         for path, match in pathq:
             if match == MATCH_PREFIX:
                 conj.append(
-                    n.c.path.like(self.escape_like(path) + '%', escape='\\'))
+                    n.c.path.like(
+                        self.escape_like(path) + '%',
+                        escape=ESCAPE_CHAR
+                    )
+                )
             elif match == MATCH_EXACT:
                 conj.append(n.c.path == path)
         if conj:
@@ -994,7 +1072,11 @@ class Node(DBWorker):
         for path, match in pathq:
             if match == MATCH_PREFIX:
                 conj.append(
-                    n.c.path.like(self.escape_like(path) + '%', escape='\\'))
+                    n.c.path.like(
+                        self.escape_like(path) + '%',
+                        escape=ESCAPE_CHAR
+                    )
+                )
             elif match == MATCH_EXACT:
                 conj.append(n.c.path == path)
         if conj:
@@ -1099,3 +1181,34 @@ class Node(DBWorker):
         l = r.fetchone()
         r.close()
         return l
+
+    def domain_object_list(self, domain, paths, cluster=None):
+        """Return a list of (path, property list, attribute dictionary)
+           for the objects in the specific domain and cluster.
+        """
+
+        v = self.versions.alias('v')
+        n = self.nodes.alias('n')
+        a = self.attributes.alias('a')
+
+        s = select([n.c.path, v.c.serial, v.c.node, v.c.hash, v.c.size,
+                    v.c.type, v.c.source, v.c.mtime, v.c.muser, v.c.uuid,
+                    v.c.checksum, v.c.cluster, a.c.key, a.c.value])
+        if cluster:
+            s = s.where(v.c.cluster == cluster)
+        s = s.where(v.c.serial == a.c.serial)
+        s = s.where(a.c.domain == domain)
+        s = s.where(a.c.node == n.c.node)
+        s = s.where(a.c.is_latest == True)
+        if paths:
+            s = s.where(n.c.path.in_(paths))
+
+        r = self.conn.execute(s)
+        rows = r.fetchall()
+        r.close()
+
+        group_by = itemgetter(slice(12))
+        rows.sort(key = group_by)
+        groups = groupby(rows, group_by)
+        return [(k[0], k[1:], dict([i[12:] for i in data])) \
+            for (k, data) in groups]

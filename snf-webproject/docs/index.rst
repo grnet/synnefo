@@ -3,15 +3,30 @@
 Component snf-webproject
 ========================
 
-synnefo component :ref:`snf-webproject <snf-webproject>` defines a Django 
-project in which the various other synnefo components
+Synnefo component :ref:`snf-webproject <snf-webproject>` defines a Django 
+project in which the various other Synnefo components
 (:ref:`snf-cyclades-app <snf-cyclades-app>`,
 :ref:`snf-pithos-app <snf-pithos-app>`, etc.) may run.
 
-It provides a standard mechanism for every synnefo software component to modify
+It provides a standard mechanism for every Synnefo software component to modify
 the list of Django apps to be executed inside the project (``INSTALLED_APPS``),
 modify the list of middleware classes (``MIDDLEWARE_CLASSES``) and add its own
 URL patterns.
+
+In other words, wraps a Django project which extends itself (URLs,
+default_settings, installed_apps, middleware_classes) based on the Synnefo
+components/packages installed on the system.
+
+The extending mechanism is based on the python setuptools `entry_points`. So if
+an application (Synnefo component) wants to plug additional configuration to
+the Django project, it should define within its setup.py file the 'synnefo'
+appropriate entry_points.
+
+For usage example please take a look how snf-cyclades-app package defines its entry
+points in:
+
+    - snf-cyclades-app/setup.py
+    - snf-cyclades-app/app_settings/__init__.py
 
 .. todo:: Document snf-webproject facilities for developers
 
@@ -25,7 +40,7 @@ or request a specific version as ``snf-webproject==x.y.z``.
 
 .. code-block:: console
 
-   pip install snf-webproject -f https://docs.dev.grnet.gr/pypi
+   pip install snf-webproject -f https://www.synnefo.org/packages/pypi
 
 On Debian Squeeze, install the ``snf-webproject`` Debian package.
 

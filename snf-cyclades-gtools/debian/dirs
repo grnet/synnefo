@@ -1,0 +1,7 @@
+usr/sbin
+etc/synnefo
+etc/ganeti/hooks/instance-add-post.d
+etc/ganeti/hooks/instance-modify-post.d
+etc/ganeti/hooks/instance-reboot-post.d
+etc/ganeti/hooks/instance-start-post.d
+etc/ganeti/hooks/instance-stop-post.d

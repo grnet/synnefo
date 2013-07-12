@@ -62,7 +62,6 @@ eventd_start() {
         log_end_msg 0
     else
         log_end_msg 1
-        rm -f $SNF_EVENTD_PID_FILE
     fi
 } # eventd_start
 
@@ -104,7 +103,6 @@ case "$1" in
         log_daemon_msg "Stopping snf-ganeti-eventd daemon" "snf-ganeti-eventd"
         start-stop-daemon --stop --quiet --oknodo --pidfile $SNF_EVENTD_PID_FILE
         log_end_msg $?
-        rm -f $SNF_EVENTD_PID_FILE
         ;;
   restart)
         set +e
@@ -115,7 +113,6 @@ case "$1" in
                 sleep 1
             else
                 log_warning_msg "snf-ganeti-eventd daemon not running, attempting to start."
-                rm -f $SNF_EVENTD_PID_FILE
             fi
             # Check if we are on the Ganeti master node, before starting
             check_ganeti_master

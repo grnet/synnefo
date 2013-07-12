@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/sh
 . ./ci/config
 
 for project in $PROJECTS; do

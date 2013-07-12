@@ -20,3 +20,11 @@ USE_X_FORWARDED_HOST = True
 # Settings / cookies that should be 'cleansed'
 HIDDEN_SETTINGS = 'SECRET|PASSWORD|PROFANITIES_LIST|SIGNATURE|AMQP_HOSTS|PRIVATE_KEY|DB_CONNECTION'
 HIDDEN_COOKIES  = 'password|_pithos2_a|token|sessionid|shibstate|shibsession|CSRF_COOKIE'
+
+
+#When set to True, if the request URL does not match any of the patterns in the
+#URLconf and it doesn't end in a slash, an HTTP redirect is issued to the same
+#URL with a slash appended. Note that the redirect may cause any data submitted
+#in a POST request to be lost. Due to the REST nature of most of the registered
+#Synnefo endpoints we prefer to disable this behaviour by default.
+APPEND_SLASH = False

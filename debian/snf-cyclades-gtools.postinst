@@ -22,12 +22,6 @@ case "$1" in
     configure)
         echo "Updating rc.d links... "
         update-rc.d snf-ganeti-eventd defaults
-        echo "Starting snf-ganeti-eventd...\n"
-    if [ -x "/usr/sbin/invoke-rc.d" ]; then
-            invoke-rc.d snf-ganeti-eventd start
-        else
-            /etc/init.d/snf-ganeti-eventd start
-        fi
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

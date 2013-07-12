@@ -1,0 +1,61 @@
+snf-cyclades-gtools (0.10.0-1) stable; urgency=low
+
+  * New upstream version 
+
+ -- Kostas Papadimitriou <kpap@grnet.gr>  Wed, 18 Jul 2012 20:51:02 +0300
+
+snf-cyclades-gtools (0.10.0~rc2-1) stable; urgency=low
+
+  * New upstream version
+
+ -- Dimitris Aragiorgis <dimara@grnet.gr>  Thu, 28 Jun 2012 18:13:07 +0300
+
+snf-cyclades-gtools (0.10.0~rc1-1) stable; urgency=low
+
+  * New upstream version
+
+ -- Dimitris Aragiorgis <dimara@grnet.gr>  Thu, 28 Jun 2012 18:13:07 +0300
+
+snf-cyclades-gtools (0.8.0-1) stable; urgency=low
+
+  * New upstream version.
+
+ -- Vangelis Koukis <vkoukis@grnet.gr>  Tue, 07 Feb 2012 15:16:31 +0200
+
+snf-cyclades-gtools (0.7.1) UNRELEASED; urgency=low
+
+  * New upstream version.
+
+ -- Constantinos Venetsanopoulos <cven@grnet.gr>  Mon, 17 Oct 2011 10:28:46 +0300
+
+snf-cyclades-gtools (0.7) UNRELEASED; urgency=low
+
+  * New upstream version.
+
+ -- Vangelis Koukis <vkoukis@grnet.gr>  Tue, 11 Oct 2011 23:01:46 +0300
+
+snf-cyclades-gtools (0.6) UNRELEASED; urgency=low
+
+  * New upstream version.
+
+ -- Vangelis Koukis <vkoukis@grnet.gr>  Thu, 08 Sep 2011 21:38:24 +0300
+
+snf-cyclades-gtools (0.5.5) UNRELEASED; urgency=low
+
+  * New version, minor bugfixes.
+
+ -- Vangelis Koukis <vkoukis@grnet.gr>  Wed, 31 Aug 2011 17:38:09 +0300
+
+snf-cyclades-gtools (0.5.4-1) UNRELEASED; urgency=low
+
+  * New version, import snf-progress-monitor
+  * Make synnefo a Python namespace package, move everything below it
+  * Update bootstrap scripts
+
+ -- Vangelis Koukis <vkoukis@grnet.gr>  Wed, 27 Jul 2011 17:03:14 +0300
+
+snf-cyclades-gtools (0.5-1) UNRELEASED; urgency=low
+
+  * Initial release.
+
+ -- Faidon Liambotis <paravoid@debian.org>  Wed, 29 Jun 2011 18:41:49 +0300

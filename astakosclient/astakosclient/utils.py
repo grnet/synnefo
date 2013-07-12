@@ -34,8 +34,9 @@
 from httplib import HTTPConnection, HTTPSConnection
 from contextlib import closing
 
+import simplejson
 from objpool.http import PooledHTTPConnection
-from astakosclient.errors import AstakosClientException
+from astakosclient.errors import AstakosClientException, BadValue
 
 
 def retry(func):
@@ -48,11 +49,14 @@ def retry(func):
                 is_last_attempt = attemps == self.retry
                 if is_last_attempt:
                     raise err
-                if err.status == 401 or err.status == 404:
+                if err.status == 401 or \
+                   err.status == 404 or \
+                   err.status == 413:
                     # In case of Unauthorized response
-                    # or Not Found return immediately
+                    # or Not Found or Request Entity Too Large
+                    # return immediately
                     raise err
-                self.logger.info("AstakosClient request failed..retrying")
+                self.logger.warning("AstakosClient request failed..retrying")
                 attemps += 1
     return decorator
 
@@ -81,3 +85,23 @@ def scheme_to_class(scheme, use_pool, pool_size):
             return _https_connection
     else:
         return None
+
+
+def parse_request(request, logger):
+    """Parse request with simplejson to convert it to string"""
+    try:
+        return simplejson.dumps(request)
+    except Exception as err:
+        m = "Cannot parse request \"%s\" with simplejson: %s" \
+            % (request, str(err))
+        logger.error(m)
+        raise BadValue(m)
+
+
+def check_input(function_name, logger, **kwargs):
+    """Check if given arguments are not None"""
+    for i in kwargs:
+        if kwargs[i] is None:
+            m = "in " + function_name + ": " + str(i) + " parameter not given"
+            logger.error(m)
+            raise BadValue(m)

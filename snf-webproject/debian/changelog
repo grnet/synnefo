@@ -1,0 +1,65 @@
+snf-webproject (0.10.0-1) stable; urgency=low
+
+  * New upstream version 
+
+ -- Kostas Papadimitriou <kpap@grnet.gr>  Wed, 18 Jul 2012 20:51:02 +0300
+
+snf-webproject (0.10.0~rc2-1) stable; urgency=low
+
+  * New upstream version
+
+ -- Dimitris Aragiorgis <dimara@grnet.gr>  Thu, 28 Jun 2012 18:13:07 +0300
+
+snf-webproject (0.10.0~rc1-1) stable; urgency=low
+
+  * New upstream version with networks support
+
+ -- Dimitris Aragiorgis <dimara@grnet.gr>  Thu, 28 Jun 2012 18:13:07 +0300
+
+snf-webproject (0.9.12-1) stable; urgency=low
+
+  * New upstream version
+
+ -- Kostas Papadimitriou <kpap@grnet.gr>  Wed, 02 May 2012 15:34:26 +0300
+
+snf-webproject (0.9.5-1) stable; urgency=low
+
+  * New upstream version 
+
+ -- Kostas Papadimitriou <kpap@grnet.gr>  Thu, 15 Mar 2012 13:32:17 +0200
+
+snf-webproject (0.9.4-1) stable; urgency=low
+
+  * New upstream version 
+
+ -- Kostas Papadimitriou <kpap@grnet.gr>  Thu, 15 Mar 2012 13:24:26 +0200
+
+snf-webproject (0.9.3-1) stable; urgency=low
+
+  * New upstream version
+
+ -- Kostas Papadimitriou <kpap@grnet.gr>  Thu, 08 Mar 2012 14:09:24 +0200
+
+snf-webproject (0.9.1-1) stable; urgency=low
+
+  * New upstream version 
+
+ -- Kostas Papadimitriou <kpap@grnet.gr>  Wed, 07 Mar 2012 15:05:10 +0200
+
+snf-webproject (0.9.0-1) stable; urgency=low
+
+  * New upstream version 
+
+ -- Kostas Papadimitriou <kpap@grnet.gr>  Fri, 02 Mar 2012 17:20:05 +0200
+
+snf-webproject (0.9.0rc1-1) stable; urgency=low
+
+  * New upstream version
+
+ -- Kostas Papadimitriou <kpap@grnet.gr>  Fri, 24 Feb 2012 17:37:22 +0200
+
+snf-webproject (0.8.0-1) stable; urgency=low
+
+  * Initial Debian packaging for Synnefo v0.8.0.
+
+ -- Vangelis Koukis <vkoukis@grnet.gr>  Tue, 07 Feb 2012 15:17:56 +0200

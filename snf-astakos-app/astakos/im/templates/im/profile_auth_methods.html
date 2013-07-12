@@ -30,10 +30,10 @@
                 <p>Are you sure you want to change {{ userauthprovider.get_method_prompt_msg }}?</p> 
                 {% endif %}
                 {% if userauthprovider.get_remove_policy %}
-                <p><a href="{{ userauthprovider.get_remove_url }}"
-                  class="submit">Yes</a>
+                <form action="{{ userauthprovider.get_remove_url }}" method="post">{% csrf_token %}
+                  <input type="submit" value="YES" />
+                </form>  
                 <a href="#" class="no submit">No</a>
-                </p>
                 {% else %}
                 <p><a href="{{ userauthprovider.get_switch_url }}"
                   class="submit">Yes</a>
@@ -77,10 +77,10 @@
               </span>
               <div class="dialog-wrap">
                 <p>Are you sure you want to remove {{ userauthprovider.get_method_prompt_msg }}?</p> 
-                <p><a href="{{ userauthprovider.get_remove_url }}"
-                  class="submit">Yes</a>
+                <form action="{{ userauthprovider.get_remove_url }}" method="post">{% csrf_token %}
+                  <input type="submit" value="YES" />
+                </form>  
                 <a href="#" class="no submit">No</a>
-                </p>
               </div>	
               {% else %}
               <a href="javascript:void(0);" class="noaction" 

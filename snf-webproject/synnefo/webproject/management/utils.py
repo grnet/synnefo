@@ -43,7 +43,7 @@ from synnefo.util.text import uenc, udec
 def parse_bool(value, strict=True):
     """Convert a string to boolen value.
 
-    If string is True, then ValueError will be raised, if the string can not be
+    If strict is True, then ValueError will be raised, if the string can not be
     converted to boolean. Otherwise the string will be returned as is.
 
     """
@@ -53,7 +53,7 @@ def parse_bool(value, strict=True):
         return False
 
     if strict:
-        raise ValueError("Can convert '%s' to boolean value")
+        raise ValueError("Cannot convert '%s' to boolean value" % value)
     else:
         return value
 
@@ -117,7 +117,7 @@ def parse_filters(filter_by):
 
 
 def pprint_table(out, table, headers=None, output_format='pretty',
-                 separator=None, vertical=False):
+                 separator=None, vertical=False, title=None):
     """Print a pretty, aligned string representation of table.
 
     Works by finding out the max width of each column and padding to data
@@ -156,11 +156,10 @@ def pprint_table(out, table, headers=None, output_format='pretty',
             assert(len(table) == 1)
             row = table[0]
             max_key = max(map(len, headers))
-            max_val = max(map(len, row))
             for row in table:
                 for (k, v) in zip(headers, row):
                     k = uenc(k.ljust(max_key))
-                    v = uenc(v.ljust(max_val))
+                    v = uenc(v)
                     out.write("%s: %s\n" % (k, v))
         else:
             # Find out the max width of each column
@@ -168,6 +167,8 @@ def pprint_table(out, table, headers=None, output_format='pretty',
             widths = [max(map(len, col)) for col in zip(*(columns))]
 
             t_length = sum(widths) + len(sep) * (len(widths) - 1)
+            if title is not None:
+                out.write(title.center(t_length) + "\n")
             if headers:
                 # pretty print the headers
                 line = sep.join(uenc(v.rjust(w))\

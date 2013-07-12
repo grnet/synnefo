@@ -51,6 +51,24 @@ USERS_DISPLAYNAMES = dict(map(lambda k: (k[1]['displayname'], {'uuid': k[0]}),
 
 from synnefo.db import models_factory as mfactory
 
+
+class AstakosClientMock():
+    def __init__(*args, **kwargs):
+        pass
+
+    def get_username(self, token, uuid):
+        try:
+            return USERS_UUIDS.get(uuid)['displayname']
+        except TypeError:
+            return None
+
+    def get_uuid(self, token, display_name):
+        try:
+            return USERS_DISPLAYNAMES.get(display_name)['uuid']
+        except TypeError:
+            return None
+
+
 class AuthClient(Client):
 
     def request(self, **request):
@@ -60,46 +78,45 @@ class AuthClient(Client):
         return super(AuthClient, self).request(**request)
 
 
+def get_user_mock(request, *args, **kwargs):
+    request.user_uniq = None
+    request.user = None
+    if request.META.get('HTTP_X_AUTH_TOKEN', None) == '0000':
+        request.user_uniq = 'test'
+        request.user = {'uniq': 'test', 'auth_token': '0000'}
+    if request.META.get('HTTP_X_AUTH_TOKEN', None) == '0001':
+        request.user_uniq = 'test'
+        request.user = {'uniq': 'test', 'groups': ['default',
+                                                   'helpdesk'],
+                        'auth_token': '0001'}
+
+
+@mock.patch("astakosclient.AstakosClient", new=AstakosClientMock)
+@mock.patch("snf_django.lib.astakos.get_user", new=get_user_mock)
 class HelpdeskTests(TestCase):
     """
     Helpdesk tests. Test correctness of permissions and returned data.
     """
 
-    fixtures = ['helpdesk_test']
-
     def setUp(self):
-
-        def get_user_mock(request, *args, **kwargs):
-            if request.META.get('HTTP_X_AUTH_TOKEN', None) == '0000':
-                request.user_uniq = 'test'
-                request.user = {'uniq': 'test', 'auth_token': '0000'}
-            if request.META.get('HTTP_X_AUTH_TOKEN', None) == '0001':
-                request.user_uniq = 'test'
-                request.user = {'uniq': 'test', 'groups': ['default',
-                                                           'helpdesk'],
-                                'auth_token': '0001'}
-
-        def get_uuid_mock(token, displayname, url):
-            try:
-                return USERS_DISPLAYNAMES.get(displayname)['uuid']
-            except TypeError:
-                return None
-
-        def get_displayname_mock(token, uuid, url):
-            try:
-                return USERS_UUIDS.get(uuid)['displayname']
-            except TypeError:
-                return None
-
-        # mock the astakos authentication function
-        from snf_django.lib import astakos
-        astakos.get_user = get_user_mock
-        astakos.get_displayname = get_displayname_mock
-        astakos.get_user_uuid = get_uuid_mock
-
         settings.SKIP_SSH_VALIDATION = True
         settings.HELPDESK_ENABLED = True
         self.client = AuthClient()
+
+        # init models
+        vm1u1 = mfactory.VirtualMachineFactory(userid=USER1, name="user1 vm",
+                                               pk=1001)
+        vm1u2 = mfactory.VirtualMachineFactory(userid=USER2, name="user2 vm1",
+                                               pk=1002)
+        vm2u2 = mfactory.VirtualMachineFactory(userid=USER2, name="user2 vm2",
+                                               pk=1003)
+
+        netpub = mfactory.NetworkFactory(public=True)
+        net1u1 = mfactory.NetworkFactory(public=False, userid=USER1)
+
+        nic1 = mfactory.NetworkInterfaceFactory(machine=vm1u2, network=net1u1)
+        nic2 = mfactory.NetworkInterfaceFactory(machine=vm1u1, network=netpub,
+                                                ipv4="195.251.222.211")
 
     def test_enabled_setting(self):
         settings.HELPDESK_ENABLED = False
@@ -121,7 +138,7 @@ class HelpdeskTests(TestCase):
         # ip exists, 'test' account discovered
         r = self.client.get(reverse('helpdesk-details',
                             args=["195.251.222.211"]), user_token='0001')
-        self.assertEqual(r.context['account'], USER2)
+        self.assertEqual(r.context['account'], USER1)
 
     def test_vm_lookup(self):
         # vm id does not exist
@@ -220,7 +237,7 @@ class HelpdeskTests(TestCase):
         self.assertEqual(account, USER1)
         self.assertEqual(vms[0].name, "user1 vm")
         self.assertEqual(vms.count(), 1)
-        self.assertEqual(len(nets), 1)
+        self.assertEqual(len(nets), 2)
         self.assertEqual(r.context['account_exists'], True)
 
         # 'testuser2@test.com' details, see helpdesk
@@ -232,9 +249,9 @@ class HelpdeskTests(TestCase):
         vms = r.context['vms']
         nets = r.context['networks']
         self.assertEqual(account, USER2)
-        self.assertEqual(vms[0].name, "user2 vm2")
-        self.assertEqual(vms[1].name, "user2 vm1")
         self.assertEqual(vms.count(), 2)
+        self.assertEqual(sorted([vms[0].name, vms[1].name]),
+                         sorted(["user2 vm1", "user2 vm2"]))
         self.assertEqual(len(nets), 0)
         self.assertEqual(r.context['account_exists'], True)
 

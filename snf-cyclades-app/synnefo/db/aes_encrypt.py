@@ -1,5 +1,6 @@
 from binascii import b2a_base64, a2b_base64
 from Crypto.Cipher import AES
+from Crypto import Random
 from random import choice
 from string import letters, digits
 from synnefo.settings import SECRET_ENCRYPTION_KEY
@@ -18,13 +19,13 @@ def _pad_secret(secret, blocksize=32, padding='}'):
     return secret
 
 
-def encrypt(s):
-    obj = AES.new(_pad_secret(SECRET_ENCRYPTION_KEY), AES.MODE_CFB)
+def encrypt(s, iv):
+    obj = AES.new(_pad_secret(SECRET_ENCRYPTION_KEY), AES.MODE_CFB, iv)
     return obj.encrypt(s)
 
 
-def decrypt(s):
-    obj = AES.new(_pad_secret(SECRET_ENCRYPTION_KEY), AES.MODE_CFB)
+def decrypt(s, iv):
+    obj = AES.new(_pad_secret(SECRET_ENCRYPTION_KEY), AES.MODE_CFB, iv)
     return obj.decrypt(s)
 
 
@@ -33,11 +34,13 @@ def encrypt_db_charfield(plaintext):
         return plaintext
     salt = "".join([choice(letters + digits) for i in xrange(SALT_LEN)])
 
+    iv = Random.get_random_bytes(16)
     plaintext = "%s%s" % (salt, plaintext)
     # Encrypt and convert to binary
-    ciphertext = b2a_base64(encrypt(plaintext))
+    ciphertext = b2a_base64(encrypt(plaintext, iv))
+    iv = b2a_base64(iv)
     # Append prefix,salt and return encoded value
-    final = '%s:%s$%s' % (DB_ENCRYPTED_FIELD_PREFIX, salt, ciphertext)
+    final = '%s:%s:%s$%s' % (DB_ENCRYPTED_FIELD_PREFIX, iv, salt, ciphertext)
     return final.encode('utf8')
 
 
@@ -48,11 +51,12 @@ def decrypt_db_charfield(ciphertext):
     if not has_prefix:  # Non-encoded value
         return ciphertext
     else:
-        _, ciphertext = ciphertext.split(':')
+        _, iv, ciphertext = ciphertext.split(':')
 
     pure_salt, encrypted = ciphertext.split('$')
+    iv = a2b_base64(iv)
 
-    plaintext = decrypt(a2b_base64(encrypted))
+    plaintext = decrypt(a2b_base64(encrypted), iv)
 
     salt = plaintext[:SALT_LEN]
     plaintext = plaintext[SALT_LEN:]

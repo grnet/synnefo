@@ -31,24 +31,28 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from sqlalchemy.sql import select, literal
+from sqlalchemy.sql import select, literal, or_
 from sqlalchemy.sql.expression import join, union
 
 from xfeatures import XFeatures
 from groups import Groups
 from public import Public
+from node import Node
+
+from dbworker import ESCAPE_CHAR
 
 
 READ = 0
 WRITE = 1
 
 
-class Permissions(XFeatures, Groups, Public):
+class Permissions(XFeatures, Groups, Public, Node):
 
     def __init__(self, **params):
         XFeatures.__init__(self, **params)
         Groups.__init__(self, **params)
         Public.__init__(self, **params)
+        Node.__init__(self, **params)
 
     def access_grant(self, path, access, members=()):
         """Grant members with access to path.
@@ -154,8 +158,17 @@ class Permissions(XFeatures, Groups, Public):
                 valid.append(subp + '/')
         return [x for x in valid if self.xfeature_get(x)]
 
-    def access_list_paths(self, member, prefix=None):
-        """Return the list of paths granted to member."""
+    def access_list_paths(self, member, prefix=None, include_owned=False,
+                          include_containers=True):
+        """Return the list of paths granted to member.
+
+        Keyword arguments:
+        prefix -- return only paths starting with prefix (default None)
+        include_owned -- return also paths owned by member (default False)
+        include_containers -- return also container paths owned by member
+                              (default True)
+
+        """
 
         xfeatures_xfeaturevals = self.xfeatures.join(self.xfeaturevals)
 
@@ -172,17 +185,34 @@ class Permissions(XFeatures, Groups, Public):
         s = select([self.xfeatures.c.path], from_obj=[inner_join]).distinct()
         if prefix:
             s = s.where(self.xfeatures.c.path.like(
-                self.escape_like(prefix) + '%', escape='\\'))
+                self.escape_like(prefix) + '%', escape=ESCAPE_CHAR
+            ))
         r = self.conn.execute(s)
         l = [row[0] for row in r.fetchall()]
         r.close()
+
+        if include_owned:
+            container_nodes = select(
+                [self.nodes.c.node],
+                self.nodes.c.parent == self.node_lookup(member))
+            condition = self.nodes.c.parent.in_(container_nodes)
+            if include_containers:
+                condition = or_(condition,
+                                self.nodes.c.node.in_(container_nodes))
+            s = select([self.nodes.c.path], condition)
+            r = self.conn.execute(s)
+            l += [row[0] for row in r.fetchall() if row[0] not in l]
+            r.close()
         return l
 
     def access_list_shared(self, prefix=''):
         """Return the list of shared paths."""
 
         s = select([self.xfeatures.c.path],
-                   self.xfeatures.c.path.like(self.escape_like(prefix) + '%', escape='\\')).order_by(self.xfeatures.c.path.asc())
+                   self.xfeatures.c.path.like(self.escape_like(prefix) + '%',
+                                              escape=ESCAPE_CHAR
+                   )
+        ).order_by(self.xfeatures.c.path.asc())
         r = self.conn.execute(s)
         l = [row[0] for row in r.fetchall()]
         r.close()

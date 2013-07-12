@@ -72,14 +72,14 @@
         // custom glance api parser
         parse: function (resp, xhr) {
             if (_.isArray(resp)) {
-                resp = {'images': {'values': resp }};
+              resp = {'images': resp };
             }
             return models.GlanceImages.__super__.parse.call(this, resp, xhr);
         },
 
         _read_image_from_request: function(image, msg, xhr) {
             var img = {};
-            img['metadata'] = {values:{}};
+            img['metadata'] = {};
 
             var headers = snf.util.parseHeaders(xhr.getAllResponseHeaders().toLowerCase());
 
@@ -91,7 +91,7 @@
                 if (key.indexOf("x-image-meta-property") == -1) {
                     img[key.replace("x-image-meta-","").replace(/-/g,"_")] = _.trim(value);
                 } else {
-                    img.metadata.values[key.replace('x-image-meta-property-',"").replace(/-/g,"_")] = _.trim(value);
+                    img.metadata[key.replace('x-image-meta-property-',"").replace(/-/g,"_")] = _.trim(value);
                 }
             
             })
@@ -102,16 +102,16 @@
         parse_meta: function(img) {
             if (img.properties) {
                 img.metadata = {};
-                img.metadata.values = img.properties;
+                img.metadata = img.properties;
             } else {
                 if (!img.metadata) {
-                    img.metadata = {values:{}};
+                    img.metadata = {};
                 }
             }
 
             // fixes plankton regression (returns lowercase meta keys)
-            if (img.metadata.values.os && !img.metadata.values.OS) {
-                img.metadata.values.OS = img.metadata.values.os;
+            if (img.metadata.os && !img.metadata.OS) {
+                img.metadata.OS = img.metadata.os;
             }
 
             img = models.GlanceImages.__super__.parse_meta.call(this, img);

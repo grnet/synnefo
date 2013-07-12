@@ -1,9 +1,48 @@
 #coding=utf8
 from django.conf import settings
+from synnefo.lib import parse_base_url, join_urls
+from synnefo.lib.services import fill_endpoints
+from synnefo.util.keypath import get_path, set_path
+from pithos.api.services import pithos_services as vanilla_pithos_services
+from astakosclient import astakos_services as vanilla_astakos_services
 
-AUTHENTICATION_URL = getattr(settings, 'PITHOS_AUTHENTICATION_URL',
-                             'https://accounts.example.synnefo.org/im/authenticate/')
-ASTAKOS_URL = AUTHENTICATION_URL.replace("im/authenticate/", "")
+from copy import deepcopy
+
+# Top-level URL for Pithos. Must set.
+BASE_URL = getattr(settings, 'PITHOS_BASE_URL',
+                   "https://object-store.example.synnefo.org/pithos/")
+
+BASE_HOST, BASE_PATH = parse_base_url(BASE_URL)
+
+# Process Astakos settings
+ASTAKOS_BASE_URL = getattr(settings, 'ASTAKOS_BASE_URL',
+                           'https://accounts.example.synnefo.org/astakos/')
+ASTAKOS_BASE_HOST, ASTAKOS_BASE_PATH = parse_base_url(ASTAKOS_BASE_URL)
+
+pithos_services = deepcopy(vanilla_pithos_services)
+fill_endpoints(pithos_services, BASE_URL)
+PITHOS_PREFIX = get_path(pithos_services, 'pithos_object-store.prefix')
+PUBLIC_PREFIX = get_path(pithos_services, 'pithos_public.prefix')
+UI_PREFIX = get_path(pithos_services, 'pithos_ui.prefix')
+
+astakos_services = deepcopy(vanilla_astakos_services)
+fill_endpoints(astakos_services, ASTAKOS_BASE_URL)
+CUSTOMIZE_ASTAKOS_SERVICES = \
+        getattr(settings, 'PITHOS_CUSTOMIZE_ASTAKOS_SERVICES', ())
+for path, value in CUSTOMIZE_ASTAKOS_SERVICES:
+    set_path(astakos_services, path, value, createpath=True)
+
+ASTAKOS_ACCOUNTS_PREFIX = get_path(astakos_services, 'astakos_account.prefix')
+ASTAKOS_VIEWS_PREFIX = get_path(astakos_services, 'astakos_ui.prefix')
+ASTAKOS_KEYSTONE_PREFIX = get_path(astakos_services, 'astakos_identity.prefix')
+
+BASE_ASTAKOS_PROXY_PATH = getattr(settings, 'PITHOS_BASE_ASTAKOS_PROXY_PATH',
+                                  ASTAKOS_BASE_PATH)
+BASE_ASTAKOS_PROXY_PATH = join_urls(BASE_PATH, BASE_ASTAKOS_PROXY_PATH)
+BASE_ASTAKOS_PROXY_PATH = BASE_ASTAKOS_PROXY_PATH.strip('/')
+
+
+ASTAKOSCLIENT_POOLSIZE = getattr(settings, 'PITHOS_ASTAKOSCLIENT_POOLSIZE', 200)
 
 COOKIE_NAME = getattr(settings, 'PITHOS_ASTAKOS_COOKIE_NAME', '_pithos2_a')
 
@@ -27,8 +66,10 @@ BACKEND_QUEUE_HOSTS = getattr(settings, 'PITHOS_BACKEND_QUEUE_HOSTS', None) # Ex
 BACKEND_QUEUE_EXCHANGE = getattr(settings, 'PITHOS_BACKEND_QUEUE_EXCHANGE', 'pithos')
 
 # Default setting for new accounts.
-BACKEND_QUOTA = getattr(
-    settings, 'PITHOS_BACKEND_QUOTA', 50 * 1024 * 1024 * 1024)
+BACKEND_ACCOUNT_QUOTA = getattr(
+    settings, 'PITHOS_BACKEND_ACCOUNT_QUOTA', 50 * 1024 * 1024 * 1024)
+BACKEND_CONTAINER_QUOTA = getattr(
+    settings, 'PITHOS_BACKEND_CONTAINER_QUOTA', 0)
 BACKEND_VERSIONING = getattr(settings, 'PITHOS_BACKEND_VERSIONING', 'auto')
 BACKEND_FREE_VERSIONING = getattr(settings, 'PITHOS_BACKEND_FREE_VERSIONING', True)
 
@@ -55,19 +96,6 @@ TRANSLATE_UUIDS = getattr(settings, 'PITHOS_TRANSLATE_UUIDS', False)
 # Set to False if snf astakos-app is running on the same machine, so it handles
 # the requests on its own.
 PROXY_USER_SERVICES = getattr(settings, 'PITHOS_PROXY_USER_SERVICES', True)
-
-USER_CATALOG_URL = getattr(settings, 'PITHOS_USER_CATALOG_URL',
-                           'https://accounts.example.synnefo.org/user_catalogs/')
-USER_FEEDBACK_URL = getattr(settings, 'PITHOS_USER_FEEDBACK_URL',
-                            'https://accounts.example.synnefo.org/feedback/')
-USER_LOGIN_URL = getattr(settings, 'PITHOS_USER_LOGIN_URL',
-                         'https://accounts.example.synnefo.org/login/')
-
-# Set the quota holder component URI
-USE_QUOTAHOLDER = getattr(settings, 'PITHOS_USE_QUOTAHOLDER', False)
-QUOTAHOLDER_URL = getattr(settings, 'PITHOS_QUOTAHOLDER_URL', '')
-QUOTAHOLDER_TOKEN = getattr(settings, 'PITHOS_QUOTAHOLDER_TOKEN', '')
-QUOTAHOLDER_POOLSIZE = getattr(settings, 'PITHOS_QUOTAHOLDER_POOLSIZE', 200)
 
 # Set how many random bytes to use for constructing the URL of Pithos public files
 PUBLIC_URL_SECURITY =  getattr(settings, 'PITHOS_PUBLIC_URL_SECURITY', 16)

@@ -33,177 +33,36 @@
 
 import logging
 
-from urlparse import urlparse
-from urllib import unquote
-from django.utils import simplejson as json
-
-from objpool.http import PooledHTTPConnection
-
-logger = logging.getLogger(__name__)
+from astakosclient import AstakosClient
+from astakosclient.errors import (Unauthorized, NoUUID, NoUserName,
+                                  AstakosClientException)
 
 
-def retry(howmany):
-    def execute(func):
-        def f(*args, **kwargs):
-            attempts = 0
-            while True:
-                try:
-                    return func(*args, **kwargs)
-                except Exception, e:
-                    is_last_attempt = attempts == howmany - 1
-                    if is_last_attempt:
-                        raise e
-                    if e.args:
-                        status = e.args[-1]
-                        # In case of Unauthorized response
-                        # or Not Found return directly
-                        if status == 401 or status == 404:
-                            raise e
-                    attempts += 1
-        return f
-    return execute
-
-
-def call(token, url, headers=None, body=None, method='GET'):
-    p = urlparse(url)
-
-    kwargs = {}
-    if headers is None:
-        headers = {}
-    kwargs["headers"] = headers
-    kwargs['headers']['X-Auth-Token'] = token
-    if body:
-        kwargs['body'] = body
-        kwargs['headers'].setdefault('content-type',
-                                     'application/octet-stream')
-    kwargs['headers'].setdefault('content-length', len(body) if body else 0)
-
-    with PooledHTTPConnection(p.netloc, p.scheme) as conn:
-        conn.request(method, p.path + '?' + p.query, **kwargs)
-        response = conn.getresponse()
-        headers = response.getheaders()
-        headers = dict((unquote(h), unquote(v)) for h, v in headers)
-        length = response.getheader('content-length', None)
-        data = response.read(length)
-        status = int(response.status)
-
-    if status < 200 or status >= 300:
-        raise Exception(data, status)
-
-    return json.loads(data)
-
-
-def authenticate(
-        token, authentication_url='http://127.0.0.1:8000/im/authenticate',
-        usage=False):
-
-    if usage:
-        authentication_url += "?usage=1"
-
-    return call(token, authentication_url)
-
-
-@retry(3)
-def get_displaynames(
-        token,
-        uuids,
-        url='http://127.0.0.1:8000/user_catalogs',
-        override_users={}):
-
-    if override_users:
-        return dict((u, u) for u in uuids)
-
-    try:
-        data = call(
-            token, url,  headers={'content-type': 'application/json'},
-            body=json.dumps({'uuids': uuids}), method='POST')
-    except:
-        raise
-    else:
-        return data.get('uuid_catalog')
-
-
-@retry(3)
-def get_uuids(
-        token,
-        displaynames,
-        url='http://127.0.0.1:8000/user_catalogs',
-        override_users={}):
-
-    if override_users:
-        return dict((u, u) for u in displaynames)
-
-    try:
-        data = call(
-            token, url, headers={'content-type': 'application/json'},
-            body=json.dumps({'displaynames': displaynames}), method='POST')
-    except:
-        raise
-    else:
-        return data.get('displayname_catalog')
-
-
-def get_user_uuid(
-        token,
-        displayname,
-        url='http://127.0.0.1:8000/user_catalogs',
-        override_users={}):
-
-    if not displayname:
-        return
-
-    displayname_dict = get_uuids(token, [displayname], url, override_users)
-    return displayname_dict.get(displayname)
-
-
-def get_displayname(
-        token,
-        uuid,
-        url='http://127.0.0.1:8000/user_catalogs',
-        override_users={}):
-
-    if not uuid:
-        return
-
-    uuid_dict = get_displaynames(token, [uuid], url, override_users)
-    return uuid_dict.get(uuid)
-
-
-def user_for_token(token, authentication_url, usage=False):
+def user_for_token(client, token, usage=False):
     if not token:
         return None
 
     try:
-        return authenticate(token, authentication_url, usage=usage)
-    except Exception, e:
-        # In case of Unauthorized response return None
-        if e.args and e.args[-1] == 401:
-            return None
-        raise e
+        return client.get_user_info(token, usage=True)
+    except Unauthorized:
+        return None
 
 
-def get_user(
-        request,
-        authentication_url='http://127.0.0.1:8000/im/authenticate',
-        fallback_token=None,
-        usage=False):
+def get_user(request, astakos_url, fallback_token=None,
+             usage=False, logger=None):
     request.user = None
     request.user_uniq = None
 
+    client = AstakosClient(astakos_url, retry=2, use_pool=True, logger=logger)
     # Try to find token in a parameter or in a request header.
-    user = user_for_token(
-        request.GET.get('X-Auth-Token'), authentication_url,
-        usage=usage)
+    user = user_for_token(client, request.GET.get('X-Auth-Token'), usage=usage)
     if not user:
-        user = user_for_token(
-            request.META.get('HTTP_X_AUTH_TOKEN'),
-            authentication_url,
-            usage=usage)
+        user = user_for_token(client,
+                              request.META.get('HTTP_X_AUTH_TOKEN'),
+                              usage=usage)
     if not user:
-        user = user_for_token(fallback_token, authentication_url, usage=usage)
+        user = user_for_token(client, fallback_token, usage=usage)
     if not user:
-        logger.warning("Cannot retrieve user details from %s",
-                       authentication_url)
         return None
 
     # use user uuid, instead of email, keep email/displayname reference
@@ -214,30 +73,17 @@ def get_user(
     return user
 
 
-def get_token_from_cookie(request, cookiename):
-    """
-    Extract token from the cookie name provided. Cookie should be in the same
-    form as astakos service sets its cookie contents::
-
-        <user_uniq>|<user_token>
-    """
-    try:
-        cookie_content = unquote(request.COOKIES.get(cookiename, None))
-        return cookie_content.split("|")[1]
-    except AttributeError:
-        pass
-
-    return None
-
-
 class UserCache(object):
     """uuid<->displayname user 'cache'"""
 
-    def __init__(self, astakos_url, astakos_token, split=100):
+    def __init__(self, astakos_url, astakos_token, split=100, logger=None):
+        if logger is None:
+            logger = logging.getLogger(__name__)
+        self.logger = logger
+
+        self.astakos = AstakosClient(astakos_url, retry=2,
+                                     use_pool=True, logger=logger)
         self.astakos_token = astakos_token
-        self.astakos_url = astakos_url
-        self.user_catalog_url = astakos_url.replace("im/authenticate",
-                                                    "service/api/user_catalogs")
         self.users = {}
 
         self.split = split
@@ -246,40 +92,63 @@ class UserCache(object):
     def fetch_names(self, uuid_list):
         total = len(uuid_list)
         split = self.split
+        count = 0
 
         for start in range(0, total, split):
             end = start + split
             try:
-                names = get_displaynames(token=self.astakos_token,
-                                         url=self.user_catalog_url,
-                                         uuids=uuid_list[start:end])
+                names = self.astakos.service_get_usernames(
+                    self.astakos_token, uuid_list[start:end])
+                count += len(names)
+
                 self.users.update(names)
-            except Exception as e:
-                logger.error("Failed to fetch names: %s",  e)
+            except AstakosClientException:
+                pass
+            except Exception as err:
+                self.logger.error("Unexpected error while fetching "
+                                  "user display names: %s" % repr(err))
+
+        diff = (total - count)
+        assert(diff >= 0), "fetched more displaynames than requested"
+
+        if diff:
+            self.logger.debug("Failed to fetch %d displaynames", diff)
 
     def get_uuid(self, name):
+        uuid = name
+
         if not name in self.users:
             try:
-                self.users[name] = get_user_uuid(token=self.astakos_token,
-                                                 url=self.user_catalog_url,
-                                                 displayname=name)
-            except Exception as e:
-                logger.error("Can not get uuid for name %s: %s", name, e)
-                self.users[name] = name
+                uuid = self.astakos.service_get_uuid(
+                    self.astakos_token, name)
+            except NoUUID:
+                self.logger.debug("Failed to fetch uuid for %s", name)
+            except AstakosClientException:
+                pass
+            except Exception as err:
+                self.logger.error("Unexpected error while fetching "
+                                  "user uuid %s: %s" % (name, repr(err)))
+            finally:
+                self.users[name] = uuid
 
         return self.users[name]
 
     def get_name(self, uuid):
-        """Do the uuid-to-email resolving"""
+        name = "-"
 
         if not uuid in self.users:
             try:
-                self.users[uuid] = get_displayname(token=self.astakos_token,
-                                                   url=self.user_catalog_url,
-                                                   uuid=uuid)
-            except Exception as e:
-                logging.error("Can not get display name for uuid %s: %s",
-                              uuid, e)
-                self.users[uuid] = "-"
+                name = self.astakos.service_get_username(
+                    self.astakos_token, uuid)
+            except NoUserName:
+                self.logger.debug("Failed to fetch display name for %s", uuid)
+            except AstakosClientException:
+                pass
+            except Exception as err:
+                self.logger.error("Unexpected error while fetching "
+                                  "user displayname %s: %s"
+                                  % (uuid, repr(err)))
+            finally:
+                self.users[uuid] = name
 
         return self.users[uuid]

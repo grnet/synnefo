@@ -1,23 +1,13 @@
 {% load i18n %}
 <div id="footer-container">
-<div id='footer'>
-    <div id='footer-text'>
-        <a href="https://www.okeanos.grnet.gr/about">{% trans "About" %}</a>
-            &nbsp;|&nbsp;
-        <a href="https://accounts.okeanos.grnet.gr/im/feedback">{% trans "Feedback" %}</a>
-            &nbsp;|&nbsp;
-        <a href="https://www.okeanos.grnet.gr/support">{% trans "Help" %}</a>
-        {% comment %}
-            &nbsp;|&nbsp;
-        <a href="#">{% trans "Terms" %}</a>
-            &nbsp;|&nbsp;
-        <a href="#">{% trans "Privacy" %}</a>
-        {% endcomment %}
-        <br/>
-        <div class='grnet-sign'><a href="http://www.grnet.gr/" target="_blank">{% trans "Copyright (c) 2011–2013 Greek Research and Technology Network" %}</a></div>
+    <div id='footer'>
+        <div id='footer-text'>
+            {% if BRANDING_SHOW_COPYRIGHT %}
+            <div class='grnet-sign'><a href="{{ BRANDING_COMPANY_URL }}" target="_blank" title="{{ BRANDING_COMPANY_NAME }}">{{  BRANDING_COPYRIGHT_MESSAGE }}</a></div>
+            {% endif %}
+        </div>
+        <div id="footer-bg">
+        </div>
+        <div class="software">Powered by <a href="http://www.synnefo.org/">Synnefo</a> <span class="version">v{{ BRANDING_SYNNEFO_VERSION }}</span></div>
     </div>
-    <div id="footer-bg">
-    </div>
-    <div class="software">powered by <a href="http://www.synnefo.org/" target="_blank">synnefo</a> <span class="version">v{{ synnefo_version }}</span></div>
-</div>
 </div>

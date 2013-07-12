@@ -32,6 +32,8 @@
 # or implied, of GRNET S.A.
 
 from time import time
+from operator import itemgetter
+from itertools import groupby
 
 from dbworker import DBWorker
 
@@ -180,9 +182,16 @@ class Node(DBWorker):
                             references versions(serial)
                             on update cascade
                             on delete cascade ) """)
+        execute(""" create index if not exists idx_attributes_domain
+                    on attributes(domain) """)
 
-        q = "insert or ignore into nodes(node, parent) values (?, ?)"
-        execute(q, (ROOTNODE, ROOTNODE))
+        wrapper = self.wrapper
+        wrapper.execute()
+        try:
+            q = "insert or ignore into nodes(node, parent) values (?, ?)"
+            execute(q, (ROOTNODE, ROOTNODE))
+        finally:
+            wrapper.commit()
 
     def node_create(self, parent, path):
         """Create a new node from the given properties.
@@ -194,9 +203,11 @@ class Node(DBWorker):
         props = (parent, path)
         return self.execute(q, props).lastrowid
 
-    def node_lookup(self, path):
+    def node_lookup(self, path, **kwargs):
         """Lookup the current node of the given path.
            Return None if the path is not found.
+
+           kwargs is not used: it is passed for conformance
         """
 
         q = "select node from nodes where path = ?"
@@ -279,7 +290,7 @@ class Node(DBWorker):
         self.statistics_update(parent, -nr, -size, mtime, cluster)
         self.statistics_update_ancestors(parent, -nr, -size, mtime, cluster)
 
-        q = ("select hash from versions "
+        q = ("select hash, serial from versions "
              "where node in (select node "
              "from nodes "
              "where parent = ?) "
@@ -328,7 +339,7 @@ class Node(DBWorker):
         mtime = time()
         self.statistics_update_ancestors(node, -nr, -size, mtime, cluster)
 
-        q = ("select hash from versions "
+        q = ("select hash, serial from versions "
              "where node = ? "
              "and cluster = ? "
              "and mtime <= ?")
@@ -338,7 +349,7 @@ class Node(DBWorker):
         for r in self.fetchall():
             hashes += [r[0]]
             serials += [r[1]]
-        
+
         q = ("delete from versions "
              "where node = ? "
              "and cluster = ? "
@@ -374,6 +385,37 @@ class Node(DBWorker):
         q = "delete from nodes where node = ?"
         self.execute(q, (node,))
         return True
+
+    def node_accounts(self, accounts=()):
+        q = ("select path, node from nodes where node != 0 and parent = 0 ")
+        args = []
+        if accounts:
+            placeholders = ','.join('?' for a in accounts)
+            q += ("and path in (%s)" % placeholders)
+            args += accounts
+        return self.execute(q, args).fetchall()
+
+    def node_account_quotas(self):
+        q = ("select n.path, p.value from nodes n, policy p "
+             "where n.node != 0 and n.parent = 0 "
+             "and n.node = p.node and p.key = 'quota'"
+        )
+        return dict(self.execute(q).fetchall())
+
+    def node_account_usage(self, account_node, cluster):
+        select_children = ("select node from nodes where parent = ?")
+        select_descedents = ("select node from nodes "
+                             "where parent in (%s) "
+                             "or node in (%s) ") % ((select_children,)*2)
+        args = [account_node]*2
+        q = ("select sum(v.size) from versions v, nodes n "
+             "where v.node = n.node "
+             "and n.node in (%s) "
+             "and v.cluster = ?") % select_descedents
+        args += [cluster]
+
+        self.execute(q, args)
+        return self.fetchone()[0]
 
     def policy_get(self, node):
         q = "select key, value from policy where node = ?"
@@ -996,3 +1038,32 @@ class Node(DBWorker):
              "and n.node = v.node") % cluster_where
         self.execute(q, args)
         return self.fetchone()
+
+    def domain_object_list(self, domain, paths, cluster=None):
+        """Return a list of (path, property list, attribute dictionary)
+           for the objects in the specific domain and cluster.
+        """
+
+        q = ("select n.path, v.serial, v.node, v.hash, "
+             "v.size, v.type, v.source, v.mtime, v.muser, "
+             "v.uuid, v.checksum, v.cluster, a.key, a.value "
+             "from nodes n, versions v, attributes a "
+             "where n.node = v.node and "
+             "n.latest_version = v.serial and "
+             "v.serial = a.serial and "
+             "a.domain = ? and "
+             "n.path in (%s)" % ','.join(['?' for _ in range(len(paths))]))
+        args = [domain]
+        map(args.append, paths)
+        if cluster != None:
+            q += "and v.cluster = ?"
+            args += [cluster]
+
+        self.execute(q, args)
+        rows = self.fetchall()
+
+        group_by = itemgetter(slice(12))
+        rows.sort(key = group_by)
+        groups = groupby(rows, group_by)
+        return [(k[0], k[1:], dict([i[12:] for i in data])) \
+            for (k, data) in groups]

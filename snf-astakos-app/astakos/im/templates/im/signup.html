@@ -13,11 +13,14 @@
 	<img class="pic" src="{{ IM_STATIC_URL }}images/ringer1.png" />
 {% endif %}
 </div> 
-{% comment %}{% include "im/services_description.html" %}{% endcomment %}
 {% endblock body.left %}
 
 {% block body.right %}
-<h2>{% trans "SIGN UP" %}</h2>
+<h2>
+	<span class="title">{% trans "SIGN UP" %}</span>
+	<span class="header-actions"><a href="{% url login %}">{% trans "Sign in" %}</a></span>
+
+</h2>
 {% if not third_party_token and not signup_form.errors %}
  
 <p>{% trans "Choose one of the following sign up methods." %}</p>
@@ -26,7 +29,7 @@
 {% for provider_obj in auth_providers %}
 	{% if provider_obj.get_create_policy %}
 		{% if provider_obj.module == 'local' %}
-			<a href="#" class="submit standalone" id="signup-classic">CLASSIC</a>
+        <a href="#" class="submit standalone {{ provider_obj.module }}-provider" id="signup-classic">CLASSIC</a>
             {% if "local" in im_modules %}
             {% include "im/auth/signup_form.html" %}
 		    {% endif %}

@@ -32,10 +32,27 @@
 # or implied, of GRNET S.A.
 
 from django.conf.urls.defaults import include, patterns
+from synnefo.lib import join_urls
+from astakos.im.settings import (
+    BASE_PATH, ACCOUNTS_PREFIX, VIEWS_PREFIX, KEYSTONE_PREFIX, WEBLOGIN_PREFIX)
+from snf_django.lib.api.utils import prefix_pattern
+from snf_django.utils.urls import extend_with_root_redirects
+from astakos.im import settings
 
-urlpatterns = patterns('',
-                       (r'^im/', include('astakos.im.urls')),
-                       (r'^login/?$', 'astakos.im.target.redirect.login'),
-                       (r'^feedback/?$', 'astakos.im.api.user.send_feedback'),
-                       (r'^user_catalogs/?$', 'astakos.im.api.user.get_uuid_displayname_catalogs'),
-                       (r'^service/api/user_catalogs/?$', 'astakos.im.api.service.get_uuid_displayname_catalogs'))
+astakos_patterns = patterns(
+    '',
+    (prefix_pattern(VIEWS_PREFIX), include('astakos.im.urls')),
+    (prefix_pattern(ACCOUNTS_PREFIX), include('astakos.api.urls')),
+    (prefix_pattern(KEYSTONE_PREFIX), include('astakos.api.keystone_urls')),
+    (prefix_pattern(WEBLOGIN_PREFIX), include('astakos.im.weblogin_urls')),
+)
+
+
+urlpatterns = patterns(
+    '',
+    (prefix_pattern(BASE_PATH), include(astakos_patterns)),
+)
+
+# set utility redirects
+extend_with_root_redirects(urlpatterns, settings.astakos_services,
+                           'astakos_ui', BASE_PATH)

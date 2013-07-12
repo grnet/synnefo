@@ -32,9 +32,29 @@
 # or implied, of GRNET S.A.
 
 import json
+from hashlib import sha1
+from random import random
+from time import time
 
 from synnefo.lib.amqp import AMQPClient
-from synnefo.lib.queue import Receipt
+
+
+class Message(object):
+    def __init__(self, client, user, instance, resource, value, details={}):
+        self.eventVersion = '1.0'
+        self.occurredMillis = int(time() * 1000)
+        self.receivedMillis = self.occurredMillis
+        self.clientID = client
+        self.userID = user
+        self.instanceID = instance
+        self.resource = resource
+        self.value = value
+        self.details = details
+        hash = sha1()
+        hash.update(json.dumps(
+            [client, user, resource, value, details, random()]))
+        self.id = hash.hexdigest()
+
 
 class Queue(object):
     """Queue.
@@ -53,10 +73,11 @@ class Queue(object):
                                      type='topic')
 
     def send(self, message_key, user, instance, resource, value, details):
-        body = Receipt(self.client_id, user, instance, resource, value, details).format()
+        body = Message(
+            self.client_id, user, instance, resource, value, details)
         self.client.basic_publish(exchange=self.exchange,
                                   routing_key=message_key,
-                                  body=json.dumps(body))
-    
+                                  body=json.dumps(body.__dict__))
+
     def close(self):
         self.client.close()

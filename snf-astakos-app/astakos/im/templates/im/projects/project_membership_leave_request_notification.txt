@@ -1,6 +1,5 @@
---- A translation in English follows ---
+{% extends "im/email.txt" %}
 
-Ο χρήστης {{user}} επιθυμεί να διαγραφεί από το project {{object.name}}.
---
-
+{% block content %}
 User {{user}} requests to leave project {{object.name}}.
+{% endblock content %}

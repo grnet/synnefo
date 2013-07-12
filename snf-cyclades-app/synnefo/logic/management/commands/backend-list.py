@@ -52,6 +52,7 @@ class Command(ListCommand):
         free_ips = 0
         total_ips = 0
         for bnet in backend.networks.filter(deleted=False,
+                                            network__drained=False,
                                             network__public=True,
                                             network__deleted=False):
             network = bnet.network
@@ -74,7 +75,8 @@ class Command(ListCommand):
         "ips": (get_ips, "free/total number of public IPs"),
         "mem": (get_mem, "free/total memory (MB)"),
         "disk": (get_mem, "free/total disk (GB)"),
+        "hypervisor": ("hypervisor", "The hypervisor the backend is using"),
     }
 
     fields = ["id", "clustername", "port", "username", "drained", "offline",
-              "vms", "ips"]
+              "vms", "hypervisor", "ips"]

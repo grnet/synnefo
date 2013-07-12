@@ -1,0 +1,3 @@
+#kvm-vif-bridge /etc/ganeti
+conf/default/snf-ganeti-eventd /etc/default
+conf/init.d/snf-ganeti-eventd /etc/init.d

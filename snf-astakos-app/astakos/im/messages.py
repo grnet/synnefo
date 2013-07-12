@@ -213,7 +213,7 @@ PENDING_APPLICATION_LIMIT_MODIFY = \
 
 # Auth providers messages
 AUTH_PROVIDER_LOGIN_SUCCESS                  =   "Logged in successfully, using {method_prompt}."
-AUTH_PROVIDER_LOGOUT_SUCCESS                 =   "Logged out successfully."
+AUTH_PROVIDER_LOGOUT_SUCCESS                 =   "Logged out successfully from {service_name}."
 AUTH_PROVIDER_LOGOUT_SUCCESS_EXTRA           =   "You may still be logged in at {title} though. Consider logging out from there too."
 AUTH_PROVIDER_NOT_ACTIVE                     =   "'{method_prompt}' is disabled."
 AUTH_PROVIDER_ADD_DISABLED                   =   "{method_prompt} is disabled for your account."

@@ -107,7 +107,7 @@ Description: Synnefo File/Object Storage backend library
 
 Package: snf-tools
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}
+Depends: ${misc:Depends}, ${python:Depends}, kamaki (>= 0.9)
 Provides: ${python:Provides}
 XB-Python-Version: ${python:Versions}
 Description: Synnefo generic additional tools (burnin)

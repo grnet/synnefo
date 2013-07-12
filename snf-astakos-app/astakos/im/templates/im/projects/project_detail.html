@@ -133,7 +133,7 @@
     <dl class="alt-style">
       <dt>Max participants</dt>
       <dd>
-        {% if object.limit_on_members_number %}
+        {% if object.limit_on_members_number != None %}
         {{object.limit_on_members_number}}
         {% else %}Not set{% endif %}
       </dd>
@@ -150,9 +150,10 @@
       <dt><a href="{% url project_approved_members object.chain %}" title="view approved members">Approved members</a></dt>
       <dd>{{ approved_members_count }}
         <span class="faint"> 
-          {% if object.limit_on_members_number %}
-          ({% substract object.limit_on_members_number approved_members_count%} memberships remain)
-          
+          {% if remaining_memberships_count != None %}
+          ({{ remaining_memberships_count }}
+          membership{{ remaining_memberships_count|pluralize }}
+          remain{{ remaining_memberships_count|pluralize:"s," }})
           {% else %}&nbsp;{% endif %} 
         </span>
       </dd>

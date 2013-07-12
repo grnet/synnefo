@@ -35,7 +35,8 @@ from time import time
 from operator import itemgetter
 from itertools import groupby
 
-from sqlalchemy import Table, Integer, BigInteger, DECIMAL, Column, String, MetaData, ForeignKey
+from sqlalchemy import (Table, Integer, BigInteger, DECIMAL, Boolean,
+                        Column, String, MetaData, ForeignKey)
 from sqlalchemy.types import Text
 from sqlalchemy.schema import Index, Sequence
 from sqlalchemy.sql import func, and_, or_, not_, null, select, bindparam, text, exists
@@ -180,8 +181,11 @@ def create_tables(engine):
     columns.append(Column('domain', String(256), primary_key=True))
     columns.append(Column('key', String(128), primary_key=True))
     columns.append(Column('value', String(256)))
+    columns.append(Column('node', Integer, nullable=False, default=0))
+    columns.append(Column('is_latest', Boolean, nullable=False, default=True))
     attributes = Table('attributes', metadata, *columns, mysql_engine='InnoDB')
     Index('idx_attributes_domain', attributes.c.domain)
+    Index('idx_attributes_serial_node', attributes.c.serial, attributes.c.node)
 
     metadata.create_all(engine)
     return metadata.sorted_tables
@@ -483,7 +487,6 @@ class Node(DBWorker):
             or_(self.nodes.c.parent.in_(select_children),
                 self.nodes.c.node.in_(select_children)))
         s = select([func.sum(self.versions.c.size)])
-        s = s.group_by(self.versions.c.cluster)
         s = s.where(self.nodes.c.node == self.versions.c.node)
         s = s.where(self.nodes.c.node.in_(select_descendants))
         s = s.where(self.versions.c.cluster == cluster)
@@ -866,7 +869,7 @@ class Node(DBWorker):
         r.close()
         return l
 
-    def attribute_set(self, serial, domain, items):
+    def attribute_set(self, serial, domain, node, items, is_latest=True):
         """Set the attributes of the version specified by serial.
            Receive attributes as an iterable of (key, value) pairs.
         """
@@ -882,7 +885,8 @@ class Node(DBWorker):
             rp.close()
             if rp.rowcount == 0:
                 s = self.attributes.insert()
-                s = s.values(serial=serial, domain=domain, key=k, value=v)
+                s = s.values(serial=serial, domain=domain, node=node,
+                             is_latest=is_latest, key=k, value=v)
                 self.conn.execute(s).close()
 
     def attribute_del(self, serial, domain, keys=()):
@@ -907,25 +911,36 @@ class Node(DBWorker):
 
     def attribute_copy(self, source, dest):
         s = select(
-            [dest, self.attributes.c.domain,
-                self.attributes.c.key, self.attributes.c.value],
+            [dest, self.attributes.c.domain, self.attributes.c.node,
+             self.attributes.c.key, self.attributes.c.value],
             self.attributes.c.serial == source)
         rp = self.conn.execute(s)
         attributes = rp.fetchall()
         rp.close()
-        for dest, domain, k, v in attributes:
-            #insert or replace
+        for dest, domain, node, k, v in attributes:
+            select_src_node = select(
+                [self.versions.c.node],
+                self.versions.c.serial == dest)
+            # insert or replace
             s = self.attributes.update().where(and_(
                 self.attributes.c.serial == dest,
                 self.attributes.c.domain == domain,
                 self.attributes.c.key == k))
-            rp = self.conn.execute(s, value=v)
+            s = s.values(node = select_src_node, value=v)
+            rp = self.conn.execute(s)
             rp.close()
             if rp.rowcount == 0:
                 s = self.attributes.insert()
-                values = {'serial': dest, 'domain': domain,
-                          'key': k, 'value': v}
-                self.conn.execute(s, values).close()
+                s = s.values(serial=dest, domain=domain, node=select_src_node,
+                             is_latest=True, key=k, value=v)
+            self.conn.execute(s).close()
+
+    def attribute_unset_is_latest(self, node, exclude):
+        u = self.attributes.update().where(and_(
+            self.attributes.c.node == node,
+                     self.attributes.c.serial != exclude)).values(
+                             {'is_latest': False})
+        self.conn.execute(u)
 
     def latest_attribute_keys(self, parent, domain, before=inf, except_cluster=0, pathq=None):
         """Return a list with all keys pairs defined
@@ -1167,7 +1182,7 @@ class Node(DBWorker):
         r.close()
         return l
 
-    def domain_object_list(self, domain, cluster=None):
+    def domain_object_list(self, domain, paths, cluster=None):
         """Return a list of (path, property list, attribute dictionary)
            for the objects in the specific domain and cluster.
         """
@@ -1179,12 +1194,14 @@ class Node(DBWorker):
         s = select([n.c.path, v.c.serial, v.c.node, v.c.hash, v.c.size,
                     v.c.type, v.c.source, v.c.mtime, v.c.muser, v.c.uuid,
                     v.c.checksum, v.c.cluster, a.c.key, a.c.value])
-        s = s.where(n.c.node == v.c.node)
-        s = s.where(n.c.latest_version == v.c.serial)
         if cluster:
             s = s.where(v.c.cluster == cluster)
         s = s.where(v.c.serial == a.c.serial)
         s = s.where(a.c.domain == domain)
+        s = s.where(a.c.node == n.c.node)
+        s = s.where(a.c.is_latest == True)
+        if paths:
+            s = s.where(n.c.path.in_(paths))
 
         r = self.conn.execute(s)
         rows = r.fetchall()

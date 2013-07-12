@@ -157,7 +157,8 @@ def handle_third_party_login(request, provider_module, identifier,
     if not affiliation:
         affiliation = provider_module.title()
 
-    next_redirect = request.GET.get('next', request.session.get('next_url', None))
+    next_redirect = request.GET.get('next', request.session.get('next_url',
+                                                                None))
     if 'next_url' in request.session:
         del request.session['next_url']
 
@@ -168,6 +169,7 @@ def handle_third_party_login(request, provider_module, identifier,
         'affiliation': affiliation,
         'info': provider_info
     }
+
     provider = auth.get_provider(provider_module, request.user, identifier,
                                  **provider_data)
 

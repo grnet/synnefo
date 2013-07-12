@@ -599,6 +599,7 @@ to point at node1 which is where we have installed Astakos.
 If you are an advanced user and want to use the Shibboleth Authentication
 method, read the relative :ref:`section <shibboleth-auth>`.
 
+.. _email-configuration:
 
 Email delivery configuration
 ----------------------------
@@ -1759,8 +1760,6 @@ It can be retrieved by running on the Astakos node (node1 in our case):
 The token has been generated automatically during the :ref:`Cyclades service
 registration <services-reg>`.
 
-TODO: Document the Network Options here
-
 Edit ``/etc/synnefo/20-snf-cyclades-app-cloudbar.conf``:
 
 .. code-block:: console
@@ -1798,19 +1797,6 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-queues.conf``:
 The above settings denote the Message Queue. Those settings should have the same
 values as in ``/etc/synnefo/10-snf-cyclades-gtools-backend.conf`` file, and
 reflect our :ref:`Message Queue setup <rabbitmq-setup>`.
-
-Edit ``/etc/synnefo/20-snf-cyclades-app-ui.conf``:
-
-.. code-block:: console
-
-   UI_LOGIN_URL = "https://node1.example.com/ui/login"
-   UI_LOGOUT_URL = "https://node1.example.com/ui/logout"
-
-The ``UI_LOGIN_URL`` option tells the Cyclades Web UI where to redirect users,
-if they are not logged in. We point that to Astakos.
-
-The ``UI_LOGOUT_URL`` option tells the Cyclades Web UI where to redirect the
-user when he/she logs out. We point that to Astakos, too.
 
 Edit ``/etc/synnefo/20-snf-cyclades-app-vmapi.conf``:
 
@@ -2106,13 +2092,12 @@ installation. We do this by running:
 
 .. code-block:: console
 
-   $ kamaki config set user.url "https://node1.example.com"
-   $ kamaki config set compute.url "https://node1.example.com/api/v1.1"
-   $ kamaki config set image.url "https://node1.example.com/image"
-   $ kamaki config set file.url "https://node2.example.com/v1"
-   $ kamaki config set token USER_TOKEN
+   $ kamaki config set cloud.default.url \
+       "https://node1.example.com/astakos/identity/v2.0"
+   $ kamaki config set cloud.default.token USER_TOKEN
 
-The USER_TOKEN appears on the user's `Profile` web page on the Astakos Web UI.
+Both the Authentication URL and the USER_TOKEN appear on the user's
+`API access` web page on the Astakos Web UI.
 
 You can see that the new configuration options have been applied correctly,
 either by checking the editable file ``~/.kamakirc`` or by running:

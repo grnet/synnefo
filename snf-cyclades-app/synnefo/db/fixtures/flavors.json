@@ -5,7 +5,8 @@
         "fields": {
             "cpu": 1,
             "ram": 1024,
-            "disk": 20
+            "disk": 20,
+            "disk_template": "drbd"
         }
     },
 
@@ -15,7 +16,8 @@
         "fields": {
             "cpu": 1,
             "ram": 1024,
-            "disk": 30
+            "disk": 30,
+            "disk_template": "drbd"
         }
     },
 
@@ -25,7 +27,8 @@
         "fields": {
             "cpu": 1,
             "ram": 1024,
-            "disk": 40
+            "disk": 40,
+            "disk_template": "drbd"
         }
     },
 
@@ -35,7 +38,8 @@
         "fields": {
             "cpu": 1,
             "ram": 2048,
-            "disk": 20
+            "disk": 20,
+            "disk_template": "drbd"
         }
     },
 
@@ -45,7 +49,8 @@
         "fields": {
             "cpu": 1,
             "ram": 2048,
-            "disk": 30
+            "disk": 30,
+            "disk_template": "drbd"
         }
     },
 
@@ -55,7 +60,8 @@
         "fields": {
             "cpu": 1,
             "ram": 2048,
-            "disk": 40
+            "disk": 40,
+            "disk_template": "drbd"
         }
     },
 
@@ -65,7 +71,8 @@
         "fields": {
             "cpu": 1,
             "ram": 4096,
-            "disk": 20
+            "disk": 20,
+            "disk_template": "drbd"
         }
     },
 
@@ -75,7 +82,8 @@
         "fields": {
             "cpu": 1,
             "ram": 4096,
-            "disk": 30
+            "disk": 30,
+            "disk_template": "drbd"
         }
     },
 
@@ -85,7 +93,8 @@
         "fields": {
             "cpu": 1,
             "ram": 4096,
-            "disk": 40
+            "disk": 40,
+            "disk_template": "drbd"
         }
     },
 
@@ -95,7 +104,8 @@
         "fields": {
             "cpu": 2,
             "ram": 1024,
-            "disk": 20
+            "disk": 20,
+            "disk_template": "drbd"
         }
     },
 
@@ -105,7 +115,8 @@
         "fields": {
             "cpu": 2,
             "ram": 1024,
-            "disk": 30
+            "disk": 30,
+            "disk_template": "drbd"
         }
     },
 
@@ -115,7 +126,8 @@
         "fields": {
             "cpu": 2,
             "ram": 1024,
-            "disk": 40
+            "disk": 40,
+            "disk_template": "drbd"
         }
     },
 
@@ -125,7 +137,8 @@
         "fields": {
             "cpu": 2,
             "ram": 2048,
-            "disk": 20
+            "disk": 20,
+            "disk_template": "drbd"
         }
     },
 
@@ -135,7 +148,8 @@
         "fields": {
             "cpu": 2,
             "ram": 2048,
-            "disk": 30
+            "disk": 30,
+            "disk_template": "drbd"
         }
     },
 
@@ -145,7 +159,8 @@
         "fields": {
             "cpu": 2,
             "ram": 2048,
-            "disk": 40
+            "disk": 40,
+            "disk_template": "drbd"
         }
     },
 
@@ -155,7 +170,8 @@
         "fields": {
             "cpu": 2,
             "ram": 4096,
-            "disk": 20
+            "disk": 20,
+            "disk_template": "drbd"
         }
     },
 
@@ -165,7 +181,8 @@
         "fields": {
             "cpu": 2,
             "ram": 4096,
-            "disk": 30
+            "disk": 30,
+            "disk_template": "drbd"
         }
     },
 
@@ -175,7 +192,8 @@
         "fields": {
             "cpu": 2,
             "ram": 4096,
-            "disk": 40
+            "disk": 40,
+            "disk_template": "drbd"
         }
     },
 
@@ -185,7 +203,8 @@
         "fields": {
             "cpu": 4,
             "ram": 1024,
-            "disk": 20
+            "disk": 20,
+            "disk_template": "drbd"
         }
     },
 
@@ -195,7 +214,8 @@
         "fields": {
             "cpu": 4,
             "ram": 1024,
-            "disk": 30
+            "disk": 30,
+            "disk_template": "drbd"
         }
     },
 
@@ -205,7 +225,8 @@
         "fields": {
             "cpu": 4,
             "ram": 1024,
-            "disk": 40
+            "disk": 40,
+            "disk_template": "drbd"
         }
     },
 
@@ -215,7 +236,8 @@
         "fields": {
             "cpu": 4,
             "ram": 2048,
-            "disk": 20
+            "disk": 20,
+            "disk_template": "drbd"
         }
     },
 
@@ -225,7 +247,8 @@
         "fields": {
             "cpu": 4,
             "ram": 2048,
-            "disk": 30
+            "disk": 30,
+            "disk_template": "drbd"
         }
     },
 
@@ -235,7 +258,8 @@
         "fields": {
             "cpu": 4,
             "ram": 2048,
-            "disk": 40
+            "disk": 40,
+            "disk_template": "drbd"
         }
     },
 
@@ -245,7 +269,8 @@
         "fields": {
             "cpu": 4,
             "ram": 4096,
-            "disk": 20
+            "disk": 20,
+            "disk_template": "drbd"
         }
     },
 
@@ -255,7 +280,8 @@
         "fields": {
             "cpu": 4,
             "ram": 4096,
-            "disk": 30
+            "disk": 30,
+            "disk_template": "drbd"
         }
     },
 
@@ -265,7 +291,8 @@
         "fields": {
             "cpu": 4,
             "ram": 4096,
-            "disk": 40
+            "disk": 40,
+            "disk_template": "drbd"
         }
     }
 ]

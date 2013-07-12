@@ -37,7 +37,8 @@ from rados import *
 
 from context_object import RadosObject, file_sync_read_chunks
 
-CEPH_CONF_FILE="/etc/ceph/ceph.conf"
+CEPH_CONF_FILE = "/etc/ceph/ceph.conf"
+
 
 class RadosBlocker(object):
     """Blocker.
@@ -123,7 +124,7 @@ class RadosBlocker(object):
                 if not rbl:
                     break
                 for block in rbl.sync_read_chunks(blocksize, 1, 0):
-                    break # there should be just one block there
+                    break  # there should be just one block there
             if not block:
                 break
             append(self._pad(block))
@@ -138,11 +139,11 @@ class RadosBlocker(object):
         """
         block_hash = self.block_hash
         hashlist = [block_hash(b) for b in blocklist]
-        mf = None
-        missing = [i for i, h in enumerate(hashlist) if not self._check_rear_block(h)]
+        missing = [i for i, h in enumerate(hashlist) if not
+                   self._check_rear_block(h)]
         for i in missing:
             with self._get_rear_block(hashlist[i], 1) as rbl:
-                 rbl.sync_write(blocklist[i]) #XXX: verify?
+                rbl.sync_write(blocklist[i])  # XXX: verify?
 
         return hashlist, missing
 
@@ -202,6 +203,5 @@ class RadosBlocker(object):
             sextend(sl)
             lastsize = len(block)
 
-        size = (len(hashlist) -1) * blocksize + lastsize if hashlist else 0
+        size = (len(hashlist) - 1) * blocksize + lastsize if hashlist else 0
         return size, hashlist, storedlist
-

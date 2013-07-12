@@ -148,9 +148,10 @@ class Groups(DBWorker):
     def group_check(self, owner, group, member):
         """Check if a member is in a group."""
 
-        s = select([self.groups.c.member], and_(self.groups.c.owner == owner,
-                                                self.groups.c.name == group,
-                                                self.groups.c.member == member))
+        s = select([self.groups.c.member],
+                   and_(self.groups.c.owner == owner,
+                        self.groups.c.name == group,
+                        self.groups.c.member == member))
         r = self.conn.execute(s)
         l = r.fetchone()
         r.close()

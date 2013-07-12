@@ -39,6 +39,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class Public(DBWorker):
     """Paths can be marked as public."""
 
@@ -62,7 +63,7 @@ class Public(DBWorker):
             candidate = get_random_word(length=l, alphabet=public_url_alphabet)
             if self.public_path(candidate) is None:
                 return candidate
-            l +=1
+            l += 1
 
     def public_set(self, path, public_url_security, public_url_alphabet):
         q = "select public_id from public where path = ?"
@@ -98,7 +99,8 @@ class Public(DBWorker):
         return None
 
     def public_list(self, prefix):
-        q = "select path, url from public where path like ? escape '\\' and active = 1"
+        q = ("select path, url from public where "
+             "path like ? escape '\\' and active = 1")
         self.execute(q, (self.escape_like(prefix) + '%',))
         return self.fetchall()
 

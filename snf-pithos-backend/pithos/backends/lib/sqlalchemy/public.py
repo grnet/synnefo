@@ -45,6 +45,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 def create_tables(engine):
     metadata = MetaData()
     columns = []
@@ -80,7 +81,7 @@ class Public(DBWorker):
             candidate = get_random_word(length=l, alphabet=public_url_alphabet)
             if self.public_path(candidate) is None:
                 return candidate
-            l +=1
+            l += 1
 
     def public_set(self, path, public_security, public_url_alphabet):
         s = select([self.public.c.public_id])
@@ -117,7 +118,7 @@ class Public(DBWorker):
     def public_get(self, path):
         s = select([self.public.c.url])
         s = s.where(and_(self.public.c.path == path,
-                         self.public.c.active == True))
+                         self.public.c.active))
         r = self.conn.execute(s)
         row = r.fetchone()
         r.close()
@@ -129,7 +130,7 @@ class Public(DBWorker):
         s = select([self.public.c.path, self.public.c.url])
         s = s.where(self.public.c.path.like(
             self.escape_like(prefix) + '%', escape=ESCAPE_CHAR))
-        s = s.where(self.public.c.active == True)
+        s = s.where(self.public.c.active)
         r = self.conn.execute(s)
         rows = r.fetchall()
         r.close()
@@ -138,7 +139,7 @@ class Public(DBWorker):
     def public_path(self, public):
         s = select([self.public.c.path])
         s = s.where(and_(self.public.c.url == public,
-                         self.public.c.active == True))
+                         self.public.c.active))
         r = self.conn.execute(s)
         row = r.fetchone()
         r.close()

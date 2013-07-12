@@ -37,7 +37,6 @@ DEFAULT_CONTAINER_QUOTA = 0  # No quota.
 DEFAULT_CONTAINER_VERSIONING = 'auto'
 
 
-
 class NotAllowedError(Exception):
     pass
 
@@ -71,22 +70,30 @@ class VersionNotExists(IndexError):
 
 
 class BaseBackend(object):
-    """Abstract backend class that serves as a reference for actual implementations.
+    """Abstract backend class.
 
-    The purpose of the backend is to provide the necessary functions for handling data
-    and metadata. It is responsible for the actual storage and retrieval of information.
+    This class serves as a reference for actual implementations.
 
-    Note that the account level is always valid as it is checked from another subsystem.
+    The purpose of the backend is to provide the necessary functions
+    for handling data and metadata.
 
-    When not replacing metadata/groups/policy, keys with empty values should be deleted.
+    It is responsible for the actual storage and retrieval of information.
+
+    Note that the account level is always valid as it is checked
+    from another subsystem.
+
+    When not replacing metadata/groups/policy, keys with empty values
+    should be deleted.
 
     The following variables should be available:
         'hash_algorithm': Suggested is 'sha256'
 
         'block_size': Suggested is 4MB
 
-        'default_account_policy': A dictionary with default account policy settings
-        'default_container_policy': A dictionary with default container policy settings
+        'default_account_policy': A dictionary with default account policy
+                                  settings
+        'default_container_policy': A dictionary with default container policy
+                                    settings
     """
 
     def close(self):
@@ -96,14 +103,15 @@ class BaseBackend(object):
     def list_accounts(self, user, marker=None, limit=10000):
         """Return a list of accounts the user can access.
 
-        Parameters:
+        Keyword arguments:
             'marker': Start list from the next item after 'marker'
 
             'limit': Number of containers to return
         """
         return []
 
-    def get_account_meta(self, user, account, domain, until=None, include_user_defined=True):
+    def get_account_meta(self, user, account, domain, until=None,
+                         include_user_defined=True, external_quota=None):
         """Return a dictionary with the account metadata for the domain.
 
         The keys returned are all user-defined, except:
@@ -117,6 +125,9 @@ class BaseBackend(object):
 
             'until_timestamp': Last modification until the timestamp provided
 
+            'external_quota': The quota computed from external quota holder
+                              mechanism
+
         Raises:
             NotAllowedError: Operation not permitted
         """
@@ -128,6 +139,7 @@ class BaseBackend(object):
         Parameters:
             'domain': Metadata domain
 
+        Keyword arguments:
             'meta': Dictionary with metadata to update
 
             'replace': Replace instead of update
@@ -138,7 +150,7 @@ class BaseBackend(object):
         return
 
     def get_account_groups(self, user, account):
-        """Return a dictionary with the user groups defined for this account.
+        """Return a dictionary with the user groups defined for the account.
 
         Raises:
             NotAllowedError: Operation not permitted
@@ -161,7 +173,7 @@ class BaseBackend(object):
         The keys returned are:
             'quota': The maximum bytes allowed (default is 0 - unlimited)
 
-            'versioning': Can be 'auto', 'manual' or 'none' (default is 'manual')
+            'versioning': Can be 'auto', 'manual' or 'none' (default: 'manual')
 
         Raises:
             NotAllowedError: Operation not permitted
@@ -198,10 +210,11 @@ class BaseBackend(object):
         """
         return
 
-    def list_containers(self, user, account, marker=None, limit=10000, shared=False, until=None, public=False):
+    def list_containers(self, user, account, marker=None, limit=10000,
+                        shared=False, until=None, public=False):
         """Return a list of container names existing under an account.
 
-        Parameters:
+        Keyword arguments:
             'marker': Start list from the next item after 'marker'
 
             'limit': Number of containers to return
@@ -216,8 +229,9 @@ class BaseBackend(object):
         """
         return []
 
-    def list_container_meta(self, user, account, container, domain, until=None):
-        """Return a list with all the container's object meta keys for the domain.
+    def list_container_meta(self, user, account, container, domain,
+                            until=None):
+        """Return a list of the container's object meta keys for a domain.
 
         Raises:
             NotAllowedError: Operation not permitted
@@ -226,7 +240,8 @@ class BaseBackend(object):
         """
         return []
 
-    def get_container_meta(self, user, account, container, domain, until=None, include_user_defined=True):
+    def get_container_meta(self, user, account, container, domain, until=None,
+                           include_user_defined=True):
         """Return a dictionary with the container metadata for the domain.
 
         The keys returned are all user-defined, except:
@@ -247,12 +262,14 @@ class BaseBackend(object):
         """
         return {}
 
-    def update_container_meta(self, user, account, container, domain, meta, replace=False):
+    def update_container_meta(self, user, account, container, domain, meta,
+                              replace=False):
         """Update the metadata associated with the container for the domain.
 
         Parameters:
             'domain': Metadata domain
 
+        Keyword arguments:
             'meta': Dictionary with metadata to update
 
             'replace': Replace instead of update
@@ -270,7 +287,7 @@ class BaseBackend(object):
         The keys returned are:
             'quota': The maximum bytes allowed (default is 0 - unlimited)
 
-            'versioning': Can be 'auto', 'manual' or 'none' (default is 'manual')
+            'versioning': Can be 'auto', 'manual' or 'none' (default: 'manual')
 
         Raises:
             NotAllowedError: Operation not permitted
@@ -279,7 +296,8 @@ class BaseBackend(object):
         """
         return {}
 
-    def update_container_policy(self, user, account, container, policy, replace=False):
+    def update_container_policy(self, user, account, container, policy,
+                                replace=False):
         """Update the policy associated with the container.
 
         Raises:
@@ -291,11 +309,8 @@ class BaseBackend(object):
         """
         return
 
-    def put_container(self, user, account, container, policy=None, delimiter=None):
+    def put_container(self, user, account, container, policy=None):
         """Create a new container with the given name.
-
-        Parameters:
-            'delimiter': If present deletes container contents instead of the container
 
         Raises:
             NotAllowedError: Operation not permitted
@@ -306,8 +321,13 @@ class BaseBackend(object):
         """
         return
 
-    def delete_container(self, user, account, container, until=None):
+    def delete_container(self, user, account, container, until=None,
+                         delimiter=None):
         """Delete/purge the container with the given name.
+
+        Keyword arguments:
+            'delimiter': If not None, deletes the container contents starting
+                         with the delimiter
 
         Raises:
             NotAllowedError: Operation not permitted
@@ -318,13 +338,17 @@ class BaseBackend(object):
         """
         return
 
-    def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=None, shared=False, until=None, size_range=None, public=False):
-        """Return a list of object (name, version_id) tuples existing under a container.
+    def list_objects(self, user, account, container, prefix='', delimiter=None,
+                     marker=None, limit=10000, virtual=True, domain=None,
+                     keys=None, shared=False, until=None, size_range=None,
+                     public=False):
+        """List (object name, object version_id) under a container.
 
-        Parameters:
+        Keyword arguments:
             'prefix': List objects starting with 'prefix'
 
-            'delimiter': Return unique names before 'delimiter' and after 'prefix'
+            'delimiter': Return unique names before 'delimiter' and
+                         after 'prefix'
 
             'marker': Start list from the next item after 'marker'
 
@@ -333,7 +357,7 @@ class BaseBackend(object):
             'virtual': If not set, the result will only include names starting
                        with 'prefix' and ending without a 'delimiter' or with
                        the first occurance of the 'delimiter' after 'prefix'.
-                       If set, the result will include all names after 'prefix',
+                       If set, the result will include all names after 'prefix'
                        up to and including the 'delimiter' if it is found
 
             'domain': Metadata domain for keys
@@ -357,8 +381,11 @@ class BaseBackend(object):
         """
         return []
 
-    def list_object_meta(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=None, shared=False, until=None, size_range=None):
-        """Return a list of object metadata dicts existing under a container.
+    def list_object_meta(self, user, account, container, prefix='',
+                         delimiter=None, marker=None, limit=10000,
+                         virtual=True, domain=None, keys=None, shared=False,
+                         until=None, size_range=None, public=False):
+        """Return a list of metadata dicts of objects under a container.
 
         Same parameters with list_objects. Returned dicts have no user-defined
         metadata and, if until is not None, a None 'modified' timestamp.
@@ -371,7 +398,7 @@ class BaseBackend(object):
         return []
 
     def list_object_permissions(self, user, account, container, prefix=''):
-        """Return a list of paths that enforce permissions under a container.
+        """Return a list of paths enforce permissions under a container.
 
         Raises:
             NotAllowedError: Operation not permitted
@@ -379,10 +406,11 @@ class BaseBackend(object):
         return []
 
     def list_object_public(self, user, account, container, prefix=''):
-        """Return a dict mapping paths to public ids for objects that are public under a container."""
+        """Return a mapping of object paths to public ids under a container."""
         return {}
 
-    def get_object_meta(self, user, account, container, name, domain, version=None, include_user_defined=True):
+    def get_object_meta(self, user, account, container, name, domain,
+                        version=None, include_user_defined=True):
         """Return a dictionary with the object metadata for the domain.
 
         The keys returned are all user-defined, except:
@@ -396,13 +424,15 @@ class BaseBackend(object):
 
             'modified': Last modification timestamp (overall)
 
-            'modified_by': The user that committed the object (version requested)
+            'modified_by': The user that committed the object
+                           (version requested)
 
             'version': The version identifier
 
             'version_timestamp': The version's modification timestamp
 
-            'uuid': A unique identifier that persists data or metadata updates and renames
+            'uuid': A unique identifier that persists data or metadata updates
+                    and renames
 
             'checksum': The MD5 sum of the object (may be empty)
 
@@ -415,8 +445,9 @@ class BaseBackend(object):
         """
         return {}
 
-    def update_object_meta(self, user, account, container, name, domain, meta, replace=False):
-        """Update the metadata associated with the object for the domain and return the new version.
+    def update_object_meta(self, user, account, container, name, domain, meta,
+                           replace=False):
+        """Update object metadata for a domain and return the new version.
 
         Parameters:
             'domain': Metadata domain
@@ -449,7 +480,8 @@ class BaseBackend(object):
         """
         return {}
 
-    def update_object_permissions(self, user, account, container, name, permissions):
+    def update_object_permissions(self, user, account, container, name,
+                                  permissions):
         """Update (set) the permissions associated with the object.
 
         Parameters:
@@ -499,8 +531,10 @@ class BaseBackend(object):
         """
         return 0, []
 
-    def update_object_hashmap(self, user, account, container, name, size, type, hashmap, checksum, domain, meta=None, replace_meta=False, permissions=None):
-        """Create/update an object with the specified size and partial hashes and return the new version.
+    def update_object_hashmap(self, user, account, container, name, size, type,
+                              hashmap, checksum, domain, meta=None,
+                              replace_meta=False, permissions=None):
+        """Create/update an object's hashmap and return the new version.
 
         Parameters:
             'domain': Metadata domain
@@ -522,17 +556,22 @@ class BaseBackend(object):
         """
         return ''
 
-    def update_object_checksum(self, user, account, container, name, version, checksum):
+    def update_object_checksum(self, user, account, container, name, version,
+                               checksum):
         """Update an object's checksum."""
         return
 
-    def copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta=None, replace_meta=False, permissions=None, src_version=None, delimiter=None):
+    def copy_object(self, user, src_account, src_container, src_name,
+                    dest_account, dest_container, dest_name, type, domain,
+                    meta=None, replace_meta=False, permissions=None,
+                    src_version=None, delimiter=None):
         """Copy an object's data and metadata and return the new version.
 
         Parameters:
             'domain': Metadata domain
 
-            'meta': Dictionary with metadata to change from source to destination
+            'meta': Dictionary with metadata to change from source
+                    to destination
 
             'replace_meta': Replace metadata instead of update
 
@@ -540,7 +579,8 @@ class BaseBackend(object):
 
             'src_version': Copy from the version provided
 
-            'delimiter': Copy objects whose path starts with src_name + delimiter
+            'delimiter': Copy objects whose path starts with
+                         src_name + delimiter
 
         Raises:
             NotAllowedError: Operation not permitted
@@ -555,19 +595,24 @@ class BaseBackend(object):
         """
         return ''
 
-    def move_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta=None, replace_meta=False, permissions=None, delimiter=None):
+    def move_object(self, user, src_account, src_container, src_name,
+                    dest_account, dest_container, dest_name, type, domain,
+                    meta=None, replace_meta=False, permissions=None,
+                    delimiter=None):
         """Move an object's data and metadata and return the new version.
 
         Parameters:
             'domain': Metadata domain
 
-            'meta': Dictionary with metadata to change from source to destination
+            'meta': Dictionary with metadata to change from source
+                    to destination
 
             'replace_meta': Replace metadata instead of update
 
             'permissions': New object permissions
 
-            'delimiter': Move objects whose path starts with src_name + delimiter
+            'delimiter': Move objects whose path starts with
+                         src_name + delimiter
 
         Raises:
             NotAllowedError: Operation not permitted
@@ -580,11 +625,13 @@ class BaseBackend(object):
         """
         return ''
 
-    def delete_object(self, user, account, container, name, until=None, delimiter=None):
+    def delete_object(self, user, account, container, name, until=None,
+                      delimiter=None):
         """Delete/purge an object.
 
         Parameters:
-            'delimiter': Delete objects whose path starting with name + delimiter
+            'delimiter': Delete objects whose path starting with
+                         name + delimiter
 
         Raises:
             NotAllowedError: Operation not permitted
@@ -594,7 +641,7 @@ class BaseBackend(object):
         return
 
     def list_versions(self, user, account, container, name):
-        """Return a list of all (version, version_timestamp) tuples for an object.
+        """Return a list of all object (version, version_timestamp) tuples.
 
         Raises:
             NotAllowedError: Operation not permitted
@@ -640,3 +687,10 @@ class BaseBackend(object):
             IndexError: Offset or data outside block limits
         """
         return 0
+
+    def get_domain_objects(self, domain, user=None):
+        """Return a list of tuples for objects under the domain.
+
+        Parameters:
+            'user': return only objects accessible to the user.
+        """

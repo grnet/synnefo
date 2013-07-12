@@ -344,8 +344,8 @@ class ManageAccountsTests(unittest.TestCase):
                    'application/octet-stream', data, meta, permissions))
             data = get_random_data(int(random.random()))
             self.utils.create_update_object(
-                   'account1', container, object,
-                   'application/octet-stream', data, meta, permissions)
+                'account1', container, object, 'application/octet-stream',
+                data, meta, permissions)
 
         self.utils.merge_account('Account1', 'account1', only_stats=False,
                                  dry=False, silent=True)

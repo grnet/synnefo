@@ -1,18 +1,18 @@
 # Copyright 2011-2012 GRNET S.A. All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
 # conditions are met:
-# 
+#
 #   1. Redistributions of source code must retain the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer.
-# 
+#
 #   2. Redistributions in binary form must reproduce the above
 #      copyright notice, this list of conditions and the following
 #      disclaimer in the documentation and/or other materials
 #      provided with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
 # OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -25,7 +25,7 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-# 
+#
 # The views and conclusions contained in the software and
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
@@ -56,7 +56,8 @@ class FileBlocker(object):
             if not exists(blockpath):
                 makedirs(blockpath)
             else:
-                raise ValueError("Variable blockpath '%s' is not a directory" % (blockpath,))
+                raise ValueError("Variable blockpath '%s' is not a directory" %
+                                 (blockpath,))
 
         hashtype = params['hashtype']
         try:
@@ -125,7 +126,7 @@ class FileBlocker(object):
                 if not rbl:
                     break
                 for block in rbl.sync_read_chunks(blocksize, 1, 0):
-                    break # there should be just one block there
+                    break  # there should be just one block there
             if not block:
                 break
             append(self._pad(block))
@@ -140,11 +141,11 @@ class FileBlocker(object):
         """
         block_hash = self.block_hash
         hashlist = [block_hash(b) for b in blocklist]
-        mf = None
-        missing = [i for i, h in enumerate(hashlist) if not self._check_rear_block(h)]
+        missing = [i for i, h in enumerate(hashlist) if not
+                   self._check_rear_block(h)]
         for i in missing:
             with self._get_rear_block(hashlist[i], 1) as rbl:
-                 rbl.sync_write(blocklist[i]) #XXX: verify?
+                rbl.sync_write(blocklist[i])  # XXX: verify?
 
         return hashlist, missing
 
@@ -161,7 +162,7 @@ class FileBlocker(object):
         block = self.block_retr((blkhash,))
         if not block:
             return None, None
-        
+
         block = block[0]
         newblock = block[:offset] + data
         if len(newblock) > blocksize:
@@ -204,6 +205,5 @@ class FileBlocker(object):
             sextend(sl)
             lastsize = len(block)
 
-        size = (len(hashlist) -1) * blocksize + lastsize if hashlist else 0
+        size = (len(hashlist) - 1) * blocksize + lastsize if hashlist else 0
         return size, hashlist, storedlist
-

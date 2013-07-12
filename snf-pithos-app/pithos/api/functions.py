@@ -691,9 +691,9 @@ def object_list(request, v_account, v_container):
 
     try:
         objects = request.backend.list_object_meta(
-            request.user_uniq, v_account,
-            v_container, prefix, delimiter, marker,
-            limit, virtual, 'pithos', keys, shared, until, None, public_granted)
+            request.user_uniq, v_account, v_container, prefix, delimiter,
+            marker, limit, virtual, 'pithos', keys, shared, until, None,
+            public_granted)
         object_permissions = {}
         object_public = {}
         if until is None:
@@ -920,9 +920,9 @@ def _object_read(request, v_account, v_container, v_object):
         try:
             for x in objects:
                 s, h = \
-                    request.backend.get_object_hashmap(request.user_uniq,
-                                                       v_account, src_container,
-                                                       x[0], x[1])
+                    request.backend.get_object_hashmap(
+                        request.user_uniq, v_account, src_container, x[0],
+                        x[1])
                 sizes.append(s)
                 hashmaps.append(h)
         except NotAllowedError:
@@ -1009,8 +1009,8 @@ def object_write(request, v_account, v_container, v_object):
         else:
             if TRANSLATE_UUIDS:
                 try:
-                    src_account = retrieve_uuid(getattr(request, 'token', None),
-                                                src_account)
+                    src_account = retrieve_uuid(
+                        getattr(request, 'token', None), src_account)
                 except ItemNotExists:
                     faults.ItemNotFound('Invalid source account')
 
@@ -1139,7 +1139,8 @@ def object_write(request, v_account, v_container, v_object):
     return response
 
 
-@api_method('POST', user_required=True, logger=logger, lock_container_path=True)
+@api_method('POST', user_required=True, logger=logger,
+            lock_container_path=True)
 def object_write_form(request, v_account, v_container, v_object):
     # Normal Response Codes: 201
     # Error Response Codes: internalServerError (500),
@@ -1301,10 +1302,9 @@ def object_update(request, v_account, v_container, v_object):
         # Do permissions first, as it may fail easier.
         if permissions is not None:
             try:
-                request.backend.update_object_permissions(request.user_uniq,
-                                                          v_account,
-                                                          v_container, v_object,
-                                                          permissions)
+                request.backend.update_object_permissions(
+                    request.user_uniq, v_account, v_container, v_object,
+                    permissions)
             except NotAllowedError:
                 raise faults.Forbidden('Not allowed')
             except ItemNotExists:
@@ -1345,8 +1345,8 @@ def object_update(request, v_account, v_container, v_object):
 
     try:
         size, hashmap = \
-            request.backend.get_object_hashmap(request.user_uniq,
-                                               v_account, v_container, v_object)
+            request.backend.get_object_hashmap(
+                request.user_uniq, v_account, v_container, v_object)
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except ItemNotExists:
@@ -1417,8 +1417,8 @@ def object_update(request, v_account, v_container, v_object):
                         hashmap[bi] = src_hashmap[sbi]
                     else:
                         data = request.backend.get_block(src_hashmap[sbi])
-                        hashmap[bi] = request.backend.update_block(hashmap[bi],
-                                                                   data[:bl], 0)
+                        hashmap[bi] = request.backend.update_block(
+                            hashmap[bi], data[:bl], 0)
                 else:
                     hashmap.append(src_hashmap[sbi])
                 offset += bl

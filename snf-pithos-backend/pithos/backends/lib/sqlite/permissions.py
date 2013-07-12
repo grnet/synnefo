@@ -166,10 +166,10 @@ class Permissions(XFeatures, Groups, Public, Node):
         """
 
         q = ("select distinct path from xfeatures inner join "
-             "   (select distinct feature_id, key from xfeaturevals inner join "
-             "      (select owner || ':' || name as value from groups "
-             "       where member = ? union select ? union select '*') "
-             "    using (value)) "
+             "  (select distinct feature_id, key from xfeaturevals inner join "
+             "     (select owner || ':' || name as value from groups "
+             "      where member = ? union select ? union select '*') "
+             "   using (value)) "
              "using (feature_id)")
         p = (member, member)
         if prefix:

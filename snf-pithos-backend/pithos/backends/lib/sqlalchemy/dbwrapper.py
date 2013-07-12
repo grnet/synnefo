@@ -56,8 +56,7 @@ class DBWrapper(object):
         else:
             #self.engine = create_engine(db, pool_size=0, max_overflow=-1)
             self.engine = create_engine(
-                db, poolclass=NullPool, isolation_level='READ COMMITTED'
-        )
+                db, poolclass=NullPool, isolation_level='READ COMMITTED')
         self.engine.echo = False
         self.engine.echo_pool = False
         self.conn = self.engine.connect()

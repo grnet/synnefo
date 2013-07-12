@@ -246,10 +246,12 @@ class Node(DBWorker):
     def node_get_versions(self, node, keys=(), propnames=_propnames):
         """Return the properties of all versions at node.
            If keys is empty, return all properties in the order
-           (serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster).
+           (serial, node, hash, size, type, source, mtime, muser, uuid,
+            checksum, cluster).
         """
 
-        q = ("select serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster "
+        q = ("select serial, node, hash, size, type, source, mtime, muser, "
+             "uuid, checksum, cluster "
              "from versions "
              "where node = ?")
         self.execute(q, (node,))
@@ -407,16 +409,15 @@ class Node(DBWorker):
     def node_account_quotas(self):
         q = ("select n.path, p.value from nodes n, policy p "
              "where n.node != 0 and n.parent = 0 "
-             "and n.node = p.node and p.key = 'quota'"
-        )
+             "and n.node = p.node and p.key = 'quota'")
         return dict(self.execute(q).fetchall())
 
     def node_account_usage(self, account_node, cluster):
         select_children = ("select node from nodes where parent = ?")
         select_descedents = ("select node from nodes "
                              "where parent in (%s) "
-                             "or node in (%s) ") % ((select_children,)*2)
-        args = [account_node]*2
+                             "or node in (%s) ") % ((select_children,) * 2)
+        args = [account_node] * 2
         q = ("select sum(v.size) from versions v, nodes n "
              "where v.node = n.node "
              "and n.node in (%s) "
@@ -454,7 +455,8 @@ class Node(DBWorker):
 
         qs = ("select population, size from statistics "
               "where node = ? and cluster = ?")
-        qu = ("insert or replace into statistics (node, population, size, mtime, cluster) "
+        qu = ("insert or replace into statistics "
+              "(node, population, size, mtime, cluster) "
               "values (?, ?, ?, ?, ?)")
         self.execute(qs, (node, cluster))
         r = self.fetchone()
@@ -505,7 +507,8 @@ class Node(DBWorker):
         parent, path = props
 
         # The latest version.
-        q = ("select serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster "
+        q = ("select serial, node, hash, size, type, source, mtime, muser, "
+             "uuid, checksum, cluster "
              "from versions v "
              "where serial = %s "
              "and cluster != ?")
@@ -568,7 +571,8 @@ class Node(DBWorker):
            Return the (serial, mtime) of the new version.
         """
 
-        q = ("insert into versions (node, hash, size, type, source, mtime, muser, uuid, checksum, cluster) "
+        q = ("insert into versions (node, hash, size, type, source, mtime, "
+             "muser, uuid, checksum, cluster) "
              "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
         mtime = time()
         props = (node, hash, size, type, source, mtime, muser,
@@ -598,7 +602,9 @@ class Node(DBWorker):
         if not all_props:
             q = q % ("serial", subq)
         else:
-            q = q % ("serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster", subq)
+            q = q % (("serial, node, hash, size, type, source, mtime, muser, "
+                      "uuid, checksum, cluster"),
+                     subq)
 
         self.execute(q, args + [cluster])
         props = self.fetchone()
@@ -606,10 +612,12 @@ class Node(DBWorker):
             return props
         return None
 
-    def version_lookup_bulk(self, nodes, before=inf, cluster=0, all_props=True):
+    def version_lookup_bulk(self, nodes, before=inf, cluster=0,
+                            all_props=True):
         """Lookup the current versions of the given nodes.
            Return a list with their properties:
-           (serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster).
+           (serial, node, hash, size, type, source, mtime, muser, uuid,
+            checksum, cluster).
         """
 
         if not nodes:
@@ -623,7 +631,10 @@ class Node(DBWorker):
         if not all_props:
             q = q % ("serial", subq, '')
         else:
-            q = q % ("serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster", subq, 'order by node')
+            q = q % (("serial, node, hash, size, type, source, mtime, muser, "
+                     "uuid, checksum, cluster"),
+                     subq,
+                     'order by node')
 
         args += [cluster]
         self.execute(q, args)
@@ -633,10 +644,12 @@ class Node(DBWorker):
         """Return a sequence of values for the properties of
            the version specified by serial and the keys, in the order given.
            If keys is empty, return all properties in the order
-           (serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster).
+           (serial, node, hash, size, type, source, mtime, muser, uuid,
+            checksum, cluster).
         """
 
-        q = ("select serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster "
+        q = ("select serial, node, hash, size, type, source, mtime, muser, "
+             "uuid, checksum, cluster "
              "from versions "
              "where serial = ?")
         self.execute(q, (serial,))
@@ -702,7 +715,8 @@ class Node(DBWorker):
         return hash, size
 
     def attribute_get(self, serial, domain, keys=()):
-        """Return a list of (key, value) pairs of the version specified by serial.
+        """Return a list of (key, value) pairs of the specific version.
+
            If keys is empty, return all attributes.
            Othwerise, return only those specified.
         """
@@ -714,7 +728,8 @@ class Node(DBWorker):
                  "where key in (%s) and serial = ? and domain = ?" % (marks,))
             execute(q, keys + (serial, domain))
         else:
-            q = "select key, value from attributes where serial = ? and domain = ?"
+            q = ("select key, value from attributes where "
+                 "serial = ? and domain = ?")
             execute(q, (serial, domain))
         return self.fetchall()
 
@@ -727,7 +742,7 @@ class Node(DBWorker):
              "(serial, domain, node, is_latest, key, value) "
              "values (?, ?, ?, ?, ?, ?)")
         self.executemany(q, ((serial, domain, node, is_latest, k, v) for
-            k, v in items))
+                         k, v in items))
 
     def attribute_del(self, serial, domain, keys=()):
         """Delete attributes of the version specified by serial.
@@ -736,7 +751,8 @@ class Node(DBWorker):
         """
 
         if keys:
-            q = "delete from attributes where serial = ? and domain = ? and key = ?"
+            q = ("delete from attributes "
+                 "where serial = ? and domain = ? and key = ?")
             self.executemany(q, ((serial, domain, key) for key in keys))
         else:
             q = "delete from attributes where serial = ? and domain = ?"
@@ -763,7 +779,8 @@ class Node(DBWorker):
         args = []
 
         if included:
-            subq = "exists (select 1 from attributes where serial = v.serial and domain = ? and "
+            subq = ("exists (select 1 from attributes where serial = v.serial "
+                    "and domain = ? and ")
             subq += "(" + ' or '.join(('key = ?' for x in included)) + ")"
             subq += ")"
             args += [domain]
@@ -771,7 +788,8 @@ class Node(DBWorker):
             append(subq)
 
         if excluded:
-            subq = "not exists (select 1 from attributes where serial = v.serial and domain = ? and "
+            subq = ("not exists (select 1 from attributes where "
+                    "serial = v.serial and domain = ? and ")
             subq += "(" + ' or '.join(('key = ?' for x in excluded)) + ")"
             subq += ")"
             args += [domain]
@@ -780,7 +798,8 @@ class Node(DBWorker):
 
         if opers:
             for k, o, v in opers:
-                subq = "exists (select 1 from attributes where serial = v.serial and domain = ? and "
+                subq = ("exists (select 1 from attributes where "
+                        "serial = v.serial and domain = ? and ")
                 subq += "key = ? and value %s ?" % (o,)
                 subq += ")"
                 args += [domain, k, v]
@@ -874,7 +893,8 @@ class Node(DBWorker):
             args += [before]
         return q % where_cond, args
 
-    def latest_attribute_keys(self, parent, domain, before=inf, except_cluster=0, pathq=None):
+    def latest_attribute_keys(self, parent, domain, before=inf,
+                              except_cluster=0, pathq=None):
         """Return a list with all keys pairs defined
            for all latest versions under parent that
            do not belong to the cluster.
@@ -955,7 +975,8 @@ class Node(DBWorker):
 
            Limit applies to the first list of tuples returned.
 
-           If all_props is True, return all properties after path, not just serial.
+           If all_props is True, return all properties after path,
+           not just serial.
         """
 
         execute = self.execute
@@ -978,7 +999,9 @@ class Node(DBWorker):
         if not all_props:
             q = q % ("v.serial", subq)
         else:
-            q = q % ("v.serial, v.node, v.hash, v.size, v.type, v.source, v.mtime, v.muser, v.uuid, v.checksum, v.cluster", subq)
+            q = q % (("v.serial, v.node, v.hash, v.size, v.type, v.source, "
+                      "v.mtime, v.muser, v.uuid, v.checksum, v.cluster"),
+                     subq)
         args += [except_cluster, parent, start, nextling]
         start_index = len(args) - 2
 
@@ -1020,7 +1043,6 @@ class Node(DBWorker):
             if props is None:
                 break
             path = props[0]
-            serial = props[1]
             idx = path.find(delimiter, pfz)
 
             if idx < 0:
@@ -1083,7 +1105,7 @@ class Node(DBWorker):
              "n.path in (%s)") % ','.join('?' for _ in paths)
         args = [domain]
         map(args.append, paths)
-        if cluster != None:
+        if cluster is not None:
             q += "and v.cluster = ?"
             args += [cluster]
 
@@ -1091,7 +1113,7 @@ class Node(DBWorker):
         rows = self.fetchall()
 
         group_by = itemgetter(slice(12))
-        rows.sort(key = group_by)
+        rows.sort(key=group_by)
         groups = groupby(rows, group_by)
-        return [(k[0], k[1:], dict([i[12:] for i in data])) \
-            for (k, data) in groups]
+        return [(k[0], k[1:], dict([i[12:] for i in data])) for
+                (k, data) in groups]

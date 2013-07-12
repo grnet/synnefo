@@ -11,7 +11,7 @@ revision = '165ba3fbfe53'
 down_revision = '3dd56e750a3'
 
 from alembic import op
-from sqlalchemy.sql import table, column, literal, and_
+from sqlalchemy.sql import table, column, and_
 
 from pithos.api.settings import (SERVICE_TOKEN, ASTAKOS_BASE_URL)
 
@@ -35,6 +35,8 @@ except ImportError:
 import sqlalchemy as sa
 
 catalog = {}
+
+
 def get_uuid(account):
     global catalog
     if account in catalog:
@@ -52,6 +54,8 @@ def get_uuid(account):
         return catalog[account]
 
 inverse_catalog = {}
+
+
 def get_displayname(account):
     global inverse_catalog
     if account in inverse_catalog:
@@ -92,19 +96,20 @@ x = table(
     column('path', sa.String(2048))
 )
 
-xvals =  table(
+xvals = table(
     'xfeaturevals',
     column('feature_id', sa.Integer),
     column('key', sa.Integer),
     column('value', sa.String(256))
 )
 
-g =  table(
+g = table(
     'groups',
     column('owner', sa.String(256)),
     column('name', sa.String(256)),
     column('member', sa.String(256))
 )
+
 
 def migrate(callback):
     connection = op.get_bind()
@@ -119,7 +124,7 @@ def migrate(callback):
             bar.next()
             continue
         path = sep.join([match, rest])
-        u = n.update().where(n.c.node == node).values({'path':path})
+        u = n.update().where(n.c.node == node).values({'path': path})
         connection.execute(u)
         bar.next()
     bar.finish()
@@ -127,8 +132,7 @@ def migrate(callback):
     s = sa.select([v.c.muser]).distinct()
     musers = connection.execute(s).fetchall()
     bar = IncrementalBar('Migrating version modification users...',
-                         max=len(musers)
-    )
+                         max=len(musers))
     for muser, in musers:
         match = callback(muser)
         if not match:
@@ -149,7 +153,7 @@ def migrate(callback):
             bar.next()
             continue
         path = sep.join([match, rest])
-        u = p.update().where(p.c.public_id == id).values({'path':path})
+        u = p.update().where(p.c.public_id == id).values({'path': path})
         connection.execute(u)
         bar.next()
     bar.finish()
@@ -164,7 +168,7 @@ def migrate(callback):
             bar.next()
             continue
         path = sep.join([match, rest])
-        u = x.update().where(x.c.feature_id == id).values({'path':path})
+        u = x.update().where(x.c.feature_id == id).values({'path': path})
         connection.execute(u)
         bar.next()
     bar.finish()
@@ -182,11 +186,10 @@ def migrate(callback):
             continue
         new_value = sep.join([match, group])
         u = xvals.update()
-        u = u.where(and_(
-                xvals.c.feature_id == feature_id,
-                xvals.c.key == key,
-                xvals.c.value == value))
-        u = u.values({'value':new_value})
+        u = u.where(and_(xvals.c.feature_id == feature_id,
+                         xvals.c.key == key,
+                         xvals.c.value == value))
+        u = u.values({'value': new_value})
         connection.execute(u)
         bar.next()
     bar.finish()
@@ -214,8 +217,10 @@ def migrate(callback):
             bar.next()
     bar.finish()
 
+
 def upgrade():
     migrate(get_uuid)
+
 
 def downgrade():
     migrate(get_displayname)

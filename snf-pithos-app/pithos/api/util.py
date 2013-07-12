@@ -56,9 +56,9 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  ASTAKOSCLIENT_POOLSIZE,
                                  SERVICE_TOKEN,
                                  ASTAKOS_BASE_URL,
-                                 BACKEND_ACCOUNT_QUOTA, BACKEND_CONTAINER_QUOTA,
-                                 BACKEND_VERSIONING,
-                                 BACKEND_FREE_VERSIONING,
+                                 BACKEND_ACCOUNT_QUOTA,
+                                 BACKEND_CONTAINER_QUOTA,
+                                 BACKEND_VERSIONING, BACKEND_FREE_VERSIONING,
                                  BACKEND_POOL_ENABLED, BACKEND_POOL_SIZE,
                                  BACKEND_BLOCK_SIZE, BACKEND_HASH_ALGORITHM,
                                  RADOS_STORAGE, RADOS_POOL_BLOCKS,
@@ -200,7 +200,8 @@ def put_container_headers(request, response, meta, policy):
             int(meta['until_timestamp']))
     for k, v in policy.iteritems():
         response[smart_str(format_header_key('X-Container-Policy-' + k),
-                           strings_only=True)] = smart_str(v, strings_only=True)
+                           strings_only=True)] = smart_str(v,
+                                                           strings_only=True)
 
 
 def get_object_headers(request):
@@ -402,7 +403,7 @@ def update_public_meta(public, meta):
 
 
 def validate_modification_preconditions(request, meta):
-    """Check that the modified timestamp conforms with the preconditions set."""
+    """Check the modified timestamp conforms with the preconditions set."""
 
     if 'modified' not in meta:
         return  # TODO: Always return?
@@ -441,8 +442,8 @@ def validate_matching_preconditions(request, meta):
     if if_none_match is not None:
         # TODO: If this passes, must ignore If-Modified-Since header.
         if etag is not None:
-            if (if_none_match == '*'
-                    or etag in [x.lower() for x in parse_etags(if_none_match)]):
+            if (if_none_match == '*' or etag in [x.lower() for x in
+                                                 parse_etags(if_none_match)]):
                 # TODO: Continue if an If-Modified-Since header is present.
                 if request.method in ('HEAD', 'GET'):
                     raise faults.NotModified('Resource ETag matches')
@@ -697,7 +698,7 @@ MAX_UPLOAD_SIZE = 5 * (1024 * 1024 * 1024)  # 5GB
 
 
 def socket_read_iterator(request, length=0, blocksize=4096):
-    """Return a maximum of blocksize data read from the socket in each iteration
+    """Return maximum of blocksize data read from the socket in each iteration
 
     Read up to 'length'. If 'length' is negative, will attempt a chunked read.
     The maximum ammount of data read is controlled by MAX_UPLOAD_SIZE.

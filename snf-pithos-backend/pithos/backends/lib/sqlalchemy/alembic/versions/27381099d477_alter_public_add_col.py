@@ -16,6 +16,7 @@ import sqlalchemy as sa
 from pithos.backends.modular import ULTIMATE_ANSWER
 from pithos.api.short_url import encode_url
 
+
 def upgrade():
     op.add_column('public', sa.Column('url', sa.String(2048)))
     op.create_unique_constraint('idx_public_url', 'public', ['url'])
@@ -31,8 +32,9 @@ def upgrade():
     s = sa.select([p.c.public_id])
     rows = conn.execute(s).fetchall()
     for r in rows:
-        s = p.update().values(url=get_url(r[0])).where(p.c.public_id==r[0])
+        s = p.update().values(url=get_url(r[0])).where(p.c.public_id == r[0])
         op.execute(s)
+
 
 def downgrade():
     op.drop_constraint('idx_public_url', 'public')

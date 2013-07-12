@@ -32,7 +32,7 @@
 # or implied, of GRNET S.A.
 
 from os import SEEK_CUR, SEEK_SET
-from rados import Ioctx, ObjectNotFound
+from rados import ObjectNotFound
 
 _zeros = ''
 
@@ -80,6 +80,7 @@ def file_sync_write_chunks(radosobject, chunksize, offset, chunks, size=None):
         radosobject.sunc_write(zeros(chunksize))
     radosobject.sync_write(buffer(zeros(chunksize), 0, r))
 
+
 def file_sync_read_chunks(radosobject, chunksize, nr, offset=0):
     """Read and yield groups of chunks from a buffered file object at offset.
        Reads never span accros chunksize boundaries.
@@ -100,6 +101,7 @@ def file_sync_read_chunks(radosobject, chunksize, nr, offset=0):
                 break
         yield chunk
         nr -= 1
+
 
 class RadosObject(object):
     __slots__ = ("name", "ioctx", "create", "offset")
@@ -144,7 +146,7 @@ class RadosObject(object):
         datalen = 0
         while 1:
             try:
-                s = read(self.name, size-datalen, self.offset)
+                s = read(self.name, size - datalen, self.offset)
             except ObjectNotFound:
                 s = None
             if not s:
@@ -158,4 +160,3 @@ class RadosObject(object):
 
     def sync_read_chunks(self, chunksize, nr, offset=0):
         return file_sync_read_chunks(self, chunksize, nr, offset)
-

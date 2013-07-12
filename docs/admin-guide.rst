@@ -1802,9 +1802,13 @@ Upgrade Notes
 
    v0.12 -> v0.13 <upgrade/upgrade-0.13>
    v0.13 -> v0.14 <upgrade/upgrade-0.14>
+   v0.14 -> v0.14.2 <upgrade/upgrade-0.14.2>
 
 
 Changelog, NEWS
 ===============
 
+
+* v0.14.2 :ref:`Changelog <Changelog-0.14.2>`, :ref:`NEWS <NEWS-0.14.2>`
+* v0.14 :ref:`Changelog <Changelog-0.14>`, :ref:`NEWS <NEWS-0.14>`
 * v0.13 :ref:`Changelog <Changelog-0.13>`, :ref:`NEWS <NEWS-0.13>`

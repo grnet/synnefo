@@ -344,7 +344,7 @@ def member_action_extra_context(membership, table, col):
                    _('Are you sure you want to accept this member?')]
         confirms = [True, True]
 
-    if membership.state in ProjectMembership.ACTUALLY_ACCEPTED:
+    if membership.state in ProjectMembership.ACCEPTED_STATES:
         urls = ['astakos.im.views.project_remove_member']
         actions = [_('Remove')]
         prompts = [_('Are you sure you want to remove this member?')]

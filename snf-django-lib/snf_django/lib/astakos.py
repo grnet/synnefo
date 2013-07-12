@@ -31,8 +31,11 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import logging
+
 from astakosclient import AstakosClient
-from astakosclient.errors import Unauthorized
+from astakosclient.errors import (Unauthorized, NoUUID, NoUserName,
+                                  AstakosClientException)
 
 
 def user_for_token(client, token, usage=False):
@@ -74,6 +77,10 @@ class UserCache(object):
     """uuid<->displayname user 'cache'"""
 
     def __init__(self, astakos_url, astakos_token, split=100, logger=None):
+        if logger is None:
+            logger = logging.getLogger(__name__)
+        self.logger = logger
+
         self.astakos = AstakosClient(astakos_url, retry=2,
                                      use_pool=True, logger=logger)
         self.astakos_token = astakos_token
@@ -85,36 +92,63 @@ class UserCache(object):
     def fetch_names(self, uuid_list):
         total = len(uuid_list)
         split = self.split
+        count = 0
 
         for start in range(0, total, split):
             end = start + split
             try:
                 names = self.astakos.service_get_usernames(
                     self.astakos_token, uuid_list[start:end])
+                count += len(names)
+
                 self.users.update(names)
-            except:
+            except AstakosClientException:
                 pass
+            except Exception as err:
+                self.logger.error("Unexpected error while fetching "
+                                  "user display names: %s" % repr(err))
+
+        diff = (total - count)
+        assert(diff >= 0), "fetched more displaynames than requested"
+
+        if diff:
+            self.logger.debug("Failed to fetch %d displaynames", diff)
 
     def get_uuid(self, name):
+        uuid = name
+
         if not name in self.users:
             try:
-                self.users[name] = \
-                    self.astakos.service.get_uuid(
-                        self.astakos_token, name)
-            except:
-                self.users[name] = name
+                uuid = self.astakos.service_get_uuid(
+                    self.astakos_token, name)
+            except NoUUID:
+                self.logger.debug("Failed to fetch uuid for %s", name)
+            except AstakosClientException:
+                pass
+            except Exception as err:
+                self.logger.error("Unexpected error while fetching "
+                                  "user uuid %s: %s" % (name, repr(err)))
+            finally:
+                self.users[name] = uuid
 
         return self.users[name]
 
     def get_name(self, uuid):
-        """Do the uuid-to-email resolving"""
+        name = "-"
 
         if not uuid in self.users:
             try:
-                self.users[uuid] = \
-                    self.astakos.get_username(
-                        self.astakos_token, uuid)
-            except:
-                self.users[uuid] = "-"
+                name = self.astakos.service_get_username(
+                    self.astakos_token, uuid)
+            except NoUserName:
+                self.logger.debug("Failed to fetch display name for %s", uuid)
+            except AstakosClientException:
+                pass
+            except Exception as err:
+                self.logger.error("Unexpected error while fetching "
+                                  "user displayname %s: %s"
+                                  % (uuid, repr(err)))
+            finally:
+                self.users[uuid] = name
 
         return self.users[uuid]

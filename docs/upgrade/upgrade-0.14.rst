@@ -209,8 +209,14 @@ the deprecated user setting.
 You are now done migrating from Synnefo v0.13 to v0.14. Please test your
 installation to make sure everything works as expected.
 
+4. Update astakos email notification settings
+=============================================
 
-4. Bring all services up
+Make sure to update your configuration to include settings refered in the 
+updated :ref:`Email delivery configuration <email-configuration>` section 
+of the quick installation admin guide. 
+
+5. Bring all services up
 ========================
 
 After the upgrade is finished, we bring up all services:

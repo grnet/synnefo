@@ -512,15 +512,14 @@ def leave_project_checks(project):
 
 
 def can_leave_request(project, user):
-    leave_policy = project.application.member_leave_policy
-    if leave_policy == CLOSED_POLICY:
+    try:
+        leave_project_checks(project)
+    except PermissionDenied:
         return False
     m = user.get_membership(project)
     if m is None:
         return False
-    if m.state != ProjectMembership.ACCEPTED:
-        return False
-    return True
+    return m.can_leave()
 
 
 def leave_project(project_id, request_user):
@@ -560,13 +559,13 @@ def join_project_checks(project):
 
 
 def can_join_request(project, user):
-    join_policy = project.application.member_join_policy
-    if join_policy == CLOSED_POLICY:
+    try:
+        join_project_checks(project)
+    except PermissionDenied:
         return False
+
     m = user.get_membership(project)
-    if m:
-        return False
-    return True
+    return not(m)
 
 
 def join_project(project_id, request_user):
@@ -767,7 +766,7 @@ def check_expiration(execute=False):
     expired = objects.expired_projects()
     if execute:
         for project in expired:
-            terminate(project.id)
+            terminate(project.pk)
 
     return [project.expiration_info() for project in expired]
 

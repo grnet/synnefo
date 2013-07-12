@@ -43,6 +43,8 @@ log = getLogger(__name__)
 
 
 class Command(ListCommand):
+    help = "List networks"
+
     option_list = ListCommand.option_list + (
         make_option(
             '--public',

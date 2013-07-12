@@ -131,13 +131,14 @@ class ShibbolethTests(TestCase):
         # provider info stored
         provider = AstakosUserAuthProvider.objects.get(module="shibboleth")
         self.assertEqual(provider.affiliation, 'Test Affiliation')
-        self.assertEqual(provider.info, {u'email': u'kpap@synnefo.org',
-                                         u'eppn': u'kpapeppn',
-                                         u'name': u'Kostas Papadimitriou'})
+        self.assertEqual(provider.info['email'], u'kpap@synnefo.org')
+        self.assertEqual(provider.info['eppn'], u'kpapeppn')
+        self.assertEqual(provider.info['name'], u'Kostas Papadimitriou')
+        self.assertTrue('headers' in provider.info)
 
         # login (not activated yet)
         client.set_tokens(mail="kpap@synnefo.org", eppn="kpapeppn",
-                          cn="Kostas Papadimitriou", )
+                          cn="Kostas Papadimitriou")
         r = client.get(ui_url("login/shibboleth?"), follow=True)
         self.assertContains(r, 'is pending moderation')
 
@@ -320,6 +321,17 @@ class ShibbolethTests(TestCase):
         self.assertTrue(user.has_auth_provider('shibboleth'))
         self.assertTrue(user.check_password('111'))
         self.assertTrue(user.has_usable_password())
+
+        # change password via profile form
+        r = client.post(ui_url("profile"), {
+            'old_password': '111',
+            'new_password': '',
+            'new_password2': '',
+            'change_password': 'on',
+        }, follow=False)
+        self.assertEqual(r.status_code, 200)
+        self.assertFalse(r.context['profile_form'].is_valid())
+
         self.client.logout()
 
         # now we can login
@@ -1339,12 +1351,14 @@ class TestWebloginRedirect(TestCase):
         # scheme preserved
         self.assertTrue(url.startswith('pithos://localhost/'))
         # redirect contains token param
-        params = urlparse.urlparse(urlparse.urlparse(url).path, 'https').query
+        params = urlparse.urlparse(url.replace('pithos', 'https'),
+                                   scheme='https').query
         params = urlparse.parse_qs(params)
         self.assertEqual(params['token'][0],
                          AstakosUser.objects.get().auth_token)
         # does not contain uuid
-        self.assertFalse('uuid' in params)
+        # reverted for 0.14.2 to support old pithos desktop clients
+        #self.assertFalse('uuid' in params)
 
         # invalid cases
         r = self.client.get(invalid_scheme, follow=True)

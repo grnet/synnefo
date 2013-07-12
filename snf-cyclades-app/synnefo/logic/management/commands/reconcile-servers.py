@@ -119,8 +119,8 @@ class Command(BaseCommand):
         backend_id = options['backend-id']
         backend = get_backend(backend_id) if backend_id else None
 
-        D = reconciliation.get_servers_from_db(backend)
         G, GNics = reconciliation.get_instances_from_ganeti(backend)
+        D = reconciliation.get_servers_from_db(backend)
 
         DBNics = reconciliation.get_nics_from_db(backend)
 

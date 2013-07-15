@@ -36,7 +36,7 @@
 
 from pithos.api.test import (PithosAPITest, DATE_FORMATS, o_names,
                              pithos_settings, pithos_test_settings)
-from pithos.api.test.util import strnextling, get_random_data
+from pithos.api.test.util import strnextling, get_random_data, get_random_name
 
 from synnefo.lib import join_urls
 
@@ -170,7 +170,7 @@ class ContainerGet(PithosAPITest):
         # check folder inheritance
         oname, _ = self.create_folder(cname, HTTP_X_OBJECT_SHARING='read=*')
         # create child object
-        descendant = '%s/%s' % (oname, get_random_data(8))
+        descendant = '%s/%s' % (oname, get_random_name())
         self.upload_object(cname, descendant)
         # request shared
         url = join_urls(self.pithos_path, self.user, cname)
@@ -261,7 +261,7 @@ class ContainerGet(PithosAPITest):
         # test folder inheritance
         oname, _ = self.create_folder(cname, HTTP_X_OBJECT_PUBLIC='true')
         # create child object
-        descendant = '%s/%s' % (oname, get_random_data(8))
+        descendant = '%s/%s' % (oname, get_random_name())
         self.upload_object(cname, descendant)
         # request public
         r = self.get('%s?public=' % url)
@@ -322,7 +322,7 @@ class ContainerGet(PithosAPITest):
         # test folder inheritance
         oname, _ = self.create_folder(cname, HTTP_X_OBJECT_PUBLIC='true')
         # create child object
-        descendant = '%s/%s' % (oname, get_random_data(8))
+        descendant = '%s/%s' % (oname, get_random_name())
         self.upload_object(cname, descendant)
         # request public
         r = self.get('%s?shared=&public=' % container_url)

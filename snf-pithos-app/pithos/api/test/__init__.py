@@ -40,19 +40,21 @@ from xml.dom import minidom
 from snf_django.utils.testing import with_settings, astakos_user
 
 from pithos.api import settings as pithos_settings
-from pithos.api.test.util import is_date, get_random_data
+from pithos.api.test.util import is_date, get_random_data, get_random_name
+from pithos.backends.migrate import initialize_db
 
 from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
 
 from django.test import TestCase
+from django.test.simple import DjangoTestSuiteRunner
 from django.conf import settings
 from django.utils.http import urlencode
+from django.db.backends.creation import TEST_DATABASE_PREFIX
 
 import django.utils.simplejson as json
 
 import random
-import threading
 import functools
 
 
@@ -83,45 +85,58 @@ details = {'container': ('name', 'count', 'bytes', 'last_modified',
            'object': ('name', 'hash', 'bytes', 'content_type',
                       'content_encoding', 'last_modified',)}
 
-return_codes = (400, 401, 403, 404, 503)
-
 TEST_BLOCK_SIZE = 1024
 TEST_HASH_ALGORITHM = 'sha256'
 
-BACKEND_DB_CONNECTION = None
+print 'backend module:', pithos_settings.BACKEND_DB_MODULE
+print 'backend database engine:', settings.DATABASES['default']['ENGINE']
+print 'update md5:', pithos_settings.UPDATE_MD5
 
 
-def django_to_sqlalchemy():
-    """Convert the django default database to sqlalchemy connection string"""
+django_sqlalchemy_engines = {
+    'django.db.backends.postgresql_psycopg2': 'postgresql+psycopg2',
+    'django.db.backends.postgresql': 'postgresql',
+    'django.db.backends.mysql': '',
+    'django.db.backends.sqlite3': 'mssql',
+    'django.db.backends.oracle': 'oracle'}
 
-    global BACKEND_DB_CONNECTION
-    if BACKEND_DB_CONNECTION:
-        return BACKEND_DB_CONNECTION
 
-    # TODO support for more complex configuration
+def prepate_db_connection():
+    """Build pithos backend connection string from django default database"""
+
     db = settings.DATABASES['default']
-    name = db.get('TEST_NAME', 'test_%s' % db['NAME'])
-    if db['ENGINE'] == 'django.db.backends.sqlite3':
-        BACKEND_DB_CONNECTION = 'sqlite:///%s' % name
+    name = db.get('TEST_NAME', TEST_DATABASE_PREFIX + db['NAME'])
+
+    if (pithos_settings.BACKEND_DB_MODULE == 'pithos.backends.lib.sqlalchemy'):
+        if db['ENGINE'] == 'django.db.backends.sqlite3':
+            db_connection = 'sqlite:///%s' % name
+        else:
+            d = dict(scheme=django_sqlalchemy_engines.get(db['ENGINE']),
+                     user=db['USER'],
+                     pwd=db['PASSWORD'],
+                     host=db['HOST'].lower(),
+                     port=int(db['PORT']) if db['PORT'] != '' else '',
+                     name=name)
+            db_connection = (
+                '%(scheme)s://%(user)s:%(pwd)s@%(host)s:%(port)s/%(name)s' % d)
+
+            # initialize pithos database
+            initialize_db(db_connection)
     else:
-        d = dict(scheme=django_sqlalchemy_engines.get(db['ENGINE']),
-                 user=db['USER'],
-                 pwd=db['PASSWORD'],
-                 host=db['HOST'].lower(),
-                 port=int(db['PORT']) if db['PORT'] != '' else '',
-                 name=name)
-        BACKEND_DB_CONNECTION = (
-            '%(scheme)s://%(user)s:%(pwd)s@%(host)s:%(port)s/%(name)s' % d)
-    return BACKEND_DB_CONNECTION
+        db_connection = name
+    pithos_settings.BACKEND_DB_CONNECTION = db_connection
+
+
+class PithosTestSuiteRunner(DjangoTestSuiteRunner):
+    def setup_databases(self, **kwargs):
+        old_names, mirrors = super(PithosTestSuiteRunner,
+                                   self).setup_databases(**kwargs)
+        prepate_db_connection()
+        return old_names, mirrors
 
 
 class PithosAPITest(TestCase):
     def setUp(self):
-        if (pithos_settings.BACKEND_DB_MODULE ==
-                'pithos.backends.lib.sqlalchemy'):
-            pithos_settings.BACKEND_DB_CONNECTION = django_to_sqlalchemy()
-            pithos_settings.BACKEND_POOL_SIZE = 1
-
         # Override default block size to spead up tests
         pithos_settings.BACKEND_BLOCK_SIZE = TEST_BLOCK_SIZE
         pithos_settings.BACKEND_HASH_ALGORITHM = TEST_HASH_ALGORITHM
@@ -318,7 +333,7 @@ class PithosAPITest(TestCase):
 
     def upload_object(self, cname, oname=None, length=None, verify=True,
                       **meta):
-        oname = oname or get_random_data(8)
+        oname = oname or get_random_name()
         length = length or random.randint(TEST_BLOCK_SIZE, 2 * TEST_BLOCK_SIZE)
         data = get_random_data(length=length)
         headers = dict(('HTTP_X_OBJECT_META_%s' % k.upper(), v)
@@ -332,7 +347,7 @@ class PithosAPITest(TestCase):
     def update_object_data(self, cname, oname=None, length=None,
                            content_type=None, content_range=None,
                            verify=True, **meta):
-        oname = oname or get_random_data(8)
+        oname = oname or get_random_name()
         length = length or random.randint(TEST_BLOCK_SIZE, 2 * TEST_BLOCK_SIZE)
         content_type = content_type or 'application/octet-stream'
         data = get_random_data(length=length)
@@ -354,7 +369,7 @@ class PithosAPITest(TestCase):
                                        content_range='bytes */*')
 
     def create_folder(self, cname, oname=None, **headers):
-        oname = oname or get_random_data(8)
+        oname = oname or get_random_name()
         url = join_urls(self.pithos_path, self.user, cname, oname)
         r = self.put(url, data='', content_type='application/directory',
                      **headers)
@@ -407,14 +422,6 @@ class PithosAPITest(TestCase):
             k in meta.keys())
         (self.assertEqual(object_meta['X-Object-Meta-%s' % k], v) for
             k, v in meta.items())
-
-    def assert_status(self, status, codes):
-        l = [elem for elem in return_codes]
-        if isinstance(codes, list):
-            l.extend(codes)
-        else:
-            l.append(codes)
-        self.assertTrue(status in l)
 
     def assert_extended(self, data, format, type, size=10000):
         if format == 'xml':
@@ -484,45 +491,3 @@ class AssertUUidInvariant(object):
         assert('x-object-uuid' in self.map)
         uuid = map['x-object-uuid']
         assert(uuid == self.uuid)
-
-
-django_sqlalchemy_engines = {
-    'django.db.backends.postgresql_psycopg2': 'postgresql+psycopg2',
-    'django.db.backends.postgresql': 'postgresql',
-    'django.db.backends.mysql': '',
-    'django.db.backends.sqlite3': 'mssql',
-    'django.db.backends.oracle': 'oracle'}
-
-
-def test_concurrently(times=2):
-    """
-    Add this decorator to small pieces of code that you want to test
-    concurrently to make sure they don't raise exceptions when run at the
-    same time.  E.g., some Django views that do a SELECT and then a subsequent
-    INSERT might fail when the INSERT assumes that the data has not changed
-    since the SELECT.
-    """
-    def test_concurrently_decorator(test_func):
-        def wrapper(*args, **kwargs):
-            exceptions = []
-
-            def call_test_func():
-                try:
-                    test_func(*args, **kwargs)
-                except Exception, e:
-                    exceptions.append(e)
-                    raise
-
-            threads = []
-            for i in range(times):
-                threads.append(threading.Thread())
-            for t in threads:
-                t.start()
-            for t in threads:
-                t.join()
-            if exceptions:
-                raise Exception(
-                    ('test_concurrently intercepted %s',
-                     'exceptions: %s') % (len(exceptions), exceptions))
-        return wrapper
-    return test_concurrently_decorator

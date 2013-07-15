@@ -42,7 +42,8 @@ from pithos.api.test import (PithosAPITest, pithos_settings,
                              AssertMappingInvariant, AssertUUidInvariant,
                              TEST_BLOCK_SIZE, TEST_HASH_ALGORITHM,
                              DATE_FORMATS)
-from pithos.api.test.util import md5_hash, merkle, strnextling, get_random_data
+from pithos.api.test.util import (md5_hash, merkle, strnextling,
+                                  get_random_data, get_random_name)
 
 from synnefo.lib import join_urls
 
@@ -128,7 +129,7 @@ class ObjectGet(PithosAPITest):
         self.assertEqual(r.status_code, 404)
 
         # upload object with trailing space
-        oname = self.upload_object('c1', quote('%s ' % get_random_data(8)))[0]
+        oname = self.upload_object('c1', quote('%s ' % get_random_name()))[0]
 
         url = join_urls(self.pithos_path, self.user, 'c1', oname)
         r = self.get(url)
@@ -314,7 +315,7 @@ class ObjectGet(PithosAPITest):
 
         # perform get with If-Match
         url = join_urls(self.pithos_path, self.user, cname, oname)
-        r = self.get(url, HTTP_IF_MATCH=get_random_data(8))
+        r = self.get(url, HTTP_IF_MATCH=get_random_name())
         self.assertEqual(r.status_code, 412)
 
     def test_if_none_match(self):
@@ -494,12 +495,12 @@ class ObjectGet(PithosAPITest):
 class ObjectPut(PithosAPITest):
     def setUp(self):
         PithosAPITest.setUp(self)
-        self.container = get_random_data(8)
+        self.container = get_random_name()
         self.create_container(self.container)
 
     def test_upload(self):
         cname = self.container
-        oname = get_random_data(8)
+        oname = get_random_name()
         data = get_random_data()
         meta = {'test': 'test1'}
         headers = dict(('HTTP_X_OBJECT_META_%s' % k.upper(), v)
@@ -526,7 +527,7 @@ class ObjectPut(PithosAPITest):
 
     def test_maximum_upload_size_exceeds(self):
         cname = self.container
-        oname = get_random_data(8)
+        oname = get_random_name()
 
         # set container quota to 100
         url = join_urls(self.pithos_path, self.user, cname)
@@ -543,7 +544,7 @@ class ObjectPut(PithosAPITest):
 
     def test_upload_with_name_containing_slash(self):
         cname = self.container
-        oname = '/%s' % get_random_data(8)
+        oname = '/%s' % get_random_name()
         data = get_random_data()
         url = join_urls(self.pithos_path, self.user, cname, oname)
         r = self.put(url, data=data)
@@ -557,7 +558,7 @@ class ObjectPut(PithosAPITest):
 
     def test_upload_unprocessable_entity(self):
         cname = self.container
-        oname = get_random_data(8)
+        oname = get_random_name()
         data = get_random_data()
         url = join_urls(self.pithos_path, self.user, cname, oname)
         r = self.put(url, data=data, HTTP_ETAG='123')
@@ -565,7 +566,7 @@ class ObjectPut(PithosAPITest):
 
 #    def test_chunked_transfer(self):
 #        cname = self.container
-#        oname = '/%s' % get_random_data(8)
+#        oname = '/%s' % get_random_name()
 #        data = get_random_data()
 #        url = join_urls(self.pithos_path, self.user, cname, oname)
 #        r = self.put(url, data=data, HTTP_TRANSFER_ENCODING='chunked')
@@ -582,7 +583,7 @@ class ObjectPut(PithosAPITest):
             data += self.upload_object(cname, oname=part)[1]
 
         manifest = '%s/%s' % (cname, prefix)
-        oname = get_random_data(8)
+        oname = get_random_name()
         url = join_urls(self.pithos_path, self.user, cname, oname)
         r = self.put(url, data='', HTTP_X_OBJECT_MANIFEST=manifest)
         self.assertEqual(r.status_code, 201)
@@ -595,14 +596,14 @@ class ObjectPut(PithosAPITest):
         self.assertEqual(r.content, data)
 
         # invalid manifestation
-        invalid_manifestation = '%s/%s' % (cname, get_random_data(8))
+        invalid_manifestation = '%s/%s' % (cname, get_random_name())
         self.put(url, data='', HTTP_X_OBJECT_MANIFEST=invalid_manifestation)
         r = self.get(url)
         self.assertEqual(r.content, '')
 
     def test_create_zero_length_object(self):
         cname = self.container
-        oname = get_random_data(8)
+        oname = get_random_name()
         url = join_urls(self.pithos_path, self.user, cname, oname)
         r = self.put(url, data='')
         self.assertEqual(r.status_code, 201)
@@ -629,7 +630,7 @@ class ObjectPut(PithosAPITest):
         url = join_urls(self.pithos_path, self.user, cname, oname)
         r = self.get('%s?hashmap=&format=json' % url)
 
-        oname = get_random_data(8)
+        oname = get_random_name()
         url = join_urls(self.pithos_path, self.user, cname, oname)
         r = self.put('%s?hashmap=' % url, data=r.content)
         self.assertEqual(r.status_code, 201)
@@ -655,7 +656,7 @@ class ObjectCopy(PithosAPITest):
         with AssertMappingInvariant(self.get_object_info, self.container,
                                     self.object):
             # copy object
-            oname = get_random_data(8)
+            oname = get_random_name()
             url = join_urls(self.pithos_path, self.user, self.container, oname)
             r = self.put(url, data='', HTTP_X_OBJECT_META_TEST='testcopy',
                          HTTP_X_COPY_FROM='/%s/%s' % (
@@ -679,7 +680,7 @@ class ObjectCopy(PithosAPITest):
         self.create_container(cname)
         with AssertMappingInvariant(self.get_object_info, self.container,
                                     self.object):
-            oname = get_random_data(8)
+            oname = get_random_name()
             url = join_urls(self.pithos_path, self.user, cname, oname)
             r = self.put(url, data='', HTTP_X_OBJECT_META_TEST='testcopy',
                          HTTP_X_COPY_FROM='/%s/%s' % (
@@ -700,32 +701,32 @@ class ObjectCopy(PithosAPITest):
 
     def test_copy_invalid(self):
         # copy from non-existent object
-        oname = get_random_data(8)
+        oname = get_random_name()
         url = join_urls(self.pithos_path, self.user, self.container, oname)
         r = self.put(url, data='', HTTP_X_OBJECT_META_TEST='testcopy',
                      HTTP_X_COPY_FROM='/%s/%s' % (
-                         self.container, get_random_data(8)))
+                         self.container, get_random_name()))
         self.assertEqual(r.status_code, 404)
 
         # copy from non-existent container
-        oname = get_random_data(8)
+        oname = get_random_name()
         url = join_urls(self.pithos_path, self.user, self.container, oname)
         r = self.put(url, data='', HTTP_X_OBJECT_META_TEST='testcopy',
                      HTTP_X_COPY_FROM='/%s/%s' % (
-                         get_random_data(8), self.object))
+                         get_random_name(), self.object))
         self.assertEqual(r.status_code, 404)
 
     def test_copy_dir(self):
         folder = self.create_folder(self.container)[0]
         subfolder = self.create_folder(
-            self.container, oname='%s/%s' % (folder, get_random_data(8)))[0]
+            self.container, oname='%s/%s' % (folder, get_random_name()))[0]
         objects = [subfolder]
         append = objects.append
         append(self.upload_object(self.container,
-                                  '%s/%s' % (folder, get_random_data(8)),
+                                  '%s/%s' % (folder, get_random_name()),
                                   HTTP_X_OBJECT_META_DEPTH='1')[0])
         append(self.upload_object(self.container,
-                                  '%s/%s' % (subfolder, get_random_data(8)),
+                                  '%s/%s' % (subfolder, get_random_name()),
                                   HTTP_X_OBJECT_META_DEPTH='2')[0])
         other = self.upload_object(self.container, strnextling(folder))[0]
 
@@ -772,7 +773,7 @@ class ObjectMove(PithosAPITest):
 
     def test_move(self):
         # move object
-        oname = get_random_data(8)
+        oname = get_random_name()
         url = join_urls(self.pithos_path, self.user, self.container, oname)
         r = self.put(url, data='', HTTP_X_OBJECT_META_TEST='testcopy',
                      HTTP_X_MOVE_FROM='/%s/%s' % (
@@ -799,17 +800,17 @@ class ObjectMove(PithosAPITest):
     def test_move_dir(self):
         folder = self.create_folder(self.container)[0]
         subfolder = self.create_folder(
-            self.container, oname='%s/%s' % (folder, get_random_data(8)))[0]
+            self.container, oname='%s/%s' % (folder, get_random_name()))[0]
         objects = [subfolder]
         append = objects.append
         meta = {}
         meta[objects[0]] = {}
         append(self.upload_object(self.container,
-                                  '%s/%s' % (folder, get_random_data(8)),
+                                  '%s/%s' % (folder, get_random_name()),
                                   HTTP_X_OBJECT_META_DEPTH='1')[0])
         meta[objects[1]] = {'X-Object-Meta-Depth': '1'}
         append(self.upload_object(self.container,
-                                  '%s/%s' % (subfolder, get_random_data(8)),
+                                  '%s/%s' % (subfolder, get_random_name()),
                                   HTTP_X_OBJECT_META_DEPTH='2')[0])
         meta[objects[1]] = {'X-Object-Meta-Depth': '2'}
         other = self.upload_object(self.container, strnextling(folder))[0]
@@ -1081,7 +1082,7 @@ class ObjectPost(PithosAPITest):
 
     def test_update_from_other_object(self):
         src = self.object
-        dest = get_random_data(8)
+        dest = get_random_name()
 
         url = join_urls(self.pithos_path, self.user, self.container, src)
         r = self.get(url)
@@ -1111,7 +1112,7 @@ class ObjectPost(PithosAPITest):
 
     def test_update_range_from_other_object(self):
         src = self.object
-        dest = get_random_data(8)
+        dest = get_random_name()
 
         url = join_urls(self.pithos_path, self.user, self.container, src)
         r = self.get(url)
@@ -1156,24 +1157,24 @@ class ObjectDelete(PithosAPITest):
 
     def test_delete_non_existent(self):
         url = join_urls(self.pithos_path, self.user, self.container,
-                        get_random_data(8))
+                        get_random_name())
         r = self.delete(url)
         self.assertEqual(r.status_code, 404)
 
     def test_delete_dir(self):
         folder = self.create_folder(self.container)[0]
         subfolder = self.create_folder(
-            self.container, oname='%s/%s' % (folder, get_random_data(8)))[0]
+            self.container, oname='%s/%s' % (folder, get_random_name()))[0]
         objects = [subfolder]
         append = objects.append
         meta = {}
         meta[objects[0]] = {}
         append(self.upload_object(self.container,
-                                  '%s/%s' % (folder, get_random_data(8)),
+                                  '%s/%s' % (folder, get_random_name()),
                                   HTTP_X_OBJECT_META_DEPTH='1')[0])
         meta[objects[1]] = {'X-Object-Meta-Depth': '1'}
         append(self.upload_object(self.container,
-                                  '%s/%s' % (subfolder, get_random_data(8)),
+                                  '%s/%s' % (subfolder, get_random_name()),
                                   HTTP_X_OBJECT_META_DEPTH='2')[0])
         meta[objects[1]] = {'X-Object-Meta-Depth': '2'}
         other = self.upload_object(self.container, strnextling(folder))[0]

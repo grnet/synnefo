@@ -34,8 +34,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from pithos.api.test import PithosAPITest, AssertMappingInvariant,\
-    DATE_FORMATS
+from pithos.api.test import (PithosAPITest, AssertMappingInvariant,
+                             DATE_FORMATS)
 
 from synnefo.lib import join_urls
 

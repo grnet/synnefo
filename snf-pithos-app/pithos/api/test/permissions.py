@@ -35,7 +35,7 @@
 # or implied, of GRNET S.A.
 
 from pithos.api.test import PithosAPITest
-from pithos.api.test.util import get_random_data
+from pithos.api.test.util import get_random_data, get_random_name
 
 from synnefo.lib import join_urls
 
@@ -53,7 +53,7 @@ class TestPermissions(PithosAPITest):
         r = self.post(url, **kwargs)
         self.assertEqual(r.status_code, 202)
 
-        self.container = get_random_data(8)
+        self.container = get_random_name()
         self.create_container(self.container)
         self.object = self.upload_object(self.container)[0]
         l = [self.object + '/', self.object + '/a', self.object + 'a',

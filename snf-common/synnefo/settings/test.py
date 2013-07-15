@@ -60,3 +60,5 @@ PITHOS_BASE_URL = 'http://storage.example.synnefo.org/pithos/'
 CLOUDBAR_LOCATION = '/static/im/cloudbar/'
 CLOUDBAR_SERVICES_URL = '/ui/get_services'
 CLOUDBAR_MENU_URL = '/ui/get_menu'
+
+TEST_RUNNER = 'pithos.api.test.PithosTestSuiteRunner'

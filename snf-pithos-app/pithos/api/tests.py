@@ -36,3 +36,4 @@ from pithos.api.test.accounts import *
 from pithos.api.test.containers import *
 from pithos.api.test.objects import *
 from pithos.api.test.permissions import *
+from pithos.api.test.public import *

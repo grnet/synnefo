@@ -94,6 +94,10 @@ def get_random_data(length=None):
     return get_random_word(length)[:length]
 
 
+def get_random_name(length=8):
+    return get_random_data(length)
+
+
 def md5_hash(data):
     md5 = hashlib.md5()
     md5.update(data)

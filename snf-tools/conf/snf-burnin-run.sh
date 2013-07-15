@@ -35,6 +35,7 @@ FAILURE_SUBJECT="Burnin Failed"
 # ----------------------------------------
 # Some burnin parameters
 AUTH_URL="https://accounts.synnefo.org/identity/v2.0/"
+SYSTEM_IMAGES_USER="uuid-of-owner-of-system-images"
 TIMEOUT=240
 
 # ----------------------------------------
@@ -81,6 +82,7 @@ run_burnin() {
                 --log-folder="$logfolder" \
                 --auth-url="$AUTH_URL" \
                 --force-flavor="$flavor" \
+                --system-images-user="$SYSTEM_IMAGES_USER" \
                 --nofailfast \
             &>> $outputfile
 

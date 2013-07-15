@@ -306,8 +306,9 @@ class ImagesTestCase(unittest.TestCase):
     def test_005_image_metadata(self):
         """Test every image has specific metadata defined"""
         keys = frozenset(["osfamily", "root_partition"])
-        sys_images = filter(lambda x: x['owner'] == SYSTEM_IMAGES_USER,
-                            self.dimages)
+        details = self.compute_client.list_images(detail=True)
+        sys_images = filter(lambda x: x['user_id'] == SYSTEM_IMAGES_USER,
+                            details)
         for i in sys_images:
             self.assertTrue(keys.issubset(i["metadata"].keys()))
 

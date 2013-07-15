@@ -76,9 +76,8 @@ except ImportError:
 # Global Variables
 AUTH_URL = None
 TOKEN = None
-PLANKTON_USER = None
+SYSTEM_IMAGES_USER = None
 NO_IPV6 = None
-DEFAULT_PLANKTON_USER = "images@okeanos.grnet.gr"
 NOFAILFAST = None
 VERBOSE = None
 
@@ -297,20 +296,19 @@ class ImagesTestCase(unittest.TestCase):
         dnames = sorted(map(lambda x: x["name"], self.dimages))
         self.assertEqual(names, dnames)
 
-# XXX: Find a way to resolve owner's uuid to username.
-#      (maybe use astakosclient)
-#    def test_004_unique_image_names(self):
-#        """Test system images have unique names"""
-#        sys_images = filter(lambda x: x['owner'] == PLANKTON_USER,
-#                            self.dimages)
-#        names = sorted(map(lambda x: x["name"], sys_images))
-#        self.assertEqual(sorted(list(set(names))), names)
+    def test_004_unique_image_names(self):
+        """Test system images have unique names"""
+        sys_images = filter(lambda x: x['owner'] == SYSTEM_IMAGES_USER,
+                            self.dimages)
+        names = sorted(map(lambda x: x["name"], sys_images))
+        self.assertEqual(sorted(list(set(names))), names)
 
     def test_005_image_metadata(self):
         """Test every image has specific metadata defined"""
         keys = frozenset(["osfamily", "root_partition"])
-        details = self.compute_client.list_images(detail=True)
-        for i in details:
+        sys_images = filter(lambda x: x['owner'] == SYSTEM_IMAGES_USER,
+                            self.dimages)
+        for i in sys_images:
             self.assertTrue(keys.issubset(i["metadata"].keys()))
 
     def test_006_download_image(self):
@@ -1956,10 +1954,10 @@ def parse_arguments(args):
                       action="store", type="string", dest="auth_url",
                       help="The AUTH URI to use to reach the Synnefo API",
                       default=None)
-    parser.add_option("--plankton-user",
-                      action="store", type="string", dest="plankton_user",
+    parser.add_option("--system-images-user",
+                      action="store", type="string", dest="system_images_user",
                       help="Owner of system images",
-                      default=DEFAULT_PLANKTON_USER)
+                      default=None)
     parser.add_option("--token",
                       action="store", type="string", dest="token",
                       help="The token to use for authentication to the API")
@@ -2066,6 +2064,8 @@ def parse_arguments(args):
     _mandatory_argument(opts.token, "--token")
     # `auth_url' is mandatory
     _mandatory_argument(opts.auth_url, "--auth-url")
+    # `system_images_user' is mandatory
+    _mandatory_argument(opts.system_images_user, "--system-images-user")
 
     if not opts.show_stale:
         # `image-id' is mandatory
@@ -2108,11 +2108,11 @@ def main():
     (opts, args) = parse_arguments(sys.argv[1:])
 
     # Some global variables
-    global AUTH_URL, TOKEN, PLANKTON_USER
+    global AUTH_URL, TOKEN, SYSTEM_IMAGES_USER
     global NO_IPV6, VERBOSE, NOFAILFAST
     AUTH_URL = opts.auth_url
     TOKEN = opts.token
-    PLANKTON_USER = opts.plankton_user
+    SYSTEM_IMAGES_USER = opts.system_images_user
     NO_IPV6 = opts.no_ipv6
     VERBOSE = opts.verbose
     NOFAILFAST = opts.nofailfast

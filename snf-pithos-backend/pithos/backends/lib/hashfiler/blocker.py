@@ -62,6 +62,7 @@ class Blocker(object):
 
         self.fblocker = FileBlocker(**params)
         self.hashlen = self.fblocker.hashlen
+        self.blocksize = params['blocksize']
 
     def block_hash(self, data):
         """Hash a block of data"""
@@ -99,6 +100,7 @@ class Blocker(object):
            and a data 'patch' applied at offset. Return:
            (the hash of the new block, if the block already existed)
         """
+        blocksize = self.blocksize
         r_hash = None
         r_existed = True
         (f_hash, f_existed) = self.fblocker.block_delta(blkhash, offset, data)

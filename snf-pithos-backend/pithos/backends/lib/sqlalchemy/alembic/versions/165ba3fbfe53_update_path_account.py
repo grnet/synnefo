@@ -13,11 +13,10 @@ down_revision = '3dd56e750a3'
 from alembic import op
 from sqlalchemy.sql import table, column, and_
 
-from pithos.api.settings import (SERVICE_TOKEN, ASTAKOS_BASE_URL)
-
 from astakosclient import AstakosClient
 from astakosclient.errors import NoUserName, NoUUID
-astakos_client = AstakosClient(ASTAKOS_BASE_URL, retry=3, use_pool=True)
+
+import functools
 
 try:
     from progress.bar import IncrementalBar
@@ -37,14 +36,13 @@ import sqlalchemy as sa
 catalog = {}
 
 
-def get_uuid(account):
+def _get_uuid(account, service_token, astakos_client):
     global catalog
     if account in catalog:
         return catalog[account]
     try:
-        catalog[account] = astakos_client.service_get_uuid(
-            SERVICE_TOKEN, account
-        )
+        catalog[account] = astakos_client.service_get_uuid(service_token,
+                                                           account)
         print '\n', account, '-->', catalog[account]
     except NoUUID:
         return None
@@ -56,14 +54,13 @@ def get_uuid(account):
 inverse_catalog = {}
 
 
-def get_displayname(account):
+def _get_displayname(account, service_token, astakos_client):
     global inverse_catalog
     if account in inverse_catalog:
         return inverse_catalog[account]
     try:
         inverse_catalog[account] = astakos_client.service_get_username(
-            SERVICE_TOKEN, account
-        )
+            service_token, account)
         print '\n', account, '-->', inverse_catalog[account]
     except NoUserName:
         return None
@@ -219,8 +216,31 @@ def migrate(callback):
 
 
 def upgrade():
-    migrate(get_uuid)
+    try:
+        from pithos.api import settings
+    except ImportError:
+        return
+    else:
+        astakos_client = AstakosClient(settings.ASTAKOS_BASE_URL,
+                                       retry=3,
+                                       use_pool=True)
+        get_uuid = functools.partial(_get_uuid,
+                                     service_token=settings.SERVICE_TOKEN,
+                                     astakos_client=astakos_client)
+        migrate(get_uuid)
 
 
 def downgrade():
-    migrate(get_displayname)
+    try:
+        from pithos.api import settings
+    except ImportError:
+        return
+    else:
+        astakos_client = AstakosClient(settings.ASTAKOS_BASE_URL,
+                                       retry=3,
+                                       use_pool=True)
+        get_displayname = functools.partial(
+            _get_displayname,
+            service_token=settings.SERVICE_TOKEN,
+            astakos_client=astakos_client)
+        migrate(get_displayname)

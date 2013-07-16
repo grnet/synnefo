@@ -1,5 +1,5 @@
 {% extends "im/email.txt" %}
   
 {% block content %}
-Your project application request ({{object.name}}) has been terminated.
+Your project ({{object.application.name}}) has been terminated.
 {% endblock content %}

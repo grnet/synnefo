@@ -196,7 +196,8 @@ class QuotaAPITest(TestCase):
         body = json.loads(r.content)
         self.assertEqual(body['serial'], serial)
         assertIn('issue_time', body)
-        self.assertEqual(body['provisions'], commission_request['provisions'])
+        provisions = sorted(body['provisions'], key=lambda p: p['resource'])
+        self.assertEqual(provisions, commission_request['provisions'])
         self.assertEqual(body['name'], commission_request['name'])
 
         r = client.get(u('service_quotas?user=' + user.uuid), **s1_headers)

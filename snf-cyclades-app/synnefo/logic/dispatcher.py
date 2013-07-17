@@ -43,7 +43,7 @@ import sys
 import os
 path = os.path.normpath(os.path.join(os.getcwd(), '..'))
 sys.path.append(path)
-from synnefo import settings
+from django.conf import settings
 setup_environ(settings)
 
 from django.db import close_connection

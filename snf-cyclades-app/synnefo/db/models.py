@@ -38,7 +38,7 @@ import utils
 from contextlib import contextmanager
 from hashlib import sha1
 from snf_django.lib.api import faults
-from synnefo import settings as snf_settings
+from django.conf import settings as snf_settings
 from aes_encrypt import encrypt_db_charfield, decrypt_db_charfield
 
 from synnefo.db.managers import ForUpdateManager, ProtectedDeleteManager

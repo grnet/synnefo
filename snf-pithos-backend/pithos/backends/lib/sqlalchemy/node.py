@@ -1206,7 +1206,7 @@ class Node(DBWorker):
         s = s.where(v.c.serial == a.c.serial)
         s = s.where(a.c.domain == domain)
         s = s.where(a.c.node == n.c.node)
-        s = s.where(a.c.is_latest is True)
+        s = s.where(a.c.is_latest == True)
         if paths:
             s = s.where(n.c.path.in_(paths))
 

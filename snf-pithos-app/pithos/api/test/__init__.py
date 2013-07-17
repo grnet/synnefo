@@ -174,18 +174,21 @@ class PithosAPITest(TestCase):
     def head(self, url, user='user', data={}, follow=False, **extra):
         with astakos_user(user):
             extra = dict((quote(k), quote(v)) for k, v in extra.items())
+            extra.setdefault('HTTP_X_AUTH_TOKEN', 'token')
             response = self.client.head(url, data, follow, **extra)
         return response
 
     def get(self, url, user='user', data={}, follow=False, **extra):
         with astakos_user(user):
             extra = dict((quote(k), quote(v)) for k, v in extra.items())
+            extra.setdefault('HTTP_X_AUTH_TOKEN', 'token')
             response = self.client.get(url, data, follow, **extra)
         return response
 
     def delete(self, url, user='user', data={}, follow=False, **extra):
         with astakos_user(user):
             extra = dict((quote(k), quote(v)) for k, v in extra.items())
+            extra.setdefault('HTTP_X_AUTH_TOKEN', 'token')
             response = self.client.delete(url, data, follow, **extra)
         return response
 
@@ -193,6 +196,7 @@ class PithosAPITest(TestCase):
              content_type='application/octet-stream', follow=False, **extra):
         with astakos_user(user):
             extra = dict((quote(k), quote(v)) for k, v in extra.items())
+            extra.setdefault('HTTP_X_AUTH_TOKEN', 'token')
             response = self.client.post(url, data, content_type, follow,
                                         **extra)
         return response
@@ -201,6 +205,7 @@ class PithosAPITest(TestCase):
             content_type='application/octet-stream', follow=False, **extra):
         with astakos_user(user):
             extra = dict((quote(k), quote(v)) for k, v in extra.items())
+            extra.setdefault('HTTP_X_AUTH_TOKEN', 'token')
             response = self.client.put(url, data, content_type, follow,
                                        **extra)
         return response
@@ -218,7 +223,8 @@ class PithosAPITest(TestCase):
 
     def delete_account_meta(self, meta, user=None):
         user = user or self.user
-        transform = lambda k: 'HTTP_X_ACCOUNT_META_%s' % k.replace('-', '_').upper()
+        transform = (lambda k: 'HTTP_X_ACCOUNT_META_%s' %
+                     k.replace('-', '_').upper())
         kwargs = dict((transform(k), '') for k, v in meta.items())
         url = join_urls(self.pithos_path, user)
         r = self.post('%s?update=' % url, user=user, **kwargs)
@@ -230,7 +236,8 @@ class PithosAPITest(TestCase):
     def delete_account_groups(self, groups, user=None):
         user = user or self.user
         url = join_urls(self.pithos_path, user)
-        transform = lambda k: 'HTTP_X_ACCOUNT_GROUP_%s' % k.replace('-', '_').upper()
+        transform = (lambda k: 'HTTP_X_ACCOUNT_GROUP_%s' %
+                     k.replace('-', '_').upper())
         kwargs = dict((transform(k), '') for k, v in groups.items())
         r = self.post('%s?update=' % url, user=user, **kwargs)
         self.assertEqual(r.status_code, 202)
@@ -289,7 +296,7 @@ class PithosAPITest(TestCase):
         url = join_urls(self.pithos_path, user, container)
         r = self.post('%s?update=' % url, user=user, **kwargs)
         self.assertEqual(r.status_code, 202)
-        container_meta = self.get_container_meta(container)
+        container_meta = self.get_container_meta(container, user=user)
         (self.assertTrue('X-Container-Meta-%s' % k in container_meta) for
             k in meta.keys())
         (self.assertEqual(container_meta['X-Container-Meta-%s' % k], v) for
@@ -437,7 +444,7 @@ class PithosAPITest(TestCase):
         url = join_urls(self.pithos_path, user, container, object)
         r = self.post('%s?update=' % url, user=user, content_type='', **kwargs)
         self.assertEqual(r.status_code, 202)
-        object_meta = self.get_object_meta(container, object)
+        object_meta = self.get_object_meta(container, object, user=user)
         (self.assertTrue('X-Objecr-Meta-%s' % k in object_meta) for
             k in meta.keys())
         (self.assertEqual(object_meta['X-Object-Meta-%s' % k], v) for

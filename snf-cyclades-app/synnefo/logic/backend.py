@@ -231,7 +231,7 @@ def _process_net_status(vm, etime, nics):
     vm.nics.all().delete()
 
     for nic in ganeti_nics:
-        ipv4 = nic.get('ipv4', '')
+        ipv4 = nic["ipv4"]
         net = nic['network']
         if ipv4:
             net.reserve_address(ipv4)
@@ -257,15 +257,12 @@ def process_ganeti_nics(ganeti_nics):
         net = Network.objects.get(pk=pk)
 
         # Get the new nic info
-        mac = new_nic.get('mac', '')
-        ipv4 = new_nic.get('ip', '')
-        if net.subnet6:
-            ipv6 = mac2eui64(mac, net.subnet6)
-        else:
-            ipv6 = ''
+        mac = new_nic.get('mac')
+        ipv4 = new_nic.get('ip')
+        ipv6 = mac2eui64(mac, net.subnet6) if net.subnet6 is not None else None
 
-        firewall = new_nic.get('firewall', '')
-        firewall_profile = _reverse_tags.get(firewall, '')
+        firewall = new_nic.get('firewall')
+        firewall_profile = _reverse_tags.get(firewall)
         if not firewall_profile and net.public:
             firewall_profile = settings.DEFAULT_FIREWALL_PROFILE
 
@@ -655,6 +652,14 @@ def _create_network(network, backend):
     else:
         conflicts_check = False
 
+    # Use a dummy network subnet for IPv6 only networks. Currently Ganeti does
+    # not support IPv6 only networks. To bypass this limitation, we create the
+    # network with a dummy network subnet, and make Cyclades connect instances
+    # to such networks, with address=None.
+    subnet = network.subnet
+    if subnet is None:
+        subnet = "10.0.0.0/24"
+
     try:
         bn = BackendNetwork.objects.get(network=network, backend=backend)
         mac_prefix = bn.mac_prefix
@@ -664,7 +669,7 @@ def _create_network(network, backend):
 
     with pooled_rapi_client(backend) as client:
         return client.CreateNetwork(network_name=network.backend_id,
-                                    network=network.subnet,
+                                    network=subnet,
                                     network6=network.subnet6,
                                     gateway=network.gateway,
                                     gateway6=network.gateway6,

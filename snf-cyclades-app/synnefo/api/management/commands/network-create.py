@@ -34,14 +34,12 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import validate_network_info, get_backend
-from synnefo.webproject.management.utils import pprint_table, parse_bool
+from synnefo.management.common import get_backend, convert_api_faults
+from synnefo.webproject.management.utils import parse_bool
 
-from synnefo import quotas
 from synnefo.db.models import Network, Backend
-from synnefo.db.utils import validate_mac, InvalidMacAddress
+from synnefo.logic import networks
 from synnefo.logic.backend import create_network
-from synnefo.api.util import values_from_flavor
 
 NETWORK_FLAVORS = Network.FLAVORS.keys()
 
@@ -53,12 +51,6 @@ class Command(BaseCommand):
     help = "Create a new network"
 
     option_list = BaseCommand.option_list + (
-        make_option(
-            "-n",
-            "--dry-run",
-            dest="dry_run",
-            default=False,
-            action="store_true"),
         make_option(
             '--name',
             dest='name',
@@ -91,8 +83,9 @@ class Command(BaseCommand):
         make_option(
             '--dhcp',
             dest='dhcp',
-            action='store_true',
-            default=False,
+            default="False",
+            choices=["True", "False"],
+            metavar="True|False",
             help='Automatically assign IPs'),
         make_option(
             '--public',
@@ -142,13 +135,16 @@ class Command(BaseCommand):
                  ' public networks'),
     )
 
+    @convert_api_faults
     def handle(self, *args, **options):
         if args:
             raise CommandError("Command doesn't accept any arguments")
 
-        dry_run = options["dry_run"]
         name = options['name']
         subnet = options['subnet']
+        gateway = options['gateway']
+        subnet6 = options['subnet6']
+        gateway6 = options['gateway6']
         backend_id = options['backend_id']
         public = options['public']
         flavor = options['flavor']
@@ -158,66 +154,38 @@ class Command(BaseCommand):
         tags = options['tags']
         userid = options["owner"]
         floating_ip_pool = parse_bool(options["floating_ip_pool"])
+        dhcp = parse_bool(options["dhcp"])
 
         if not name:
-            raise CommandError("Name is required")
-        if not subnet:
-            raise CommandError("Subnet is required")
+            raise CommandError("name is required")
         if not flavor:
-            raise CommandError("Flavor is required")
+            raise CommandError("flavor is required")
+
+        if (subnet is None) and (subnet6 is None):
+            raise CommandError("subnet or subnet6 is required")
+        if subnet is None and gateway is not None:
+            raise CommandError("Can not use gateway without subnet")
+        if subnet6 is None and gateway6 is not None:
+            raise CommandError("Can not use gateway6 without subnet6")
+
         if public and not (backend_id or floating_ip_pool):
             raise CommandError("backend-id is required")
         if not userid and not public:
             raise CommandError("'owner' is required for private networks")
 
-        if mac_prefix and flavor == "MAC_FILTERED":
-            raise CommandError("Can not override MAC_FILTERED mac-prefix")
-        if link and flavor == "PHYSICAL_VLAN":
-            raise CommandError("Can not override PHYSICAL_VLAN link")
-
-        if backend_id:
+        if backend_id is not None:
+            try:
+                backend_id = int(backend_id)
+            except ValueError:
+                raise CommandError("Invalid backend-id: %s", backend_id)
             backend = get_backend(backend_id)
 
-        fmode, flink, fmac_prefix, ftags = values_from_flavor(flavor)
-        mode = mode or fmode
-        link = link or flink
-        mac_prefix = mac_prefix or fmac_prefix
-        tags = tags or ftags
-
-        try:
-            validate_mac(mac_prefix + "0:00:00:00")
-        except InvalidMacAddress:
-            raise CommandError("Invalid MAC prefix '%s'" % mac_prefix)
-        subnet, gateway, subnet6, gateway6 = validate_network_info(options)
-
-        if not link or not mode:
-            raise CommandError("Can not create network."
-                               " No connectivity link or mode")
-        netinfo = {
-            "name": name,
-            "userid": options["owner"],
-            "subnet": subnet,
-            "gateway": gateway,
-            "gateway6": gateway6,
-            "subnet6": subnet6,
-            "dhcp": options["dhcp"],
-            "flavor": flavor,
-            "public": public,
-            "mode": mode,
-            "link": link,
-            "mac_prefix": mac_prefix,
-            "tags": tags,
-            "floating_ip_pool": floating_ip_pool,
-            "state": "ACTIVE"}
-
-        if dry_run:
-            self.stdout.write("Creating network:\n")
-            pprint_table(self.stdout, tuple(netinfo.items()))
-            return
-
-        network = Network.objects.create(**netinfo)
-        if userid:
-            quotas.issue_and_accept_commission(network)
+        network = networks.create(user_id=userid, name=name, flavor=flavor,
+                                  subnet=subnet, gateway=gateway,
+                                  subnet6=subnet6, gateway6=gateway6,
+                                  dhcp=dhcp, public=public, mode=mode,
+                                  link=link, mac_prefix=mac_prefix, tags=tags,
+                                  floating_ip_pool=floating_ip_pool)
 
         # Create network in Backend if needed
         if floating_ip_pool:

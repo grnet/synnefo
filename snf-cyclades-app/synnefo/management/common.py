@@ -33,6 +33,7 @@
 
 from django.core.management import CommandError
 from synnefo.db.models import Backend, VirtualMachine, Network, Flavor
+from functools import wraps
 
 from snf_django.lib.api import faults
 from synnefo.api import util
@@ -165,6 +166,16 @@ def check_backend_credentials(clustername, port, username, password):
     if info_name != clustername:
         raise CommandError("Invalid clustername value. Please use the"
                            " Ganeti Cluster name: %s" % info_name)
+
+
+def convert_api_faults(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except faults.Fault as e:
+            raise CommandError(e.message)
+    return wrapper
 
 
 class Omit(object):

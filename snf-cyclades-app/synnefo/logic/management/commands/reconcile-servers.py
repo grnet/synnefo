@@ -101,14 +101,15 @@ class Command(BaseCommand):
 
         verbosity = int(options["verbosity"])
 
-        logger = logging.getLogger("reconcile-severs")
+        logger = logging.getLogger("reconcile-servers")
         logger.propagate = 0
 
         formatter = logging.Formatter("%(message)s")
         log_handler = logging.StreamHandler()
         log_handler.setFormatter(formatter)
         if verbosity == 2:
-            formatter = logging.Formatter("%(asctime)s: %(message)s")
+            formatter =\
+                logging.Formatter("%(asctime)s [%(process)d]: %(message)s")
             log_handler.setFormatter(formatter)
             logger.setLevel(logging.DEBUG)
         elif verbosity == 1:

@@ -495,7 +495,9 @@ class Network(models.Model):
     name = models.CharField('Network Name', max_length=128)
     userid = models.CharField('User ID of the owner', max_length=128,
                               null=True, db_index=True)
-    subnet = models.CharField('Subnet', max_length=32, default='10.0.0.0/24')
+    # subnet will be null for IPv6 only networks
+    subnet = models.CharField('Subnet', max_length=32, null=True)
+    # subnet6 will be null for IPv4 only networks
     subnet6 = models.CharField('IPv6 Subnet', max_length=64, null=True)
     gateway = models.CharField('Gateway', max_length=32, null=True)
     gateway6 = models.CharField('IPv6 Gateway', max_length=64, null=True)
@@ -794,7 +796,8 @@ def pooled_rapi_client(obj):
 
         if backend.offline:
             log.warning("Trying to connect with offline backend: %s", backend)
-            raise faults.ServiceUnavailable
+            raise faults.ServiceUnavailable("Can not connect to offline"
+                                            " backend: %s" % backend)
 
         b = backend
         client = get_rapi_client(b.id, b.hash, b.clustername, b.port,

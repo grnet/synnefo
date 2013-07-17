@@ -40,7 +40,7 @@ from snf_django.lib import api
 from snf_django.lib.api import faults, utils
 from synnefo.api import util
 from synnefo import quotas
-from synnefo.db.models import Network, FloatingIP
+from synnefo.db.models import Network, FloatingIP, NetworkInterface
 
 
 from logging import getLogger
@@ -169,8 +169,13 @@ def allocate_floating_ip(request):
                     pool.save()
                 # If address is not available, check that it belongs to the
                 # same user
-                elif not network.nics.filter(ipv4=address,
-                                             machine__userid=userid).exists():
+                else:
+                    try:
+                        nic = network.nics.get(ipv4=address,
+                                               machine__userid=userid)
+                        nic.ip_type = "FLOATING"
+                        nic.save()
+                    except NetworkInterface.DoesNotExist:
                         msg = "Address '%s' is already in use" % address
                         raise faults.Conflict(msg)
         floating_ip = FloatingIP.objects.create(ipv4=address, network=network,

@@ -356,7 +356,8 @@ def connect(vm, network):
         # Get a free IP from the address pool.
         address = util.get_network_free_address(network)
     nic = NetworkInterface.objects.create(machine=vm, network=network,
-                                          ipv4=address, state="BUILDING")
+                                          ip_type="STATIC", ipv4=address,
+                                          state="BUILDING")
     log.info("Connecting VM %s to Network %s. NIC: %s", vm, network, nic)
 
     return backend.connect_to_network(vm, nic)
@@ -430,6 +431,7 @@ def add_floating_ip(vm, address):
     nic = NetworkInterface.objects.create(machine=vm,
                                           network=floating_ip.network,
                                           ipv4=floating_ip.ipv4,
+                                          ip_type="FLOATING",
                                           state="BUILDING")
     log.info("Connecting VM %s to floating IP %s. NIC: %s", vm, floating_ip,
              nic)

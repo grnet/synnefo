@@ -675,6 +675,11 @@ class NetworkInterface(models.Model):
         ("ERROR", "Error"),
     )
 
+    IP_TYPES = (
+        ("FIXED", "Fixed IP Address"),
+        ("FLOATING", "Floating IP Address"),
+    )
+
     machine = models.ForeignKey(VirtualMachine, related_name='nics',
                                 on_delete=models.CASCADE)
     network = models.ForeignKey(Network, related_name='nics',
@@ -689,6 +694,8 @@ class NetworkInterface(models.Model):
                                         max_length=30, null=True)
     state = models.CharField(max_length=32, null=False, default="ACTIVE",
                              choices=STATES)
+    ip_type = models.CharField(max_length=32, null=False, default="FIXED",
+                               choices=IP_TYPES)
 
     @property
     def backend_uuid(self):
@@ -699,15 +706,6 @@ class NetworkInterface(models.Model):
         return "<%s:vm:%s network:%s ipv4:%s ipv6:%s>" % \
             (self.id, self.machine_id, self.network_id, self.ipv4,
              self.ipv6)
-
-    @property
-    def is_floating_ip(self):
-        network = self.network
-        if self.ipv4 and network.floating_ip_pool:
-            return network.floating_ips.filter(machine=self.machine,
-                                               ipv4=self.ipv4,
-                                               deleted=False).exists()
-        return False
 
     class Meta:
         # Assert than an IPv4 address from the same network will not be

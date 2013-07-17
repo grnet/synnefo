@@ -105,13 +105,12 @@ def metadata_item_demux(request, server_id, key):
 
 
 def nic_to_dict(nic):
-    ip_type = "floating" if nic.is_floating_ip else "fixed"
     d = {'id': util.construct_nic_id(nic),
          'network_id': str(nic.network.id),
          'mac_address': nic.mac,
          'ipv4': nic.ipv4,
          'ipv6': nic.ipv6,
-         'OS-EXT-IPS:type': ip_type}
+         'OS-EXT-IPS:type': nic.ip_type.lower()}
 
     if nic.firewall_profile:
         d['firewallProfile'] = nic.firewall_profile

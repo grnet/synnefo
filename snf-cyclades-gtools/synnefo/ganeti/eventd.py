@@ -111,12 +111,12 @@ def get_instance_nics(instance, logger):
     """
     try:
         client = cli.GetClient()
-        fields = ["nic.networks.names", "nic.ips", "nic.macs", "nic.modes",
-                  "nic.links", "tags"]
+        fields = ["nic.names", "nic.networks.names", "nic.ips", "nic.macs",
+                  "nic.modes", "nic.links", "tags"]
         info = client.QueryInstances([instance], fields, use_locking=False)
-        networks, ips, macs, modes, links, tags = info[0]
-        nic_keys = ["network", "ip", "mac", "mode", "link"]
-        nics = zip(networks, ips, macs, modes, links)
+        names, networks, ips, macs, modes, links, tags = info[0]
+        nic_keys = ["name", "network", "ip", "mac", "mode", "link"]
+        nics = zip(names, networks, ips, macs, modes, links)
         nics = map(lambda x: dict(zip(nic_keys, x)), nics)
     except ganeti_errors.OpPrereqError:
         # Not running on master! Load the conf file

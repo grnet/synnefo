@@ -125,3 +125,5 @@ BACKEND_BLOCK_SIZE = getattr(
 # The backend block hash algorithm
 BACKEND_HASH_ALGORITHM = getattr(
     settings, 'PITHOS_BACKEND_HASH_ALGORITHM', 'sha256')
+
+LOGIN_URL = join_urls(ASTAKOS_VIEWS_PREFIX, 'login')

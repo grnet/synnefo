@@ -325,11 +325,12 @@ class PithosAPITest(TestCase):
         self.assertEqual(r.status_code, 204)
         return r
 
-    def create_container(self, cname):
+    def create_container(self, cname=None):
+        cname = cname or get_random_name()
         url = join_urls(self.pithos_path, self.user, cname)
         r = self.put(url, data='')
         self.assertTrue(r.status_code in (202, 201))
-        return r
+        return cname, r
 
     def upload_object(self, cname, oname=None, length=None, verify=True,
                       **meta):

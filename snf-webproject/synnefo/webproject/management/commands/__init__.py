@@ -157,7 +157,7 @@ class ListCommand(BaseCommand):
             assert(self.astakos_url), "astakos_url attribute is needed when"\
                                       " user_uuid_field is declared"
             assert(self.astakos_token), "astakos_token attribute is needed"\
-                                        " user_uuid_field is declared"
+                                        " when user_uuid_field is declared"
             self.option_list += (
                 make_option(
                     "-u", "--user",

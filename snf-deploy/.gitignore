@@ -1,8 +1,0 @@
-*.pyc
-lala.tmp
-kamaki-fab
-images/*
-*.pid
-*.monitor
-packages
-*.swp

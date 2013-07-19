@@ -293,7 +293,8 @@ def _get_projects(query, request_user=None):
         is_memb = Q(id__in=memb_projects)
         owned = (Q(application__owner=request_user) |
                  Q(application__applicant=request_user))
-        active = Project.o_state_q(Project.O_ACTIVE)
+        active = (Project.o_state_q(Project.O_ACTIVE) &
+                  Q(application__private=False))
         projects = projects.filter(is_memb | owned | active)
     return projects.select_related(
         "application", "application__owner", "application__applicant")
@@ -365,6 +366,13 @@ def _get_maybe_string(d, key):
     return value
 
 
+def _get_maybe_boolean(d, key):
+    value = d.get(key)
+    if value is not None and not isinstance(value, bool):
+        raise faults.BadRequest("%s must be boolean" % key)
+    return value
+
+
 DOMAIN_VALUE_REGEX = re.compile(
     r'^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,6}$',
     re.IGNORECASE)
@@ -414,6 +422,7 @@ def submit_application(app_data, user, project_id=None):
     if not isinstance(max_members, (int, long)) or max_members < 0:
         raise faults.BadRequest("Invalid max_members")
 
+    private = bool(_get_maybe_boolean(app_data, "private"))
     homepage = _get_maybe_string(app_data, "homepage")
     description = _get_maybe_string(app_data, "description")
     comments = _get_maybe_string(app_data, "comments")
@@ -432,6 +441,7 @@ def submit_application(app_data, user, project_id=None):
             member_join_policy=join_policy,
             member_leave_policy=leave_policy,
             limit_on_members_number=max_members,
+            private=private,
             comments=comments,
             resources=resources,
             request_user=user)

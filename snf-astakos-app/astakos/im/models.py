@@ -1328,6 +1328,7 @@ class ProjectApplication(models.Model):
     waive_reason = models.TextField(null=True, blank=True)
     waive_actor = models.ForeignKey(AstakosUser, null=True,
                                     related_name='waived_apps')
+    private = models.BooleanField(default=False)
 
     objects = ProjectApplicationManager()
 

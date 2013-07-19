@@ -343,7 +343,7 @@ ALLOWED_CHECKS = [
     (lambda u, a: not u or u.is_project_admin()),
     (lambda u, a: a.owner == u),
     (lambda u, a: a.applicant == u),
-    (lambda u, a: a.chain.overall_state() == Project.O_ACTIVE
+    (lambda u, a: a.chain.overall_state() == Project.O_ACTIVE and not a.private
      or bool(a.chain.projectmembership_set.any_accepted().filter(person=u))),
 ]
 
@@ -672,6 +672,7 @@ def submit_application(owner=None,
                        member_join_policy=None,
                        member_leave_policy=None,
                        limit_on_members_number=None,
+                       private=False,
                        comments=None,
                        resources=None,
                        request_user=None):
@@ -700,6 +701,7 @@ def submit_application(owner=None,
         member_join_policy=member_join_policy,
         member_leave_policy=member_leave_policy,
         limit_on_members_number=limit_on_members_number,
+        private=private,
         comments=comments)
 
     if project is None:

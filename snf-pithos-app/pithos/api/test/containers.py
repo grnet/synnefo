@@ -711,7 +711,7 @@ class ContainerPut(PithosAPITest):
     def test_create_twice(self):
         self.create_container('c1')
         self.assertTrue('c1' in self.list_containers(format=None))
-        r = self.create_container('c1')
+        r = self.create_container('c1')[-1]
         self.assertEqual(r.status_code, 202)
         self.assertTrue('c1' in self.list_containers(format=None))
 

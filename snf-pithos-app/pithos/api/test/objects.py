@@ -59,6 +59,28 @@ merkle = partial(merkle,
                  blockhash=TEST_HASH_ALGORITHM)
 
 
+class ObjectHead(PithosAPITest):
+    def setUp(self):
+        cname = self.create_container()[0]
+        oname, odata = self.upload_object(cname)[:-1]
+
+        url = join_urls(self.pithos_path, cname, oname)
+        r = self.head(url)
+        map(lambda i: self.assertTrue(i in r),
+            ['Etag',
+             'Content-Length',
+             'Content-Type',
+             'Last-Modified',
+             'Content-Encoding',
+             'Content-Disposition',
+             'X-Object-Hash',
+             'X-Object-UUID',
+             'X-Object-Version',
+             'X-Object-Version-Timestamp',
+             'X-Object-Modified-By',
+             'X-Object-Manifest'])
+
+
 class ObjectGet(PithosAPITest):
     def setUp(self):
         PithosAPITest.setUp(self)
@@ -406,7 +428,7 @@ class ObjectGet(PithosAPITest):
         for t in t1_formats:
             r = self.get(url, HTTP_IF_UNMODIFIED_SINCE=t)
             self.assertEqual(r.status_code, 200)
-            self.assertEqual(odata, odata)
+            self.assertEqual(r.content, odata)
 
         # modify object
         _time.sleep(2)

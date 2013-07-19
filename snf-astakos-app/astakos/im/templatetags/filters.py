@@ -178,16 +178,6 @@ def get_value_after_dot(value):
 #     return value.replace('http://','')[:-1]
 
 
-from math import log
-unit_list = zip(['bytes', 'kB', 'MB', 'GB', 'TB', 'PB'], [0, 0, 0, 0, 0, 0])
-
-
-@register.filter
-def sizeof_fmt(num):
-    """Human friendly file size"""
-    return ProjectResourceGrant.display_filesize(num)
-
-
 @register.filter
 def truncatename(v, max=18, append="..."):
     length = len(v)

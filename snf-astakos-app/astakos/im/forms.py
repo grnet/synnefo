@@ -45,6 +45,7 @@ from django.utils.encoding import smart_str
 from django.db import transaction
 from django.core import validators
 
+from synnefo.util import units
 from synnefo_branding.utils import render_to_string
 from synnefo.lib import join_urls
 from astakos.im.models import AstakosUser, EmailChange, Invitation, Resource, \
@@ -883,10 +884,14 @@ class ProjectApplicationForm(forms.ModelForm):
                         raise forms.ValidationError("Invalid resource %s" %
                                                     resource.name)
                     d = model_to_dict(resource)
-                    if uplimit:
-                        d.update(dict(resource=prefix, uplimit=long(uplimit)))
-                    else:
-                        d.update(dict(resource=prefix, uplimit=None))
+                    try:
+                        uplimit = long(uplimit)
+                    except ValueError:
+                        m = "Limit should be an integer"
+                        raise forms.ValidationError(m)
+                    display = units.show(uplimit, resource.unit)
+                    d.update(dict(resource=prefix, uplimit=uplimit,
+                                  display_uplimit=display))
                     append(d)
 
         ordered_keys = presentation.RESOURCES['resources_order']

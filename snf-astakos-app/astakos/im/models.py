@@ -69,6 +69,7 @@ from synnefo.lib.ordereddict import OrderedDict
 
 from snf_django.lib.db.fields import intDecimalField
 from synnefo.util.text import uenc, udec
+from synnefo.util import units
 from astakos.im import presentation
 
 logger = logging.getLogger(__name__)
@@ -1484,45 +1485,11 @@ class ProjectResourceGrant(models.Model):
         unique_together = ("resource", "project_application")
 
     def display_member_capacity(self):
-        if self.member_capacity:
-            if self.resource.unit:
-                return ProjectResourceGrant.display_filesize(
-                    self.member_capacity)
-            else:
-                if math.isinf(self.member_capacity):
-                    return 'Unlimited'
-                else:
-                    return self.member_capacity
-        else:
-            return 'Unlimited'
+        return units.show(self.member_capacity, self.resource.unit)
 
     def __str__(self):
         return 'Max %s per user: %s' % (self.resource.pluralized_display_name,
                                         self.display_member_capacity())
-
-    @classmethod
-    def display_filesize(cls, value):
-        try:
-            value = float(value)
-        except:
-            return
-        else:
-            if math.isinf(value):
-                return 'Unlimited'
-            if value > 1:
-                unit_list = zip(['bytes', 'kB', 'MB', 'GB', 'TB', 'PB'],
-                                [0, 0, 0, 0, 0, 0])
-                exponent = min(int(math.log(value, 1024)), len(unit_list) - 1)
-                quotient = float(value) / 1024**exponent
-                unit, value_decimals = unit_list[exponent]
-                format_string = '{0:.%sf} {1}' % (value_decimals)
-                return format_string.format(quotient, unit)
-            if value == 0:
-                return '0 bytes'
-            if value == 1:
-                return '1 byte'
-            else:
-                return '0'
 
 
 def _distinct(f, l):

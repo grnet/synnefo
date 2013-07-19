@@ -1019,38 +1019,7 @@ class AstakosUserAuthProvider(models.Model):
         return super(AstakosUserAuthProvider, self).save(*args, **kwargs)
 
 
-class ExtendedManager(models.Manager):
-    def _update_or_create(self, **kwargs):
-        assert kwargs, \
-            'update_or_create() must be passed at least one keyword argument'
-        obj, created = self.get_or_create(**kwargs)
-        defaults = kwargs.pop('defaults', {})
-        if created:
-            return obj, True, False
-        else:
-            try:
-                params = dict(
-                    [(k, v) for k, v in kwargs.items() if '__' not in k])
-                params.update(defaults)
-                for attr, val in params.items():
-                    if hasattr(obj, attr):
-                        setattr(obj, attr, val)
-                sid = transaction.savepoint()
-                obj.save(force_update=True)
-                transaction.savepoint_commit(sid)
-                return obj, False, True
-            except IntegrityError, e:
-                transaction.savepoint_rollback(sid)
-                try:
-                    return self.get(**kwargs), False, False
-                except self.model.DoesNotExist:
-                    raise e
-
-    update_or_create = _update_or_create
-
-
 class AstakosUserQuota(models.Model):
-    objects = ExtendedManager()
     capacity = intDecimalField()
     resource = models.ForeignKey(Resource)
     user = models.ForeignKey(AstakosUser)
@@ -1510,8 +1479,6 @@ class ProjectResourceGrant(models.Model):
                                             null=True)
     project_capacity = intDecimalField(null=True)
     member_capacity = intDecimalField(default=0)
-
-    objects = ExtendedManager()
 
     class Meta:
         unique_together = ("resource", "project_application")

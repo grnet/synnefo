@@ -40,11 +40,9 @@ import os
 from distutils.util import convert_path
 from fnmatch import fnmatchcase
 from setuptools import setup, find_packages
-
+from snfdeploy.version import __version__
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 
-
-__version__ = "0.13.0"
 
 # Package info
 VERSION = __version__

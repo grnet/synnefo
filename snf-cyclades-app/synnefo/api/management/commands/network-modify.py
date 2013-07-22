@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -159,6 +159,8 @@ class Command(BaseCommand):
             if value is not None:
                 network.__setattr__(field, value)
 
+        network.save()
+
         add_reserved_ips = options.get('add_reserved_ips')
         remove_reserved_ips = options.get('remove_reserved_ips')
         if add_reserved_ips or remove_reserved_ips:
@@ -167,13 +169,11 @@ class Command(BaseCommand):
             if remove_reserved_ips:
                 remove_reserved_ips = remove_reserved_ips.split(",")
 
-        for bnetwork in network.backend_networks.all():
-            with pooled_rapi_client(bnetwork.backend) as c:
-                c.ModifyNetwork(network=network.backend_id,
-                                add_reserved_ips=add_reserved_ips,
-                                remove_reserved_ips=remove_reserved_ips)
-
-        network.save()
+            for bnetwork in network.backend_networks.all():
+                with pooled_rapi_client(bnetwork.backend) as c:
+                    c.ModifyNetwork(network=network.backend_id,
+                                    add_reserved_ips=add_reserved_ips,
+                                    remove_reserved_ips=remove_reserved_ips)
 
         add_to_backend = options["add_to_backend"]
         if add_to_backend is not None:

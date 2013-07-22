@@ -31,13 +31,19 @@ SNF_TEST_PITHOS_SQLITE_MODULE = bool(int(os.environ.get(
 
 # override default database
 if SNF_TEST_USE_POSTGRES:
+    NAME = os.environ.get('SNF_TEST_DB_NAME', 'synnefo_db')
+    TEST_NAME = 'test_' + NAME
     DATABASES['default'] = {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'synnefo_db',
-        'TEST_NAME': 'test_synnefo_db',
-        'USER': 'postgres',
-        'PORT': '5432',
+        'NAME': NAME,
+        'TEST_NAME': os.environ.get('SNF_TEST_DB_TEST_NAME', TEST_NAME),
+        'USER': os.environ.get('SNF_TEST_DB_USER', 'postgres'),
+        'HOST': os.environ.get('SNF_TEST_DB_HOST', '127.0.0.1'),
+        'PORT': os.environ.get('SNF_TEST_DB_PORT', '5432'),
     }
+    password = os.environ.get('SNF_TEST_DB_PASSWORD', None)
+    if password is not None:
+        DATABASES['default']['PASSWORD'] = password
 elif SNF_TEST_PITHOS_SQLITE_MODULE:
     PITHOS_BACKEND_POOL_ENABLED = False
     PITHOS_BACKEND_DB_MODULE = 'pithos.backends.lib.sqlite'

@@ -22,8 +22,25 @@ Synnefo-wide
 Cyclades
 --------
 
+* Implement Floating IP addresses, which are addresses that can be dynamically
+  added and removed to a running server.
+
+  * Implement the 'os-floating-ips' and 'os-floating-ip-pools' API extensions.
+  * Implement 'snf-manage floating-ip-list' management command.
+  * Add 'floating_ip_pool' attribute to networks. Such networks must exist to
+    all Ganeti backends.
+
+* Speed up server reconciliation, by performing parallel reconciliation for
+  each backend.
+* Implement IPv6 only networks.
+* Implement 'resize' server action.
+
+  * Implement the 'resize' server action, to change the flavor of a server.
+  Only 'cpu' and 'memory' resizing is supported.
+
+* Compute quotas for CPU and memory of running vms.
 * Obsolete PUBLIC_USE_POOL setting, since Cyclades manages IP pool for all
-type of networks.
+  type of networks.
 
 Pithos
 ------

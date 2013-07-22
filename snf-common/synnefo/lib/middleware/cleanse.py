@@ -39,27 +39,64 @@ from django.views import debug
 
 import re
 
+HIDDEN_ALL = settings.HIDDEN_COOKIES + settings.HIDDEN_HEADERS
+
 
 def mail_admins_safe(subject, message, fail_silently=False, connection=None):
     '''
     Wrapper function to cleanse email body from sensitive content before
     sending it
     '''
+    new_msg = ""
 
-    HIDDEN_ALL = settings.HIDDEN_SETTINGS + "|" + settings.HIDDEN_COOKIES
-    message = re.sub("((\S+)?(%s)(\S+)?(:|\=)( )?)('|\"?)\S+('|\"?)"
-                     % HIDDEN_ALL, r"\1*******", message)
+    if len(message) > settings.MAIL_MAX_LEN:
+        new_msg += "Mail size over limit (truncated)\n\n"
+        message = message[:settings.MAIL_MAX_LEN]
 
-    return mail.mail_admins_plain(subject, message, fail_silently, connection)
+    for line in message.splitlines():
+        # Lines of interest in the mail are in the form of
+        # key:value.
+        try:
+            (key, value) = line.split(':', 1)
+        except ValueError:
+            new_msg += line + '\n'
+            continue
+
+        new_msg += key + ':'
+
+        # Special case when the first header / cookie printed
+        # (prefixed by 'META:{' or 'COOKIES:{') needs to be hidden.
+        if value.startswith('{'):
+            try:
+                (newkey, newval) = value.split(':', 1)
+            except ValueError:
+                new_msg += value + '\n'
+                continue
+
+            new_msg += newkey + ':'
+            key = newkey.lstrip('{')
+            value = newval
+
+        if key.strip(" '") not in HIDDEN_ALL:
+            new_msg += value + '\n'
+            continue
+
+        # Append value[-1] to the clensed string, so that commas / closing
+        # brackets are printed correctly.
+        # (it will 'eat up' the closing bracket if the header is the last one
+        # printed)
+        new_msg += ' ' + '*'*8 + value[-1] + '\n'
+
+    return mail.mail_admins_plain(subject, new_msg, fail_silently, connection)
 
 
 class CleanseSettingsMiddleware(object):
+    '''
+    Prevent django from printing sensitive information (paswords, tokens
+    etc), when handling server errors (for both DEBUG and no-DEBUG
+    deployments.
+    '''
     def __init__(self):
-        '''
-        Prevent django from printing sensitive information (paswords, tokens
-        etc), when handling server errors (for both DEBUG and no-DEBUG
-        deployments.
-        '''
         debug.HIDDEN_SETTINGS = re.compile(settings.HIDDEN_SETTINGS)
 
         if not hasattr(mail, 'mail_admins_plain'):

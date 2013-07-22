@@ -187,6 +187,8 @@ class Command(BaseCommand):
                                   link=link, mac_prefix=mac_prefix, tags=tags,
                                   floating_ip_pool=floating_ip_pool)
 
+        self.stdout.write("Successfully created network '%s' in DB.\n",
+                          network)
         # Create network in Backend if needed
         if floating_ip_pool:
             backends = Backend.objects.filter(offline=False)
@@ -196,9 +198,8 @@ class Command(BaseCommand):
             backends = []
 
         for backend in backends:
+            self.stdout.write("Creating network in backend '%s'\n", backend)
             network.create_backend_network(backend)
-            self.stdout.write("Trying to connect network to backend '%s'\n" %
-                              backend)
             jobs = create_network(network=network, backend=backend,
                                   connect=True)
             self.stdout.write("Successfully issued jobs: %s\n" %

@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -27,7 +27,7 @@
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of GRNET S.A.
 #
-
+import sys
 from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 
@@ -54,10 +54,13 @@ class Command(BaseCommand):
         make_option('--user', dest='username'),
         make_option('--pass', dest='password'),
         make_option(
-            '--no-check', action='store_false',
-            dest='check', default=True,
+            '--no-check',
+            action='store_false',
+            dest='check',
+            default=True,
             help="Do not perform credentials check and resources update"),
-       make_option('--hypervisor',
+        make_option(
+            '--hypervisor',
             dest='hypervisor',
             default=None,
             choices=HYPERVISORS,
@@ -77,7 +80,6 @@ class Command(BaseCommand):
         port = options['port']
         username = options['username']
         password = options['password']
-        hypervisor = options["hypervisor"]
 
         if not (clustername and username and password):
             raise CommandError("Clustername, user and pass must be supplied")
@@ -86,6 +88,13 @@ class Command(BaseCommand):
         if options['check']:
             check_backend_credentials(clustername, port, username, password)
 
+        create_backend(clustername, port, username, password,
+                       hypervisor=options["hypervisor"],
+                       initialize=options["init"])
+
+
+def create_backend(clustername, port, username, password, hypervisor=None,
+                   initialize=True, stream=sys.stdout):
         kw = {"clustername": clustername,
               "port": port,
               "username": username,
@@ -94,56 +103,53 @@ class Command(BaseCommand):
 
         if hypervisor:
             kw["hypervisor"] = hypervisor
+
         # Create the new backend in database
         try:
             backend = Backend.objects.create(**kw)
         except IntegrityError as e:
             raise CommandError("Cannot create backend: %s\n" % e)
 
-        self.stdout.write('\nSuccessfully created backend with id %d\n' %
-                          backend.id)
+        stream.write("Successfully created backend with id %d\n" % backend.id)
 
-        if not options['check']:
+        if not initialize:
             return
 
-        self.stdout.write('\rRetrieving backend resources:\n')
+        stream.write("Retrieving backend resources:\n")
         resources = get_physical_resources(backend)
         attr = ['mfree', 'mtotal', 'dfree', 'dtotal', 'pinst_cnt', 'ctotal']
 
         table = [[str(resources[x]) for x in attr]]
-        pprint_table(self.stdout, table, attr)
+        pprint_table(stream, table, attr)
 
         update_resources(backend, resources)
-
-        if not options['init']:
-            return
 
         networks = Network.objects.filter(deleted=False, floating_ip_pool=True)
         if not networks:
             return
 
-        self.stdout.write('\nCreating the follow networks:\n')
+        stream.write("Creating the follow networks:\n")
         headers = ('Name', 'Subnet', 'Gateway', 'Mac Prefix', 'Public')
         table = []
 
         for net in networks:
             table.append((net.backend_id, str(net.subnet), str(net.gateway),
                          str(net.mac_prefix), str(net.public)))
-        pprint_table(self.stdout, table, headers)
+        pprint_table(stream, table, headers)
 
         for net in networks:
             net.create_backend_network(backend)
             result = create_network_synced(net, backend)
             if result[0] != "success":
-                self.stdout.write('\nError Creating Network %s: %s\n' %
-                                  (net.backend_id, result[1]))
+                stream.write('\nError Creating Network %s: %s\n' %
+                             (net.backend_id, result[1]))
             else:
-                self.stdout.write('Successfully created Network: %s\n' %
-                                  net.backend_id)
+                stream.write('Successfully created Network: %s\n' %
+                             net.backend_id)
             result = connect_network_synced(network=net, backend=backend)
             if result[0] != "success":
-                self.stdout.write('\nError Connecting Network %s: %s\n' %
-                                  (net.backend_id, result[1]))
+                stream.write('\nError Connecting Network %s: %s\n' %
+                             (net.backend_id, result[1]))
             else:
-                self.stdout.write('Successfully connected Network: %s\n' %
-                                  net.backend_id)
+                stream.write('Successfully connected Network: %s\n' %
+                             net.backend_id)

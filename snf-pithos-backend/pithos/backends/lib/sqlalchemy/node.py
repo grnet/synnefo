@@ -241,8 +241,10 @@ class Node(DBWorker):
         """
 
         # Use LIKE for comparison to avoid MySQL problems with trailing spaces.
-        s = select([self.nodes.c.node], self.nodes.c.path.like(
-            self.escape_like(path), escape=ESCAPE_CHAR), for_update=for_update)
+        s = select([self.nodes.c.node],
+                   self.nodes.c.path.like(self.escape_like(path),
+                                          escape=ESCAPE_CHAR),
+                   for_update=for_update)
         r = self.conn.execute(s)
         row = r.fetchone()
         r.close()
@@ -668,8 +670,9 @@ class Node(DBWorker):
         else:
             c1 = select([self.nodes.c.latest_version],
                         self.nodes.c.node == v.c.node)
-        c2 = select([self.nodes.c.node], self.nodes.c.path.like(
-            self.escape_like(path) + '%', escape=ESCAPE_CHAR))
+        c2 = select([self.nodes.c.node],
+                    self.nodes.c.path.like(self.escape_like(path) + '%',
+                                           escape=ESCAPE_CHAR))
         s = s.where(and_(v.c.serial == c1,
                          v.c.cluster != except_cluster,
                          v.c.node.in_(c2)))
@@ -933,7 +936,7 @@ class Node(DBWorker):
                 self.attributes.c.serial == dest,
                 self.attributes.c.domain == domain,
                 self.attributes.c.key == k))
-            s = s.values(node = select_src_node, value=v)
+            s = s.values(node=select_src_node, value=v)
             rp = self.conn.execute(s)
             rp.close()
             if rp.rowcount == 0:
@@ -979,12 +982,8 @@ class Node(DBWorker):
         conj = []
         for path, match in pathq:
             if match == MATCH_PREFIX:
-                conj.append(
-                    n.c.path.like(
-                        self.escape_like(path) + '%',
-                        escape=ESCAPE_CHAR
-                    )
-                )
+                conj.append(n.c.path.like(self.escape_like(path) + '%',
+                                          escape=ESCAPE_CHAR))
             elif match == MATCH_EXACT:
                 conj.append(n.c.path == path)
         if conj:
@@ -1079,12 +1078,8 @@ class Node(DBWorker):
         conj = []
         for path, match in pathq:
             if match == MATCH_PREFIX:
-                conj.append(
-                    n.c.path.like(
-                        self.escape_like(path) + '%',
-                        escape=ESCAPE_CHAR
-                    )
-                )
+                conj.append(n.c.path.like(self.escape_like(path) + '%',
+                                          escape=ESCAPE_CHAR))
             elif match == MATCH_EXACT:
                 conj.append(n.c.path == path)
         if conj:

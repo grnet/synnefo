@@ -31,64 +31,99 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from synnefo.util import units
 from astakos.im.models import (
     Resource, AstakosUserQuota, AstakosUser, Service,
-    Project, ProjectMembership, ProjectResourceQuota, ProjectApplication)
+    Project, ProjectMembership, ProjectResourceQuota)
 import astakos.quotaholder_app.callpoint as qh
 from astakos.quotaholder_app.exception import NoCapacityError
 from django.db.models import Q
+from synnefo.util.keypath import set_path
 
 
-def from_holding(holding):
+PROJECT_TAG = "project:"
+USER_TAG = "user:"
+
+def project_ref(value):
+    return  PROJECT_TAG + value
+
+
+def get_project_ref(project):
+    return project_ref(project.uuid)
+
+
+def user_ref(value):
+    return USER_TAG + value
+
+
+def get_user_ref(user):
+    return user_ref(user.uuid)
+
+
+def from_holding(holding, is_project=False):
     limit, usage_min, usage_max = holding
-    body = {'limit':       limit,
-            'usage':       usage_max,
-            'pending':     usage_max-usage_min,
+    prefix = 'project_' if is_project else ''
+    body = {prefix+'limit':   limit,
+            prefix+'usage':   usage_max,
+            prefix+'pending': usage_max-usage_min,
             }
     return body
 
 
-def limits_only(holding):
-    limit, usage_min, usage_max = holding
-    return limit
+def get_user_counters(users, resources=None, sources=None, flt=None):
+    holders = [get_user_ref(user) for user in users]
+    return qh.get_quota(holders=holders,
+                        resources=resources,
+                        sources=sources,
+                        flt=flt)
 
 
-def transform_data(holdings, func=None):
-    if func is None:
-        func = from_holding
+def get_project_counters(projects, resources=None, sources=None):
+    holders = [get_project_ref(project) for project in projects]
+    return qh.get_quota(holders=holders,
+                        resources=resources,
+                        sources=sources)
 
+
+def strip_names(counters):
+    stripped = {}
+    for ((holder, source, resource), value) in counters.iteritems():
+        prefix, sep, holder = holder.partition(":")
+        assert prefix in ["user", "project"]
+        if source is not None:
+            prefix, sep, source = source.partition(":")
+            assert prefix == "project"
+        stripped[(holder, source, resource)] = value
+    return stripped
+
+
+def get_related_sources(counters):
+    projects = set()
+    for (holder, source, resource) in counters.iterkeys():
+        projects.add(source)
+    return list(projects)
+
+
+def mk_quota_dict(users_counters, project_counters):
     quota = {}
-    for (holder, source, resource), value in holdings.iteritems():
-        holder_quota = quota.get(holder, {})
-        source_quota = holder_quota.get(source, {})
-        body = func(value)
-        source_quota[resource] = body
-        holder_quota[source] = source_quota
-        quota[holder] = holder_quota
+    for (holder, source, resource), u_value in users_counters.iteritems():
+        p_value = project_counters[(source, None, resource)]
+        values_dict = from_holding(u_value)
+        values_dict.update(from_holding(p_value, is_project=True))
+        set_path(quota, [holder, source, resource], values_dict,
+                 createpath=True)
     return quota
 
 
-def get_counters(users, resources=None, sources=None, flt=None):
-    uuids = [user.uuid for user in users]
-
-    counters = qh.get_quota(holders=uuids,
-                            resources=resources,
-                            sources=sources,
-                            flt=flt)
-    return counters
+def get_users_quotas_counters(users, resources=None, sources=None, flt=None):
+    user_counters = get_user_counters(users, resources, sources, flt=flt)
+    projects = get_related_sources(user_counters)
+    project_counters = qh.get_quota(holders=projects, resources=resources)
+    return strip_names(user_counters), strip_names(project_counters)
 
 
 def get_users_quotas(users, resources=None, sources=None, flt=None):
-    counters = get_counters(users, resources, sources, flt=flt)
-    quotas = transform_data(counters)
-    return quotas
-
-
-def get_users_quota_limits(users, resources=None, sources=None):
-    counters = get_counters(users, resources, sources)
-    limits = transform_data(counters, limits_only)
-    return limits
+    u_c, p_c = get_users_quotas_counters(users, resources, sources, flt=flt)
+    return mk_quota_dict(u_c, p_c)
 
 
 def get_user_quotas(user, resources=None, sources=None):
@@ -102,8 +137,43 @@ def service_get_quotas(component, users=None):
     service_names = [t for (t,) in name_values]
     resources = Resource.objects.filter(service_origin__in=service_names)
     resource_names = [r.name for r in resources]
-    counters = qh.get_quota(holders=users, resources=resource_names)
-    return transform_data(counters)
+    astakosusers = AstakosUser.objects.verified()
+    if users is not None:
+        astakosusers = astakosusers.filter(uuid__in=users)
+    return get_users_quotas(astakosusers, resources=resource_names)
+
+
+def mk_limits_dict(counters):
+    quota = {}
+    for key, (limit, _, _) in counters.iteritems():
+        path = list(key)
+        set_path(quota, path, limit, createpath=True)
+    return quota
+
+
+def mk_project_quota_dict(project_counters):
+    quota = {}
+    for (holder, _, resource), p_value in project_counters.iteritems():
+        values_dict = from_holding(p_value, is_project=True)
+        set_path(quota, [holder, resource], values_dict,
+                 createpath=True)
+    return quota
+
+
+def get_projects_quota(projects, resources=None, sources=None):
+    project_counters = get_project_counters(projects, resources, sources)
+    return mk_project_quota_dict(strip_names(project_counters))
+
+
+def get_project_quota(project, resources=None, sources=None):
+    quotas = get_projects_quota([project], resources, sources)
+    return quotas.get(project.uuid, {})
+
+
+def get_projects_quota_limits():
+    project_counters = qh.get_quota(flt=Q(holder__startswith=PROJECT_TAG))
+    user_counters = qh.get_quota(flt=Q(holder__startswith=USER_TAG))
+    return mk_limits_dict(project_counters), mk_limits_dict(user_counters)
 
 
 def _level_quota_dict(quotas):
@@ -116,21 +186,37 @@ def _level_quota_dict(quotas):
     return lst
 
 
-def _set_user_quota(quotas, resource=None):
+def set_quota(quotas, resource=None):
     q = _level_quota_dict(quotas)
     qh.set_quota(q, resource=resource)
 
 
-SYSTEM = 'system'
 PENDING_APP_RESOURCE = 'astakos.pending_app'
 
 
-def register_pending_apps(user, quantity, force=False):
-    provision = (user.uuid, SYSTEM, PENDING_APP_RESOURCE), quantity
+def mk_user_provision(user, source, resource, quantity):
+    holder = user_ref(user)
+    source = project_ref(source)
+    return (holder, source, resource), quantity
+
+
+def mk_project_provision(project, resource, quantity):
+    holder = project_ref(project)
+    return (holder, None, resource), quantity
+
+
+def _mk_provisions(holder, source, resource, quantity):
+    return [((holder, source, resource), quantity),
+            ((source, None, resource), quantity)]
+
+
+def register_pending_apps(user, project, quantity, force=False):
+    provisions = _mk_provisions(get_user_ref(user), get_project_ref(project),
+                                PENDING_APP_RESOURCE, quantity)
     try:
         s = qh.issue_commission(clientkey='astakos',
                                 force=force,
-                                provisions=[provision])
+                                provisions=provisions)
     except NoCapacityError as e:
         limit = e.data['limit']
         return False, limit
@@ -140,7 +226,8 @@ def register_pending_apps(user, quantity, force=False):
 
 def get_pending_app_quota(user):
     quota = get_user_quotas(user)
-    return quota[SYSTEM][PENDING_APP_RESOURCE]
+    source = user.base_project.uuid
+    return quota[source][PENDING_APP_RESOURCE]
 
 
 def update_base_quota(users, resource, value):
@@ -161,154 +248,101 @@ def _partition_by(f, l):
     return d
 
 
-def initial_quotas(users, flt=None):
-    if flt is None:
-        flt = Q()
-
-    userids = [user.pk for user in users]
-    objs = AstakosUserQuota.objects.select_related('resource')
-    orig_quotas = objs.filter(user__pk__in=userids).filter(flt)
-    orig_quotas = _partition_by(lambda q: q.user_id, orig_quotas)
-
-    initial = {}
-    for user in users:
-        qs = {}
-        for q in orig_quotas.get(user.pk, []):
-            qs[q.resource.name] = q.capacity
-        initial[user.uuid] = {SYSTEM: qs}
-    return initial
-
-
-def get_grant_source(grant):
-    return SYSTEM
-
-
-def add_limits(x, y):
-    return min(x+y, units.PRACTICALLY_INFINITE)
-
-
-def astakos_users_quotas(users, resource=None):
-    users = list(users)
-    flt = Q(resource__name=resource) if resource is not None else Q()
-    quotas = initial_quotas(users, flt=flt)
-
-    userids = [user.pk for user in users]
-    ACTUALLY_ACCEPTED = ProjectMembership.ACTUALLY_ACCEPTED
-    objs = ProjectMembership.objects.select_related(
-        'project', 'person')
-    memberships = objs.filter(
-        person__pk__in=userids,
-        state__in=ACTUALLY_ACCEPTED,
-        project__state=Project.NORMAL,
-        )
-
-    projs = set(m.project_id for m in memberships)
-
+def astakos_project_quotas(projects, resource=None):
     objs = ProjectResourceQuota.objects.select_related()
-    grants = objs.filter(project__in=projs).filter(flt)
+    flt = Q(resource__name=resource) if resource is not None else Q()
+    grants = objs.filter(project__in=projects).filter(flt)
+    grants_d = _partition_by(lambda g: g.project_id, grants)
 
-    for membership in memberships:
-        uuid = membership.person.uuid
-        userquotas = quotas.get(uuid, {})
+    objs = ProjectMembership.objects
+    memberships = objs.initialized(projects).select_related(
+        "person", "project")
+    memberships_d = _partition_by(lambda m: m.project_id, memberships)
 
-        proj = membership.project
-        for grant in grants:
-            if grant.project_id != proj.id:
-                continue
+    user_quota = {}
+    project_quota = {}
 
-            source = get_grant_source(grant)
-            source_quotas = userquotas.get(source, {})
+    for project in projects:
+        pr_ref = get_project_ref(project)
+        state = project.state
+        if state not in Project.INITIALIZED_STATES:
+            continue
 
-            resource = grant.resource.full_name()
-            prev = source_quotas.get(resource, 0)
-            new = add_limits(prev, grant.member_capacity)
-            source_quotas[resource] = new
-            userquotas[source] = source_quotas
-        quotas[uuid] = userquotas
+        project_grants = grants_d.get(project.id, [])
+        project_memberships = memberships_d.get(project.id, [])
+        for grant in project_grants:
+            resource = grant.resource.name
+            path = [pr_ref, None, resource]
+            val = grant.project_capacity if state == Project.NORMAL else 0
+            set_path(project_quota, path, val, createpath=True)
+            for membership in project_memberships:
+                u_ref = get_user_ref(membership.person)
+                path = [u_ref, pr_ref, resource]
+                val = grant.member_capacity if membership.is_active() else 0
+                set_path(user_quota, path, val, createpath=True)
 
-    return quotas
+    return project_quota, user_quota
 
 
-def list_user_quotas(users, qhflt=None, initflt=None):
+def list_user_quotas(users, qhflt=None):
     qh_quotas = get_users_quotas(users, flt=qhflt)
-    astakos_initial = initial_quotas(users, flt=initflt)
-    return qh_quotas, astakos_initial
+    return qh_quotas
 
 
-# Syncing to quotaholder
-
-def get_users_for_update(user_ids):
-    uids = sorted(user_ids)
-    objs = AstakosUser.objects
-    return list(objs.filter(id__in=uids).order_by('id').select_for_update())
-
-
-def get_user_for_update(user_id):
-    return get_users_for_update([user_id])[0]
-
-
-def qh_sync_locked_users(users, resource=None):
-    astakos_quotas = astakos_users_quotas(users, resource=resource)
-    _set_user_quota(astakos_quotas, resource=resource)
-
-
-def qh_sync_users(users, resource=None):
-    uids = [user.id for user in users]
-    users = get_users_for_update(uids)
-    qh_sync_locked_users(users, resource=resource)
-
-
-def qh_sync_users_diffs(users, sync=True):
-    uids = [user.id for user in users]
-    if sync:
-        users = get_users_for_update(uids)
-
-    astakos_quotas = astakos_users_quotas(users)
-    qh_limits = get_users_quota_limits(users)
-    diff_quotas = {}
-    for holder, local in astakos_quotas.iteritems():
-        registered = qh_limits.get(holder, None)
-        if local != registered:
-            diff_quotas[holder] = dict(local)
-
-    if sync:
-        _set_user_quota(diff_quotas)
-    return qh_limits, diff_quotas
-
-
-def qh_sync_locked_user(user):
-    qh_sync_locked_users([user])
-
-
-def qh_sync_user(user):
-    qh_sync_users([user])
-
-
-def qh_sync_new_users(users):
-    entries = []
-    for resource in Resource.objects.all():
-        for user in users:
-            entries.append(
-                AstakosUserQuota(user=user, resource=resource,
-                                 capacity=resource.uplimit))
-    AstakosUserQuota.objects.bulk_create(entries)
-    qh_sync_users(users)
-
-
-def qh_sync_new_user(user):
-    qh_sync_new_users([user])
-
-
-def members_to_sync(project):
-    objs = ProjectMembership.objects.select_related('person')
-    memberships = objs.filter(project=project,
-                              state__in=ProjectMembership.ACTUALLY_ACCEPTED)
-    return set(m.person for m in memberships)
+def qh_sync_projects(projects, resource=None):
+    p_quota, u_quota = astakos_project_quotas(projects, resource=resource)
+    p_quota.update(u_quota)
+    set_quota(p_quota, resource=resource)
 
 
 def qh_sync_project(project):
-    users = members_to_sync(project)
-    qh_sync_users(users)
+    qh_sync_projects([project])
+
+
+def membership_quota(membership):
+    project = membership.project
+    pr_ref = get_project_ref(project)
+    u_ref = get_user_ref(membership.person)
+    objs = ProjectResourceQuota.objects.select_related()
+    grants = objs.filter(project=project)
+    user_quota = {}
+    is_active = membership.is_active()
+    for grant in grants:
+        resource = grant.resource.name
+        path = [u_ref, pr_ref, resource]
+        value = grant.member_capacity if is_active else 0
+        set_path(user_quota, path, value, createpath=True)
+    return user_quota
+
+
+def qh_sync_membership(membership):
+    quota = membership_quota(membership)
+    set_quota(quota)
+
+
+def compute_diff_quota(local, registered):
+    diff = {}
+    for holder, h_quota in local.iteritems():
+        for source, value in h_quota.iteritems():
+            reg_h_quota = registered.get(holder, {})
+            reg_value = reg_h_quota.get(source, {})
+            if value != reg_value:
+                set_path(diff, [holder, source], value, createpath=True)
+    return diff
+
+
+def qh_sync_projects_diffs(projects, sync=True):
+    local_project, local_user = astakos_project_quotas(projects)
+    registered_project, registered_user = get_projects_quota_limits(projects)
+    diff_quotas = compute_diff_quota(local_project, registered_project)
+    diff_quotas.update(compute_diff_quota(local_user, registered_user))
+
+    if sync:
+        set_quota(diff_quotas)
+
+    all_registered = registered_project
+    all_registered.update(registered_user)
+    return all_registered, diff_quotas
 
 
 def pick_limit_scheme(project, resource):
@@ -316,13 +350,18 @@ def pick_limit_scheme(project, resource):
 
 
 def qh_sync_new_resource(resource):
-    users = AstakosUser.objects.filter(
-        moderated=True, is_rejected=False).order_by('id').select_for_update()
+    projects = Project.objects.filter(state__in=Project.INITIALIZED_STATES).\
+        select_for_update()
 
     entries = []
-    for user in users:
+    for project in projects:
+        limit = pick_limit_scheme(project, resource)
         entries.append(
-            AstakosUserQuota(user=user, resource=resource,
-                             capacity=resource.uplimit))
-    AstakosUserQuota.objects.bulk_create(entries)
-    qh_sync_users(users, resource=resource.name)
+            ProjectResourceQuota(
+                project=project,
+                resource=resource,
+                project_capacity=limit,
+                member_capacity=limit))
+
+    ProjectResourceQuota.objects.bulk_create(entries)
+    qh_sync_projects(projects, resource=resource.name)

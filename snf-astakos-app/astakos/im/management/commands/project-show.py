@@ -38,6 +38,7 @@ from synnefo.lib.ordereddict import OrderedDict
 from snf_django.management.commands import SynnefoCommand
 from snf_django.management import utils
 from astakos.im.models import ProjectApplication, Project
+from astakos.im import quotas
 from ._common import show_resource_value, style_options, check_style
 from synnefo.util import units
 
@@ -60,6 +61,11 @@ class Command(SynnefoCommand):
                     default=False,
                     help=("Show a list of project memberships")
                     ),
+        make_option('--quota',
+                    action='store_true',
+                    dest='list_quotas',
+                    default=False,
+                    help="List project quota"),
         make_option('--unit-style',
                     default='mb',
                     help=("Specify display unit for resource values "
@@ -81,7 +87,7 @@ class Command(SynnefoCommand):
         id_ = args[0]
         if True:
             project = get_chain_state(id_)
-            self.print_project(project)
+            self.print_project(project, show_quota)
             if show_members and project is not None:
                 self.stdout.write("\n")
                 fields, labels = members_fields(project)
@@ -105,13 +111,15 @@ class Command(SynnefoCommand):
         self.pprint_dict(app_info)
         self.print_app_resources(app)
 
-    def print_project(self, project):
+    def print_project(self, project, show_quota=False):
         self.pprint_dict(project_fields(project))
-        self.print_resources(project)
+        quota = (quotas.get_project_quota(project)
+                 if show_quota else None)
+        self.print_resources(project, quota=quota)
 
-    def print_resources(self, project):
+    def print_resources(self, project, quota=None):
         policies = project.projectresourcequota_set.all()
-        fields, labels = resource_fields(policies, self.unit_style)
+        fields, labels = resource_fields(policies, quota, self.unit_style)
         if fields:
             self.stdout.write("\n")
             self.pprint_table(fields, labels, title="Resource limits")
@@ -131,15 +139,23 @@ def get_chain_state(project_id):
         raise CommandError("Project with id %s not found." % project_id)
 
 
-def resource_fields(policies, style):
-    labels = ('name', 'description', 'max per member')
+def resource_fields(policies, quota, style):
+    labels = ('name', 'max per member', 'max per project')
+    if quota:
+        labels += ('usage',)
     collect = []
     for policy in policies:
         name = policy.resource.name
-        desc = policy.resource.desc
         capacity = policy.member_capacity
-        collect.append((name, desc,
-                        show_resource_value(capacity, name, style)))
+        p_capacity = policy.project_capacity
+        row = (name,
+               show_resource_value(capacity, name, style),
+               show_resource_value(p_capacity, name, style))
+        if quota:
+            r_quota = quota.get(name)
+            usage = r_quota.get('project_usage')
+            row += (show_resource_value(usage, name, style),)
+        collect.append(row)
     return collect, labels
 
 

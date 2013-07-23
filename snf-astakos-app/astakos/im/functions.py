@@ -448,7 +448,7 @@ def accept_membership(memb_id, request_user=None, reason=None):
     accept_membership_checks(membership, request_user)
     user = membership.person
     membership.perform_action("accept", actor=request_user, reason=reason)
-    quotas.qh_sync_user(user)
+    quotas.qh_sync_membership(membership)
     logger.info("User %s has been accepted in %s." %
                 (user.log_display, project))
 
@@ -519,7 +519,7 @@ def remove_membership(memb_id, request_user=None, reason=None):
     remove_membership_checks(membership, request_user)
     user = membership.person
     membership.perform_action("remove", actor=request_user, reason=reason)
-    quotas.qh_sync_user(user)
+    quotas.qh_sync_membership(membership)
     logger.info("User %s has been removed from %s." %
                 (user.log_display, project))
 
@@ -552,7 +552,7 @@ def enroll_member(project_id, user, request_user=None, reason=None):
         membership = new_membership(project, user, actor=request_user,
                                     enroll=True)
 
-    quotas.qh_sync_user(user)
+    quotas.qh_sync_membership(membership)
     logger.info("User %s has been enrolled in %s." %
                 (membership.person.log_display, project))
 
@@ -595,7 +595,7 @@ def leave_project(memb_id, request_user, reason=None):
     leave_policy = project.member_leave_policy
     if leave_policy == AUTO_ACCEPT_POLICY:
         membership.perform_action("remove", actor=request_user, reason=reason)
-        quotas.qh_sync_user(request_user)
+        quotas.qh_sync_membership(membership)
         logger.info("User %s has left %s." %
                     (request_user.log_display, project))
         auto_accepted = True
@@ -661,7 +661,7 @@ def join_project(project_id, request_user, reason=None):
     if (join_policy == AUTO_ACCEPT_POLICY and (
             not project.violates_members_limit(adding=1))):
         membership.perform_action("accept", actor=request_user, reason=reason)
-        quotas.qh_sync_user(request_user)
+        quotas.qh_sync_membership(membership)
         logger.info("User %s joined %s." %
                     (request_user.log_display, project))
     else:
@@ -945,15 +945,7 @@ def approve_application(application_id, project_id=None, request_user=None,
     if application.name:
         check_conflicting_projects(project, application.name)
 
-    # Pre-lock members and owner together in order to impose an ordering
-    # on locking users
-    members = quotas.members_to_sync(project)
-    uids_to_sync = [member.id for member in members]
-    applicant = application.applicant
-    uids_to_sync.append(applicant.id)
-    quotas.get_users_for_update(uids_to_sync)
-
-    qh_release_pending_app(applicant, locked=True)
+    qh_release_pending_app(application.applicant)
     application.approve(actor=request_user, reason=reason)
 
     if project.state == Project.UNINITIALIZED:
@@ -962,7 +954,7 @@ def approve_application(application_id, project_id=None, request_user=None,
         _apply_modifications(project, application)
     project.activate(actor=request_user, reason=reason)
 
-    quotas.qh_sync_locked_users(members)
+    quotas.qh_sync_project(project)
     logger.info("%s has been approved." % (application.log_display))
     project_notif.application_notify(application, "approve")
     return project
@@ -1122,10 +1114,12 @@ def get_pending_app_diff(project):
     return diff
 
 
-def qh_add_pending_app(user, project=None, force=False):
-    user = AstakosUser.objects.select_for_update().get(id=user.id)
+def qh_add_pending_app(user, project=None, force=False, assign_project=None):
+    if assign_project is None:
+        assign_project = user.base_project
     diff = get_pending_app_diff(project)
-    return quotas.register_pending_apps(user, diff, force)
+    return quotas.register_pending_apps(user, assign_project,
+                                        diff, force=force)
 
 
 def check_pending_app_quota(user, project=None):
@@ -1138,7 +1132,7 @@ def check_pending_app_quota(user, project=None):
     return True, None
 
 
-def qh_release_pending_app(user, locked=False):
-    if not locked:
-        user = AstakosUser.objects.select_for_update().get(id=user.id)
-    quotas.register_pending_apps(user, -1)
+def qh_release_pending_app(user, assign_project=None):
+    if assign_project is None:
+        assign_project = user.base_project
+    quotas.register_pending_apps(user, assign_project, -1)

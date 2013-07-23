@@ -1850,8 +1850,10 @@ class ProjectMembershipManager(models.Manager):
         q = self.model.Q_ACCEPTED_STATES
         return self.filter(q)
 
-    def actually_accepted(self):
+    def actually_accepted(self, projects=None):
         q = self.model.Q_ACTUALLY_ACCEPTED
+        if projects is not None:
+            q &= Q(project__in=projects)
         return self.filter(q)
 
     def initialized(self, projects=None):

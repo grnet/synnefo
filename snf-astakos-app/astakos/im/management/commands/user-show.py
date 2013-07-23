@@ -36,7 +36,7 @@ from optparse import make_option
 
 from django.db.models import Q
 from astakos.im.models import AstakosUser, get_latest_terms, Project
-from astakos.im.quotas import list_user_quotas
+from astakos.im.quotas import get_user_quotas
 
 from synnefo.lib.ordereddict import OrderedDict
 from snf_django.management.commands import SynnefoCommand
@@ -127,12 +127,10 @@ class Command(SynnefoCommand):
                 unit_style = options["unit_style"]
                 check_style(unit_style)
 
-                quotas, initial = list_user_quotas([user])
-                h_quotas = quotas[user.uuid]
-                h_initial = initial[user.uuid]
+                quotas = get_user_quotas(user)
                 if quotas:
                     self.stdout.write("\n")
-                    print_data, labels = show_user_quotas(h_quotas, h_initial,
+                    print_data, labels = show_user_quotas(quotas,
                                                           style=unit_style)
                     utils.pprint_table(self.stdout, print_data, labels,
                                        options["output_format"],

@@ -31,7 +31,6 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import re
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
@@ -157,10 +156,12 @@ class Command(BaseCommand):
                 raise CommandError(msg)
 
         floating_ip_pool = options["floating_ip_pool"]
+        if floating_ip_pool is not None:
+            floating_ip_pool = parse_bool(floating_ip_pool)
         if floating_ip_pool is False and network.floating_ip_pool is True:
             if network.floating_ips.filter(deleted=False).exists():
-                msg = "Can not make network a non floating IP pool. There are"\
-                      " still reserved floating IPs."
+                msg = ("Can not make network a non floating IP pool. There are"
+                       " still reserved floating IPs.")
                 raise CommandError(msg)
         elif floating_ip_pool is True:
             for backend in Backend.objects.filter(offline=False):
@@ -202,7 +203,7 @@ class Command(BaseCommand):
                     bnet = network.backend_networks.get(backend=backend)
                 except BackendNetwork.DoesNotExist:
                     bnet = network.create_backend_network(backend=backend)
-                if bnet.operstate != "ACTVE":
+                if bnet.operstate != "ACTIVE":
                     create_network(network, backend, connect=True)
                     msg = "Sent job to create network '%s' in backend '%s'\n"
                     self.stdout.write(msg % (network, backend))
@@ -238,8 +239,8 @@ def check_link_availability(backend, network):
     mode = network.mode
     link = network.link
     for gnet in ganeti_networks:
-        if gnet["name"] != name and\
-           re.search("(%s, %s)" % (mode, link), gnet["group_list"]):
+        if (gnet["name"] != name and
+           (mode, link) in [(m, l) for (_, m, l) in gnet["group_list"]]):
             msg = "Can not create network '%s' in backend '%s'. Link '%s'" \
                   " is already used by network '%s" % \
                   (network, backend, gnet["name"])

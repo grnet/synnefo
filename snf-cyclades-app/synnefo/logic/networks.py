@@ -36,10 +36,10 @@ from django.db import transaction
 from snf_django.lib.api import faults
 from synnefo.api import util
 from synnefo import quotas
-from synnefo.db.models import Network
+from synnefo.db.models import Network, Backend
 from synnefo.db.utils import validate_mac
 from synnefo.db.pools import EmptyPool
-from synnefo.logic import backend
+from synnefo.logic import backend as backend_mod
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -64,7 +64,8 @@ def network_command(action):
 @transaction.commit_on_success
 def create(user_id, name, flavor, subnet=None, gateway=None, subnet6=None,
            gateway6=None, public=False, dhcp=True, link=None, mac_prefix=None,
-           mode=None, floating_ip_pool=False, tags=None):
+           mode=None, floating_ip_pool=False, tags=None, backend=None,
+           lazy_create=True):
     if flavor is None:
         raise faults.BadRequest("Missing request parameter 'type'")
     elif flavor not in Network.FLAVORS.keys():
@@ -124,6 +125,19 @@ def create(user_id, name, flavor, subnet=None, gateway=None, subnet6=None,
     # Note: the following call does a commit!
     if not public:
         quotas.issue_and_accept_commission(network)
+
+    if not lazy_create:
+        if floating_ip_pool:
+            backends = Backend.objects.filter(offline=False)
+        elif backend is not None:
+            backends = [backend]
+        else:
+            backends = []
+
+        for bend in backends:
+            network.create_backend_network(bend)
+            backend_mod.create_network(network=network, backend=bend,
+                                       connect=True)
     return network
 
 
@@ -147,10 +161,9 @@ def delete(network):
     network.save()
 
     # Delete network to all backends that exists
-    backend_networks = network.backend_networks.exclude(operstate="DELETED")
-    for bnet in backend_networks:
-        backend.delete_network(network, bnet.backend)
-    # If network does not exist in any backend, update the network state
-    if not backend_networks:
-        backend.update_network_state(network)
+    for bnet in network.backend_networks.exclude(operstate="DELETED"):
+        backend_mod.delete_network(network, bnet.backend)
+    else:
+        # If network does not exist in any backend, update the network state
+        backend_mod.update_network_state(network)
     return network

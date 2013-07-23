@@ -37,9 +37,8 @@ from django.core.management.base import BaseCommand, CommandError
 from synnefo.management.common import get_backend, convert_api_faults
 from synnefo.webproject.management.utils import parse_bool
 
-from synnefo.db.models import Network, Backend
+from synnefo.db.models import Network
 from synnefo.logic import networks
-from synnefo.logic.backend import create_network
 
 NETWORK_FLAVORS = Network.FLAVORS.keys()
 
@@ -177,30 +176,17 @@ class Command(BaseCommand):
             try:
                 backend_id = int(backend_id)
             except ValueError:
-                raise CommandError("Invalid backend-id: %s", backend_id)
+                raise CommandError("Invalid backend-id: %s" % backend_id)
             backend = get_backend(backend_id)
+        else:
+            backend = None
 
         network = networks.create(user_id=userid, name=name, flavor=flavor,
                                   subnet=subnet, gateway=gateway,
                                   subnet6=subnet6, gateway6=gateway6,
                                   dhcp=dhcp, public=public, mode=mode,
                                   link=link, mac_prefix=mac_prefix, tags=tags,
-                                  floating_ip_pool=floating_ip_pool)
+                                  floating_ip_pool=floating_ip_pool,
+                                  backend=backend, lazy_create=False)
 
-        self.stdout.write("Successfully created network '%s' in DB.\n",
-                          network)
-        # Create network in Backend if needed
-        if floating_ip_pool:
-            backends = Backend.objects.filter(offline=False)
-        elif backend_id:
-            backends = [backend]
-        else:
-            backends = []
-
-        for backend in backends:
-            self.stdout.write("Creating network in backend '%s'\n", backend)
-            network.create_backend_network(backend)
-            jobs = create_network(network=network, backend=backend,
-                                  connect=True)
-            self.stdout.write("Successfully issued jobs: %s\n" %
-                              ",".join(map(str, jobs)))
+        self.stdout.write("Created network '%s' in DB.\n" % network)

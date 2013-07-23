@@ -94,6 +94,11 @@ def create(user_id, name, flavor, subnet=None, gateway=None, subnet6=None,
     mac_prefix = mac_prefix or fmac_prefix
     tags = tags or ftags
 
+    if (flavor == "IP_LESS_ROUTED" and
+       Network.objects.filter(deleted=False, mode=mode, link=link).exists()):
+        msg = "Link '%s' is already used." % link
+        raise faults.BadRequest(msg)
+
     validate_mac(mac_prefix + "0:00:00:00")
 
     network = Network.objects.create(

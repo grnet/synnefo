@@ -295,8 +295,9 @@ def backend_public_networks(backend):
     """
     bnets = BackendNetwork.objects.filter(backend=backend,
                                           network__public=True,
-                                          network__subnet__isnull=False,
                                           network__deleted=False,
+                                          network__floating_ip_pool=False,
+                                          network__subnet__isnull=False,
                                           network__drained=False)
     return [b.network for b in bnets]
 

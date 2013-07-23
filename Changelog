@@ -16,6 +16,9 @@ Synnefo-wide
 
 * Use the SYNNEFO_TRACE environmental variable to control whether the greenlet
   tracing code will get loaded or not.
+* Split the HIDDEN_COOKIES setting in HIDDEN_HEADERS and HIDDEN_COOKIES, and
+  add the MAIL_MAX_LEN setting, to limit the mail size for unhandled
+  exceptions.
 
 Released: UNRELEASED
 

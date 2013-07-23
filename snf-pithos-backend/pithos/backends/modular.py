@@ -37,7 +37,7 @@ import logging
 import hashlib
 import binascii
 
-from functools import wraps
+from functools import wraps, partial
 from traceback import format_exc
 
 try:
@@ -249,6 +249,8 @@ class ModularBackend(BaseBackend):
 
         self.serials = []
         self.messages = []
+
+        self._move_object = partial(self._copy_object, is_move=True)
 
     def pre_exec(self, lock_container_path=False):
         self.lock_container_path = lock_container_path
@@ -929,7 +931,7 @@ class ModularBackend(BaseBackend):
     def _update_object_hash(self, user, account, container, name, size, type,
                             hash, checksum, domain, meta, replace_meta,
                             permissions, src_node=None, src_version_id=None,
-                            is_copy=False):
+                            is_copy=False, report_size_change=True):
         if permissions is not None and user != account:
             raise NotAllowedError
         self._can_write(user, account, container, name)
@@ -982,10 +984,11 @@ class ModularBackend(BaseBackend):
                     )
                 )
 
-        self._report_size_change(
-            user, account, size_delta,
-            {'action': 'object update', 'path': path,
-             'versions': ','.join([str(dest_version_id)])})
+        if report_size_change:
+            self._report_size_change(
+                user, account, size_delta,
+                {'action': 'object update', 'path': path,
+                 'versions': ','.join([str(dest_version_id)])})
         if permissions is not None:
             self.permissions.access_set(path, permissions)
             self._report_sharing_change(
@@ -1045,6 +1048,8 @@ class ModularBackend(BaseBackend):
                      dest_domain=None, dest_meta=None, replace_meta=False,
                      permissions=None, src_version=None, is_move=False,
                      delimiter=None):
+
+        report_size_change = not is_move
         dest_meta = dest_meta or {}
         dest_version_ids = []
         self._can_read(user, src_account, src_container, src_name)
@@ -1060,10 +1065,12 @@ class ModularBackend(BaseBackend):
         dest_version_ids.append(self._update_object_hash(
             user, dest_account, dest_container, dest_name, size, type, hash,
             None, dest_domain, dest_meta, replace_meta, permissions,
-            src_node=node, src_version_id=src_version_id, is_copy=is_copy))
+            src_node=node, src_version_id=src_version_id, is_copy=is_copy,
+            report_size_change=report_size_change))
         if is_move and ((src_account, src_container, src_name) !=
                         (dest_account, dest_container, dest_name)):
-            self._delete_object(user, src_account, src_container, src_name)
+            self._delete_object(user, src_account, src_container, src_name,
+                                report_size_change=report_size_change)
 
         if delimiter:
             prefix = (src_name + delimiter if not
@@ -1122,14 +1129,14 @@ class ModularBackend(BaseBackend):
         meta = meta or {}
         if user != src_account:
             raise NotAllowedError
-        dest_version_id = self._copy_object(
+        dest_version_id = self._move_object(
             user, src_account, src_container, src_name, dest_account,
             dest_container, dest_name, type, domain, meta, replace_meta,
-            permissions, None, True, delimiter)
+            permissions, None, delimiter=delimiter)
         return dest_version_id
 
     def _delete_object(self, user, account, container, name, until=None,
-                       delimiter=None):
+                       delimiter=None, report_size_change=True):
         if user != account:
             raise NotAllowedError
 
@@ -1175,11 +1182,12 @@ class ModularBackend(BaseBackend):
             cluster=CLUSTER_DELETED, update_statistics_ancestors_depth=1)
         del_size = self._apply_versioning(account, container, src_version_id,
                                           update_statistics_ancestors_depth=1)
-        self._report_size_change(
-            user, account, -del_size,
-            {'action': 'object delete',
-             'path': path,
-             'versions': ','.join([str(dest_version_id)])})
+        if report_size_change:
+            self._report_size_change(
+                user, account, -del_size,
+                {'action': 'object delete',
+                 'path': path,
+                 'versions': ','.join([str(dest_version_id)])})
         self._report_object_change(
             user, account, path, details={'action': 'object delete'})
         self.permissions.access_clear(path)
@@ -1201,11 +1209,12 @@ class ModularBackend(BaseBackend):
                 del_size = self._apply_versioning(
                     account, container, src_version_id,
                     update_statistics_ancestors_depth=1)
-                self._report_size_change(
-                    user, account, -del_size,
-                    {'action': 'object delete',
-                     'path': path,
-                     'versions': ','.join([str(dest_version_id)])})
+                if report_size_change:
+                    self._report_size_change(
+                        user, account, -del_size,
+                        {'action': 'object delete',
+                         'path': path,
+                         'versions': ','.join([str(dest_version_id)])})
                 self._report_object_change(
                     user, account, path, details={'action': 'object delete'})
                 paths.append(path)

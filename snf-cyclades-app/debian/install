@@ -1,2 +1,0 @@
-conf/default/snf-dispatcher /etc/default
-conf/init.d/snf-dispatcher /etc/init.d

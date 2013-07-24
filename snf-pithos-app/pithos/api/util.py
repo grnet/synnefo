@@ -1116,8 +1116,8 @@ def view_method():
         def wrapper(request, *args, **kwargs):
             token = get_token_from_cookie(request)
             if token is None:
-                return HttpResponseRedirect('%s?next=%s' % (LOGIN_URL,
-                                                            request.path))
+                return HttpResponseRedirect('%s?next=%s' % (
+                    LOGIN_URL, join_urls(BASE_HOST, request.path)))
             request.META['HTTP_X_AUTH_TOKEN'] = token
             # Get the response object
             response = func(request, *args, **kwargs)

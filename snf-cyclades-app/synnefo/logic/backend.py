@@ -55,6 +55,9 @@ _firewall_tags = {
 
 _reverse_tags = dict((v.split(':')[3], k) for k, v in _firewall_tags.items())
 
+# Timeout in seconds for building NICs. After this period the NICs considered
+# stale and removed from DB.
+BUILDING_NIC_TIMEOUT = 180
 
 NIC_FIELDS = ["state", "mac", "ipv4", "ipv6", "network", "firewall_profile"]
 
@@ -241,7 +244,7 @@ def _process_net_status(vm, etime, nics):
             # TODO: This is dangerous as the job may be stack in the queue, and
             # releasing the IP may lead to duplicate IP use.
             if nic.state != "BUILDING" or (nic.state == "BUILDING" and
-               etime > nic.created + timedelta(minutes=5)):
+               etime > nic.created + timedelta(seconds=BUILDING_NIC_TIMEOUT)):
                 release_nic_address(nic)
                 nic.delete()
             else:

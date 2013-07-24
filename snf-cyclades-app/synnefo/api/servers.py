@@ -693,7 +693,8 @@ def set_firewall_profile(request, vm, args):
     profile = args.get("profile")
     if profile is None:
         raise faults.BadRequest("Missing 'profile' attribute")
-    servers.set_firewall_profile(vm, profile=profile)
+    index = args.get("index", 0)
+    servers.set_firewall_profile(vm, profile=profile, index=index)
     return HttpResponse(status=202)
 
 

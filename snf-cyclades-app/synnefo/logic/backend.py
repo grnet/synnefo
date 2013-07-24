@@ -761,18 +761,21 @@ def disconnect_from_network(vm, nic):
                                      dry_run=settings.TEST)
 
 
-def set_firewall_profile(vm, profile):
+def set_firewall_profile(vm, profile, index=0):
     try:
-        tag = _firewall_tags[profile]
+        tag = _firewall_tags[profile] % index
     except KeyError:
         raise ValueError("Unsopported Firewall Profile: %s" % profile)
 
-    log.debug("Setting tag of VM %s to %s", vm, profile)
+    log.debug("Setting tag of VM %s, NIC index %d, to %s", vm, index, profile)
 
     with pooled_rapi_client(vm) as client:
-        # Delete all firewall tags
-        for t in _firewall_tags.values():
-            client.DeleteInstanceTags(vm.backend_vm_id, [t],
+        # Delete previous firewall tags
+        old_tags = client.GetInstanceTags(vm.backend_vm_id)
+        delete_tags = [(t % index) for t in _firewall_tags.values()
+                       if (t % index) in old_tags]
+        if delete_tags:
+            client.DeleteInstanceTags(vm.backend_vm_id, delete_tags,
                                       dry_run=settings.TEST)
 
         client.AddInstanceTags(vm.backend_vm_id, [tag], dry_run=settings.TEST)

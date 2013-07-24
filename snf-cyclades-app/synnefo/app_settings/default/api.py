@@ -21,7 +21,7 @@ POLL_LIMIT = 3600
 # network of this list. If the special network ID "SNF:ANY_PUBLIC" is used,
 # Cyclades will automatically choose a public network and connect the server to
 # it.
-DEFAULT_INSTANCE_NETWORKS=["SNF:ANY_PUBLIC"]
+DEFAULT_INSTANCE_NETWORKS = ["SNF:ANY_PUBLIC"]
 
 # Maximum allowed network size for private networks.
 MAX_CIDR_BLOCK = 22
@@ -48,10 +48,11 @@ DEFAULT_ROUTING_TABLE = 'snf_public'
 DEFAULT_MAC_FILTERED_BRIDGE = 'prv0'
 
 
-# Firewalling
-GANETI_FIREWALL_ENABLED_TAG = 'synnefo:network:0:protected'
-GANETI_FIREWALL_DISABLED_TAG = 'synnefo:network:0:unprotected'
-GANETI_FIREWALL_PROTECTED_TAG = 'synnefo:network:0:limited'
+# Firewalling. Firewall tags should contain '%d' to be filled with the NIC
+# index.
+GANETI_FIREWALL_ENABLED_TAG = 'synnefo:network:%d:protected'
+GANETI_FIREWALL_DISABLED_TAG = 'synnefo:network:%d:unprotected'
+GANETI_FIREWALL_PROTECTED_TAG = 'synnefo:network:%d:limited'
 
 # The default firewall profile that will be in effect if no tags are defined
 DEFAULT_FIREWALL_PROFILE = 'DISABLED'

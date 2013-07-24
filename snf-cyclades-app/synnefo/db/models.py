@@ -357,7 +357,7 @@ class VirtualMachine(models.Model):
     # Latest action and corresponding Ganeti job ID, for actions issued
     # by the API
     task = models.CharField(max_length=64, null=True)
-    task_job_id = models.BigIntegerField(max_length=64, null=True)
+    task_job_id = models.BigIntegerField(null=True)
 
     objects = ForUpdateManager()
 

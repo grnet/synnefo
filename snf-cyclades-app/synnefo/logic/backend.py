@@ -798,9 +798,9 @@ def get_nodes(backend, bulk=True):
         return c.GetNodes(bulk=bulk)
 
 
-def get_jobs(backend):
+def get_jobs(backend, bulk=True):
     with pooled_rapi_client(backend) as c:
-        return c.GetJobs()
+        return c.GetJobs(bulk=bulk)
 
 
 def get_physical_resources(backend):

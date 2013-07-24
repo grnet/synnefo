@@ -33,7 +33,6 @@ from django.test import TestCase
 from synnefo.db.models import VirtualMachine, Network, BackendNetwork
 from synnefo.db import models_factory as mfactory
 from synnefo.logic import reconciliation
-from datetime import timedelta
 from mock import patch
 from snf_django.utils.testing import mocked_quotaholder
 from time import time
@@ -56,84 +55,34 @@ class ServerReconciliationTest(TestCase):
                                                            logger=log)
 
     def test_building_vm(self, mrapi):
-        mrapi = self.reconciler.client
-        vm1 = mfactory.VirtualMachineFactory(backend=self.backend,
-                                             backendjobid=None,
-                                             operstate="BUILD")
-        self.reconciler.reconcile()
-        # Assert not deleted
-        vm1 = VirtualMachine.objects.get(id=vm1.id)
-        self.assertFalse(vm1.deleted)
-        self.assertEqual(vm1.operstate, "BUILD")
-
-        vm1.created = vm1.created - timedelta(seconds=120)
-        vm1.save()
-        with mocked_quotaholder():
-            self.reconciler.reconcile()
-        vm1 = VirtualMachine.objects.get(id=vm1.id)
-        self.assertEqual(vm1.operstate, "ERROR")
-
         vm1 = mfactory.VirtualMachineFactory(backend=self.backend,
                                              backendjobid=1,
-                                             deleted=False,
                                              operstate="BUILD")
-        vm1.backendtime = vm1.created - timedelta(seconds=120)
-        vm1.backendjobid = 10
-        vm1.save()
         for status in ["queued", "waiting", "running"]:
-            mrapi.GetJobStatus.return_value = {"status": status}
+            mrapi().GetJobs.return_value = [{"id": "1", "status": status}]
             with mocked_quotaholder():
                 self.reconciler.reconcile()
             vm1 = VirtualMachine.objects.get(id=vm1.id)
             self.assertFalse(vm1.deleted)
             self.assertEqual(vm1.operstate, "BUILD")
 
-        mrapi.GetJobStatus.return_value = {"status": "error"}
+        mrapi().GetJobs.return_value = [{"id": "1", "status": "error"}]
         with mocked_quotaholder():
             self.reconciler.reconcile()
         vm1 = VirtualMachine.objects.get(id=vm1.id)
         self.assertFalse(vm1.deleted)
         self.assertEqual(vm1.operstate, "ERROR")
 
-        for status in ["success", "cancelled"]:
+        for status in ["success", "canceled"]:
+            vm1.operstate = "BUILD"
             vm1.deleted = False
             vm1.save()
-            mrapi.GetJobStatus.return_value = {"status": status}
+            mrapi().GetJobs.return_value = [{"id": "1", "status": status}]
             with mocked_quotaholder():
                 self.reconciler.reconcile()
             vm1 = VirtualMachine.objects.get(id=vm1.id)
-            self.assertTrue(vm1.deleted)
-            self.assertEqual(vm1.operstate, "DESTROYED")
-
-        vm1 = mfactory.VirtualMachineFactory(backend=self.backend,
-                                             backendjobid=1,
-                                             operstate="BUILD")
-        vm1.backendtime = vm1.created - timedelta(seconds=120)
-        vm1.backendjobid = 10
-        vm1.save()
-        cmrapi = self.reconciler.client
-        cmrapi.GetInstances.return_value = \
-            [{"name": vm1.backend_vm_id,
-             "beparams": {"maxmem": 1024,
-                          "minmem": 1024,
-                          "vcpus": 4},
-             "oper_state": False,
-             "mtime": time(),
-             "disk.sizes": [],
-             "nic.ips": [],
-             "nic.macs": [],
-             "nic.networks": [],
-             "tags": []}]
-        mrapi.GetJobStatus.return_value = {"status": "running"}
-        with mocked_quotaholder():
-            self.reconciler.reconcile()
-        vm1 = VirtualMachine.objects.get(id=vm1.id)
-        self.assertEqual(vm1.operstate, "BUILD")
-        mrapi.GetJobStatus.return_value = {"status": "error"}
-        with mocked_quotaholder():
-            self.reconciler.reconcile()
-        vm1 = VirtualMachine.objects.get(id=vm1.id)
-        self.assertEqual(vm1.operstate, "ERROR")
+            self.assertFalse(vm1.deleted)
+            self.assertEqual(vm1.operstate, "ERROR")
 
     def test_stale_server(self, mrapi):
         mrapi.GetInstances = []

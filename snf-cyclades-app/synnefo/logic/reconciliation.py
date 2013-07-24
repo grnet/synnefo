@@ -68,7 +68,7 @@ setup_environ(settings)
 import logging
 import itertools
 import bitarray
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from django.db import transaction
 from synnefo.db.models import (Backend, VirtualMachine, Flavor,
@@ -76,7 +76,6 @@ from synnefo.db.models import (Backend, VirtualMachine, Flavor,
                                BackendNetwork)
 from synnefo.db.pools import IPPool
 from synnefo.logic import utils, backend as backend_mod
-from synnefo.logic.rapi import GanetiApiError
 
 logger = logging.getLogger()
 logging.basicConfig()
@@ -85,6 +84,10 @@ try:
     CHECK_INTERVAL = settings.RECONCILIATION_CHECK_INTERVAL
 except AttributeError:
     CHECK_INTERVAL = 60
+
+GANETI_JOB_ERROR = "error"
+GANETI_JOBS_PENDING = ["queued", "waiting", "running", "canceling"]
+GANETI_JOBS_FINALIZED = ["success", "error", "canceled"]
 
 
 class BackendReconciler(object):
@@ -114,6 +117,9 @@ class BackendReconciler(object):
         self.gnt_servers_keys = set(self.gnt_servers.keys())
         log.debug("Got servers info from Ganeti backend.")
 
+        self.gnt_jobs = get_ganeti_jobs(backend)
+        log.debug("Got jobs from Ganeti backend")
+
         self.event_time = datetime.now()
 
         self.stale_servers = self.reconcile_stale_servers()
@@ -122,31 +128,17 @@ class BackendReconciler(object):
         self.close()
 
     def get_build_status(self, db_server):
-        job = db_server.backendjobid
-        if job is None:
-            created = db_server.created
-            # Job has not yet been enqueued.
-            if self.event_time < created + timedelta(seconds=60):
-                return "RUNNING"
-            else:
+        job_id = db_server.backendjobid
+        if job_id in self.gnt_jobs:
+            gnt_job_status = self.gnt_jobs[job_id]["status"]
+            if gnt_job_status == GANETI_JOB_ERROR:
                 return "ERROR"
-        else:
-            updated = db_server.backendtime
-            if self.event_time >= updated + timedelta(seconds=60):
-                try:
-                    job_info = self.client.GetJobStatus(job_id=job)
-                    finalized = ["success", "error", "cancelled"]
-                    if job_info["status"] == "error":
-                        return "ERROR"
-                    elif job_info["status"] not in finalized:
-                        return "RUNNING"
-                    else:
-                        return "FINALIZED"
-                except GanetiApiError:
-                    return "ERROR"
-            else:
-                self.log.debug("Pending build for server '%s'", db_server.id)
+            elif gnt_job_status not in GANETI_JOBS_FINALIZED:
                 return "RUNNING"
+            else:
+                return "FINALIZED"
+        else:
+            return "ERROR"
 
     def reconcile_stale_servers(self):
         # Detect stale servers
@@ -218,6 +210,8 @@ class BackendReconciler(object):
                                            gnt_server)
             self.reconcile_unsynced_nics(server_id, db_server, gnt_server)
             self.reconcile_unsynced_disks(server_id, db_server, gnt_server)
+            if db_server.task is not None:
+                self.reconcile_pending_task(server_id, db_server)
 
     def reconcile_building_server(self, db_server):
         self.log.info("Server '%s' is BUILD in DB, but 'ERROR' in Ganeti.",
@@ -308,6 +302,25 @@ class BackendReconciler(object):
 
     def reconcile_unsynced_disks(self, server_id, db_server, gnt_server):
         pass
+
+    def reconcile_pending_task(self, server_id, db_server):
+        job_id = db_server.task_job_id
+        pending_task = False
+        if job_id not in self.gnt_jobs:
+            pending_task = True
+        else:
+            gnt_job_status = self.gnt_job[job_id]["status"]
+            if gnt_job_status in GANETI_JOBS_FINALIZED:
+                pending_task = True
+
+        if pending_task:
+            self.log.info("Found server '%s' with pending task: '%s'",
+                          server_id, db_server.task)
+            if self.options["fixed_pending_tasks"]:
+                db_server.task = None
+                db_server.task_job_id = None
+                db_server.save()
+                self.log.info("Cleared pending task for server '%s", server_id)
 
 
 def format_db_nic(nic):
@@ -433,6 +446,11 @@ def nics_from_instance(i):
                 logger.error("Found tag %s for non-existent NIC %d",
                              tag, index)
     return nics
+
+
+def get_ganeti_jobs(backend):
+    gnt_jobs = backend_mod.get_jobs(backend)
+    return dict([(int(j["id"]), j) for j in gnt_jobs])
 
 
 def disks_from_instance(i):

@@ -71,6 +71,9 @@ class Command(BaseCommand):
         make_option('--fix-unsynced-flavors', action='store_true',
                     dest='fix_unsynced_flavors', default=False,
                     help='Fix unsynced flavors between DB and Ganeti'),
+        make_option('--fix-pending-tasks', action='store_true',
+                    dest='fix_pending_tasks', default=False,
+                    help='Fix servers with stale pending tasks.'),
         make_option('--fix-all', action='store_true', dest='fix_all',
                     default=False, help='Enable all --fix-* arguments'),
     )

@@ -138,16 +138,16 @@ def set_container_quota(args):
         failed = []
 
         def update_container_policy(account):
-            utils.backend.wrapper.execute()
+            trans = utils.backend.wrapper.conn.begin()
             try:
                 utils.backend.update_container_policy(
                     account, account, args.container, {'quota': quota}
                 )
                 if args.dry:
                     print "Skipping database commit."
-                    utils.backend.wrapper.rollback()
+                    trans.rollback()
                 else:
-                    utils.backend.wrapper.commit()
+                    trans.commit()
             except Exception, e:
                 failed.append((account, e))
 

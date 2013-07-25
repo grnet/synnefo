@@ -379,6 +379,10 @@ class QuotaAPITest(TestCase):
         self.assertEqual(r11['usage'], 102)
         self.assertEqual(r11['pending'], 101)
 
+        # Bad Request
+        r = client.head(u('commissions'))
+        self.assertEqual(r.status_code, 400)
+
 
 class TokensApiTest(TestCase):
     def setUp(self):

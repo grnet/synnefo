@@ -480,20 +480,32 @@ class Node(DBWorker):
         r.close()
         return dict(rows)
 
-    def node_account_usage(self, account_node, cluster):
-        select_children = select(
-            [self.nodes.c.node]).where(self.nodes.c.parent == account_node)
-        select_descendants = select([self.nodes.c.node]).where(
-            or_(self.nodes.c.parent.in_(select_children),
-                self.nodes.c.node.in_(select_children)))
-        s = select([func.sum(self.versions.c.size)])
-        s = s.where(self.nodes.c.node == self.versions.c.node)
-        s = s.where(self.nodes.c.node.in_(select_descendants))
+    def node_account_usage(self, account=None, cluster=0):
+        """Return usage for a specific account.
+
+        Keyword arguments:
+        account -- (default None: list usage for all the accounts)
+        cluster -- list current, history or deleted usage (default 0: normal)
+        """
+
+        n1 = self.nodes.alias('n1')
+        n2 = self.nodes.alias('n2')
+        n3 = self.nodes.alias('n3')
+
+        s = select([n3.c.path, func.sum(self.versions.c.size)])
+        s = s.where(n1.c.node == self.versions.c.node)
         s = s.where(self.versions.c.cluster == cluster)
+        s = s.where(n1.c.parent == n2.c.node)
+        s = s.where(n2.c.parent == n3.c.node)
+        s = s.where(n3.c.parent == 0)
+        s = s.where(n3.c.node != 0)
+        if account:
+            s = s.where(n3.c.path == account)
+        s = s.group_by(n3.c.path)
         r = self.conn.execute(s)
-        usage = r.fetchone()[0]
+        usage = r.fetchall()
         r.close()
-        return usage
+        return dict(usage)
 
     def policy_get(self, node):
         s = select([self.policy.c.key, self.policy.c.value],

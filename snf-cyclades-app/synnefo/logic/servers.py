@@ -89,9 +89,11 @@ def server_command(action):
             commission_info = quotas.get_commission_info(vm, action=action)
             if commission_info is not None:
                 # Issue new commission, associate it with the VM
+                commission_name = "client: api, resource %s" % vm
                 serial = quotas.issue_commission(user=user_id,
                                                  source=quotas.DEFAULT_SOURCE,
                                                  provisions=commission_info,
+                                                 name=commission_name,
                                                  force=False,
                                                  auto_accept=False)
             vm.serial = serial
@@ -327,7 +329,8 @@ def resize(vm, flavor):
     # Save serial to VM, since it is needed by server_command decorator
     vm.serial = quotas.issue_commission(user=vm.userid,
                                         source=quotas.DEFAULT_SOURCE,
-                                        provisions=commission_info)
+                                        provisions=commission_info,
+                                        name="resource: %s. resize" % vm)
     return backend.resize_instance(vm, vcpus=flavor.cpu, memory=flavor.ram)
 
 

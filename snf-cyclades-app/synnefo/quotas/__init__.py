@@ -83,7 +83,7 @@ def handle_astakosclient_error(func):
 
 
 @handle_astakosclient_error
-def issue_commission(user, source, provisions,
+def issue_commission(user, source, provisions, name="",
                      force=False, auto_accept=False):
     """Issue a new commission to the quotaholder.
 
@@ -95,7 +95,7 @@ def issue_commission(user, source, provisions,
     qh = Quotaholder.get()
     try:
         serial = qh.issue_one_commission(ASTAKOS_TOKEN,
-                                         user, source, provisions,
+                                         user, source, provisions, name=name,
                                          force=force, auto_accept=auto_accept)
     except QuotaLimit as e:
         msg, details = render_overlimit_exception(e)
@@ -254,8 +254,11 @@ def issue_and_accept_commission(resource, delete=False):
             qh_resources = reverse_quantities(qh_resources)
 
         # Issue commission and get the assigned serial
-        serial = issue_commission(resource.userid, DEFAULT_SOURCE,
-                                  qh_resources)
+        commission_reason = ("client: api, resource: %s, delete: %s"
+                             % (resource, delete))
+        serial = issue_commission(user=resource.userid, source=DEFAULT_SOURCE,
+                                  provisions=qh_resources,
+                                  name=commission_reason)
     except:
         transaction.rollback()
         raise

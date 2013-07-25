@@ -96,9 +96,12 @@ def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields):
         previous_serial = vm.serial
         if previous_serial and not previous_serial.resolved:
             quotas.resolve_vm_commission(previous_serial)
+        commission_name = ("client: dispatcher, resource: %s, ganeti_job: %s"
+                           % (vm, job_id))
         serial = quotas.issue_commission(user=vm.userid,
                                          source=quotas.DEFAULT_SOURCE,
                                          provisions=commission_info,
+                                         name=commission_name,
                                          force=True,
                                          auto_accept=True)
         # Clear VM's serial. Expected job may arrive later. However correlated

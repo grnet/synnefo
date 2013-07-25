@@ -395,7 +395,7 @@ class VirtualMachine(models.Model):
         get_latest_by = 'created'
 
     def __unicode__(self):
-        return str(self.id)
+        return "<vm: %s>" % str(self.id)
 
     # Error classes
     class InvalidBackendIdError(Exception):
@@ -532,7 +532,7 @@ class Network(models.Model):
     objects = ForUpdateManager()
 
     def __unicode__(self):
-        return str(self.id)
+        return "<Network: %s>" % str(self.id)
 
     @property
     def backend_id(self):
@@ -739,7 +739,7 @@ class FloatingIP(models.Model):
     objects = ForUpdateManager()
 
     def __unicode__(self):
-        return "<%s@%s>" % (self.ipv4, self.network.id)
+        return "<FIP: %s@%s>" % (self.ipv4, self.network.id)
 
     def in_use(self):
         if self.machine is None:

@@ -11,6 +11,8 @@ repository and have aligned versions.
 v0.14.3
 =======
 
+Released: Thu Jul 25 12:22:47 EEST 2013
+
 Synnefo-wide
 ------------
 
@@ -20,7 +22,6 @@ Synnefo-wide
   add the MAIL_MAX_LEN setting, to limit the mail size for unhandled
   exceptions.
 
-Released: UNRELEASED
 
 .. _Changelog-0.14.2:
 

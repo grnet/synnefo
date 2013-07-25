@@ -1686,6 +1686,8 @@ class ProjectApplication(models.Model):
         project.application = self
         project.last_approval_date = now
         project.save()
+        if project.is_deactivated():
+            project.resume()
         return project
 
     @property

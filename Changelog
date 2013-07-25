@@ -6,6 +6,23 @@ Unified Changelog file for Synnefo versions >= 0.13
 Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
+.. _Changelog-0.14.3:
+
+v0.14.3
+=======
+
+Released: Thu Jul 25 12:22:47 EEST 2013
+
+Synnefo-wide
+------------
+
+* Use the SYNNEFO_TRACE environmental variable to control whether the greenlet
+  tracing code will get loaded or not.
+* Split the HIDDEN_COOKIES setting in HIDDEN_HEADERS and HIDDEN_COOKIES, and
+  add the MAIL_MAX_LEN setting, to limit the mail size for unhandled
+  exceptions.
+
+
 .. _Changelog-0.14.2:
 
 v0.14.2

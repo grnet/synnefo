@@ -1,7 +1,7 @@
 #coding=utf8
 from django.conf import settings
 from synnefo.lib import parse_base_url, join_urls
-from synnefo.lib.services import fill_endpoints
+from synnefo.lib.services import fill_endpoints, get_public_endpoint
 from synnefo.util.keypath import get_path, set_path
 from pithos.api.services import pithos_services as vanilla_pithos_services
 from astakosclient import astakos_services as vanilla_astakos_services
@@ -103,5 +103,9 @@ PUBLIC_URL_SECURITY =  getattr(settings, 'PITHOS_PUBLIC_URL_SECURITY', 16)
 PUBLIC_URL_ALPHABET =  getattr(
     settings,
     'PITHOS_PUBLIC_URL_ALPHABET',
-    '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-)
+    '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
+
+ASTAKOS_UI_URL = get_public_endpoint(astakos_services, 'astakos_ui', '').rstrip('/')
+
+# Astakos login URL to redirect if the user information is missing
+LOGIN_URL = join_urls(ASTAKOS_UI_URL, 'login')

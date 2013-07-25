@@ -35,7 +35,8 @@ from functools import wraps
 from datetime import datetime
 from urllib import quote, unquote
 
-from django.http import HttpResponse, Http404, HttpResponseForbidden
+from django.http import (HttpResponse, HttpResponseRedirect, Http404,
+                         HttpResponseForbidden)
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 from django.utils.http import http_date, parse_etags
@@ -63,7 +64,7 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  RADOS_POOL_MAPS, TRANSLATE_UUIDS,
                                  PUBLIC_URL_SECURITY,
                                  PUBLIC_URL_ALPHABET,
-                                 COOKIE_NAME, BASE_HOST)
+                                 COOKIE_NAME, BASE_HOST, LOGIN_URL)
 from pithos.api.resources import resources
 from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
                                   VersionNotExists)
@@ -1113,16 +1114,21 @@ def view_method():
     def decorator(func):
         @wraps(func)
         def wrapper(request, *args, **kwargs):
-            request.META['HTTP_X_AUTH_TOKEN'] = get_token_from_cookie(request)
+            token = get_token_from_cookie(request)
+            if token is None:
+                return HttpResponseRedirect('%s?next=%s' % (
+                    LOGIN_URL, join_urls(BASE_HOST, request.path)))
+            request.META['HTTP_X_AUTH_TOKEN'] = token
             # Get the response object
             response = func(request, *args, **kwargs)
-            if response.status_code == 200:
+            if response.status_code in [200, 206, 304, 412, 416]:
                 return response
             elif response.status_code == 404:
                 raise Http404()
             elif response.status_code in [401, 403]:
                 return HttpResponseForbidden()
             else:
-                raise Exception(response)
+                # unexpected response status
+                raise Exception(response.status_code)
         return wrapper
     return decorator

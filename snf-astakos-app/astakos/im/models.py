@@ -1789,6 +1789,9 @@ class Project(models.Model):
 
     def resume(self, actor=None, reason=None):
         self.set_state(self.NORMAL, actor=actor, reason=reason)
+        if self.name is None:
+            self.name = self.application.name
+            self.save()
 
     ### Logical checks
 
@@ -1847,6 +1850,10 @@ class ProjectLog(models.Model):
     comments = models.TextField(null=True)
 
     objects = ProjectLogManager()
+
+
+class ProjectLock(models.Model):
+    objects = ForUpdateManager()
 
 
 class ProjectMembershipManager(ForUpdateManager):
@@ -2001,10 +2008,6 @@ class ProjectMembership(models.Model):
         except KeyError:
             raise ValueError("No such action '%s'" % action)
         return self.set_state(s, actor=actor, reason=reason)
-
-
-class Serial(models.Model):
-    serial = models.AutoField(primary_key=True)
 
 
 class ProjectMembershipLogManager(models.Manager):

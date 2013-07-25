@@ -44,7 +44,7 @@ from synnefo_branding.utils import render_to_string
 
 from synnefo.lib import join_urls
 from astakos.im.models import AstakosUser, Invitation, ProjectMembership, \
-    ProjectApplication, Project, new_chain, Resource
+    ProjectApplication, Project, new_chain, Resource, ProjectLock
 from astakos.im.quotas import qh_sync_user, get_pending_app_quota, \
     register_pending_apps, qh_sync_project, qh_sync_locked_users, \
     get_users_for_update, members_to_sync
@@ -297,6 +297,10 @@ def get_project_for_update(project_id):
 def get_project_of_application_for_update(app_id):
     app = get_application(app_id)
     return get_project_for_update(app.chain_id)
+
+
+def get_project_lock():
+    ProjectLock.objects.get_for_update(pk=1)
 
 
 def get_application(application_id):
@@ -822,6 +826,7 @@ def check_conflicting_projects(application):
 
 
 def approve_application(app_id, request_user=None, reason=""):
+    get_project_lock()
     project = get_project_of_application_for_update(app_id)
     application = get_application(app_id)
 
@@ -848,7 +853,7 @@ def approve_application(app_id, request_user=None, reason=""):
     project.name = application.name
     project.save()
     if project.is_deactivated():
-        project.resume()
+        project.resume(actor=request_user, reason="APPROVE")
     qh_sync_locked_users(members)
     logger.info("%s has been approved." % (application.log_display))
     application_approve_notify(application)

@@ -1362,9 +1362,13 @@ def object_update(request, v_account, v_container, v_object):
         src_account = request.META.get('HTTP_X_SOURCE_ACCOUNT')
         if not src_account:
             src_account = request.user_uniq
-        src_container, src_name = split_container_object_string(src_object)
-        src_version = request.META.get('HTTP_X_SOURCE_VERSION')
         try:
+            src_container, src_name = split_container_object_string(src_object)
+        except ValueError:
+            raise faults.BadRequest('Invalid source object')
+
+        try:
+            src_version = request.META.get('HTTP_X_SOURCE_VERSION')
             src_size, src_hashmap = request.backend.get_object_hashmap(
                 request.user_uniq,
                 src_account, src_container, src_name, src_version)

@@ -80,7 +80,8 @@ class ObjectGetView(PithosAPITest):
         parts = list(urlsplit(r['Location']))
         qs = parse_qs(parts[3])
         self.assertTrue('next' in qs)
-        self.assertEqual(qs['next'][0], self.view_url)
+        self.assertEqual(qs['next'][0], join_urls(pithos_settings.BASE_HOST,
+                                                  self.view_url))
 
     def test_versions(self):
         c = self.cname

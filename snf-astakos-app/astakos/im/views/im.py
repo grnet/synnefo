@@ -54,8 +54,6 @@ from django.template import RequestContext
 from synnefo_branding import utils as branding
 from synnefo_branding import settings as branding_settings
 
-from synnefo.lib import join_urls
-
 import astakos.im.messages as astakos_messages
 
 from astakos.im import activation_backends

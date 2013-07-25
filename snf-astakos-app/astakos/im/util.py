@@ -32,15 +32,13 @@
 # or implied, of GRNET S.A.
 
 import logging
-import datetime
 import time
 import urllib
 
 from urlparse import urlparse
 from datetime import tzinfo, timedelta
 
-from django.http import HttpResponse, HttpResponseBadRequest, urlencode, \
-    HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseBadRequest, urlencode
 from django.template import RequestContext
 from django.contrib.auth import authenticate
 from django.core.urlresolvers import reverse

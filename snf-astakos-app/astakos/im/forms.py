@@ -418,7 +418,7 @@ class LoginForm(AuthenticationForm):
 
         try:
             super(LoginForm, self).clean()
-        except forms.ValidationError, e:
+        except forms.ValidationError:
             if self.user_cache is None:
                 raise
             if not self.user_cache.is_active:
@@ -849,7 +849,7 @@ class ProjectApplicationForm(forms.ModelForm):
 
     def clean(self):
         userid = self.data.get('user', None)
-        policies = self.resource_policies
+        self.resource_policies
         self.user = None
         if userid:
             try:

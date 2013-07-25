@@ -181,7 +181,6 @@ class RichLinkColumn(tables.TemplateColumn):
 def action_extra_context(project, table, self):
     user = table.user
     url, action, confirm, prompt = '', '', True, ''
-    append_url = ''
 
     membership = user.get_membership(project)
     if membership is not None:

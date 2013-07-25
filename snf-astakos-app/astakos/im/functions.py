@@ -32,7 +32,6 @@
 # or implied, of GRNET S.A.
 
 import logging
-from datetime import datetime
 
 from django.utils.translation import ugettext as _
 from django.core.mail import send_mail, get_connection

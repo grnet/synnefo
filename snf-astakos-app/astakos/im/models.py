@@ -31,11 +31,9 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import hashlib
 import uuid
 import logging
 import json
-import math
 import copy
 
 from datetime import datetime, timedelta
@@ -44,13 +42,13 @@ from urllib import quote
 from random import randint
 import os
 
-from django.db import models, IntegrityError, transaction
+from django.db import models, transaction
 from django.contrib.auth.models import User, UserManager, Group, Permission
 from django.utils.translation import ugettext as _
 from django.db.models.signals import pre_save, post_save
 from django.contrib.contenttypes.models import ContentType
 
-from django.db.models import Q, Max
+from django.db.models import Q
 from django.core.urlresolvers import reverse
 from django.utils.http import int_to_base36
 from django.contrib.auth.tokens import default_token_generator
@@ -532,7 +530,7 @@ class AstakosUser(User):
             uuid_val = str(uuid.uuid4())
             try:
                 AstakosUser.objects.get(uuid=uuid_val)
-            except AstakosUser.DoesNotExist, e:
+            except AstakosUser.DoesNotExist:
                 self.uuid = uuid_val
         return self.uuid
 
@@ -609,7 +607,6 @@ class AstakosUser(User):
     @property
     def status_display(self):
         msg = ""
-        append = None
         if self.is_active:
             msg = "Accepted/Active"
         if self.is_rejected:
@@ -981,7 +978,7 @@ class AstakosUserAuthProvider(models.Model):
             self.info = json.loads(self.info_data)
             if not self.info:
                 self.info = {}
-        except Exception, e:
+        except Exception:
             self.info = {}
 
         for key, value in self.info.iteritems():
@@ -1230,7 +1227,7 @@ class PendingThirdPartyUser(models.Model):
                 username = uuid.uuid4().hex[:30]
                 try:
                     AstakosUser.objects.get(username=username)
-                except AstakosUser.DoesNotExist, e:
+                except AstakosUser.DoesNotExist:
                     self.username = username
         super(PendingThirdPartyUser, self).save(**kwargs)
 

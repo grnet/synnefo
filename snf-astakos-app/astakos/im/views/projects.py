@@ -48,7 +48,6 @@ from django.utils.translation import ugettext as _
 from django.views.generic.list_detail import object_list, object_detail
 from django.core.exceptions import PermissionDenied
 from django.views.decorators.http import require_http_methods
-from django.db.models import Q
 
 from snf_django.lib.db.transaction import commit_on_success_strict
 
@@ -617,7 +616,7 @@ def project_app_approve(request, application_id):
         raise PermissionDenied(m)
 
     try:
-        app = ProjectApplication.objects.get(id=application_id)
+        ProjectApplication.objects.get(id=application_id)
     except ProjectApplication.DoesNotExist:
         raise Http404
 
@@ -650,7 +649,7 @@ def project_app_deny(request, application_id):
         raise PermissionDenied(m)
 
     try:
-        app = ProjectApplication.objects.get(id=application_id)
+        ProjectApplication.objects.get(id=application_id)
     except ProjectApplication.DoesNotExist:
         raise Http404
 

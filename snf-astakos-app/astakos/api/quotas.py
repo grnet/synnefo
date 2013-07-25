@@ -89,7 +89,6 @@ def commissions(request):
 @api.api_method(http_method='GET', token_required=True, user_required=False)
 @component_from_token
 def get_pending_commissions(request):
-    data = request.GET
     client_key = str(request.component_instance)
 
     result = qh.get_pending_commissions(clientkey=client_key)
@@ -183,8 +182,7 @@ def _issue_commission(clientkey, provisions, name, force, accept):
                                  name=name,
                                  force=force)
     if accept:
-        done = qh.resolve_pending_commission(clientkey=clientkey,
-                                             serial=serial)
+        qh.resolve_pending_commission(clientkey=clientkey, serial=serial)
 
     return serial
 
@@ -255,7 +253,7 @@ def get_commission(request, serial):
                                  serial=serial)
         status_code = 200
         return json_response(data, status_code)
-    except qh_exception.NoCommissionError as e:
+    except qh_exception.NoCommissionError:
         return HttpResponse(status=404)
 
 

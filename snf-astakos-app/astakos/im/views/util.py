@@ -43,8 +43,6 @@ from django.views.generic.create_update import apply_extra_context, \
 
 from synnefo.lib.ordereddict import OrderedDict
 
-from snf_django.lib.db.transaction import commit_on_success_strict
-
 from astakos.im import presentation
 from astakos.im.util import model_to_dict
 from astakos.im.models import Resource

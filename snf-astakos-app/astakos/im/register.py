@@ -53,7 +53,7 @@ def add_resource(resource_dict):
         raise RegisterException("Malformed resource dict.")
 
     try:
-        service = Service.objects.get(name=service_origin)
+        Service.objects.get(name=service_origin)
     except Service.DoesNotExist:
         m = "There is no service %s." % service_origin
         raise RegisterException(m)

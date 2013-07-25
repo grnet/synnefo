@@ -299,8 +299,9 @@ class AuthProvider(object):
         else:
             params['username'] = self.identifier
 
-        branding_params = dict(map(lambda k: (k[0].lower(), k[1]),
-            branding_utils.get_branding_dict().iteritems()))
+        branding_params = dict(
+            map(lambda k: (k[0].lower(), k[1]),
+                branding_utils.get_branding_dict().iteritems()))
         params.update(branding_params)
 
         if not self.message_tpls_compiled:

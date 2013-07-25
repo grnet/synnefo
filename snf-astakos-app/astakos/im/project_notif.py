@@ -113,11 +113,12 @@ def application_approve_notify(application):
 
 
 def project_termination_notify(project):
+    app = project.application
     try:
         notification = build_notification(
             SENDER,
             [project.application.owner.email],
-            _(messages.PROJECT_TERMINATION_SUBJECT) % project.__dict__,
+            _(messages.PROJECT_TERMINATION_SUBJECT) % app.__dict__,
             template='im/projects/project_termination_notification.txt',
             dictionary={'object': project}
         ).send()

@@ -31,38 +31,46 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf import settings as django_settings
-from synnefo_branding import settings
-from django.template.loader import render_to_string as django_render_to_string
 
+def set_signal_trap():
+    from os import getpid
+    from traceback import format_stack, print_exc
+    from signal import signal, SIGTRAP
+    from sys import stderr
+    import gc
 
-def get_branding_dict(prepend=None):
-    # CONTACT_EMAIL may not be a branding setting. We include it here though
-    # for practial reasons.
-    dct = {'support': django_settings.CONTACT_EMAIL}
-    for key in dir(settings):
-        if key == key.upper():
-            newkey = key.lower()
-            if prepend:
-                newkey = '%s_%s' % (prepend, newkey)
-            dct[newkey.upper()] = getattr(settings, key)
-    return dct
+    def greenlet_trace(arg):
+        i = 0
+        stderr.write("--- Greenlet trace: %s\n" % arg)
+        for ob in gc.get_objects():
+            if not isinstance(ob, greenlet):
+                continue
+            if not ob:
+                continue
+            i = i + 1
+            stderr.write(("--- > Greenlet %d:\n" % i +
+                          "".join(format_stack(ob.gr_frame)) + "\n\n"))
+        stderr.write("--- End of trace: %s\n" % arg)
 
+    try:
+        from greenlet import greenlet
+    except ImportError:
 
-def brand_message(msg, **extra_args):
-    params = get_branding_dict()
-    params.update(extra_args)
-    return msg % params
+        def greenlet_trace(arg):
+            return
 
+    def handle_trap(*args):
+        try:
+            import trap_inject
+            reload(trap_inject)
+            trap_inject.inject()
+        except ImportError:
+            pass
+        except:
+            print_exc()
 
-def render_to_string(template_name, dictionary=None, context_instance=None):
-    if not dictionary:
-        dictionary = {}
+        msg = ('=== pid: %s' % getpid()) + '\n'.join(format_stack()) + '\n'
+        stderr.write(msg)
+        greenlet_trace('TRAP')
 
-    if isinstance(dictionary, dict):
-        newdict = get_branding_dict("BRANDING")
-        newdict.update(dictionary)
-    else:
-        newdict = dictionary
-
-    return django_render_to_string(template_name, newdict, context_instance)
+    signal(SIGTRAP, handle_trap)

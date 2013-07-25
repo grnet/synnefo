@@ -224,9 +224,8 @@ QH_SYNC_ERROR = 'Failed to get synchronized with quotaholder.'
 UNIQUE_PROJECT_NAME_CONSTRAIN_ERR = (
     'The project name (as specified in its application\'s definition) must '
     'be unique among all active projects.')
-INVALID_PROJECT = 'Project %(id)s is invalid.'
-NOT_ALIVE_PROJECT = 'Project %(id)s is not alive.'
-NOT_SUSPENDED_PROJECT = 'Project %(id)s is not suspended.'
+NOT_ALIVE_PROJECT = 'Project %s is not alive.'
+NOT_SUSPENDED_PROJECT = 'Project %s is not suspended.'
 NOT_ALLOWED = 'You do not have the permissions to perform this action.'
 MEMBER_NUMBER_LIMIT_REACHED = (
     'You have reached the maximum number of members for this Project.')
@@ -269,7 +268,6 @@ APPLICATION_CANNOT_DENY = "Cannot deny application %s in state '%s'"
 APPLICATION_CANNOT_DISMISS = "Cannot dismiss application %s in state '%s'"
 APPLICATION_CANNOT_CANCEL = "Cannot cancel application %s in state '%s'"
 APPLICATION_CANCELLED = "Your project application has been cancelled."
-
 REACHED_PENDING_APPLICATION_LIMIT = ("You have reached the maximum number "
                                      "of pending project applications: %s.")
 

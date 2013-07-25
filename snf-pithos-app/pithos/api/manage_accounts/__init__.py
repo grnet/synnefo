@@ -164,13 +164,22 @@ class ManageAccounts():
         if dest_account not in self._existing_accounts():
             raise NameError('%s does not exist' % dest_account)
 
-        self._copy_object(src_account, src_container, src_name,
-                          dest_account, move=True)
-        if not silent:
+        trans = self.backend.wrapper.conn.begin()
+        try:
+            self._copy_object(src_account, src_container, src_name,
+                              dest_account, move=True)
+
             if dry:
-                print "Database commit skipped."
+                if not silent:
+                    print "Skipping database commit."
+                trans.rollback()
             else:
-                print "%s is deleted" % src_account
+                trans.commit()
+                if not silent:
+                    print "%s is deleted." % src_account
+        except:
+            trans.rollback()
+            raise
 
     def _copy_object(self, src_account, src_container, src_name,
                      dest_account, move=False):
@@ -287,12 +296,22 @@ class ManageAccounts():
             return
         self._merge_account(src_account, dest_account, delete_src)
 
-        if not silent:
+        trans = self.backend.wrapper.conn.begin()
+        try:
+            self._merge_account(src_account, dest_account, delete_src)
+
             if dry:
-                print "Database commit skipped."
+                if not silent:
+                    print "Skipping database commit."
+                trans.rollback()
             else:
-                print "%s has been merged into %s." % (src_account,
-                                                       dest_account)
+                trans.commit()
+                if not silent:
+                    msg = "%s merged into %s."
+                    print msg % (src_account, dest_account)
+        except:
+            trans.rollback()
+            raise
 
     def _delete_container_contents(self, account, container):
         self.backend.delete_container(account, account, container,
@@ -328,11 +347,21 @@ class ManageAccounts():
             return
         self._delete_account(account)
 
-        if not silent:
+        trans = self.backend.wrapper.conn.begin()
+        try:
+            self._delete_account(account)
+
             if dry:
-                print "Database commit skipped."
+                if not silent:
+                    print "Skipping database commit."
+                trans.rollback()
             else:
-                print "%s has been deleted." % account
+                trans.commit()
+                if not silent:
+                    print "%s is deleted." % account
+        except:
+            trans.rollback()
+            raise
 
     @manage_transactions(lock_container_path=True)
     def create_account(self, account):

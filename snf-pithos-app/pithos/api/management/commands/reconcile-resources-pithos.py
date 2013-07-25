@@ -31,17 +31,17 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import NoArgsCommand, CommandError
+from django.core.management.base import NoArgsCommand
 
 from optparse import make_option
 
 from pithos.api.util import get_backend
 from pithos.api.resources import resources
-from pithos.backends.modular import CLUSTER_NORMAL, DEFAULT_SOURCE
+from pithos.backends.modular import DEFAULT_SOURCE
 
 from synnefo.webproject.management import utils
 
-from astakosclient.errors import QuotaLimit
+from astakosclient.errors import QuotaLimit, NotFound
 
 backend = get_backend()
 
@@ -71,21 +71,26 @@ class Command(NoArgsCommand):
     def handle_noargs(self, **options):
         try:
             backend.pre_exec()
-            qh_result = backend.astakosclient.service_get_quotas(
-                backend.service_token)
+            userid = options['userid']
 
-            users = (options['userid'],) if options['userid'] else None
-            account_nodes = backend.node.node_accounts(users)
-            if not account_nodes:
-                raise CommandError('No users found.')
+            # Get holding from Pithos DB
+            db_usage = backend.node.node_account_usage(userid)
 
-            db_usage = {}
-            for path, node in account_nodes:
-                size = backend.node.node_account_usage(node, CLUSTER_NORMAL)
-                db_usage[path] = size or 0
+            users = set(db_usage.keys())
+            if userid and userid not in users:
+                self.stdout.write("User '%s' does not exist in DB!\n" % userid)
+                return
 
-            users = set(qh_result.keys())
-            users.update(db_usage.keys())
+            # Get holding from Quotaholder
+            try:
+                qh_result = backend.astakosclient.service_get_quotas(
+                    backend.service_token, userid)
+            except NotFound:
+                self.stdout.write(
+                    "User '%s' does not exist in Quotaholder!\n" % userid)
+                return
+
+            users.update(qh_result.keys())
 
             pending_exists = False
             unknown_user_exists = False
@@ -96,8 +101,7 @@ class Command(NoArgsCommand):
                     qh_all = qh_result[uuid]
                 except KeyError:
                     self.stdout.write(
-                        "User '%s' does not exist in Quotaholder!\n" % uuid
-                    )
+                        "User '%s' does not exist in Quotaholder!\n" % uuid)
                     unknown_user_exists = True
                     continue
                 else:
@@ -115,14 +119,13 @@ class Command(NoArgsCommand):
                             self.stdout.write(
                                 "Pending commission. "
                                 "User '%s', resource '%s'.\n" %
-                                (uuid, resource)
-                            )
+                                (uuid, resource))
                             pending_exists = True
                             continue
 
                         qh_value = qh_resource['usage']
 
-                        if  db_value != qh_value:
+                        if db_value != qh_value:
                             data = (uuid, resource, db_value, qh_value)
                             unsynced.append(data)
 
@@ -148,8 +151,7 @@ class Command(NoArgsCommand):
             if pending_exists:
                 self.stdout.write(
                     "Found pending commissions. Run 'snf-manage"
-                    " reconcile-commissions-pithos'\n"
-                )
+                    " reconcile-commissions-pithos'\n")
             elif not (unsynced or unknown_user_exists):
                 self.stdout.write("Everything in sync.\n")
         except:

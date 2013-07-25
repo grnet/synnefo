@@ -66,6 +66,7 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  RADOS_POOL_MAPS, TRANSLATE_UUIDS,
                                  PUBLIC_URL_SECURITY, PUBLIC_URL_ALPHABET,
                                  COOKIE_NAME, BASE_HOST, UPDATE_MD5, LOGIN_URL)
+
 from pithos.api.resources import resources
 from pithos.backends import connect_backend
 from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
@@ -1128,8 +1129,8 @@ def view_method():
         def wrapper(request, *args, **kwargs):
             token = get_token_from_cookie(request)
             if token is None:
-                return HttpResponseRedirect('%s?next=%s' % (LOGIN_URL,
-                                                            request.path))
+                return HttpResponseRedirect('%s?next=%s' % (
+                    LOGIN_URL, join_urls(BASE_HOST, request.path)))
             request.META['HTTP_X_AUTH_TOKEN'] = token
             # Get the response object
             response = func(request, *args, **kwargs)

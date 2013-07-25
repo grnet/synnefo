@@ -412,20 +412,31 @@ class Node(DBWorker):
              "and n.node = p.node and p.key = 'quota'")
         return dict(self.execute(q).fetchall())
 
-    def node_account_usage(self, account_node, cluster):
-        select_children = ("select node from nodes where parent = ?")
-        select_descedents = ("select node from nodes "
-                             "where parent in (%s) "
-                             "or node in (%s) ") % ((select_children,) * 2)
-        args = [account_node] * 2
-        q = ("select sum(v.size) from versions v, nodes n "
-             "where v.node = n.node "
-             "and n.node in (%s) "
-             "and v.cluster = ?") % select_descedents
-        args += [cluster]
+    def node_account_usage(self, account=None, cluster=0):
+        """Return usage for a specific account.
 
+        Keyword arguments:
+        account -- (default None: list usage for all the accounts)
+        cluster -- list current, history or deleted usage (default 0: normal)
+        """
+
+        q = ("select n3.path, sum(v.size) from "
+             "versions v, nodes n1, nodes n2, nodes n3 "
+             "where v.node = n1.node "
+             "and v.cluster = ? "
+             "and n1.parent = n2.node "
+             "and n2.parent = n3.node "
+             "and n3.parent = 0 "
+             "and n3.node != 0 ")
+        args = [cluster]
+        if account:
+            q += ("and n3.path = ? ")
+            args += [account]
+        q += ("group by n3.path")
+
+        print '###', q, args
         self.execute(q, args)
-        return self.fetchone()[0]
+        return dict(self.fetchall())
 
     def policy_get(self, node):
         q = "select key, value from policy where node = ?"

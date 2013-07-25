@@ -230,3 +230,8 @@ class TestProjects(TestCase):
         newlimit = user_quotas[self.member.uuid]['system'][resource]['limit']
         # 200 - 100 from project
         self.assertEqual(newlimit, 100)
+
+        # support email gets rendered in emails content
+        for mail in get_mailbox('user@synnefo.org'):
+            self.assertTrue(settings.CONTACT_EMAIL in
+                            mail.message().as_string())

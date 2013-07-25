@@ -57,14 +57,23 @@ if os.path.exists(SYNNEFO_SETTINGS_DIR):
         conffiles = [f for f in entries if os.path.isfile(f) and
                      f.endswith(".conf")]
     except Exception as e:
-        print >>sys.stderr, "Failed to list *.conf files under %s" % \
-                            SYNNEFO_SETTINGS_DIR
+        print >> sys.stderr, "Failed to list *.conf files under %s" % \
+                             SYNNEFO_SETTINGS_DIR
         raise SystemExit(1)
     conffiles.sort()
     for f in conffiles:
         try:
             execfile(os.path.abspath(f))
         except Exception as e:
-            print >>sys.stderr, "Failed to read settings file: %s [%r]" % \
-                                (os.path.abspath(f), e)
+            print >> sys.stderr, "Failed to read settings file: %s [%r]" % \
+                                 (os.path.abspath(f), e)
             raise SystemExit(1)
+
+
+from os import environ
+# The tracing code is enabled by an environmental variable and not a synnefo
+# setting, on purpose, so that you can easily control whether it'll get loaded
+# or not, based on context (eg enable it for gunicorn but not for eventd).
+if environ.get('SYNNEFO_TRACE'):
+    from synnefo.lib import trace
+    trace.set_signal_trap()

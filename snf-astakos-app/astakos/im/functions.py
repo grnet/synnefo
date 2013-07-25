@@ -371,7 +371,7 @@ def checkAllowed(entity, request_user, admin_only=False):
 
 def checkAlive(project):
     if not project.is_alive:
-        m = _(astakos_messages.NOT_ALIVE_PROJECT) % project.__dict__
+        m = _(astakos_messages.NOT_ALIVE_PROJECT) % project.id
         raise PermissionDenied(m)
 
 
@@ -805,7 +805,7 @@ def resume(project_id, request_user=None):
     checkAllowed(project, request_user, admin_only=True)
 
     if not project.is_suspended:
-        m = _(astakos_messages.NOT_SUSPENDED_PROJECT) % project.__dict__
+        m = _(astakos_messages.NOT_SUSPENDED_PROJECT) % project.id
         raise PermissionDenied(m)
 
     project.resume()

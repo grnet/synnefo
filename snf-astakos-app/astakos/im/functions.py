@@ -52,7 +52,8 @@ from astakos.im.project_notif import membership_change_notify, \
     membership_enroll_notify, membership_request_notify, \
     membership_leave_request_notify, application_submit_notify, \
     application_approve_notify, application_deny_notify, \
-    project_termination_notify, project_suspension_notify
+    project_termination_notify, project_suspension_notify, \
+    project_unsuspension_notify, project_reinstatement_notify
 from astakos.im import settings
 
 import astakos.im.messages as astakos_messages
@@ -893,7 +894,7 @@ def suspend(project_id, request_user=None, reason=None):
     project_suspension_notify(project)
 
 
-def resume(project_id, request_user=None, reason=None):
+def unsuspend(project_id, request_user=None, reason=None):
     project = get_project_for_update(project_id)
     project_check_allowed(project, request_user, level=ADMIN_LEVEL)
 
@@ -904,6 +905,23 @@ def resume(project_id, request_user=None, reason=None):
     project.resume(actor=request_user, reason=reason)
     qh_sync_project(project)
     logger.info("%s has been unsuspended." % (project))
+    project_unsuspension_notify(project)
+
+
+def reinstate(project_id, request_user=None, reason=None):
+    get_project_lock()
+    project = get_project_for_update(project_id)
+    project_check_allowed(project, request_user, level=ADMIN_LEVEL)
+
+    if not project.is_terminated:
+        m = _(astakos_messages.NOT_TERMINATED_PROJECT) % project.id
+        raise ProjectConflict(m)
+
+    check_conflicting_projects(project.application)
+    project.resume(actor=request_user, reason=reason)
+    qh_sync_project(project)
+    logger.info("%s has been reinstated" % (project))
+    project_reinstatement_notify(project)
 
 
 def _partition_by(f, l):

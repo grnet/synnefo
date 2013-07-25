@@ -226,6 +226,7 @@ UNIQUE_PROJECT_NAME_CONSTRAIN_ERR = (
     'be unique among all active projects.')
 NOT_ALIVE_PROJECT = 'Project %s is not alive.'
 NOT_SUSPENDED_PROJECT = 'Project %s is not suspended.'
+NOT_TERMINATED_PROJECT = 'Project %s is not terminated.'
 NOT_ALLOWED = 'You do not have the permissions to perform this action.'
 MEMBER_NUMBER_LIMIT_REACHED = (
     'You have reached the maximum number of members for this Project.')
@@ -359,6 +360,10 @@ PROJECT_TERMINATION_SUBJECT = \
     '%s project terminated (%%(name)s)' % _SITENAME
 PROJECT_SUSPENSION_SUBJECT = \
     '%s project suspended (%%(name)s)' % _SITENAME
+PROJECT_UNSUSPENSION_SUBJECT = \
+    '%s project resumed (%%(name)s)' % _SITENAME
+PROJECT_REINSTATEMENT_SUBJECT = \
+    '%s project reinstated (%%(name)s)' % _SITENAME
 PROJECT_MEMBERSHIP_CHANGE_SUBJECT = \
     '%s project membership changed (%%(name)s)' % _SITENAME
 PROJECT_MEMBERSHIP_ENROLL_SUBJECT = \

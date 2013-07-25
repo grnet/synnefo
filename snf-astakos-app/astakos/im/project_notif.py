@@ -137,3 +137,29 @@ def project_suspension_notify(project):
         ).send()
     except NotificationError, e:
         logger.error(e.message)
+
+
+def project_unsuspension_notify(project):
+    try:
+        build_notification(
+            SENDER,
+            [project.application.owner.email],
+            _(messages.PROJECT_UNSUSPENSION_SUBJECT) % project.__dict__,
+            template='im/projects/project_unsuspension_notification.txt',
+            dictionary={'object': project}
+        ).send()
+    except NotificationError, e:
+        logger.error(e.message)
+
+
+def project_reinstatement_notify(project):
+    try:
+        build_notification(
+            SENDER,
+            [project.application.owner.email],
+            _(messages.PROJECT_REINSTATEMENT_SUBJECT) % project.__dict__,
+            template='im/projects/project_reinstatement_notification.txt',
+            dictionary={'object': project}
+        ).send()
+    except NotificationError, e:
+        logger.error(e.message)

@@ -1160,6 +1160,95 @@ class ObjectPost(PithosAPITest):
                                    source_data[:upto - offset + 1] +
                                    initial_data[upto + 1:]))
 
+    def test_update_range_from_invalid_other_object(self):
+        src = self.object
+        dest = get_random_name()
+
+        url = join_urls(self.pithos_path, self.user, self.container, src)
+        r = self.get(url)
+
+        # update zero length object
+        url = join_urls(self.pithos_path, self.user, self.container, dest)
+        initial_data = get_random_data()
+        length = len(initial_data)
+        r = self.put(url, data=initial_data)
+        self.assertEqual(r.status_code, 201)
+
+        offset = random.randint(1, length - 2)
+        upto = random.randint(offset, length - 1)
+
+        # source object does not start with /
+        r = self.post(url,
+                      HTTP_CONTENT_RANGE='bytes %s-%s/*' % (offset, upto),
+                      HTTP_X_SOURCE_OBJECT='%s/%s' % (self.container, src))
+        self.assertEqual(r.status_code, 400)
+
+        # source object does not exist
+        r = self.post(url,
+                      HTTP_CONTENT_RANGE='bytes %s-%s/*' % (offset, upto),
+                      HTTP_X_SOURCE_OBJECT='/%s/%s1' % (self.container, src))
+        self.assertEqual(r.status_code, 404)
+
+    def test_update_from_other_version(self):
+        versions = []
+        info = self.get_object_info(self.container, self.object)
+        versions.append(info['X-Object-Version'])
+        pre_length = int(info['Content-Length'])
+
+        # update object
+        d1, r = self.upload_object(self.container, self.object,
+                                   length=pre_length - 1)[1:]
+        self.assertTrue('X-Object-Version' in r)
+        versions.append(r['X-Object-Version'])
+
+        # update object
+        d2, r = self.upload_object(self.container, self.object,
+                                   length=pre_length - 2)[1:]
+        self.assertTrue('X-Object-Version' in r)
+        versions.append(r['X-Object-Version'])
+
+        # get previous version
+        url = join_urls(self.pithos_path, self.user, self.container,
+                        self.object)
+        r = self.get('%s?version=list&format=json' % url)
+        self.assertEqual(r.status_code, 200)
+        l = json.loads(r.content)['versions']
+        self.assertEqual(len(l), 3)
+        self.assertEqual([str(v[0]) for v in l], versions)
+
+        # update with the previous version
+        r = self.post(url,
+                      HTTP_CONTENT_RANGE='bytes 0-/*',
+                      HTTP_X_SOURCE_OBJECT='/%s/%s' % (self.container,
+                                                       self.object),
+                      HTTP_X_SOURCE_VERSION=versions[0])
+        self.assertEqual(r.status_code, 204)
+
+        # check content
+        r = self.get(url)
+        content = r.content
+        self.assertEqual(len(content), pre_length)
+        self.assertEqual(content, self.object_data)
+
+        # update object
+        d3, r = self.upload_object(self.container, self.object,
+                                   length=len(d2) + 1)[1:]
+        self.assertTrue('X-Object-Version' in r)
+        versions.append(r['X-Object-Version'])
+
+        # update with the previous version
+        r = self.post(url,
+                      HTTP_CONTENT_RANGE='bytes 0-/*',
+                      HTTP_X_SOURCE_OBJECT='/%s/%s' % (self.container,
+                                                       self.object),
+                      HTTP_X_SOURCE_VERSION=versions[-2])
+        self.assertEqual(r.status_code, 204)
+
+        # check content
+        r = self.get(url)
+        content = r.content
+        self.assertEqual(content, d2 + d3[-1])
+
 
 class ObjectDelete(PithosAPITest):
     def setUp(self):

@@ -127,11 +127,11 @@ class Command(BaseCommand):
             help="Use the network as a Floating IP pool. Floating IP pools"
                  " are created in all available backends."),
         make_option(
-            '--backend-id',
-            dest='backend_id',
+            "--backend-ids",
+            dest="backend_ids",
             default=None,
-            help='ID of the backend that the network will be created. Only for'
-                 ' public networks'),
+            help="Comma seperated list of Ganeti backends IDs that the network"
+                 " will be created. Only for public networks."),
     )
 
     @convert_api_faults
@@ -144,7 +144,7 @@ class Command(BaseCommand):
         gateway = options['gateway']
         subnet6 = options['subnet6']
         gateway6 = options['gateway6']
-        backend_id = options['backend_id']
+        backend_ids = options['backend_ids']
         public = options['public']
         flavor = options['flavor']
         mode = options['mode']
@@ -167,19 +167,20 @@ class Command(BaseCommand):
         if subnet6 is None and gateway6 is not None:
             raise CommandError("Can not use gateway6 without subnet6")
 
-        if public and not (backend_id or floating_ip_pool):
-            raise CommandError("backend-id is required")
+        if public and not (backend_ids or floating_ip_pool):
+            raise CommandError("backend-ids is required")
         if not userid and not public:
             raise CommandError("'owner' is required for private networks")
 
-        if backend_id is not None:
-            try:
-                backend_id = int(backend_id)
-            except ValueError:
-                raise CommandError("Invalid backend-id: %s" % backend_id)
-            backend = get_backend(backend_id)
-        else:
-            backend = None
+        backends = []
+        if backend_ids is not None:
+            for backend_id in backend_ids.split(","):
+                try:
+                    backend_id = int(backend_id)
+                except ValueError:
+                    raise CommandError("Invalid backend-id: %s" % backend_id)
+                backend = get_backend(backend_id)
+                backends.append(backend)
 
         network = networks.create(user_id=userid, name=name, flavor=flavor,
                                   subnet=subnet, gateway=gateway,
@@ -187,6 +188,6 @@ class Command(BaseCommand):
                                   dhcp=dhcp, public=public, mode=mode,
                                   link=link, mac_prefix=mac_prefix, tags=tags,
                                   floating_ip_pool=floating_ip_pool,
-                                  backend=backend, lazy_create=False)
+                                  backends=backends, lazy_create=False)
 
         self.stdout.write("Created network '%s' in DB.\n" % network)

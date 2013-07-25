@@ -64,7 +64,7 @@ def network_command(action):
 @transaction.commit_on_success
 def create(user_id, name, flavor, subnet=None, gateway=None, subnet6=None,
            gateway6=None, public=False, dhcp=True, link=None, mac_prefix=None,
-           mode=None, floating_ip_pool=False, tags=None, backend=None,
+           mode=None, floating_ip_pool=False, tags=None, backends=None,
            lazy_create=True):
     if flavor is None:
         raise faults.BadRequest("Missing request parameter 'type'")
@@ -129,9 +129,7 @@ def create(user_id, name, flavor, subnet=None, gateway=None, subnet6=None,
     if not lazy_create:
         if floating_ip_pool:
             backends = Backend.objects.filter(offline=False)
-        elif backend is not None:
-            backends = [backend]
-        else:
+        elif backends is None:
             backends = []
 
         for bend in backends:

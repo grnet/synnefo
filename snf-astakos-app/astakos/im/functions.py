@@ -583,13 +583,17 @@ def join_project_checks(project):
         raise ProjectConflict(m)
 
 
-def can_join_request(project, user):
+Nothing = type('Nothing', (), {})
+
+
+def can_join_request(project, user, membership=Nothing):
     try:
         join_project_checks(project)
     except ProjectError:
         return False
 
-    m = user.get_membership(project)
+    m = (membership if membership is not Nothing
+         else user.get_membership(project))
     if not m:
         return True
     return m.check_action("join")

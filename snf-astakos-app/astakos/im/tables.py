@@ -182,7 +182,7 @@ def action_extra_context(project, table, self):
     user = table.user
     url, action, confirm, prompt = '', '', True, ''
 
-    membership = user.get_membership(project)
+    membership = table.memberships.get(project.id)
     if membership is not None:
         allowed = membership_allowed_actions(membership, user)
         if 'leave' in allowed:
@@ -198,7 +198,7 @@ def action_extra_context(project, table, self):
             confirm = True
             prompt = _('Are you sure you want to cancel the join request?')
 
-    if can_join_request(project, user):
+    if can_join_request(project, user, membership):
         url = reverse('astakos.im.views.project_join', args=(project.id,))
         action = _('Join')
         confirm = True
@@ -225,7 +225,9 @@ class UserTable(tables.Table):
 
 
 def project_name_append(project, column):
-    if project.has_pending_modifications():
+    pending_apps = column.table.pending_apps
+    app = pending_apps.get(project.id)
+    if app and app.id != project.application_id:
         return mark_safe("<br /><i class='tiny'>%s</i>" %
                          _('modifications pending'))
     return u''
@@ -233,6 +235,14 @@ def project_name_append(project, column):
 
 # Table classes
 class UserProjectsTable(UserTable):
+
+    def __init__(self, *args, **kwargs):
+        self.pending_apps = kwargs.pop('pending_apps')
+        self.memberships = kwargs.pop('memberships')
+        self.accepted = kwargs.pop('accepted')
+        self.requested = kwargs.pop('requested')
+        super(UserProjectsTable, self).__init__(*args, **kwargs)
+
     caption = _('My projects')
 
     name = LinkColumn('astakos.im.views.project_detail',
@@ -249,8 +259,9 @@ class UserProjectsTable(UserTable):
     end_date = tables.DateColumn(verbose_name=_('Expiration'),
                                  format=DEFAULT_DATE_FORMAT,
                                  accessor='application.end_date')
-    members_count = tables.Column(verbose_name=_("Members"), default=0,
-                                  orderable=False)
+    members_count_f = tables.Column(verbose_name=_("Members"),
+                                    empty_values=(),
+                                    orderable=False)
     membership_status = tables.Column(verbose_name=_("Status"),
                                       empty_values=(),
                                       orderable=False)
@@ -262,15 +273,18 @@ class UserProjectsTable(UserTable):
         if self.user.owns_project(record) or self.user.is_project_admin():
             return record.state_display()
         else:
-            return self.user.membership_display(record)
+            m = self.memberships.get(record.id)
+            if m:
+                return m.user_friendly_state_display()
+            return _('Not a member')
 
-    def render_members_count(self, record, *args, **kwargs):
+    def render_members_count_f(self, record, *args, **kwargs):
         append = ""
         project = record
         if project is None:
             append = mark_safe("<i class='tiny'>%s</i>" % (_('pending'),))
 
-        c = project.count_pending_memberships()
+        c = len(self.requested.get(project.id, []))
         if c > 0:
             pending_members_url = reverse(
                 'project_pending_members',
@@ -288,7 +302,7 @@ class UserProjectsTable(UserTable):
             append = mark_safe(pending_members)
         members_url = reverse('project_approved_members',
                               kwargs={'chain_id': record.id})
-        members_count = record.members_count()
+        members_count = len(self.accepted.get(project.id, []))
         if self.user.owns_project(record) or self.user.is_project_admin():
             members_count = '<a href="%s">%d</a>' % (members_url,
                                                      members_count)
@@ -296,7 +310,7 @@ class UserProjectsTable(UserTable):
 
     class Meta:
         sequence = ('name', 'membership_status', 'issue_date', 'end_date',
-                    'members_count', 'project_action')
+                    'members_count_f', 'project_action')
         attrs = {'id': 'projects-list', 'class': 'my-projects alt-style'}
         template = "im/table_render.html"
         empty_text = _('No projects')

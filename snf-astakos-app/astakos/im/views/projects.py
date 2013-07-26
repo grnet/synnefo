@@ -138,14 +138,27 @@ def create_app_object(request, extra_context=None):
         messages.error(request, e)
 
 
+def get_user_projects_table(projects, user, prefix):
+    apps = ProjectApplication.objects.pending_per_project(projects)
+    memberships = user.projectmembership_set.one_per_project()
+    objs = ProjectMembership.objects
+    accepted_ms = objs.any_accepted_per_project(projects)
+    requested_ms = objs.requested_per_project(projects)
+    return tables.UserProjectsTable(projects, user=user,
+                                    prefix=prefix,
+                                    pending_apps=apps,
+                                    memberships=memberships,
+                                    accepted=accepted_ms,
+                                    requested=requested_ms)
+
+
 @require_http_methods(["GET"])
 @cookie_fix
 @valid_astakos_user_required
 def project_list(request):
-    projects = Project.objects.user_accessible_projects(
-        request.user).select_related()
-    table = tables.UserProjectsTable(projects, user=request.user,
-                                     prefix="my_projects_")
+    projects = Project.objects.user_accessible_projects(request.user)
+    table = get_user_projects_table(projects, user=request.user,
+                                    prefix="my_projects_")
     RequestConfig(request,
                   paginate={"per_page": settings.PAGINATE_BY}).configure(table)
 
@@ -424,10 +437,11 @@ def project_search(request):
 
         projects = Project.objects.search_by_name(q)
         projects = projects.filter(Project.o_state_q(Project.O_ACTIVE))
-        projects = projects.exclude(id__in=accepted)
+        projects = projects.exclude(id__in=accepted).select_related(
+            'application', 'application__owner', 'application__applicant')
 
-    table = tables.UserProjectsTable(projects, user=request.user,
-                                     prefix="my_projects_")
+    table = get_user_projects_table(projects, user=request.user,
+                                    prefix="my_projects_")
     if request.method == "POST":
         table.caption = _('SEARCH RESULTS')
     else:

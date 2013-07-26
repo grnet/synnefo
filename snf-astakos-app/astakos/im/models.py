@@ -1283,7 +1283,18 @@ def new_chain():
 
 
 class ProjectApplicationManager(ForUpdateManager):
-    pass
+
+    def pending_per_project(self, projects):
+        apps = self.filter(state=self.model.PENDING,
+                           chain__in=projects).order_by('chain', '-id')
+        checked_chain = None
+        projs = {}
+        for app in apps:
+            chain = app.chain_id
+            if chain != checked_chain:
+                checked_chain = chain
+                projs[chain] = app
+        return projs
 
 
 class ProjectApplication(models.Model):
@@ -1666,10 +1677,6 @@ class Project(models.Model):
             return None
         return last_pending
 
-    def has_pending_modifications(self):
-        last_pending = self.last_pending_modification()
-        return last_pending is not None
-
     def state_display(self):
         return self.O_STATE_DISPLAY.get(self.overall_state(), _('Unknown'))
 
@@ -1805,6 +1812,24 @@ class ProjectMembershipManager(ForUpdateManager):
 
     def associated(self):
         return self.filter(state__in=ProjectMembership.ASSOCIATED_STATES)
+
+    def any_accepted_per_project(self, projects):
+        ms = self.any_accepted().filter(project__in=projects)
+        return _partition_by(lambda m: m.project_id, ms)
+
+    def requested_per_project(self, projects):
+        ms = self.requested().filter(project__in=projects)
+        return _partition_by(lambda m: m.project_id, ms)
+
+    def one_per_project(self):
+        ms = self.all().select_related(
+            'project', 'project__application',
+            'project__application__owner', 'project_application__applicant',
+            'person')
+        m_per_p = {}
+        for m in ms:
+            m_per_p[m.project_id] = m
+        return m_per_p
 
 
 class ProjectMembership(models.Model):

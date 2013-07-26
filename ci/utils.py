@@ -208,7 +208,10 @@ class SynnefoCI(object):
         accept_ssh_from = self.config.get('Global', 'filter_access_network')
         self.logger.debug("Block ssh except from %s" % accept_ssh_from)
         cmd = """
+        local_ip=/sbin/ifconfig eth0 | grep 'inet addr:' | \
+            cut -d':' -f2 | cut -d' ' -f1
         iptables -A INPUT -s localhost -j ACCEPT
+        iptables -A INPUT -s $local_ip -j ACCEPT
         iptables -A INPUT -s {0} -p tcp --dport 22 -j ACCEPT
         iptables -A INPUT -p tcp --dport 22 -j DROP
         """.format(accept_ssh_from)
@@ -430,14 +433,14 @@ class SynnefoCI(object):
         """
         _run(cmd, False)
 
-        self.logger.debug("Upload local_unit_tests.sh file")
-        unit_tests_file = os.path.join(self.ci_dir, "local_unit_tests.sh")
+        self.logger.debug("Upload tests.sh file")
+        unit_tests_file = os.path.join(self.ci_dir, "tests.sh")
         with fabric.quiet():
             fabric.put(unit_tests_file, ".")
 
         self.logger.debug("Run unit tests")
         cmd = """
-        bash local_unit_tests.sh {0}
+        bash tests.sh {0}
         """.format(component)
         _run(cmd, True)
 

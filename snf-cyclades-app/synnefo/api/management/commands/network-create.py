@@ -37,7 +37,7 @@ from django.core.management.base import BaseCommand, CommandError
 from synnefo.management.common import get_backend, convert_api_faults
 from synnefo.webproject.management.utils import parse_bool
 
-from synnefo.db.models import Network
+from synnefo.db.models import Network, Backend
 from synnefo.logic import networks
 
 NETWORK_FLAVORS = Network.FLAVORS.keys()
@@ -131,7 +131,8 @@ class Command(BaseCommand):
             dest="backend_ids",
             default=None,
             help="Comma seperated list of Ganeti backends IDs that the network"
-                 " will be created. Only for public networks."),
+                 " will be created. Only for public networks. Use 'all' to"
+                 " create network in all available backends."),
     )
 
     @convert_api_faults
@@ -174,13 +175,17 @@ class Command(BaseCommand):
 
         backends = []
         if backend_ids is not None:
-            for backend_id in backend_ids.split(","):
-                try:
-                    backend_id = int(backend_id)
-                except ValueError:
-                    raise CommandError("Invalid backend-id: %s" % backend_id)
-                backend = get_backend(backend_id)
-                backends.append(backend)
+            if backend_ids == "all":
+                backends = Backend.objects.filter(offline=False)
+            else:
+                for backend_id in backend_ids.split(","):
+                    try:
+                        backend_id = int(backend_id)
+                    except ValueError:
+                        raise CommandError("Invalid backend-id: %s"
+                                           % backend_id)
+                    backend = get_backend(backend_id)
+                    backends.append(backend)
 
         network = networks.create(user_id=userid, name=name, flavor=flavor,
                                   subnet=subnet, gateway=gateway,

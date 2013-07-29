@@ -203,6 +203,7 @@ class SynnefoCI(object):
 
         server = self._wait_transition(server_id, "BUILD", "ACTIVE")
         self._get_server_ip_and_port(server)
+        self._copy_ssh_keys()
 
         self.setup_fabric()
         self.logger.info("Setup firewall")
@@ -251,6 +252,20 @@ class SynnefoCI(object):
         self.logger.debug("Server's IPv4 is %s" % _green(server_ip))
         self.write_config('server_port', server_port)
         self.logger.debug("Server's ssh port is %s" % _green(server_port))
+
+    @_check_fabric
+    def _copy_ssh_keys(self):
+        authorized_keys = self.config.get("Deployment",
+                                          "ssh_keys")
+        if os.path.exists(authorized_keys):
+            keyfile = '/tmp/%s.pub' % fabric.env.user
+            _run('mkdir -p ~/.ssh && chmod 700 ~/.ssh', False)
+            fabric.put(authorized_keys, keyfile)
+            _run('cat %s >> ~/.ssh/authorized_keys' % keyfile, False)
+            _run('rm %s' % keyfile, False)
+            self.logger.debug("Uploaded ssh authorized keys")
+        else:
+            self.logger.debug("No ssh keys found")
 
     def write_config(self, option, value, section="Temporary Options"):
         """Write changes back to config file"""

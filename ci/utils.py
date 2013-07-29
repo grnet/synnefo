@@ -101,7 +101,10 @@ class SynnefoCI(object):
         self.repo_dir = os.path.dirname(self.ci_dir)
 
         # Read config file
-        self.conffile = os.path.join(self.ci_dir, "new_config")
+        default_conffile = os.path.join(self.ci_dir, "new_config")
+        self.conffile = os.environ.get("SYNNEFO_CI_CONFIG_FILE",
+                                       default_conffile)
+
         self.config = ConfigParser()
         self.config.optionxform = str
         self.config.read(self.conffile)
@@ -197,8 +200,6 @@ class SynnefoCI(object):
         self.logger.debug("Server's admin user is %s" % _green(server_user))
         server_passwd = server['adminPass']
         self.write_config('server_passwd', server_passwd)
-        self.logger.debug(
-            "Server's admin password is %s" % _green(server_passwd))
 
         server = self._wait_transition(server_id, "BUILD", "ACTIVE")
         self._get_server_ip_and_port(server)
@@ -239,7 +240,7 @@ class SynnefoCI(object):
         self.logger.info("Get server connection details..")
         # XXX: check if this IP is from public network
         server_ip = server['attachments'][0]['ipv4']
-        if eval(self.config.get('Deployment', 'deploy_on_io')):
+        if self.config.get('Deployment', 'deploy_on_io') == "True":
             tmp1 = int(server_ip.split(".")[2])
             tmp2 = int(server_ip.split(".")[3])
             server_ip = "gate.okeanos.io"
@@ -268,9 +269,10 @@ class SynnefoCI(object):
         fabric.env.user = self.config.get('Temporary Options', 'server_user')
         fabric.env.host_string = \
             self.config.get('Temporary Options', 'server_ip')
-        fabric.env.port = self.config.getint('Temporary Options', 'server_port')
-        fabric.env.password = \
-            self.config.get('Temporary Options', 'server_passwd')
+        fabric.env.port = self.config.getint('Temporary Options',
+                                             'server_port')
+        fabric.env.password = self.config.get('Temporary Options',
+                                              'server_passwd')
         fabric.env.connection_attempts = 10
         fabric.env.shell = "/bin/bash -c"
         fabric.env.disable_known_hosts = True
@@ -309,38 +311,27 @@ class SynnefoCI(object):
         _run(cmd, False)
 
         synnefo_repo = self.config.get('Global', 'synnefo_repo')
+        synnefo_branch = self.config.get('Global', 'synnefo_branch')
         # Currently clonning synnefo can fail unexpectedly
+        cloned = False
         for i in range(3):
             self.logger.debug("Clone synnefo from %s" % synnefo_repo)
+            cmd = ("git clone --branch %s %s"
+                   % (synnefo_branch, synnefo_repo))
             try:
-                _run("git clone %s" % synnefo_repo, False)
+                _run(cmd, False)
+                cloned = True
                 break
             except:
-                self.logger.warning("Clonning synnefo failed.. retrying %s" % i)
-
-        synnefo_branch = self.config.get('Global', 'synnefo_branch')
-        if synnefo_branch == "HEAD":
-            # Get current branch
-            synnefo_branch = os.popen("git rev-parse HEAD").read().strip()
-            self.logger.debug(
-                "Checkout %s in feature-ci branch" % synnefo_branch)
-            with fabric.cd("synnefo"):
-                _run("git checkout -b feature-ci %s" % synnefo_branch, False)
-        elif synnefo_branch == "origin/master":
-            pass
-        elif "origin" in synnefo_branch:
-            self.logger.debug("Checkout %s branch" % synnefo_branch)
-            with fabric.cd("synnefo"):
-                _run("git checkout -t %s" % synnefo_branch, False)
-        else:
-            self.logger.debug(
-                "Checkout %s in feature-ci branch" % synnefo_branch)
-            with fabric.cd("synnefo"):
-                _run("git checkout -b feature-ci %s" % synnefo_branch, False)
+                self.logger.warning("Clonning synnefo failed.. retrying %s"
+                                    % i)
+        if not cloned:
+            self.logger.error("Can not clone Synnefo repo.")
+            sys.exit(-1)
 
         deploy_repo = self.config.get('Global', 'deploy_repo')
         self.logger.debug("Clone snf-deploy from %s" % deploy_repo)
-        _run("git clone %s" % deploy_repo, False)
+        _run("git clone --depth 1 %s" % deploy_repo, False)
 
     @_check_fabric
     def build_synnefo(self):
@@ -355,7 +346,7 @@ class SynnefoCI(object):
         """
         _run(cmd, False)
 
-        if eval(self.config.get('Global', 'patch_pydist')):
+        if self.config.get('Global', 'patch_pydist') == "True":
             self.logger.debug("Patch pydist.py module")
             cmd = r"""
             sed -r -i 's/(\(\?P<name>\[A-Za-z\]\[A-Za-z0-9_\.)/\1\\\-/' \

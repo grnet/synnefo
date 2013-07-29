@@ -6,7 +6,8 @@ Unified Changelog file for Synnefo versions >= 0.13
 Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
-.. _Changelog-0.14next:
+.. _Changelog-0.14.4:
+
 
 v0.14next
 =========
@@ -48,6 +49,17 @@ Pithos
 objects by domain attribute. This is used by Plankton for listing VM images.
 
 * Enforce container-level atomicity in (most) Pithos API calls.
+
+
+v0.14.4
+=======
+
+Released: Mon Jul 29 12:24:22 EEST 2013
+
+Pithos
+------
+
+* Fix bug in reconcile resources management command.
 
 
 .. _Changelog-0.14.3:

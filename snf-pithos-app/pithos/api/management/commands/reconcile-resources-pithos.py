@@ -78,8 +78,10 @@ class Command(NoArgsCommand):
 
             users = set(db_usage.keys())
             if userid and userid not in users:
-                self.stdout.write("User '%s' does not exist in DB!\n" % userid)
-                return
+                if backend._lookup_account(userid) is None:
+                    self.stdout.write("User '%s' does not exist in DB!\n" %
+                                      userid)
+                    return
 
             # Get holding from Quotaholder
             try:
@@ -167,4 +169,4 @@ def create_provision(provision_info):
     return {"holder": user,
             "source": DEFAULT_SOURCE,
             "resource": resource,
-            "quantity": db_value - qh_value}
+            "quantity": int(db_value - qh_value)}

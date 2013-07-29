@@ -62,7 +62,7 @@ INSTALL_REQUIRES = [
     'pycurl>=7.19.0',
     'python-dateutil>=1.4.1',
     'IPy>=0.70',
-    'South>=0.7, <=0.7.3',
+    'South>=0.7.3',
     'pycrypto>=2.1.0',
     'puka',
     'python-daemon>=1.5.5, <1.6',

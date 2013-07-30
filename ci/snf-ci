@@ -1,0 +1,93 @@
+#!/usr/bin/env python
+
+"""
+"""
+from utils import SynnefoCI
+from optparse import OptionParser
+
+CREATE_SERVER_CMD = "create"
+BUILD_SYNNEFO_CMD = "build"
+DEPLOY_SYNNEFO_CMD = "deploy"
+TEST_SYNNEFO_CMD = "test"
+RUN_BURNIN_CMD = "burnin"
+ALL_CMDS = "all"
+
+AVAILABLE_COMMANDS = [
+    CREATE_SERVER_CMD,
+    BUILD_SYNNEFO_CMD,
+    DEPLOY_SYNNEFO_CMD,
+    TEST_SYNNEFO_CMD,
+    RUN_BURNIN_CMD,
+]
+
+CLEAN_CONFIG_CMDS = [CREATE_SERVER_CMD, ALL_CMDS]
+
+USAGE = """usage: %%prog [options] command
+
+command:
+    * %s Create the slave server
+    * %s: Create in Synnefo packages in created server
+    * %s: Deploy Synnefo in created server
+    * %s: Run Synnefo unittests
+    * %s: Run snf-burnin in the deployed Synnefo
+
+    * %s: Run all the available commands
+""" % tuple([CREATE_SERVER_CMD,
+             BUILD_SYNNEFO_CMD,
+             DEPLOY_SYNNEFO_CMD,
+             TEST_SYNNEFO_CMD,
+             RUN_BURNIN_CMD,
+             ALL_CMDS])
+
+
+def main():
+    parser = OptionParser(usage=USAGE)
+    parser.add_option("-c", "--cloud", dest="kamaki_cloud", default=None,
+                      help="Use specified cloud, as is in .kamakirc"),
+    parser.add_option("-f", "--flavor", dest="flavor", default=None,
+                      help="Name of flavor to use for the server.")
+    parser.add_option("-i", "--image", dest="image", default=None,
+                      help="UUID of image to use for the server.")
+
+    (options, args) = parser.parse_args()
+
+    if len(args) != 1:
+        msg = "ERROR: Command takes exactly one argument"
+        parser.print_help()
+        print
+        print msg
+        return
+
+    command = args[0]
+    if command == ALL_CMDS:
+        for cmd in AVAILABLE_COMMANDS:
+            setattr(options, cmd, True)
+    elif command not in AVAILABLE_COMMANDS:
+        msg = "ERROR: Unknown command: %s" % command
+        parser.print_help()
+        print
+        print msg
+        return
+    else:
+        setattr(options, command, True)
+
+    cleanup_config = command in CLEAN_CONFIG_CMDS
+    synnefo_ci = SynnefoCI(cleanup_config=cleanup_config,
+                           cloud=options.kamaki_cloud)
+
+    if getattr(options, CREATE_SERVER_CMD, False):
+        synnefo_ci.create_server(flavor_id=options.flavor,
+                                 image_id=options.image)
+        synnefo_ci.clone_repo()
+    if getattr(options, BUILD_SYNNEFO_CMD, False):
+        synnefo_ci.build_synnefo()
+    if getattr(options, DEPLOY_SYNNEFO_CMD, False):
+        synnefo_ci.deploy_synnefo()
+    if getattr(options, TEST_SYNNEFO_CMD, False):
+        synnefo_ci.unit_test()
+    if getattr(options, RUN_BURNIN_CMD, False):
+        synnefo_ci.run_burnin()
+
+
+if __name__ == "__main__":
+    main()

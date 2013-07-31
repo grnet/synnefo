@@ -26,7 +26,7 @@ USAGE = """usage: %%prog [options] command
 
 command:
     * %s Create the slave server
-    * %s: Create in Synnefo packages in created server
+    * %s: Create debian packages for Synnefo in the created server
     * %s: Deploy Synnefo in created server
     * %s: Run Synnefo unittests
     * %s: Run snf-burnin in the deployed Synnefo
@@ -50,6 +50,10 @@ def main():
                       help="Name of flavor to use for the server.")
     parser.add_option("-i", "--image", dest="image", default=None,
                       help="UUID of image to use for the server.")
+    parser.add_option("--fetch-packages", dest="fetch_packages",
+                      action="store_true", default=False,
+                      help="Download the debian packages that were created"
+                           " during the '%s' step." % BUILD_SYNNEFO_CMD)
 
     (options, args) = parser.parse_args()
 
@@ -84,6 +88,8 @@ def main():
         synnefo_ci.clone_repo()
     if getattr(options, BUILD_SYNNEFO_CMD, False):
         synnefo_ci.build_synnefo()
+    if options.fetch_packages:
+        synnefo_ci.fetch_packages()
     if getattr(options, DEPLOY_SYNNEFO_CMD, False):
         synnefo_ci.deploy_synnefo()
     if getattr(options, TEST_SYNNEFO_CMD, False):

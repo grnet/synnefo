@@ -229,16 +229,17 @@ class SynnefoCI(object):
         self.setup_fabric()
         self.logger.info("Setup firewall")
         accept_ssh_from = self.config.get('Global', 'filter_access_network')
-        self.logger.debug("Block ssh except from %s" % accept_ssh_from)
-        cmd = """
-        local_ip=$(/sbin/ifconfig eth0 | grep 'inet addr:' | \
-            cut -d':' -f2 | cut -d' ' -f1)
-        iptables -A INPUT -s localhost -j ACCEPT
-        iptables -A INPUT -s $local_ip -j ACCEPT
-        iptables -A INPUT -s {0} -p tcp --dport 22 -j ACCEPT
-        iptables -A INPUT -p tcp --dport 22 -j DROP
-        """.format(accept_ssh_from)
-        _run(cmd, False)
+        if accept_ssh_from != "":
+            self.logger.debug("Block ssh except from %s" % accept_ssh_from)
+            cmd = """
+            local_ip=$(/sbin/ifconfig eth0 | grep 'inet addr:' | \
+                cut -d':' -f2 | cut -d' ' -f1)
+            iptables -A INPUT -s localhost -j ACCEPT
+            iptables -A INPUT -s $local_ip -j ACCEPT
+            iptables -A INPUT -s {0} -p tcp --dport 22 -j ACCEPT
+            iptables -A INPUT -p tcp --dport 22 -j DROP
+            """.format(accept_ssh_from)
+            _run(cmd, False)
 
     def _find_image(self):
         """Find a suitable image to use
@@ -275,9 +276,11 @@ class SynnefoCI(object):
 
     @_check_fabric
     def _copy_ssh_keys(self):
+        if not self.config.has_option("Deployment", "ssh_keys"):
+            return
         authorized_keys = self.config.get("Deployment",
                                           "ssh_keys")
-        if os.path.exists(authorized_keys):
+        if authorized_keys != "" and os.path.exists(authorized_keys):
             keyfile = '/tmp/%s.pub' % fabric.env.user
             _run('mkdir -p ~/.ssh && chmod 700 ~/.ssh', False)
             fabric.put(authorized_keys, keyfile)

@@ -25,7 +25,7 @@ CLEAN_CONFIG_CMDS = [CREATE_SERVER_CMD, ALL_CMDS]
 USAGE = """usage: %%prog [options] command
 
 command:
-    * %s Create the slave server
+    * %s: Create the slave server
     * %s: Create debian packages for Synnefo in the created server
     * %s: Deploy Synnefo in created server
     * %s: Run Synnefo unittests
@@ -54,6 +54,8 @@ def main():
                       action="store_true", default=False,
                       help="Download the debian packages that were created"
                            " during the '%s' step." % BUILD_SYNNEFO_CMD)
+    parser.add_option("--schema", dest="schema", default=None,
+                      help="Schema for snf-deploy.")
 
     (options, args) = parser.parse_args()
 
@@ -91,7 +93,7 @@ def main():
     if options.fetch_packages:
         synnefo_ci.fetch_packages()
     if getattr(options, DEPLOY_SYNNEFO_CMD, False):
-        synnefo_ci.deploy_synnefo()
+        synnefo_ci.deploy_synnefo(schema=options.schema)
     if getattr(options, TEST_SYNNEFO_CMD, False):
         synnefo_ci.unit_test()
     if getattr(options, RUN_BURNIN_CMD, False):

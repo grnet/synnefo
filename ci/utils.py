@@ -429,16 +429,20 @@ class SynnefoCI(object):
         _run(cmd, False)
 
     @_check_fabric
-    def deploy_synnefo(self):
+    def deploy_synnefo(self, schema=None):
         """Deploy Synnefo using snf-deploy"""
         self.logger.info("Deploy Synnefo..")
-        schema = self.config.get('Global', 'schema')
-        schema_files = os.path.join(self.ci_dir, "schemas/%s/*" % schema)
+        if schema is None:
+            schema = self.config.get('Global', 'schema')
         self.logger.debug("Will use %s schema" % schema)
+
+        schema_dir = os.path.join(self.ci_dir, "schemas/%s" % schema)
+        if not (os.path.exists(schema_dir) and os.path.isdir(schema_dir)):
+            raise ValueError("Unknown schema: %s" % schema)
 
         self.logger.debug("Upload schema files to server")
         with fabric.quiet():
-            fabric.put(schema_files, "/etc/snf-deploy/")
+            fabric.put(os.path.join(schema_dir, "*"), "/etc/snf-deploy/")
 
         self.logger.debug("Change password in nodes.conf file")
         cmd = """

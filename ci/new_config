@@ -20,8 +20,9 @@ git_config_name = Buildbot
 git_config_mail = synnefo@builder.dev.grnet.gr
 # Url to fetch ssh public keys
 public_ssh_keys_url =
-# Network address from which we allow access to server
-filter_access_network = 195.251.29.0/24,62.217.123.39
+# Network address from which we allow access to server. If not set, access
+# to server is not restricted.
+filter_access_network =
 # Config file to save temporary options (eg IPs, passwords etc)
 temporary_config = /tmp/ci_temp_conf
 

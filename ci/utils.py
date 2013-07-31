@@ -260,9 +260,8 @@ class SynnefoCI(object):
     def _get_server_ip_and_port(self, server):
         """Compute server's IPv4 and ssh port number"""
         self.logger.info("Get server connection details..")
-        # XXX: check if this IP is from public network
         server_ip = server['attachments'][0]['ipv4']
-        if self.config.get('Deployment', 'deploy_on_io') == "True":
+        if ".okeanos.io" in self.cyclades_client.base_url:
             tmp1 = int(server_ip.split(".")[2])
             tmp2 = int(server_ip.split(".")[3])
             server_ip = "gate.okeanos.io"

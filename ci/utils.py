@@ -11,6 +11,7 @@ import logging
 import fabric.api as fabric
 from ConfigParser import ConfigParser, DuplicateSectionError
 
+from kamaki.cli import config as kamaki_config
 from kamaki.clients.astakos import AstakosClient
 from kamaki.clients.cyclades import CycladesClient
 from kamaki.clients.image import ImageClient
@@ -84,7 +85,7 @@ class _MyFormatter(logging.Formatter):
 class SynnefoCI(object):
     """SynnefoCI python class"""
 
-    def __init__(self, cleanup_config=False):
+    def __init__(self, cleanup_config=False, cloud=None):
         """ Initialize SynnefoCI python class
 
         Setup logger, local_dir, config and kamaki
@@ -117,6 +118,16 @@ class SynnefoCI(object):
         else:
             self.config.read(self.config.get('Global', 'temporary_config'))
 
+        # Set kamaki cloud
+        if cloud is not None:
+            self.kamaki_cloud = cloud
+        elif self.config.has_option("Deployment", "kamaki_cloud"):
+            kamaki_cloud = self.config.get("Deployment", "kamaki_cloud")
+            if kamaki_cloud == "":
+                self.kamaki_cloud = None
+        else:
+            self.kamaki_cloud = None
+
         # Initialize variables
         self.fabric_installed = False
         self.kamaki_installed = False
@@ -128,10 +139,16 @@ class SynnefoCI(object):
 
         Setup cyclades_client and image_client
         """
-        self.logger.info("Setup kamaki client..")
-        auth_url = self.config.get('Deployment', 'auth_url')
+
+        config = kamaki_config.Config()
+        if self.kamaki_cloud is None:
+            self.kamaki_cloud = config.get_global("default_cloud")
+
+        self.logger.info("Setup kamaki client, using cloud '%s'.." %
+                         self.kamaki_cloud)
+        auth_url = config.get_cloud(self.kamaki_cloud, "url")
         self.logger.debug("Authentication URL is %s" % _green(auth_url))
-        token = self.config.get('Deployment', 'token')
+        token = config.get_cloud(self.kamaki_cloud, "token")
         #self.logger.debug("Token is %s" % _green(token))
 
         astakos_client = AstakosClient(auth_url, token)

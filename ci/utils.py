@@ -16,6 +16,8 @@ from kamaki.clients.astakos import AstakosClient
 from kamaki.clients.cyclades import CycladesClient
 from kamaki.clients.image import ImageClient
 
+DEFAULT_CONFIG_FILE = "new_config"
+
 
 def _run(cmd, verbose):
     """Run fabric with verbose level"""
@@ -85,7 +87,7 @@ class _MyFormatter(logging.Formatter):
 class SynnefoCI(object):
     """SynnefoCI python class"""
 
-    def __init__(self, cleanup_config=False, cloud=None):
+    def __init__(self, config_file=None, cleanup_config=False, cloud=None):
         """ Initialize SynnefoCI python class
 
         Setup logger, local_dir, config and kamaki
@@ -102,13 +104,14 @@ class SynnefoCI(object):
         self.repo_dir = os.path.dirname(self.ci_dir)
 
         # Read config file
-        default_conffile = os.path.join(self.ci_dir, "new_config")
-        self.conffile = os.environ.get("SYNNEFO_CI_CONFIG_FILE",
-                                       default_conffile)
+        if config_file is None:
+            config_file = DEFAULT_CONFIG_FILE
+        if not os.path.isabs(config_file):
+            config_file = os.path.join(self.ci_dir, config_file)
 
         self.config = ConfigParser()
         self.config.optionxform = str
-        self.config.read(self.conffile)
+        self.config.read(config_file)
         temp_config = self.config.get('Global', 'temporary_config')
         if cleanup_config:
             try:

@@ -47,21 +47,21 @@ def _green(msg):
 
 def _check_fabric(fun):
     """Check if fabric env has been set"""
-    def wrapper(self, *args):
+    def wrapper(self, *args, **kwargs):
         """wrapper function"""
         if not self.fabric_installed:
             self.setup_fabric()
-        return fun(self, *args)
+        return fun(self, *args, **kwargs)
     return wrapper
 
 
 def _check_kamaki(fun):
     """Check if kamaki has been initialized"""
-    def wrapper(self, *args):
+    def wrapper(self, *args, **kwargs):
         """wrapper function"""
         if not self.kamaki_installed:
             self.setup_kamaki()
-        return fun(self, *args)
+        return fun(self, *args, **kwargs)
     return wrapper
 
 
@@ -199,16 +199,20 @@ class SynnefoCI(object):
             self._wait_transition(server_id, "ACTIVE", "DELETED")
 
     @_check_kamaki
-    def create_server(self):
+    def create_server(self, image_id=None, flavor_id=None):
         """Create slave server"""
         self.logger.info("Create a new server..")
-        image = self._find_image()
-        self.logger.debug("Will use image \"%s\"" % _green(image['name']))
-        self.logger.debug("Image has id %s" % _green(image['id']))
+        if image_id is None:
+            image = self._find_image()
+            self.logger.debug("Will use image \"%s\"" % _green(image['name']))
+            image_id = image["id"]
+        self.logger.debug("Image has id %s" % _green(image_id))
+        if flavor_id is None:
+            flavor_id = self.config.getint("Deployment", "flavor_id")
         server = self.cyclades_client.create_server(
             self.config.get('Deployment', 'server_name'),
-            self.config.getint('Deployment', 'flavor_id'),
-            image['id'])
+            flavor_id,
+            image_id)
         server_id = server['id']
         self.write_config('server_id', server_id)
         self.logger.debug("Server got id %s" % _green(server_id))

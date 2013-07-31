@@ -27,9 +27,8 @@ temporary_config = /tmp/ci_temp_conf
 
 
 [Deployment]
-# Credentials
-auth_url = https://accounts.okeanos.io/identity/v2.0/
-token =
+# Choose the 'cloud' to use from .kamakirc
+kamaki_cloud =
 # If we deploy on okeanos.io we have to set this to True
 # The server will reside besides a NAT and we have to compute ssh port
 deploy_on_io = True

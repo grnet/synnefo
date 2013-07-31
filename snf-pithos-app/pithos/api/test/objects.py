@@ -1189,65 +1189,62 @@ class ObjectPost(PithosAPITest):
                       HTTP_X_SOURCE_OBJECT='/%s/%s1' % (self.container, src))
         self.assertEqual(r.status_code, 404)
 
-    def test_update_from_other_version(self):
-        versions = []
+    def test_restore_version(self):
         info = self.get_object_info(self.container, self.object)
-        versions.append(info['X-Object-Version'])
-        pre_length = int(info['Content-Length'])
+        v = []
+        append = v.append
+        append((info['X-Object-Version'],
+                int(info['Content-Length']),
+                self.object_data))
 
         # update object
-        d1, r = self.upload_object(self.container, self.object,
-                                   length=pre_length - 1)[1:]
+        data, r = self.upload_object(self.container, self.object,
+                                     length=v[0][1] - 1)[1:]
         self.assertTrue('X-Object-Version' in r)
-        versions.append(r['X-Object-Version'])
+        append((r['X-Object-Version'], len(data), data))
+        # v[0][1] > v[1][1]
 
-        # update object
-        d2, r = self.upload_object(self.container, self.object,
-                                   length=pre_length - 2)[1:]
-        self.assertTrue('X-Object-Version' in r)
-        versions.append(r['X-Object-Version'])
-
-        # get previous version
+        # update with the previous version
         url = join_urls(self.pithos_path, self.user, self.container,
                         self.object)
-        r = self.get('%s?version=list&format=json' % url)
-        self.assertEqual(r.status_code, 200)
-        l = json.loads(r.content)['versions']
-        self.assertEqual(len(l), 3)
-        self.assertEqual([str(v[0]) for v in l], versions)
-
-        # update with the previous version
         r = self.post(url,
                       HTTP_CONTENT_RANGE='bytes 0-/*',
                       HTTP_X_SOURCE_OBJECT='/%s/%s' % (self.container,
                                                        self.object),
-                      HTTP_X_SOURCE_VERSION=versions[0])
+                      HTTP_X_SOURCE_VERSION=v[0][0],
+                      HTTP_X_OBJECT_BYTES=str(v[0][1]))
         self.assertEqual(r.status_code, 204)
+        # v[2][1] = v[0][1] > v[1][1]
 
         # check content
         r = self.get(url)
         content = r.content
-        self.assertEqual(len(content), pre_length)
+        self.assertEqual(len(content), v[0][1])
         self.assertEqual(content, self.object_data)
+        append((r['X-Object-Version'], len(content), content))
 
-        # update object
-        d3, r = self.upload_object(self.container, self.object,
-                                   length=len(d2) + 1)[1:]
+        # update object content(v4) > content(v2)
+        data, r = self.upload_object(self.container, self.object,
+                                     length=v[2][1] + 1)[1:]
         self.assertTrue('X-Object-Version' in r)
-        versions.append(r['X-Object-Version'])
+        append((r['X-Object-Version'], len(data), data))
+        # v[3][1] > v[2][1] = v[0][1] > v[1][1]
 
         # update with the previous version
         r = self.post(url,
                       HTTP_CONTENT_RANGE='bytes 0-/*',
                       HTTP_X_SOURCE_OBJECT='/%s/%s' % (self.container,
                                                        self.object),
-                      HTTP_X_SOURCE_VERSION=versions[-2])
+                      HTTP_X_SOURCE_VERSION=v[2][0],
+                      HTTP_X_OBJECT_BYTES=str(v[2][1]))
         self.assertEqual(r.status_code, 204)
+        # v[3][1] > v[4][1] = v[2][1] = v[0][1] > v[1][1]
 
         # check content
         r = self.get(url)
-        content = r.content
-        self.assertEqual(content, d2 + d3[-1])
+        data = r.content
+        self.assertEqual(data, v[2][2])
+        append((r['X-Object-Version'], len(data), data))
 
 
 class ObjectDelete(PithosAPITest):

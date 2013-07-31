@@ -519,3 +519,5 @@ class SynnefoCI(object):
 
         self.logger.debug("Untar packages file %s" % pkgs_file)
         os.system("cd %s; tar xzf synnefo_build-area.tgz" % pkgs_dir)
+        self.logger.info("Downloaded debian packages to %s" %
+                         _green(pkgs_dir))

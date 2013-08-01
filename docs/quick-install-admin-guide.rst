@@ -98,7 +98,7 @@ General Synnefo dependencies
 		* gevent
 		* dns server
 
-You can install apache2, progresql and ntp by running:
+You can install apache2, postgresql and ntp by running:
 
 .. code-block:: console
 
@@ -250,8 +250,8 @@ In vars you can set your own parameters such as KEY_COUNTRY
 
 Now you can create the certificate
 
-.. code-block:: console 
-		
+.. code-block:: console
+
 		# ./build-ca
 
 The previous will create a ``ca.crt`` file. Copy this file under
@@ -266,11 +266,11 @@ to update the records. You will have to do the following on node2 as well.
 Now you can create the keys and sign them with the certificate
 
 .. code-block:: console
-		
+
 		# ./build-key-server node1.example.com
 
 This will create a .pem and a .key file in your current folder. Copy these in
-``/etc/ssl/certs/`` and ``/etc/ssl/private/`` respectively and 
+``/etc/ssl/certs/`` and ``/etc/ssl/private/`` respectively and
 use them in the apache2 configuration file below instead of the defaults.
 
 Apache2 setup
@@ -344,6 +344,12 @@ Now enable sites and modules by running:
    # a2enmod headers
    # a2enmod proxy_http
 
+.. note:: This isn't really needed, but it's a good security practice to disable
+    directory listing in apache::
+
+        # a2dismod autoindex
+
+
 .. warning:: Do NOT start/restart the server yet. If the server is running::
 
        # /etc/init.d/apache2 stop
@@ -387,7 +393,7 @@ If your machines are not under the same domain nameyou have to set up a dns serv
 In order to set up a dns server using dnsmasq do the following
 
 .. code-block:: console
-			
+
 				# apt-get install dnsmasq
 
 Then edit you ``/etc/hosts/`` as follows
@@ -400,7 +406,7 @@ Then edit you ``/etc/hosts/`` as follows
 Finally edit the ``/etc/dnsmasq.conf`` file and specify the ``listen-address`` and
 the ``interface`` you would like to listen to.
 
-Also add the following in your ``/etc/resolv.conf`` file 
+Also add the following in your ``/etc/resolv.conf`` file
 
 .. code-block:: console
 
@@ -556,6 +562,11 @@ As in node1, enable sites and modules by running:
    # a2enmod headers
    # a2enmod proxy_http
 
+.. note:: This isn't really needed, but it's a good security practice to disable
+    directory listing in apache::
+
+        # a2dismod autoindex
+
 .. warning:: Do NOT start/restart the server yet. If the server is running::
 
        # /etc/init.d/apache2 stop
@@ -582,7 +593,7 @@ DNS Setup
 Add the following line in ``/etc/resolv.conf`` file
 
 .. code-block:: console
-		
+
 		nameserver 4.3.2.1
 
 to inform the node about the new dns server.
@@ -703,36 +714,36 @@ method, read the relative :ref:`section <shibboleth-auth>`.
 Email delivery configuration
 ----------------------------
 
-Many of the ``astakos`` operations require server to notify service users and 
-administrators via email. e.g. right after the signup process the service sents 
-an email to the registered email address containing an email verification url, 
-after the user verifies the email address astakos once again needs to notify 
+Many of the ``astakos`` operations require server to notify service users and
+administrators via email. e.g. right after the signup process the service sents
+an email to the registered email address containing an email verification url,
+after the user verifies the email address astakos once again needs to notify
 administrators with a notice that a new account has just been verified.
 
 More specifically astakos sends emails in the following cases
 
 - An email containing a verification link after each signup process.
-- An email to the people listed in ``ADMINS`` setting after each email 
-  verification if ``ASTAKOS_MODERATION`` setting is ``True``. The email 
-  notifies administrators that an additional action is required in order to 
+- An email to the people listed in ``ADMINS`` setting after each email
+  verification if ``ASTAKOS_MODERATION`` setting is ``True``. The email
+  notifies administrators that an additional action is required in order to
   activate the user.
-- A welcome email to the user email and an admin notification to ``ADMINS`` 
+- A welcome email to the user email and an admin notification to ``ADMINS``
   right after each account activation.
-- Feedback messages submited from astakos contact view and astakos feedback 
+- Feedback messages submited from astakos contact view and astakos feedback
   API endpoint are sent to contacts listed in ``HELPDESK`` setting.
-- Project application request notifications to people included in ``HELPDESK`` 
+- Project application request notifications to people included in ``HELPDESK``
   and ``MANAGERS`` settings.
-- Notifications after each project members action (join request, membership 
+- Notifications after each project members action (join request, membership
   accepted/declinde etc.) to project members or project owners.
 
-Astakos uses the Django internal email delivering mechanism to send email 
-notifications. A simple configuration, using an external smtp server to 
-deliver messages, is shown below. Alter the following example to meet your 
+Astakos uses the Django internal email delivering mechanism to send email
+notifications. A simple configuration, using an external smtp server to
+deliver messages, is shown below. Alter the following example to meet your
 smtp server characteristics. Notice that the smtp server is needed for a proper
 installation
 
 .. code-block:: python
-    
+
     # /etc/synnefo/00-snf-common-admins.conf
     EMAIL_HOST = "mysmtp.server.synnefo.org"
     EMAIL_HOST_USER = "<smtpuser>"
@@ -740,11 +751,11 @@ installation
 
     # this gets appended in all email subjects
     EMAIL_SUBJECT_PREFIX = "[example.synnefo.org] "
-    
+
     # Address to use for outgoing emails
     DEFAULT_FROM_EMAIL = "server@example.synnefo.org"
 
-    # Email where users can contact for support. This is used in html/email 
+    # Email where users can contact for support. This is used in html/email
     # templates.
     CONTACT_EMAIL = "server@example.synnefo.org"
 
@@ -753,21 +764,21 @@ installation
 
 Notice that since email settings might be required by applications other than
 astakos they are defined in a different configuration file than the one
-previously used to set astakos specific settings. 
+previously used to set astakos specific settings.
 
-Refer to 
+Refer to
 `Django documentation <https://docs.djangoproject.com/en/1.2/topics/email/>`_
 for additional information on available email settings.
 
-As refered in the previous section, based on the operation that triggers 
-an email notification, the recipients list differs. Specifically for 
-emails whose recipients include contacts from your service team 
-(administrators, managers, helpdesk etc) synnefo provides the following 
+As refered in the previous section, based on the operation that triggers
+an email notification, the recipients list differs. Specifically for
+emails whose recipients include contacts from your service team
+(administrators, managers, helpdesk etc) synnefo provides the following
 settings located in ``10-snf-common-admins.conf``:
 
 .. code-block:: python
 
-    ADMINS = (('Admin name', 'admin@example.synnefo.org'), 
+    ADMINS = (('Admin name', 'admin@example.synnefo.org'),
               ('Admin2 name', 'admin2@example.synnefo.org))
     MANAGERS = (('Manager name', 'manager@example.synnefo.org'),)
     HELPDESK = (('Helpdesk user name', 'helpdesk@example.synnefo.org'),)
@@ -1219,7 +1230,7 @@ For the purpose of this guide, we will assume that the :ref:`GANETI-MASTER
 :ref:`GANETI-NODE <GANETI_NODES>` and is Master-capable and VM-capable too.
 
 We highly recommend that you read the official Ganeti documentation, if you are
-not familiar with Ganeti. 
+not familiar with Ganeti.
 
 Unfortunately, the current stable version of the stock Ganeti (v2.6.2) doesn't
 support IP pool management. This feature will be available in Ganeti >= 2.7.
@@ -1231,23 +1242,23 @@ the proper version of Ganeti. To do so:
 
    # apt-get install snf-ganeti ganeti-htools
 
-Ganeti will make use of drbd. To enable this and make the configuration pemanent 
+Ganeti will make use of drbd. To enable this and make the configuration pemanent
 you have to do the following :
 
 .. code-block:: console
 
-		# rmmod -f drbd && modprobe drbd minor_count=255 usermode_helper=/bin/true	
+		# rmmod -f drbd && modprobe drbd minor_count=255 usermode_helper=/bin/true
 		# echo 'drbd minor_count=255 usermode_helper=/bin/true' >> /etc/modules
 
 
 We assume that Ganeti will use the KVM hypervisor. After installing Ganeti on
 both nodes, choose a domain name that resolves to a valid floating IP (let's
-say it's ``ganeti.node1.example.com``). This IP is needed to communicate with 
-the Ganeti cluster. Make sure node1 and node2 have same dsa,rsa keys and authorised_keys 
-for password-less root ssh between each other. If not then skip passing --no-ssh-init but be 
-aware that it will replace /root/.ssh/* related files and you might lose access to master node. 
-Also, Ganeti will need a volume to host your VMs' disks. So, make sure there is an lvm volume 
-group named ``ganeti``. Finally, setup a bridge interface on the host machines (e.g: br0). This  
+say it's ``ganeti.node1.example.com``). This IP is needed to communicate with
+the Ganeti cluster. Make sure node1 and node2 have same dsa,rsa keys and authorised_keys
+for password-less root ssh between each other. If not then skip passing --no-ssh-init but be
+aware that it will replace /root/.ssh/* related files and you might lose access to master node.
+Also, Ganeti will need a volume to host your VMs' disks. So, make sure there is an lvm volume
+group named ``ganeti``. Finally, setup a bridge interface on the host machines (e.g: br0). This
 will be needed for the network configuration afterwards.
 
 Then run on node1:
@@ -1291,7 +1302,7 @@ to handle image files stored on Pithos. It also needs `python-psycopg2` to be
 able to access the Pithos database. This is why, we also install them on *all*
 VM-capable Ganeti nodes.
 
-.. warning:: 
+.. warning::
 		snf-image uses ``curl`` for handling URLs. This means that it will
 		not  work out of the box if you try to use URLs served by servers which do
 		not have a valid certificate. In case you haven't followed the guide's

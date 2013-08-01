@@ -46,8 +46,6 @@ HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 
 # Package info
 VERSION = __version__
-README = open(os.path.join(HERE, 'README')).read()
-CHANGES = open(os.path.join(HERE, 'Changelog')).read()
 SHORT_DESCRIPTION = 'Deployment tool for synnefo from scratch'
 
 PACKAGES_ROOT = '.'
@@ -68,7 +66,7 @@ setup(
     license = 'BSD',
     url = 'http://code.grnet.gr/',
     description = SHORT_DESCRIPTION,
-    long_description=README + '\n\n' +  CHANGES,
+    long_description = SHORT_DESCRIPTION,
     classifiers = CLASSIFIERS,
 
     author='Synnefo development team',

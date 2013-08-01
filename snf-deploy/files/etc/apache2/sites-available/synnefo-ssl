@@ -1,0 +1,35 @@
+<IfModule mod_ssl.c>
+<VirtualHost _default_:443>
+  ServerName %HOST%
+
+  Alias /static "/usr/share/synnefo/static"
+
+#  SetEnv no-gzip
+#  SetEnv dont-vary
+
+  AllowEncodedSlashes On
+
+  RequestHeader set X-Forwarded-Protocol "https"
+
+  <Proxy * >
+    Order allow,deny
+    Allow from all
+  </Proxy>
+
+  SetEnv                proxy-sendchunked
+  SSLProxyEngine        off
+  ProxyErrorOverride    off
+
+  ProxyPass        /static !
+  ProxyPass        / http://localhost:8080/ retry=0
+  ProxyPassReverse / http://localhost:8080/
+
+#  RewriteEngine On
+#  RewriteRule ^/login(.*) /im/login/redirect\$1 [PT,NE]
+
+  SSLEngine on
+  SSLCertificateFile    /etc/ssl/certs/ssl-cert-snakeoil.pem
+  SSLCertificateKeyFile /etc/ssl/private/ssl-cert-snakeoil.key
+</VirtualHost>
+</IfModule>
+

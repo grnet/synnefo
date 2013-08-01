@@ -1,0 +1,11 @@
+etc/snf-deploy
+
+usr/lib/snf-deploy
+
+var/lib/snf-deploy
+var/lib/snf-deploy/packages
+var/lib/snf-deploy/images
+var/lib/snf-deploy/files
+var/lib/snf-deploy/conf
+var/lib/snf-deploy/dnsmasq
+

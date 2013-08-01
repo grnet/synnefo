@@ -20,7 +20,8 @@ PACKAGES = \
 	snf-pithos-backend \
 	snf-tools \
 	snf-stats-app \
-	snf-django-lib
+	snf-django-lib \
+	snf-deploy
 
 PYTHON_PACKAGES = \
 	astakosclient

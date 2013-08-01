@@ -9,6 +9,7 @@ import sys
 import time
 import logging
 import fabric.api as fabric
+import subprocess
 from ConfigParser import ConfigParser, DuplicateSectionError
 
 from kamaki.cli import config as kamaki_config
@@ -352,20 +353,36 @@ class SynnefoCI(object):
         _run(cmd, False)
 
         synnefo_repo = self.config.get('Global', 'synnefo_repo')
-        synnefo_branch = self.config.get('Global', 'synnefo_branch')
+        synnefo_branch = self.config.get("Global", "synnefo_branch")
+        if synnefo_branch == "":
+            synnefo_branch =\
+                subprocess.Popen(["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                    stdout=subprocess.PIPE).communicate()[0].strip()
+            if synnefo_branch == "HEAD":
+                synnefo_branch = \
+                    subprocess.Popen(["git", "rev-parse","--short", "HEAD"],
+                        stdout=subprocess.PIPE).communicate()[0].strip()
+        self.logger.info("Will use branch %s" % synnefo_branch)
         # Currently clonning synnefo can fail unexpectedly
         cloned = False
-        for i in range(3):
+        for i in range(10):
             self.logger.debug("Clone synnefo from %s" % synnefo_repo)
-            cmd = ("git clone --branch %s %s"
-                   % (synnefo_branch, synnefo_repo))
             try:
-                _run(cmd, False)
+                _run("git clone %s synnefo" % synnefo_repo, False)
                 cloned = True
                 break
             except:
                 self.logger.warning("Clonning synnefo failed.. retrying %s"
                                     % i)
+        cmd ="""
+        cd synnefo
+        for branch in `git branch -a | grep remotes | grep -v HEAD | grep -v master`; do
+            git branch --track ${branch##*/} $branch
+        done
+        git checkout %s
+        """ % (synnefo_branch)
+        _run(cmd, False)
+
         if not cloned:
             self.logger.error("Can not clone Synnefo repo.")
             sys.exit(-1)

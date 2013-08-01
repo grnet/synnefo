@@ -2,6 +2,7 @@
 
 """
 """
+import os
 from utils import SynnefoCI
 from optparse import OptionParser
 
@@ -51,9 +52,10 @@ def main():
     parser.add_option("-i", "--image", dest="image", default=None,
                       help="UUID of image to use for the server.")
     parser.add_option("--fetch-packages", dest="fetch_packages",
-                      action="store_true", default=False,
+                      default=None,
                       help="Download the debian packages that were created"
-                           " during the '%s' step." % BUILD_SYNNEFO_CMD)
+                           " during the '%s' step in this directory" %
+                           BUILD_SYNNEFO_CMD)
     parser.add_option("--schema", dest="schema", default=None,
                       help="Schema for snf-deploy.")
 
@@ -91,7 +93,8 @@ def main():
     if getattr(options, BUILD_SYNNEFO_CMD, False):
         synnefo_ci.build_synnefo()
     if options.fetch_packages:
-        synnefo_ci.fetch_packages()
+        dest = os.path.abspath(options.fetch_packages)
+        synnefo_ci.fetch_packages(dest=dest)
     if getattr(options, DEPLOY_SYNNEFO_CMD, False):
         synnefo_ci.deploy_synnefo(schema=options.schema)
     if getattr(options, TEST_SYNNEFO_CMD, False):

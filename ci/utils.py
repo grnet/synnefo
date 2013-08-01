@@ -520,7 +520,7 @@ class SynnefoCI(object):
         _run(cmd, True)
 
     @_check_fabric
-    def fetch_packages(self):
+    def fetch_packages(self, dest=None):
         """Download Synnefo packages"""
         self.logger.info("Download Synnefo packages")
         self.logger.debug("Create tarball with packages")
@@ -529,9 +529,16 @@ class SynnefoCI(object):
         """
         _run(cmd, False)
 
-        pkgs_dir = self.config.get('Global', 'pkgs_dir')
+        if dest is None:
+            pkgs_dir = self.config.get('Global', 'pkgs_dir')
+        else:
+            pkgs_dir = dest
+
         self.logger.debug("Fetch packages to local dir %s" % pkgs_dir)
-        os.makedirs(pkgs_dir)
+        # Create package directory if missing
+        if not os.path.exists(pkgs_dir):
+            os.makedirs(pkgs_dir)
+
         with fabric.quiet():
             fabric.get("synnefo_build-area.tgz", pkgs_dir)
 
@@ -539,6 +546,12 @@ class SynnefoCI(object):
         self._check_hash_sum(pkgs_file, "synnefo_build-area.tgz")
 
         self.logger.debug("Untar packages file %s" % pkgs_file)
-        os.system("cd %s; tar xzf synnefo_build-area.tgz" % pkgs_dir)
+        cmd = """
+        cd %s
+        tar xzf synnefo_build-area.tgz
+        cp synnefo_build-area/* %s
+        rm -r synnefo_build-area
+        """ % (pkgs_dir, dest)
+        os.system(cmd)
         self.logger.info("Downloaded debian packages to %s" %
                          _green(pkgs_dir))

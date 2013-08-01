@@ -5,8 +5,9 @@ build_timeout = 240
 apt_repo = http://apt.dev.grnet.gr squeeze/
 # Synnefo git repo
 synnefo_repo = https://code.grnet.gr/git/synnefo
-# Git branch to test (specify sha1 or branch name)
-synnefo_branch = HEAD
+# Git branch to test (specify sha1 or branch name). If not set, the
+# branch/sha will result from the current repository.
+synnefo_branch =
 # snf-deploy git repo
 deploy_repo = https://code.grnet.gr/git/snf-deploy
 # Defines the schema that snf-deploy will use

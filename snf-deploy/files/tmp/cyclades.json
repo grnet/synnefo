@@ -1,0 +1,88 @@
+{
+    "cyclades_compute": {
+        "component": "cyclades", 
+        "prefix": "compute", 
+        "endpoints": [
+            {
+                "versionId": "v2.0", 
+                "publicURL": "https://compute.%DOMAIN%/cyclades/compute/v2.0/"
+            }
+        ], 
+        "type": "compute", 
+        "public": true, 
+        "resources": {
+            "network-private": {
+                "service_type": "compute", 
+                "service_origin": "cyclades_compute", 
+                "name": "cyclades.network.private", 
+                "desc": "Number of private networks"
+            }, 
+            "disk": {
+                "service_type": "compute", 
+                "service_origin": "cyclades_compute", 
+                "name": "cyclades.disk", 
+                "unit": "bytes", 
+                "desc": "Virtual machine disk size"
+            }, 
+            "ram": {
+                "service_type": "compute", 
+                "service_origin": "cyclades_compute", 
+                "name": "cyclades.ram", 
+                "unit": "bytes", 
+                "desc": "Virtual machine memory size"
+            }, 
+            "cpu": {
+                "service_type": "compute", 
+                "service_origin": "cyclades_compute", 
+                "name": "cyclades.cpu", 
+                "desc": "Number of virtual machine processors"
+            }, 
+            "vm": {
+                "service_type": "compute", 
+                "service_origin": "cyclades_compute", 
+                "name": "cyclades.vm", 
+                "desc": "Number of virtual machines"
+            }
+        }
+    }, 
+    "cyclades_vmapi": {
+        "component": "cyclades", 
+        "prefix": "vmapi", 
+        "endpoints": [
+            {
+                "versionId": "v1.0", 
+                "publicURL": "https://cyclades.%DOMAIN%/cyclades/vmapi/v1.0/"
+            }
+        ], 
+        "type": "vmapi", 
+        "public": true, 
+        "resources": {}
+    }, 
+    "cyclades_admin": {
+        "component": "cyclades", 
+        "prefix": "admin", 
+        "endpoints": [
+            {
+                "versionId": "", 
+                "publicURL": "https://cyclades.%DOMAIN%/cyclades/admin/"
+            }
+        ], 
+        "type": "admin", 
+        "public": true, 
+        "resources": {}
+    }, 
+    "cyclades_plankton": {
+        "component": "cyclades", 
+        "prefix": "image", 
+        "endpoints": [
+            {
+                "versionId": "v1.0", 
+                "publicURL": "https://cyclades.%DOMAIN%/cyclades/image/v1.0/"
+            }
+        ], 
+        "type": "image", 
+        "public": true, 
+        "resources": {}
+    }
+}
+

@@ -1,0 +1,23 @@
+[
+    {
+        "model": "db.Flavor",
+        "pk": 1,
+        "fields": {
+            "cpu": 1,
+            "ram": 256,
+            "disk": 2,
+            "disk_template": "plain"
+        }
+    },
+    {
+        "model": "db.Flavor",
+        "pk": 2,
+        "fields": {
+            "cpu": 1,
+            "ram": 256,
+            "disk": 2,
+            "disk_template": "file"
+        }
+    }
+]
+

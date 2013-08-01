@@ -1,0 +1,24 @@
+{
+    "pithos_object-store": {
+        "component": "pithos", 
+        "prefix": "object-store", 
+        "endpoints": [
+            {
+                "versionId": "v1", 
+                "publicURL": "https://pithos.%DOMAIN%/pithos/object-store/v1/"
+            }
+        ], 
+        "type": "object-store", 
+        "public": true, 
+        "resources": {
+            "diskspace": {
+                "service_type": "object-store", 
+                "service_origin": "pithos_object-store", 
+                "name": "pithos.diskspace", 
+                "unit": "bytes", 
+                "desc": "Pithos account diskspace"
+            }
+        }
+    }
+}
+

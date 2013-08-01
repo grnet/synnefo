@@ -9,6 +9,7 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'synnefo.settings'
 import astakos
 from astakos.im.models import AstakosUser as A
 
+
 def user_filter(user):
     return A.objects.filter(email__iexact=user.email).count() > 1
 
@@ -41,4 +42,3 @@ sleep(2)
 for user in users:
     print "deleting %s: %s" % (user.id, user.email)
     user.delete()
-

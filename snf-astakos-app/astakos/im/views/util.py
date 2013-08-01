@@ -70,11 +70,12 @@ class ExceptionHandler(object):
             return True  # suppress exception
 
 
-def render_response(template, tab=None, status=200, context_instance=None, **kwargs):
+def render_response(template, tab=None, status=200, context_instance=None,
+                    **kwargs):
     """
-    Calls ``django.template.loader.render_to_string`` with an additional ``tab``
-    keyword argument and returns an ``django.http.HttpResponse`` with the
-    specified ``status``.
+    Calls ``django.template.loader.render_to_string`` with an additional
+    ``tab`` keyword argument and returns an ``django.http.HttpResponse``
+    with the specified ``status``.
     """
     if tab is None:
         tab = template.partition('_')[0].partition('.html')[0]
@@ -84,18 +85,20 @@ def render_response(template, tab=None, status=200, context_instance=None, **kwa
     response = HttpResponse(html, status=status)
     return response
 
+
 @commit_on_success_strict()
 def _create_object(request, model=None, template_name=None,
-        template_loader=template_loader, extra_context=None, post_save_redirect=None,
-        login_required=False, context_processors=None, form_class=None,
-        msg=None):
+                   template_loader=template_loader, extra_context=None,
+                   post_save_redirect=None, login_required=False,
+                   context_processors=None, form_class=None, msg=None):
     """
     Based of django.views.generic.create_update.create_object which displays a
     summary page before creating the object.
     """
     response = None
 
-    if extra_context is None: extra_context = {}
+    if extra_context is None:
+        extra_context = {}
     if login_required and not request.user.is_authenticated():
         return redirect_to_login(request.path)
     try:
@@ -115,7 +118,8 @@ def _create_object(request, model=None, template_name=None,
                 else:
                     new_object = form.save()
                     if not msg:
-                        msg = _("The %(verbose_name)s was created successfully.")
+                        msg = _(
+                            "The %(verbose_name)s was created successfully.")
                     msg = msg % model._meta.__dict__
                     messages.success(request, msg, fail_silently=True)
                     response = redirect(post_save_redirect, new_object)
@@ -125,11 +129,11 @@ def _create_object(request, model=None, template_name=None,
         messages.error(request, e)
         return None
     else:
-        if response == None:
+        if response is None:
             # Create the template, context, response
             if not template_name:
-                template_name = "%s/%s_form.html" %\
-                     (model._meta.app_label, model._meta.object_name.lower())
+                template_name = "%s/%s_form.html" % \
+                    (model._meta.app_label, model._meta.object_name.lower())
             t = template_loader.get_template(template_name)
             c = RequestContext(request, {
                 'form': form
@@ -138,19 +142,22 @@ def _create_object(request, model=None, template_name=None,
             response = HttpResponse(t.render(c))
         return response
 
+
 @commit_on_success_strict()
 def _update_object(request, model=None, object_id=None, slug=None,
-        slug_field='slug', template_name=None, template_loader=template_loader,
-        extra_context=None, post_save_redirect=None, login_required=False,
-        context_processors=None, template_object_name='object',
-        form_class=None, msg=None):
+                   slug_field='slug', template_name=None,
+                   template_loader=template_loader, extra_context=None,
+                   post_save_redirect=None, login_required=False,
+                   context_processors=None, template_object_name='object',
+                   form_class=None, msg=None):
     """
     Based of django.views.generic.create_update.update_object which displays a
     summary page before updating the object.
     """
     response = None
 
-    if extra_context is None: extra_context = {}
+    if extra_context is None:
+        extra_context = {}
     if login_required and not request.user.is_authenticated():
         return redirect_to_login(request.path)
 
@@ -171,7 +178,8 @@ def _update_object(request, model=None, object_id=None, slug=None,
                 else:
                     obj = form.save()
                     if not msg:
-                        msg = _("The %(verbose_name)s was created successfully.")
+                        msg = _(
+                            "The %(verbose_name)s was created successfully.")
                     msg = msg % model._meta.__dict__
                     messages.success(request, msg, fail_silently=True)
                     response = redirect(post_save_redirect, obj)
@@ -181,9 +189,9 @@ def _update_object(request, model=None, object_id=None, slug=None,
         messages.error(request, e)
         return None
     else:
-        if response == None:
+        if response is None:
             if not template_name:
-                template_name = "%s/%s_form.html" %\
+                template_name = "%s/%s_form.html" % \
                     (model._meta.app_label, model._meta.object_name.lower())
             t = template_loader.get_template(template_name)
             c = RequestContext(request, {
@@ -192,8 +200,10 @@ def _update_object(request, model=None, object_id=None, slug=None,
             }, context_processors)
             apply_extra_context(extra_context, c)
             response = HttpResponse(t.render(c))
-            populate_xheaders(request, response, model, getattr(obj, obj._meta.pk.attname))
+            populate_xheaders(request, response, model,
+                              getattr(obj, obj._meta.pk.attname))
         return response
+
 
 def _resources_catalog(for_project=False, for_usage=False):
     """
@@ -272,6 +282,5 @@ def _resources_catalog(for_project=False, for_usage=False):
         if len(resources) == 0:
             resource_catalog.pop(group_index)
             resource_groups.pop(group)
-
 
     return resource_catalog, resource_groups

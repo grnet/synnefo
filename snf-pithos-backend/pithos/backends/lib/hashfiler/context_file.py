@@ -31,7 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from os import SEEK_CUR, SEEK_SET, fsync
+from os import SEEK_CUR, SEEK_SET
 from errno import ENOENT, EROFS
 
 
@@ -64,7 +64,7 @@ def file_sync_write_chunks(openfile, chunksize, offset, chunks, size=None):
 
     try:
         seek(offset * chunksize)
-    except IOError, e:
+    except IOError:
         seek = None
         for x in xrange(offset):
             fwrite(zeros(chunksize))
@@ -105,7 +105,7 @@ def file_sync_read_chunks(openfile, chunksize, nr, offset=0):
     seek = openfile.seek
     try:
         seek(remains)
-    except IOError, e:
+    except IOError:
         seek = None
         while 1:
             s = fread(remains)
@@ -177,7 +177,8 @@ class ContextFile(object):
 
     def sync_write_chunks(self, chunksize, offset, chunks, size=None):
         #self.dirty = 1
-        return file_sync_write_chunks(self.fdesc, chunksize, offset, chunks, size)
+        return file_sync_write_chunks(self.fdesc, chunksize, offset, chunks,
+                                      size)
 
     def sync_read(self, size):
         read = self.fdesc.read

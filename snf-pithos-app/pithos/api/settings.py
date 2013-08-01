@@ -27,8 +27,8 @@ UI_PREFIX = get_path(pithos_services, 'pithos_ui.prefix')
 
 astakos_services = deepcopy(vanilla_astakos_services)
 fill_endpoints(astakos_services, ASTAKOS_BASE_URL)
-CUSTOMIZE_ASTAKOS_SERVICES = \
-        getattr(settings, 'PITHOS_CUSTOMIZE_ASTAKOS_SERVICES', ())
+CUSTOMIZE_ASTAKOS_SERVICES = getattr(settings,
+                                     'PITHOS_CUSTOMIZE_ASTAKOS_SERVICES', ())
 for path, value in CUSTOMIZE_ASTAKOS_SERVICES:
     set_path(astakos_services, path, value, createpath=True)
 
@@ -42,7 +42,8 @@ BASE_ASTAKOS_PROXY_PATH = join_urls(BASE_PATH, BASE_ASTAKOS_PROXY_PATH)
 BASE_ASTAKOS_PROXY_PATH = BASE_ASTAKOS_PROXY_PATH.strip('/')
 
 
-ASTAKOSCLIENT_POOLSIZE = getattr(settings, 'PITHOS_ASTAKOSCLIENT_POOLSIZE', 200)
+ASTAKOSCLIENT_POOLSIZE = getattr(settings, 'PITHOS_ASTAKOSCLIENT_POOLSIZE',
+                                 200)
 
 COOKIE_NAME = getattr(settings, 'PITHOS_ASTAKOS_COOKIE_NAME', '_pithos2_a')
 
@@ -60,10 +61,14 @@ BACKEND_BLOCK_PATH = getattr(
 BACKEND_BLOCK_UMASK = getattr(settings, 'PITHOS_BACKEND_BLOCK_UMASK', 0o022)
 
 # Queue for billing.
-BACKEND_QUEUE_MODULE = getattr(settings, 'PITHOS_BACKEND_QUEUE_MODULE',
-                               None)  # Example: 'pithos.backends.lib.rabbitmq'
-BACKEND_QUEUE_HOSTS = getattr(settings, 'PITHOS_BACKEND_QUEUE_HOSTS', None) # Example: "['amqp://guest:guest@localhost:5672']"
-BACKEND_QUEUE_EXCHANGE = getattr(settings, 'PITHOS_BACKEND_QUEUE_EXCHANGE', 'pithos')
+BACKEND_QUEUE_MODULE = getattr(settings, 'PITHOS_BACKEND_QUEUE_MODULE', None)
+# Example: 'pithos.backends.lib.rabbitmq'
+
+BACKEND_QUEUE_HOSTS = getattr(settings, 'PITHOS_BACKEND_QUEUE_HOSTS', None)
+# Example: "['amqp://guest:guest@localhost:5672']"
+
+BACKEND_QUEUE_EXCHANGE = getattr(settings, 'PITHOS_BACKEND_QUEUE_EXCHANGE',
+                                 'pithos')
 
 # Default setting for new accounts.
 BACKEND_ACCOUNT_QUOTA = getattr(
@@ -71,7 +76,11 @@ BACKEND_ACCOUNT_QUOTA = getattr(
 BACKEND_CONTAINER_QUOTA = getattr(
     settings, 'PITHOS_BACKEND_CONTAINER_QUOTA', 0)
 BACKEND_VERSIONING = getattr(settings, 'PITHOS_BACKEND_VERSIONING', 'auto')
-BACKEND_FREE_VERSIONING = getattr(settings, 'PITHOS_BACKEND_FREE_VERSIONING', True)
+BACKEND_FREE_VERSIONING = getattr(settings, 'PITHOS_BACKEND_FREE_VERSIONING',
+                                  True)
+
+# Enable backend pooling
+BACKEND_POOL_ENABLED = getattr(settings, 'PITHOS_BACKEND_POOL_ENABLED', True)
 
 # Default backend pool size
 BACKEND_POOL_SIZE = getattr(settings, 'PITHOS_BACKEND_POOL_SIZE', 5)
@@ -83,7 +92,7 @@ UPDATE_MD5 = getattr(settings, 'PITHOS_UPDATE_MD5', False)
 SERVICE_TOKEN = getattr(settings, 'PITHOS_SERVICE_TOKEN', '')
 
 RADOS_STORAGE = getattr(settings, 'PITHOS_RADOS_STORAGE', False)
-RADOS_POOL_BLOCKS= getattr(settings, 'PITHOS_RADOS_POOL_BLOCKS', 'blocks')
+RADOS_POOL_BLOCKS = getattr(settings, 'PITHOS_RADOS_POOL_BLOCKS', 'blocks')
 RADOS_POOL_MAPS = getattr(settings, 'PITHOS_RADOS_POOL_MAPS', 'maps')
 
 # This enables a ui compatibility layer for the introduction of UUIDs in
@@ -97,13 +106,25 @@ TRANSLATE_UUIDS = getattr(settings, 'PITHOS_TRANSLATE_UUIDS', False)
 # the requests on its own.
 PROXY_USER_SERVICES = getattr(settings, 'PITHOS_PROXY_USER_SERVICES', True)
 
-# Set how many random bytes to use for constructing the URL of Pithos public files
-PUBLIC_URL_SECURITY =  getattr(settings, 'PITHOS_PUBLIC_URL_SECURITY', 16)
+# Set how many random bytes to use for constructing the URL
+# of Pithos public files
+PUBLIC_URL_SECURITY = getattr(settings, 'PITHOS_PUBLIC_URL_SECURITY', 16)
 # Set the alphabet to use for constructing the URL of Pithos public files
-PUBLIC_URL_ALPHABET =  getattr(
+PUBLIC_URL_ALPHABET = getattr(
     settings,
     'PITHOS_PUBLIC_URL_ALPHABET',
     '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
+
+# The maximum number or items returned by the listing api methods
+API_LIST_LIMIT = getattr(settings, 'PITHOS_API_LIST_LIMIT', 10000)
+
+# The backend block size
+BACKEND_BLOCK_SIZE = getattr(
+    settings, 'PITHOS_BACKEND_BLOCK_SIZE', 4 * 1024 * 1024)
+
+# The backend block hash algorithm
+BACKEND_HASH_ALGORITHM = getattr(
+    settings, 'PITHOS_BACKEND_HASH_ALGORITHM', 'sha256')
 
 ASTAKOS_UI_URL = get_public_endpoint(astakos_services, 'astakos_ui', '').rstrip('/')
 

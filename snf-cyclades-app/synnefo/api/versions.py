@@ -33,7 +33,6 @@
 
 from logging import getLogger
 
-from django.conf import settings
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
@@ -46,13 +45,13 @@ log = getLogger('synnefo.api')
 
 
 VERSION_2_0 = {
-    "id" : "v2.0",
-    "status" : "CURRENT",
-    "updated" : "2011-01-21T11:33:21-06:00",
+    "id": "v2.0",
+    "status": "CURRENT",
+    "updated": "2011-01-21T11:33:21-06:00",
     "links": [
         {
-            "rel" : "self",
-            "href" : COMPUTE_ROOT_URL,
+            "rel": "self",
+            "href": COMPUTE_ROOT_URL,
         },
     ],
 }
@@ -61,25 +60,27 @@ VERSIONS = [VERSION_2_0]
 
 MEDIA_TYPES = [
     {
-        "base" : "application/xml",
-        "type" : "application/vnd.openstack.compute.v2+xml"
+        "base": "application/xml",
+        "type": "application/vnd.openstack.compute.v2+xml"
     },
     {
-        "base" : "application/json",
-        "type" : "application/vnd.openstack.compute.v2+json"
+        "base": "application/json",
+        "type": "application/vnd.openstack.compute.v2+json"
     }
 ]
 
 DESCRIBED_BY = [
     {
-        "rel" : "describedby",
-        "type" : "application/pdf",
-        "href" : "http://docs.rackspacecloud.com/servers/api/v2/cs-devguide-20110125.pdf"
+        "rel": "describedby",
+        "type": "application/pdf",
+        "href": "http://docs.rackspacecloud.com/servers/api/v2/"
+                "cs-devguide-20110125.pdf"
     },
     {
-        "rel" : "describedby",
-        "type" : "application/vnd.sun.wadl+xml",
-        "href" : "http://docs.rackspacecloud.com/servers/api/v2/application.wadl"
+        "rel": "describedby",
+        "type": "application/vnd.sun.wadl+xml",
+        "href": "http://docs.rackspacecloud.com/servers/api/v2/"
+                "application.wadl"
     }
 ]
 

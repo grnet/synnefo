@@ -94,8 +94,8 @@ class Command(BaseCommand):
                         ['name', 'owner_uuid',
                          'owner_name' if displayname else Omit,
                          'flavor', 'image', 'state', 'backend', 'deleted',
-                         'action', 'backendjobid', 'backendopcode',
-                         'backendjobstatus', 'backend_time'])
+                         'action', 'task', 'task_job', 'backendjobid',
+                         'backendopcode', 'backendjobstatus', 'backend_time'])
 
         uuid = vm.userid
         if displayname:
@@ -105,6 +105,7 @@ class Command(BaseCommand):
                         [vm.name, uuid, dname if displayname else Omit,
                          vm.flavor.name, image, common.format_vm_state(vm),
                          str(vm.backend), str(vm.deleted), str(vm.action),
+                         str(vm.task), str(vm.task_job_id),
                          str(vm.backendjobid), str(vm.backendopcode),
                          str(vm.backendjobstatus), str(vm.backendtime)])
 

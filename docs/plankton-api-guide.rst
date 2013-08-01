@@ -121,7 +121,7 @@ Name             Description           Image    Glance
 id               A unique image id      ✔        **✘**
 uri              Unique id in URI form **✘**    ✔
 name             The name of the image ✔        ✔
-status           ???The VM status???   ✔        **✘**
+status           The VM status         ✔        **✘**
 disk_format      The disc format       ✔        ✔
 container_format The container format  ✔        ✔
 size             Image size in bytes   ✔        ✔

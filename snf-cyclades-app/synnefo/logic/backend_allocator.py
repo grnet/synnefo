@@ -32,7 +32,8 @@ import datetime
 from django.utils import importlib
 
 from synnefo.settings import (BACKEND_ALLOCATOR_MODULE, BACKEND_REFRESH_MIN,
-                              BACKEND_PER_USER, ARCHIPELAGO_BACKENDS)
+                              BACKEND_PER_USER, ARCHIPELAGO_BACKENDS,
+                              DEFAULT_INSTANCE_NETWORKS)
 from synnefo.db.models import Backend
 from synnefo.logic.backend import update_resources
 from synnefo.api.util import backend_public_networks
@@ -101,7 +102,9 @@ def get_available_backends():
     """
     backends = list(Backend.objects.select_for_update().filter(drained=False,
                                                                offline=False))
-    return filter(lambda x: has_free_ip(x), backends)
+    if "SNF:ANY_PUBLIC" in DEFAULT_INSTANCE_NETWORKS:
+        backends = filter(lambda x: has_free_ip(x), backends)
+    return backends
 
 
 def filter_archipelagos_backends(available_backends, disk_template):

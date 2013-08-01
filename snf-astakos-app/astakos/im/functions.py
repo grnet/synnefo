@@ -218,10 +218,12 @@ def send_feedback(msg, data, user, email_template_name='im/feedback_mail.txt'):
 
 
 def send_change_email(
-    ec, request, email_template_name='registration/email_change_email.txt'):
+    ec, request, email_template_name='registration/email_change_email.txt'
+):
     url = ec.get_url()
     url = request.build_absolute_uri(url)
-    c = {'url': url, 'site_name': settings.SITENAME, 'support': settings.CONTACT_EMAIL,
+    c = {'url': url, 'site_name': settings.SITENAME,
+         'support': settings.CONTACT_EMAIL,
          'ec': ec}
     message = render_to_string(email_template_name, c)
     from_email = settings.SERVER_EMAIL
@@ -724,9 +726,9 @@ def check_conflicting_projects(application):
         conflicting_project = Project.objects.get(q)
         if (conflicting_project != project):
             m = (_("cannot approve: project with name '%s' "
-                   "already exists (id: %s)") % (
-                    new_project_name, conflicting_project.id))
-            raise PermissionDenied(m) # invalid argument
+                   "already exists (id: %s)") %
+                 (new_project_name, conflicting_project.id))
+            raise PermissionDenied(m)  # invalid argument
     except Project.DoesNotExist:
         pass
 

@@ -11,13 +11,12 @@ revision = '165ba3fbfe53'
 down_revision = '3dd56e750a3'
 
 from alembic import op
-from sqlalchemy.sql import table, column, literal, and_
-
-from pithos.api.settings import (SERVICE_TOKEN, ASTAKOS_BASE_URL)
+from sqlalchemy.sql import table, column, and_
 
 from astakosclient import AstakosClient
 from astakosclient.errors import NoUserName, NoUUID
-astakos_client = AstakosClient(ASTAKOS_BASE_URL, retry=3, use_pool=True)
+
+import functools
 
 try:
     from progress.bar import IncrementalBar
@@ -35,14 +34,15 @@ except ImportError:
 import sqlalchemy as sa
 
 catalog = {}
-def get_uuid(account):
+
+
+def _get_uuid(account, service_token, astakos_client):
     global catalog
     if account in catalog:
         return catalog[account]
     try:
-        catalog[account] = astakos_client.service_get_uuid(
-            SERVICE_TOKEN, account
-        )
+        catalog[account] = astakos_client.service_get_uuid(service_token,
+                                                           account)
         print '\n', account, '-->', catalog[account]
     except NoUUID:
         return None
@@ -52,14 +52,15 @@ def get_uuid(account):
         return catalog[account]
 
 inverse_catalog = {}
-def get_displayname(account):
+
+
+def _get_displayname(account, service_token, astakos_client):
     global inverse_catalog
     if account in inverse_catalog:
         return inverse_catalog[account]
     try:
         inverse_catalog[account] = astakos_client.service_get_username(
-            SERVICE_TOKEN, account
-        )
+            service_token, account)
         print '\n', account, '-->', inverse_catalog[account]
     except NoUserName:
         return None
@@ -92,19 +93,20 @@ x = table(
     column('path', sa.String(2048))
 )
 
-xvals =  table(
+xvals = table(
     'xfeaturevals',
     column('feature_id', sa.Integer),
     column('key', sa.Integer),
     column('value', sa.String(256))
 )
 
-g =  table(
+g = table(
     'groups',
     column('owner', sa.String(256)),
     column('name', sa.String(256)),
     column('member', sa.String(256))
 )
+
 
 def migrate(callback):
     connection = op.get_bind()
@@ -119,7 +121,7 @@ def migrate(callback):
             bar.next()
             continue
         path = sep.join([match, rest])
-        u = n.update().where(n.c.node == node).values({'path':path})
+        u = n.update().where(n.c.node == node).values({'path': path})
         connection.execute(u)
         bar.next()
     bar.finish()
@@ -127,8 +129,7 @@ def migrate(callback):
     s = sa.select([v.c.muser]).distinct()
     musers = connection.execute(s).fetchall()
     bar = IncrementalBar('Migrating version modification users...',
-                         max=len(musers)
-    )
+                         max=len(musers))
     for muser, in musers:
         match = callback(muser)
         if not match:
@@ -149,7 +150,7 @@ def migrate(callback):
             bar.next()
             continue
         path = sep.join([match, rest])
-        u = p.update().where(p.c.public_id == id).values({'path':path})
+        u = p.update().where(p.c.public_id == id).values({'path': path})
         connection.execute(u)
         bar.next()
     bar.finish()
@@ -164,7 +165,7 @@ def migrate(callback):
             bar.next()
             continue
         path = sep.join([match, rest])
-        u = x.update().where(x.c.feature_id == id).values({'path':path})
+        u = x.update().where(x.c.feature_id == id).values({'path': path})
         connection.execute(u)
         bar.next()
     bar.finish()
@@ -182,11 +183,10 @@ def migrate(callback):
             continue
         new_value = sep.join([match, group])
         u = xvals.update()
-        u = u.where(and_(
-                xvals.c.feature_id == feature_id,
-                xvals.c.key == key,
-                xvals.c.value == value))
-        u = u.values({'value':new_value})
+        u = u.where(and_(xvals.c.feature_id == feature_id,
+                         xvals.c.key == key,
+                         xvals.c.value == value))
+        u = u.values({'value': new_value})
         connection.execute(u)
         bar.next()
     bar.finish()
@@ -214,8 +214,33 @@ def migrate(callback):
             bar.next()
     bar.finish()
 
+
 def upgrade():
-    migrate(get_uuid)
+    try:
+        from pithos.api import settings
+    except ImportError:
+        return
+    else:
+        astakos_client = AstakosClient(settings.ASTAKOS_BASE_URL,
+                                       retry=3,
+                                       use_pool=True)
+        get_uuid = functools.partial(_get_uuid,
+                                     service_token=settings.SERVICE_TOKEN,
+                                     astakos_client=astakos_client)
+        migrate(get_uuid)
+
 
 def downgrade():
-    migrate(get_displayname)
+    try:
+        from pithos.api import settings
+    except ImportError:
+        return
+    else:
+        astakos_client = AstakosClient(settings.ASTAKOS_BASE_URL,
+                                       retry=3,
+                                       use_pool=True)
+        get_displayname = functools.partial(
+            _get_displayname,
+            service_token=settings.SERVICE_TOKEN,
+            astakos_client=astakos_client)
+        migrate(get_displayname)

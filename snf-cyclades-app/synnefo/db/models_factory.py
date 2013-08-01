@@ -141,6 +141,7 @@ class NetworkFactory(factory.DjangoModelFactory):
     userid = factory.Sequence(user_seq())
     subnet = factory.Sequence(lambda n: '192.168.{0}.0/24'.format(n))
     gateway = factory.LazyAttribute(lambda a: a.subnet[:-4] + '1')
+    subnet6 = "2001:648:2ffc:1112::/64"
     dhcp = False
     flavor = factory.Sequence(round_seq(models.Network.FLAVORS.keys()))
     mode = factory.LazyAttribute(lambda a:
@@ -152,6 +153,11 @@ class NetworkFactory(factory.DjangoModelFactory):
     public = False
     deleted = False
     state = factory.Sequence(round_seq_first(models.Network.OPER_STATES))
+
+
+class IPv6NetworkFactory(NetworkFactory):
+    subnet = None
+    gateway = None
 
 
 class DeletedNetwork(NetworkFactory):
@@ -172,13 +178,23 @@ class NetworkInterfaceFactory(factory.DjangoModelFactory):
     machine = factory.SubFactory(VirtualMachineFactory)
     network = factory.SubFactory(NetworkFactory)
     index = factory.Sequence(lambda x: x, type=int)
-    mac = factory.Sequence(lambda n:
-        'aa:{0}{0}:{0}{0}:aa:{0}{0}:{0}{0}'.format(hex(int(n) % 15)[2:3]))
+    mac = factory.Sequence(lambda n: 'aa:{0}{0}:{0}{0}:aa:{0}{0}:{0}{0}'
+                           .format(hex(int(n) % 15)[2:3]))
     ipv4 = factory.LazyAttributeSequence(lambda a, n: a.network.subnet[:-4] +
                                          '{0}'.format(int(n) + 2))
     state = "ACTIVE"
     firewall_profile =\
         factory.Sequence(round_seq_first(FACTORY_FOR.FIREWALL_PROFILES))
+
+
+class FloatingIPFactory(factory.DjangoModelFactory):
+    FACTORY_FOR = models.FloatingIP
+
+    machine = factory.SubFactory(VirtualMachineFactory)
+    network = factory.SubFactory(NetworkFactory, public=False, deleted=False,
+                                 floating_ip_pool=True)
+    ipv4 = factory.LazyAttributeSequence(lambda a, n: a.network.subnet[:-4] +
+                                         '{0}'.format(int(n) + 2))
 
 
 class BridgePoolTableFactory(factory.DjangoModelFactory):
@@ -196,3 +212,4 @@ class MacPrefixPoolTableFactory(factory.DjangoModelFactory):
 
 class QuotaHolderSerialFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.QuotaHolderSerial
+    serial = factory.Sequence(lambda x: x, type=int)

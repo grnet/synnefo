@@ -278,6 +278,7 @@ class HelpdeskTests(TestCase):
         self.assertEqual(r.status_code, 403)
 
         backend.shutdown_instance = shutdown = mock.Mock()
+        shutdown.return_value = 1
         self.vm1.operstate = 'STARTED'
         self.vm1.save()
         r = self.client.post(reverse('helpdesk-vm-shutdown', args=(pk,)),
@@ -287,6 +288,7 @@ class HelpdeskTests(TestCase):
         self.assertEqual(len(shutdown.mock_calls), 1)
 
         backend.startup_instance = startup = mock.Mock()
+        startup.return_value = 2
         self.vm1.operstate = 'STOPPED'
         self.vm1.save()
         r = self.client.post(reverse('helpdesk-vm-start', args=(pk,)),

@@ -110,10 +110,9 @@ def login(request):
 @requires_auth_provider('twitter', login=True)
 @require_http_methods(["GET", "POST"])
 @cookie_fix
-def authenticated(
-    request,
-    template='im/third_party_check_local.html',
-    extra_context=None):
+def authenticated(request,
+                  template='im/third_party_check_local.html',
+                  extra_context=None):
 
     if extra_context is None:
         extra_context = {}
@@ -130,7 +129,7 @@ def authenticated(
         return HttpResponseRedirect(reverse('edit_profile'))
 
     token = oauth.Token(request.session['request_token']['oauth_token'],
-        request.session['request_token']['oauth_token_secret'])
+                        request.session['request_token']['oauth_token_secret'])
     client = oauth.Client(consumer, token)
 
     # Step 2. Request the authorized access token from Twitter.
@@ -170,4 +169,3 @@ def authenticated(
                                          user_info,
                                          template,
                                          extra_context)
-

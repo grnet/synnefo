@@ -49,12 +49,12 @@ The extended class provides the following:
 """
 
 from django.core.management import ManagementUtility, setup_environ, \
-BaseCommand, LaxOptionParser, handle_default_options, find_commands, \
-load_command_class
+    BaseCommand, LaxOptionParser, handle_default_options, find_commands, \
+    load_command_class
 
 from django.core import management
 from django.utils.importlib import import_module
-from optparse import Option, make_option
+from optparse import make_option
 from synnefo.util.version import get_component_version
 from synnefo.lib.dictconfig import dictConfig
 
@@ -90,9 +90,9 @@ def find_modules(name, path=None):
         except ImportError:
             if sys.modules.get(name, None):
                 modpath = sys.modules[name].__path__
-                if (isinstance(modpath, basestring)
-                    and not ('', modpath) in results):
-                        results.append(('', sys.modules[name].__path__))
+                if isinstance(modpath, basestring) \
+                   and not ('', modpath) in results:
+                    results.append(('', sys.modules[name].__path__))
                 else:
                     for mp in modpath:
                         if not ('', mp) in results:
@@ -164,8 +164,8 @@ def get_commands():
     """
     global _commands
     if _commands is None:
-        _commands = dict([(name, 'django.core') for name in \
-            find_commands(management.__path__[0])])
+        _commands = dict([(name, 'django.core') for name in
+                         find_commands(management.__path__[0])])
 
         # Find the installed apps
         try:
@@ -222,7 +222,8 @@ class SynnefoManagementUtility(ManagementUtility):
         # --settings-dir option
         # will remove it later to avoid django commands from raising errors
         option_list = BaseCommand.option_list + (
-            make_option('--settings-dir',
+            make_option(
+                '--settings-dir',
                 action='store',
                 dest='settings_dir',
                 default=None,
@@ -344,8 +345,8 @@ class EncodedStdOut(object):
 def main():
     # no need to run setup_environ
     # we already know our project
-    os.environ['DJANGO_SETTINGS_MODULE'] = os.environ.get('DJANGO_SETTINGS_MODULE',
-                                                          'synnefo.settings')
+    os.environ['DJANGO_SETTINGS_MODULE'] = \
+        os.environ.get('DJANGO_SETTINGS_MODULE', 'synnefo.settings')
     configure_logging()
     mu = SynnefoManagementUtility(sys.argv)
     mu.execute()

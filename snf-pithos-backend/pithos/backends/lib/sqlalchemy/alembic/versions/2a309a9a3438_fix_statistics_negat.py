@@ -24,5 +24,6 @@ def upgrade():
     u = st.update().where(st.c.population < 0).values({'population': 0})
     op.execute(u)
 
+
 def downgrade():
     pass

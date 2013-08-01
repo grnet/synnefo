@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -29,18 +29,13 @@
 #
 
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.logic.backend import delete_network
+from synnefo.logic import networks
 from synnefo.management.common import get_network
-from synnefo import quotas
 
 
 class Command(BaseCommand):
     can_import_settings = True
-
     help = "Remove a network from the Database, and Ganeti"
-
-    output_transaction = True  # The management command runs inside
-                               # an SQL transaction
 
     def handle(self, *args, **options):
         if len(args) < 1:
@@ -48,19 +43,6 @@ class Command(BaseCommand):
 
         network = get_network(args[0])
 
-        self.stdout.write('Trying to remove network: %s\n' % str(network))
+        self.stdout.write('Removing network: %s\n' % network.backend_id)
 
-        if network.machines.exists():
-            raise CommandError('Network is not empty. Can not delete')
-
-        network.action = 'DESTROY'
-        network.save()
-
-        if network.userid:
-            quotas.issue_and_accept_commission(network, delete=True)
-
-        for bnet in network.backend_networks.exclude(operstate="DELETED"):
-            delete_network(network, bnet.backend)
-
-        self.stdout.write("Successfully submitted Ganeti jobs to"
-                          " remove network %s" % network.backend_id)
+        networks.delete(network)

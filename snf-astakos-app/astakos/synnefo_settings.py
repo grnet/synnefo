@@ -45,7 +45,7 @@ installed_apps = [
     'django.contrib.messages',
     'django_tables2',
     'astakos.quotaholder_app',
-	'synnefo_branding',
+    'synnefo_branding',
 #    'debug_toolbar',
 ]
 
@@ -74,7 +74,7 @@ middlware_classes = [
     'synnefo.lib.middleware.SecureMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-#    'debug_toolbar.middleware.DebugToolbarMiddleware',
+    # 'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
 static_files = {'astakos.im': ''}

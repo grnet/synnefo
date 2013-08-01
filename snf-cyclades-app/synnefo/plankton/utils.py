@@ -45,7 +45,7 @@ def image_backend(user_id):
     erros to cloud faults.
 
     """
-    image_backend = backend.ImageBackend(user_id)
+    image_backend = backend.get_backend()(user_id)
     try:
         yield image_backend
     except backend.Forbidden:

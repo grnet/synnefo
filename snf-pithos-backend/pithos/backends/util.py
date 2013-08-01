@@ -43,6 +43,7 @@ USAGE_LIMIT = 500
 class PithosBackendPool(ObjectPool):
     def __init__(self, size=None, db_module=None, db_connection=None,
                  block_module=None, block_path=None, block_umask=None,
+                 block_size=None, hash_algorithm=None,
                  queue_module=None, queue_hosts=None,
                  queue_exchange=None, free_versioning=True,
                  astakos_url=None, service_token=None,
@@ -52,14 +53,15 @@ class PithosBackendPool(ObjectPool):
                  public_url_alphabet=None,
                  account_quota_policy=None,
                  container_quota_policy=None,
-                 container_versioning_policy=None
-        ):
+                 container_versioning_policy=None):
         super(PithosBackendPool, self).__init__(size=size)
         self.db_module = db_module
         self.db_connection = db_connection
         self.block_module = block_module
         self.block_path = block_path
         self.block_umask = block_umask
+        self.block_size = block_size
+        self.hash_algorithm = hash_algorithm
         self.queue_module = queue_module
         self.block_params = block_params
         self.queue_hosts = queue_hosts
@@ -76,24 +78,26 @@ class PithosBackendPool(ObjectPool):
 
     def _pool_create(self):
         backend = connect_backend(
-                db_module=self.db_module,
-                db_connection=self.db_connection,
-                block_module=self.block_module,
-                block_path=self.block_path,
-                block_umask=self.block_umask,
-                queue_module=self.queue_module,
-                block_params=self.block_params,
-                queue_hosts=self.queue_hosts,
-                queue_exchange=self.queue_exchange,
-                astakos_url=self.astakos_url,
-                service_token=self.service_token,
-                astakosclient_poolsize=self.astakosclient_poolsize,
-                free_versioning=self.free_versioning,
-                public_url_security=self.public_url_security,
-                public_url_alphabet=self.public_url_alphabet,
-                account_quota_policy=self.account_quota_policy,
-                container_quota_policy=self.container_quota_policy,
-                container_versioning_policy=self.container_versioning_policy)
+            db_module=self.db_module,
+            db_connection=self.db_connection,
+            block_module=self.block_module,
+            block_path=self.block_path,
+            block_umask=self.block_umask,
+            block_size=self.block_size,
+            hash_algorithm=self.hash_algorithm,
+            queue_module=self.queue_module,
+            block_params=self.block_params,
+            queue_hosts=self.queue_hosts,
+            queue_exchange=self.queue_exchange,
+            astakos_url=self.astakos_url,
+            service_token=self.service_token,
+            astakosclient_poolsize=self.astakosclient_poolsize,
+            free_versioning=self.free_versioning,
+            public_url_security=self.public_url_security,
+            public_url_alphabet=self.public_url_alphabet,
+            account_quota_policy=self.account_quota_policy,
+            container_quota_policy=self.container_quota_policy,
+            container_versioning_policy=self.container_versioning_policy)
 
         backend._real_close = backend.close
         backend.close = instancemethod(_pooled_backend_close, backend,
@@ -115,13 +119,18 @@ class PithosBackendPool(ObjectPool):
 
         try:
             fd = conn.connection.connection.fileno()
-            r, w, x = select([fd], (), (), 0)
-            if r:
-                conn.close()
+        except AttributeError:
+            # probably sqlite, assume success
+            pass
+        else:
+            try:
+                r, w, x = select([fd], (), (), 0)
+                if r:
+                    conn.close()
+                    return False
+            except:
+                print_exc()
                 return False
-        except:
-            print_exc()
-            return False
 
         return True
 

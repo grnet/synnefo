@@ -40,14 +40,13 @@ from urlparse import urlparse
 from datetime import tzinfo, timedelta
 
 from django.http import HttpResponse, HttpResponseBadRequest, urlencode, \
-                        HttpResponseRedirect
+    HttpResponseRedirect
 from django.template import RequestContext
 from django.contrib.auth import authenticate
 from django.core.urlresolvers import reverse
 from django.shortcuts import redirect
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.utils.translation import ugettext as _
-from django.core.urlresolvers import reverse
 
 from astakos.im.models import AstakosUser, Invitation
 from astakos.im.functions import login
@@ -75,8 +74,8 @@ def isoformat(d):
     return d.replace(tzinfo=UTC()).isoformat()
 
 
-def epoch(datetime):
-    return int(time.mktime(datetime.timetuple()) * 1000)
+def epoch(dt):
+    return int(time.mktime(dt.timetuple()) * 1000)
 
 
 def get_context(request, extra_context=None, **kwargs):
@@ -224,6 +223,7 @@ def prepare_response(request, user, next='', renew=False):
     response.status_code = 302
     return response
 
+
 class lazy_string(object):
     def __init__(self, function, *args, **kwargs):
         self.function = function
@@ -254,6 +254,7 @@ def get_query(request):
     except AttributeError:
         return {}
 
+
 def get_properties(obj):
     def get_class_attr(_class, attr):
         try:
@@ -261,8 +262,9 @@ def get_properties(obj):
         except AttributeError:
             return
 
-    return (i for i in vars(obj.__class__) \
-        if isinstance(get_class_attr(obj.__class__, i), property))
+    return (i for i in vars(obj.__class__)
+            if isinstance(get_class_attr(obj.__class__, i), property))
+
 
 def model_to_dict(obj, exclude=None, include_empty=True):
     '''
@@ -282,7 +284,8 @@ def model_to_dict(obj, exclude=None, include_empty=True):
         except (ObjectDoesNotExist, AttributeError):
             continue
 
-        if field.__class__.__name__ in ['RelatedManager', 'ManyRelatedManager']:
+        if field.__class__.__name__ in ['RelatedManager',
+                                        'ManyRelatedManager']:
             if field.model.__name__ in exclude:
                 continue
 
@@ -314,10 +317,11 @@ def model_to_dict(obj, exclude=None, include_empty=True):
             tree[field_name] = value
     properties = list(get_properties(obj))
     for p in properties:
-       tree[p] = getattr(obj, p)
+        tree[p] = getattr(obj, p)
     tree['str_repr'] = obj.__str__()
 
     return tree
+
 
 def login_url(request):
     attrs = {}

@@ -31,9 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from binascii import hexlify
-
 from filemapper import FileMapper
+
 
 class Mapper(object):
     """Mapper.
@@ -47,7 +46,7 @@ class Mapper(object):
             if params['mappool']:
                 from radosmapper import RadosMapper
                 self.rmap = RadosMapper(**params)
-	except KeyError:
+        except KeyError:
             pass
 
         self.fmap = FileMapper(**params)

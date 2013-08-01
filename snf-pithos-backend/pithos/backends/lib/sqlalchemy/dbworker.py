@@ -33,6 +33,7 @@
 
 ESCAPE_CHAR = '@'
 
+
 class DBWorker(object):
     """Database connection handler."""
 
@@ -44,9 +45,6 @@ class DBWorker(object):
         self.engine = wrapper.engine
 
     def escape_like(self, s, escape_char=ESCAPE_CHAR):
-        return (
-                s
-                .replace(escape_char, escape_char * 2)
-                .replace('%', escape_char + '%')
-                .replace('_', escape_char + '_')
-        )
+        return (s.replace(escape_char, escape_char * 2).
+                replace('%', escape_char + '%').
+                replace('_', escape_char + '_'))

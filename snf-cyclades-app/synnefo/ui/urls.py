@@ -33,9 +33,9 @@
 #
 from django.conf.urls.defaults import *
 from django.conf import settings
-import os
 
-urlpatterns = patterns('',
+urlpatterns = patterns(
+    '',
     url(r'^$', 'synnefo.ui.views.home', name='ui_index'),
     url(r'^machines/console$', 'synnefo.ui.views.machines_console',
         name='ui_machines_console'),
@@ -44,7 +44,5 @@ urlpatterns = patterns('',
 )
 
 if settings.DEBUG or settings.TEST:
-    urlpatterns += patterns('',
-        url(r'^jstests$', 'synnefo.ui.views.js_tests', name='js_tests'),)
-
-
+    urlpatterns += patterns(
+        '', url(r'^jstests$', 'synnefo.ui.views.js_tests', name='js_tests'),)

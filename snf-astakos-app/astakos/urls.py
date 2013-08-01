@@ -32,7 +32,6 @@
 # or implied, of GRNET S.A.
 
 from django.conf.urls.defaults import include, patterns
-from synnefo.lib import join_urls
 from astakos.im.settings import (
     BASE_PATH, ACCOUNTS_PREFIX, VIEWS_PREFIX, KEYSTONE_PREFIX, WEBLOGIN_PREFIX)
 from snf_django.lib.api.utils import prefix_pattern

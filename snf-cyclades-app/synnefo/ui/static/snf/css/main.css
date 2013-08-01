@@ -2555,7 +2555,7 @@ div.list table thead .vmname {
 }
 
 .hidden {
-    display:none;
+    display:none; 
 }
 
 div.actions a.selected, div.actions a.selected:hover, div.machine-actions a.selected, div.machine-actions a.selected:hover {
@@ -5157,6 +5157,28 @@ table.list-machines .wave {
     width: 624px !important;
 }
 
+.create-vm .vm-network .list-cont.personalize-cont:last-child .confirm-params {
+  margin-right: 0!important;
+}
+
+.create-vm .vm-network .list-cont.personalize-cont:last-child {
+  border-right: none;
+  margin-right: 0;
+  width: 298px;
+}
+
+.create-vm .vm-network .list-cont.personalize-cont .confirm-params {
+  max-height: 240px;
+}
+
+.create-vm .vm-network .list-cont.personalize-cont {
+  height: 330px;
+}
+
+.create-vm .vm-network .list-cont.personalize-cont {
+    width: 47%;
+}
+
 .create-vm .header-step.current {
     font-weight: bold;
 }
@@ -5381,6 +5403,7 @@ table.list-machines .wave {
 }
 
 .create-vm .create-step-cont li.ssh-key-option.selected,
+.create-vm .create-step-cont li.list-item-option.selected,
 .create-vm ul li.selected {
     background-color: #FF7F2A;
     background-image:linear-gradient(top, #FF9955, #E88B4D);
@@ -5927,7 +5950,7 @@ table.list-machines .wave {
 .create-vm .steps-history .steps-history-cont.current {
     background-color: #A1C8DB;
     color: #fff;
-    width: 468px;
+    width: 416px;
 }
 
 .create-vm .steps-history-step {
@@ -6186,7 +6209,8 @@ table.list-machines .wave {
     margin-right: 10px;
 }
 
-.create-vm .create-step-cont li.ssh-key-option .check {
+.create-vm .create-step-cont li.ssh-key-option .check,
+.create-vm .create-step-cont li.list-item-option .check {
     float: right;
     margin-right: 5px;
     margin-top: 0px;
@@ -6194,18 +6218,21 @@ table.list-machines .wave {
 
 .create-vm .create-step-cont li.ssh-key-option.selected {
 }
-.create-vm .create-step-cont li.ssh-key-option.selected:hover {
+.create-vm .create-step-cont li.ssh-key-option.selected:hover,
+.create-vm .create-step-cont li.list-item-option.selected:hover {
     background-color: #F95;
 }
 
-.create-vm .create-step-cont li.ssh-key-option:hover {
+.create-vm .create-step-cont li.ssh-key-option:hover,
+.create-vm .create-step-cont li.list-item-option:hover {
     background-color: #eee;
 }
 
 .create-vm .create-step-cont li.ssh-key-option.selected {
 }
 
-.create-vm .create-step-cont li.ssh-key-option {
+.create-vm .create-step-cont li.ssh-key-option,
+.create-vm .create-step-cont li.list-item-option {
     padding: 6px !important;
 }
 
@@ -6749,6 +6776,15 @@ input.has-errors {
     display: block;
 }
 
+.models-view .model-list ul li.model-item .item-action.connect {
+    background-image: url("../images/option-action-connect.png");
+}
+
+.from-create .models-view .item-action.connect,
+.from-create .models-view .item-action.connect:hover {
+    display: none !important;
+}
+
 .models-view .model-list ul li.model-item .item-action.hide {
     background-image: url("../images/minus-8.png");
 }
@@ -6760,7 +6796,9 @@ input.has-errors {
     background-image: url("../images/plus-8-dark.png");
 }
 
-.models-view .model-list ul li.model-item .item-action.remove {
+.models-view .model-list ul li.model-item .item-action.remove,
+.models-view .model-list ul li.model-item .item-action.disconnect
+{
     background-image: url("../images/option-action-remove.png");
 }
 
@@ -6771,7 +6809,9 @@ input.has-errors {
 .models-view .model-list ul li.model-item .item-action.edit {
     background-image: url("../images/option-action-edit.png");
 }
-.models-view .model-list ul li.model-item .item-action.remove:hover {
+.models-view .model-list ul li.model-item .item-action.remove:hover,
+.models-view .model-list ul li.model-item .item-action.disconnect:hover
+{
     background-color: #880000 !important;
     border-color: #800 !important;
 }
@@ -6800,6 +6840,14 @@ input.has-errors {
     background-repeat: no-repeat;
     background-position: right center;
     border-right: 5px solid transparent;
+}
+
+.models-view .model-list ul li.model-item.in-progress .item-action {
+  display: none !important;
+}
+
+.models-view .model-list ul li.model-item.in-progress:hover .item-action {
+  display: none !important;
 }
 
 .models-view .model-list h3 {
@@ -6898,7 +6946,8 @@ input.has-errors {
 }
 
 #user_custom_images,
-#user_public_keys {
+#user_public_keys,
+#user_public_ips {
     font-size: 0.7em;
 }
 
@@ -6994,7 +7043,7 @@ input.has-errors {
     border-color: #782421;
 }
 
-#user_public_keys .limit-msg {
+.models-view .limit-msg {
     color: #800;
     position: absolute;
     right: 20px;
@@ -7093,4 +7142,78 @@ input.has-errors {
 
 .suspended .action-indicator {
   display: none !important;
+}
+
+.trigger-resize {
+    background-image: url("../images/pencil-disabled.png");
+    background-position: right 2px;
+    background-repeat: no-repeat;
+    padding-right: 15px !important;
+    cursor: pointer;
+}
+
+.can-resize .trigger-resize:hover {
+    text-decoration: underline;
+}
+
+.can-resize .trigger-resize {
+    font-weight: bold;
+    background-image: url("../images/pencil.png");
+}
+
+.vm-resize .flavor-options-cont {
+  float: none;
+  width: 100%;
+  margin: 0;
+  height: auto;
+}
+
+.form-action.disabled {
+  background-color: #ddd;
+  color: #aaa;
+  border-color: #999;
+}
+
+.overlay.connect-ip .form-actions {
+  display: none;
+}
+
+.overlay.connect-ip li.options-object .options-object-cont {
+  background-image: none !important; 
+}
+
+#user_public_ips li.connected:hover .item-action.remove {
+  display: none;
+}
+
+#user_public_ips li.connected:hover .item-action.connect {
+  display: none;
+}
+
+#user_public_ips li.connected:hover .item-action.disconnect {
+  display: block;
+}
+
+#user_public_ips li:hover .item-action.disconnect {
+  display: none;
+}
+
+#user_public_ips li .progress-msg {
+  display: none;
+}
+
+#user_public_ips li.in-progress .progress-msg {
+  display: block !important;  
+}
+
+#user_public_ips li.in-progress {
+  background-color: #C6CFD2;
+  background-image: url("../images/icons/indicators/small/progress.gif");
+  background-position: 530px center;
+  background-repeat: no-repeat;
+}
+
+#user_public_ips .param.address {
+  font-weight: bold;
+  margin-right: 10px;
 }

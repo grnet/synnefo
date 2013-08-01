@@ -121,8 +121,7 @@ def project_add(request):
             post_save_redirect=reverse('project_list'),
             form_class=ProjectApplicationForm,
             msg=_("The %(verbose_name)s has been received and "
-                  "is under consideration."),
-            )
+                  "is under consideration."))
 
     if response is not None:
         return response
@@ -136,17 +135,19 @@ def project_add(request):
 @cookie_fix
 @valid_astakos_user_required
 def project_list(request):
-    projects = ProjectApplication.objects.user_accessible_projects(request.user).select_related()
+    projects = ProjectApplication.objects.user_accessible_projects(
+        request.user).select_related()
     table = tables.UserProjectApplicationsTable(projects, user=request.user,
                                                 prefix="my_projects_")
-    RequestConfig(request, paginate={"per_page": settings.PAGINATE_BY}).configure(table)
+    RequestConfig(request,
+                  paginate={"per_page": settings.PAGINATE_BY}).configure(table)
 
     return object_list(
         request,
         projects,
         template_name='im/projects/project_list.html',
         extra_context={
-            'is_search':False,
+            'is_search': False,
             'table': table,
         })
 
@@ -169,6 +170,7 @@ def project_app_cancel(request, application_id):
 
     next = restrict_next(next, domain=settings.COOKIE_DOMAIN)
     return redirect(next)
+
 
 @commit_on_success_strict()
 def _project_app_cancel(request, application_id):
@@ -249,11 +251,13 @@ def project_modify(request, application_id):
     next = restrict_next(next, domain=settings.COOKIE_DOMAIN)
     return redirect(next)
 
+
 @require_http_methods(["GET", "POST"])
 @cookie_fix
 @valid_astakos_user_required
 def project_app(request, application_id):
     return common_detail(request, application_id, project_view=False)
+
 
 @require_http_methods(["GET", "POST"])
 @cookie_fix
@@ -261,15 +265,15 @@ def project_app(request, application_id):
 def project_detail(request, chain_id):
     return common_detail(request, chain_id)
 
+
 @commit_on_success_strict()
 def addmembers(request, chain_id, addmembers_form):
     if addmembers_form.is_valid():
         try:
             chain_id = int(chain_id)
-            map(lambda u: enroll_member(
-                    chain_id,
-                    u,
-                    request_user=request.user),
+            map(lambda u: enroll_member(chain_id,
+                                        u,
+                                        request_user=request.user),
                 addmembers_form.valid_users)
         except (IOError, PermissionDenied), e:
             messages.error(request, e)
@@ -342,8 +346,10 @@ def common_detail(request, chain_or_app_id, project_view=True,
         m = _(astakos_messages.NOT_ALLOWED)
         raise PermissionDenied(m)
 
-    if (not (is_owner or is_project_admin) and project_view and
-        not user.non_owner_can_view(project)):
+    if (
+        not (is_owner or is_project_admin) and project_view and
+        not user.non_owner_can_view(project)
+    ):
         m = _(astakos_messages.NOT_ALLOWED)
         raise PermissionDenied(m)
 
@@ -377,9 +383,10 @@ def common_detail(request, chain_or_app_id, project_view=True,
             'mem_display': mem_display,
             'can_join_request': can_join_req,
             'can_leave_request': can_leave_req,
-            'members_status_filter':members_status_filter,
+            'members_status_filter': members_status_filter,
             'remaining_memberships_count': remaining_memberships_count,
-            })
+        })
+
 
 @require_http_methods(["GET", "POST"])
 @cookie_fix
@@ -402,7 +409,8 @@ def project_search(request):
         accepted_projects = request.user.projectmembership_set.filter(
             ~Q(acceptance_date__isnull=True)).values_list('project', flat=True)
         projects = ProjectApplication.objects.search_by_name(q)
-        projects = projects.filter(~Q(project__last_approval_date__isnull=True))
+        projects = projects.filter(
+            ~Q(project__last_approval_date__isnull=True))
         projects = projects.exclude(project__in=accepted_projects)
 
     table = tables.UserProjectApplicationsTable(projects, user=request.user,
@@ -412,18 +420,20 @@ def project_search(request):
     else:
         table.caption = _('ALL PROJECTS')
 
-    RequestConfig(request, paginate={"per_page": settings.PAGINATE_BY}).configure(table)
+    RequestConfig(request,
+                  paginate={"per_page": settings.PAGINATE_BY}).configure(table)
 
     return object_list(
         request,
         projects,
         template_name='im/projects/project_list.html',
         extra_context={
-          'form': form,
-          'is_search': True,
-          'q': q,
-          'table': table
+            'form': form,
+            'is_search': True,
+            'q': q,
+            'table': table
         })
+
 
 @require_http_methods(["POST"])
 @cookie_fix
@@ -436,7 +446,6 @@ def project_join(request, chain_id):
 
     with ExceptionHandler(request):
         _project_join(request, chain_id)
-
 
     next = restrict_next(next, domain=settings.COOKIE_DOMAIN)
     return redirect(next)
@@ -509,7 +518,6 @@ def _project_cancel(request, chain_id):
         messages.success(request, m)
     except (IOError, PermissionDenied), e:
         messages.error(request, e)
-
 
 
 @require_http_methods(["POST"])

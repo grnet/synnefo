@@ -264,3 +264,7 @@ class IPPool(PoolManager):
 
     def index_to_value(self, index):
         return str(self.net[index])
+
+    def contains(self, address):
+        addr = ipaddr.IPAddress(address)
+        return addr in self.net

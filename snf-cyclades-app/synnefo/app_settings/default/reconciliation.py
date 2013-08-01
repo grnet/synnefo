@@ -5,4 +5,3 @@
 
 # Minutes between reconciliations
 RECONCILIATION_MIN = 30
-

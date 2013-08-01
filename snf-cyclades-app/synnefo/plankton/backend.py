@@ -54,11 +54,14 @@ The Plankton attributes are the following:
 import json
 import warnings
 import logging
-from time import gmtime, strftime
+import os
+
+from time import time, gmtime, strftime
 from functools import wraps
 from operator import itemgetter
 
 from django.conf import settings
+from django.utils import importlib
 from pithos.backends.base import NotAllowedError, VersionNotExists
 
 logger = logging.getLogger(__name__)
@@ -69,7 +72,7 @@ PLANKTON_PREFIX = 'plankton:'
 PROPERTY_PREFIX = 'property:'
 
 PLANKTON_META = ('container_format', 'disk_format', 'name', 'properties',
-                 'status')
+                 'status', 'created_at')
 
 from pithos.backends.util import PithosBackendPool
 _pithos_backend_pool = \
@@ -118,6 +121,21 @@ def handle_backend_exceptions(func):
     return wrapper
 
 
+def commit_on_success(func):
+    def wrapper(self, *args, **kwargs):
+        backend = self.backend
+        backend.pre_exec()
+        try:
+            ret = func(self, *args, **kwargs)
+        except:
+            backend.post_exec(False)
+            raise
+        else:
+            backend.post_exec(True)
+        return ret
+    return wrapper
+
+
 class ImageBackend(object):
     """A wrapper arround the pithos backend to simplify image handling."""
 
@@ -134,6 +152,7 @@ class ImageBackend(object):
         self.backend.close()
 
     @handle_backend_exceptions
+    @commit_on_success
     def get_image(self, image_uuid):
         """Retrieve information about an image."""
         image_url = self._get_image_url(image_uuid)
@@ -150,20 +169,18 @@ class ImageBackend(object):
         Get all available information about an Image.
         """
         account, container, name = split_url(image_url)
-        versions = self.backend.list_versions(self.user, account, container,
-                                              name)
-        if not versions:
-            raise Exception("Image without versions %s" % image_url)
         try:
             meta = self._get_meta(image_url)
             meta["deleted"] = ""
         except NameError:
+            versions = self.backend.list_versions(self.user, account,
+                                                  container, name)
+            if not versions:
+                raise Exception("Image without versions %s" % image_url)
             # Object was deleted, use the latest version
             version, timestamp = versions[-1]
             meta = self._get_meta(image_url, version)
             meta["deleted"] = timestamp
-
-        meta["created"] = versions[0][1]
 
         if PLANKTON_PREFIX + 'name' not in meta:
             logger.warning("Image without Plankton name! url %s meta %s",
@@ -217,6 +234,7 @@ class ImageBackend(object):
                      self.user, image_url, permissions)
 
     @handle_backend_exceptions
+    @commit_on_success
     def unregister(self, image_uuid):
         """Unregister an image.
 
@@ -233,6 +251,7 @@ class ImageBackend(object):
         logger.debug("User '%s' deleted image '%s'", self.user, image_url)
 
     @handle_backend_exceptions
+    @commit_on_success
     def add_user(self, image_uuid, add_user):
         """Add a user as an image member.
 
@@ -249,6 +268,7 @@ class ImageBackend(object):
         self._update_permissions(image_url, permissions)
 
     @handle_backend_exceptions
+    @commit_on_success
     def remove_user(self, image_uuid, remove_user):
         """Remove the user from image members.
 
@@ -268,6 +288,7 @@ class ImageBackend(object):
         self._update_permissions(image_url, permissions)
 
     @handle_backend_exceptions
+    @commit_on_success
     def replace_users(self, image_uuid, replace_users):
         """Replace image members.
 
@@ -285,6 +306,7 @@ class ImageBackend(object):
         self._update_permissions(image_url, permissions)
 
     @handle_backend_exceptions
+    @commit_on_success
     def list_users(self, image_uuid):
         """List the image members.
 
@@ -298,6 +320,7 @@ class ImageBackend(object):
         return [user for user in permissions.get('read', []) if user != '*']
 
     @handle_backend_exceptions
+    @commit_on_success
     def update_metadata(self, image_uuid, metadata):
         """Update Image metadata."""
         image_url = self._get_image_url(image_uuid)
@@ -318,9 +341,11 @@ class ImageBackend(object):
         meta.update(**metadata)
 
         self._update_meta(image_url, meta)
-        return self.get_image(image_uuid)
+        image_url = self._get_image_url(image_uuid)
+        return self._get_image(image_url)
 
     @handle_backend_exceptions
+    @commit_on_success
     def register(self, name, image_url, metadata):
         # Validate that metadata are allowed
         if "id" in metadata:
@@ -363,6 +388,9 @@ class ImageBackend(object):
         # Update rest metadata
         meta = {}
         meta['properties'] = metadata.pop('properties', {})
+        # Add creation(register) timestamp as a metadata, to avoid extra
+        # queries when retrieving the list of images.
+        meta['created_at'] = time()
         meta.update(name=name, status='available', **metadata)
 
         # Do the actualy update in the Pithos backend
@@ -393,8 +421,6 @@ class ImageBackend(object):
         for (location, meta, permissions) in _images:
             image_url = "pithos://" + location
             meta["modified"] = meta["version_timestamp"]
-            # TODO: Create metadata when registering an Image
-            meta["created"] = meta["version_timestamp"]
             images.append(image_to_dict(image_url, meta, permissions))
 
         if params is None:
@@ -404,16 +430,19 @@ class ImageBackend(object):
         images.sort(key=key, reverse=reverse)
         return images
 
+    @commit_on_success
     def list_images(self, filters=None, params=None):
         return self._list_images(user=self.user, filters=filters,
                                  params=params)
 
+    @commit_on_success
     def list_shared_images(self, member, filters=None, params=None):
         images = self._list_images(user=self.user, filters=filters,
                                    params=params)
         is_shared = lambda img: not img["is_public"] and img["owner"] == member
         return filter(is_shared, images)
 
+    @commit_on_success
     def list_public_images(self, filters=None, params=None):
         images = self._list_images(user=None, filters=filters, params=params)
         return filter(lambda img: img["is_public"], images)
@@ -444,7 +473,8 @@ def image_to_dict(image_url, meta, permissions):
     image["id"] = meta["uuid"]
     image["location"] = image_url
     image["checksum"] = meta["hash"]
-    image["created_at"] = format_timestamp(meta["created"])
+    created = meta.get("created_at", meta["modified"])
+    image["created_at"] = format_timestamp(created)
     deleted = meta.get("deleted", None)
     image["deleted_at"] = format_timestamp(deleted) if deleted else ""
     image["updated_at"] = format_timestamp(meta["modified"])
@@ -463,7 +493,67 @@ def image_to_dict(image_url, meta, permissions):
             # Keep only those in plankton meta
             if key in PLANKTON_META:
                 if key == "properties":
-                    val = json.loads(val)
-                image[key] = val
+                    image[key] = json.loads(val)
+                elif key == "created_at":
+                    # created timestamp is return in 'created_at' field
+                    pass
+                else:
+                    image[key] = val
 
     return image
+
+
+class JSONFileBackend(object):
+    """
+    A dummy image backend that loads available images from a file with json
+    formatted content.
+
+    usage:
+        PLANKTON_BACKEND_MODULE = 'synnefo.plankton.backend.JSONFileBackend'
+        PLANKTON_IMAGES_JSON_BACKEND_FILE = '/tmp/images.json'
+
+        # loading images from an existing plankton service
+        $ curl -H "X-Auth-Token: <MYTOKEN>" \
+                https://cyclades.synnefo.org/plankton/images/detail | \
+                python -m json.tool > /tmp/images.json
+    """
+    def __init__(self, userid):
+        self.images_file = getattr(settings,
+                                   'PLANKTON_IMAGES_JSON_BACKEND_FILE', '')
+        if not os.path.exists(self.images_file):
+            raise Exception("Invalid plankgon images json backend file: %s",
+                            self.images_file)
+        fp = file(self.images_file)
+        self.images = json.load(fp)
+        fp.close()
+
+    def iter(self, *args, **kwargs):
+        return self.images.__iter__()
+
+    def list_images(self, *args, **kwargs):
+        return self.images
+
+    def get_image(self, image_uuid):
+        try:
+            return filter(lambda i: i['id'] == image_uuid, self.images)[0]
+        except IndexError:
+            raise Exception("Unknown image uuid: %s" % image_uuid)
+
+    def close(self):
+        pass
+
+
+def get_backend():
+    backend_module = getattr(settings, 'PLANKTON_BACKEND_MODULE', None)
+    if not backend_module:
+        # no setting set
+        return ImageBackend
+
+    parts = backend_module.split(".")
+    module = ".".join(parts[:-1])
+    cls = parts[-1]
+    try:
+        return getattr(importlib.import_module(module), cls)
+    except (ImportError, AttributeError), e:
+        raise ImportError("Cannot import plankton module: %s (%s)" %
+                          (backend_module, e.message))

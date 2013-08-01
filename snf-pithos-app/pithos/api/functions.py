@@ -55,21 +55,20 @@ from pithos.api.util import (
     copy_or_move_object, get_int_parameter, get_content_length,
     get_content_range, socket_read_iterator, SaveToBackendHandler,
     object_data_response, put_object_block, hashmap_md5, simple_list_response,
-    api_method, is_uuid,
-    retrieve_uuid, retrieve_uuids, retrieve_displaynames,
-    get_pithos_usage
+    api_method, is_uuid, retrieve_uuid, retrieve_uuids,
+    retrieve_displaynames, get_pithos_usage, Checksum, NoChecksum
 )
 
 from pithos.api.settings import (UPDATE_MD5, TRANSLATE_UUIDS,
                                  SERVICE_TOKEN, ASTAKOS_BASE_URL)
+
+from pithos.api import settings
 
 from pithos.backends.base import (
     NotAllowedError, QuotaError, ContainerNotEmpty, ItemNotExists,
     VersionNotExists, ContainerExists)
 
 from pithos.backends.filter import parse_filters
-
-import hashlib
 
 import logging
 logger = logging.getLogger(__name__)
@@ -176,7 +175,7 @@ def object_demux(request, v_account, v_container, v_object):
         return api.api_method_not_allowed(request)
 
 
-@api_method('GET', user_required=False, logger=logger)
+@api_method('GET', token_required=False, user_required=False, logger=logger)
 def authenticate(request):
     # Normal Response Codes: 204
     # Error Response Codes: internalServerError (500),
@@ -209,7 +208,7 @@ def account_list(request):
     marker = request.GET.get('marker')
     limit = get_int_parameter(request.GET.get('limit'))
     if not limit:
-        limit = 10000
+        limit = settings.API_LIST_LIMIT
 
     accounts = request.backend.list_accounts(request.user_uniq, marker, limit)
 
@@ -371,19 +370,23 @@ def container_list(request, v_account):
     marker = request.GET.get('marker')
     limit = get_int_parameter(request.GET.get('limit'))
     if not limit:
-        limit = 10000
+        limit = settings.API_LIST_LIMIT
 
     shared = False
     if 'shared' in request.GET:
         shared = True
-    public = False
-    if request.user_uniq == v_account and 'public' in request.GET:
-        public = True
+
+    public_requested = 'public' in request.GET
+    public_granted = public_requested and request.user_uniq == v_account
+
+    if public_requested and not public_granted:
+        raise faults.Forbidden(
+            'PUblic container listing is not allowed to non path owners')
 
     try:
         containers = request.backend.list_containers(
             request.user_uniq, v_account,
-            marker, limit, shared, until, public)
+            marker, limit, shared, until, public_granted)
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except NameError:
@@ -639,7 +642,7 @@ def object_list(request, v_account, v_container):
     marker = request.GET.get('marker')
     limit = get_int_parameter(request.GET.get('limit'))
     if not limit:
-        limit = 10000
+        limit = settings.API_LIST_LIMIT
 
     keys = request.GET.get('meta')
     if keys:
@@ -661,6 +664,10 @@ def object_list(request, v_account, v_container):
 
     public_requested = 'public' in request.GET
     public_granted = public_requested and request.user_uniq == v_account
+
+    if public_requested and not public_granted:
+        raise faults.Forbidden(
+            'PUblic object listing is not allowed to non path owners')
 
     if request.serialization == 'text':
         try:
@@ -684,9 +691,9 @@ def object_list(request, v_account, v_container):
 
     try:
         objects = request.backend.list_object_meta(
-            request.user_uniq, v_account,
-            v_container, prefix, delimiter, marker,
-            limit, virtual, 'pithos', keys, shared, until, None, public_granted)
+            request.user_uniq, v_account, v_container, prefix, delimiter,
+            marker, limit, virtual, 'pithos', keys, shared, until, None,
+            public_granted)
         object_permissions = {}
         object_public = {}
         if until is None:
@@ -806,7 +813,7 @@ def object_meta(request, v_account, v_container, v_object):
         validate_matching_preconditions(request, meta)
     except faults.NotModified:
         response = HttpResponse(status=304)
-        response['ETag'] = meta['checksum']
+        response['ETag'] = meta['hash'] if not UPDATE_MD5 else meta['checksum']
         return response
 
     response = HttpResponse(status=200)
@@ -887,7 +894,7 @@ def _object_read(request, v_account, v_container, v_object):
         validate_matching_preconditions(request, meta)
     except faults.NotModified:
         response = HttpResponse(status=304)
-        response['ETag'] = meta['checksum']
+        response['ETag'] = meta['hash'] if not UPDATE_MD5 else meta['checksum']
         return response
 
     hashmap_reply = False
@@ -913,9 +920,9 @@ def _object_read(request, v_account, v_container, v_object):
         try:
             for x in objects:
                 s, h = \
-                    request.backend.get_object_hashmap(request.user_uniq,
-                                                       v_account, src_container,
-                                                       x[0], x[1])
+                    request.backend.get_object_hashmap(
+                        request.user_uniq, v_account, src_container, x[0],
+                        x[1])
                 sizes.append(s)
                 hashmaps.append(h)
         except NotAllowedError:
@@ -963,7 +970,8 @@ def _object_read(request, v_account, v_container, v_object):
     return object_data_response(request, sizes, hashmaps, meta)
 
 
-@api_method('PUT', format_allowed=True, user_required=True, logger=logger)
+@api_method('PUT', format_allowed=True, user_required=True, logger=logger,
+            lock_container_path=True)
 def object_write(request, v_account, v_container, v_object):
     # Normal Response Codes: 201
     # Error Response Codes: internalServerError (500),
@@ -1001,8 +1009,8 @@ def object_write(request, v_account, v_container, v_object):
         else:
             if TRANSLATE_UUIDS:
                 try:
-                    src_account = retrieve_uuid(getattr(request, 'token', None),
-                                                src_account)
+                    src_account = retrieve_uuid(
+                        getattr(request, 'token', None), src_account)
                 except ItemNotExists:
                     faults.ItemNotFound('Invalid source account')
 
@@ -1071,7 +1079,8 @@ def object_write(request, v_account, v_container, v_object):
 
         checksum = ''  # Do not set to None (will copy previous value).
     else:
-        md5 = hashlib.md5()
+        etag = request.META.get('HTTP_ETAG')
+        checksum_compute = Checksum() if etag or UPDATE_MD5 else NoChecksum()
         size = 0
         hashmap = []
         for data in socket_read_iterator(request, content_length,
@@ -1081,21 +1090,17 @@ def object_write(request, v_account, v_container, v_object):
             #       and we stop before getting this much data.
             size += len(data)
             hashmap.append(request.backend.put_block(data))
-            md5.update(data)
+            checksum_compute.update(data)
 
-        checksum = md5.hexdigest().lower()
-        etag = request.META.get('HTTP_ETAG')
+        checksum = checksum_compute.hexdigest()
         if etag and parse_etags(etag)[0].lower() != checksum:
             raise faults.UnprocessableEntity('Object ETag does not match')
 
     try:
-        version_id = \
-            request.backend.update_object_hashmap(request.user_uniq,
-                                                  v_account, v_container,
-                                                  v_object, size, content_type,
-                                                  hashmap, checksum,
-                                                  'pithos', meta, True,
-                                                  permissions)
+        version_id, merkle = request.backend.update_object_hashmap(
+            request.user_uniq, v_account, v_container, v_object, size,
+            content_type, hashmap, checksum, 'pithos', meta, True, permissions
+        )
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except IndexError, e:
@@ -1129,13 +1134,13 @@ def object_write(request, v_account, v_container, v_object):
             raise faults.ItemNotFound('Object does not exist')
 
     response = HttpResponse(status=201)
-    if checksum:
-        response['ETag'] = checksum
+    response['ETag'] = merkle if not UPDATE_MD5 else checksum
     response['X-Object-Version'] = version_id
     return response
 
 
-@api_method('POST', user_required=True, logger=logger)
+@api_method('POST', user_required=True, logger=logger,
+            lock_container_path=True)
 def object_write_form(request, v_account, v_container, v_object):
     # Normal Response Codes: 201
     # Error Response Codes: internalServerError (500),
@@ -1151,13 +1156,10 @@ def object_write_form(request, v_account, v_container, v_object):
 
     checksum = file.etag
     try:
-        version_id = \
-            request.backend.update_object_hashmap(request.user_uniq,
-                                                  v_account, v_container,
-                                                  v_object, file.size,
-                                                  file.content_type,
-                                                  file.hashmap, checksum,
-                                                  'pithos', {}, True)
+        version_id, merkle = request.backend.update_object_hashmap(
+            request.user_uniq, v_account, v_container, v_object, file.size,
+            file.content_type, file.hashmap, checksum, 'pithos', {}, True
+        )
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except ItemNotExists:
@@ -1166,13 +1168,14 @@ def object_write_form(request, v_account, v_container, v_object):
         raise faults.RequestEntityTooLarge('Quota error: %s' % e)
 
     response = HttpResponse(status=201)
-    response['ETag'] = checksum
+    response['ETag'] = merkle if not UPDATE_MD5 else checksum
     response['X-Object-Version'] = version_id
     response.content = checksum
     return response
 
 
-@api_method('COPY', format_allowed=True, user_required=True, logger=logger)
+@api_method('COPY', format_allowed=True, user_required=True, logger=logger,
+            lock_container_path=True)
 def object_copy(request, v_account, v_container, v_object):
     # Normal Response Codes: 201
     # Error Response Codes: internalServerError (500),
@@ -1216,7 +1219,8 @@ def object_copy(request, v_account, v_container, v_object):
     return response
 
 
-@api_method('MOVE', format_allowed=True, user_required=True, logger=logger)
+@api_method('MOVE', format_allowed=True, user_required=True, logger=logger,
+            lock_container_path=True)
 def object_move(request, v_account, v_container, v_object):
     # Normal Response Codes: 201
     # Error Response Codes: internalServerError (500),
@@ -1259,7 +1263,8 @@ def object_move(request, v_account, v_container, v_object):
     return response
 
 
-@api_method('POST', format_allowed=True, user_required=True, logger=logger)
+@api_method('POST', format_allowed=True, user_required=True, logger=logger,
+            lock_container_path=True)
 def object_update(request, v_account, v_container, v_object):
     # Normal Response Codes: 202, 204
     # Error Response Codes: internalServerError (500),
@@ -1297,10 +1302,9 @@ def object_update(request, v_account, v_container, v_object):
         # Do permissions first, as it may fail easier.
         if permissions is not None:
             try:
-                request.backend.update_object_permissions(request.user_uniq,
-                                                          v_account,
-                                                          v_container, v_object,
-                                                          permissions)
+                request.backend.update_object_permissions(
+                    request.user_uniq, v_account, v_container, v_object,
+                    permissions)
             except NotAllowedError:
                 raise faults.Forbidden('Not allowed')
             except ItemNotExists:
@@ -1341,8 +1345,8 @@ def object_update(request, v_account, v_container, v_object):
 
     try:
         size, hashmap = \
-            request.backend.get_object_hashmap(request.user_uniq,
-                                               v_account, v_container, v_object)
+            request.backend.get_object_hashmap(
+                request.user_uniq, v_account, v_container, v_object)
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except ItemNotExists:
@@ -1358,9 +1362,13 @@ def object_update(request, v_account, v_container, v_object):
         src_account = request.META.get('HTTP_X_SOURCE_ACCOUNT')
         if not src_account:
             src_account = request.user_uniq
-        src_container, src_name = split_container_object_string(src_object)
-        src_version = request.META.get('HTTP_X_SOURCE_VERSION')
         try:
+            src_container, src_name = split_container_object_string(src_object)
+        except ValueError:
+            raise faults.BadRequest('Invalid source object')
+
+        try:
+            src_version = request.META.get('HTTP_X_SOURCE_VERSION')
             src_size, src_hashmap = request.backend.get_object_hashmap(
                 request.user_uniq,
                 src_account, src_container, src_name, src_version)
@@ -1391,7 +1399,7 @@ def object_update(request, v_account, v_container, v_object):
                     'Content length does not match range length')
     if (total is not None
             and (total != size or offset >= size
-                 or (length > 0 and offset + length >= size))):
+                 or (length > 0 and offset + length > size))):
         raise faults.RangeNotSatisfiable(
             'Supplied range will change provided object limits')
 
@@ -1413,8 +1421,8 @@ def object_update(request, v_account, v_container, v_object):
                         hashmap[bi] = src_hashmap[sbi]
                     else:
                         data = request.backend.get_block(src_hashmap[sbi])
-                        hashmap[bi] = request.backend.update_block(hashmap[bi],
-                                                                   data[:bl], 0)
+                        hashmap[bi] = request.backend.update_block(
+                            hashmap[bi], data[:bl], 0)
                 else:
                     hashmap.append(src_hashmap[sbi])
                 offset += bl
@@ -1444,7 +1452,8 @@ def object_update(request, v_account, v_container, v_object):
             offset += bytes
             data = data[bytes:]
         if len(data) > 0:
-            put_object_block(request, hashmap, data, offset)
+            bytes = put_object_block(request, hashmap, data, offset)
+            offset += bytes
 
     if offset > size:
         size = offset
@@ -1454,13 +1463,11 @@ def object_update(request, v_account, v_container, v_object):
     checksum = hashmap_md5(
         request.backend, hashmap, size) if UPDATE_MD5 else ''
     try:
-        version_id = \
-            request.backend.update_object_hashmap(request.user_uniq,
-                                                  v_account, v_container,
-                                                  v_object, size,
-                                                  prev_meta['type'],
-                                                  hashmap, checksum, 'pithos',
-                                                  meta, replace, permissions)
+        version_id, merkle = request.backend.update_object_hashmap(
+            request.user_uniq, v_account, v_container, v_object, size,
+            prev_meta['type'], hashmap, checksum, 'pithos', meta, replace,
+            permissions
+        )
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except ItemNotExists:
@@ -1479,12 +1486,13 @@ def object_update(request, v_account, v_container, v_object):
             raise faults.ItemNotFound('Object does not exist')
 
     response = HttpResponse(status=204)
-    response['ETag'] = checksum
+    response['ETag'] = merkle if not UPDATE_MD5 else checksum
     response['X-Object-Version'] = version_id
     return response
 
 
-@api_method('DELETE', user_required=True, logger=logger)
+@api_method('DELETE', user_required=True, logger=logger,
+            lock_container_path=True)
 def object_delete(request, v_account, v_container, v_object):
     # Normal Response Codes: 204
     # Error Response Codes: internalServerError (500),

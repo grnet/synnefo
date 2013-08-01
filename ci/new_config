@@ -1,0 +1,72 @@
+[Global]
+# Timeouts in seconds
+build_timeout = 240
+# Apt repository to use
+apt_repo = http://apt.dev.grnet.gr squeeze/
+# Synnefo git repo
+synnefo_repo = https://code.grnet.gr/git/synnefo
+# Git branch to test (specify sha1 or branch name)
+synnefo_branch = HEAD
+# snf-deploy git repo
+deploy_repo = https://code.grnet.gr/git/snf-deploy
+# Defines the schema that snf-deploy will use
+schema = one_node
+# Local dir to save builded packages
+pkgs_dir = /tmp/synnefo_pkgs
+# If True patch the pydist.py module (see Debian bug #657665)
+patch_pydist = True
+# Configuration of git (on remote server)
+git_config_name = Buildbot
+git_config_mail = synnefo@builder.dev.grnet.gr
+# Url to fetch ssh public keys
+public_ssh_keys_url =
+# Network address from which we allow access to server
+filter_access_network = 195.251.29.0/24,62.217.123.39
+# Config file to save temporary options (eg IPs, passwords etc)
+temporary_config = /tmp/ci_temp_conf
+
+
+[Deployment]
+# Credentials
+auth_url = https://accounts.okeanos.io/identity/v2.0/
+token =
+# If we deploy on okeanos.io we have to set this to True
+# The server will reside besides a NAT and we have to compute ssh port
+deploy_on_io = True
+# Server name to use for our machine
+server_name = Synnefo Deployment
+# Flavor ID to use
+# (149 for production, 639 for okeanos.io)
+flavor_id = 639
+# Image to use (name must contain this)
+image_name = OldStable
+# UUID of owner of system images
+# (25ecced9-bf53-4145-91ee-cf47377e9fb2 for production,
+#  04cbe33f-29b7-4ef1-94fb-015929e5fc06 for okeanos.io)
+system_uuid = 04cbe33f-29b7-4ef1-94fb-015929e5fc06
+
+
+[Burnin]
+# Maybe add some burnin options
+# (e.g. tests to run/ignore, timeouts etc)
+cmd_options = --nofailfast --no-ipv6 --action-timeout=240
+
+
+[Unit Tests]
+component = astakos cyclades pithos
+
+
+[Repository]
+# Projects reside on this repo
+projects =
+    snf-common
+    astakosclient
+    snf-django-lib
+    snf-webproject
+    snf-branding
+    snf-astakos-app
+    snf-pithos-backend
+    snf-cyclades-gtools
+    snf-cyclades-app
+    snf-pithos-app
+    snf-tools

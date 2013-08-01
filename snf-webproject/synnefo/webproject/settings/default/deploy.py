@@ -24,7 +24,7 @@ HIDDEN_COOKIES = ['password', '_pithos2_a', 'token', 'sessionid', 'shibstate',
                   'shibsession', 'CSRF_COOKIE']
 HIDDEN_HEADERS = ['HTTP_X_AUTH_TOKEN', 'HTTP_COOKIE']
 # Mail size limit for unhandled exception
-MAIL_MAX_LEN = 100 * 1024 # (100KB)
+MAIL_MAX_LEN = 100 * 1024  # (100KB)
 
 #When set to True, if the request URL does not match any of the patterns in the
 #URLconf and it doesn't end in a slash, an HTTP redirect is issued to the same

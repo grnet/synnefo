@@ -68,8 +68,8 @@ def add_pending_auth_provider(request, third_party_token, provider):
         # a third party provider account
         try:
             pending = PendingThirdPartyUser.objects.get(
-                                token=third_party_token,
-                                provider=provider.module)
+                token=third_party_token,
+                provider=provider.module)
             provider = pending.get_provider()
             provider.add_to_user()
             pending.delete()
@@ -78,7 +78,8 @@ def add_pending_auth_provider(request, third_party_token, provider):
 
 
 def get_pending_key(request):
-    third_party_token = get_query(request).get('key', request.session.get('pending_key', False))
+    third_party_token = get_query(request).get(
+        'key', request.session.get('pending_key', False))
     if 'pending_key' in request.session:
         del request.session['pending_key']
     return third_party_token
@@ -157,8 +158,9 @@ def handle_third_party_login(request, provider_module, identifier,
     if not affiliation:
         affiliation = provider_module.title()
 
-    next_redirect = request.GET.get('next', request.session.get('next_url',
-                                                                None))
+    next_redirect = request.GET.get(
+        'next', request.session.get('next_url', None))
+
     if 'next_url' in request.session:
         del request.session['next_url']
 

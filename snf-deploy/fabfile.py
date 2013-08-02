@@ -22,6 +22,7 @@ def setup_env(confdir="conf", packages="packages",
     print(" * Using %s and %s for packages and templates accordingly..." % (packages, templates))
 
     autoconf = ast.literal_eval(autoconf)
+    disable_colors = ast.literal_eval(disable_colors)
     conf = Conf.configure(confdir=confdir, cluster_name=cluster_name, autoconf=autoconf)
     env.env = Env(conf)
 
@@ -29,6 +30,9 @@ def setup_env(confdir="conf", packages="packages",
     env.password = env.env.password
     env.user = env.env.user
     env.shell = "/bin/bash -c"
+
+    if disable_colors:
+        disable_color()
 
     if env.env.cms.hostname in [env.env.accounts.hostname, env.env.cyclades.hostname, env.env.pithos.hostname]:
       env.cms_pass = True

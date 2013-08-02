@@ -16,6 +16,25 @@ import tempfile
 from snfdeploy import massedit
 
 
+HEADER = '\033[95m'
+OKBLUE = '\033[94m'
+OKGREEN = '\033[92m'
+WARNING = '\033[93m'
+FAIL = '\033[91m'
+ENDC = '\033[0m'
+
+
+def disable_color():
+    HEADER = ''
+    OKBLUE = ''
+    OKGREEN = ''
+    WARNING = ''
+    FAIL = ''
+    ENDC = ''
+
+
+if not sys.stdout.isatty():
+    disable_color()
 
 class Host(object):
     def __init__(self, hostname, ip, mac, domain):
@@ -164,27 +183,10 @@ class Conf(object):
         self.nodes.set("info", "public_iface", get_default_route()[1])
 
 
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-
-    def disable(self):
-        self.HEADER = ''
-        self.OKBLUE = ''
-        self.OKGREEN = ''
-        self.WARNING = ''
-        self.FAIL = ''
-        self.ENDC = ''
-
-
 def debug(host, msg):
 
-    print bcolors.HEADER + host + \
-          bcolors.OKBLUE + ": " + msg + bcolors.ENDC
+    print HEADER + host + \
+          OKBLUE + ": " + msg + ENDC
 
 
 def check_pidfile(pidfile):

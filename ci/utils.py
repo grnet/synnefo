@@ -347,7 +347,7 @@ class SynnefoCI(object):
         curl https://dev.grnet.gr/files/apt-grnetdev.pub | apt-key add -
         apt-get update
         git config --global user.name {1}
-        git config --global user.mail {2}
+        git config --global user.email {2}
         """.format(self.config.get('Global', 'apt_repo'),
                    self.config.get('Global', 'git_config_name'),
                    self.config.get('Global', 'git_config_mail'))

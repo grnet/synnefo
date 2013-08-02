@@ -203,9 +203,9 @@ class ModularBackend(BaseBackend):
         for x in ['READ', 'WRITE']:
             setattr(self, x, getattr(self.db_module, x))
         self.node = self.db_module.Node(**params)
-        for x in ['ROOTNODE', 'SERIAL', 'HASH', 'SIZE', 'TYPE', 'MTIME',
-                  'MUSER', 'UUID', 'CHECKSUM', 'CLUSTER', 'MATCH_PREFIX',
-                  'MATCH_EXACT']:
+        for x in ['ROOTNODE', 'SERIAL', 'NODE', 'HASH', 'SIZE', 'TYPE',
+                  'MTIME', 'MUSER', 'UUID', 'CHECKSUM', 'CLUSTER',
+                  'MATCH_PREFIX', 'MATCH_EXACT']:
             setattr(self, x, getattr(self.db_module, x))
 
         self.block_module = load_module(block_module)
@@ -915,8 +915,7 @@ class ModularBackend(BaseBackend):
             self.permissions.public_unset(path)
         else:
             self.permissions.public_set(
-                path, self.public_url_security, self.public_url_alphabet
-            )
+                path, self.public_url_security, self.public_url_alphabet)
 
     @debug_method
     def get_object_hashmap(self, user, account, container, name, version=None):
@@ -925,6 +924,8 @@ class ModularBackend(BaseBackend):
         self._can_read(user, account, container, name)
         path, node = self._lookup_object(account, container, name)
         props = self._get_version(node, version)
+        if props[self.HASH] is None:
+            return 0, ()
         hashmap = self.store.map_get(binascii.unhexlify(props[self.HASH]))
         return props[self.SIZE], [binascii.hexlify(x) for x in hashmap]
 
@@ -1368,6 +1369,8 @@ class ModularBackend(BaseBackend):
             except ValueError:
                 raise VersionNotExists('Version does not exist')
             props = self.node.version_get_properties(version)
+            if props is not None and node != props[self.NODE]:
+                raise NotAllowedError('Version does not belong to this path')
             if props is None or props[self.CLUSTER] == CLUSTER_DELETED:
                 raise VersionNotExists('Version does not exist')
         return props

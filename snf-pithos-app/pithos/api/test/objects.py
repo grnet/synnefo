@@ -136,6 +136,46 @@ class ObjectGet(PithosAPITest):
         self.assertEqual(len(l3), len(l2) + 1)
         self.assertEqual(l3[:-1], l2)
 
+    def test_get_version(self):
+        c = 'c1'
+        o = self.objects[c][0]
+        url = join_urls(self.pithos_path, self.user, c, o)
+
+        # Update metadata
+        meta = {'HTTP_X_OBJECT_META_QUALITY': 'AAA'}
+        r = self.post(url, content_type='', **meta)
+        self.assertEqual(r.status_code, 202)
+
+        url = join_urls(self.pithos_path, self.user, c, o)
+        r = self.get('%s?version=list&format=json' % url)
+        self.assertEqual(r.status_code, 200)
+        l = json.loads(r.content)['versions']
+        self.assertEqual(len(l), 2)
+
+        r = self.head('%s?version=%s' % (url, l[0][0]))
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('X-Object-Meta-Quality' not in r)
+
+        r = self.head('%s?version=%s' % (url, l[1][0]))
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('X-Object-Meta-Quality' in r)
+
+        # test invalid version
+        r = self.head('%s?version=-1' % url)
+        self.assertEqual(r.status_code, 404)
+
+        other_name, other_data, r = self.upload_object(c)
+        self.assertTrue('X-Object-Version' in r)
+        other_version = r['X-Object-Version']
+
+        self.assertTrue(o != other_name)
+
+        r = self.get('%s?version=%s' % (url, other_version))
+        self.assertEqual(r.status_code, 403)
+
+        r = self.head('%s?version=%s' % (url, other_version))
+        self.assertEqual(r.status_code, 403)
+
     def test_objects_with_trailing_spaces(self):
         # create object
         oname = self.upload_object('c1')[0]

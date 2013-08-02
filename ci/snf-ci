@@ -8,6 +8,7 @@ from optparse import OptionParser
 
 CREATE_SERVER_CMD = "create"
 BUILD_SYNNEFO_CMD = "build"
+BUILD_DOCS_SYNNEFO_CMD = "docs"
 DEPLOY_SYNNEFO_CMD = "deploy"
 TEST_SYNNEFO_CMD = "test"
 RUN_BURNIN_CMD = "burnin"
@@ -16,6 +17,7 @@ ALL_CMDS = "all"
 AVAILABLE_COMMANDS = [
     CREATE_SERVER_CMD,
     BUILD_SYNNEFO_CMD,
+    BUILD_DOCS_SYNNEFO_CMD,
     DEPLOY_SYNNEFO_CMD,
     TEST_SYNNEFO_CMD,
     RUN_BURNIN_CMD,
@@ -28,6 +30,7 @@ USAGE = """usage: %%prog [options] command
 command:
     * %s: Create the slave server
     * %s: Create debian packages for Synnefo in the created server
+    * %s: Create documentation for Synnefo in the created server
     * %s: Deploy Synnefo in created server
     * %s: Run Synnefo unittests
     * %s: Run snf-burnin in the deployed Synnefo
@@ -35,6 +38,7 @@ command:
     * %s: Run all the available commands
 """ % tuple([CREATE_SERVER_CMD,
              BUILD_SYNNEFO_CMD,
+             BUILD_DOCS_SYNNEFO_CMD,
              DEPLOY_SYNNEFO_CMD,
              TEST_SYNNEFO_CMD,
              RUN_BURNIN_CMD,
@@ -56,6 +60,11 @@ def main():
                       help="Download the debian packages that were created"
                            " during the '%s' step in this directory" %
                            BUILD_SYNNEFO_CMD)
+    parser.add_option("--fetch-docs", dest="fetch_docs",
+                      default=None,
+                      help="Download the documentation that was created"
+                           " during the '%s' step in this directory" %
+                           BUILD_DOCS_SYNNEFO_CMD)
     parser.add_option("--schema", dest="schema", default=None,
                       help="Schema for snf-deploy.")
 
@@ -92,9 +101,14 @@ def main():
         synnefo_ci.clone_repo()
     if getattr(options, BUILD_SYNNEFO_CMD, False):
         synnefo_ci.build_synnefo()
-    if options.fetch_packages:
-        dest = os.path.abspath(options.fetch_packages)
-        synnefo_ci.fetch_packages(dest=dest)
+        if options.fetch_packages:
+            dest = os.path.abspath(options.fetch_packages)
+            synnefo_ci.fetch_packages(dest=dest)
+    if getattr(options, BUILD_DOCS_SYNNEFO_CMD, False):
+        synnefo_ci.build_documentation()
+        if options.fetch_docs:
+            dest = os.path.abspath(options.fetch_docs)
+            synnefo_ci.fetch_documentation(dest=dest)
     if getattr(options, DEPLOY_SYNNEFO_CMD, False):
         synnefo_ci.deploy_synnefo(schema=options.schema)
     if getattr(options, TEST_SYNNEFO_CMD, False):

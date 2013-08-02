@@ -169,6 +169,9 @@ def get_uuid_displayname_catalogs(request, user_call=True):
     except:
         raise faults.BadRequest('Request body should be json formatted.')
     else:
+        if not isinstance(input_data, dict):
+            raise faults.BadRequest(
+                'Request body should be a json formatted dictionary')
         uuids = input_data.get('uuids', [])
         if uuids is None and user_call:
             uuids = []

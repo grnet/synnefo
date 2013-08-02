@@ -39,6 +39,8 @@ from synnefo.lib import join_urls
 from django.test import TestCase
 from django.core.urlresolvers import reverse
 
+from datetime import date
+
 #from xml.dom import minidom
 
 import json
@@ -586,6 +588,83 @@ class TokensApiTest(TestCase):
 #            body = minidom.parseString(r.content)
 #        except Exception, e:
 #            self.fail(e)
+
+
+class UserCatalogsTest(TestCase):
+    def test_get_uuid_displayname_catalogs(self):
+        self.user = AstakosUser.objects.create(
+            email='test1', email_verified=True, moderated=True,
+            is_rejected=False)
+
+        client = Client()
+        url = reverse('astakos.api.user.get_uuid_displayname_catalogs')
+        d = dict(uuids=[self.user.uuid], displaynames=[self.user.username])
+
+        # assert Unauthorized: missing authentication token
+        r = client.post(url,
+                        data=json.dumps(d),
+                        content_type='application/json')
+        self.assertEqual(r.status_code, 401)
+
+        # assert Unauthorized: invalid authentication token
+        r = client.post(url,
+                        data=json.dumps(d),
+                        content_type='application/json',
+                        HTTP_X_AUTH_TOKEN='1234')
+        self.assertEqual(r.status_code, 401)
+
+        # assert Unauthorized: inactive token holder
+        r = client.post(url,
+                        data=json.dumps(d),
+                        content_type='application/json',
+                        HTTP_X_AUTH_TOKEN=self.user.auth_token)
+        self.assertEqual(r.status_code, 401)
+
+        backend = activation_backends.get_backend()
+        backend.activate_user(self.user)
+        assert self.user.is_active is True
+
+        r = client.post(url,
+                        data=json.dumps(d),
+                        content_type='application/json',
+                        HTTP_X_AUTH_TOKEN=self.user.auth_token)
+        self.assertEqual(r.status_code, 200)
+        try:
+            data = json.loads(r.content)
+        except:
+            self.fail('Response body should be json formatted')
+        else:
+            if not isinstance(data, dict):
+                self.fail('Response body should be json formatted dictionary')
+
+            self.assertTrue('uuid_catalog' in data)
+            self.assertEqual(data['uuid_catalog'],
+                             {self.user.uuid: self.user.username})
+
+            self.assertTrue('displayname_catalog' in data)
+            self.assertEqual(data['displayname_catalog'],
+                             {self.user.username: self.user.uuid})
+
+        # assert Unauthorized: expired token
+        self.user.auth_token_expires = date.today() - timedelta(1)
+        self.user.save()
+
+        r = client.post(url,
+                        data=json.dumps(d),
+                        content_type='application/json',
+                        HTTP_X_AUTH_TOKEN=self.user.auth_token)
+        self.assertEqual(r.status_code, 401)
+
+        # assert Unauthorized: expired token
+        self.user.auth_token_expires = date.today() + timedelta(1)
+        self.user.save()
+
+        # assert badRequest
+        r = client.post(url,
+                        data=json.dumps(str(d)),
+                        content_type='application/json',
+                        HTTP_X_AUTH_TOKEN=self.user.auth_token)
+        self.assertEqual(r.status_code, 400)
 
 
 class WrongPathAPITest(TestCase):

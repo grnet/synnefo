@@ -452,7 +452,7 @@ class SynnefoCI(object):
         self.logger.info("Build Synnefo documentation..")
         _run("pip install -U Sphinx", False)
         with fabric.cd("synnefo"):
-            _run("./ci/make_docs.sh synnefo_documentation", False)
+            _run("devflow-update-version; ./ci/make_docs.sh synnefo_documentation", False)
 
     def fetch_documentation(self, dest=None):
         if dest is None:

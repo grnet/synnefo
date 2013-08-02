@@ -5,8 +5,9 @@ build_timeout = 240
 apt_repo = http://apt.dev.grnet.gr squeeze/
 # Synnefo git repo
 synnefo_repo = https://code.grnet.gr/git/synnefo
-# Git branch to test (specify sha1 or branch name)
-synnefo_branch = HEAD
+# Git branch to test (specify sha1 or branch name). If not set, the
+# branch/sha will result from the current repository.
+synnefo_branch =
 # snf-deploy git repo
 deploy_repo = https://code.grnet.gr/git/snf-deploy
 # Defines the schema that snf-deploy will use
@@ -20,19 +21,16 @@ git_config_name = Buildbot
 git_config_mail = synnefo@builder.dev.grnet.gr
 # Url to fetch ssh public keys
 public_ssh_keys_url =
-# Network address from which we allow access to server
-filter_access_network = 195.251.29.0/24,62.217.123.39
+# Network address from which we allow access to server. If not set, access
+# to server is not restricted.
+filter_access_network =
 # Config file to save temporary options (eg IPs, passwords etc)
 temporary_config = /tmp/ci_temp_conf
 
 
 [Deployment]
-# Credentials
-auth_url = https://accounts.okeanos.io/identity/v2.0/
-token =
-# If we deploy on okeanos.io we have to set this to True
-# The server will reside besides a NAT and we have to compute ssh port
-deploy_on_io = True
+# Choose the 'cloud' to use from .kamakirc
+kamaki_cloud =
 # Server name to use for our machine
 server_name = Synnefo Deployment
 # Flavor ID to use

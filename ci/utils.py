@@ -9,11 +9,16 @@ import sys
 import time
 import logging
 import fabric.api as fabric
+import subprocess
+import tempfile
 from ConfigParser import ConfigParser, DuplicateSectionError
 
+from kamaki.cli import config as kamaki_config
 from kamaki.clients.astakos import AstakosClient
 from kamaki.clients.cyclades import CycladesClient
 from kamaki.clients.image import ImageClient
+
+DEFAULT_CONFIG_FILE = "new_config"
 
 
 def _run(cmd, verbose):
@@ -46,21 +51,21 @@ def _green(msg):
 
 def _check_fabric(fun):
     """Check if fabric env has been set"""
-    def wrapper(self, *args):
+    def wrapper(self, *args, **kwargs):
         """wrapper function"""
         if not self.fabric_installed:
             self.setup_fabric()
-        return fun(self, *args)
+        return fun(self, *args, **kwargs)
     return wrapper
 
 
 def _check_kamaki(fun):
     """Check if kamaki has been initialized"""
-    def wrapper(self, *args):
+    def wrapper(self, *args, **kwargs):
         """wrapper function"""
         if not self.kamaki_installed:
             self.setup_kamaki()
-        return fun(self, *args)
+        return fun(self, *args, **kwargs)
     return wrapper
 
 
@@ -84,7 +89,7 @@ class _MyFormatter(logging.Formatter):
 class SynnefoCI(object):
     """SynnefoCI python class"""
 
-    def __init__(self, cleanup_config=False):
+    def __init__(self, config_file=None, cleanup_config=False, cloud=None):
         """ Initialize SynnefoCI python class
 
         Setup logger, local_dir, config and kamaki
@@ -101,10 +106,14 @@ class SynnefoCI(object):
         self.repo_dir = os.path.dirname(self.ci_dir)
 
         # Read config file
-        self.conffile = os.path.join(self.ci_dir, "new_config")
+        if config_file is None:
+            config_file = DEFAULT_CONFIG_FILE
+        if not os.path.isabs(config_file):
+            config_file = os.path.join(self.ci_dir, config_file)
+
         self.config = ConfigParser()
         self.config.optionxform = str
-        self.config.read(self.conffile)
+        self.config.read(config_file)
         temp_config = self.config.get('Global', 'temporary_config')
         if cleanup_config:
             try:
@@ -113,6 +122,16 @@ class SynnefoCI(object):
                 pass
         else:
             self.config.read(self.config.get('Global', 'temporary_config'))
+
+        # Set kamaki cloud
+        if cloud is not None:
+            self.kamaki_cloud = cloud
+        elif self.config.has_option("Deployment", "kamaki_cloud"):
+            kamaki_cloud = self.config.get("Deployment", "kamaki_cloud")
+            if kamaki_cloud == "":
+                self.kamaki_cloud = None
+        else:
+            self.kamaki_cloud = None
 
         # Initialize variables
         self.fabric_installed = False
@@ -125,10 +144,16 @@ class SynnefoCI(object):
 
         Setup cyclades_client and image_client
         """
-        self.logger.info("Setup kamaki client..")
-        auth_url = self.config.get('Deployment', 'auth_url')
+
+        config = kamaki_config.Config()
+        if self.kamaki_cloud is None:
+            self.kamaki_cloud = config.get_global("default_cloud")
+
+        self.logger.info("Setup kamaki client, using cloud '%s'.." %
+                         self.kamaki_cloud)
+        auth_url = config.get_cloud(self.kamaki_cloud, "url")
         self.logger.debug("Authentication URL is %s" % _green(auth_url))
-        token = self.config.get('Deployment', 'token')
+        token = config.get_cloud(self.kamaki_cloud, "token")
         #self.logger.debug("Token is %s" % _green(token))
 
         astakos_client = AstakosClient(auth_url, token)
@@ -179,16 +204,20 @@ class SynnefoCI(object):
             self._wait_transition(server_id, "ACTIVE", "DELETED")
 
     @_check_kamaki
-    def create_server(self):
+    def create_server(self, image_id=None, flavor_id=None):
         """Create slave server"""
         self.logger.info("Create a new server..")
-        image = self._find_image()
-        self.logger.debug("Will use image \"%s\"" % _green(image['name']))
-        self.logger.debug("Image has id %s" % _green(image['id']))
+        if image_id is None:
+            image = self._find_image()
+            self.logger.debug("Will use image \"%s\"" % _green(image['name']))
+            image_id = image["id"]
+        self.logger.debug("Image has id %s" % _green(image_id))
+        if flavor_id is None:
+            flavor_id = self.config.getint("Deployment", "flavor_id")
         server = self.cyclades_client.create_server(
             self.config.get('Deployment', 'server_name'),
-            self.config.getint('Deployment', 'flavor_id'),
-            image['id'])
+            flavor_id,
+            image_id)
         server_id = server['id']
         self.write_config('server_id', server_id)
         self.logger.debug("Server got id %s" % _green(server_id))
@@ -197,25 +226,25 @@ class SynnefoCI(object):
         self.logger.debug("Server's admin user is %s" % _green(server_user))
         server_passwd = server['adminPass']
         self.write_config('server_passwd', server_passwd)
-        self.logger.debug(
-            "Server's admin password is %s" % _green(server_passwd))
 
         server = self._wait_transition(server_id, "BUILD", "ACTIVE")
         self._get_server_ip_and_port(server)
+        self._copy_ssh_keys()
 
         self.setup_fabric()
         self.logger.info("Setup firewall")
         accept_ssh_from = self.config.get('Global', 'filter_access_network')
-        self.logger.debug("Block ssh except from %s" % accept_ssh_from)
-        cmd = """
-        local_ip=$(/sbin/ifconfig eth0 | grep 'inet addr:' | \
-            cut -d':' -f2 | cut -d' ' -f1)
-        iptables -A INPUT -s localhost -j ACCEPT
-        iptables -A INPUT -s $local_ip -j ACCEPT
-        iptables -A INPUT -s {0} -p tcp --dport 22 -j ACCEPT
-        iptables -A INPUT -p tcp --dport 22 -j DROP
-        """.format(accept_ssh_from)
-        _run(cmd, False)
+        if accept_ssh_from != "":
+            self.logger.debug("Block ssh except from %s" % accept_ssh_from)
+            cmd = """
+            local_ip=$(/sbin/ifconfig eth0 | grep 'inet addr:' | \
+                cut -d':' -f2 | cut -d' ' -f1)
+            iptables -A INPUT -s localhost -j ACCEPT
+            iptables -A INPUT -s $local_ip -j ACCEPT
+            iptables -A INPUT -s {0} -p tcp --dport 22 -j ACCEPT
+            iptables -A INPUT -p tcp --dport 22 -j DROP
+            """.format(accept_ssh_from)
+            _run(cmd, False)
 
     def _find_image(self):
         """Find a suitable image to use
@@ -237,9 +266,8 @@ class SynnefoCI(object):
     def _get_server_ip_and_port(self, server):
         """Compute server's IPv4 and ssh port number"""
         self.logger.info("Get server connection details..")
-        # XXX: check if this IP is from public network
         server_ip = server['attachments'][0]['ipv4']
-        if eval(self.config.get('Deployment', 'deploy_on_io')):
+        if ".okeanos.io" in self.cyclades_client.base_url:
             tmp1 = int(server_ip.split(".")[2])
             tmp2 = int(server_ip.split(".")[3])
             server_ip = "gate.okeanos.io"
@@ -250,6 +278,22 @@ class SynnefoCI(object):
         self.logger.debug("Server's IPv4 is %s" % _green(server_ip))
         self.write_config('server_port', server_port)
         self.logger.debug("Server's ssh port is %s" % _green(server_port))
+
+    @_check_fabric
+    def _copy_ssh_keys(self):
+        if not self.config.has_option("Deployment", "ssh_keys"):
+            return
+        authorized_keys = self.config.get("Deployment",
+                                          "ssh_keys")
+        if authorized_keys != "" and os.path.exists(authorized_keys):
+            keyfile = '/tmp/%s.pub' % fabric.env.user
+            _run('mkdir -p ~/.ssh && chmod 700 ~/.ssh', False)
+            fabric.put(authorized_keys, keyfile)
+            _run('cat %s >> ~/.ssh/authorized_keys' % keyfile, False)
+            _run('rm %s' % keyfile, False)
+            self.logger.debug("Uploaded ssh authorized keys")
+        else:
+            self.logger.debug("No ssh keys found")
 
     def write_config(self, option, value, section="Temporary Options"):
         """Write changes back to config file"""
@@ -268,9 +312,10 @@ class SynnefoCI(object):
         fabric.env.user = self.config.get('Temporary Options', 'server_user')
         fabric.env.host_string = \
             self.config.get('Temporary Options', 'server_ip')
-        fabric.env.port = self.config.getint('Temporary Options', 'server_port')
-        fabric.env.password = \
-            self.config.get('Temporary Options', 'server_passwd')
+        fabric.env.port = self.config.getint('Temporary Options',
+                                             'server_port')
+        fabric.env.password = self.config.get('Temporary Options',
+                                              'server_passwd')
         fabric.env.connection_attempts = 10
         fabric.env.shell = "/bin/bash -c"
         fabric.env.disable_known_hosts = True
@@ -309,38 +354,43 @@ class SynnefoCI(object):
         _run(cmd, False)
 
         synnefo_repo = self.config.get('Global', 'synnefo_repo')
+        synnefo_branch = self.config.get("Global", "synnefo_branch")
+        if synnefo_branch == "":
+            synnefo_branch =\
+                subprocess.Popen(["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                    stdout=subprocess.PIPE).communicate()[0].strip()
+            if synnefo_branch == "HEAD":
+                synnefo_branch = \
+                    subprocess.Popen(["git", "rev-parse","--short", "HEAD"],
+                        stdout=subprocess.PIPE).communicate()[0].strip()
+        self.logger.info("Will use branch %s" % synnefo_branch)
         # Currently clonning synnefo can fail unexpectedly
-        for i in range(3):
+        cloned = False
+        for i in range(10):
             self.logger.debug("Clone synnefo from %s" % synnefo_repo)
             try:
-                _run("git clone %s" % synnefo_repo, False)
+                _run("git clone %s synnefo" % synnefo_repo, False)
+                cloned = True
                 break
             except:
-                self.logger.warning("Clonning synnefo failed.. retrying %s" % i)
+                self.logger.warning("Clonning synnefo failed.. retrying %s"
+                                    % i)
+        cmd ="""
+        cd synnefo
+        for branch in `git branch -a | grep remotes | grep -v HEAD | grep -v master`; do
+            git branch --track ${branch##*/} $branch
+        done
+        git checkout %s
+        """ % (synnefo_branch)
+        _run(cmd, False)
 
-        synnefo_branch = self.config.get('Global', 'synnefo_branch')
-        if synnefo_branch == "HEAD":
-            # Get current branch
-            synnefo_branch = os.popen("git rev-parse HEAD").read().strip()
-            self.logger.debug(
-                "Checkout %s in feature-ci branch" % synnefo_branch)
-            with fabric.cd("synnefo"):
-                _run("git checkout -b feature-ci %s" % synnefo_branch, False)
-        elif synnefo_branch == "origin/master":
-            pass
-        elif "origin" in synnefo_branch:
-            self.logger.debug("Checkout %s branch" % synnefo_branch)
-            with fabric.cd("synnefo"):
-                _run("git checkout -t %s" % synnefo_branch, False)
-        else:
-            self.logger.debug(
-                "Checkout %s in feature-ci branch" % synnefo_branch)
-            with fabric.cd("synnefo"):
-                _run("git checkout -b feature-ci %s" % synnefo_branch, False)
+        if not cloned:
+            self.logger.error("Can not clone Synnefo repo.")
+            sys.exit(-1)
 
         deploy_repo = self.config.get('Global', 'deploy_repo')
         self.logger.debug("Clone snf-deploy from %s" % deploy_repo)
-        _run("git clone %s" % deploy_repo, False)
+        _run("git clone --depth 1 %s" % deploy_repo, False)
 
     @_check_fabric
     def build_synnefo(self):
@@ -355,7 +405,7 @@ class SynnefoCI(object):
         """
         _run(cmd, False)
 
-        if eval(self.config.get('Global', 'patch_pydist')):
+        if self.config.get('Global', 'patch_pydist') == "True":
             self.logger.debug("Patch pydist.py module")
             cmd = r"""
             sed -r -i 's/(\(\?P<name>\[A-Za-z\]\[A-Za-z0-9_\.)/\1\\\-/' \
@@ -396,17 +446,39 @@ class SynnefoCI(object):
         """
         _run(cmd, False)
 
+
     @_check_fabric
-    def deploy_synnefo(self):
+    def build_documentation(self):
+        self.logger.info("Build Synnefo documentation..")
+        _run("pip install -U Sphinx", False)
+        with fabric.cd("synnefo"):
+            _run("./ci/make_docs.sh synnefo_documentation", False)
+
+    def fetch_documentation(self, dest=None):
+        if dest is None:
+            dest = "synnefo_documentation"
+        dest = os.path.abspath(dest)
+        if not os.path.exists(dest):
+            os.makedirs(dest)
+        self.fetch_compressed("synnefo/synnefo_documentation", dest)
+        self.logger.info("Downloaded documentation to %s" %
+                         _green(dest))
+
+    @_check_fabric
+    def deploy_synnefo(self, schema=None):
         """Deploy Synnefo using snf-deploy"""
         self.logger.info("Deploy Synnefo..")
-        schema = self.config.get('Global', 'schema')
-        schema_files = os.path.join(self.ci_dir, "schemas/%s/*" % schema)
+        if schema is None:
+            schema = self.config.get('Global', 'schema')
         self.logger.debug("Will use %s schema" % schema)
+
+        schema_dir = os.path.join(self.ci_dir, "schemas/%s" % schema)
+        if not (os.path.exists(schema_dir) and os.path.isdir(schema_dir)):
+            raise ValueError("Unknown schema: %s" % schema)
 
         self.logger.debug("Upload schema files to server")
         with fabric.quiet():
-            fabric.put(schema_files, "/etc/snf-deploy/")
+            fabric.put(os.path.join(schema_dir, "*"), "/etc/snf-deploy/")
 
         self.logger.debug("Change password in nodes.conf file")
         cmd = """
@@ -467,23 +539,38 @@ class SynnefoCI(object):
         _run(cmd, True)
 
     @_check_fabric
-    def fetch_packages(self):
-        """Download Synnefo packages"""
-        self.logger.info("Download Synnefo packages")
-        self.logger.debug("Create tarball with packages")
-        cmd = """
-        tar czf synnefo_build-area.tgz synnefo_build-area
-        """
+    def fetch_compressed(self, src, dest=None):
+        self.logger.debug("Creating tarball of %s" % src)
+        basename = os.path.basename(src)
+        tar_file = basename + ".tgz"
+        cmd = "tar czf %s %s" % (tar_file, src)
         _run(cmd, False)
+        if not os.path.exists(dest):
+            os.makedirs(dest)
 
-        pkgs_dir = self.config.get('Global', 'pkgs_dir')
-        self.logger.debug("Fetch packages to local dir %s" % pkgs_dir)
-        os.makedirs(pkgs_dir)
-        with fabric.quiet():
-            fabric.get("synnefo_build-area.tgz", pkgs_dir)
+        tmp_dir = tempfile.mkdtemp()
+        fabric.get(tar_file, tmp_dir)
 
-        pkgs_file = os.path.join(pkgs_dir, "synnefo_build-area.tgz")
-        self._check_hash_sum(pkgs_file, "synnefo_build-area.tgz")
+        dest_file = os.path.join(tmp_dir, tar_file)
+        self._check_hash_sum(dest_file, tar_file)
+        self.logger.debug("Untar packages file %s" % dest_file)
+        cmd = """
+        cd %s
+        tar xzf %s
+        cp -r %s/* %s
+        rm -r %s
+        """ % (tmp_dir, tar_file, src, dest, tmp_dir)
+        os.system(cmd)
+        self.logger.info("Downloaded %s to %s" %
+                         (src, _green(dest)))
 
-        self.logger.debug("Untar packages file %s" % pkgs_file)
-        os.system("cd %s; tar xzf synnefo_build-area.tgz" % pkgs_dir)
+    @_check_fabric
+    def fetch_packages(self, dest=None):
+        if dest is None:
+            dest = self.config.get('Global', 'pkgs_dir')
+        dest = os.path.abspath(dest)
+        if not os.path.exists(dest):
+            os.makedirs(dest)
+        self.fetch_compressed("synnefo_build-area", dest)
+        self.logger.info("Downloaded debian packages to %s" %
+                         _green(dest))

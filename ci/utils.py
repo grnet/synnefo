@@ -10,6 +10,7 @@ import time
 import logging
 import fabric.api as fabric
 import subprocess
+import tempfile
 from ConfigParser import ConfigParser, DuplicateSectionError
 
 from kamaki.cli import config as kamaki_config
@@ -445,6 +446,24 @@ class SynnefoCI(object):
         """
         _run(cmd, False)
 
+
+    @_check_fabric
+    def build_documentation(self):
+        self.logger.info("Build Synnefo documentation..")
+        _run("pip install -U Sphinx", False)
+        with fabric.cd("synnefo"):
+            _run("./ci/make_docs.sh synnefo_documentation", False)
+
+    def fetch_documentation(self, dest=None):
+        if dest is None:
+            dest = "synnefo_documentation"
+        dest = os.path.abspath(dest)
+        if not os.path.exists(dest):
+            os.makedirs(dest)
+        self.fetch_compressed("synnefo/synnefo_documentation", dest)
+        self.logger.info("Downloaded documentation to %s" %
+                         _green(dest))
+
     @_check_fabric
     def deploy_synnefo(self, schema=None):
         """Deploy Synnefo using snf-deploy"""
@@ -520,38 +539,38 @@ class SynnefoCI(object):
         _run(cmd, True)
 
     @_check_fabric
-    def fetch_packages(self, dest=None):
-        """Download Synnefo packages"""
-        self.logger.info("Download Synnefo packages")
-        self.logger.debug("Create tarball with packages")
-        cmd = """
-        tar czf synnefo_build-area.tgz synnefo_build-area
-        """
+    def fetch_compressed(self, src, dest=None):
+        self.logger.debug("Creating tarball of %s" % src)
+        basename = os.path.basename(src)
+        tar_file = basename + ".tgz"
+        cmd = "tar czf %s %s" % (tar_file, src)
         _run(cmd, False)
+        if not os.path.exists(dest):
+            os.makedirs(dest)
 
-        if dest is None:
-            pkgs_dir = self.config.get('Global', 'pkgs_dir')
-        else:
-            pkgs_dir = dest
+        tmp_dir = tempfile.mkdtemp()
+        fabric.get(tar_file, tmp_dir)
 
-        self.logger.debug("Fetch packages to local dir %s" % pkgs_dir)
-        # Create package directory if missing
-        if not os.path.exists(pkgs_dir):
-            os.makedirs(pkgs_dir)
-
-        with fabric.quiet():
-            fabric.get("synnefo_build-area.tgz", pkgs_dir)
-
-        pkgs_file = os.path.join(pkgs_dir, "synnefo_build-area.tgz")
-        self._check_hash_sum(pkgs_file, "synnefo_build-area.tgz")
-
-        self.logger.debug("Untar packages file %s" % pkgs_file)
+        dest_file = os.path.join(tmp_dir, tar_file)
+        self._check_hash_sum(dest_file, tar_file)
+        self.logger.debug("Untar packages file %s" % dest_file)
         cmd = """
         cd %s
-        tar xzf synnefo_build-area.tgz
-        cp synnefo_build-area/* %s
-        rm -r synnefo_build-area
-        """ % (pkgs_dir, dest)
+        tar xzf %s
+        cp -r %s/* %s
+        rm -r %s
+        """ % (tmp_dir, tar_file, src, dest, tmp_dir)
         os.system(cmd)
+        self.logger.info("Downloaded %s to %s" %
+                         (src, _green(dest)))
+
+    @_check_fabric
+    def fetch_packages(self, dest=None):
+        if dest is None:
+            dest = self.config.get('Global', 'pkgs_dir')
+        dest = os.path.abspath(dest)
+        if not os.path.exists(dest):
+            os.makedirs(dest)
+        self.fetch_compressed("synnefo_build-area", dest)
         self.logger.info("Downloaded debian packages to %s" %
-                         _green(pkgs_dir))
+                         _green(dest))

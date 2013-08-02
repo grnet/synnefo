@@ -1,6 +1,6 @@
 snf-deploy/fabfile.py usr/lib/snf-deploy
 snf-deploy/conf/* etc/snf-deploy
 snf-deploy/files/usr/lib/* usr/lib/snf-deploy
-tsnf-deploy/files/etc var/lib/snf-deploy/files/etc
+snf-deploy/files/etc var/lib/snf-deploy/files/etc
 snf-deploy/files/root var/lib/snf-deploy/files/root
 snf-deploy/files/tmp var/lib/snf-deploy/files/tmp

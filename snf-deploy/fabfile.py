@@ -409,10 +409,10 @@ def setup_mq():
 
 
 @roles("db")
-def allow_access_in_db(ip):
+def allow_access_in_db(ip, user="all", trust=""):
     cmd = """
-    echo host all all {0}/32 md5 >> /etc/postgresql/8.4/main/pg_hba.conf
-    """.format(ip)
+    echo host all {0} {1}/32 md5 {2} >> /etc/postgresql/8.4/main/pg_hba.conf
+    """.format(user, ip, trust)
     try_run(cmd)
     try_run("/etc/init.d/postgresql restart")
 
@@ -436,6 +436,7 @@ def setup_db():
     try_run(cmd)
 
     try_run("/etc/init.d/postgresql restart")
+    allow_access_in_db("127.0.0.1", "postgres", "trust")
 
 
 @roles("db")

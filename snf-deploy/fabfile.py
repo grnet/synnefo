@@ -461,7 +461,7 @@ def setup_webproject():
     }
     custom = customize_settings_from_tmpl(tmpl, replace)
     put(custom, tmpl, mode=0644)
-    with settings(host_string=env.env.db.hostname):
+    with settings(host_string=env.env.db.ip):
         host_info = env.env.ips_info[env.host]
         allow_access_in_db(host_info.ip)
     try_run("/etc/init.d/gunicorn restart")
@@ -536,7 +536,7 @@ def add_user():
     snf-manage user-add {0} {1} {2}
     """.format(email, name, lastname)
     try_run(cmd)
-    with settings(host_string=env.env.db.hostname):
+    with settings(host_string=env.env.db.ip):
         uid, user_auth_token, user_uuid = get_auth_token_from_db(email)
     cmd = """
     snf-manage user-modify --password {0} {1}
@@ -549,7 +549,7 @@ def activate_user(user_email=None):
     if not user_email:
       user_email = env.env.user_email
     debug(env.host, " * Activate user %s..." % user_email)
-    with settings(host_string=env.env.db.hostname):
+    with settings(host_string=env.env.db.ip):
         uid, user_auth_token, user_uuid = get_auth_token_from_db(user_email)
 
     cmd = """
@@ -703,7 +703,7 @@ def setup_nfs_dirs():
 
 @roles("nodes")
 def setup_nfs_clients():
-    if env.host == env.env.pithos.hostname:
+    if env.host == env.env.pithos.ip:
       return
 
     debug(env.host, " * Mounting pithos NFS mount point...")
@@ -745,7 +745,7 @@ def setup_pithos():
     setup_apache()
     setup_webproject()
 
-    with settings(host_string=env.env.accounts.hostname):
+    with settings(host_string=env.env.accounts.ip):
         service_id, service_token = get_service_details("pithos")
 
     install_package("kamaki")
@@ -1059,7 +1059,7 @@ def setup_cyclades():
     install_package("python-django-south")
     tmpl = "/etc/synnefo/cyclades.conf"
 
-    with settings(host_string=env.env.accounts.hostname):
+    with settings(host_string=env.env.accounts.ip):
         service_id, service_token = get_service_details("cyclades")
 
     replace = {
@@ -1165,7 +1165,7 @@ def setup_kamaki():
         try_run("ping -c1 cyclades." + env.env.domain)
         try_run("ping -c1 pithos." + env.env.domain)
 
-    with settings(host_string=env.env.db.hostname):
+    with settings(host_string=env.env.db.ip):
         uid, user_auth_token, user_uuid = get_auth_token_from_db(env.env.user_email)
 
     install_package("python-progress")
@@ -1187,7 +1187,7 @@ def upload_image(image="debian_base.diskdump"):
 @roles("client")
 def register_image(image="debian_base.diskdump"):
     debug(env.host, " * Register image to plankton...")
-    with settings(host_string=env.env.db.hostname):
+    with settings(host_string=env.env.db.ip):
         uid, user_auth_token, user_uuid = get_auth_token_from_db(env.env.user_email)
 
     pithos_url = "pithos://{0}/images/{1}".format(user_uuid, image)

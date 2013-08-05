@@ -775,14 +775,6 @@ def setup_pithos():
     custom = customize_settings_from_tmpl(tmpl, replace)
     put(custom, tmpl, mode=0644)
 
-    #TOFIX: this is needed in order webclient not to serve /ui url
-    #       but only /pithos/ui
-    if env.env.pithos.hostname == env.env.cyclades.hostname:
-      tmpl = "/usr/share/pyshared/pithos_webclient/synnefo_settings.py"
-      replace = {}
-      custom = customize_settings_from_tmpl(tmpl, replace)
-      put(custom, tmpl, mode=0644)
-
     try_run("/etc/init.d/gunicorn restart")
     #TOFIX: the previous command lets pithos-backend create blocks and maps
     #       with root owner

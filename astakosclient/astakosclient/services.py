@@ -49,8 +49,8 @@ astakos_services = {
                 'service_type': "account",
                 'service_origin': "astakos_account",
                 'allow_in_projects': False},
-            },
         },
+    },
 
     'astakos_identity': {
         'type': 'identity',

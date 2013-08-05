@@ -30,6 +30,7 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
+import copy
 
 
 def dict_merge(a, b):
@@ -119,10 +120,9 @@ def del_path(container, path, sep='.', collect=True):
     """
 
     name_path, node_path, basename = \
-            lookup_path(container, path, sep=sep, createpath=False)
+        lookup_path(container, path, sep=sep, createpath=False)
 
     lastnode = node_path.pop()
-    lastname = basename
     try:
         if basename in lastnode:
             del lastnode[basename]
@@ -157,7 +157,7 @@ def get_path(container, path, sep='.'):
 
     """
     name_path, node_path, basename = \
-            lookup_path(container, path, sep=sep, createpath=False)
+        lookup_path(container, path, sep=sep, createpath=False)
     name_path.append(basename)
     node = node_path[-1]
 
@@ -186,16 +186,16 @@ def set_path(container, path, value, sep='.',
     Traceback (most recent call last):
     KeyError: "'a.b.x': path not found"
     >>> set_path({'a': {'b': {'c': 'd'}}}, 'a.b.x.d', 1, createpath=True)
-    
+
     >>> set_path({'a': {'b': {'c': 'd'}}}, 'a.b.c', 1)
-     
+
     >>> set_path({'a': {'b': {'c': 'd'}}}, 'a.b.c', 1, overwrite=False)
     Traceback (most recent call last):
     ValueError: will not overwrite path 'a.b.c'
 
     """
     name_path, node_path, basename = \
-            lookup_path(container, path, sep=sep, createpath=createpath)
+        lookup_path(container, path, sep=sep, createpath=createpath)
     name_path.append(basename)
     node = node_path[-1]
 

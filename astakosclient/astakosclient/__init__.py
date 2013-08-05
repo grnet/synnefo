@@ -201,8 +201,8 @@ class AstakosClient():
             else:
                 return None
         except Exception as err:
-            self.logger.error("Cannot parse response \"%s\" with simplejson: %s"
-                              % (data, str(err)))
+            msg = "Cannot parse response \"%s\" with simplejson: %s"
+            self.logger.error(msg % (data, str(err)))
             raise InvalidResponse(str(err), data)
 
     # ------------------------

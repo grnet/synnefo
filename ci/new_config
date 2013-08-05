@@ -19,8 +19,6 @@ patch_pydist = True
 # Configuration of git (on remote server)
 git_config_name = Buildbot
 git_config_mail = synnefo@builder.dev.grnet.gr
-# Url to fetch ssh public keys
-public_ssh_keys_url =
 # Network address from which we allow access to server. If not set, access
 # to server is not restricted.
 filter_access_network =
@@ -38,10 +36,6 @@ server_name = Synnefo Deployment
 flavor_id = 639
 # Image to use (name must contain this)
 image_name = OldStable
-# UUID of owner of system images
-# (25ecced9-bf53-4145-91ee-cf47377e9fb2 for production,
-#  04cbe33f-29b7-4ef1-94fb-015929e5fc06 for okeanos.io)
-system_uuid = 04cbe33f-29b7-4ef1-94fb-015929e5fc06
 
 
 [Burnin]

@@ -38,7 +38,7 @@ flavor_id = 639
 image_name = OldStable
 # File containing the ssh keys to upload/install to server
 # If not set, no ssh keys will be installed
-ssh_keys =
+ssh_keys = https://pithos.okeanos.grnet.gr/public/p99dOwPP94B0RuFquxExl6
 
 
 [Burnin]

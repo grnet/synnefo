@@ -5,7 +5,7 @@ SNF_MANAGE=$(which snf-manage) ||
 	{ echo "Cannot find snf-manage in $PATH" 1>&2; exit 1; }
 
 runtest () {
-    TEST="$SNF_MANAGE test $* --traceback --settings=synnefo.settings.test"
+    TEST="$SNF_MANAGE test $* --traceback --noinput --settings=synnefo.settings.test"
 
     if coverage >/dev/null 2>&1; then
       coverage run $TEST

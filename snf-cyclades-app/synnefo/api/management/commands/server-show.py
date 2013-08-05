@@ -38,7 +38,7 @@ from synnefo.management.common import (format_vm_state, get_vm,
 from snf_django.lib.astakos import UserCache
 from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
                               ASTAKOS_BASE_URL)
-from synnefo.webproject.management import utils
+from snf_django.management import utils
 
 
 class Command(SynnefoCommand):

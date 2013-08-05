@@ -41,7 +41,7 @@ from optparse import make_option
 from django.core.management.base import BaseCommand
 from synnefo.management.common import get_backend
 from synnefo.logic import reconciliation
-from synnefo.webproject.management.utils import parse_bool
+from snf_django.management.utils import parse_bool
 
 
 class Command(BaseCommand):

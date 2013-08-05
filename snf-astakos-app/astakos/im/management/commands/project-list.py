@@ -36,7 +36,7 @@ from optparse import make_option
 from snf_django.management.commands import SynnefoCommand, CommandError
 
 from astakos.im.models import Chain
-from synnefo.webproject.management import utils
+from snf_django.management import utils
 from ._common import is_uuid, is_email
 
 

@@ -35,7 +35,7 @@ from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import simplejson as json
 
-from synnefo.webproject.management import utils
+from snf_django.management import utils
 from astakos.im.models import Resource
 from astakos.im.register import update_resource
 from ._common import show_resource_value, style_options, check_style, units

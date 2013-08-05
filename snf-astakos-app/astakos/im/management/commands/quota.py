@@ -41,7 +41,7 @@ from astakos.im.functions import get_user_by_uuid
 from astakos.im.management.commands._common import is_uuid, is_email
 from snf_django.lib.db.transaction import commit_on_success_strict
 from snf_django.management.commands import SynnefoCommand
-from synnefo.webproject.management import utils
+from snf_django.management import utils
 from ._common import show_quotas, style_options, check_style, units
 
 import logging

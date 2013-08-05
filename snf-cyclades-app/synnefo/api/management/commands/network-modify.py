@@ -39,7 +39,7 @@ from synnefo.db.models import (Network, Backend, BackendNetwork,
                                pooled_rapi_client)
 from synnefo.management.common import (validate_network_info, get_network,
                                        get_backend)
-from synnefo.webproject.management.utils import parse_bool
+from snf_django.management.utils import parse_bool
 from synnefo.logic.backend import create_network, delete_network
 
 HELP_MSG = """Modify a network.

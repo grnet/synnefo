@@ -36,7 +36,7 @@ from django.core.management.base import CommandError
 
 from synnefo.lib.ordereddict import OrderedDict
 from snf_django.management.commands import SynnefoCommand
-from synnefo.webproject.management import utils
+from snf_django.management import utils
 from astakos.im.models import Chain, ProjectApplication
 from ._common import show_resource_value, style_options, check_style
 

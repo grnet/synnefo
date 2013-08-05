@@ -39,7 +39,7 @@ from pithos.api.util import get_backend
 from pithos.api.resources import resources
 from pithos.backends.modular import DEFAULT_SOURCE
 
-from synnefo.webproject.management import utils
+from snf_django.management import utils
 
 from astakosclient.errors import QuotaLimit, NotFound
 

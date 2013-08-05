@@ -1,5 +1,5 @@
 import sys
-from synnefo.webproject.management import utils
+from snf_django.management import utils
 
 # Use backported unittest functionality if Python < 2.7
 try:

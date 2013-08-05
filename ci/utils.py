@@ -27,7 +27,7 @@ def _run(cmd, verbose):
         args = ('running',)
     else:
         args = ('running', 'stdout',)
-    with fabric.hide(*args):
+    with fabric.hide(*args):  # Used * or ** magic. pylint: disable-msg=W0142
         return fabric.run(cmd)
 
 
@@ -118,7 +118,7 @@ class SynnefoCI(object):
         if cleanup_config:
             try:
                 os.remove(temp_config)
-            except:
+            except OSError:
                 pass
         else:
             self.config.read(self.config.get('Global', 'temporary_config'))
@@ -281,6 +281,7 @@ class SynnefoCI(object):
 
     @_check_fabric
     def _copy_ssh_keys(self):
+        """Upload/Install ssh keys to server"""
         if not self.config.has_option("Deployment", "ssh_keys"):
             return
         authorized_keys = self.config.get("Deployment",
@@ -356,12 +357,14 @@ class SynnefoCI(object):
         synnefo_repo = self.config.get('Global', 'synnefo_repo')
         synnefo_branch = self.config.get("Global", "synnefo_branch")
         if synnefo_branch == "":
-            synnefo_branch =\
-                subprocess.Popen(["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            synnefo_branch = \
+                subprocess.Popen(
+                    ["git", "rev-parse", "--abbrev-ref", "HEAD"],
                     stdout=subprocess.PIPE).communicate()[0].strip()
             if synnefo_branch == "HEAD":
                 synnefo_branch = \
-                    subprocess.Popen(["git", "rev-parse","--short", "HEAD"],
+                    subprocess.Popen(
+                        ["git", "rev-parse", "--short", "HEAD"],
                         stdout=subprocess.PIPE).communicate()[0].strip()
         self.logger.info("Will use branch %s" % synnefo_branch)
         # Currently clonning synnefo can fail unexpectedly
@@ -372,12 +375,13 @@ class SynnefoCI(object):
                 _run("git clone %s synnefo" % synnefo_repo, False)
                 cloned = True
                 break
-            except:
+            except BaseException:
                 self.logger.warning("Clonning synnefo failed.. retrying %s"
                                     % i)
-        cmd ="""
+        cmd = """
         cd synnefo
-        for branch in `git branch -a | grep remotes | grep -v HEAD | grep -v master`; do
+        for branch in `git branch -a | grep remotes | \
+                       grep -v HEAD | grep -v master`; do
             git branch --track ${branch##*/} $branch
         done
         git checkout %s
@@ -446,15 +450,18 @@ class SynnefoCI(object):
         """
         _run(cmd, False)
 
-
     @_check_fabric
     def build_documentation(self):
+        """Build Synnefo documentation"""
         self.logger.info("Build Synnefo documentation..")
         _run("pip install -U Sphinx", False)
         with fabric.cd("synnefo"):
-            _run("devflow-update-version; ./ci/make_docs.sh synnefo_documentation", False)
+            _run("devflow-update-version; "
+                 "./ci/make_docs.sh synnefo_documentation", False)
 
     def fetch_documentation(self, dest=None):
+        """Fetch Synnefo documentation"""
+        self.logger.info("Fetch Synnefo documentation..")
         if dest is None:
             dest = "synnefo_documentation"
         dest = os.path.abspath(dest)
@@ -540,6 +547,7 @@ class SynnefoCI(object):
 
     @_check_fabric
     def fetch_compressed(self, src, dest=None):
+        """Create a tarball and fetch it locally"""
         self.logger.debug("Creating tarball of %s" % src)
         basename = os.path.basename(src)
         tar_file = basename + ".tgz"
@@ -566,6 +574,7 @@ class SynnefoCI(object):
 
     @_check_fabric
     def fetch_packages(self, dest=None):
+        """Fetch Synnefo packages"""
         if dest is None:
             dest = self.config.get('Global', 'pkgs_dir')
         dest = os.path.abspath(dest)

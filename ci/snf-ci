@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 
+# Invalid name for type module. pylint: disable-msg=C0103
+
 """
+Continuous Integration script for Synnefo.
 """
+
 import os
 from utils import SynnefoCI
 from optparse import OptionParser
@@ -45,12 +49,13 @@ command:
              ALL_CMDS])
 
 
-def main():
+def main():  # Too many branches. pylint: disable-msg=R0912
+    """Parse command line options and run the specified actions"""
     parser = OptionParser(usage=USAGE)
     parser.add_option("--conf", dest="config_file", default=None,
-                      help="Configuration file for SynnefoCI script"),
+                      help="Configuration file for SynnefoCI script")
     parser.add_option("-c", "--cloud", dest="kamaki_cloud", default=None,
-                      help="Use specified cloud, as is in .kamakirc"),
+                      help="Use specified cloud, as is in .kamakirc")
     parser.add_option("-f", "--flavor", dest="flavor", default=None,
                       help="Name of flavor to use for the server.")
     parser.add_option("-i", "--image", dest="image", default=None,

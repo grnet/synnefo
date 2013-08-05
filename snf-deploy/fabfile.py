@@ -16,13 +16,14 @@ from snfdeploy import massedit
 
 
 def setup_env(confdir="conf", packages="packages",
-              templates="files", cluster_name="ganeti1", autoconf=False, disable_colors=False):
+              templates="files", cluster_name="ganeti1", autoconf=False, disable_colors=False, key_inject=False):
     print("Loading configuration for synnefo...")
     print(" * Using config files under %s..." % confdir)
     print(" * Using %s and %s for packages and templates accordingly..." % (packages, templates))
 
     autoconf = ast.literal_eval(autoconf)
     disable_colors = ast.literal_eval(disable_colors)
+    env.key_inject = ast.literal_eval(key_inject)
     conf = Conf.configure(confdir=confdir, cluster_name=cluster_name, autoconf=autoconf)
     env.env = Env(conf)
 
@@ -226,8 +227,11 @@ def check_ssh():
 
 @roles("ips")
 def add_keys():
-    if not ast.literal_eval(env.env.key_inject):
+    if not env.key_inject:
       debug(env.host, "Skipping ssh keys injection..")
+      return
+    else:
+      debug(env.host, "Adding rsa/dsa keys..")
     try_run("mkdir -p /root/.ssh")
     cmd = """
 for f in $(ls /root/.ssh/*); do

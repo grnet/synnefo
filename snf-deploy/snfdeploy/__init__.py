@@ -255,9 +255,9 @@ def fabcommand(args, env, actions, nodes=[]):
 
   fabcmd += " --fabfile {4}/fabfile.py \
 setup_env:confdir={0},packages={1},templates={2},cluster_name={3},\
-autoconf={5},disable_colors={6} \
+autoconf={5},disable_colors={6},key_inject={7} \
 ".format(args.confdir, env.packages, env.templates, args.cluster_name,
-         env.lib, args.autoconf, args.disable_colors)
+         env.lib, args.autoconf, args.disable_colors, args.key_inject)
 
   if nodes:
     hosts = [env.nodes_info[n].hostname for n in nodes]

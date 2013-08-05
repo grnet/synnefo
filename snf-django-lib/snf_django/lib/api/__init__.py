@@ -138,7 +138,8 @@ def api_method(http_method=None, token_required=True, user_required=True,
     return decorator
 
 
-def get_serialization(request, format_allowed=True, default_serialization="json"):
+def get_serialization(request, format_allowed=True,
+                      default_serialization="json"):
     """Return the serialization format requested.
 
     Valid formats are 'json' and 'xml' and 'text'
@@ -191,7 +192,8 @@ def update_response_headers(request, response):
     if not response.has_header("Content-Length"):
         # compatibility code for django 1.4
         _is_string = getattr(response, '_is_string', None)
-        _base_content_is_iter = getattr(response, '_base_content_is_iter', None)
+        _base_content_is_iter = getattr(response, '_base_content_is_iter',
+                                        None)
         if (_is_string is not None and _is_string) or\
                 (_base_content_is_iter is not None and
                     not _base_content_is_iter):

@@ -91,6 +91,15 @@ class _MyFormatter(logging.Formatter):
         return result
 
 
+# Too few public methods. pylint: disable-msg=R0903
+class _InfoFilter(logging.Filter):
+    """Logging Filter that allows DEBUG and INFO messages only"""
+    def filter(self, rec):
+        """The filter"""
+        return rec.levelno in (logging.DEBUG, logging.INFO)
+
+
+# Too many instance attributes. pylint: disable-msg=R0902
 class SynnefoCI(object):
     """SynnefoCI python class"""
 
@@ -102,9 +111,17 @@ class SynnefoCI(object):
         # Setup logger
         self.logger = logging.getLogger('synnefo-ci')
         self.logger.setLevel(logging.DEBUG)
-        handler = logging.StreamHandler()
-        handler.setFormatter(_MyFormatter())
-        self.logger.addHandler(handler)
+
+        handler1 = logging.StreamHandler(sys.stdout)
+        handler1.setLevel(logging.DEBUG)
+        handler1.addFilter(_InfoFilter())
+        handler1.setFormatter(_MyFormatter())
+        handler2 = logging.StreamHandler(sys.stderr)
+        handler2.setLevel(logging.WARNING)
+        handler2.setFormatter(_MyFormatter())
+
+        self.logger.addHandler(handler1)
+        self.logger.addHandler(handler2)
 
         # Get our local dir
         self.ci_dir = os.path.dirname(os.path.abspath(__file__))

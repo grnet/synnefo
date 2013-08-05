@@ -307,19 +307,32 @@ class SynnefoCI(object):
         self.write_config('server_port', server_port)
         self.logger.debug("Server's ssh port is %s" % _green(server_port))
         self.logger.debug("Access server using \"ssh -p %s %s@%s\"" %
-                          (server_port, fabric.env.user, server_ip))
+                          (server_port, server['metadata']['users'], server_ip))
 
     @_check_fabric
     def _copy_ssh_keys(self, ssh_keys):
         """Upload/Install ssh keys to server"""
-        self.logger.debug("Check for authentication keys to upload")
+        self.logger.debug("Check for authentication keys to use")
         if ssh_keys is None:
             ssh_keys = self.config.get("Deployment", "ssh_keys")
 
-        if ssh_keys != "" and os.path.exists(ssh_keys):
+        if ssh_keys != "":
+            self.logger.debug("Will use %s authentication keys file" % ssh_keys)
             keyfile = '/tmp/%s.pub' % fabric.env.user
             _run('mkdir -p ~/.ssh && chmod 700 ~/.ssh', False)
-            _put(ssh_keys, keyfile)
+            if ssh_keys.startswith("http://") or \
+                    ssh_keys.startswith("https://") or \
+                    ssh_keys.startswith("ftp://"):
+                cmd = """
+                apt-get update
+                apt-get install wget --yes
+                wget {0} -O {1} --no-check-certificate
+                """.format(ssh_keys, keyfile)
+                _run(cmd, False)
+            elif os.path.exists(ssh_keys):
+                _put(ssh_keys, keyfile)
+            else:
+                self.logger.debug("No ssh keys found")
             _run('cat %s >> ~/.ssh/authorized_keys' % keyfile, False)
             _run('rm %s' % keyfile, False)
             self.logger.debug("Uploaded ssh authorized keys")

@@ -316,14 +316,6 @@ def get_project_of_membership_for_update(memb_id):
     return get_project_for_update(m.project_id)
 
 
-def get_user_by_id(user_id):
-    try:
-        return AstakosUser.objects.get(id=user_id)
-    except AstakosUser.DoesNotExist:
-        m = _(astakos_messages.UNKNOWN_USER_ID) % user_id
-        raise ProjectNotFound(m)
-
-
 def get_user_by_uuid(uuid):
     try:
         return AstakosUser.objects.get(uuid=uuid)

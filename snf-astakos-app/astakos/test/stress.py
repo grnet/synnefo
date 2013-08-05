@@ -47,7 +47,7 @@ os.environ['SYNNEFO_SETTINGS_DIR'] = path + '/settings'
 os.environ['DJANGO_SETTINGS_MODULE'] = 'synnefo.settings'
 
 from astakos.im.models import AstakosUser
-from astakos.im.functions import get_related_project_id, ProjectError
+from astakos.im.functions import ProjectError
 from astakos.im import quotas
 from views import submit, approve, join, leave
 from snf_django.lib.db.transaction import commit_on_success_strict
@@ -86,7 +86,7 @@ def new_user():
         email=email, defaults=defaults)
     if created:
         quotas.qh_sync_user(u)
-        return u.id, u.email
+        return u
     return None
 
 
@@ -94,10 +94,9 @@ def new_user():
 def new_users(count):
     for i in range(count):
         while True:
-            result = new_user()
-            if result is not None:
-                uid, email = result
-                USERS[uid] = email
+            u = new_user()
+            if u is not None:
+                USERS[u.id] = u
                 break
 
 
@@ -113,29 +112,28 @@ class SubmitApproveT(threading.Thread):
                            prefix=self.name)
 
 
-def submit_and_approve(name, user_id, prec, repeat, prefix=""):
+def submit_and_approve(name, user_id, project_id, repeat, prefix=""):
     if prefix:
         prefix += ' '
 
     for i in range(repeat):
         try:
             now = datetime.datetime.now()
-            logger.info('%s%s: submitting with precursor %s'
-                        % (prefix, now, prec))
-            app_id = submit(name, user_id, prec)
-            prec = app_id
+            logger.info('%s%s: submitting for project %s'
+                        % (prefix, now, project_id))
+            app_id, project_id = submit(name, user_id, project_id)
         except ProjectError as e:
-            logger.info('Limit reached')
+            logger.info(e.message)
+            continue
         except Exception as e:
             logger.exception(e)
             continue
         try:
             now = datetime.datetime.now()
-            pid = get_related_project_id(app_id)
             logger.info('%s%s: approving application %s of project %s'
-                        % (prefix, now, app_id, pid))
+                        % (prefix, now, app_id, project_id))
             approve(app_id)
-            PROJECTS[pid] = True
+            PROJECTS[project_id] = True
         except Exception as e:
             logger.exception(e)
 
@@ -146,17 +144,18 @@ class JoinLeaveT(threading.Thread):
         threading.Thread.__init__(self, *args, **kwargs)
 
     def run(self):
-        owner = choice(USERS.keys())
+        user = choice(USERS.values())
         while True:
             projects = PROJECTS.keys()
             if projects:
                 pid = choice(projects)
                 break
             sleep(0.1)
-        join_and_leave(pid, owner, self.repeat, prefix=self.name)
+        join_and_leave(pid, user, self.repeat, prefix=self.name)
 
 
-def join_and_leave(proj_id, user_id, repeat, prefix=""):
+def join_and_leave(proj_id, user, repeat, prefix=""):
+    user_id = user.id
     if prefix:
         prefix += ' '
 
@@ -165,19 +164,20 @@ def join_and_leave(proj_id, user_id, repeat, prefix=""):
             now = datetime.datetime.now()
             logger.info('%s%s: user %s joining project %s'
                         % (prefix, now, user_id, proj_id))
-            join(proj_id, user_id)
+            membership = join(proj_id, user)
         except ProjectError as e:
-            logger.info('Membership already exists')
+            logger.info(e.message)
+            continue
         except Exception as e:
             logger.exception(e)
-
+            continue
         try:
             now = datetime.datetime.now()
             logger.info('%s%s: user %s leaving project %s'
                         % (prefix, now, user_id, proj_id))
-            leave(proj_id, user_id)
+            leave(membership.id, user)
         except ProjectError as e:
-            logger.info('No such membership')
+            logger.info(e.message)
         except Exception as e:
             logger.exception(e)
 

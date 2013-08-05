@@ -38,7 +38,7 @@ from astakos.im.models import AstakosUser, get_latest_terms, Chain
 from astakos.im.quotas import list_user_quotas
 
 from synnefo.lib.ordereddict import OrderedDict
-from synnefo.webproject.management.commands import SynnefoCommand
+from snf_django.management.commands import SynnefoCommand
 from synnefo.webproject.management import utils
 
 from ._common import show_quotas, style_options, check_style

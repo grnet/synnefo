@@ -33,7 +33,7 @@
 
 from optparse import make_option
 from astakos.im.models import Resource
-from synnefo.webproject.management.commands import ListCommand
+from snf_django.management.commands import ListCommand
 from ._common import show_resource_value, style_options, check_style
 
 

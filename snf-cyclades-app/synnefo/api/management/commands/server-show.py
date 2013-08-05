@@ -32,7 +32,7 @@
 # or implied, of GRNET S.A.
 
 from django.core.management.base import CommandError
-from synnefo.webproject.management.commands import SynnefoCommand
+from snf_django.management.commands import SynnefoCommand
 from synnefo.management.common import (format_vm_state, get_vm,
                                        get_image)
 from snf_django.lib.astakos import UserCache

@@ -33,7 +33,7 @@
 
 from optparse import make_option
 
-from synnefo.webproject.management.commands import SynnefoCommand, CommandError
+from snf_django.management.commands import SynnefoCommand, CommandError
 
 from astakos.im.models import Chain
 from synnefo.webproject.management import utils

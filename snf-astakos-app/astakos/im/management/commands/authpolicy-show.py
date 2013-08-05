@@ -35,7 +35,7 @@ from django.core.management.base import CommandError
 
 from astakos.im.models import AuthProviderPolicyProfile as Profile
 from synnefo.lib.ordereddict import OrderedDict
-from synnefo.webproject.management.commands import SynnefoCommand
+from snf_django.management.commands import SynnefoCommand
 from synnefo.webproject.management import utils
 
 

@@ -380,6 +380,10 @@ def parse_options():
                       default=None,
                       help="Path of an existing ssh key to use")
 
+  parser.add_argument("--no-key-inject", dest="key_inject",
+                      default=True, action="store_false",
+                      help="Whether to inject ssh key pairs to hosts")
+
   # backend related options
   parser.add_argument("--cluster-name", dest="cluster_name",
                       default="ganeti1",

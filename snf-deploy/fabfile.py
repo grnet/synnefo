@@ -226,7 +226,8 @@ def check_ssh():
 
 @roles("ips")
 def add_keys():
-    debug(env.host, "Adding rsa/dsa keys..")
+    if not ast.literal_eval(env.env.key_inject):
+      debug(env.host, "Skipping ssh keys injection..")
     try_run("mkdir -p /root/.ssh")
     cmd = """
 for f in $(ls /root/.ssh/*); do

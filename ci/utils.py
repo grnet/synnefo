@@ -19,6 +19,11 @@ from kamaki.clients.cyclades import CycladesClient
 from kamaki.clients.image import ImageClient
 
 DEFAULT_CONFIG_FILE = "new_config"
+# UUID of owner of system images
+DEFAULT_SYSTEM_IMAGES_UUID = [
+    "25ecced9-bf53-4145-91ee-cf47377e9fb2",  # production (okeanos.grnet.gr)
+    "04cbe33f-29b7-4ef1-94fb-015929e5fc06",  # testing (okeanos.io)
+    ]
 
 
 def _run(cmd, verbose):
@@ -249,17 +254,17 @@ class SynnefoCI(object):
     def _find_image(self):
         """Find a suitable image to use
 
-        It has to belong to the `system_uuid' user and
-        contain the word `image_name'
+        It has to belong to one of the `DEFAULT_SYSTEM_IMAGES_UUID'
+        users and contain the word given by `image_name' option.
         """
-        system_uuid = self.config.get('Deployment', 'system_uuid')
         image_name = self.config.get('Deployment', 'image_name').lower()
         images = self.image_client.list_public(detail=True)['images']
         # Select images by `system_uuid' user
-        images = [x for x in images if x['user_id'] == system_uuid]
+        images = [x for x in images
+                  if x['user_id'] in DEFAULT_SYSTEM_IMAGES_UUID]
         # Select images with `image_name' in their names
-        images = \
-            [x for x in images if x['name'].lower().find(image_name) != -1]
+        images = [x for x in images
+                  if x['name'].lower().find(image_name) != -1]
         # Let's select the first one
         return images[0]
 

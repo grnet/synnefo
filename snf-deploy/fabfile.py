@@ -200,28 +200,28 @@ def setup_ns():
 def check_dhcp():
     debug(env.host, "Checking IPs for synnefo..")
     for n, info in env.env.nodes_info.iteritems():
-        try_run("ping -c 1 " + info.ip)
+        try_run("ping -c 1 " + info.ip, True)
 
 @roles("nodes")
 def check_dns():
     debug(env.host, "Checking fqdns for synnefo..")
     for n, info in env.env.nodes_info.iteritems():
-        try_run("ping -c 1 " + info.fqdn)
+        try_run("ping -c 1 " + info.fqdn, True)
 
     for n, info in env.env.roles.iteritems():
-        try_run("ping -c 1 " + info.fqdn)
+        try_run("ping -c 1 " + info.fqdn, True)
 
 @roles("nodes")
 def check_connectivity():
     debug(env.host, "Checking internet connectivity..")
-    try_run("ping -c 1 www.google.com")
+    try_run("ping -c 1 www.google.com", True)
 
 
 @roles("nodes")
 def check_ssh():
     debug(env.host, "Checking password-less ssh..")
     for n, info in env.env.nodes_info.iteritems():
-        try_run("ssh " + info.fqdn + "  date")
+        try_run("ssh " + info.fqdn + "  date", True)
 
 
 @roles("ips")
@@ -277,7 +277,7 @@ def setup_hosts():
     try_run(cmd)
 
 
-def try_run(cmd):
+def try_run(cmd, abort=False):
     try:
       if env.local:
         return local(cmd, capture=True)
@@ -285,6 +285,8 @@ def try_run(cmd):
         return run(cmd)
     except:
       debug(env.host, "WARNING: command failed. Continuing anyway...")
+      if abort:
+        raise
 
 def create_bridges():
     debug(env.host, " * Creating bridges...")

@@ -19,9 +19,9 @@ patch_pydist = True
 # Configuration of git (on remote server)
 git_config_name = Buildbot
 git_config_mail = synnefo@builder.dev.grnet.gr
-# Network address from which we allow access to server. If not set, access
-# to server is not restricted.
-filter_access_network =
+# Network address from which we allow access to server.
+# If not set, access to server is not restricted.
+accept_ssh_from =
 # Config file to save temporary options (eg IPs, passwords etc)
 temporary_config = /tmp/ci_temp_conf
 
@@ -36,6 +36,9 @@ server_name = Synnefo Deployment
 flavor_id = 639
 # Image to use (name must contain this)
 image_name = OldStable
+# File containing the ssh keys to upload/install to server
+# If not set, no ssh keys will be installed
+ssh_keys =
 
 
 [Burnin]

@@ -60,6 +60,9 @@ def main():  # Too many branches. pylint: disable-msg=R0912
                       help="Name of flavor to use for the server.")
     parser.add_option("-i", "--image", dest="image", default=None,
                       help="UUID of image to use for the server.")
+    parser.add_option("--ssh-keys", dest="ssh_keys", default=None,
+                      help="Upload/Install the public ssh keys contained"
+                           " in this file to the server")
     parser.add_option("--fetch-packages", dest="fetch_packages",
                       default=None,
                       help="Download the debian packages that were created"
@@ -102,7 +105,8 @@ def main():  # Too many branches. pylint: disable-msg=R0912
 
     if getattr(options, CREATE_SERVER_CMD, False):
         synnefo_ci.create_server(flavor_id=options.flavor,
-                                 image_id=options.image)
+                                 image_id=options.image,
+                                 ssh_keys=options.ssh_keys)
         synnefo_ci.clone_repo()
     if getattr(options, BUILD_SYNNEFO_CMD, False):
         synnefo_ci.build_synnefo()

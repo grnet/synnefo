@@ -1300,7 +1300,7 @@ class ModularBackend(BaseBackend):
                 version = int(version)
             except ValueError:
                 raise VersionNotExists('Version does not exist')
-            props = self.node.version_get_properties(version)
+            props = self.node.version_get_properties(version, node=node)
             if props is None or props[self.CLUSTER] == CLUSTER_DELETED:
                 raise VersionNotExists('Version does not exist')
         return props

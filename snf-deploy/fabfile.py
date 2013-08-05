@@ -16,7 +16,7 @@ from snfdeploy import massedit
 
 
 def setup_env(confdir="conf", packages="packages",
-              templates="files", cluster_name="ganeti1", autoconf=False):
+              templates="files", cluster_name="ganeti1", autoconf=False, disable_colors=False):
     print("Loading configuration for synnefo...")
     print(" * Using config files under %s..." % confdir)
     print(" * Using %s and %s for packages and templates accordingly..." % (packages, templates))

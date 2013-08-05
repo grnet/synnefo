@@ -36,6 +36,12 @@ def _run(cmd, verbose):
         return fabric.run(cmd)
 
 
+def _put(local, remote):
+    """Run fabric put command without output"""
+    with fabric.quiet():
+        fabric.put(local, remote)
+
+
 def _red(msg):
     """Red color"""
     #return "\x1b[31m" + str(msg) + "\x1b[0m"
@@ -226,7 +232,7 @@ class SynnefoCI(object):
             self._wait_transition(server_id, "ACTIVE", "DELETED")
 
     @_check_kamaki
-    def create_server(self, image_id=None, flavor_id=None):
+    def create_server(self, image_id=None, flavor_id=None, ssh_keys=None):
         """Create slave server"""
         self.logger.info("Create a new server..")
         if image_id is None:
@@ -251,11 +257,11 @@ class SynnefoCI(object):
 
         server = self._wait_transition(server_id, "BUILD", "ACTIVE")
         self._get_server_ip_and_port(server)
-        self._copy_ssh_keys()
+        self._copy_ssh_keys(ssh_keys)
 
         self.setup_fabric()
         self.logger.info("Setup firewall")
-        accept_ssh_from = self.config.get('Global', 'filter_access_network')
+        accept_ssh_from = self.config.get('Global', 'accept_ssh_from')
         if accept_ssh_from != "":
             self.logger.debug("Block ssh except from %s" % accept_ssh_from)
             cmd = """
@@ -300,18 +306,20 @@ class SynnefoCI(object):
         self.logger.debug("Server's IPv4 is %s" % _green(server_ip))
         self.write_config('server_port', server_port)
         self.logger.debug("Server's ssh port is %s" % _green(server_port))
+        self.logger.debug("Access server using \"ssh -p %s %s@%s\"" %
+                          (server_port, fabric.env.user, server_ip))
 
     @_check_fabric
-    def _copy_ssh_keys(self):
+    def _copy_ssh_keys(self, ssh_keys):
         """Upload/Install ssh keys to server"""
-        if not self.config.has_option("Deployment", "ssh_keys"):
-            return
-        authorized_keys = self.config.get("Deployment",
-                                          "ssh_keys")
-        if authorized_keys != "" and os.path.exists(authorized_keys):
+        self.logger.debug("Check for authentication keys to upload")
+        if ssh_keys is None:
+            ssh_keys = self.config.get("Deployment", "ssh_keys")
+
+        if ssh_keys != "" and os.path.exists(ssh_keys):
             keyfile = '/tmp/%s.pub' % fabric.env.user
             _run('mkdir -p ~/.ssh && chmod 700 ~/.ssh', False)
-            fabric.put(authorized_keys, keyfile)
+            _put(ssh_keys, keyfile)
             _run('cat %s >> ~/.ssh/authorized_keys' % keyfile, False)
             _run('rm %s' % keyfile, False)
             self.logger.debug("Uploaded ssh authorized keys")
@@ -506,8 +514,7 @@ class SynnefoCI(object):
             raise ValueError("Unknown schema: %s" % schema)
 
         self.logger.debug("Upload schema files to server")
-        with fabric.quiet():
-            fabric.put(os.path.join(schema_dir, "*"), "/etc/snf-deploy/")
+        _put(os.path.join(schema_dir, "*"), "/etc/snf-deploy/")
 
         self.logger.debug("Change password in nodes.conf file")
         cmd = """
@@ -536,8 +543,7 @@ class SynnefoCI(object):
 
         self.logger.debug("Upload tests.sh file")
         unit_tests_file = os.path.join(self.ci_dir, "tests.sh")
-        with fabric.quiet():
-            fabric.put(unit_tests_file, ".")
+        _put(unit_tests_file, ".")
 
         self.logger.debug("Run unit tests")
         cmd = """

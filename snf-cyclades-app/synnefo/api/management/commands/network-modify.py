@@ -37,9 +37,9 @@ from django.core.management.base import BaseCommand, CommandError
 
 from synnefo.db.models import (Network, Backend, BackendNetwork,
                                pooled_rapi_client)
-from synnefo.management.common import (validate_network_info, get_network,
-                                       get_backend)
+from synnefo.management.common import (get_network, get_backend)
 from snf_django.management.utils import parse_bool
+from synnefo.logic import networks
 from synnefo.logic.backend import create_network, delete_network
 
 HELP_MSG = """Modify a network.
@@ -144,8 +144,11 @@ class Command(BaseCommand):
         network = get_network(args[0])
 
         # Validate subnet
-        if options.get('subnet'):
-            validate_network_info(options)
+        subnet = options["subnet"] or network.subnet
+        gateway = options["gateway"] or network.gateway
+        subnet6 = options["subnet6"] or network.subnet6
+        gateway6 = options["gateway6"] or network.gateway6
+        networks.validate_network_params(subnet, gateway, subnet6, gateway6)
 
         # Validate state
         state = options.get('state')

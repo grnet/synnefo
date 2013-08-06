@@ -30,9 +30,12 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
+import ipaddr
+
 from functools import wraps
 from django.db import transaction
 
+from django.conf import settings
 from snf_django.lib.api import faults
 from synnefo.api import util
 from synnefo import quotas
@@ -80,7 +83,7 @@ def create(user_id, name, flavor, subnet=None, gateway=None, subnet6=None,
         raise faults.BadRequest("IPv6 only networks can not be"
                                 " pools.")
     # Check that network parameters are valid
-    util.validate_network_params(subnet, gateway, subnet6, gateway6)
+    validate_network_params(subnet, gateway, subnet6, gateway6)
 
     try:
         fmode, flink, fmac_prefix, ftags = util.values_from_flavor(flavor)
@@ -165,3 +168,45 @@ def delete(network):
         # If network does not exist in any backend, update the network state
         backend_mod.update_network_state(network)
     return network
+
+
+def validate_network_params(subnet=None, gateway=None, subnet6=None,
+                            gateway6=None):
+    if (subnet is None) and (subnet6 is None):
+        raise faults.BadRequest("subnet or subnet6 is required")
+
+    if subnet:
+        try:
+            # Use strict option to not all subnets with host bits set
+            network = ipaddr.IPv4Network(subnet, strict=True)
+        except ValueError:
+            raise faults.BadRequest("Invalid network IPv4 subnet")
+
+        # Check that network size is allowed!
+        prefixlen = network.prefixlen
+        if not prefixlen <= 29 and prefixlen > settings.MAX_CIDR_BLOCK:
+            raise faults.OverLimit(message="Unsupported network size",
+                                   details="Network mask must be in range"
+                                           " (%s, 29]"
+                                           % settings.MAX_CIDR_BLOCK)
+        if gateway:  # Check that gateway belongs to network
+            try:
+                gateway = ipaddr.IPv4Address(gateway)
+            except ValueError:
+                raise faults.BadRequest("Invalid network IPv4 gateway")
+            if not gateway in network:
+                raise faults.BadRequest("Invalid network IPv4 gateway")
+
+    if subnet6:
+        try:
+            # Use strict option to not all subnets with host bits set
+            network6 = ipaddr.IPv6Network(subnet6, strict=True)
+        except ValueError:
+            raise faults.BadRequest("Invalid network IPv6 subnet")
+        if gateway6:
+            try:
+                gateway6 = ipaddr.IPv6Address(gateway6)
+            except ValueError:
+                raise faults.BadRequest("Invalid network IPv6 gateway")
+            if not gateway6 in network6:
+                raise faults.BadRequest("Invalid network IPv6 gateway")

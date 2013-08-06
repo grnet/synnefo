@@ -31,9 +31,8 @@ temporary_config = /tmp/ci_temp_conf
 kamaki_cloud =
 # Server name to use for our machine
 server_name = Synnefo Deployment
-# Flavor ID to use
-# (149 for production, 639 for okeanos.io)
-flavor_id = 639
+# Flavor name (reg expression) to use
+flavor_name = C8R8...D100drbd
 # Image to use (name must contain this)
 image_name = OldStable
 # File containing the ssh keys to upload/install to server

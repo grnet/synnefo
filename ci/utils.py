@@ -5,6 +5,7 @@ Synnefo ci utils module
 """
 
 import os
+import re
 import sys
 import time
 import logging
@@ -17,6 +18,7 @@ from kamaki.cli import config as kamaki_config
 from kamaki.clients.astakos import AstakosClient
 from kamaki.clients.cyclades import CycladesClient
 from kamaki.clients.image import ImageClient
+from kamaki.clients.compute import ComputeClient
 
 DEFAULT_CONFIG_FILE = "new_config"
 # UUID of owner of system images
@@ -165,12 +167,13 @@ class SynnefoCI(object):
         self.fabric_installed = False
         self.kamaki_installed = False
         self.cyclades_client = None
+        self.compute_client = None
         self.image_client = None
 
     def setup_kamaki(self):
         """Initialize kamaki
 
-        Setup cyclades_client and image_client
+        Setup cyclades_client, image_client and compute_client
         """
 
         config = kamaki_config.Config()
@@ -197,6 +200,12 @@ class SynnefoCI(object):
         self.logger.debug("Images API url is %s" % _green(image_url))
         self.image_client = ImageClient(cyclades_url, token)
         self.image_client.CONNECTION_RETRY_LIMIT = 2
+
+        compute_url = \
+            astakos_client.get_service_endpoints('compute')['publicURL']
+        self.logger.debug("Compute API url is %s" % _green(compute_url))
+        self.compute_client = ComputeClient(compute_url, token)
+        self.compute_client.CONNECTION_RETRY_LIMIT = 2
 
     def _wait_transition(self, server_id, current_status, new_status):
         """Wait for server to go from current_status to new_status"""
@@ -232,7 +241,7 @@ class SynnefoCI(object):
             self._wait_transition(server_id, "ACTIVE", "DELETED")
 
     @_check_kamaki
-    def create_server(self, image_id=None, flavor_id=None, ssh_keys=None):
+    def create_server(self, image_id=None, flavor_name=None, ssh_keys=None):
         """Create slave server"""
         self.logger.info("Create a new server..")
         if image_id is None:
@@ -240,8 +249,7 @@ class SynnefoCI(object):
             self.logger.debug("Will use image \"%s\"" % _green(image['name']))
             image_id = image["id"]
         self.logger.debug("Image has id %s" % _green(image_id))
-        if flavor_id is None:
-            flavor_id = self.config.getint("Deployment", "flavor_id")
+        flavor_id = self._find_flavor(flavor_name)
         server = self.cyclades_client.create_server(
             self.config.get('Deployment', 'server_name'),
             flavor_id,
@@ -273,6 +281,24 @@ class SynnefoCI(object):
             iptables -A INPUT -p tcp --dport 22 -j DROP
             """.format(accept_ssh_from)
             _run(cmd, False)
+
+    def _find_flavor(self, flavor_name):
+        """Given a flavor_name (reg expression) find a flavor id to use"""
+        if flavor_name is None:
+            flavor_name = self.config.get('Deployment', 'flavor_name')
+        self.logger.debug("Try to find a flavor with name \"%s\"" % flavor_name)
+
+        flavors = self.compute_client.list_flavors()
+        flavors = [f for f in flavors
+                   if re.search(flavor_name, f['name']) is not None]
+
+        if flavors:
+            self.logger.debug("Will use %s with id %s"
+                              % (flavors[0]['name'], flavors[0]['id']))
+            return flavors[0]['id']
+        else:
+            self.logger.error("No matching flavor found.. aborting")
+            sys.exit(1)
 
     def _find_image(self):
         """Find a suitable image to use

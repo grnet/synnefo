@@ -416,10 +416,10 @@ def setup_mq():
 
 
 @roles("db")
-def allow_access_in_db(ip, user="all", trust=""):
+def allow_access_in_db(ip, user="all", method="md5"):
     cmd = """
-    echo host all {0} {1}/32 md5 {2} >> /etc/postgresql/8.4/main/pg_hba.conf
-    """.format(user, ip, trust)
+    echo host all {0} {1}/32 {2} >> /etc/postgresql/8.4/main/pg_hba.conf
+    """.format(user, ip, method)
     try_run(cmd)
     try_run("/etc/init.d/postgresql restart")
 
@@ -442,8 +442,8 @@ def setup_db():
     """
     try_run(cmd)
 
+    allow_access_in_db(env.host, "all", "trust")
     try_run("/etc/init.d/postgresql restart")
-    allow_access_in_db("127.0.0.1", "postgres", "trust")
 
 
 @roles("db")
@@ -471,7 +471,7 @@ def setup_webproject():
     put(custom, tmpl, mode=0644)
     with settings(host_string=env.env.db.ip):
         host_info = env.env.ips_info[env.host]
-        allow_access_in_db(host_info.ip)
+        allow_access_in_db(host_info.ip, "all", "trust")
     try_run("/etc/init.d/gunicorn restart")
 
 

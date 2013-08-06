@@ -316,7 +316,7 @@ class BackendReconciler(object):
         if pending_task:
             self.log.info("Found server '%s' with pending task: '%s'",
                           server_id, db_server.task)
-            if self.options["fixed_pending_tasks"]:
+            if self.options["fix_pending_tasks"]:
                 db_server.task = None
                 db_server.task_job_id = None
                 db_server.save()

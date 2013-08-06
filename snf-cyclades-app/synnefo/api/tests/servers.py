@@ -123,7 +123,7 @@ class ServerAPITest(ComputeAPITest):
         user = self.vm2.userid
         net = mfactory.NetworkFactory()
         nic = mfactory.NetworkInterfaceFactory(machine=self.vm2, network=net,
-                                              ipv6="::babe")
+                                               ipv6="::babe")
 
         db_vm_meta = mfactory.VirtualMachineMetadataFactory(vm=db_vm)
 
@@ -142,12 +142,13 @@ class ServerAPITest(ComputeAPITest):
         self.assertEqual(api_nic['firewallProfile'], nic.firewall_profile)
         self.assertEqual(api_nic['ipv4'], nic.ipv4)
         self.assertEqual(api_nic['ipv6'], nic.ipv6)
-        self.assertEqual(api_nic['OS-EXT-IPS:type'],"fixed")
+        self.assertEqual(api_nic['OS-EXT-IPS:type'], "fixed")
         self.assertEqual(api_nic['id'], 'nic-%s-%s' % (db_vm.id, nic.index))
         api_address = server["addresses"]
-        self.assertEqual(api_address[str(net.id)],
-               [{"version": 4, "addr": nic.ipv4, "OS-EXT-IPS:type": "fixed"},
-                {"version": 6, "addr": nic.ipv6, "OS-EXT-IPS:type": "fixed"}])
+        self.assertEqual(api_address[str(net.id)], [
+            {"version": 4, "addr": nic.ipv4, "OS-EXT-IPS:type": "fixed"},
+            {"version": 6, "addr": nic.ipv6, "OS-EXT-IPS:type": "fixed"}
+        ])
 
         metadata = server['metadata']
         self.assertEqual(len(metadata), 1)
@@ -161,13 +162,15 @@ class ServerAPITest(ComputeAPITest):
             response = self.myget("servers/%d" % vm.id, vm.userid)
             server = json.loads(response.content)['server']
             self.assertEqual(server["SNF:fqdn"], "vm.example.org")
-        with override_settings(settings,
-                               CYCLADES_SERVERS_FQDN="snf-%(id)s.vm.example.org"):
+        with override_settings(settings, CYCLADES_SERVERS_FQDN=
+                               "snf-%(id)s.vm.example.org"):
             response = self.myget("servers/%d" % vm.id, vm.userid)
             server = json.loads(response.content)['server']
-            self.assertEqual(server["SNF:fqdn"], "snf-%d.vm.example.org" % vm.id)
+            self.assertEqual(server["SNF:fqdn"],
+                             "snf-%d.vm.example.org" % vm.id)
         with override_settings(settings,
-                               CYCLADES_SERVERS_FQDN="snf-%(id)s.vm-%(id)s.example.org"):
+                               CYCLADES_SERVERS_FQDN=
+                               "snf-%(id)s.vm-%(id)s.example.org"):
             response = self.myget("servers/%d" % vm.id, vm.userid)
             server = json.loads(response.content)['server']
             self.assertEqual(server["SNF:fqdn"], "snf-%d.vm-%d.example.org" %
@@ -190,14 +193,14 @@ class ServerAPITest(ComputeAPITest):
             self.assertEqual(server["SNF:fqdn"], nic.ipv6)
 
         # IPv4 NIC
-        nic = mfactory.NetworkInterfaceFactory(machine=vm, network__public=True,
-                                      state="ACTIVE")
+        nic = mfactory.NetworkInterfaceFactory(machine=vm,
+                                               network__public=True,
+                                               state="ACTIVE")
         with override_settings(settings,
                                CYCLADES_SERVERS_FQDN=None):
             response = self.myget("servers/%d" % vm.id, vm.userid)
             server = json.loads(response.content)['server']
             self.assertEqual(server["SNF:fqdn"], nic.ipv4)
-
 
     def test_server_building_nics(self):
         db_vm = self.vm2
@@ -249,7 +252,7 @@ class ServerAPITest(ComputeAPITest):
         response = self.myget('nonexistent')
         self.assertEqual(response.status_code, 400)
         try:
-            error = json.loads(response.content)
+            json.loads(response.content)
         except ValueError:
             self.assertTrue(False)
 
@@ -301,16 +304,16 @@ class ServerCreateAPITest(ComputeAPITest):
                                        backend=self.backend,
                                        operstate="ACTIVE")
         self.request = {
-                    "server": {
-                        "name": "new-server-test",
-                        "userid": "test_user",
-                        "imageRef": 1,
-                        "flavorRef": self.flavor.id,
-                        "metadata": {
-                            "My Server Name": "Apache1"
-                        },
-                        "personality": []
-                    }
+            "server": {
+                "name": "new-server-test",
+                "userid": "test_user",
+                "imageRef": 1,
+                "flavorRef": self.flavor.id,
+                "metadata": {
+                    "My Server Name": "Apache1"
+                },
+                "personality": []
+            }
         }
 
     def test_create_server(self, mrapi):
@@ -329,7 +332,7 @@ class ServerCreateAPITest(ComputeAPITest):
         self.assertEqual(api_server['status'], "BUILD")
         self.assertEqual(api_server['progress'], 0)
         self.assertEqual(api_server['metadata'],
-                        {"My Server Name":  "Apache1"})
+                         {"My Server Name":  "Apache1"})
         self.assertTrue('adminPass' in api_server)
 
         db_vm = VirtualMachine.objects.get(userid='test_user')
@@ -360,8 +363,10 @@ class ServerCreateAPITest(ComputeAPITest):
         request = deepcopy(self.request)
         request["server"]["networks"] = [bnet3.network.id, bnet4.network.id]
         with override_settings(settings,
-                DEFAULT_INSTANCE_NETWORKS=["SNF:ANY_PUBLIC", bnet1.network.id,
-                                           bnet2.network.id]):
+                               DEFAULT_INSTANCE_NETWORKS=[
+                                   "SNF:ANY_PUBLIC",
+                                   bnet1.network.id,
+                                   bnet2.network.id]):
             with mocked_quotaholder():
                 response = self.mypost('servers', 'test_user',
                                        json.dumps(request), 'json')
@@ -381,7 +386,7 @@ class ServerCreateAPITest(ComputeAPITest):
 
         request["server"]["floating_ips"] = []
         with override_settings(settings,
-                DEFAULT_INSTANCE_NETWORKS=[bnet2.network.id]):
+                               DEFAULT_INSTANCE_NETWORKS=[bnet2.network.id]):
             with mocked_quotaholder():
                 response = self.mypost('servers', 'test_user',
                                        json.dumps(request), 'json')
@@ -407,7 +412,7 @@ class ServerCreateAPITest(ComputeAPITest):
         with override_settings(settings,
                                DEFAULT_INSTANCE_NETWORKS=["SNF:ANY_PUBLIC"]):
             response = self.mypost('servers', 'test_user',
-                                    json.dumps(request), 'json')
+                                   json.dumps(request), 'json')
         self.assertFault(response, 403, "forbidden")
         # test wrong user
         request = deepcopy(self.request)
@@ -434,10 +439,10 @@ class ServerCreateAPITest(ComputeAPITest):
                                          machine=None)
         request["server"]["floating_ips"] = [fp1.ipv4, fp2.ipv4]
         with override_settings(settings,
-                DEFAULT_INSTANCE_NETWORKS=[bnet3.network.id]):
+                               DEFAULT_INSTANCE_NETWORKS=[bnet3.network.id]):
             with mocked_quotaholder():
                 response = self.mypost('servers', 'test_user',
-                                     json.dumps(request), 'json')
+                                       json.dumps(request), 'json')
         self.assertEqual(response.status_code, 202)
         api_server = json.loads(response.content)['server']
         vm = VirtualMachine.objects.get(id=api_server["id"])
@@ -498,12 +503,14 @@ class ServerMetadataAPITest(ComputeAPITest):
         for db_m in metadata:
             self.assertEqual(api_metadata[db_m.meta_key], db_m.meta_value)
 
-        request = {'metadata':
-                        {'foo': 'bar'},
-                        metadata[0].meta_key: 'bar2'
-                  }
+        request = {
+            'metadata': {
+                'foo': 'bar'
+            },
+            metadata[0].meta_key: 'bar2'
+        }
         response = self.mypost('servers/%d/metadata' % vm.id,
-                             vm.userid, json.dumps(request), 'json')
+                               vm.userid, json.dumps(request), 'json')
         metadata2 = VirtualMachineMetadata.objects.filter(vm=vm)
         response = self.myget('servers/%d/metadata' % vm.id, vm.userid)
         self.assertTrue(response.status_code in [200, 203])
@@ -626,13 +633,13 @@ class ServerActionAPITest(ComputeAPITest):
         vm = self.get_vm(flavor=flavor, operstate="BUILD")
         request = {'resize': {'flavorRef': flavor.id}}
         response = self.mypost('servers/%d/action' % vm.id,
-                             vm.userid, json.dumps(request), 'json')
+                               vm.userid, json.dumps(request), 'json')
         self.assertFault(response, 409, "buildInProgress")
         # Check same Flavor
         vm = self.get_vm(flavor=flavor, operstate="STOPPED")
         request = {'resize': {'flavorRef': flavor.id}}
         response = self.mypost('servers/%d/action' % vm.id,
-                             vm.userid, json.dumps(request), 'json')
+                               vm.userid, json.dumps(request), 'json')
         self.assertBadRequest(response)
         # Check flavor with different disk
         flavor2 = mfactory.FlavorFactory(disk=1024)
@@ -640,14 +647,14 @@ class ServerActionAPITest(ComputeAPITest):
         vm = self.get_vm(flavor=flavor2, operstate="STOPPED")
         request = {'resize': {'flavorRef': flavor3.id}}
         response = self.mypost('servers/%d/action' % vm.id,
-                             vm.userid, json.dumps(request), 'json')
+                               vm.userid, json.dumps(request), 'json')
         self.assertBadRequest(response)
         flavor2 = mfactory.FlavorFactory(disk_template="foo")
         flavor3 = mfactory.FlavorFactory(disk_template="baz")
         vm = self.get_vm(flavor=flavor2, operstate="STOPPED")
         request = {'resize': {'flavorRef': flavor3.id}}
         response = self.mypost('servers/%d/action' % vm.id,
-                             vm.userid, json.dumps(request), 'json')
+                               vm.userid, json.dumps(request), 'json')
         self.assertBadRequest(response)
         # Check success
         vm = self.get_vm(flavor=flavor, operstate="STOPPED")
@@ -657,7 +664,7 @@ class ServerActionAPITest(ComputeAPITest):
         request = {'resize': {'flavorRef': flavor4.id}}
         mrapi().ModifyInstance.return_value = 42
         response = self.mypost('servers/%d/action' % vm.id,
-                             vm.userid, json.dumps(request), 'json')
+                               vm.userid, json.dumps(request), 'json')
         self.assertEqual(response.status_code, 202)
         vm = VirtualMachine.objects.get(id=vm.id)
         self.assertEqual(vm.task_job_id, 42)
@@ -673,7 +680,7 @@ class ServerActionAPITest(ComputeAPITest):
         for action in VirtualMachine.ACTIONS:
             request = {action[0]: ""}
             response = self.mypost('servers/%d/action' % vm.id,
-                                 vm.userid, json.dumps(request), 'json')
+                                   vm.userid, json.dumps(request), 'json')
             self.assertBadRequest(response)
         # however you can destroy
         mrapi().DeleteInstance.return_value = 42

@@ -185,10 +185,10 @@ def validate_network_params(subnet=None, gateway=None, subnet6=None,
         # Check that network size is allowed!
         prefixlen = network.prefixlen
         if not prefixlen <= 29 and prefixlen > settings.MAX_CIDR_BLOCK:
-            raise faults.OverLimit(message="Unsupported network size",
-                                   details="Network mask must be in range"
-                                           " (%s, 29]"
-                                           % settings.MAX_CIDR_BLOCK)
+            raise faults.OverLimit(
+                message="Unsupported network size",
+                details="Netmask must be in range: (%s, 29]" %
+                settings.MAX_CIDR_BLOCK)
         if gateway:  # Check that gateway belongs to network
             try:
                 gateway = ipaddr.IPv4Address(gateway)
@@ -203,6 +203,12 @@ def validate_network_params(subnet=None, gateway=None, subnet6=None,
             network6 = ipaddr.IPv6Network(subnet6, strict=True)
         except ValueError:
             raise faults.BadRequest("Invalid network IPv6 subnet")
+        # Check that network6 is an /64 subnet, because this is imposed by
+        # 'mac2eui64' utiity.
+        if network6.prefixlen != 64:
+            msg = ("Unsupported IPv6 subnet size. Network netmask must be"
+                   " /64")
+            raise faults.BadRequest(msg)
         if gateway6:
             try:
                 gateway6 = ipaddr.IPv6Address(gateway6)

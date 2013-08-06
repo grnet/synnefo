@@ -280,7 +280,9 @@ def get_related_project_id(application_id):
 
 def get_project_by_id(project_id):
     try:
-        return Project.objects.get(id=project_id)
+        return Project.objects.select_related(
+            "application", "application__owner",
+            "application__applicant").get(id=project_id)
     except Project.DoesNotExist:
         m = _(astakos_messages.UNKNOWN_PROJECT_ID) % project_id
         raise ProjectNotFound(m)
@@ -498,6 +500,14 @@ def remove_membership(memb_id, request_user=None, reason=None):
 
     membership_change_notify(project, user, 'removed')
     return membership
+
+
+def enroll_member_by_email(project_id, email, request_user=None, reason=None):
+    try:
+        user = AstakosUser.objects.verified().get(email=email)
+        return enroll_member(project_id, user, request_user, reason=reason)
+    except AstakosUser.DoesNotExist:
+        raise ProjectConflict(astakos_messages.UNKNOWN_USERS)
 
 
 def enroll_member(project_id, user, request_user=None, reason=None):

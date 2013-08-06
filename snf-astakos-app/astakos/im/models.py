@@ -1481,6 +1481,14 @@ class ProjectApplication(models.Model):
         return presentation.PROJECT_MEMBER_LEAVE_POLICIES.get(policy)
 
 
+class ProjectResourceGrantManager(models.Manager):
+    def grants_per_app(self, applications):
+        app_ids = [app.id for app in applications]
+        grants = self.filter(
+            project_application__in=app_ids).select_related("resource")
+        return _partition_by(lambda g: g.project_application_id, grants)
+
+
 class ProjectResourceGrant(models.Model):
 
     resource = models.ForeignKey(Resource)
@@ -1488,6 +1496,8 @@ class ProjectResourceGrant(models.Model):
                                             null=True)
     project_capacity = intDecimalField(null=True)
     member_capacity = intDecimalField(default=0)
+
+    objects = ProjectResourceGrantManager()
 
     class Meta:
         unique_together = ("resource", "project_application")

@@ -309,7 +309,7 @@ class BackendReconciler(object):
         if job_id not in self.gnt_jobs:
             pending_task = True
         else:
-            gnt_job_status = self.gnt_job[job_id]["status"]
+            gnt_job_status = self.gnt_jobs[job_id]["status"]
             if gnt_job_status in GANETI_JOBS_FINALIZED:
                 pending_task = True
 

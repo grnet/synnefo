@@ -184,7 +184,7 @@ def validate_network_params(subnet=None, gateway=None, subnet6=None,
 
         # Check that network size is allowed!
         prefixlen = network.prefixlen
-        if not prefixlen <= 29 and prefixlen > settings.MAX_CIDR_BLOCK:
+        if prefixlen > 29 or prefixlen <= settings.MAX_CIDR_BLOCK:
             raise faults.OverLimit(
                 message="Unsupported network size",
                 details="Netmask must be in range: (%s, 29]" %

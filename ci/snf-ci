@@ -104,7 +104,7 @@ def main():  # Too many branches. pylint: disable-msg=R0912
                            cloud=options.kamaki_cloud)
 
     if getattr(options, CREATE_SERVER_CMD, False):
-        synnefo_ci.create_server(flavor_id=options.flavor,
+        synnefo_ci.create_server(flavor_name=options.flavor,
                                  image_id=options.image,
                                  ssh_keys=options.ssh_keys)
         synnefo_ci.clone_repo()

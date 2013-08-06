@@ -43,7 +43,7 @@ from synnefo.logic.utils import get_rsapi_state
 from synnefo.cyclades_settings import cyclades_services
 from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
-from synnefo import settings
+from django.conf import settings
 
 from mock import patch, Mock
 
@@ -153,6 +153,51 @@ class ServerAPITest(ComputeAPITest):
         self.assertEqual(len(metadata), 1)
         self.assertEqual(metadata[db_vm_meta.meta_key], db_vm_meta.meta_value)
         self.assertSuccess(response)
+
+    def test_server_fqdn(self):
+        vm = mfactory.VirtualMachineFactory()
+        with override_settings(settings,
+                               CYCLADES_SERVERS_FQDN="vm.example.org"):
+            response = self.myget("servers/%d" % vm.id, vm.userid)
+            server = json.loads(response.content)['server']
+            self.assertEqual(server["SNF:fqdn"], "vm.example.org")
+        with override_settings(settings,
+                               CYCLADES_SERVERS_FQDN="snf-%(id)s.vm.example.org"):
+            response = self.myget("servers/%d" % vm.id, vm.userid)
+            server = json.loads(response.content)['server']
+            self.assertEqual(server["SNF:fqdn"], "snf-%d.vm.example.org" % vm.id)
+        with override_settings(settings,
+                               CYCLADES_SERVERS_FQDN="snf-%(id)s.vm-%(id)s.example.org"):
+            response = self.myget("servers/%d" % vm.id, vm.userid)
+            server = json.loads(response.content)['server']
+            self.assertEqual(server["SNF:fqdn"], "snf-%d.vm-%d.example.org" %
+                             (vm.id, vm.id))
+        # No setting, no NICs
+        with override_settings(settings,
+                               CYCLADES_SERVERS_FQDN=None):
+            response = self.myget("servers/%d" % vm.id, vm.userid)
+            server = json.loads(response.content)['server']
+            self.assertEqual(server["SNF:fqdn"], "")
+
+        # IPv6 NIC
+        nic = mfactory.NetworkInterfaceFactory(machine=vm, ipv4=None,
+                                               ipv6="babe::", state="ACTIVE",
+                                               network__public=True)
+        with override_settings(settings,
+                               CYCLADES_SERVERS_FQDN=None):
+            response = self.myget("servers/%d" % vm.id, vm.userid)
+            server = json.loads(response.content)['server']
+            self.assertEqual(server["SNF:fqdn"], nic.ipv6)
+
+        # IPv4 NIC
+        nic = mfactory.NetworkInterfaceFactory(machine=vm, network__public=True,
+                                      state="ACTIVE")
+        with override_settings(settings,
+                               CYCLADES_SERVERS_FQDN=None):
+            response = self.myget("servers/%d" % vm.id, vm.userid)
+            server = json.loads(response.content)['server']
+            self.assertEqual(server["SNF:fqdn"], nic.ipv4)
+
 
     def test_server_building_nics(self):
         db_vm = self.vm2

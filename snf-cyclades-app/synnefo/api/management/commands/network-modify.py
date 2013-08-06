@@ -167,7 +167,11 @@ class Command(BaseCommand):
                        " still reserved floating IPs.")
                 raise CommandError(msg)
         elif floating_ip_pool is True:
-            for backend in Backend.objects.filter(offline=False):
+            existing =\
+                network.backend_networks.filter(operstate="ACTIVE")\
+                                        .values_list("backend", flat=True)
+            for backend in Backend.objects.filter(offline=False)\
+                                          .exclude(id__in=existing):
                 check_link_availability(backend, network)
 
         dhcp = options.get("dhcp")
@@ -243,8 +247,12 @@ def check_link_availability(backend, network):
     link = network.link
     for gnet in ganeti_networks:
         if (gnet["name"] != name and
-           (mode, link) in [(m, l) for (_, m, l) in gnet["group_list"]]):
+            reduce(lambda x, y: x or y,
+                   ["(%s, %s)" % (mode, link) in gnet["group_list"]],
+                   False)):
+           # Ganeti >= 2.7
+           #(mode, link) in [(m, l) for (_, m, l) in gnet["group_list"]]):
             msg = "Can not create network '%s' in backend '%s'. Link '%s'" \
                   " is already used by network '%s" % \
-                  (network, backend, gnet["name"])
+                  (network, backend, link, gnet["name"])
             raise CommandError(msg)

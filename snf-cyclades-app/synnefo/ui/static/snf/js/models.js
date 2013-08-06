@@ -2632,6 +2632,11 @@
             suffix = '';
             if (active) { suffix = '_active'}
             var value = this.get('limit'+suffix) - this.get('usage'+suffix);
+            if (active) {
+              if (this.get('available') <= value) {
+                value = this.get('available');
+              }
+            }
             if (value < 0) { return value }
             return value
         },
@@ -2643,6 +2648,7 @@
             } else {
                 value = this.get(key)
             }
+            if (value <= 0) { value = 0 }
             if (!this.is_bytes()) {
               return value + "";
             }
@@ -2683,16 +2689,16 @@
           return this.filter(function(q) { return q.get('name') == k})[0]
         },
 
-        get_available_for_vm: function(active) {
+        get_available_for_vm: function(options) {
           var quotas = synnefo.storage.quotas;
           var key = 'available';
-          if (active) { key = 'available_active'; }
-          var quota = {
-            'ram': quotas.get('cyclades.ram').get(key),
-            'cpu': quotas.get('cyclades.cpu').get(key),
-            'disk': quotas.get('cyclades.disk').get(key)
-          }
-          return quota;
+          var available_quota = {};
+          _.each(['cyclades.ram', 'cyclades.cpu', 'cyclades.disk'], 
+            function (key) {
+              var value = quotas.get(key).get_available(true);
+              available_quota[key.replace('cyclades.', '')] = value;
+          });
+          return available_quota;
         }
     })
 

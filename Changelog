@@ -41,6 +41,8 @@ Cyclades
 * Compute quotas for CPU and memory of running vms.
 * Obsolete PUBLIC_USE_POOL setting, since Cyclades manages IP pool for all
   type of networks.
+* Extend servers info API respones with 'SNF:fqdn' attribute, and introduce
+  CYCLADES_SERVERS_FQDN to set the template for servers FDQN.
 
 Pithos
 ------

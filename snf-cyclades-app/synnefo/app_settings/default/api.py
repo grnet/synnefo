@@ -107,3 +107,8 @@ CYCLADES_SERVICE_TOKEN = ''
 # endpoints. Set this to False if you deploy cyclades-app/astakos-app on the
 # same machine.
 CYCLADES_PROXY_USER_SERVICES = True
+
+# Template to use to build the FQDN of VMs. The setting will be formated with
+# the id of the VM. If set to 'None' the first public IPv4 or IPv6 address
+# of the VM will be used.
+CYCLADES_SERVERS_FQDN = 'snf-%(id)s.vm.example.synnefo.org'

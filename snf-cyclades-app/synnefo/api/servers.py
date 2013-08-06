@@ -170,8 +170,30 @@ def vm_to_dict(vm, detail=False):
         d["config_drive"] = ""
         d["accessIPv4"] = ""
         d["accessIPv6"] = ""
+        d["SNF:fqdn"] = get_server_fqdn(vm)
 
     return d
+
+
+def get_server_fqdn(vm):
+    fqdn_setting = settings.CYCLADES_SERVERS_FQDN
+    if fqdn_setting is None:
+        public_nics = vm.nics.filter(network__public=True, state="ACTIVE")
+        # Return the first public IPv4 address if exists
+        ipv4_nics = public_nics.exclude(ipv4=None)
+        if ipv4_nics:
+            return ipv4_nics[0].ipv4
+        # Else return the first public IPv6 address if exists
+        ipv6_nics = public_nics.exclude(ipv6=None)
+        if ipv6_nics:
+            return ipv6_nics[0].ipv6
+        return ""
+    elif isinstance(fqdn_setting, basestring):
+        return fqdn_setting % {"id": vm.id}
+    else:
+        msg = ("Invalid setting: CYCLADES_SERVERS_FQDN."
+               " Value must be a string.")
+        raise faults.InternalServerError(msg)
 
 
 def diagnostics_to_dict(diagnostics):

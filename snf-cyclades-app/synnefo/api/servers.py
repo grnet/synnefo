@@ -170,7 +170,9 @@ def vm_to_dict(vm, detail=False):
         d["config_drive"] = ""
         d["accessIPv4"] = ""
         d["accessIPv6"] = ""
-        d["SNF:fqdn"] = get_server_fqdn(vm)
+        fqdn = get_server_fqdn(vm)
+        d["SNF:fqdn"] = fqdn
+        d["SNF:port_forwarding"] = get_server_port_forwarding(vm, fqdn)
 
     return d
 
@@ -194,6 +196,45 @@ def get_server_fqdn(vm):
         msg = ("Invalid setting: CYCLADES_SERVERS_FQDN."
                " Value must be a string.")
         raise faults.InternalServerError(msg)
+
+
+def get_server_port_forwarding(vm, fqdn):
+    """Create API 'port_forwarding' attribute from corresponding setting.
+
+    Create the 'port_forwarding' API vm attribute based on the corresponding
+    setting (CYCLADES_PORT_FORWARDING), which can be either a tuple
+    of the form (host, port) or a callable object returning such tuple. In
+    case of callable object, must be called with the following arguments:
+    * ip_address
+    * server_id
+    * fqdn
+    * owner UUID
+
+    """
+    port_forwarding = {}
+    for dport, to_dest in settings.CYCLADES_PORT_FORWARDING.items():
+        if hasattr(to_dest, "__call__"):
+            public_nics = vm.nics.filter(network__public=True, state="ACTIVE")\
+                                 .exclude(ipv4=None).order_by('index')
+            if public_nics:
+                vm_ipv4 = public_nics[0].ipv4
+            else:
+                vm_ipv4 = None
+            to_dest = to_dest(vm_ipv4, vm.id, fqdn, vm.userid)
+        msg = ("Invalid setting: CYCLADES_PORT_FOWARDING."
+               " Value must be a tuple of two elements (host, port).")
+        if to_dest is None:
+            continue
+        if not isinstance(to_dest, tuple) or len(to_dest) != 2:
+                raise faults.InternalServerError(msg)
+        else:
+            try:
+                host, port = to_dest
+            except (TypeError, ValueError):
+                raise faults.InternalServerError(msg)
+
+        port_forwarding[dport] = {"host": host, "port": str(port)}
+    return port_forwarding
 
 
 def diagnostics_to_dict(diagnostics):

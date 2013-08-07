@@ -202,6 +202,41 @@ class ServerAPITest(ComputeAPITest):
             server = json.loads(response.content)['server']
             self.assertEqual(server["SNF:fqdn"], nic.ipv4)
 
+    def test_server_port_forwarding(self):
+        vm = mfactory.VirtualMachineFactory()
+        ports = {
+            22: ("foo", 61000),
+            80: lambda ip, id, fqdn, user: ("bar", 61001)}
+        with override_settings(settings,
+                               CYCLADES_PORT_FORWARDING=ports):
+            response = self.myget("servers/%d" % vm.id, vm.userid)
+            server = json.loads(response.content)['server']
+            self.assertEqual(server["SNF:port_forwarding"],
+                             {"22": {"host": "foo", "port": "61000"},
+                              "80": {"host": "bar", "port": "61001"}})
+
+        def _port_from_ip(ip, base):
+            fields = ip.split('.', 4)
+            return (base + 256*int(fields[2]) + int(fields[3]))
+
+        ports = {
+            22: lambda ip, id, fqdn, user:
+            ip and ("gate", _port_from_ip(ip, 10000)) or None}
+        with override_settings(settings,
+                               CYCLADES_PORT_FORWARDING=ports):
+            response = self.myget("servers/%d" % vm.id, vm.userid)
+            server = json.loads(response.content)['server']
+            self.assertEqual(server["SNF:port_forwarding"], {})
+
+        mfactory.NetworkInterfaceFactory(machine=vm, ipv4="192.168.2.2",
+                                         network__public=True)
+        with override_settings(settings,
+                               CYCLADES_PORT_FORWARDING=ports):
+            response = self.myget("servers/%d" % vm.id, vm.userid)
+            server = json.loads(response.content)['server']
+            self.assertEqual(server["SNF:port_forwarding"],
+                             {"22": {"host": "gate", "port": "10514"}})
+
     def test_server_building_nics(self):
         db_vm = self.vm2
         user = self.vm2.userid

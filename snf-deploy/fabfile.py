@@ -270,7 +270,10 @@ def setup_resolv_conf():
       "ns_node_ip": env.env.ns.ip,
       }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
+    try:
+      put(custom, tmpl)
+    except:
+      pass
     try_run("chattr +i /etc/resolv.conf")
 
 

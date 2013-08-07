@@ -159,9 +159,6 @@ def project_list(request):
     projects = Project.objects.user_accessible_projects(request.user)
     table = get_user_projects_table(projects, user=request.user,
                                     prefix="my_projects_")
-    RequestConfig(request,
-                  paginate={"per_page": settings.PAGINATE_BY}).configure(table)
-
     return object_list(
         request,
         projects,
@@ -446,9 +443,6 @@ def project_search(request):
         table.caption = _('SEARCH RESULTS')
     else:
         table.caption = _('ALL PROJECTS')
-
-    RequestConfig(request,
-                  paginate={"per_page": settings.PAGINATE_BY}).configure(table)
 
     return object_list(
         request,

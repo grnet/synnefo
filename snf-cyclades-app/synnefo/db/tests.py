@@ -33,7 +33,7 @@
 
 from django.test import TestCase
 
-from synnefo import settings
+from django.conf import settings
 # Import pool tests
 from synnefo.db.pools.tests import *
 

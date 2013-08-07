@@ -41,6 +41,12 @@ Cyclades
 * Compute quotas for CPU and memory of running vms.
 * Obsolete PUBLIC_USE_POOL setting, since Cyclades manages IP pool for all
   type of networks.
+* Extend servers info API response with 'SNF:fqdn' attribute, and introduce
+  CYCLADES_SERVERS_FQDN to set the template for servers FDQN.
+* Extend servers info API response with 'SNF:port_forwarding' attribute,
+  describing port fowarding rules (DNAT) that are applied to vms. The
+  description of such rules is done via the new CYCLADES_PORT_FORWARDING
+  setting.
 
 Pithos
 ------

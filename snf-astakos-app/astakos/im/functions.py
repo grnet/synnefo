@@ -513,11 +513,11 @@ def enroll_member(project_id, user, request_user=None, reason=None):
         if not membership.check_action("enroll"):
             m = _(astakos_messages.MEMBERSHIP_ACCEPTED)
             raise ProjectConflict(m)
-        membership.perform_action("join", actor=request_user, reason=reason)
+        membership.perform_action("enroll", actor=request_user, reason=reason)
     except ProjectNotFound:
-        membership = new_membership(project, user, actor=request_user)
+        membership = new_membership(project, user, actor=request_user,
+                                    enroll=True)
 
-    membership.perform_action("accept", actor=request_user, reason=reason)
     qh_sync_user(user)
     logger.info("User %s has been enrolled in %s." %
                 (membership.person.log_display, project))
@@ -599,10 +599,12 @@ def can_join_request(project, user, membership=Nothing):
     return m.check_action("join")
 
 
-def new_membership(project, user, actor=None, reason=None):
-    m = ProjectMembership.objects.create(project=project, person=user)
-    m._log_create(None, ProjectMembership.REQUESTED, actor=actor,
-                  reason=reason)
+def new_membership(project, user, actor=None, reason=None, enroll=False):
+    state = (ProjectMembership.ACCEPTED if enroll
+             else ProjectMembership.REQUESTED)
+    m = ProjectMembership.objects.create(
+        project=project, person=user, state=state)
+    m._log_create(None, state, actor=actor, reason=reason)
     return m
 
 

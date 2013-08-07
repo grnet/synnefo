@@ -1939,6 +1939,7 @@ class ProjectMembership(models.Model):
     ACTION_STATES = {
         "join":          REQUESTED,
         "accept":        ACCEPTED,
+        "enroll":        ACCEPTED,
         "leave_request": LEAVE_REQUESTED,
         "deny_leave":    ACCEPTED,
         "cancel_leave":  ACCEPTED,

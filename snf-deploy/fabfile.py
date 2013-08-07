@@ -245,7 +245,7 @@ done
       tmpl = "/root/.ssh/" + f
       replace = {}
       custom = customize_settings_from_tmpl(tmpl, replace)
-      put(custom, tmpl)
+      put(custom, tmpl, mode=0600)
 
     cmd = """
 if [ -e /root/.ssh/authorized_keys.bak ]; then

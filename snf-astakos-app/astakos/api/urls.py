@@ -58,6 +58,24 @@ astakos_account_v1_0 += patterns(
     url(r'^service/user_catalogs/?$', 'get_uuid_displayname_catalogs'),
 )
 
+astakos_account_v1_0 += patterns(
+    'astakos.api.projects',
+    url(r'^projects/?$', 'projects', name='api_projects'),
+    url(r'^projects/(?P<project_id>\d+)/?$', 'project', name='api_project'),
+    url(r'^projects/(?P<project_id>\d+)/action/?$', 'project_action',
+        name='api_project_action'),
+    url(r'^projects/apps/?$', 'applications', name='api_applications'),
+    url(r'^projects/apps/(?P<app_id>\d+)/?$', 'application',
+        name='api_application'),
+    url(r'^projects/apps/(?P<app_id>\d+)/action/?$', 'application_action',
+        name='api_application_action'),
+    url(r'^projects/memberships/?$', 'memberships', name='api_memberships'),
+    url(r'^projects/memberships/(?P<memb_id>\d+)/?$', 'membership',
+        name='api_membership'),
+    url(r'^projects/memberships/(?P<memb_id>\d+)/action/?$',
+        'membership_action', name='api_membership_action'),
+)
+
 urlpatterns = patterns(
     '',
     url(r'^v1.0/', include(astakos_account_v1_0)),

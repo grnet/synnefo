@@ -209,18 +209,15 @@ def astakos_users_quotas(users, initial=None):
         quotas = copy.deepcopy(initial)
 
     ACTUALLY_ACCEPTED = ProjectMembership.ACTUALLY_ACCEPTED
-    objs = ProjectMembership.objects.select_related('project', 'person')
-    memberships = objs.filter(person__in=users,
-                              state__in=ACTUALLY_ACCEPTED,
-                              project__state=Project.APPROVED)
+    objs = ProjectMembership.objects.select_related(
+        'project', 'person', 'project__application')
+    memberships = objs.filter(
+        person__in=users,
+        state__in=ACTUALLY_ACCEPTED,
+        project__state=Project.NORMAL,
+        project__application__state=ProjectApplication.APPROVED)
 
-    project_ids = set(m.project_id for m in memberships)
-    objs = ProjectApplication.objects.select_related('project')
-    apps = objs.filter(project__in=project_ids)
-
-    project_dict = {}
-    for app in apps:
-        project_dict[app.project] = app
+    apps = set(m.project.application_id for m in memberships)
 
     objs = ProjectResourceGrant.objects.select_related()
     grants = objs.filter(project_application__in=apps)
@@ -229,7 +226,7 @@ def astakos_users_quotas(users, initial=None):
         uuid = membership.person.uuid
         userquotas = quotas.get(uuid, {})
 
-        application = project_dict[membership.project]
+        application = membership.project.application
 
         for grant in grants:
             if grant.project_application_id != application.id:

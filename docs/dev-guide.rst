@@ -46,6 +46,13 @@ Resource and Quota Service API (Astakos)
 
     Resource and Quota API <quota-api-guide.rst>
 
+Project API
+===========
+
+.. toctree::
+    :maxdepth: 2
+
+    Project API <project-api-guide.rst>
 
 Compute Service API (Cyclades)
 ==============================

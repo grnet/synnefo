@@ -1809,7 +1809,7 @@ Changelog, NEWS
 ===============
 
 
-* v0.14.4 :ref:`Changelog <Changelog-0.14.5>`, :ref:`NEWS <NEWS-0.14.5>`
+* v0.14.5 :ref:`Changelog <Changelog-0.14.5>`, :ref:`NEWS <NEWS-0.14.5>`
 * v0.14.4 :ref:`Changelog <Changelog-0.14.4>`, :ref:`NEWS <NEWS-0.14.4>`
 * v0.14.3 :ref:`Changelog <Changelog-0.14.3>`, :ref:`NEWS <NEWS-0.14.3>`
 * v0.14.2 :ref:`Changelog <Changelog-0.14.2>`, :ref:`NEWS <NEWS-0.14.2>`

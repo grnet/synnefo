@@ -787,7 +787,8 @@ class Node(DBWorker):
         r.close()
         return (tuple(row.values()) for row in rproxy)
 
-    def version_get_properties(self, serial, keys=(), propnames=_propnames):
+    def version_get_properties(self, serial, keys=(), propnames=_propnames,
+                               node=None):
         """Return a sequence of values for the properties of
            the version specified by serial and the keys, in the order given.
            If keys is empty, return all properties in the order
@@ -800,6 +801,8 @@ class Node(DBWorker):
                     v.c.size, v.c.type, v.c.source,
                     v.c.mtime, v.c.muser, v.c.uuid,
                     v.c.checksum, v.c.cluster], v.c.serial == serial)
+        if node is not None:
+            s = s.where(v.c.node == node)
         rp = self.conn.execute(s)
         r = rp.fetchone()
         rp.close()

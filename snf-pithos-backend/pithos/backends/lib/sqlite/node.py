@@ -651,7 +651,8 @@ class Node(DBWorker):
         self.execute(q, args)
         return self.fetchall()
 
-    def version_get_properties(self, serial, keys=(), propnames=_propnames):
+    def version_get_properties(self, serial, keys=(), propnames=_propnames,
+                               node=None):
         """Return a sequence of values for the properties of
            the version specified by serial and the keys, in the order given.
            If keys is empty, return all properties in the order
@@ -662,8 +663,12 @@ class Node(DBWorker):
         q = ("select serial, node, hash, size, type, source, mtime, muser, "
              "uuid, checksum, cluster "
              "from versions "
-             "where serial = ?")
-        self.execute(q, (serial,))
+             "where serial = ? ")
+        args = [serial]
+        if node is not None:
+            q += ("and node = ?")
+            args += [node]
+        self.execute(q, args)
         r = self.fetchone()
         if r is None:
             return r

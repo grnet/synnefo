@@ -37,7 +37,7 @@ from mock import patch
 
 from snf_django.lib.api import faults
 from snf_django.utils.testing import mocked_quotaholder, override_settings
-from synnefo import settings
+from django.conf import settings
 
 
 @patch("synnefo.logic.rapi_pool.GanetiRapiClient")

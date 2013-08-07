@@ -283,6 +283,11 @@ def setup_hosts():
     try_run("echo StrictHostKeyChecking no >> /etc/ssh/ssh_config")
     cmd = " sed -i 's/^127.*/127.0.0.1 localhost/g' /etc/hosts "
     try_run(cmd)
+    host_info = env.env.ips_info[env.host]
+    cmd = "hostname %s" % host_info.hostname
+    try_run(cmd)
+    cmd = "echo %s > /etc/hostname" % host_info.hostname
+    try_run(cmd)
 
 
 def try_run(cmd, abort=False):

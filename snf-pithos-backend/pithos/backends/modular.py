@@ -639,6 +639,8 @@ class ModularBackend(BaseBackend):
             for t in src_names:
                 path = '/'.join((account, container, t[0]))
                 node = t[2]
+                if not self._exists(node):
+                    continue
                 src_version_id, dest_version_id = self._put_version_duplicate(
                     user, node, size=0, type='', hash=None, checksum='',
                     cluster=CLUSTER_DELETED,
@@ -1178,6 +1180,8 @@ class ModularBackend(BaseBackend):
             return
 
         path, node = self._lookup_object(account, container, name)
+        if not self._exists(node):
+            raise ItemNotExists('Object is deleted.')
         src_version_id, dest_version_id = self._put_version_duplicate(
             user, node, size=0, type='', hash=None, checksum='',
             cluster=CLUSTER_DELETED, update_statistics_ancestors_depth=1)
@@ -1203,6 +1207,8 @@ class ModularBackend(BaseBackend):
             for t in src_names:
                 path = '/'.join((account, container, t[0]))
                 node = t[2]
+                if not self._exists(node):
+                    continue
                 src_version_id, dest_version_id = self._put_version_duplicate(
                     user, node, size=0, type='', hash=None, checksum='',
                     cluster=CLUSTER_DELETED,
@@ -1711,6 +1717,14 @@ class ModularBackend(BaseBackend):
         try:
             self._can_read(user, account, container, object)
         except NotAllowedError:
+            return False
+        else:
+            return True
+
+    def _exists(self, node):
+        try:
+            self._get_version(node)
+        except ItemNotExists:
             return False
         else:
             return True

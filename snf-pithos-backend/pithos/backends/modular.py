@@ -133,7 +133,7 @@ def debug_method(func):
             result = format_exc()
             raise
         finally:
-            all_args = [str(i) for i in args]
+            all_args = map(repr, args)
             map(all_args.append, ('%s=%s' % (k, v) for k, v in kw.iteritems()))
             logger.debug(">>> %s(%s) <<< %s" % (
                 func.__name__, ', '.join(all_args).rstrip(', '), result))
@@ -1261,10 +1261,10 @@ class ModularBackend(BaseBackend):
         self._can_read(user, account, container, name)
         return (account, container, name)
 
-    @debug_method
     def get_block(self, hash):
         """Return a block's data."""
 
+        logger.debug("get_block: %s", hash)
         block = self.store.block_get(binascii.unhexlify(hash))
         if not block:
             raise ItemNotExists('Block does not exist')

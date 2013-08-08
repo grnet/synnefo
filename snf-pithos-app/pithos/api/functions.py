@@ -1432,7 +1432,8 @@ def object_update(request, v_account, v_container, v_object):
             data = ''
             sbi = 0
             while length > 0:
-                data += request.backend.get_block(src_hashmap[sbi])
+                if sbi < len(src_hashmap):
+                    data += request.backend.get_block(src_hashmap[sbi])
                 if length < request.backend.block_size:
                     data = data[:length]
                 bytes = put_object_block(request, hashmap, data, offset)

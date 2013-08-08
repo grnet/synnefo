@@ -111,7 +111,7 @@ class ObjectGetView(PithosAPITest):
 
         vserial, _ = l2[-2]
         self.assertEqual(self.get_object_meta(c, o, version=vserial),
-                         {'X-Object-Meta-Quality': 'AAA'})
+                         {'Quality': 'AAA'})
 
         # update data
         self.append_object_data(c, o)

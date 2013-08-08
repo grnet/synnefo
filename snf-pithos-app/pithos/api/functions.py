@@ -198,7 +198,8 @@ def authenticate(request):
     return response
 
 
-@api_method('GET', format_allowed=True, user_required=True, logger=logger)
+@api_method('GET', format_allowed=True, user_required=True, logger=logger,
+            serializations=["text", "xml", "json"])
 def account_list(request):
     # Normal Response Codes: 200, 204
     # Error Response Codes: internalServerError (500),

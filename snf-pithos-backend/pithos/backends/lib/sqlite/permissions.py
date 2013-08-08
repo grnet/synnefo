@@ -173,8 +173,10 @@ class Permissions(XFeatures, Groups, Public, Node):
              "using (feature_id)")
         p = (member, member)
         if prefix:
-            q += " where path like ? escape '\\'"
-            p += (self.escape_like(prefix) + '%',)
+            q += " where"
+            for path in self.access_inherit(prefix) or [prefix]:
+                q += " path like ? escape '\\'"
+                p += (self.escape_like(path) + '%',)
         self.execute(q, p)
 
         l = [r[0] for r in self.fetchall()]
@@ -194,6 +196,10 @@ class Permissions(XFeatures, Groups, Public, Node):
     def access_list_shared(self, prefix=''):
         """Return the list of shared paths."""
 
-        q = "select path from xfeatures where path like ? escape '\\'"
-        self.execute(q, (self.escape_like(prefix) + '%',))
+        q = "select path from xfeatures where"
+        p = []
+        for path in self.access_inherit(prefix) or [prefix]:
+            q += " path like ? escape '\\'"
+            p += (self.escape_like(path) + '%',)
+        self.execute(q, p)
         return [r[0] for r in self.fetchall()]

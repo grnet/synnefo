@@ -39,3 +39,4 @@ from pithos.api.test.permissions import *
 from pithos.api.test.public import *
 from pithos.api.test.views import *
 from pithos.api.test.unicode import *
+from pithos.api.test.listing import *

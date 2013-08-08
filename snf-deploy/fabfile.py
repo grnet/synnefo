@@ -281,7 +281,7 @@ def setup_resolv_conf():
 def setup_hosts():
     debug(env.host, "Tweaking /etc/hosts and ssh_config files...")
     try_run("echo StrictHostKeyChecking no >> /etc/ssh/ssh_config")
-    cmd = " sed -i 's/^127.*/127.0.0.1 localhost/g' /etc/hosts "
+    cmd = " sed -i 's/^127.*/127.0.0.1 localhost/' /etc/hosts "
     try_run(cmd)
     host_info = env.env.ips_info[env.host]
     cmd = "hostname %s" % host_info.hostname

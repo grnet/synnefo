@@ -444,8 +444,32 @@ $('#members-table tr .check input').click(function(e){
     $('.renew-token a.do').show();
   })
 
+// control pagination for projects intro page
+$('.projects').siblings("#projects-list")
+    .tablesorter({
+      widthFixed: true,
+      sortList: [[0,0]],
+    })
+    .tablesorterPager({
+      container: $("#pager"),
+      size:10,
+      positionFixed:false,
+    });
+
+// control pagination for find project page
+$('.projects').find("#projects-list")
+    .tablesorter({
+      widthFixed: true,
+      sortList: [[0,0]],
+    })
+    .tablesorterPager({
+      container: $("#pager"),
+      size:20,
+      positionFixed:false,
+    });
 
 });
+
 	
 $(window).resize(function() {
     

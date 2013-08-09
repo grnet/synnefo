@@ -243,6 +243,9 @@ table.alt-style tr td:first-child a				{ margin:0; }
 table.alt-style tr th a							{ padding-right:20px; }
 table.alt-style tr th.asc a						{ background:url(../images/arrow_th_bg.png) no-repeat right -48px; }
 table.alt-style tr th.desc a					{ background:url(../images/arrow_th_bg.png) no-repeat right 6px; }
+table.alt-style tr th.headerSortDown			{ padding-right:20px;background:url(../images/arrow_th_bg.png) no-repeat 70% -42px; }
+table.alt-style tr th.headerSortUp 				{ padding-right:20px;background:url(../images/arrow_th_bg.png) no-repeat 70% 10px; }
+table.my-projects tr th:hover 		{ cursor: pointer; text-decoration: underline;}
 .content a.submit								{ margin:0; display:inline-block; margin:10px 0 ;  height:auto; min-width:100px; text-align:center;}
 table.alt-style tr:nth-child(2n) td				{ background:#F2F2F2 } 
 dl.alt-style dt									{ width:30%; float:left; color:#3582AC; font-weight:normal;}
@@ -666,6 +669,7 @@ table.cols-3 tr.links td 						{ font-size:1.154em}
 
 .members-table 									{ width:100%;}
 .members-table .check 							{ width:5%;}
+.members-table .check input[type="checkbox"]	{ vertical-align: middle }
 .members-table .check + td.email	 			{ padding-left:5px;}
 .approved .members-table .email:hover,
 .pending .members-table.email:hover 			{ cursor: pointer;} 

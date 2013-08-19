@@ -25,72 +25,76 @@ networks are defined from the Cyclades, Ganeti, and Backend persperctive.
 Network @ Cyclades level
 ------------------------
 
-Cyclades understands two types of Virtual Networks:
+Cyclades networks support a range of different options to cover the specific
+needs of each deployment.
 
-a) Public Networks
-b) Private Networks
+First of all, as far as visibility and accessibility is concerned, a network
+can be either `public` or `private`. Public networks are created by the
+administrator via the command line interface (`snf-manage`) and are visible to
+all end-users. On the other hand, private networks are created by the end-user
+from the Web UI or the kamaki client and provide isolated Layer 2 connectivity
+to the end-user.
 
-Public Networks are created by the administrator via `snf-manage` commands
-and can be used by all end-users. Each public network is assigned to a
-single backend but one backend can have multiple public networks.
+Both networks can have an IPv4 subnet or/and an IPv6 subnet along with the
+corresponding gateway. For IPv4 networks, if the `--dhcp` option is set,
+Cyclades will treat the IPv4 subnet as an IP pool, and will assign to each VM
+that is connected to this network an IPv4 address from this pool.
 
-Private Networks are created by the end-user from the Web UI or the kamaki
-client and provide isolated Layer 2 connectivity to the end-user. With regard
-to the fact that a user's VMs may be allocated across different Ganeti clusters
-(backends), private networks are created in all backends to ensure VMs
-connectivity.
+A public network can also be marked as a floating IP pool with the
+`--floating-ip-pool` option. Floating IPs, are IPv4 addresses that can be
+dynamically by added and removed from running VMs. A user can reserve and
+release a floating IP address that he can later add and remove it from running
+VMs. Also the user can release a floating IP if it not used by any of his
+VMs.
 
-Both types of networks are created dynamically.
+Private networks and floating IPs must be accessible from all instances across
+all Ganeti backends. So, such networks must exist in all backends, and
+are dynamically created when new Ganeti backends are added. Specially for
+private networks, to avoid the overhead of creating the network to all
+backends, Cyclades create these networks on demand, when an instance that
+lives in a backend tries to connect to this network.
 
-From the VM perspective, each NIC is attached to a specific Network.
+The administrator may also want to connect instances to some network, without
+supporting floating IPs (e.g. to enforce each VM to be connected to a specific
+network). This can be achieved by setting the `DEFAULT_INSTANCE_NETWORKS`
+setting to the list of the selected networks. The special keyword
+`SNF:ANY_PUBLIC` may be used as a network identifier, to indicate to the system
+to peak any of the public networks that has a free IP address. Public networks
+that are not floating IP pools, do not need to exist to all Ganeti backends,
+since the Cyclades backend allocator, will route spawned vms to a Ganeti
+backend that the selected networks exist. The administrator can choose in
+which backends to create the network via the `--backends` command line option.
 
-When a new VM is created the backend allocator (in Cyclades) decides in which
-backend  to spawn it. Depending on the chosen backend, Synnefo finds the first
-non-full public Network that exists in the backend. Then attaches the VM's
-first NIC to this network.
+Another distinction between networks is their flavor. Flavor is a way to
+abstract infrastructure specific options, that are used to ensure connectivity
+and isolation to the VMs connected to the network. It is a set of options that
+eventually will guide scripts to set up rules, while creating virtual
+interfaces in the node level. Each of these flavors define attributes that will
+be used at Ganeti level to create the physical network. These attributes are:
 
-Once the VM is created, the user is able to connect the VM to multiple
-private networks, that himself has already created.
-
-A Network can have the following attributes:
-
- - IPv4 subnet (mandatory)
- - IPv4 gateway
- - IPv6 subnet
- - IPv6 gateway
- - public/private flag
- - flavor
-
-Flavor is a way to abstact infrastructure specific options, that are used to
-ensure connectivity and isolation to the VMs connected to the network. It is a
-set of options that eventually will guide scripts to set up rules, while
-creating virtual interfaces in the node level. The available flavors and their
-options can be found in the Synnefo settings and are configurable.
+* ``mode``: Whether the network is in 'bridged' or 'routed' mode.
+* ``link``: Bridge for 'bridged' networks and routing table for 'routed'
+  networks. e.g. 'br100', 'rt200'
+* ``mac_prefix``: A MAC prefix for the network. e.g. 'aa:00:05'
+* ``tags``: A list of tags to be used at the Ganeti level.
 
 To ensure L2 isolation, Synnefo supports two different mechanisms (see also Node
 Level section):
 
- - assigning one physical VLAN per network
- - assigning one MAC prefix per network, so that every NIC attached to this
-   network will have this prefix. Isolation is then achieved by filtering
-   rules (via `ebtables`) based on a specific mask (ff:ff:f0:00:00:00, see Node
-   Level section for more details).
+* assigning one physical VLAN per network
+* assigning one MAC prefix per network, so that every NIC attached to this
+  network will have this prefix. Isolation is then achieved by filtering
+  rules (via `ebtables`) based on a specific mask (ff:ff:f0:00:00:00, see Node
+  Level section for more details).
 
 Having this in mind and in order to prevent assignment of duplicate VLAN/MAC
 prefix to different networks, Synnefo supports two types of Pools:
 
- - Bridge Pool (corresponding to a number of VLANs bridged to those bridges)
- - MAC prefix Pool
+- Bridge Pool (corresponding to a number of VLANs bridged to those bridges)
+- MAC prefix Pool
 
-For Pool handling refer to the corresponding doc section.
-
-Finally, each supported flavor must declare the following options (see also
-Ganeti Level section):
-
- - ``mode`` ('bridged' or 'routed'),
- - ``link`` ('br100', 'rt200', 'pool')
- - ``mac_prefix`` ('aa:00:05', 'pool', None)
- - ``tags`` (['ip-less-routed' or 'mac-filtered' or 'physical-vlan' or None])
+For Pool handling refer to the corresponding doc section. To use this pools,
+set either `--link` or `--mac-prefix` to the reserved keyword `pool`.
 
 Existing network flavors are the following:
 
@@ -103,17 +107,20 @@ PHYSICAL_VLAN    bridged   'pool'                            ``DEFAULT_MAC_PREFI
 CUSTOM           bridged   ``DEFAULT_BRIDGE``                ``DEFAULT_MAC_PREFIX``
 ==============   =======   ===============================   ======================  ==================
 
-``DEFAULT_ROUTING_TABLE``, ``DEFAULT_MAC_PREFIX``, ``DEFAULT_BRIDGE``, ``DEFAULT_MAC_FILTERED_BRIDGE``
-are all configurable settings in ``/etc/synnefo/20-snf-cyclades-app-api.conf``. 'pool' is used
-to denote that a link or MAC prefix will be allocated from the corresponging Pool.
+``DEFAULT_ROUTING_TABLE``, ``DEFAULT_MAC_PREFIX``, ``DEFAULT_BRIDGE``,
+``DEFAULT_MAC_FILTERED_BRIDGE`` are all configurable settings in
+``/etc/synnefo/20-snf-cyclades-app-api.conf``. 'pool' is used to denote that a
+link or MAC prefix will be allocated from the corresponding Pool. Finally,
+most of these attributes, may be overridden when creating networks with
+`snf-manage network-create command`.
 
 The administrator is able to create any of the above flavors
 and override their default values by explicitly passing mode, link, etc. using
 the `snf-manage network-create` command. 
 
-The end-user is allowed to create only networks of flavor ``MAC_FILTERED`` and
-``PHYSICAL_VLAN``. Currently, only ``MAC_FILTERED`` and ``PHYSICAL_VLAN`` can
-use existing pools and cannot be overriden.
+The administrator can create networks of any flavor, but end-users is allowed
+to create via API only networks with flavors that are set in the
+`API_ENABLED_NETWORK_FLAVORS` setting.
 
 Network @ Ganeti level
 ----------------------

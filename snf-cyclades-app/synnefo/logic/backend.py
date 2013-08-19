@@ -759,9 +759,22 @@ def disconnect_from_network(vm, nic):
     log.debug("Removing nic of VM %s, with index %s", vm, str(nic.index))
 
     with pooled_rapi_client(vm) as client:
-        return client.ModifyInstance(vm.backend_vm_id, nics=op,
-                                     hotplug=vm.backend.use_hotplug(),
-                                     dry_run=settings.TEST)
+        jobID = client.ModifyInstance(vm.backend_vm_id, nics=op,
+                                      hotplug=vm.backend.use_hotplug(),
+                                      dry_run=settings.TEST)
+        # If the NIC has a tag for a firewall profile it must be deleted,
+        # otherwise it may affect another NIC. XXX: Deleting the tag should
+        # depend on the removing the NIC, but currently RAPI client does not
+        # support this, this may result in clearing the firewall profile
+        # without successfully removing the NIC. This issue will be fixed with
+        # use of NIC UUIDs.
+        firewall_profile = nic.firewall_profile
+        if firewall_profile != "DISABLED":
+            tag = _firewall_tags[firewall_profile] % nic.index
+            client.DeleteInstanceTags(vm.backend_vm_id, [tag],
+                                      dry_run=settings.TEST)
+
+        return jobID
 
 
 def set_firewall_profile(vm, profile, index=0):
@@ -781,7 +794,9 @@ def set_firewall_profile(vm, profile, index=0):
             client.DeleteInstanceTags(vm.backend_vm_id, delete_tags,
                                       dry_run=settings.TEST)
 
-        client.AddInstanceTags(vm.backend_vm_id, [tag], dry_run=settings.TEST)
+        if profile != "DISABLED":
+            client.AddInstanceTags(vm.backend_vm_id, [tag],
+                                   dry_run=settings.TEST)
 
         # XXX NOP ModifyInstance call to force process_net_status to run
         # on the dispatcher

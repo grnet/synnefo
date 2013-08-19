@@ -58,6 +58,8 @@ Cyclades
   describing port fowarding rules (DNAT) that are applied to vms. The
   description of such rules is done via the new CYCLADES_PORT_FORWARDING
   setting.
+* Change --dhcp option of network management commands from a flag to a boolean
+  value, e.g. --dhcp=True
 
 Pithos
 ------

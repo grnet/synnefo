@@ -218,7 +218,7 @@ Then in Cyclades run:
 
 .. code-block:: console
 
-   # snf-manage network-create --subnet=5.6.7.0/27 --gateway=5.6.7.1 --subnet6=2001:648:2FFC:1322::/64 --gateway6=2001:648:2FFC:1322::1 --public --dhcp --flavor=CUSTOM --link=br100 ----name=default --backend-id=1
+   # snf-manage network-create --subnet=5.6.7.0/27 --gateway=5.6.7.1 --subnet6=2001:648:2FFC:1322::/64 --gateway6=2001:648:2FFC:1322::1 --public --dhcp=True --flavor=CUSTOM --link=br100 ----name=default --backend-id=1
 
    # snf-manage network-list
    id    name     flavor   owner mac_prefix   dhcp    state         link  vms public IPv4 Subnet   IPv4 Gateway
@@ -272,7 +272,7 @@ Then in Cyclades run:
 
 .. code-block:: console
 
-   # snf-manage network-create --subnet=5.6.7.0/27 --gateway=5.6.7.1 --subnet6=2001:648:2FFC:1322::/64 --gateway6=2001:648:2FFC:1322::1 --public --dhcp --flavor=IP_LESS_ROUTED --name=routed --backend-id=1
+   # snf-manage network-create --subnet=5.6.7.0/27 --gateway=5.6.7.1 --subnet6=2001:648:2FFC:1322::/64 --gateway6=2001:648:2FFC:1322::1 --public --dhcp=True --flavor=IP_LESS_ROUTED --name=routed --backend-id=1
 
    # snf-manage network-list
    id    name     flavor         owner mac_prefix   dhcp    state   link      vms  public IPv4 Subnet   IPv4 Gateway
@@ -329,7 +329,7 @@ and the create the network:
 
 .. code-block:: console
 
-   # snf-manage network-create --subnet=192.168.1.0/24 --gateway=192.168.1.0/24 --dhcp --flavor=MAC_FILTERED --link=prv0 --name=mac --backend-id=1
+   # snf-manage network-create --subnet=192.168.1.0/24 --gateway=192.168.1.0/24 --dhcp=True --flavor=MAC_FILTERED --link=prv0 --name=mac --backend-id=1
    # snf-manage network-list
    id    name     flavor       owner mac_prefix   dhcp    state         link  vms public IPv4 Subnet    IPv4 Gateway
    3     mac      MAC_FILTERED       aa:00:01     True    ACTIVE        prv0      False  192.168.1.0/24 192.168.1.1
@@ -392,7 +392,7 @@ and the create the network:
 
 .. code-block:: console
 
-   # snf-manage network-create --subnet=192.168.1.0/24  --gateway=192.168.1.0/24  --dhcp --flavor=PHYSICAL_VLAN  --name=vlan  --backend-id=1
+   # snf-manage network-create --subnet=192.168.1.0/24  --gateway=192.168.1.0/24  --dhcp=True --flavor=PHYSICAL_VLAN  --name=vlan  --backend-id=1
 
    # snf-manage network-list
    id    name     flavor       owner mac_prefix   dhcp    state         link  vms public IPv4 Subnet    IPv4 Gateway
@@ -426,7 +426,7 @@ that he can access the VPN. Then we run in Cyclades:
 
 .. code-block:: console
 
-   # snf-manage network-create --subnet=192.168.1.0/24 --gateway=192.168.1.0/24 --dhcp --flavor=CUSTOM --mode=bridged --link=br200 --mac-prefix=bb:00:44 --owner=user@grnet.gr --tags=nfdhcpd,vpn --name=vpn --backend-id=1
+   # snf-manage network-create --subnet=192.168.1.0/24 --gateway=192.168.1.0/24 --dhcp=True --flavor=CUSTOM --mode=bridged --link=br200 --mac-prefix=bb:00:44 --owner=user@grnet.gr --tags=nfdhcpd,vpn --name=vpn --backend-id=1
 
    # snf-manage network-list
    id    name     flavor       owner              mac_prefix   dhcp    state         link  vms public IPv4 Subnet    IPv4 Gateway

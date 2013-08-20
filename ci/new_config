@@ -8,8 +8,6 @@ synnefo_repo = https://code.grnet.gr/git/synnefo
 # Git branch to test (specify sha1 or branch name). If not set, the
 # branch/sha will result from the current repository.
 synnefo_branch =
-# snf-deploy git repo
-deploy_repo = https://code.grnet.gr/git/snf-deploy
 # Defines the schema that snf-deploy will use
 schema = one_node
 # Local dir to save builded packages

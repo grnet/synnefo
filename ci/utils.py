@@ -284,21 +284,25 @@ class SynnefoCI(object):
 
     def _find_flavor(self, flavor_name):
         """Given a flavor_name (reg expression) find a flavor id to use"""
-        if flavor_name is None:
-            flavor_name = self.config.get('Deployment', 'flavor_name')
-        self.logger.debug("Try to find a flavor with name \"%s\"" % flavor_name)
+        # Get a list of flavor names from config file
+        flavor_names = self.config.get('Deployment', 'flavor_name').split(",")
+        if flavor_name is not None:
+            # If we have a flavor_name to use, add it to our list
+            flavor_names.insert(0, flavor_name)
 
         flavors = self.compute_client.list_flavors()
-        flavors = [f for f in flavors
-                   if re.search(flavor_name, f['name']) is not None]
+        for flname in flavor_names:
+            sflname = flname.strip()
+            self.logger.debug("Try to find a flavor with name \"%s\"" % sflname)
+            fls = [f for f in flavors
+                   if re.search(sflname, f['name']) is not None]
+            if fls:
+                self.logger.debug("Will use %s with id %s"
+                                  % (fls[0]['name'], fls[0]['id']))
+                return fls[0]['id']
 
-        if flavors:
-            self.logger.debug("Will use %s with id %s"
-                              % (flavors[0]['name'], flavors[0]['id']))
-            return flavors[0]['id']
-        else:
-            self.logger.error("No matching flavor found.. aborting")
-            sys.exit(1)
+        self.logger.error("No matching flavor found.. aborting")
+        sys.exit(1)
 
     def _find_image(self):
         """Find a suitable image to use

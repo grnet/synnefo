@@ -465,10 +465,6 @@ class SynnefoCI(object):
             self.logger.error("Can not clone Synnefo repo.")
             sys.exit(-1)
 
-        deploy_repo = self.config.get('Global', 'deploy_repo')
-        self.logger.debug("Clone snf-deploy from %s" % deploy_repo)
-        _run("git clone --depth 1 %s" % deploy_repo, False)
-
     @_check_fabric
     def build_synnefo(self):
         """Build Synnefo packages"""
@@ -490,26 +486,7 @@ class SynnefoCI(object):
             """
             _run(cmd, False)
 
-        self.logger.debug("Build snf-deploy package")
-        cmd = """
-        git checkout -t origin/debian
-        git-buildpackage --git-upstream-branch=master \
-                --git-debian-branch=debian \
-                --git-export-dir=../snf-deploy_build-area \
-                -uc -us
-        """
-        with fabric.cd("snf-deploy"):
-            _run(cmd, True)
-
-        self.logger.debug("Install snf-deploy package")
-        cmd = """
-        dpkg -i snf-deploy*.deb
-        apt-get -f install --yes
-        """
-        with fabric.cd("snf-deploy_build-area"):
-            with fabric.settings(warn_only=True):
-                _run(cmd, True)
-
+        # Build synnefo packages
         self.logger.debug("Build synnefo packages")
         cmd = """
         devflow-autopkg snapshot -b ~/synnefo_build-area --no-sign
@@ -517,6 +494,17 @@ class SynnefoCI(object):
         with fabric.cd("synnefo"):
             _run(cmd, True)
 
+        # Install snf-deploy package
+        self.logger.debug("Install snf-deploy package")
+        cmd = """
+        dpkg -i snf-deploy*.deb
+        apt-get -f install --yes
+        """
+        with fabric.cd("synnefo_build-area"):
+            with fabric.settings(warn_only=True):
+                _run(cmd, True)
+
+        # Setup synnefo packages for snf-deploy
         self.logger.debug("Copy synnefo debs to snf-deploy packages dir")
         cmd = """
         cp ~/synnefo_build-area/*.deb /var/lib/snf-deploy/packages/

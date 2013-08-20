@@ -769,7 +769,7 @@ def disconnect_from_network(vm, nic):
         # without successfully removing the NIC. This issue will be fixed with
         # use of NIC UUIDs.
         firewall_profile = nic.firewall_profile
-        if firewall_profile != "DISABLED":
+        if firewall_profile and firewall_profile != "DISABLED":
             tag = _firewall_tags[firewall_profile] % nic.index
             client.DeleteInstanceTags(vm.backend_vm_id, [tag],
                                       dry_run=settings.TEST)

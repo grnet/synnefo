@@ -86,7 +86,7 @@ class ServerTest(TestCase):
                                       state="ACTIVE",
                                       dhcp=True,
                                       flavor="CUSTOM")
-        vm = mfactory.VirtualMachineFactory(operstate="ACTIVE")
+        vm = mfactory.VirtualMachineFactory(operstate="STARTED")
         mfactory.BackendNetworkFactory(network=net, backend=vm.backend)
         mrapi().ModifyInstance.return_value = 42
         servers.connect(vm, net)
@@ -100,7 +100,7 @@ class ServerTest(TestCase):
         self.assertEqual(nics[1]["network"], net.backend_id)
 
         # No dhcp
-        vm = mfactory.VirtualMachineFactory(operstate="ACTIVE")
+        vm = mfactory.VirtualMachineFactory(operstate="STARTED")
         net = mfactory.NetworkFactory(subnet="192.168.2.0/24",
                                       gateway="192.168.2.1",
                                       state="ACTIVE",
@@ -117,7 +117,7 @@ class ServerTest(TestCase):
         self.assertEqual(nics[1]["network"], net.backend_id)
 
         # Test connect to IPv6 only network
-        vm = mfactory.VirtualMachineFactory(operstate="ACTIVE")
+        vm = mfactory.VirtualMachineFactory(operstate="STARTED")
         net = mfactory.NetworkFactory(subnet6="2000::/64",
                                       state="ACTIVE",
                                       gateway="2000::1")
@@ -158,9 +158,16 @@ class ServerCommandTest(TestCase):
         self.assertRaises(faults.BadRequest, servers.stop, vm)
         vm = mfactory.VirtualMachineFactory(operstate="STARTED")
         self.assertRaises(faults.BadRequest, servers.resize, vm)
-        vm = mfactory.VirtualMachineFactory(operstate="STOPPED")
-        self.assertRaises(faults.BadRequest, servers.stop, vm)
+        # Check that connect/disconnect is allowed only in STOPPED vms
+        # if hotplug is disabled.
+        vm = mfactory.VirtualMachineFactory(operstate="STARTED")
+        network = mfactory.NetworkFactory(state="ACTIVE")
+        with override_settings(settings, GANETI_USE_HOTPLUG=False):
+            self.assertRaises(faults.BadRequest, servers.connect, vm, network)
+            self.assertRaises(faults.BadRequest, servers.disconnect, vm,
+                              network)
         #test valid
+        vm = mfactory.VirtualMachineFactory(operstate="STOPPED")
         mrapi().StartupInstance.return_value = 1
         with mocked_quotaholder():
             servers.start(vm)

@@ -44,9 +44,11 @@ def validate_server_action(vm, action):
     operstate = vm.operstate
     if operstate == "BUILD":
         raise faults.BuildInProgress("Server '%s' is being build." % vm.id)
-    elif (action == "START" and operstate == "STARTED") or\
-         (action == "STOP" and operstate == "STOPPED") or\
-         (action == "RESIZE" and operstate == "STARTED"):
+    elif (action == "START" and operstate != "STOPPED") or\
+         (action == "STOP" and operstate != "STARTED") or\
+         (action == "RESIZE" and operstate != "STOPPED") or\
+         (action in ["CONNECT", "DISCONNECT"] and operstate != "STOPPED"
+          and not settings.GANETI_USE_HOTPLUG):
         raise faults.BadRequest("Can not perform '%s' action while server is"
                                 " in '%s' state." % (action, operstate))
     return

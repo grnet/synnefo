@@ -622,8 +622,16 @@
             this.view_id = "vm_{0}_details".format(vm.id);
             
             views.VMDetailsView.__super__.initialize.call(this);
-
+            
+            this.resize_actions = this.$(".trigger-resize");
+            this.init_handlers();
             this.update_layout();
+        },
+        
+        init_handlers: function() {
+          this.resize_actions.bind('click', _.bind(function(e){
+              ui.main.vm_resize_view.show(this.vm);
+          }, this));
         },
 
         update_layout: function() {
@@ -853,15 +861,13 @@
         'STOPPED':          ['state', 'terminated-state'],
         'ACTIVE':           ['state', 'running-state'],
         'ERROR':            ['state', 'error-state'],
-        'DELETED':           ['state', 'destroying-state'],
+        'DELETED':          ['state', 'destroying-state'],
         'DESTROY':          ['state', 'destroying-state'],
-        'BUILD_INIT':       ['state', 'build-state'], 
-        'BUILD_COPY':       ['state', 'build-state'],
-        'BUILD_FINAL':      ['state', 'build-state'],
         'SHUTDOWN':         ['state', 'shutting-state'],
         'START':            ['state', 'starting-state'],
         'CONNECT':          ['state', 'connecting-state'],
-        'DISCONNECT':       ['state', 'disconnecting-state']
+        'DISCONNECT':       ['state', 'disconnecting-state'],
+        'RESIZE':           ['state', 'rebooting-state']
     };
 
 })(this);

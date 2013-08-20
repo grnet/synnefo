@@ -314,7 +314,7 @@ class ShibbolethTests(TestCase):
         # we can reenable the local provider by setting a password
         r = client.get(ui_url("password_change"), follow=True)
         r = client.post(ui_url("password_change"), {'new_password1': '111',
-                                                'new_password2': '111'},
+                                                    'new_password2': '111'},
                         follow=True)
         user = r.context['request'].user
         self.assertTrue(user.has_auth_provider('local'))
@@ -456,7 +456,7 @@ class TestLocal(TestCase):
         # admin gets notified and activates the user from the command line
         self.assertEqual(len(get_mailbox('kpap@synnefo.org')), 1)
         r = self.client.post(ui_url('local'), {'username': 'kpap@synnefo.org',
-                                           'password': 'password'},
+                                               'password': 'password'},
                              follow=True)
         self.assertContains(r, messages.VERIFICATION_SENT)
         backend = activation_backends.get_backend()
@@ -931,7 +931,7 @@ class TestAuthProvidersAPI(TestCase):
         provider.add_to_user()
         user = AstakosUser.objects.get()
         self.assertEqual(sorted(user.groups.values_list('name', flat=True)),
-                              sorted([u'group1', u'group2', u'group-create']))
+                         sorted([u'group1', u'group2', u'group-create']))
 
         local = auth.get_provider('local', user)
         local.add_to_user()
@@ -941,7 +941,7 @@ class TestAuthProvidersAPI(TestCase):
         user = AstakosUser.objects.get()
         self.assertEqual(len(user.get_auth_providers()), 1)
         self.assertEqual(sorted(user.groups.values_list('name', flat=True)),
-                              sorted([u'group-create', u'localgroup']))
+                         sorted([u'group-create', u'localgroup']))
 
         local = user.get_auth_provider('local')
         self.assertRaises(Exception, local.remove_from_user)
@@ -949,11 +949,9 @@ class TestAuthProvidersAPI(TestCase):
         provider.add_to_user()
         user = AstakosUser.objects.get()
         self.assertEqual(sorted(user.groups.values_list('name', flat=True)),
-                              sorted([u'group-create', u'group1', u'group2',
-                               u'localgroup']))
+                         sorted([u'group-create', u'group1', u'group2',
+                                 u'localgroup']))
         Group.objects.all().delete()
-
-
 
     @im_settings(IM_MODULES=['local', 'shibboleth'])
     def test_policies(self):
@@ -1033,7 +1031,6 @@ class TestAuthProvidersAPI(TestCase):
                   'GOOGLE_ADD_GROUPS_POLICY']:
             delattr(settings, 'ASTAKOS_AUTH_PROVIDER_%s' % s)
 
-
     @shibboleth_settings(CREATE_POLICY=True)
     @im_settings(IM_MODULES=['local', 'shibboleth'])
     def test_create_http(self):
@@ -1054,7 +1051,7 @@ class TestAuthProvidersAPI(TestCase):
         provider = auth_providers.get_provider('shibboleth', user,
                                                'test@shibboleth.com',
                                                **{'info': {'name':
-                                                                'User Test'}})
+                                                           'User Test'}})
         self.assertFalse(provider.get_create_policy)
         settings.ASTAKOS_AUTH_PROVIDER_SHIBBOLETH_CREATE_POLICY = True
         self.assertTrue(provider.get_create_policy)
@@ -1330,7 +1327,7 @@ class TestWebloginRedirect(TestCase):
         invalid_domain = weblogin("https://www.invaliddomain.synnefo.org")
         invalid_scheme = weblogin("customscheme://localhost")
         invalid_scheme_with_valid_domain = \
-                weblogin("http://www.invaliddomain.com")
+            weblogin("http://www.invaliddomain.com")
         valid_scheme = weblogin("pithos://localhost/")
         # to be used in assertRedirects
         valid_scheme_quoted = weblogin_quoted("pithos://localhost/")

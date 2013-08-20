@@ -38,6 +38,7 @@ from sqlalchemy.exc import NoSuchTableError
 
 from dbworker import DBWorker
 
+
 def create_tables(engine):
     metadata = MetaData()
     columns = []
@@ -46,6 +47,7 @@ def create_tables(engine):
 
     metadata.create_all(engine)
     return metadata.sorted_tables
+
 
 class QuotaholderSerial(DBWorker):
     """QuotaholderSerial keeps track of quota holder serials.
@@ -96,7 +98,7 @@ class QuotaholderSerial(DBWorker):
 
         r = self.conn.execute(
             self.qh_serials.insert(),
-            list({'serial':s} for s in serials)
+            list({'serial': s} for s in serials)
         )
         r.close()
 

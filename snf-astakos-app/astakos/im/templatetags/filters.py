@@ -50,6 +50,7 @@ register = template.Library()
 
 DELIM = ','
 
+
 @register.filter
 def monthssince(joined_date):
     now = datetime.datetime.now()
@@ -76,13 +77,16 @@ def monthssince(joined_date):
 
     return months
 
+
 @register.filter
 def to_unicode(s):
     return unicode(s)
 
+
 @register.filter
 def to_string(s):
     return str(s)
+
 
 @register.filter
 def lookup(d, key):
@@ -90,6 +94,7 @@ def lookup(d, key):
         return d.get(key)
     except:
         return
+
 
 @register.filter
 def lookup_uni(d, key):
@@ -176,18 +181,21 @@ def get_value_after_dot(value):
 from math import log
 unit_list = zip(['bytes', 'kB', 'MB', 'GB', 'TB', 'PB'], [0, 0, 0, 0, 0, 0])
 
+
 @register.filter
 def sizeof_fmt(num):
     """Human friendly file size"""
     return ProjectResourceGrant.display_filesize(num)
 
+
 @register.filter
 def truncatename(v, max=18, append="..."):
     length = len(v)
-    if length>max:
+    if length > max:
         return v[:max] + append
     else:
         return v
+
 
 @register.filter
 def resource_groups(project_definition):
@@ -196,6 +204,7 @@ def resource_groups(project_definition):
         return grants.values_list('resource__group', flat=True)
     except:
         return ()
+
 
 @register.filter
 def resource_grants(project_definition):
@@ -208,4 +217,3 @@ def resource_grants(project_definition):
         return dict((e[0], e[1]) for e in grants)
     except:
         return {}
-        

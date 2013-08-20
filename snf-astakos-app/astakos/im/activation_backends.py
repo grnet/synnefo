@@ -387,15 +387,17 @@ class ActivationBackend(object):
         if result.status == self.Result.PENDING_MODERATION:
             logger.info("Sending notifications for user"
                         " verification: %s", user.log_display)
-            functions.send_account_pending_moderation_notification(user,
-                                        self.pending_moderation_template_name)
+            functions.send_account_pending_moderation_notification(
+                user,
+                self.pending_moderation_template_name)
             # TODO: notify user
 
         if result.status == self.Result.ACCEPTED:
             logger.info("Sending notifications for user"
                         " moderation: %s", user.log_display)
-            functions.send_account_activated_notification(user,
-                                         self.activated_email_template_name)
+            functions.send_account_activated_notification(
+                user,
+                self.activated_email_template_name)
             functions.send_greeting(user,
                                     self.greeting_template_name)
             # TODO: notify admins

@@ -151,7 +151,6 @@ class TestProjects(TestCase):
         r = self.user_client.post(post_url, data=application_data, follow=True)
         app2_id = ProjectApplication.objects.filter().order_by('pk')[1].pk
 
-
         # no more applications (LIMIT is 2)
         r = self.user_client.get(reverse('project_add'), follow=True)
         self.assertRedirects(r, reverse('project_list'))
@@ -234,5 +233,5 @@ class TestProjects(TestCase):
 
         # support email gets rendered in emails content
         for mail in get_mailbox('user@synnefo.org'):
-            self.assertTrue(settings.CONTACT_EMAIL in \
+            self.assertTrue(settings.CONTACT_EMAIL in
                             mail.message().as_string())

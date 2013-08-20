@@ -219,7 +219,6 @@
                         return;
                     }
                 }
-                
                 last_ajax = this.fetch(params);
             }, this);
             handler_options.callback = callback;
@@ -695,7 +694,7 @@
         get_connectable_vms: function() {
             return storage.vms.filter(function(vm){
                 return !vm.in_error_state() && !vm.is_building();
-            })
+            });
         },
 
         state_message: function() {
@@ -780,6 +779,7 @@
             
             // handle progress message on instance change
             this.bind("change", _.bind(this.update_status_message, this));
+            this.bind("change:task_state", _.bind(this.update_status, this));
             // force update of progress message
             this.update_status_message(true);
             
@@ -797,6 +797,10 @@
             if (!st) { return this.get("status")}
             return this.set({status:st});
         },
+        
+        update_status: function() {
+            this.set_status(this.get('status'));
+        },
 
         set_status: function(st) {
             var new_state = this.state_for_api_status(st);
@@ -809,7 +813,8 @@
             }
             
             // call it silently to avoid double change trigger
-            this.set({'state': this.state_for_api_status(st)}, {silent: true});
+            var state = this.state_for_api_status(st);
+            this.set({'state': state}, {silent: true});
             
             // trigger transition
             if (transition && models.VM.TRANSITION_STATES.indexOf(new_state) == -1) { 
@@ -1051,6 +1056,10 @@
             models.VM.__super__.unbind.apply(this, arguments);
         },
 
+        can_resize: function() {
+          return this.get('status') == 'STOPPED';
+        },
+
         handle_stats_error: function() {
             stats = {};
             _.each(['cpuBar', 'cpuTimeSeries', 'netBar', 'netTimeSeries'], function(k) {
@@ -1209,11 +1218,6 @@
             return this.state_transition(this.state(), status);
         },
         
-        // vm state equals vm api status
-        state_is_status: function(state) {
-            return models.VM.STATUSES.indexOf(state) != -1;
-        },
-        
         // get transition state for the corresponging api status
         state_transition: function(state, new_status) {
             var statuses = models.VM.STATES_TRANSITIONS[state];
@@ -1254,6 +1258,25 @@
                 flv = storage.flavors.get(this.get('flavor'));
             }
             return flv;
+        },
+
+        get_resize_flavors: function() {
+          var vm_flavor = this.get_flavor();
+          var flavors = synnefo.storage.flavors.filter(function(f){
+              return f.get('disk_template') ==
+              vm_flavor.get('disk_template') && f.get('disk') ==
+              vm_flavor.get('disk');
+          });
+          return flavors;
+        },
+
+        get_flavor_quotas: function() {
+          var flavor = this.get_flavor();
+          return {
+            cpu: flavor.get('cpu') + 1, 
+            ram: flavor.get_ram_size() + 1, 
+            disk:flavor.get_disk_size() + 1
+          }
         },
 
         get_meta: function(key, deflt) {
@@ -1438,10 +1461,58 @@
                                          error, 'shutdown', params);
                     break;
                 case 'console':
-                    this.__make_api_call(this.url() + "/action", "create", {'console': {'type':'vnc'}}, function(data) {
+                    this.__make_api_call(this.url() + "/action", "create", 
+                                         {'console': {'type':'vnc'}}, 
+                                         function(data) {
                         var cons_data = data.console;
                         success.apply(this, [cons_data]);
                     }, undefined, 'console', params)
+                    break;
+                case 'destroy':
+                    this.__make_api_call(this.url(), // vm actions url
+                                         "delete", // create so that sync later uses POST to make the call
+                                         undefined, // payload
+                                         function() {
+                                             // set state after successful call
+                                             self.state('DESTROY');
+                                             success.apply(this, arguments);
+                                             synnefo.storage.quotas.get('cyclades.vm').decrease();
+
+                                         },  
+                                         error, 'destroy', params);
+                    break;
+                case 'resize':
+                    this.__make_api_call(this.get_action_url(), // vm actions url
+                                         "create", // create so that sync later uses POST to make the call
+                                         {resize: {flavorRef:params.flavor}}, // payload
+                                         function() {
+                                             self.state('RESIZE');
+                                             success.apply(this, arguments);
+                                             snf.api.trigger("call");
+                                         },  
+                                         error, 'resize', params);
+                    break;
+                case 'addFloatingIp':
+                    this.__make_api_call(this.get_action_url(), // vm actions url
+                                         "create", // create so that sync later uses POST to make the call
+                                         {addFloatingIp: {address:params.address}}, // payload
+                                         function() {
+                                             self.state('CONNECT');
+                                             success.apply(this, arguments);
+                                             snf.api.trigger("call");
+                                         },  
+                                         error, 'addFloatingIp', params);
+                    break;
+                case 'removeFloatingIp':
+                    this.__make_api_call(this.get_action_url(), // vm actions url
+                                         "create", // create so that sync later uses POST to make the call
+                                         {removeFloatingIp: {address:params.address}}, // payload
+                                         function() {
+                                             self.state('DISCONNECT');
+                                             success.apply(this, arguments);
+                                             snf.api.trigger("call");
+                                         },  
+                                         error, 'addFloatingIp', params);
                     break;
                 case 'destroy':
                     this.__make_api_call(this.url(), // vm actions url
@@ -1461,7 +1532,8 @@
             }
         },
         
-        __make_api_call: function(url, method, data, success, error, action, extra_params) {
+        __make_api_call: function(url, method, data, success, error, action, 
+                                  extra_params) {
             var self = this;
             error = error || function(){};
             success = success || function(){};
@@ -1469,17 +1541,22 @@
             var params = {
                 url: url,
                 data: data,
-                success: function(){ self.handle_action_succeed.apply(self, arguments); success.apply(this, arguments)},
+                success: function() { 
+                  self.handle_action_succeed.apply(self, arguments); 
+                  success.apply(this, arguments)
+                },
                 error: function(){ self.handle_action_fail.apply(self, arguments); error.apply(this, arguments)},
                 error_params: { ns: "Machines actions", 
                                 title: "'" + this.get("name") + "'" + " " + action + " failed", 
-                                extra_details: { 'Machine ID': this.id, 'URL': url, 'Action': action || "undefined" },
+                                extra_details: {'Machine ID': this.id, 
+                                                'URL': url, 
+                                                'Action': action || "undefined" },
                                 allow_reload: false
                               },
                 display: false,
                 critical: false
             }
-            _.extend(params, extra_params)
+            _.extend(params, extra_params);
             this.sync(method, this, params);
         },
 
@@ -1550,25 +1627,35 @@
         'shutdown',
         'reboot',
         'console',
-        'destroy'
+        'destroy',
+        'resize'
     ]
+
+    models.VM.TASK_STATE_STATUS_MAP = {
+      'BULDING': 'BUILD',
+      'REBOOTING': 'REBOOT',
+      'STOPPING': 'SHUTDOWN',
+      'STARTING': 'START',
+      'RESIZING': 'RESIZE',
+      'CONNECTING': 'CONNECT',
+      'DISCONNECTING': 'DISCONNECT',
+      'DESTROYING': 'DESTROY'
+    }
 
     models.VM.AVAILABLE_ACTIONS = {
         'UNKNWON'       : ['destroy'],
         'BUILD'         : ['destroy'],
-        'REBOOT'        : ['shutdown', 'destroy', 'console'],
+        'REBOOT'        : ['destroy'],
         'STOPPED'       : ['start', 'destroy'],
         'ACTIVE'        : ['shutdown', 'destroy', 'reboot', 'console'],
         'ERROR'         : ['destroy'],
-        'DELETED'        : [],
-        'DESTROY'       : [],
-        'BUILD_INIT'    : ['destroy'],
-        'BUILD_COPY'    : ['destroy'],
-        'BUILD_FINAL'   : ['destroy'],
+        'DELETED'       : ['destroy'],
+        'DESTROY'       : ['destroy'],
         'SHUTDOWN'      : ['destroy'],
-        'START'         : [],
-        'CONNECT'       : [],
-        'DISCONNECT'    : []
+        'START'         : ['destroy'],
+        'CONNECT'       : ['destroy'],
+        'DISCONNECT'    : ['destroy'],
+        'RESIZE'        : ['destroy']
     }
 
     // api status values
@@ -1579,7 +1666,8 @@
         'STOPPED',
         'ACTIVE',
         'ERROR',
-        'DELETED'
+        'DELETED',
+        'RESIZE'
     ]
 
     // api status values
@@ -1592,14 +1680,12 @@
     // vm states
     models.VM.STATES = models.VM.STATUSES.concat([
         'DESTROY',
-        'BUILD_INIT',
-        'BUILD_COPY',
-        'BUILD_FINAL',
         'SHUTDOWN',
         'START',
         'CONNECT',
         'DISCONNECT',
-        'FIREWALL'
+        'FIREWALL',
+        'RESIZE'
     ]);
     
     models.VM.STATES_TRANSITIONS = {
@@ -1610,9 +1696,7 @@
         'START': ['ERROR', 'ACTIVE', 'DESTROY'],
         'REBOOT': ['ERROR', 'ACTIVE', 'STOPPED', 'DESTROY'],
         'BUILD': ['ERROR', 'ACTIVE', 'DESTROY'],
-        'BUILD_COPY': ['ERROR', 'ACTIVE', 'BUILD_FINAL', 'DESTROY'],
-        'BUILD_FINAL': ['ERROR', 'ACTIVE', 'DESTROY'],
-        'BUILD_INIT': ['ERROR', 'ACTIVE', 'BUILD_COPY', 'BUILD_FINAL', 'DESTROY']
+        'RESIZE': ['ERROR', 'STOPPED']
     }
 
     models.VM.TRANSITION_STATES = [
@@ -1620,17 +1704,17 @@
         'SHUTDOWN',
         'START',
         'REBOOT',
-        'BUILD'
+        'BUILD',
+        'RESIZE'
     ]
 
     models.VM.ACTIVE_STATES = [
         'BUILD', 'REBOOT', 'ACTIVE',
-        'BUILD_INIT', 'BUILD_COPY', 'BUILD_FINAL',
         'SHUTDOWN', 'CONNECT', 'DISCONNECT'
     ]
 
     models.VM.BUILDING_STATES = [
-        'BUILD', 'BUILD_INIT', 'BUILD_COPY', 'BUILD_FINAL'
+        'BUILD'
     ]
 
     models.Networks = models.Collection.extend({
@@ -1930,14 +2014,15 @@
         comparator: function(flv) {
             return flv.get("disk") * flv.get("cpu") * flv.get("ram");
         },
-
-        unavailable_values_for_quotas: function(quotas, flavors) {
+          
+        unavailable_values_for_quotas: function(quotas, flavors, extra) {
             var flavors = flavors || this.active();
             var index = {cpu:[], disk:[], ram:[]};
+            var extra = extra == undefined ? {cpu:0, disk:0, ram:0} : extra;
             
             _.each(flavors, function(el) {
 
-                var disk_available = quotas['disk'];
+                var disk_available = quotas['disk'] + extra.disk;
                 var disk_size = el.get_disk_size();
                 if (index.disk.indexOf(disk_size) == -1) {
                   var disk = el.disk_to_bytes();
@@ -1945,8 +2030,8 @@
                     index.disk.push(disk_size);
                   }
                 }
-
-                var ram_available = quotas['ram'];
+                
+                var ram_available = quotas['ram'] + extra.ram * 1024 * 1024;
                 var ram_size = el.get_ram_size();
                 if (index.ram.indexOf(ram_size) == -1) {
                   var ram = el.ram_to_bytes();
@@ -1956,8 +2041,8 @@
                 }
 
                 var cpu = el.get('cpu');
-                var cpu_available = quotas['cpu'];
-                if (index.ram.indexOf(cpu) == -1) {
+                var cpu_available = quotas['cpu'] + extra.cpu;
+                if (index.cpu.indexOf(cpu) == -1) {
                   if (cpu > cpu_available) {
                     index.cpu.push(el.get('cpu'))
                   }
@@ -1998,7 +2083,7 @@
         },
         
         get_data: function(lst) {
-            var data = {'cpu': [], 'mem':[], 'disk':[]};
+            var data = {'cpu': [], 'mem':[], 'disk':[], 'disk_template':[]};
 
             _.each(lst, function(flv) {
                 if (data.cpu.indexOf(flv.get("cpu")) == -1) {
@@ -2009,6 +2094,9 @@
                 }
                 if (data.disk.indexOf(flv.get("disk")) == -1) {
                     data.disk.push(flv.get("disk"));
+                }
+                if (data.disk_template.indexOf(flv.get("disk_template")) == -1) {
+                    data.disk_template.push(flv.get("disk_template"));
                 }
             })
             
@@ -2039,6 +2127,14 @@
             if (data.status && data.status == "DELETED") {
                 if (!this.get(data.id)) {
                     return false;
+                }
+            }
+            
+            if ('SNF:task_state' in data) { 
+                data['task_state'] = data['SNF:task_state'];
+                if (data['task_state']) {
+                    var status = models.VM.TASK_STATE_STATUS_MAP[data['task_state']];
+                    if (status) { data['status'] = status }
                 }
             }
 
@@ -2205,6 +2301,12 @@
           _(missing_ids).each(function(imgid){
             synnefo.storage.images.update_unknown_id(imgid, check);
           });
+        },
+
+        get_connectable: function() {
+            return storage.vms.filter(function(vm){
+                return !vm.in_error_state() && !vm.is_building();
+            });
         }
     })
     
@@ -2386,6 +2488,45 @@
 
     })
     
+    models.PublicIP = models.Model.extend({
+        path: 'os-floating-ips',
+        has_status: false,
+        
+        initialize: function() {
+            models.PublicIP.__super__.initialize.apply(this, arguments);
+            this.bind('change:instance_id', _.bind(this.handle_status_change, this));
+        },
+
+        handle_status_change: function() {
+            this.set({state: null});
+        },
+
+        get_vm: function() {
+            if (this.get('instance_id')) {
+                return synnefo.storage.vms.get(parseInt(this.get('instance_id')));
+            }
+            return null;
+        },
+
+        connect_to: function(vm) {
+        }
+    });
+
+    models.PublicIPs = models.Collection.extend({
+        model: models.PublicIP,
+        path: 'os-floating-ips',
+        api_type: 'compute',
+        noUpdate: true,
+
+        parse: function(resp) {
+            resp = _.map(resp.floating_ips, function(ip) {
+              return ip;
+            });
+
+            return resp;
+        }
+    });
+
     models.PublicKeys = models.Collection.extend({
         model: models.PublicKey,
         details: false,
@@ -2472,16 +2613,18 @@
             return this.get('resource').get('unit') == 'bytes';
         },
         
-        get_available: function() {
-            var value = this.get('limit') - this.get('usage');
+        get_available: function(active) {
+            suffix = '';
+            if (active) { suffix = '_active'}
+            var value = this.get('limit'+suffix) - this.get('usage'+suffix);
             if (value < 0) { return value }
             return value
         },
 
-        get_readable: function(key) {
+        get_readable: function(key, active) {
             var value;
             if (key == 'available') {
-                value = this.get_available();
+                value = this.get_available(active);
             } else {
                 value = this.get(key)
             }
@@ -2497,12 +2640,44 @@
         api_type: 'accounts',
         path: 'quotas',
         parse: function(resp) {
-            return _.map(resp.system, function(value, key) {
+            filtered = _.map(resp.system, function(value, key) {
                 var available = (value.limit - value.usage) || 0;
+                var available_active = available;
+                var keysplit = key.split(".");
+                var limit_active = value.limit;
+                var usage_active = value.usage;
+                keysplit[keysplit.length-1] = "active_" + keysplit[keysplit.length-1];
+                var activekey = keysplit.join(".");
+                var exists = resp.system[activekey];
+                if (exists) {
+                    available_active = exists.limit - exists.usage;
+                    limit_active = exists.limit;
+                    usage_active = exists.usage;
+                }
                 return _.extend(value, {'name': key, 'id': key, 
                           'available': available,
+                          'available_active': available_active,
+                          'limit_active': limit_active,
+                          'usage_active': usage_active,
                           'resource': snf.storage.resources.get(key)});
-            })
+            });
+            return filtered;
+        },
+        
+        get_by_id: function(k) {
+          return this.filter(function(q) { return q.get('name') == k})[0]
+        },
+
+        get_available_for_vm: function(active) {
+          var quotas = synnefo.storage.quotas;
+          var key = 'available';
+          if (active) { key = 'available_active'; }
+          var quota = {
+            'ram': quotas.get('cyclades.ram').get(key),
+            'cpu': quotas.get('cyclades.cpu').get(key),
+            'disk': quotas.get('cyclades.disk').get(key)
+          }
+          return quota;
         }
     })
 
@@ -2532,5 +2707,6 @@
     snf.storage.nics = new models.NICs();
     snf.storage.resources = new models.Resources();
     snf.storage.quotas = new models.Quotas();
+    snf.storage.public_ips = new models.PublicIPs();
 
 })(this);

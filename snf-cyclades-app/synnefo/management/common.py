@@ -33,6 +33,7 @@
 
 from django.core.management import CommandError
 from synnefo.db.models import Backend, VirtualMachine, Network, Flavor
+from functools import wraps
 
 from snf_django.lib.api import faults
 from synnefo.api import util
@@ -112,7 +113,7 @@ def get_vm(server_id):
                            " available server IDs." % server_id)
 
 
-def get_network(network_id):
+def get_network(network_id, for_update=True):
     """Get a Network object by its ID.
 
     @type network_id: int or string
@@ -128,8 +129,11 @@ def get_network(network_id):
         except Network.InvalidBackendIdError:
             raise CommandError("Invalid network ID: %s" % network_id)
 
+    networks = Network.objects
+    if for_update:
+        networks = networks.select_for_update()
     try:
-        return Network.objects.get(id=network_id)
+        return networks.get(id=network_id)
     except Network.DoesNotExist:
         raise CommandError("Network with ID %s not found in DB."
                            " Use snf-manage network-list to find out"
@@ -162,6 +166,16 @@ def check_backend_credentials(clustername, port, username, password):
     if info_name != clustername:
         raise CommandError("Invalid clustername value. Please use the"
                            " Ganeti Cluster name: %s" % info_name)
+
+
+def convert_api_faults(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except faults.Fault as e:
+            raise CommandError(e.message)
+    return wrapper
 
 
 class Omit(object):

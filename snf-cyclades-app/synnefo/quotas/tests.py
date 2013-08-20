@@ -51,17 +51,41 @@ class GetDBHoldingsTestCase(TestCase):
 
     def test_vm_holdings(self):
         flavor = mfactory.FlavorFactory(cpu=24, ram=8192, disk=20,
-                                  disk_template='drbd')
+                                        disk_template='drbd')
         mfactory.VirtualMachineFactory()
-        mfactory.VirtualMachineFactory(flavor=flavor, userid="user1")
+        mfactory.VirtualMachineFactory(flavor=flavor, userid="user1",
+                                       operstate="BUILD")
         user_holdings = {"user1": {"cyclades.vm": 1,
                                    "cyclades.cpu": 24,
+                                   "cyclades.active_cpu": 24,
                                    "cyclades.disk": 21474836480,
-                                   "cyclades.ram": 8589934592}}
+                                   "cyclades.ram": 8589934592,
+                                   "cyclades.active_ram": 8589934592}}
         holdings = util.get_db_holdings(user="user1")
         self.assertEqual(holdings, user_holdings)
         holdings = util.get_db_holdings()
         self.assertEqual(holdings["user1"], user_holdings["user1"])
+        mfactory.VirtualMachineFactory(flavor=flavor, userid="user1")
+        ##
+        mfactory.VirtualMachineFactory(flavor=flavor, userid="user2",
+                                       operstate="STARTED")
+        user_holdings = {"user2": {"cyclades.vm": 1,
+                                   "cyclades.cpu": 24,
+                                   "cyclades.active_cpu": 24,
+                                   "cyclades.disk": 21474836480,
+                                   "cyclades.ram": 8589934592,
+                                   "cyclades.active_ram": 8589934592}}
+        holdings = util.get_db_holdings(user="user2")
+        self.assertEqual(holdings, user_holdings)
+        mfactory.VirtualMachineFactory(flavor=flavor, userid="user3",
+                                       operstate="STOPPED")
+        user_holdings = {"user3": {"cyclades.vm": 1,
+                                   "cyclades.cpu": 24,
+                                   "cyclades.disk": 21474836480,
+                                   "cyclades.ram": 8589934592}}
+        holdings = util.get_db_holdings(user="user3")
+        self.assertEqual(holdings, user_holdings)
+
 
     def test_network_holdings(self):
         mfactory.NetworkFactory(userid="user1")
@@ -71,6 +95,16 @@ class GetDBHoldingsTestCase(TestCase):
         self.assertEqual(holdings, user_holdings)
         holdings = util.get_db_holdings()
         self.assertEqual(holdings["user2"], user_holdings["user2"])
+
+    def test_floating_ip_holdings(self):
+        mfactory.FloatingIPFactory(userid="user1")
+        mfactory.FloatingIPFactory(userid="user1")
+        mfactory.FloatingIPFactory(userid="user2")
+        mfactory.FloatingIPFactory(userid="user3")
+        holdings = util.get_db_holdings()
+        self.assertEqual(holdings["user1"]["cyclades.floating_ip"], 2)
+        self.assertEqual(holdings["user2"]["cyclades.floating_ip"], 1)
+        self.assertEqual(holdings["user3"]["cyclades.floating_ip"], 1)
 
 
 @patch("synnefo.quotas.get_quotaholder_pending")
@@ -96,3 +130,61 @@ class ResolvePendingTestCase(TestCase):
         qh.return_value = [21, 25, 28]
         pending = quotas.resolve_pending_commissions()
         self.assertEqual(pending, ([25], [28, 21]))
+
+
+class GetCommissionInfoTest(TestCase):
+    def test_commissions(self):
+        flavor = mfactory.FlavorFactory(cpu=2, ram=1024, disk=20)
+        vm = mfactory.VirtualMachineFactory(flavor=flavor)
+        #commission = quotas.get_commission_info(vm, "BUILD")
+        #self.assertEqual({"cyclades.vm": 1,
+        #                  "cyclades.cpu": 2,
+        #                  "cyclades.active_cpu": 2,
+        #                  "cyclades.ram": 1048576 * 1024,
+        #                  "cyclades.active_ram": 1048576 * 1024,
+        #                  "cyclades.disk": 1073741824 * 20}, commission)
+        vm.operstate = "STARTED"
+        vm.save()
+        commission = quotas.get_commission_info(vm, "STOP")
+        self.assertEqual({"cyclades.active_cpu": -2,
+                          "cyclades.active_ram": 1048576 * -1024}, commission)
+        # Check None quotas if vm is already stopped
+        vm.operstate = "STOPPED"
+        vm.save()
+        commission = quotas.get_commission_info(vm, "STOP")
+        self.assertEqual(None, commission)
+        commission = quotas.get_commission_info(vm, "START")
+        self.assertEqual({"cyclades.active_cpu": 2,
+                          "cyclades.active_ram": 1048576 * 1024}, commission)
+        vm.operstate = "STARTED"
+        vm.save()
+        commission = quotas.get_commission_info(vm, "DESTROY")
+        self.assertEqual({"cyclades.vm": -1,
+                          "cyclades.cpu": -2,
+                          "cyclades.active_cpu": -2,
+                          "cyclades.ram": 1048576 * -1024,
+                          "cyclades.active_ram": 1048576 * -1024,
+                          "cyclades.disk": 1073741824 * -20}, commission)
+        vm.operstate = "STOPPED"
+        vm.save()
+        commission = quotas.get_commission_info(vm, "DESTROY")
+        self.assertEqual({"cyclades.vm": -1,
+                          "cyclades.cpu": -2,
+                          "cyclades.ram": 1048576 * -1024,
+                          "cyclades.disk": 1073741824 * -20}, commission)
+        commission = quotas.get_commission_info(vm, "RESIZE")
+        self.assertEqual(None, commission)
+        commission = quotas.get_commission_info(vm, "RESIZE",
+                                                {"beparams": {"vcpus": 4,
+                                                              "maxmem":2048}})
+        self.assertEqual({"cyclades.cpu": 2,
+                          "cyclades.ram": 1048576 * 1024}, commission)
+        vm.operstate = "STOPPED"
+        vm.save()
+        commission = quotas.get_commission_info(vm, "REBOOT")
+        self.assertEqual({"cyclades.active_cpu": 2,
+                          "cyclades.active_ram": 1048576 * 1024}, commission)
+        vm.operstate = "STARTED"
+        vm.save()
+        commission = quotas.get_commission_info(vm, "REBOOT")
+        self.assertEqual(None, commission)

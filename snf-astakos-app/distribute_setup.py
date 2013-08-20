@@ -150,8 +150,10 @@ def use_setuptools(version=DEFAULT_VERSION, download_base=DEFAULT_URL,
             e = sys.exc_info()[1]
             if was_imported:
                 sys.stderr.write(
-                    "The required version of distribute (>=%s) is not available,\n"
-                    "and can't be installed while this script is running. Please\n"
+                    "The required version of distribute (>=%s) is not "
+                    "available,\n"
+                    "and can't be installed while this script is running. "
+                    "Please\n"
                     "install a more recent version first, using\n"
                     "'easy_install -U distribute'."
                     "\n\n(Currently using %r)\n" % (version, e.args[0]))
@@ -434,7 +436,8 @@ def _relaunch():
     log.warn('Relaunching...')
     # we have to relaunch the process
     # pip marker to avoid a relaunch bug
-    if sys.argv[:3] == ['-c', 'install', '--single-version-externally-managed']:
+    if sys.argv[:3] == ['-c', 'install',
+                        '--single-version-externally-managed']:
         sys.argv[0] = 'setup.py'
     args = [sys.executable] + sys.argv
     sys.exit(subprocess.call(args))

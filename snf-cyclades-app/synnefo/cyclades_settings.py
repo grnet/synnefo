@@ -73,7 +73,7 @@ ASTAKOS_BASE_HOST, ASTAKOS_BASE_PATH = parse_base_url(ASTAKOS_BASE_URL)
 # Patch astakosclient directly, otherwise it will not see any customization
 #astakos_services = deepcopy(vanilla_astakos_services)
 CUSTOMIZE_ASTAKOS_SERVICES = \
-        getattr(settings, 'CYCLADES_CUSTOMIZE_ASTAKOS_SERVICES', ())
+    getattr(settings, 'CYCLADES_CUSTOMIZE_ASTAKOS_SERVICES', ())
 
 astakos_services = deepcopy(vanilla_astakos_services)
 fill_endpoints(astakos_services, ASTAKOS_BASE_URL)

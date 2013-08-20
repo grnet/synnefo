@@ -37,11 +37,8 @@ from itertools import groupby
 
 from sqlalchemy import (Table, Integer, BigInteger, DECIMAL, Boolean,
                         Column, String, MetaData, ForeignKey)
-from sqlalchemy.types import Text
-from sqlalchemy.schema import Index, Sequence
-from sqlalchemy.sql import func, and_, or_, not_, null, select, bindparam, text, exists
-from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.engine.reflection import Inspector
+from sqlalchemy.schema import Index
+from sqlalchemy.sql import func, and_, or_, not_, select, bindparam, exists
 from sqlalchemy.exc import NoSuchTableError
 
 from dbworker import DBWorker, ESCAPE_CHAR
@@ -135,7 +132,7 @@ def create_tables(engine):
                           primary_key=True))
     columns.append(Column('key', String(128), primary_key=True))
     columns.append(Column('value', String(256)))
-    policy = Table('policy', metadata, *columns, mysql_engine='InnoDB')
+    Table('policy', metadata, *columns, mysql_engine='InnoDB')
 
     #create statistics table
     columns = []
@@ -149,7 +146,7 @@ def create_tables(engine):
     columns.append(Column('mtime', DECIMAL(precision=16, scale=6)))
     columns.append(Column('cluster', Integer, nullable=False, default=0,
                           primary_key=True, autoincrement=False))
-    statistics = Table('statistics', metadata, *columns, mysql_engine='InnoDB')
+    Table('statistics', metadata, *columns, mysql_engine='InnoDB')
 
     #create versions table
     columns = []
@@ -244,8 +241,10 @@ class Node(DBWorker):
         """
 
         # Use LIKE for comparison to avoid MySQL problems with trailing spaces.
-        s = select([self.nodes.c.node], self.nodes.c.path.like(
-            self.escape_like(path), escape=ESCAPE_CHAR), for_update=for_update)
+        s = select([self.nodes.c.node],
+                   self.nodes.c.path.like(self.escape_like(path),
+                                          escape=ESCAPE_CHAR),
+                   for_update=for_update)
         r = self.conn.execute(s)
         row = r.fetchone()
         r.close()
@@ -282,7 +281,8 @@ class Node(DBWorker):
     def node_get_versions(self, node, keys=(), propnames=_propnames):
         """Return the properties of all versions at node.
            If keys is empty, return all properties in the order
-           (serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster).
+           (serial, node, hash, size, type, source, mtime, muser, uuid,
+            checksum, cluster).
         """
 
         s = select([self.versions.c.serial,
@@ -306,7 +306,8 @@ class Node(DBWorker):
         if not keys:
             return rows
 
-        return [[p[propnames[k]] for k in keys if k in propnames] for p in rows]
+        return [[p[propnames[k]] for k in keys if k in propnames] for
+                p in rows]
 
     def node_count_children(self, node):
         """Return node's child count."""
@@ -367,9 +368,10 @@ class Node(DBWorker):
         s = select([self.nodes.c.node],
                    and_(self.nodes.c.parent == parent,
                         select([func.count(self.versions.c.serial)],
-                               self.versions.c.node == self.nodes.c.node).as_scalar() == 0))
+                               self.versions.c.node == self.nodes.c.node).
+                        as_scalar() == 0))
         rp = self.conn.execute(s)
-        nodes = [r[0] for r in rp.fetchall()]
+        nodes = [row[0] for row in rp.fetchall()]
         rp.close()
         if nodes:
             s = self.nodes.delete().where(self.nodes.c.node.in_(nodes))
@@ -423,9 +425,10 @@ class Node(DBWorker):
         s = select([self.nodes.c.node],
                    and_(self.nodes.c.node == node,
                         select([func.count(self.versions.c.serial)],
-                               self.versions.c.node == self.nodes.c.node).as_scalar() == 0))
-        rp= self.conn.execute(s)
-        nodes = [r[0] for r in rp.fetchall()]
+                               self.versions.c.node == self.nodes.c.node).
+                        as_scalar() == 0))
+        rp = self.conn.execute(s)
+        nodes = [row[0] for row in rp.fetchall()]
         rp.close()
         if nodes:
             s = self.nodes.delete().where(self.nodes.c.node.in_(nodes))
@@ -566,8 +569,9 @@ class Node(DBWorker):
 
         #insert or replace
         #TODO better upsert
-        u = self.statistics.update().where(and_(self.statistics.c.node == node,
-                                           self.statistics.c.cluster == cluster))
+        u = self.statistics.update().where(and_(
+            self.statistics.c.node == node,
+            self.statistics.c.cluster == cluster))
         u = u.values(population=population, size=size, mtime=mtime)
         rp = self.conn.execute(u)
         rp.close()
@@ -678,8 +682,9 @@ class Node(DBWorker):
         else:
             c1 = select([self.nodes.c.latest_version],
                         self.nodes.c.node == v.c.node)
-        c2 = select([self.nodes.c.node], self.nodes.c.path.like(
-            self.escape_like(path) + '%', escape=ESCAPE_CHAR))
+        c2 = select([self.nodes.c.node],
+                    self.nodes.c.path.like(self.escape_like(path) + '%',
+                                           escape=ESCAPE_CHAR))
         s = s.where(and_(v.c.serial == c1,
                          v.c.cluster != except_cluster,
                          v.c.node.in_(c2)))
@@ -705,9 +710,10 @@ class Node(DBWorker):
         """
 
         mtime = time()
-        s = self.versions.insert(
-        ).values(node=node, hash=hash, size=size, type=type, source=source,
-                 mtime=mtime, muser=muser, uuid=uuid, checksum=checksum, cluster=cluster)
+        s = self.versions.insert().values(
+            node=node, hash=hash, size=size, type=type, source=source,
+            mtime=mtime, muser=muser, uuid=uuid, checksum=checksum,
+            cluster=cluster)
         serial = self.conn.execute(s).inserted_primary_key[0]
         self.statistics_update_ancestors(node, 1, size, mtime, cluster,
                                          update_statistics_ancestors_depth)
@@ -748,10 +754,12 @@ class Node(DBWorker):
             return props
         return None
 
-    def version_lookup_bulk(self, nodes, before=inf, cluster=0, all_props=True):
+    def version_lookup_bulk(self, nodes, before=inf, cluster=0,
+                            all_props=True):
         """Lookup the current versions of the given nodes.
            Return a list with their properties:
-           (serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster).
+           (serial, node, hash, size, type, source, mtime, muser, uuid,
+            checksum, cluster).
         """
         if not nodes:
             return ()
@@ -784,7 +792,8 @@ class Node(DBWorker):
         """Return a sequence of values for the properties of
            the version specified by serial and the keys, in the order given.
            If keys is empty, return all properties in the order
-           (serial, node, hash, size, type, source, mtime, muser, uuid, checksum, cluster).
+           (serial, node, hash, size, type, source, mtime, muser, uuid,
+            checksum, cluster).
         """
 
         v = self.versions.alias()
@@ -863,9 +872,10 @@ class Node(DBWorker):
         return hash, size
 
     def attribute_get(self, serial, domain, keys=()):
-        """Return a list of (key, value) pairs of the version specified by serial.
-           If keys is empty, return all attributes.
-           Othwerise, return only those specified.
+        """Return a list of (key, value) pairs of the specific version.
+
+        If keys is empty, return all attributes.
+        Othwerise, return only those specified.
         """
 
         if keys:
@@ -941,7 +951,7 @@ class Node(DBWorker):
                 self.attributes.c.serial == dest,
                 self.attributes.c.domain == domain,
                 self.attributes.c.key == k))
-            s = s.values(node = select_src_node, value=v)
+            s = s.values(node=select_src_node, value=v)
             rp = self.conn.execute(s)
             rp.close()
             if rp.rowcount == 0:
@@ -953,11 +963,11 @@ class Node(DBWorker):
     def attribute_unset_is_latest(self, node, exclude):
         u = self.attributes.update().where(and_(
             self.attributes.c.node == node,
-                     self.attributes.c.serial != exclude)).values(
-                             {'is_latest': False})
+            self.attributes.c.serial != exclude)).values({'is_latest': False})
         self.conn.execute(u)
 
-    def latest_attribute_keys(self, parent, domain, before=inf, except_cluster=0, pathq=None):
+    def latest_attribute_keys(self, parent, domain, before=inf,
+                              except_cluster=0, pathq=None):
         """Return a list with all keys pairs defined
            for all latest versions under parent that
            do not belong to the cluster.
@@ -987,12 +997,8 @@ class Node(DBWorker):
         conj = []
         for path, match in pathq:
             if match == MATCH_PREFIX:
-                conj.append(
-                    n.c.path.like(
-                        self.escape_like(path) + '%',
-                        escape=ESCAPE_CHAR
-                    )
-                )
+                conj.append(n.c.path.like(self.escape_like(path) + '%',
+                                          escape=ESCAPE_CHAR))
             elif match == MATCH_EXACT:
                 conj.append(n.c.path == path)
         if conj:
@@ -1053,7 +1059,8 @@ class Node(DBWorker):
 
            Limit applies to the first list of tuples returned.
 
-           If all_props is True, return all properties after path, not just serial.
+           If all_props is True, return all properties after path,
+           not just serial.
         """
 
         if not start or start < prefix:
@@ -1086,12 +1093,8 @@ class Node(DBWorker):
         conj = []
         for path, match in pathq:
             if match == MATCH_PREFIX:
-                conj.append(
-                    n.c.path.like(
-                        self.escape_like(path) + '%',
-                        escape=ESCAPE_CHAR
-                    )
-                )
+                conj.append(n.c.path.like(self.escape_like(path) + '%',
+                                          escape=ESCAPE_CHAR))
             elif match == MATCH_EXACT:
                 conj.append(n.c.path == path)
         if conj:
@@ -1150,7 +1153,6 @@ class Node(DBWorker):
             if props is None:
                 break
             path = props[0]
-            serial = props[1]
             idx = path.find(delimiter, pfz)
 
             if idx < 0:
@@ -1223,7 +1225,7 @@ class Node(DBWorker):
         r.close()
 
         group_by = itemgetter(slice(12))
-        rows.sort(key = group_by)
+        rows.sort(key=group_by)
         groups = groupby(rows, group_by)
-        return [(k[0], k[1:], dict([i[12:] for i in data])) \
-            for (k, data) in groups]
+        return [(k[0], k[1:], dict([i[12:] for i in data])) for
+                (k, data) in groups]

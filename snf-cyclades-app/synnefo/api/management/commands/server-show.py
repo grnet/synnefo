@@ -61,20 +61,22 @@ class Command(SynnefoCommand):
             image_name = "None"
         image = '%s (%s)' % (imageid, image_name)
 
-	usercache = UserCache(ASTAKOS_BASE_URL, ASTAKOS_TOKEN)
+        usercache = UserCache(ASTAKOS_BASE_URL, ASTAKOS_TOKEN)
         kv = {
-          'id': server.id,
-          'name': server.name,
-          'owner_uuid': userid,
-          'owner_name': usercache.get_name(userid),
-          'created': utils.format_date(server.created),
-          'updated': utils.format_date(server.updated),
-          'image': image,
-          'host id': server.hostid,
-          'flavor': flavor,
-          'deleted': utils.format_bool(server.deleted),
-          'suspended': utils.format_bool(server.suspended),
-          'state': format_vm_state(server),
+            'id': server.id,
+            'name': server.name,
+            'owner_uuid': userid,
+            'owner_name': usercache.get_name(userid),
+            'created': utils.format_date(server.created),
+            'updated': utils.format_date(server.updated),
+            'image': image,
+            'host id': server.hostid,
+            'flavor': flavor,
+            'deleted': utils.format_bool(server.deleted),
+            'suspended': utils.format_bool(server.suspended),
+            'state': format_vm_state(server),
+            'task': server.task,
+            'task_job_id': server.task_job_id,
         }
 
         utils.pprint_table(self.stdout, [kv.values()], kv.keys(),

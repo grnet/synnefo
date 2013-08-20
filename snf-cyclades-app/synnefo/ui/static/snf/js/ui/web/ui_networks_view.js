@@ -68,10 +68,14 @@
             this.submit_handler_set = false;
         },
         
+        handle_vm_click: function(el) {
+            $(el).toggleClass("selected");
+        },
+
         init_handlers: function() {
             var self = this;
-            this.list.find("li").click(function(){
-                $(this).toggleClass("selected");
+            this.list.find("li").click(function() {
+                self.handle_vm_click($(this));
             });
             
             if (!this.submit_handler_set) {
@@ -138,12 +142,17 @@
             }, this));
         },
 
-        show_vms: function(network, vms, selected, callback) {
+        show_vms: function(network, vms, selected, callback, subtitle) {
             this.network = network;
             this.reset();
-            this.set_subtitle(network.escape("name"));
+            if (network) {
+              this.set_subtitle(network.escape("name"));
+            } else {
+              this.set_subtitle(subtitle);
+            }
+
             this.vms = vms;
-            if (!synnefo.config.network_allow_duplicate_vm_nics) {
+            if (!synnefo.config.network_allow_duplicate_vm_nics && this.network) {
                 this.vms = _.filter(this.vms, function(vm) {
                     return !vm.connected_to(this.network);
                 }, this);

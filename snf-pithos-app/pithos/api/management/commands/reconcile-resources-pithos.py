@@ -70,6 +70,7 @@ class Command(NoArgsCommand):
 
     def handle_noargs(self, **options):
         try:
+            backend.pre_exec()
             userid = options['userid']
 
             # Get holding from Pithos DB
@@ -126,7 +127,7 @@ class Command(NoArgsCommand):
 
                         qh_value = qh_resource['usage']
 
-                        if  db_value != qh_value:
+                        if db_value != qh_value:
                             data = (uuid, resource, db_value, qh_value)
                             unsynced.append(data)
 
@@ -147,6 +148,7 @@ class Command(NoArgsCommand):
                             "Reconciling failed because a limit has been "
                             "reached. Use --force to ignore the check.\n")
                         return
+                    self.stdout.write("Fixed unsynced resources\n")
 
             if pending_exists:
                 self.stdout.write(
@@ -154,6 +156,10 @@ class Command(NoArgsCommand):
                     " reconcile-commissions-pithos'\n")
             elif not (unsynced or unknown_user_exists):
                 self.stdout.write("Everything in sync.\n")
+        except:
+            backend.post_exec(False)
+        else:
+            backend.post_exec(True)
         finally:
             backend.close()
 

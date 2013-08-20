@@ -39,7 +39,8 @@ from django.http import Http404
 def index(request):
     raise Http404
 
-urlpatterns = patterns('',
+urlpatterns = patterns(
+    '',
     url(r'^$', index),
     url(r'^stats$', views.get_stats),
 )

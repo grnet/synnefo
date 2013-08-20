@@ -37,15 +37,17 @@ from sqlalchemy.exc import NoSuchTableError
 
 from dbworker import DBWorker
 
+
 def create_tables(engine):
     metadata = MetaData()
     columns = []
     columns.append(Column('key', String(256), primary_key=True))
     columns.append(Column('value', String(256)))
-    config = Table('config', metadata, *columns, mysql_engine='InnoDB')
-    
+    Table('config', metadata, *columns, mysql_engine='InnoDB')
+
     metadata.create_all(engine)
     return metadata.sorted_tables
+
 
 class Config(DBWorker):
     """Config are properties holding persistent information about system state.
@@ -71,7 +73,7 @@ class Config(DBWorker):
         if row:
             return row[0]
         return None
-    
+
     def set_value(self, key, value):
         """Set a configuration entry.
         """

@@ -27,11 +27,12 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
+0.14 (Jun 18, 2013)        Forbidden response for public listing by non path owners
+0.14 (Apr 23, 2013)        Reply with Merkle hash in the ETag if MD5 is not computed.
 0.13 (Mar 27, 2013)        Restrict public object listing only to the owner.
-                           Do not propagate public URL information in shared objects.
+\                          Do not propagate public URL information in shared objects.
 0.13 (Jan 21, 2013)        Proxy identity management services
 \                          UUID to displayname translation
-0.9 (Feb 17, 2012)         Change permissions model.
 0.10 (Jul 18, 2012)        Support for bulk COPY/MOVE/DELETE
 \                          Optionally include public objects in listings.
 0.9 (Feb 17, 2012)         Change permissions model.
@@ -107,7 +108,9 @@ renew                   Force token renewal (no value parameter)
 force                   Force logout current user (no value parameter)
 ======================  =========================
 
-When done with logging in, the service's login URI should redirect to the URI provided with ``next``, adding ``user`` and ``token`` parameters, which contain the account and token fields respectively.
+When done with logging in, the service's login URI should redirect to the URI provided with ``next``, adding the ``token`` parameters which contains authentication token.
+
+If ``next`` request parameter is missing the call fails with BadRequest (400) response status.
 
 A user management service that implements a login URI according to these conventions is Astakos (https://code.grnet.gr/projects/astakos), by GRNET.
 
@@ -427,6 +430,7 @@ Return Code                  Description
 200 (OK)                     The request succeeded
 204 (No Content)             The account has no containers (only for non-extended replies)
 304 (Not Modified)           The account has not been modified
+403 (Forbidden)              Public is requested but the request user is not the path owner
 412 (Precondition Failed)    The condition set can not be satisfied
 ===========================  =====================
 
@@ -545,7 +549,7 @@ path                    Assume ``prefix=path`` and ``delimiter=/``
 format                  Optional extended reply type (can be ``json`` or ``xml``)
 meta                    Return objects that satisfy the key queries in the specified comma separated list (use ``<key>``, ``!<key>`` for existence queries, ``<key><op><value>`` for value queries, where ``<op>`` can be one of ``=``, ``!=``, ``<=``, ``>=``, ``<``, ``>``)
 shared                  Show only objects (no value parameter)
-public                  Show only public objects (no value parameter / avalaible only for owner reqeusts)
+public                  Show only public objects (no value parameter / avalaible only for owner requests)
 until                   Optional timestamp
 ======================  ===================================
 
@@ -635,8 +639,9 @@ For more examples of container details returned in JSON/XML formats refer to the
 Return Code                  Description
 ===========================  ===============================
 200 (OK)                     The request succeeded
-204 (No Content)             The account has no containers (only for non-extended replies)
+204 (No Content)             The container has no objects (only for non-extended replies)
 304 (Not Modified)           The container has not been modified
+403 (Forbidden)              Public is requested but the request user is not the path owner
 412 (Precondition Failed)    The condition set can not be satisfied
 ===========================  ===============================
 
@@ -942,7 +947,7 @@ Hashmaps should be formatted as outlined in ``GET``.
 ==========================  ===============================
 Reply Header Name           Value
 ==========================  ===============================
-ETag                        The MD5 hash of the object
+ETag                        The MD5 (or the Merkle if MD5 is deactivated) hash of the object
 X-Object-Version            The object's new version
 ==========================  ===============================
 
@@ -955,7 +960,7 @@ Return Code                     Description
 409 (Conflict)                  The object can not be created from the provided hashmap (a list of missing hashes will be included in the reply)
 411 (Length Required)           Missing ``Content-Length`` or ``Content-Type`` in the request
 413 (Request Entity Too Large)  Insufficient quota to complete the request
-422 (Unprocessable Entity)      The MD5 checksum of the data written to the storage system does not match the (optionally) supplied ETag value
+422 (Unprocessable Entity)      The MD5 (or the Merkle if MD5 is deactivated) checksum of the data written to the storage system does not match the (optionally) supplied ETag value
 ==============================  ==============================
 
 
@@ -1097,7 +1102,7 @@ This will create/override the object with the given name, as if using ``PUT``. T
 ==========================  ===============================
 Reply Header Name           Value
 ==========================  ===============================
-ETag                        The MD5 hash of the object
+ETag                        The MD5 (or the Merkle if MD5 is deactivated) hash of the object
 X-Object-Version            The object's new version
 ==========================  ===============================
 

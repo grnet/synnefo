@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -35,9 +35,12 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 
-from synnefo.db.models import Network, pooled_rapi_client
-from synnefo.management.common import validate_network_info, get_network
+from synnefo.db.models import (Network, Backend, BackendNetwork,
+                               pooled_rapi_client)
+from synnefo.management.common import (validate_network_info, get_network,
+                                       get_backend)
 from synnefo.webproject.management.utils import parse_bool
+from synnefo.logic.backend import create_network, delete_network
 
 HELP_MSG = """Modify a network.
 
@@ -115,7 +118,23 @@ class Command(BaseCommand):
             metavar="True|False",
             choices=["True", "False"],
             help="Set as drained to exclude for IP allocation."
-                 " Only used for public networks.")
+                 " Only used for public networks."),
+        make_option(
+            "--add-to-backend",
+            dest="add_to_backend",
+            help="Create a public network to a Ganeti backend."),
+        make_option(
+            "--remove-from-backend",
+            dest="remove_from_backend",
+            help="Remove a public network from a Ganeti backend."),
+        make_option(
+            "--floating-ip-pool",
+            dest="floating_ip_pool",
+            metavar="True|False",
+            choices=["True", "False"],
+            help="Convert network to a floating IP pool. During this"
+                 " conversation the network will be created to all"
+                 " available Ganeti backends."),
     )
 
     def handle(self, *args, **options):
@@ -136,6 +155,18 @@ class Command(BaseCommand):
                 msg = "Invalid state, must be one of %s" % ', '.join(allowed)
                 raise CommandError(msg)
 
+        floating_ip_pool = options["floating_ip_pool"]
+        if floating_ip_pool is not None:
+            floating_ip_pool = parse_bool(floating_ip_pool)
+        if floating_ip_pool is False and network.floating_ip_pool is True:
+            if network.floating_ips.filter(deleted=False).exists():
+                msg = ("Can not make network a non floating IP pool. There are"
+                       " still reserved floating IPs.")
+                raise CommandError(msg)
+        elif floating_ip_pool is True:
+            for backend in Backend.objects.filter(offline=False):
+                check_link_availability(backend, network)
+
         dhcp = options.get("dhcp")
         if dhcp:
             options["dhcp"] = parse_bool(dhcp)
@@ -143,11 +174,14 @@ class Command(BaseCommand):
         if drained:
             options["drained"] = parse_bool(drained)
         fields = ('name', 'userid', 'subnet', 'gateway', 'subnet6', 'gateway6',
-                  'dhcp', 'state', 'link', 'mac_prefix', 'drained')
+                  'dhcp', 'state', 'link', 'mac_prefix', 'drained',
+                  'floating_ip_pool')
         for field in fields:
             value = options.get(field, None)
             if value is not None:
                 network.__setattr__(field, value)
+
+        network.save()
 
         add_reserved_ips = options.get('add_reserved_ips')
         remove_reserved_ips = options.get('remove_reserved_ips')
@@ -157,10 +191,57 @@ class Command(BaseCommand):
             if remove_reserved_ips:
                 remove_reserved_ips = remove_reserved_ips.split(",")
 
-        for bnetwork in network.backend_networks.all():
-            with pooled_rapi_client(bnetwork.backend) as c:
-                c.ModifyNetwork(network=network.backend_id,
-                                add_reserved_ips=add_reserved_ips,
-                                remove_reserved_ips=remove_reserved_ips)
+            for bnetwork in network.backend_networks.all():
+                with pooled_rapi_client(bnetwork.backend) as c:
+                    c.ModifyNetwork(network=network.backend_id,
+                                    add_reserved_ips=add_reserved_ips,
+                                    remove_reserved_ips=remove_reserved_ips)
 
-        network.save()
+        if floating_ip_pool is True:
+            for backend in Backend.objects.filter(offline=False):
+                try:
+                    bnet = network.backend_networks.get(backend=backend)
+                except BackendNetwork.DoesNotExist:
+                    bnet = network.create_backend_network(backend=backend)
+                if bnet.operstate != "ACTIVE":
+                    create_network(network, backend, connect=True)
+                    msg = "Sent job to create network '%s' in backend '%s'\n"
+                    self.stdout.write(msg % (network, backend))
+
+        add_to_backend = options["add_to_backend"]
+        if add_to_backend is not None:
+            backend = get_backend(add_to_backend)
+            network.create_backend_network(backend=backend)
+            create_network(network, backend, connect=True)
+            msg = "Sent job to create network '%s' in backend '%s'\n"
+            self.stdout.write(msg % (network, backend))
+
+        remove_from_backend = options["remove_from_backend"]
+        if remove_from_backend is not None:
+            backend = get_backend(remove_from_backend)
+            if network.nics.filter(machine__backend=backend,
+                                   machine__deleted=False).exists():
+                msg = "Can not remove. There are still connected VMs to this"\
+                      " network"
+                raise CommandError(msg)
+            network.action = "DESTROY"
+            network.save()
+            delete_network(network, backend, disconnect=True)
+            msg = "Sent job to delete network '%s' from backend '%s'\n"
+            self.stdout.write(msg % (network, backend))
+
+
+def check_link_availability(backend, network):
+    """Check if network link is available in backend."""
+    with pooled_rapi_client(backend) as c:
+        ganeti_networks = c.GetNetworks(bulk=True)
+    name = network.backend_id
+    mode = network.mode
+    link = network.link
+    for gnet in ganeti_networks:
+        if (gnet["name"] != name and
+           (mode, link) in [(m, l) for (_, m, l) in gnet["group_list"]]):
+            msg = "Can not create network '%s' in backend '%s'. Link '%s'" \
+                  " is already used by network '%s" % \
+                  (network, backend, gnet["name"])
+            raise CommandError(msg)

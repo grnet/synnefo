@@ -54,10 +54,19 @@
                     <div class="metadata-container">
                         <div class="vm-details metadata-column">
                                 <div class="flavor-details">
-                                <span class="vm-detail"><span class="key">{% trans "CPUs" %}:</span> <span class="value"><span class="cpu-data">1</span></span></span>
-                                <span class="vm-detail"><span class="key">{% trans "RAM" %}:</span><span class="value"><span class="ram-data">2048</span>MB</span></span>
-                                <span class="vm-detail"><span class="key">{% trans "System Disk" %}:</span> <span class="value"><span class="disk-data">20</span>GB</span></span>
-                            </div>
+                                  <span class="vm-detail"><span class="key">
+                                      {% trans "CPUs" %}:</span> <span
+                                    class="value"><span
+                                      class="cpu-data trigger-resize">1</span></span></span>
+                                <span class="vm-detail"><span class="key">
+                                    {% trans "RAM" %}:</span><span
+                                    class="value trigger-resize"><span
+                                      class="ram-data">2048</span>MB</span></span>
+                                <span class="vm-detail"><span class="key">
+                                    {% trans "System Disk" %}:</span> <span
+                                    class="value"><span
+                                      class="disk-data">20</span>GB</span></span>
+                              </div>
                                 <div class="image-details">
                                 <span class="vm-detail"><span class="key">{% trans "Image" %}:</span> <span class="value"><span class="image-data">Debian</span></span></span>
                                 <span class="vm-detail"><span class="key">{% trans "Image Size" %}:</span> <span class="value"><span class="image-size-data">2.3</span></span></span>

@@ -47,7 +47,8 @@ if ROOT_REDIRECT:
     urlpatterns += patterns('django.views.generic.simple',
                             url(r'^$', 'redirect_to', {'url': ROOT_REDIRECT}))
 
-urlpatterns += patterns('',
+urlpatterns += patterns(
+    '',
     (r'^lang/$', 'synnefo.webproject.i18n.set_language')
 )
 
@@ -70,32 +71,40 @@ if getattr(settings, 'WEBPROJECT_SERVE_STATIC', settings.DEBUG):
             urlns = ns
             url_r = r'^%s%s/(?P<path>.*)$' % (settings.MEDIA_URL.lstrip("/"),
                                               urlns)
-            urlpatterns += patterns('', url(url_r,
-                 'django.views.static.serve',
-                 {'document_root': static_root,
-                  'show_indexes': getattr(settings,
-                      'WEBPROJECT_STATIC_SHOW_INDEXES', True)}))
+            urlpatterns += patterns(
+                '', url(url_r,
+                        'django.views.static.serve',
+                        {'document_root': static_root,
+                         'show_indexes': getattr(
+                             settings, 'WEBPROJECT_STATIC_SHOW_INDEXES', True)
+                         }))
 
         else:
             # app contains static files in <appname>/static/<appname>
             for fpath in os.listdir(static_root):
                 urlns = ns + fpath
-                url_r = r'^%s%s/(?P<path>.*)$' % (settings.MEDIA_URL.lstrip("/"), urlns)
+                url_r = r'^%s%s/(?P<path>.*)$' % \
+                    (settings.MEDIA_URL.lstrip("/"), urlns)
                 static_root = os.path.join(static_root, urlns)
-                urlpatterns += patterns('',  url(url_r,
-                     'django.views.static.serve',
-                     {'document_root': static_root,
-                      'show_indexes': getattr(settings,
-                          'WEBPROJECT_STATIC_SHOW_INDEXES', True)}))
+                urlpatterns += patterns(
+                    '',  url(url_r,
+                             'django.views.static.serve',
+                             {'document_root': static_root,
+                              'show_indexes': getattr(
+                                  settings,
+                                  'WEBPROJECT_STATIC_SHOW_INDEXES', True)
+                              }))
 
     # also serve the media root after all explicitly defined paths
     # to be able to serve uploaded files
-    urlpatterns += patterns('', url(r'^%s(?P<path>.*)$' % \
-         settings.MEDIA_URL.lstrip("/"),
-         'django.views.static.serve',
-         {'document_root': settings.MEDIA_ROOT,
-          'show_indexes': getattr(settings,
-              'WEBPROJECT_STATIC_SHOW_INDEXES', True)}))
+    urlpatterns += patterns(
+        '', url(r'^%s(?P<path>.*)$' %
+                settings.MEDIA_URL.lstrip("/"),
+                'django.views.static.serve',
+                {'document_root': settings.MEDIA_ROOT,
+                 'show_indexes': getattr(
+                     settings, 'WEBPROJECT_STATIC_SHOW_INDEXES', True)
+                 }))
 
 urlpatterns = extend_urls(urlpatterns, 'synnefo')
 

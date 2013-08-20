@@ -33,10 +33,11 @@
 
 from binascii import hexlify
 
-from context_object import RadosObject, file_sync_read_chunks
+from context_object import RadosObject
 from rados import *
 
-CEPH_CONF_FILE="/etc/ceph/ceph.conf"
+CEPH_CONF_FILE = "/etc/ceph/ceph.conf"
+
 
 class RadosMapper(object):
     """Mapper.
@@ -91,4 +92,3 @@ class RadosMapper(object):
             return
         with self._get_rear_map(maphash, 1) as rmap:
             rmap.sync_write_chunks(namelen, blkoff, hashes, None)
-

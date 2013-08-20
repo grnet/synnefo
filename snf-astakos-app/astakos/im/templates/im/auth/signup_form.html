@@ -26,4 +26,11 @@
   .form-stacked { display: block !important }
   a.submit.standalone.{{ provider_obj.module }}-provider { display: none !important }
 </style>
+  
+<script>
+$(document).ready(function(){
+    $('.lt .pic').attr('src', '{{ IM_STATIC_URL }}images/ringer2.png');
+});
+</script>
+ 
 {% endif %}

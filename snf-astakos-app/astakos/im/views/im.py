@@ -150,12 +150,14 @@ def invite(request, template_name='im/invitations.html', extra_context=None):
     """
     Allows a user to invite somebody else.
 
-    In case of GET request renders a form for providing the invitee information.
-    In case of POST checks whether the user has not run out of invitations and then
-    sends an invitation email to singup to the service.
+    In case of GET request renders a form for providing the invitee
+    information.
+    In case of POST checks whether the user has not run out of invitations and
+    then sends an invitation email to singup to the service.
 
-    The view uses commit_manually decorator in order to ensure the number of the
-    user invitations is going to be updated only if the email has been successfully sent.
+    The view uses commit_manually decorator in order to ensure the number of
+    the user invitations is going to be updated only if the email has been
+    successfully sent.
 
     If the user isn't logged in, redirects to settings.LOGIN_URL.
 
@@ -213,7 +215,6 @@ def invite(request, template_name='im/invitations.html', extra_context=None):
     return render_response(template_name,
                            invitation_form=form,
                            context_instance=context)
-
 
 
 @require_http_methods(["GET", "POST"])
@@ -362,7 +363,7 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
                            user_disabled_providers=user_disabled_providers,
                            user_available_providers=user_available_providers,
                            context_instance=get_context(request,
-                                                          extra_context))
+                                                        extra_context))
 
 
 @transaction.commit_manually
@@ -508,11 +509,12 @@ def signup(request, template_name='im/signup.html', on_success='index',
     else:
         transaction.commit()
 
-    return render_response(template_name,
-                           signup_form=form,
-                           third_party_token=third_party_token,
-                           provider=provider,
-                           context_instance=get_context(request, extra_context))
+    return render_response(
+        template_name,
+        signup_form=form,
+        third_party_token=third_party_token,
+        provider=provider,
+        context_instance=get_context(request, extra_context))
 
 
 @require_http_methods(["GET", "POST"])
@@ -520,11 +522,13 @@ def signup(request, template_name='im/signup.html', on_success='index',
 @login_required
 @cookie_fix
 @signed_terms_required
-def feedback(request, template_name='im/feedback.html', email_template_name='im/feedback_mail.txt', extra_context=None):
+def feedback(request, template_name='im/feedback.html',
+             email_template_name='im/feedback_mail.txt', extra_context=None):
     """
     Allows a user to send feedback.
 
-    In case of GET request renders a form for providing the feedback information.
+    In case of GET request renders a form for providing the feedback
+    information.
     In case of POST sends an email to support team.
 
     If the user isn't logged in, redirects to settings.LOGIN_URL.
@@ -597,12 +601,13 @@ def logout(request, template='registration/logged_out.html',
         response['Location'] = settings.LOGOUT_NEXT
         response.status_code = 301
     else:
-        last_provider = request.COOKIES.get('astakos_last_login_method', 'local')
+        last_provider = request.COOKIES.get(
+            'astakos_last_login_method', 'local')
         provider = auth.get_provider(last_provider)
         message = provider.get_logout_success_msg
         extra = provider.get_logout_success_extra_msg
         if extra:
-            message += "<br />"  + extra
+            message += "<br />" + extra
         messages.success(request, message)
         response['Location'] = reverse('index')
         response.status_code = 301
@@ -742,9 +747,11 @@ def change_email(request, activation_key=None,
                              "code, %s", activation_key)
                 raise Http404
 
-            if (request.user.is_authenticated() and \
-                request.user == email_change.user) or not \
-                    request.user.is_authenticated():
+            if (
+                request.user.is_authenticated() and
+                request.user == email_change.user or not
+                request.user.is_authenticated()
+            ):
                 user = EmailChange.objects.change_email(activation_key)
                 msg = _(astakos_messages.EMAIL_CHANGED)
                 messages.success(request, msg)
@@ -792,7 +799,8 @@ def change_email(request, activation_key=None,
             return HttpResponseRedirect(reverse('edit_profile'))
 
     if request.user.email_change_is_pending():
-        messages.warning(request, astakos_messages.PENDING_EMAIL_CHANGE_REQUEST)
+        messages.warning(request,
+                         astakos_messages.PENDING_EMAIL_CHANGE_REQUEST)
 
     return render_response(
         form_template_name,
@@ -908,8 +916,10 @@ def get_menu(request, with_extra_links=False, with_signout=True):
             append(item(url=request.build_absolute_uri(reverse('landing')),
                         name="Dashboard"))
         if with_extra_links:
-            append(item(url=request.build_absolute_uri(reverse('edit_profile')),
-                        name="Profile"))
+            append(
+                item(
+                    url=request.build_absolute_uri(reverse('edit_profile')),
+                    name="Profile"))
 
         if with_extra_links:
             if settings.INVITATIONS_ENABLED:
@@ -919,12 +929,17 @@ def get_menu(request, with_extra_links=False, with_signout=True):
             append(item(url=request.build_absolute_uri(reverse('api_access')),
                         name="API access"))
 
-            append(item(url=request.build_absolute_uri(reverse('resource_usage')),
-                        name="Usage"))
+            append(
+                item(
+                    url=request.build_absolute_uri(reverse('resource_usage')),
+                    name="Usage"))
 
             if settings.PROJECTS_VISIBLE:
-                append(item(url=request.build_absolute_uri(reverse('project_list')),
-                            name="Projects"))
+                append(
+                    item(
+                        url=request.build_absolute_uri(
+                            reverse('project_list')),
+                        name="Projects"))
 
             append(item(url=request.build_absolute_uri(reverse('feedback')),
                         name="Contact"))

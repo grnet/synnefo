@@ -46,6 +46,7 @@ All Synnefo components use an intuitive settings mechanism, that adds and remove
 settings dynamically as components are getting added or removed from a physical
 node. All settings are stored in a single location.
 
+
 .. _general-arch:
 
 Synnefo General Architecture
@@ -61,6 +62,7 @@ with multiple Ganeti clusters.
 Synnefo also supports RADOS as an alternative storage backend for
 Files/Images/VM disks. :ref:`Here <syn+archip+rados>` is a graph that shows
 Synnefo running with two different storage backends.
+
 
 Synnefo Guides
 ==============
@@ -133,6 +135,18 @@ They are also available from our apt repository: ``apt.dev.grnet.gr``
  * `nfdhcpd <https://code.grnet.gr/projects/nfdhcpd>`_
 
 
+Design
+======
+
+Drafts
+------
+
+.. toctree::
+   :maxdepth: 1
+
+   Sample design <design/sample>
+
+
 Contact
 =======
 
@@ -144,6 +158,7 @@ You can contact the Synnefo team at the following mailing lists:
 The official site is:
 
  `http://www.synnefo.org <http://www.synnefo.org>`_
+
 
 Indices and tables
 ==================

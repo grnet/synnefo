@@ -56,7 +56,7 @@ CLASSIFIERS = []
 # Package requirements
 INSTALL_REQUIRES = [
     'gdmodule',
-    'py-rrdtool',
+    'python-rrdtool',
     'Django>=1.2, <1.3',
     'snf-django-lib',
 ]

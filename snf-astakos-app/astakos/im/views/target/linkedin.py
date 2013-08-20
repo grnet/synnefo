@@ -120,7 +120,7 @@ def authenticated(
         return HttpResponseRedirect(reverse('edit_profile'))
 
     token = oauth.Token(request.session['request_token']['oauth_token'],
-        request.session['request_token']['oauth_token_secret'])
+                        request.session['request_token']['oauth_token_secret'])
     token.set_verifier(request.GET.get('oauth_verifier'))
     client = oauth.Client(consumer, token)
     resp, content = client.request(access_token_url, "POST")
@@ -134,9 +134,11 @@ def authenticated(
     access_token = dict(cgi.parse_qsl(content))
 
     token = oauth.Token(access_token['oauth_token'],
-        access_token['oauth_token_secret'])
+                        access_token['oauth_token_secret'])
     client = oauth.Client(consumer, token)
-    resp, content = client.request("http://api.linkedin.com/v1/people/~:(id,first-name,last-name,industry,email-address)?format=json", "GET")
+    _url = ("http://api.linkedin.com/v1/people/~:(id,first-name,last-name,"
+            "industry,email-address)?format=json")
+    resp, content = client.request(_url, "GET")
     if resp['status'] != '200':
         try:
             del request.session['request_token']
@@ -148,10 +150,10 @@ def authenticated(
     profile_data = json.loads(content)
     userid = profile_data['id']
     username = profile_data.get('emailAddress', None)
-    realname = profile_data.get('firstName', '') + ' ' + profile_data.get('lastName', '')
+    realname = profile_data.get('firstName', '') + ' ' + profile_data.get(
+        'lastName', '')
     provider_info = profile_data
     affiliation = 'LinkedIn.com'
-
 
     try:
         return handle_third_party_login(request, 'linkedin', userid,
@@ -165,4 +167,3 @@ def authenticated(
                                          user_info,
                                          template,
                                          extra_context)
-

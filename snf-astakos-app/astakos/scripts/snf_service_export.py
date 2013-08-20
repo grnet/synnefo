@@ -83,9 +83,23 @@ cyclades_services = {
                 "service_type": "compute",
                 "service_origin": "cyclades_compute",
             },
+            'active_cpu': {
+                "name": "cyclades.active_cpu",
+                "desc": "Number of virtual machine processors of running"
+                        " servers",
+                "service_type": "compute",
+                "service_origin": "cyclades_compute",
+            },
             'ram': {
                 "name": "cyclades.ram",
                 "desc": "Virtual machine memory size",
+                "unit": "bytes",
+                "service_type": "compute",
+                "service_origin": "cyclades_compute",
+            },
+            'active_ram': {
+                "name": "cyclades.active_ram",
+                "desc": "Virtual machine memory size of running servers",
                 "unit": "bytes",
                 "service_type": "compute",
                 "service_origin": "cyclades_compute",
@@ -100,6 +114,12 @@ cyclades_services = {
             'network-private': {
                 "name": "cyclades.network.private",
                 "desc": "Number of private networks",
+                "service_type": "compute",
+                "service_origin": "cyclades_compute",
+            },
+            'floating_ip': {
+                "name": "cyclades.floating_ip",
+                "desc": "Number of Floating IP addresses",
                 "service_type": "compute",
                 "service_origin": "cyclades_compute",
             },
@@ -119,7 +139,7 @@ cyclades_services = {
     },
 
     'cyclades_vmapi': {
-        'type': 'cyclades_vmapi',
+        'type': 'vmapi',
         'component': 'cyclades',
         'prefix': 'vmapi',
         'public': True,
@@ -158,6 +178,18 @@ cyclades_services = {
         'component': 'cyclades',
         'prefix': 'ui',
         'public': False,
+        'endpoints': [
+            {'versionId': '',
+             'publicURL': None},
+        ],
+        'resources': {},
+    },
+
+    'cyclades_admin': {
+        'type': 'admin',
+        'component': 'cyclades',
+        'prefix': 'admin',
+        'public': True,
         'endpoints': [
             {'versionId': '',
              'publicURL': None},

@@ -57,15 +57,18 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  ASTAKOSCLIENT_POOLSIZE,
                                  SERVICE_TOKEN,
                                  ASTAKOS_BASE_URL,
-                                 BACKEND_ACCOUNT_QUOTA, BACKEND_CONTAINER_QUOTA,
-                                 BACKEND_VERSIONING,
-                                 BACKEND_FREE_VERSIONING, BACKEND_POOL_SIZE,
+                                 BACKEND_ACCOUNT_QUOTA,
+                                 BACKEND_CONTAINER_QUOTA,
+                                 BACKEND_VERSIONING, BACKEND_FREE_VERSIONING,
+                                 BACKEND_POOL_ENABLED, BACKEND_POOL_SIZE,
+                                 BACKEND_BLOCK_SIZE, BACKEND_HASH_ALGORITHM,
                                  RADOS_STORAGE, RADOS_POOL_BLOCKS,
                                  RADOS_POOL_MAPS, TRANSLATE_UUIDS,
-                                 PUBLIC_URL_SECURITY,
-                                 PUBLIC_URL_ALPHABET,
-                                 COOKIE_NAME, BASE_HOST, LOGIN_URL)
+                                 PUBLIC_URL_SECURITY, PUBLIC_URL_ALPHABET,
+                                 COOKIE_NAME, BASE_HOST, UPDATE_MD5, LOGIN_URL)
+
 from pithos.api.resources import resources
+from pithos.backends import connect_backend
 from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
                                   VersionNotExists)
 
@@ -199,7 +202,8 @@ def put_container_headers(request, response, meta, policy):
             int(meta['until_timestamp']))
     for k, v in policy.iteritems():
         response[smart_str(format_header_key('X-Container-Policy-' + k),
-                           strings_only=True)] = smart_str(v, strings_only=True)
+                           strings_only=True)] = smart_str(v,
+                                                           strings_only=True)
 
 
 def get_object_headers(request):
@@ -216,7 +220,7 @@ def get_object_headers(request):
 
 
 def put_object_headers(response, meta, restricted=False, token=None):
-    response['ETag'] = meta['checksum']
+    response['ETag'] = meta['hash'] if not UPDATE_MD5 else meta['checksum']
     response['Content-Length'] = meta['bytes']
     response.override_serialization = True
     response['Content-Type'] = meta.get('type', 'application/octet-stream')
@@ -260,11 +264,11 @@ def update_manifest_meta(request, v_account, meta):
                 request.user_uniq, v_account,
                 src_container, prefix=src_name, virtual=False)
             for x in objects:
-                src_meta = request.backend.get_object_meta(request.user_uniq,
-                                                           v_account,
-                                                           src_container,
-                                                           x[0], 'pithos', x[1])
-                etag += src_meta['checksum']
+                src_meta = request.backend.get_object_meta(
+                    request.user_uniq, v_account, src_container, x[0],
+                    'pithos', x[1])
+                etag += (src_meta['hash'] if not UPDATE_MD5 else
+                         src_meta['checksum'])
                 bytes += src_meta['bytes']
         except:
             # Ignore errors.
@@ -401,7 +405,7 @@ def update_public_meta(public, meta):
 
 
 def validate_modification_preconditions(request, meta):
-    """Check that the modified timestamp conforms with the preconditions set."""
+    """Check the modified timestamp conforms with the preconditions set."""
 
     if 'modified' not in meta:
         return  # TODO: Always return?
@@ -424,7 +428,7 @@ def validate_modification_preconditions(request, meta):
 def validate_matching_preconditions(request, meta):
     """Check that the ETag conforms with the preconditions set."""
 
-    etag = meta['checksum']
+    etag = meta['hash'] if not UPDATE_MD5 else meta['checksum']
     if not etag:
         etag = None
 
@@ -440,8 +444,8 @@ def validate_matching_preconditions(request, meta):
     if if_none_match is not None:
         # TODO: If this passes, must ignore If-Modified-Since header.
         if etag is not None:
-            if (if_none_match == '*'
-                    or etag in [x.lower() for x in parse_etags(if_none_match)]):
+            if (if_none_match == '*' or etag in [x.lower() for x in
+                                                 parse_etags(if_none_match)]):
                 # TODO: Continue if an If-Modified-Since header is present.
                 if request.method in ('HEAD', 'GET'):
                     raise faults.NotModified('Resource ETag matches')
@@ -696,7 +700,7 @@ MAX_UPLOAD_SIZE = 5 * (1024 * 1024 * 1024)  # 5GB
 
 
 def socket_read_iterator(request, length=0, blocksize=4096):
-    """Return a maximum of blocksize data read from the socket in each iteration
+    """Return maximum of blocksize data read from the socket in each iteration
 
     Read up to 'length'. If 'length' is negative, will attempt a chunked read.
     The maximum ammount of data read is controlled by MAX_UPLOAD_SIZE.
@@ -773,12 +777,12 @@ class SaveToBackendHandler(FileUploadHandler):
         if len(self.data) >= length:
             block = self.data[:length]
             self.file.hashmap.append(self.backend.put_block(block))
-            self.md5.update(block)
+            self.checksum_compute.update(block)
             self.data = self.data[length:]
 
     def new_file(self, field_name, file_name, content_type,
                  content_length, charset=None):
-        self.md5 = hashlib.md5()
+        self.checksum_compute = NoChecksum() if not UPDATE_MD5 else Checksum()
         self.data = ''
         self.file = UploadedFile(
             name=file_name, content_type=content_type, charset=charset)
@@ -795,7 +799,7 @@ class SaveToBackendHandler(FileUploadHandler):
         l = len(self.data)
         if l > 0:
             self.put_data(l)
-        self.file.etag = self.md5.hexdigest().lower()
+        self.file.etag = self.checksum_compute.hexdigest()
         return self.file
 
 
@@ -992,31 +996,38 @@ else:
     BLOCK_PARAMS = {'mappool': None,
                     'blockpool': None, }
 
+BACKEND_KWARGS = dict(
+    db_module=BACKEND_DB_MODULE,
+    db_connection=BACKEND_DB_CONNECTION,
+    block_module=BACKEND_BLOCK_MODULE,
+    block_path=BACKEND_BLOCK_PATH,
+    block_umask=BACKEND_BLOCK_UMASK,
+    block_size=BACKEND_BLOCK_SIZE,
+    hash_algorithm=BACKEND_HASH_ALGORITHM,
+    queue_module=BACKEND_QUEUE_MODULE,
+    queue_hosts=BACKEND_QUEUE_HOSTS,
+    queue_exchange=BACKEND_QUEUE_EXCHANGE,
+    astakos_url=ASTAKOS_BASE_URL,
+    service_token=SERVICE_TOKEN,
+    astakosclient_poolsize=ASTAKOSCLIENT_POOLSIZE,
+    free_versioning=BACKEND_FREE_VERSIONING,
+    block_params=BLOCK_PARAMS,
+    public_url_security=PUBLIC_URL_SECURITY,
+    public_url_alphabet=PUBLIC_URL_ALPHABET,
+    account_quota_policy=BACKEND_ACCOUNT_QUOTA,
+    container_quota_policy=BACKEND_CONTAINER_QUOTA,
+    container_versioning_policy=BACKEND_VERSIONING)
 
-_pithos_backend_pool = PithosBackendPool(
-        size=BACKEND_POOL_SIZE,
-        db_module=BACKEND_DB_MODULE,
-        db_connection=BACKEND_DB_CONNECTION,
-        block_module=BACKEND_BLOCK_MODULE,
-        block_path=BACKEND_BLOCK_PATH,
-        block_umask=BACKEND_BLOCK_UMASK,
-        queue_module=BACKEND_QUEUE_MODULE,
-        queue_hosts=BACKEND_QUEUE_HOSTS,
-        queue_exchange=BACKEND_QUEUE_EXCHANGE,
-        astakos_url=ASTAKOS_BASE_URL,
-        service_token=SERVICE_TOKEN,
-        astakosclient_poolsize=ASTAKOSCLIENT_POOLSIZE,
-        free_versioning=BACKEND_FREE_VERSIONING,
-        block_params=BLOCK_PARAMS,
-        public_url_security=PUBLIC_URL_SECURITY,
-        public_url_alphabet=PUBLIC_URL_ALPHABET,
-        account_quota_policy=BACKEND_ACCOUNT_QUOTA,
-        container_quota_policy=BACKEND_CONTAINER_QUOTA,
-        container_versioning_policy=BACKEND_VERSIONING)
+_pithos_backend_pool = PithosBackendPool(size=BACKEND_POOL_SIZE,
+                                         **BACKEND_KWARGS)
 
 
 def get_backend():
-    backend = _pithos_backend_pool.pool_get()
+    if BACKEND_POOL_ENABLED:
+        backend = _pithos_backend_pool.pool_get()
+    else:
+        backend = connect_backend(**BACKEND_KWARGS)
+    backend.serials = []
     backend.messages = []
     return backend
 
@@ -1038,11 +1049,6 @@ def update_request_headers(request):
 
 
 def update_response_headers(request, response):
-    if (not response.has_header('Content-Length') and
-        not (response.has_header('Content-Type') and
-             response['Content-Type'].startswith('multipart/byteranges'))):
-        response['Content-Length'] = len(response.content)
-
     # URL-encode unicode in headers.
     meta = response.items()
     for k, v in meta:
@@ -1059,13 +1065,14 @@ def get_pithos_usage(token):
     quotas = astakos.get_quotas(token)['system']
     pithos_resources = [r['name'] for r in resources]
     map(quotas.pop, filter(lambda k: k not in pithos_resources, quotas.keys()))
-    return quotas.popitem()[-1] # assume only one resource
+    return quotas.popitem()[-1]  # assume only one resource
 
 
-def api_method(http_method=None, token_required=True, user_required=True, logger=None,
-               format_allowed=False, serializations=None,
-               strict_serlization=False):
+def api_method(http_method=None, token_required=True, user_required=True,
+               logger=None, format_allowed=False, serializations=None,
+               strict_serlization=False, lock_container_path=False):
     serializations = serializations or ['json', 'xml']
+
     def decorator(func):
         @api.api_method(http_method=http_method, token_required=token_required,
                         user_required=user_required,
@@ -1081,18 +1088,24 @@ def api_method(http_method=None, token_required=True, user_required=True, logger
             if len(args) > 2 and len(args[2]) > 1024:
                 raise faults.BadRequest('Object name too large.')
 
+            success_status = False
             try:
                 # Add a PithosBackend as attribute of the request object
                 request.backend = get_backend()
+                request.backend.pre_exec(lock_container_path)
+
                 # Many API method expect thet X-Auth-Token in request,token
                 request.token = request.x_auth_token
                 update_request_headers(request)
                 response = func(request, *args, **kwargs)
                 update_response_headers(request, response)
+
+                success_status = True
                 return response
             finally:
                 # Always close PithosBackend connection
                 if getattr(request, "backend", None) is not None:
+                    request.backend.post_exec(success_status)
                     request.backend.close()
         return wrapper
     return decorator
@@ -1132,3 +1145,22 @@ def view_method():
                 raise Exception(response.status_code)
         return wrapper
     return decorator
+
+
+class Checksum:
+    def __init__(self):
+        self.md5 = hashlib.md5()
+
+    def update(self, data):
+        self.md5.update(data)
+
+    def hexdigest(self):
+        return self.md5.hexdigest().lower()
+
+
+class NoChecksum:
+    def update(self, data):
+        pass
+
+    def hexdigest(self):
+        return ''

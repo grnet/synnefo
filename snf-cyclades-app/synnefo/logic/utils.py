@@ -102,12 +102,61 @@ def get_rsapi_state(vm):
     if vm.deleted:
         return "DELETED"
     # A machine is in REBOOT if an OP_INSTANCE_REBOOT request is in progress
-    in_reboot = (r == 'ACTIVE') and\
+    in_reboot = (r == "ACTIVE") and\
                 (vm.backendopcode == "OP_INSTANCE_REBOOT") and\
-                (vm.backendjobstatus in ('queued', 'waiting', 'running'))
+                (vm.backendjobstatus in ("queued", "waiting", "running"))
     if in_reboot:
         return "REBOOT"
+    in_resize = (r == "STOPPED") and\
+                (vm.backendopcode == "OP_INSTANCE_MODIFY") and\
+                (vm.task == "RESIZE") and \
+                (vm.backendjobstatus in ("queued", "waiting", "running"))
+    if in_resize:
+        return "RESIZE"
     return r
+
+
+TASK_STATE_FROM_ACTION = {
+    "BUILD": "BULDING",
+    "START": "STARTING",
+    "STOP": "STOPPING",
+    "REBOOT": "REBOOTING",
+    "DESTROY": "DESTROYING",
+    "RESIZE": "RESIZING",
+    "CONNECT": "CONNECTING",
+    "DISCONNECT": "DISCONNECTING"}
+
+
+def get_task_state(vm):
+    if vm.task is None:
+        return ""
+    try:
+        return TASK_STATE_FROM_ACTION[vm.task]
+    except KeyError:
+        return "UNKNOWN"
+
+
+OPCODE_TO_ACTION = {
+    "OP_INSTANCE_CREATE": "BUILD",
+    "OP_INSTANCE_START": "START",
+    "OP_INSTANCE_STOP": "STOP",
+    "OP_INSTANCE_REBOOT": "REBOOT",
+    "OP_INSTANCE_REMOVE": "DESTROY"}
+
+
+def get_action_from_opcode(opcode, job_fields):
+    if opcode == "OP_INSTANCE_SET_PARAMS":
+        nics = job_fields.get("nics")
+        beparams = job_fields.get("beparams")
+        if nics:
+            #TODO: check the nic format
+            return "CONNECT" or "DISCONNECT"
+        elif beparams:
+            return "RESIZE"
+        else:
+            return None
+    else:
+        return OPCODE_TO_ACTION.get(opcode, None)
 
 
 def hide_pass(kw):

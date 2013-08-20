@@ -524,13 +524,11 @@
         'ERROR':            ['error-state'],
         'DELETED':          ['destroying-state'],
         'DESTROY':          ['destroying-state'],
-        'BUILD_INIT':       ['build-state'], 
-        'BUILD_COPY':       ['build-state'],
-        'BUILD_FINAL':      ['build-state'],
         'SHUTDOWN':         ['shutting-state'],
         'START':            ['starting-state'],
         'CONNECT':          ['connecting-state'],
-        'DISCONNECT':       ['disconnecting-state']
+        'DISCONNECT':       ['disconnecting-state'],
+        'RESIZE':           ['rebooting-state']
     };
 
 })(this);

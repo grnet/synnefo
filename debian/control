@@ -140,3 +140,13 @@ Recommends: snf-webproject
 XB-Python-Version: ${python:Versions}
 Description: Synnefo Django library
  Synnefo Django library
+
+Package: snf-deploy
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}, fabric
+XB-Python-Version: ${python:Versions}
+Description: Auto deploy tool for Synnefo.
+ * Creates virtual cluster
+ * Installs all related software components to the cluster in order to have a
+   local synnefo up-and-running
+

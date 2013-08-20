@@ -48,7 +48,7 @@ class TokenBackend(ModelBackend):
     def authenticate(self, email=None, auth_token=None):
         try:
             user = AstakosUser.objects.get_by_identifier(email, is_active=True,
-                                                        auth_token=auth_token)
+                                                         auth_token=auth_token)
             return user
         except AstakosUser.DoesNotExist:
             return None
@@ -65,8 +65,8 @@ class TokenBackend(ModelBackend):
 
 class EmailBackend(ModelBackend):
     """
-    If the ``username`` parameter is actually an email uses email to authenticate
-    the user else tries the username.
+    If the ``username`` parameter is actually an email uses email to
+    authenticate the user else tries the username.
 
     Used from ``astakos.im.forms.LoginForm`` to authenticate.
     """
@@ -82,7 +82,6 @@ class EmailBackend(ModelBackend):
         else:
             msg = 'Invalid password during authentication for %s' % username
             logger._log(settings.LOGGING_LEVEL, msg, [])
-
 
     def get_user(self, user_id):
         try:

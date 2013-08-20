@@ -35,7 +35,6 @@ from collections import defaultdict
 from sqlalchemy import Table, Column, String, Integer, MetaData, ForeignKey
 from sqlalchemy.sql import select, and_
 from sqlalchemy.schema import Index
-from sqlalchemy.sql.expression import desc
 from sqlalchemy.exc import NoSuchTableError
 
 from dbworker import DBWorker
@@ -58,8 +57,7 @@ def create_tables(engine):
     columns.append(Column('key', Integer, primary_key=True,
                           autoincrement=False))
     columns.append(Column('value', String(256), primary_key=True))
-    xfeaturevals = Table(
-        'xfeaturevals', metadata, *columns, mysql_engine='InnoDB')
+    Table('xfeaturevals', metadata, *columns, mysql_engine='InnoDB')
 
     metadata.create_all(engine)
     return metadata.sorted_tables
@@ -85,7 +83,8 @@ class XFeatures(DBWorker):
 #
 #         s = select([self.xfeatures.c.path, self.xfeatures.c.feature_id])
 #         s = s.where(self.xfeatures.c.path <= path)
-#         #s = s.where(self.xfeatures.c.path.like(self.escape_like(path) + '%', escape='\\')) # XXX: Implement reverse and escape like...
+#         s = s.where(self.xfeatures.c.path.like(
+#           self.escape_like(path) + '%', escape='\\'))  # XXX: Escape like...
 #         s = s.order_by(desc(self.xfeatures.c.path))
 #         r = self.conn.execute(s)
 #         l = r.fetchall()
@@ -128,7 +127,7 @@ class XFeatures(DBWorker):
 
     def xfeature_destroy_bulk(self, paths):
         """Destroy features and all their key, value pairs."""
-        
+
         if not paths:
             return
         s = self.xfeatures.delete().where(self.xfeatures.c.path.in_(paths))

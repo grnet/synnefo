@@ -17,18 +17,18 @@ POLL_LIMIT = 3600
 # Network Configuration
 #
 
+# List of network IDs. All created instances will get a NIC connected to each
+# network of this list. If the special network ID "SNF:ANY_PUBLIC" is used,
+# Cyclades will automatically choose a public network and connect the server to
+# it.
+DEFAULT_INSTANCE_NETWORKS = ["SNF:ANY_PUBLIC"]
+
 # Maximum allowed network size for private networks.
 MAX_CIDR_BLOCK = 22
 
 # Default settings used by network flavors
 DEFAULT_MAC_PREFIX = 'aa:00:0'
 DEFAULT_BRIDGE = 'br0'
-
-# Boolean value indicating whether synnefo would hold a Pool and allocate IP
-# addresses. If this setting is set to False, IP pool management will be
-# delegated to Ganeti. If machines have been created with this option as False,
-# you must run network reconciliation after turning it to True.
-PUBLIC_USE_POOL = True
 
 # Network flavors that users are allowed to create through API requests
 API_ENABLED_NETWORK_FLAVORS = ['MAC_FILTERED']
@@ -48,10 +48,11 @@ DEFAULT_ROUTING_TABLE = 'snf_public'
 DEFAULT_MAC_FILTERED_BRIDGE = 'prv0'
 
 
-# Firewalling
-GANETI_FIREWALL_ENABLED_TAG = 'synnefo:network:0:protected'
-GANETI_FIREWALL_DISABLED_TAG = 'synnefo:network:0:unprotected'
-GANETI_FIREWALL_PROTECTED_TAG = 'synnefo:network:0:limited'
+# Firewalling. Firewall tags should contain '%d' to be filled with the NIC
+# index.
+GANETI_FIREWALL_ENABLED_TAG = 'synnefo:network:%d:protected'
+GANETI_FIREWALL_DISABLED_TAG = 'synnefo:network:%d:unprotected'
+GANETI_FIREWALL_PROTECTED_TAG = 'synnefo:network:%d:limited'
 
 # The default firewall profile that will be in effect if no tags are defined
 DEFAULT_FIREWALL_PROFILE = 'DISABLED'

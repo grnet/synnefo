@@ -17,16 +17,16 @@
     <script type="text/javascript" src="{% url javascript_catalog %}"></script> 
     {% endcomment %}
 
-    <link rel="stylesheet" type="text/css" href="{{ SYNNEFO_CSS_URL }}main.css"/>
+    <link rel="stylesheet" type="text/css" href="{{ SYNNEFO_CSS_URL }}main.css?v={{ SYNNEFO_JS_LIB_VERSION }}"/>
 
     <!--[if IE]>
-        <style type="text/css" media="all">@import url({{ SYNNEFO_CSS_URL }}ie.css);</style>
+        <style type="text/css" media="all">@import url({{ SYNNEFO_CSS_URL }}ie.css?v={{ SYNNEFO_JS_LIB_VERSION }});</style>
     <![endif]-->
     <!--[if (lte IE 8)]>
-        <style type="text/css" media="all">@import url({{ SYNNEFO_CSS_URL }}ie8.css);</style>
+        <style type="text/css" media="all">@import url({{ SYNNEFO_CSS_URL }}ie8.css?v={{ SYNNEFO_JS_LIB_VERSION }});</style>
     <![endif]-->
     <!--[if (lte IE 7)]>
-        <style type="text/css" media="all">@import url({{ SYNNEFO_CSS_URL }}ie7.css);</style>
+        <style type="text/css" media="all">@import url({{ SYNNEFO_CSS_URL }}ie7.css?v={{ SYNNEFO_JS_LIB_VERSION }});</style>
     <![endif]-->
 
     <script src="{{ SYNNEFO_JS_LIB_URL }}jquery-1.7.2.js"></script>
@@ -39,48 +39,50 @@
     <script src="{{ SYNNEFO_JS_LIB_URL}}jquery.base64.js"></script>
 
 
-    <script src="{{ SYNNEFO_JS_LIB_URL}}underscore.js"></script>
-    <script src="{{ SYNNEFO_JS_LIB_URL}}underscore.string.js"></script>
-    <script src="{{ SYNNEFO_JS_LIB_URL}}backbone.js"></script>
-    <script src="{{ SYNNEFO_JS_LIB_URL}}json2.js"></script>
-    <script src="{{ SYNNEFO_JS_LIB_URL}}stacktrace.js"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}underscore.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}underscore.string.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}backbone.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}json2.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}stacktrace.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
 
     <!--[if (lt IE 7)]>
-        <script src="{{ SYNNEFO_JS_LIB_URL }}selectivizr.js"></script>
+        <script src="{{ SYNNEFO_JS_LIB_URL }}selectivizr.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <! [endif] -->
 
     <!--[if IE]>
-        <script src="{{ SYNNEFO_JS_URL }}ui/ie_fixes.js"></script>
+        <script src="{{ SYNNEFO_JS_URL }}ui/ie_fixes.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <![endif]-->
     
-    <script src="{{ SYNNEFO_JS_URL }}utils.js"></script>
-    <script src="{{ SYNNEFO_JS_URL }}auth.js"></script>
-    <script src="{{ SYNNEFO_JS_URL }}quota.js"></script>
-    <script src="{{ SYNNEFO_JS_URL }}sync.js"></script>
-    <script src="{{ SYNNEFO_JS_URL }}models.js"></script>
-    <script src="{{ SYNNEFO_JS_URL }}glance_models.js"></script>
-    <script src="{{ SYNNEFO_JS_URL }}views.js"></script>
+    <script src="{{ SYNNEFO_JS_URL }}utils.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_URL }}auth.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_URL }}quota.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_URL }}sync.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_URL }}models.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_URL }}glance_models.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_URL }}views.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
 
-    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_vms_base_view.js"></script>
-    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_model_views.js"></script>
-    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_error_view.js"></script>
-    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_icon_view.js"></script>
-    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_single_view.js"></script>
-    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_list_view.js"></script>
-    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_networks_view.js"></script>
-    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_disks_view.js"></script>
-    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_metadata_view.js"></script>
-    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_feedback_view.js"></script>
-    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_create_view.js"></script>
-    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_connect_view.js"></script>
-    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_public_keys_view.js"></script>
-    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_custom_images.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_vms_base_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_model_views.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_error_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_icon_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_single_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_list_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_networks_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_disks_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_metadata_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_feedback_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_create_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_connect_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_vm_resize_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_public_keys_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_public_ips_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_custom_images.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
 
-    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_router.js"></script>
-    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_main_view.js"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_router.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_main_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
 
     <!-- the following views require refactor -->
-    <script src="{{ SYNNEFO_JS_URL }}synnefo.js"></script>
+    <script src="{{ SYNNEFO_JS_URL }}synnefo.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script>
         tmp_auth_client = new synnefo.auth.AstakosClient({
             cookie_name: '{{ auth_cookie_name }}',
@@ -117,13 +119,11 @@
             'ERROR':  '{% trans "Error" %}',
             'DELETE': '',
             'DESTROY': '{% trans "Destroying..." %}',
-            'BUILD_INIT':  '{% trans "Building..." %}',
-            'BUILD_COPY':  '{% trans "Building..." %}',
-            'BUILD_FINAL':  '{% trans "Building..." %}',
             'SHUTDOWN': '{% trans "Shutting down..." %}',
             'START': '{% trans "Starting..." %}',
             'CONNECT': '{% trans "Connecting..." %}',
-            'DISCONNECT': '{% trans "Disconnecting..." %}'
+            'DISCONNECT': '{% trans "Disconnecting..." %}',
+            'RESIZE': '{% trans "Resizing..." %}'
         }
 
 
@@ -200,6 +200,7 @@
                     <ul class="useractions">
                         <!--<li class="feedback"><a class="action" href="#">{% trans "send feedback..." %}</a></li>-->
                         <li class="api"><a class="action" href="#">{% trans "API access..." %}</a></li>
+                        <li class="public_ips"><a class="action" href="#">{% trans "IP addresses..." %}</a></li>
                         <li class="public_keys"><a class="action" href="#">{% trans "ssh public keys..." %}</a></li>
                         <!--<li class="custom_images"><a class="action" href="#">{% trans "custom images..." %}</a></li>-->
                         <!--<li class="logout last"><a class="action" href="#">{% trans "logout" %}</a></li>-->
@@ -291,7 +292,7 @@
             $("<link/>", {
                rel: "stylesheet",
                type: "text/css",
-               href: "{{ SYNNEFO_CSS_URL }}opera.css"
+               href: "{{ SYNNEFO_CSS_URL }}opera.css?v={{ SYNNEFO_JS_LIB_VERSION }}"
             }).appendTo("head");
         }
 
@@ -565,9 +566,13 @@
     <div id="user_public_keys" class="overlay-content overlay-content hidden">
         {% include "userdata/public_keys_view.html" %}
     </div>
+    <div id="user_public_ips" class="overlay-content overlay-content hidden">
+        {% include "partials/ips.html" %}
+    </div>
     <div id="user_custom_images" class="overlay-content overlay-content hidden">
         {% include "partials/custom_images.html" %}
     </div>
+    {% include "partials/vm_resize.html" %}
     {% include "footer.html" %}
 
     <script>
@@ -678,8 +683,7 @@
             synnefo.ui.init();
             synnefo.ui.main.bind("ready", function(){
             });
-
-        })
+        });
     </script>
 </body>
 </html>

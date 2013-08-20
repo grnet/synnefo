@@ -31,11 +31,12 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from pithos.api.util import get_backend, split_container_object_string
-
+from pithos.api.util import (get_backend, split_container_object_string,
+                             Checksum, NoChecksum)
 import re
-import hashlib
 import os
+
+from functools import wraps
 
 
 def data_read_iterator(str, size=1024):
@@ -48,6 +49,28 @@ def data_read_iterator(str, size=1024):
         yield data
 
 
+def manage_transactions(lock_container_path=False):
+    """Decorator function for ManageAccounts methods."""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(self, *args, **kwargs):
+            self.backend.pre_exec(lock_container_path)
+            try:
+                result = func(self, *args, **kwargs)
+            except:
+                self.backend.post_exec(False)
+                raise
+            else:
+                dry = kwargs.get('dry', False)
+                if dry:
+                    self.backend.post_exec(False)
+                else:
+                    self.backend.post_exec(True)
+                return result
+        return wrapper
+    return decorator
+
+
 class ManageAccounts():
     def __init__(self):
         self.backend = get_backend()
@@ -55,23 +78,29 @@ class ManageAccounts():
     def cleanup(self):
         self.backend.close()
 
-    def existing_accounts(self):
-        return sorted([path for path, _ in self.backend.node.node_accounts()])
+    def _existing_accounts(self):
+        l = sorted([path for path, _ in self.backend.node.node_accounts()])
+        return l
 
+    @manage_transactions()
+    def existing_accounts(self):
+        return self._existing_accounts()
+
+    @manage_transactions()
     def duplicate_accounts(self):
-        accounts = self.existing_accounts()
+        accounts = self._existing_accounts()
         duplicates = []
         for i in range(len(accounts)):
             account = accounts[i]
             matcher = re.compile(account, re.IGNORECASE)
-            duplicate = filter(matcher.match, (i for i in accounts[i + 1:] \
-                if len(i) == len(account)))
+            duplicate = filter(matcher.match, (i for i in accounts[i + 1:] if
+                                               len(i) == len(account)))
             if duplicate:
                 duplicate.insert(0, account)
                 duplicates.append(duplicate)
         return duplicates
 
-    def list_all_containers(self, account, step=10):
+    def _list_all_containers(self, account, step=10):
         containers = []
         marker = None
         while 1:
@@ -83,7 +112,11 @@ class ManageAccounts():
             marker = more[-1]
         return containers
 
-    def list_all_container_objects(self, account, container, virtual=False):
+    @manage_transactions()
+    def list_all_containers(self, account, step=10):
+        return self._list_all_containers(account, step)
+
+    def _list_all_container_objects(self, account, container, virtual=False):
         objects = []
         marker = None
         while 1:
@@ -95,26 +128,40 @@ class ManageAccounts():
             marker = more[-1][0]
         return objects
 
-    def list_all_objects(self, account, virtual=False):
-        containers = self.list_all_containers(account)
+    @manage_transactions()
+    def list_all_container_objects(self, account, container, virtual=False):
+        return self._list_all_container_objects(account, container, virtual)
+
+    def _list_all_objects(self, account, virtual=False):
+        containers = self._list_all_containers(account)
         objects = []
         extend = objects.extend
         for c in containers:
-            more = self.list_all_container_objects(account, c, virtual=virtual)
+            more = self._list_all_container_objects(account, c,
+                                                    virtual=virtual)
             extend([os.path.join(c, i) for i in more])
         return objects
 
-    def list_past_versions(self, account, container, name):
+    @manage_transactions()
+    def list_all_objects(self, account, virtual=False):
+        return self._list_all_objects(account, virtual)
+
+    def _list_past_versions(self, account, container, name):
         versions = self.backend.list_versions(account, account, container,
                                               name)
         # do not return the current version
         return list(x[0] for x in versions[:-1])
 
-    def move_object(self, src_account, src_container, src_name,
-                    dest_account, dry=True, silent=False):
-        if src_account not in self.existing_accounts():
+    @manage_transactions()
+    def list_past_versions(self, account, container, name):
+        return self._list_past_versions(account, container, name)
+
+    @manage_transactions(lock_container_path=True)
+    def move_object(self, src_account, src_container, src_name, dest_account,
+                    dry=True, silent=False):
+        if src_account not in self._existing_accounts():
             raise NameError('%s does not exist' % src_account)
-        if dest_account not in self.existing_accounts():
+        if dest_account not in self._existing_accounts():
             raise NameError('%s does not exist' % dest_account)
 
         trans = self.backend.wrapper.conn.begin()
@@ -135,7 +182,7 @@ class ManageAccounts():
             raise
 
     def _copy_object(self, src_account, src_container, src_name,
-                    dest_account, move=False):
+                     dest_account, move=False):
         path = os.path.join(src_container, src_name)
         fullpath = os.path.join(src_account, path)
         dest_container = src_container
@@ -147,8 +194,8 @@ class ManageAccounts():
         content_type = meta.get('type')
 
         # get source object history
-        versions = self.list_past_versions(src_account, src_container,
-                                           src_name)
+        versions = self._list_past_versions(src_account, src_container,
+                                            src_name)
 
         # get source object permissions
         permissions = self.backend.permissions.access_get(fullpath)
@@ -203,7 +250,7 @@ class ManageAccounts():
     def _merge_account(self, src_account, dest_account, delete_src=False):
             # TODO: handle exceptions
             # copy all source objects
-            for path in self.list_all_objects(src_account):
+            for path in self._list_all_objects(src_account):
                 src_container, src_name = split_container_object_string(
                     '/%s' % path)
 
@@ -221,7 +268,7 @@ class ManageAccounts():
                                                        permissions)
 
                 self._copy_object(src_account, src_container, src_name,
-                                 dest_account, move=delete_src)
+                                  dest_account, move=delete_src)
 
             # move groups also
             groups = self.backend.get_account_groups(src_account, src_account)
@@ -231,21 +278,23 @@ class ManageAccounts():
             if delete_src:
                 self._delete_account(src_account)
 
+    @manage_transactions(lock_container_path=True)
     def merge_account(self, src_account, dest_account, only_stats=True,
                       dry=True, silent=False, delete_src=False):
-        if src_account not in self.existing_accounts():
+        if src_account not in self._existing_accounts():
             raise NameError('%s does not exist' % src_account)
-        if dest_account not in self.existing_accounts():
+        if dest_account not in self._existing_accounts():
             raise NameError('%s does not exist' % dest_account)
 
         if only_stats:
             print "The following %s's entries will be moved to %s:" \
                 % (src_account, dest_account)
-            print "Objects: %r" % self.list_all_objects(src_account)
+            print "Objects: %r" % self._list_all_objects(src_account)
             print "Groups: %r" \
                 % self.backend.get_account_groups(src_account,
                                                   src_account).keys()
             return
+        self._merge_account(src_account, dest_account, delete_src)
 
         trans = self.backend.wrapper.conn.begin()
         try:
@@ -264,28 +313,39 @@ class ManageAccounts():
             trans.rollback()
             raise
 
-    def delete_container_contents(self, account, container):
+    def _delete_container_contents(self, account, container):
         self.backend.delete_container(account, account, container,
                                       delimiter='/')
 
-    def delete_container(self, account, container):
+    @manage_transactions(lock_container_path=True)
+    def delete_container_contents(self, account, container):
+        return self._delete_container(account, account, container,
+                                      delimiter='/')
+
+    def _delete_container(self, account, container):
         self.backend.delete_container(account, account, container)
 
+    @manage_transactions(lock_container_path=True)
+    def delete_container(self, account, container):
+        self._delete_container(account, account, container)
+
     def _delete_account(self, account):
-        for c in self.list_all_containers(account):
-            self.delete_container_contents(account, c)
-            self.delete_container(account, c)
+        for c in self._list_all_containers(account):
+            self._delete_container_contents(account, c)
+            self._delete_container(account, c)
         self.backend.delete_account(account, account)
 
+    @manage_transactions(lock_container_path=True)
     def delete_account(self, account, only_stats=True, dry=True, silent=False):
-        if account not in self.existing_accounts():
+        if account not in self._existing_accounts():
             raise NameError('%s does not exist' % account)
         if only_stats:
             print "The following %s's entries will be removed:" % account
-            print "Objects: %r" % self.list_all_objects(account)
+            print "Objects: %r" % self._list_all_objects(account)
             print "Groups: %r" \
                 % self.backend.get_account_groups(account, account).keys()
             return
+        self._delete_account(account)
 
         trans = self.backend.wrapper.conn.begin()
         try:
@@ -303,22 +363,29 @@ class ManageAccounts():
             trans.rollback()
             raise
 
+    @manage_transactions(lock_container_path=True)
     def create_account(self, account):
         return self.backend._lookup_account(account, create=True)
 
+    @manage_transactions(lock_container_path=True)
     def create_update_object(self, account, container, name, content_type,
-                             data, meta=None, permissions=None, request_user=None):
+                             data, meta=None, permissions=None,
+                             request_user=None,
+                             checksum_compute_class=NoChecksum):
         meta = meta or {}
         permissions = permissions or {}
-        md5 = hashlib.md5()
+
+        assert checksum_compute_class in (
+            NoChecksum, Checksum), 'Invalid checksum_compute_class'
+        checksum_compute = checksum_compute_class()
         size = 0
         hashmap = []
         for block_data in data_read_iterator(data, self.backend.block_size):
             size += len(block_data)
             hashmap.append(self.backend.put_block(block_data))
-            md5.update(block_data)
+            checksum_compute.update(block_data)
 
-        checksum = md5.hexdigest().lower()
+        checksum = checksum_compute.hexdigest()
 
         request_user = request_user or account
         return self.backend.update_object_hashmap(request_user, account,

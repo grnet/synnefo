@@ -20,6 +20,49 @@ Pithos
 
 .. _Changelog-0.14.4:
 
+
+v0.14next
+=========
+
+Released: UNRELEASED
+
+Synnefo-wide
+------------
+
+* Integrate Pithos tests in continuous integration.
+
+Cyclades
+--------
+
+* Implement Floating IP addresses, which are addresses that can be dynamically
+  added and removed to a running server.
+
+  * Implement the 'os-floating-ips' and 'os-floating-ip-pools' API extensions.
+  * Implement 'snf-manage floating-ip-list' management command.
+  * Add 'floating_ip_pool' attribute to networks. Such networks must exist to
+    all Ganeti backends.
+
+* Speed up server reconciliation, by performing parallel reconciliation for
+  each backend.
+* Implement IPv6 only networks.
+* Implement 'resize' server action.
+
+  * Implement the 'resize' server action, to change the flavor of a server.
+  Only 'cpu' and 'memory' resizing is supported.
+
+* Compute quotas for CPU and memory of running vms.
+* Obsolete PUBLIC_USE_POOL setting, since Cyclades manages IP pool for all
+  type of networks.
+
+Pithos
+------
+
+* Refactor metadata schema (table attributes) in Pithos DB to speedup current
+objects by domain attribute. This is used by Plankton for listing VM images.
+
+* Enforce container-level atomicity in (most) Pithos API calls.
+
+
 v0.14.4
 =======
 
@@ -50,16 +93,17 @@ Synnefo-wide
 
 .. _Changelog-0.14.2:
 
+Released: Fri Jul 12 13:13:32 EEST 2013
+
 v0.14.2
 =======
-
-Released: Fri Jul 12 13:13:32 EEST 2013
 
 Cyclades
 --------
 
 * Add new setting PITHOS_BACKEND_POOL_SIZE, which configures the size
   of the pool of Pithos backends that are used by plankton.
+
 
 .. _Changelog-0.14:
 

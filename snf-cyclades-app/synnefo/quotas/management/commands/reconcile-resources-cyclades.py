@@ -31,6 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from datetime import datetime
 from django.core.management.base import BaseCommand
 from optparse import make_option
 
@@ -123,7 +124,9 @@ class Command(BaseCommand):
                 request = {}
                 request["force"] = options["force"]
                 request["auto_accept"] = True
-                request["name"] = "RECONCILE"
+                request["name"] = \
+                    ("client: reconcile-resources-cyclades, time: %s"
+                     % datetime.now())
                 request["provisions"] = map(create_provision, unsynced)
                 try:
                     qh.issue_commission(ASTAKOS_TOKEN, request)

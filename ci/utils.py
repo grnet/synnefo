@@ -149,24 +149,8 @@ class SynnefoCI(object):
         self.temp_config = ConfigParser()
         self.temp_config.optionxform = str
         self.temp_config.read(temp_config)
-        if build_id is not None:
-            self.build_id = build_id
-        else:
-            # Find a uniq build_id to use
-            ids = self.temp_config.sections()
-            if ids:
-                max_id = int(max(self.temp_config.sections(), key=int))
-                self.build_id = max_id + 1
-            else:
-                self.build_id = 1
-        self.logger.info("Will use %s as build id" % _green(self.build_id))
-        # If build_id doesn't exist create a new one
-        try:
-            self.temp_config.add_section(str(self.build_id))
-            creation_time = time.strftime("%a, %d %b %Y %X", time.localtime())
-            self.write_config("created", creation_time)
-        except DuplicateSectionError:
-            pass
+        self.build_id = build_id
+        self.logger.info("Will use \"%s\" as build id" % _green(self.build_id))
 
         # Set kamaki cloud
         if cloud is not None:
@@ -249,7 +233,7 @@ class SynnefoCI(object):
     @_check_kamaki
     def destroy_server(self, wait=True):
         """Destroy slave server"""
-        server_id = self.temp_config.getint(str(self.build_id), 'server_id')
+        server_id = int(self.read_temp_config('server_id'))
         self.logger.info("Destoying server with id %s " % server_id)
         self.cyclades_client.delete_server(server_id)
         if wait:
@@ -259,24 +243,40 @@ class SynnefoCI(object):
     def create_server(self, image_id=None, flavor_name=None, ssh_keys=None):
         """Create slave server"""
         self.logger.info("Create a new server..")
+
+        # Find a build_id to use
+        if self.build_id is None:
+            # If build_id is given use this, else ..
+            # Find a uniq build_id to use
+            ids = self.temp_config.sections()
+            if ids:
+                max_id = int(max(self.temp_config.sections(), key=int))
+                self.build_id = max_id + 1
+            else:
+                self.build_id = 1
+        self.logger.debug("New build id \"%s\" was created"
+                          % _green(self.build_id))
+
+        # Find an image to use
         if image_id is None:
             image = self._find_image()
             self.logger.debug("Will use image \"%s\"" % _green(image['name']))
             image_id = image["id"]
         self.logger.debug("Image has id %s" % _green(image_id))
+        # Find a flavor to use
         flavor_id = self._find_flavor(flavor_name)
         server = self.cyclades_client.create_server(
             self.config.get('Deployment', 'server_name'),
             flavor_id,
             image_id)
         server_id = server['id']
-        self.write_config('server_id', server_id)
+        self.write_temp_config('server_id', server_id)
         self.logger.debug("Server got id %s" % _green(server_id))
         server_user = server['metadata']['users']
-        self.write_config('server_user', server_user)
+        self.write_temp_config('server_user', server_user)
         self.logger.debug("Server's admin user is %s" % _green(server_user))
         server_passwd = server['adminPass']
-        self.write_config('server_passwd', server_passwd)
+        self.write_temp_config('server_passwd', server_passwd)
 
         server = self._wait_transition(server_id, "BUILD", "ACTIVE")
         self._get_server_ip_and_port(server)
@@ -347,9 +347,9 @@ class SynnefoCI(object):
             server_port = 10000 + tmp1 * 256 + tmp2
         else:
             server_port = 22
-        self.write_config('server_ip', server_ip)
+        self.write_temp_config('server_ip', server_ip)
         self.logger.debug("Server's IPv4 is %s" % _green(server_ip))
-        self.write_config('server_port', server_port)
+        self.write_temp_config('server_port', server_port)
         self.logger.debug("Server's ssh port is %s" % _green(server_port))
         self.logger.debug("Access server using \"ssh -p %s %s@%s\"" %
                           (server_port, server['metadata']['users'], server_ip))
@@ -384,8 +384,15 @@ class SynnefoCI(object):
         else:
             self.logger.debug("No ssh keys found")
 
-    def write_config(self, option, value):
+    def write_temp_config(self, option, value):
         """Write changes back to config file"""
+        # If build_id section doesn't exist create a new one
+        try:
+            self.temp_config.add_section(str(self.build_id))
+            creation_time = time.strftime("%a, %d %b %Y %X", time.localtime())
+            self.write_temp_config("created", creation_time)
+        except DuplicateSectionError:
+            pass
         self.temp_config.set(str(self.build_id), option, str(value))
         curr_time = time.strftime("%a, %d %b %Y %X", time.localtime())
         self.temp_config.set(str(self.build_id), "modified", curr_time)
@@ -393,17 +400,28 @@ class SynnefoCI(object):
         with open(temp_conf_file, 'wb') as tcf:
             self.temp_config.write(tcf)
 
+    def read_temp_config(self, option):
+        """Read from temporary_config file"""
+        # If build_id is None use the latest one
+        if self.build_id is None:
+            ids = self.temp_config.sections()
+            if ids:
+                self.build_id = int(ids[-1])
+            else:
+                self.logger.error("No sections in temporary config file")
+                sys.exit(1)
+            self.logger.debug("Will use \"%s\" as build id"
+                              % _green(self.build_id))
+        # Read specified option
+        return self.temp_config.get(str(self.build_id), option)
+
     def setup_fabric(self):
         """Setup fabric environment"""
         self.logger.info("Setup fabric parameters..")
-        fabric.env.user = self.temp_config.get(str(self.build_id),
-                                               'server_user')
-        fabric.env.host_string = \
-            self.temp_config.get(str(self.build_id), 'server_ip')
-        fabric.env.port = self.temp_config.getint(str(self.build_id),
-                                                  'server_port')
-        fabric.env.password = self.temp_config.get(str(self.build_id),
-                                                   'server_passwd')
+        fabric.env.user = self.read_temp_config('server_user')
+        fabric.env.host_string = self.read_temp_config('server_ip')
+        fabric.env.port = int(self.read_temp_config('server_port'))
+        fabric.env.password = self.read_temp_config('server_passwd')
         fabric.env.connection_attempts = 10
         fabric.env.shell = "/bin/bash -c"
         fabric.env.disable_known_hosts = True

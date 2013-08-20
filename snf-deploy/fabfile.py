@@ -16,12 +16,14 @@ from snfdeploy import massedit
 
 
 def setup_env(confdir="conf", packages="packages",
-              templates="files", cluster_name="ganeti1", autoconf=False):
+              templates="files", cluster_name="ganeti1", autoconf=False, disable_colors=False, key_inject=False):
     print("Loading configuration for synnefo...")
     print(" * Using config files under %s..." % confdir)
     print(" * Using %s and %s for packages and templates accordingly..." % (packages, templates))
 
     autoconf = ast.literal_eval(autoconf)
+    disable_colors = ast.literal_eval(disable_colors)
+    env.key_inject = ast.literal_eval(key_inject)
     conf = Conf.configure(confdir=confdir, cluster_name=cluster_name, autoconf=autoconf)
     env.env = Env(conf)
 
@@ -29,6 +31,9 @@ def setup_env(confdir="conf", packages="packages",
     env.password = env.env.password
     env.user = env.env.user
     env.shell = "/bin/bash -c"
+
+    if disable_colors:
+        disable_color()
 
     if env.env.cms.hostname in [env.env.accounts.hostname, env.env.cyclades.hostname, env.env.pithos.hostname]:
       env.cms_pass = True
@@ -196,33 +201,37 @@ def setup_ns():
 def check_dhcp():
     debug(env.host, "Checking IPs for synnefo..")
     for n, info in env.env.nodes_info.iteritems():
-        try_run("ping -c 1 " + info.ip)
+        try_run("ping -c 1 " + info.ip, True)
 
 @roles("nodes")
 def check_dns():
     debug(env.host, "Checking fqdns for synnefo..")
     for n, info in env.env.nodes_info.iteritems():
-        try_run("ping -c 1 " + info.fqdn)
+        try_run("ping -c 1 " + info.fqdn, True)
 
     for n, info in env.env.roles.iteritems():
-        try_run("ping -c 1 " + info.fqdn)
+        try_run("ping -c 1 " + info.fqdn, True)
 
 @roles("nodes")
 def check_connectivity():
     debug(env.host, "Checking internet connectivity..")
-    try_run("ping -c 1 www.google.com")
+    try_run("ping -c 1 www.google.com", True)
 
 
 @roles("nodes")
 def check_ssh():
     debug(env.host, "Checking password-less ssh..")
     for n, info in env.env.nodes_info.iteritems():
-        try_run("ssh " + info.fqdn + "  date")
+        try_run("ssh " + info.fqdn + "  date", True)
 
 
 @roles("ips")
 def add_keys():
-    debug(env.host, "Adding rsa/dsa keys..")
+    if not env.key_inject:
+      debug(env.host, "Skipping ssh keys injection..")
+      return
+    else:
+      debug(env.host, "Adding rsa/dsa keys..")
     try_run("mkdir -p /root/.ssh")
     cmd = """
 for f in $(ls /root/.ssh/*); do
@@ -236,7 +245,7 @@ done
       tmpl = "/root/.ssh/" + f
       replace = {}
       custom = customize_settings_from_tmpl(tmpl, replace)
-      put(custom, tmpl)
+      put(custom, tmpl, mode=0600)
 
     cmd = """
 if [ -e /root/.ssh/authorized_keys.bak ]; then
@@ -261,7 +270,10 @@ def setup_resolv_conf():
       "ns_node_ip": env.env.ns.ip,
       }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
+    try:
+      put(custom, tmpl)
+    except:
+      pass
     try_run("chattr +i /etc/resolv.conf")
 
 
@@ -269,11 +281,16 @@ def setup_resolv_conf():
 def setup_hosts():
     debug(env.host, "Tweaking /etc/hosts and ssh_config files...")
     try_run("echo StrictHostKeyChecking no >> /etc/ssh/ssh_config")
-    cmd = " sed -i 's/^127.*/127.0.0.1 localhost/g' /etc/hosts "
+    cmd = " sed -i 's/^127.*/127.0.0.1 localhost/' /etc/hosts "
+    try_run(cmd)
+    host_info = env.env.ips_info[env.host]
+    cmd = "hostname %s" % host_info.hostname
+    try_run(cmd)
+    cmd = "echo %s > /etc/hostname" % host_info.hostname
     try_run(cmd)
 
 
-def try_run(cmd):
+def try_run(cmd, abort=False):
     try:
       if env.local:
         return local(cmd, capture=True)
@@ -281,6 +298,8 @@ def try_run(cmd):
         return run(cmd)
     except:
       debug(env.host, "WARNING: command failed. Continuing anyway...")
+      if abort:
+        raise
 
 def create_bridges():
     debug(env.host, " * Creating bridges...")
@@ -405,10 +424,10 @@ def setup_mq():
 
 
 @roles("db")
-def allow_access_in_db(ip):
+def allow_access_in_db(ip, user="all", method="md5"):
     cmd = """
-    echo host all all {0}/32 md5 >> /etc/postgresql/8.4/main/pg_hba.conf
-    """.format(ip)
+    echo host all {0} {1}/32 {2} >> /etc/postgresql/8.4/main/pg_hba.conf
+    """.format(user, ip, method)
     try_run(cmd)
     try_run("/etc/init.d/postgresql restart")
 
@@ -431,6 +450,7 @@ def setup_db():
     """
     try_run(cmd)
 
+    allow_access_in_db(env.host, "all", "trust")
     try_run("/etc/init.d/postgresql restart")
 
 
@@ -457,9 +477,9 @@ def setup_webproject():
     }
     custom = customize_settings_from_tmpl(tmpl, replace)
     put(custom, tmpl, mode=0644)
-    with settings(host_string=env.env.db.hostname):
+    with settings(host_string=env.env.db.ip):
         host_info = env.env.ips_info[env.host]
-        allow_access_in_db(host_info.ip)
+        allow_access_in_db(host_info.ip, "all", "trust")
     try_run("/etc/init.d/gunicorn restart")
 
 
@@ -532,7 +552,7 @@ def add_user():
     snf-manage user-add {0} {1} {2}
     """.format(email, name, lastname)
     try_run(cmd)
-    with settings(host_string=env.env.db.hostname):
+    with settings(host_string=env.env.db.ip):
         uid, user_auth_token, user_uuid = get_auth_token_from_db(email)
     cmd = """
     snf-manage user-modify --password {0} {1}
@@ -545,7 +565,7 @@ def activate_user(user_email=None):
     if not user_email:
       user_email = env.env.user_email
     debug(env.host, " * Activate user %s..." % user_email)
-    with settings(host_string=env.env.db.hostname):
+    with settings(host_string=env.env.db.ip):
         uid, user_auth_token, user_uuid = get_auth_token_from_db(user_email)
 
     cmd = """
@@ -699,7 +719,7 @@ def setup_nfs_dirs():
 
 @roles("nodes")
 def setup_nfs_clients():
-    if env.host == env.env.pithos.hostname:
+    if env.host == env.env.pithos.ip:
       return
 
     debug(env.host, " * Mounting pithos NFS mount point...")
@@ -741,7 +761,7 @@ def setup_pithos():
     setup_apache()
     setup_webproject()
 
-    with settings(host_string=env.env.accounts.hostname):
+    with settings(host_string=env.env.accounts.ip):
         service_id, service_token = get_service_details("pithos")
 
     install_package("kamaki")
@@ -770,14 +790,6 @@ def setup_pithos():
         }
     custom = customize_settings_from_tmpl(tmpl, replace)
     put(custom, tmpl, mode=0644)
-
-    #TOFIX: this is needed in order webclient not to serve /ui url
-    #       but only /pithos/ui
-    if env.env.pithos.hostname == env.env.cyclades.hostname:
-      tmpl = "/usr/share/pyshared/pithos_webclient/synnefo_settings.py"
-      replace = {}
-      custom = customize_settings_from_tmpl(tmpl, replace)
-      put(custom, tmpl, mode=0644)
 
     try_run("/etc/init.d/gunicorn restart")
     #TOFIX: the previous command lets pithos-backend create blocks and maps
@@ -1055,7 +1067,7 @@ def setup_cyclades():
     install_package("python-django-south")
     tmpl = "/etc/synnefo/cyclades.conf"
 
-    with settings(host_string=env.env.accounts.hostname):
+    with settings(host_string=env.env.accounts.ip):
         service_id, service_token = get_service_details("cyclades")
 
     replace = {
@@ -1161,7 +1173,7 @@ def setup_kamaki():
         try_run("ping -c1 cyclades." + env.env.domain)
         try_run("ping -c1 pithos." + env.env.domain)
 
-    with settings(host_string=env.env.db.hostname):
+    with settings(host_string=env.env.db.ip):
         uid, user_auth_token, user_uuid = get_auth_token_from_db(env.env.user_email)
 
     install_package("python-progress")
@@ -1183,7 +1195,7 @@ def upload_image(image="debian_base.diskdump"):
 @roles("client")
 def register_image(image="debian_base.diskdump"):
     debug(env.host, " * Register image to plankton...")
-    with settings(host_string=env.env.db.hostname):
+    with settings(host_string=env.env.db.ip):
         uid, user_auth_token, user_uuid = get_auth_token_from_db(env.env.user_email)
 
     pithos_url = "pithos://{0}/images/{1}".format(user_uuid, image)

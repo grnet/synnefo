@@ -115,7 +115,7 @@ def application_approve_notify(application):
 def project_termination_notify(project):
     app = project.application
     try:
-        notification = build_notification(
+        build_notification(
             SENDER,
             [project.application.owner.email],
             _(messages.PROJECT_TERMINATION_SUBJECT) % app.__dict__,
@@ -128,11 +128,37 @@ def project_termination_notify(project):
 
 def project_suspension_notify(project):
     try:
-        notification = build_notification(
+        build_notification(
             SENDER,
             [project.application.owner.email],
             _(messages.PROJECT_SUSPENSION_SUBJECT) % project.__dict__,
             template='im/projects/project_suspension_notification.txt',
+            dictionary={'object': project}
+        ).send()
+    except NotificationError, e:
+        logger.error(e.message)
+
+
+def project_unsuspension_notify(project):
+    try:
+        build_notification(
+            SENDER,
+            [project.application.owner.email],
+            _(messages.PROJECT_UNSUSPENSION_SUBJECT) % project.__dict__,
+            template='im/projects/project_unsuspension_notification.txt',
+            dictionary={'object': project}
+        ).send()
+    except NotificationError, e:
+        logger.error(e.message)
+
+
+def project_reinstatement_notify(project):
+    try:
+        build_notification(
+            SENDER,
+            [project.application.owner.email],
+            _(messages.PROJECT_REINSTATEMENT_SUBJECT) % project.__dict__,
+            template='im/projects/project_reinstatement_notification.txt',
             dictionary={'object': project}
         ).send()
     except NotificationError, e:

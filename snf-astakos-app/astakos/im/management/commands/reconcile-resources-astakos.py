@@ -35,7 +35,7 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 
-from synnefo.webproject.management.utils import pprint_table
+from snf_django.management.utils import pprint_table
 from snf_django.lib.db.transaction import commit_on_success_strict
 from astakos.im.models import Component, AstakosUser
 from astakos.im.quotas import service_get_quotas, SYSTEM

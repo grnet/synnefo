@@ -32,7 +32,7 @@
 # or implied, of GRNET S.A.
 
 from synnefo.db.models import FloatingIP
-from synnefo.webproject.management.commands import ListCommand
+from snf_django.management.commands import ListCommand
 from synnefo.settings import CYCLADES_SERVICE_TOKEN, ASTAKOS_BASE_URL
 from logging import getLogger
 log = getLogger(__name__)

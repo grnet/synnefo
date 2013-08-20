@@ -149,7 +149,7 @@
         },
 
         metric_for_choice: function(choice) {
-            var map = {ram:'GB', cpu:'X', disk:'GB', disk_template:''};
+            var map = {ram:'MB', cpu:'X', disk:'GB', disk_template:''};
             return map[choice] || '';
         },
         

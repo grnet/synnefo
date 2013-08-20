@@ -66,7 +66,7 @@ CLASSIFIERS = [
 # Package requirements
 INSTALL_REQUIRES = [
     'Django>=1.2, <1.3',
-    'South>=0.7, <=0.7.3',
+    'South>=0.7.3',
     'httplib2>=0.6.0',
     'snf-common',
     'django-tables2',

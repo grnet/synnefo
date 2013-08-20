@@ -111,7 +111,8 @@ class FloatingIPAPITest(BaseAPITest):
         self.assertEqual(ip.network, net)
         self.assertEqual(json.loads(response.content)["floating_ip"],
                          {"instance_id": None, "ip": "192.168.2.1",
-                          "fixed_ip": None, "id": "1", "pool": "1"})
+                          "fixed_ip": None, "id": str(ip.id),
+                          "pool": str(net.id)})
 
     def test_reserve_no_pool(self):
         # No networks
@@ -132,9 +133,11 @@ class FloatingIPAPITest(BaseAPITest):
         with mocked_quotaholder():
             response = self.post(URL, "test_user", json.dumps({}), "json")
         self.assertSuccess(response)
+        ip = FloatingIP.objects.get()
         self.assertEqual(json.loads(response.content)["floating_ip"],
                          {"instance_id": None, "ip": "192.168.2.1",
-                          "fixed_ip": None, "id": "1", "pool": str(net2.id)})
+                          "fixed_ip": None, "id": str(ip.id),
+                          "pool": str(net2.id)})
 
     def test_reserve_full(self):
         net = FloatingIPPoolFactory(userid="test_user",
@@ -151,9 +154,11 @@ class FloatingIPAPITest(BaseAPITest):
         with mocked_quotaholder():
             response = self.post(URL, "test_user", json.dumps(request), "json")
         self.assertSuccess(response)
+        ip = FloatingIP.objects.get()
         self.assertEqual(json.loads(response.content)["floating_ip"],
                          {"instance_id": None, "ip": "192.168.2.10",
-                          "fixed_ip": None, "id": "1", "pool": "1"})
+                          "fixed_ip": None, "id": str(ip.id), "pool":
+                          str(net.id)})
 
         # Already reserved
         FloatingIPFactory(network=net, ipv4="192.168.2.3")

@@ -81,6 +81,18 @@ def xml_response(content, template, status_code=None):
     return response
 
 
+def read_json_body(request, default=None):
+    body = request.raw_post_data
+    if not body and request.method == "GET":
+        body = request.GET.get("body")
+    if not body:
+        return default
+    try:
+        return json.loads(body)
+    except json.JSONDecodeError:
+        raise faults.BadRequest("Request body should be in json format.")
+
+
 def is_integer(x):
     return isinstance(x, (int, long))
 
@@ -169,6 +181,9 @@ def get_uuid_displayname_catalogs(request, user_call=True):
     except:
         raise faults.BadRequest('Request body should be json formatted.')
     else:
+        if not isinstance(input_data, dict):
+            raise faults.BadRequest(
+                'Request body should be a json formatted dictionary')
         uuids = input_data.get('uuids', [])
         if uuids is None and user_call:
             uuids = []
@@ -224,3 +239,7 @@ def get_content_length(request):
     if content_length is None:
         raise faults.LengthRequired('Missing or invalid Content-Length header')
     return content_length
+
+
+def invert_dict(d):
+    return dict((v, k) for k, v in d.iteritems())

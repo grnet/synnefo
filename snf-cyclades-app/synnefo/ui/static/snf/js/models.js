@@ -2488,6 +2488,21 @@
 
     })
     
+    models.PublicPool = models.Model.extend({});
+    models.PublicPools = models.Collection.extend({
+      model: models.PublicPool,
+      path: 'os-floating-ip-pools',
+      api_type: 'compute',
+      noUpdate: true,
+
+      parse: function(data) {
+        return _.map(data.floating_ip_pools, function(pool) {
+          pool.id = pool.name;
+          return pool;
+        });
+      }
+    });
+
     models.PublicIP = models.Model.extend({
         path: 'os-floating-ips',
         has_status: false,
@@ -2617,6 +2632,11 @@
             suffix = '';
             if (active) { suffix = '_active'}
             var value = this.get('limit'+suffix) - this.get('usage'+suffix);
+            if (active) {
+              if (this.get('available') <= value) {
+                value = this.get('available');
+              }
+            }
             if (value < 0) { return value }
             return value
         },
@@ -2628,6 +2648,7 @@
             } else {
                 value = this.get(key)
             }
+            if (value <= 0) { value = 0 }
             if (!this.is_bytes()) {
               return value + "";
             }
@@ -2668,16 +2689,16 @@
           return this.filter(function(q) { return q.get('name') == k})[0]
         },
 
-        get_available_for_vm: function(active) {
+        get_available_for_vm: function(options) {
           var quotas = synnefo.storage.quotas;
           var key = 'available';
-          if (active) { key = 'available_active'; }
-          var quota = {
-            'ram': quotas.get('cyclades.ram').get(key),
-            'cpu': quotas.get('cyclades.cpu').get(key),
-            'disk': quotas.get('cyclades.disk').get(key)
-          }
-          return quota;
+          var available_quota = {};
+          _.each(['cyclades.ram', 'cyclades.cpu', 'cyclades.disk'], 
+            function (key) {
+              var value = quotas.get(key).get_available(true);
+              available_quota[key.replace('cyclades.', '')] = value;
+          });
+          return available_quota;
         }
     })
 
@@ -2708,5 +2729,6 @@
     snf.storage.resources = new models.Resources();
     snf.storage.quotas = new models.Quotas();
     snf.storage.public_ips = new models.PublicIPs();
+    snf.storage.public_pools = new models.PublicPools();
 
 })(this);

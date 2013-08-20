@@ -32,7 +32,7 @@
 # or implied, of GRNET S.A.
 
 from synnefo.db.models import Backend
-from synnefo.webproject.management.commands import ListCommand
+from snf_django.management.commands import ListCommand
 from synnefo.api import util
 
 

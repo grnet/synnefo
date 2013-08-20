@@ -32,13 +32,13 @@
 # or implied, of GRNET S.A.
 
 from django.core.management.base import CommandError
-from synnefo.webproject.management.commands import SynnefoCommand
+from snf_django.management.commands import SynnefoCommand
 from synnefo.management.common import (format_vm_state, get_vm,
                                        get_image)
 from snf_django.lib.astakos import UserCache
 from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
                               ASTAKOS_BASE_URL)
-from synnefo.webproject.management import utils
+from snf_django.management import utils
 
 
 class Command(SynnefoCommand):

@@ -34,7 +34,8 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from astakos.im.functions import (terminate, suspend, resume, check_expiration,
+from astakos.im.functions import (terminate, suspend, unsuspend,
+                                  reinstate, check_expiration,
                                   approve_application, deny_application)
 from snf_django.lib.db.transaction import commit_on_success_strict
 
@@ -60,9 +61,14 @@ class Command(BaseCommand):
                     metavar='<project id>',
                     help="Suspend a project"),
         make_option('--unsuspend',
-                    dest='resume',
+                    dest='unsuspend',
                     metavar='<project id>',
                     help="Resume a suspended project"),
+        make_option('--reinstate',
+                    dest='reinstate',
+                    metavar='<project id>',
+                    help=("Resume a terminated project; this will fail if its "
+                          "name has been reserved by another project")),
         make_option('--check-expired',
                     action='store_true',
                     dest='check_expired',
@@ -87,7 +93,8 @@ class Command(BaseCommand):
 
         actions = {
             'terminate': terminate,
-            'resume': resume,
+            'reinstate': reinstate,
+            'unsuspend': unsuspend,
             'suspend': suspend,
             'approve': approve_application,
             'deny': lambda a: deny_application(a, reason=message),

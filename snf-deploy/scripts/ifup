@@ -1,0 +1,24 @@
+#! /bin/bash
+# Script to bring a network (tap) device for qemu-kvm up
+# The idea is to add the tap device to the same bridge
+# as we have default routing to.
+
+# in order to be able to find brctl
+PATH=$PATH:/sbin:/usr/sbin
+
+: ${BRIDGE:=auto_nodes_br}
+
+ip=$(which ip)
+
+brctl=$(which brctl)
+
+if [ ! "$ip" -o ! "$brctl" ]; then
+   echo "W: $0: not doing any bridge processing: ip or brctl utility not found" >&2
+   exit 0
+fi
+
+$ip link set "$1" up
+
+brctl addif $BRIDGE "$1"
+
+exit 0

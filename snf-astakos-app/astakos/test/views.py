@@ -33,52 +33,50 @@
 
 from datetime import datetime, timedelta
 
-from django.core.exceptions import PermissionDenied
-from astakos.im.models import AstakosUser, ProjectApplication
+from astakos.im.models import AstakosUser, Project
 from astakos.im.functions import (join_project, leave_project,
                                   submit_application, approve_application,
-                                  get_user_by_id, check_pending_app_quota)
+                                  check_pending_app_quota,
+                                  ProjectForbidden)
 from snf_django.lib.db.transaction import commit_on_success_strict
 
 
 @commit_on_success_strict()
-def join(proj_id, user_id):
-    join_project(proj_id, get_user_by_id(user_id))
+def join(proj_id, user):
+    return join_project(proj_id, user)
 
 
 @commit_on_success_strict()
-def leave(proj_id, user_id):
-    leave_project(proj_id, get_user_by_id(user_id))
+def leave(memb_id, request_user):
+    return leave_project(memb_id, request_user)
 
 
 @commit_on_success_strict()
-def submit(name, user_id, prec):
+def submit(name, user_id, project_id=None):
     try:
         owner = AstakosUser.objects.get(id=user_id)
     except AstakosUser.DoesNotExist:
         raise AttributeError('user does not exist')
 
-    precursor = (ProjectApplication.objects.get(id=prec)
-                 if prec is not None
-                 else None)
-
-    ok, limit = check_pending_app_quota(owner, precursor=precursor)
+    project = (Project.objects.get(id=project_id) if project_id is not None
+               else None)
+    ok, limit = check_pending_app_quota(owner, project=project)
     if not ok:
-        raise PermissionDenied('Limit %s reached', limit)
+        raise ProjectForbidden('Limit %s reached', limit)
 
-    resource_policies = [('cyclades.network.private', 5)]
+    resource_policies = {'cyclades.network.private': {'member_capacity': 5}}
     data = {'owner': owner,
             'name': name,
-            'precursor_id': prec,
+            'project_id': project_id,
             'end_date': datetime.now() + timedelta(days=1),
             'member_join_policy': 1,
             'member_leave_policy': 1,
-            'resource_policies': resource_policies,
+            'resources': resource_policies,
             'request_user': owner
             }
 
     app = submit_application(**data)
-    return app.id
+    return app.id, app.chain_id
 
 
 @commit_on_success_strict()

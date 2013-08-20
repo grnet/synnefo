@@ -43,4 +43,4 @@ def fix_header(k, v):
 
 def forward_header(k):
     return k.upper() not in ['HOST', 'CONTENT_LENGTH', 'CONTENT_TYPE'] and \
-           not is_hop_by_hop(k) and not '.' in k
+        not is_hop_by_hop(k) and not '.' in k

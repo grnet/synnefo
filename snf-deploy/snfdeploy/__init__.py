@@ -254,8 +254,10 @@ def fabcommand(args, env, actions, nodes=[]):
     fabcmd = "fab "
 
   fabcmd += " --fabfile {4}/fabfile.py \
-    setup_env:confdir={0},packages={1},templates={2},cluster_name={3},autoconf={5} \
-    ".format(args.confdir, env.packages, env.templates, args.cluster_name, env.lib, args.autoconf)
+setup_env:confdir={0},packages={1},templates={2},cluster_name={3},\
+autoconf={5},disable_colors={6},key_inject={7} \
+".format(args.confdir, env.packages, env.templates, args.cluster_name,
+         env.lib, args.autoconf, args.disable_colors, args.key_inject)
 
   if nodes:
     hosts = [env.nodes_info[n].hostname for n in nodes]
@@ -378,6 +380,10 @@ def parse_options():
                       default=None,
                       help="Path of an existing ssh key to use")
 
+  parser.add_argument("--no-key-inject", dest="key_inject",
+                      default=True, action="store_false",
+                      help="Whether to inject ssh key pairs to hosts")
+
   # backend related options
   parser.add_argument("--cluster-name", dest="cluster_name",
                       default="ganeti1",
@@ -400,7 +406,12 @@ def parse_options():
   parser.add_argument("actions", type=str, nargs="*",
                       help="Run one or more of the supported subcommands")
 
+  # disable colors in terminal
+  parser.add_argument("--disable-colors", dest="disable_colors", default=False,
+                      action="store_true", help="Disable colors in terminal")
+
   return parser.parse_args()
+
 
 def get_actions(*args):
     actions = {

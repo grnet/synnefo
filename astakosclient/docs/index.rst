@@ -192,6 +192,44 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
         resolved.
         Otherwise raise an AstakosClientException exception.
 
+    **get_projects(**\ token, name=None, state=None, owner=None\ **)**
+        Retrieve all accessible projects
+
+    **get_project(**\ token, project_id\ **)**
+        Retrieve project description, if accessible
+
+    **create_project(**\ token, specs\ **)**
+        Submit application to create a new project
+
+    **modify_project(**\ token, project_id, specs\ **)**
+        Submit application to modify an existing project
+
+    **project_action(**\ token, project_id, action, reason=""\ **)**
+        Perform action on a project
+
+    **get_applications(**\ token, project=None\ **)**
+        Retrieve all accessible applications
+
+    **get_application(**\ token, app_id\ **)**
+        Retrieve application description, if accessible
+
+    **application_action(**\ token, app_id, action, reason=""\ **)**
+        Perform action on an application
+
+    **get_memberships(**\ token, project=None\ **)**
+        Retrieve all accessible memberships
+
+    **get_membership(**\ token, memb_id\ **)**
+        Retrieve membership description, if accessible
+
+    **membership_action(**\ token, memb_id, action, reason=""\ **)**
+        Perform action on a membership
+
+    **join_project(**\ token, project_id\ **)**
+        Join a project
+
+    **enroll_member(**\ token, project_id, email\ **)**
+        Enroll a user in a project
 
 Public Functions
 ----------------

@@ -124,7 +124,7 @@ class ObjectGet(PithosAPITest):
 
         vserial, _ = l2[-2]
         self.assertEqual(self.get_object_meta(c, o, version=vserial),
-                         {'X-Object-Meta-Quality': 'AAA'})
+                         {'Quality': 'AAA'})
 
         # update data
         self.append_object_data(c, o)
@@ -135,6 +135,46 @@ class ObjectGet(PithosAPITest):
         l3 = json.loads(r.content)['versions']
         self.assertEqual(len(l3), len(l2) + 1)
         self.assertEqual(l3[:-1], l2)
+
+    def test_get_version(self):
+        c = 'c1'
+        o = self.objects[c][0]
+        url = join_urls(self.pithos_path, self.user, c, o)
+
+        # Update metadata
+        meta = {'HTTP_X_OBJECT_META_QUALITY': 'AAA'}
+        r = self.post(url, content_type='', **meta)
+        self.assertEqual(r.status_code, 202)
+
+        url = join_urls(self.pithos_path, self.user, c, o)
+        r = self.get('%s?version=list&format=json' % url)
+        self.assertEqual(r.status_code, 200)
+        l = json.loads(r.content)['versions']
+        self.assertEqual(len(l), 2)
+
+        r = self.head('%s?version=%s' % (url, l[0][0]))
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('X-Object-Meta-Quality' not in r)
+
+        r = self.head('%s?version=%s' % (url, l[1][0]))
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('X-Object-Meta-Quality' in r)
+
+        # test invalid version
+        r = self.head('%s?version=-1' % url)
+        self.assertEqual(r.status_code, 404)
+
+        other_name, other_data, r = self.upload_object(c)
+        self.assertTrue('X-Object-Version' in r)
+        other_version = r['X-Object-Version']
+
+        self.assertTrue(o != other_name)
+
+        r = self.get('%s?version=%s' % (url, other_version))
+        self.assertEqual(r.status_code, 404)
+
+        r = self.head('%s?version=%s' % (url, other_version))
+        self.assertEqual(r.status_code, 404)
 
     def test_objects_with_trailing_spaces(self):
         # create object
@@ -746,10 +786,10 @@ class ObjectCopy(PithosAPITest):
         append = objects.append
         append(self.upload_object(self.container,
                                   '%s/%s' % (folder, get_random_name()),
-                                  HTTP_X_OBJECT_META_DEPTH='1')[0])
+                                  depth='1')[0])
         append(self.upload_object(self.container,
                                   '%s/%s' % (subfolder, get_random_name()),
-                                  HTTP_X_OBJECT_META_DEPTH='2')[0])
+                                  depth='2')[0])
         other = self.upload_object(self.container, strnextling(folder))[0]
 
         # copy dir
@@ -770,8 +810,9 @@ class ObjectCopy(PithosAPITest):
             # assert metadata
             meta = self.get_object_meta(self.container, obj)
             for k in meta.keys():
-                self.assertTrue(k in r)
-                self.assertEqual(r[k], meta[k])
+                key = 'X-Object-Meta-%s' % k
+                self.assertTrue(key in r)
+                self.assertEqual(r[key], meta[k])
 
         # assert other has not been created under copy folder
         url = join_urls(self.pithos_path, self.user, self.container,
@@ -825,16 +866,12 @@ class ObjectMove(PithosAPITest):
             self.container, oname='%s/%s' % (folder, get_random_name()))[0]
         objects = [subfolder]
         append = objects.append
-        meta = {}
-        meta[objects[0]] = {}
         append(self.upload_object(self.container,
                                   '%s/%s' % (folder, get_random_name()),
-                                  HTTP_X_OBJECT_META_DEPTH='1')[0])
-        meta[objects[1]] = {'X-Object-Meta-Depth': '1'}
+                                  depth='1')[0])
         append(self.upload_object(self.container,
                                   '%s/%s' % (subfolder, get_random_name()),
-                                  HTTP_X_OBJECT_META_DEPTH='2')[0])
-        meta[objects[1]] = {'X-Object-Meta-Depth': '2'}
+                                  depth='1')[0])
         other = self.upload_object(self.container, strnextling(folder))[0]
 
         # move dir
@@ -856,11 +893,6 @@ class ObjectMove(PithosAPITest):
                             obj.replace(folder, copy_folder))
             r = self.head(url)
             self.assertEqual(r.status_code, 200)
-
-#            # assert metadata
-#            for k in meta[obj].keys():
-#                self.assertTrue(k in r)
-#                self.assertEqual(r[k], meta[obj][k])
 
         # assert other has not been created under copy folder
         url = join_urls(self.pithos_path, self.user, self.container,
@@ -894,9 +926,8 @@ class ObjectPost(PithosAPITest):
             meta = self.get_object_meta(self.container, self.object)
 
             for k, v in d.items():
-                key = 'X-Object-Meta-%s' % k.title()
-                self.assertTrue(key in meta)
-                self.assertTrue(meta[key], v)
+                self.assertTrue(k.title() in meta)
+                self.assertTrue(meta[k.title()], v)
 
             # Header key too large
             d = {'a' * 115: 'b' * 256}
@@ -1026,7 +1057,7 @@ class ObjectPost(PithosAPITest):
         range = 'bytes %s-%s/%s' % (first_byte_pos, last_byte_pos, length)
         kwargs = {'content_type': 'application/octet-stream',
                   'HTTP_CONTENT_RANGE': range,
-                  'CONTENT_LENGTH': partial + 1}
+                  'CONTENT_LENGTH': str(partial + 1)}
 
         url = join_urls(self.pithos_path, self.user, self.container, oname)
         r = self.post(url, data=data, **kwargs)
@@ -1275,16 +1306,12 @@ class ObjectDelete(PithosAPITest):
             self.container, oname='%s/%s' % (folder, get_random_name()))[0]
         objects = [subfolder]
         append = objects.append
-        meta = {}
-        meta[objects[0]] = {}
         append(self.upload_object(self.container,
                                   '%s/%s' % (folder, get_random_name()),
-                                  HTTP_X_OBJECT_META_DEPTH='1')[0])
-        meta[objects[1]] = {'X-Object-Meta-Depth': '1'}
+                                  depth='1')[0])
         append(self.upload_object(self.container,
                                   '%s/%s' % (subfolder, get_random_name()),
-                                  HTTP_X_OBJECT_META_DEPTH='2')[0])
-        meta[objects[1]] = {'X-Object-Meta-Depth': '2'}
+                                  depth='2')[0])
         other = self.upload_object(self.container, strnextling(folder))[0]
 
         # move dir

@@ -69,6 +69,9 @@ API_SERVICE_QUOTAS = join_urls(ACCOUNTS_PREFIX, "service_quotas")
 API_COMMISSIONS = join_urls(ACCOUNTS_PREFIX, "commissions")
 API_COMMISSIONS_ACTION = join_urls(API_COMMISSIONS, "action")
 API_FEEDBACK = join_urls(ACCOUNTS_PREFIX, "feedback")
+API_PROJECTS = join_urls(ACCOUNTS_PREFIX, "projects")
+API_APPLICATIONS = join_urls(API_PROJECTS, "apps")
+API_MEMBERSHIPS = join_urls(API_PROJECTS, "memberships")
 
 # --------------------------------------------------------------------
 # Astakos Keystone API urls
@@ -201,8 +204,8 @@ class AstakosClient():
             else:
                 return None
         except Exception as err:
-            self.logger.error("Cannot parse response \"%s\" with simplejson: %s"
-                              % (data, str(err)))
+            msg = "Cannot parse response \"%s\" with simplejson: %s"
+            self.logger.error(msg % (data, str(err)))
             raise InvalidResponse(str(err), data)
 
     # ------------------------
@@ -575,6 +578,235 @@ class AstakosClient():
                                  self.logger)
         return self._call_astakos(token, path, req_headers, req_body, "POST")
 
+    # ----------------------------
+    # do a GET to ``API_PROJECTS``
+    def get_projects(self, token, name=None, state=None, owner=None):
+        """Retrieve all accessible projects
+
+        Arguments:
+        token -- user's token (string)
+        name  -- filter by name (optional)
+        state -- filter by state (optional)
+        owner -- filter by owner (optional)
+
+        In case of success, return a list of project descriptions.
+        """
+        path = API_PROJECTS
+        filters = {}
+        if name is not None:
+            filters["name"] = name
+        if state is not None:
+            filters["state"] = state
+        if owner is not None:
+            filters["owner"] = owner
+        req_headers = {'content-type': 'application/json'}
+        req_body = (parse_request({"filter": filters}, self.logger)
+                    if filters else None)
+        return self._call_astakos(token, path, req_headers, req_body)
+
+    # -----------------------------------------
+    # do a GET to ``API_PROJECTS``/<project_id>
+    def get_project(self, token, project_id):
+        """Retrieve project description, if accessible
+
+        Arguments:
+        token      -- user's token (string)
+        project_id -- project identifier
+
+        In case of success, return project description.
+        """
+        path = join_urls(API_PROJECTS, str(project_id))
+        return self._call_astakos(token, path)
+
+    # -----------------------------
+    # do a POST to ``API_PROJECTS``
+    def create_project(self, token, specs):
+        """Submit application to create a new project
+
+        Arguments:
+        token -- user's token (string)
+        specs -- dict describing a project
+
+        In case of success, return project and application identifiers.
+        """
+        path = API_PROJECTS
+        req_headers = {'content-type': 'application/json'}
+        req_body = parse_request(specs, self.logger)
+        return self._call_astakos(token, path, req_headers, req_body, "POST")
+
+    # ------------------------------------------
+    # do a POST to ``API_PROJECTS``/<project_id>
+    def modify_project(self, token, project_id, specs):
+        """Submit application to modify an existing project
+
+        Arguments:
+        token      -- user's token (string)
+        project_id -- project identifier
+        specs      -- dict describing a project
+
+        In case of success, return project and application identifiers.
+        """
+        path = join_urls(API_PROJECTS, str(project_id))
+        req_headers = {'content-type': 'application/json'}
+        req_body = parse_request(specs, self.logger)
+        return self._call_astakos(token, path, req_headers, req_body, "POST")
+
+    # -------------------------------------------------
+    # do a POST to ``API_PROJECTS``/<project_id>/action
+    def project_action(self, token, project_id, action, reason=""):
+        """Perform action on a project
+
+        Arguments:
+        token      -- user's token (string)
+        project_id -- project identifier
+        action     -- action to perform, one of "suspend", "unsuspend",
+                      "terminate", "reinstate"
+        reason     -- reason of performing the action
+
+        In case of success, return nothing.
+        """
+        path = join_urls(API_PROJECTS, str(project_id))
+        path = join_urls(path, "action")
+        req_headers = {'content-type': 'application/json'}
+        req_body = parse_request({action: reason}, self.logger)
+        return self._call_astakos(token, path, req_headers, req_body, "POST")
+
+    # --------------------------------
+    # do a GET to ``API_APPLICATIONS``
+    def get_applications(self, token, project=None):
+        """Retrieve all accessible applications
+
+        Arguments:
+        token   -- user's token (string)
+        project -- filter by project (optional)
+
+        In case of success, return a list of application descriptions.
+        """
+        path = API_APPLICATIONS
+        req_headers = {'content-type': 'application/json'}
+        body = {"project": project} if project is not None else None
+        req_body = parse_request(body, self.logger) if body else None
+        return self._call_astakos(token, path, req_headers, req_body)
+
+    # -----------------------------------------
+    # do a GET to ``API_APPLICATIONS``/<app_id>
+    def get_application(self, token, app_id):
+        """Retrieve application description, if accessible
+
+        Arguments:
+        token  -- user's token (string)
+        app_id -- application identifier
+
+        In case of success, return application description.
+        """
+        path = join_urls(API_APPLICATIONS, str(app_id))
+        return self._call_astakos(token, path)
+
+    # -------------------------------------------------
+    # do a POST to ``API_APPLICATIONS``/<app_id>/action
+    def application_action(self, token, app_id, action, reason=""):
+        """Perform action on an application
+
+        Arguments:
+        token  -- user's token (string)
+        app_id -- application identifier
+        action -- action to perform, one of "approve", "deny",
+                  "dismiss", "cancel"
+        reason -- reason of performing the action
+
+        In case of success, return nothing.
+        """
+        path = join_urls(API_APPLICATIONS, str(app_id))
+        path = join_urls(path, "action")
+        req_headers = {'content-type': 'application/json'}
+        req_body = parse_request({action: reason}, self.logger)
+        return self._call_astakos(token, path, req_headers, req_body, "POST")
+
+    # -------------------------------
+    # do a GET to ``API_MEMBERSHIPS``
+    def get_memberships(self, token, project=None):
+        """Retrieve all accessible memberships
+
+        Arguments:
+        token   -- user's token (string)
+        project -- filter by project (optional)
+
+        In case of success, return a list of membership descriptions.
+        """
+        path = API_MEMBERSHIPS
+        req_headers = {'content-type': 'application/json'}
+        body = {"project": project} if project is not None else None
+        req_body = parse_request(body, self.logger) if body else None
+        return self._call_astakos(token, path, req_headers, req_body)
+
+    # -----------------------------------------
+    # do a GET to ``API_MEMBERSHIPS``/<memb_id>
+    def get_membership(self, token, memb_id):
+        """Retrieve membership description, if accessible
+
+        Arguments:
+        token   -- user's token (string)
+        memb_id -- membership identifier
+
+        In case of success, return membership description.
+        """
+        path = join_urls(API_MEMBERSHIPS, str(memb_id))
+        return self._call_astakos(token, path)
+
+    # -------------------------------------------------
+    # do a POST to ``API_MEMBERSHIPS``/<memb_id>/action
+    def membership_action(self, token, memb_id, action, reason=""):
+        """Perform action on a membership
+
+        Arguments:
+        token   -- user's token (string)
+        memb_id -- membership identifier
+        action  -- action to perform, one of "leave", "cancel", "accept",
+                   "reject", "remove"
+        reason  -- reason of performing the action
+
+        In case of success, return nothing.
+        """
+        path = join_urls(API_MEMBERSHIPS, str(memb_id))
+        path = join_urls(path, "action")
+        req_headers = {'content-type': 'application/json'}
+        req_body = parse_request({action: reason}, self.logger)
+        return self._call_astakos(token, path, req_headers, req_body, "POST")
+
+    # --------------------------------
+    # do a POST to ``API_MEMBERSHIPS``
+    def join_project(self, token, project_id):
+        """Join a project
+
+        Arguments:
+        token      -- user's token (string)
+        project_id -- project identifier
+
+        In case of success, return membership identifier.
+        """
+        path = API_MEMBERSHIPS
+        req_headers = {'content-type': 'application/json'}
+        body = {"join": {"project": project_id}}
+        req_body = parse_request(body, self.logger)
+        return self._call_astakos(token, path, req_headers, req_body, "POST")
+
+    # --------------------------------
+    # do a POST to ``API_MEMBERSHIPS``
+    def enroll_member(self, token, project_id, email):
+        """Enroll a user in a project
+
+        Arguments:
+        token      -- user's token (string)
+        project_id -- project identifier
+        email      -- user identified by email
+
+        In case of success, return membership identifier.
+        """
+        path = API_MEMBERSHIPS
+        req_headers = {'content-type': 'application/json'}
+        body = {"enroll": {"project": project_id, "user": email}}
+        req_body = parse_request(body, self.logger)
+        return self._call_astakos(token, path, req_headers, req_body, "POST")
 
 # --------------------------------------------------------------------
 # Private functions

@@ -38,7 +38,7 @@ from synnefo.logic.backend import (get_physical_resources,
                                    create_network_synced,
                                    connect_network_synced)
 from synnefo.management.common import check_backend_credentials
-from synnefo.webproject.management.utils import pprint_table
+from snf_django.management.utils import pprint_table
 
 
 HYPERVISORS = [h[0] for h in Backend.HYPERVISORS]

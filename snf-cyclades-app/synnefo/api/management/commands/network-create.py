@@ -35,7 +35,7 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 from synnefo.management.common import get_backend, convert_api_faults
-from synnefo.webproject.management.utils import parse_bool
+from snf_django.management.utils import parse_bool
 
 from synnefo.db.models import Network, Backend
 from synnefo.logic import networks

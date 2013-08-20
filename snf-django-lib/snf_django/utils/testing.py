@@ -132,7 +132,7 @@ def astakos_user(user):
     with patch("snf_django.lib.api.get_token") as get_token:
         get_token.return_value = "DummyToken"
         with patch('astakosclient.AstakosClient.get_user_info') as m:
-            m.return_value = {"uuid": user}
+            m.return_value = {"uuid": unicode(user, 'utf8')}
             with patch('astakosclient.AstakosClient.get_quotas') as m2:
                 m2.return_value = {
                     "system": {

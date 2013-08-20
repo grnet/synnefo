@@ -60,7 +60,6 @@ CLASSIFIERS = []
 INSTALL_REQUIRES = [
         'Django >=1.2, <1.3',
         'snf-common',
-        'snf-django-lib',
 ]
 
 EXTRAS_REQUIRES = {

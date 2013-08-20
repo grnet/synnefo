@@ -112,7 +112,7 @@ class AccountHead(PithosAPITest):
     def test_get_account_meta_until_invalid_date(self):
         self.update_account_meta({'quality': 'AAA'})
         meta = self.get_account_meta(until='-1')
-        self.assertTrue('X-Account-Meta-Quality' in meta)
+        self.assertTrue('Quality' in meta)
 
 
 class AccountGet(PithosAPITest):
@@ -354,10 +354,8 @@ class AccountPost(PithosAPITest):
 
             meta.update(initial)
             account_meta = self.get_account_meta()
-            (self.assertTrue('X-Account-Meta-%s' % k in account_meta) for
-                k in meta.keys())
-            (self.assertEqual(account_meta['X-Account-Meta-%s' % k], v) for
-                k, v in meta.items())
+            (self.assertTrue(k in account_meta) for k in meta.keys())
+            (self.assertEqual(account_meta[k], v) for k, v in meta.items())
 
     def test_reset_meta(self):
         url = join_urls(self.pithos_path, self.user)
@@ -373,13 +371,10 @@ class AccountPost(PithosAPITest):
             self.assertEqual(r.status_code, 202)
 
             account_meta = self.get_account_meta()
-            (self.assertTrue('X-Account-Meta-%s' % k in account_meta) for
-                k in new_meta.keys())
-            (self.assertEqual(account_meta['X-Account-Meta-%s' % k], v) for
-                k, v in new_meta.items())
+            (self.assertTrue(k in account_meta) for k in new_meta.keys())
+            (self.assertEqual(account_meta[k], v) for k, v in new_meta.items())
 
-            (self.assertTrue('X-Account-Meta-%s' % k not in account_meta) for
-                k in meta.keys())
+            (self.assertTrue(k not in account_meta) for k in meta.keys())
 
     def test_delete_meta(self):
         url = join_urls(self.pithos_path, self.user)
@@ -394,8 +389,7 @@ class AccountPost(PithosAPITest):
 
             account_meta = self.get_account_meta()
 
-            (self.assertTrue('X-Account-Meta-%s' % k not in account_meta) for
-                k in meta.keys())
+            (self.assertTrue(k not in account_meta) for k in meta.keys())
 
     def test_set_account_groups(self):
         url = join_urls(self.pithos_path, self.user)
@@ -406,11 +400,9 @@ class AccountPost(PithosAPITest):
             self.assertEqual(r.status_code, 202)
 
             account_groups = self.get_account_groups()
-            self.assertTrue(
-                'X-Account-Group-Pithosdev' in self.get_account_groups())
-            self.assertEqual(
-                account_groups['X-Account-Group-Pithosdev'],
-                ','.join(sorted(pithosdevs)))
+            self.assertTrue('Pithosdev' in self.get_account_groups())
+            self.assertEqual(account_groups['Pithosdev'],
+                             ','.join(sorted(pithosdevs)))
 
             clientdevs = ['pkanavos', 'mvasilak']
             r = self.post('%s?update=' % url,
@@ -418,16 +410,12 @@ class AccountPost(PithosAPITest):
             self.assertEqual(r.status_code, 202)
 
             account_groups = self.get_account_groups()
-            self.assertTrue(
-                'X-Account-Group-Pithosdev' in account_groups)
-            self.assertTrue(
-                'X-Account-Group-Clientsdev' in account_groups)
-            self.assertEqual(
-                account_groups['X-Account-Group-Pithosdev'],
-                ','.join(sorted(pithosdevs)))
-            self.assertEqual(
-                account_groups['X-Account-Group-Clientsdev'],
-                ','.join(sorted(clientdevs)))
+            self.assertTrue('Pithosdev' in account_groups)
+            self.assertTrue('Clientsdev' in account_groups)
+            self.assertEqual(account_groups['Pithosdev'],
+                             ','.join(sorted(pithosdevs)))
+            self.assertEqual(account_groups['Clientsdev'],
+                             ','.join(sorted(clientdevs)))
 
             clientdevs = ['mvasilak']
             r = self.post('%s?update=' % url,
@@ -435,16 +423,12 @@ class AccountPost(PithosAPITest):
             self.assertEqual(r.status_code, 202)
 
             account_groups = self.get_account_groups()
-            self.assertTrue(
-                'X-Account-Group-Pithosdev' in account_groups)
-            self.assertTrue(
-                'X-Account-Group-Clientsdev' in account_groups)
-            self.assertEqual(
-                account_groups['X-Account-Group-Pithosdev'],
-                ','.join(sorted(pithosdevs)))
-            self.assertEqual(
-                account_groups['X-Account-Group-Clientsdev'],
-                ','.join(sorted(clientdevs)))
+            self.assertTrue('Pithosdev' in account_groups)
+            self.assertTrue('Clientsdev' in account_groups)
+            self.assertEqual(account_groups['Pithosdev'],
+                             ','.join(sorted(pithosdevs)))
+            self.assertEqual(account_groups['Clientsdev'],
+                             ','.join(sorted(clientdevs)))
 
     def test_reset_account_groups(self):
         url = join_urls(self.pithos_path, self.user)
@@ -463,19 +447,17 @@ class AccountPost(PithosAPITest):
             headers = dict(('HTTP_X_ACCOUNT_GROUP_%s' % k, ','.join(v))
                            for k, v in groups.iteritems())
             account_meta = self.get_account_meta()
-            headers.update(dict(('HTTP_%s' % k.upper().replace('-', '_'), v)
-                           for k, v in account_meta.iteritems()))
+            headers.update(dict(('HTTP_X_ACCOUNT_META_%s' %
+                                k.upper().replace('-', '_'), v) for
+                                k, v in account_meta.iteritems()))
             r = self.post(url, **headers)
             self.assertEqual(r.status_code, 202)
 
             account_groups = self.get_account_groups()
-            self.assertTrue(
-                'X-Account-Group-Pithosdev' in account_groups)
-            self.assertTrue(
-                'X-Account-Group-Clientsdev' not in account_groups)
-            self.assertEqual(
-                account_groups['X-Account-Group-Pithosdev'],
-                ','.join(sorted(groups['pithosdev'])))
+            self.assertTrue('Pithosdev' in account_groups)
+            self.assertTrue('Clientsdev' not in account_groups)
+            self.assertEqual(account_groups['Pithosdev'],
+                             ','.join(sorted(groups['pithosdev'])))
 
     def test_delete_account_groups(self):
         url = join_urls(self.pithos_path, self.user)
@@ -492,7 +474,5 @@ class AccountPost(PithosAPITest):
             self.assertEqual(r.status_code, 202)
 
             account_groups = self.get_account_groups()
-            self.assertTrue(
-                'X-Account-Group-Pithosdev' not in account_groups)
-            self.assertTrue(
-                'X-Account-Group-Clientsdev' not in account_groups)
+            self.assertTrue('Pithosdev' not in account_groups)
+            self.assertTrue('Clientsdev' not in account_groups)

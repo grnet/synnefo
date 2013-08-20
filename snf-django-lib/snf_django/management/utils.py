@@ -171,7 +171,7 @@ def pprint_table(out, table, headers=None, output_format='pretty',
                 out.write(title.center(t_length) + "\n")
             if headers:
                 # pretty print the headers
-                line = sep.join(uenc(v.rjust(w))\
+                line = sep.join(uenc(v.rjust(w))
                                 for v, w in zip(headers, widths))
                 out.write(line + "\n")
                 out.write("-" * t_length + "\n")

@@ -226,6 +226,7 @@ UNIQUE_PROJECT_NAME_CONSTRAIN_ERR = (
     'be unique among all active projects.')
 NOT_ALIVE_PROJECT = 'Project %s is not alive.'
 NOT_SUSPENDED_PROJECT = 'Project %s is not suspended.'
+NOT_TERMINATED_PROJECT = 'Project %s is not terminated.'
 NOT_ALLOWED = 'You do not have the permissions to perform this action.'
 MEMBER_NUMBER_LIMIT_REACHED = (
     'You have reached the maximum number of members for this Project.')
@@ -233,7 +234,8 @@ MEMBER_JOIN_POLICY_CLOSED = 'The Project\'s member join policy is closed.'
 MEMBER_LEAVE_POLICY_CLOSED = 'The project\'s member leave policy is closed.'
 NOT_MEMBERSHIP_REQUEST = 'This is not a valid membership request.'
 NOT_ACCEPTED_MEMBERSHIP = 'This is not an accepted membership.'
-MEMBERSHIP_REQUEST_EXISTS = 'The membership request already exists.'
+MEMBERSHIP_ACCEPTED = 'Membership already exists.'
+MEMBERSHIP_ASSOCIATED = 'Request or membership already exists.'
 NO_APPLICANT = (
     'Project application requires at least one applicant. None found.')
 INVALID_PROJECT_START_DATE = (
@@ -358,6 +360,10 @@ PROJECT_TERMINATION_SUBJECT = \
     '%s project terminated (%%(name)s)' % _SITENAME
 PROJECT_SUSPENSION_SUBJECT = \
     '%s project suspended (%%(name)s)' % _SITENAME
+PROJECT_UNSUSPENSION_SUBJECT = \
+    '%s project resumed (%%(name)s)' % _SITENAME
+PROJECT_REINSTATEMENT_SUBJECT = \
+    '%s project reinstated (%%(name)s)' % _SITENAME
 PROJECT_MEMBERSHIP_CHANGE_SUBJECT = \
     '%s project membership changed (%%(name)s)' % _SITENAME
 PROJECT_MEMBERSHIP_ENROLL_SUBJECT = \

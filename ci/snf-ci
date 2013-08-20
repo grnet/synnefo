@@ -1,0 +1,130 @@
+#!/usr/bin/env python
+
+# Invalid name for type module. pylint: disable-msg=C0103
+
+"""
+Continuous Integration script for Synnefo.
+"""
+
+import os
+from utils import SynnefoCI
+from optparse import OptionParser
+
+CREATE_SERVER_CMD = "create"
+BUILD_SYNNEFO_CMD = "build"
+BUILD_DOCS_SYNNEFO_CMD = "docs"
+DEPLOY_SYNNEFO_CMD = "deploy"
+TEST_SYNNEFO_CMD = "test"
+RUN_BURNIN_CMD = "burnin"
+ALL_CMDS = "all"
+
+AVAILABLE_COMMANDS = [
+    CREATE_SERVER_CMD,
+    BUILD_SYNNEFO_CMD,
+    BUILD_DOCS_SYNNEFO_CMD,
+    DEPLOY_SYNNEFO_CMD,
+    TEST_SYNNEFO_CMD,
+    RUN_BURNIN_CMD,
+]
+
+CLEAN_CONFIG_CMDS = [CREATE_SERVER_CMD, ALL_CMDS]
+
+USAGE = """usage: %%prog [options] command
+
+command:
+    * %s: Create the slave server
+    * %s: Create debian packages for Synnefo in the created server
+    * %s: Create documentation for Synnefo in the created server
+    * %s: Deploy Synnefo in created server
+    * %s: Run Synnefo unittests
+    * %s: Run snf-burnin in the deployed Synnefo
+
+    * %s: Run all the available commands
+""" % tuple([CREATE_SERVER_CMD,
+             BUILD_SYNNEFO_CMD,
+             BUILD_DOCS_SYNNEFO_CMD,
+             DEPLOY_SYNNEFO_CMD,
+             TEST_SYNNEFO_CMD,
+             RUN_BURNIN_CMD,
+             ALL_CMDS])
+
+
+def main():  # Too many branches. pylint: disable-msg=R0912
+    """Parse command line options and run the specified actions"""
+    parser = OptionParser(usage=USAGE)
+    parser.add_option("-c", "--conf", dest="config_file", default=None,
+                      help="Configuration file for SynnefoCI script")
+    parser.add_option("--cloud", dest="kamaki_cloud", default=None,
+                      help="Use specified cloud, as is in .kamakirc")
+    parser.add_option("-f", "--flavor", dest="flavor", default=None,
+                      help="Name of flavor to use for the server.")
+    parser.add_option("-i", "--image", dest="image", default=None,
+                      help="UUID of image to use for the server.")
+    parser.add_option("--ssh-keys", dest="ssh_keys", default=None,
+                      help="Upload/Install the public ssh keys contained"
+                           " in this file to the server")
+    parser.add_option("--fetch-packages", dest="fetch_packages",
+                      default=None,
+                      help="Download the debian packages that were created"
+                           " during the '%s' step in this directory" %
+                           BUILD_SYNNEFO_CMD)
+    parser.add_option("--fetch-docs", dest="fetch_docs",
+                      default=None,
+                      help="Download the documentation that was created"
+                           " during the '%s' step in this directory" %
+                           BUILD_DOCS_SYNNEFO_CMD)
+    parser.add_option("--schema", dest="schema", default=None,
+                      help="Schema for snf-deploy.")
+
+    (options, args) = parser.parse_args()
+
+    if len(args) != 1:
+        msg = "ERROR: Command takes exactly one argument"
+        parser.print_help()
+        print
+        print msg
+        return
+
+    command = args[0]
+    if command == ALL_CMDS:
+        for cmd in AVAILABLE_COMMANDS:
+            setattr(options, cmd, True)
+    elif command not in AVAILABLE_COMMANDS:
+        msg = "ERROR: Unknown command: %s" % command
+        parser.print_help()
+        print
+        print msg
+        return
+    else:
+        setattr(options, command, True)
+
+    cleanup_config = command in CLEAN_CONFIG_CMDS
+    synnefo_ci = SynnefoCI(config_file=options.config_file,
+                           cleanup_config=cleanup_config,
+                           cloud=options.kamaki_cloud)
+
+    if getattr(options, CREATE_SERVER_CMD, False):
+        synnefo_ci.create_server(flavor_name=options.flavor,
+                                 image_id=options.image,
+                                 ssh_keys=options.ssh_keys)
+        synnefo_ci.clone_repo()
+    if getattr(options, BUILD_SYNNEFO_CMD, False):
+        synnefo_ci.build_synnefo()
+        if options.fetch_packages:
+            dest = os.path.abspath(options.fetch_packages)
+            synnefo_ci.fetch_packages(dest=dest)
+    if getattr(options, BUILD_DOCS_SYNNEFO_CMD, False):
+        synnefo_ci.build_documentation()
+        if options.fetch_docs:
+            dest = os.path.abspath(options.fetch_docs)
+            synnefo_ci.fetch_documentation(dest=dest)
+    if getattr(options, DEPLOY_SYNNEFO_CMD, False):
+        synnefo_ci.deploy_synnefo(schema=options.schema)
+    if getattr(options, TEST_SYNNEFO_CMD, False):
+        synnefo_ci.unit_test()
+    if getattr(options, RUN_BURNIN_CMD, False):
+        synnefo_ci.run_burnin()
+
+
+if __name__ == "__main__":
+    main()

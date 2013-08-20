@@ -1902,7 +1902,7 @@ backend node edit Synnefo setting CUSTOM_BRIDGED_BRIDGE to 'br0':
                                --gateway=5.6.7.1 \
                                --subnet6=2001:648:2FFC:1322::/64 \
                                --gateway6=2001:648:2FFC:1322::1 \
-                               --public --dhcp --flavor=CUSTOM \
+                               --public --dhcp=True --flavor=CUSTOM \
                                --link=br0 --mode=bridged \
                                --name=public_network \
                                --backend-id=1

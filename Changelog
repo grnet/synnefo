@@ -6,21 +6,6 @@ Unified Changelog file for Synnefo versions >= 0.13
 Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
-.. _Changelog-0.14.5:
-
-v0.14.5
-=======
-
-Released: Wed Aug  7 11:19:49 EEST 2013
-
-Pithos
-------
-
-* Fix security issue with handling Pithos versions.
-
-.. _Changelog-0.14.4:
-
-
 v0.14next
 =========
 
@@ -30,6 +15,20 @@ Synnefo-wide
 ------------
 
 * Integrate Pithos tests in continuous integration.
+
+Astakos
+-------
+
+* Changes in project schema:
+
+  * A Project entry is created when submitting an application for a new
+    project, rather than on approval. Its state is dependent on the state
+    of its `reference' application (current definition). Lock Project rather
+    than Chain (the latter is semantically obsolete).
+
+  * Improve recording of project, application, and membership actions.
+
+* Implement API calls for projects.
 
 Cyclades
 --------
@@ -53,6 +52,14 @@ Cyclades
 * Compute quotas for CPU and memory of running vms.
 * Obsolete PUBLIC_USE_POOL setting, since Cyclades manages IP pool for all
   type of networks.
+* Extend servers info API response with 'SNF:fqdn' attribute, and introduce
+  CYCLADES_SERVERS_FQDN to set the template for servers FDQN.
+* Extend servers info API response with 'SNF:port_forwarding' attribute,
+  describing port fowarding rules (DNAT) that are applied to vms. The
+  description of such rules is done via the new CYCLADES_PORT_FORWARDING
+  setting.
+* Change --dhcp option of network management commands from a flag to a boolean
+  value, e.g. --dhcp=True
 
 Pithos
 ------
@@ -62,6 +69,21 @@ objects by domain attribute. This is used by Plankton for listing VM images.
 
 * Enforce container-level atomicity in (most) Pithos API calls.
 
+
+.. _Changelog-0.14.5:
+
+v0.14.5
+=======
+
+Released: Wed Aug  7 11:19:49 EEST 2013
+
+Pithos
+------
+
+* Fix security issue with handling Pithos versions.
+
+
+.. _Changelog-0.14.4:
 
 v0.14.4
 =======

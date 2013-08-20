@@ -7,7 +7,7 @@ from django.db import transaction
 from django.utils import simplejson as json
 
 from snf_django.lib.api import faults
-from synnefo import settings
+from django.conf import settings
 from synnefo import quotas
 from synnefo.api import util
 from synnefo.logic import backend

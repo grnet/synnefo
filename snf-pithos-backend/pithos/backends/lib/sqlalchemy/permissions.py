@@ -184,9 +184,10 @@ class Permissions(XFeatures, Groups, Public, Node):
                           self.xfeaturevals.c.value == u.c.value)
         s = select([self.xfeatures.c.path], from_obj=[inner_join]).distinct()
         if prefix:
-            s = s.where(self.xfeatures.c.path.like(
-                self.escape_like(prefix) + '%', escape=ESCAPE_CHAR
-            ))
+            like = lambda p: self.xfeatures.c.path.like(
+                self.escape_like(p) + '%', escape=ESCAPE_CHAR)
+            s = s.where(or_(*map(like,
+                                 self.access_inherit(prefix) or [prefix])))
         r = self.conn.execute(s)
         l = [row[0] for row in r.fetchall()]
         r.close()
@@ -208,11 +209,11 @@ class Permissions(XFeatures, Groups, Public, Node):
     def access_list_shared(self, prefix=''):
         """Return the list of shared paths."""
 
-        s = select([self.xfeatures.c.path],
-                   self.xfeatures.c.path.like(
-                       self.escape_like(prefix) + '%',
-                       escape=ESCAPE_CHAR)).order_by(
-                           self.xfeatures.c.path.asc())
+        s = select([self.xfeatures.c.path])
+        like = lambda p: self.xfeatures.c.path.like(
+            self.escape_like(p) + '%', escape=ESCAPE_CHAR)
+        s = s.where(or_(*map(like, self.access_inherit(prefix) or [prefix])))
+        s = s.order_by(self.xfeatures.c.path.asc())
         r = self.conn.execute(s)
         l = [row[0] for row in r.fetchall()]
         r.close()

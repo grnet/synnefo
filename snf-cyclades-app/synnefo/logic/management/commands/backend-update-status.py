@@ -32,7 +32,7 @@ from optparse import make_option
 from django.core.management.base import BaseCommand
 from synnefo.management.common import get_backend
 
-from synnefo import settings
+from django.conf import settings
 import datetime
 
 from synnefo.db.models import Backend

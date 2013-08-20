@@ -1,2 +1,1 @@
-include README Changelog
 include distribute_setup.py

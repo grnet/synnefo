@@ -52,20 +52,6 @@ def format_vm_state(vm):
         return vm.operstate
 
 
-def validate_network_info(options):
-    subnet = options['subnet']
-    gateway = options['gateway']
-    subnet6 = options['subnet6']
-    gateway6 = options['gateway6']
-
-    try:
-        util.validate_network_params(subnet, gateway)
-    except (faults.BadRequest, faults.OverLimit) as e:
-        raise CommandError(e)
-
-    return subnet, gateway, subnet6, gateway6
-
-
 def get_backend(backend_id):
     try:
         backend_id = int(backend_id)

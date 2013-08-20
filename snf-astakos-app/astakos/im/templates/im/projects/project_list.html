@@ -14,7 +14,16 @@
 		</div>
         {% endif %}
         {% if table %}
+
             {% render_table table %}
+            <div class="pagination clearfix" id="pager">
+                <p class="next-prev">
+                    <a href="" class="prev">&lt; Previous</a>
+                    <a href="" class="next">Next &gt;</a>
+                </p>
+                <span class="pagedisplay">1/1</span>
+            </div>
+
         {% endif %}
 </div>
 </div>  

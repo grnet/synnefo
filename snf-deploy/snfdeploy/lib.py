@@ -16,6 +16,26 @@ import tempfile
 from snfdeploy import massedit
 
 
+HEADER = '\033[95m'
+OKBLUE = '\033[94m'
+OKGREEN = '\033[92m'
+WARNING = '\033[93m'
+FAIL = '\033[91m'
+ENDC = '\033[0m'
+
+
+def disable_color():
+    HEADER = ''
+    OKBLUE = ''
+    OKGREEN = ''
+    WARNING = ''
+    FAIL = ''
+    ENDC = ''
+
+
+if not sys.stdout.isatty():
+    disable_color()
+
 
 class Host(object):
     def __init__(self, hostname, ip, mac, domain):
@@ -39,12 +59,14 @@ class Host(object):
 
 class Alias(Host):
     def __init__(self, host, alias):
-        super(Alias, self).__init__(host.hostname, host.ip, host.mac, host.domain)
+        super(Alias, self).__init__(host.hostname, host.ip, host.mac,
+                                    host.domain)
         self.alias = alias
 
     @property
     def cnamerecord(self):
-        return self.alias + " IN CNAME " + self.hostname + "." + self.domain + ".\n"
+        return (self.alias + " IN CNAME " + self.hostname + "." +
+                self.domain + ".\n")
 
     @property
     def fqdn(self):
@@ -66,10 +88,17 @@ class Env(object):
         self.node2hostname = dict(conf.get_section("nodes", "hostnames"))
         self.node2ip = dict(conf.get_section("nodes", "ips"))
         self.node2mac = dict(conf.get_section("nodes", "macs"))
-        self.hostnames = [self.node2hostname[n] for n in self.nodes.split(",")]
-        self.ips = [self.node2ip[n] for n in self.nodes.split(",")]
-        self.cluster_hostnames = [self.node2hostname[n] for n in self.cluster_nodes.split(",")]
-        self.cluster_ips = [self.node2ip[n] for n in self.cluster_nodes.split(",")]
+        self.hostnames = [self.node2hostname[n]
+                          for n in self.nodes.split(",")]
+
+        self.ips = [self.node2ip[n]
+                    for n in self.nodes.split(",")]
+
+        self.cluster_hostnames = [self.node2hostname[n]
+                                  for n in self.cluster_nodes.split(",")]
+
+        self.cluster_ips = [self.node2ip[n]
+                            for n in self.cluster_nodes.split(",")]
 
         self.net = ipaddr.IPNetwork(self.subnet)
 
@@ -77,15 +106,16 @@ class Env(object):
         self.hosts_info = {}
         self.ips_info = {}
         for node in self.nodes.split(","):
-            host =  Host(self.node2hostname[node],
-                         self.node2ip[node],
-                         self.node2mac[node], self.domain)
+            host = Host(self.node2hostname[node],
+                        self.node2ip[node],
+                        self.node2mac[node], self.domain)
 
             self.nodes_info[node] = host
             self.hosts_info[host.hostname] = host
             self.ips_info[host.ip] = host
 
-        self.cluster = Host(self.cluster_name, self.cluster_ip, None, self.domain)
+        self.cluster = Host(self.cluster_name, self.cluster_ip, None,
+                            self.domain)
         self.master = self.nodes_info[self.master_node]
 
         self.roles = {}
@@ -93,15 +123,16 @@ class Env(object):
             self.roles[role] = Alias(self.nodes_info[node], role)
             setattr(self, role, self.roles[role])
 
+
 class Conf(object):
 
     files = {
-      "nodes": ["network", "info"],
-      "deploy": ["dirs", "packages"],
-      "vcluster": ["cluster", "image"],
-      "synnefo": ["cred", "synnefo", "roles"],
-      "packages": ["debian", "ganeti", "synnefo", "other"],
-      "ganeti": [],
+        "nodes": ["network", "info"],
+        "deploy": ["dirs", "packages", "keys"],
+        "vcluster": ["cluster", "image"],
+        "synnefo": ["cred", "synnefo", "roles"],
+        "packages": ["debian", "ganeti", "synnefo", "other"],
+        "ganeti": [],
     }
 
     def __init__(self, confdir, cluster_name):
@@ -164,27 +195,10 @@ class Conf(object):
         self.nodes.set("info", "public_iface", get_default_route()[1])
 
 
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-
-    def disable(self):
-        self.HEADER = ''
-        self.OKBLUE = ''
-        self.OKGREEN = ''
-        self.WARNING = ''
-        self.FAIL = ''
-        self.ENDC = ''
-
-
 def debug(host, msg):
 
-    print bcolors.HEADER + host + \
-          bcolors.OKBLUE + ": " + msg + bcolors.ENDC
+    print HEADER + host + \
+        OKBLUE + ": " + msg + ENDC
 
 
 def check_pidfile(pidfile):
@@ -201,10 +215,10 @@ def check_pidfile(pidfile):
 
 
 def randomMAC():
-    mac = [ 0x52, 0x54, 0x56,
-        random.randint(0x00, 0xff),
-        random.randint(0x00, 0xff),
-        random.randint(0x00, 0xff) ]
+    mac = [0x52, 0x54, 0x56,
+           random.randint(0x00, 0xff),
+           random.randint(0x00, 0xff),
+           random.randint(0x00, 0xff)]
     return ':'.join(map(lambda x: "%02x" % x, mac))
 
 
@@ -220,7 +234,9 @@ def create_dir(d, clean=False):
 def get_netinfo():
     _, pdev = get_default_route()
     r = re.compile(".*inet (\S+)/(\S+).*")
-    s = subprocess.Popen(['ip', 'addr', 'show', 'dev', pdev], stdout=subprocess.PIPE)
+    s = subprocess.Popen(['ip', 'addr', 'show', 'dev', pdev],
+                         stdout=subprocess.PIPE)
+
     for line in s.stdout.readlines():
         match = r.search(line)
         if match:
@@ -257,4 +273,4 @@ def import_conf_file(filename, directory):
 
 
 def raddr(addr):
-    return list(reversed(addr.replace("/","-").split(".")))
+    return list(reversed(addr.replace("/", "-").split(".")))

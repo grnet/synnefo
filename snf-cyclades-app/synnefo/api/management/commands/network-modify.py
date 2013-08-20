@@ -37,9 +37,9 @@ from django.core.management.base import BaseCommand, CommandError
 
 from synnefo.db.models import (Network, Backend, BackendNetwork,
                                pooled_rapi_client)
-from synnefo.management.common import (validate_network_info, get_network,
-                                       get_backend)
-from synnefo.webproject.management.utils import parse_bool
+from synnefo.management.common import (get_network, get_backend)
+from snf_django.management.utils import parse_bool
+from synnefo.logic import networks
 from synnefo.logic.backend import create_network, delete_network
 
 HELP_MSG = """Modify a network.
@@ -144,8 +144,11 @@ class Command(BaseCommand):
         network = get_network(args[0])
 
         # Validate subnet
-        if options.get('subnet'):
-            validate_network_info(options)
+        subnet = options["subnet"] or network.subnet
+        gateway = options["gateway"] or network.gateway
+        subnet6 = options["subnet6"] or network.subnet6
+        gateway6 = options["gateway6"] or network.gateway6
+        networks.validate_network_params(subnet, gateway, subnet6, gateway6)
 
         # Validate state
         state = options.get('state')
@@ -164,7 +167,11 @@ class Command(BaseCommand):
                        " still reserved floating IPs.")
                 raise CommandError(msg)
         elif floating_ip_pool is True:
-            for backend in Backend.objects.filter(offline=False):
+            existing =\
+                network.backend_networks.filter(operstate="ACTIVE")\
+                                        .values_list("backend", flat=True)
+            for backend in Backend.objects.filter(offline=False)\
+                                          .exclude(id__in=existing):
                 check_link_availability(backend, network)
 
         dhcp = options.get("dhcp")
@@ -240,8 +247,12 @@ def check_link_availability(backend, network):
     link = network.link
     for gnet in ganeti_networks:
         if (gnet["name"] != name and
-           (mode, link) in [(m, l) for (_, m, l) in gnet["group_list"]]):
+            reduce(lambda x, y: x or y,
+                   ["(%s, %s)" % (mode, link) in gnet["group_list"]],
+                   False)):
+           # Ganeti >= 2.7
+           #(mode, link) in [(m, l) for (_, m, l) in gnet["group_list"]]):
             msg = "Can not create network '%s' in backend '%s'. Link '%s'" \
                   " is already used by network '%s" % \
-                  (network, backend, gnet["name"])
+                  (network, backend, link, gnet["name"])
             raise CommandError(msg)

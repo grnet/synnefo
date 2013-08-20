@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -50,11 +50,9 @@ class FlavorAPITest(BaseAPITest):
         self.compute_path = get_service_path(cyclades_services, 'compute',
                                              version='v2.0')
 
-
     def myget(self, path):
         path = join_urls(self.compute_path, path)
         return self.get(path)
-
 
     def test_flavor_list(self):
         """Test if the expected list of flavors is returned."""
@@ -88,7 +86,7 @@ class FlavorAPITest(BaseAPITest):
             self.assertEqual(api_flavor['name'], db_flavor.name)
             self.assertEqual(api_flavor['ram'], db_flavor.ram)
             self.assertEqual(api_flavor['SNF:disk_template'],
-                                        db_flavor.disk_template)
+                             db_flavor.disk_template)
 
     def test_flavor_details(self):
         """Test if the expected flavor is returned."""
@@ -133,14 +131,14 @@ class FlavorAPITest(BaseAPITest):
     def test_wrong_flavor(self):
         """Test 404 result when requesting a flavor that does not exist."""
 
-        # XXX: flavors/22 below fails for no apparent reason
-        response = self.myget('flavors/%d' % 23)
+        flavor_id = max(Flavor.objects.values_list('id', flat=True)) + 1
+        response = self.myget('flavors/%d' % flavor_id)
         self.assertItemNotFound(response)
 
     def test_catch_wrong_api_paths(self, *args):
         response = self.myget('nonexistent')
         self.assertEqual(response.status_code, 400)
         try:
-            error = json.loads(response.content)
+            json.loads(response.content)
         except ValueError:
             self.assertTrue(False)

@@ -935,7 +935,7 @@
             var active = true;
             var key = 'available';
             var available_dsp = quotas.get('cyclades.'+type).get_readable(key, active);
-            var available = quotas.get('cyclades.'+type).get(key);
+            var available = quotas.get('cyclades.'+type).get_available(key);
             var content = "({0} left)".format(available_dsp);
             if (available <= 0) { content = "(None left)" }
             

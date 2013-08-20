@@ -133,7 +133,7 @@ def debug_method(func):
             result = format_exc()
             raise
         finally:
-            all_args = [str(i) for i in args]
+            all_args = map(repr, args)
             map(all_args.append, ('%s=%s' % (k, v) for k, v in kw.iteritems()))
             logger.debug(">>> %s(%s) <<< %s" % (
                 func.__name__, ', '.join(all_args).rstrip(', '), result))
@@ -203,9 +203,9 @@ class ModularBackend(BaseBackend):
         for x in ['READ', 'WRITE']:
             setattr(self, x, getattr(self.db_module, x))
         self.node = self.db_module.Node(**params)
-        for x in ['ROOTNODE', 'SERIAL', 'HASH', 'SIZE', 'TYPE', 'MTIME',
-                  'MUSER', 'UUID', 'CHECKSUM', 'CLUSTER', 'MATCH_PREFIX',
-                  'MATCH_EXACT']:
+        for x in ['ROOTNODE', 'SERIAL', 'NODE', 'HASH', 'SIZE', 'TYPE',
+                  'MTIME', 'MUSER', 'UUID', 'CHECKSUM', 'CLUSTER',
+                  'MATCH_PREFIX', 'MATCH_EXACT']:
             setattr(self, x, getattr(self.db_module, x))
 
         self.block_module = load_module(block_module)
@@ -639,6 +639,8 @@ class ModularBackend(BaseBackend):
             for t in src_names:
                 path = '/'.join((account, container, t[0]))
                 node = t[2]
+                if not self._exists(node):
+                    continue
                 src_version_id, dest_version_id = self._put_version_duplicate(
                     user, node, size=0, type='', hash=None, checksum='',
                     cluster=CLUSTER_DELETED,
@@ -915,8 +917,7 @@ class ModularBackend(BaseBackend):
             self.permissions.public_unset(path)
         else:
             self.permissions.public_set(
-                path, self.public_url_security, self.public_url_alphabet
-            )
+                path, self.public_url_security, self.public_url_alphabet)
 
     @debug_method
     def get_object_hashmap(self, user, account, container, name, version=None):
@@ -925,6 +926,8 @@ class ModularBackend(BaseBackend):
         self._can_read(user, account, container, name)
         path, node = self._lookup_object(account, container, name)
         props = self._get_version(node, version)
+        if props[self.HASH] is None:
+            return 0, ()
         hashmap = self.store.map_get(binascii.unhexlify(props[self.HASH]))
         return props[self.SIZE], [binascii.hexlify(x) for x in hashmap]
 
@@ -1177,6 +1180,8 @@ class ModularBackend(BaseBackend):
             return
 
         path, node = self._lookup_object(account, container, name)
+        if not self._exists(node):
+            raise ItemNotExists('Object is deleted.')
         src_version_id, dest_version_id = self._put_version_duplicate(
             user, node, size=0, type='', hash=None, checksum='',
             cluster=CLUSTER_DELETED, update_statistics_ancestors_depth=1)
@@ -1202,6 +1207,8 @@ class ModularBackend(BaseBackend):
             for t in src_names:
                 path = '/'.join((account, container, t[0]))
                 node = t[2]
+                if not self._exists(node):
+                    continue
                 src_version_id, dest_version_id = self._put_version_duplicate(
                     user, node, size=0, type='', hash=None, checksum='',
                     cluster=CLUSTER_DELETED,
@@ -1260,10 +1267,10 @@ class ModularBackend(BaseBackend):
         self._can_read(user, account, container, name)
         return (account, container, name)
 
-    @debug_method
     def get_block(self, hash):
         """Return a block's data."""
 
+        logger.debug("get_block: %s", hash)
         block = self.store.block_get(binascii.unhexlify(hash))
         if not block:
             raise ItemNotExists('Block does not exist')
@@ -1710,6 +1717,14 @@ class ModularBackend(BaseBackend):
         try:
             self._can_read(user, account, container, object)
         except NotAllowedError:
+            return False
+        else:
+            return True
+
+    def _exists(self, node):
+        try:
+            self._get_version(node)
+        except ItemNotExists:
             return False
         else:
             return True

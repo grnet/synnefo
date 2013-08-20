@@ -3,7 +3,7 @@
  
 {% load astakos_tags filters django_tables2 %}
 
-{% block bottom_link %}<a href="{% url project_detail object.chain %}" title="Back to project ">&lt; Back to Project</a>{% endblock bottom_link %}
+{% block bottom_link %}<a href="{% url project_detail object.chain_id %}" title="Back to project ">&lt; Back to Project</a>{% endblock bottom_link %}
 {% block inner_project %} 
    
   {% if owner_mode or admin_mode and project_view %}
@@ -15,9 +15,9 @@
           MEMBERS  
  
           <div class="project-actions">
-            <a href="{% url project_members object.chain %}"  {% if members_status_filter == None %}class="inactive"{% endif %}>ALL</a> -
-            <a href="{% url project_approved_members object.chain %}" {% if members_status_filter == 1 %}class="inactive"{% endif %}>APPROVED</a> -
-            <a href="{% url project_pending_members object.chain %}" {% if members_status_filter == 0 %}class="inactive"{% endif %}>PENDING</a>
+            <a href="{% url project_members object.chain_id %}"  {% if members_status_filter == None %}class="inactive"{% endif %}>ALL</a> -
+            <a href="{% url project_approved_members object.chain_id %}" {% if members_status_filter == 1 %}class="inactive"{% endif %}>APPROVED</a> -
+            <a href="{% url project_pending_members object.chain_id %}" {% if members_status_filter == 0 %}class="inactive"{% endif %}>PENDING</a>
 
           </div>
         </h3>

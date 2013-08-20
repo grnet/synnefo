@@ -31,8 +31,6 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import ipaddr
-
 from base64 import b64encode, b64decode
 from hashlib import sha256
 from logging import getLogger
@@ -55,7 +53,6 @@ from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
 from synnefo.db.pools import EmptyPool
 
 from synnefo.plankton.utils import image_backend
-from synnefo.settings import MAX_CIDR_BLOCK
 
 from synnefo.cyclades_settings import cyclades_services, BASE_HOST
 from synnefo.lib.services import get_service_path
@@ -229,51 +226,6 @@ def get_floating_ip(user_id, ipv4, for_update=False):
         return objects.get(userid=user_id, ipv4=ipv4, deleted=False)
     except FloatingIP.DoesNotExist:
         raise faults.ItemNotFound("Floating IP does not exist.")
-
-
-def validate_network_params(subnet=None, gateway=None, subnet6=None,
-                            gateway6=None):
-    if (subnet is None) and (subnet6 is None):
-        raise faults.BadRequest("subnet or subnet6 is required")
-
-    if subnet:
-        try:
-            # Use strict option to not all subnets with host bits set
-            network = ipaddr.IPv4Network(subnet, strict=True)
-        except ValueError:
-            raise faults.BadRequest("Invalid network IPv4 subnet")
-
-        # Check that network size is allowed!
-        if not validate_network_size(network.prefixlen):
-            raise faults.OverLimit(message="Unsupported network size",
-                                   details="Network mask must be in range"
-                                           " (%s, 29]" % MAX_CIDR_BLOCK)
-        if gateway:  # Check that gateway belongs to network
-            try:
-                gateway = ipaddr.IPv4Address(gateway)
-            except ValueError:
-                raise faults.BadRequest("Invalid network IPv4 gateway")
-            if not gateway in network:
-                raise faults.BadRequest("Invalid network IPv4 gateway")
-
-    if subnet6:
-        try:
-            # Use strict option to not all subnets with host bits set
-            network6 = ipaddr.IPv6Network(subnet6, strict=True)
-        except ValueError:
-            raise faults.BadRequest("Invalid network IPv6 subnet")
-        if gateway6:
-            try:
-                gateway6 = ipaddr.IPv6Address(gateway6)
-            except ValueError:
-                raise faults.BadRequest("Invalid network IPv6 gateway")
-            if not gateway6 in network6:
-                raise faults.BadRequest("Invalid network IPv6 gateway")
-
-
-def validate_network_size(cidr_block):
-    """Return True if network size is allowed."""
-    return cidr_block <= 29 and cidr_block > MAX_CIDR_BLOCK
 
 
 def allocate_public_address(backend):

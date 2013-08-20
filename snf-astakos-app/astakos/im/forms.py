@@ -44,8 +44,8 @@ from django.utils.safestring import mark_safe
 from django.utils.encoding import smart_str
 from django.db import transaction
 from django.core import validators
-from django.core.exceptions import PermissionDenied
 
+from synnefo.util import units
 from synnefo_branding.utils import render_to_string
 from synnefo.lib import join_urls
 from astakos.im.models import AstakosUser, EmailChange, Invitation, Resource, \
@@ -53,7 +53,7 @@ from astakos.im.models import AstakosUser, EmailChange, Invitation, Resource, \
 from astakos.im import presentation
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
 from astakos.im.functions import send_change_email, submit_application, \
-    accept_membership_checks
+    accept_membership_project_checks, ProjectError
 
 from astakos.im.util import reserved_verified_email, model_to_dict
 from astakos.im import auth_providers
@@ -418,7 +418,7 @@ class LoginForm(AuthenticationForm):
 
         try:
             super(LoginForm, self).clean()
-        except forms.ValidationError, e:
+        except forms.ValidationError:
             if self.user_cache is None:
                 raise
             if not self.user_cache.is_active:
@@ -849,7 +849,7 @@ class ProjectApplicationForm(forms.ModelForm):
 
     def clean(self):
         userid = self.data.get('user', None)
-        policies = self.resource_policies
+        self.resource_policies
         self.user = None
         if userid:
             try:
@@ -884,10 +884,14 @@ class ProjectApplicationForm(forms.ModelForm):
                         raise forms.ValidationError("Invalid resource %s" %
                                                     resource.name)
                     d = model_to_dict(resource)
-                    if uplimit:
-                        d.update(dict(resource=prefix, uplimit=uplimit))
-                    else:
-                        d.update(dict(resource=prefix, uplimit=None))
+                    try:
+                        uplimit = long(uplimit)
+                    except ValueError:
+                        m = "Limit should be an integer"
+                        raise forms.ValidationError(m)
+                    display = units.show(uplimit, resource.unit)
+                    d.update(dict(resource=prefix, uplimit=uplimit,
+                                  display_uplimit=display))
                     append(d)
 
         ordered_keys = presentation.RESOURCES['resources_order']
@@ -902,14 +906,21 @@ class ProjectApplicationForm(forms.ModelForm):
         return policies
 
     def cleaned_resource_policies(self):
-        return [(d['name'], d['uplimit']) for d in self.resource_policies]
+        policies = {}
+        for d in self.resource_policies:
+            policies[d["name"]] = {
+                "project_capacity": None,
+                "member_capacity": d["uplimit"]
+            }
+
+        return policies
 
     def save(self, commit=True):
         data = dict(self.cleaned_data)
-        data['precursor_id'] = self.instance.id
         is_new = self.instance.id is None
+        data['project_id'] = self.instance.chain.id if not is_new else None
         data['owner'] = self.user if is_new else self.instance.owner
-        data['resource_policies'] = self.cleaned_resource_policies()
+        data['resources'] = self.cleaned_resource_policies()
         data['request_user'] = self.user
         submit_application(**data)
 
@@ -961,8 +972,8 @@ class AddProjectMembersForm(forms.Form):
 
     def clean(self):
         try:
-            accept_membership_checks(self.project, self.request_user)
-        except PermissionDenied, e:
+            accept_membership_project_checks(self.project, self.request_user)
+        except ProjectError as e:
             raise forms.ValidationError(e)
 
         q = self.cleaned_data.get('q') or ''

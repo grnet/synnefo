@@ -33,7 +33,7 @@
 
 from optparse import make_option
 
-from synnefo.webproject.management.commands import ListCommand
+from snf_django.management.commands import ListCommand
 from synnefo.db.models import VirtualMachine
 from synnefo.management.common import get_backend
 from synnefo.api.util import get_image

@@ -53,16 +53,7 @@
                         {{rp.pluralized_display_name}} per user
            			</dt>
 			 		<dd>
-			 			
-           			{% if rp.uplimit %}
-           				 {% if rp.unit %}
-           				 	{{ rp.uplimit|sizeof_fmt }}
-           				 {% else %}
-           				 	{{ rp.uplimit }}
-           				 {% endif %}
-           			{% else %}
-           				Unlimited
-           			{% endif %}
+                                          {{ rp.display_uplimit }}
            			</dd>
            		{% empty %}
            			No resources

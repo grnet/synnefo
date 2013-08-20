@@ -1046,8 +1046,8 @@ class TestCommissions(unittest.TestCase):
         global token_1, commission_description
         _mock_request([_request_ok])
         try:
-            client = \
-                AstakosClient("https://example.com", use_pool=True, pool_size=2)
+            client = AstakosClient("https://example.com", use_pool=True,
+                                   pool_size=2)
             response = client.get_commission_info(token_1, 57)
         except Exception as err:
             self.fail("Shouldn't raise Exception %s" % err)
@@ -1142,7 +1142,8 @@ class TestCommissions(unittest.TestCase):
         _mock_request([_request_ok])
         try:
             client = AstakosClient("https://example.com")
-            result = client.resolve_commissions(token_1, [56, 57], [56, 58, 59])
+            result = client.resolve_commissions(token_1, [56, 57],
+                                                [56, 58, 59])
         except Exception as err:
             self.fail("Shouldn't raise Exception %s" % err)
         self.assertEqual(result, resolve_commissions_rep)

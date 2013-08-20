@@ -31,7 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from synnefo.webproject.management.commands import ListCommand
+from snf_django.management.commands import ListCommand
 from synnefo.db.models import Flavor, VirtualMachine
 
 

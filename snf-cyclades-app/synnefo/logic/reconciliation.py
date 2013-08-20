@@ -57,13 +57,7 @@ For G, the operating state is True if the machine is up, False otherwise.
 
 
 from django.core.management import setup_environ
-try:
-    from synnefo import settings
-except ImportError:
-    raise Exception("Cannot import settings, make sure PYTHONPATH contains "
-                    "the parent directory of the Synnefo Django project.")
-setup_environ(settings)
-
+from django.conf import settings
 
 import logging
 import itertools
@@ -309,14 +303,14 @@ class BackendReconciler(object):
         if job_id not in self.gnt_jobs:
             pending_task = True
         else:
-            gnt_job_status = self.gnt_job[job_id]["status"]
+            gnt_job_status = self.gnt_jobs[job_id]["status"]
             if gnt_job_status in GANETI_JOBS_FINALIZED:
                 pending_task = True
 
         if pending_task:
             self.log.info("Found server '%s' with pending task: '%s'",
                           server_id, db_server.task)
-            if self.options["fixed_pending_tasks"]:
+            if self.options["fix_pending_tasks"]:
                 db_server.task = None
                 db_server.task_job_id = None
                 db_server.save()

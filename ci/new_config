@@ -5,10 +5,9 @@ build_timeout = 240
 apt_repo = http://apt.dev.grnet.gr squeeze/
 # Synnefo git repo
 synnefo_repo = https://code.grnet.gr/git/synnefo
-# Git branch to test (specify sha1 or branch name)
-synnefo_branch = HEAD
-# snf-deploy git repo
-deploy_repo = https://code.grnet.gr/git/snf-deploy
+# Git branch to test (specify sha1 or branch name). If not set, the
+# branch/sha will result from the current repository.
+synnefo_branch =
 # Defines the schema that snf-deploy will use
 schema = one_node
 # Local dir to save builded packages
@@ -18,32 +17,26 @@ patch_pydist = True
 # Configuration of git (on remote server)
 git_config_name = Buildbot
 git_config_mail = synnefo@builder.dev.grnet.gr
-# Url to fetch ssh public keys
-public_ssh_keys_url =
-# Network address from which we allow access to server
-filter_access_network = 195.251.29.0/24,62.217.123.39
+# Network address from which we allow access to server.
+# If not set, access to server is not restricted.
+accept_ssh_from =
 # Config file to save temporary options (eg IPs, passwords etc)
 temporary_config = /tmp/ci_temp_conf
 
 
 [Deployment]
-# Credentials
-auth_url = https://accounts.okeanos.io/identity/v2.0/
-token =
-# If we deploy on okeanos.io we have to set this to True
-# The server will reside besides a NAT and we have to compute ssh port
-deploy_on_io = True
+# Choose the 'cloud' to use from .kamakirc
+kamaki_cloud =
 # Server name to use for our machine
 server_name = Synnefo Deployment
-# Flavor ID to use
-# (149 for production, 639 for okeanos.io)
-flavor_id = 639
+# Flavor name (reg expression) to use
+# This is a list of flavor_names (comma seperated) to try
+flavor_name = C8R8...D100drbd
 # Image to use (name must contain this)
 image_name = OldStable
-# UUID of owner of system images
-# (25ecced9-bf53-4145-91ee-cf47377e9fb2 for production,
-#  04cbe33f-29b7-4ef1-94fb-015929e5fc06 for okeanos.io)
-system_uuid = 04cbe33f-29b7-4ef1-94fb-015929e5fc06
+# File containing the ssh keys to upload/install to server
+# If not set, no ssh keys will be installed
+ssh_keys = https://pithos.okeanos.grnet.gr/public/p99dOwPP94B0RuFquxExl6
 
 
 [Burnin]

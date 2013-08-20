@@ -27,8 +27,6 @@ AVAILABLE_COMMANDS = [
     RUN_BURNIN_CMD,
 ]
 
-CLEAN_CONFIG_CMDS = [CREATE_SERVER_CMD, ALL_CMDS]
-
 USAGE = """usage: %%prog [options] command
 
 command:
@@ -63,6 +61,13 @@ def main():  # Too many branches. pylint: disable-msg=R0912
     parser.add_option("--ssh-keys", dest="ssh_keys", default=None,
                       help="Upload/Install the public ssh keys contained"
                            " in this file to the server")
+    parser.add_option("-n", "--build-id", dest="build_id", default=None,
+                      type="int",
+                      help="Specify a number to use to identify this build."
+                           " One can later use this number to retrieve"
+                           " information (such as IPs, passwords etc) about"
+                           " the machines created. If not given this script"
+                           " will create a new build-id.")
     parser.add_option("--fetch-packages", dest="fetch_packages",
                       default=None,
                       help="Download the debian packages that were created"
@@ -98,9 +103,8 @@ def main():  # Too many branches. pylint: disable-msg=R0912
     else:
         setattr(options, command, True)
 
-    cleanup_config = command in CLEAN_CONFIG_CMDS
     synnefo_ci = SynnefoCI(config_file=options.config_file,
-                           cleanup_config=cleanup_config,
+                           build_id=options.build_id,
                            cloud=options.kamaki_cloud)
 
     if getattr(options, CREATE_SERVER_CMD, False):

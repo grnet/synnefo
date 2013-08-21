@@ -80,6 +80,10 @@ def main():  # Too many branches. pylint: disable-msg=R0912
                            BUILD_DOCS_SYNNEFO_CMD)
     parser.add_option("--schema", dest="schema", default=None,
                       help="Schema for snf-deploy.")
+    parser.add_option("--local-repo", dest="local_repo", default=False,
+                      action="store_true",
+                      help="Instead of cloning from the official Synnefo"
+                           " repo, copy and use the local one.")
 
     (options, args) = parser.parse_args()
 
@@ -111,7 +115,7 @@ def main():  # Too many branches. pylint: disable-msg=R0912
         synnefo_ci.create_server(flavor_name=options.flavor,
                                  image_id=options.image,
                                  ssh_keys=options.ssh_keys)
-        synnefo_ci.clone_repo()
+        synnefo_ci.clone_repo(local_repo=options.local_repo)
     if getattr(options, BUILD_SYNNEFO_CMD, False):
         synnefo_ci.build_synnefo()
         if options.fetch_packages:

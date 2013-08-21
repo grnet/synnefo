@@ -37,7 +37,7 @@ flavor_name = C8R8...D100drbd
 image_name = OldStable
 # File containing the ssh keys to upload/install to server
 # If not set, no ssh keys will be installed
-ssh_keys = https://pithos.okeanos.grnet.gr/public/p99dOwPP94B0RuFquxExl6
+ssh_keys =
 
 
 [Burnin]

@@ -1146,7 +1146,7 @@ def add_network():
     debug(env.host, " * Adding public network in cyclades...")
     backend_id = get_backend_id(env.env.cluster.fqdn)
     cmd = """
-    snf-manage network-create --subnet={0} --gateway={1} --public --dhcp --flavor={2} --mode=bridged --link={3} --name=Internet --backend-id={4}
+    snf-manage network-create --subnet={0} --gateway={1} --public --dhcp=True --flavor={2} --mode=bridged --link={3} --name=Internet --backend-id={4}
     """.format(env.env.synnefo_public_network_subnet,
                env.env.synnefo_public_network_gateway,
                env.env.synnefo_public_network_type,

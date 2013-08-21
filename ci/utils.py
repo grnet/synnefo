@@ -441,7 +441,7 @@ class SynnefoCI(object):
             sys.exit(-1)
 
     @_check_fabric
-    def clone_repo(self):
+    def clone_repo(self, local_repo=False):
         """Clone Synnefo repo from slave server"""
         self.logger.info("Configure repositories on remote server..")
         self.logger.debug("Setup apt, install curl and git")
@@ -459,6 +459,7 @@ class SynnefoCI(object):
                    self.config.get('Global', 'git_config_mail'))
         _run(cmd, False)
 
+        # Find synnefo_repo and synnefo_branch to use
         synnefo_repo = self.config.get('Global', 'synnefo_repo')
         synnefo_branch = self.config.get("Global", "synnefo_branch")
         if synnefo_branch == "":
@@ -472,17 +473,50 @@ class SynnefoCI(object):
                         ["git", "rev-parse", "--short", "HEAD"],
                         stdout=subprocess.PIPE).communicate()[0].strip()
         self.logger.info("Will use branch %s" % synnefo_branch)
-        # Currently clonning synnefo can fail unexpectedly
-        cloned = False
-        for i in range(10):
-            self.logger.debug("Clone synnefo from %s" % synnefo_repo)
-            try:
-                _run("git clone %s synnefo" % synnefo_repo, False)
-                cloned = True
-                break
-            except BaseException:
-                self.logger.warning("Clonning synnefo failed.. retrying %s"
-                                    % i)
+
+        if local_repo or synnefo_branch == "":
+            # Use local_repo
+            self.logger.debug("Push local repo to server")
+            # Firstly create the remote repo
+            _run("git init synnefo", False)
+            # Then push our local repo over ssh
+            # We have to pass some arguments to ssh command
+            # namely to disable host checking.
+            (temp_ssh_file_handle, temp_ssh_file) = tempfile.mkstemp()
+            os.close(temp_ssh_file_handle)
+            cmd = """
+            echo 'exec ssh -o "StrictHostKeyChecking no" \
+                           -o "UserKnownHostsFile /dev/null" \
+                           -q "$@"' > {4}
+            chmod u+x {4}
+            export GIT_SSH="{4}"
+            echo "{0}" | git push --mirror ssh://{1}@{2}:{3}/~/synnefo
+            rm -f {4}
+            """.format(fabric.env.password,
+                       fabric.env.user,
+                       fabric.env.host_string,
+                       fabric.env.port,
+                       temp_ssh_file)
+            os.system(cmd)
+        else:
+            # Clone Synnefo from remote repo
+            # Currently clonning synnefo can fail unexpectedly
+            cloned = False
+            for i in range(10):
+                self.logger.debug("Clone synnefo from %s" % synnefo_repo)
+                try:
+                    _run("git clone %s synnefo" % synnefo_repo, False)
+                    cloned = True
+                    break
+                except BaseException:
+                    self.logger.warning(
+                        "Clonning synnefo failed.. retrying %s" % i)
+            if not cloned:
+                self.logger.error("Can not clone Synnefo repo.")
+                sys.exit(-1)
+
+        # Checkout the desired synnefo_branch
+        self.logger.debug("Checkout %s branch/commit" % synnefo_branch)
         cmd = """
         cd synnefo
         for branch in `git branch -a | grep remotes | \
@@ -492,10 +526,6 @@ class SynnefoCI(object):
         git checkout %s
         """ % (synnefo_branch)
         _run(cmd, False)
-
-        if not cloned:
-            self.logger.error("Can not clone Synnefo repo.")
-            sys.exit(-1)
 
     @_check_fabric
     def build_synnefo(self):

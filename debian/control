@@ -27,7 +27,9 @@ Description: Synnefo common package
 
 Package: snf-webproject
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}, snf-common, python-django-south (>= 0.7)
+Depends: ${misc:Depends}, ${python:Depends},
+  snf-common (= ${binary:Version}),
+  python-django-south (>= 0.7)
 Provides: ${python:Provides}
 XB-Python-Version: ${python:Versions}
 Description: Synnefo webproject package (common settings mechanism)
@@ -41,8 +43,12 @@ Description: Synnefo Branding package for user interface and message customizati
 
 Package: snf-cyclades-app
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}, snf-common,
- python-django-south (>= 0.7)
+Depends: ${misc:Depends}, ${python:Depends},
+  snf-common (= ${binary:Version}), snf-django-lib (= ${binary:Version}),
+  snf-branding (= ${binary:Version}), snf-webproject (= ${binary:Version}),
+  python-astakosclient (= ${binary:Version}),
+  snf-pithos-backend (= ${binary:Version}),
+  python-django-south (>= 0.7)
 Provides: ${python:Provides}
 Replaces: snf-network
 Recommends: snf-webproject
@@ -53,7 +59,8 @@ Description: Synnefo Compute/Network/Image package
 
 Package: snf-cyclades-gtools
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}, ganeti2, snf-common, snf-network
+Depends: ${misc:Depends}, ${python:Depends}, ganeti2, snf-network,
+  snf-common (= ${binary:Version})
 Provides: ${python:Provides}
 Suggests: collectd
 XB-Python-Version: ${python:Versions}
@@ -69,7 +76,10 @@ Description: Synnefo tools to interact with Ganeti
 
 Package: snf-astakos-app
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}
+Depends: ${misc:Depends}, ${python:Depends},
+  snf-common (= ${binary:Version}), snf-django-lib (= ${binary:Version}),
+  snf-branding (= ${binary:Version}), snf-webproject (= ${binary:Version}),
+  python-astakosclient (= ${binary:Version})
 Provides: ${python:Provides}
 Conflicts: snf-quotaholder-app
 Replaces: snf-quotaholder-app
@@ -82,7 +92,11 @@ Description: Synnefo Identity management package
 
 Package: snf-pithos-app
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}, snf-pithos-backend, snf-common
+Depends: ${misc:Depends}, ${python:Depends},
+  snf-common (= ${binary:Version}), snf-django-lib (= ${binary:Version}),
+  snf-branding (= ${binary:Version}), snf-webproject (= ${binary:Version}),
+  python-astakosclient (= ${binary:Version}),
+  snf-pithos-backend (= ${binary:Version}),
 Recommends: snf-webproject
 Provides: ${python:Provides}
 XB-Python-Version: ${python:Versions}
@@ -93,7 +107,7 @@ Description: Synnefo File/Object Storage package
 
 Package: snf-pithos-backend
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}, snf-common,
+Depends: ${misc:Depends}, ${python:Depends}, snf-common ( = ${binary:Version}),
     python-argparse
 Replaces: snf-pithos-lib
 Provides: ${python:Provides}
@@ -116,7 +130,8 @@ Description: Synnefo generic additional tools (burnin)
 
 Package: snf-stats-app
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}, snf-common
+Depends: ${misc:Depends}, ${python:Depends},
+  snf-common (= ${binary:Version}), snf-django-lib (= ${binary:Version})
 Provides: ${python:Provides}
 Recommends: snf-webproject
 Suggests: gunicorn, collectd, python-gevent (>=0.13)
@@ -134,7 +149,8 @@ Description: Synnefo Astakos Client
 
 Package: snf-django-lib
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}, snf-common
+Depends: ${misc:Depends}, ${python:Depends},
+  snf-common (= ${binary:Version}), python-astakosclient (= ${binary:Version})
 Provides: ${python:Provides}
 Recommends: snf-webproject
 XB-Python-Version: ${python:Versions}

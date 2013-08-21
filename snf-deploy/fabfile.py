@@ -429,6 +429,10 @@ def allow_access_in_db(ip, user="all", method="md5"):
     echo host all {0} {1}/32 {2} >> /etc/postgresql/8.4/main/pg_hba.conf
     """.format(user, ip, method)
     try_run(cmd)
+    cmd = """
+    sed -i 's/\(host.*127.0.0.1.*\)md5/\1trust/' /etc/postgresql/8.4/main/pg_hba.conf
+    """
+    try_run(cmd)
     try_run("/etc/init.d/postgresql restart")
 
 @roles("db")

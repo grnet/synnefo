@@ -31,7 +31,7 @@ SNF_TEST_PITHOS_SQLITE_MODULE = bool(int(os.environ.get(
 
 # override default database
 if SNF_TEST_USE_POSTGRES:
-    NAME = os.environ.get('SNF_TEST_DB_NAME', 'synnefo_db')
+    NAME = os.environ.get('SNF_TEST_DB_NAME', 'snf_apps')
     TEST_NAME = 'test_' + NAME
     DATABASES['default'] = {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',

@@ -351,7 +351,7 @@ class SynnefoCI(object):
         self.logger.debug("Server's IPv4 is %s" % _green(server_ip))
         self.write_temp_config('server_port', server_port)
         self.logger.debug("Server's ssh port is %s" % _green(server_port))
-        self.logger.debug("Access server using \"ssh -p %s %s@%s\"" %
+        self.logger.debug("Access server using \"ssh -X -p %s %s@%s\"" %
                           (server_port, server['metadata']['users'], server_ip))
 
     @_check_fabric
@@ -444,11 +444,11 @@ class SynnefoCI(object):
     def clone_repo(self, local_repo=False):
         """Clone Synnefo repo from slave server"""
         self.logger.info("Configure repositories on remote server..")
-        self.logger.debug("Setup apt, install curl and git")
+        self.logger.debug("Setup apt. Install curl, git and firefox")
         cmd = """
         echo 'APT::Install-Suggests "false";' >> /etc/apt/apt.conf
         apt-get update
-        apt-get install curl git --yes
+        apt-get install curl git iceweasel --yes
         echo -e "\n\ndeb {0}" >> /etc/apt/sources.list
         curl https://dev.grnet.gr/files/apt-grnetdev.pub | apt-key add -
         apt-get update
@@ -516,7 +516,7 @@ class SynnefoCI(object):
                 sys.exit(-1)
 
         # Checkout the desired synnefo_branch
-        self.logger.debug("Checkout %s branch/commit" % synnefo_branch)
+        self.logger.debug("Checkout \"%s\" branch/commit" % synnefo_branch)
         cmd = """
         cd synnefo
         for branch in `git branch -a | grep remotes | \

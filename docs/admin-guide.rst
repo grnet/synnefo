@@ -492,32 +492,6 @@ Finally, backend systems having acquired a token can use the
 
 
 
-File Storage Service (Pithos)
-=============================
-
-Overview
---------
-
-Architecture
-------------
-
-Prereqs
--------
-
-Installation
-------------
-
-Configuration
--------------
-
-Working with Pithos
--------------------
-
-Pithos advanced operations
---------------------------
-
-
-
 Compute/Network/Image Service (Cyclades)
 ========================================
 

@@ -26,22 +26,22 @@ Identity Service (Astakos)
 ==========================
 
 
-Overview
---------
-
 Authentication methods
-~~~~~~~~~~~~~~~~~~~~~~
+----------------------
 
-Local Authentication
-````````````````````
+Astakos supports multiple authentication methods:
 
-LDAP Authentication
-```````````````````
+ * local username/password
+ * LDAP / Active Directory
+ * SAML 2.0 (Shibboleth) federated logins
+ * Google
+ * Twitter
+ * LinkedIn
 
 .. _shibboleth-auth:
 
 Shibboleth Authentication
-`````````````````````````
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Astakos can delegate user authentication to a Shibboleth federation.
 
@@ -90,7 +90,7 @@ Finally, add 'shibboleth' in ``ASTAKOS_IM_MODULES`` list. The variable resides
 inside the file ``/etc/synnefo/20-snf-astakos-app-settings.conf``
 
 Twitter Authentication
-```````````````````````
+~~~~~~~~~~~~~~~~~~~~~~
 
 To enable twitter authentication while signed in under a Twitter account,
 visit dev.twitter.com/apps.
@@ -104,9 +104,8 @@ Fill the necessary information and for callback URL give::
 Finally, add 'twitter' in ``ASTAKOS_IM_MODULES`` list. The variable resides
 inside the file ``/etc/synnefo/20-snf-astakos-app-settings.conf``
 
-
 Google Authentication
-`````````````````````
+~~~~~~~~~~~~~~~~~~~~~
 
 To enable google authentication while signed in under a Google account,
 visit https://code.google.com/apis/console/.
@@ -123,17 +122,6 @@ Fill the necessary information and for callback URL give::
 Finally, add 'google' in ``ASTAKOS_IM_MODULES`` list. The variable resides
 inside the file ``/etc/synnefo/20-snf-astakos-app-settings.conf``
 
-Architecture
-------------
-
-Prereqs
--------
-
-Installation
-------------
-
-Configuration
--------------
 
 Working with Astakos
 --------------------
@@ -161,11 +149,9 @@ command:
   email               : user@synnefo.org
   ....
 
-
-Based on how your configuration of `astakos-app`, there are several ways for a 
-user to get activated and be able to login. We discuss the user activation 
-flow in the following section.
-
+Based on the `astakos-app` configuration, there are several ways for a user to
+get verified and activated in order to be able to login. We discuss the user
+verification and activation flow in the following section.
 
 User activation flow
 ````````````````````
@@ -174,7 +160,6 @@ A user can register for an account using the astakos signup form. Once the form
 is submited successfully a user entry is created in astakos database. That entry
 is passed through the astakos activation backend which handles whether the user
 should be automatically verified and activated.
-
 
 Email verification
 ``````````````````
@@ -196,15 +181,14 @@ At this stage:
     * administrator may also enforce a user to get verified using the
       ``snf-manage user-modify --verify <userid>`` command.
 
-
 Account activation
 ``````````````````
 
-Once user gets verified it is time for astakos to decide whether or not to
+Once the user gets verified, it is time for Astakos to decide whether or not to
 proceed through user activation process. If ``ASTAKOS_MODERATION_ENABLED``
 setting is set to ``False`` (default value) user gets activated automatically. 
 
-In case the moderation is enabled astakos may still automatically activate the
+In case the moderation is enabled Astakos may still automatically activate the
 user in the following cases:
 
     * User email matches any of the regular expressions defined in
@@ -213,11 +197,12 @@ user in the following cases:
       activation is enabled (see 
       :ref:`authentication methods policies <auth_methods_policies>`).
 
-If all of the above fail to trigger automatic activation, an email is sent 
-to the persons listed in ``HELPDESK``, ``MANAGERS`` and ``ADMINS`` settings, 
-notifing that there is a new user pending for moderation and that it's 
-up to the administrator to decide if the user should be activated, using the 
-``user-modify`` command.
+If all of the above fail to trigger automatic activation, an email is sent to
+the persons listed in ``HELPDESK``, ``MANAGERS`` and ``ADMINS`` settings,
+notifing that there is a new user pending for moderation and that it's up to
+the administrator to decide if the user should be activated. The UI also shows
+a corresponding 'pending moderation' message to the user. The administrator can
+activate a user using the ``snf-manage user-modify`` command:
 
 .. code-block:: console
 
@@ -227,11 +212,10 @@ up to the administrator to decide if the user should be activated, using the
     # command to reject a pending user
     $ snf-manage user-modify --reject --reject-reason="spammer" <userid>
 
-Once activation process finish, a greeting message is sent to the user email
-address and a notification for the activation to the persons listed in 
-``HELPDESK``, ``MANAGERS`` and ``ADMINS`` settings. Once activated the user is 
-able to login and access the synnefo services.
-
+Once the activation process finishes, a greeting message is sent to the user
+email address and a notification for the activation to the persons listed in
+``HELPDESK``, ``MANAGERS`` and ``ADMINS`` settings. Once activated the user is
+able to login and access the Synnefo services.
 
 Additional authentication methods
 `````````````````````````````````
@@ -293,6 +277,20 @@ locally signed up users under moderation you can apply the following settings.
     ASTAKOS_AUTH_PROVIDER_SHIBBOLETH_AUTOMODERATE_POLICY = True
     ASTAKOS_AUTH_PROVIDER_SHIBBOLETH_REMOVE_POLICY = False
 
+User login
+~~~~~~~~~~
+
+During the logging procedure, the user is authenticated by the respective
+identity provider.
+
+If ``ASTAKOS_RECAPTCHA_ENABLED`` is set and the user fails several times
+(``ASTAKOS_RATELIMIT_RETRIES_ALLOWED`` setting) to provide the correct
+credentials for a local account, he/she is then prompted to solve a captcha
+challenge.
+
+Upon success, the system renews the token (if it has expired), logins the user
+and sets the cookie, before redirecting the user to the ``next`` parameter
+value.
 
 Setting quota limits
 ~~~~~~~~~~~~~~~~~~~~
@@ -377,9 +375,9 @@ html file that will contain your terms. For example, create the file
 
 .. code-block:: console
 
-   <h1>~okeanos terms</h1>
+   <h1>My cloud service terms</h1>
 
-   These are the example terms for ~okeanos
+   These are the example terms for my cloud service
 
 Then, add those terms-of-use with the snf-manage command:
 
@@ -389,6 +387,15 @@ Then, add those terms-of-use with the snf-manage command:
 
 Your terms have been successfully added and you will see the corresponding link
 appearing in the Astakos web pages' footer.
+
+During the account registration, if there are approval terms, the user is
+presented with an "I agree with the Terms" checkbox that needs to get checked
+in order to proceed.
+
+In case there are new approval terms that the user has not signed yet, the
+``signed_terms_required`` view decorator redirects to the ``approval_terms``
+view, so the user will be presented with the new terms the next time he/she
+logins.
 
 Enabling reCAPTCHA
 ~~~~~~~~~~~~~~~~~~
@@ -415,6 +422,73 @@ Restart the service on the Astakos node(s) and you are ready:
 
 Checkout your new Sign up page. If you see the reCAPTCHA box, you have setup
 everything correctly.
+
+
+Astakos internals
+-----------------
+
+X-Auth-Token
+~~~~~~~~~~~~
+
+Alice requests a specific resource from a cloud service e.g.: Pithos. In the
+request she supplies the `X-Auth-Token` to identify whether she is eligible to
+perform the specific task. The service contacts Astakos through its
+``/account/v1.0/authenticate`` api call (see :ref:`authenticate-api-label`)
+providing the specific ``X-Auth-Token``. Astakos checkes whether the token
+belongs to an active user and it has not expired and returns a dictionary
+containing user related information. Finally the service uses the ``uniq``
+field included in the dictionary as the account string to identify the user
+accessible resources.
+
+.. _authentication-label:
+
+Django Auth methods and Backends
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Astakos incorporates Django user authentication system and extends its User model.
+
+Since username field of django User model has a limitation of 30 characters,
+AstakosUser is **uniquely** identified by the ``email`` instead. Therefore,
+``astakos.im.authentication_backends.EmailBackend`` is served to authenticate a
+user using email if the first argument is actually an email, otherwise tries
+the username.
+
+A new AstakosUser instance is assigned with a uui as username and also with a
+``auth_token`` used by the cloud services to authenticate the user.
+``astakos.im.authentication_backends.TokenBackend`` is also specified in order
+to authenticate the user using the email and the token fields.
+
+Logged on users can perform a number of actions:
+
+ * access and edit their profile via: ``/im/profile``.
+ * change their password via: ``/im/password``
+ * send feedback for grnet services via: ``/im/send_feedback``
+ * logout (and delete cookie) via: ``/im/logout``
+
+Internal Astakos requests are handled using cookie-based Django user sessions.
+
+External systems should forward to the ``/login`` URI. The server,
+depending on its configuration will redirect to the appropriate login page.
+When done with logging in, the service's login URI should redirect to the URI
+provided with next, adding user and token parameters, which contain the email
+and token fields respectively.
+
+The login URI accepts the following parameters:
+
+======================  =========================
+Request Parameter Name  Value
+======================  =========================
+next                    The URI to redirect to when the process is finished
+renew                   Force token renewal (no value parameter)
+force                   Force logout current user (no value parameter)
+======================  =========================
+
+External systems inside the ``ASTAKOS_COOKIE_DOMAIN`` scope can acquire the
+user information by the cookie identified by ``ASTAKOS_COOKIE_NAME`` setting
+(set during the login procedure).
+
+Finally, backend systems having acquired a token can use the
+:ref:`authenticate-api-label` API call from a private network or through HTTPS.
 
 
 

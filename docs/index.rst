@@ -3,28 +3,24 @@ Welcome to Synnefo's documentation
 
 .. image:: /images/synnefo-logo.png
 
-| Synnefo is open source cloud software, used to create massively scalable IaaS
-  clouds.
-| Synnefo uses `Google Ganeti <http://code.google.com/p/ganeti/>`_ for the low
-  level VM management part.
+Synnefo is a complete open source cloud stack written in Python that provides
+Compute, Network, Image, Volume and Storage services, similar to the ones
+offered by AWS. Synnefo manages multiple `Ganeti
+<http://code.google.com/p/ganeti>`_ clusters at the backend for handling of
+low-level VM operations. To boost 3rd-party compatibility, Synnefo exposes the
+OpenStack APIs to users.
 
-| You can see Synnefo in action, powering GRNET's
-  `~okeanos public cloud service <http://okeanos.io>`_.
-| It is a collection of components (``snf-*``), most of them written in python, that
-  are used as the building bricks to provide the following services:
+You can see Synnefo in action, powering GRNET's
+`~okeanos public cloud service <http://okeanos.grnet.gr>`_.
+
+Synnefo has three main components providing the corresponding services:
 
 .. toctree::
    :maxdepth: 1
 
-   Identity Management (codename: astakos) <astakos>
-   Object Storage Service (codename: pithos) <pithos>
-   Compute Service (codename: cyclades) <cyclades>
-   Network Service (part of Cyclades) <networks>
-   Image Service (part of Cyclades) <plankton>
-   Volume Storage Service (codename: archipelago) <archipelago>
-
-.. image:: images/synnefo-overview.png
-   :target: _images/synnefo-overview.png
+   Astakos: Identity/Account services <astakos>
+   Pithos: File/Object Storage service <pithos>
+   Cyclades: Compute/Network/Image/Volume services <cyclades>
 
 There are also the following tools:
 
@@ -37,6 +33,10 @@ There are also the following tools:
    snf-image: Secure image deployment tool <snf-image>
    snf-burnin: Integration testing tool for a running Synnefo deployment <snf-burnin>
 
+This is an overview of the Synnefo services:
+
+.. image:: images/synnefo-overview.png
+   :target: _images/synnefo-overview.png
 
 Synnefo is designed to be as simple, scalable and production ready as possible.
 Furthermore, although it can be deployed in small configurations, its prime
@@ -45,7 +45,6 @@ target is large installations.
 All Synnefo components use an intuitive settings mechanism, that adds and removes
 settings dynamically as components are getting added or removed from a physical
 node. All settings are stored in a single location.
-
 
 .. _general-arch:
 
@@ -62,7 +61,6 @@ with multiple Ganeti clusters.
 Synnefo also supports RADOS as an alternative storage backend for
 Files/Images/VM disks. :ref:`Here <syn+archip+rados>` is a graph that shows
 Synnefo running with two different storage backends.
-
 
 Synnefo Guides
 ==============
@@ -158,7 +156,6 @@ You can contact the Synnefo team at the following mailing lists:
 The official site is:
 
  `http://www.synnefo.org <http://www.synnefo.org>`_
-
 
 Indices and tables
 ==================

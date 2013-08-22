@@ -302,7 +302,6 @@ class SynnefoCI(object):
 
         # Setup apt, download packages
         self.logger.debug("Setup apt. Install x2goserver and firefox")
-        print self.config.get('Global', 'apt_repo')
         cmd = """
         echo 'APT::Install-Suggests "false";' >> /etc/apt/apt.conf
         apt-get update

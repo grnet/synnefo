@@ -68,6 +68,7 @@ def _check_fabric(fun):
         """wrapper function"""
         if not self.fabric_installed:
             self.setup_fabric()
+            self.fabric_installed = True
         return fun(self, *args, **kwargs)
     return wrapper
 
@@ -78,6 +79,7 @@ def _check_kamaki(fun):
         """wrapper function"""
         if not self.kamaki_installed:
             self.setup_kamaki()
+            self.kamaki_installed = True
         return fun(self, *args, **kwargs)
     return wrapper
 
@@ -282,6 +284,7 @@ class SynnefoCI(object):
         self._get_server_ip_and_port(server)
         self._copy_ssh_keys(ssh_keys)
 
+        # Setup Firewall
         self.setup_fabric()
         self.logger.info("Setup firewall")
         accept_ssh_from = self.config.get('Global', 'accept_ssh_from')
@@ -296,6 +299,24 @@ class SynnefoCI(object):
             iptables -A INPUT -p tcp --dport 22 -j DROP
             """.format(accept_ssh_from)
             _run(cmd, False)
+
+        # Setup apt, download packages
+        self.logger.debug("Setup apt. Install x2goserver and firefox")
+        print self.config.get('Global', 'apt_repo')
+        cmd = """
+        echo 'APT::Install-Suggests "false";' >> /etc/apt/apt.conf
+        apt-get update
+        apt-get install curl --yes
+        echo -e "\n\n{0}" >> /etc/apt/sources.list
+        # Synnefo repo's key
+        curl https://dev.grnet.gr/files/apt-grnetdev.pub | apt-key add -
+        # X2GO Key
+        apt-key adv --recv-keys --keyserver keys.gnupg.net E1F958385BFE2B6E
+        apt-get install x2go-keyring
+        apt-get update
+        apt-get install x2goserver x2goserver-xsession iceweasel
+        """.format(self.config.get('Global', 'apt_repo'))
+        _run(cmd, False)
 
     def _find_flavor(self, flavor_name):
         """Given a flavor_name (reg expression) find a flavor id to use"""
@@ -444,18 +465,12 @@ class SynnefoCI(object):
     def clone_repo(self, local_repo=False):
         """Clone Synnefo repo from slave server"""
         self.logger.info("Configure repositories on remote server..")
-        self.logger.debug("Setup apt. Install curl, git and firefox")
+        self.logger.debug("Install/Setup git")
         cmd = """
-        echo 'APT::Install-Suggests "false";' >> /etc/apt/apt.conf
-        apt-get update
-        apt-get install curl git iceweasel --yes
-        echo -e "\n\ndeb {0}" >> /etc/apt/sources.list
-        curl https://dev.grnet.gr/files/apt-grnetdev.pub | apt-key add -
-        apt-get update
-        git config --global user.name {1}
-        git config --global user.email {2}
-        """.format(self.config.get('Global', 'apt_repo'),
-                   self.config.get('Global', 'git_config_name'),
+        apt-get install git --yes
+        git config --global user.name {0}
+        git config --global user.email {1}
+        """.format(self.config.get('Global', 'git_config_name'),
                    self.config.get('Global', 'git_config_mail'))
         _run(cmd, False)
 

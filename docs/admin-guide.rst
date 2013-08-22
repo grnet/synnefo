@@ -495,71 +495,6 @@ Finally, backend systems having acquired a token can use the
 Compute/Network/Image Service (Cyclades)
 ========================================
 
-Compute Overview
-----------------
-
-Network Overview
-----------------
-
-Image Overview
---------------
-
-Architecture
-------------
-
-Asynchronous communication with Ganeti backends
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Synnefo uses Google Ganeti backends for VM cluster management. In order for
-Cyclades to be able to handle thousands of user requests, Cyclades and Ganeti
-communicate asynchronously. Briefly, requests are submitted to Ganeti through
-Ganeti's RAPI/HTTP interface, and then asynchronous notifications about the
-progress of Ganeti jobs are being created and pushed upwards to Cyclades. The
-architecture and communication with a Ganeti backend is shown in the graph
-below:
-
-.. image:: images/cyclades-ganeti-communication.png
-   :width: 50%
-   :target: _images/cyclades-ganeti-communication.png
-
-The Cyclades API server is responsible for handling user requests. Read-only
-requests are directly served by looking up the Cyclades DB. If the request
-needs an action in the Ganeti backend, Cyclades submit jobs to the Ganeti
-master using the `Ganeti RAPI interface
-<http://docs.ganeti.org/ganeti/2.2/html/rapi.html>`_.
-
-While Ganeti executes the job, `snf-ganeti-eventd`, `snf-ganeti-hook` and
-`snf-progress-monitor` are monitoring the progress of the job and send
-corresponding messages to the RabbitMQ servers. These components are part
-of `snf-cyclades-gtools` and must be installed on all Ganeti nodes. Specially:
-
-* *snf-ganeti-eventd* sends messages about operations affecting the operating
-  state of instances and networks. Works by monitoring the Ganeti job queue.
-* *snf-ganeti_hook* sends messages about the NICs of instances. It includes a
-  number of `Ganeti hooks <http://docs.ganeti.org/ganeti/2.2/html/hooks.html>`_
-  for customisation of operations.
-* *snf-progress_monitor* sends messages about the progress of the Image deployment
-  phase which is done by the Ganeti OS Definition `snf-image`.
-
-Finally, `snf-dispatcher` consumes messages from the RabbitMQ queues, processes
-these messages and properly updates the state of the Cyclades DB. Subsequent
-requests to the Cyclades API, will retrieve the updated state from the DB.
-
-
-Prereqs
--------
-
-Work in progress. Please refer to :ref:`administrator's install quide <quick-install-admin-guide>`.
-
-Installation
-------------
-
-Work in progress. Please refer to :ref:`administrator's install quide <quick-install-admin-guide>`.
-
-Configuration
--------------
-
-Work in progress. Please refer to :ref:`administrator's install quide <quick-install-admin-guide>`.
-
 Working with Cyclades
 ---------------------
 
@@ -665,7 +600,6 @@ between users and backends. If the user is found in ``BACKEND_PER_USER``, then
 Synnefo allocates all his/hers VMs to the specific backend in the variable,
 even if is marked as drained (useful for testing).
 
-
 Managing Virtual Machines
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -757,6 +691,7 @@ prefix pool is responsible for providing only unicast and locally administered
 MAC addresses, so many of these prefixes will be externally reserved, to
 exclude from allocation.
 
+
 Cyclades advanced operations
 ----------------------------
 
@@ -792,7 +727,6 @@ Adding the `--fix-all` option, will do the actual synchronization:
 
 Please see ``snf-manage reconcile --help`` for all the details.
 
-
 Reconciling Networks
 ````````````````````
 
@@ -816,6 +750,47 @@ Adding the `--fix-all` option, will do the actual synchronization:
   $ snf-manage reconcile-networks --fix-all
 
 Please see ``snf-manage reconcile-networks --help`` for all the details.
+
+
+Cyclades internals
+------------------
+
+Asynchronous communication with Ganeti backends
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Synnefo uses Google Ganeti backends for VM cluster management. In order for
+Cyclades to be able to handle thousands of user requests, Cyclades and Ganeti
+communicate asynchronously. Briefly, requests are submitted to Ganeti through
+Ganeti's RAPI/HTTP interface, and then asynchronous notifications about the
+progress of Ganeti jobs are being created and pushed upwards to Cyclades. The
+architecture and communication with a Ganeti backend is shown in the graph
+below:
+
+.. image:: images/cyclades-ganeti-communication.png
+   :width: 50%
+   :target: _images/cyclades-ganeti-communication.png
+
+The Cyclades API server is responsible for handling user requests. Read-only
+requests are directly served by looking up the Cyclades DB. If the request
+needs an action in the Ganeti backend, Cyclades submit jobs to the Ganeti
+master using the `Ganeti RAPI interface
+<http://docs.ganeti.org/ganeti/2.2/html/rapi.html>`_.
+
+While Ganeti executes the job, `snf-ganeti-eventd`, `snf-ganeti-hook` and
+`snf-progress-monitor` are monitoring the progress of the job and send
+corresponding messages to the RabbitMQ servers. These components are part
+of `snf-cyclades-gtools` and must be installed on all Ganeti nodes. Specially:
+
+* *snf-ganeti-eventd* sends messages about operations affecting the operating
+  state of instances and networks. Works by monitoring the Ganeti job queue.
+* *snf-ganeti_hook* sends messages about the NICs of instances. It includes a
+  number of `Ganeti hooks <http://docs.ganeti.org/ganeti/2.2/html/hooks.html>`_
+  for customisation of operations.
+* *snf-progress_monitor* sends messages about the progress of the Image deployment
+  phase which is done by the Ganeti OS Definition `snf-image`.
+
+Finally, `snf-dispatcher` consumes messages from the RabbitMQ queues, processes
+these messages and properly updates the state of the Cyclades DB. Subsequent
+requests to the Cyclades API, will retrieve the updated state from the DB.
 
 
 

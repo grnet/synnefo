@@ -2,7 +2,9 @@
 # Timeouts in seconds
 build_timeout = 240
 # Apt repository to use
-apt_repo = http://apt.dev.grnet.gr squeeze/
+apt_repo =
+    deb http://apt.dev.grnet.gr squeeze/
+    deb http://packages.x2go.org/debian squeeze main
 # Synnefo git repo.
 # If not set, snf-ci will copy and use the local repo.
 synnefo_repo = https://code.grnet.gr/git/synnefo

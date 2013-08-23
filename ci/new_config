@@ -42,7 +42,7 @@ flavors = name:C8R8...D100drbd, id:1
 images = name:Debian Base \(OldStable\), id:72d9844f-1024-4a07-a3c3-60d650b8f5cd
 # File containing the ssh keys to upload/install to server
 # If not set, no ssh keys will be installed
-ssh_keys =
+ssh_keys = ~/.ssh/id_rsa.pub
 
 
 [Burnin]

@@ -311,9 +311,9 @@ class SynnefoCI(object):
         curl https://dev.grnet.gr/files/apt-grnetdev.pub | apt-key add -
         # X2GO Key
         apt-key adv --recv-keys --keyserver keys.gnupg.net E1F958385BFE2B6E
-        apt-get install x2go-keyring
+        apt-get install x2go-keyring --yes
         apt-get update
-        apt-get install x2goserver x2goserver-xsession iceweasel
+        apt-get install x2goserver x2goserver-xsession iceweasel --yes
         """.format(self.config.get('Global', 'apt_repo'))
         _run(cmd, False)
 

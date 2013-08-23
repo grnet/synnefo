@@ -150,7 +150,7 @@ class SynnefoCI(object):
         temp_config = self.config.get('Global', 'temporary_config')
         self.temp_config = ConfigParser()
         self.temp_config.optionxform = str
-        self.temp_config.read(temp_config)
+        self.temp_config.read(os.path.expanduser(temp_config))
         self.build_id = build_id
         self.logger.info("Will use \"%s\" as build id" % _green(self.build_id))
 
@@ -426,6 +426,7 @@ class SynnefoCI(object):
             ssh_keys = self.config.get("Deployment", "ssh_keys")
 
         if ssh_keys != "":
+            ssh_keys = os.path.expanduser(ssh_keys)
             self.logger.debug("Will use %s authentication keys file" % ssh_keys)
             keyfile = '/tmp/%s.pub' % fabric.env.user
             _run('mkdir -p ~/.ssh && chmod 700 ~/.ssh', False)
@@ -442,6 +443,7 @@ class SynnefoCI(object):
                 _put(ssh_keys, keyfile)
             else:
                 self.logger.debug("No ssh keys found")
+                return
             _run('cat %s >> ~/.ssh/authorized_keys' % keyfile, False)
             _run('rm %s' % keyfile, False)
             self.logger.debug("Uploaded ssh authorized keys")
@@ -756,7 +758,7 @@ class SynnefoCI(object):
         """Fetch Synnefo packages"""
         if dest is None:
             dest = self.config.get('Global', 'pkgs_dir')
-        dest = os.path.abspath(dest)
+        dest = os.path.abspath(os.path.expanduser(dest))
         if not os.path.exists(dest):
             os.makedirs(dest)
         self.fetch_compressed("synnefo_build-area", dest)

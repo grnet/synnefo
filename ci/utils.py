@@ -242,7 +242,7 @@ class SynnefoCI(object):
             self._wait_transition(server_id, "ACTIVE", "DELETED")
 
     @_check_kamaki
-    def create_server(self, image_id=None, flavor_name=None, ssh_keys=None):
+    def create_server(self, image=None, flavor=None, ssh_keys=None):
         """Create slave server"""
         self.logger.info("Create a new server..")
 
@@ -260,13 +260,11 @@ class SynnefoCI(object):
                           % _green(self.build_id))
 
         # Find an image to use
-        if image_id is None:
-            image = self._find_image()
-            self.logger.debug("Will use image \"%s\"" % _green(image['name']))
-            image_id = image["id"]
-        self.logger.debug("Image has id %s" % _green(image_id))
+        image_id = self._find_image(image)
         # Find a flavor to use
-        flavor_id = self._find_flavor(flavor_name)
+        flavor_id = self._find_flavor(flavor)
+
+        # Create Server
         server = self.cyclades_client.create_server(
             self.config.get('Deployment', 'server_name'),
             flavor_id,
@@ -317,44 +315,90 @@ class SynnefoCI(object):
         """.format(self.config.get('Global', 'apt_repo'))
         _run(cmd, False)
 
-    def _find_flavor(self, flavor_name):
-        """Given a flavor_name (reg expression) find a flavor id to use"""
-        # Get a list of flavor names from config file
-        flavor_names = self.config.get('Deployment', 'flavor_name').split(",")
-        if flavor_name is not None:
-            # If we have a flavor_name to use, add it to our list
-            flavor_names.insert(0, flavor_name)
+    def _find_flavor(self, flavor=None):
+        """Find a suitable flavor to use
 
-        flavors = self.compute_client.list_flavors()
-        for flname in flavor_names:
-            sflname = flname.strip()
-            self.logger.debug("Try to find a flavor with name \"%s\"" % sflname)
-            fls = [f for f in flavors
-                   if re.search(sflname, f['name']) is not None]
-            if fls:
-                self.logger.debug("Will use %s with id %s"
-                                  % (fls[0]['name'], fls[0]['id']))
-                return fls[0]['id']
+        Search by name (reg expression) or by id
+        """
+        # Get a list of flavors from config file
+        flavors = self.config.get('Deployment', 'flavors').split(",")
+        if flavor is not None:
+            # If we have a flavor_name to use, add it to our list
+            flavors.insert(0, flavor)
+
+        list_flavors = self.compute_client.list_flavors()
+        for flv in flavors:
+            [flv_type, flv_value] = flv.strip().split(':')
+            if flv_type == "name":
+                # Filter flavors by name
+                self.logger.debug(
+                    "Trying to find a flavor with name \"%s\"" % flv_value)
+                list_flvs = \
+                    [f for f in list_flavors
+                     if re.search(flv_value, f['name'], flags=re.I) is not None]
+            elif flv_type == "id":
+                # Filter flavors by id
+                self.logger.debug(
+                    "Trying to find a flavor with id \"%s\"" % flv_value)
+                list_flvs = \
+                    [f for f in list_flavors
+                     if f['id'].lower() == flv_value.lower()]
+            else:
+                self.logger.error("Unrecognized flavor type %s" % flv_type)
+
+            # Check if we found one
+            if list_flvs:
+                self.logger.debug("Will use \"%s\" with id \"%s\""
+                                  % (list_flvs[0]['name'], list_flvs[0]['id']))
+                return list_flvs[0]['id']
 
         self.logger.error("No matching flavor found.. aborting")
         sys.exit(1)
 
-    def _find_image(self):
+    def _find_image(self, image=None):
         """Find a suitable image to use
 
-        It has to belong to one of the `DEFAULT_SYSTEM_IMAGES_UUID'
-        users and contain the word given by `image_name' option.
+        In case of search by name, the image has to belong to one
+        of the `DEFAULT_SYSTEM_IMAGES_UUID' users.
+        In case of search by id it only has to exist.
         """
-        image_name = self.config.get('Deployment', 'image_name').lower()
-        images = self.image_client.list_public(detail=True)['images']
-        # Select images by `system_uuid' user
-        images = [x for x in images
-                  if x['user_id'] in DEFAULT_SYSTEM_IMAGES_UUID]
-        # Select images with `image_name' in their names
-        images = [x for x in images
-                  if x['name'].lower().find(image_name) != -1]
-        # Let's select the first one
-        return images[0]
+        # Get a list of images from config file
+        images = self.config.get('Deployment', 'images').split(",")
+        if image is not None:
+            # If we have an image from command line, add it to our list
+            images.insert(0, image)
+
+        list_images = self.image_client.list_public(detail=True)['images']
+        for img in images:
+            [img_type, img_value] = img.strip().split(':')
+            if img_type == "name":
+                # Filter images by name
+                self.logger.debug(
+                    "Trying to find an image with name \"%s\"" % img_value)
+                list_imgs = \
+                    [i for i in list_images
+                     if i['user_id'] in DEFAULT_SYSTEM_IMAGES_UUID and
+                        re.search(img_value, i['name'], flags=re.I) is not None]
+            elif img_type == "id":
+                # Filter images by id
+                self.logger.debug(
+                    "Trying to find an image with id \"%s\"" % img_value)
+                list_imgs = \
+                    [i for i in list_images
+                     if i['id'].lower() == img_value.lower()]
+            else:
+                self.logger.error("Unrecognized image type %s" % img_type)
+                sys.exit(1)
+
+            # Check if we found one
+            if list_imgs:
+                self.logger.debug("Will use \"%s\" with id \"%s\""
+                                  % (list_imgs[0]['name'], list_imgs[0]['id']))
+                return list_imgs[0]['id']
+
+        # We didn't found one
+        self.logger.error("No matching image found.. aborting")
+        sys.exit(1)
 
     def _get_server_ip_and_port(self, server):
         """Compute server's IPv4 and ssh port number"""
@@ -614,7 +658,7 @@ class SynnefoCI(object):
         self.logger.info("Deploy Synnefo..")
         if schema is None:
             schema = self.config.get('Global', 'schema')
-        self.logger.debug("Will use %s schema" % schema)
+        self.logger.debug("Will use \"%s\" schema" % schema)
 
         schema_dir = os.path.join(self.ci_dir, "schemas/%s" % schema)
         if not (os.path.exists(schema_dir) and os.path.isdir(schema_dir)):

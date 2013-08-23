@@ -324,6 +324,7 @@ fixed_image.return_value = {'location': 'pithos://foo',
                             'checksum': '1234',
                             "id": 1,
                             "name": "test_image",
+                            "size": "41242",
                             'disk_format': 'diskdump'}
 
 

@@ -44,15 +44,8 @@ from synnefo_branding.utils import render_to_string
 from synnefo.lib import join_urls
 from astakos.im.models import AstakosUser, Invitation, ProjectMembership, \
     ProjectApplication, Project, new_chain, Resource, ProjectLock
-from astakos.im.quotas import qh_sync_user, get_pending_app_quota, \
-    register_pending_apps, qh_sync_project, qh_sync_locked_users, \
-    get_users_for_update, members_to_sync
-from astakos.im.project_notif import membership_change_notify, \
-    membership_enroll_notify, membership_request_notify, \
-    membership_leave_request_notify, application_submit_notify, \
-    application_approve_notify, application_deny_notify, \
-    project_termination_notify, project_suspension_notify, \
-    project_unsuspension_notify, project_reinstatement_notify
+from astakos.im import quotas
+from astakos.im import project_notif
 from astakos.im import settings
 
 import astakos.im.messages as astakos_messages
@@ -425,11 +418,11 @@ def accept_membership(memb_id, request_user=None, reason=None):
     accept_membership_checks(membership, request_user)
     user = membership.person
     membership.perform_action("accept", actor=request_user, reason=reason)
-    qh_sync_user(user)
+    quotas.qh_sync_user(user)
     logger.info("User %s has been accepted in %s." %
                 (user.log_display, project))
 
-    membership_change_notify(project, user, 'accepted')
+    project_notif.membership_change_notify(project, user, 'accepted')
     return membership
 
 
@@ -452,7 +445,7 @@ def reject_membership(memb_id, request_user=None, reason=None):
     logger.info("Request of user %s for %s has been rejected." %
                 (user.log_display, project))
 
-    membership_change_notify(project, user, 'rejected')
+    project_notif.membership_change_notify(project, user, 'rejected')
     return membership
 
 
@@ -496,11 +489,11 @@ def remove_membership(memb_id, request_user=None, reason=None):
     remove_membership_checks(membership, request_user)
     user = membership.person
     membership.perform_action("remove", actor=request_user, reason=reason)
-    qh_sync_user(user)
+    quotas.qh_sync_user(user)
     logger.info("User %s has been removed from %s." %
                 (user.log_display, project))
 
-    membership_change_notify(project, user, 'removed')
+    project_notif.membership_change_notify(project, user, 'removed')
     return membership
 
 
@@ -529,11 +522,11 @@ def enroll_member(project_id, user, request_user=None, reason=None):
         membership = new_membership(project, user, actor=request_user,
                                     enroll=True)
 
-    qh_sync_user(user)
+    quotas.qh_sync_user(user)
     logger.info("User %s has been enrolled in %s." %
                 (membership.person.log_display, project))
 
-    membership_enroll_notify(project, membership.person)
+    project_notif.membership_enroll_notify(project, membership.person)
     return membership
 
 
@@ -572,7 +565,7 @@ def leave_project(memb_id, request_user, reason=None):
     leave_policy = project.application.member_leave_policy
     if leave_policy == AUTO_ACCEPT_POLICY:
         membership.perform_action("remove", actor=request_user, reason=reason)
-        qh_sync_user(request_user)
+        quotas.qh_sync_user(request_user)
         logger.info("User %s has left %s." %
                     (request_user.log_display, project))
         auto_accepted = True
@@ -581,7 +574,8 @@ def leave_project(memb_id, request_user, reason=None):
                                   reason=reason)
         logger.info("User %s requested to leave %s." %
                     (request_user.log_display, project))
-        membership_leave_request_notify(project, membership.person)
+        project_notif.membership_leave_request_notify(
+            project, membership.person)
     return auto_accepted
 
 
@@ -637,11 +631,11 @@ def join_project(project_id, request_user, reason=None):
     if (join_policy == AUTO_ACCEPT_POLICY and (
             not project.violates_members_limit(adding=1))):
         membership.perform_action("accept", actor=request_user, reason=reason)
-        qh_sync_user(request_user)
+        quotas.qh_sync_user(request_user)
         logger.info("User %s joined %s." %
                     (request_user.log_display, project))
     else:
-        membership_request_notify(project, membership.person)
+        project_notif.membership_request_notify(project, membership.person)
         logger.info("User %s requested to join %s." %
                     (request_user.log_display, project))
     return membership
@@ -730,7 +724,7 @@ def submit_application(owner=None,
         set_resource_policies(application, policies)
     logger.info("User %s submitted %s." %
                 (request_user.log_display, application.log_display))
-    application_submit_notify(application)
+    project_notif.application_submit_notify(application)
     return application
 
 
@@ -817,7 +811,7 @@ def deny_application(application_id, request_user=None, reason=""):
     application.deny(actor=request_user, reason=reason)
     logger.info("%s has been denied with reason \"%s\"." %
                 (application.log_display, reason))
-    application_deny_notify(application)
+    project_notif.application_deny_notify(application)
 
 
 def check_conflicting_projects(application):
@@ -851,11 +845,11 @@ def approve_application(app_id, request_user=None, reason=""):
 
     # Pre-lock members and owner together in order to impose an ordering
     # on locking users
-    members = members_to_sync(project)
+    members = quotas.members_to_sync(project)
     uids_to_sync = [member.id for member in members]
     owner = application.owner
     uids_to_sync.append(owner.id)
-    get_users_for_update(uids_to_sync)
+    quotas.get_users_for_update(uids_to_sync)
 
     qh_release_pending_app(owner, locked=True)
     application.approve(actor=request_user, reason=reason)
@@ -864,9 +858,9 @@ def approve_application(app_id, request_user=None, reason=""):
     project.save()
     if project.is_deactivated():
         project.resume(actor=request_user, reason="APPROVE")
-    qh_sync_locked_users(members)
+    quotas.qh_sync_locked_users(members)
     logger.info("%s has been approved." % (application.log_display))
-    application_approve_notify(application)
+    project_notif.application_approve_notify(application)
 
 
 def check_expiration(execute=False):
@@ -885,10 +879,10 @@ def terminate(project_id, request_user=None, reason=None):
     checkAlive(project)
 
     project.terminate(actor=request_user, reason=reason)
-    qh_sync_project(project)
+    quotas.qh_sync_project(project)
     logger.info("%s has been terminated." % (project))
 
-    project_termination_notify(project)
+    project_notif.project_termination_notify(project)
 
 
 def suspend(project_id, request_user=None, reason=None):
@@ -897,10 +891,10 @@ def suspend(project_id, request_user=None, reason=None):
     checkAlive(project)
 
     project.suspend(actor=request_user, reason=reason)
-    qh_sync_project(project)
+    quotas.qh_sync_project(project)
     logger.info("%s has been suspended." % (project))
 
-    project_suspension_notify(project)
+    project_notif.project_suspension_notify(project)
 
 
 def unsuspend(project_id, request_user=None, reason=None):
@@ -912,9 +906,9 @@ def unsuspend(project_id, request_user=None, reason=None):
         raise ProjectConflict(m)
 
     project.resume(actor=request_user, reason=reason)
-    qh_sync_project(project)
+    quotas.qh_sync_project(project)
     logger.info("%s has been unsuspended." % (project))
-    project_unsuspension_notify(project)
+    project_notif.project_unsuspension_notify(project)
 
 
 def reinstate(project_id, request_user=None, reason=None):
@@ -928,9 +922,9 @@ def reinstate(project_id, request_user=None, reason=None):
 
     check_conflicting_projects(project.application)
     project.resume(actor=request_user, reason=reason)
-    qh_sync_project(project)
+    quotas.qh_sync_project(project)
     logger.info("%s has been reinstated" % (project))
-    project_reinstatement_notify(project)
+    project_notif.project_reinstatement_notify(project)
 
 
 def _partition_by(f, l):
@@ -970,12 +964,12 @@ def get_pending_app_diff(user, project):
 def qh_add_pending_app(user, project=None, force=False):
     user = AstakosUser.objects.select_for_update().get(id=user.id)
     diff = get_pending_app_diff(user, project)
-    return register_pending_apps(user, diff, force)
+    return quotas.register_pending_apps(user, diff, force)
 
 
 def check_pending_app_quota(user, project=None):
     diff = get_pending_app_diff(user, project)
-    quota = get_pending_app_quota(user)
+    quota = quotas.get_pending_app_quota(user)
     limit = quota['limit']
     usage = quota['usage']
     if usage + diff > limit:
@@ -986,4 +980,4 @@ def check_pending_app_quota(user, project=None):
 def qh_release_pending_app(user, locked=False):
     if not locked:
         user = AstakosUser.objects.select_for_update().get(id=user.id)
-    register_pending_apps(user, -1)
+    quotas.register_pending_apps(user, -1)

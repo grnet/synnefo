@@ -128,7 +128,7 @@ class Conf(object):
 
     files = {
         "nodes": ["network", "info"],
-        "deploy": ["dirs", "packages", "keys"],
+        "deploy": ["dirs", "packages", "keys", "options"],
         "vcluster": ["cluster", "image"],
         "synnefo": ["cred", "synnefo", "roles"],
         "packages": ["debian", "ganeti", "synnefo", "other"],

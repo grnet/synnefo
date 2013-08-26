@@ -454,6 +454,12 @@ def setup_db():
     """
     try_run(cmd)
 
+    if env.env.testing_vm:
+        cmd = """
+        echo "fsync=off\nsynchronous_commit=off\nfull_page_writes=off" >> /etc/postgresql/8.4/main/postgresql.conf
+        """
+        try_run(cmd)
+
     allow_access_in_db(env.host, "all", "trust")
     try_run("/etc/init.d/postgresql restart")
 

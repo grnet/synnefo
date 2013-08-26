@@ -951,7 +951,7 @@ def count_pending_app(users):
     return usage
 
 
-def get_pending_app_diff(user, project):
+def get_pending_app_diff(project):
     if project is None:
         diff = 1
     else:
@@ -964,12 +964,12 @@ def get_pending_app_diff(user, project):
 
 def qh_add_pending_app(user, project=None, force=False):
     user = AstakosUser.objects.select_for_update().get(id=user.id)
-    diff = get_pending_app_diff(user, project)
+    diff = get_pending_app_diff(project)
     return quotas.register_pending_apps(user, diff, force)
 
 
 def check_pending_app_quota(user, project=None):
-    diff = get_pending_app_diff(user, project)
+    diff = get_pending_app_diff(project)
     quota = quotas.get_pending_app_quota(user)
     limit = quota['limit']
     usage = quota['usage']

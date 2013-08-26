@@ -19,6 +19,7 @@ from kamaki.clients.astakos import AstakosClient
 from kamaki.clients.cyclades import CycladesClient
 from kamaki.clients.image import ImageClient
 from kamaki.clients.compute import ComputeClient
+import filelocker
 
 DEFAULT_CONFIG_FILE = "new_config"
 # UUID of owner of system images
@@ -147,10 +148,11 @@ class SynnefoCI(object):
         self.config.read(config_file)
 
         # Read temporary_config file
-        temp_config = self.config.get('Global', 'temporary_config')
+        self.temp_config_file = \
+            os.path.expanduser(self.config.get('Global', 'temporary_config'))
         self.temp_config = ConfigParser()
         self.temp_config.optionxform = str
-        self.temp_config.read(os.path.expanduser(temp_config))
+        self.temp_config.read(self.temp_config_file)
         self.build_id = build_id
         self.logger.info("Will use \"%s\" as build id" % _green(self.build_id))
 
@@ -453,19 +455,27 @@ class SynnefoCI(object):
 
     def write_temp_config(self, option, value):
         """Write changes back to config file"""
-        # If build_id section doesn't exist create a new one
-        try:
-            self.temp_config.add_section(str(self.build_id))
-            creation_time = time.strftime("%a, %d %b %Y %X", time.localtime())
-            self.write_temp_config("created", creation_time)
-        except DuplicateSectionError:
-            pass
-        self.temp_config.set(str(self.build_id), option, str(value))
-        curr_time = time.strftime("%a, %d %b %Y %X", time.localtime())
-        self.temp_config.set(str(self.build_id), "modified", curr_time)
-        temp_conf_file = self.config.get('Global', 'temporary_config')
-        with open(temp_conf_file, 'wb') as tcf:
-            self.temp_config.write(tcf)
+        # Acquire the lock to write to temp_config_file
+        with filelocker.lock("%s.lock" % self.temp_config_file,
+                             filelocker.LOCK_EX):
+
+            # Read temp_config again to get any new entries
+            self.temp_config.read(self.temp_config_file)
+
+            # If build_id section doesn't exist create a new one
+            try:
+                self.temp_config.add_section(str(self.build_id))
+                creation_time = \
+                    time.strftime("%a, %d %b %Y %X", time.localtime())
+                self.temp_config.set(str(self.build_id),
+                                     "created", str(creation_time))
+            except DuplicateSectionError:
+                pass
+            self.temp_config.set(str(self.build_id), option, str(value))
+            curr_time = time.strftime("%a, %d %b %Y %X", time.localtime())
+            self.temp_config.set(str(self.build_id), "modified", curr_time)
+            with open(self.temp_config_file, 'wb') as tcf:
+                self.temp_config.write(tcf)
 
     def read_temp_config(self, option):
         """Read from temporary_config file"""
@@ -545,6 +555,7 @@ class SynnefoCI(object):
             # namely to disable host checking.
             (temp_ssh_file_handle, temp_ssh_file) = tempfile.mkstemp()
             os.close(temp_ssh_file_handle)
+            # XXX: git push doesn't read the password
             cmd = """
             echo 'exec ssh -o "StrictHostKeyChecking no" \
                            -o "UserKnownHostsFile /dev/null" \

@@ -265,8 +265,9 @@ class SynnefoCI(object):
         flavor_id = self._find_flavor(flavor)
 
         # Create Server
+        server_name = self.config.get("Deployment", "server_name")
         server = self.cyclades_client.create_server(
-            self.config.get('Deployment', 'server_name'),
+            "%s(BID: %s)" % (server_name, self.build_id),
             flavor_id,
             image_id)
         server_id = server['id']

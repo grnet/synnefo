@@ -1480,10 +1480,9 @@ class ProjectResourceGrantManager(models.Manager):
 class ProjectResourceGrant(models.Model):
 
     resource = models.ForeignKey(Resource)
-    project_application = models.ForeignKey(ProjectApplication,
-                                            null=True)
-    project_capacity = models.BigIntegerField(null=True)
-    member_capacity = models.BigIntegerField(default=0)
+    project_application = models.ForeignKey(ProjectApplication)
+    project_capacity = models.BigIntegerField()
+    member_capacity = models.BigIntegerField()
 
     objects = ProjectResourceGrantManager()
 

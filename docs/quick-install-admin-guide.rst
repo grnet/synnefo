@@ -783,6 +783,13 @@ settings located in ``10-snf-common-admins.conf``:
     MANAGERS = (('Manager name', 'manager@example.synnefo.org'),)
     HELPDESK = (('Helpdesk user name', 'helpdesk@example.synnefo.org'),)
 
+Alternatively, it may be convenient to send e-mails to a file, instead of an actual smtp server, using the file backend. Do so by creating a configuration file ``/etc/synnefo/99-local.conf`` including the folowing:
+
+.. code-block:: python
+
+    EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+    EMAIL_FILE_PATH = '/tmp/app-messages' 
+  
 
 
 Enable Pooling

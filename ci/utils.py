@@ -407,7 +407,8 @@ class SynnefoCI(object):
         """Compute server's IPv4 and ssh port number"""
         self.logger.info("Get server connection details..")
         server_ip = server['attachments'][0]['ipv4']
-        if ".okeanos.io" in self.cyclades_client.base_url:
+        if (".okeanos.io" in self.cyclades_client.base_url or
+           ".demo.synnefo.org" in self.cyclades_client.base_url):
             tmp1 = int(server_ip.split(".")[2])
             tmp2 = int(server_ip.split(".")[3])
             server_ip = "gate.okeanos.io"

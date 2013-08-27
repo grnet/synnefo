@@ -746,22 +746,34 @@ def connect_to_network(vm, network, address=None):
 
     log.debug("Connecting vm %s to network %s(%s)", vm, network, address)
 
+    kwargs = {
+        "instance": vm.backend_vm_id,
+        "nics": [("add", nic)],
+        "depends": depends,
+    }
+    if vm.backend.use_hotplug():
+        kwargs["hotplug"] = True
+    if settings.TEST:
+        kwargs["dry_run"] = True
+
     with pooled_rapi_client(vm) as client:
-        return client.ModifyInstance(vm.backend_vm_id, nics=[('add',  nic)],
-                                     hotplug=vm.backend.use_hotplug(),
-                                     depends=depends,
-                                     dry_run=settings.TEST)
+        return client.ModifyInstance(**kwargs)
 
 
 def disconnect_from_network(vm, nic):
-    op = [('remove', nic.index, {})]
-
     log.debug("Removing nic of VM %s, with index %s", vm, str(nic.index))
 
+    kwargs = {
+        "instance": vm.backend_vm_id,
+        "nics": [("remove", nic.index, {})],
+    }
+    if vm.backend.use_hotplug():
+        kwargs["hotplug"] = True
+    if settings.TEST:
+        kwargs["dry_run"] = True
+
     with pooled_rapi_client(vm) as client:
-        jobID = client.ModifyInstance(vm.backend_vm_id, nics=op,
-                                      hotplug=vm.backend.use_hotplug(),
-                                      dry_run=settings.TEST)
+        jobID = client.ModifyInstance(**kwargs)
         # If the NIC has a tag for a firewall profile it must be deleted,
         # otherwise it may affect another NIC. XXX: Deleting the tag should
         # depend on the removing the NIC, but currently RAPI client does not

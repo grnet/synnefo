@@ -94,7 +94,7 @@ class ServerTest(TestCase):
         self.assertFalse(pool.is_available("192.168.2.2"))
         args, kwargs = mrapi().ModifyInstance.call_args
         nics = kwargs["nics"][0]
-        self.assertEqual(args[0], vm.backend_vm_id)
+        self.assertEqual(kwargs["instance"], vm.backend_vm_id)
         self.assertEqual(nics[0], "add")
         self.assertEqual(nics[1]["ip"], "192.168.2.2")
         self.assertEqual(nics[1]["network"], net.backend_id)
@@ -111,7 +111,7 @@ class ServerTest(TestCase):
         self.assertTrue(pool.is_available("192.168.2.2"))
         args, kwargs = mrapi().ModifyInstance.call_args
         nics = kwargs["nics"][0]
-        self.assertEqual(args[0], vm.backend_vm_id)
+        self.assertEqual(kwargs["instance"], vm.backend_vm_id)
         self.assertEqual(nics[0], "add")
         self.assertEqual(nics[1]["ip"], None)
         self.assertEqual(nics[1]["network"], net.backend_id)
@@ -125,7 +125,7 @@ class ServerTest(TestCase):
         servers.connect(vm, net)
         args, kwargs = mrapi().ModifyInstance.call_args
         nics = kwargs["nics"][0]
-        self.assertEqual(args[0], vm.backend_vm_id)
+        self.assertEqual(kwargs["instance"], vm.backend_vm_id)
         self.assertEqual(nics[0], "add")
         self.assertEqual(nics[1]["ip"], None)
         self.assertEqual(nics[1]["network"], net.backend_id)

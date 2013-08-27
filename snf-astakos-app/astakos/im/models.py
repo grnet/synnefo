@@ -1585,6 +1585,7 @@ class Project(models.Model):
 
     state = models.IntegerField(default=NORMAL,
                                 db_index=True)
+    uuid = models.CharField(max_length=255, unique=True)
 
     objects = ProjectManager()
 
@@ -1764,6 +1765,12 @@ class Project(models.Model):
     @property
     def approved_members(self):
         return [m.person for m in self.approved_memberships]
+
+
+def create_project(**kwargs):
+    if "uuid" not in kwargs:
+        kwargs["uuid"] = str(uuid.uuid4())
+    return Project.objects.create(**kwargs)
 
 
 class ProjectLogManager(models.Manager):

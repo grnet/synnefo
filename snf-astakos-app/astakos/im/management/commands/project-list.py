@@ -128,8 +128,7 @@ class Command(SynnefoCommand):
             if preds:
                 chains = filter_preds(preds, chains)
 
-        labels = ('ProjID', 'Name', 'Owner', 'Email', 'Status',
-                  'Pending AppID')
+        labels = ('ProjID', 'Name', 'Owner', 'Status', 'Pending AppID')
 
         info = chain_info(chains)
         utils.pprint_table(self.stdout, info, labels,
@@ -160,9 +159,8 @@ def chain_info(chains):
         pending_appid = pending_app.id if pending_app is not None else ""
         application = project.application
 
-        t = (project.pk,
+        t = (project.uuid,
              application.name,
-             application.owner.realname,
              application.owner.email,
              status,
              pending_appid,

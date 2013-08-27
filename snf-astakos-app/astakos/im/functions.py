@@ -43,7 +43,8 @@ from synnefo_branding.utils import render_to_string
 
 from synnefo.lib import join_urls
 from astakos.im.models import AstakosUser, Invitation, ProjectMembership, \
-    ProjectApplication, Project, new_chain, Resource, ProjectLock
+    ProjectApplication, Project, new_chain, Resource, ProjectLock, \
+    create_project
 from astakos.im import quotas
 from astakos.im import project_notif
 from astakos.im import settings
@@ -283,9 +284,21 @@ def get_project_by_id(project_id):
         raise ProjectNotFound(m)
 
 
+def get_project_by_uuid(uuid):
+    try:
+        return Project.objects.get(uuid=uuid)
+    except Project.DoesNotExist:
+        m = _(astakos_messages.UNKNOWN_PROJECT_ID) % uuid
+        raise ProjectNotFound(m)
+
+
 def get_project_for_update(project_id):
     try:
-        return Project.objects.select_for_update().get(id=project_id)
+        try:
+            project_id = int(project_id)
+            return Project.objects.select_for_update().get(id=project_id)
+        except ValueError:
+            return Project.objects.select_for_update().get(uuid=project_id)
     except Project.DoesNotExist:
         m = _(astakos_messages.UNKNOWN_PROJECT_ID) % project_id
         raise ProjectNotFound(m)
@@ -385,7 +398,7 @@ def app_check_allowed(application, request_user,
 
 def checkAlive(project):
     if not project.is_alive:
-        m = _(astakos_messages.NOT_ALIVE_PROJECT) % project.id
+        m = _(astakos_messages.NOT_ALIVE_PROJECT) % project.uuid
         raise ProjectConflict(m)
 
 
@@ -513,7 +526,7 @@ def enroll_member(project_id, user, request_user=None, reason=None):
     accept_membership_project_checks(project, request_user)
 
     try:
-        membership = get_membership(project_id, user.id)
+        membership = get_membership(project.id, user.id)
         if not membership.check_action("enroll"):
             m = _(astakos_messages.MEMBERSHIP_ACCEPTED)
             raise ProjectConflict(m)
@@ -708,7 +721,7 @@ def submit_application(owner=None,
         chain = new_chain()
         application.chain_id = chain.chain
         application.save()
-        Project.objects.create(id=chain.chain, application=application)
+        create_project(id=chain.chain, application=application)
     else:
         application.chain = project
         application.save()
@@ -826,7 +839,7 @@ def check_conflicting_projects(application):
         if (conflicting_project != project):
             m = (_("cannot approve: project with name '%s' "
                    "already exists (id: %s)") %
-                 (new_project_name, conflicting_project.id))
+                 (new_project_name, conflicting_project.uuid))
             raise ProjectConflict(m)  # invalid argument
     except Project.DoesNotExist:
         pass
@@ -905,7 +918,7 @@ def unsuspend(project_id, request_user=None, reason=None):
     project_check_allowed(project, request_user, level=ADMIN_LEVEL)
 
     if not project.is_suspended:
-        m = _(astakos_messages.NOT_SUSPENDED_PROJECT) % project.id
+        m = _(astakos_messages.NOT_SUSPENDED_PROJECT) % project.uuid
         raise ProjectConflict(m)
 
     project.resume(actor=request_user, reason=reason)
@@ -920,7 +933,7 @@ def reinstate(project_id, request_user=None, reason=None):
     project_check_allowed(project, request_user, level=ADMIN_LEVEL)
 
     if not project.is_terminated:
-        m = _(astakos_messages.NOT_TERMINATED_PROJECT) % project.id
+        m = _(astakos_messages.NOT_TERMINATED_PROJECT) % project.uuid
         raise ProjectConflict(m)
 
     check_conflicting_projects(project.application)

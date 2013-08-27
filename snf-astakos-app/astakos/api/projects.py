@@ -128,7 +128,7 @@ def get_applications_details(applications):
     for application in applications:
         d = {
             "id": application.id,
-            "project": application.chain_id,
+            "project": application.chain.uuid,
             "state": APPLICATION_STATE_SHOW[application.state],
             "comments": application.comments,
         }
@@ -151,7 +151,7 @@ def get_projects_details(projects, request_user=None):
     for project in projects:
         application = project.application
         d = {
-            "id": project.id,
+            "id": project.uuid,
             "application": application.id,
             "state": PROJECT_STATE_SHOW[project.overall_state()],
             "creation_date": project.creation_date,
@@ -189,7 +189,7 @@ def get_memberships_details(memberships, request_user):
         d = {
             "id": membership.id,
             "user": membership.person.uuid,
-            "project": membership.project_id,
+            "project": membership.project.uuid,
             "state": MEMBERSHIP_STATE_SHOW[membership.state],
             "allowed_actions": allowed_actions,
         }
@@ -332,7 +332,7 @@ def get_project(request, project_id):
 
 
 def _get_project(project_id, request_user=None):
-    project = functions.get_project_by_id(project_id)
+    project = functions.get_project_by_uuid(project_id)
     functions.project_check_allowed(
         project, request_user, level=functions.ANY_LEVEL)
     return project
@@ -447,7 +447,7 @@ def submit_application(app_data, user, project_id=None):
             request_user=user)
 
     result = {"application": application.id,
-              "id": application.chain_id
+              "id": application.chain.uuid,
               }
     return json_response(result, status_code=201)
 
@@ -501,9 +501,7 @@ def applications(request):
 def make_application_query(input_data):
     project_id = input_data.get("project")
     if project_id is not None:
-        if not isinstance(project_id, (int, long)):
-            raise faults.BadRequest("'project' must be integer")
-        return Q(chain=project_id)
+        return Q(chain__uuid=project_id)
     return Q()
 
 
@@ -585,9 +583,7 @@ def memberships(request):
 def make_membership_query(input_data):
     project_id = input_data.get("project")
     if project_id is not None:
-        if not isinstance(project_id, (int, long)):
-            raise faults.BadRequest("'project' must be integer")
-        return Q(project=project_id)
+        return Q(project__uuid=project_id)
     return Q()
 
 

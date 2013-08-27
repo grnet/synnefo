@@ -84,11 +84,6 @@ class Command(SynnefoCommand):
         self.output_format = options['output_format']
 
         id_ = args[0]
-        try:
-            id_ = int(id_)
-        except ValueError:
-            raise CommandError("id should be an integer value.")
-
         if search_apps:
             app = get_app(id_)
             self.print_app(app)
@@ -132,6 +127,10 @@ class Command(SynnefoCommand):
 
 def get_app(app_id):
     try:
+        app_id = int(app_id)
+    except ValueError:
+        raise CommandError("id should be an integer value.")
+    try:
         return ProjectApplication.objects.get(id=app_id)
     except ProjectApplication.DoesNotExist:
         raise CommandError("Application with id %s not found." % app_id)
@@ -139,7 +138,7 @@ def get_app(app_id):
 
 def get_chain_state(project_id):
     try:
-        chain = Project.objects.get(id=project_id)
+        chain = Project.objects.get(uuid=project_id)
         return chain, chain.last_pending_application()
     except Project.DoesNotExist:
         raise CommandError("Project with id %s not found." % project_id)
@@ -163,7 +162,7 @@ def app_fields(app):
     mem_limit_show = mem_limit if mem_limit is not None else "unlimited"
 
     d = OrderedDict([
-        ('project id', app.chain_id),
+        ('project id', app.chain.uuid),
         ('application id', app.id),
         ('name', app.name),
         ('status', app.state_display()),
@@ -187,7 +186,7 @@ def project_fields(project, pending_app):
     app = project.application
 
     d = OrderedDict([
-        ('project id', project.id),
+        ('project id', project.uuid),
         ('application id', app.id),
         ('name', app.name),
         ('status', project.state_display()),

@@ -161,7 +161,7 @@ def memberships(user):
 
     for m in ms:
         project = m.project
-        print_data.append((project.id,
+        print_data.append((project.uuid,
                            project.application.name,
                            m.state_display(),
                            ))
@@ -181,7 +181,7 @@ def chain_info(chains):
         pending_appid = pending_app.id if pending_app is not None else ""
         application = project.application
 
-        t = (project.pk,
+        t = (project.uuid,
              application.name,
              status,
              pending_appid,

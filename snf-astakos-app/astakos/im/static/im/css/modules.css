@@ -513,7 +513,9 @@ form input[type="text"]:-ms-input-placeholder,
 .stats .info h3									{ font-size:1.231em; color:#222222 }
 .stats .vm .img-wrap							{ background-image:url(../images/vm-stats.png) }
 .stats .ram .img-wrap							{ background-image:url(../images/ram-stats.png) }
+.stats .active_ram .img-wrap					{ background-image:url(../images/ram-stats.png) }
 .stats .cpu .img-wrap							{ background-image:url(../images/cpu-stats.png) }
+.stats .active_cpu .img-wrap					{ background-image:url(../images/cpu-stats.png) }
 .stats .network .img-wrap						{ background-image:url(../images/network-stats.png) }
 .stats .disksize .img-wrap						{ background-image:url(../images/disk-stats.png) }
 .stats .disk .img-wrap							{ background-image:url(../images/disk-stats.png) }
@@ -521,6 +523,7 @@ form input[type="text"]:-ms-input-placeholder,
 .stats .bandwidth .img-wrap						{ background-image:url(../images/bandwidth-stats.png) }
 .stats .project .img-wrap						{ background-image:url(../images/projects-stats.png) }
 .stats .projects .img-wrap						{ background-image:url(../images/projects-stats.png) }
+.stats .floating_ip .img-wrap					{ background-image:url(../images/floating_ip-stats.png) }
 
 .stats .red .img-wrap							{ background-position: 15px 7px; }
 .stats .yellow .img-wrap						{ background-position: -124px 7px; }

@@ -1438,7 +1438,7 @@
                 case 'reboot':
                     this.__make_api_call(this.get_action_url(), // vm actions url
                                          "create", // create so that sync later uses POST to make the call
-                                         {reboot:{type:"HARD"}}, // payload
+                                         {reboot:{}}, // payload
                                          function() {
                                              // set state after successful call
                                              self.state("REBOOT"); 

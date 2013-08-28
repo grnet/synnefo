@@ -733,10 +733,8 @@ def reboot(request, vm, args):
     #                       buildInProgress (409),
     #                       overLimit (413)
 
-    reboot_type = args.get("type")
-    if reboot_type is None:
-        raise faults.BadRequest("Missing 'type' attribute.")
-    elif reboot_type not in ["SOFT", "HARD"]:
+    reboot_type = args.get("type", "SOFT")
+    if reboot_type not in ["SOFT", "HARD"]:
         raise faults.BadRequest("Invalid 'type' attribute.")
     vm = servers.reboot(vm, reboot_type=reboot_type)
     return HttpResponse(status=202)

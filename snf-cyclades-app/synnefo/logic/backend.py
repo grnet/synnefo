@@ -572,9 +572,20 @@ def delete_instance(vm):
 
 def reboot_instance(vm, reboot_type):
     assert reboot_type in ('soft', 'hard')
+    kwargs = {"instance": vm.backend_vm_id,
+              "reboot_type": "hard"}
+    # XXX: Currently shutdown_timeout parameter is not supported from the
+    # Ganeti RAPI. Until supported, we will fallback for both reboot types
+    # to the default shutdown timeout of Ganeti (120s). Note that reboot
+    # type of Ganeti job must be always hard. The 'soft' and 'hard' type
+    # of OS API is different from the one in Ganeti, and maps to
+    # 'shutdown_timeout'.
+    #if reboot_type == "hard":
+    #    kwargs["shutdown_timeout"] = 0
+    if settings.TEST:
+        kwargs["dry_run"] = True
     with pooled_rapi_client(vm) as client:
-        return client.RebootInstance(vm.backend_vm_id, reboot_type,
-                                     dry_run=settings.TEST)
+        return client.RebootInstance(**kwargs)
 
 
 def startup_instance(vm):

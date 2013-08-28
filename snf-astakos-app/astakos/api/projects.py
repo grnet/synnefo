@@ -31,6 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import re
 from django.utils import simplejson as json
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
@@ -362,6 +363,15 @@ def _get_maybe_string(d, key):
     return value
 
 
+DOMAIN_VALUE_REGEX = re.compile(
+    r'^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,6}$',
+    re.IGNORECASE)
+
+
+def valid_project_name(name):
+    return DOMAIN_VALUE_REGEX.match(name) is not None
+
+
 def submit_application(app_data, user, project_id=None):
     uuid = app_data.get("owner")
     if uuid is None:
@@ -376,6 +386,9 @@ def submit_application(app_data, user, project_id=None):
         name = app_data["name"]
     except KeyError:
         raise faults.BadRequest("Name missing.")
+
+    if not valid_project_name(name):
+        raise faults.BadRequest("Project name should be in domain format")
 
     join_policy = app_data.get("join_policy", "moderated")
     try:

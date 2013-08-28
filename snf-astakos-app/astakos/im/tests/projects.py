@@ -557,6 +557,10 @@ class ProjectAPITest(TestCase):
         status, body = self.create(ap, h_owner)
         self.assertEqual(status, 201)
 
+        ap["name"] = "non_domain_name"
+        status, body = self.create(ap, h_owner)
+        self.assertEqual(status, 400)
+
         filters = {"filter": {"state": "nonex"}}
         req = {"body": json.dumps(filters)}
         r = client.get(reverse("api_projects"), req, **h_owner)

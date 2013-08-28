@@ -306,15 +306,16 @@ class SynnefoCI(object):
         cmd = """
         echo 'APT::Install-Suggests "false";' >> /etc/apt/apt.conf
         apt-get update
-        apt-get install curl --yes
+        apt-get install curl --yes --force-yes
         echo -e "\n\n{0}" >> /etc/apt/sources.list
         # Synnefo repo's key
         curl https://dev.grnet.gr/files/apt-grnetdev.pub | apt-key add -
         # X2GO Key
         apt-key adv --recv-keys --keyserver keys.gnupg.net E1F958385BFE2B6E
-        apt-get install x2go-keyring --yes
+        apt-get install x2go-keyring --yes --force-yes
         apt-get update
-        apt-get install x2goserver x2goserver-xsession iceweasel --yes
+        apt-get install x2goserver x2goserver-xsession \
+                iceweasel --yes --force-yes
         """.format(self.config.get('Global', 'apt_repo'))
         _run(cmd, False)
 
@@ -439,7 +440,7 @@ class SynnefoCI(object):
                     ssh_keys.startswith("ftp://"):
                 cmd = """
                 apt-get update
-                apt-get install wget --yes
+                apt-get install wget --yes --force-yes
                 wget {0} -O {1} --no-check-certificate
                 """.format(ssh_keys, keyfile)
                 _run(cmd, False)
@@ -524,7 +525,7 @@ class SynnefoCI(object):
         self.logger.info("Configure repositories on remote server..")
         self.logger.debug("Install/Setup git")
         cmd = """
-        apt-get install git --yes
+        apt-get install git --yes --force-yes
         git config --global user.name {0}
         git config --global user.email {1}
         """.format(self.config.get('Global', 'git_config_name'),
@@ -608,7 +609,7 @@ class SynnefoCI(object):
         cmd = """
         apt-get update
         apt-get install zlib1g-dev dpkg-dev debhelper git-buildpackage \
-                python-dev python-all python-pip --yes
+                python-dev python-all python-pip --yes --force-yes
         pip install devflow
         """
         _run(cmd, False)
@@ -633,7 +634,7 @@ class SynnefoCI(object):
         self.logger.debug("Install snf-deploy package")
         cmd = """
         dpkg -i snf-deploy*.deb
-        apt-get -f install --yes
+        apt-get -f install --yes --force-yes
         """
         with fabric.cd("synnefo_build-area"):
             with fabric.settings(warn_only=True):

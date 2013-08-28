@@ -90,7 +90,7 @@ Status  Description
       "end_date": date,
       "join_policy": "auto" | "moderated" | "closed",
       "leave_policy": "auto" | "moderated" | "closed",
-      "max_members": int or null
+      "max_members": natural number
       "resources": {"cyclades.vm": {"project_capacity": int or null,
                                     "member_capacity": int
                                    }

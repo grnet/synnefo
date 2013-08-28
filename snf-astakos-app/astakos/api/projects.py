@@ -409,8 +409,7 @@ def submit_application(app_data, user, project_id=None):
         raise faults.BadRequest("Missing end date")
 
     max_members = app_data.get("max_members")
-    if max_members is not None and \
-            (not isinstance(max_members, (int, long)) or max_members < 0):
+    if not isinstance(max_members, (int, long)) or max_members < 0:
         raise faults.BadRequest("Invalid max_members")
 
     homepage = _get_maybe_string(app_data, "homepage")

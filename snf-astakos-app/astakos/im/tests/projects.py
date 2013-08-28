@@ -162,6 +162,7 @@ class ProjectAPITest(TestCase):
         app1 = {"name": "test.pr",
                 "end_date": "2013-5-5T20:20:20Z",
                 "join_policy": "auto",
+                "max_members": 5,
                 "resources": {"service1.resource11": {
                     "member_capacity": 512}}
                 }
@@ -561,6 +562,11 @@ class ProjectAPITest(TestCase):
         status, body = self.create(ap, h_owner)
         self.assertEqual(status, 400)
 
+        ap["name"] = "domain.name"
+        ap.pop("max_members")
+        status, body = self.create(ap, h_owner)
+        self.assertEqual(status, 400)
+
         filters = {"filter": {"state": "nonex"}}
         req = {"body": json.dumps(filters)}
         r = client.get(reverse("api_projects"), req, **h_owner)
@@ -642,6 +648,7 @@ class TestProjects(TestCase):
             'end_date': dto.strftime("%Y-%m-%d"),
             'member_join_policy': 2,
             'member_leave_policy': 1,
+            'limit_on_members_number': 5,
             'service1.resource_uplimit': 100,
             'is_selected_service1.resource': "1",
             'astakos.pending_app_uplimit': 100,
@@ -680,6 +687,11 @@ class TestProjects(TestCase):
             'is_selected_service1.resource': "1",
             'user': self.user.pk
         }
+        r = self.user_client.post(post_url, data=application_data, follow=True)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.context['form'].is_valid(), False)
+
+        application_data['limit_on_members_number'] = 5
         r = self.user_client.post(post_url, data=application_data, follow=True)
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.context['form'].is_valid(), True)

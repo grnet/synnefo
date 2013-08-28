@@ -805,7 +805,7 @@ class ProjectApplicationForm(forms.ModelForm):
         label=max_members_label,
         help_text=max_members_help,
         min_value=0,
-        required=False)
+        required=True)
 
     class Meta:
         model = ProjectApplication

@@ -32,6 +32,8 @@
 # or implied, of GRNET S.A.
 
 import logging
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 from django.utils.translation import ugettext as _
 from django.core.mail import send_mail, get_connection
@@ -690,6 +692,35 @@ def membership_allowed_actions(membership, request_user):
     return allowed
 
 
+def make_base_project(username):
+    chain = new_chain()
+    proj = create_project(
+        id=chain.chain,
+        last_application=None,
+        owner=None,
+        realname="tmp",
+        homepage="",
+        description=("base project for user " + username),
+        end_date=(datetime.now() + relativedelta(years=100)),
+        member_join_policy=CLOSED_POLICY,
+        member_leave_policy=CLOSED_POLICY,
+        limit_on_members_number=1,
+        private=True,
+        is_base=True)
+    proj.realname = "base:" + proj.uuid
+    proj.save()
+    # No quota are set; they will be filled in upon user acceptance
+    return proj
+
+
+def enable_base_project(user):
+    project = user.base_project
+    _fill_from_skeleton(project)
+    project.activate()
+    new_membership(project, user, enroll=True)
+    quotas.qh_sync_project(project)
+
+
 def submit_application(owner=None,
                        name=None,
                        project_id=None,
@@ -934,6 +965,7 @@ def approve_application(application_id, project_id=None, request_user=None,
     quotas.qh_sync_locked_users(members)
     logger.info("%s has been approved." % (application.log_display))
     project_notif.application_notify(application, "approve")
+    return project
 
 
 def _fill_from_skeleton(project):

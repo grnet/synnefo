@@ -40,8 +40,6 @@ from astakos.im import functions
 from astakos.im import settings
 from astakos.im import forms
 
-from astakos.im.quotas import qh_sync_new_user
-
 import astakos.im.messages as astakos_messages
 
 import datetime
@@ -255,7 +253,7 @@ class ActivationBackend(object):
                                          default=lambda obj:
                                          str(obj))
         user.save()
-        qh_sync_new_user(user)
+        functions.enable_base_project(user)
 
         if user.is_rejected:
             logger.warning("User has previously been "

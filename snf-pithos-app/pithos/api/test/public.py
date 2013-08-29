@@ -204,7 +204,7 @@ class TestPublic(PithosAPITest):
         url = join_urls(self.pithos_path, self.user, cname, oname)
         r = self.get('%s?version=list&format=json' % url)
         version_list = json.loads(r.content)['versions']
-        mtime = [int(t[1]) for t in version_list]
+        mtime = [int(float(t[1])) for t in version_list]
 
         # delete object history
         i = random.randrange(len(mtime))

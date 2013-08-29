@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -434,8 +434,7 @@ class TestLocal(TestCase):
 
         form = forms.LocalUserCreationForm(data)
         self.assertTrue(form.is_valid())
-        user = form.save()
-        form.store_user(user, {})
+        user = form.create_user()
 
         u = AstakosUser.objects.get()
         self.assertEqual(u.email, 'kPap@synnefo.org')
@@ -657,6 +656,17 @@ class TestLocal(TestCase):
         # she can't because account is not active yet
         self.assertContains(r, "Changing password is not")
 
+    def test_fix_superuser(self):
+        u = User.objects.create(username="dummy", email="email@example.org",
+                                first_name="Super", last_name="User",
+                                is_superuser=True)
+        User.objects.create(username="dummy2", email="email2@example.org",
+                            first_name="Other", last_name="User")
+        fixed = auth_functions.fix_superusers()
+        self.assertEqual(len(fixed), 1)
+        fuser = fixed[0]
+        self.assertEqual(fuser.email, fuser.username)
+
 
 class UserActionsTests(TestCase):
 
@@ -789,7 +799,7 @@ class TestAuthProviderViews(TestCase):
         Pending = PendingThirdPartyUser
         User = AstakosUser
 
-        User.objects.create(email="newuser@synnefo.org")
+        auth_functions.make_user("newuser@synnefo.org")
         get_local_user("olduser@synnefo.org")
         cl_olduser = ShibbolethClient()
         get_local_user("olduser2@synnefo.org")
@@ -946,8 +956,8 @@ class TestAuthProvidersAPI(TestCase):
 
     @im_settings(IM_MODULES=['local', 'shibboleth'])
     def test_create(self):
-        user = AstakosUser.objects.create(email="kpap@synnefo.org")
-        user2 = AstakosUser.objects.create(email="kpap2@synnefo.org")
+        user = auth_functions.make_user(email="kpap@synnefo.org")
+        user2 = auth_functions.make_user(email="kpap2@synnefo.org")
 
         module = 'shibboleth'
         identifier = 'SHIB_UUID'
@@ -1000,7 +1010,7 @@ class TestAuthProvidersAPI(TestCase):
                         CREATION_GROUPS_POLICY=['localgroup-create',
                                                 'group-create'])
     def test_add_groups(self):
-        user = AstakosUser.objects.create(email="kpap@synnefo.org")
+        user = auth_functions.make_user("kpap@synnefo.org")
         provider = auth.get_provider('shibboleth', user, 'test123')
         provider.add_to_user()
         user = AstakosUser.objects.get()
@@ -1037,14 +1047,14 @@ class TestAuthProvidersAPI(TestCase):
         settings.ASTAKOS_AUTH_PROVIDER_GOOGLE_ADD_GROUPS_POLICY = \
             ['google-user']
 
-        user = AstakosUser.objects.create(email="kpap@synnefo.org")
+        user = auth_functions.make_user("kpap@synnefo.org")
         user.groups.add(group_old)
         user.add_auth_provider('local')
 
-        user2 = AstakosUser.objects.create(email="kpap2@synnefo.org")
+        user2 = auth_functions.make_user("kpap2@synnefo.org")
         user2.add_auth_provider('shibboleth', identifier='shibid')
 
-        user3 = AstakosUser.objects.create(email="kpap3@synnefo.org")
+        user3 = auth_functions.make_user("kpap3@synnefo.org")
         user3.groups.add(group_old)
         user3.add_auth_provider('local')
         user3.add_auth_provider('shibboleth', identifier='1234')
@@ -1109,8 +1119,7 @@ class TestAuthProvidersAPI(TestCase):
     @im_settings(IM_MODULES=['local', 'shibboleth'])
     def test_create_http(self):
         # this should be wrapped inside a transaction
-        user = AstakosUser(email="test@test.com")
-        user.save()
+        user = auth_functions.make_user(email="test@test.com")
         provider = auth_providers.get_provider('shibboleth', user,
                                                'test@academia.test')
         provider.add_to_user()
@@ -1120,8 +1129,7 @@ class TestAuthProvidersAPI(TestCase):
         user.get_auth_provider('local')
 
         settings.ASTAKOS_AUTH_PROVIDER_SHIBBOLETH_CREATE_POLICY = False
-        user = AstakosUser(email="test2@test.com")
-        user.save()
+        user = auth_functions.make_user("test2@test.com")
         provider = auth_providers.get_provider('shibboleth', user,
                                                'test@shibboleth.com',
                                                **{'info': {'name':
@@ -1255,8 +1263,7 @@ class TestActivationBackend(TestCase):
             'password2': '123'
         }
         form = backend.get_signup_form('local', user_data)
-        user = form.save(commit=False)
-        form.store_user(user)
+        user = form.create_user()
         self.assertEqual(user.is_active, False)
         self.assertEqual(user.email_verified, False)
 
@@ -1311,8 +1318,7 @@ class TestActivationBackend(TestCase):
         }
         form = backend.get_signup_form(provider='local',
                                        initial_data=user_data)
-        user = form.save(commit=False)
-        form.store_user(user)
+        user = form.create_user()
         self.assertEqual(user.is_active, False)
         self.assertEqual(user.email_verified, False)
 

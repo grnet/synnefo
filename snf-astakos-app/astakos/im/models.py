@@ -337,6 +337,11 @@ class AstakosUserManager(UserManager):
         qextra = Q(**kwargs)
         return self.filter((qemail | qusername) & qextra).exists()
 
+    def unverified_namesakes(self, email_or_username):
+        q = Q(email__iexact=email_or_username)
+        q |= Q(username__iexact=email_or_username)
+        return self.filter(q & Q(email_verified=False))
+
     def verified_user_exists(self, email_or_username):
         return self.user_exists(email_or_username, email_verified=True)
 
@@ -465,11 +470,6 @@ class AstakosUser(User):
 
     objects = AstakosUserManager()
 
-    def __init__(self, *args, **kwargs):
-        super(AstakosUser, self).__init__(*args, **kwargs)
-        if not self.id:
-            self.is_active = False
-
     @property
     def realname(self):
         return '%s %s' % (self.first_name, self.last_name)
@@ -529,29 +529,16 @@ class AstakosUser(User):
         return AstakosUserQuota.objects.select_related("resource").\
             get(user=self, resource__name=resource)
 
-    def update_uuid(self):
-        while not self.uuid:
-            uuid_val = str(uuid.uuid4())
-            try:
-                AstakosUser.objects.get(uuid=uuid_val)
-            except AstakosUser.DoesNotExist:
-                self.uuid = uuid_val
-        return self.uuid
+    def fix_username(self):
+        self.username = self.email.lower()
+
+    def set_email(self, email):
+        self.email = email
+        self.fix_username()
 
     def save(self, update_timestamps=True, **kwargs):
         if update_timestamps:
-            if not self.id:
-                self.date_joined = datetime.now()
             self.updated = datetime.now()
-
-        self.update_uuid()
-
-        if not self.verification_code:
-            self.renew_verification_code()
-
-        # username currently matches email
-        if self.username != self.email.lower():
-            self.username = self.email.lower()
 
         super(AstakosUser, self).save(**kwargs)
 
@@ -1093,7 +1080,7 @@ class EmailChangeManager(models.Manager):
             # update user
             user = AstakosUser.objects.get(pk=email_change.user_id)
             old_email = user.email
-            user.email = email_change.new_email_address
+            user.set_email(email_change.new_email_address)
             user.save()
             email_change.delete()
             msg = "User %s changed email from %s to %s"
@@ -1987,39 +1974,6 @@ class ProjectMembershipLog(models.Model):
 ### SIGNALS ###
 ################
 
-def create_astakos_user(u):
-    try:
-        AstakosUser.objects.get(user_ptr=u.pk)
-    except AstakosUser.DoesNotExist:
-        extended_user = AstakosUser(user_ptr_id=u.pk)
-        extended_user.__dict__.update(u.__dict__)
-        extended_user.save()
-        if not extended_user.has_auth_provider('local'):
-            extended_user.add_auth_provider('local')
-    except BaseException, e:
-        logger.exception(e)
-
-
-def fix_superusers():
-    # Associate superusers with AstakosUser
-    admins = User.objects.filter(is_superuser=True)
-    for u in admins:
-        create_astakos_user(u)
-
-
-def user_post_save(sender, instance, created, **kwargs):
-    if not created:
-        return
-    create_astakos_user(instance)
-post_save.connect(user_post_save, sender=User)
-
-
-def astakosuser_post_save(sender, instance, created, **kwargs):
-    pass
-
-post_save.connect(astakosuser_post_save, sender=AstakosUser)
-
-
 def resource_post_save(sender, instance, created, **kwargs):
     pass
 
@@ -2029,5 +1983,4 @@ post_save.connect(resource_post_save, sender=Resource)
 def renew_token(sender, instance, **kwargs):
     if not instance.auth_token:
         instance.renew_token()
-pre_save.connect(renew_token, sender=AstakosUser)
 pre_save.connect(renew_token, sender=Component)

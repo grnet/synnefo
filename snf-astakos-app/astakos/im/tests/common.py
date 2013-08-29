@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -54,6 +54,7 @@ from astakos.im import functions
 from astakos.im import settings as astakos_settings
 from astakos.im import forms
 from astakos.im import activation_backends
+from astakos.im import auth as auth_functions
 
 from urllib import quote
 from datetime import timedelta
@@ -145,30 +146,23 @@ def get_user_client(username, password="password"):
 
 
 def get_local_user(username, **kwargs):
-        try:
-            return AstakosUser.objects.get(email=username)
-        except:
-            user_params = {
-                'username': username,
-                'email': username,
-                'is_active': True,
-                'activation_sent': datetime.now(),
-                'has_signed_terms': True,
-                'date_signed_terms': datetime.now(),
-                'email_verified': True
-            }
-            user_params.update(kwargs)
-            user = AstakosUser(**user_params)
-            user.set_password(kwargs.get('password', 'password'))
-            user.renew_verification_code()
-            user.save()
-            user.add_auth_provider('local', auth_backend='astakos')
-            if kwargs.get('is_active', True):
-                user.is_active = True
-            else:
-                user.is_active = False
-            user.save()
-            return user
+    try:
+        return AstakosUser.objects.get(email=username)
+    except:
+        user = auth_functions.make_local_user(email=username,
+                                              has_signed_terms=True)
+        user.set_password(kwargs.pop('password', 'password'))
+
+        for key, value in kwargs.iteritems():
+            setattr(user, key, value)
+        user.save()
+
+        if kwargs.get("is_active", True):
+            backend = activation_backends.get_backend()
+            backend.verify_user(user, user.verification_code)
+            backend.accept_user(user)
+
+        return user
 
 
 def get_mailbox(email):

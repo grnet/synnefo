@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -464,14 +464,7 @@ def signup(request, template_name='im/signup.html', on_success='index',
             **form_kwargs)
 
         if form.is_valid():
-            user = form.save(commit=False)
-
-            # delete previously unverified accounts
-            if AstakosUser.objects.user_exists(user.email):
-                AstakosUser.objects.get_by_identifier(user.email).delete()
-
-            # store_user so that user auth providers get initialized
-            form.store_user(user, request)
+            user = form.create_user()
             result = activation_backend.handle_registration(user)
             if result.status == \
                     activation_backend.Result.PENDING_MODERATION:

@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -58,6 +58,7 @@ from astakos.im.functions import send_change_email, submit_application, \
 from astakos.im.util import reserved_verified_email, model_to_dict
 from astakos.im import auth_providers
 from astakos.im import settings
+from astakos.im import auth
 
 import astakos.im.messages as astakos_messages
 
@@ -73,25 +74,7 @@ DOMAIN_VALUE_REGEX = re.compile(
     re.IGNORECASE)
 
 
-class StoreUserMixin(object):
-
-    def store_user(self, user, request=None):
-        """
-        WARNING: this should be wrapped inside a transactional view/method.
-        """
-        user.save()
-        self.post_store_user(user, request)
-        return user
-
-    def post_store_user(self, user, request):
-        """
-        Interface method for descendant backends to be able to do stuff within
-        the transaction enabled by store_user.
-        """
-        pass
-
-
-class LocalUserCreationForm(UserCreationForm, StoreUserMixin):
+class LocalUserCreationForm(UserCreationForm):
     """
     Extends the built in UserCreationForm in several ways:
 
@@ -177,30 +160,21 @@ class LocalUserCreationForm(UserCreationForm, StoreUserMixin):
             raise forms.ValidationError(_(
                 astakos_messages.CAPTCHA_VALIDATION_ERR))
 
-    def post_store_user(self, user, request=None):
-        """
-        Interface method for descendant backends to be able to do stuff within
-        the transaction enabled by store_user.
-        """
-        user.add_auth_provider('local', auth_backend='astakos')
-        user.set_password(self.cleaned_data['password1'])
+    def create_user(self):
+        try:
+            data = self.cleaned_data
+        except AttributeError:
+            self.is_valid()
+            data = self.cleaned_data
 
-    def save(self, commit=True, **kwargs):
-        """
-        Saves the email, first_name and last_name properties, after the normal
-        save behavior is complete.
-        """
-        user = super(LocalUserCreationForm, self).save(commit=False, **kwargs)
-        user.has_signed_terms = True
-        user.date_signed_terms = datetime.now()
-        user.renew_token()
-        if commit:
-            user.save(**kwargs)
-            logger.info('Created user %s', user.log_display)
+        user = auth.make_local_user(
+            email=data['email'], password=data['password1'],
+            first_name=data['first_name'], last_name=data['last_name'],
+            has_signed_terms=True)
         return user
 
 
-class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
+class ThirdPartyUserCreationForm(forms.ModelForm):
     email = forms.EmailField(
         label='Contact email',
         help_text='This is needed for contact purposes. '
@@ -264,22 +238,21 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
     def _get_pending_user(self):
         return PendingThirdPartyUser.objects.get(token=self.third_party_token)
 
-    def post_store_user(self, user, request=None):
+    def create_user(self):
+        try:
+            data = self.cleaned_data
+        except AttributeError:
+            self.is_valid()
+            data = self.cleaned_data
+
+        user = auth.make_user(
+            email=data["email"],
+            first_name=data["first_name"], last_name=data["last_name"],
+            has_signed_terms=True)
         pending = self._get_pending_user()
         provider = pending.get_provider(user)
         provider.add_to_user()
         pending.delete()
-
-    def save(self, commit=True, **kwargs):
-        user = super(ThirdPartyUserCreationForm, self).save(commit=False,
-                                                            **kwargs)
-        user.set_unusable_password()
-        user.renew_token()
-        user.has_signed_terms = True
-        user.date_signed_terms = datetime.now()
-        if commit:
-            user.save(**kwargs)
-            logger.info('Created user %s' % user.log_display)
         return user
 
 

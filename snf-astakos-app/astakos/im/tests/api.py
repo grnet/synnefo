@@ -408,16 +408,14 @@ class TokensApiTest(TestCase):
     def setUp(self):
         backend = activation_backends.get_backend()
 
-        self.user1 = AstakosUser.objects.create(
-            email='test1', email_verified=True, moderated=True,
-            has_signed_terms=True,
+        self.user1 = get_local_user(
+            'test1@example.org', email_verified=True, moderated=True,
             is_rejected=False)
         backend.activate_user(self.user1)
         assert self.user1.is_active is True
 
-        self.user2 = AstakosUser.objects.create(
-            email='test2', email_verified=True, moderated=True,
-            has_signed_terms=True,
+        self.user2 = get_local_user(
+            'test2@example.org', email_verified=True, moderated=True,
             is_rejected=False)
         backend.activate_user(self.user2)
         assert self.user2.is_active is True
@@ -611,10 +609,9 @@ class TokensApiTest(TestCase):
 
 class UserCatalogsTest(TestCase):
     def test_get_uuid_displayname_catalogs(self):
-        self.user = AstakosUser.objects.create(
-            email='test1', email_verified=True, moderated=True,
-            has_signed_terms=True,
-            is_rejected=False)
+        self.user = get_local_user(
+            'test1@example.org', email_verified=True, moderated=True,
+            is_rejected=False, is_active=False)
 
         client = Client()
         url = reverse('astakos.api.user.get_uuid_displayname_catalogs')

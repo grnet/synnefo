@@ -361,7 +361,7 @@ class Command(BaseCommand):
                 m = "A user with this email address already exists."
                 raise CommandError(m)
 
-            user.email = newemail
+            user.set_email(newemail)
             user.save()
 
     def confirm(self):

@@ -57,14 +57,11 @@ class ProjectAPITest(TestCase):
         register.update_resources([(r, 1024)])
 
         # create user
-        self.user1 = get_local_user("test@grnet.gr", moderated=True)
-        quotas.qh_sync_user(self.user1)
-        self.user2 = get_local_user("test2@grnet.gr", moderated=True)
+        self.user1 = get_local_user("test@grnet.gr")
+        self.user2 = get_local_user("test2@grnet.gr")
         self.user2.uuid = "uuid2"
         self.user2.save()
-        quotas.qh_sync_user(self.user2)
-        self.user3 = get_local_user("test3@grnet.gr", moderated=True)
-        quotas.qh_sync_user(self.user3)
+        self.user3 = get_local_user("test3@grnet.gr")
 
         astakos = Component.objects.create(name="astakos")
         register.add_service(astakos, "astakos_account", "account", [])
@@ -620,8 +617,6 @@ class TestProjects(TestCase):
         self.user_client = get_user_client("user@synnefo.org")
         self.member_client = get_user_client("member@synnefo.org")
         self.member2_client = get_user_client("member2@synnefo.org")
-
-        quotas.qh_sync_new_users(AstakosUser.objects.all())
 
     def tearDown(self):
         Service.objects.all().delete()

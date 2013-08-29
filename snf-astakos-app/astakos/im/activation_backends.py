@@ -90,9 +90,7 @@ class ActivationBackend(object):
     >>> backend = get_backend()
     >>> formCls = backend.get_signup_form(request.POST)
     >>> if form.is_valid():
-    >>>     user = form.save(commit=False)
-    >>>     # this creates auth provider objects
-    >>>     form.store_user(user)
+    >>>     user = form.create_user()
     >>>     activation = backend.handle_registration(user)
     >>>     # activation.status is one of backend.Result.{*} activation result
     >>>     # types

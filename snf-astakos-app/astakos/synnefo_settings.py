@@ -70,8 +70,8 @@ context_processors = [
 middlware_classes = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'synnefo.lib.middleware.LoggingConfigMiddleware',
-    'synnefo.lib.middleware.SecureMiddleware',
+    'synnefo.webproject.middleware.LoggingConfigMiddleware',
+    'synnefo.webproject.middleware.SecureMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
 #    'debug_toolbar.middleware.DebugToolbarMiddleware',

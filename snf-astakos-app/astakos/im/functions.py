@@ -574,8 +574,8 @@ def leave_project(memb_id, request_user, reason=None):
                                   reason=reason)
         logger.info("User %s requested to leave %s." %
                     (request_user.log_display, project))
-        project_notif.membership_leave_request_notify(
-            project, membership.person)
+        project_notif.membership_request_notify(
+            project, membership.person, "leave")
     return auto_accepted
 
 
@@ -635,7 +635,8 @@ def join_project(project_id, request_user, reason=None):
         logger.info("User %s joined %s." %
                     (request_user.log_display, project))
     else:
-        project_notif.membership_request_notify(project, membership.person)
+        project_notif.membership_request_notify(
+            project, membership.person, "join")
         logger.info("User %s requested to join %s." %
                     (request_user.log_display, project))
     return membership
@@ -724,7 +725,7 @@ def submit_application(owner=None,
         set_resource_policies(application, policies)
     logger.info("User %s submitted %s." %
                 (request_user.log_display, application.log_display))
-    project_notif.application_submit_notify(application)
+    project_notif.application_notify(application, "submit")
     return application
 
 
@@ -811,7 +812,7 @@ def deny_application(application_id, request_user=None, reason=""):
     application.deny(actor=request_user, reason=reason)
     logger.info("%s has been denied with reason \"%s\"." %
                 (application.log_display, reason))
-    project_notif.application_deny_notify(application)
+    project_notif.application_notify(application, "deny")
 
 
 def check_conflicting_projects(application):
@@ -860,7 +861,7 @@ def approve_application(app_id, request_user=None, reason=""):
         project.resume(actor=request_user, reason="APPROVE")
     quotas.qh_sync_locked_users(members)
     logger.info("%s has been approved." % (application.log_display))
-    project_notif.application_approve_notify(application)
+    project_notif.application_notify(application, "approve")
 
 
 def check_expiration(execute=False):
@@ -882,7 +883,7 @@ def terminate(project_id, request_user=None, reason=None):
     quotas.qh_sync_project(project)
     logger.info("%s has been terminated." % (project))
 
-    project_notif.project_termination_notify(project)
+    project_notif.project_notify(project, "terminate")
 
 
 def suspend(project_id, request_user=None, reason=None):
@@ -894,7 +895,7 @@ def suspend(project_id, request_user=None, reason=None):
     quotas.qh_sync_project(project)
     logger.info("%s has been suspended." % (project))
 
-    project_notif.project_suspension_notify(project)
+    project_notif.project_notify(project, "suspend")
 
 
 def unsuspend(project_id, request_user=None, reason=None):
@@ -908,7 +909,7 @@ def unsuspend(project_id, request_user=None, reason=None):
     project.resume(actor=request_user, reason=reason)
     quotas.qh_sync_project(project)
     logger.info("%s has been unsuspended." % (project))
-    project_notif.project_unsuspension_notify(project)
+    project_notif.project_notify(project, "unsuspend")
 
 
 def reinstate(project_id, request_user=None, reason=None):
@@ -924,7 +925,7 @@ def reinstate(project_id, request_user=None, reason=None):
     project.resume(actor=request_user, reason=reason)
     quotas.qh_sync_project(project)
     logger.info("%s has been reinstated" % (project))
-    project_notif.project_reinstatement_notify(project)
+    project_notif.project_notify(project, "reinstate")
 
 
 def _partition_by(f, l):

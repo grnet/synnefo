@@ -64,7 +64,7 @@ context_processors = [
     'astakos.im.context_processors.custom_messages',
     'astakos.im.context_processors.last_login_method',
     'astakos.im.context_processors.membership_policies',
-    'synnefo.lib.context_processors.cloudbar'
+    'synnefo.webproject.context_processors.cloudbar'
 ]
 
 middlware_classes = [

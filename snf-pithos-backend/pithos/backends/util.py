@@ -151,6 +151,14 @@ class PithosBackendPool(ObjectPool):
         backend.messages = []
         return False
 
+    def shutdown(self):
+        while True:
+            backend = self.pool_get(create=False)
+            if backend is None:
+                break
+            self.pool_put(None)
+            backend._real_close()
+
 
 def _pooled_backend_close(backend):
     backend._pool.pool_put(backend)

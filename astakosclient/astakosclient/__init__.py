@@ -677,6 +677,30 @@ class AstakosClient(object):
 
         return self._issue_commission(request)
 
+    def issue_resource_reassignment(self, holder, from_source,
+                                    to_source, provisions, name="",
+                                    force=False, auto_accept=False):
+        """Change resource assignment to another project
+        """
+
+        request = {}
+        request["force"] = force
+        request["auto_accept"] = auto_accept
+        request["name"] = name
+
+        try:
+            request["provisions"] = []
+            for resource, quantity in provisions.iteritems():
+                ps = self.mk_provisions(
+                    holder, from_source, resource, -quantity)
+                ps += self.mk_provisions(holder, to_source, resource, quantity)
+                request["provisions"].extend(ps)
+        except Exception as err:
+            self.logger.error(str(err))
+            raise BadValue(str(err))
+
+        return self._issue_commission(request)
+
     # ----------------------------------
     # do a GET to ``API_COMMISSIONS``
     def get_pending_commissions(self):

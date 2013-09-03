@@ -153,6 +153,9 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
         commission's id (int). Otherwise it raises an AstakosClientException
         exception.
 
+    **issue_resource_reassignment(**\ holder, from_source, to_source, provisions, name="", force=False, auto_accept=False\ **)**
+        Change resource assignment to another project
+
     **get_pending_commissions()**
         It returns the pending commissions (list of integers). In case of
         error it raises an AstakosClientException exception.

@@ -781,7 +781,7 @@ class TestCommissions(unittest.TestCase):
         global auth_url
         try:
             client = AstakosClient(token['id'], auth_url)
-            response = client.issue_commission(commission_request)
+            response = client._issue_commission(commission_request)
         except Exception as err:
             self.fail("Shouldn't raise Exception %s" % err)
         self.assertEqual(response, commission_successful_response['serial'])
@@ -795,7 +795,7 @@ class TestCommissions(unittest.TestCase):
         new_request['provisions'][1]['quantity'] = 520000000
         try:
             client = AstakosClient(token['id'], auth_url)
-            client.issue_commission(new_request)
+            client._issue_commission(new_request)
         except QuotaLimit:
             pass
         except Exception as err:

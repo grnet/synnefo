@@ -560,7 +560,7 @@ class AstakosClient(object):
 
     # ----------------------------------
     # do a POST to ``API_COMMISSIONS``
-    def issue_commission(self, request):
+    def _issue_commission(self, request):
         """Issue a commission
 
         Keyword arguments:
@@ -591,6 +591,57 @@ class AstakosClient(object):
             self.logger.error(msg)
             raise AstakosClientException(msg)
 
+    def _mk_user_provision(self, holder, source, resource, quantity):
+        holder = "user:" + holder
+        source = "project:" + source
+        return {"holder": holder, "source": source,
+                "resource": resource, "quantity": quantity}
+
+    def _mk_project_provision(self, holder, resource, quantity):
+        holder = "project:" + holder
+        return {"holder": holder, "source": None,
+                "resource": resource, "quantity": quantity}
+
+    def mk_provisions(self, holder, source, resource, quantity):
+        return [self._mk_user_provision(holder, source, resource, quantity),
+                self._mk_project_provision(source, resource, quantity)]
+
+    def issue_commission_generic(self, user_provisions, project_provisions,
+                                 name="", force=False, auto_accept=False):
+        """Issue commission (for multiple holder/source pairs)
+
+        keyword arguments:
+        user_provisions  -- dict mapping user holdings
+                            (user, project, resource) to integer quantities
+        project_provisions -- dict mapping project holdings
+                              (project, resource) to integer quantities
+        name        -- description of the commission (string)
+        force       -- force this commission (boolean)
+        auto_accept -- auto accept this commission (boolean)
+
+        In case of success return commission's id (int).
+        Otherwise raise an AstakosClientException.
+
+        """
+        request = {}
+        request["force"] = force
+        request["auto_accept"] = auto_accept
+        request["name"] = name
+        try:
+            request["provisions"] = []
+            for (holder, source, resource), quantity in \
+                    user_provisions.iteritems():
+                p = self._mk_user_provision(holder, source, resource, quantity)
+                request["provisions"].append(p)
+            for (holder, resource), quantity in project_provisions.iteritems():
+                p = self._mk_project_provision(holder, resource, quantity)
+                request["provisions"].append(p)
+        except Exception as err:
+            self.logger.error(str(err))
+            raise BadValue(str(err))
+
+        return self._issue_commission(request)
+
     def issue_one_commission(self, holder, source, provisions,
                              name="", force=False, auto_accept=False):
         """Issue one commission (with specific holder and source)
@@ -605,7 +656,6 @@ class AstakosClient(object):
 
         In case of success return commission's id (int).
         Otherwise raise an AstakosClientException.
-        (See also issue_commission)
 
         """
         check_input("issue_one_commission", self.logger,
@@ -619,14 +669,13 @@ class AstakosClient(object):
         try:
             request["provisions"] = []
             for resource, quantity in provisions.iteritems():
-                prov = {"holder": holder, "source": source,
-                        "resource": resource, "quantity": quantity}
-                request["provisions"].append(prov)
+                ps = self.mk_provisions(holder, source, resource, quantity)
+                request["provisions"].extend(ps)
         except Exception as err:
             self.logger.error(str(err))
             raise BadValue(str(err))
 
-        return self.issue_commission(request)
+        return self._issue_commission(request)
 
     # ----------------------------------
     # do a GET to ``API_COMMISSIONS``

@@ -139,9 +139,12 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
         quotas of a specific user with argument user=UUID. In case of error it
         raises an AstakosClientException exception.
 
-    **issue_commission(**\ request\ **)**
-        Issue a commission. In case of success it returns commission's id
-        (int). Otherwise it raises an AstakosClientException exception.
+    **issue_commission_generic(**\ user_provisions, project_provisions, name="", force=False, auto_accept=False\ **)**
+        Issue a commission. User provisions are specified as a dict from
+        (user, project, resource) to int; project provisions as a dict from
+        (project, resource) to int.
+        In case of success return commission's id (int).
+        Otherwise raise an AstakosClientException exception.
 
     **issue_one_commission(**\ holder, source, provisions, name="", force=False, auto_accept=False\ **)**
         Issue a commission. We have to specify the holder, the source and the

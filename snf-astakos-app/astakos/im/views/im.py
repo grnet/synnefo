@@ -663,29 +663,48 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
         return response
 
 
+@login_required
+def _approval_terms_post(request, template_name, terms, extra_context):
+    next = restrict_next(
+        request.POST.get('next'),
+        domain=settings.COOKIE_DOMAIN
+    )
+    if not next:
+        next = reverse('index')
+    form = SignApprovalTermsForm(request.POST, instance=request.user)
+    if not form.is_valid():
+        return render_response(template_name,
+                               terms=terms,
+                               approval_terms_form=form,
+                               context_instance=get_context(request,
+                                                            extra_context))
+    user = form.save()
+    return HttpResponseRedirect(next)
+
+
 @require_http_methods(["GET", "POST"])
 @cookie_fix
 def approval_terms(request, term_id=None,
                    template_name='im/approval_terms.html', extra_context=None):
     extra_context = extra_context or {}
-    term = None
+    terms_record = None
     terms = None
     if not term_id:
         try:
-            term = ApprovalTerms.objects.order_by('-id')[0]
+            terms_record = ApprovalTerms.objects.order_by('-id')[0]
         except IndexError:
             pass
     else:
         try:
-            term = ApprovalTerms.objects.get(id=term_id)
+            terms_record = ApprovalTerms.objects.get(id=term_id)
         except ApprovalTerms.DoesNotExist, e:
             pass
 
-    if not term:
+    if not terms_record:
         messages.error(request, _(astakos_messages.NO_APPROVAL_TERMS))
         return HttpResponseRedirect(reverse('index'))
     try:
-        f = open(term.location, 'r')
+        f = open(terms_record.location, 'r')
     except IOError:
         messages.error(request, _(astakos_messages.GENERIC_ERROR))
         return render_response(
@@ -695,21 +714,8 @@ def approval_terms(request, term_id=None,
     terms = f.read()
 
     if request.method == 'POST':
-        next = restrict_next(
-            request.POST.get('next'),
-            domain=settings.COOKIE_DOMAIN
-        )
-        if not next:
-            next = reverse('index')
-        form = SignApprovalTermsForm(request.POST, instance=request.user)
-        if not form.is_valid():
-            return render_response(template_name,
-                                   terms=terms,
-                                   approval_terms_form=form,
-                                   context_instance=get_context(request,
-                                                                extra_context))
-        user = form.save()
-        return HttpResponseRedirect(next)
+        return _approval_terms_post(request, template_name, terms,
+                                    extra_context)
     else:
         form = None
         if request.user.is_authenticated() and not request.user.signed_terms:

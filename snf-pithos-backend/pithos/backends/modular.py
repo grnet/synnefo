@@ -252,6 +252,8 @@ class ModularBackend(BaseBackend):
 
         self._move_object = partial(self._copy_object, is_move=True)
 
+        self.lock_container_path = False
+
     def pre_exec(self, lock_container_path=False):
         self.lock_container_path = lock_container_path
         self.wrapper.execute()

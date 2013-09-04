@@ -332,7 +332,7 @@ class SynnefoCI(object):
 
         list_flavors = self.compute_client.list_flavors()
         for flv in flavors:
-            [flv_type, flv_value] = flv.strip().split(':')
+            flv_type, flv_value = parse_typed_option(option="flavor", value=flv)
             if flv_type == "name":
                 # Filter flavors by name
                 self.logger.debug(
@@ -374,7 +374,7 @@ class SynnefoCI(object):
 
         list_images = self.image_client.list_public(detail=True)['images']
         for img in images:
-            [img_type, img_value] = img.strip().split(':')
+            img_type, img_value = parse_typed_option(option="image", value=img)
             if img_type == "name":
                 # Filter images by name
                 self.logger.debug(
@@ -778,3 +778,14 @@ class SynnefoCI(object):
         self.fetch_compressed("synnefo_build-area", dest)
         self.logger.info("Downloaded debian packages to %s" %
                          _green(dest))
+
+
+def parse_typed_option(option, value):
+    try:
+        [type_, val] = value.strip().split(':')
+        if type_ not in ["id", "name"]:
+            raise ValueError
+        return type_, val
+    except ValueError:
+        msg = "Invalid %s format. Must be [id|name]:.+" % option
+        raise ValueError(msg)

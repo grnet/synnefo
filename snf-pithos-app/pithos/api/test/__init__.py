@@ -153,6 +153,13 @@ class PithosTestSuiteRunner(DjangoTestSuiteRunner):
 
 
 class PithosTestClient(Client):
+    def _get_path(self, parsed):
+        # If there are parameters, add them
+        if parsed[3]:
+             return unquote(parsed[2] + ";" + parsed[3])
+        else:
+             return unquote(parsed[2])
+
     def copy(self, path, data={}, content_type=MULTIPART_CONTENT,
              follow=False, **extra):
         """

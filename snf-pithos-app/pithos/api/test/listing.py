@@ -37,6 +37,7 @@ from synnefo.lib import join_urls
 
 import django.utils.simplejson as json
 
+
 class ListSharing(PithosAPITest):
     def _build_structure(self, user=None):
         user = user or self.user

@@ -307,3 +307,39 @@ class TestPermissions(PithosAPITest):
                 url, content_type='', HTTP_CONTENT_RANGE='bytes */*',
                 HTTP_X_OBJECT_SHARING='write=%s:%s' % (self.user, group))
             self._assert_write(self.object, members)
+
+    def test_not_allowed(self):
+        cname = self.create_container()[0]
+        oname, odata = self.upload_object(cname)[:-1]
+
+        url = join_urls(self.pithos_path, self.user)
+        r = self.head(url, user='chuck')
+        self.assertEqual(r.status_code, 403)
+        r = self.get(url, user='chuck')
+        self.assertEqual(r.status_code, 403)
+        r = self.post(url, user='chuck', data=get_random_data())
+        self.assertEqual(r.status_code, 403)
+
+        url = join_urls(self.pithos_path, self.user, cname)
+        r = self.head(url, user='chuck')
+        self.assertEqual(r.status_code, 403)
+        r = self.get(url, user='chuck')
+        self.assertEqual(r.status_code, 403)
+        r = self.put(url, user='chuck', data=get_random_data())
+        self.assertEqual(r.status_code, 403)
+        r = self.post(url, user='chuck', data=get_random_data())
+        self.assertEqual(r.status_code, 403)
+        r = self.delete(url, user='chuck')
+        self.assertEqual(r.status_code, 403)
+
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.head(url, user='chuck')
+        self.assertEqual(r.status_code, 403)
+        r = self.get(url, user='chuck')
+        self.assertEqual(r.status_code, 403)
+        r = self.put(url, user='chuck', data=get_random_data())
+        self.assertEqual(r.status_code, 403)
+        r = self.post(url, user='chuck', data=get_random_data())
+        self.assertEqual(r.status_code, 403)
+        r = self.delete(url, user='chuck')
+        self.assertEqual(r.status_code, 403)

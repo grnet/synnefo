@@ -58,7 +58,7 @@ class TestPublic(PithosAPITest):
         (self.assertTrue(l in pithos_settings.PUBLIC_URL_ALPHABET) for
          l in public)
 
-        r = self.get(public, user='user2')
+        r = self.get(public, user='user2', token=None)
         self.assertEqual(r.status_code, 200)
         self.assertTrue('X-Object-Public' not in r)
 
@@ -212,7 +212,7 @@ class TestPublic(PithosAPITest):
         public2 = self._assert_public_object(cname, oname, odata)
         self.assertEqual(public, public2)
 
-        # delete object histoy until now
+        # delete object history until now
         _time.sleep(1)
         t = datetime.datetime.utcnow()
         now = int(_time.mktime(t.timetuple()))
@@ -222,3 +222,30 @@ class TestPublic(PithosAPITest):
         self.assertEqual(r.status_code, 404)
         r = self.get(public)
         self.assertEqual(r.status_code, 404)
+
+    def test_public_manifest(self):
+        cname = self.create_container()[0]
+        prefix = 'myobject/'
+        data = ''
+        for i in range(random.randint(2, 10)):
+            part = '%s%d' % (prefix, i)
+            data += self.upload_object(cname, oname=part)[1]
+
+        manifest = '%s/%s' % (cname, prefix)
+        oname = get_random_name()
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.put(url, data='', HTTP_X_OBJECT_MANIFEST=manifest,
+                     HTTP_X_OBJECT_PUBLIC='true')
+        self.assertEqual(r.status_code, 201)
+
+        r = self.head(url)
+        self.assertTrue('X-Object-Manifest' in r)
+        self.assertEqual(r['X-Object-Manifest'], manifest)
+
+        self.assertTrue('X-Object-Public' in r)
+        public = r['X-Object-Public']
+
+        r = self.get(public)
+        self.assertTrue(r.content, data)
+        #self.assertTrue('X-Object-Manifest' in r)
+        #self.assertEqual(r['X-Object-Manifest'], manifest)

@@ -35,7 +35,7 @@
 # or implied, of GRNET S.A.
 
 from collections import defaultdict
-from urllib import quote
+from urllib import quote, unquote
 from functools import partial
 
 from pithos.api.test import (PithosAPITest, pithos_settings,
@@ -60,25 +60,57 @@ merkle = partial(merkle,
 
 
 class ObjectHead(PithosAPITest):
-    def setUp(self):
+    def test_get_object_meta(self):
         cname = self.create_container()[0]
         oname, odata = self.upload_object(cname)[:-1]
 
-        url = join_urls(self.pithos_path, cname, oname)
+        url = join_urls(self.pithos_path, self.user, cname, oname)
         r = self.head(url)
-        map(lambda i: self.assertTrue(i in r),
-            ['Etag',
-             'Content-Length',
-             'Content-Type',
-             'Last-Modified',
-             'Content-Encoding',
-             'Content-Disposition',
-             'X-Object-Hash',
-             'X-Object-UUID',
-             'X-Object-Version',
-             'X-Object-Version-Timestamp',
-             'X-Object-Modified-By',
-             'X-Object-Manifest'])
+
+        mandatory = ['Etag',
+                     'Content-Length',
+                     'Content-Type',
+                     'Last-Modified',
+                     'X-Object-Hash',
+                     'X-Object-UUID',
+                     'X-Object-Version',
+                     'X-Object-Version-Timestamp',
+                     'X-Object-Modified-By']
+        for i in mandatory:
+            self.assertTrue(i in r)
+
+        r = self.post(url, content_type='',
+                      HTTP_CONTENT_ENCODING='gzip',
+                      HTTP_CONTENT_DISPOSITION=(
+                          'attachment; filename="%s"' % oname))
+        self.assertEqual(r.status_code, 202)
+
+        r = self.head(url)
+        for i in mandatory:
+            self.assertTrue(i in r)
+        self.assertTrue('Content-Encoding' in r)
+        self.assertEqual(r['Content-Encoding'], 'gzip')
+        self.assertTrue('Content-Disposition' in r)
+        self.assertEqual(unquote(r['Content-Disposition']),
+                         'attachment; filename="%s"' % oname)
+
+        prefix = 'myobject/'
+        data = ''
+        for i in range(random.randint(2, 10)):
+            part = '%s%d' % (prefix, i)
+            data += self.upload_object(cname, oname=part)[1]
+
+        manifest = '%s/%s' % (cname, prefix)
+        oname = get_random_name()
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.put(url, data='', HTTP_X_OBJECT_MANIFEST=manifest)
+        self.assertEqual(r.status_code, 201)
+
+        r = self.head(url)
+        for i in mandatory:
+            self.assertTrue(i in r)
+        self.assertTrue('X-Object-Manifest' in r)
+        self.assertEqual(r['X-Object-Manifest'], manifest)
 
 
 class ObjectGet(PithosAPITest):
@@ -702,7 +734,7 @@ class ObjectPut(PithosAPITest):
         self.assertEqual(r.content, data)
 
 
-class ObjectCopy(PithosAPITest):
+class ObjectPutCopy(PithosAPITest):
     def setUp(self):
         PithosAPITest.setUp(self)
         self.container = 'c1'
@@ -760,6 +792,99 @@ class ObjectCopy(PithosAPITest):
             # assert etag is the same
             self.assertTrue('X-Object-Hash' in r)
             self.assertEqual(r['X-Object-Hash'], self.etag)
+
+    def test_copy_from_other_account(self):
+        cname = 'c2'
+        self.create_container(cname, user='chuck')
+        self.create_container(cname, user='alice')
+
+        # share object for read with alice
+        url = join_urls(self.pithos_path, self.user, self.container,
+                        self.object)
+        r = self.post(url, content_type='', HTTP_CONTENT_RANGE='bytes */*',
+                      HTTP_X_OBJECT_SHARING='read=alice')
+        self.assertEqual(r.status_code, 202)
+
+        # assert not allowed for chuck
+        oname = get_random_name()
+        url = join_urls(self.pithos_path, 'chuck', cname, oname)
+        r = self.put(url, data='', user='chuck',
+                     HTTP_X_OBJECT_META_TEST='testcopy',
+                     HTTP_X_COPY_FROM='/%s/%s' % (
+                         self.container, self.object),
+                     HTTP_X_SOURCE_ACCOUNT='user')
+
+        self.assertEqual(r.status_code, 403)
+
+        # assert copy success for alice
+        url = join_urls(self.pithos_path, 'alice', cname, oname)
+        r = self.put(url, data='', user='alice',
+                     HTTP_X_OBJECT_META_TEST='testcopy',
+                     HTTP_X_COPY_FROM='/%s/%s' % (
+                         self.container, self.object),
+                     HTTP_X_SOURCE_ACCOUNT='user')
+        self.assertEqual(r.status_code, 201)
+
+        # assert access the new object
+        r = self.head(url, user='alice')
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('X-Object-Meta-Test' in r)
+        self.assertEqual(r['X-Object-Meta-Test'], 'testcopy')
+
+        # assert etag is the same
+        self.assertTrue('X-Object-Hash' in r)
+        self.assertEqual(r['X-Object-Hash'], self.etag)
+
+        # share object for write
+        url = join_urls(self.pithos_path, self.user, self.container,
+                        self.object)
+        r = self.post(url, content_type='', HTTP_CONTENT_RANGE='bytes */*',
+                      HTTP_X_OBJECT_SHARING='write=dan')
+        self.assertEqual(r.status_code, 202)
+
+        # assert not allowed copy for alice
+        url = join_urls(self.pithos_path, 'alice', cname, oname)
+        r = self.put(url, data='', user='alice',
+                     HTTP_X_OBJECT_META_TEST='testcopy',
+                     HTTP_X_COPY_FROM='/%s/%s' % (
+                         self.container, self.object),
+                     HTTP_X_SOURCE_ACCOUNT='user')
+        self.assertEqual(r.status_code, 403)
+
+        # assert allowed copy for dan
+        self.create_container(cname, user='dan')
+        url = join_urls(self.pithos_path, 'dan', cname, oname)
+        r = self.put(url, data='', user='dan',
+                     HTTP_X_OBJECT_META_TEST='testcopy',
+                     HTTP_X_COPY_FROM='/%s/%s' % (
+                         self.container, self.object),
+                     HTTP_X_SOURCE_ACCOUNT='user')
+        self.assertEqual(r.status_code, 201)
+
+        # assert access the new object
+        r = self.head(url, user='dan')
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('X-Object-Meta-Test' in r)
+        self.assertEqual(r['X-Object-Meta-Test'], 'testcopy')
+
+        # assert etag is the same
+        self.assertTrue('X-Object-Hash' in r)
+        self.assertEqual(r['X-Object-Hash'], self.etag)
+
+        # assert source object still exists
+        url = join_urls(self.pithos_path, self.user, self.container,
+                        self.object)
+        r = self.head(url)
+        self.assertEqual(r.status_code, 200)
+        # assert etag is the same
+        self.assertTrue('X-Object-Hash' in r)
+        self.assertEqual(r['X-Object-Hash'], self.etag)
+
+        r = self.get(url)
+        self.assertEqual(r.status_code, 200)
+        # assert etag is the same
+        self.assertTrue('X-Object-Hash' in r)
+        self.assertEqual(r['X-Object-Hash'], self.etag)
 
     def test_copy_invalid(self):
         # copy from non-existent object
@@ -822,7 +947,7 @@ class ObjectCopy(PithosAPITest):
         self.assertEqual(r.status_code, 404)
 
 
-class ObjectMove(PithosAPITest):
+class ObjectPutMove(PithosAPITest):
     def setUp(self):
         PithosAPITest.setUp(self)
         self.container = 'c1'
@@ -898,6 +1023,402 @@ class ObjectMove(PithosAPITest):
         url = join_urls(self.pithos_path, self.user, self.container,
                         '%s/%s' % (copy_folder,
                                    other.replace(folder, copy_folder)))
+        r = self.head(url)
+        self.assertEqual(r.status_code, 404)
+
+    def test_move_from_other_account(self):
+        cname = 'c2'
+        self.create_container(cname, user='chuck')
+        self.create_container(cname, user='alice')
+
+        # share object for read with alice
+        url = join_urls(self.pithos_path, self.user, self.container,
+                        self.object)
+        r = self.post(url, content_type='', HTTP_CONTENT_RANGE='bytes */*',
+                      HTTP_X_OBJECT_SHARING='read=alice')
+        self.assertEqual(r.status_code, 202)
+
+        # assert not allowed move for chuck
+        oname = get_random_name()
+        url = join_urls(self.pithos_path, 'chuck', cname, oname)
+        r = self.put(url, data='', user='chuck',
+                     HTTP_X_OBJECT_META_TEST='testcopy',
+                     HTTP_X_MOVE_FROM='/%s/%s' % (
+                         self.container, self.object),
+                     HTTP_X_SOURCE_ACCOUNT='user')
+
+        self.assertEqual(r.status_code, 403)
+
+        # assert no new object was created
+        r = self.head(url, user='chuck')
+        self.assertEqual(r.status_code, 404)
+
+        # assert not allowed move for alice
+        url = join_urls(self.pithos_path, 'alice', cname, oname)
+        r = self.put(url, data='', user='alice',
+                     HTTP_X_OBJECT_META_TEST='testcopy',
+                     HTTP_X_MOVE_FROM='/%s/%s' % (
+                         self.container, self.object),
+                     HTTP_X_SOURCE_ACCOUNT='user')
+        self.assertEqual(r.status_code, 403)
+
+        # assert no new object was created
+        r = self.head(url, user='alice')
+        self.assertEqual(r.status_code, 404)
+
+        # share object for write with dan
+        url = join_urls(self.pithos_path, self.user, self.container,
+                        self.object)
+        r = self.post(url, content_type='', HTTP_CONTENT_RANGE='bytes */*',
+                      HTTP_X_OBJECT_SHARING='write=dan')
+        self.assertEqual(r.status_code, 202)
+
+        # assert not allowed move for alice
+        url = join_urls(self.pithos_path, 'alice', cname, oname)
+        r = self.put(url, data='', user='alice',
+                     HTTP_X_OBJECT_META_TEST='testcopy',
+                     HTTP_X_MOVE_FROM='/%s/%s' % (
+                         self.container, self.object),
+                     HTTP_X_SOURCE_ACCOUNT='user')
+        self.assertEqual(r.status_code, 403)
+
+        # assert no new object was created
+        r = self.head(url, user='alice')
+        self.assertEqual(r.status_code, 404)
+
+        # assert not allowed move for dan
+        self.create_container(cname, user='dan')
+        url = join_urls(self.pithos_path, 'dan', cname, oname)
+        r = self.put(url, data='', user='dan',
+                     HTTP_X_OBJECT_META_TEST='testcopy',
+                     HTTP_X_MOVE_FROM='/%s/%s' % (
+                         self.container, self.object),
+                     HTTP_X_SOURCE_ACCOUNT='user')
+        self.assertEqual(r.status_code, 403)
+
+        # assert no new object was created
+        r = self.head(url, user='dan')
+        self.assertEqual(r.status_code, 404)
+
+
+class ObjectCopy(PithosAPITest):
+    def setUp(self):
+        PithosAPITest.setUp(self)
+        self.container = 'c1'
+        self.create_container(self.container)
+        self.object, self.data = self.upload_object(self.container)[:-1]
+
+        url = join_urls(
+            self.pithos_path, self.user, self.container, self.object)
+        r = self.head(url)
+        self.etag = r['X-Object-Hash']
+
+    def test_copy(self):
+        with AssertMappingInvariant(self.get_object_info, self.container,
+                                    self.object):
+            oname = get_random_name()
+            # copy object
+            url = join_urls(self.pithos_path, self.user, self.container,
+                            self.object)
+            r = self.copy(url, HTTP_X_OBJECT_META_TEST='testcopy',
+                          HTTP_DESTINATION='/%s/%s' % (self.container,
+                                                       oname))
+            # assert copy success
+            url = join_urls(self.pithos_path, self.user, self.container,
+                            oname)
+            self.assertEqual(r.status_code, 201)
+
+            # assert access the new object
+            r = self.head(url)
+            self.assertEqual(r.status_code, 200)
+            self.assertTrue('X-Object-Meta-Test' in r)
+            self.assertEqual(r['X-Object-Meta-Test'], 'testcopy')
+
+            # assert etag is the same
+            self.assertTrue('X-Object-Hash' in r)
+            self.assertEqual(r['X-Object-Hash'], self.etag)
+
+            # assert source object still exists
+            url = join_urls(self.pithos_path, self.user, self.container,
+                            self.object)
+            r = self.head(url)
+            self.assertEqual(r.status_code, 200)
+
+            # assert etag is the same
+            self.assertTrue('X-Object-Hash' in r)
+            self.assertEqual(r['X-Object-Hash'], self.etag)
+
+            r = self.get(url)
+            self.assertEqual(r.status_code, 200)
+
+            # assert etag is the same
+            self.assertTrue('X-Object-Hash' in r)
+            self.assertEqual(r['X-Object-Hash'], self.etag)
+
+            # copy object to other container (not existing)
+            cname = get_random_name()
+            url = join_urls(self.pithos_path, self.user, self.container,
+                            self.object)
+            r = self.copy(url, HTTP_X_OBJECT_META_TEST='testcopy',
+                          HTTP_DESTINATION='/%s/%s' % (cname, self.object))
+
+            # assert destination container does not exist
+            url = join_urls(self.pithos_path, self.user, cname,
+                            self.object)
+            self.assertEqual(r.status_code, 404)
+
+            # create container
+            self.create_container(cname)
+
+            # copy object to other container (existing)
+            url = join_urls(self.pithos_path, self.user, self.container,
+                            self.object)
+            r = self.copy(url, HTTP_X_OBJECT_META_TEST='testcopy',
+                          HTTP_DESTINATION='/%s/%s' % (cname, self.object))
+
+            # assert copy success
+            url = join_urls(self.pithos_path, self.user, cname,
+                            self.object)
+            self.assertEqual(r.status_code, 201)
+
+            # assert access the new object
+            r = self.head(url)
+            self.assertEqual(r.status_code, 200)
+            self.assertTrue('X-Object-Meta-Test' in r)
+            self.assertEqual(r['X-Object-Meta-Test'], 'testcopy')
+
+            # assert etag is the same
+            self.assertTrue('X-Object-Hash' in r)
+            self.assertEqual(r['X-Object-Hash'], self.etag)
+
+                        # assert source object still exists
+            url = join_urls(self.pithos_path, self.user, self.container,
+                            self.object)
+            r = self.head(url)
+            self.assertEqual(r.status_code, 200)
+
+            # assert etag is the same
+            self.assertTrue('X-Object-Hash' in r)
+            self.assertEqual(r['X-Object-Hash'], self.etag)
+
+            r = self.get(url)
+            self.assertEqual(r.status_code, 200)
+
+            # assert etag is the same
+            self.assertTrue('X-Object-Hash' in r)
+            self.assertEqual(r['X-Object-Hash'], self.etag)
+
+    def test_copy_to_other_account(self):
+        # create a container under alice account
+        cname = self.create_container(user='alice')[0]
+
+        # create a folder under this container
+        folder = self.create_folder(cname, user='alice')[0]
+
+        oname = get_random_name()
+
+        # copy object to other account container
+        url = join_urls(self.pithos_path, self.user, self.container,
+                        self.object)
+        r = self.copy(url, HTTP_X_OBJECT_META_TEST='testcopy',
+                      HTTP_DESTINATION='/%s/%s/%s' % (cname, folder, oname),
+                      HTTP_DESTINATION_ACCOUNT='alice')
+        self.assertEqual(r.status_code, 403)
+
+        # share object for read with user
+        url = join_urls(self.pithos_path, 'alice', cname, folder)
+        r = self.post(url, user='alice', content_type='',
+                      HTTP_CONTENT_RANGE='bytes */*',
+                      HTTP_X_OBJECT_SHARING='read=%s' % self.user)
+        self.assertEqual(r.status_code, 202)
+
+        # assert copy object still is not allowed
+        url = join_urls(self.pithos_path, self.user, self.container,
+                        self.object)
+        r = self.copy(url, HTTP_X_OBJECT_META_TEST='testcopy',
+                      HTTP_DESTINATION='/%s/%s/%s' % (cname, folder, oname),
+                      HTTP_DESTINATION_ACCOUNT='alice')
+        self.assertEqual(r.status_code, 403)
+
+        # share object for write with user
+        url = join_urls(self.pithos_path, 'alice', cname, folder)
+        r = self.post(url, user='alice',  content_type='',
+                      HTTP_CONTENT_RANGE='bytes */*',
+                      HTTP_X_OBJECT_SHARING='write=%s' % self.user)
+        self.assertEqual(r.status_code, 202)
+
+        # assert copy object now is allowed
+        url = join_urls(self.pithos_path, self.user, self.container,
+                        self.object)
+        r = self.copy(url, HTTP_X_OBJECT_META_TEST='testcopy',
+                      HTTP_DESTINATION='/%s/%s/%s' % (cname, folder, oname),
+                      HTTP_DESTINATION_ACCOUNT='alice')
+        self.assertEqual(r.status_code, 201)
+
+        # assert access the new object
+        url = join_urls(self.pithos_path, 'alice', cname, folder, oname)
+        r = self.head(url, user='alice')
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('X-Object-Meta-Test' in r)
+        self.assertEqual(r['X-Object-Meta-Test'], 'testcopy')
+
+        # assert etag is the same
+        self.assertTrue('X-Object-Hash' in r)
+        self.assertEqual(r['X-Object-Hash'], self.etag)
+
+        # assert source object still exists
+        url = join_urls(self.pithos_path, self.user, self.container,
+                        self.object)
+        r = self.head(url)
+        self.assertEqual(r.status_code, 200)
+
+        # assert etag is the same
+        self.assertTrue('X-Object-Hash' in r)
+        self.assertEqual(r['X-Object-Hash'], self.etag)
+
+        r = self.get(url)
+        self.assertEqual(r.status_code, 200)
+
+        # assert etag is the same
+        self.assertTrue('X-Object-Hash' in r)
+        self.assertEqual(r['X-Object-Hash'], self.etag)
+
+
+class ObjectMove(PithosAPITest):
+    def setUp(self):
+        PithosAPITest.setUp(self)
+        self.container = 'c1'
+        self.create_container(self.container)
+        self.object, self.data = self.upload_object(self.container)[:-1]
+
+        url = join_urls(
+            self.pithos_path, self.user, self.container, self.object)
+        r = self.head(url)
+        self.etag = r['X-Object-Hash']
+
+    def test_move(self):
+        oname = get_random_name()
+
+        # move object
+        url = join_urls(self.pithos_path, self.user, self.container,
+                        self.object)
+        r = self.move(url, HTTP_X_OBJECT_META_TEST='testmove',
+                      HTTP_DESTINATION='/%s/%s' % (self.container,
+                                                   oname))
+        # assert move success
+        url = join_urls(self.pithos_path, self.user, self.container,
+                        oname)
+        self.assertEqual(r.status_code, 201)
+
+        # assert access the new object
+        r = self.head(url)
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('X-Object-Meta-Test' in r)
+        self.assertEqual(r['X-Object-Meta-Test'], 'testmove')
+
+        # assert etag is the same
+        self.assertTrue('X-Object-Hash' in r)
+        self.assertEqual(r['X-Object-Hash'], self.etag)
+
+        # assert source object does not exist
+        url = join_urls(self.pithos_path, self.user, self.container,
+                        self.object)
+        r = self.head(url)
+        self.assertEqual(r.status_code, 404)
+
+    def test_move_to_other_container(self):
+        # move object to other container (not existing)
+        cname = get_random_name()
+        url = join_urls(self.pithos_path, self.user, self.container,
+                        self.object)
+        r = self.move(url, HTTP_X_OBJECT_META_TEST='testmove',
+                      HTTP_DESTINATION='/%s/%s' % (cname, self.object))
+
+        # assert destination container does not exist
+        url = join_urls(self.pithos_path, self.user, cname,
+                        self.object)
+        self.assertEqual(r.status_code, 404)
+
+        # create container
+        self.create_container(cname)
+
+        # move object to other container (existing)
+        url = join_urls(self.pithos_path, self.user, self.container,
+                        self.object)
+        r = self.move(url, HTTP_X_OBJECT_META_TEST='testmove',
+                      HTTP_DESTINATION='/%s/%s' % (cname, self.object))
+
+        # assert move success
+        url = join_urls(self.pithos_path, self.user, cname,
+                        self.object)
+        self.assertEqual(r.status_code, 201)
+
+        # assert access the new object
+        r = self.head(url)
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('X-Object-Meta-Test' in r)
+        self.assertEqual(r['X-Object-Meta-Test'], 'testmove')
+
+        # assert etag is the same
+        self.assertTrue('X-Object-Hash' in r)
+        self.assertEqual(r['X-Object-Hash'], self.etag)
+
+        # assert source object does not exist
+        url = join_urls(self.pithos_path, self.user, self.container,
+                        self.object)
+        r = self.head(url)
+        self.assertEqual(r.status_code, 404)
+
+    def test_move_to_other_account(self):
+        # create a container under alice account
+        cname = self.create_container(user='alice')[0]
+
+        # create a folder under this container
+        folder = self.create_folder(cname, user='alice')[0]
+
+        oname = get_random_name()
+
+        # move object to other account container
+        url = join_urls(self.pithos_path, self.user, self.container,
+                        self.object)
+        r = self.move(url, HTTP_X_OBJECT_META_TEST='testmove',
+                      HTTP_DESTINATION='/%s/%s/%s' % (cname, folder, oname),
+                      HTTP_DESTINATION_ACCOUNT='alice')
+        self.assertEqual(r.status_code, 403)
+
+        # share object for read with user
+        url = join_urls(self.pithos_path, 'alice', cname, folder)
+        r = self.post(url, user='alice', content_type='',
+                      HTTP_CONTENT_RANGE='bytes */*',
+                      HTTP_X_OBJECT_SHARING='read=%s' % self.user)
+        self.assertEqual(r.status_code, 202)
+
+        # assert move object still is not allowed
+        url = join_urls(self.pithos_path, self.user, self.container,
+                        self.object)
+        r = self.move(url, HTTP_X_OBJECT_META_TEST='testmove',
+                      HTTP_DESTINATION='/%s/%s/%s' % (cname, folder, oname),
+                      HTTP_DESTINATION_ACCOUNT='alice')
+        self.assertEqual(r.status_code, 403)
+
+        # share object for write with user
+        url = join_urls(self.pithos_path, 'alice', cname, folder)
+        r = self.post(url, user='alice',  content_type='',
+                      HTTP_CONTENT_RANGE='bytes */*',
+                      HTTP_X_OBJECT_SHARING='write=%s' % self.user)
+        self.assertEqual(r.status_code, 202)
+
+        # assert move object now is allowed
+        url = join_urls(self.pithos_path, self.user, self.container,
+                        self.object)
+        r = self.move(url, HTTP_X_OBJECT_META_TEST='testmove',
+                      HTTP_DESTINATION='/%s/%s/%s' % (cname, folder, oname),
+                      HTTP_DESTINATION_ACCOUNT='alice')
+        self.assertEqual(r.status_code, 201)
+
+        # assert source object does not exist
+        url = join_urls(self.pithos_path, self.user, self.container,
+                        self.object)
         r = self.head(url)
         self.assertEqual(r.status_code, 404)
 
@@ -1276,6 +1797,66 @@ class ObjectPost(PithosAPITest):
         data = r.content
         self.assertEqual(data, v[2][2])
         append((r['X-Object-Version'], len(data), data))
+
+    def test_update_from_other_version(self):
+        versions = []
+        info = self.get_object_info(self.container, self.object)
+        versions.append(info['X-Object-Version'])
+        pre_length = int(info['Content-Length'])
+
+        # update object
+        d1, r = self.upload_object(self.container, self.object,
+                                   length=pre_length - 1)[1:]
+        self.assertTrue('X-Object-Version' in r)
+        versions.append(r['X-Object-Version'])
+
+        # update object
+        d2, r = self.upload_object(self.container, self.object,
+                                   length=pre_length - 2)[1:]
+        self.assertTrue('X-Object-Version' in r)
+        versions.append(r['X-Object-Version'])
+
+        # get previous version
+        url = join_urls(self.pithos_path, self.user, self.container,
+                        self.object)
+        r = self.get('%s?version=list&format=json' % url)
+        self.assertEqual(r.status_code, 200)
+        l = json.loads(r.content)['versions']
+        self.assertEqual(len(l), 3)
+        self.assertEqual([str(v[0]) for v in l], versions)
+
+        # update with the previous version
+        r = self.post(url,
+                      HTTP_CONTENT_RANGE='bytes 0-/*',
+                      HTTP_X_SOURCE_OBJECT='/%s/%s' % (self.container,
+                                                       self.object),
+                      HTTP_X_SOURCE_VERSION=versions[0])
+        self.assertEqual(r.status_code, 204)
+
+        # check content
+        r = self.get(url)
+        content = r.content
+        self.assertEqual(len(content), pre_length)
+        self.assertEqual(content, self.object_data)
+
+        # update object
+        d3, r = self.upload_object(self.container, self.object,
+                                   length=len(d2) + 1)[1:]
+        self.assertTrue('X-Object-Version' in r)
+        versions.append(r['X-Object-Version'])
+
+        # update with the previous version
+        r = self.post(url,
+                      HTTP_CONTENT_RANGE='bytes 0-/*',
+                      HTTP_X_SOURCE_OBJECT='/%s/%s' % (self.container,
+                                                       self.object),
+                      HTTP_X_SOURCE_VERSION=versions[-2])
+        self.assertEqual(r.status_code, 204)
+
+        # check content
+        r = self.get(url)
+        content = r.content
+        self.assertEqual(content, d2 + d3[-1])
 
 
 class ObjectDelete(PithosAPITest):

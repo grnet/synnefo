@@ -34,7 +34,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from urlparse import urlunsplit, urlsplit
+from urlparse import urlunsplit, urlsplit, urlparse
 from xml.dom import minidom
 from urllib import quote, unquote
 
@@ -48,6 +48,7 @@ from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
 
 from django.test import TestCase
+from django.test.client import Client, MULTIPART_CONTENT, FakePayload
 from django.test.simple import DjangoTestSuiteRunner
 from django.conf import settings
 from django.utils.http import urlencode
@@ -102,7 +103,7 @@ django_sqlalchemy_engines = {
     'django.db.backends.oracle': 'oracle'}
 
 
-def prepate_db_connection():
+def prepare_db_connection():
     """Build pithos backend connection string from django default database"""
 
     db = settings.DATABASES['default']
@@ -141,7 +142,7 @@ class PithosTestSuiteRunner(DjangoTestSuiteRunner):
     def setup_databases(self, **kwargs):
         old_names, mirrors = super(PithosTestSuiteRunner,
                                    self).setup_databases(**kwargs)
-        prepate_db_connection()
+        prepare_db_connection()
         return old_names, mirrors
 
     def teardown_databases(self, old_config, **kwargs):
@@ -151,8 +152,52 @@ class PithosTestSuiteRunner(DjangoTestSuiteRunner):
                                                               **kwargs)
 
 
+class PithosTestClient(Client):
+    def copy(self, path, data={}, content_type=MULTIPART_CONTENT,
+             follow=False, **extra):
+        """
+        Send a resource to the server using COPY.
+        """
+        parsed = urlparse(path)
+        r = {
+            'CONTENT_TYPE':    'text/html; charset=utf-8',
+            'PATH_INFO':       self._get_path(parsed),
+            'QUERY_STRING':    urlencode(data, doseq=True) or parsed[4],
+            'REQUEST_METHOD': 'COPY',
+            'wsgi.input':      FakePayload('')
+        }
+        r.update(extra)
+
+        response = self.request(**r)
+        if follow:
+            response = self._handle_redirects(response, **extra)
+        return response
+
+    def move(self, path, data={}, content_type=MULTIPART_CONTENT,
+             follow=False, **extra):
+        """
+        Send a resource to the server using MOVE.
+        """
+        parsed = urlparse(path)
+        r = {
+            'CONTENT_TYPE':    'text/html; charset=utf-8',
+            'PATH_INFO':       self._get_path(parsed),
+            'QUERY_STRING':    urlencode(data, doseq=True) or parsed[4],
+            'REQUEST_METHOD': 'MOVE',
+            'wsgi.input':      FakePayload('')
+        }
+        r.update(extra)
+
+        response = self.request(**r)
+        if follow:
+            response = self._handle_redirects(response, **extra)
+        return response
+
+
 class PithosAPITest(TestCase):
     def setUp(self):
+        self.client = PithosTestClient()
+
         # Override default block size to spead up tests
         pithos_settings.BACKEND_BLOCK_SIZE = TEST_BLOCK_SIZE
         pithos_settings.BACKEND_HASH_ALGORITHM = TEST_HASH_ALGORITHM
@@ -177,43 +222,71 @@ class PithosAPITest(TestCase):
             self.delete_container_content(c['name'])
             self.delete_container(c['name'])
 
-    def head(self, url, user='user', data={}, follow=False, **extra):
+    def head(self, url, user='user', token='DummyToken', data={}, follow=False,
+             **extra):
         with astakos_user(user):
             extra = dict((quote(k), quote(v)) for k, v in extra.items())
-            extra.setdefault('HTTP_X_AUTH_TOKEN', 'token')
+            if token:
+                extra['HTTP_X_AUTH_TOKEN'] = token
             response = self.client.head(url, data, follow, **extra)
         return response
 
-    def get(self, url, user='user', data={}, follow=False, **extra):
+    def get(self, url, user='user', token='DummyToken', data={}, follow=False,
+            **extra):
         with astakos_user(user):
             extra = dict((quote(k), quote(v)) for k, v in extra.items())
-            extra.setdefault('HTTP_X_AUTH_TOKEN', 'token')
+            if token:
+                extra['HTTP_X_AUTH_TOKEN'] = token
             response = self.client.get(url, data, follow, **extra)
         return response
 
-    def delete(self, url, user='user', data={}, follow=False, **extra):
+    def delete(self, url, user='user', token='DummyToken', data={},
+               follow=False, **extra):
         with astakos_user(user):
             extra = dict((quote(k), quote(v)) for k, v in extra.items())
-            extra.setdefault('HTTP_X_AUTH_TOKEN', 'token')
+            if token:
+                extra['HTTP_X_AUTH_TOKEN'] = token
             response = self.client.delete(url, data, follow, **extra)
         return response
 
-    def post(self, url, user='user', data={},
+    def post(self, url, user='user', token='DummyToken', data={},
              content_type='application/octet-stream', follow=False, **extra):
         with astakos_user(user):
             extra = dict((quote(k), quote(v)) for k, v in extra.items())
-            extra.setdefault('HTTP_X_AUTH_TOKEN', 'token')
+            if token:
+                extra['HTTP_X_AUTH_TOKEN'] = token
             response = self.client.post(url, data, content_type, follow,
                                         **extra)
         return response
 
-    def put(self, url, user='user', data={},
+    def put(self, url, user='user', token='DummyToken', data={},
             content_type='application/octet-stream', follow=False, **extra):
         with astakos_user(user):
             extra = dict((quote(k), quote(v)) for k, v in extra.items())
-            extra.setdefault('HTTP_X_AUTH_TOKEN', 'token')
+            if token:
+                extra['HTTP_X_AUTH_TOKEN'] = token
             response = self.client.put(url, data, content_type, follow,
                                        **extra)
+        return response
+
+    def copy(self, url, user='user', token='DummyToken', data={},
+             content_type='application/octet-stream', follow=False, **extra):
+        with astakos_user(user):
+            extra = dict((quote(k), quote(v)) for k, v in extra.items())
+            if token:
+                extra['HTTP_X_AUTH_TOKEN'] = token
+            response = self.client.copy(url, data, content_type, follow,
+                                        **extra)
+        return response
+
+    def move(self, url, user='user', token='DummyToken', data={},
+             content_type='application/octet-stream', follow=False, **extra):
+        with astakos_user(user):
+            extra = dict((quote(k), quote(v)) for k, v in extra.items())
+            if token:
+                extra['HTTP_X_AUTH_TOKEN'] = token
+            response = self.client.move(url, data, content_type, follow,
+                                        **extra)
         return response
 
     def update_account_meta(self, meta, user=None):
@@ -223,29 +296,41 @@ class PithosAPITest(TestCase):
         url = join_urls(self.pithos_path, user)
         r = self.post('%s?update=' % url, user=user, **kwargs)
         self.assertEqual(r.status_code, 202)
-        account_meta = self.get_account_meta()
-        (self.assertTrue(k in account_meta) for k in meta.keys())
-        (self.assertEqual(account_meta[k], v) for k, v in meta.items())
+        account_meta = self.get_account_meta(user=user)
+        (self.assertTrue('X-Account-Meta-%s' % k in account_meta) for
+            k in meta.keys())
+        (self.assertEqual(account_meta['X-Account-Meta-%s' % k], v) for
+            k, v in meta.items())
+
+    def reset_account_meta(self, meta, user=None):
+        user = user or self.user
+        kwargs = dict(
+            ('HTTP_X_ACCOUNT_META_%s' % k, str(v)) for k, v in meta.items())
+        url = join_urls(self.pithos_path, user)
+        r = self.post(url, user=user, **kwargs)
+        self.assertEqual(r.status_code, 202)
+        account_meta = self.get_account_meta(user=user)
+        (self.assertTrue('X-Account-Meta-%s' % k in account_meta) for
+            k in meta.keys())
+        (self.assertEqual(account_meta['X-Account-Meta-%s' % k], v) for
+            k, v in meta.items())
 
     def delete_account_meta(self, meta, user=None):
         user = user or self.user
-        transform = (lambda k: 'HTTP_X_ACCOUNT_META_%s' %
-                     k.replace('-', '_').upper())
+        transform = lambda k: 'HTTP_%s' % k.replace('-', '_').upper()
         kwargs = dict((transform(k), '') for k, v in meta.items())
         url = join_urls(self.pithos_path, user)
         r = self.post('%s?update=' % url, user=user, **kwargs)
         self.assertEqual(r.status_code, 202)
-        account_meta = self.get_account_meta()
-        (self.assertTrue(k not in account_meta) for k in meta.keys())
+        account_meta = self.get_account_meta(user=user)
+        (self.assertTrue('X-Account-Meta-%s' % k not in account_meta) for
+            k in meta.keys())
         return r
 
     def delete_account_groups(self, groups, user=None):
         user = user or self.user
         url = join_urls(self.pithos_path, user)
-        transform = (lambda k: 'HTTP_X_ACCOUNT_GROUP_%s' %
-                     k.replace('-', '_').upper())
-        kwargs = dict((transform(k), '') for k, v in groups.items())
-        r = self.post('%s?update=' % url, user=user, **kwargs)
+        r = self.post('%s?update=' % url, user=user, **groups)
         self.assertEqual(r.status_code, 202)
         account_groups = self.get_account_groups()
         (self.assertTrue(k not in account_groups) for k in groups.keys())
@@ -438,6 +523,7 @@ class PithosAPITest(TestCase):
     def get_object_meta(self, container, object, version=None, until=None,
                         user=None):
         prefix = 'X-Object-Meta-'
+        user = user or self.user
         r = self.get_object_info(container, object, version, until=until,
                                  user=user)
         headers = dict(r._headers.values())

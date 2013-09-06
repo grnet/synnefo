@@ -119,7 +119,7 @@ cyclades_services = {
     },
 
     'cyclades_vmapi': {
-        'type': 'cyclades_vmapi',
+        'type': 'vmapi',
         'component': 'cyclades',
         'prefix': 'vmapi',
         'public': True,
@@ -158,6 +158,18 @@ cyclades_services = {
         'component': 'cyclades',
         'prefix': 'ui',
         'public': False,
+        'endpoints': [
+            {'versionId': '',
+             'publicURL': None},
+        ],
+        'resources': {},
+    },
+
+    'cyclades_admin': {
+        'type': 'admin',
+        'component': 'cyclades',
+        'prefix': 'admin',
+        'public': True,
         'endpoints': [
             {'versionId': '',
              'publicURL': None},

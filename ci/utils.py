@@ -26,7 +26,7 @@ DEFAULT_CONFIG_FILE = "new_config"
 DEFAULT_SYSTEM_IMAGES_UUID = [
     "25ecced9-bf53-4145-91ee-cf47377e9fb2",  # production (okeanos.grnet.gr)
     "04cbe33f-29b7-4ef1-94fb-015929e5fc06",  # testing (okeanos.io)
-    ]
+]
 
 
 def _run(cmd, verbose):
@@ -190,22 +190,22 @@ class SynnefoCI(object):
         token = config.get_cloud(self.kamaki_cloud, "token")
         #self.logger.debug("Token is %s" % _green(token))
 
-        astakos_client = AstakosClient(auth_url, token)
+        self.astakos_client = AstakosClient(auth_url, token)
 
         cyclades_url = \
-            astakos_client.get_service_endpoints('compute')['publicURL']
+            self.astakos_client.get_service_endpoints('compute')['publicURL']
         self.logger.debug("Cyclades API url is %s" % _green(cyclades_url))
         self.cyclades_client = CycladesClient(cyclades_url, token)
         self.cyclades_client.CONNECTION_RETRY_LIMIT = 2
 
         image_url = \
-            astakos_client.get_service_endpoints('image')['publicURL']
+            self.astakos_client.get_service_endpoints('image')['publicURL']
         self.logger.debug("Images API url is %s" % _green(image_url))
         self.image_client = ImageClient(cyclades_url, token)
         self.image_client.CONNECTION_RETRY_LIMIT = 2
 
         compute_url = \
-            astakos_client.get_service_endpoints('compute')['publicURL']
+            self.astakos_client.get_service_endpoints('compute')['publicURL']
         self.logger.debug("Compute API url is %s" % _green(compute_url))
         self.compute_client = ComputeClient(compute_url, token)
         self.compute_client.CONNECTION_RETRY_LIMIT = 2
@@ -332,14 +332,16 @@ class SynnefoCI(object):
 
         list_flavors = self.compute_client.list_flavors()
         for flv in flavors:
-            flv_type, flv_value = parse_typed_option(option="flavor", value=flv)
+            flv_type, flv_value = parse_typed_option(option="flavor",
+                                                     value=flv)
             if flv_type == "name":
                 # Filter flavors by name
                 self.logger.debug(
                     "Trying to find a flavor with name \"%s\"" % flv_value)
                 list_flvs = \
                     [f for f in list_flavors
-                     if re.search(flv_value, f['name'], flags=re.I) is not None]
+                     if re.search(flv_value, f['name'], flags=re.I)
+                     is not None]
             elif flv_type == "id":
                 # Filter flavors by id
                 self.logger.debug(
@@ -372,6 +374,8 @@ class SynnefoCI(object):
             # If we have an image from command line, add it to our list
             images.insert(0, image)
 
+        auth = self.astakos_client.authenticate()
+        user_uuid = auth["access"]["token"]["tenant"]["id"]
         list_images = self.image_client.list_public(detail=True)['images']
         for img in images:
             img_type, img_value = parse_typed_option(option="image", value=img)
@@ -379,10 +383,11 @@ class SynnefoCI(object):
                 # Filter images by name
                 self.logger.debug(
                     "Trying to find an image with name \"%s\"" % img_value)
+                accepted_uuids = DEFAULT_SYSTEM_IMAGES_UUID + [user_uuid]
                 list_imgs = \
-                    [i for i in list_images
-                     if i['user_id'] in DEFAULT_SYSTEM_IMAGES_UUID and
-                        re.search(img_value, i['name'], flags=re.I) is not None]
+                    [i for i in list_images if i['user_id'] in accepted_uuids
+                     and
+                     re.search(img_value, i['name'], flags=re.I) is not None]
             elif img_type == "id":
                 # Filter images by id
                 self.logger.debug(
@@ -421,7 +426,8 @@ class SynnefoCI(object):
         self.write_temp_config('server_port', server_port)
         self.logger.debug("Server's ssh port is %s" % _green(server_port))
         self.logger.debug("Access server using \"ssh -X -p %s %s@%s\"" %
-                          (server_port, server['metadata']['users'], server_ip))
+                          (server_port, server['metadata']['users'],
+                           server_ip))
 
     @_check_fabric
     def _copy_ssh_keys(self, ssh_keys):
@@ -432,7 +438,8 @@ class SynnefoCI(object):
 
         if ssh_keys != "":
             ssh_keys = os.path.expanduser(ssh_keys)
-            self.logger.debug("Will use %s authentication keys file" % ssh_keys)
+            self.logger.debug("Will use %s authentication keys file" %
+                              ssh_keys)
             keyfile = '/tmp/%s.pub' % fabric.env.user
             _run('mkdir -p ~/.ssh && chmod 700 ~/.ssh', False)
             if ssh_keys.startswith("http://") or \

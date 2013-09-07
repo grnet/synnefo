@@ -31,15 +31,15 @@ temporary_config = /tmp/ci_temp_conf
 # Choose the 'cloud' to use from .kamakirc
 kamaki_cloud =
 # Server name to use for our machine
-server_name = Synnefo Deployment
+server_name = Synnefo_CI
 # A list of flavors (comma seperated) to choose from
 # The user can specify a flavor name (reg expression)
 # with "name:" or a flavor id with "id:".
-flavors = name:C8R8...D100drbd, id:1
+flavors = name:C8R8...D20ext_.*, name:C8R8...D20drbd, id:1
 # A list of images (comma seperated) to choose from
 # The user can specify an image name (reg expression)
 # with "name:" or an image id with "id:".
-images = name:Debian Base \(OldStable\), id:72d9844f-1024-4a07-a3c3-60d650b8f5cd
+images = name:SynnefoCISqueeze.*,  name:Debian Base \(OldStable\), id:72d9844f-1024-4a07-a3c3-60d650b8f5cd
 # File containing the ssh keys to upload/install to server
 # If not set, no ssh keys will be installed
 ssh_keys = ~/.ssh/id_rsa.pub

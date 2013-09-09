@@ -733,6 +733,27 @@ class ObjectPut(PithosAPITest):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.content, data)
 
+    def test_create_object_by_invalid_hashmap(self):
+        cname = self.container
+        block_size = pithos_settings.BACKEND_BLOCK_SIZE
+
+        # upload an object
+        oname, data = self.upload_object(cname, length=block_size + 1)[:-1]
+        # get it hashmap
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.get('%s?hashmap=&format=json' % url)
+        data = r.content
+        try:
+            hashmap = json.loads(data)
+        except:
+            self.fail('JSON format expected')
+
+        oname = get_random_name()
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        hashmap['hashes'] = [get_random_name()]
+        r = self.put('%s?hashmap=' % url, data=json.dumps(hashmap))
+        self.assertEqual(r.status_code, 400)
+
 
 class ObjectPutCopy(PithosAPITest):
     def setUp(self):

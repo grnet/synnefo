@@ -48,7 +48,8 @@ except ImportError:
 from base import (DEFAULT_ACCOUNT_QUOTA, DEFAULT_CONTAINER_QUOTA,
                   DEFAULT_CONTAINER_VERSIONING, NotAllowedError, QuotaError,
                   BaseBackend, AccountExists, ContainerExists, AccountNotEmpty,
-                  ContainerNotEmpty, ItemNotExists, VersionNotExists)
+                  ContainerNotEmpty, ItemNotExists, VersionNotExists,
+                  InvalidHash)
 
 
 class DisabledAstakosClient(object):
@@ -930,7 +931,7 @@ class ModularBackend(BaseBackend):
         props = self._get_version(node, version)
         if props[self.HASH] is None:
             return 0, ()
-        hashmap = self.store.map_get(binascii.unhexlify(props[self.HASH]))
+        hashmap = self.store.map_get(self._unhexlify_hash(props[self.HASH]))
         return props[self.SIZE], [binascii.hexlify(x) for x in hashmap]
 
     def _update_object_hash(self, user, account, container, name, size, type,
@@ -1015,7 +1016,7 @@ class ModularBackend(BaseBackend):
         if size == 0:  # No such thing as an empty hashmap.
             hashmap = [self.put_block('')]
         map = HashMap(self.block_size, self.hash_algorithm)
-        map.extend([binascii.unhexlify(x) for x in hashmap])
+        map.extend([self._unhexlify_hash(x) for x in hashmap])
         missing = self.store.block_search(map)
         if missing:
             ie = IndexError()
@@ -1273,7 +1274,7 @@ class ModularBackend(BaseBackend):
         """Return a block's data."""
 
         logger.debug("get_block: %s", hash)
-        block = self.store.block_get(binascii.unhexlify(hash))
+        block = self.store.block_get(self._unhexlify_hash(hash))
         if not block:
             raise ItemNotExists('Block does not exist')
         return block
@@ -1290,7 +1291,7 @@ class ModularBackend(BaseBackend):
         logger.debug("update_block: %s %s %s", hash, len(data), offset)
         if offset == 0 and len(data) == self.block_size:
             return self.put_block(data)
-        h = self.store.block_update(binascii.unhexlify(hash), offset, data)
+        h = self.store.block_update(self._unhexlify_hash(hash), offset, data)
         return binascii.hexlify(h)
 
     # Path functions.
@@ -1730,3 +1731,9 @@ class ModularBackend(BaseBackend):
             return False
         else:
             return True
+
+    def _unhexlify_hash(self, hash):
+        try:
+            return binascii.unhexlify(hash)
+        except TypeError:
+            raise InvalidHash(hash)

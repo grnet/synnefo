@@ -66,7 +66,7 @@ from pithos.api import settings
 
 from pithos.backends.base import (
     NotAllowedError, QuotaError, ContainerNotEmpty, ItemNotExists,
-    VersionNotExists, ContainerExists)
+    VersionNotExists, ContainerExists, InvalidHash)
 
 from pithos.backends.filter import parse_filters
 
@@ -1115,6 +1115,8 @@ def object_write(request, v_account, v_container, v_object):
         raise faults.BadRequest('Invalid sharing header')
     except QuotaError, e:
         raise faults.RequestEntityTooLarge('Quota error: %s' % e)
+    except InvalidHash, e:
+        raise faults.BadRequest('Invalid hash: %s' % e)
     if not checksum and UPDATE_MD5:
         # Update the MD5 after the hashmap, as there may be missing hashes.
         checksum = hashmap_md5(request.backend, hashmap, size)

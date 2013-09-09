@@ -1709,21 +1709,6 @@ class ModularBackend(BaseBackend):
             meta.update(user_defined)
         return meta
 
-    def _has_read_access(self, user, path):
-        try:
-            account, container, object = path.split('/', 2)
-        except ValueError:
-            raise ValueError('Invalid object path')
-
-        assert isinstance(user, basestring), "Invalid user"
-
-        try:
-            self._can_read(user, account, container, object)
-        except NotAllowedError:
-            return False
-        else:
-            return True
-
     def _exists(self, node):
         try:
             self._get_version(node)

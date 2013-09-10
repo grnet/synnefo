@@ -56,7 +56,6 @@ For G, the operating state is True if the machine is up, False otherwise.
 """
 
 
-from django.core.management import setup_environ
 from django.conf import settings
 
 import logging
@@ -258,7 +257,7 @@ class BackendReconciler(object):
                 self.log.warning("Server '%s' has unknown flavor.", server_id)
                 return
 
-            self.log.info("Server '%s' has flavor '%' in DB and '%s' in"
+            self.log.info("Server '%s' has flavor '%s' in DB and '%s' in"
                           " Ganeti", server_id, db_flavor, gnt_flavor)
             if self.options["fix_unsynced_flavors"]:
                 old_state = db_server.operstate
@@ -318,7 +317,7 @@ class BackendReconciler(object):
 
 
 def format_db_nic(nic):
-    return "Index: %s IP: %s Network: %s MAC: %s Firewall: %s" % (nic.index,
+    return "Index: %s, IP: %s Network: %s MAC: %s Firewall: %s" % (nic.index,
            nic.ipv4, nic.network_id, nic.mac, nic.firewall_profile)
 
 

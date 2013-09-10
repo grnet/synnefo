@@ -742,7 +742,8 @@ def disconnect_network(network, backend, group=None):
     return job_ids
 
 
-def connect_to_network(vm, network, address=None):
+def connect_to_network(vm, nic):
+    network = nic.network
     backend = vm.backend
     network = Network.objects.select_for_update().get(id=network.id)
     bnet, created = BackendNetwork.objects.get_or_create(backend=backend,
@@ -753,9 +754,9 @@ def connect_to_network(vm, network, address=None):
 
     depends = [[job, ["success", "error", "canceled"]] for job in depend_jobs]
 
-    nic = {'ip': address, 'network': network.backend_id}
+    nic = {'ip': nic.ipv4, 'network': network.backend_id}
 
-    log.debug("Connecting vm %s to network %s(%s)", vm, network, address)
+    log.debug("Connecting NIC %s to VM %s", nic, vm)
 
     kwargs = {
         "instance": vm.backend_vm_id,

@@ -358,7 +358,12 @@ def connect(vm, network):
 
     log.info("Connecting VM %s to Network %s(%s)", vm, network, address)
 
-    return backend.connect_to_network(vm, network, address)
+    nic = NetworkInterface.objects.create(machine=vm,
+                                          network=network,
+                                          ipv4=address,
+                                          state="BUILDING")
+
+    return backend.connect_to_network(vm, nic)
 
 
 @server_command("DISCONNECT")
@@ -434,8 +439,13 @@ def console(vm, console_type):
 @server_command("CONNECT")
 def add_floating_ip(vm, address):
     floating_ip = add_floating_ip_to_vm(vm, address)
-    log.info("Connecting VM %s to floating IP %s", vm, floating_ip)
-    return backend.connect_to_network(vm, floating_ip.network, address)
+    nic = NetworkInterface.objects.create(machine=vm,
+                                          network=floating_ip.network,
+                                          ipv4=floating_ip.ipv4,
+                                          state="BUILDING")
+    log.info("Connecting VM %s to floating IP %s. NIC: %s", vm, floating_ip,
+             nic)
+    return backend.connect_to_network(vm, nic)
 
 
 def add_floating_ip_to_vm(vm, address):

@@ -489,7 +489,7 @@ def list_addresses(request, server_id):
 
     log.debug('list_addresses %s', server_id)
     vm = util.get_vm(server_id, request.user_uniq)
-    attachments = [nic_to_dict(nic) for nic in vm.nics.all()]
+    attachments = [nic_to_dict(nic) for nic in vm.nics.filter(state="ACTIVE")]
     addresses = attachments_to_addresses(attachments)
 
     if request.serialization == 'xml':
@@ -513,7 +513,7 @@ def list_addresses_by_network(request, server_id, network_id):
     log.debug('list_addresses_by_network %s %s', server_id, network_id)
     machine = util.get_vm(server_id, request.user_uniq)
     network = util.get_network(network_id, request.user_uniq)
-    nics = machine.nics.filter(network=network).all()
+    nics = machine.nics.filter(network=network, state="ACTIVE").all()
     addresses = attachments_to_addresses(map(nic_to_dict, nics))
 
     if request.serialization == 'xml':

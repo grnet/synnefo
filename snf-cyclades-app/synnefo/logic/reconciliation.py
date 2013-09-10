@@ -146,6 +146,11 @@ class BackendReconciler(object):
                     self.reconcile_building_server(db_server)
                 elif build_status != "RUNNING":
                     stale.append(server_id)
+            elif (db_server.operstate == "ERROR" and
+                  db_server.action != "DESTROY"):
+                # Servers at building ERROR are stale only if the user has
+                # asked to destroy them.
+                pass
             else:
                 stale.append(server_id)
 

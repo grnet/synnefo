@@ -46,21 +46,27 @@ All Synnefo components use an intuitive settings mechanism, that adds and remove
 settings dynamically as components are getting added or removed from a physical
 node. All settings are stored in a single location.
 
+
 .. _general-arch:
 
 Synnefo General Architecture
 ============================
 
-The following graph shows the whole Synnefo architecture and how it interacts
-with multiple Ganeti clusters.
+The following graph shows the whole Synnefo stack and how it interacts with
+multiple Ganeti clusters and the storage backends. Synnefo decouples the cloud
+from the cluster layer enhancing robustness, stability and ease of
+administration. As shown in the figure below, Synnefo sits on the cloud layer:
 
-.. image:: images/synnefo-arch2.png
+.. image:: images/snf-architecture.png
    :width: 100%
-   :target: _images/synnefo-arch2.png
+   :target: _images/snf-architecture.png
 
-Synnefo also supports RADOS as an alternative storage backend for
-Files/Images/VM disks. :ref:`Here <syn+archip+rados>` is a graph that shows
-Synnefo running with two different storage backends.
+Synnefo manages multiple Ganeti clusters and different kind of storage backends
+such as a Ceph/RADOS cluster or an NFS-based backend.
+
+For an extensive view of all components and APIs between them, please take a
+look at the Admin Guide's :ref:`corresponding figure <syn+archip>`.
+
 
 Synnefo Guides
 ==============

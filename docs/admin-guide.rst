@@ -6,20 +6,23 @@ Synnefo Administrator's Guide
 This is the complete Synnefo Administrator's Guide.
 
 
+.. _syn+archip:
 
 General Synnefo Architecture
 ============================
 
-The following graph shows the whole Synnefo architecture and how it interacts
-with multiple Ganeti clusters. We hope that after reading the Administrator's
-Guide you will be able to understand every component and all the interactions
-between them. It is a good idea to first go through the Administrator's Guide
-before proceeding.
+The following figure shows a detailed view of the whole Synnefo architecture
+and how it interacts with multiple Ganeti clusters. We hope that after reading
+the Administrator's Guide you will be able to understand every component and
+all the interactions between them.
 
 .. image:: images/synnefo-arch2.png
    :width: 100%
    :target: _images/synnefo-arch2.png
 
+Synnefo also supports RADOS as an alternative storage backend for
+Files/Images/VM disks. You will find the :ref:`corresponding figure
+<syn+archip+rados>` later in this guide.
 
 
 Identity Service (Astakos)

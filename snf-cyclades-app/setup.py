@@ -36,6 +36,7 @@ import distribute_setup
 distribute_setup.use_setuptools()
 
 import os
+import sys
 
 from distutils.util import convert_path
 from fnmatch import fnmatchcase
@@ -73,7 +74,7 @@ INSTALL_REQUIRES = [
     'ipaddr',
     'setproctitle>=1.0.1',
     'bitarray>=0.8',
-    'objpool>=0.2',
+    'objpool>=0.3',
     'astakosclient',
     'snf-django-lib',
     'snf-branding',

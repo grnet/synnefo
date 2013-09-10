@@ -59,7 +59,7 @@ CLASSIFIERS = []
 
 # Package requirements
 INSTALL_REQUIRES = [
-    "objpool >= 0.2",
+    "objpool>=0.3",
     "simplejson"
 ]
 

@@ -36,6 +36,7 @@ import distribute_setup
 distribute_setup.use_setuptools()
 
 import os
+import sys
 
 from distutils.util import convert_path
 from fnmatch import fnmatchcase
@@ -60,7 +61,7 @@ INSTALL_REQUIRES = [
     'snf-common',
     'SQLAlchemy==0.6.3',
     'alembic>=0.3.4, <0.4',
-    'objpool>=0.2'
+    'objpool>=0.3'
 ]
 
 EXTRAS_REQUIRES = {

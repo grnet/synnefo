@@ -140,9 +140,6 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
     if status == "success":
         if state_for_success is not None:
             vm.operstate = state_for_success
-        if nics is not None:
-            # Update the NICs of the VM
-            _process_net_status(vm, etime, nics)
         if beparams:
             # Change the flavor of the VM
             _process_resize(vm, beparams)
@@ -152,6 +149,10 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
         # OP_INSTANCE_REMOVE) completes before an error job and messages arrive
         # in reversed order.
         vm.backendtime = etime
+
+    if status in ["success", "error", "canceled"] and nics is not None:
+        # Update the NICs of the VM
+        _process_net_status(vm, etime, nics)
 
     # Special case: if OP_INSTANCE_CREATE fails --> ERROR
     if opcode == 'OP_INSTANCE_CREATE' and status in ('canceled', 'error'):

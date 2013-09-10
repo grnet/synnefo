@@ -79,6 +79,7 @@ def server_command(action):
         def wrapper(vm, *args, **kwargs):
             user_id = vm.userid
             validate_server_action(vm, action)
+            vm.action = action
 
             # Resolve(reject) previous serial if it is still pending!!
             previous_serial = vm.serial

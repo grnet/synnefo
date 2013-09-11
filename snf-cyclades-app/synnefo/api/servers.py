@@ -393,6 +393,7 @@ def do_create_server(userid, name, password, flavor, image, metadata={},
         transaction.commit()
 
     try:
+        vm = VirtualMachine.objects.select_for_update().get(id=vm.id)
         jobID = create_instance(vm, nic, flavor, image)
         # At this point the job is enqueued in the Ganeti backend
         vm.backendjobid = jobID

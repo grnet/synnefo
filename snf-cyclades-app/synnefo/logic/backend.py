@@ -74,6 +74,13 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None):
     vm.backendopcode = opcode
     vm.backendlogmsg = logmsg
 
+    # Update backendtime only for jobs that have been successfully completed,
+    # since only these jobs update the state of the VM. Else a "race condition"
+    # may occur when a successful job (e.g. OP_INSTANCE_REMOVE) completes
+    # before an error job and messages arrive in reversed order.
+    if status == 'success':
+        vm.backendtime = etime
+
     # Notifications of success change the operating state
     state_for_success = VirtualMachine.OPER_STATE_FROM_OPCODE.get(opcode, None)
     if status == 'success' and state_for_success is not None:
@@ -100,13 +107,10 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None):
             # Issue and accept commission to Quotaholder
             if not already_deleted:
                 quotas.issue_and_accept_commission(vm, delete=True)
-
-    # Update backendtime only for jobs that have been successfully completed,
-    # since only these jobs update the state of the VM. Else a "race condition"
-    # may occur when a successful job (e.g. OP_INSTANCE_REMOVE) completes
-    # before an error job and messages arrive in reversed order.
-    if status == 'success':
-        vm.backendtime = etime
+                # the above has already saved the object and committed;
+                # a second save would override others' changes, since the
+                # object is now unlocked
+                return
 
     vm.save()
 
@@ -296,6 +300,10 @@ def update_network_state(network):
         # Issue commission
         if network.userid:
             quotas.issue_and_accept_commission(network, delete=True)
+            # the above has already saved the object and committed;
+            # a second save would override others' changes, since the
+            # object is now unlocked
+            return
         elif not network.public:
             log.warning("Network %s does not have an owner!", network.id)
     network.save()

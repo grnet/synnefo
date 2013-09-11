@@ -63,4 +63,4 @@ class Command(BaseCommand):
             delete_network(network, bnet.backend)
 
         self.stdout.write("Successfully submitted Ganeti jobs to"
-                          " remove network %s" % network.backend_id)
+                          " remove network %s\n" % network.backend_id)

@@ -1315,8 +1315,7 @@ class ModularBackend(BaseBackend):
         return node
 
     def _lookup_account(self, account, create=True):
-        for_update = True if create else False
-        node = self.node.node_lookup(account, for_update=for_update)
+        node = self.node.node_lookup(account)
         if node is None and create:
             node = self._put_path(
                 account, self.ROOTNODE, account,

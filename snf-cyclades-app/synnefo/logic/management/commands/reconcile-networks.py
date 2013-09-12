@@ -114,7 +114,9 @@ def reconcile_networks(conflicting_ips=False):
             if not bnet and gnet:
                 # Network exists in Ganeti and not in DB.
                 if network.action != "DESTROY" and not network.public:
-                    reconcile_parted_network(network, bend)
+                    bnet = reconcile_parted_network(network, bend)
+                    if not bnet:
+                        continue
 
             if not gnet:
                 # Network does not exist in Ganeti. If the network action is

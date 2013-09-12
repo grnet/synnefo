@@ -821,7 +821,7 @@ def disconnect_from_network(vm, nic):
 
     kwargs = {
         "instance": vm.backend_vm_id,
-        "nics": [("remove", nic.index, {})],
+        "nics": [("remove", nic.backend_uuid, {})],
     }
     if vm.backend.use_hotplug():
         kwargs["hotplug"] = True

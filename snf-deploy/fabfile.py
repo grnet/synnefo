@@ -1048,14 +1048,14 @@ def setup_router():
                env.env.common_bridge, env.env.public_iface)
     try_run(cmd)
 
+
 @roles("cyclades")
 def cyclades_loaddata():
     debug(env.host, " * Loading initial data for cyclades...")
-    tmpl = "/tmp/flavor.json"
-    replace = {}
-    custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
-    try_run("snf-manage loaddata " + tmpl)
+    try_run("snf-manage flavor-create %s %s %s %s" % (env.env.flavor_cpu,
+                                                      env.env.flavor_ram,
+                                                      env.env.flavor_disk,
+                                                      env.env.flavor_storage))
     #run("snf-manage loaddata flavors")
 
 

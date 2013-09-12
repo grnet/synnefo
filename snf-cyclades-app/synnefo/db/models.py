@@ -712,6 +712,19 @@ class NetworkInterface(models.Model):
         # assigned to more than one NICs
         unique_together = ("network", "ipv4")
 
+    def delete(self):
+        """Custom method for deleting NetworkInterfaces.
+
+        In case the NIC is of 'FLOATING' type, this method clears the 'machine'
+        flag of the FloatingIP object, before deleting the NIC.
+
+        """
+        if self.ip_type == "FLOATING":
+            FloatingIP.objects.filter(machine=self.machine_id,
+                                      network=self.network_id,
+                                      ipv4=self.ipv4).update(machine=None)
+        super(NetworkInterface, self).delete()
+
 
 class FloatingIP(models.Model):
     userid = models.CharField("UUID of the owner", max_length=128,

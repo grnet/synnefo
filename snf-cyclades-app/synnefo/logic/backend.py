@@ -37,7 +37,7 @@ from datetime import datetime, timedelta
 from synnefo.db.models import (Backend, VirtualMachine, Network,
                                BackendNetwork, BACKEND_STATUSES,
                                pooled_rapi_client, VirtualMachineDiagnostic,
-                               Flavor)
+                               Flavor, FloatingIP)
 from synnefo.logic import utils
 from synnefo import quotas
 from synnefo.api.util import release_resource
@@ -325,12 +325,18 @@ def release_nic_address(nic):
     """Release the IPv4 address of a NIC.
 
     Check if an instance's NIC has an IPv4 address and release it if it is not
-    a Floating IP.
+    a Floating IP. If it is as Floating IP, then disassociate the FloatingIP
+    from the machine.
 
     """
 
-    if nic.ipv4 and not nic.ip_type == "FLOATING":
-        nic.network.release_address(nic.ipv4)
+    if nic.ipv4:
+        if nic.ip_type == "FLOATING":
+            FloatingIP.objects.filter(machine=nic.machine_id,
+                                      network=nic.network_id,
+                                      ipv4=nic.ipv4).update(machine=None)
+        else:
+            nic.network.release_address(nic.ipv4)
 
 
 @transaction.commit_on_success

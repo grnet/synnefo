@@ -41,6 +41,7 @@ from synnefo.logic import utils
 from synnefo import quotas
 from synnefo.api.util import release_resource
 from synnefo.util.mac2eui64 import mac2eui64
+from synnefo.logic.rapi import GanetiApiError
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -87,14 +88,10 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None):
         vm.operstate = 'ERROR'
         vm.backendtime = etime
     elif opcode == 'OP_INSTANCE_REMOVE':
-        # Set the deleted flag explicitly, cater for admin-initiated removals
         # Special case: OP_INSTANCE_REMOVE fails for machines in ERROR,
         # when no instance exists at the Ganeti backend.
-        # See ticket #799 for all the details.
-        #
-        if (status == 'success' or
-           (status == 'error' and (vm.operstate == 'ERROR' or
-                                   vm.action == 'DESTROY'))):
+        if status == "success" or (status == "error" and
+                                   not vm_exists_in_backend(vm)):
             _process_net_status(vm, etime, nics=[])
             vm.deleted = True
             vm.operstate = state_for_success
@@ -233,9 +230,9 @@ def process_network_status(back_network, etime, jobid, opcode, status, logmsg):
         back_network.backendtime = etime
 
     if opcode == 'OP_NETWORK_REMOVE':
-        if (status == 'success' or
-           (status == 'error' and (back_network.operstate == 'ERROR' or
-                                   network.action == 'DESTROY'))):
+        network_is_deleted = (status == "success")
+        if network_is_deleted or (status == "error" and not
+                                  network_exists_in_backend(back_network)):
             back_network.operstate = state_for_success
             back_network.deleted = True
             back_network.backendtime = etime
@@ -489,7 +486,31 @@ def get_instance_console(vm):
 
 def get_instance_info(vm):
     with pooled_rapi_client(vm) as client:
-        return client.GetInstanceInfo(vm.backend_vm_id)
+        return client.GetInstance(vm.backend_vm_id)
+
+
+def vm_exists_in_backend(vm):
+    try:
+        get_instance_info(vm)
+        return True
+    except GanetiApiError as e:
+        if e.code == 404:
+            return False
+        raise e
+
+
+def get_network_info(backend_network):
+    with pooled_rapi_client(backend_network) as client:
+        return client.GetNetwork(backend_network.network.backend_id)
+
+
+def network_exists_in_backend(backend_network):
+    try:
+        get_network_info(backend_network)
+        return True
+    except GanetiApiError as e:
+        if e.code == 404:
+            return False
 
 
 def create_network(network, backend, connect=True):

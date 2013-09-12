@@ -124,19 +124,6 @@ DEFAULT_SOURCE = 'system'
 logger = logging.getLogger(__name__)
 
 
-def backend_method(func):
-    @wraps(func)
-    def wrapper(self, *args, **kw):
-        self.success_status = getattr(self, 'success_status', False)
-        try:
-            result = func(self, *args, **kw)
-            return result
-        except:
-            self.backend.success_status = False
-            raise
-    return wrapper
-
-
 def debug_method(func):
     @wraps(func)
     def wrapper(self, *args, **kw):
@@ -268,12 +255,11 @@ class ModularBackend(BaseBackend):
 
         self.lock_container_path = False
 
-    def __enter__(self):
+    def pre_exec(self, lock_container_path=False):
+        self.lock_container_path = lock_container_path
         self.wrapper.execute()
-        return self
 
-    def __exit__(self, type, value, traceback):
-        success_status = getattr(self, 'success_status', True)
+    def post_exec(self, success_status=True):
         if success_status:
             # send messages produced
             for m in self.messages:
@@ -306,7 +292,6 @@ class ModularBackend(BaseBackend):
                     accept_serials=[],
                     reject_serials=self.serials)
             self.wrapper.rollback()
-        self.close()
 
     def close(self):
         self.wrapper.close()

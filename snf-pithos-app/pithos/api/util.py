@@ -1088,10 +1088,11 @@ def api_method(http_method=None, token_required=True, user_required=True,
             if len(args) > 2 and len(args[2]) > 1024:
                 raise faults.BadRequest('Object name too large.')
 
-            with get_backend() as backend:
+            success_status = False
+            try:
                 # Add a PithosBackend as attribute of the request object
-                request.backend = backend
-                request.backend.lock_container_path = lock_container_path
+                request.backend = get_backend()
+                request.backend.pre_exec(lock_container_path)
 
                 # Many API method expect thet X-Auth-Token in request,token
                 request.token = request.x_auth_token
@@ -1099,7 +1100,13 @@ def api_method(http_method=None, token_required=True, user_required=True,
                 response = func(request, *args, **kwargs)
                 update_response_headers(request, response)
 
+                success_status = True
                 return response
+            finally:
+                # Always close PithosBackend connection
+                if getattr(request, "backend", None) is not None:
+                    request.backend.post_exec(success_status)
+                    request.backend.close()
         return wrapper
     return decorator
 

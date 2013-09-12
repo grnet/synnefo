@@ -672,7 +672,16 @@ class ServerActionAPITest(ComputeAPITest):
         request = {'firewallProfile': {'profile': 'PROTECTED'}}
         response = self.mypost('servers/%d/action' % vm.id,
                                vm.userid, json.dumps(request), 'json')
-        self.assertEqual(response.status_code, 202)
+        self.assertBadRequest(response)
+        request = {'firewallProfile': {'profile': 'PROTECTED', "nic": "10"}}
+        response = self.mypost('servers/%d/action' % vm.id,
+                               vm.userid, json.dumps(request), 'json')
+        self.assertItemNotFound(response)
+        nic = mfactory.NetworkInterfaceFactory(machine=vm)
+        request = {'firewallProfile': {'profile': 'PROTECTED', "nic": nic.id}}
+        response = self.mypost('servers/%d/action' % vm.id,
+                               vm.userid, json.dumps(request), 'json')
+        self.assertSuccess(response)
         mrapi().ModifyInstance.assert_called_once()
 
     def test_unsupported_firewall(self, mrapi, mimage):

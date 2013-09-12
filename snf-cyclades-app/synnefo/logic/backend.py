@@ -844,34 +844,29 @@ def disconnect_from_network(vm, nic):
 
     with pooled_rapi_client(vm) as client:
         jobID = client.ModifyInstance(**kwargs)
-        # If the NIC has a tag for a firewall profile it must be deleted,
-        # otherwise it may affect another NIC. XXX: Deleting the tag should
-        # depend on the removing the NIC, but currently RAPI client does not
-        # support this, this may result in clearing the firewall profile
-        # without successfully removing the NIC. This issue will be fixed with
-        # use of NIC UUIDs.
         firewall_profile = nic.firewall_profile
         if firewall_profile and firewall_profile != "DISABLED":
-            tag = _firewall_tags[firewall_profile] % nic.index
+            tag = _firewall_tags[firewall_profile] % nic.backend_uuid
             client.DeleteInstanceTags(vm.backend_vm_id, [tag],
                                       dry_run=settings.TEST)
 
         return jobID
 
 
-def set_firewall_profile(vm, profile, index=0):
+def set_firewall_profile(vm, profile, nic):
+    uuid = nic.backend_uuid
     try:
-        tag = _firewall_tags[profile] % index
+        tag = _firewall_tags[profile] % uuid
     except KeyError:
         raise ValueError("Unsopported Firewall Profile: %s" % profile)
 
-    log.debug("Setting tag of VM %s, NIC index %d, to %s", vm, index, profile)
+    log.debug("Setting tag of VM %s, NIC %s, to %s", vm, nic, profile)
 
     with pooled_rapi_client(vm) as client:
         # Delete previous firewall tags
         old_tags = client.GetInstanceTags(vm.backend_vm_id)
-        delete_tags = [(t % index) for t in _firewall_tags.values()
-                       if (t % index) in old_tags]
+        delete_tags = [(t % uuid) for t in _firewall_tags.values()
+                       if (t % uuid) in old_tags]
         if delete_tags:
             client.DeleteInstanceTags(vm.backend_vm_id, delete_tags,
                                       dry_run=settings.TEST)

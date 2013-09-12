@@ -138,14 +138,10 @@ def get_instance_nics(instance, logger):
             if len(t) != 4:
                 logger.error("Malformed synefo tag %s", tag)
                 continue
-            try:
-                index = int(t[2])
-                nics[index]['firewall'] = t[3]
-            except ValueError:
-                logger.error("Malformed synnefo tag %s", tag)
-            except IndexError:
-                logger.error("Found tag %s for non-existent NIC %d",
-                             tag, index)
+            nic_name = t[2]
+            firewall = t[3]
+            [nic.setdefault("firewall", firewall)
+             for nic in nics if nic["name"] == nic_name]
     return nics
 
 

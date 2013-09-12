@@ -49,10 +49,10 @@ DEFAULT_MAC_FILTERED_BRIDGE = 'prv0'
 
 
 # Firewalling. Firewall tags should contain '%d' to be filled with the NIC
-# index.
-GANETI_FIREWALL_ENABLED_TAG = 'synnefo:network:%d:protected'
-GANETI_FIREWALL_DISABLED_TAG = 'synnefo:network:%d:unprotected'
-GANETI_FIREWALL_PROTECTED_TAG = 'synnefo:network:%d:limited'
+# ID.
+GANETI_FIREWALL_ENABLED_TAG = 'synnefo:network:%s:protected'
+GANETI_FIREWALL_DISABLED_TAG = 'synnefo:network:%s:unprotected'
+GANETI_FIREWALL_PROTECTED_TAG = 'synnefo:network:%s:limited'
 
 # The default firewall profile that will be in effect if no tags are defined
 DEFAULT_FIREWALL_PROFILE = 'DISABLED'

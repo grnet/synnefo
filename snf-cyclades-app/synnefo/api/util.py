@@ -176,7 +176,6 @@ def get_image_dict(image_id, user_id):
     image["metadata"] = dict((key.upper(), val)
                              for key, val in properties.items())
 
-
     return image
 
 
@@ -286,10 +285,11 @@ def get_network_free_address(network):
 
 
 def get_nic(vm, nic_id):
+    """Get a VMs NIC by its ID."""
     try:
         return vm.nics.get(id=nic_id)
     except NetworkInterface.DoesNotExist:
-        raise faults.ItemNotFound('Server not connected to this network.')
+        raise faults.ItemNotFound("NIC '%s' not found" % nic_id)
 
 
 def render_metadata(request, metadata, use_values=False, status=200):

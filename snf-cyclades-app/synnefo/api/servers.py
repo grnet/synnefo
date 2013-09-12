@@ -756,8 +756,11 @@ def set_firewall_profile(request, vm, args):
     profile = args.get("profile")
     if profile is None:
         raise faults.BadRequest("Missing 'profile' attribute")
-    index = args.get("index", 0)
-    servers.set_firewall_profile(vm, profile=profile, index=index)
+    nic_id = args.get("nic")
+    if nic_id is None:
+        raise faults.BadRequest("Missing 'nic' attribute")
+    nic = util.get_nic(vm, nic_id)
+    servers.set_firewall_profile(vm, profile=profile, nic=nic)
     return HttpResponse(status=202)
 
 

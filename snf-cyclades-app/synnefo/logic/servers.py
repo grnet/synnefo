@@ -337,12 +337,12 @@ def resize(vm, flavor):
 
 
 @server_command("SET_FIREWALL_PROFILE")
-def set_firewall_profile(vm, profile, index=0):
-    log.info("Setting VM %s, NIC index %s, firewall %s", vm, index, profile)
+def set_firewall_profile(vm, profile, nic):
+    log.info("Setting VM %s, NIC %s, firewall %s", vm, nic, profile)
 
     if profile not in [x[0] for x in NetworkInterface.FIREWALL_PROFILES]:
         raise faults.BadRequest("Unsupported firewall profile")
-    backend.set_firewall_profile(vm, profile=profile, index=index)
+    backend.set_firewall_profile(vm, profile=profile, nic=nic)
     return None
 
 

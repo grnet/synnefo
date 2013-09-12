@@ -858,7 +858,9 @@ class ModularBackend(BaseBackend):
         """Update object metadata for a domain and return the new version."""
 
         self._can_write(user, account, container, name)
-        path, node = self._lookup_object(account, container, name)
+
+        path, node = self._lookup_object(account, container, name,
+                                         lock_container=True)
         src_version_id, dest_version_id = self._put_metadata(
             user, node, domain, meta, replace,
             update_statistics_ancestors_depth=1)
@@ -895,7 +897,8 @@ class ModularBackend(BaseBackend):
 
         if user != account:
             raise NotAllowedError
-        path = self._lookup_object(account, container, name)[0]
+        path = self._lookup_object(account, container, name,
+                                   lock_container=True)[0]
         self._check_permissions(path, permissions)
         self.permissions.access_set(path, permissions)
         self._report_sharing_change(user, account, path, {'members':
@@ -915,7 +918,8 @@ class ModularBackend(BaseBackend):
         """Update the public status of the object."""
 
         self._can_write(user, account, container, name)
-        path = self._lookup_object(account, container, name)[0]
+        path = self._lookup_object(account, container, name,
+                                   lock_container=True)[0]
         if not public:
             self.permissions.public_unset(path)
         else:
@@ -1039,7 +1043,8 @@ class ModularBackend(BaseBackend):
         # Update objects with greater version and same hashmap
         # and size (fix metadata updates).
         self._can_write(user, account, container, name)
-        path, node = self._lookup_object(account, container, name)
+        path, node = self._lookup_object(account, container, name,
+                                         lock_container=True)
         props = self._get_version(node, version)
         versions = self.node.node_get_versions(node)
         for x in versions:
@@ -1059,7 +1064,8 @@ class ModularBackend(BaseBackend):
         dest_meta = dest_meta or {}
         dest_version_ids = []
         self._can_read(user, src_account, src_container, src_name)
-        path, node = self._lookup_object(src_account, src_container, src_name)
+        path, node = self._lookup_object(src_account, src_container, src_name,
+                                         lock_container=True)
         # TODO: Will do another fetch of the properties in duplicate version...
         props = self._get_version(
             node, src_version)  # Check to see if source exists.
@@ -1146,9 +1152,11 @@ class ModularBackend(BaseBackend):
         if user != account:
             raise NotAllowedError
 
+        # lookup object and lock container path also
+        path, node = self._lookup_object(account, container, name,
+                                         lock_container=True)
+
         if until is not None:
-            path = '/'.join((account, container, name))
-            node = self.node.node_lookup(path)
             if node is None:
                 return
             hashes = []
@@ -1182,7 +1190,6 @@ class ModularBackend(BaseBackend):
             )
             return
 
-        path, node = self._lookup_object(account, container, name)
         if not self._exists(node):
             raise ItemNotExists('Object is deleted.')
         src_version_id, dest_version_id = self._put_version_duplicate(
@@ -1330,7 +1337,10 @@ class ModularBackend(BaseBackend):
             raise ItemNotExists('Container does not exist')
         return path, node
 
-    def _lookup_object(self, account, container, name):
+    def _lookup_object(self, account, container, name, lock_container=False):
+        if lock_container:
+            self._lookup_container(account, container)
+
         path = '/'.join((account, container, name))
         node = self.node.node_lookup(path)
         if node is None:

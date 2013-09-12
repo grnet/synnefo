@@ -508,7 +508,8 @@ def container_create(request, v_account, v_container):
     return HttpResponse(status=ret)
 
 
-@api_method('POST', format_allowed=True, user_required=True, logger=logger)
+@api_method('POST', format_allowed=True, user_required=True, logger=logger,
+            lock_container_path=True)
 def container_update(request, v_account, v_container):
     # Normal Response Codes: 202
     # Error Response Codes: internalServerError (500),
@@ -563,7 +564,8 @@ def container_update(request, v_account, v_container):
     return response
 
 
-@api_method('DELETE', user_required=True, logger=logger)
+@api_method('DELETE', user_required=True, logger=logger,
+            lock_container_path=True)
 def container_delete(request, v_account, v_container):
     # Normal Response Codes: 204
     # Error Response Codes: internalServerError (500),

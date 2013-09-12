@@ -48,6 +48,7 @@ from astakosclient.errors import AstakosClientException
 from django.conf import settings
 from snf_django.lib.api import faults
 
+import itertools
 
 log = getLogger(__name__)
 
@@ -188,7 +189,15 @@ def update_response_headers(request, response):
         response["Date"] = format_date_time(time())
 
     if not response.has_header("Content-Length"):
-        response["Content-Length"] = len(response.content)
+        if response._is_string:
+            response["Content-Length"] = len(response.content)
+        else:
+            if not (response.has_header('Content-Type') and
+                    response['Content-Type'].startswith(
+                        'multipart/byteranges')):
+                # save response content from been consumed if it is an iterator
+                response._container, data = itertools.tee(response._container)
+                response["Content-Length"] = len(str(data))
 
     cache.add_never_cache_headers(response)
     # Fix Vary and Cache-Control Headers. Issue: #3448

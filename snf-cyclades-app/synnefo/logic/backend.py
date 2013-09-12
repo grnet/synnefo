@@ -57,10 +57,11 @@ _reverse_tags = dict((v.split(':')[3], k) for k, v in _firewall_tags.items())
 
 # Timeout in seconds for building NICs. After this period the NICs considered
 # stale and removed from DB.
-BUILDING_NIC_TIMEOUT = 180
+BUILDING_NIC_TIMEOUT = timedelta(seconds=180)
 
 NIC_FIELDS = ["state", "mac", "ipv4", "ipv6", "network", "firewall_profile",
               "index"]
+UNKNOWN_NIC_PREFIX = "unknown-"
 
 
 def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields):
@@ -244,18 +245,24 @@ def _process_net_status(vm, etime, nics):
             # state for more than 5 minutes, then we remove the NIC.
             # TODO: This is dangerous as the job may be stack in the queue, and
             # releasing the IP may lead to duplicate IP use.
-            if nic.state != "BUILDING" or (nic.state == "BUILDING" and
-               etime > nic.created + timedelta(seconds=BUILDING_NIC_TIMEOUT)):
-                release_nic_address(nic)
-                nic.delete()
+            if db_nic.state != "BUILDING" or\
+                (db_nic.state == "BUILDING" and
+                 etime > db_nic.created + BUILDING_NIC_TIMEOUT):
+                release_nic_address(db_nic)
+                db_nic.delete()
             else:
-                log.warning("Ignoring recent building NIC: %s", nic)
+                log.warning("Ignoring recent building NIC: %s", db_nic)
         elif db_nic is None:
             # NIC exists in Ganeti but not in DB
+            if str(nic_name).startswith(UNKNOWN_NIC_PREFIX):
+                msg = "Can not process NIC! NIC '%s' does not have a"\
+                      " valid name." % ganeti_nic
+                log.error(msg)
+                continue
             if ganeti_nic["ipv4"]:
                 network = ganeti_nic["network"]
                 network.reserve_address(ganeti_nic["ipv4"])
-            vm.nics.create(**ganeti_nic)
+            vm.nics.create(id=nic_name, **ganeti_nic)
         elif not nics_are_equal(db_nic, ganeti_nic):
             # Special case where the IPv4 address has changed, because you
             # need to release the old IPv4 address and reserve the new one
@@ -292,7 +299,7 @@ def process_ganeti_nics(ganeti_nics):
         else:
             # Put as default value the index. If it is an unknown NIC to
             # synnefo it will be created automaticaly.
-            nic_id = "unknown-" + str(index)
+            nic_id = UNKNOWN_NIC_PREFIX + str(index)
         network_name = gnic.get('network', '')
         network_id = utils.id_from_network_name(network_name)
         network = Network.objects.get(id=network_id)

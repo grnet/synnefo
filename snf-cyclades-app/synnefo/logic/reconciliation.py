@@ -61,7 +61,7 @@ from django.conf import settings
 import logging
 import itertools
 import bitarray
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from django.db import transaction
 from synnefo.db.models import (Backend, VirtualMachine, Flavor,
@@ -286,10 +286,10 @@ class BackendReconciler(object):
 
     def reconcile_unsynced_nics(self, server_id, db_server, gnt_server):
         building_time = (self.event_time -
-                         timedelta(seconds=backend_mod.BUILDING_NIC_TIMEOUT))
+                         backend_mod.BUILDING_NIC_TIMEOUT)
         db_nics = db_server.nics.exclude(state="BUILDING",
                                          created__lte=building_time) \
-                                .order_by("index")
+                                .order_by("id")
         gnt_nics = gnt_server["nics"]
         gnt_nics_parsed = backend_mod.process_ganeti_nics(gnt_nics)
         nics_changed = len(db_nics) != len(gnt_nics)
@@ -306,7 +306,7 @@ class BackendReconciler(object):
                   "\tDB:\n\t\t%s\n\tGaneti:\n\t\t%s"
             db_nics_str = "\n\t\t".join(map(format_db_nic, db_nics))
             gnt_nics_str = "\n\t\t".join(map(format_gnt_nic,
-                                         gnt_nics_parsed.items()))
+                                         sorted(gnt_nics_parsed.items())))
             self.log.info(msg, server_id, db_nics_str, gnt_nics_str)
             if self.options["fix_unsynced_nics"]:
                 backend_mod.process_net_status(vm=db_server,
@@ -347,7 +347,7 @@ def format_db_nic(nic):
 
 def format_gnt_nic(nic):
     nic_name, nic = nic
-    return NIC_MSG % (nic_name, nic["state"], nic["ipv4"], nic["network"],
+    return NIC_MSG % (nic_name, nic["state"], nic["ipv4"], nic["network"].id,
                       nic["mac"], nic["index"], nic["firewall_profile"])
 
 

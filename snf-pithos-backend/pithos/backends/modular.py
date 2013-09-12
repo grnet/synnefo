@@ -1064,8 +1064,18 @@ class ModularBackend(BaseBackend):
         dest_meta = dest_meta or {}
         dest_version_ids = []
         self._can_read(user, src_account, src_container, src_name)
-        path, node = self._lookup_object(src_account, src_container, src_name,
-                                         lock_container=True)
+
+        src_container_path = '/'.join((src_account, src_container))
+        dest_container_path = '/'.join((dest_account, dest_container))
+        # Lock container paths in alphabetical order
+        if src_container_path < dest_container_path:
+            self._lookup_container(src_account, src_container)
+            self._lookup_container(dest_account, dest_container)
+        else:
+            self._lookup_container(dest_account, dest_container)
+            self._lookup_container(src_account, src_container)
+
+        path, node = self._lookup_object(src_account, src_container, src_name)
         # TODO: Will do another fetch of the properties in duplicate version...
         props = self._get_version(
             node, src_version)  # Check to see if source exists.

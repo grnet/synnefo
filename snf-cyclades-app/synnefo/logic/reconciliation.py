@@ -336,19 +336,19 @@ class BackendReconciler(object):
                 self.log.info("Cleared pending task for server '%s", server_id)
 
 
-NIC_MSG = ": %s\t".join(["ID", "State", "IP", "Network", "MAC", "Firewall"])\
-    + ": %s"
+NIC_MSG = ": %s\t".join(["ID", "State", "IP", "Network", "MAC", "Index",
+                         "Firewall"]) + ": %s"
 
 
 def format_db_nic(nic):
     return NIC_MSG % (nic.id, nic.state, nic.ipv4, nic.network_id, nic.mac,
-                      nic.firewall_profile)
+                      nic.index, nic.firewall_profile)
 
 
 def format_gnt_nic(nic):
     nic_name, nic = nic
     return NIC_MSG % (nic_name, nic["state"], nic["ipv4"], nic["network"],
-                      nic["mac"], nic["firewall_profile"])
+                      nic["mac"], nic["index"], nic["firewall_profile"])
 
 
 #

@@ -59,7 +59,8 @@ _reverse_tags = dict((v.split(':')[3], k) for k, v in _firewall_tags.items())
 # stale and removed from DB.
 BUILDING_NIC_TIMEOUT = 180
 
-NIC_FIELDS = ["state", "mac", "ipv4", "ipv6", "network", "firewall_profile"]
+NIC_FIELDS = ["state", "mac", "ipv4", "ipv6", "network", "firewall_profile",
+              "index"]
 
 
 def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields):

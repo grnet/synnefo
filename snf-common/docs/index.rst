@@ -59,6 +59,3 @@ settings:
 
 .. literalinclude:: ../synnefo/settings/default/admins.py
     :lines: 4-
-.. literalinclude:: ../synnefo/settings/default/logging.py
-    :lines: 4-
-

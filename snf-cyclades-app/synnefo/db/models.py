@@ -743,7 +743,7 @@ class IPPoolTable(PoolTable):
 
 @contextmanager
 def pooled_rapi_client(obj):
-        if isinstance(obj, VirtualMachine):
+        if isinstance(obj, (VirtualMachine, BackendNetwork)):
             backend = obj.backend
         else:
             backend = obj

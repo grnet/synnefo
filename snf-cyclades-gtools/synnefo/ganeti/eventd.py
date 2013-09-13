@@ -241,13 +241,6 @@ class JobFileHandler(pyinotify.ProcessEvent):
             if op.status == "success":
                 msg["result"] = op.result
 
-            if ((op_id in ["OP_INSTANCE_CREATE", "OP_INSTANCE_STARTUP"] and
-                 op.status == "success") or
-                (op_id == "OP_INSTANCE_SET_PARAMS" and
-                 op.status in ["success", "error", "cancelled"])):
-                    nics = get_instance_nics(msg["instance"], self.logger)
-                    msg["nics"] = nics
-
             msg = json.dumps(msg)
             self.logger.debug("Delivering msg: %s (key=%s)", msg, routekey)
 
@@ -289,9 +282,10 @@ class JobFileHandler(pyinotify.ProcessEvent):
                "operation": op_id,
                "job_fields": job_fields}
 
-        if op_id in ["OP_INSTANCE_CREATE", "OP_INSTANCE_SET_PARAMS",
-                     "OP_INSTANCE_STARTUP"]:
-            if op.status == "success":
+        if ((op_id in ["OP_INSTANCE_CREATE", "OP_INSTANCE_STARTUP"] and
+             op.status == "success") or
+            (op_id == "OP_INSTANCE_SET_PARAMS" and
+             op.status in ["success", "error", "cancelled"])):
                 nics = get_instance_nics(msg["instance"], self.logger)
                 msg["instance_nics"] = nics
 

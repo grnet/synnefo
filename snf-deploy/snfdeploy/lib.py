@@ -45,11 +45,12 @@ if not sys.stdout.isatty():
 
 
 class Host(object):
-    def __init__(self, hostname, ip, mac, domain):
+    def __init__(self, hostname, ip, mac, domain, os):
         self.hostname = hostname
         self.ip = ip
         self.mac = mac
         self.domain = domain
+        self.os = os
 
     @property
     def fqdn(self):
@@ -67,7 +68,7 @@ class Host(object):
 class Alias(Host):
     def __init__(self, host, alias):
         super(Alias, self).__init__(host.hostname, host.ip, host.mac,
-                                    host.domain)
+                                    host.domain, host.os)
         self.alias = alias
 
     @property
@@ -95,6 +96,7 @@ class Env(object):
         self.node2hostname = dict(conf.get_section("nodes", "hostnames"))
         self.node2ip = dict(conf.get_section("nodes", "ips"))
         self.node2mac = dict(conf.get_section("nodes", "macs"))
+        self.node2os = dict(conf.get_section("nodes", "os"))
         self.hostnames = [self.node2hostname[n]
                           for n in self.nodes.split(",")]
 
@@ -115,7 +117,7 @@ class Env(object):
         for node in self.nodes.split(","):
             host = Host(self.node2hostname[node],
                         self.node2ip[node],
-                        self.node2mac[node], self.domain)
+                        self.node2mac[node], self.domain, self.node2os[node])
 
             self.nodes_info[node] = host
             self.hosts_info[host.hostname] = host

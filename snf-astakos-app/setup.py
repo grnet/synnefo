@@ -213,7 +213,6 @@ setup(
             'web_static = astakos.synnefo_settings:static_files'
         ],
         'console_scripts': [
-            'astakos-migrate-0.14 = astakos.scripts.upgrade.migrate_014:main',
             'snf-service-export = astakos.scripts.snf_service_export:main',
         ],
     }

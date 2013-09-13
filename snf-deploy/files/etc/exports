@@ -1,4 +1,0 @@
-%PITHOS_DIR% %SUBNET%(rw,sync,no_subtree_check,no_root_squash)
-/srv/okeanos %SUBNET%(rw,sync,no_subtree_check,no_root_squash)
-%SRV% %SUBNET%(rw,fsid=0,no_subtree_check,sync,no_root_squash)
-

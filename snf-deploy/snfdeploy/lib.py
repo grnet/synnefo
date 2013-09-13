@@ -124,7 +124,7 @@ class Env(object):
             self.ips_info[host.ip] = host
 
         self.cluster = Host(self.cluster_name, self.cluster_ip, None,
-                            self.domain)
+                            self.domain, None)
         self.master = self.nodes_info[self.master_node]
 
         self.roles = {}
@@ -138,7 +138,7 @@ class Conf(object):
     files = {
         "nodes": ["network", "info"],
         "deploy": ["dirs", "packages", "keys", "options"],
-        "vcluster": ["cluster", "image"],
+        "vcluster": ["cluster", "image", "network"],
         "synnefo": ["cred", "synnefo", "roles"],
         "packages": ["debian", "ganeti", "synnefo", "other"],
         "ganeti": [],
@@ -196,8 +196,8 @@ class Conf(object):
         #domain = get_domain()
         #if domain:
         #    self.nodes.set("network", "domain", get_domain())
-        self.nodes.set("network", "subnet", "/".join(get_netinfo()))
-        self.nodes.set("network", "gateway", get_default_route()[0])
+        # self.nodes.set("network", "subnet", "/".join(get_netinfo()))
+        # self.nodes.set("network", "gateway", get_default_route()[0])
         self.nodes.set("hostnames", "node1", get_hostname())
         self.nodes.set("ips", "node1", get_netinfo()[0])
         self.nodes.set("info", "nodes", "node1")

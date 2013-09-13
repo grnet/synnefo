@@ -79,7 +79,7 @@ def install_package(package):
     host_info = env.env.ips_info[env.host]
     if ast.literal_eval(env.env.use_local_packages):
         with settings(warn_only=True):
-            deb = local("ls %s/%s*%s.deb" % (env.env.packages, package, host_info[os]))
+            deb = local("ls %s/%s*%s_all.deb" % (env.env.packages, package, host_info[os]))
             if deb:
                 debug(env.host, " * Package %s found in %s..." % (package, env.env.packages))
                 put(deb, "/tmp/")
@@ -89,7 +89,7 @@ def install_package(package):
 
     info = getattr(env.env, package)
     if info in ["squeeze-backports", "stable", "testing", "unstable"]:
-        if  info == "squeeze-backports" and host_infa.os = "wheezy":
+        if  info == "squeeze-backports" and host_infa.os == "wheezy":
           info = host_info.os
         APT_GET += " -t %s %s " % (info, package)
     elif info:
@@ -737,33 +737,40 @@ def setup_nfs_clients():
     if env.host == env.env.pithos.ip:
       return
 
+    host_info = env.env.ips_info[env.host]
     debug(env.host, " * Mounting pithos NFS mount point...")
     with settings(hide("everything")):
         try_run("ping -c1 " + env.env.pithos.hostname)
+    with settings(host_string=env.env.pithos.ip):
+        update_nfs_exports(host_info.ip)
+
     install_package("nfs-common")
-    for d in [env.env.pithos_dir, "/srv/okeanos"]:
+    for d in [env.env.pithos_dir, env.env.image_dir]:
       try_run("mkdir -p " + d)
       cmd = """
-      echo "{0}:/{1} {2}  nfs4 defaults,rw,noatime,nodiratime,intr,rsize=1048576,wsize=1048576,noacl" >> /etc/fstab
-      """.format(env.env.pithos.hostname, os.path.basename(d), d)
+      echo "{0}:{1} {1}  nfs defaults,rw,noatime,rsize=131072,wsize=131072,timeo=14,intr,noacl" >> /etc/fstab
+      """.format(env.env.pithos.ip, d)
       try_run(cmd)
       try_run("mount " + d)
 
+@roles("pithos")
+def update_nfs_exports(ip):
+    tmpl = "/tmp/exports"
+    replace = {
+      "pithos_dir": env.env.pithos_dir,
+      "image_dir": env.env.image_dir,
+      "ip": ip,
+      }
+    custom = customize_settings_from_tmpl(tmpl, replace)
+    put(custom, tmpl)
+    try_run("cat %s >> /etc/exports" % tmpl)
+    try_run("/etc/init.d/nfs-kernel-server restart")
 
 @roles("pithos")
 def setup_nfs_server():
     debug(env.host, " * Setting up NFS server for pithos...")
     setup_nfs_dirs()
     install_package("nfs-kernel-server")
-    tmpl = "/etc/exports"
-    replace = {
-      "pithos_dir": env.env.pithos_dir,
-      "srv": os.path.dirname(env.env.pithos_dir),
-      "subnet": env.env.subnet
-      }
-    custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
-    try_run("/etc/init.d/nfs-kernel-server restart")
 
 
 @roles("pithos")
@@ -963,7 +970,7 @@ def setup_image_host():
     debug(env.host, "Setting up snf-image...")
     install_package("snf-pithos-backend")
     install_package("snf-image")
-    try_run("mkdir -p /srv/okeanos")
+    try_run("mkdir -p %s" % env.env.image_dir)
     tmpl = "/etc/default/snf-image"
     replace = {
         "synnefo_user": env.env.synnefo_user,
@@ -1272,7 +1279,7 @@ def setup_burnin():
 def add_image_locally():
     debug(env.host, " * Getting image locally in order snf-image to use it directly..")
     image = "debian_base.diskdump"
-    try_run("wget {0} -O /srv/okeanos/{1}".format(env.env.debian_base_url, image))
+    try_run("wget {0} -O {1}/{2}".format(env.env.debian_base_url, env.env.image_dir, image))
 
 
 @roles("master")

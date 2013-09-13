@@ -25,6 +25,13 @@ ENDC = '\033[0m'
 
 
 def disable_color():
+    global HEADER
+    global OKBLUE
+    global OKGREEN
+    global WARNING
+    global FAIL
+    global ENDC
+
     HEADER = ''
     OKBLUE = ''
     OKGREEN = ''

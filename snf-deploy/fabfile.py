@@ -76,9 +76,10 @@ def install_package(package):
     debug(env.host, " * Installing package %s..." % package)
     APT_GET = "export DEBIAN_FRONTEND=noninteractive ;apt-get install -y --force-yes "
 
+    host_info = env.env.ips_info[env.host]
     if ast.literal_eval(env.env.use_local_packages):
         with settings(warn_only=True):
-            deb = local("ls %s/%s*deb" % (env.env.packages, package))
+            deb = local("ls %s/%s*%s.deb" % (env.env.packages, package, host_info[os]))
             if deb:
                 debug(env.host, " * Package %s found in %s..." % (package, env.env.packages))
                 put(deb, "/tmp/")
@@ -87,7 +88,9 @@ def install_package(package):
                 return
 
     info = getattr(env.env, package)
-    if info in ["stable", "squeeze-backports", "testing", "unstable"]:
+    if info in ["squeeze-backports", "stable", "testing", "unstable"]:
+        if  info == "squeeze-backports" and host_infa.os = "wheezy":
+          info = host_info.os
         APT_GET += " -t %s %s " % (info, package)
     elif info:
         APT_GET += " %s=%s " % (package, info)
@@ -358,7 +361,11 @@ def setup_apt():
     curl -k https://dev.grnet.gr/files/apt-grnetdev.pub | apt-key add -
     """
     try_run(cmd)
-    tmpl = "/etc/apt/sources.list.d/okeanos.list"
+    host_info = env.env.ips_info[env.host]
+    if host_info.os == "squeeze":
+      tmpl = "/etc/apt/sources.list.d/synnefo.squeeze.list"
+    else:
+      tmpl = "/etc/apt/sources.list.d/synnefo.wheezy.list"
     replace = {}
     custom = customize_settings_from_tmpl(tmpl, replace)
     put(custom, tmpl)

@@ -100,12 +100,11 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None):
         if status == "success" or (status == "error" and
                                    not vm_exists_in_backend(vm)):
             _process_net_status(vm, etime, nics=[])
-            already_deleted = vm.deleted
-            vm.deleted = True
             vm.operstate = state_for_success
             vm.backendtime = etime
-            # Issue and accept commission to Quotaholder
-            if not already_deleted:
+            if not vm.deleted:
+                vm.deleted = True
+                # Issue and accept commission to Quotaholder
                 quotas.issue_and_accept_commission(vm, delete=True)
                 # the above has already saved the object and committed;
                 # a second save would override others' changes, since the

@@ -149,6 +149,7 @@ Drafts
    :maxdepth: 1
 
    Sample design <design/sample>
+   Resource-pool projects design <design/resource-pool-projects>
 
 
 Contact

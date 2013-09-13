@@ -79,7 +79,7 @@ def install_package(package):
     host_info = env.env.ips_info[env.host]
     if ast.literal_eval(env.env.use_local_packages):
         with settings(warn_only=True):
-            deb = local("ls %s/%s*%s_all.deb" % (env.env.packages, package, host_info[os]))
+            deb = local("ls %s/%s*%s_all.deb" % (env.env.packages, package, host_info.os))
             if deb:
                 debug(env.host, " * Package %s found in %s..." % (package, env.env.packages))
                 put(deb, "/tmp/")
@@ -89,7 +89,7 @@ def install_package(package):
 
     info = getattr(env.env, package)
     if info in ["squeeze-backports", "stable", "testing", "unstable"]:
-        if  info == "squeeze-backports" and host_infa.os == "wheezy":
+        if  info == "squeeze-backports" and host_info.os == "wheezy":
           info = host_info.os
         APT_GET += " -t %s %s " % (info, package)
     elif info:
@@ -542,7 +542,7 @@ def astakos_register_services():
     snf-manage component-add "pithos" {2}ui/
     snf-manage component-add "astakos" {3}ui/
     """.format(env.env.cms.fqdn, cyclades_base_url,
-               pithos.base_url, astakos_base_url)
+               pithos_base_url, astakos_base_url)
     try_run(cmd)
     import_service("astakos", astakos_base_url)
     import_service("pithos", pithos_base_url)
@@ -633,7 +633,7 @@ EOF
 
 
 def import_service(service, base_url):
-    try_run("snf-service-export %s %s | snf-manage service-import -" %
+    try_run("snf-service-export %s %s | snf-manage service-import --json -" %
             (service, base_url))
 
 
@@ -821,19 +821,6 @@ def setup_pithos():
     #try_run("pithos-migrate upgrade head")
 
 
-def add_wheezy():
-    tmpl = "/etc/apt/sources.list.d/wheezy.list"
-    replace = {}
-    custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
-    apt_get_update()
-
-
-def remove_wheezy():
-    try_run("rm -f /etc/apt/sources.list.d/wheezy.list")
-    apt_get_update()
-
-
 @roles("ganeti")
 def setup_ganeti():
     debug(env.host, "Setting up snf-ganeti...")
@@ -849,9 +836,7 @@ def setup_ganeti():
         #try_run("apt-get update")
     install_package("qemu-kvm")
     install_package("python-bitarray")
-    add_wheezy()
     install_package("ganeti-htools")
-    remove_wheezy()
     install_package("snf-ganeti")
     try_run("mkdir -p /srv/ganeti/file-storage/")
     cmd = """

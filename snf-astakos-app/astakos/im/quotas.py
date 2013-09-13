@@ -32,7 +32,7 @@
 # or implied, of GRNET S.A.
 
 from astakos.im.models import (
-    Resource, AstakosUserQuota, AstakosUser, Service,
+    Resource, AstakosUser, Service,
     Project, ProjectMembership, ProjectResourceQuota)
 import astakos.quotaholder_app.callpoint as qh
 from astakos.quotaholder_app.exception import NoCapacityError
@@ -228,14 +228,6 @@ def get_pending_app_quota(user):
     quota = get_user_quotas(user)
     source = user.base_project.uuid
     return quota[source][PENDING_APP_RESOURCE]
-
-
-def update_base_quota(users, resource, value):
-    userids = [user.pk for user in users]
-    AstakosUserQuota.objects.\
-        filter(resource__name=resource, user__pk__in=userids).\
-        update(capacity=value)
-    qh_sync_locked_users(users, resource=resource)
 
 
 def _partition_by(f, l):

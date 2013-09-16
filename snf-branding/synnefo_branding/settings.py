@@ -52,4 +52,4 @@ SYNNEFO_VERSION = get_component_version('common')
 
 # Footer message appears above Copyright message at the Compute templates
 # and the Dashboard UI. Accepts html tags
-FOOTER_EXTRA_MESSAGE = ''
+FOOTER_EXTRA_MESSAGE = getattr(settings, 'BRANDING_FOOTER_EXTRA_MESSAGE', '')

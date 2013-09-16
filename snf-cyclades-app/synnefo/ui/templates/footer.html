@@ -2,10 +2,14 @@
 <div id="footer-container">
     <div id='footer'>
         <div id='footer-text'>
+            {% if BRANDING_FOOTER_EXTRA_MESSAGE %}
+                <div class="extra-msg">{{ BRANDING_FOOTER_EXTRA_MESSAGE|safe }}</div>
+            {% endif %}
             {% if BRANDING_SHOW_COPYRIGHT %}
             <div class='grnet-sign'><a href="{{ BRANDING_COMPANY_URL }}" target="_blank" title="{{ BRANDING_COMPANY_NAME }}">{{  BRANDING_COPYRIGHT_MESSAGE }}</a></div>
             {% endif %}
         </div>
+
         <div id="footer-bg">
         </div>
         <div class="software">Powered by <a href="http://www.synnefo.org/">Synnefo</a> <span class="version">v{{ BRANDING_SYNNEFO_VERSION }}</span></div>

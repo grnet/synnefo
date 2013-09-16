@@ -34,12 +34,25 @@
 
 from django.conf.urls.defaults import url, patterns
 from snf_django.lib.api.utils import prefix_pattern
-from synnefo.lib.services import get_public_endpoint
+from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
 
 
+def extend_path_with_slash(patterns_obj, path):
+    if not path.endswith('/'):
+        pattern = prefix_pattern(path, append_slash=False) + '$'
+        entry = url(pattern, 'redirect_to', {'url': path + '/'})
+        patterns_obj += patterns('django.views.generic.simple', entry)
+
+
+def extend_endpoint_with_slash(patterns_obj, filled_services, service_type,
+                               version=None):
+    path = get_service_path(filled_services, service_type, version)
+    extend_path_with_slash(patterns_obj, path)
+
+
 def extend_with_root_redirects(patterns_obj, filled_services, service_type,
-                               base_path):
+                               base_path, with_slash=True):
     """
     Append additional redirect url entries for `/` and `/<base_path>` paths.
 
@@ -50,7 +63,10 @@ def extend_with_root_redirects(patterns_obj, filled_services, service_type,
     redirects to the chosen service url.
 
     """
-    service_url = get_public_endpoint(filled_services, service_type)
+    service_path = get_service_path(filled_services, service_type)
+    if with_slash:
+        service_path = service_path.rstrip('/') + '/'
+
     root_url_entry = None
     if base_path and base_path != '/':
         # redirect slash to /<base_path>/
@@ -61,11 +77,11 @@ def extend_with_root_redirects(patterns_obj, filled_services, service_type,
     base_path_pattern = prefix_pattern(base_path) + '$'
     base_path_pattern_no_slash = prefix_pattern(base_path).rstrip('/') + '$'
 
-    # redirect /<base_path> and /<base_path>/ to service_url public endpoint
+    # redirect /<base_path> and /<base_path>/ to service_path public endpoint
     base_url_entry = url(base_path_pattern, 'redirect_to', {'url':
-                                                            service_url})
+                                                            service_path})
     base_url_entry_no_slash = url(base_path_pattern_no_slash,
-                                  'redirect_to', {'url': service_url})
+                                  'redirect_to', {'url': service_path})
     # urls order matter. Setting base_url_entry first allows us to avoid
     # redirect loops when base_path is empty or `/`
     patterns_obj += patterns('django.views.generic.simple',

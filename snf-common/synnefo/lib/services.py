@@ -47,7 +47,7 @@ def fill_endpoints(services, base_url):
             if publicURL is not None:
                 continue
 
-            publicURL = join_urls(base_url, prefix, version).rstrip('/') + '/'
+            publicURL = join_urls(base_url, prefix, version).rstrip('/')
             set_path(endpoint, 'publicURL', publicURL)
 
 
@@ -84,4 +84,4 @@ def get_public_endpoint(services, service_type, version=None):
 
 def get_service_path(services, service_type, version=None):
     service_url = get_public_endpoint(services, service_type, version=version)
-    return urlparse(service_url).path.rstrip('/') + '/'
+    return urlparse(service_url).path.rstrip('/')

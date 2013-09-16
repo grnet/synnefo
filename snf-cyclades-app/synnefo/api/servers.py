@@ -393,6 +393,7 @@ def do_create_server(userid, name, password, flavor, image, metadata={},
         transaction.commit()
 
     try:
+        vm = VirtualMachine.objects.select_for_update().get(id=vm.id)
         jobID = create_instance(vm, nic, flavor, image)
         # At this point the job is enqueued in the Ganeti backend
         vm.backendjobid = jobID
@@ -407,9 +408,11 @@ def do_create_server(userid, name, password, flavor, image, metadata={},
         # already reserved quotas by issuing a negative commission
         vm.operstate = "ERROR"
         vm.backendlogmsg = "Can not communicate to backend."
+        already_deleted = vm.deleted
         vm.deleted = True
         vm.save()
-        quotas.issue_and_accept_commission(vm, delete=True)
+        if not already_deleted:
+            quotas.issue_and_accept_commission(vm, delete=True)
         raise
     except:
         transaction.rollback()

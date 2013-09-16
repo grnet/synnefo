@@ -52,5 +52,4 @@ SYNNEFO_VERSION = get_component_version('common')
 
 # Footer message appears above Copyright message at the Compute templates
 # and the Dashboard UI. Accepts html tags
-FOOTER_EXTRA_MESSAGE = '<p>The project is co-financed by Greece and the \
-                        European Union.</p>'
+FOOTER_EXTRA_MESSAGE = ''

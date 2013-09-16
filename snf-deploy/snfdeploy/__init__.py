@@ -73,7 +73,7 @@ Usage: snf-deploy run <action> [<action>...]
       setup_apt              add_rapi_user                 add_backend
       setup_astakos          add_nodes                     add_image_locally
       setup_cms              astakos_loaddata              add_network
-      setup_common           astakos_register_services     add_ns
+      setup_common           astakos_register_components   add_ns
       setup_cyclades         cms_loaddata                  add_user
       setup_db               cyclades_loaddata             connect_bridges
       setup_ganeti           enable_drbd                   create_bridges
@@ -434,10 +434,12 @@ def get_actions(*args):
         "setup_astakos",
         #TODO: astakos-quota fails if no user is added.
         #      add_user fails if no groups found
-        "astakos_loaddata", "add_user", "activate_user", "astakos_register_services",
+        "astakos_loaddata", "add_user", "activate_user",
+        "astakos_register_components",
         "setup_cms", "cms_loaddata",
         "setup_pithos",
-        "setup_cyclades", "cyclades_loaddata", "add_pools", "setup_vncauthproxy",
+        "setup_cyclades", "cyclades_loaddata", "add_pools",
+        "export_services", "import_services", "setup_vncauthproxy",
         "setup_kamaki", "upload_image", "register_image",
         "setup_burnin"
         ],

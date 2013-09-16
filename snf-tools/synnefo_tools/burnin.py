@@ -2075,10 +2075,10 @@ def parse_arguments(args):
     _mandatory_argument(opts.token, "--token")
     # `auth_url' is mandatory
     _mandatory_argument(opts.auth_url, "--auth-url")
-    # `system_images_user' is mandatory
-    _mandatory_argument(opts.system_images_user, "--system-images-user")
 
     if not opts.show_stale:
+        # `system_images_user' is mandatory
+        _mandatory_argument(opts.system_images_user, "--system-images-user")
         # `image-id' is mandatory
         _mandatory_argument(opts.force_imageid, "--image-id")
         if opts.force_imageid != 'all':

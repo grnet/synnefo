@@ -738,12 +738,14 @@ class SynnefoCI(object):
             --force-flavor=2 --image-id=all \
             --system-images-user=$images_user \
             {0}
+        BurninExitStatus=$?
         log_folder=$(ls -1d /var/log/burnin/* | tail -n1)
         for i in $(ls $log_folder/*/details*); do
             echo -e "\\n\\n"
             echo -e "***** $i\\n"
             cat $i
         done
+        exit $BurninExitStatus
         """.format(self.config.get('Burnin', 'cmd_options'))
         _run(cmd, True)
 

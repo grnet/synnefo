@@ -1661,7 +1661,7 @@ class TestRunnerProcess(Process):
                     fail.write(str(res[0].shortDescription()) + '\n')
                     fail.write('\n')
                     if not NOFAILFAST:
-                        sys.exit()
+                        sys.exit(1)
 
                 if (len(result.failures) == 0) and (len(result.errors) == 0):
                     log.debug("Passed testcase: %s" % msg)
@@ -1676,6 +1676,8 @@ class TestRunnerProcess(Process):
 
 def _run_cases_in_series(cases, image_folder):
     """Run instances of TestCase in series"""
+
+    error_found = False
 
     for case in cases:
 
@@ -1709,6 +1711,7 @@ def _run_cases_in_series(cases, image_folder):
             error.write(str(res[0]) + '\n')
             error.write(str(res[0].shortDescription()) + '\n')
             error.write('\n')
+            error_found = True
 
         for res in result.failures:
             log.error("snf-burnin failed in testcase: %s" % test)
@@ -1716,11 +1719,18 @@ def _run_cases_in_series(cases, image_folder):
             fail.write(str(res[0]) + '\n')
             fail.write(str(res[0].shortDescription()) + '\n')
             fail.write('\n')
+            error_found = True
             if not NOFAILFAST:
-                sys.exit()
+                sys.exit(1)
 
         if (len(result.failures) == 0) and (len(result.errors) == 0):
             log.debug("Passed testcase: %s" % test)
+
+    # Return
+    if error_found:
+        return 1
+    else:
+        return 0
 
 
 def _run_cases_in_parallel(cases, fanout, image_folder):

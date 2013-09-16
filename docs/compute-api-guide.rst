@@ -453,6 +453,7 @@ imageRef    Image id             ✔        ✔
 flavorRef   Resources flavor     ✔        ✔
 personality Personality contents ✔        ✔
 metadata    Custom metadata      ✔        ✔
+project     Project assignment   ✔        **✘**
 =========== ==================== ======== ==========
 
 * **name** can be any string
@@ -462,6 +463,10 @@ metadata    Custom metadata      ✔        ✔
 
 * **metadata** are ``key``:``value`` pairs of custom server-specific metadata.
   There are no semantic limitations.
+
+* **project** (optional) is the project where the VM is to be assigned. If not
+  given, user's base project is assumed (identified with the same uuid as the
+  user).
 
 * **personality** (optional) is a list of personality injections. A personality
   injection is a way to add a file into a virtual server while creating it.
@@ -2937,6 +2942,7 @@ cidr6              IPv6 CDIR               **✘**    null
 gateway            IPv4 gateway address    **✘**    null
 gateway6           IPv6 gateway address    **✘**    null
 public             If a public network     **✘**    False
+project            Project assignment      **✘**    base project
 ================== ======================= ======== =======
 
 * **name** is a string
@@ -2950,6 +2956,10 @@ public             If a public network     **✘**    False
 * **cidr6**, and **gateway6** are IPv6 addresses
 
 * **public** should better not be used. If True, a 403 error is returned.
+
+* **project** (optional) is the project where the network is to be assigned.
+  If not given, user's base project is assumed (identified with the same uuid
+  as the user).
 
 *Example Create Network Request Body: JSON*
 

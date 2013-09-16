@@ -46,7 +46,6 @@ log = logging.getLogger(__name__)
 QUOTABLE_RESOURCES = [VirtualMachine, Network, IPAddress]
 
 
-DEFAULT_SOURCE = 'system'
 RESOURCES = [
     "cyclades.vm",
     "cyclades.total_cpu",
@@ -108,7 +107,7 @@ def issue_commission(resource, action, name="", force=False, auto_accept=False,
         return None
 
     user = resource.userid
-    source = DEFAULT_SOURCE
+    source = resource.project
 
     qh = Quotaholder.get()
     if True:  # placeholder

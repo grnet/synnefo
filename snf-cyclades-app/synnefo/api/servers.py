@@ -385,6 +385,7 @@ def create_server(request):
         networks = server.get("networks")
         if networks is not None:
             assert isinstance(networks, list)
+        project = server.get("project")
     except (KeyError, AssertionError):
         raise faults.BadRequest("Malformed request")
 
@@ -403,7 +404,7 @@ def create_server(request):
 
     vm = servers.create(user_id, name, password, flavor, image,
                         metadata=metadata, personality=personality,
-                        networks=networks)
+                        project=project, networks=networks)
 
     server = vm_to_dict(vm, detail=True)
     server['status'] = 'BUILD'

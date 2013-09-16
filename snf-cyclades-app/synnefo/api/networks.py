@@ -128,8 +128,9 @@ def create_network(request):
     if name is None:
         name = ""
 
+    project = network_dict.get('project', None)
     network = networks.create(userid=userid, name=name, flavor=flavor,
-                              public=False)
+                              public=False, project=project)
     networkdict = network_to_dict(network, detail=True)
     response = render_network(request, networkdict, status=201)
 

@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -74,6 +74,13 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None):
     vm.backendopcode = opcode
     vm.backendlogmsg = logmsg
 
+    # Update backendtime only for jobs that have been successfully completed,
+    # since only these jobs update the state of the VM. Else a "race condition"
+    # may occur when a successful job (e.g. OP_INSTANCE_REMOVE) completes
+    # before an error job and messages arrive in reversed order.
+    if status == 'success':
+        vm.backendtime = etime
+
     # Notifications of success change the operating state
     state_for_success = VirtualMachine.OPER_STATE_FROM_OPCODE.get(opcode, None)
     if status == 'success' and state_for_success is not None:
@@ -93,18 +100,16 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None):
         if status == "success" or (status == "error" and
                                    not vm_exists_in_backend(vm)):
             _process_net_status(vm, etime, nics=[])
-            vm.deleted = True
             vm.operstate = state_for_success
             vm.backendtime = etime
-            # Issue and accept commission to Quotaholder
-            quotas.issue_and_accept_commission(vm, delete=True)
-
-    # Update backendtime only for jobs that have been successfully completed,
-    # since only these jobs update the state of the VM. Else a "race condition"
-    # may occur when a successful job (e.g. OP_INSTANCE_REMOVE) completes
-    # before an error job and messages arrive in reversed order.
-    if status == 'success':
-        vm.backendtime = etime
+            if not vm.deleted:
+                vm.deleted = True
+                # Issue and accept commission to Quotaholder
+                quotas.issue_and_accept_commission(vm, delete=True)
+                # the above has already saved the object and committed;
+                # a second save would override others' changes, since the
+                # object is now unlocked
+                return
 
     vm.save()
 
@@ -294,6 +299,10 @@ def update_network_state(network):
         # Issue commission
         if network.userid:
             quotas.issue_and_accept_commission(network, delete=True)
+            # the above has already saved the object and committed;
+            # a second save would override others' changes, since the
+            # object is now unlocked
+            return
         elif not network.public:
             log.warning("Network %s does not have an owner!", network.id)
     network.save()

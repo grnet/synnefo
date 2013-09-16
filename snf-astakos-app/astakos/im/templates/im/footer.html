@@ -1,4 +1,8 @@
 {% block footer_content %}
+{% if BRANDING_FOOTER_EXTRA_MESSAGE %}
+	<div class="extra-msg">{{ BRANDING_FOOTER_EXTRA_MESSAGE|safe }}</div>
+{% endif %}
+
  
 <p class="termslink" style="float:right"><a href="{% url latest_terms %}">Terms of service</a></p>
 {% if BRANDING_SHOW_COPYRIGHT%}

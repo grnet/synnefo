@@ -522,32 +522,14 @@ def astakos_loaddata():
 
 
 @roles("accounts")
-def astakos_register_services():
-    debug(env.host, " * Register services in astakos...")
+def astakos_register_components():
+    debug(env.host, " * Register components in astakos...")
     cmd = """
     snf-manage component-add "home" https://{0} home-icon.png
     snf-manage component-add "cyclades" https://{1}/cyclades/ui/
     snf-manage component-add "pithos" https://{2}/pithos/ui/
     snf-manage component-add "astakos" https://{3}/astakos/ui/
     """.format(env.env.cms.fqdn, env.env.cyclades.fqdn, env.env.pithos.fqdn, env.env.accounts.fqdn)
-    try_run(cmd)
-    import_service("astakos")
-    import_service("pithos")
-    import_service("cyclades")
-    tmpl = "/tmp/resources.json"
-    replace = {}
-    custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
-    try_run("snf-manage resource-import --json %s" % tmpl)
-    cmd = """
-    snf-manage resource-modify --limit 40G pithos.diskspace
-    snf-manage resource-modify --limit 2 astakos.pending_app
-    snf-manage resource-modify --limit 4 cyclades.vm
-    snf-manage resource-modify --limit 40G cyclades.disk
-    snf-manage resource-modify --limit 8G cyclades.ram
-    snf-manage resource-modify --limit 16 cyclades.cpu
-    snf-manage resource-modify --limit 4 cyclades.network.private
-    """
     try_run(cmd)
 
 
@@ -1149,6 +1131,48 @@ def add_pools():
     debug(env.host, " * Creating pools of resources (brigdes, mac prefixes) in cyclades...")
     try_run("snf-manage pool-create --type=mac-prefix --base=aa:00:0 --size=65536")
     try_run("snf-manage pool-create --type=bridge --base=prv --size=20")
+
+
+@roles("accounts", "cyclades", "pithos")
+def export_services():
+    debug(env.host, " * Exporting services...")
+    host = env.host
+    services = []
+    if host == env.env.cyclades.ip:
+        services.append("cyclades")
+    if host == env.env.pithos.ip:
+        services.append("pithos")
+    if host == env.env.accounts.ip:
+        services.append("astakos")
+    for service in services:
+        filename = "%s_services.json" % service
+        cmd = "snf-manage service-export-%s > %s" % (service, filename)
+        run(cmd)
+        get(filename, filename+".local")
+
+
+@roles("accounts")
+def import_services():
+    debug(env.host, " * Registering services to astakos...")
+    for service in ["cyclades", "pithos", "astakos"]:
+        filename = "%s_services.json" % service
+        put(filename +".local", filename)
+        cmd = "snf-manage service-import --json=%s" % filename
+        run(cmd)
+
+    debug(env.host, " * Setting default quota...")
+    cmd = """
+    snf-manage resource-modify --limit 40G pithos.diskspace
+    snf-manage resource-modify --limit 2 astakos.pending_app
+    snf-manage resource-modify --limit 4 cyclades.vm
+    snf-manage resource-modify --limit 40G cyclades.disk
+    snf-manage resource-modify --limit 16G cyclades.ram
+    snf-manage resource-modify --limit 8G cyclades.active_ram
+    snf-manage resource-modify --limit 32 cyclades.cpu
+    snf-manage resource-modify --limit 16 cyclades.active_cpu
+    snf-manage resource-modify --limit 4 cyclades.network.private
+    """
+    try_run(cmd)
 
 
 @roles("cyclades")

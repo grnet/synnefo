@@ -2241,9 +2241,9 @@ def main():
 
         # Run each test
         if opts.fanout > 1:
-            _run_cases_in_parallel(seq_cases, opts.fanout, image_folder)
+            return _run_cases_in_parallel(seq_cases, opts.fanout, image_folder)
         else:
-            _run_cases_in_series(seq_cases, image_folder)
+            return _run_cases_in_series(seq_cases, image_folder)
 
 
 # --------------------------------------------------------------------

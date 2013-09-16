@@ -702,17 +702,20 @@ def object_list(request, v_account, v_container):
         if until is None:
             name = '/'.join((v_account, v_container, ''))
             name_idx = len(name)
+            objects_bulk = []
             for x in request.backend.list_object_permissions(
                     request.user_uniq, v_account, v_container, prefix):
 
                 # filter out objects which are not under the container
                 if name != x[:name_idx]:
                     continue
-
-                object = x[name_idx:]
-                object_permissions[object] = \
-                    request.backend.get_object_permissions(
-                        request.user_uniq, v_account, v_container, object)
+                objects_bulk.append(x[name_idx:])
+                
+            if len(objects_bulk) > 0:
+                object_permissions = \
+                    request.backend.get_object_permissions_bulk(
+                        request.user_uniq, v_account, v_container,
+                        objects_bulk)
 
             if request.user_uniq == v_account:
                 # Bring public information only if the request user

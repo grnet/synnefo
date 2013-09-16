@@ -209,6 +209,8 @@ class ModularBackend(BaseBackend):
                   'MATCH_PREFIX', 'MATCH_EXACT']:
             setattr(self, x, getattr(self.db_module, x))
 
+        self.ALLOWED =  ['read','write']
+
         self.block_module = load_module(block_module)
         self.block_params = block_params
         params = {'path': block_path,
@@ -867,6 +869,35 @@ class ModularBackend(BaseBackend):
         self._apply_versioning(account, container, src_version_id,
                                update_statistics_ancestors_depth=1)
         return dest_version_id
+    
+    @debug_method
+    def get_object_permissions_bulk(self, user, account, container, names):
+        """Return the action allowed on the object, the path
+        from which the object gets its permissions from,
+        along with a dictionary containing the permissions."""
+
+        permissions_path = self._get_permissions_path_bulk(account,
+                container,names)
+        object_permissions = {}
+        access_objects = self.permissions.access_check_bulk(permissions_path,
+                user)
+        group_parents = access_objects['group_parents']
+        nobject_permissions = {}
+        for path in permissions_path:
+            allowed = 1
+            name = path.split('/')[-1]
+            if user != account:
+                try:
+                    allowed = access_objects[path]
+                except KeyError:
+                    raise NotAllowedError
+            access_dict, allowed = \
+                self.permissions.access_get_for_bulk(access_objects[path])
+            nobject_permissions[name] = (self.ALLOWED[allowed], path,
+                                         access_dict)
+        self._lookup_objects(permissions_path)
+        return nobject_permissions
+
 
     @debug_method
     def get_object_permissions(self, user, account, container, name):
@@ -1641,25 +1672,48 @@ class ModularBackend(BaseBackend):
                 formatted.append((p, self.MATCH_EXACT))
         return formatted
 
-    def _get_permissions_path(self, account, container, name):
-        path = '/'.join((account, container, name))
-        permission_paths = self.permissions.access_inherit(path)
+    def _get_formatted_paths(self, paths):
+        formatted = []
+        if len(paths) == 0 :
+            return formatted
+        props = self.node.get_props(paths)
+        if props:
+            for prop in props:
+                if prop[1].split(';', 1)[0].strip() in (
+                        'application/directory', 'application/folder'):
+                    formatted.append((prop[0].rstrip('/') + '/', self.MATCH_PREFIX))
+                formatted.append((prop[0], self.MATCH_EXACT))
+        return formatted
+
+    def _get_permissions_path_bulk(self, account, container, names):
+        formatted_paths = []
+        for name in names:
+            path = '/'.join((account, container, name))
+            formatted_paths.append(path)
+        permission_paths = self.permissions.access_inherit_bulk(formatted_paths)
         permission_paths.sort()
         permission_paths.reverse()
+        permission_paths_list = []
+        lookup_list = []
         for p in permission_paths:
-            if p == path:
-                return p
+            if p in formatted_paths:
+                permission_paths_list.append(p)
             else:
                 if p.count('/') < 2:
                     continue
-                node = self.node.node_lookup(p)
-                props = None
-                if node is not None:
-                    props = self.node.version_lookup(node, inf, CLUSTER_NORMAL)
-                if props is not None:
-                    if props[self.TYPE].split(';', 1)[0].strip() in (
+                lookup_list.append(p)
+
+        if len(lookup_list) > 0:
+            props = self.node.get_props(paths)
+            if props:
+                for prop in props:
+                    if prop[1].split(';', 1)[0].strip() in (
                             'application/directory', 'application/folder'):
-                        return p
+                        permission_paths_list.append((prop[0].rstrip('/') + '/',self.MATCH_PREFIX))
+
+        if len(permission_paths_list) > 0:
+            return permission_paths_list
+
         return None
 
     def _can_read(self, user, account, container, name):

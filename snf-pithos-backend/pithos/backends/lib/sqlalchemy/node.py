@@ -1229,3 +1229,17 @@ class Node(DBWorker):
         groups = groupby(rows, group_by)
         return [(k[0], k[1:], dict([i[12:] for i in data])) for
                 (k, data) in groups]
+
+    def get_props(self, paths):
+        inner_join = \
+            self.nodes.join(self.versions,
+                onclause=self.versions.c.serial==self.nodes.c.latest_version)
+        cc = self.nodes.c.path.in_(paths)
+        s = select([self.nodes.c.path,self.versions.c.type],
+                    from_obj=[inner_join]).where(cc).distinct()
+        r = self.conn.execute(s)
+        rows = r.fetchall()
+        r.close()
+        if rows:
+            return rows
+        return None

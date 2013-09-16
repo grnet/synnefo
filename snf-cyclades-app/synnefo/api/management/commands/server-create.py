@@ -97,6 +97,8 @@ class Command(BaseCommand):
         image = common.get_image(image_id, user_id)
         if backend_id:
             backend = common.get_backend(backend_id)
+        else:
+            backend = None
 
         do_create_server(user_id, name, password, flavor, image,
                          backend=backend)

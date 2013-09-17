@@ -31,6 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import datetime
 from django import dispatch
 from django.conf import settings
 from django.conf.urls.defaults import patterns
@@ -45,7 +46,8 @@ from synnefo.api import util
 from synnefo.api.actions import server_actions
 from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata,
                                NetworkInterface)
-from synnefo.logic.backend import create_instance, delete_instance
+from synnefo.logic.backend import (create_instance, delete_instance,
+                                   process_op_status)
 from synnefo.logic.utils import get_rsapi_state
 from synnefo.logic.backend_allocator import BackendAllocator
 from synnefo import quotas
@@ -404,16 +406,14 @@ def do_create_server(userid, name, password, flavor, image, metadata={},
                  userid, vm, nic, backend, str(jobID))
     except:
         # If an exception is raised, then the user will never get the VM id.
-        # So, the VM must be marked as 'deleted'. We do not delete the VM row
-        # from DB, because the job may have been enqueued to Ganeti. We must
-        # also release the VM resources.
-        if not vm.deleted:  # just an extra check for reconciliation...
-            vm.deleted = True
-            vm.operstate = "ERROR"
-            vm.backendlogmsg = "Error while enqueuing job to Ganeti."
-            vm.save()
-            # The following call performs commit.
-            quotas.issue_and_accept_commission(vm, delete=True)
+        # In order to delete it from DB and release it's resources, we
+        # mock a successful OP_INSTANCE_REMOVE job.
+        process_op_status(vm=vm,
+                          etime=datetime.datetime.now(),
+                          jobid=-0,
+                          opcode="OP_INSTANCE_REMOVE",
+                          status="success",
+                          logmsg="Reconciled eventd: VM creation failed.")
         raise
 
     return vm

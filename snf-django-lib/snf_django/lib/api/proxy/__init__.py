@@ -68,9 +68,9 @@ def proxy(request, proxy_base=None, target_base=None):
 
     # set X-Forwarded-For, if already set, pass it through, otherwise set it
     # to the current request remote address
-    SOURCE_IP = request.META.get('REMOTE_ADDR', None)
-    if SOURCE_IP and not 'X-Forwarded-For' in headers:
-        headers['X-Forwarded-For'] = SOURCE_IP
+    source_ip = request.META.get('REMOTE_ADDR', None)
+    if source_ip and not 'X-Forwarded-For' in headers:
+        headers['X-Forwarded-For'] = source_ip
 
     # request.META remains cleanup
     for k in headers.keys():
@@ -84,9 +84,10 @@ def proxy(request, proxy_base=None, target_base=None):
     kwargs['body'] = request.raw_post_data
 
     path = request.path.lstrip('/')
-    if path.startswith(proxy_base):
+    if not path.startswith(proxy_base):
         m = "request path '{0}' does not start with proxy_base '{1}'"
         m = m.format(path, proxy_base)
+        raise AssertionError(m)
     path = path.replace(proxy_base, '', 1)
     path = join_urls(target_base, path)
     with PooledHTTPConnection(parsed.netloc, parsed.scheme) as conn:

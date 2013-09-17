@@ -1685,6 +1685,26 @@ class ModularBackend(BaseBackend):
                 formatted.append((prop[0], self.MATCH_EXACT))
         return formatted
 
+    def _get_permissions_path(self, account, container, name):
+        path = '/'.join((account, container, name))
+        permission_paths = self.permissions.access_inherit(path)
+        permission_paths.sort()
+        permission_paths.reverse()
+        for p in permission_paths:
+            if p == path:
+                return p
+            else:
+                if p.count('/') < 2:
+                    continue
+                node = self.node.node_lookup(p)
+                props = None
+                if node is not None:
+                    props = self.node.version_lookup(node, inf, CLUSTER_NORMAL)
+                if props is not None:
+                    if props[self.TYPE].split(';', 1)[0].strip() in ('application/directory', 'application/folder'):
+                        return p
+        return None
+
     def _get_permissions_path_bulk(self, account, container, names):
         formatted_paths = []
         for name in names:

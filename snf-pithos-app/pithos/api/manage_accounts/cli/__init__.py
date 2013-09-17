@@ -152,7 +152,7 @@ def set_container_quota(args):
                 failed.append((account, e))
 
         map(update_container_policy, accounts)
-        if failed:
+        if failed and args.report:
             sys.stdout.write(
                 'Failed for the following accounts:\n'
             )
@@ -226,6 +226,10 @@ def main(argv=None):
     parser_set_container_quota.add_argument(
         '--dry', action="store_true", default=False,
         help="Do not commit database changes."
+    )
+    parser_set_container_quota.add_argument(
+        '--report', action="store_true", default=False,
+        help="Report failures."
     )
     parser_set_container_quota.add_argument('container')
     parser_set_container_quota.add_argument('quota')

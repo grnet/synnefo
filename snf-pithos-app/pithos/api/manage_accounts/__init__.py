@@ -31,12 +31,14 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from pithos.api.util import get_backend, split_container_object_string
 
 import re
 import hashlib
 import os
 
+os.environ['DJANGO_SETTINGS_MODULE'] = 'synnefo.settings'
+
+from pithos.api.util import get_backend, split_container_object_string
 
 def data_read_iterator(str, size=1024):
     offset = 0

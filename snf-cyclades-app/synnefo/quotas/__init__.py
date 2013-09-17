@@ -222,6 +222,7 @@ def issue_and_accept_commission(resource, delete=False):
         else:
             reject_commissions(rejected=[previous_serial.serial], strict=False)
         previous_serial.resolved = True
+        previous_serial.save()
 
     try:
         # Convert resources in the format expected by Quotaholder

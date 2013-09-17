@@ -47,7 +47,6 @@ from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata,
                                NetworkInterface)
 from synnefo.logic.backend import create_instance, delete_instance
 from synnefo.logic.utils import get_rsapi_state
-from synnefo.logic.rapi import GanetiApiError
 from synnefo.logic.backend_allocator import BackendAllocator
 from synnefo import quotas
 
@@ -359,22 +358,13 @@ def do_create_server(userid, name, password, flavor, image, metadata={},
             flavor=flavor,
             action="CREATE")
 
+        log.info("Created entry in DB for VM '%s'", vm)
+
         # Create VM's public NIC. Do not wait notification form ganeti hooks to
         # create this NIC, because if the hooks never run (e.g. building error)
         # the VM's public IP address will never be released!
         NetworkInterface.objects.create(machine=vm, network=network, index=0,
                                         ipv4=address, state="BUILDING")
-
-        log.info("Created entry in DB for VM '%s'", vm)
-
-        # dispatch server created signal
-        server_created.send(sender=vm, created_vm_params={
-            'img_id': image['backend_id'],
-            'img_passwd': password,
-            'img_format': str(image['format']),
-            'img_personality': json.dumps(personality),
-            'img_properties': json.dumps(image['metadata']),
-        })
 
         # Also we must create the VM metadata in the same transaction.
         for key, val in metadata.items():
@@ -394,6 +384,17 @@ def do_create_server(userid, name, password, flavor, image, metadata={},
 
     try:
         vm = VirtualMachine.objects.select_for_update().get(id=vm.id)
+        # dispatch server created signal needed to trigger the 'vmapi', which
+        # enriches the vm object with the 'config_url' attribute which must be
+        # passed to the Ganeti job.
+        server_created.send(sender=vm, created_vm_params={
+            'img_id': image['backend_id'],
+            'img_passwd': password,
+            'img_format': str(image['format']),
+            'img_personality': json.dumps(personality),
+            'img_properties': json.dumps(image['metadata']),
+        })
+
         jobID = create_instance(vm, nic, flavor, image)
         # At this point the job is enqueued in the Ganeti backend
         vm.backendjobid = jobID
@@ -401,21 +402,18 @@ def do_create_server(userid, name, password, flavor, image, metadata={},
         transaction.commit()
         log.info("User %s created VM %s, NIC %s, Backend %s, JobID %s",
                  userid, vm, nic, backend, str(jobID))
-    except GanetiApiError as e:
-        log.exception("Can not communicate to backend %s: %s.",
-                      backend, e)
-        # Failed while enqueuing OP_INSTANCE_CREATE to backend. Restore
-        # already reserved quotas by issuing a negative commission
-        vm.operstate = "ERROR"
-        vm.backendlogmsg = "Can not communicate to backend."
-        already_deleted = vm.deleted
-        vm.deleted = True
-        vm.save()
-        if not already_deleted:
-            quotas.issue_and_accept_commission(vm, delete=True)
-        raise
     except:
-        transaction.rollback()
+        # If an exception is raised, then the user will never get the VM id.
+        # So, the VM must be marked as 'deleted'. We do not delete the VM row
+        # from DB, because the job may have been enqueued to Ganeti. We must
+        # also release the VM resources.
+        if not vm.deleted:  # just an extra check for reconciliation...
+            vm.deleted = True
+            vm.operstate = "ERROR"
+            vm.backendlogmsg = "Error while enqueuing job to Ganeti."
+            vm.save()
+            # The following call performs commit.
+            quotas.issue_and_accept_commission(vm, delete=True)
         raise
 
     return vm

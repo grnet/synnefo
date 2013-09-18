@@ -77,20 +77,19 @@ def install_package(package):
     APT_GET = "export DEBIAN_FRONTEND=noninteractive ;apt-get install -y --force-yes "
 
     host_info = env.env.ips_info[env.host]
+    env.env.update_packages(host_info.os)
     if ast.literal_eval(env.env.use_local_packages):
         with settings(warn_only=True):
             deb = local("ls %s/%s*%s_all.deb" % (env.env.packages, package, host_info.os))
             if deb:
                 debug(env.host, " * Package %s found in %s..." % (package, env.env.packages))
                 put(deb, "/tmp/")
-                try_run("dpkg -i /tmp/%s*deb || " % package + APT_GET + "-f")
-                try_run("rm /tmp/%s*deb" % package)
+                try_run("dpkg -i /tmp/%s || " % os.path.basename(deb) + APT_GET + "-f")
+                try_run("rm /tmp/%s" % os.path.basename(deb))
                 return
 
     info = getattr(env.env, package)
-    if info in ["squeeze-backports", "stable", "testing", "unstable"]:
-        if  info == "squeeze-backports" and host_info.os == "wheezy":
-          info = host_info.os
+    if info in ["squeeze-backports", "stable", "testing", "unstable", "wheezy"]:
         APT_GET += " -t %s %s " % (info, package)
     elif info:
         APT_GET += " %s=%s " % (package, info)

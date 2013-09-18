@@ -1029,6 +1029,7 @@ class ModularBackend(BaseBackend):
 
         hash = map.hash()
         hexlified = binascii.hexlify(hash)
+        # _update_object_hash() locks destination path
         dest_version_id = self._update_object_hash(
             user, account, container, name, size, type, hexlified, checksum,
             domain, meta, replace_meta, permissions)
@@ -1116,6 +1117,7 @@ class ModularBackend(BaseBackend):
                 dest_prefix = dest_name + delimiter if not dest_name.endswith(
                     delimiter) else dest_name
                 vdest_name = path.replace(prefix, dest_prefix, 1)
+                # _update_object_hash() locks destination path
                 dest_version_ids.append(self._update_object_hash(
                     user, dest_account, dest_container, vdest_name, size,
                     vtype, hash, None, dest_domain, meta={},
@@ -1202,6 +1204,7 @@ class ModularBackend(BaseBackend):
 
         if not self._exists(node):
             raise ItemNotExists('Object is deleted.')
+
         src_version_id, dest_version_id = self._put_version_duplicate(
             user, node, size=0, type='', hash=None, checksum='',
             cluster=CLUSTER_DELETED, update_statistics_ancestors_depth=1)

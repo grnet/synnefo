@@ -199,9 +199,12 @@ def update_response_headers(request, response):
                     not _base_content_is_iter):
             response["Content-Length"] = len(response.content)
         else:
-            # save response content from been consumed if it is an iterator
-            response._container, data = itertools.tee(response._container)
-            response["Content-Length"] = len(str(data))
+            if not (response.has_header('Content-Type') and
+                    response['Content-Type'].startswith(
+                        'multipart/byteranges')):
+                # save response content from been consumed if it is an iterator
+                response._container, data = itertools.tee(response._container)
+                response["Content-Length"] = len(str(data))
 
     cache.add_never_cache_headers(response)
     # Fix Vary and Cache-Control Headers. Issue: #3448

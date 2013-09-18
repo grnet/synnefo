@@ -1327,7 +1327,7 @@ uncommenting and setting the following:
   BRANDING_COMPANY_URL = 'https://www.company-ltd.synnefo.org/'
 
 
-**Copyright options:**
+**Copyright and footer options:**
 
 By default, no Copyright message is shown in the UI footer. If you want to make
 it visible in the footer of Astakos, Pithos and Cyclades UI, you can uncomment
@@ -1344,6 +1344,15 @@ setting the following option:
 .. code-block:: python
 
   BRANDING_COPYRIGHT_MESSAGE = 'Copyright (c) 2011-2013 GRNET'
+
+If you want to include a custom message in the footer, you can uncomment and 
+set the ``BRANDING_FOOTER_EXTRA_MESSAGE`` setting. You can use html markup. 
+Your custom message will appear  above Copyright message at the Compute 
+templates and the Dashboard UI.
+
+.. code-block:: python
+
+  #BRANDING_FOOTER_EXTRA_MESSAGE = ''
 
 
 **Images:**
@@ -1829,12 +1838,14 @@ Upgrade Notes
    v0.12 -> v0.13 <upgrade/upgrade-0.13>
    v0.13 -> v0.14 <upgrade/upgrade-0.14>
    v0.14 -> v0.14.2 <upgrade/upgrade-0.14.2>
+   v0.14.2 -> v0.14.6 <upgrade/upgrade-0.14.6>
 
 
 Changelog, NEWS
 ===============
 
 
+* v0.14.6 :ref:`Changelog <Changelog-0.14.6>`, :ref:`NEWS <NEWS-0.14.6>`
 * v0.14.5 :ref:`Changelog <Changelog-0.14.5>`, :ref:`NEWS <NEWS-0.14.5>`
 * v0.14.4 :ref:`Changelog <Changelog-0.14.4>`, :ref:`NEWS <NEWS-0.14.4>`
 * v0.14.3 :ref:`Changelog <Changelog-0.14.3>`, :ref:`NEWS <NEWS-0.14.3>`

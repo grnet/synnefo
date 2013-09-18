@@ -185,7 +185,7 @@ def account(request, search_query):
 
     if is_ip:
         try:
-            nic = NetworkInterface.objects.get(ipv4=search_query)
+            nic = NetworkInterface.objects.get(ipv4=search_query).exclude(machine__deleted=True)
             search_query = nic.machine.userid
             is_uuid = True
         except NetworkInterface.DoesNotExist:

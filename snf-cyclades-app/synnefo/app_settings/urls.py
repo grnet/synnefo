@@ -35,7 +35,8 @@ from django.conf.urls.defaults import *
 from django.conf import settings
 from snf_django.lib.api.proxy import proxy
 from snf_django.lib.api.utils import prefix_pattern
-from snf_django.utils.urls import extend_with_root_redirects
+from snf_django.utils.urls import \
+    extend_with_root_redirects, extend_endpoint_with_slash
 from snf_django.lib.api.urls import api_patterns
 from synnefo.cyclades_settings import (
     BASE_URL, BASE_HOST, BASE_PATH, COMPUTE_PREFIX, VMAPI_PREFIX,
@@ -46,6 +47,14 @@ from synnefo.cyclades_settings import (
 
 from functools import partial
 
+
+urlpatterns = []
+
+# Redirects should be first, otherwise they may get overridden by wildcards
+extend_endpoint_with_slash(urlpatterns, cyclades_services, 'cyclades_ui')
+extend_endpoint_with_slash(urlpatterns, cyclades_services, 'cyclades_helpdesk')
+extend_endpoint_with_slash(urlpatterns, cyclades_services, 'admin')
+extend_endpoint_with_slash(urlpatterns, cyclades_services, 'cyclades_userdata')
 
 astakos_proxy = partial(proxy, proxy_base=BASE_ASTAKOS_PROXY_PATH,
                         target_base=ASTAKOS_BASE_URL)
@@ -63,7 +72,7 @@ cyclades_patterns += patterns('',
     (prefix_pattern(HELPDESK_PREFIX), include('synnefo.helpdesk.urls')),
 )
 
-urlpatterns = patterns(
+urlpatterns += patterns(
     '',
     (prefix_pattern(BASE_PATH), include(cyclades_patterns)),
 )

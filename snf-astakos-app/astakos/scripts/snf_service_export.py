@@ -119,7 +119,7 @@ cyclades_services = {
     },
 
     'cyclades_vmapi': {
-        'type': 'cyclades_vmapi',
+        'type': 'vmapi',
         'component': 'cyclades',
         'prefix': 'vmapi',
         'public': True,
@@ -164,6 +164,18 @@ cyclades_services = {
         ],
         'resources': {},
     },
+
+    'cyclades_admin': {
+        'type': 'admin',
+        'component': 'cyclades',
+        'prefix': 'admin',
+        'public': True,
+        'endpoints': [
+            {'versionId': '',
+             'publicURL': None},
+        ],
+        'resources': {},
+    },
 }
 
 pithos_services = {
@@ -188,12 +200,12 @@ pithos_services = {
     },
 
     'pithos_public': {
-        'type': 'public',
+        'type': 'pithos_public',
         'component': 'pithos',
         'prefix': 'public',
         'public': False,
         'endpoints': [
-            {'versionId': 'v1.0',
+            {'versionId': '',
              'publicURL': None},
         ],
         'resources': {},

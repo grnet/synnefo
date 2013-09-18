@@ -83,6 +83,10 @@ class Alias(Host):
 
 class Env(object):
 
+    def update_packages(self, os):
+        for section in self.conf.files[os]:
+          self.evaluate(os, section)
+
     def evaluate(self, filename, section):
         for k, v in self.conf.get_section(filename, section):
             setattr(self, k, v)
@@ -141,6 +145,8 @@ class Conf(object):
         "vcluster": ["cluster", "image", "network"],
         "synnefo": ["cred", "synnefo", "roles"],
         "packages": ["debian", "ganeti", "synnefo", "other"],
+        "squeeze": ["debian", "ganeti", "synnefo", "other"],
+        "wheezy": ["debian", "ganeti", "synnefo", "other"],
         "ganeti": [],
     }
 
@@ -202,6 +208,7 @@ class Conf(object):
         self.nodes.set("ips", "node1", get_netinfo()[0])
         self.nodes.set("info", "nodes", "node1")
         self.nodes.set("info", "public_iface", get_default_route()[1])
+
 
 
 def debug(host, msg):

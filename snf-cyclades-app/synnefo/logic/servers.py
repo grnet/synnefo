@@ -1,4 +1,5 @@
 import logging
+import datetime
 
 from socket import getfqdn
 from functools import wraps
@@ -12,7 +13,6 @@ from synnefo import quotas
 from synnefo.api import util
 from synnefo.logic import backend
 from synnefo.logic.backend_allocator import BackendAllocator
-from synnefo.logic.rapi import GanetiApiError
 from synnefo.db.models import (NetworkInterface, VirtualMachine, Network,
                                VirtualMachineMetadata, FloatingIP)
 
@@ -177,15 +177,6 @@ def create(userid, name, password, flavor, image, metadata={},
 
         log.info("Created entry in DB for VM '%s'", vm)
 
-        # dispatch server created signal
-        server_created.send(sender=vm, created_vm_params={
-            'img_id': image['backend_id'],
-            'img_passwd': password,
-            'img_format': str(image['format']),
-            'img_personality': json.dumps(personality),
-            'img_properties': json.dumps(image['metadata']),
-        })
-
         nics = create_instance_nics(vm, userid, private_networks, floating_ips)
 
         # Also we must create the VM metadata in the same transaction.
@@ -204,7 +195,20 @@ def create(userid, name, password, flavor, image, metadata={},
     else:
         transaction.commit()
 
+    jobID = None
     try:
+        vm = VirtualMachine.objects.select_for_update().get(id=vm.id)
+        # dispatch server created signal needed to trigger the 'vmapi', which
+        # enriches the vm object with the 'config_url' attribute which must be
+        # passed to the Ganeti job.
+        server_created.send(sender=vm, created_vm_params={
+            'img_id': image['backend_id'],
+            'img_passwd': password,
+            'img_format': str(image['format']),
+            'img_personality': json.dumps(personality),
+            'img_properties': json.dumps(image['metadata']),
+        })
+
         jobID = backend.create_instance(vm, nics, flavor, image)
         # At this point the job is enqueued in the Ganeti backend
         vm.backendjobid = jobID
@@ -214,19 +218,16 @@ def create(userid, name, password, flavor, image, metadata={},
         transaction.commit()
         log.info("User %s created VM %s, NICs %s, Backend %s, JobID %s",
                  userid, vm, nics, backend, str(jobID))
-    except GanetiApiError as e:
-        log.exception("Can not communicate to backend %s: %s.",
-                      backend, e)
-        # Failed while enqueuing OP_INSTANCE_CREATE to backend. Restore
-        # already reserved quotas by issuing a negative commission
-        vm.operstate = "ERROR"
-        vm.backendlogmsg = "Can not communicate to backend."
-        vm.deleted = True
-        vm.save()
-        quotas.issue_and_accept_commission(vm, delete=True)
-        raise
     except:
-        transaction.rollback()
+        # If an exception is raised, then the user will never get the VM id.
+        # In order to delete it from DB and release it's resources, we
+        # mock a successful OP_INSTANCE_REMOVE job.
+        backend.process_op_status(vm=vm, etime=datetime.datetime.now(),
+                                  jobid=-0,
+                                  opcode="OP_INSTANCE_REMOVE",
+                                  status="success",
+                                  logmsg="Reconciled eventd: VM creation"
+                                         " failed.")
         raise
 
     return vm

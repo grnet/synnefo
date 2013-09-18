@@ -506,33 +506,16 @@ class ServerCreateAPITest(ComputeAPITest):
                                    json.dumps(request), 'json')
         self.assertItemNotFound(response)
 
-    def test_create_server_error(self, mrapi, mimage):
+    def test_create_server_error(self, mrapi):
         """Test if the create server call returns the expected response
            if a valid request has been speficied."""
-        mimage.return_value = {'location': 'pithos://foo',
-                               'checksum': '1234',
-                               "id": 1,
-                               "name": "test_image",
-                               'disk_format': 'diskdump'}
         mrapi().CreateInstance.side_effect = GanetiApiError("..ganeti is down")
-        flavor = mfactory.FlavorFactory()
         # Create public network and backend
         network = mfactory.NetworkFactory(public=True)
         backend = mfactory.BackendFactory()
         mfactory.BackendNetworkFactory(network=network, backend=backend)
 
-        request = {
-                    "server": {
-                        "name": "new-server-test",
-                        "userid": "test_user",
-                        "imageRef": 1,
-                        "flavorRef": flavor.id,
-                        "metadata": {
-                            "My Server Name": "Apache1"
-                        },
-                        "personality": []
-                    }
-        }
+        request = self.request
         with mocked_quotaholder():
             response = self.mypost('servers', 'test_user',
                                    json.dumps(request), 'json')

@@ -62,7 +62,7 @@ def get_token(request):
 
 
 def api_method(http_method=None, token_required=True, user_required=True,
-               logger=None, format_allowed=True, astakos_url=None,
+               logger=None, format_allowed=True, astakos_auth_url=None,
                serializations=None, strict_serlization=False):
     """Decorator function for views that implement an API method."""
     if not logger:
@@ -104,12 +104,12 @@ def api_method(http_method=None, token_required=True, user_required=True,
                 # Authenticate
                 if user_required:
                     assert(token_required), "Can not get user without token"
-                    astakos = astakos_url or settings.ASTAKOS_BASE_URL
-                    astakos = AstakosClient(astakos,
+                    astakos = astakos_auth_url or settings.ASTAKOS_AUTH_URL
+                    astakos = AstakosClient(token, astakos,
                                             use_pool=True,
                                             retry=2,
                                             logger=logger)
-                    user_info = astakos.get_user_info(token)
+                    user_info = astakos.get_user_info()
                     request.user_uniq = user_info["uuid"]
                     request.user = user_info
 

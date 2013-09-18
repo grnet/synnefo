@@ -132,45 +132,59 @@ def astakos_user(user):
     """
     with patch("snf_django.lib.api.get_token") as get_token:
         get_token.return_value = "DummyToken"
-        with patch('astakosclient.AstakosClient.get_user_info') as m:
-            m.return_value = {"uuid": text.udec(user, 'utf8')}
-            with patch('astakosclient.AstakosClient.get_quotas') as m2:
-                m2.return_value = {
-                    "system": {
-                        "pithos.diskspace": {
-                            "usage": 0,
-                            "limit": 1073741824,  # 1GB
-                            "pending": 0
-                        }
+        with patch('astakosclient.AstakosClient.get_endpoints') as m1:
+            m1.return_value = {
+                'access': {
+                    'serviceCatalog': [{
+                        'endpoints': [{'SNF:uiURL': 'ui_url',
+                                       'publicURL': 'accounts_url',
+                                       'region': 'default',
+                                       'versionId': 'v1.0'}],
+                        'name': 'astakos_account',
+                        'type': 'account'}]
                     }
                 }
-                issue_fun = "astakosclient.AstakosClient.issue_one_commission"
-                with patch(issue_fun) as m3:
-                    serials = []
-                    append = serials.append
+            with patch('astakosclient.AstakosClient.get_user_info') as m2:
+                m2.return_value = {"uuid": text.udec(user, 'utf8')}
+                with patch('astakosclient.AstakosClient.get_quotas') as m3:
+                    m3.return_value = {
+                        "system": {
+                            "pithos.diskspace": {
+                                "usage": 0,
+                                "limit": 1073741824,  # 1GB
+                                "pending": 0
+                            }
+                        }
+                    }
+                    issue_fun = \
+                        "astakosclient.AstakosClient.issue_one_commission"
+                    with patch(issue_fun) as m3:
+                        serials = []
+                        append = serials.append
 
-                    def get_serial(*args, **kwargs):
-                        global serial
-                        serial += 1
-                        append(serial)
-                        return serial
+                        def get_serial(*args, **kwargs):
+                            global serial
+                            serial += 1
+                            append(serial)
+                            return serial
 
-                    m3.side_effect = get_serial
-                    resolv_fun = \
-                        'astakosclient.AstakosClient.resolve_commissions'
-                    with patch(resolv_fun) as m4:
-                        m4.return_value = {'accepted': serials,
-                                           'rejected': [],
-                                           'failed': []}
-                        users_fun = 'astakosclient.AstakosClient.get_usernames'
-                        with patch(users_fun) as m5:
+                        m3.side_effect = get_serial
+                        resolv_fun = \
+                            'astakosclient.AstakosClient.resolve_commissions'
+                        with patch(resolv_fun) as m4:
+                            m4.return_value = {'accepted': serials,
+                                               'rejected': [],
+                                               'failed': []}
+                            users_fun = \
+                                'astakosclient.AstakosClient.get_usernames'
+                            with patch(users_fun) as m5:
 
-                            def get_usernames(*args, **kwargs):
-                                uuids = args[-1]
-                                return dict((uuid, uuid) for uuid in uuids)
+                                def get_usernames(*args, **kwargs):
+                                    uuids = args[-1]
+                                    return dict((uuid, uuid) for uuid in uuids)
 
-                            m5.side_effect = get_usernames
-                            yield
+                                m5.side_effect = get_usernames
+                                yield
 
 
 serial = 0

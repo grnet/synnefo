@@ -6,6 +6,19 @@ Unified Changelog file for Synnefo versions >= 0.13
 Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
+.. _Changelog-0.14.7:
+
+v0.14.7
+=======
+
+Released: Wed Sep 18 17:50:12 EEST 2013
+
+Cyclades
+--------
+
+* Fix bug in helpdesk view
+
+
 .. _Changelog-0.14.6:
 
 v0.14.6

@@ -6,6 +6,33 @@ Unified Changelog file for Synnefo versions >= 0.13
 Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
+.. _Changelog-0.14.6:
+
+v0.14.6
+=======
+
+Released: Wed Sep 18 16:18:58 EEST 2013
+
+Pithos
+------
+
+* Substitute the PITHOS_BACKEND_QUOTA setting with two
+  distinct settings: PITHOS_BACKEND_ACCOUNT_QUOTA &
+  PITHOS_BACKEND_CONTAINER_QUOTA
+* Set PITHOS_BACKEND_CONTAINER_QUOTA default value to 0 (unlimited)
+* Fix bug that resulted in DB deadlocks.
+
+Cyclades
+--------
+
+* Fix bug in snf-dispatcher that resulted in servers to be deleted from the
+  DB even if the corresponding Ganeti job failed.
+
+Branding
+--------
+
+* Add new BRANDING_FOOTER_EXTRA_MESSAGE setting.
+
 .. _Changelog-0.14.5:
 
 v0.14.5
@@ -257,10 +284,6 @@ Pithos
   'PITHOS_USER_LOGIN_URL' settings.
 * Remove PITHOS_USE_QUOTAHOLDER, PITHOS_QUOTAHOLDER_URL,
   PITHOS_QUOTAHOLDER_TOKEN and PITHOS_ASTAKOSCLIENT_POOLSIZE
-* Substitute the PITHOS_BACKEND_QUOTA setting with two
-  distinct settings: PITHOS_BACKEND_ACCOUNT_QUOTA &
-  PITHOS_BACKEND_CONTAINER_QUOTA
-* Set PITHOS_BACKEND_CONTAINER_QUOTA default value to 0 (unlimited)
 
 Tools
 -----

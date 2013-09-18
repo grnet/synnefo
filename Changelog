@@ -69,6 +69,19 @@ objects by domain attribute. This is used by Plankton for listing VM images.
 
 * Enforce container-level atomicity in (most) Pithos API calls.
 
+
+.. _Changelog-0.14.7:
+
+v0.14.7
+=======
+
+Released: Wed Sep 18 17:50:12 EEST 2013
+
+Cyclades
+--------
+
+* Fix bug in helpdesk view
+
 .. _Changelog-0.14.6:
 
 v0.14.6

@@ -284,10 +284,17 @@ def get_network_free_address(network):
     return address
 
 
-def get_nic(vm, nic_id):
+def get_vm_nic(vm, nic_id):
     """Get a VMs NIC by its ID."""
     try:
         return vm.nics.get(id=nic_id)
+    except NetworkInterface.DoesNotExist:
+        raise faults.ItemNotFound("NIC '%s' not found" % nic_id)
+
+
+def get_nic(nic_id):
+    try:
+        return NetworkInterface.objects.get(id=nic_id)
     except NetworkInterface.DoesNotExist:
         raise faults.ItemNotFound("NIC '%s' not found" % nic_id)
 
@@ -311,10 +318,6 @@ def render_meta(request, meta, status=200):
     else:
         data = json.dumps(dict(meta=meta))
     return HttpResponse(data, status=status)
-
-
-def construct_nic_id(nic):
-    return "-".join(["nic", unicode(nic.machine.id), unicode(nic.id)])
 
 
 def verify_personality(personality):

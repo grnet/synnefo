@@ -35,7 +35,7 @@ import json
 from mock import patch
 
 from snf_django.utils.testing import BaseAPITest, mocked_quotaholder
-from synnefo.db.models import Network, NetworkInterface
+from synnefo.db.models import Network
 from synnefo.db import models_factory as mfactory
 from synnefo.cyclades_settings import cyclades_services
 from synnefo.lib.services import get_service_path
@@ -93,7 +93,7 @@ class NetworkAPITest(ComputeAPITest):
             self.assertEqual(db_net.gateway6, api_net['gateway6'])
             self.assertEqual(db_net.dhcp, api_net['dhcp'])
             self.assertEqual(db_net.public, api_net['public'])
-            db_nics = ["nic-%d-%d" % (nic.machine.id, nic.id) for nic in
+            db_nics = [nic.id for nic in
                        db_net.nics.filter(machine__userid=db_net.userid)]
             self.assertEqual(db_nics, api_net['attachments'])
 
@@ -137,9 +137,9 @@ class NetworkAPITest(ComputeAPITest):
     def test_invalid_data_3(self, mrapi):
         """Test unauthorized to create public network"""
         request = {
-                'network': {'name': 'foo',
-                            "public": "True",
-                            "type": "MAC_FILTERED"}
+            'network': {"name": 'foo',
+                        "public": "True",
+                        "type": "MAC_FILTERED"}
             }
         response = self.mypost('networks/', 'user1',
                                json.dumps(request), 'json')
@@ -148,7 +148,7 @@ class NetworkAPITest(ComputeAPITest):
     def test_invalid_data_4(self, mrapi):
         """Test unauthorized to create network not in settings"""
         request = {
-                'network': {'name': 'foo', 'type': 'CUSTOM'}
+            'network': {'name': 'foo', 'type': 'CUSTOM'}
             }
         response = self.mypost('networks/', 'user1',
                                json.dumps(request), 'json')
@@ -407,7 +407,7 @@ class NetworkAPITest(ComputeAPITest):
         net = mfactory.NetworkFactory(state='ACTIVE', userid=user)
         nic = mfactory.NetworkInterfaceFactory(machine=vm, network=net)
         mrapi().ModifyInstance.return_value = 1
-        request = {'remove': {'attachment': 'nic-%s-%s' % (vm.id, nic.id)}}
+        request = {'remove': {'attachment': "%s" % nic.id}}
         response = self.mypost('networks/%d/action' % net.id,
                                net.userid, json.dumps(request), 'json')
         self.assertEqual(response.status_code, 202)
@@ -420,9 +420,7 @@ class NetworkAPITest(ComputeAPITest):
         vm = mfactory.VirtualMachineFactory(name='yo', userid=user)
         net = mfactory.NetworkFactory(state='ACTIVE', userid=user)
         nic = mfactory.NetworkInterfaceFactory(machine=vm, network=net)
-        request = {'remove':
-                    {'att234achment': 'nic-%s-%s' % (vm.id, nic.id)}
-                  }
+        request = {'remove': {'att234achment': '%s' % nic.id}}
         response = self.mypost('networks/%d/action' % net.id,
                                net.userid, json.dumps(request), 'json')
         self.assertBadRequest(response)
@@ -431,9 +429,7 @@ class NetworkAPITest(ComputeAPITest):
         user = 'userr'
         vm = mfactory.VirtualMachineFactory(name='yo', userid=user)
         net = mfactory.NetworkFactory(state='ACTIVE', userid=user)
-        request = {'remove':
-                    {'attachment': 'nic-%s' % vm.id}
-                  }
+        request = {'remove': {'attachment': 'nic-%s' % vm.id}}
         response = self.mypost('networks/%d/action' % net.id,
                                net.userid, json.dumps(request), 'json')
         self.assertBadRequest(response)
@@ -442,7 +438,7 @@ class NetworkAPITest(ComputeAPITest):
         response = self.myget('nonexistent')
         self.assertEqual(response.status_code, 400)
         try:
-            error = json.loads(response.content)
+            json.loads(response.content)
         except ValueError:
             self.assertTrue(False)
 

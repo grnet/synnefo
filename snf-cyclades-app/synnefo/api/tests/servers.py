@@ -144,7 +144,7 @@ class ServerAPITest(ComputeAPITest):
         self.assertEqual(api_nic['ipv4'], nic.ipv4)
         self.assertEqual(api_nic['ipv6'], nic.ipv6)
         self.assertEqual(api_nic['OS-EXT-IPS:type'], "fixed")
-        self.assertEqual(api_nic['id'], 'nic-%s-%s' % (db_vm.id, nic.id))
+        self.assertEqual(api_nic['id'], nic.id)
         api_address = server["addresses"]
         self.assertEqual(api_address[str(net.id)], [
             {"version": 4, "addr": nic.ipv4, "OS-EXT-IPS:type": "fixed"},

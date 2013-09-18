@@ -95,7 +95,7 @@ def network_to_dict(network, user_id, detail=True):
         d['status'] = network.state
         d['public'] = network.public
 
-        attachments = [util.construct_nic_id(nic)
+        attachments = [nic.id
                        for nic in network.nics.filter(machine__userid=user_id)
                                               .filter(state="ACTIVE")
                                               .order_by('machine')]

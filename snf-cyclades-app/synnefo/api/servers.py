@@ -105,7 +105,7 @@ def metadata_item_demux(request, server_id, key):
 
 
 def nic_to_dict(nic):
-    d = {'id': util.construct_nic_id(nic),
+    d = {'id': nic.id,
          'network_id': str(nic.network.id),
          'mac_address': nic.mac,
          'ipv4': nic.ipv4,
@@ -759,7 +759,7 @@ def set_firewall_profile(request, vm, args):
     nic_id = args.get("nic")
     if nic_id is None:
         raise faults.BadRequest("Missing 'nic' attribute")
-    nic = util.get_nic(vm, nic_id)
+    nic = util.get_vm_nic(vm, nic_id)
     servers.set_firewall_profile(vm, profile=profile, nic=nic)
     return HttpResponse(status=202)
 
@@ -873,15 +873,14 @@ def remove(request, net, args):
     if attachment is None:
         raise faults.BadRequest("Missing 'attachment' attribute.")
     try:
-        # attachment string: nic-<vm-id>-<nic-id>
-        _, server_id, nic_id = attachment.split("-", 2)
-        server_id = int(server_id)
-        nic_id = int(nic_id)
+        nic_id = int(attachment)
     except (ValueError, TypeError):
         raise faults.BadRequest("Invalid 'attachment' attribute.")
 
+    nic = util.get_nic(nic_id=nic_id)
+    server_id = nic.machine_id
     vm = util.get_vm(server_id, request.user_uniq, non_suspended=True)
-    nic = util.get_nic(vm, nic_id)
+
     servers.disconnect(vm, nic)
 
     return HttpResponse(status=202)

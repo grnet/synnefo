@@ -1109,17 +1109,18 @@ class Node(DBWorker):
         s = s.where(self.versions.c.node.in_(select([self.nodes.c.node],
                                         self.nodes.c.parent == parent)))
 
-        s = s.where(self.versions.c.node == self.versions.c.node)
+        s = s.where(self.versions.c.node == self.nodes.c.node)
         s = s.where(and_(self.nodes.c.path > bindparam('start'), self.nodes.c.path < nextling))
-        conj = []
+        conja = []
+        conjb = []
         for path, match in pathq:
             if match == MATCH_PREFIX:
-                conj.append(self.nodes.c.path.like(self.escape_like(path) + '%',
+                conja.append(self.nodes.c.path.like(self.escape_like(path) + '%',
                                           escape=ESCAPE_CHAR))
             elif match == MATCH_EXACT:
-                conj.append(self.nodes.c.path == path)
-        if conj:
-            s = s.where(or_(*conj))
+                conjb.append(path)
+        if conja or conjb:
+            s = s.where(and_(self.nodes.c.path.in_(conjb),*conja))
 
         if sizeq and len(sizeq) == 2:
             if sizeq[0]:

@@ -89,7 +89,7 @@ def install_package(package):
                 return
 
     info = getattr(env.env, package)
-    if info in ["squeeze-backports", "stable", "testing", "unstable", "wheezy"]:
+    if info in ["squeeze-backports", "squeeze", "stable", "testing", "unstable", "wheezy"]:
         APT_GET += " -t %s %s " % (info, package)
     elif info:
         APT_GET += " %s=%s " % (package, info)
@@ -283,7 +283,7 @@ def setup_resolv_conf():
 def setup_hosts():
     debug(env.host, "Tweaking /etc/hosts and ssh_config files...")
     try_run("echo StrictHostKeyChecking no >> /etc/ssh/ssh_config")
-    cmd = " sed -i 's/^127.*/127.0.0.1 localhost/' /etc/hosts "
+    cmd = "sed -i 's/^127.*$/127.0.0.1 localhost/g' /etc/hosts "
     try_run(cmd)
     host_info = env.env.ips_info[env.host]
     cmd = "hostname %s" % host_info.hostname
@@ -528,7 +528,7 @@ def astakos_loaddata():
 
 
 @roles("accounts")
-def astakos_register_services():
+def astakos_register_components():
     debug(env.host, " * Register services in astakos...")
 
     cyclades_base_url = "https://%s/cyclades/" % env.env.cyclades.fqdn
@@ -1194,7 +1194,7 @@ def add_network():
     debug(env.host, " * Adding public network in cyclades...")
     backend_id = get_backend_id(env.env.cluster.fqdn)
     cmd = """
-    snf-manage network-create --subnet={0} --gateway={1} --public --dhcp --flavor={2} --mode=bridged --link={3} --name=Internet --backend-id={4}
+    snf-manage network-create --subnet={0} --gateway={1} --public --dhcp=True --flavor={2} --mode=bridged --link={3} --name=Internet --backend-id={4}
     """.format(env.env.synnefo_public_network_subnet,
                env.env.synnefo_public_network_gateway,
                env.env.synnefo_public_network_type,
@@ -1243,8 +1243,8 @@ def upload_image(image="debian_base.diskdump"):
 @roles("client")
 def register_image(image="debian_base.diskdump"):
     debug(env.host, " * Register image to plankton...")
-    with settings(host_string=env.env.db.ip):
-        uid, user_auth_token, user_uuid = get_auth_token_from_db(env.env.user_email)
+    # with settings(host_string=env.env.db.ip):
+    #     uid, user_auth_token, user_uuid = get_auth_token_from_db(env.env.user_email)
 
     image_location = "images:{0}".format(image)
     cmd = """

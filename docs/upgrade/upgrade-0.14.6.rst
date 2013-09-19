@@ -1,7 +1,7 @@
 Upgrade to Synnefo v0.14.6
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The upgrade from v0.14.2 to v0.14.6 consists of the following step:
+The upgrade from v0.14.2 to v0.14.6 consists of the following steps:
 
 1. Set default container quota policy to unlimited for the containers
    created prior to 0.14
@@ -11,28 +11,28 @@ The upgrade from v0.14.2 to v0.14.6 consists of the following step:
 1. Set default container quota policy to unlimited in old containers
 ====================================================================
 
-1. In 0.14 has changed the default container quota policy and the containers
-   by default have no limits in their quota. However this affects only the
-   neawly created containers.
+1. The default policy for container quota has changed in 0.14. Containers no
+   longer have quota limits. However, this affects only newly created
+   containers.
    
-   In order to massively change the quota of ``pithos`` container
-   (in all the accounts)::
+   To massively change the quota of the ``pithos`` container
+   for all accounts, run::
 
     $ pithos-manage-accounts set-container-quota pithos 0
 
-   In order to massively change the quota of ``trash`` container
-   (in all the accounts)::
+   To massively change the quota of the ``trash`` container
+   for all accounts, run::
     $ pithos-manage-accounts set-container-quota trash 0
 
-   In order to massively change the quota of ``images`` container
-   (in all the accounts)::
+   To massively change the quota of the ``images`` container
+   for all accounts, run::
     $ pithos-manage-accounts set-container-quota images 0
 
 2. Re-register services in astakos
 ==================================
 
 Service definitions have changed; you will thus need to register their new
-version. In astakos node, run::
+version. On the astakos node, run::
 
     astakos-host$ snf-component-register
 

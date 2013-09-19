@@ -457,6 +457,7 @@ def get_actions(*args):
         ],
       # backend actions
       "backend": [
+        "setup_hosts",
         "update_ns_for_ganeti",
         "setup_ganeti", "init_cluster",
         "add_rapi_user", "add_nodes",

@@ -1,5 +1,4 @@
 import logging
-import datetime
 
 from socket import getfqdn
 from functools import wraps
@@ -171,16 +170,11 @@ def create(userid, name, password, flavor, image, metadata={},
         # Create the server in Ganeti.
         create_server(vm, nics, flavor, image, personality, password)
     except:
-        # If an exception is raised, then the user will never get the VM id.
-        # In order to delete it from DB and release it's resources, we
-        # mock a successful OP_INSTANCE_REMOVE job.
-        backend.process_op_status(vm=vm, etime=datetime.datetime.now(),
-                                  jobid=-0,
-                                  opcode="OP_INSTANCE_REMOVE",
-                                  status="success",
-                                  logmsg="Reconciled eventd: VM creation"
-                                         " failed.")
-        raise
+        log.exception("Failed create instance '%s'", vm)
+        vm.operstate = "ERROR"
+        vm.backendlogmsg = "Failed to send job to Ganeti."
+        vm.save()
+        vm.nics.all().update(state="ERROR")
 
     return vm
 

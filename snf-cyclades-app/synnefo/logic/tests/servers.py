@@ -72,11 +72,13 @@ class ServerCreationTest(TransactionTestCase):
         # error in enqueue. check the vm is deleted and resources released
         mrapi().CreateInstance.side_effect = Exception("ganeti is down")
         with mocked_quotaholder():
-            self.assertRaises(Exception, servers.create, **kwargs)
+            servers.create(**kwargs)
         vm = models.VirtualMachine.objects.get()
-        self.assertTrue(vm.deleted)
-        self.assertEqual(len(vm.nics.all()), 0)
-        vm.delete()
+        self.assertFalse(vm.deleted)
+        self.assertEqual(vm.operstate, "ERROR")
+        self.assertEqual(len(vm.nics.all()), 1)
+        for nic in vm.nics.all():
+            self.assertEqual(nic.state, "ERROR")
 
         # success with no nics
         mrapi().CreateInstance.side_effect = None
@@ -85,7 +87,6 @@ class ServerCreationTest(TransactionTestCase):
                                DEFAULT_INSTANCE_NETWORKS=[]):
             with mocked_quotaholder():
                 vm = servers.create(**kwargs)
-        self.assertEqual(models.VirtualMachine.objects.count(), 1)
         vm = models.VirtualMachine.objects.get(id=vm.id)
         self.assertEqual(vm.nics.count(), 0)
         self.assertEqual(vm.backendjobid, 42)

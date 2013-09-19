@@ -519,14 +519,13 @@ class ServerCreateAPITest(ComputeAPITest):
         with mocked_quotaholder():
             response = self.mypost('servers', 'test_user',
                                    json.dumps(request), 'json')
-        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.status_code, 202)
         mrapi().CreateInstance.assert_called_once()
         vm = VirtualMachine.objects.get()
-        # The VM has been deleted
-        self.assertTrue(vm.deleted)
-        # and it has no nics
-        self.assertEqual(len(vm.nics.all()), 0)
-        self.assertEqual(vm.backendjobid, 0)
+        # The VM has not been deleted
+        self.assertFalse(vm.deleted)
+        # but is in "ERROR" operstate
+        self.assertEqual(vm.operstate, "ERROR")
 
 
 @patch('synnefo.logic.rapi_pool.GanetiRapiClient')

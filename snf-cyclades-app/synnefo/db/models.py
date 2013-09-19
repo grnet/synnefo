@@ -692,6 +692,7 @@ class NetworkInterface(models.Model):
     STATES = (
         ("ACTIVE", "Active"),
         ("BUILDING", "Building"),
+        ("ERROR", "Error"),
     )
 
     machine = models.ForeignKey(VirtualMachine, related_name='nics')

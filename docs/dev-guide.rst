@@ -3,7 +3,73 @@
 Synnefo Developer's Guide
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This is the complete Synnefo Developer's Guide. Here, we document all Synnefo
+This is the complete Synnefo Developer's Guide.
+
+Environment set up
+==================
+
+First of all you have to set up a developing environment for Synnefo.
+
+**1. Create a new Squeeze VM**
+
+**2. Build your own Synnefo installation**
+
+Follow the instructions `here <http://www.synnefo.org/docs/synnefo/latest/quick-install-guide.html>`_
+to build Synnefo on a single node using ``snf-deploy``.
+
+**3. Install GitPython**
+
+.. code-block:: console
+
+	# pip install gitpython
+
+**4. Install devflow**
+
+Devflow is a tool to manage versions, helps implement the git flow development process,
+and builds Python and Debian packages. You will need it to create your code's version.
+
+.. code-block:: console
+
+	# pip install devflow
+
+**5. Get Synnefo code**
+
+First you need to install git
+
+.. code-block:: console
+
+	# apt-get install git
+
+And now get the Synnefo code from the official Synnefo repository
+
+.. code-block:: console
+
+	$ git clone https://code.grnet.gr/git/synnefo
+
+Make sure you did the previous as a regular user. Otherwise you will have problems
+with file permissions when deploying.
+
+**6. Code and deploy**
+
+1. Configure the version
+
+.. code-block:: console
+
+	$ devflow-update-version
+
+2. Code
+3. In every component you change run
+
+.. code-block:: console
+
+	# python setup.py develop
+
+4. Refresh the web page and see your changes
+
+Synnefo REST APIs
+=================
+
+Here, we document all Synnefo
 REST APIs, to allow external developers write independent tools that interact
 with Synnefo.
 
@@ -238,23 +304,23 @@ Syncing
 Consider the following algorithm for synchronizing a local folder with the
 server. The "state" is the complete object listing, with the corresponding
 attributes.
- 
+
 .. code-block:: python
 
   # L: Local State, the last synced state of the object.
   # Stored locally (e.g. in an SQLite database)
-  
+
   # C: Current State, the current local state of the object
   # Returned by the filesystem
-  
+
   # S: Server State, the current server state of the object
   # Returned by the server (HTTP request)
-  
+
   def sync(path):
       L = get_local_state(path)   # Database action
       C = get_current_state(path) # Filesystem action
       S = get_server_state(path)  # Network action
-  
+
       if C == L:
           # No local changes
           if S == L:
@@ -278,7 +344,7 @@ attributes.
               else:
                   # Conflicting changes exist
                   conflict()
-  
+
 
 Notes:
 

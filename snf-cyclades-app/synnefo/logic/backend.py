@@ -96,20 +96,14 @@ def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields):
         # Commission for this change has not been issued, or the issued
         # commission was unaware of the current change. Reject all previous
         # commissions and create a new one in forced mode!
-        previous_serial = vm.serial
-        if previous_serial and not previous_serial.resolved:
-            quotas.resolve_vm_commission(previous_serial)
         commission_name = ("client: dispatcher, resource: %s, ganeti_job: %s"
                            % (vm, job_id))
-        serial = quotas.issue_commission(user=vm.userid,
-                                         source=quotas.DEFAULT_SOURCE,
-                                         provisions=commission_info,
-                                         name=commission_name,
-                                         force=True,
-                                         auto_accept=True)
-        # Clear VM's serial. Expected job may arrive later. However correlated
-        # serial must not be accepted, since it reflects a previous VM state
-        vm.serial = None
+        quotas.handle_resource_commission(vm, action,
+                                          commission_info=commission_info,
+                                          commission_name=commission_name,
+                                          force=True,
+                                          auto_accept=True)
+        log.debug("Issued new commission: %s", vm.serial)
 
     return vm
 

@@ -81,25 +81,10 @@ def server_command(action):
             validate_server_action(vm, action)
             vm.action = action
 
-            # Resolve(reject) previous serial if it is still pending!!
-            previous_serial = vm.serial
-            if previous_serial and not previous_serial.resolved:
-                quotas.resolve_vm_commission(serial=previous_serial)
-
-            # Check if action is quotable and issue the corresponding
-            # commission
-            serial = None
-            commission_info = quotas.get_commission_info(vm, action=action)
-            if commission_info is not None:
-                # Issue new commission, associate it with the VM
-                commission_name = "client: api, resource %s" % vm
-                serial = quotas.issue_commission(user=user_id,
-                                                 source=quotas.DEFAULT_SOURCE,
-                                                 provisions=commission_info,
-                                                 name=commission_name,
-                                                 force=False,
-                                                 auto_accept=False)
-            vm.serial = serial
+            commission_name = "client: api, resource: %s" % vm
+            quotas.handle_resource_commission(vm, action=action,
+                                              commission_name=commission_name)
+            vm.save()
 
             # XXX: Special case for server creation!
             if action == "BUILD":

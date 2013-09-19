@@ -349,7 +349,39 @@ def reverse_quantities(resources):
     return dict((r, -s) for r, s in resources.items())
 
 
-def resolve_vm_commission(serial):
+def handle_resource_commission(resource, action, commission_name,
+                               commission_info=None, force=False,
+                               auto_accept=False):
+    """Handle a issuing of a commission for a resource.
+
+    Create a new commission for a resource based on the action that
+    is performed. If the resource has a previous pending commission,
+    resolved it before issuing the new one.
+
+    """
+    # Try to resolve previous serial
+    resolve_commission(resource.serial)
+
+    # Check if action is quotable and issue the corresponding commission
+    serial = None
+    if commission_info is None:
+        commission_info = get_commission_info(resource, action=action)
+    if commission_info is not None:
+        # Issue new commission, associate it with the resource
+        if commission_name is None:
+            commission_name = "client: api, resource %s" % resource
+        serial = issue_commission(user=resource.userid,
+                                  source=DEFAULT_SOURCE,
+                                  provisions=commission_info,
+                                  name=commission_name,
+                                  force=False,
+                                  auto_accept=False)
+    resource.serial = serial
+
+
+def resolve_commission(serial):
+    if serial is None or serial.resolved:
+        return
     log.warning("Resolving pending commission: %s", serial)
     if not serial.pending and serial.accept:
         accept_serial(serial)

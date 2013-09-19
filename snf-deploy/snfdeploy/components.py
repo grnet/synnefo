@@ -658,18 +658,18 @@ class Astakos(SynnefoComponent):
             ]
 
     def modify_all_quota(self):
-        cmd = "snf-manage user-modify -f --all --base-quota"
+        cmd = "snf-manage project-modify --all-base-projects --limit"
         return [
-            "%s pithos.diskspace 40G" % cmd,
-            "%s astakos.pending_app 2" % cmd,
-            "%s cyclades.vm 4" % cmd,
-            "%s cyclades.disk 40G" % cmd,
-            "%s cyclades.total_ram 16G" % cmd,
-            "%s cyclades.ram 8G" % cmd,
-            "%s cyclades.total_cpu 32" % cmd,
-            "%s cyclades.cpu 16" % cmd,
-            "%s cyclades.network.private 4" % cmd,
-            "%s cyclades.floating_ip 4" % cmd,
+            "%s pithos.diskspace 40G 40G" % cmd,
+            "%s astakos.pending_app 2 2" % cmd,
+            "%s cyclades.vm 4 4" % cmd,
+            "%s cyclades.disk 40G 40G" % cmd,
+            "%s cyclades.total_ram 16G 16G" % cmd,
+            "%s cyclades.ram 8G 8G" % cmd,
+            "%s cyclades.total_cpu 32 32" % cmd,
+            "%s cyclades.cpu 16 16" % cmd,
+            "%s cyclades.network.private 4 4" % cmd,
+            "%s cyclades.floating_ip 4 4" % cmd,
             ]
 
     def get_services(self):

@@ -721,6 +721,76 @@ def enable_base_project(user):
     quotas.qh_sync_project(project)
 
 
+MODIFY_KEYS_MAIN = ["owner", "realname", "homepage", "description"]
+MODIFY_KEYS_EXTRA = ["end_date", "member_join_policy", "member_leave_policy",
+                     "limit_on_members_number", "private"]
+MODIFY_KEYS = MODIFY_KEYS_MAIN + MODIFY_KEYS_EXTRA
+
+
+def modifies_main_fields(request):
+    return set(request.keys()).intersection(MODIFY_KEYS_MAIN)
+
+
+def modify_project(project_id, request):
+    project = get_project_for_update(project_id)
+    if project.state not in Project.INITIALIZED_STATES:
+        m = _(astakos_messages.UNINITIALIZED_NO_MODIFY) % project.uuid
+        raise ProjectConflict(m)
+
+    if project.is_base:
+        main_fields = modifies_main_fields(request)
+        if main_fields:
+            m = (_(astakos_messages.BASE_NO_MODIFY_FIELDS)
+                 % ", ".join(map(str, main_fields)))
+            raise ProjectBadRequest(m)
+
+    new_name = request.get("realname")
+    if new_name is not None and project.is_alive:
+        check_conflicting_projects(project, new_name)
+        project.realname = new_name
+        project.name = new_name
+        project.save()
+
+    _modify_projects(Project.objects.filter(id=project.id), request)
+
+
+def modify_projects_in_bulk(flt, request):
+    main_fields = modifies_main_fields(request)
+    if main_fields:
+        raise ProjectBadRequest("Cannot modify field(s) '%s' in bulk" %
+                                ", ".join(map(str, main_fields)))
+
+    projects = Project.objects.initialized(flt).select_for_update()
+    _modify_projects(projects, request)
+
+
+def _modify_projects(projects, request):
+    upds = {}
+    for key in MODIFY_KEYS:
+        value = request.get(key)
+        if value is not None:
+            upds[key] = value
+    projects.update(**upds)
+
+    changed_resources = set()
+    pquotas = []
+    req_policies = request.get("resources", {})
+    req_policies = validate_resource_policies(req_policies, admin=True)
+    for project in projects:
+        for resource, m_capacity, p_capacity in req_policies:
+            changed_resources.add(resource)
+            pquotas.append(
+                ProjectResourceQuota(
+                    project=project,
+                    resource=resource,
+                    member_capacity=m_capacity,
+                    project_capacity=p_capacity))
+    ProjectResourceQuota.objects.\
+        filter(project__in=projects, resource__in=changed_resources).delete()
+    ProjectResourceQuota.objects.bulk_create(pquotas)
+    quotas.qh_sync_projects(projects)
+
+
 def submit_application(owner=None,
                        name=None,
                        project_id=None,
@@ -798,13 +868,15 @@ def submit_application(owner=None,
     return application
 
 
-def validate_resource_policies(policies):
+def validate_resource_policies(policies, admin=False):
     if not isinstance(policies, dict):
         raise ProjectBadRequest("Malformed resource policies")
 
     resource_names = policies.keys()
-    resources = Resource.objects.filter(name__in=resource_names,
-                                        api_visible=True)
+    resources = Resource.objects.filter(name__in=resource_names)
+    if not admin:
+        resources = resources.filter(api_visible=True)
+
     resource_d = {}
     for resource in resources:
         resource_d[resource.name] = resource

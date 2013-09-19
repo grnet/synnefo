@@ -273,6 +273,8 @@ APPLICATION_CANNOT_CANCEL = "Cannot cancel application %s in state '%s'"
 APPLICATION_CANCELLED = "Your project application has been cancelled."
 REACHED_PENDING_APPLICATION_LIMIT = ("You have reached the maximum number "
                                      "of pending project applications: %s.")
+UNINITIALIZED_NO_MODIFY = "Cannot modify: project %s is not initialized."
+BASE_NO_MODIFY_FIELDS = "Cannot modify field(s) '%s' of base projects."
 
 PENDING_APPLICATION_LIMIT_ADD = \
     ("You are not allowed to create a new project "

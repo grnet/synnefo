@@ -40,23 +40,25 @@ from synnefo.lib import join_urls
 
 class TopLevel(PithosAPITest):
     def test_not_allowed_method(self):
-        r = self.head(self.pithos_path)
+        url = join_urls(self.pithos_path, '/')
+        r = self.head(url)
         self.assertEqual(r.status_code, 400)
-        r = self.put(self.pithos_path, data='')
+        r = self.put(url, data='')
         self.assertEqual(r.status_code, 400)
-        r = self.post(self.pithos_path, data='')
+        r = self.post(url, data='')
         self.assertEqual(r.status_code, 400)
-        r = self.delete(self.pithos_path)
+        r = self.delete(url)
         self.assertEqual(r.status_code, 400)
 
     def test_authenticate(self):
-        r = self.get(self.pithos_path, token=None)
+        url = join_urls(self.pithos_path, '/')
+        r = self.get(url, token=None)
         self.assertEqual(r.status_code, 400)
 
-        r = self.get(self.pithos_path, token=None, HTTP_X_AUTH_USER=self.user)
+        r = self.get(url, token=None, HTTP_X_AUTH_USER=self.user)
         self.assertEqual(r.status_code, 400)
 
-        r = self.get(self.pithos_path, token=None, HTTP_X_AUTH_USER=self.user,
+        r = self.get(url, token=None, HTTP_X_AUTH_USER=self.user,
                      HTTP_X_AUTH_KEY='DummyToken')
         self.assertEqual(r.status_code, 204)
         self.assertTrue('X-Auth-Token' in r)

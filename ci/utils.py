@@ -698,6 +698,7 @@ class SynnefoCI(object):
 
         self.logger.debug("Run snf-deploy")
         cmd = """
+        snf-deploy keygen --force
         snf-deploy --disable-colors --autoconf all
         """
         _run(cmd, True)

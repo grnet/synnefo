@@ -79,9 +79,11 @@ def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields):
 
     if vm.task_job_id == job_id and vm.serial is not None:
         # Commission for this change has already been issued. So just
-        # accept/reject it
+        # accept/reject it. Special case is OP_INSTANCE_CREATE, which even
+        # if fails, must be accepted, as the user must manually remove the
+        # failed server
         serial = vm.serial
-        if job_status == "success":
+        if job_status == "success" or job_opcode == "OP_INSTANCE_CREATE":
             quotas.accept_serial(serial)
         elif job_status in ["error", "canceled"]:
             log.debug("Job %s failed. Rejecting related serial %s", job_id,

@@ -391,6 +391,7 @@ def get_server_details(request, server_id):
 
 
 @api.api_method(http_method='PUT', user_required=True, logger=log)
+@transaction.commit_on_success
 def update_server_name(request, server_id):
     # Normal Response Code: 204
     # Error Response Codes: computeFault (400, 500),
@@ -541,6 +542,7 @@ def list_metadata(request, server_id):
 
 
 @api.api_method(http_method='POST', user_required=True, logger=log)
+@transaction.commit_on_success
 def update_metadata(request, server_id):
     # Normal Response Code: 201
     # Error Response Codes: computeFault (400, 500),

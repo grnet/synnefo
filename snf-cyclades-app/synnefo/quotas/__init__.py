@@ -312,11 +312,9 @@ def get_commission_info(resource, action, action_fields=None):
                      "cyclades.ram": 1048576 * flavor.ram}
         online_resources = {"cyclades.active_cpu": flavor.cpu,
                             "cyclades.active_ram": 1048576 * flavor.ram}
-        # No commission for build! Commission has already been issued and
-        # accepted, since the VM has been created in DB.
-        #if action == "BUILD":
-        #    resources.update(online_resources)
-        #    return resources
+        if action == "BUILD":
+            resources.update(online_resources)
+            return resources
         if action == "START":
             if resource.operstate == "STOPPED":
                 return online_resources

@@ -1658,19 +1658,6 @@ class ModularBackend(BaseBackend):
         # raise ValueError('Bad characters in permissions')
         pass
 
-    def _get_formatted_paths(self, paths):
-        formatted = []
-        for p in paths:
-            node = self.node.node_lookup(p)
-            props = None
-            if node is not None:
-                props = self.node.version_lookup(node, inf, CLUSTER_NORMAL)
-            if props is not None:
-                if props[self.TYPE].split(';', 1)[0].strip() in (
-                        'application/directory', 'application/folder'):
-                    formatted.append((p.rstrip('/') + '/', self.MATCH_PREFIX))
-                formatted.append((p, self.MATCH_EXACT))
-        return formatted
 
     def _get_formatted_paths(self, paths):
         formatted = []

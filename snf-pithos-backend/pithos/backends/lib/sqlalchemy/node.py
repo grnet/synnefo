@@ -102,7 +102,7 @@ _propnames = {
     'muser': 7,
     'uuid': 8,
     'checksum': 9,
-    'cluster': 10
+    'cluster': 10,
 }
 
 
@@ -672,22 +672,32 @@ class Node(DBWorker):
 
         # All children (get size and mtime).
         # This is why the full path is stored.
-        s = select([func.count(v.c.serial),
+        if before != inf:
+            s = select([func.count(v.c.serial),
                     func.sum(v.c.size),
                     func.max(v.c.mtime)])
-        if before != inf:
             c1 = select([func.max(self.versions.c.serial)],
                         self.versions.c.node == v.c.node)
             c1 = c1.where(self.versions.c.mtime < before)
         else:
-            c1 = select([self.nodes.c.latest_version],
-                        self.nodes.c.node == v.c.node)
+            inner_join = \
+                    self.versions.join(self.nodes, onclause=\
+                    self.versions.c.serial == self.nodes.c.latest_version)
+            s = select([func.count(self.versions.c.serial),
+                    func.sum(self.versions.c.size),
+                    func.max(self.versions.c.mtime)], from_obj=[inner_join])
+
         c2 = select([self.nodes.c.node],
                     self.nodes.c.path.like(self.escape_like(path) + '%',
                                            escape=ESCAPE_CHAR))
-        s = s.where(and_(v.c.serial == c1,
+        if before != inf:
+            s = s.where(and_(v.c.serial == c1,
                          v.c.cluster != except_cluster,
                          v.c.node.in_(c2)))
+        else:
+            s = s.where(and_(self.versions.c.cluster != except_cluster,
+                        self.versions.c.node.in_(c2)))
+
         rp = self.conn.execute(s)
         r = rp.fetchone()
         rp.close()
@@ -1233,9 +1243,9 @@ class Node(DBWorker):
     def get_props(self, paths):
         inner_join = \
             self.nodes.join(self.versions,
-                onclause=self.versions.c.serial==self.nodes.c.latest_version)
+                onclause=self.versions.c.serial == self.nodes.c.latest_version)
         cc = self.nodes.c.path.in_(paths)
-        s = select([self.nodes.c.path,self.versions.c.type],
+        s = select([self.nodes.c.path, self.versions.c.type],
                     from_obj=[inner_join]).where(cc).distinct()
         r = self.conn.execute(s)
         rows = r.fetchall()

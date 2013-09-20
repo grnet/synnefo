@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright 2011 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
@@ -367,6 +368,19 @@ class TestLocal(TestCase):
     def tearDown(self):
         settings.ASTAKOS_MODERATION_ENABLED = self._orig_moderation
         AstakosUser.objects.all().delete()
+
+    @im_settings(RECAPTCHA_ENABLED=True, RATELIMIT_RETRIES_ALLOWED=3)
+    def test_login_ratelimit(self):
+        credentials = {'username': 'γιού τι έφ', 'password': 'password'}
+        r = self.client.post(ui_url('local'), credentials, follow=True)
+        fields = r.context['login_form'].fields.keyOrder
+        self.assertFalse('recaptcha_challenge_field' in fields)
+        r = self.client.post(ui_url('local'), credentials, follow=True)
+        fields = r.context['login_form'].fields.keyOrder
+        self.assertFalse('recaptcha_challenge_field' in fields)
+        r = self.client.post(ui_url('local'), credentials, follow=True)
+        fields = r.context['login_form'].fields.keyOrder
+        self.assertTrue('recaptcha_challenge_field' in fields)
 
     def test_no_moderation(self):
         # disable moderation

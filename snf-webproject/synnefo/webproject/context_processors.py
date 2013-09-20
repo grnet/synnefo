@@ -8,8 +8,9 @@ def cloudbar(request):
     context plus a ready to use pre rendered script html tag containing valid
     javascript code for cloudbar to display.
 
-    To use it add ``synnefo.lib.context_processors.cloudbar`` in your project's
-    ``TEMPLATE_CONTEXT_PROCESSORS setting`` (snf-webproject already does).
+    To use it add ``synnefo.webproject.context_processors.cloudbar`` in your
+    project's ``TEMPLATE_CONTEXT_PROCESSORS setting`` (snf-webproject already
+    does).
 
     Then in your base html template::
 

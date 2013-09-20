@@ -35,8 +35,15 @@ from django.conf.urls.defaults import include, patterns
 from astakos.im.settings import (
     BASE_PATH, ACCOUNTS_PREFIX, VIEWS_PREFIX, KEYSTONE_PREFIX, WEBLOGIN_PREFIX)
 from snf_django.lib.api.utils import prefix_pattern
-from snf_django.utils.urls import extend_with_root_redirects
-from astakos.im import settings
+from snf_django.utils.urls import \
+    extend_with_root_redirects, extend_endpoint_with_slash
+from astakos.im.settings import astakos_services
+
+urlpatterns = []
+
+# Redirects should be first, otherwise they may get overridden by wildcards
+extend_endpoint_with_slash(urlpatterns, astakos_services, 'astakos_ui')
+extend_endpoint_with_slash(urlpatterns, astakos_services, 'astakos_weblogin')
 
 astakos_patterns = patterns(
     '',
@@ -47,11 +54,11 @@ astakos_patterns = patterns(
 )
 
 
-urlpatterns = patterns(
+urlpatterns += patterns(
     '',
     (prefix_pattern(BASE_PATH), include(astakos_patterns)),
 )
 
 # set utility redirects
-extend_with_root_redirects(urlpatterns, settings.astakos_services,
+extend_with_root_redirects(urlpatterns, astakos_services,
                            'astakos_ui', BASE_PATH)

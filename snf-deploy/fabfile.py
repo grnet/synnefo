@@ -76,18 +76,20 @@ def install_package(package):
     debug(env.host, " * Installing package %s..." % package)
     APT_GET = "export DEBIAN_FRONTEND=noninteractive ;apt-get install -y --force-yes "
 
+    host_info = env.env.ips_info[env.host]
+    env.env.update_packages(host_info.os)
     if ast.literal_eval(env.env.use_local_packages):
         with settings(warn_only=True):
-            deb = local("ls %s/%s*deb" % (env.env.packages, package))
+            deb = local("ls %s/%s*%s_all.deb" % (env.env.packages, package, host_info.os))
             if deb:
                 debug(env.host, " * Package %s found in %s..." % (package, env.env.packages))
                 put(deb, "/tmp/")
-                try_run("dpkg -i /tmp/%s*deb || " % package + APT_GET + "-f")
-                try_run("rm /tmp/%s*deb" % package)
+                try_run("dpkg -i /tmp/%s || " % os.path.basename(deb) + APT_GET + "-f")
+                try_run("rm /tmp/%s" % os.path.basename(deb))
                 return
 
     info = getattr(env.env, package)
-    if info in ["stable", "squeeze-backports", "testing", "unstable"]:
+    if info in ["squeeze-backports", "squeeze", "stable", "testing", "unstable", "wheezy"]:
         APT_GET += " -t %s %s " % (info, package)
     elif info:
         APT_GET += " %s=%s " % (package, info)
@@ -281,7 +283,7 @@ def setup_resolv_conf():
 def setup_hosts():
     debug(env.host, "Tweaking /etc/hosts and ssh_config files...")
     try_run("echo StrictHostKeyChecking no >> /etc/ssh/ssh_config")
-    cmd = " sed -i 's/^127.*/127.0.0.1 localhost/' /etc/hosts "
+    cmd = "sed -i 's/^127.*$/127.0.0.1 localhost/g' /etc/hosts "
     try_run(cmd)
     host_info = env.env.ips_info[env.host]
     cmd = "hostname %s" % host_info.hostname
@@ -358,7 +360,11 @@ def setup_apt():
     curl -k https://dev.grnet.gr/files/apt-grnetdev.pub | apt-key add -
     """
     try_run(cmd)
-    tmpl = "/etc/apt/sources.list.d/okeanos.list"
+    host_info = env.env.ips_info[env.host]
+    if host_info.os == "squeeze":
+      tmpl = "/etc/apt/sources.list.d/synnefo.squeeze.list"
+    else:
+      tmpl = "/etc/apt/sources.list.d/synnefo.wheezy.list"
     replace = {}
     custom = customize_settings_from_tmpl(tmpl, replace)
     put(custom, tmpl)
@@ -522,23 +528,24 @@ def astakos_loaddata():
 
 
 @roles("accounts")
-def astakos_register_services():
+def astakos_register_components():
     debug(env.host, " * Register services in astakos...")
+
+    cyclades_base_url = "https://%s/cyclades/" % env.env.cyclades.fqdn
+    pithos_base_url = "https://%s/pithos/" % env.env.pithos.fqdn
+    astakos_base_url = "https://%s/astakos/" % env.env.accounts.fqdn
+
     cmd = """
     snf-manage component-add "home" https://{0} home-icon.png
-    snf-manage component-add "cyclades" https://{1}/cyclades/ui/
-    snf-manage component-add "pithos" https://{2}/pithos/ui/
-    snf-manage component-add "astakos" https://{3}/astakos/ui/
-    """.format(env.env.cms.fqdn, env.env.cyclades.fqdn, env.env.pithos.fqdn, env.env.accounts.fqdn)
+    snf-manage component-add "cyclades" {1}ui/
+    snf-manage component-add "pithos" {2}ui/
+    snf-manage component-add "astakos" {3}ui/
+    """.format(env.env.cms.fqdn, cyclades_base_url,
+               pithos_base_url, astakos_base_url)
     try_run(cmd)
-    import_service("astakos")
-    import_service("pithos")
-    import_service("cyclades")
-    tmpl = "/tmp/resources.json"
-    replace = {}
-    custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
-    try_run("snf-manage resource-import --json %s" % tmpl)
+    import_service("astakos", astakos_base_url)
+    import_service("pithos", pithos_base_url)
+    import_service("cyclades", cyclades_base_url)
     cmd = """
     snf-manage resource-modify --limit 40G pithos.diskspace
     snf-manage resource-modify --limit 2 astakos.pending_app
@@ -623,14 +630,11 @@ EOF
     """
     try_run(cmd)
 
-def import_service(service):
-    tmpl = "/tmp/%s.json" % service
-    replace = {
-      "DOMAIN": env.env.domain,
-      }
-    custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
-    try_run("snf-manage service-import --json %s" % tmpl)
+
+def import_service(service, base_url):
+    try_run("snf-service-export %s %s | snf-manage service-import --json -" %
+            (service, base_url))
+
 
 @roles("accounts")
 def get_service_details(service="pithos"):
@@ -732,33 +736,40 @@ def setup_nfs_clients():
     if env.host == env.env.pithos.ip:
       return
 
+    host_info = env.env.ips_info[env.host]
     debug(env.host, " * Mounting pithos NFS mount point...")
     with settings(hide("everything")):
         try_run("ping -c1 " + env.env.pithos.hostname)
+    with settings(host_string=env.env.pithos.ip):
+        update_nfs_exports(host_info.ip)
+
     install_package("nfs-common")
-    for d in [env.env.pithos_dir, "/srv/okeanos"]:
+    for d in [env.env.pithos_dir, env.env.image_dir]:
       try_run("mkdir -p " + d)
       cmd = """
-      echo "{0}:/{1} {2}  nfs4 defaults,rw,noatime,nodiratime,intr,rsize=1048576,wsize=1048576,noacl" >> /etc/fstab
-      """.format(env.env.pithos.hostname, os.path.basename(d), d)
+      echo "{0}:{1} {1}  nfs defaults,rw,noatime,rsize=131072,wsize=131072,timeo=14,intr,noacl" >> /etc/fstab
+      """.format(env.env.pithos.ip, d)
       try_run(cmd)
       try_run("mount " + d)
 
+@roles("pithos")
+def update_nfs_exports(ip):
+    tmpl = "/tmp/exports"
+    replace = {
+      "pithos_dir": env.env.pithos_dir,
+      "image_dir": env.env.image_dir,
+      "ip": ip,
+      }
+    custom = customize_settings_from_tmpl(tmpl, replace)
+    put(custom, tmpl)
+    try_run("cat %s >> /etc/exports" % tmpl)
+    try_run("/etc/init.d/nfs-kernel-server restart")
 
 @roles("pithos")
 def setup_nfs_server():
     debug(env.host, " * Setting up NFS server for pithos...")
     setup_nfs_dirs()
     install_package("nfs-kernel-server")
-    tmpl = "/etc/exports"
-    replace = {
-      "pithos_dir": env.env.pithos_dir,
-      "srv": os.path.dirname(env.env.pithos_dir),
-      "subnet": env.env.subnet
-      }
-    custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
-    try_run("/etc/init.d/nfs-kernel-server restart")
 
 
 @roles("pithos")
@@ -809,19 +820,6 @@ def setup_pithos():
     #try_run("pithos-migrate upgrade head")
 
 
-def add_wheezy():
-    tmpl = "/etc/apt/sources.list.d/wheezy.list"
-    replace = {}
-    custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
-    apt_get_update()
-
-
-def remove_wheezy():
-    try_run("rm -f /etc/apt/sources.list.d/wheezy.list")
-    apt_get_update()
-
-
 @roles("ganeti")
 def setup_ganeti():
     debug(env.host, "Setting up snf-ganeti...")
@@ -837,9 +835,7 @@ def setup_ganeti():
         #try_run("apt-get update")
     install_package("qemu-kvm")
     install_package("python-bitarray")
-    add_wheezy()
     install_package("ganeti-htools")
-    remove_wheezy()
     install_package("snf-ganeti")
     try_run("mkdir -p /srv/ganeti/file-storage/")
     cmd = """
@@ -958,7 +954,7 @@ def setup_image_host():
     debug(env.host, "Setting up snf-image...")
     install_package("snf-pithos-backend")
     install_package("snf-image")
-    try_run("mkdir -p /srv/okeanos")
+    try_run("mkdir -p %s" % env.env.image_dir)
     tmpl = "/etc/default/snf-image"
     replace = {
         "synnefo_user": env.env.synnefo_user,
@@ -1151,6 +1147,48 @@ def add_pools():
     try_run("snf-manage pool-create --type=bridge --base=prv --size=20")
 
 
+@roles("accounts", "cyclades", "pithos")
+def export_services():
+    debug(env.host, " * Exporting services...")
+    host = env.host
+    services = []
+    if host == env.env.cyclades.ip:
+        services.append("cyclades")
+    if host == env.env.pithos.ip:
+        services.append("pithos")
+    if host == env.env.accounts.ip:
+        services.append("astakos")
+    for service in services:
+        filename = "%s_services.json" % service
+        cmd = "snf-manage service-export-%s > %s" % (service, filename)
+        run(cmd)
+        get(filename, filename+".local")
+
+
+@roles("accounts")
+def import_services():
+    debug(env.host, " * Registering services to astakos...")
+    for service in ["cyclades", "pithos", "astakos"]:
+        filename = "%s_services.json" % service
+        put(filename +".local", filename)
+        cmd = "snf-manage service-import --json=%s" % filename
+        run(cmd)
+
+    debug(env.host, " * Setting default quota...")
+    cmd = """
+    snf-manage resource-modify --limit 40G pithos.diskspace
+    snf-manage resource-modify --limit 2 astakos.pending_app
+    snf-manage resource-modify --limit 4 cyclades.vm
+    snf-manage resource-modify --limit 40G cyclades.disk
+    snf-manage resource-modify --limit 16G cyclades.ram
+    snf-manage resource-modify --limit 8G cyclades.active_ram
+    snf-manage resource-modify --limit 32 cyclades.cpu
+    snf-manage resource-modify --limit 16 cyclades.active_cpu
+    snf-manage resource-modify --limit 4 cyclades.network.private
+    """
+    try_run(cmd)
+
+
 @roles("cyclades")
 def add_network():
     debug(env.host, " * Adding public network in cyclades...")
@@ -1205,8 +1243,8 @@ def upload_image(image="debian_base.diskdump"):
 @roles("client")
 def register_image(image="debian_base.diskdump"):
     debug(env.host, " * Register image to plankton...")
-    with settings(host_string=env.env.db.ip):
-        uid, user_auth_token, user_uuid = get_auth_token_from_db(env.env.user_email)
+    # with settings(host_string=env.env.db.ip):
+    #     uid, user_auth_token, user_uuid = get_auth_token_from_db(env.env.user_email)
 
     image_location = "images:{0}".format(image)
     cmd = """
@@ -1225,7 +1263,7 @@ def setup_burnin():
 def add_image_locally():
     debug(env.host, " * Getting image locally in order snf-image to use it directly..")
     image = "debian_base.diskdump"
-    try_run("wget {0} -O /srv/okeanos/{1}".format(env.env.debian_base_url, image))
+    try_run("wget {0} -O {1}/{2}".format(env.env.debian_base_url, env.env.image_dir, image))
 
 
 @roles("master")

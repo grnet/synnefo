@@ -44,6 +44,7 @@ from synnefo.cyclades_settings import cyclades_services
 from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
 from django.conf import settings
+from synnefo.logic.rapi import GanetiApiError
 
 from mock import patch, Mock
 
@@ -504,6 +505,28 @@ class ServerCreateAPITest(ComputeAPITest):
             response = self.mypost('servers', 'test_user',
                                    json.dumps(request), 'json')
         self.assertItemNotFound(response)
+
+    def test_create_server_error(self, mrapi):
+        """Test if the create server call returns the expected response
+           if a valid request has been speficied."""
+        mrapi().CreateInstance.side_effect = GanetiApiError("..ganeti is down")
+        # Create public network and backend
+        network = mfactory.NetworkFactory(public=True)
+        backend = mfactory.BackendFactory()
+        mfactory.BackendNetworkFactory(network=network, backend=backend)
+
+        request = self.request
+        with mocked_quotaholder():
+            response = self.mypost('servers', 'test_user',
+                                   json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 500)
+        mrapi().CreateInstance.assert_called_once()
+        vm = VirtualMachine.objects.get()
+        # The VM has been deleted
+        self.assertTrue(vm.deleted)
+        # and it has no nics
+        self.assertEqual(len(vm.nics.all()), 0)
+        self.assertEqual(vm.backendjobid, 0)
 
 
 @patch('synnefo.logic.rapi_pool.GanetiRapiClient')

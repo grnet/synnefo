@@ -45,11 +45,12 @@ if not sys.stdout.isatty():
 
 
 class Host(object):
-    def __init__(self, hostname, ip, mac, domain):
+    def __init__(self, hostname, ip, mac, domain, os):
         self.hostname = hostname
         self.ip = ip
         self.mac = mac
         self.domain = domain
+        self.os = os
 
     @property
     def fqdn(self):
@@ -67,7 +68,7 @@ class Host(object):
 class Alias(Host):
     def __init__(self, host, alias):
         super(Alias, self).__init__(host.hostname, host.ip, host.mac,
-                                    host.domain)
+                                    host.domain, host.os)
         self.alias = alias
 
     @property
@@ -82,6 +83,10 @@ class Alias(Host):
 
 class Env(object):
 
+    def update_packages(self, os):
+        for section in self.conf.files[os]:
+          self.evaluate(os, section)
+
     def evaluate(self, filename, section):
         for k, v in self.conf.get_section(filename, section):
             setattr(self, k, v)
@@ -95,6 +100,7 @@ class Env(object):
         self.node2hostname = dict(conf.get_section("nodes", "hostnames"))
         self.node2ip = dict(conf.get_section("nodes", "ips"))
         self.node2mac = dict(conf.get_section("nodes", "macs"))
+        self.node2os = dict(conf.get_section("nodes", "os"))
         self.hostnames = [self.node2hostname[n]
                           for n in self.nodes.split(",")]
 
@@ -115,14 +121,14 @@ class Env(object):
         for node in self.nodes.split(","):
             host = Host(self.node2hostname[node],
                         self.node2ip[node],
-                        self.node2mac[node], self.domain)
+                        self.node2mac[node], self.domain, self.node2os[node])
 
             self.nodes_info[node] = host
             self.hosts_info[host.hostname] = host
             self.ips_info[host.ip] = host
 
         self.cluster = Host(self.cluster_name, self.cluster_ip, None,
-                            self.domain)
+                            self.domain, None)
         self.master = self.nodes_info[self.master_node]
 
         self.roles = {}
@@ -136,9 +142,11 @@ class Conf(object):
     files = {
         "nodes": ["network", "info"],
         "deploy": ["dirs", "packages", "keys", "options"],
-        "vcluster": ["cluster", "image"],
+        "vcluster": ["cluster", "image", "network"],
         "synnefo": ["cred", "synnefo", "roles"],
         "packages": ["debian", "ganeti", "synnefo", "other"],
+        "squeeze": ["debian", "ganeti", "synnefo", "other"],
+        "wheezy": ["debian", "ganeti", "synnefo", "other"],
         "ganeti": [],
     }
 
@@ -194,12 +202,13 @@ class Conf(object):
         #domain = get_domain()
         #if domain:
         #    self.nodes.set("network", "domain", get_domain())
-        self.nodes.set("network", "subnet", "/".join(get_netinfo()))
-        self.nodes.set("network", "gateway", get_default_route()[0])
+        # self.nodes.set("network", "subnet", "/".join(get_netinfo()))
+        # self.nodes.set("network", "gateway", get_default_route()[0])
         self.nodes.set("hostnames", "node1", get_hostname())
         self.nodes.set("ips", "node1", get_netinfo()[0])
         self.nodes.set("info", "nodes", "node1")
         self.nodes.set("info", "public_iface", get_default_route()[1])
+
 
 
 def debug(host, msg):

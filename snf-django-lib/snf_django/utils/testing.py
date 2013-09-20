@@ -172,8 +172,12 @@ def astakos_user(user):
 def mocked_quotaholder(success=True):
     with patch("synnefo.quotas.Quotaholder.get") as astakos:
         global serial
-        serial += 1
-        astakos.return_value.issue_one_commission.return_value = serial
+        serial += 10
+
+        def foo(*args, **kwargs):
+            return (len(astakos.return_value.issue_one_commission.mock_calls) +
+                    serial)
+        astakos.return_value.issue_one_commission.side_effect = foo
         astakos.return_value.resolve_commissions.return_value = {"failed": []}
         yield astakos.return_value
 

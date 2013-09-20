@@ -45,7 +45,7 @@ class APITest(TestCase):
         path = get_service_path(cyclades_services,
                                 'compute', version='v2.0')
         with astakos_user('user'):
-            response = self.client.get(path)
+            response = self.client.get(path.rstrip('/') + '/')
         self.assertEqual(response.status_code, 200)
         api_version = json.loads(response.content)['version']
         self.assertEqual(api_version['id'], 'v2.0')

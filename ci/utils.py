@@ -172,6 +172,7 @@ class SynnefoCI(object):
         self.cyclades_client = None
         self.compute_client = None
         self.image_client = None
+        self.astakos_client = None
 
     def setup_kamaki(self):
         """Initialize kamaki
@@ -348,7 +349,7 @@ class SynnefoCI(object):
                     "Trying to find a flavor with id \"%s\"" % flv_value)
                 list_flvs = \
                     [f for f in list_flavors
-                     if f['id'].lower() == flv_value.lower()]
+                     if str(f['id']) == flv_value]
             else:
                 self.logger.error("Unrecognized flavor type %s" % flv_type)
 
@@ -791,6 +792,7 @@ class SynnefoCI(object):
 
 
 def parse_typed_option(option, value):
+    """Parsed typed options (flavors and images)"""
     try:
         [type_, val] = value.strip().split(':')
         if type_ not in ["id", "name"]:

@@ -69,11 +69,14 @@ def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields):
 
     """
     if job_status not in ["success", "error", "canceled"]:
-        return
+        return vm
 
     # Check successful completion of a job will trigger any quotable change in
     # the VM state.
     action = utils.get_action_from_opcode(job_opcode, job_fields)
+    if action == "BUILD":
+        # Quotas for new VMs are automatically accepted by the API
+        return vm
     commission_info = quotas.get_commission_info(vm, action=action,
                                                  action_fields=job_fields)
 
@@ -83,7 +86,7 @@ def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields):
         # if fails, must be accepted, as the user must manually remove the
         # failed server
         serial = vm.serial
-        if job_status == "success" or job_opcode == "OP_INSTANCE_CREATE":
+        if job_status == "success":
             quotas.accept_serial(serial)
         elif job_status in ["error", "canceled"]:
             log.debug("Job %s failed. Rejecting related serial %s", job_id,

@@ -109,6 +109,13 @@ def server_command(action):
                     transaction.commit()
                 raise
 
+            if action == "BUILD" and vm.serial is not None:
+                # XXX: Special case for server creation: we must accept the
+                # commission because the VM has been stored in DB. Also, if
+                # communication with Ganeti fails, the job will never reach
+                # Ganeti, and the commission will never be resolved.
+                quotas.accept_serial(vm.serial)
+
             log.info("user: %s, vm: %s, action: %s, job_id: %s, serial: %s",
                      user_id, vm.id, action, job_id, vm.serial)
 
@@ -166,15 +173,8 @@ def create(userid, name, password, flavor, image, metadata={},
             meta_value=val,
             vm=vm)
 
-    try:
-        # Create the server in Ganeti.
-        create_server(vm, nics, flavor, image, personality, password)
-    except:
-        log.exception("Failed create instance '%s'", vm)
-        vm.operstate = "ERROR"
-        vm.backendlogmsg = "Failed to send job to Ganeti."
-        vm.save()
-        vm.nics.all().update(state="ERROR")
+    # Create the server in Ganeti.
+    create_server(vm, nics, flavor, image, personality, password)
 
     return vm
 
@@ -212,7 +212,16 @@ def create_server(vm, nics, flavor, image, personality, password):
         'img_properties': json.dumps(image['metadata']),
     })
     # send job to Ganeti
-    jobID = backend.create_instance(vm, nics, flavor, image)
+    try:
+        jobID = backend.create_instance(vm, nics, flavor, image)
+    except:
+        log.exception("Failed create instance '%s'", vm)
+        jobID = None
+        vm.operstate = "ERROR"
+        vm.backendlogmsg = "Failed to send job to Ganeti."
+        vm.save()
+        vm.nics.all().update(state="ERROR")
+
     # At this point the job is enqueued in the Ganeti backend
     vm.backendjobid = jobID
     vm.save()

@@ -35,6 +35,7 @@
 from contextlib import contextmanager
 from django.test import TestCase
 from django.utils import simplejson as json
+from synnefo.util.text import uenc
 from mock import patch
 
 
@@ -132,7 +133,7 @@ def astakos_user(user):
     with patch("snf_django.lib.api.get_token") as get_token:
         get_token.return_value = "DummyToken"
         with patch('astakosclient.AstakosClient.get_user_info') as m:
-            m.return_value = {"uuid": unicode(user, 'utf8')}
+            m.return_value = {"uuid": uenc(user, 'utf8')}
             with patch('astakosclient.AstakosClient.get_quotas') as m2:
                 m2.return_value = {
                     "system": {

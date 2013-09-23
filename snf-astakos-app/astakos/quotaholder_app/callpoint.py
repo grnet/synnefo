@@ -38,7 +38,7 @@ from astakos.quotaholder_app.exception import (
     NoCommissionError,
     CorruptedError,
     NoHoldingError,
-    DuplicateError)
+)
 
 from astakos.quotaholder_app.commission import (
     Import, Release, Operations, finalize, undo)
@@ -139,22 +139,23 @@ def set_quota(quotas, resource=None):
     Holding.objects.bulk_create(new_holdings.values())
 
 
+def _merge_same_keys(provisions):
+    prov_dict = _partition_by(lambda t: t[0], provisions, lambda t: t[1])
+    tuples = []
+    for key, values in prov_dict.iteritems():
+        tuples.append((key, sum(values)))
+    return tuples
+
+
 def issue_commission(clientkey, provisions, name="", force=False):
     operations = Operations()
     provisions_to_create = []
 
+    provisions = _merge_same_keys(provisions)
     keys = [key for (key, value) in provisions]
     holdings = _get_holdings_for_update(keys)
     try:
-        checked = []
         for key, quantity in provisions:
-            if key in checked:
-                m = "Duplicate provision for %s" % str(key)
-                provision = _mkProvision(key, quantity)
-                raise DuplicateError(m,
-                                     provision=provision)
-            checked.append(key)
-
             # Target
             try:
                 th = holdings[key]
@@ -221,12 +222,14 @@ def _get_commissions_for_update(clientkey, serials):
     return commissions
 
 
-def _partition_by(f, l):
+def _partition_by(f, l, convert=None):
+    if convert is None:
+        convert = lambda x: x
     d = {}
     for x in l:
         group = f(x)
         group_l = d.get(group, [])
-        group_l.append(x)
+        group_l.append(convert(x))
         d[group] = group_l
     return d
 

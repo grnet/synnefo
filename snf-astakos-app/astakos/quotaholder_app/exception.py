@@ -80,7 +80,3 @@ class NoQuantityError(OverLimitError):
 
 class NoHoldingError(CommissionException):
     pass
-
-
-class DuplicateError(CommissionException):
-    pass

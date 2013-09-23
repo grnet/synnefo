@@ -311,12 +311,26 @@ class SynnefoCI(object):
         echo -e "\n\n{0}" >> /etc/apt/sources.list
         # Synnefo repo's key
         curl https://dev.grnet.gr/files/apt-grnetdev.pub | apt-key add -
+
         # X2GO Key
         apt-key adv --recv-keys --keyserver keys.gnupg.net E1F958385BFE2B6E
         apt-get install x2go-keyring --yes --force-yes
         apt-get update
         apt-get install x2goserver x2goserver-xsession \
                 iceweasel --yes --force-yes
+
+        # xterm published application
+        echo '[Desktop Entry]' > /usr/share/applications/xterm.desktop
+        echo 'Name=XTerm' >> /usr/share/applications/xterm.desktop
+        echo 'Comment=standard terminal emulator for the X window system' >> \
+            /usr/share/applications/xterm.desktop
+        echo 'Exec=xterm' >> /usr/share/applications/xterm.desktop
+        echo 'Terminal=false' >> /usr/share/applications/xterm.desktop
+        echo 'Type=Application' >> /usr/share/applications/xterm.desktop
+        echo 'Encoding=UTF-8' >> /usr/share/applications/xterm.desktop
+        echo 'Icon=xterm-color_48x48' >> /usr/share/applications/xterm.desktop
+        echo 'Categories=System;TerminalEmulator;' >> \
+                /usr/share/applications/xterm.desktop
         """.format(self.config.get('Global', 'apt_repo'))
         _run(cmd, False)
 

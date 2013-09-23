@@ -130,10 +130,44 @@ def astakos_user(user):
     with patch("snf_django.lib.api.get_token") as get_token:
         get_token.return_value = "DummyToken"
         with patch('astakosclient.AstakosClient.get_user_info') as m:
-            m.return_value = {"uuid": user}
-            yield
+            m.return_value = {"uuid": uenc(user, 'utf8')}
+            with patch('astakosclient.AstakosClient.get_quotas') as m2:
+                m2.return_value = {
+                    "system": {
+                        "pithos.diskspace": {
+                            "usage": 0,
+                            "limit": 1073741824,  # 1GB
+                            "pending": 0
+                        }
+                    }
+                }
+                issue_fun = "astakosclient.AstakosClient.issue_one_commission"
+                with patch(issue_fun) as m3:
+                    serials = []
+                    append = serials.append
 
-serial = 0
+                    def get_serial(*args, **kwargs):
+                        global serial
+                        serial += 1
+                        append(serial)
+                        return serial
+
+                    m3.side_effect = get_serial
+                    resolv_fun = \
+                        'astakosclient.AstakosClient.resolve_commissions'
+                    with patch(resolv_fun) as m4:
+                        m4.return_value = {'accepted': serials,
+                                           'rejected': [],
+                                           'failed': []}
+                        users_fun = 'astakosclient.AstakosClient.get_usernames'
+                        with patch(users_fun) as m5:
+
+                            def get_usernames(*args, **kwargs):
+                                uuids = args[-1]
+                                return dict((uuid, uuid) for uuid in uuids)
+
+                            m5.side_effect = get_usernames
+                            yield
 
 
 @contextmanager

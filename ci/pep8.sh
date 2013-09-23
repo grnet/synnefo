@@ -2,7 +2,7 @@
 
 # Files to be excluded from pep8 tests
 EXCLUDE=migrations,build,setup,distribute_setup.py,\
-setup.py,rapi.py,dictconfig.py,ordereddict.py
+setup.py,rapi.py,dictconfig.py,ordereddict.py,parsedate.py
 
 # Keep only *.py files
 py_files=$(echo "$@" | awk '/.*\.py/' RS=" " ORS=" ")

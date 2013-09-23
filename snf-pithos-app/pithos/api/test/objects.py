@@ -1712,16 +1712,16 @@ class ObjectPost(PithosAPITest):
         url = join_urls(self.pithos_path, self.user, self.container, src)
         r = self.get(url)
         source_data = r.content
+        source_length = len(source_data)
 
         # update zero length object
         url = join_urls(self.pithos_path, self.user, self.container, dest)
         initial_data = get_random_data()
-        length = len(initial_data)
         r = self.put(url, data=initial_data)
         self.assertEqual(r.status_code, 201)
 
-        offset = random.randint(1, length - 2)
-        upto = random.randint(offset, length - 1)
+        offset = random.randint(0, source_length - 1)
+        upto = random.randint(offset, source_length - 1)
         r = self.post(url,
                       HTTP_CONTENT_RANGE='bytes %s-%s/*' % (offset, upto),
                       HTTP_X_SOURCE_OBJECT='/%s/%s' % (self.container, src))

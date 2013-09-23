@@ -739,7 +739,7 @@ class ContainerPost(PithosAPITest):
         self.assertTrue('x-container-policy-quota' in info)
         self.assertEqual(info['x-container-policy-quota'], '100')
 
-        r = self.upload_object('c1', length=101, verify=False)[2]
+        r = self.upload_object('c1', length=101, verify_status=False)[2]
         self.assertEqual(r.status_code, 413)
 
         url = join_urls(self.pithos_path, self.user, 'c1')

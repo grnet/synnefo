@@ -156,9 +156,9 @@ class PithosTestClient(Client):
     def _get_path(self, parsed):
         # If there are parameters, add them
         if parsed[3]:
-             return unquote(parsed[2] + ";" + parsed[3])
+            return unquote(parsed[2] + ";" + parsed[3])
         else:
-             return unquote(parsed[2])
+            return unquote(parsed[2])
 
     def copy(self, path, data={}, content_type=MULTIPART_CONTENT,
              follow=False, **extra):
@@ -296,54 +296,58 @@ class PithosAPITest(TestCase):
                                         **extra)
         return response
 
-    def update_account_meta(self, meta, user=None):
+    def update_account_meta(self, meta, user=None, verify_status=True):
         user = user or self.user
         kwargs = dict(
             ('HTTP_X_ACCOUNT_META_%s' % k, str(v)) for k, v in meta.items())
         url = join_urls(self.pithos_path, user)
         r = self.post('%s?update=' % url, user=user, **kwargs)
-        self.assertEqual(r.status_code, 202)
+        if verify_status:
+            self.assertEqual(r.status_code, 202)
         account_meta = self.get_account_meta(user=user)
         (self.assertTrue('X-Account-Meta-%s' % k in account_meta) for
             k in meta.keys())
         (self.assertEqual(account_meta['X-Account-Meta-%s' % k], v) for
             k, v in meta.items())
 
-    def reset_account_meta(self, meta, user=None):
+    def reset_account_meta(self, meta, user=None, verify_status=True):
         user = user or self.user
         kwargs = dict(
             ('HTTP_X_ACCOUNT_META_%s' % k, str(v)) for k, v in meta.items())
         url = join_urls(self.pithos_path, user)
         r = self.post(url, user=user, **kwargs)
-        self.assertEqual(r.status_code, 202)
+        if verify_status:
+            self.assertEqual(r.status_code, 202)
         account_meta = self.get_account_meta(user=user)
         (self.assertTrue('X-Account-Meta-%s' % k in account_meta) for
             k in meta.keys())
         (self.assertEqual(account_meta['X-Account-Meta-%s' % k], v) for
             k, v in meta.items())
 
-    def delete_account_meta(self, meta, user=None):
+    def delete_account_meta(self, meta, user=None, verify_status=True):
         user = user or self.user
         transform = lambda k: 'HTTP_%s' % k.replace('-', '_').upper()
         kwargs = dict((transform(k), '') for k, v in meta.items())
         url = join_urls(self.pithos_path, user)
         r = self.post('%s?update=' % url, user=user, **kwargs)
-        self.assertEqual(r.status_code, 202)
+        if verify_status:
+            self.assertEqual(r.status_code, 202)
         account_meta = self.get_account_meta(user=user)
         (self.assertTrue('X-Account-Meta-%s' % k not in account_meta) for
             k in meta.keys())
         return r
 
-    def delete_account_groups(self, groups, user=None):
+    def delete_account_groups(self, groups, user=None, verify_status=True):
         user = user or self.user
         url = join_urls(self.pithos_path, user)
         r = self.post('%s?update=' % url, user=user, **groups)
-        self.assertEqual(r.status_code, 202)
+        if verify_status:
+            self.assertEqual(r.status_code, 202)
         account_groups = self.get_account_groups()
         (self.assertTrue(k not in account_groups) for k in groups.keys())
         return r
 
-    def get_account_info(self, until=None, user=None):
+    def get_account_info(self, until=None, user=None, verify_status=True):
         user = user or self.user
         url = join_urls(self.pithos_path, user)
         if until is not None:
@@ -353,7 +357,8 @@ class PithosAPITest(TestCase):
             })
             url = urlunsplit(parts)
         r = self.head(url, user=user)
-        self.assertEqual(r.status_code, 204)
+        if verify_status:
+            self.assertEqual(r.status_code, 204)
         return r
 
     def get_account_meta(self, until=None, user=None):
@@ -368,7 +373,8 @@ class PithosAPITest(TestCase):
         headers = dict(r._headers.values())
         return filter_headers(headers, prefix)
 
-    def get_container_info(self, container, until=None, user=None):
+    def get_container_info(self, container, until=None, user=None,
+                           verify_status=True):
         user = user or self.user
         url = join_urls(self.pithos_path, user, container)
         if until is not None:
@@ -378,7 +384,8 @@ class PithosAPITest(TestCase):
             })
             url = urlunsplit(parts)
         r = self.head(url, user=user)
-        self.assertEqual(r.status_code, 204)
+        if verify_status:
+            self.assertEqual(r.status_code, 204)
         return r
 
     def get_container_meta(self, container, until=None, user=None):
@@ -387,18 +394,22 @@ class PithosAPITest(TestCase):
         headers = dict(r._headers.values())
         return filter_headers(headers, prefix)
 
-    def update_container_meta(self, container, meta, user=None):
+    def update_container_meta(self, container, meta=None, user=None,
+                              verify_status=True):
         user = user or self.user
+        meta = meta or {get_random_name(): get_random_name()}
         kwargs = dict(
             ('HTTP_X_CONTAINER_META_%s' % k, str(v)) for k, v in meta.items())
         url = join_urls(self.pithos_path, user, container)
         r = self.post('%s?update=' % url, user=user, **kwargs)
-        self.assertEqual(r.status_code, 202)
+        if verify_status:
+            self.assertEqual(r.status_code, 202)
         container_meta = self.get_container_meta(container, user=user)
         (self.assertTrue('X-Container-Meta-%s' % k in container_meta) for
             k in meta.keys())
         (self.assertEqual(container_meta['X-Container-Meta-%s' % k], v) for
             k, v in meta.items())
+        return r
 
     def list_containers(self, format='json', headers={}, user=None, **params):
         user = user or self.user
@@ -425,29 +436,40 @@ class PithosAPITest(TestCase):
         elif format == 'xml':
             return minidom.parseString(r.content)
 
-    def delete_container_content(self, cname, user=None):
+    def delete_container_content(self, cname, user=None, verify_status=True):
         user = user or self.user
         url = join_urls(self.pithos_path, user, cname)
         r = self.delete('%s?delimiter=/' % url, user=user)
-        self.assertEqual(r.status_code, 204)
+        if verify_status:
+            self.assertEqual(r.status_code, 204)
         return r
 
-    def delete_container(self, cname, user=None):
+    def delete_container(self, cname, user=None, verify_status=True):
         user = user or self.user
         url = join_urls(self.pithos_path, user, cname)
         r = self.delete(url, user=user)
-        self.assertEqual(r.status_code, 204)
+        if verify_status:
+            self.assertEqual(r.status_code, 204)
         return r
 
-    def create_container(self, cname=None, user=None):
+    def delete_object(self, cname, oname, user=None, verify_status=True):
+        user = user or self.user
+        url = join_urls(self.pithos_path, user, cname, oname)
+        r = self.delete(url, user=user)
+        if verify_status:
+            self.assertEqual(r.status_code, 204)
+        return r
+
+    def create_container(self, cname=None, user=None, verify_status=True):
         cname = cname or get_random_name()
         user = user or self.user
         url = join_urls(self.pithos_path, user, cname)
         r = self.put(url, user=user, data='')
-        self.assertTrue(r.status_code in (202, 201))
+        if verify_status:
+            self.assertTrue(r.status_code in (202, 201))
         return cname, r
 
-    def upload_object(self, cname, oname=None, length=None, verify=True,
+    def upload_object(self, cname, oname=None, length=None, verify_status=True,
                       user=None, **meta):
         oname = oname or get_random_name()
         length = length or random.randint(TEST_BLOCK_SIZE, 2 * TEST_BLOCK_SIZE)
@@ -457,13 +479,13 @@ class PithosAPITest(TestCase):
                        for k, v in meta.iteritems())
         url = join_urls(self.pithos_path, user, cname, oname)
         r = self.put(url, user=user, data=data, **headers)
-        if verify:
+        if verify_status:
             self.assertEqual(r.status_code, 201)
         return oname, data, r
 
     def update_object_data(self, cname, oname=None, length=None,
                            content_type=None, content_range=None,
-                           verify=True, user=None, **meta):
+                           verify_status=True, user=None, **meta):
         oname = oname or get_random_name()
         length = length or random.randint(TEST_BLOCK_SIZE, 2 * TEST_BLOCK_SIZE)
         content_type = content_type or 'application/octet-stream'
@@ -476,7 +498,7 @@ class PithosAPITest(TestCase):
         url = join_urls(self.pithos_path, user, cname, oname)
         r = self.post(url, user=user, data=data, content_type=content_type,
                       **headers)
-        if verify:
+        if verify_status:
             self.assertEqual(r.status_code, 204)
         return oname, data, r
 
@@ -488,23 +510,26 @@ class PithosAPITest(TestCase):
                                        content_range='bytes */*',
                                        user=user)
 
-    def create_folder(self, cname, oname=None, user=None, **headers):
+    def create_folder(self, cname, oname=None, user=None, verify_status=True,
+                      **headers):
         user = user or self.user
         oname = oname or get_random_name()
         url = join_urls(self.pithos_path, user, cname, oname)
         r = self.put(url, user=user, data='',
                      content_type='application/directory', **headers)
-        self.assertEqual(r.status_code, 201)
+        if verify_status:
+            self.assertEqual(r.status_code, 201)
         return oname, r
 
-    def list_objects(self, cname, prefix=None, user=None):
+    def list_objects(self, cname, prefix=None, user=None, verify_status=True):
         user = user or self.user
         url = join_urls(self.pithos_path, user, cname)
         path = '%s?format=json' % url
         if prefix is not None:
             path = '%s&prefix=%s' % (path, prefix)
         r = self.get(path, user=user)
-        self.assertTrue(r.status_code in (200, 204))
+        if verify_status:
+            self.assertTrue(r.status_code in (200, 204))
         try:
             objects = json.loads(r.content)
         except:
@@ -512,7 +537,7 @@ class PithosAPITest(TestCase):
         return objects
 
     def get_object_info(self, container, object, version=None, until=None,
-                        user=None):
+                        user=None, verify_status=True):
         user = user or self.user
         url = join_urls(self.pithos_path, user, container, object)
         if until is not None:
@@ -524,7 +549,8 @@ class PithosAPITest(TestCase):
         if version:
             url = '%s?version=%s' % (url, version)
         r = self.head(url, user=user)
-        self.assertEqual(r.status_code, 200)
+        if verify_status:
+            self.assertEqual(r.status_code, 200)
         return r
 
     def get_object_meta(self, container, object, version=None, until=None,
@@ -536,18 +562,22 @@ class PithosAPITest(TestCase):
         headers = dict(r._headers.values())
         return filter_headers(headers, prefix)
 
-    def update_object_meta(self, container, object, meta, user=None):
+    def update_object_meta(self, container, object, meta=None, user=None,
+                           verify_status=True):
         user = user or self.user
+        meta = meta or {get_random_name(): get_random_name()}
         kwargs = dict(
             ('HTTP_X_OBJECT_META_%s' % k, str(v)) for k, v in meta.items())
         url = join_urls(self.pithos_path, user, container, object)
         r = self.post('%s?update=' % url, user=user, content_type='', **kwargs)
-        self.assertEqual(r.status_code, 202)
+        if verify_status:
+            self.assertEqual(r.status_code, 202)
         object_meta = self.get_object_meta(container, object, user=user)
         (self.assertTrue('X-Objecr-Meta-%s' % k in object_meta) for
             k in meta.keys())
         (self.assertEqual(object_meta['X-Object-Meta-%s' % k], v) for
             k, v in meta.items())
+        return r
 
     def assert_extended(self, data, format, type, size=10000):
         if format == 'xml':

@@ -1715,8 +1715,11 @@ class ObjectPost(PithosAPITest):
         source_length = len(source_data)
 
         # update zero length object
+        block_size = pithos_settings.BACKEND_BLOCK_SIZE
         url = join_urls(self.pithos_path, self.user, self.container, dest)
-        initial_data = get_random_data()
+        initial_data = get_random_data(
+            length=source_length + random.randint(0, block_size))
+
         r = self.put(url, data=initial_data)
         self.assertEqual(r.status_code, 201)
 

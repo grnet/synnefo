@@ -352,6 +352,10 @@ class ProjectAPITest(TestCase):
         status, body = self.enroll(project_id, self.user1, h_owner)
         self.assertEqual(status, 409)
 
+        # Enroll fails, project does not exist
+        status, body = self.enroll(-1, self.user1, h_owner)
+        self.assertEqual(status, 409)
+
         # Get projects
         ## Simple user mode
         r = client.get(reverse("api_projects"), **h_plain)

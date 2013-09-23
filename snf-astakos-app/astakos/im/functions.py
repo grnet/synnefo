@@ -511,7 +511,6 @@ def enroll_member_by_email(project_id, email, request_user=None, reason=None):
 
 
 def enroll_member(project_id, user, request_user=None, reason=None):
-    project = get_project_for_update(project_id)
     try:
         project = get_project_for_update(project_id)
     except ProjectNotFound as e:

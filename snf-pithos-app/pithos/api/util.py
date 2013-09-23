@@ -1134,15 +1134,11 @@ def view_method():
             request.META['HTTP_X_AUTH_TOKEN'] = token
             # Get the response object
             response = func(request, *args, **kwargs)
-            if response.status_code in [200, 206, 304, 412, 416]:
-                return response
-            elif response.status_code == 404:
+            if response.status_code == 404:
                 raise Http404()
             elif response.status_code in [401, 403]:
                 return HttpResponseForbidden()
-            else:
-                # unexpected response status
-                raise Exception(response.status_code)
+            return response
         return wrapper
     return decorator
 

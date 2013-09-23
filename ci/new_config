@@ -25,6 +25,8 @@ git_config_mail = synnefo@builder.dev.grnet.gr
 accept_ssh_from =
 # Config file to save temporary options (eg IPs, passwords etc)
 temporary_config = /tmp/ci_temp_conf
+# File to save the x2goplugin html file
+x2go_plugin_file = /tmp/x2go.html
 
 
 [Deployment]

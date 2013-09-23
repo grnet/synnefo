@@ -16,9 +16,10 @@ BUILD_DOCS_SYNNEFO_CMD = "docs"
 DEPLOY_SYNNEFO_CMD = "deploy"
 TEST_SYNNEFO_CMD = "test"
 RUN_BURNIN_CMD = "burnin"
+CREATE_X2GO_FILE = "x2goplugin"
 ALL_CMDS = "all"
 
-AVAILABLE_COMMANDS = [
+COMMANDS_IN_ALL_MODE = [
     CREATE_SERVER_CMD,
     BUILD_SYNNEFO_CMD,
     BUILD_DOCS_SYNNEFO_CMD,
@@ -26,6 +27,10 @@ AVAILABLE_COMMANDS = [
     TEST_SYNNEFO_CMD,
     RUN_BURNIN_CMD,
 ]
+
+AVAILABLE_COMMANDS = [
+    CREATE_X2GO_FILE,
+] + COMMANDS_IN_ALL_MODE
 
 USAGE = """usage: %%prog [options] command[,command...]
 
@@ -36,6 +41,7 @@ command:
     * %s: Deploy Synnefo in created server
     * %s: Run Synnefo unittests
     * %s: Run snf-burnin in the deployed Synnefo
+    * %s: Create x2go plugin file
 
     * %s: Run all the available commands
 """ % tuple([CREATE_SERVER_CMD,
@@ -44,6 +50,7 @@ command:
              DEPLOY_SYNNEFO_CMD,
              TEST_SYNNEFO_CMD,
              RUN_BURNIN_CMD,
+             CREATE_X2GO_FILE,
              ALL_CMDS])
 
 
@@ -90,6 +97,8 @@ def main():  # Too many branches. pylint: disable-msg=R0912
                       action="store_true",
                       help="Instead of cloning from the official Synnefo"
                            " repo, copy and use the local one.")
+    parser.add_option("--x2go-output", dest="x2go_output", default=None,
+                      help="File where to save the x2go plugin html page.")
 
     (options, args) = parser.parse_args()
 
@@ -102,7 +111,7 @@ def main():  # Too many branches. pylint: disable-msg=R0912
 
     commands = args[0]
     if commands == ALL_CMDS:
-        for cmd in AVAILABLE_COMMANDS:
+        for cmd in COMMANDS_IN_ALL_MODE:
             setattr(options, cmd, True)
 
     else:
@@ -142,6 +151,8 @@ def main():  # Too many branches. pylint: disable-msg=R0912
         synnefo_ci.unit_test()
     if getattr(options, RUN_BURNIN_CMD, False):
         synnefo_ci.run_burnin()
+    if getattr(options, CREATE_X2GO_FILE, False):
+        synnefo_ci.x2go_plugin(options.x2go_output)
 
 
 if __name__ == "__main__":

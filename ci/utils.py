@@ -790,6 +790,53 @@ class SynnefoCI(object):
         self.logger.info("Downloaded debian packages to %s" %
                          _green(dest))
 
+    def x2go_plugin(self, dest=None):
+        """Produce an html page which will use the x2goplugin
+
+        Arguments:
+          dest  -- The file where to save the page (String)
+
+        """
+        output_str = """
+        <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+        <html>
+        <head>
+        <title>X2Go SynnefoCI Service</title>
+        </head>
+        <body onload="checkPlugin()">
+        <div id="x2goplugin">
+            <object
+                src="location"
+                type="application/x2go"
+                name="x2goplugin"
+                palette="background"
+                height="100%"
+                hspace="0"
+                vspace="0"
+                width="100%"
+                x2goconfig="
+                    session=X2Go-SynnefoCI-Session
+                    server={0}
+                    user={1}
+                    sshport={2}
+                    published=true
+                    autologin=true
+                ">
+            </object>
+        </div>
+        </body>
+        </html>
+        """.format(self.read_temp_config('server_ip'),
+                   self.read_temp_config('server_user'),
+                   self.read_temp_config('server_port'))
+        if dest is None:
+            dest = self.config.get('Global', 'x2go_plugin_file')
+
+        self.logger.info("Writting x2go plugin html file to %s" % dest)
+        fid = open(dest, 'w')
+        fid.write(output_str)
+        fid.close()
+
 
 def parse_typed_option(option, value):
     """Parsed typed options (flavors and images)"""

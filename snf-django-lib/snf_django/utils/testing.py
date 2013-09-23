@@ -144,7 +144,8 @@ def astakos_user(user):
                         }
                     }
                 }
-                with patch('astakosclient.AstakosClient.issue_one_commission') as m3:
+                issue_fun = "astakosclient.AstakosClient.issue_one_commission"
+                with patch(issue_fun) as m3:
                     serials = []
                     append = serials.append
 
@@ -155,11 +156,14 @@ def astakos_user(user):
                         return serial
 
                     m3.side_effect = get_serial
-                    with patch('astakosclient.AstakosClient.resolve_commissions') as m4:
+                    resolv_fun = \
+                        'astakosclient.AstakosClient.resolve_commissions'
+                    with patch(resolv_fun) as m4:
                         m4.return_value = {'accepted': serials,
                                            'rejected': [],
                                            'failed': []}
-                        with patch('astakosclient.AstakosClient.get_usernames') as m5:
+                        users_fun = 'astakosclient.AstakosClient.get_usernames'
+                        with patch(users_fun) as m5:
 
                             def get_usernames(*args, **kwargs):
                                 uuids = args[-1]

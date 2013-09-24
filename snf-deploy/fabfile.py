@@ -80,7 +80,8 @@ def install_package(package):
     env.env.update_packages(host_info.os)
     if ast.literal_eval(env.env.use_local_packages):
         with settings(warn_only=True):
-            deb = local("ls %s/%s*%s_all.deb" % (env.env.packages, package, host_info.os))
+            deb = local("ls %s/%s*%s_all.deb" % (env.env.packages, package, host_info.os),
+                        capture=True)
             if deb:
                 debug(env.host, " * Package %s found in %s..." % (package, env.env.packages))
                 put(deb, "/tmp/")

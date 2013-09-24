@@ -171,6 +171,9 @@ def astakos_user(user):
                             yield
 
 
+serial = 0
+
+
 @contextmanager
 def mocked_quotaholder(success=True):
     with patch("synnefo.quotas.Quotaholder.get") as astakos:

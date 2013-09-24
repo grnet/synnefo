@@ -92,7 +92,7 @@ def install_package(package):
     env.env.update_packages(host_info.os)
     if ast.literal_eval(env.env.use_local_packages):
         with settings(warn_only=True):
-            deb = local("ls %s/%s*%s_all.deb"
+            deb = local("ls %s/%s*%s_*.deb"
                         % (env.env.packages, package, host_info.os),
                         capture=True)
             if deb:

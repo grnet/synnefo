@@ -141,9 +141,8 @@ def add_service(component, name, service_type, endpoints):
                  (name, service.component.name))
             raise RegisterException(m)
         service.endpoints.all().delete()
-    else:
-        service.component = component
-        service.type = service_type
+        for key, value in defaults.iteritems():
+            setattr(service, key, value)
         service.save()
 
     for endpoint in endpoints:

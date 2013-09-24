@@ -24,7 +24,7 @@ PITHOS_APPS="api"
 
 TEST_COMPONENTS="$@"
 if [ -z "$TEST_COMPONENTS" ]; then
-    TEST_COMPONENTS="astakos cyclades pithos"
+    TEST_COMPONENTS="astakos cyclades"
 fi
 
 for component in $TEST_COMPONENTS; do

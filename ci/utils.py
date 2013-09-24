@@ -140,9 +140,8 @@ class SynnefoCI(object):
 
         # Read config file
         if config_file is None:
-            config_file = DEFAULT_CONFIG_FILE
-        if not os.path.isabs(config_file):
-            config_file = os.path.join(self.ci_dir, config_file)
+            config_file = os.path.join(self.ci_dir, DEFAULT_CONFIG_FILE)
+        config_file = os.path.abspath(config_file)
         self.config = ConfigParser()
         self.config.optionxform = str
         self.config.read(config_file)

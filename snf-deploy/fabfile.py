@@ -782,8 +782,8 @@ def setup_nfs_dirs():
     mkdir -p data
     chown www-data:www-data data
     chmod g+ws data
-    mkdir -p /srv/okeanos
-    """.format(env.env.pithos_dir)
+    mkdir -p {1}
+    """.format(env.env.pithos_dir, env.env.image_dir)
     try_run(cmd)
 
 
@@ -1030,6 +1030,7 @@ def setup_image_host():
         "synnefo_db_passwd": env.env.synnefo_db_passwd,
         "pithos_dir": env.env.pithos_dir,
         "db_node": env.env.db.ip,
+        "image_dir": env.env.image_dir,
     }
     custom = customize_settings_from_tmpl(tmpl, replace)
     try_put(custom, tmpl)

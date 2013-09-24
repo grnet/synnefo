@@ -7,7 +7,9 @@ The upgrade to v0.15 consists in the following steps:
 
 2. Upgrade packages, migrate the databases and configure settings.
 
-3. Bring up all services.
+3. Re-register components and services in astakos.
+
+4. Bring up all services.
 
 .. warning::
 
@@ -100,7 +102,19 @@ The upgrade to v0.15 consists in the following steps:
 
     pithos-host$ pithos-migrate upgrade head
 
-3. Bring all services up
+3. Re-register components and services in astakos
+=================================================
+
+Component registration has changed; you will thus need to repeat the
+process. On the astakos node, run::
+
+    astakos-host$ snf-component-register
+
+This will detect that the Synnefo components are already registered and ask
+to re-register. Answer positively. You need to enter the base URL and the UI
+URL for each component, just like during the initial registration.
+
+4. Bring all services up
 ========================
 
 After the upgrade is finished, we bring up all services:

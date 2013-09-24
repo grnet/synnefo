@@ -30,6 +30,16 @@ Astakos
 
 * Implement API calls for projects.
 
+* Store the base URL of a component. Deployer should provide it when adding
+  a new component. Service endpoints originating from a component are
+  expected to match its base URL; otherwise, a warning is issued.
+  Re-registration with `snf-component-register' affects both the base and
+  the ui URL.
+
+* Management commands:
+  * Changed commands:
+     * component-add got options --base-url and --ui-url
+
 Cyclades
 --------
 

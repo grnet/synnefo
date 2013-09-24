@@ -600,15 +600,15 @@ def astakos_loaddata():
 def astakos_register_components():
     debug(env.host, " * Register services in astakos...")
 
-    cyclades_base_url = "https://%s/cyclades/" % env.env.cyclades.fqdn
-    pithos_base_url = "https://%s/pithos/" % env.env.pithos.fqdn
-    astakos_base_url = "https://%s/astakos/" % env.env.accounts.fqdn
+    cyclades_base_url = "https://%s/cyclades" % env.env.cyclades.fqdn
+    pithos_base_url = "https://%s/pithos" % env.env.pithos.fqdn
+    astakos_base_url = "https://%s/astakos" % env.env.accounts.fqdn
 
     cmd = """
-    snf-manage component-add "home" https://{0} home-icon.png
-    snf-manage component-add "cyclades" {1}ui/
-    snf-manage component-add "pithos" {2}ui/
-    snf-manage component-add "astakos" {3}ui/
+    snf-manage component-add "home" --ui-url https://{0}
+    snf-manage component-add "cyclades" --base-url {1} --ui-url {1}/ui
+    snf-manage component-add "pithos" --base-url {2} --ui-url {2}/ui
+    snf-manage component-add "astakos" --base-url {3} --ui-url {3}/ui
     """.format(env.env.cms.fqdn, cyclades_base_url,
                pithos_base_url, astakos_base_url)
     try_run(cmd)

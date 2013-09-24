@@ -917,9 +917,9 @@ offered by the services.
 
     .. code-block:: console
 
-       astakos-host$ snf-manage component-add astakos astakos_ui_url
-       astakos-host$ snf-manage component-add cyclades cyclades_ui_url
-       astakos-host$ snf-manage component-add pithos pithos_ui_url
+       astakos-host$ snf-manage component-add astakos --base-url astakos_base_url --ui-url astakos_ui_url
+       astakos-host$ snf-manage component-add cyclades --base-url cyclades_base_url --ui-url cyclades_ui_url
+       astakos-host$ snf-manage component-add pithos --base-url pithos_base_url --ui-url pithos_ui_url
        astakos-host$ snf-manage service-export-astakos > astakos.json
        astakos-host$ snf-manage service-import --json astakos.json
        cyclades-host$ snf-manage service-export-cyclades > cyclades.json

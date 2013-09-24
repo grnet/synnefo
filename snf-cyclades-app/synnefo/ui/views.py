@@ -154,6 +154,9 @@ NETWORK_DUPLICATE_NICS = \
 NETWORK_STRICT_DESTROY = \
     getattr(settings,
             'UI_NETWORK_STRICT_DESTROY', False)
+PRIVATE_NETWORKS_NIC_HOTPLUG = \
+    getattr(settings,
+            'UI_PRIVATE_NETWORK_NIC_HOTPLUG', False)
 NETWORK_ALLOW_MULTIPLE_DESTROY = \
     getattr(settings,
             'UI_NETWORK_ALLOW_MULTIPLE_DESTROY', False)
@@ -240,6 +243,8 @@ def home(request):
                'grouped_public_network_name':
                json.dumps(GROUPED_PUBLIC_NETWORK_NAME),
                'group_public_networks': json.dumps(GROUP_PUBLIC_NETWORKS),
+               'private_networks_nic_hotplug':
+                   json.dumps(PRIVATE_NETWORKS_NIC_HOTPLUG),
                'diagnostics_update_interval':
                json.dumps(DIAGNOSTICS_UPDATE_INTERVAL),
                'vm_hostname_format': json.dumps(VM_HOSTNAME_FORMAT)

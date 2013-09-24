@@ -913,7 +913,11 @@
 
         connect_vms: function(vms) {
             _.each(vms, _.bind(function(vm){
-                this.network.add_vm(vm);
+                this.network.add_vm(vm, function() {
+                  if (!synnefo.config.private_networks_nic_hotplug) {
+                    vm.require_reboot();
+                  }
+                });
             }, this));
 
             this.parent_view.connect_machines_view.hide();

@@ -36,7 +36,7 @@ import json
 
 from synnefo.lib.ordereddict import OrderedDict
 
-from django.core.urlresolvers import reverse
+from django.core.urlresolvers import reverse, NoReverseMatch
 from django.utils.translation import ugettext as _
 from django.contrib.auth.models import Group
 from django import template
@@ -556,7 +556,7 @@ class AuthProvider(object):
 class LocalAuthProvider(AuthProvider):
     module = 'local'
 
-    login_view = 'password_change'
+    login_view = 'login'
     remote_authenticate = False
     username_key = 'user_email'
 
@@ -576,9 +576,16 @@ class LocalAuthProvider(AuthProvider):
     @property
     def urls(self):
         urls = super(LocalAuthProvider, self).urls
-        urls['change_password'] = reverse('password_change')
+
+        password_change_url = None
+        try:
+            password_change_url = reverse('password_change')
+        except NoReverseMatch:
+            pass
+
+        urls['change_password'] = password_change_url
         if self.user:
-            urls['add'] = reverse('password_change')
+            urls['add'] = password_change_url
         if self._instance:
             urls.update({
                 'remove': reverse('remove_auth_provider',
@@ -605,6 +612,7 @@ class ShibbolethAuthProvider(AuthProvider):
 
     messages = {
         'title': _('Academic'),
+        'method_details': '{account_prompt}: {provider_info_eppn}',
         'login_description': _('If you are a student, professor or researcher'
                                ' you can login using your academic account.'),
         'add_prompt': _('Allows you to login using your Academic '

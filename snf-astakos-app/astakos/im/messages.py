@@ -125,7 +125,7 @@ SHIBBOLETH_INACTIVE_ACC = (
     'yet activated. '
     'If that is your account, you need to activate it before being able to '
     'associate it with this shibboleth account.')
-SHIBBOLETH_MISSING_EPPN = (
+SHIBBOLETH_MISSING_USER_ID = (
     'Your request is missing a unique ' +
     'token. This means your academic ' +
     'institution does not yet allow its users to log ' +

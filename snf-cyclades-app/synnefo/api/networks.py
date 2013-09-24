@@ -33,7 +33,11 @@
 
 
 from django.conf import settings
-from django.conf.urls.defaults import patterns
+try:
+    from django.conf.urls import patterns
+except ImportError:  # Django==1.2
+    from django.conf.urls.defaults import patterns
+
 from django.db import transaction
 from django.db.models import Q
 from django.http import HttpResponse

@@ -944,6 +944,7 @@ def add_node(node):
 def enable_drbd():
     if env.enable_drbd:
         debug(env.host, " * Enabling DRBD...")
+        install_package("drbd8-utils")
         try_run("modprobe drbd minor_count=255 usermode_helper=/bin/true")
         try_run("echo drbd minor_count=255 usermode_helper=/bin/true " +
                 ">> /etc/modules")

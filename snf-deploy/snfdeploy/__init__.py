@@ -622,7 +622,7 @@ def main():
     fabcommand(args, env, actions)
 
   if args.command == "ganeti":
-    actions += get_actions("ganeti")
+    actions = get_actions("ganeti")
     fabcommand(args, env, actions)
 
 

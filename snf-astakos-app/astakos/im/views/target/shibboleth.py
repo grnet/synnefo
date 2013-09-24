@@ -72,8 +72,13 @@ def migrate_eppn_to_remote_id(eppn, remote_id):
         pass
 
     pending_users = \
+<<<<<<< HEAD
         PendingThirdPartyUser.objects.filter(third_party_identifier=eppn,
                                              provider='shibboleth')
+=======
+            PendingThirdPartyUser.objects.filter(third_party_identifier=eppn,
+                                                 provider='shibboleth')
+>>>>>>> astakos: Shibboleth EPPN migration functionality
 
     for pending in pending_users:
         msg = "Migrating pending user %s eppn (%s -> %s)"
@@ -158,11 +163,7 @@ def login(request,
         fullname = '%s %s' % (first_name, last_name)
 
         if not any([first_name, last_name]) and \
-<<<<<<< HEAD
-                settings.SHIBBOLETH_REQUIRE_NAME_INFO:
-=======
                     settings.SHIBBOLETH_REQUIRE_NAME_INFO:
->>>>>>> astakos: Set initial signup values if available
             raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_NAME))
 
     except KeyError, e:
@@ -175,16 +176,8 @@ def login(request,
 
     affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, 'Shibboleth')
     email = tokens.get(Tokens.SHIB_MAIL, '')
-<<<<<<< HEAD
     provider_info = {'eppn': eppn, 'email': email, 'name': fullname,
                      'headers': shibboleth_headers, 'user_id': user_id}
-=======
-    eppn_info = tokens.get(Tokens.SHIB_EPPN)
-    provider_info = {'eppn': eppn_info, 'email': email, 'name': fullname,
-                     'headers': shibboleth_headers}
-    userid = eppn
-
->>>>>>> astakos: Set initial signup values if available
 
     try:
         return handle_third_party_login(request, 'shibboleth',
@@ -196,11 +189,7 @@ def login(request,
                      'first_name': first_name,
                      'last_name': last_name,
                      'email': email}
-<<<<<<< HEAD
         return handle_third_party_signup(request, user_id, 'shibboleth',
-=======
-        return handle_third_party_signup(request, userid, 'shibboleth',
->>>>>>> astakos: Set initial signup values if available
                                          third_party_key,
                                          provider_info,
                                          user_info,

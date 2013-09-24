@@ -181,6 +181,10 @@ ENABLE_LOCAL_ACCOUNT_MIGRATION = getattr(
 SHIBBOLETH_MIGRATE_EPPN = getattr(settings, 'ASTAKOS_SHIBBOLETH_MIGRATE_EPPN',
                                   False)
 
+# Migrate eppn identifiers to remote id
+SHIBBOLETH_MIGRATE_EPPN = getattr(settings, 'ASTAKOS_SHIBBOLETH_MIGRATE_EPPN',
+                                  False)
+
 # Strict shibboleth usage
 SHIBBOLETH_REQUIRE_NAME_INFO = getattr(settings,
                                        'ASTAKOS_SHIBBOLETH_REQUIRE_NAME_INFO',

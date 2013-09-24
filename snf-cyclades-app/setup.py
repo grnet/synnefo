@@ -57,7 +57,7 @@ CLASSIFIERS = []
 
 # Package requirements
 INSTALL_REQUIRES = [
-    'Django >=1.2, <1.3',
+    'Django >=1.2, <=1.4.5',
     'simplejson>=2.1.1',
     'pycurl>=7.19.0',
     'python-dateutil>=1.4.1',

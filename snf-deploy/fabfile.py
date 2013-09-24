@@ -432,11 +432,13 @@ def setup_mq():
 @roles("db")
 def allow_access_in_db(ip, user="all", method="md5"):
     cmd = """
-    echo host all {0} {1}/32 {2} >> /etc/postgresql/8.4/main/pg_hba.conf
+    pg_hba=$(ls /etc/postgresql/*/main/pg_hba.conf)
+    echo host all {0} {1}/32 {2} >> $pg_hba
     """.format(user, ip, method)
     try_run(cmd)
     cmd = """
-    sed -i 's/\(host.*127.0.0.1.*\)md5/\\1trust/' /etc/postgresql/8.4/main/pg_hba.conf
+    pg_hba=$(ls /etc/postgresql/*/main/pg_hba.conf)
+    sed -i 's/\(host.*127.0.0.1.*\)md5/\\1trust/' $pg_hba
     """
     try_run(cmd)
     try_run("/etc/init.d/postgresql restart")
@@ -456,13 +458,15 @@ def setup_db():
     cmd = 'su - postgres -c "psql -w -f %s" ' % tmpl
     try_run(cmd)
     cmd = """
-    echo "listen_addresses = '*'" >> /etc/postgresql/8.4/main/postgresql.conf
+    conf=$(ls /etc/postgresql/*/main/postgresql.conf)
+    echo "listen_addresses = '*'" >> $conf
     """
     try_run(cmd)
 
     if env.env.testing_vm:
         cmd = """
-        echo "fsync=off\nsynchronous_commit=off\nfull_page_writes=off" >> /etc/postgresql/8.4/main/postgresql.conf
+        conf=$(ls /etc/postgresql/*/main/postgresql.conf)
+        echo "fsync=off\nsynchronous_commit=off\nfull_page_writes=off" >> $conf
         """
         try_run(cmd)
 

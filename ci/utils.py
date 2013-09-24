@@ -21,7 +21,7 @@ from kamaki.clients.image import ImageClient
 from kamaki.clients.compute import ComputeClient
 import filelocker
 
-DEFAULT_CONFIG_FILE = "new_config"
+DEFAULT_CONFIG_FILE = "ci_squeeze.conf"
 # UUID of owner of system images
 DEFAULT_SYSTEM_IMAGES_UUID = [
     "25ecced9-bf53-4145-91ee-cf47377e9fb2",  # production (okeanos.grnet.gr)
@@ -440,7 +440,7 @@ class SynnefoCI(object):
         self.logger.debug("Server's IPv4 is %s" % _green(server_ip))
         self.write_temp_config('server_port', server_port)
         self.logger.debug("Server's ssh port is %s" % _green(server_port))
-        self.logger.debug("Access server using \"ssh -X -p %s %s@%s\"" %
+        self.logger.debug("Access server using \"ssh -p %s %s@%s\"" %
                           (server_port, server['metadata']['users'],
                            server_ip))
 

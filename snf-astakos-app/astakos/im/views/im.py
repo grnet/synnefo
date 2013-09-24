@@ -413,6 +413,7 @@ def signup(request, template_name='im/signup.html', on_success='index',
     # user registered using third party provider
     third_party_token = request.REQUEST.get('third_party_token', None)
     unverified = None
+    pending = None
     if third_party_token:
         # retreive third party entry. This was created right after the initial
         # third party provider handshake.
@@ -446,8 +447,16 @@ def signup(request, template_name='im/signup.html', on_success='index',
     if third_party_token:
         form_kwargs['third_party_token'] = third_party_token
 
+    if pending:
+        form_kwargs['initial'] = {
+            'first_name': pending.first_name,
+            'last_name': pending.last_name,
+            'email': pending.email
+        }
+
     form = activation_backend.get_signup_form(
         provider, None, **form_kwargs)
+
 
     if request.method == 'POST':
         form = activation_backend.get_signup_form(

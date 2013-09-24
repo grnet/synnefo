@@ -755,9 +755,13 @@ class TestAuthProviderViews(TestCase):
 
         # new academic user
         self.assertFalse(academic_users.filter(email='newuser@synnefo.org'))
-        cl_newuser.set_tokens(eppn="newusereppn")
+        cl_newuser.set_tokens(eppn="newusereppn", mail="newuser@synnefo.org",
+                              surname="Lastname")
         r = cl_newuser.get(ui_url('login/shibboleth?'), follow=True)
+        initial = r.context['signup_form'].initial
         pending = Pending.objects.get()
+        self.assertEqual(initial.get('last_name'), 'Lastname')
+        self.assertEqual(initial.get('email'), 'newuser@synnefo.org')
         identifier = pending.third_party_identifier
         signup_data = {'third_party_identifier': identifier,
                        'first_name': 'Academic',

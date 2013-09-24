@@ -90,10 +90,10 @@ def login(request,
 
     try:
         eppn = tokens.get(Tokens.SHIB_EPPN)
-
+        fullname, first_name, last_name, email = None, None, None, None
         if global_settings.DEBUG and not eppn:
             eppn = getattr(global_settings, 'SHIBBOLETH_TEST_EPPN', None)
-            realname = getattr(global_settings, 'SHIBBOLETH_TEST_REALNAME',
+            fullname = getattr(global_settings, 'SHIBBOLETH_TEST_FULLNAME',
                                None)
 
         if not eppn:
@@ -102,17 +102,23 @@ def login(request,
                 'contact_email': settings.CONTACT_EMAIL
             })
         if Tokens.SHIB_DISPLAYNAME in tokens:
-            realname = tokens[Tokens.SHIB_DISPLAYNAME]
+            fullname = tokens[Tokens.SHIB_DISPLAYNAME]
         elif Tokens.SHIB_CN in tokens:
-            realname = tokens[Tokens.SHIB_CN]
-        elif Tokens.SHIB_NAME in tokens and Tokens.SHIB_SURNAME in tokens:
-            realname = tokens[Tokens.SHIB_NAME] + ' ' + \
-                tokens[Tokens.SHIB_SURNAME]
-        else:
-            if settings.SHIBBOLETH_REQUIRE_NAME_INFO:
-                raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_NAME))
-            else:
-                realname = ''
+            fullname = tokens[Tokens.SHIB_CN]
+        if Tokens.SHIB_NAME in tokens:
+            first_name = tokens[Tokens.SHIB_NAME]
+        if Tokens.SHIB_SURNAME in tokens:
+            last_name = tokens[Tokens.SHIB_SURNAME]
+
+        if fullname:
+            splitted = fullname.split(' ', 1)
+            if len(splitted) == 2:
+                first_name, last_name = splitted
+        fullname = '%s %s' % (first_name, last_name)
+
+        if not any([first_name, last_name]) and \
+                    settings.SHIBBOLETH_REQUIRE_NAME_INFO:
+            raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_NAME))
 
     except KeyError, e:
         # invalid shibboleth headers, redirect to login, display message
@@ -122,7 +128,7 @@ def login(request,
     affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, 'Shibboleth')
     email = tokens.get(Tokens.SHIB_MAIL, '')
     eppn_info = tokens.get(Tokens.SHIB_EPPN)
-    provider_info = {'eppn': eppn_info, 'email': email, 'name': realname,
+    provider_info = {'eppn': eppn_info, 'email': email, 'name': fullname,
                      'headers': shibboleth_headers}
     userid = eppn
 
@@ -132,7 +138,10 @@ def login(request,
                                         affiliation, third_party_key)
     except AstakosUser.DoesNotExist, e:
         third_party_key = get_pending_key(request)
-        user_info = {'affiliation': affiliation, 'realname': realname}
+        user_info = {'affiliation': affiliation,
+                     'first_name': first_name,
+                     'last_name': last_name,
+                     'email': email}
         return handle_third_party_signup(request, userid, 'shibboleth',
                                          third_party_key,
                                          provider_info,

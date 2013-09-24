@@ -33,7 +33,11 @@
 
 from django.core import urlresolvers
 from django.views.decorators import csrf
-from django.conf.urls.defaults import patterns
+try:
+    from django.conf.urls import patterns
+except ImportError:  # Django==1.2
+    from django.conf.urls.defaults import patterns
+
 
 
 def _patch_pattern(regex_pattern):

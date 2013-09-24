@@ -820,8 +820,7 @@ class TestAuthProviderViews(TestCase):
 
         # new academic user
         self.assertFalse(academic_users.filter(email='newuser@synnefo.org'))
-        cl_newuser.set_tokens(remote_user="newusereppn",
-                              mail="newuser@synnefo.org",
+        cl_newuser.set_tokens(eppn="newusereppn", mail="newuser@synnefo.org",
                               surname="Lastname")
         r = cl_newuser.get(ui_url('login/shibboleth?'), follow=True)
         initial = r.context['signup_form'].initial

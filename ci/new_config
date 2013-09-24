@@ -54,7 +54,7 @@ cmd_options = --nofailfast --no-ipv6 --action-timeout=240
 
 
 [Unit Tests]
-component = astakos cyclades pithos
+component = astakos cyclades
 
 
 [Repository]

@@ -1839,6 +1839,7 @@ Upgrade Notes
    v0.13 -> v0.14 <upgrade/upgrade-0.14>
    v0.14 -> v0.14.2 <upgrade/upgrade-0.14.2>
    v0.14.5 -> v0.14.6 <upgrade/upgrade-0.14.6>
+   v0.14 -> v0.15 <upgrade/upgrade-0.15>
 
 
 Changelog, NEWS

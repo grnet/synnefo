@@ -543,19 +543,6 @@ def astakos_register_components():
     """.format(env.env.cms.fqdn, cyclades_base_url,
                pithos_base_url, astakos_base_url)
     try_run(cmd)
-    import_service("astakos", astakos_base_url)
-    import_service("pithos", pithos_base_url)
-    import_service("cyclades", cyclades_base_url)
-    cmd = """
-    snf-manage resource-modify --limit 40G pithos.diskspace
-    snf-manage resource-modify --limit 2 astakos.pending_app
-    snf-manage resource-modify --limit 4 cyclades.vm
-    snf-manage resource-modify --limit 40G cyclades.disk
-    snf-manage resource-modify --limit 8G cyclades.ram
-    snf-manage resource-modify --limit 16 cyclades.cpu
-    snf-manage resource-modify --limit 4 cyclades.network.private
-    """
-    try_run(cmd)
 
 
 @roles("accounts")
@@ -629,11 +616,6 @@ EOF
     snf-manage migrate quotaholder_app
     """
     try_run(cmd)
-
-
-def import_service(service, base_url):
-    try_run("snf-service-export %s %s | snf-manage service-import --json -" %
-            (service, base_url))
 
 
 @roles("accounts")

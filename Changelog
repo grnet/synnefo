@@ -37,6 +37,8 @@ Astakos
   the ui URL.
 
 * Management commands:
+  * Introduced new commands:
+     * component-show
   * Changed commands:
      * component-add got options --base-url and --ui-url
 

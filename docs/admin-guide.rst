@@ -1066,6 +1066,7 @@ commission-show               Show details for a pending commission
 component-add                 Register a component
 component-list                List components
 component-modify              Modify component attributes
+component-show                Show component details
 project-control               Manage projects and applications
 project-list                  List projects
 project-show                  Show project details

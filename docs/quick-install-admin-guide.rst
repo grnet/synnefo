@@ -1186,17 +1186,6 @@ VM-capable Ganeti nodes.
     not have a valid certificate. To circumvent this you should edit the file
     ``/etc/default/snf-image``. Change ``#CURL="curl"`` to ``CURL="curl -k"``.
 
-After `snf-image` has been installed successfully, create the helper VM by
-running on *both* nodes:
-
-.. code-block:: console
-
-   # snf-image-update-helper
-
-This will create all the needed files under ``/var/lib/snf-image/helper/`` for
-snf-image to run successfully, and it may take a few minutes depending on your
-Internet connection.
-
 Configuration
 ~~~~~~~~~~~~~
 snf-image supports native access to Images stored on Pithos. This means that

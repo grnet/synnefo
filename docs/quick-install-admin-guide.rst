@@ -1233,7 +1233,7 @@ This should return ``valid`` for snf-image.
 
 If you are interested to learn more about snf-image's internals (and even use
 it alongside Ganeti without Synnefo), please see
-`here <https://code.grnet.gr/projects/snf-image/wiki>`_ for information
+`here <http://www.synnefo.org/docs/snf-image/latest/index.html>`_ for information
 concerning installation instructions, documentation on the design and
 implementation, and supported Image formats.
 
@@ -1246,7 +1246,7 @@ Now that snf-image is installed successfully we need to provide it with some
 Images. :ref:`snf-image <snf-image>` supports Images stored in ``extdump``,
 ``ntfsdump`` or ``diskdump`` format. We recommend the use of the ``diskdump``
 format. For more information about snf-image Image formats see `here
-<https://code.grnet.gr/projects/snf-image/wiki/Image_Format>`_.
+<http://www.synnefo.org/docs/snf-image/latest/usage.html#image-format>`_.
 
 :ref:`snf-image <snf-image>` also supports three (3) different locations for the
 above Images to be stored:
@@ -1258,8 +1258,8 @@ above Images to be stored:
 
 For the purpose of this guide, we will use the Debian Squeeze Base Image found
 on the official `snf-image page
-<https://code.grnet.gr/projects/snf-image/wiki#Sample-Images>`_. The image is
-of type ``diskdump``. We will store it in our new Pithos installation.
+<http://www.synnefo.org/docs/snf-image/latest/usage.html#sample-images>`_. The
+image is of type ``diskdump``. We will store it in our new Pithos installation.
 
 To do so, do the following:
 
@@ -1275,7 +1275,7 @@ Ganeti, in the next section.
 
 Of course, you can repeat the procedure to upload more Images, available from
 the `official snf-image page
-<https://code.grnet.gr/projects/snf-image/wiki#Sample-Images>`_.
+<http://www.synnefo.org/docs/snf-image/latest/usage.html#sample-images>`_.
 
 .. _ganeti-with-pithos-images:
 
@@ -1308,7 +1308,7 @@ In the above command:
                * ``filename``: the name of file (visible also from the Web UI)
  * ``img_properties``: taken from the metadata file. Used only the two mandatory
                        properties ``OSFAMILY`` and ``ROOT_PARTITION``. `Learn more
-                       <https://code.grnet.gr/projects/snf-image/wiki/Image_Format#Image-Properties>`_
+                       <http://www.synnefo.org/docs/snf-image/latest/usage.html#image-properties>`_
 
 If the ``gnt-instance add`` command returns successfully, then run:
 

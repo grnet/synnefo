@@ -126,7 +126,7 @@ They are also available from our apt repository: ``apt.dev.grnet.gr``
  * `snf-cyclades-gtools <http://www.synnefo.org/docs/snf-cyclades-gtools/latest/index.html>`_
  * `astakosclient <http://www.synnefo.org/docs/astakosclient/latest/index.html>`_
  * `snf-vncauthproxy <https://code.grnet.gr/projects/vncauthproxy>`_
- * `snf-image <https://code.grnet.gr/projects/snf-image/wiki/>`_ 
+ * `snf-image <http://www.synnefo.org/docs/snf-image/latest/index.html/>`_
  * `snf-image-creator <http://www.synnefo.org/docs/snf-image-creator/latest/index.html>`_
  * `snf-occi <http://www.synnefo.org/docs/snf-occi/latest/index.html>`_
  * `snf-cloudcms <http://www.synnefo.org/docs/snf-cloudcms/latest/index.html>`_

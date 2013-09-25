@@ -15,6 +15,6 @@ nothing to do with Synnefo) can use snf-image to serurely deploy many kind of
 images with Ganeti.
 
 Please refer to the
-`snf-image documentation <https://code.grnet.gr/projects/snf-image/wiki>`_ for
+`snf-image documentation <http://www.synnefo.org/docs/snf-image/latest/index.html>`_ for
 all details concerning installation and configuration.
 

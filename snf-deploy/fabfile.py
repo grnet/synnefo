@@ -518,9 +518,11 @@ def setup_common():
         "EMAIL_SUBJECT_PREFIX": env.host,
         "domain": env.env.domain,
         "HOST": host_info.fqdn,
+        "MAIL_DIR": env.env.mail_dir,
     }
     custom = customize_settings_from_tmpl(tmpl, replace)
     put(custom, tmpl, mode=0644)
+    try_run("mkdir -p {0}; chown root:www-data {0}; chmod 775 {0}".format(env.env.mail_dir))
     try_run("/etc/init.d/gunicorn restart")
 
 @roles("accounts")

@@ -910,7 +910,7 @@ EOF
 def add_rapi_user():
     debug(env.host, " * Adding RAPI user to Ganeti backend...")
     cmd = """
-    echo -n "{0}:Ganeti Remote API:{1}" | openssl md5
+    echo -n "{0}:Ganeti Remote API:{1}" | openssl md5 | sed 's/^.* //'
     """.format(env.env.synnefo_user, env.env.synnefo_rapi_passwd)
     result = try_run(cmd)
     if result.startswith("(stdin)= "):

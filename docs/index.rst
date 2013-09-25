@@ -34,7 +34,7 @@ There are also the following tools:
    kamaki: Command-line client <http://www.synnefo.org/docs/kamaki/latest/index.html>
    snf-deploy: Synnefo deployment tool <snf-deploy>
    snf-image-creator: Image bundling/uploading/registering tool <http://www.synnefo.org/docs/snf-image-creator/latest/index.html>
-   snf-image: Secure image deployment tool <snf-image>
+   snf-image: Secure image deployment tool <http://www.synnefo.org/docs/snf-image/latest/index.html>
    snf-burnin: Integration testing tool for a running Synnefo deployment <snf-burnin>
 
 

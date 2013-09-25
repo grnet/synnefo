@@ -11,9 +11,9 @@ desc[cyclades]='compute component'
 desc[pithos]='file storage component'
 
 declare -A ex_url
-ex_url[astakos]='https://accounts.example.synnefo.org/astakos/'
-ex_url[cyclades]='https://compute.example.synnefo.org/cyclades/'
-ex_url[pithos]='https://storage.example.synnefo.org/pithos/'
+ex_url[astakos]='https://accounts.example.synnefo.org/astakos'
+ex_url[cyclades]='https://compute.example.synnefo.org/cyclades'
+ex_url[pithos]='https://storage.example.synnefo.org/pithos'
 
 
 register_services () {
@@ -22,7 +22,7 @@ register_services () {
 }
 
 ex_ui_url () {
-    echo "$(echo $1 | sed -e 's/\/*$//g')/ui/"
+    echo "$(echo $1 | sed -e 's/\/*$//g')/ui"
 }
 
 changed=0

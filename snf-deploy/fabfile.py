@@ -841,6 +841,8 @@ def add_rapi_user():
     echo -n "{0}:Ganeti Remote API:{1}" | openssl md5
     """.format(env.env.synnefo_user, env.env.synnefo_rapi_passwd)
     result = try_run(cmd)
+    if result.startswith("(stdin)= "):
+        result = result.split("(stdin)= ")[1]
     cmd = """
     echo "{0} {1}{2} write" >> /var/lib/ganeti/rapi/users
     """.format(env.env.synnefo_user, '{ha1}',result)

@@ -1168,8 +1168,10 @@ snf-image
 Installation
 ~~~~~~~~~~~~
 For :ref:`Cyclades <cyclades>` to be able to launch VMs from specified Images,
-you need the :ref:`snf-image <snf-image>` OS Definition installed on *all*
-VM-capable Ganeti nodes. This means we need :ref:`snf-image <snf-image>` on
+you need the :ref:
+`snf-image <http://www.synnefo.org/docs/snf-image/latest/index.html>` OS
+Definition installed on *all* VM-capable Ganeti nodes. This means we need
+:ref:`snf-image <http://www.synnefo.org/docs/snf-image/latest/index.html>` on
 node1 and node2. You can do this by running on *both* nodes:
 
 .. code-block:: console
@@ -1232,13 +1234,15 @@ Actual Images for snf-image
 ---------------------------
 
 Now that snf-image is installed successfully we need to provide it with some
-Images. :ref:`snf-image <snf-image>` supports Images stored in ``extdump``,
-``ntfsdump`` or ``diskdump`` format. We recommend the use of the ``diskdump``
-format. For more information about snf-image Image formats see `here
+Images.
+:ref:`snf-image <http://www.synnefo.org/docs/snf-image/latest/index.html>`
+supports Images stored in ``extdump``, ``ntfsdump`` or ``diskdump`` format. We
+recommend the use of the ``diskdump`` format. For more information about
+snf-image Image formats see `here
 <http://www.synnefo.org/docs/snf-image/latest/usage.html#image-format>`_.
 
-:ref:`snf-image <snf-image>` also supports three (3) different locations for the
-above Images to be stored:
+:ref:`snf-image <http://www.synnefo.org/docs/snf-image/latest/index.html>`
+also supports three (3) different locations for the above Images to be stored:
 
     * Under a local folder (usually an NFS mount, configurable as ``IMAGE_DIR``
       in :file:`/etc/default/snf-image`)

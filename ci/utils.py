@@ -631,7 +631,7 @@ class SynnefoCI(object):
         apt-get update
         apt-get install zlib1g-dev dpkg-dev debhelper git-buildpackage \
                 python-dev python-all python-pip --yes --force-yes
-        pip install devflow
+        pip install -U devflow
         """
         _run(cmd, False)
 
@@ -725,8 +725,8 @@ class SynnefoCI(object):
 
         self.logger.debug("Install needed packages")
         cmd = """
-        pip install mock
-        pip install factory_boy
+        pip install -U mock
+        pip install -U factory_boy
         """
         _run(cmd, False)
 

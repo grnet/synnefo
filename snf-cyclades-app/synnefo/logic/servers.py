@@ -56,7 +56,7 @@ def validate_server_action(vm, action):
     return
 
 
-def server_command(action):
+def server_command(action, action_fields=None):
     """Handle execution of a server action.
 
     Helper function to validate and execute a server action, handle quota
@@ -85,6 +85,7 @@ def server_command(action):
 
             commission_name = "client: api, resource: %s" % vm
             quotas.handle_resource_commission(vm, action=action,
+                                              action_fields=action_fields,
                                               commission_name=commission_name)
             vm.save()
 
@@ -275,14 +276,19 @@ def reboot(vm, reboot_type):
     return backend.reboot_instance(vm, reboot_type.lower())
 
 
-@server_command("RESIZE")
 def resize(vm, flavor):
+    action_fields = {"beparams": {"vcpus": flavor.cpu,
+                                  "maxmem": flavor.ram}}
+    comm = server_command("RESIZE", action_fields=action_fields)
+    return comm(_resize)(vm, flavor)
+
+
+def _resize(vm, flavor):
     old_flavor = vm.flavor
     # User requested the same flavor
     if old_flavor.id == flavor.id:
         raise faults.BadRequest("Server '%s' flavor is already '%s'."
                                 % (vm, flavor))
-        return None
     # Check that resize can be performed
     if old_flavor.disk != flavor.disk:
         raise faults.BadRequest("Cannot resize instance disk.")
@@ -290,13 +296,6 @@ def resize(vm, flavor):
         raise faults.BadRequest("Cannot change instance disk template.")
 
     log.info("Resizing VM from flavor '%s' to '%s", old_flavor, flavor)
-    commission_info = {"cyclades.cpu": flavor.cpu - old_flavor.cpu,
-                       "cyclades.ram": 1048576 * (flavor.ram - old_flavor.ram)}
-    # Save serial to VM, since it is needed by server_command decorator
-    vm.serial = quotas.issue_commission(user=vm.userid,
-                                        source=quotas.DEFAULT_SOURCE,
-                                        provisions=commission_info,
-                                        name="resource: %s. resize" % vm)
     return backend.resize_instance(vm, vcpus=flavor.cpu, memory=flavor.ram)
 
 

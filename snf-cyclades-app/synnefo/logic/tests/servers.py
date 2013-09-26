@@ -151,7 +151,8 @@ class ServerCommandTest(TransactionTestCase):
         vm = mfactory.VirtualMachineFactory(operstate="STOPPED")
         self.assertRaises(faults.BadRequest, servers.stop, vm)
         vm = mfactory.VirtualMachineFactory(operstate="STARTED")
-        self.assertRaises(faults.BadRequest, servers.resize, vm)
+        flavor = mfactory.FlavorFactory()
+        self.assertRaises(faults.BadRequest, servers.resize, vm, flavor)
         # Check that connect/disconnect is allowed only in STOPPED vms
         # if hotplug is disabled.
         vm = mfactory.VirtualMachineFactory(operstate="STARTED")

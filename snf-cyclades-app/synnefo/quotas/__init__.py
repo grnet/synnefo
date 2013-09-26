@@ -350,7 +350,7 @@ def reverse_quantities(resources):
 
 def handle_resource_commission(resource, action, commission_name,
                                commission_info=None, force=False,
-                               auto_accept=False):
+                               auto_accept=False, action_fields=None):
     """Handle a issuing of a commission for a resource.
 
     Create a new commission for a resource based on the action that
@@ -364,7 +364,8 @@ def handle_resource_commission(resource, action, commission_name,
     # Check if action is quotable and issue the corresponding commission
     serial = None
     if commission_info is None:
-        commission_info = get_commission_info(resource, action=action)
+        commission_info = get_commission_info(
+            resource, action=action, action_fields=action_fields)
     if commission_info is not None:
         # Issue new commission, associate it with the resource
         if commission_name is None:

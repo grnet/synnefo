@@ -185,16 +185,17 @@ class LocalUserCreationForm(UserCreationForm, StoreUserMixin):
         user.add_auth_provider('local', auth_backend='astakos')
         user.set_password(self.cleaned_data['password1'])
 
-    def save(self, commit=True):
+    def save(self, commit=True, *args, **kwargs):
         """
         Saves the email, first_name and last_name properties, after the normal
         save behavior is complete.
         """
-        user = super(LocalUserCreationForm, self).save(commit=False)
+        user = super(LocalUserCreationForm, self).save(commit=False,
+                                                       *args, **kwargs)
         user.date_signed_terms = datetime.now()
         user.renew_token()
         if commit:
-            user.save()
+            user.save(*args, **kwargs)
             logger.info('Created user %s', user.log_display)
         return user
 
@@ -218,12 +219,13 @@ class InvitedLocalUserCreationForm(LocalUserCreationForm):
         for f in ro:
             self.fields[f].widget.attrs['readonly'] = True
 
-    def save(self, commit=True):
-        user = super(InvitedLocalUserCreationForm, self).save(commit=False)
+    def save(self, commit=True, *args, **kwargs):
+        user = super(InvitedLocalUserCreationForm, self).save(commit=False,
+                                                              *args, **kwargs)
         user.set_invitations_level()
         user.email_verified = True
         if commit:
-            user.save()
+            user.save(*args, **kwargs)
         return user
 
 
@@ -297,13 +299,14 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
         provider.add_to_user()
         pending.delete()
 
-    def save(self, commit=True):
-        user = super(ThirdPartyUserCreationForm, self).save(commit=False)
+    def save(self, commit=True, *args, **kwargs):
+        user = super(ThirdPartyUserCreationForm, self).save(commit=False,
+                                                            *args, **kwargs)
         user.set_unusable_password()
         user.renew_token()
         user.date_signed_terms = datetime.now()
         if commit:
-            user.save()
+            user.save(*args, **kwargs)
             logger.info('Created user %s' % user.log_display)
         return user
 
@@ -324,12 +327,13 @@ class InvitedThirdPartyUserCreationForm(ThirdPartyUserCreationForm):
         for f in ro:
             self.fields[f].widget.attrs['readonly'] = True
 
-    def save(self, commit=True):
-        user = super(InvitedThirdPartyUserCreationForm, self).save(commit=False)
+    def save(self, commit=True, *args, **kwargs):
+        user = super(InvitedThirdPartyUserCreationForm, self).save(
+            commit=False, *args, **kwargs)
         user.set_invitation_level()
         user.email_verified = True
         if commit:
-            user.save()
+            user.save(*args, **kwargs)
         return user
 
 
@@ -455,8 +459,8 @@ class ProfileForm(forms.ModelForm):
     def clean_email(self):
         return self.instance.email
 
-    def save(self, commit=True):
-        user = super(ProfileForm, self).save(commit=False)
+    def save(self, commit=True, *args, **kwargs):
+        user = super(ProfileForm, self).save(commit=False, *args, **kwargs)
         user.is_verified = True
         if self.cleaned_data.get('renew'):
             user.renew_token(
@@ -464,7 +468,7 @@ class ProfileForm(forms.ModelForm):
                 current_key=self.session_key
             )
         if commit:
-            user.save()
+            user.save(*args, **kwargs)
         return user
 
 
@@ -519,11 +523,13 @@ class ExtendedPasswordResetForm(PasswordResetForm):
             raise forms.ValidationError(_(astakos_messages.EMAIL_UNKNOWN))
         return email
 
-    def save(
-        self, domain_override=None, email_template_name='registration/password_reset_email.html',
-            use_https=False, token_generator=default_token_generator, request=None):
+    def save(self, domain_override=None,
+             email_template_name='registration/password_reset_email.html',
+             use_https=False, token_generator=default_token_generator,
+             request=None, *args, **kwargs):
         """
-        Generates a one-use only link for resetting password and sends to the user.
+        Generates a one-use only link for resetting password
+        and sends to the user.
         """
         for user in self.users_cache:
             url = user.astakosuser.get_password_reset_url(token_generator)
@@ -557,8 +563,10 @@ class EmailChangeForm(forms.ModelForm):
             raise forms.ValidationError(_(astakos_messages.EMAIL_USED))
         return addr
 
-    def save(self, request, email_template_name='registration/email_change_email.txt', commit=True):
-        ec = super(EmailChangeForm, self).save(commit=False)
+    def save(self, request,
+             email_template_name='registration/email_change_email.txt',
+             commit=True, *args, **kwargs):
+        ec = super(EmailChangeForm, self).save(commit=False, *args, **kwargs)
         ec.user = request.user
         # delete pending email changes
         request.user.emailchanges.all().delete()
@@ -567,7 +575,7 @@ class EmailChangeForm(forms.ModelForm):
             str(random()) + smart_str(ec.new_email_address))
         ec.activation_key = activation_key.hexdigest()
         if commit:
-            ec.save()
+            ec.save(*args, **kwargs)
         send_change_email(ec, request, email_template_name=email_template_name)
 
 
@@ -586,11 +594,11 @@ class SignApprovalTermsForm(forms.ModelForm):
             raise forms.ValidationError(_(astakos_messages.SIGN_TERMS))
         return has_signed_terms
 
-    def save(self, commit=True):
-        user = super(SignApprovalTermsForm, self).save(commit)
+    def save(self, commit=True, *args, **kwargs):
+        user = super(SignApprovalTermsForm, self).save(commit, *args, **kwargs)
         user.date_signed_terms = datetime.now()
         if commit:
-            user.save()
+            user.save(*args, **kwargs)
         return user
 
 
@@ -629,7 +637,7 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
         self.session_key = kwargs.pop('session_key', None)
         super(ExtendedPasswordChangeForm, self).__init__(user, *args, **kwargs)
 
-    def save(self, commit=True):
+    def save(self, commit=True, *args, **kwargs):
         try:
             if settings.NEWPASSWD_INVALIDATE_TOKEN or \
                     self.cleaned_data.get('renew'):
@@ -638,7 +646,8 @@ class ExtendedPasswordChangeForm(PasswordChangeForm):
         except AttributeError:
             # if user model does has not such methods
             pass
-        return super(ExtendedPasswordChangeForm, self).save(commit=commit)
+        return super(ExtendedPasswordChangeForm, self).save(commit=commit,
+                                                            *args, **kwargs)
 
 class ExtendedSetPasswordForm(SetPasswordForm):
     """
@@ -656,7 +665,7 @@ class ExtendedSetPasswordForm(SetPasswordForm):
         super(ExtendedSetPasswordForm, self).__init__(user, *args, **kwargs)
 
     @transaction.commit_on_success()
-    def save(self, commit=True):
+    def save(self, commit=True, *args, **kwargs):
         try:
             self.user = AstakosUser.objects.get(id=self.user.id)
             if settings.NEWPASSWD_INVALIDATE_TOKEN or \
@@ -669,7 +678,8 @@ class ExtendedSetPasswordForm(SetPasswordForm):
 
         except BaseException, e:
             logger.exception(e)
-        return super(ExtendedSetPasswordForm, self).save(commit=commit)
+        return super(ExtendedSetPasswordForm, self).save(commit=commit,
+                                                         *args, **kwargs)
 
 
 
@@ -895,7 +905,7 @@ class ProjectApplicationForm(forms.ModelForm):
     def cleaned_resource_policies(self):
         return [(d['name'], d['uplimit']) for d in self.resource_policies]
 
-    def save(self, commit=True):
+    def save(self, commit=True, *args, **kwargs):
         data = dict(self.cleaned_data)
         data['precursor_id'] = self.instance.id
         is_new = self.instance.id is None
@@ -1102,4 +1112,3 @@ class ExtendedProfileForm(ProfileForm):
             self.password_change_form.save(*args, **kwargs)
             self.password_changed = True
         return super(ExtendedProfileForm, self).save(*args, **kwargs)
-

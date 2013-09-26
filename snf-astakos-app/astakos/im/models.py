@@ -511,7 +511,7 @@ class AstakosUser(User):
                 self.uuid = uuid_val
         return self.uuid
 
-    def save(self, update_timestamps=True, **kwargs):
+    def save(self, update_timestamps=True, *args, **kwargs):
         if update_timestamps:
             if not self.id:
                 self.date_joined = datetime.now()
@@ -526,7 +526,7 @@ class AstakosUser(User):
         if self.username != self.email.lower():
             self.username = self.email.lower()
 
-        super(AstakosUser, self).save(**kwargs)
+        super(AstakosUser, self).save(*args, **kwargs)
 
     def renew_verification_code(self):
         self.verification_code = str(uuid.uuid4())
@@ -1222,7 +1222,7 @@ class PendingThirdPartyUser(models.Model):
         else:
             self.last_name = parts[0]
 
-    def save(self, **kwargs):
+    def save(self, *args, **kwargs):
         if not self.id:
             # set username
             while not self.username:
@@ -1231,7 +1231,7 @@ class PendingThirdPartyUser(models.Model):
                     AstakosUser.objects.get(username = username)
                 except AstakosUser.DoesNotExist, e:
                     self.username = username
-        super(PendingThirdPartyUser, self).save(**kwargs)
+        super(PendingThirdPartyUser, self).save(*args, **kwargs)
 
     def generate_token(self):
         self.password = self.third_party_identifier

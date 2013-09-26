@@ -1623,6 +1623,7 @@ Operations                                      Cyclades OS/Compute
 `Reboot <#reboot-server>`_                      ✔        ✔
 `Get Console <#get-server-console>`_            ✔        **✘**
 `Set Firewall <#set-server-firewall-profile>`_  ✔        **✘**
+`Reassign <#reassign-server>`_                  ✔        **✘**
 `Change Admin Password <#os-compute-specific>`_ **✘**    ✔
 `Rebuild <#os-compute-specific>`_               **✘**    ✔
 `Resize <#os-compute-specific>`_                **✘**    ✔
@@ -1801,6 +1802,23 @@ Request body contents::
 .. code-block:: javascript
 
   {"firewallProfile": {"profile": "ENABLED"}}
+
+.. note:: Response body should be empty
+
+Reassign Server
+...............
+
+This operation assigns the VM to a different project.
+
+Request body contents::
+
+  reassign: { project: <project-id>}
+
+*Example Action reassign: JSON**
+
+.. code-block:: javascript
+
+  {"reassign": {"project": "9969f2fd-86d8-45d6-9106-5e251f7dd92f"}}
 
 .. note:: Response body should be empty
 
@@ -2756,6 +2774,7 @@ Description                                     URI                             
 `Delete <#delete-network>`_                     ``/networks/<network-id>``        DELETE
 `Connect <#connect-network-to-server>`_         ``/networks/<network-id>/action`` POST
 `Disconnect <#disconnect-network-from-server>`_ ``/networks/<network-id>/action`` POST
+`Reassign <#reassign-network>`_                 ``/networks/<network-id>/action`` POST
 =============================================== ================================= ======
 
 
@@ -3330,6 +3349,66 @@ Return Code                 Description
 =========================== =====================
 
 .. note:: In case of a 202 code, the request body should be empty
+
+Reassign Network
+................
+
+Assign a network to a different project.
+
+.. rubric:: Request
+
+================================= ======
+URI                               Method
+================================= ======
+``/networks/<network-id>/action`` POST
+================================= ======
+
+* **network-id** is the identifier of the network
+
+|
+
+==============  =========================
+Request Header  Value
+==============  =========================
+X-Auth-Token    User authentication token
+Content-Type    Type or request body
+Content-Length  Length of request body
+==============  =========================
+
+**Example Request Headers**::
+
+  X-Auth-Token:   z31uRXUn1LZy45p1r7V==
+  Content-Type:   application/json
+  Content-Length: 31
+
+.. note:: Request parameters should be empty
+
+Response body content (reassign)::
+
+  reassign {project: <project-id>}
+
+*Example Action Reassign: JSON*
+
+.. code-block:: javascript
+
+  {"reassign" : {"project" : "9969f2fd-86d8-45d6-9106-5e251f7dd92f"}}
+
+.. rubric:: Response
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded
+400 (Bad Request)           Malformed request
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Not allowed to modify this network (e.g. public)
+404 (Not Found)             Network not found
+500 (Internal Server Error) The request cannot be completed because of an
+\                           internal error
+503 (Service Unavailable)   The service is not currently available
+=========================== =====================
+
+.. note:: In case of a 200 code, the request body should be empty
 
 Index of Attributes
 -------------------

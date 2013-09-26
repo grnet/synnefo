@@ -62,7 +62,9 @@ ips_urlpatterns = patterns(
     'synnefo.api.floating_ips',
     (r'^(?:/|.json|.xml)?$', 'demux'),
     (r'^/detail(?:.json|.xml)?$', 'list_floating_ips', {'detail': True}),
-    (r'^/(\w+)(?:/|.json|.xml)?$', 'floating_ip_demux'))
+    (r'^/(\w+)(?:/|.json|.xml)?$', 'floating_ip_demux'),
+    (r'^/(\w+)/action(?:.json|.xml)?$', 'floating_ip_action_demux'),
+)
 
 
 def demux(request):
@@ -85,6 +87,29 @@ def floating_ip_demux(request, floating_ip_id):
     else:
         return api.api_method_not_allowed(request,
                                           allowed_methods=['GET', 'DELETE'])
+
+
+@api.api_method(http_method='POST', user_required=True, logger=log,
+                serializations=["json"])
+def floating_ip_action_demux(request, floating_ip_id):
+    userid = request.user_uniq
+    req = utils.get_request_dict(request)
+    log.debug('floating_ip_action %s %s', floating_ip_id, req)
+    if len(req) != 1:
+        raise faults.BadRequest('Malformed request.')
+    floating_ip = util.get_floating_ip_by_id(userid,
+                                             floating_ip_id,
+                                             for_update=True)
+    action = req.keys()[0]
+    try:
+        f = FLOATING_IP_ACTIONS[action]
+    except KeyError:
+        raise faults.BadRequest("Action %s not supported." % action)
+    action_args = req[action]
+    if not isinstance(action_args, dict):
+        raise faults.BadRequest("Invalid argument.")
+
+    return f(request, floating_ip, action_args)
 
 
 def ip_to_dict(floating_ip):
@@ -234,6 +259,20 @@ def list_floating_ip_pools(request):
     data = json.dumps({"floating_ip_pools": floating_ip_pools})
     request.serialization = "json"
     return HttpResponse(data, status=200)
+
+
+@transaction.commit_on_success
+def reassign(request, floating_ip, args):
+    project = args.get("project")
+    if project is None:
+        raise faults.BadRequest("Missing 'project' attribute.")
+    ips.reassign_floating_ip(floating_ip, project)
+    return HttpResponse(status=200)
+
+
+FLOATING_IP_ACTIONS = {
+    "reassign": reassign,
+}
 
 
 def network_to_floating_ip_pool(network):

@@ -131,7 +131,21 @@ def issue_commission(resource, action, name="", force=False, auto_accept=False,
     source = resource.project
 
     qh = Quotaholder.get()
-    if True:  # placeholder
+    if action == "REASSIGN":
+        try:
+            from_project = action_fields["from_project"]
+            to_project = action_fields["to_project"]
+        except KeyError:
+            raise Exception("Missing project attribute.")
+
+        projects = [from_project, to_project]
+        with AstakosClientExceptionHandler(user=user, projects=projects):
+            serial = qh.issue_resource_reassignment(user,
+                                                    from_project, to_project,
+                                                    provisions, name=name,
+                                                    force=force,
+                                                    auto_accept=auto_accept)
+    else:
         with AstakosClientExceptionHandler(user=user, projects=[source]):
             serial = qh.issue_one_commission(user, source,
                                              provisions, name=name,
@@ -352,6 +366,10 @@ def get_commission_info(resource, action, action_fields=None):
             ram = beparams.get("maxmem", flavor.ram)
             return {"cyclades.total_cpu": cpu - flavor.cpu,
                     "cyclades.total_ram": 1048576 * (ram - flavor.ram)}
+        elif action == "REASSIGN":
+            if resource.operstate in ["STARTED", "BUILD", "ERROR"]:
+                resources.update(online_resources)
+            return resources
         else:
             #["CONNECT", "DISCONNECT", "SET_FIREWALL_PROFILE"]:
             return None
@@ -361,6 +379,8 @@ def get_commission_info(resource, action, action_fields=None):
             return resources
         elif action == "DESTROY":
             return reverse_quantities(resources)
+        elif action == "REASSIGN":
+            return resources
     elif isinstance(resource, IPAddress):
         if resource.floating_ip:
             resources = {"cyclades.floating_ip": 1}
@@ -368,6 +388,8 @@ def get_commission_info(resource, action, action_fields=None):
                 return resources
             elif action == "DESTROY":
                 return reverse_quantities(resources)
+            elif action == "REASSIGN":
+                return resources
         else:
             return None
 

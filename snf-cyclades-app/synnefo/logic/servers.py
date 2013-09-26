@@ -333,6 +333,15 @@ def _resize(vm, flavor):
     return backend.resize_instance(vm, vcpus=flavor.cpu, memory=flavor.ram)
 
 
+@transaction.commit_on_success
+def reassign(vm, project):
+    action_fields = {"to_project": project, "from_project": vm.project}
+    vm.project = project
+    vm.save()
+    quotas.issue_and_accept_commission(vm, action="REASSIGN",
+                                       action_fields=action_fields)
+
+
 @server_command("SET_FIREWALL_PROFILE")
 def set_firewall_profile(vm, profile, nic):
     log.info("Setting VM %s, NIC %s, firewall %s", vm, nic, profile)

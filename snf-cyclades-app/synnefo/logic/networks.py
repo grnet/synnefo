@@ -174,3 +174,13 @@ def delete(network):
         # If network does not exist in any backend, update the network state
         backend_mod.update_network_state(network)
     return network
+
+
+@network_command("REASSIGN")
+def reassign(network, project):
+    action_fields = {"to_project": project, "from_project": network.project}
+    network.project = project
+    network.save()
+    quotas.issue_and_accept_commission(network, action="REASSIGN",
+                                       action_fields=action_fields)
+    return network

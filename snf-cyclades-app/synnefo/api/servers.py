@@ -479,7 +479,7 @@ def delete_server(request, server_id):
 
 
 # additional server actions
-ARBITRARY_ACTIONS = ['console', 'firewallProfile']
+ARBITRARY_ACTIONS = ['console', 'firewallProfile', 'reassign']
 
 
 def key_to_action(key):
@@ -876,6 +876,15 @@ def confirm_resize(request, vm, args):
 @server_action('revertResize')
 def revert_resize(request, vm, args):
     raise faults.NotImplemented('Resize not supported.')
+
+
+@server_action('reassign')
+def reassign(request, vm, args):
+    project = args.get("project")
+    if project is None:
+        raise faults.BadRequest("Missing 'project' attribute.")
+    servers.reassign(vm, project)
+    return HttpResponse(status=200)
 
 
 @network_action('add')

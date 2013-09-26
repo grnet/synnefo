@@ -40,6 +40,7 @@ from django.db.models import Q
 from django.template.loader import render_to_string
 
 from snf_django.lib import api
+from snf_django.lib.api import utils
 
 from synnefo.api import util
 from synnefo.db.models import Network
@@ -53,7 +54,9 @@ urlpatterns = patterns(
     'synnefo.api.networks',
     (r'^(?:/|.json|.xml)?$', 'demux'),
     (r'^/detail(?:.json|.xml)?$', 'list_networks', {'detail': True}),
-    (r'^/(\w+)(?:/|.json|.xml)?$', 'network_demux'))
+    (r'^/(\w+)(?:/|.json|.xml)?$', 'network_demux'),
+    (r'^/(\w+)/action(?:/|.json|.xml)?$', 'network_action_demux'),
+)
 
 
 def demux(request):
@@ -79,6 +82,22 @@ def network_demux(request, network_id):
                                           allowed_methods=['GET',
                                                            'PUT',
                                                            'DELETE'])
+
+
+@api.api_method(http_method='POST', user_required=True, logger=log)
+def network_action_demux(request, network_id):
+    req = utils.get_request_dict(request)
+    network = util.get_network(network_id, request.user_uniq, for_update=True)
+    action = req.keys()[0]
+    try:
+        f = NETWORK_ACTIONS[action]
+    except KeyError:
+        raise faults.BadRequest("Action %s not supported." % action)
+    action_args = req[action]
+    if not isinstance(action_args, dict):
+        raise faults.BadRequest("Invalid argument.")
+
+    return f(request, network, action_args)
 
 
 @api.api_method(http_method='GET', user_required=True, logger=log)
@@ -194,6 +213,20 @@ def network_to_dict(network, detail=True):
         d['SNF:floating_ip_pool'] = network.floating_ip_pool
         d['deleted'] = network.deleted
     return d
+
+
+@transaction.commit_on_success
+def reassign_network(request, network, args):
+    project = args.get("project")
+    if project is None:
+        raise faults.BadRequest("Missing 'project' attribute.")
+    networks.reassign(network, project)
+    return HttpResponse(status=200)
+
+
+NETWORK_ACTIONS = {
+    "reassign": reassign_network,
+}
 
 
 def render_network(request, networkdict, status=200):

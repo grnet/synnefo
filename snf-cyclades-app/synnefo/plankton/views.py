@@ -153,7 +153,7 @@ def add_image(request):
         with image_backend(request.user_uniq) as backend:
             image = backend.register(name, location, params)
     else:
-        #f = StringIO(request.body)
+        #f = StringIO(request.raw_post_data)
         #image = backend.put(name, f, params)
         return HttpResponse(status=501)     # Not Implemented
 
@@ -384,7 +384,7 @@ def update_image_members(request, image_id):
     log.debug('update_image_members %s', image_id)
     members = []
     try:
-        data = json.loads(request.body)
+        data = json.loads(request.raw_post_data)
         for member in data['memberships']:
             members.append(member['member_id'])
     except (ValueError, KeyError, TypeError):

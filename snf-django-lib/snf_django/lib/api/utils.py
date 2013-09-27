@@ -94,7 +94,7 @@ def get_request_dict(request):
     Only JSON format is supported
 
     """
-    data = request.body
+    data = request.raw_post_data
     content_type = request.META.get("CONTENT_TYPE")
     if content_type is None:
         raise faults.BadRequest("Missing Content-Type header field")

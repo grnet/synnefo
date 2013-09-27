@@ -278,6 +278,22 @@ class Node(DBWorker):
         r.close()
         return l
 
+    def node_get_parent_path(self, node):
+        """Return the node's parent path.
+           Return None if the node is not found.
+        """
+
+        n1 = self.nodes.alias('n1')
+        n2 = self.nodes.alias('n2')
+
+        s = select([n2.c.path])
+        s = s.where(n2.c.node == n1.c.parent)
+        s = s.where(n1.c.node == node)
+        r = self.conn.execute(s)
+        l = r.fetchone()
+        r.close()
+        return l[0] if l is not None else None
+
     def node_get_versions(self, node, keys=(), propnames=_propnames):
         """Return the properties of all versions at node.
            If keys is empty, return all properties in the order

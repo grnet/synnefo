@@ -665,15 +665,17 @@ Available policy directives:
 
 * ``versioning``: Set to ``auto`` or ``none`` (default is ``auto``)
 * ``quota``: Size limit in KB (default is ``0`` - unlimited)
+* ``project``: The project origin of the container quota
 
 If the container already exists, the operation is equal to a ``POST`` with ``update`` defined.
 
-================  ===============================
-Return Code       Description
-================  ===============================
-201 (Created)     The container has been created
-202 (Accepted)    The request has been accepted
-================  ===============================
+==============================  ===============================
+Return Code                     Description
+==============================  ===============================
+201 (Created)                   The container has been created
+202 (Accepted)                  The request has been accepted
+413 (Request Entity Too Large)  Insufficient quota to complete the request
+==============================  ===============================
 
 
 POST
@@ -705,11 +707,12 @@ To change policy, include an ``X-Container-Policy-*`` header with the name in th
 
 To upload blocks of data to the container, set ``Content-Type`` to ``application/octet-stream`` and ``Content-Length`` to a valid value (except if using ``chunked`` as the ``Transfer-Encoding``).
 
-================  ===============================
-Return Code       Description
-================  ===============================
-202 (Accepted)    The request has been accepted
-================  ===============================
+==============================  ===============================
+Return Code                     Description
+==============================  ===============================
+202 (Accepted)                  The request has been accepted
+413 (Request Entity Too Large)  Insufficient quota to complete the request
+==============================  ===============================
 
 
 DELETE

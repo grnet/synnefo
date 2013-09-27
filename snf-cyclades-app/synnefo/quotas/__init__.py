@@ -85,8 +85,8 @@ def handle_astakosclient_error(func):
 
 
 @handle_astakosclient_error
-def issue_commission(user, source, provisions, name="",
-                     force=False, auto_accept=False):
+def issue_commission(resource, action, name="", force=False, auto_accept=False,
+                     action_fields=None):
     """Issue a new commission to the quotaholder.
 
     Issue a new commission to the quotaholder, and create the
@@ -94,11 +94,22 @@ def issue_commission(user, source, provisions, name="",
 
     """
 
+    provisions = get_commission_info(resource=resource, action=action,
+                                     action_fields=action_fields)
+
+    if provisions is None:
+        return None
+
+    user = resource.userid
+    source = DEFAULT_SOURCE
+
     qh = Quotaholder.get()
     try:
-        serial = qh.issue_one_commission(
-            user, source, provisions, name=name,
-            force=force, auto_accept=auto_accept)
+        if True:  # placeholder
+            serial = qh.issue_one_commission(user, source,
+                                             provisions, name=name,
+                                             force=force,
+                                             auto_accept=auto_accept)
     except QuotaLimit as e:
         msg, details = render_overlimit_exception(e)
         raise faults.OverLimit(msg, details=details)
@@ -246,17 +257,11 @@ def issue_and_accept_commission(resource, delete=False):
     resolve_commission(resource.serial)
 
     try:
-        # Convert resources in the format expected by Quotaholder
-        qh_resources = prepare_qh_resources(resource)
-        if delete:
-            qh_resources = reverse_quantities(qh_resources)
-
+        action = "DESTROY" if delete else "BUILD"
         # Issue commission and get the assigned serial
         commission_reason = ("client: api, resource: %s, delete: %s"
                              % (resource, delete))
-        serial = issue_commission(user=resource.userid, source=DEFAULT_SOURCE,
-                                  provisions=qh_resources,
-                                  name=commission_reason)
+        serial = issue_commission(resource, action, name=commission_reason)
     except:
         transaction.rollback()
         raise
@@ -279,27 +284,6 @@ def issue_and_accept_commission(resource, delete=False):
         reject_serial(serial)
         transaction.commit()
         raise
-
-
-def prepare_qh_resources(resource):
-    if isinstance(resource, VirtualMachine):
-        flavor = resource.flavor
-        return {'cyclades.vm': 1,
-                'cyclades.cpu': flavor.cpu,
-                'cyclades.active_cpu': flavor.cpu,
-                'cyclades.disk': 1073741824 * flavor.disk,  # flavor.disk in GB
-                # 'public_ip': 1,
-                #'disk_template': flavor.disk_template,
-                # flavor.ram is in MB
-                'cyclades.ram': 1048576 * flavor.ram,
-                'cyclades.active_ram': 1048576 * flavor.ram}
-    elif isinstance(resource, Network):
-        return {"cyclades.network.private": 1}
-    elif isinstance(resource, IPAddress):
-        if resource.floating_ip:
-            return {"cyclades.floating_ip": 1}
-    else:
-        raise ValueError("Unknown Resource '%s'" % resource)
 
 
 def get_commission_info(resource, action, action_fields=None):
@@ -342,6 +326,18 @@ def get_commission_info(resource, action, action_fields=None):
         else:
             #["CONNECT", "DISCONNECT", "SET_FIREWALL_PROFILE"]:
             return None
+    elif isinstance(resource, Network):
+        resources = {"cyclades.network.private": 1}
+        if action == "BUILD":
+            return resources
+        elif action == "DESTROY":
+            return reverse_quantities(resources)
+    elif isinstance(resource, FloatingIP):
+        resources = {"cyclades.floating_ip": 1}
+        if action == "BUILD":
+            return resources
+        elif action == "DESTROY":
+            return reverse_quantities(resources)
 
 
 def reverse_quantities(resources):
@@ -349,8 +345,8 @@ def reverse_quantities(resources):
 
 
 def handle_resource_commission(resource, action, commission_name,
-                               commission_info=None, force=False,
-                               auto_accept=False, action_fields=None):
+                               force=False, auto_accept=False,
+                               action_fields=None):
     """Handle a issuing of a commission for a resource.
 
     Create a new commission for a resource based on the action that
@@ -361,22 +357,11 @@ def handle_resource_commission(resource, action, commission_name,
     # Try to resolve previous serial
     resolve_commission(resource.serial, force=force)
 
-    # Check if action is quotable and issue the corresponding commission
-    serial = None
-    if commission_info is None:
-        commission_info = get_commission_info(
-            resource, action=action, action_fields=action_fields)
-    if commission_info is not None:
-        # Issue new commission, associate it with the resource
-        if commission_name is None:
-            commission_name = "client: api, resource %s" % resource
-        serial = issue_commission(user=resource.userid,
-                                  source=DEFAULT_SOURCE,
-                                  provisions=commission_info,
-                                  name=commission_name,
-                                  force=force,
-                                  auto_accept=auto_accept)
+    serial = issue_commission(resource, action, name=commission_name,
+                              force=force, auto_accept=auto_accept,
+                              action_fields=action_fields)
     resource.serial = serial
+    resource.save()
 
 
 class ResolveError(Exception):

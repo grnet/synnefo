@@ -37,18 +37,10 @@ snf-cyclades-app component (scheduled to be fixed in the next version).
 
 For the rest of the documentation we will refer to the first physical node as
 "node1" and the second as "node2". We will also assume that their domain names
-are "node1.example.com" and "node2.example.com" and their IPs are "4.3.2.1" and
-"4.3.2.2" respectively.
-
-.. note:: It is import that the two machines are under the same domain name.
-    If they are not, you can do this by editting the file ``/etc/hosts``
-    on both machines, and add the following lines:
-
-    .. code-block:: console
-
-        4.3.2.1     node1.example.com
-        4.3.2.2     node2.example.com
-
+are "node1.example.com" and "node2.example.com" and their public IPs are "4.3.2.1" and
+"4.3.2.2" respectively. It is important that the two machines are under the same domain name.
+In case you choose to follow a private installation you will need to
+set up a private dns server, using dnsmasq for example. See node1 below for more.
 
 General Prerequisites
 =====================
@@ -93,17 +85,20 @@ system clocks (e.g. by running ntpd).
 Node1
 -----
 
+
 General Synnefo dependencies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    * apache (http server)
-    * gunicorn (WSGI http server)
-    * postgresql (database)
-    * rabbitmq (message queue)
-    * ntp (NTP daemon)
-    * gevent
+		* apache (http server)
+		* public certificate
+		* gunicorn (WSGI http server)
+		* postgresql (database)
+		* rabbitmq (message queue)
+		* ntp (NTP daemon)
+		* gevent
+		* dns server
 
-You can install apache2, progresql and ntp by running:
+You can install apache2, postgresql and ntp by running:
 
 .. code-block:: console
 
@@ -230,6 +225,54 @@ Create the file ``/etc/gunicorn.d/synnefo`` containing the following:
 
        # /etc/init.d/gunicorn stop
 
+Certificate Creation
+~~~~~~~~~~~~~~~~~~~~~
+
+Node1 will host Cyclades. Cyclades should communicate with the other snf tools over a trusted connection.
+In order for the connection to be trusted, the keys provided to apache below should be signed with a certificate.
+This certificate should be added to all nodes. In case you don't have signed keys you can create a self-signed certificate
+and sign your keys with this. To do so on node1 run
+
+.. code-block:: console
+
+		# aptitude install openvpn
+		# mkdir /etc/openvpn/easy-rsa
+		# cp -ai /usr/share/doc/openvpn/examples/easy-rsa/2.0/ /etc/openvpn/easy-rsa
+		# cd /etc/openvpn/easy-rsa/2.0
+		# vim vars
+
+In vars you can set your own parameters such as KEY_COUNTRY
+
+.. code-block:: console
+
+	# . ./vars
+	# ./clean-all
+
+Now you can create the certificate
+
+.. code-block:: console
+
+		# ./build-ca
+
+The previous will create a ``ca.crt`` file. Copy this file under
+``/usr/local/share/ca-certificates/`` directory and run :
+
+.. code-block:: console
+
+		# update-ca-certificates
+
+to update the records. You will have to do the following on node2 as well.
+
+Now you can create the keys and sign them with the certificate
+
+.. code-block:: console
+
+		# ./build-key-server node1.example.com
+
+This will create a .pem and a .key file in your current folder. Copy these in
+``/etc/ssl/certs/`` and ``/etc/ssl/private/`` respectively and
+use them in the apache2 configuration file below instead of the defaults.
+
 Apache2 setup
 ~~~~~~~~~~~~~
 
@@ -246,6 +289,7 @@ following:
         RewriteRule ^(.*)$ - [F,L]
         RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI}
     </VirtualHost>
+
 
 Create the file ``/etc/apache2/sites-available/synnefo-ssl`` containing the
 following:
@@ -300,9 +344,16 @@ Now enable sites and modules by running:
    # a2enmod headers
    # a2enmod proxy_http
 
+.. note:: This isn't really needed, but it's a good security practice to disable
+    directory listing in apache::
+
+        # a2dismod autoindex
+
+
 .. warning:: Do NOT start/restart the server yet. If the server is running::
 
        # /etc/init.d/apache2 stop
+
 
 .. _rabbitmq-setup:
 
@@ -335,6 +386,32 @@ directory inside it:
    # chown www-data:www-data data
    # chmod g+ws data
 
+DNS server setup
+~~~~~~~~~~~~~~~~
+
+If your machines are not under the same domain nameyou have to set up a dns server.
+In order to set up a dns server using dnsmasq do the following
+
+.. code-block:: console
+
+				# apt-get install dnsmasq
+
+Then edit you ``/etc/hosts/`` as follows
+
+.. code-block:: console
+
+		4.3.2.1     node1.example.com
+		4.3.2.2     node2.example.com
+
+Finally edit the ``/etc/dnsmasq.conf`` file and specify the ``listen-address`` and
+the ``interface`` you would like to listen to.
+
+Also add the following in your ``/etc/resolv.conf`` file
+
+.. code-block:: console
+
+		nameserver 4.3.2.1
+
 You are now ready with all general prerequisites concerning node1. Let's go to
 node2.
 
@@ -349,6 +426,8 @@ General Synnefo dependencies
     * postgresql (database)
     * ntp (NTP daemon)
     * gevent
+    * certificates
+    * dns setup
 
 You can install the above by running:
 
@@ -483,14 +562,45 @@ As in node1, enable sites and modules by running:
    # a2enmod headers
    # a2enmod proxy_http
 
+.. note:: This isn't really needed, but it's a good security practice to disable
+    directory listing in apache::
+
+        # a2dismod autoindex
+
 .. warning:: Do NOT start/restart the server yet. If the server is running::
 
        # /etc/init.d/apache2 stop
 
+
+Acquire certificate
+~~~~~~~~~~~~~~~~~~~
+
+Copy the certificate you created before on node1 (`ca.crt`) under the directory
+``/usr/local/share/ca-certificate``
+
+and run:
+
+.. code-block:: console
+
+		# update-ca-certificates
+
+to update the records.
+
+
+DNS Setup
+~~~~~~~~~
+
+Add the following line in ``/etc/resolv.conf`` file
+
+.. code-block:: console
+
+		nameserver 4.3.2.1
+
+to inform the node about the new dns server.
+
 We are now ready with all general prerequisites for node2. Now that we have
 finished with all general prerequisites for both nodes, we can start installing
 the services. First, let's install Astakos on node1.
-
 
 Installation of Astakos on node1
 ================================
@@ -604,46 +714,48 @@ method, read the relative :ref:`section <shibboleth-auth>`.
 Email delivery configuration
 ----------------------------
 
-Many of the ``astakos`` operations require server to notify service users and 
-administrators via email. e.g. right after the signup process the service sents 
-an email to the registered email address containing an email verification url, 
-after the user verifies the email address astakos once again needs to notify 
+Many of the ``astakos`` operations require server to notify service users and
+administrators via email. e.g. right after the signup process the service sents
+an email to the registered email address containing an email verification url,
+after the user verifies the email address astakos once again needs to notify
 administrators with a notice that a new account has just been verified.
 
 More specifically astakos sends emails in the following cases
 
 - An email containing a verification link after each signup process.
-- An email to the people listed in ``ADMINS`` setting after each email 
-  verification if ``ASTAKOS_MODERATION`` setting is ``True``. The email 
-  notifies administrators that an additional action is required in order to 
+- An email to the people listed in ``ADMINS`` setting after each email
+  verification if ``ASTAKOS_MODERATION`` setting is ``True``. The email
+  notifies administrators that an additional action is required in order to
   activate the user.
-- A welcome email to the user email and an admin notification to ``ADMINS`` 
+- A welcome email to the user email and an admin notification to ``ADMINS``
   right after each account activation.
-- Feedback messages submited from astakos contact view and astakos feedback 
+- Feedback messages submited from astakos contact view and astakos feedback
   API endpoint are sent to contacts listed in ``HELPDESK`` setting.
-- Project application request notifications to people included in ``HELPDESK`` 
+- Project application request notifications to people included in ``HELPDESK``
   and ``MANAGERS`` settings.
-- Notifications after each project members action (join request, membership 
+- Notifications after each project members action (join request, membership
   accepted/declinde etc.) to project members or project owners.
 
-Astakos uses the Django internal email delivering mechanism to send email 
-notifications. A simple configuration, using an external smtp server to 
-deliver messages, is shown below. 
+Astakos uses the Django internal email delivering mechanism to send email
+notifications. A simple configuration, using an external smtp server to
+deliver messages, is shown below. Alter the following example to meet your
+smtp server characteristics. Notice that the smtp server is needed for a proper
+installation
 
 .. code-block:: python
-    
-    # /etc/synnefo/10-snf-common-admins.conf
+
+    # /etc/synnefo/00-snf-common-admins.conf
     EMAIL_HOST = "mysmtp.server.synnefo.org"
     EMAIL_HOST_USER = "<smtpuser>"
     EMAIL_HOST_PASSWORD = "<smtppassword>"
 
     # this gets appended in all email subjects
     EMAIL_SUBJECT_PREFIX = "[example.synnefo.org] "
-    
+
     # Address to use for outgoing emails
     DEFAULT_FROM_EMAIL = "server@example.synnefo.org"
 
-    # Email where users can contact for support. This is used in html/email 
+    # Email where users can contact for support. This is used in html/email
     # templates.
     CONTACT_EMAIL = "server@example.synnefo.org"
 
@@ -652,25 +764,32 @@ deliver messages, is shown below.
 
 Notice that since email settings might be required by applications other than
 astakos they are defined in a different configuration file than the one
-previously used to set astakos specific settings. 
+previously used to set astakos specific settings.
 
-Refer to 
+Refer to
 `Django documentation <https://docs.djangoproject.com/en/1.2/topics/email/>`_
 for additional information on available email settings.
 
-As refered in the previous section, based on the operation that triggers 
-an email notification, the recipients list differs. Specifically for 
-emails whose recipients include contacts from your service team 
-(administrators, managers, helpdesk etc) synnefo provides the following 
+As refered in the previous section, based on the operation that triggers
+an email notification, the recipients list differs. Specifically for
+emails whose recipients include contacts from your service team
+(administrators, managers, helpdesk etc) synnefo provides the following
 settings located in ``10-snf-common-admins.conf``:
 
 .. code-block:: python
 
-    ADMINS = (('Admin name', 'admin@example.synnefo.org'), 
+    ADMINS = (('Admin name', 'admin@example.synnefo.org'),
               ('Admin2 name', 'admin2@example.synnefo.org))
     MANAGERS = (('Manager name', 'manager@example.synnefo.org'),)
     HELPDESK = (('Helpdesk user name', 'helpdesk@example.synnefo.org'),)
 
+Alternatively, it may be convenient to send e-mails to a file, instead of an actual smtp server, using the file backend. Do so by creating a configuration file ``/etc/synnefo/99-local.conf`` including the folowing:
+
+.. code-block:: python
+
+    EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+    EMAIL_FILE_PATH = '/tmp/app-messages' 
+  
 
 
 Enable Pooling
@@ -809,6 +928,8 @@ offered by the services.
        pithos-host$ snf-manage service-export-pithos > pithos.json
        # copy the file to astakos-host
        astakos-host$ snf-manage service-import --json pithos.json
+
+Notice that in this installation astakos and cyclades are in node1 and pithos is in node2
 
 Setting Default Base Quota for Resources
 ----------------------------------------
@@ -1118,28 +1239,35 @@ For the purpose of this guide, we will assume that the :ref:`GANETI-MASTER
 We highly recommend that you read the official Ganeti documentation, if you are
 not familiar with Ganeti.
 
-Unfortunatelly, the current stable version of the stock Ganeti (v2.6.2) doesn't
+Unfortunately, the current stable version of the stock Ganeti (v2.6.2) doesn't
 support IP pool management. This feature will be available in Ganeti >= 2.7.
 Synnefo depends on the IP pool functionality of Ganeti, so you have to use
-GRNET provided packages until stable 2.7 is out. To do so:
+GRNET provided packages until stable 2.7 is out. These packages will also install
+the proper version of Ganeti. To do so:
 
 .. code-block:: console
 
    # apt-get install snf-ganeti ganeti-htools
-   # rmmod -f drbd && modprobe drbd minor_count=255 usermode_helper=/bin/true
 
-You should have:
+Ganeti will make use of drbd. To enable this and make the configuration pemanent
+you have to do the following :
 
-Ganeti >= 2.6.2+ippool11+hotplug5+extstorage3+rdbfix1+kvmfix2-1
+.. code-block:: console
+
+		# rmmod -f drbd && modprobe drbd minor_count=255 usermode_helper=/bin/true
+		# echo 'drbd minor_count=255 usermode_helper=/bin/true' >> /etc/modules
+
 
 We assume that Ganeti will use the KVM hypervisor. After installing Ganeti on
 both nodes, choose a domain name that resolves to a valid floating IP (let's
-say it's ``ganeti.node1.example.com``). Make sure node1 and node2 have same
-dsa/rsa keys and authorised_keys for password-less root ssh between each other.
-If not then skip passing --no-ssh-init but be aware that it will replace
-/root/.ssh/* related files and you might lose access to master node. Also,
-make sure there is an lvm volume group named ``ganeti`` that will host your
-VMs' disks. Finally, setup a bridge interface on the host machines (e.g: br0).
+say it's ``ganeti.node1.example.com``). This IP is needed to communicate with
+the Ganeti cluster. Make sure node1 and node2 have same dsa,rsa keys and authorised_keys
+for password-less root ssh between each other. If not then skip passing --no-ssh-init but be
+aware that it will replace /root/.ssh/* related files and you might lose access to master node.
+Also, Ganeti will need a volume to host your VMs' disks. So, make sure there is an lvm volume
+group named ``ganeti``. Finally, setup a bridge interface on the host machines (e.g: br0). This
+will be needed for the network configuration afterwards.
+
 Then run on node1:
 
 .. code-block:: console
@@ -1181,10 +1309,12 @@ to handle image files stored on Pithos. It also needs `python-psycopg2` to be
 able to access the Pithos database. This is why, we also install them on *all*
 VM-capable Ganeti nodes.
 
-.. warning:: snf-image uses ``curl`` for handling URLs. This means that it will
-    not  work out of the box if you try to use URLs served by servers which do
-    not have a valid certificate. To circumvent this you should edit the file
-    ``/etc/default/snf-image``. Change ``#CURL="curl"`` to ``CURL="curl -k"``.
+.. warning::
+		snf-image uses ``curl`` for handling URLs. This means that it will
+		not  work out of the box if you try to use URLs served by servers which do
+		not have a valid certificate. In case you haven't followed the guide's
+		directions about the certificates,in order to circumvent this you should edit the file
+		``/etc/default/snf-image``. Change ``#CURL="curl"`` to ``CURL="curl -k"`` on every node.
 
 After `snf-image` has been installed successfully, create the helper VM by
 running on *both* nodes:
@@ -1303,7 +1433,7 @@ In the above command:
  * ``img_format``: set to ``diskdump`` to reflect the type of the uploaded Image
  * ``img_id``: If you want to deploy an Image stored on Pithos (our case), this
                should have the format ``pithos://<UUID>/<container>/<filename>``:
-               * ``username``: ``user@example.com`` (defined during Astakos sign up)
+               * ``UUID``: the username found in Cyclades Web UI under API access
                * ``container``: ``pithos`` (default, if the Web UI was used)
                * ``filename``: the name of file (visible also from the Web UI)
  * ``img_properties``: taken from the metadata file. Used only the two mandatory
@@ -1494,7 +1624,7 @@ managed from our previously defined network. Run on the GANETI-MASTER (node1):
                       --net 0:ip=pool,network=test-net-public \
                       testvm2
 
-If the above returns successfully, connect to the new VM and run:
+If the above returns successfully, connect to the new VM through VNC as before and run:
 
 .. code-block:: console
 
@@ -1766,7 +1896,7 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-cloudbar.conf``:
 
    CLOUDBAR_LOCATION = 'https://node1.example.com/static/im/cloudbar/'
    CLOUDBAR_SERVICES_URL = 'https://node1.example.com/astakos/ui/get_services'
-   CLOUDBAR_MENU_URL = 'https://account.node1.example.com/astakos/ui/get_menu'
+   CLOUDBAR_MENU_URL = 'https://node1.example.com/astakos/ui/get_menu'
 
 ``CLOUDBAR_LOCATION`` tells the client where to find the Astakos common
 cloudbar. The ``CLOUDBAR_SERVICES_URL`` and ``CLOUDBAR_MENU_URL`` options are
@@ -2027,6 +2157,7 @@ skipped.
    node2 # snf-manage reconcile-resources-pithos --fix
    node1 # snf-manage reconcile-resources-cyclades --fix
 
+
 If all the above return successfully, then you have finished with the Cyclades
 installation and setup.
 
@@ -2171,7 +2302,7 @@ it to Cyclades, by running:
 .. code-block:: console
 
    $ kamaki image register "Debian Base" \
-                           pithos://u53r-un1qu3-1d/images/debian_base-6.0-7-x86_64.diskdump \
+                           pithos://u53r-un1qu3-1d/images/debian_base-6.0-11-x86_64.diskdump \
                            --public \
                            --disk-format=diskdump \
                            --property OSFAMILY=linux --property ROOT_PARTITION=1 \
@@ -2180,7 +2311,7 @@ it to Cyclades, by running:
                            --property sortorder=1 --property USERS=root --property OS=debian
 
 This command registers the Pithos file
-``pithos://u53r-un1qu3-1d/images/debian_base-6.0-7-x86_64.diskdump`` as an
+``pithos://u53r-un1qu3-1d/images/debian_base-6.0-11-x86_64.diskdump`` as an
 Image in Cyclades. This Image will be public (``--public``), so all users will
 be able to spawn VMs from it and is of type ``diskdump``. The first two
 properties (``OSFAMILY`` and ``ROOT_PARTITION``) are mandatory. All the rest

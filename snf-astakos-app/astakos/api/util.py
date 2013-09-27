@@ -82,7 +82,7 @@ def xml_response(content, template, status_code=None):
 
 
 def read_json_body(request, default=None):
-    body = request.raw_post_data
+    body = request.body
     if not body and request.method == "GET":
         body = request.GET.get("body")
     if not body:
@@ -177,7 +177,7 @@ def get_uuid_displayname_catalogs(request, user_call=True):
     # Error Response Codes: BadRequest (400)
 
     try:
-        input_data = json.loads(request.raw_post_data)
+        input_data = json.loads(request.body)
     except:
         raise faults.BadRequest('Request body should be json formatted.')
     else:

@@ -116,7 +116,7 @@ def _provisions_to_list(provisions):
 @api.api_method(http_method='POST', token_required=True, user_required=False)
 @component_from_token
 def issue_commission(request):
-    data = request.raw_post_data
+    data = request.body
     try:
         input_data = json.loads(data)
     except json.JSONDecodeError:
@@ -206,7 +206,7 @@ def conflictingCF(serial):
 @component_from_token
 @commit_on_success_strict()
 def resolve_pending_commissions(request):
-    data = request.raw_post_data
+    data = request.body
     try:
         input_data = json.loads(data)
     except json.JSONDecodeError:
@@ -262,7 +262,7 @@ def get_commission(request, serial):
 @component_from_token
 @commit_on_success_strict()
 def serial_action(request, serial):
-    data = request.raw_post_data
+    data = request.body
     try:
         input_data = json.loads(data)
     except json.JSONDecodeError:

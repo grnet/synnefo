@@ -302,7 +302,7 @@ def _get_projects(query, request_user=None):
 @commit_on_success_strict()
 def create_project(request):
     user = request.user
-    data = request.raw_post_data
+    data = request.body
     app_data = json.loads(data)
     return submit_application(app_data, user, project_id=None)
 
@@ -340,7 +340,7 @@ def _get_project(project_id, request_user=None):
 @commit_on_success_strict()
 def modify_project(request, project_id):
     user = request.user
-    data = request.raw_post_data
+    data = request.body
     app_data = json.loads(data)
     return submit_application(app_data, user, project_id=project_id)
 
@@ -469,7 +469,7 @@ PROJECT_ACTION = {
 @commit_on_success_strict()
 def project_action(request, project_id):
     user = request.user
-    data = request.raw_post_data
+    data = request.body
     input_data = json.loads(data)
 
     func, action_data = get_action(PROJECT_ACTION, input_data)
@@ -550,7 +550,7 @@ APPLICATION_ACTION = {
 @commit_on_success_strict()
 def application_action(request, app_id):
     user = request.user
-    data = request.raw_post_data
+    data = request.body
     input_data = json.loads(data)
 
     func, action_data = get_action(APPLICATION_ACTION, input_data)
@@ -634,7 +634,7 @@ MEMBERSHIPS_ACTION = {
 @commit_on_success_strict()
 def post_memberships(request):
     user = request.user
-    data = request.raw_post_data
+    data = request.body
     input_data = json.loads(data)
     func, action_data = get_action(MEMBERSHIPS_ACTION, input_data)
     return func(action_data, user)

@@ -59,13 +59,22 @@ For G, the operating state is True if the machine is up, False otherwise.
 import logging
 import sys
 import itertools
+
+from django.core.management import setup_environ
+try:
+    from synnefo import settings
+except ImportError:
+    raise Exception("Cannot import settings, make sure PYTHONPATH contains "
+                    "the parent directory of the Synnefo Django project.")
+setup_environ(settings)
+
+
 from datetime import datetime, timedelta
 
 from synnefo.db.models import (VirtualMachine, pooled_rapi_client)
 from synnefo.logic.rapi import GanetiApiError
 from synnefo.logic.backend import get_ganeti_instances, get_backends
 from synnefo.logic import utils
-from django.conf import settings
 
 
 log = logging.getLogger()
@@ -329,3 +338,12 @@ def hanging_networks(backend, GNets):
         if group_list != groups:
             hanging[id] = groups - group_list
     return hanging
+
+
+# Only for testing this module individually
+def main():
+    print get_instances_from_ganeti()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

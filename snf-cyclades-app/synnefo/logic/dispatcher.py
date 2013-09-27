@@ -36,15 +36,15 @@ and implements the message wait and dispatch loops. Actual messages are
 handled in the dispatched functions.
 
 """
+from django.core.management import setup_environ
 
 # Fix path to import synnefo settings
 import sys
 import os
 path = os.path.normpath(os.path.join(os.getcwd(), '..'))
 sys.path.append(path)
-from synnefo import settings as snf_settings
-from django.conf import settings
-settings.configure(**snf_settings.__dict__)
+from synnefo import settings
+setup_environ(settings)
 
 from django.db import close_connection
 
@@ -113,7 +113,7 @@ class Dispatcher:
         self.client.connect()
 
         # Declare queues and exchanges
-        exchange = snf_settings.EXCHANGE_GANETI
+        exchange = settings.EXCHANGE_GANETI
         exchange_dl = queues.convert_exchange_to_dead(exchange)
         self.client.exchange_declare(exchange=exchange,
                                      type="topic")

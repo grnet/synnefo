@@ -174,7 +174,7 @@ def create(userid, name, password, flavor, image, metadata={},
             vm=vm)
 
     # Create the server in Ganeti.
-    create_server(vm, nics, flavor, image, personality, password)
+    vm = create_server(vm, nics, flavor, image, personality, password)
 
     return vm
 

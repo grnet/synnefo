@@ -91,7 +91,7 @@ class View(object):
             self.request = request
             self.args = args
             self.kwargs = kwargs
-            data = request.raw_post_data
+            data = request.body
 
             if request.method.upper() in ['POST', 'PUT']:
                 # Expect json data

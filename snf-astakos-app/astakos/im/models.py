@@ -511,7 +511,7 @@ class AstakosUser(User):
                 self.uuid = uuid_val
         return self.uuid
 
-    def save(self, update_timestamps=True, *args, **kwargs):
+    def save(self, update_timestamps=True, **kwargs):
         if update_timestamps:
             if not self.id:
                 self.date_joined = datetime.now()
@@ -526,7 +526,7 @@ class AstakosUser(User):
         if self.username != self.email.lower():
             self.username = self.email.lower()
 
-        super(AstakosUser, self).save(*args, **kwargs)
+        super(AstakosUser, self).save(**kwargs)
 
     def renew_verification_code(self):
         self.verification_code = str(uuid.uuid4())

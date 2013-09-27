@@ -165,7 +165,7 @@ def get_uuid_displayname_catalogs(request, user_call=True):
     # Error Response Codes: BadRequest (400)
 
     try:
-        input_data = json.loads(request.body)
+        input_data = json.loads(request.raw_post_data)
     except:
         raise faults.BadRequest('Request body should be json formatted.')
     else:

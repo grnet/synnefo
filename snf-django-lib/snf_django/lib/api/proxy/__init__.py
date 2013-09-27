@@ -81,7 +81,7 @@ def proxy(request, proxy_base=None, target_base=None):
         headers.pop(k, None)
 
     kwargs['headers'] = headers
-    kwargs['body'] = request.body
+    kwargs['body'] = request.raw_post_data
 
     path = request.path.lstrip('/')
     if path.startswith(proxy_base):

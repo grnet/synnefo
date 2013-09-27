@@ -89,7 +89,7 @@ to access.
 
 Then open a browser and point to:
 
-`https://accounts.synnefo.live/im/`
+`https://synnefo.live/`
 
 Local access
 ------------
@@ -97,7 +97,7 @@ Local access
 If you want to access the installation from the same machine it runs on, just
 open a browser and point to:
 
-`https://accounts.synnefo.live/im/`
+`https://synnefo.live/`
 
 The default <domain> is set to ``synnefo.live``. A local BIND is already
 set up by `snf-deploy` to serve all FQDNs.

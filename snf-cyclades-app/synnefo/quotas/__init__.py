@@ -377,8 +377,8 @@ def handle_resource_commission(resource, action, commission_name,
                                   source=DEFAULT_SOURCE,
                                   provisions=commission_info,
                                   name=commission_name,
-                                  force=False,
-                                  auto_accept=False)
+                                  force=force,
+                                  auto_accept=auto_accept)
     resource.serial = serial
 
 

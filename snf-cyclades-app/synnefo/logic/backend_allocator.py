@@ -35,7 +35,7 @@ from synnefo.settings import (BACKEND_ALLOCATOR_MODULE, BACKEND_REFRESH_MIN,
                               BACKEND_PER_USER, ARCHIPELAGO_BACKENDS,
                               DEFAULT_INSTANCE_NETWORKS)
 from synnefo.db.models import Backend
-from synnefo.logic.backend import update_resources
+from synnefo.logic.backend import update_backend_resources
 from synnefo.api.util import backend_public_networks
 
 log = logging.getLogger(__name__)
@@ -167,7 +167,7 @@ def refresh_backends_stats(backends):
         if now > b.updated + delta:
             log.debug("Updating resources of backend %r. Last Updated %r",
                       b, b.updated)
-            update_resources(b)
+            update_backend_resources(b)
 
 
 def get_backend_for_user(userid):

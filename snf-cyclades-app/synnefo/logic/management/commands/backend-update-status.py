@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -27,56 +27,25 @@
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of GRNET S.A.
 #
-
-from optparse import make_option
 from django.core.management.base import BaseCommand
-from synnefo.management.common import get_backend
-
-from django.conf import settings
-import datetime
 
 from synnefo.db.models import Backend
-from synnefo.logic.backend import update_resources
+from synnefo.logic import backend as backend_mod
+
+
+HELP_MSG = """Query Ganeti backends and update the status of backend in DB.
+
+This command updates:
+    * the list of the enabled disk-templates
+    * the available resources (disk, memory, CPUs)
+"""
 
 
 class Command(BaseCommand):
-    can_import_settings = True
-
-    help = "Update backend statistics, which are used for instance allocation."
-    output_transaction = True  # The management command runs inside
-                               # an SQL transaction
-    option_list = BaseCommand.option_list + (
-        make_option('--backend-id', dest='backend_id',
-                    help="Update statistics of only this backend"),
-        make_option('--older-than', dest='older_than', metavar="MINUTES",
-                    help="Update only backends that have not been updated for\
-                    MINUTES. Set to 0 to force update."),
-        make_option('--include-drained', dest='drained',
-                    default=False,
-                    action='store_true',
-                    help="Also update statistics of drained backends")
-    )
+    help = HELP_MSG
 
     def handle(self, **options):
-
-        if options['backend_id']:
-            backends = [get_backend(options['backend_id'])]
-        else:
-            backends = Backend.objects.filter(offline=False)
-            if not options['drained']:
-                backends = backends.filter(drained=False)
-
-        now = datetime.datetime.now()
-        if options['older_than'] is not None:
-            minutes = int(options['older_than'])
-        else:
-            minutes = settings.BACKEND_REFRESH_MIN
-
-        delta = datetime.timedelta(minutes=minutes)
-
-        for b in backends:
-            if now > b.updated + delta:
-                update_resources(b)
-                print 'Successfully updated backend with id: %d' % b.id
-            else:
-                print 'Backend %d does not need update' % b.id
+        for backend in Backend.objects.filter(offline=False):
+            backend_mod.update_backend_disk_templates(backend)
+            backend_mod.update_backend_resources(backend)
+            self.stdout.write("Successfully updated backend '%s'\n" % backend)

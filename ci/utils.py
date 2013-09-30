@@ -249,8 +249,7 @@ class SynnefoCI(object):
         self.logger.info("Create a new server..")
 
         # Find a build_id to use
-        if self.build_id is None:
-            self._create_new_build_id()
+        self._create_new_build_id()
 
         # Find an image to use
         image_id = self._find_image(image)
@@ -475,13 +474,14 @@ class SynnefoCI(object):
             self.temp_config.read(self.temp_config_file)
 
             # Find a uniq build_id to use
-            ids = self.temp_config.sections()
-            if ids:
-                max_id = int(max(self.temp_config.sections(), key=int))
-                self.build_id = max_id + 1
-            else:
-                self.build_id = 1
-            self.logger.debug("New build id \"%s\" was created"
+            if self.build_id is None:
+                ids = self.temp_config.sections()
+                if ids:
+                    max_id = int(max(self.temp_config.sections(), key=int))
+                    self.build_id = max_id + 1
+                else:
+                    self.build_id = 1
+            self.logger.debug("Will use \"%s\" as build id"
                               % _green(self.build_id))
 
             # Create a new section

@@ -520,6 +520,10 @@ def must_create_keys(force, env):
 def do_create_keys(args, env):
   d = os.path.join(env.templates, "root/.ssh")
   a = os.path.join(d, "authorized_keys")
+  # Delete old keys
+  for filename in os.listdir(d):
+      os.remove(os.path.join(d, filename))
+  # Generate new keys
   for t in ("dsa", "rsa"):
     f = os.path.join(d, "id_" + t)
     cmd = 'ssh-keygen -q -t {0} -f {1} -N ""'.format(t, f)

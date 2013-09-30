@@ -8,6 +8,7 @@ Fabric file for snf-deploy
 from __future__ import with_statement
 from fabric.api import hide, env, settings, local, roles
 from fabric.operations import run, put, get
+import fabric
 import re
 import os
 import shutil
@@ -98,7 +99,7 @@ def install_package(package):
                 debug(env.host,
                       " * Package %s found in %s..."
                       % (package, env.env.packages))
-                put(deb, "/tmp/")
+                try_put(deb, "/tmp/")
                 try_run("dpkg -i /tmp/%s || "
                         % os.path.basename(deb) + apt_get + "-f")
                 try_run("rm /tmp/%s" % os.path.basename(deb))
@@ -183,7 +184,7 @@ def setup_ns():
         "domain": env.env.domain,
     }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
+    try_put(custom, tmpl)
 
     try_run("mkdir -p /etc/bind/zones")
     tmpl = "/etc/bind/zones/example.com"
@@ -193,7 +194,7 @@ def setup_ns():
     }
     custom = customize_settings_from_tmpl(tmpl, replace)
     remote = "/etc/bind/zones/" + env.env.domain
-    put(custom, remote)
+    try_put(custom, remote)
 
     try_run("mkdir -p /etc/bind/rev")
     tmpl = "/etc/bind/rev/synnefo.in-addr.arpa.zone"
@@ -201,14 +202,14 @@ def setup_ns():
         "domain": env.env.domain,
     }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
+    try_put(custom, tmpl)
 
     tmpl = "/etc/bind/named.conf.options"
     replace = {
         "NODE_IPS": ";".join(env.env.ips),
     }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl, mode=0644)
+    try_put(custom, tmpl, mode=0644)
 
     for role, info in env.env.roles.iteritems():
         if role == "ns":
@@ -225,30 +226,30 @@ def setup_ns():
 def check_dhcp():
     debug(env.host, "Checking IPs for synnefo..")
     for n, info in env.env.nodes_info.iteritems():
-        try_run("ping -c 1 " + info.ip, True)
+        try_run("ping -c 1 " + info.ip)
 
 
 @roles("nodes")
 def check_dns():
     debug(env.host, "Checking fqdns for synnefo..")
     for n, info in env.env.nodes_info.iteritems():
-        try_run("ping -c 1 " + info.fqdn, True)
+        try_run("ping -c 1 " + info.fqdn)
 
     for n, info in env.env.roles.iteritems():
-        try_run("ping -c 1 " + info.fqdn, True)
+        try_run("ping -c 1 " + info.fqdn)
 
 
 @roles("nodes")
 def check_connectivity():
     debug(env.host, "Checking internet connectivity..")
-    try_run("ping -c 1 www.google.com", True)
+    try_run("ping -c 1 www.google.com")
 
 
 @roles("nodes")
 def check_ssh():
     debug(env.host, "Checking password-less ssh..")
     for n, info in env.env.nodes_info.iteritems():
-        try_run("ssh " + info.fqdn + "  date", True)
+        try_run("ssh " + info.fqdn + "  date")
 
 
 @roles("ips")
@@ -271,7 +272,7 @@ done
         tmpl = "/root/.ssh/" + f
         replace = {}
         custom = customize_settings_from_tmpl(tmpl, replace)
-        put(custom, tmpl, mode=0600)
+        try_put(custom, tmpl, mode=0600)
 
     cmd = """
 if [ -e /root/.ssh/authorized_keys.bak ]; then
@@ -285,11 +286,11 @@ fi
 @roles("ips")
 def setup_resolv_conf():
     debug(env.host, "Tweak /etc/resolv.conf...")
-    try_run("/etc/init.d/network-manager stop")
+    try_run("/etc/init.d/network-manager stop", abort=False)
     tmpl = "/etc/dhcp/dhclient-enter-hooks.d/nodnsupdate"
     replace = {}
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl, mode=0644)
+    try_put(custom, tmpl, mode=0644)
     try_run("cp /etc/resolv.conf /etc/resolv.conf.bak")
     tmpl = "/etc/resolv.conf"
     replace = {
@@ -298,7 +299,7 @@ def setup_resolv_conf():
     }
     custom = customize_settings_from_tmpl(tmpl, replace)
     try:
-        put(custom, tmpl)
+        try_put(custom, tmpl)
         cmd = """
         echo "\
 # This has been generated automatically by snf-deploy, at
@@ -329,15 +330,39 @@ def setup_hosts():
     try_run(cmd)
 
 
-def try_run(cmd, abort=False):
+def try_run(cmd, abort=True):
     try:
         if env.local:
             return local(cmd, capture=True)
         else:
             return run(cmd)
-    except:
-        debug(env.host, "WARNING: command failed. Continuing anyway...")
+    except BaseException as e:
         if abort:
+            fabric.utils.abort(e)
+        else:
+            debug(env.host, "WARNING: command failed. Continuing anyway...")
+            raise
+
+
+def try_put(local_path=None, remote_path=None, abort=True, **kwargs):
+    try:
+        put(local_path=local_path, remote_path=remote_path, **kwargs)
+    except BaseException as e:
+        if abort:
+            fabric.utils.abort(e)
+        else:
+            debug(env.host, "WARNING: command failed. Continuing anyway...")
+            raise
+
+
+def try_get(remote_path, local_path=None, abort=True, **kwargs):
+    try:
+        get(remote_path, local_path=local_path, **kwargs)
+    except BaseException as e:
+        if abort:
+            fabric.utils.abort(e)
+        else:
+            debug(env.host, "WARNING: command failed. Continuing anyway...")
             raise
 
 
@@ -405,7 +430,7 @@ def setup_apt():
         tmpl = "/etc/apt/sources.list.d/synnefo.wheezy.list"
     replace = {}
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
+    try_put(custom, tmpl)
     apt_get_update()
 
 
@@ -422,7 +447,7 @@ def setup_gunicorn():
     tmpl = "/etc/gunicorn.d/synnefo"
     replace = {}
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl, mode=0644)
+    try_put(custom, tmpl, mode=0644)
     try_run("/etc/init.d/gunicorn restart")
 
 
@@ -435,10 +460,10 @@ def setup_apache():
         "HOST": host_info.fqdn,
     }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
+    try_put(custom, tmpl)
     tmpl = "/etc/apache2/sites-available/synnefo-ssl"
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
+    try_put(custom, tmpl)
     cmd = """
     a2enmod ssl
     a2enmod rewrite
@@ -493,7 +518,7 @@ def setup_db():
         "synnefo_db_passwd": env.env.synnefo_db_passwd,
         }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
+    try_put(custom, tmpl)
     cmd = 'su - postgres -c "psql -w -f %s" ' % tmpl
     try_run(cmd)
     cmd = """
@@ -535,7 +560,7 @@ def setup_webproject():
         "domain": env.env.domain,
     }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl, mode=0644)
+    try_put(custom, tmpl, mode=0644)
     with settings(host_string=env.env.db.ip):
         host_info = env.env.ips_info[env.host]
         allow_access_in_db(host_info.ip, "all", "trust")
@@ -559,7 +584,7 @@ def setup_common():
         "MAIL_DIR": env.env.mail_dir,
     }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl, mode=0644)
+    try_put(custom, tmpl, mode=0644)
     try_run("mkdir -p {0}; chown root:www-data {0}; chmod 775 {0}".format(
             env.env.mail_dir))
     try_run("/etc/init.d/gunicorn restart")
@@ -644,7 +669,7 @@ def setup_astakos():
         "PITHOS": env.env.pithos.fqdn,
     }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl, mode=0644)
+    try_put(custom, tmpl, mode=0644)
     if env.csrf_disable:
         cmd = """
 cat <<EOF >> /etc/synnefo/astakos.conf
@@ -709,12 +734,12 @@ def cms_loaddata():
     tmpl = "/tmp/sites.json"
     replace = {}
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
+    try_put(custom, tmpl)
 
     tmpl = "/tmp/page.json"
     replace = {}
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
+    try_put(custom, tmpl)
 
     cmd = """
     snf-manage loaddata /tmp/sites.json
@@ -742,7 +767,7 @@ def setup_cms():
         "ACCOUNTS": env.env.accounts.fqdn,
         }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl, mode=0644)
+    try_put(custom, tmpl, mode=0644)
     try_run("/etc/init.d/gunicorn restart")
 
     cmd = """
@@ -797,7 +822,7 @@ def update_nfs_exports(ip):
         "ip": ip,
     }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
+    try_put(custom, tmpl)
     try_run("cat %s >> /etc/exports" % tmpl)
     try_run("/etc/init.d/nfs-kernel-server restart")
 
@@ -837,7 +862,7 @@ def setup_pithos():
         "proxy": env.env.pithos.hostname == env.env.accounts.hostname
         }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl, mode=0644)
+    try_put(custom, tmpl, mode=0644)
     try_run("/etc/init.d/gunicorn restart")
 
     install_package("snf-pithos-webclient")
@@ -847,7 +872,7 @@ def setup_pithos():
         "PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE": service_id,
         }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl, mode=0644)
+    try_put(custom, tmpl, mode=0644)
 
     try_run("/etc/init.d/gunicorn restart")
     #TOFIX: the previous command lets pithos-backend create blocks and maps
@@ -1010,7 +1035,7 @@ def setup_image_host():
         "db_node": env.env.db.ip,
     }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
+    try_put(custom, tmpl)
 
 
 @roles("ganeti")
@@ -1036,7 +1061,7 @@ def setup_gtools():
         "mq_node": env.env.mq.ip,
     }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
+    try_put(custom, tmpl)
 
     cmd = """
     sed -i 's/false/true/' /etc/default/snf-ganeti-eventd
@@ -1075,7 +1100,7 @@ def setup_network():
         "ns_node_ip": env.env.ns.ip
     }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
+    try_put(custom, tmpl)
     try_run("/etc/init.d/nfdhcpd restart")
 
     install_package("snf-network")
@@ -1146,7 +1171,7 @@ def setup_cyclades():
         "proxy": env.env.cyclades.hostname == env.env.accounts.hostname
         }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl, mode=0644)
+    try_put(custom, tmpl, mode=0644)
     try_run("/etc/init.d/gunicorn restart")
 
     cmd = """
@@ -1223,7 +1248,7 @@ def export_services():
         filename = "%s_services.json" % service
         cmd = "snf-manage service-export-%s > %s" % (service, filename)
         run(cmd)
-        get(filename, filename+".local")
+        try_get(filename, filename+".local")
 
 
 @roles("accounts")
@@ -1231,7 +1256,7 @@ def import_services():
     debug(env.host, " * Registering services to astakos...")
     for service in ["cyclades", "pithos", "astakos"]:
         filename = "%s_services.json" % service
-        put(filename + ".local", filename)
+        try_put(filename + ".local", filename)
         cmd = "snf-manage service-import --json=%s" % filename
         run(cmd)
 

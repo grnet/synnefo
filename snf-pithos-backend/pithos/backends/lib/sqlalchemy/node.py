@@ -1006,15 +1006,16 @@ class Node(DBWorker):
         s = s.where(self.attributes.c.serial == self.versions.c.serial)
         s = s.where(self.attributes.c.domain == domain)
         s = s.where(self.nodes.c.node == self.versions.c.node)
-        conj = []
+        conja = []
+        conjb = []
         for path, match in pathq:
             if match == MATCH_PREFIX:
-                conj.append(self.nodes.c.path.like(self.escape_like(path) + '%',
+                conja.append(self.nodes.c.path.like(self.escape_like(path) + '%',
                                           escape=ESCAPE_CHAR))
             elif match == MATCH_EXACT:
-                conj.append(self.nodes.c.path == path)
-        if conj:
-            s = s.where(or_(*conj))
+                conjb.append(path)
+        if conja or conjb:
+            s = s.where(or_(self.nodes.c.path.in_(conjb),*conja))
         rp = self.conn.execute(s)
         rows = rp.fetchall()
         rp.close()
@@ -1115,15 +1116,16 @@ class Node(DBWorker):
         s = s.where(self.versions.c.node == self.nodes.c.node)
         s = s.where(and_(self.nodes.c.path > bindparam('start'),
 			 self.nodes.c.path < nextling))
-        conj = []
+        conja = []
+        conjb = []
         for path, match in pathq:
             if match == MATCH_PREFIX:
-                conj.append(self.nodes.c.path.like(self.escape_like(path) + '%',
+                conja.append(self.nodes.c.path.like(self.escape_like(path) + '%',
                              escape=ESCAPE_CHAR))
             elif match == MATCH_EXACT:
-                conj.append(self.nodes.c.path == path)
-        if conj:
-            s = s.where(or_(*conj))
+                conjb.append(path)
+        if conja or conjb:
+            s = s.where(or_(self.nodes.c.path.in_(conjb),*conja))
 
         if sizeq and len(sizeq) == 2:
             if sizeq[0]:

@@ -106,7 +106,7 @@ class XFeatures(DBWorker):
 
     def xfeature_get_bulk(self, paths):
         """Return features for paths."""
-	paths = list(set(paths))
+        paths = list(set(paths))
         s = select([self.xfeatures.c.feature_id, self.xfeatures.c.path])
         s = s.where(self.xfeatures.c.path.in_(paths))
         s = s.order_by(self.xfeatures.c.path)

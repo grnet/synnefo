@@ -12,7 +12,7 @@ import logging
 import fabric.api as fabric
 import subprocess
 import tempfile
-from ConfigParser import ConfigParser, DuplicateSectionError
+from ConfigParser import ConfigParser
 
 from kamaki.cli import config as kamaki_config
 from kamaki.clients.astakos import AstakosClient
@@ -250,16 +250,7 @@ class SynnefoCI(object):
 
         # Find a build_id to use
         if self.build_id is None:
-            # If build_id is given use this, else ..
-            # Find a uniq build_id to use
-            ids = self.temp_config.sections()
-            if ids:
-                max_id = int(max(self.temp_config.sections(), key=int))
-                self.build_id = max_id + 1
-            else:
-                self.build_id = 1
-        self.logger.debug("New build id \"%s\" was created"
-                          % _green(self.build_id))
+            self._create_new_build_id()
 
         # Find an image to use
         image_id = self._find_image(image)
@@ -476,6 +467,34 @@ class SynnefoCI(object):
         else:
             self.logger.debug("No ssh keys found")
 
+    def _create_new_build_id(self):
+        """Find a uniq build_id to use"""
+        with filelocker.lock("%s.lock" % self.temp_config_file,
+                             filelocker.LOCK_EX):
+            # Read temp_config again to get any new entries
+            self.temp_config.read(self.temp_config_file)
+
+            # Find a uniq build_id to use
+            ids = self.temp_config.sections()
+            if ids:
+                max_id = int(max(self.temp_config.sections(), key=int))
+                self.build_id = max_id + 1
+            else:
+                self.build_id = 1
+            self.logger.debug("New build id \"%s\" was created"
+                              % _green(self.build_id))
+
+            # Create a new section
+            self.temp_config.add_section(str(self.build_id))
+            creation_time = \
+                time.strftime("%a, %d %b %Y %X", time.localtime())
+            self.temp_config.set(str(self.build_id),
+                                 "created", str(creation_time))
+
+            # Write changes back to temp config file
+            with open(self.temp_config_file, 'wb') as tcf:
+                self.temp_config.write(tcf)
+
     def write_temp_config(self, option, value):
         """Write changes back to config file"""
         # Acquire the lock to write to temp_config_file
@@ -485,18 +504,11 @@ class SynnefoCI(object):
             # Read temp_config again to get any new entries
             self.temp_config.read(self.temp_config_file)
 
-            # If build_id section doesn't exist create a new one
-            try:
-                self.temp_config.add_section(str(self.build_id))
-                creation_time = \
-                    time.strftime("%a, %d %b %Y %X", time.localtime())
-                self.temp_config.set(str(self.build_id),
-                                     "created", str(creation_time))
-            except DuplicateSectionError:
-                pass
             self.temp_config.set(str(self.build_id), option, str(value))
             curr_time = time.strftime("%a, %d %b %Y %X", time.localtime())
             self.temp_config.set(str(self.build_id), "modified", curr_time)
+
+            # Write changes back to temp config file
             with open(self.temp_config_file, 'wb') as tcf:
                 self.temp_config.write(tcf)
 

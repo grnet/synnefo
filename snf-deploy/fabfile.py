@@ -299,6 +299,18 @@ def setup_resolv_conf():
     custom = customize_settings_from_tmpl(tmpl, replace)
     try:
         put(custom, tmpl)
+        cmd = """
+        echo "\
+# This has been generated automatically by snf-deploy, at
+# $(date).
+# The immutable bit (+i attribute) has been used to avoid it being
+# overwritten by software such as NetworkManager or resolvconf.
+# Use lsattr/chattr to view or modify its file attributes.
+
+
+$(cat {0})" > {0}
+""".format(tmpl)
+        try_run(cmd)
     except:
         pass
     try_run("chattr +i /etc/resolv.conf")

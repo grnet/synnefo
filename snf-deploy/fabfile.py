@@ -299,6 +299,18 @@ def setup_resolv_conf():
     custom = customize_settings_from_tmpl(tmpl, replace)
     try:
         put(custom, tmpl)
+        cmd = """
+        echo "\
+# This has been generated automatically by snf-deploy, at
+# $(date).
+# The immutable bit (+i attribute) has been used to avoid it being
+# overwritten by software such as NetworkManager or resolvconf.
+# Use lsattr/chattr to view or modify its file attributes.
+
+
+$(cat {0})" > {0}
+""".format(tmpl)
+        try_run(cmd)
     except:
         pass
     try_run("chattr +i /etc/resolv.conf")
@@ -1241,7 +1253,9 @@ def add_network():
     debug(env.host, " * Adding public network in cyclades...")
     backend_id = get_backend_id(env.env.cluster.fqdn)
     cmd = """
-    snf-manage network-create --subnet={0} --gateway={1} --public --dhcp=True --flavor={2} --mode=bridged --link={3} --name=Internet --backend-id={4}
+    snf-manage network-create --subnet={0} --gateway={1} --public \
+        --dhcp=True --flavor={2} --mode=bridged --link={3} --name=Internet \
+        --backend-id={4}
     """.format(env.env.synnefo_public_network_subnet,
                env.env.synnefo_public_network_gateway,
                env.env.synnefo_public_network_type,

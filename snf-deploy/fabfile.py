@@ -341,7 +341,6 @@ def try_run(cmd, abort=True):
             fabric.utils.abort(e)
         else:
             debug(env.host, "WARNING: command failed. Continuing anyway...")
-            raise
 
 
 def try_put(local_path=None, remote_path=None, abort=True, **kwargs):
@@ -352,7 +351,6 @@ def try_put(local_path=None, remote_path=None, abort=True, **kwargs):
             fabric.utils.abort(e)
         else:
             debug(env.host, "WARNING: command failed. Continuing anyway...")
-            raise
 
 
 def try_get(remote_path, local_path=None, abort=True, **kwargs):
@@ -363,7 +361,6 @@ def try_get(remote_path, local_path=None, abort=True, **kwargs):
             fabric.utils.abort(e)
         else:
             debug(env.host, "WARNING: command failed. Continuing anyway...")
-            raise
 
 
 def create_bridges():

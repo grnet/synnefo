@@ -70,7 +70,8 @@ class Command(ListCommand):
         "mem": (get_mem, "free/total memory (MB)"),
         "disk": (get_mem, "free/total disk (GB)"),
         "hypervisor": ("hypervisor", "The hypervisor the backend is using"),
+        "disk_templates": ("disk_templates", "Enabled disk-templates"),
     }
 
     fields = ["id", "clustername", "port", "username", "drained", "offline",
-              "vms", "hypervisor", "ips"]
+              "vms", "hypervisor", "ips", "disk_templates"]

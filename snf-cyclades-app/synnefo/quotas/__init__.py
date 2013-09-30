@@ -106,6 +106,7 @@ def issue_commission(user, source, provisions, name="",
     if serial:
         serial_info = {"serial": serial}
         if auto_accept:
+            serial_info["pending"] = False
             serial_info["accept"] = True
             serial_info["resolved"] = True
         return QuotaHolderSerial.objects.create(**serial_info)
@@ -114,7 +115,9 @@ def issue_commission(user, source, provisions, name="",
 
 
 def accept_serial(serial, strict=True):
+    assert serial.pending or serial.accept
     response = resolve_commissions(accept=[serial.serial], strict=strict)
+    serial.pending = False
     serial.accept = True
     serial.resolved = True
     serial.save()
@@ -122,8 +125,10 @@ def accept_serial(serial, strict=True):
 
 
 def reject_serial(serial, strict=True):
+    assert serial.pending or not serial.accept
     response = resolve_commissions(reject=[serial.serial], strict=strict)
-    serial.reject = True
+    serial.pending = False
+    serial.accept = False
     serial.resolved = True
     serial.save()
     return response
@@ -238,16 +243,7 @@ def issue_and_accept_commission(resource, delete=False):
     7) COMMIT!
 
     """
-    previous_serial = resource.serial
-    if previous_serial is not None and not previous_serial.resolved:
-        if previous_serial.pending:
-            msg = "Issuing commission for resource '%s' while previous serial"\
-                  " '%s' is still pending." % (resource, previous_serial)
-            raise Exception(msg)
-        elif previous_serial.accept:
-            accept_serial(previous_serial, strict=False)
-        else:
-            reject_serial(previous_serial, strict=False)
+    resolve_commission(resource.serial)
 
     try:
         # Convert resources in the format expected by Quotaholder
@@ -363,7 +359,7 @@ def handle_resource_commission(resource, action, commission_name,
 
     """
     # Try to resolve previous serial
-    resolve_commission(resource.serial)
+    resolve_commission(resource.serial, force=force)
 
     # Check if action is quotable and issue the corresponding commission
     serial = None
@@ -382,9 +378,16 @@ def handle_resource_commission(resource, action, commission_name,
     resource.serial = serial
 
 
-def resolve_commission(serial):
+class ResolveError(Exception):
+    pass
+
+
+def resolve_commission(serial, force=False):
     if serial is None or serial.resolved:
         return
+    if serial.pending and not force:
+        m = "Could not resolve commission: serial %s is undecided" % serial
+        raise ResolveError(m)
     log.warning("Resolving pending commission: %s", serial)
     if not serial.pending and serial.accept:
         accept_serial(serial)

@@ -32,6 +32,7 @@
 from django.test import TransactionTestCase
 #from snf_django.utils.testing import mocked_quotaholder
 from synnefo.logic import servers
+from synnefo import quotas
 from synnefo.db import models_factory as mfactory, models
 from mock import patch
 
@@ -167,6 +168,8 @@ class ServerCommandTest(TransactionTestCase):
         vm.task = None
         vm.task_job_id = None
         vm.save()
+        with mocked_quotaholder():
+            quotas.accept_serial(vm.serial)
         mrapi().RebootInstance.return_value = 1
         with mocked_quotaholder():
             servers.reboot(vm, "HARD")
@@ -180,10 +183,8 @@ class ServerCommandTest(TransactionTestCase):
         serial = vm.serial
         mrapi().StartupInstance.return_value = 1
         with mocked_quotaholder() as m:
-            servers.start(vm)
-            m.resolve_commissions.assert_called_once_with([],
-                                                          [serial.serial])
-            self.assertTrue(m.issue_one_commission.called)
+            with self.assertRaises(quotas.ResolveError):
+                servers.start(vm)
         # Not pending, rejct
         vm.task = None
         vm.serial = mfactory.QuotaHolderSerialFactory(serial=400,

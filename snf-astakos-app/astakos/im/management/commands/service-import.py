@@ -90,7 +90,8 @@ class Command(BaseCommand):
                 raise CommandError(m)
 
             try:
-                existed = add_service(component, name, service_type, endpoints)
+                existed = add_service(component, name, service_type, endpoints,
+                                      out=self.stdout)
             except RegisterException as e:
                 raise CommandError(e.message)
 

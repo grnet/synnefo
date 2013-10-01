@@ -1066,6 +1066,7 @@ commission-show               Show details for a pending commission
 component-add                 Register a component
 component-list                List components
 component-modify              Modify component attributes
+component-show                Show component details
 project-control               Manage projects and applications
 project-list                  List projects
 project-show                  Show project details
@@ -1839,6 +1840,7 @@ Upgrade Notes
    v0.13 -> v0.14 <upgrade/upgrade-0.14>
    v0.14 -> v0.14.2 <upgrade/upgrade-0.14.2>
    v0.14.5 -> v0.14.6 <upgrade/upgrade-0.14.6>
+   v0.14 -> v0.15 <upgrade/upgrade-0.15>
 
 
 Changelog, NEWS

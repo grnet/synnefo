@@ -121,14 +121,19 @@ def get_resources(resources=None, services=None):
     return resource_dict
 
 
-def add_endpoint(service, endpoint_dict):
+def add_endpoint(component, service, endpoint_dict, out=None):
     endpoint = Endpoint.objects.create(service=service)
     for key, value in endpoint_dict.iteritems():
+        base_url = component.base_url
+        if key == "publicURL" and not value.startswith(base_url):
+            warn = out.write if out is not None else logger.warning
+            warn("Warning: Endpoint URL '%s' does not start with "
+                 "assumed component base URL '%s'.\n" % (value, base_url))
         EndpointData.objects.create(
             endpoint=endpoint, key=key, value=value)
 
 
-def add_service(component, name, service_type, endpoints):
+def add_service(component, name, service_type, endpoints, out=None):
     defaults = {'component': component,
                 'type': service_type,
                 }
@@ -141,12 +146,11 @@ def add_service(component, name, service_type, endpoints):
                  (name, service.component.name))
             raise RegisterException(m)
         service.endpoints.all().delete()
-    else:
-        service.component = component
-        service.type = service_type
+        for key, value in defaults.iteritems():
+            setattr(service, key, value)
         service.save()
 
     for endpoint in endpoints:
-        add_endpoint(service, endpoint)
+        add_endpoint(component, service, endpoint, out=out)
 
     return not created

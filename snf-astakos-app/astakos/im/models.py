@@ -1221,7 +1221,7 @@ class PendingThirdPartyUser(models.Model):
         else:
             self.last_name = parts[0]
 
-    def save(self, **kwargs):
+    def save(self, *args, **kwargs):
         if not self.id:
             # set username
             while not self.username:
@@ -1230,7 +1230,7 @@ class PendingThirdPartyUser(models.Model):
                     AstakosUser.objects.get(username=username)
                 except AstakosUser.DoesNotExist:
                     self.username = username
-        super(PendingThirdPartyUser, self).save(**kwargs)
+        super(PendingThirdPartyUser, self).save(*args, **kwargs)
 
     def generate_token(self):
         self.password = self.third_party_identifier
@@ -1564,7 +1564,7 @@ class ProjectManager(ForUpdateManager):
         relevant = model.o_states_q(model.RELEVANT_STATES)
         return self.filter(flt, relevant).order_by(
             'application__issue_date').select_related(
-                'application', 'application__owner', 'application__applicant')
+            'application', 'application__owner', 'application__applicant')
 
     def search_by_name(self, *search_strings):
         q = Q()

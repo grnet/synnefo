@@ -31,7 +31,11 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 from django.conf import settings
-from django.conf.urls.defaults import patterns
+try:
+    from django.conf.urls import patterns
+except ImportError:  # Django==1.2
+    from django.conf.urls.defaults import patterns
+
 from django.db.models import Q
 from django.http import HttpResponse
 from django.template.loader import render_to_string
@@ -165,8 +169,9 @@ def create_network(request):
     elif flavor not in Network.FLAVORS.keys():
         raise faults.BadRequest("Invalid network type '%s'" % flavor)
     elif flavor not in settings.API_ENABLED_NETWORK_FLAVORS:
-            raise faults.Forbidden("Can not create network of type '%s'" %
-                                   flavor)
+        raise faults.Forbidden("Can not create network of type '%s'" %
+                               flavor)
+
     public = d.get("public", False)
     if public:
         raise faults.Forbidden("Can not create a public network.")

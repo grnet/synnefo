@@ -767,7 +767,7 @@ class TestProjects(TestCase):
 
         # user rejoins
         self.member_client.get(reverse("edit_profile"))
-        join_url = reverse("project_join", kwargs={'chain_id': app1_id})
+        join_url = reverse("project_join", kwargs={'chain_id': project1_id})
         r = self.member_client.post(join_url, follow=True)
         self.assertEqual(r.status_code, 200)
         self.assertEqual(ProjectMembership.objects.requested().count(), 1)

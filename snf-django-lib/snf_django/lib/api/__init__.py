@@ -191,7 +191,7 @@ def update_response_headers(request, response):
 
     if not response.has_header("Content-Length"):
         # compatibility code for django 1.4
-        _is_string = getattr(response, '_is_string', None)
+        _is_string = getattr(response, '_is_string', None)  # Django==1.2
         _base_content_is_iter = getattr(response, '_base_content_is_iter',
                                         None)
         if (_is_string is not None and _is_string) or\

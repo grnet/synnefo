@@ -6,7 +6,7 @@ DATABASES = {
     'default': {
         # Available values 'postgresql_psycopg2', 'postgresql','mysql',
         # 'sqlite3' or 'oracle'
-        'ENGINE': 'sqlite3',
+        'ENGINE': 'django.db.backends.sqlite3',
 
         # ATTENTION: This *must* be the absolute path if using sqlite3.
         # See: http://docs.djangoproject.com/en/dev/ref/settings/#name

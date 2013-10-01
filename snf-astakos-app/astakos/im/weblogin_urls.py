@@ -31,7 +31,10 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import url
+try:
+    from django.conf.urls import url
+except ImportError:  # Django==1.2
+    from django.conf.urls.defaults import url
 
 urlpatterns = (
     url(r'^login$', 'astakos.im.views.target.redirect.login',

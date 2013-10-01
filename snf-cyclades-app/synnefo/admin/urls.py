@@ -31,7 +31,11 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import url, patterns
+try:
+    from django.conf.urls import url, patterns
+except ImportError:  # Django==1.2
+    from django.conf.urls.defaults import url, patterns
+
 from synnefo.admin import views
 from django.http import Http404
 

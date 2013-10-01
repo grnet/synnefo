@@ -60,7 +60,7 @@ CLASSIFIERS = []
 INSTALL_REQUIRES = [
     'snf-common',
     'snf-pithos-backend',
-    'Django>=1.2, <1.3',
+    'Django>=1.2, <1.5',
     'objpool>=0.3',
     'astakosclient',
     'snf-django-lib',

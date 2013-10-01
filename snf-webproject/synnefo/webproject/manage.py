@@ -199,8 +199,8 @@ def get_commands():
             # Override the startapp command so that it always uses the
             # project_directory, not the current working directory
             # (which is default).
-            from django.core.management.commands.startapp import ProjectCommand
-            _commands['startapp'] = ProjectCommand(project_directory)
+            #from django.core.management.commands.startapp import ProjectCommand
+            #_commands['startapp'] = ProjectCommand(project_directory)
 
     return _commands
 

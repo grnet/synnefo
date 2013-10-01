@@ -91,8 +91,8 @@ class CookieHandler():
             path='/',
             domain=settings.COOKIE_DOMAIN, secure=settings.COOKIE_SECURE
         )
-        msg = str(('Cookie [expiring %(auth_token_expires)s]',
-                   'set for %(uuid)s')) % user.__dict__
+        msg = str(('Cookie [expiring %s]', 'set for %s')) \
+            % (user.auth_token_expires, user.uuid)
         logger._log(settings.LOGGING_LEVEL, msg, [])
 
     def __delete(self):

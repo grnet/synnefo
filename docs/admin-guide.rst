@@ -603,6 +603,33 @@ between users and backends. If the user is found in ``BACKEND_PER_USER``, then
 Synnefo allocates all his/hers VMs to the specific backend in the variable,
 even if is marked as drained (useful for testing).
 
+Allocation based on disk-templates
+**********************************
+
+Besides the available resources of each Ganeti backend, the allocator takes
+into consideration the disk template of the instance when trying to allocate it
+to a Ganeti backend. Specifically, the allocator checks if the flavor of the
+instance belongs to the available disk templates of each Ganeti backend.
+
+A Ganeti cluster has a list of enabled disk templates
+(`--enabled-disk-templates`) and a list of allowed disk templates for new
+instances (`--ipolicy-disk-templates`). See the `gnt-cluster` manpage for more
+details about these options.
+
+When Synnefo allocates an instance, it checks whether the disk template of the
+new instance belongs both in the enabled and ipolicy disk templates. You can
+see the list of the available disk-templates by running `snf-manage
+backend-list`. This list should be updated automatically after changing
+these options in Ganeti and it can also be updated by running `snf-manage
+backend-update-status`.
+
+So the administrator, can route instances on different backends based on their
+flavor disk template, by modifying the enabled or ipolicy disk templates of
+each backend.  Also, the administrator can route instances between different
+nodes of the same Ganeti backend, by modifying the same options at the
+nodegroup level (see `gnt-group` manpage for mor details).
+
+
 Managing Virtual Machines
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 

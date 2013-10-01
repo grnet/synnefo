@@ -60,6 +60,9 @@ Cyclades
   setting.
 * Change --dhcp option of network management commands from a flag to a boolean
   value, e.g. --dhcp=True
+* Remove 'ARCHIPELAGO_BACKENDS' setting used to distinquish between backends
+  that hosted only archipelago backends. Instead allocation is based on which
+  disk-templates are enabled in each backend.
 
 Pithos
 ------

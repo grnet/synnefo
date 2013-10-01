@@ -894,7 +894,7 @@ def get_physical_resources(backend):
     return res
 
 
-def update_resources(backend, resources=None):
+def update_backend_resources(backend, resources=None):
     """ Update the state of the backend resources in db.
 
     """
@@ -925,6 +925,28 @@ def get_memory_from_instances(backend):
     for i in instances:
         mem += i['oper_ram']
     return mem
+
+
+def get_available_disk_templates(backend):
+    """Get the list of available disk templates of a Ganeti backend.
+
+    The list contains the disk templates that are enabled in the Ganeti backend
+    and also included in ipolicy-disk-templates.
+
+    """
+    with pooled_rapi_client(backend) as c:
+        info = c.GetInfo()
+    enabled_disk_templates = info["enabled_disk_templates"]
+    ipolicy_disk_templates = info["ipolicy"]["disk-templates"]
+    return [dp for dp in enabled_disk_templates
+            if dp in ipolicy_disk_templates]
+
+
+def update_backend_disk_templates(backend):
+    disk_templates = get_available_disk_templates(backend)
+    backend.disk_templates = disk_templates
+    backend.save()
+
 
 ##
 ## Synchronized operations for reconciliation

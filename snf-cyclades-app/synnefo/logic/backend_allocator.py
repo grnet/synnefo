@@ -32,10 +32,10 @@ import datetime
 from django.utils import importlib
 
 from synnefo.settings import (BACKEND_ALLOCATOR_MODULE, BACKEND_REFRESH_MIN,
-                              BACKEND_PER_USER, ARCHIPELAGO_BACKENDS,
+                              BACKEND_PER_USER,
                               DEFAULT_INSTANCE_NETWORKS)
 from synnefo.db.models import Backend
-from synnefo.logic.backend import update_resources
+from synnefo.logic.backend import update_backend_resources
 from synnefo.api.util import backend_public_networks
 
 log = logging.getLogger(__name__)
@@ -72,11 +72,8 @@ class BackendAllocator():
         log.debug("Allocating VM: %r", vm)
 
         # Get available backends
-        available_backends = get_available_backends()
+        available_backends = get_available_backends(flavor)
 
-        # Temporary fix for distinquishing archipelagos capable backends
-        available_backends = filter_archipelagos_backends(available_backends,
-                                                          flavor.disk_template)
         # Refresh backends, if needed
         refresh_backends_stats(available_backends)
 
@@ -96,25 +93,24 @@ class BackendAllocator():
         return backend
 
 
-def get_available_backends():
-    """Get available backends from db.
+def get_available_backends(flavor):
+    """Get the list of available backends that can host a new VM of a flavor.
+
+    The list contains the backends that are online and that have enabled
+    the disk_template of the new VM.
+
+    Also, if the new VM will be automatically connected to a public network,
+    the backends that do not have an available public IPv4 address are
+    excluded.
 
     """
-    backends = list(Backend.objects.select_for_update().filter(drained=False,
-                                                               offline=False))
+    backends = Backend.objects.select_for_update()
+    backends = backends.filter(offline=False, drained=False,
+                               disk_templates__contains=flavor.disk_template)
+    backends = list(backends)
     if "SNF:ANY_PUBLIC" in DEFAULT_INSTANCE_NETWORKS:
         backends = filter(lambda x: has_free_ip(x), backends)
     return backends
-
-
-def filter_archipelagos_backends(available_backends, disk_template):
-    if disk_template == "ext":
-        available_backends = filter(lambda x: x.id in ARCHIPELAGO_BACKENDS,
-                                    available_backends)
-    else:
-        available_backends = filter(lambda x: x.id not in ARCHIPELAGO_BACKENDS,
-                                    available_backends)
-    return available_backends
 
 
 def has_free_ip(backend):
@@ -167,7 +163,7 @@ def refresh_backends_stats(backends):
         if now > b.updated + delta:
             log.debug("Updating resources of backend %r. Last Updated %r",
                       b, b.updated)
-            update_resources(b)
+            update_backend_resources(b)
 
 
 def get_backend_for_user(userid):

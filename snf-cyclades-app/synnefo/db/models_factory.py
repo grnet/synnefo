@@ -80,6 +80,8 @@ class BackendFactory(factory.DjangoModelFactory):
     pinst_cnt = 2
     ctotal = 80
 
+    disk_templates = ["file", "plain", "drbd"]
+
 
 class DrainedBackend(BackendFactory):
     drained = True

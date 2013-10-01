@@ -1,4 +1,4 @@
-# Copyright 2011-2013 GRNET S.A. All rights reserved.
+# Copyright 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -26,26 +26,44 @@
 # The views and conclusions contained in the software and documentation are
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of GRNET S.A.
-#
-from django.core.management.base import BaseCommand
 
-from synnefo.db.models import Backend
-from synnefo.logic import backend as backend_mod
+from django.db import models
+from south.modelsinspector import add_introspection_rules
 
 
-HELP_MSG = """Query Ganeti backends and update the status of backend in DB.
+class SeparatedValuesField(models.TextField):
+    description = ("Stores list of values as a TextField,"
+                   " separated by a delimiter.")
+    __metaclass__ = models.SubfieldBase
 
-This command updates:
-    * the list of the enabled disk-templates
-    * the available resources (disk, memory, CPUs)
-"""
+    def __init__(self, *args, **kwargs):
+        self.delimiter = kwargs.pop('delimiter', ',')
+        super(SeparatedValuesField, self).__init__(*args, **kwargs)
+
+    def to_python(self, value):
+        if not value:
+            return
+        if isinstance(value, list):
+            return value
+        return value.split(self.delimiter)
+
+    def get_db_prep_value(self, value):
+        if not value:
+            return
+        assert(isinstance(value, list) or isinstance(value, tuple))
+        return self.delimiter.join([unicode(s) for s in value])
+
+    def value_to_string(self, obj):
+        value = self._get_val_from_obj(obj)
+        return self.get_db_prep_value(value)
 
 
-class Command(BaseCommand):
-    help = HELP_MSG
-
-    def handle(self, **options):
-        for backend in Backend.objects.filter(offline=False):
-            backend_mod.update_backend_disk_templates(backend)
-            backend_mod.update_backend_resources(backend)
-            self.stdout.write("Successfully updated backend '%s'\n" % backend)
+add_introspection_rules([
+    (
+        [SeparatedValuesField],  # Class(es) these apply to
+        [],         # Positional arguments (not used)
+        {           # Keyword argument
+            "delimiter": ["delimiter", {"default": ","}],
+        },
+    ),
+], ["^synnefo\.db\.fields\.SeparatedValuesField"])

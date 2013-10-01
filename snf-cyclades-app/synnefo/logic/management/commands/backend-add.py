@@ -33,10 +33,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from synnefo.db.models import Backend, Network
 from django.db.utils import IntegrityError
-from synnefo.logic.backend import (get_physical_resources,
-                                   update_resources,
-                                   create_network_synced,
-                                   connect_network_synced)
+from synnefo.logic import backend as backend_mod
 from synnefo.management.common import check_backend_credentials
 from snf_django.management.utils import pprint_table
 
@@ -116,13 +113,14 @@ def create_backend(clustername, port, username, password, hypervisor=None,
             return
 
         stream.write("Retrieving backend resources:\n")
-        resources = get_physical_resources(backend)
+        resources = backend_mod.get_physical_resources(backend)
         attr = ['mfree', 'mtotal', 'dfree', 'dtotal', 'pinst_cnt', 'ctotal']
 
         table = [[str(resources[x]) for x in attr]]
         pprint_table(stream, table, attr)
 
-        update_resources(backend, resources)
+        backend_mod.update_backend_resources(backend, resources)
+        backend_mod.update_backend_disk_templates(backend)
 
         networks = Network.objects.filter(deleted=False, floating_ip_pool=True)
         if not networks:
@@ -139,14 +137,15 @@ def create_backend(clustername, port, username, password, hypervisor=None,
 
         for net in networks:
             net.create_backend_network(backend)
-            result = create_network_synced(net, backend)
+            result = backend_mod.create_network_synced(net, backend)
             if result[0] != "success":
                 stream.write('\nError Creating Network %s: %s\n' %
                              (net.backend_id, result[1]))
             else:
                 stream.write('Successfully created Network: %s\n' %
                              net.backend_id)
-            result = connect_network_synced(network=net, backend=backend)
+            result = backend_mod.connect_network_synced(network=net,
+                                                        backend=backend)
             if result[0] != "success":
                 stream.write('\nError Connecting Network %s: %s\n' %
                              (net.backend_id, result[1]))

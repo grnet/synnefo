@@ -42,7 +42,7 @@ from django.conf import settings as snf_settings
 from aes_encrypt import encrypt_db_charfield, decrypt_db_charfield
 
 from synnefo.db.managers import ForUpdateManager, ProtectedDeleteManager
-from synnefo.db import pools
+from synnefo.db import pools, fields
 
 from synnefo.logic.rapi_pool import (get_rapi_client,
                                      put_rapi_client)
@@ -90,6 +90,7 @@ class Backend(models.Model):
     # Type of hypervisor
     hypervisor = models.CharField('Hypervisor', max_length=32, default="kvm",
                                   null=False)
+    disk_templates = fields.SeparatedValuesField("Disk Templates", null=True)
     # Last refresh of backend resources
     updated = models.DateTimeField(auto_now_add=True)
     # Backend resources

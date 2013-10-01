@@ -47,7 +47,7 @@ class SeparatedValuesField(models.TextField):
             return value
         return value.split(self.delimiter)
 
-    def get_db_prep_value(self, value):
+    def get_prep_value(self, value):
         if not value:
             return
         assert(isinstance(value, list) or isinstance(value, tuple))
@@ -55,7 +55,7 @@ class SeparatedValuesField(models.TextField):
 
     def value_to_string(self, obj):
         value = self._get_val_from_obj(obj)
-        return self.get_db_prep_value(value)
+        return self.get_prep_value(value)
 
 
 add_introspection_rules([

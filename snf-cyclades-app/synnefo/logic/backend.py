@@ -936,10 +936,14 @@ def get_available_disk_templates(backend):
     """
     with pooled_rapi_client(backend) as c:
         info = c.GetInfo()
-    enabled_disk_templates = info["enabled_disk_templates"]
     ipolicy_disk_templates = info["ipolicy"]["disk-templates"]
-    return [dp for dp in enabled_disk_templates
-            if dp in ipolicy_disk_templates]
+    try:
+        enabled_disk_templates = info["enabled_disk_templates"]
+        return [dp for dp in enabled_disk_templates
+                if dp in ipolicy_disk_templates]
+    except KeyError:
+        # Ganeti < 2.8 does not have 'enabled_disk_templates'
+        return ipolicy_disk_templates
 
 
 def update_backend_disk_templates(backend):

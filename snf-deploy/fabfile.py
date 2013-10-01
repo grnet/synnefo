@@ -692,9 +692,9 @@ EOF
 def get_service_details(service="pithos"):
     debug(env.host,
           " * Getting registered details for %s service..." % service)
-    result = try_run("snf-manage component-list")
+    result = try_run("snf-manage component-list -o id,name,token")
     r = re.compile(r".*%s.*" % service, re.M)
-    service_id, _, _, service_token = r.search(result).group().split()
+    service_id, _, service_token = r.search(result).group().split()
     # print("%s: %s %s" % (service, service_id, service_token))
     return (service_id, service_token)
 

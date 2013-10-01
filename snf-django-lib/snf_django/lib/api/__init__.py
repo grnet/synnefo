@@ -190,13 +190,9 @@ def update_response_headers(request, response):
         response["Date"] = format_date_time(time())
 
     if not response.has_header("Content-Length"):
-        # compatibility code for django 1.4
-        _is_string = getattr(response, '_is_string', None)  # Django==1.2
         _base_content_is_iter = getattr(response, '_base_content_is_iter',
                                         None)
-        if (_is_string is not None and _is_string) or\
-                (_base_content_is_iter is not None and
-                    not _base_content_is_iter):
+        if (_base_content_is_iter is not None and not _base_content_is_iter):
             response["Content-Length"] = len(response.content)
         else:
             if not (response.has_header('Content-Type') and

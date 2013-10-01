@@ -767,7 +767,7 @@ astakos they are defined in a different configuration file than the one
 previously used to set astakos specific settings.
 
 Refer to
-`Django documentation <https://docs.djangoproject.com/en/1.2/topics/email/>`_
+`Django documentation <https://docs.djangoproject.com/en/1.4/topics/email/>`_
 for additional information on available email settings.
 
 As refered in the previous section, based on the operation that triggers

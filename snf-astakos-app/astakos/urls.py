@@ -31,10 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-try:
-    from django.conf.urls import include, patterns
-except ImportError:  # Django==1.2
-    from django.conf.urls.defaults import include, patterns
+from django.conf.urls import include, patterns
 
 from astakos.im.settings import (
     BASE_PATH, ACCOUNTS_PREFIX, VIEWS_PREFIX, KEYSTONE_PREFIX, WEBLOGIN_PREFIX)

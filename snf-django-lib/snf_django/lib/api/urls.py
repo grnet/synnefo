@@ -33,10 +33,7 @@
 
 from django.core import urlresolvers
 from django.views.decorators import csrf
-try:
-    from django.conf.urls import patterns
-except ImportError:  # Django==1.2
-    from django.conf.urls.defaults import patterns
+from django.conf.urls import patterns
 
 
 def _patch_pattern(regex_pattern):
@@ -45,25 +42,15 @@ def _patch_pattern(regex_pattern):
     RegexURLPattern callback to get resolved if required.
 
     """
-    if hasattr(regex_pattern, "_get_callback"):  # Django==1.2
-        if not regex_pattern._callback:
-            # enforce _callback resolving
-            regex_pattern._get_callback()
-
-        regex_pattern._callback = \
-            csrf.csrf_exempt(regex_pattern._callback)
-    else:
-        regex_pattern._callback = \
-            csrf.csrf_exempt(regex_pattern.callback)
+    regex_pattern._callback = \
+        csrf.csrf_exempt(regex_pattern.callback)
 
 
 def _patch_resolver(r):
     """
     Patch all patterns found in resolver with _patch_pattern
     """
-    if hasattr(r, '_get_url_patterns'):  # Django ==1.2
-        entries = r._get_url_patterns()
-    elif hasattr(r, 'url_patterns'):
+    if hasattr(r, 'url_patterns'):
         entries = r.url_patterns
     else:
         # first level view in patterns ?

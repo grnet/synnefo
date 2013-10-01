@@ -31,11 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-try:
-    from django.conf.urls import patterns, url, include
-except ImportError:  # Django==1.2
-    from django.conf.urls.defaults import patterns, url, include
-
+from django.conf.urls import patterns, url, include
 from snf_django.lib.api import api_endpoint_not_found
 
 

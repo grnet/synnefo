@@ -45,7 +45,8 @@ class Command(BaseCommand):
     help = HELP_MSG
 
     def handle(self, **options):
-        for backend in Backend.objects.filter(offline=False):
+        for backend in Backend.objects.select_for_update()\
+                                      .filter(offline=False):
             backend_mod.update_backend_disk_templates(backend)
             backend_mod.update_backend_resources(backend)
             self.stdout.write("Successfully updated backend '%s'\n" % backend)

@@ -48,7 +48,8 @@ QUEUE_CLUSTER = "%s-events-cluster" % prefix
 
 QUEUES = (QUEUE_OP,
           QUEUE_NETWORK,
-          QUEUE_PROGRESS)
+          QUEUE_PROGRESS,
+          QUEUE_CLUSTER)
 
 # ROUTING KEYS
 # notifications of type "ganeti-op-status"

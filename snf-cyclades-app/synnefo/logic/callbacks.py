@@ -36,7 +36,7 @@ from functools import wraps
 
 from django.db import transaction
 from synnefo.db.models import Backend, VirtualMachine, Network, BackendNetwork
-from synnefo.logic import utils, backend_mod
+from synnefo.logic import utils, backend as backend_mod
 
 from synnefo.lib.utils import merge_time
 

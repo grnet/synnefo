@@ -237,7 +237,7 @@ def render_overlimit_exception(e):
     return msg, details
 
 
-@transaction.commit_manually
+@transaction.commit_on_success
 def issue_and_accept_commission(resource, delete=False):
     """Issue and accept a commission to Quotaholder.
 
@@ -245,45 +245,34 @@ def issue_and_accept_commission(resource, delete=False):
     exactly after and in the same transaction that created/updated the
     resource. The workflow that implements is the following:
     0) Resolve previous unresolved commission if exists
-    1) Issue commission and get a serial
-    2) Store the serial in DB and mark is as one to accept
-    3) Correlate the serial with the resource
-    4) COMMIT!
-    5) Accept commission to QH (reject if failed until 5)
-    6) Mark serial as resolved
-    7) COMMIT!
+    1) Issue commission, get a serial and correlate it with the resource
+    2) Store the serial in DB as a serial to accept
+    3) COMMIT!
+    4) Accept commission to QH
 
     """
-    resolve_commission(resource.serial)
+    action = "DESTROY" if delete else "BUILD"
+    commission_reason = ("client: api, resource: %s, delete: %s"
+                         % (resource, delete))
+    serial = handle_resource_commission(resource=resource, action=action,
+                                        commission_name=commission_reason)
+
+    # Mark the serial as one to accept and associate it with the resource
+    serial.pending = False
+    serial.accept = True
+    serial.save()
+    transaction.commit()
 
     try:
-        action = "DESTROY" if delete else "BUILD"
-        # Issue commission and get the assigned serial
-        commission_reason = ("client: api, resource: %s, delete: %s"
-                             % (resource, delete))
-        serial = issue_commission(resource, action, name=commission_reason)
-    except:
-        transaction.rollback()
-        raise
-
-    try:
-        # Mark the serial as one to accept and associate it with the resource
-        serial.pending = False
-        serial.accept = True
-        serial.save()
-        resource.serial = serial
-        resource.save()
-        transaction.commit()
         # Accept the commission to quotaholder
         accept_serial(serial)
-        transaction.commit()
-        return serial
     except:
-        log.exception("Unexpected ERROR")
-        transaction.rollback()
-        reject_serial(serial)
-        transaction.commit()
-        raise
+        # Do not crash if we can not accept commission to Quotaholder. Quotas
+        # have already been reserved and the resource already exists in DB.
+        # Just log the error
+        log.exception("Failed to accept commission: %s", serial)
+
+    return serial
 
 
 def get_commission_info(resource, action, action_fields=None):
@@ -362,6 +351,7 @@ def handle_resource_commission(resource, action, commission_name,
                               action_fields=action_fields)
     resource.serial = serial
     resource.save()
+    return serial
 
 
 class ResolveError(Exception):

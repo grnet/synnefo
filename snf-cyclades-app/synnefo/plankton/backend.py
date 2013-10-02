@@ -202,9 +202,12 @@ class ImageBackend(object):
             self.backend.get_object_permissions(self.user, account, container,
                                                 name)
 
-        if path is None:
-            logger.warning("Image '%s' got permissions from None path",
-                           image_url)
+        if path is None and permissions != {}:
+            logger.warning("Image '%s' got permissions '%s' from 'None' path.",
+                           image_url, permissions)
+            raise Exception("Database Inconsistency Error:"
+                            " Image '%s' got permissions from 'None' path." %
+                            image_url)
 
         return permissions
 

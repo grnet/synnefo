@@ -878,7 +878,6 @@ class ModularBackend(BaseBackend):
 
         permissions_path = self._get_permissions_path_bulk(account,
                 container,names)
-        object_permissions = {}
         access_objects = self.permissions.access_check_bulk(permissions_path,
                 user)
         group_parents = access_objects['group_parents']

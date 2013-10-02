@@ -270,6 +270,7 @@ def update_build_progress(vm, msg, event_time):
               msg['instance'])
 
 
+@handle_message_delivery
 @transaction.commit_on_success()
 def update_cluster(msg):
     clustername = msg.get("cluster")

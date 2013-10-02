@@ -305,12 +305,13 @@ class VirtualMachine(models.Model):
     updated = models.DateTimeField(auto_now=True)
     imageid = models.CharField(max_length=100, null=False)
     hostid = models.CharField(max_length=100)
-    flavor = models.ForeignKey(Flavor)
+    flavor = models.ForeignKey(Flavor, on_delete=models.PROTECT)
     deleted = models.BooleanField('Deleted', default=False, db_index=True)
     suspended = models.BooleanField('Administratively Suspended',
                                     default=False)
     serial = models.ForeignKey(QuotaHolderSerial,
-                               related_name='virtual_machine', null=True)
+                               related_name='virtual_machine', null=True,
+                               on_delete=models.SET_NULL)
 
     # VM State
     # The following fields are volatile data, in the sense
@@ -403,7 +404,8 @@ class VirtualMachine(models.Model):
 class VirtualMachineMetadata(models.Model):
     meta_key = models.CharField(max_length=50)
     meta_value = models.CharField(max_length=500)
-    vm = models.ForeignKey(VirtualMachine, related_name='metadata')
+    vm = models.ForeignKey(VirtualMachine, related_name='metadata',
+                           on_delete=models.CASCADE)
 
     class Meta:
         unique_together = (('meta_key', 'vm'),)
@@ -505,7 +507,7 @@ class Network(models.Model):
                                                             size=0),
                                 null=True)
     serial = models.ForeignKey(QuotaHolderSerial, related_name='network',
-                               null=True)
+                               null=True, on_delete=models.SET_NULL)
 
     def __unicode__(self):
         return "<Network: %s>" % str(self.id)
@@ -617,7 +619,8 @@ class BackendNetwork(models.Model):
         'OP_NETWORK_QUERY_DATA': None
     }
 
-    network = models.ForeignKey(Network, related_name='backend_networks')
+    network = models.ForeignKey(Network, related_name='backend_networks',
+                                on_delete=models.CASCADE)
     backend = models.ForeignKey(Backend, related_name='networks',
                                 on_delete=models.PROTECT)
     created = models.DateTimeField(auto_now_add=True)
@@ -672,8 +675,10 @@ class NetworkInterface(models.Model):
         ("ERROR", "Error"),
     )
 
-    machine = models.ForeignKey(VirtualMachine, related_name='nics')
-    network = models.ForeignKey(Network, related_name='nics')
+    machine = models.ForeignKey(VirtualMachine, related_name='nics',
+                                on_delete=models.CASCADE)
+    network = models.ForeignKey(Network, related_name='nics',
+                                on_delete=models.CASCADE)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     index = models.IntegerField(null=True)
@@ -706,13 +711,14 @@ class FloatingIP(models.Model):
                               null=False, db_index=True)
     ipv4 = models.IPAddressField(null=False, unique=True, db_index=True)
     network = models.ForeignKey(Network, related_name="floating_ips",
-                                null=False)
+                                null=False, on_delete=models.CASCADE)
     machine = models.ForeignKey(VirtualMachine, related_name="floating_ips",
-                                null=True)
+                                null=True, on_delete=models.CASCADE)
     created = models.DateTimeField(auto_now_add=True)
     deleted = models.BooleanField(default=False, null=False)
     serial = models.ForeignKey(QuotaHolderSerial,
-                               related_name="floating_ips", null=True)
+                               related_name="floating_ips", null=True,
+                               on_delete=models.SET_NULL)
 
     def __unicode__(self):
         return "<FIP: %s@%s>" % (self.ipv4, self.network.id)
@@ -822,7 +828,8 @@ class VirtualMachineDiagnostic(models.Model):
     objects = VirtualMachineDiagnosticManager()
 
     created = models.DateTimeField(auto_now_add=True)
-    machine = models.ForeignKey('VirtualMachine', related_name="diagnostics")
+    machine = models.ForeignKey('VirtualMachine', related_name="diagnostics",
+                                on_delete=models.CASCADE)
     level = models.CharField(max_length=20, choices=TYPES)
     source = models.CharField(max_length=100)
     source_date = models.DateTimeField(null=True)

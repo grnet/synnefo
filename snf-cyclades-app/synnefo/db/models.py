@@ -32,7 +32,6 @@ import datetime
 from copy import deepcopy
 from django.conf import settings
 from django.db import models
-from django.db import IntegrityError
 
 import utils
 from contextlib import contextmanager
@@ -41,7 +40,6 @@ from snf_django.lib.api import faults
 from django.conf import settings as snf_settings
 from aes_encrypt import encrypt_db_charfield, decrypt_db_charfield
 
-from synnefo.db.managers import ProtectedDeleteManager
 from synnefo.db import pools, fields
 
 from synnefo.logic.rapi_pool import (get_rapi_client,
@@ -102,8 +100,6 @@ class Backend(models.Model):
                                             null=False)
     ctotal = models.PositiveIntegerField('Total number of logical processors',
                                          default=0, null=False)
-    # Custom object manager to protect from cascade delete
-    objects = ProtectedDeleteManager()
 
     HYPERVISORS = (
         ("kvm", "Linux KVM hypervisor"),
@@ -159,24 +155,6 @@ class Backend(models.Model):
             # Populate the new hash to the new instances
             self.virtual_machines.filter(deleted=False)\
                                  .update(backend_hash=self.hash)
-
-    def delete(self, *args, **kwargs):
-        # Integrity Error if non-deleted VMs are associated with Backend
-        if self.virtual_machines.filter(deleted=False).count():
-            raise IntegrityError("Non-deleted virtual machines are associated "
-                                 "with backend: %s" % self)
-        else:
-            # ON_DELETE = SET NULL
-            for vm in self.virtual_machines.all():
-                vm.backend = None
-                vm.save()
-            self.virtual_machines.all().backend = None
-            # Remove BackendNetworks of this Backend.
-            # Do not use networks.all().delete(), since delete() method of
-            # BackendNetwork will not be called!
-            for net in self.networks.all():
-                net.delete()
-            super(Backend, self).delete(*args, **kwargs)
 
     def __init__(self, *args, **kwargs):
         super(Backend, self).__init__(*args, **kwargs)
@@ -320,7 +298,8 @@ class VirtualMachine(models.Model):
     userid = models.CharField('User ID of the owner', max_length=100,
                               db_index=True, null=False)
     backend = models.ForeignKey(Backend, null=True,
-                                related_name="virtual_machines",)
+                                related_name="virtual_machines",
+                                on_delete=models.PROTECT)
     backend_hash = models.CharField(max_length=128, null=True, editable=False)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
@@ -639,7 +618,8 @@ class BackendNetwork(models.Model):
     }
 
     network = models.ForeignKey(Network, related_name='backend_networks')
-    backend = models.ForeignKey(Backend, related_name='networks')
+    backend = models.ForeignKey(Backend, related_name='networks',
+                                on_delete=models.PROTECT)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     deleted = models.BooleanField('Deleted', default=False)

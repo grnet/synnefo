@@ -650,9 +650,9 @@ class Node(DBWorker):
                     func.sum(v.c.size),
                     func.max(v.c.mtime)])
         if before != inf:
-            c1 = select([func.max(self.versions.c.serial)])
-            c1 = c1.where(self.versions.c.mtime < before)
-            c1.where(self.versions.c.node == v.c.node)
+            c1 = select([func.max(self.versions.c.serial)],
+                        and_(self.versions.c.mtime < before,
+                             self.versions.c.node == v.c.node))
         else:
             c1 = select([self.nodes.c.latest_version])
             c1 = c1.where(self.nodes.c.node == v.c.node)
@@ -677,8 +677,8 @@ class Node(DBWorker):
                     func.sum(v.c.size),
                     func.max(v.c.mtime)])
             c1 = select([func.max(self.versions.c.serial)],
-                        self.versions.c.node == v.c.node)
-            c1 = c1.where(self.versions.c.mtime < before)
+                        and_(self.versions.c.mtime < before,
+                             self.versions.c.node == v.c.node))
         else:
             inner_join = \
                     self.versions.join(self.nodes, onclause=\
@@ -703,7 +703,7 @@ class Node(DBWorker):
         rp.close()
         if not r:
             return None
-        size = r[1] - props[SIZE]
+        size = long(r[1] - props[SIZE])
         mtime = max(mtime, r[2])
         return (count, size, mtime)
 
@@ -991,10 +991,9 @@ class Node(DBWorker):
         n = self.nodes.alias('n')
         s = select([self.attributes.c.key]).distinct()
         if before != inf:
-            filtered = select([func.max(self.versions.c.serial)])
-            filtered = filtered.where(self.versions.c.mtime < before)
-            filtered = filtered.where(self.versions.c.node == \
-			    self.versions.c.node)
+            filtered = select([func.max(self.versions.c.serial)],
+                              and_(self.versions.c.mtime < before,
+                                   self.versions.c.node == v.c.node))
         else:
             filtered = select([self.nodes.c.latest_version])
             filtered = filtered.where(self.nodes.c.node == \
@@ -1083,8 +1082,9 @@ class Node(DBWorker):
         v = self.versions.alias('v')
         n = self.nodes.alias('n')
         if before != inf:
-            filtered = select([func.max(self.versions.c.serial)])
-            filtered = filtered.where(self.versions.c.mtime < before)
+            filtered = select([func.max(self.versions.c.serial)],
+                              and_(self.versions.c.mtime < before,
+                                   self.versions.c.node == v.c.node))
             inner_join = \
                     self.nodes.join(self.versions,
                             onclause=self.versions.c.serial==filtered)

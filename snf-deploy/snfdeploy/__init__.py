@@ -286,8 +286,8 @@ autoconf={5},disable_colors={6},key_inject={7} \
   if not args.dry_run:
     ret = os.system(fabcmd)
     if ret != 0:
-        print "exit with status %s" % ret
-        sys.exit(ret)
+        status = "exit with status %s" % ret
+        sys.exit(status)
 
 
 def cluster(args, env):

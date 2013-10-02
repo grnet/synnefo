@@ -59,7 +59,7 @@ def add_resource(resource_dict):
         raise RegisterException(m)
 
     try:
-        r = Resource.objects.get_for_update(name=name)
+        r = Resource.objects.select_for_update().get(name=name)
         exists = True
         if r.service_type != service_type:
             m = ("There already exists a resource named %s with service "

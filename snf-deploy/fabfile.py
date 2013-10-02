@@ -549,6 +549,7 @@ def setup_webproject():
     install_package("snf-webproject")
     install_package("python-psycopg2")
     install_package("python-gevent")
+    install_package("python-django")
     tmpl = "/etc/synnefo/webproject.conf"
     replace = {
         "synnefo_user": env.env.synnefo_user,

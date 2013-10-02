@@ -27,73 +27,11 @@
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of GRNET S.A.
 
-from django.db import connections
 from django.db.models import Manager
 from django.db.models.query import QuerySet
 
 
-class ForUpdateManager(Manager):
-    """Model manager implementing SELECT .. FOR UPDATE statement
-
-    This manager implements select_for_update() method in order to use
-    row-level locking in the database and guarantee exclusive access, since
-    this method is only implemented in Django>=1.4.
-
-    Non-blocking reads are not implemented, and each query including a row
-    that is locked by another transaction will block until the lock is
-    released. Also care must be taken in order to avoid deadlocks or retry
-    transactions that abort due to deadlocks.
-
-    Example:
-        networks = Network.objects.select_for_update().filter(public=True)
-
-    """
-
-    def select_for_update(self, *args, **kwargs):
-        return ForUpdateQuerySet(self.model, using=self.db)
-
-
-class ForUpdateQuerySet(QuerySet):
-    """QuerySet implmenting SELECT .. FOR UPDATE statement
-
-    This QuerySet overrides filter and get methods in order to implement
-    select_for_update() statement, by appending 'FOR UPDATE' to the end
-    for the SQL query.
-
-    """
-
-    def filter(self, *args, **kwargs):
-        query = super(ForUpdateQuerySet, self).filter(*args, **kwargs)
-        return for_update(query)
-
-    def get(self, *args, **kwargs):
-        query = self.filter(*args, **kwargs)
-        query = list(query)
-        num = len(query)
-        if num == 1:
-            return query[0]
-        if not num:
-            raise self.model.DoesNotExist("%s matching query does not exist. "
-                                          "Lookup parameters were %s" %
-                                          (self.model._meta.object_name,
-                                           kwargs))
-        raise self.model.MultipleObjectsReturned(
-            "get() returned more than one %s -- it returned %s! "
-            "Lookup parameters were %s" %
-            (self.model._meta.object_name, num, kwargs))
-
-
-def for_update(query):
-    """Rewrite query using SELECT .. FOR UPDATE."""
-    if 'sqlite' in connections[query.db].settings_dict['ENGINE'].lower():
-        # SQLite  does not support FOR UPDATE
-        return query
-    sql, params = query.query.get_compiler(query.db).as_sql()
-    return query.model._default_manager.raw(sql.rstrip() + ' FOR UPDATE',
-                                            params)
-
-
-class ProtectedDeleteManager(ForUpdateManager):
+class ProtectedDeleteManager(Manager):
     """Manager for protecting Backend deletion.
 
     Call Backend delete() method in order to prevent deletion

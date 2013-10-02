@@ -41,7 +41,7 @@ from snf_django.lib.api import faults
 from django.conf import settings as snf_settings
 from aes_encrypt import encrypt_db_charfield, decrypt_db_charfield
 
-from synnefo.db.managers import ForUpdateManager, ProtectedDeleteManager
+from synnefo.db.managers import ProtectedDeleteManager
 from synnefo.db import pools, fields
 
 from synnefo.logic.rapi_pool import (get_rapi_client,
@@ -360,8 +360,6 @@ class VirtualMachine(models.Model):
     task = models.CharField(max_length=64, null=True)
     task_job_id = models.BigIntegerField(null=True)
 
-    objects = ForUpdateManager()
-
     def get_client(self):
         if self.backend:
             return self.backend.get_client()
@@ -529,8 +527,6 @@ class Network(models.Model):
                                 null=True)
     serial = models.ForeignKey(QuotaHolderSerial, related_name='network',
                                null=True)
-
-    objects = ForUpdateManager()
 
     def __unicode__(self):
         return "<Network: %s>" % str(self.id)
@@ -738,8 +734,6 @@ class FloatingIP(models.Model):
     serial = models.ForeignKey(QuotaHolderSerial,
                                related_name="floating_ips", null=True)
 
-    objects = ForUpdateManager()
-
     def __unicode__(self):
         return "<FIP: %s@%s>" % (self.ipv4, self.network.id)
 
@@ -758,8 +752,6 @@ class PoolTable(models.Model):
     # Optional Fields
     base = models.CharField(null=True, max_length=32)
     offset = models.IntegerField(null=True)
-
-    objects = ForUpdateManager()
 
     class Meta:
         abstract = True

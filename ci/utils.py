@@ -21,7 +21,7 @@ from kamaki.clients.image import ImageClient
 from kamaki.clients.compute import ComputeClient
 import filelocker
 
-DEFAULT_CONFIG_FILE = "ci_squeeze.conf"
+DEFAULT_CONFIG_FILE = "ci_wheezy.conf"
 # UUID of owner of system images
 DEFAULT_SYSTEM_IMAGES_UUID = [
     "25ecced9-bf53-4145-91ee-cf47377e9fb2",  # production (okeanos.grnet.gr)

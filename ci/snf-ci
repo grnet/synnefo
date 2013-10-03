@@ -7,7 +7,7 @@ Continuous Integration script for Synnefo.
 """
 
 import os
-from utils import SynnefoCI
+import utils
 from optparse import OptionParser
 
 CREATE_SERVER_CMD = "create"
@@ -84,12 +84,12 @@ def main():  # Too many branches. pylint: disable-msg=R0912
     parser.add_option("--fetch-packages", dest="fetch_packages",
                       default=None,
                       help="Download the debian packages that were created"
-                           " during the '%s' step in this directory" %
+                           " during the '%s' step in this directory." %
                            BUILD_SYNNEFO_CMD)
     parser.add_option("--fetch-docs", dest="fetch_docs",
                       default=None,
                       help="Download the documentation that was created"
-                           " during the '%s' step in this directory" %
+                           " during the '%s' step in this directory." %
                            BUILD_DOCS_SYNNEFO_CMD)
     parser.add_option("--schema", dest="schema", default=None,
                       help="Schema for snf-deploy.")
@@ -99,9 +99,14 @@ def main():  # Too many branches. pylint: disable-msg=R0912
                            " repo, copy and use the local one.")
     parser.add_option("--x2go-output", dest="x2go_output", default=None,
                       help="File where to save the x2go plugin html page.")
+    parser.add_option("--no-colors", dest="use_colors",
+                      default=True, action="store_false",
+                      help="Don't use colorful output messages.")
 
     (options, args) = parser.parse_args()
 
+    # ----------------------------------
+    # Check arguments
     if len(args) != 1:
         msg = "ERROR: Command takes exactly one argument"
         parser.print_help()
@@ -126,10 +131,15 @@ def main():  # Too many branches. pylint: disable-msg=R0912
             else:
                 setattr(options, command, True)
 
-    synnefo_ci = SynnefoCI(config_file=options.config_file,
-                           build_id=options.build_id,
-                           cloud=options.kamaki_cloud)
+    # ----------------------------------
+    # Initialize SynnefoCi
+    utils.USE_COLORS = options.use_colors
+    synnefo_ci = utils.SynnefoCI(config_file=options.config_file,
+                                 build_id=options.build_id,
+                                 cloud=options.kamaki_cloud)
 
+    # ----------------------------------
+    # Run commands
     if getattr(options, CREATE_SERVER_CMD, False):
         synnefo_ci.create_server(flavor=options.flavor,
                                  image=options.image,

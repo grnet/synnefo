@@ -63,12 +63,11 @@ class Quotaholder(object):
     @classmethod
     def get(cls):
         if cls._object is None:
-            cls._object = AstakosClient(
-                ASTAKOS_TOKEN,
-                ASTAKOS_AUTH_URL,
-                use_pool=True,
-                retry=3,
-                logger=log)
+            cls._object = AstakosClient(ASTAKOS_TOKEN,
+                                        ASTAKOS_AUTH_URL,
+                                        use_pool=True,
+                                        retry=3,
+                                        logger=log)
         return cls._object
 
 

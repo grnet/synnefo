@@ -15,7 +15,9 @@ to understand how each level handles Virtual Networks, to be able to setup the
 backend appropriately.
 
 In the following sections we investigate in a top-down approach, the way
-networks are defined from the Cyclades, Ganeti, and Backend persperctive.
+networks are defined from the Cyclades, Ganeti, and Backend persperctive. For
+an introduction to the concepts of Cyclades networking and the exposed API see
+:doc:`Cyclades networking design document <design/cyclades-networking>`.
 
 Network @ Cyclades level
 ------------------------

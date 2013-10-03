@@ -19,9 +19,7 @@ class Migration(DataMigration):
                 checked_chain = chain.pk
                 projs.append(orm.Project(id=chain, application=app, state=1))
 
-        # use bulk_create in 1.4
-        for proj in projs:
-            proj.save()
+        orm.Project.objects.bulk_create(projs)
 
     def backwards(self, orm):
         "Write your backwards methods here."

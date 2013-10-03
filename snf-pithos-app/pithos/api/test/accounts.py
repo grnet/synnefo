@@ -42,6 +42,7 @@ from synnefo.lib import join_urls
 import time as _time
 import datetime
 
+import django.utils.simplejson as json
 
 class AccountHead(PithosAPITest):
     def test_get_account_meta(self):
@@ -81,6 +82,17 @@ class AccountHead(PithosAPITest):
             usage)
 
     def test_get_account_meta_until(self):
+        cnames = ['apples', 'bananas', 'kiwis']
+
+        # create containers
+        uploaded_bytes = 0
+        for cname in cnames:
+            self.create_container(cname)
+
+            # upload object
+            name, data, resp = self.upload_object(cname)
+            uploaded_bytes += len(data)
+
         self.update_account_meta({'foo': 'bar'})
 
         account_info = self.get_account_info()
@@ -90,6 +102,15 @@ class AccountHead(PithosAPITest):
         until = int(_time.mktime(t1.timetuple()))
 
         _time.sleep(2)
+
+        # add containers
+        cnames = ['oranges', 'pears']
+        for cname in cnames:
+            self.create_container(cname)
+
+            # upload object
+            self.upload_object(cname)
+
         self.update_account_meta({'quality': 'AAA'})
 
         account_info = self.get_account_info()
@@ -108,6 +129,9 @@ class AccountHead(PithosAPITest):
         t = datetime.datetime.strptime(
             account_info['X-Account-Until-Timestamp'], DATE_FORMATS[2])
         self.assertTrue(int(_time.mktime(t1.timetuple())) <= until)
+        self.assertTrue('X-Account-Container-Count' in account_info)
+        self.assertEqual(int(account_info['X-Account-Container-Count']), 3)
+        self.assertTrue('X-Account-Bytes-Used' in account_info)
 
     def test_get_account_meta_until_invalid_date(self):
         self.update_account_meta({'quality': 'AAA'})
@@ -134,6 +158,36 @@ class AccountGet(PithosAPITest):
         containers = self.list_containers(format=None)
         self.assertEquals(containers,
                           ['apples', 'bananas', 'kiwis', 'oranges', 'pears'])
+
+    def test_list_until(self):
+        account_info = self.get_account_info()
+        t = datetime.datetime.strptime(account_info['Last-Modified'],
+                                       DATE_FORMATS[2])
+        t1 = t + datetime.timedelta(seconds=1)
+        until = int(_time.mktime(t1.timetuple()))
+
+        _time.sleep(2)
+
+        self.create_container()
+        
+        url = join_urls(self.pithos_path, self.user)
+        r = self.get('%s?until=%s' % (url, until))
+        self.assertEqual(r.status_code, 200)
+        containers = r.content.split('\n')
+        if '' in containers:
+            containers.remove('')
+        self.assertEqual(containers,
+                         ['apples', 'bananas', 'kiwis', 'oranges', 'pears'])
+
+        
+        r = self.get('%s?until=%s&format=json' % (url, until))
+        self.assertEqual(r.status_code, 200)
+        try:
+            containers = json.loads(r.content)
+        except:
+            self.fail('json format expected')
+        self.assertEqual([c['name'] for c in containers],
+                         ['apples', 'bananas', 'kiwis', 'oranges', 'pears']) 
 
     def test_list_shared(self):
         # upload and publish object

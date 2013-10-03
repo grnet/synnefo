@@ -986,14 +986,12 @@ class Node(DBWorker):
         pathq = pathq or []
 
         # TODO: Use another table to store before=inf results.
-        a = self.attributes.alias('a')
         v = self.versions.alias('v')
-        n = self.nodes.alias('n')
         s = select([self.attributes.c.key]).distinct()
         if before != inf:
-            filtered = select([func.max(self.versions.c.serial)],
-                              and_(self.versions.c.mtime < before,
-                                   self.versions.c.node == v.c.node))
+            filtered = select([func.max(v.c.serial)],
+                              and_(v.c.mtime < before,
+                                   v.c.node == self.versions.c.node))
         else:
             filtered = select([self.nodes.c.latest_version])
             filtered = filtered.where(self.nodes.c.node == \
@@ -1005,6 +1003,7 @@ class Node(DBWorker):
         s = s.where(self.attributes.c.serial == self.versions.c.serial)
         s = s.where(self.attributes.c.domain == domain)
         s = s.where(self.nodes.c.node == self.versions.c.node)
+        s = s.order_by(self.attributes.c.key)
         conja = []
         conjb = []
         for path, match in pathq:
@@ -1082,9 +1081,9 @@ class Node(DBWorker):
         v = self.versions.alias('v')
         n = self.nodes.alias('n')
         if before != inf:
-            filtered = select([func.max(self.versions.c.serial)],
-                              and_(self.versions.c.mtime < before,
-                                   self.versions.c.node == v.c.node))
+            filtered = select([func.max(v.c.serial)],
+                              and_(v.c.mtime < before,
+                                   v.c.node == self.versions.c.node))
             inner_join = \
                     self.nodes.join(self.versions,
                             onclause=self.versions.c.serial==filtered)

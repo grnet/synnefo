@@ -582,8 +582,7 @@ def setup_common():
     }
     custom = customize_settings_from_tmpl(tmpl, replace)
     try_put(custom, tmpl, mode=0644)
-    try_run("mkdir -p {0}; chown root:www-data {0}; chmod 775 {0}".format(
-            env.env.mail_dir))
+    try_run("mkdir -p {0}; chmod 777 {0}".format(env.env.mail_dir))
     try_run("/etc/init.d/gunicorn restart")
 
 

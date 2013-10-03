@@ -12,7 +12,7 @@ import logging
 import fabric.api as fabric
 import subprocess
 import tempfile
-from ConfigParser import ConfigParser
+from ConfigParser import ConfigParser, DuplicateSectionError
 
 from kamaki.cli import config as kamaki_config
 from kamaki.clients.astakos import AstakosClient
@@ -485,7 +485,14 @@ class SynnefoCI(object):
                               % _green(self.build_id))
 
             # Create a new section
-            self.temp_config.add_section(str(self.build_id))
+            try:
+                self.temp_config.add_section(str(self.build_id))
+            except DuplicateSectionError:
+                msg = ("Build id \"%s\" already in use. " +
+                       "Please use a uniq one or cleanup \"%s\" file.\n") \
+                    % (self.build_id, self.temp_config_file)
+                self.logger.error(msg)
+                sys.exit(1)
             creation_time = \
                 time.strftime("%a, %d %b %Y %X", time.localtime())
             self.temp_config.set(str(self.build_id),

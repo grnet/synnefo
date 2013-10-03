@@ -740,9 +740,9 @@ Adding the `--fix-all` option, will do the actual synchronization:
 
 .. code-block:: console
 
-  $ snf-manage reconcile --fix-all
+  $ snf-manage reconcile-servers --fix-all
 
-Please see ``snf-manage reconcile --help`` for all the details.
+Please see ``snf-manage reconcile-servers --help`` for all the details.
 
 
 Reconciling Networks

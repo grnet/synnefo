@@ -22,6 +22,8 @@ from kamaki.clients.compute import ComputeClient
 import filelocker
 
 DEFAULT_CONFIG_FILE = "ci_wheezy.conf"
+# Is our terminal a colorful one?
+USE_COLORS = True
 # UUID of owner of system images
 DEFAULT_SYSTEM_IMAGES_UUID = [
     "25ecced9-bf53-4145-91ee-cf47377e9fb2",  # production (okeanos.grnet.gr)
@@ -47,20 +49,20 @@ def _put(local, remote):
 
 def _red(msg):
     """Red color"""
-    #return "\x1b[31m" + str(msg) + "\x1b[0m"
-    return str(msg)
+    ret = "\x1b[31m" + str(msg) + "\x1b[0m" if USE_COLORS else str(msg)
+    return ret
 
 
 def _yellow(msg):
     """Yellow color"""
-    #return "\x1b[33m" + str(msg) + "\x1b[0m"
-    return str(msg)
+    ret = "\x1b[33m" + str(msg) + "\x1b[0m" if USE_COLORS else str(msg)
+    return ret
 
 
 def _green(msg):
     """Green color"""
-    #return "\x1b[32m" + str(msg) + "\x1b[0m"
-    return str(msg)
+    ret = "\x1b[32m" + str(msg) + "\x1b[0m" if USE_COLORS else str(msg)
+    return ret
 
 
 def _check_fabric(fun):
@@ -359,7 +361,8 @@ class SynnefoCI(object):
             # Check if we found one
             if list_flvs:
                 self.logger.debug("Will use \"%s\" with id \"%s\""
-                                  % (list_flvs[0]['name'], list_flvs[0]['id']))
+                                  % (_green(list_flvs[0]['name']),
+                                     _green(list_flvs[0]['id'])))
                 return list_flvs[0]['id']
 
         self.logger.error("No matching flavor found.. aborting")
@@ -406,7 +409,8 @@ class SynnefoCI(object):
             # Check if we found one
             if list_imgs:
                 self.logger.debug("Will use \"%s\" with id \"%s\""
-                                  % (list_imgs[0]['name'], list_imgs[0]['id']))
+                                  % (_green(list_imgs[0]['name']),
+                                     _green(list_imgs[0]['id'])))
                 return list_imgs[0]['id']
 
         # We didn't found one
@@ -429,9 +433,10 @@ class SynnefoCI(object):
         self.logger.debug("Server's IPv4 is %s" % _green(server_ip))
         self.write_temp_config('server_port', server_port)
         self.logger.debug("Server's ssh port is %s" % _green(server_port))
-        self.logger.debug("Access server using \"ssh -p %s %s@%s\"" %
-                          (server_port, server['metadata']['users'],
-                           server_ip))
+        ssh_command = "ssh -p %s %s@%s" \
+            % (server_port, server['metadata']['users'], server_ip)
+        self.logger.debug("Access server using \"%s\"" %
+                          (_green(ssh_command)))
 
     @_check_fabric
     def _copy_ssh_keys(self, ssh_keys):
@@ -442,8 +447,8 @@ class SynnefoCI(object):
 
         if ssh_keys != "":
             ssh_keys = os.path.expanduser(ssh_keys)
-            self.logger.debug("Will use %s authentication keys file" %
-                              ssh_keys)
+            self.logger.debug("Will use \"%s\" authentication keys file" %
+                              _green(ssh_keys))
             keyfile = '/tmp/%s.pub' % fabric.env.user
             _run('mkdir -p ~/.ssh && chmod 700 ~/.ssh', False)
             if ssh_keys.startswith("http://") or \
@@ -585,7 +590,7 @@ class SynnefoCI(object):
                     subprocess.Popen(
                         ["git", "rev-parse", "--short", "HEAD"],
                         stdout=subprocess.PIPE).communicate()[0].strip()
-        self.logger.info("Will use branch %s" % synnefo_branch)
+        self.logger.info("Will use branch \"%s\"" % _green(synnefo_branch))
 
         if local_repo or synnefo_branch == "":
             # Use local_repo
@@ -714,7 +719,7 @@ class SynnefoCI(object):
         self.logger.info("Deploy Synnefo..")
         if schema is None:
             schema = self.config.get('Global', 'schema')
-        self.logger.debug("Will use \"%s\" schema" % schema)
+        self.logger.debug("Will use \"%s\" schema" % _green(schema))
 
         schema_dir = os.path.join(self.ci_dir, "schemas/%s" % schema)
         if not (os.path.exists(schema_dir) and os.path.isdir(schema_dir)):

@@ -106,9 +106,12 @@ def printable_header_dict(d):
     Format 'last_modified' timestamp.
     """
 
-    if 'last_modified' in d and d['last_modified']:
-        d['last_modified'] = utils.isoformat(
-            datetime.fromtimestamp(d['last_modified']))
+    timestamps = ('last_modified', 'x_container_until_timestamp',
+                  'x_acount_until_timestamp')
+    for timestamp in timestamps:
+        if timestamp in d and d[timestamp]:
+            d[timestamp] = utils.isoformat(
+                    datetime.fromtimestamp(d[timestamp]))
     return dict([(k.lower().replace('-', '_'), v) for k, v in d.iteritems()])
 
 

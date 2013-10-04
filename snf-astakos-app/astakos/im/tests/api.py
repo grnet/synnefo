@@ -51,6 +51,7 @@ u = lambda url: ROOT + url
 class QuotaAPITest(TestCase):
     def test_0(self):
         client = Client()
+        backend = activation_backends.get_backend()
 
         component1 = Component.objects.create(name="comp1")
         register.add_service(component1, "service1", "type1", [])
@@ -72,7 +73,8 @@ class QuotaAPITest(TestCase):
 
         # create user
         user = get_local_user('test@grnet.gr')
-        quotas.qh_sync_user(user)
+        backend.accept_user(user)
+        non_moderated_user = get_local_user('nonmon@example.com')
 
         component2 = Component.objects.create(name="comp2")
         register.add_service(component2, "service2", "type2", [])
@@ -107,6 +109,12 @@ class QuotaAPITest(TestCase):
         assertIn('system', body)
         for name in resource_names:
             assertIn(name, system_quota)
+
+        nmheaders = {'HTTP_X_AUTH_TOKEN': non_moderated_user.auth_token}
+        r = client.get(u('quotas/'), **nmheaders)
+        self.assertEqual(r.status_code, 200)
+        body = json.loads(r.content)
+        self.assertEqual(body, {})
 
         r = client.get(u('service_quotas'))
         self.assertEqual(r.status_code, 401)

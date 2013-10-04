@@ -82,7 +82,7 @@ class Command(BaseCommand):
         qh_holdings = service_get_quotas(astakos, query)
 
         if userid is None:
-            users = AstakosUser.objects.verified()
+            users = AstakosUser.objects.moderated()
         else:
             try:
                 users = [AstakosUser.objects.get(uuid=userid)]

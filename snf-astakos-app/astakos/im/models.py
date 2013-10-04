@@ -315,6 +315,9 @@ class AstakosUserManager(UserManager):
     def verified(self):
         return self.filter(email_verified=True)
 
+    def moderated(self):
+        return self.filter(moderated=True)
+
     def uuid_catalog(self, l=None):
         """
         Returns a uuid to username mapping for the uuids appearing in l.

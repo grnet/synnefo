@@ -35,9 +35,9 @@ from optparse import make_option
 
 from django.db import transaction
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import get_vm
+from synnefo.management.common import get_vm, get_flavor, convert_api_faults
 from synnefo.webproject.management.utils import parse_bool
-from synnefo.logic import servers
+from synnefo.logic import servers, backend as backend_mod
 
 
 class Command(BaseCommand):
@@ -62,9 +62,16 @@ class Command(BaseCommand):
             choices=["True", "False"],
             metavar="True|False",
             help="Mark a server as suspended/non-suspended."),
+        make_option(
+            "--flavor",
+            dest="flavor",
+            metavar="FLAVOR_ID",
+            help="Resize a server by modifying its flavor. The new flavor"
+                 " must have the same disk size and disk template."),
     )
 
     @transaction.commit_on_success
+    @convert_api_faults
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a server ID")
@@ -95,3 +102,20 @@ class Command(BaseCommand):
             server.save()
             msg = "Changed the owner of server '%s' from '%s' to '%s'.\n"
             self.stdout.write(msg % (server, old_owner, new_owner))
+
+        new_flavor_id = options.get("flavor")
+        if new_flavor_id is not None:
+            new_flavor = get_flavor(new_flavor_id)
+            old_flavor = server.flavor
+            msg = "Resizing server '%s' from flavor '%s' to '%s'.\n"
+            self.stdout.write(msg % (server, old_flavor, new_flavor))
+            server = servers.resize(server, new_flavor)
+            jobID = server.task_job_id
+            msg = "Issued job '%s'. Waiting to complete...\n"
+            self.stdout.write(msg % jobID)
+            client = server.get_client()
+            status, error = backend_mod.wait_for_job(client, jobID)
+            if status == "success":
+                self.stdout.write("Job finished successfully.\n")
+            else:
+                self.stdout.write("Job failed! Error: %s\n" % error)

@@ -733,7 +733,7 @@ class FloatingIP(models.Model):
     network = models.ForeignKey(Network, related_name="floating_ips",
                                 null=False, on_delete=models.CASCADE)
     machine = models.ForeignKey(VirtualMachine, related_name="floating_ips",
-                                null=True, on_delete=models.CASCADE)
+                                null=True, on_delete=models.SET_NULL)
     created = models.DateTimeField(auto_now_add=True)
     deleted = models.BooleanField(default=False, null=False)
     serial = models.ForeignKey(QuotaHolderSerial,

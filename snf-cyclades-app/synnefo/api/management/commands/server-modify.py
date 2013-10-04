@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -35,9 +35,13 @@ from optparse import make_option
 
 from django.db import transaction
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import get_vm, get_flavor, convert_api_faults
+from synnefo.management.common import (get_vm, get_flavor, convert_api_faults,
+                                       wait_server_task)
 from synnefo.webproject.management.utils import parse_bool
-from synnefo.logic import servers, backend as backend_mod
+from synnefo.logic import servers
+
+
+ACTIONS = ["start", "stop", "reboot_hard", "reboot_soft"]
 
 
 class Command(BaseCommand):
@@ -49,7 +53,7 @@ class Command(BaseCommand):
             '--name',
             dest='name',
             metavar='NAME',
-            help="Rename server"),
+            help="Rename server."),
         make_option(
             '--owner',
             dest='owner',
@@ -68,6 +72,19 @@ class Command(BaseCommand):
             metavar="FLAVOR_ID",
             help="Resize a server by modifying its flavor. The new flavor"
                  " must have the same disk size and disk template."),
+        make_option(
+            "--action",
+            dest="action",
+            choices=ACTIONS,
+            metavar="|".join(ACTIONS),
+            help="Perform one of the allowed actions."),
+        make_option(
+            "--wait",
+            dest="wait",
+            default="True",
+            choices=["True", "False"],
+            metavar="True|False",
+            help="Wait for Ganeti jobs to complete."),
     )
 
     @transaction.commit_on_success
@@ -103,6 +120,7 @@ class Command(BaseCommand):
             msg = "Changed the owner of server '%s' from '%s' to '%s'.\n"
             self.stdout.write(msg % (server, old_owner, new_owner))
 
+        wait = parse_bool(options["wait"])
         new_flavor_id = options.get("flavor")
         if new_flavor_id is not None:
             new_flavor = get_flavor(new_flavor_id)
@@ -110,12 +128,18 @@ class Command(BaseCommand):
             msg = "Resizing server '%s' from flavor '%s' to '%s'.\n"
             self.stdout.write(msg % (server, old_flavor, new_flavor))
             server = servers.resize(server, new_flavor)
-            jobID = server.task_job_id
-            msg = "Issued job '%s'. Waiting to complete...\n"
-            self.stdout.write(msg % jobID)
-            client = server.get_client()
-            status, error = backend_mod.wait_for_job(client, jobID)
-            if status == "success":
-                self.stdout.write("Job finished successfully.\n")
+            wait_server_task(server, wait, stdout=self.stdout)
+
+        action = options.get("action")
+        if action is not None:
+            if action == "start":
+                server = servers.start(server)
+            elif action == "stop":
+                server = servers.stop(server)
+            elif action == "reboot_hard":
+                server = servers.reboot(server, reboot_type="HARD")
+            elif action == "reboot_stof":
+                server = servers.reboot(server, reboot_type="SOFT")
             else:
-                self.stdout.write("Job failed! Error: %s\n" % error)
+                raise CommandError("Unknown action.")
+            wait_server_task(server, wait, stdout=self.stdout)

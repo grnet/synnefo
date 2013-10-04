@@ -33,84 +33,65 @@
 
 from optparse import make_option
 
+from django.db import transaction
 from django.core.management.base import BaseCommand, CommandError
 from synnefo.management.common import get_vm
-
-from synnefo.db.models import VirtualMachine
+from synnefo.webproject.management.utils import parse_bool
+from synnefo.logic import servers
 
 
 class Command(BaseCommand):
     args = "<server ID>"
-    help = "Modify a server"
+    help = "Modify a server."
 
     option_list = BaseCommand.option_list + (
         make_option(
             '--name',
             dest='name',
             metavar='NAME',
-            help="Set server's name"),
+            help="Rename server"),
         make_option(
             '--owner',
             dest='owner',
-            metavar='USER_ID',
-            help="Set server's owner"),
+            metavar='USER_UUID',
+            help="Change ownership of server. Value must be a user UUID"),
         make_option(
-            '--state',
-            dest='state',
-            metavar='STATE',
-            help="Set server's state"),
-        make_option(
-            '--set-deleted',
-            action='store_true',
-            dest='deleted',
-            help="Mark a server as deleted"),
-        make_option(
-            '--set-undeleted',
-            action='store_true',
-            dest='undeleted',
-            help="Mark a server as not deleted"),
-        make_option(
-            '--set-suspended',
-            action='store_true',
-            dest='suspended',
-            help="Mark a server as suspended"),
-        make_option(
-            '--set-unsuspended',
-            action='store_true',
-            dest='unsuspended',
-            help="Mark a server as not suspended")
+            "--suspended",
+            dest="suspended",
+            default=None,
+            choices=["True", "False"],
+            metavar="True|False",
+            help="Mark a server as suspended/non-suspended."),
     )
 
+    @transaction.commit_on_success
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a server ID")
 
         server = get_vm(args[0])
 
-        name = options.get('name')
-        if name is not None:
-            server.name = name
+        new_name = options.get("name", None)
+        if new_name is not None:
+            old_name = server.name
+            server = servers.rename(server, new_name)
+            self.stdout.write("Renamed server '%s' from '%s' to '%s'\n" %
+                              (server, old_name, new_name))
 
-        owner = options.get('owner')
-        if owner is not None:
-            server.userid = owner
+        suspended = options.get("suspended", None)
+        if suspended is not None:
+            suspended = parse_bool(suspended)
+            server.suspended = suspended
+            server.save()
+            self.stdout.write("Set server '%s' as suspended=%s\n" %
+                              (server, suspended))
 
-        state = options.get('state')
-        if state is not None:
-            allowed = [x[0] for x in VirtualMachine.OPER_STATES]
-            if state not in allowed:
-                msg = "Invalid state, must be one of %s" % ', '.join(allowed)
-                raise CommandError(msg)
-            server.operstate = state
-
-        if options.get('deleted'):
-            server.deleted = True
-        elif options.get('undeleted'):
-            server.deleted = False
-
-        if options.get('suspended'):
-            server.suspended = True
-        elif options.get('unsuspended'):
-            server.suspended = False
-
-        server.save()
+        new_owner = options.get('owner')
+        if new_owner is not None:
+            if "@" in new_owner:
+                raise CommandError("Invalid owner UUID.")
+            old_owner = server.userid
+            server.userid = new_owner
+            server.save()
+            msg = "Changed the owner of server '%s' from '%s' to '%s'.\n"
+            self.stdout.write(msg % (server, old_owner, new_owner))

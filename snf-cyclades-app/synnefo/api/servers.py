@@ -414,8 +414,8 @@ def update_server_name(request, server_id):
 
     vm = util.get_vm(server_id, request.user_uniq, for_update=True,
                      non_suspended=True)
-    vm.name = name
-    vm.save()
+
+    servers.rename(vm, new_name=name)
 
     return HttpResponse(status=204)
 

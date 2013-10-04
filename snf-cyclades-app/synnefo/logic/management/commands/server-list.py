@@ -109,6 +109,7 @@ class Command(ListCommand):
         "deleted": ("deleted", "Whether the server is deleted or not"),
         "suspended": ("suspended", "Whether the server is administratively"
                       " suspended"),
+        "project": ("project", "The project UUID"),
     }
 
     fields = ["id", "name", "user.uuid", "state", "flavor", "image.id",

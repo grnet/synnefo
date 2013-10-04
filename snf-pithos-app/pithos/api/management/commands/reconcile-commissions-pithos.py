@@ -58,8 +58,7 @@ class Command(NoArgsCommand):
         b = get_backend()
         try:
             b.pre_exec()
-            pending_commissions = b.astakosclient.get_pending_commissions(
-                token=b.service_token)
+            pending_commissions = b.astakosclient.get_pending_commissions()
 
             if pending_commissions:
                 self.stdout.write(
@@ -73,7 +72,6 @@ class Command(NoArgsCommand):
                 to_accept = b.commission_serials.lookup(pending_commissions)
                 to_reject = list(set(pending_commissions) - set(to_accept))
                 response = b.astakosclient.resolve_commissions(
-                    token=b.service_token,
                     accept_serials=to_accept,
                     reject_serials=to_reject
                 )

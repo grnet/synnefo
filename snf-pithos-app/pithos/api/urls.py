@@ -40,10 +40,11 @@ from snf_django.lib.api.urls import api_patterns
 from snf_django.lib.api import api_endpoint_not_found
 from snf_django.utils.urls import extend_endpoint_with_slash
 from pithos.api.settings import (
-    pithos_services,
-    BASE_PATH, ASTAKOS_BASE_URL, BASE_ASTAKOS_PROXY_PATH,
-    ASTAKOS_ACCOUNTS_PREFIX, PROXY_USER_SERVICES,
-    PITHOS_PREFIX, PUBLIC_PREFIX, UI_PREFIX)
+    BASE_PATH, PITHOS_PREFIX, PUBLIC_PREFIX, UI_PREFIX,
+    ASTAKOS_AUTH_PROXY_PATH, ASTAKOS_AUTH_URL,
+    ASTAKOS_ACCOUNT_PROXY_PATH, ASTAKOS_ACCOUNT_URL,
+    ASTAKOS_UI_PROXY_PATH, ASTAKOS_UI_URL,
+    pithos_services)
 
 
 urlpatterns = []
@@ -83,19 +84,25 @@ urlpatterns += patterns(
     (prefix_pattern(BASE_PATH), include(pithos_patterns)),
 )
 
-if PROXY_USER_SERVICES:
-    astakos_proxy = partial(proxy, proxy_base=BASE_ASTAKOS_PROXY_PATH,
-                            target_base=ASTAKOS_BASE_URL)
 
-    proxy_patterns = api_patterns(
-        '',
-        (r'^login/?$', astakos_proxy),
-        (r'^feedback/?$', astakos_proxy),
-        (r'^user_catalogs/?$', astakos_proxy),
-        (prefix_pattern(ASTAKOS_ACCOUNTS_PREFIX), astakos_proxy),
-    )
+# --------------------------------------
+# PROXY settings
+astakos_auth_proxy = \
+    partial(proxy, proxy_base=ASTAKOS_AUTH_PROXY_PATH,
+            target_base=ASTAKOS_AUTH_URL)
+astakos_account_proxy = \
+    partial(proxy, proxy_base=ASTAKOS_ACCOUNT_PROXY_PATH,
+            target_base=ASTAKOS_ACCOUNT_URL)
+astakos_ui_proxy = \
+    partial(proxy, proxy_base=ASTAKOS_UI_PROXY_PATH,
+            target_base=ASTAKOS_UI_URL)
 
-    urlpatterns += patterns(
-        '',
-        (prefix_pattern(BASE_ASTAKOS_PROXY_PATH), include(proxy_patterns)),
-    )
+urlpatterns += api_patterns(
+    '',
+    (prefix_pattern(ASTAKOS_AUTH_PROXY_PATH), astakos_auth_proxy),
+    (prefix_pattern(ASTAKOS_ACCOUNT_PROXY_PATH), astakos_account_proxy),
+)
+urlpatterns += patterns(
+    '',
+    (prefix_pattern(ASTAKOS_UI_PROXY_PATH), astakos_ui_proxy),
+)

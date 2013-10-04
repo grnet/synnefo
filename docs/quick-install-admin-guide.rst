@@ -1050,9 +1050,6 @@ this options:
 
    PITHOS_SERVICE_TOKEN = 'pithos_service_token22w'
 
-   # Set to False if astakos & pithos are on the same host
-   PITHOS_PROXY_USER_SERVICES = True
-
 
 The ``PITHOS_BACKEND_DB_CONNECTION`` option tells to the Pithos app where to
 find the Pithos backend database. Above we tell Pithos that its database is

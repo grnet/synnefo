@@ -63,9 +63,6 @@ In `/etc/synnefo/pithos.conf` add:
     PITHOS_UPDATE_MD5 = False
     PITHOS_SERVICE_TOKEN = 'XXXXXXXXXXX'
 
-    # Set False if astakos & pithos are on the same node
-    PITHOS_PROXY_USER_SERVICES = True
-
 
 Install pithos web UI with:
 

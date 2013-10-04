@@ -60,7 +60,7 @@ from pithos.api.util import (
 )
 
 from pithos.api.settings import (UPDATE_MD5, TRANSLATE_UUIDS,
-                                 SERVICE_TOKEN, ASTAKOS_BASE_URL)
+                                 SERVICE_TOKEN, ASTAKOS_AUTH_URL)
 
 from pithos.api import settings
 
@@ -76,9 +76,9 @@ logger = logging.getLogger(__name__)
 
 def get_uuids(names):
     try:
-        astakos = AstakosClient(ASTAKOS_BASE_URL, retry=2,
-                                use_pool=True, logger=logger)
-        uuids = astakos.service_get_uuids(SERVICE_TOKEN, names)
+        astakos = AstakosClient(SERVICE_TOKEN, ASTAKOS_AUTH_URL,
+                                retry=2, use_pool=True, logger=logger)
+        uuids = astakos.service_get_uuids(names)
     except Exception, e:
         logger.exception(e)
         return {}
@@ -710,7 +710,7 @@ def object_list(request, v_account, v_container):
                 if name != x[:name_idx]:
                     continue
                 objects_bulk.append(x[name_idx:])
-                
+
             if len(objects_bulk) > 0:
                 object_permissions = \
                     request.backend.get_object_permissions_bulk(

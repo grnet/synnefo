@@ -56,7 +56,6 @@ else:
 
 ASTAKOS_IM_MODULES = ['local', 'shibboleth']
 
-PITHOS_PROXY_USER_SERVICES = False
 
 ASTAKOS_BASE_URL = 'http://accounts.example.synnefo.org/astakos/'
 ASTAKOS_AUTH_URL = 'http://accounts.example.synnefo.org/astakos/identity/v2.0/'

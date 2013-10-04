@@ -41,7 +41,7 @@ from synnefo.logic.rapi import GanetiApiError
 from synnefo.management.common import Omit
 from synnefo.management import common
 from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
-                              ASTAKOS_BASE_URL)
+                              ASTAKOS_AUTH_URL)
 
 
 # Fields to print from a gnt-instance info
@@ -82,7 +82,7 @@ class Command(BaseCommand):
 
         displayname = options['displayname']
 
-        ucache = UserCache(ASTAKOS_BASE_URL, ASTAKOS_TOKEN)
+        ucache = UserCache(ASTAKOS_AUTH_URL, ASTAKOS_TOKEN)
 
         try:
             image = common.get_image(vm.imageid, vm.userid)['name']

@@ -1858,9 +1858,6 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-api.conf``:
    CYCLADES_BASE_URL = 'https://node1.example.com/cyclades'
    ASTAKOS_BASE_URL = 'https://node1.example.com/astakos'
 
-   # Set to False if astakos & cyclades are on the same host
-   CYCLADES_PROXY_USER_SERVICES = False
-
    CYCLADES_SERVICE_TOKEN = 'cyclades_service_token22w'
 
 The ``ASTAKOS_BASE_URL`` denotes the Astakos endpoint for Cyclades,

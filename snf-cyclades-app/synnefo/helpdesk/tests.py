@@ -56,13 +56,13 @@ class AstakosClientMock():
     def __init__(*args, **kwargs):
         pass
 
-    def get_username(self, token, uuid):
+    def get_username(self, uuid):
         try:
             return USERS_UUIDS.get(uuid)['displayname']
         except TypeError:
             return None
 
-    def get_uuid(self, token, display_name):
+    def get_uuid(self, display_name):
         try:
             return USERS_DISPLAYNAMES.get(display_name)['uuid']
         except TypeError:

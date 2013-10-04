@@ -37,7 +37,7 @@ from synnefo.management.common import (format_vm_state, get_vm,
                                        get_image)
 from snf_django.lib.astakos import UserCache
 from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
-                              ASTAKOS_BASE_URL)
+                              ASTAKOS_AUTH_URL)
 from snf_django.management import utils
 
 
@@ -61,7 +61,7 @@ class Command(SynnefoCommand):
             image_name = "None"
         image = '%s (%s)' % (imageid, image_name)
 
-        usercache = UserCache(ASTAKOS_BASE_URL, ASTAKOS_TOKEN)
+        usercache = UserCache(ASTAKOS_AUTH_URL, ASTAKOS_TOKEN)
         kv = {
             'id': server.id,
             'name': server.name,

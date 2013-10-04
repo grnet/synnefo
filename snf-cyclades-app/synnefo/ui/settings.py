@@ -33,12 +33,11 @@
 #
 
 import synnefo.cyclades_settings as cyclades
-from synnefo.cyclades_settings import cyclades_services, astakos_services
+from synnefo.cyclades_settings import cyclades_services
 
 from synnefo.lib import join_urls
 from synnefo.lib.services import get_public_endpoint as endpoint
 
-from django.conf import settings
 
 BASE_PATH = cyclades.BASE_PATH
 if not BASE_PATH.startswith("/"):
@@ -47,18 +46,11 @@ if not BASE_PATH.startswith("/"):
 GLANCE_URL = endpoint(cyclades_services, 'image', 'v1.0').rstrip('/')
 COMPUTE_URL = endpoint(cyclades_services, 'compute', 'v2.0').rstrip('/')
 USERDATA_URL = endpoint(cyclades_services, 'cyclades_userdata', '').rstrip('/')
-ASTAKOS_UI_URL = endpoint(astakos_services, 'astakos_ui', '').rstrip('/')
 
-
-if cyclades.PROXY_USER_SERVICES:
-    ACCOUNT_URL = join_urls('/', cyclades.BASE_ASTAKOS_PROXY_PATH,
-                            cyclades.ASTAKOS_ACCOUNTS_PREFIX, 'v1.0')
-else:
-    ACCOUNT_URL = endpoint(astakos_services, 'account', 'v1.0')
-
+ACCOUNT_URL = join_urls('/', cyclades.ASTAKOS_ACCOUNT_PROXY_PATH)
 
 USER_CATALOG_URL = join_urls(ACCOUNT_URL, 'user_catalogs')
 FEEDBACK_URL = join_urls(ACCOUNT_URL, 'feedback')
 
-LOGIN_URL = join_urls(ASTAKOS_UI_URL, 'login')
+LOGIN_URL = join_urls('/', cyclades.ASTAKOS_UI_PROXY_PATH, 'login')
 LOGOUT_REDIRECT = LOGIN_URL

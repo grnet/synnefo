@@ -176,7 +176,7 @@ def delete_floating_ip(floating_ip):
     floating_ip.deleted = True
     floating_ip.save()
     # Release quota for floating IP
-    quotas.issue_and_accept_commission(floating_ip, delete=True)
+    quotas.issue_and_accept_commission(floating_ip, action="DESTROY")
     transaction.commit()
     # Delete the floating IP from DB
     log.info("Deleted floating IP '%s' of user '%s", floating_ip,

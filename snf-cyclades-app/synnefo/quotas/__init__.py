@@ -237,7 +237,7 @@ def render_overlimit_exception(e):
 
 
 @transaction.commit_on_success
-def issue_and_accept_commission(resource, delete=False):
+def issue_and_accept_commission(resource, action="BUILD", action_fields=None):
     """Issue and accept a commission to Quotaholder.
 
     This function implements the Commission workflow, and must be called
@@ -250,10 +250,10 @@ def issue_and_accept_commission(resource, delete=False):
     4) Accept commission to QH
 
     """
-    action = "DESTROY" if delete else "BUILD"
-    commission_reason = ("client: api, resource: %s, delete: %s"
-                         % (resource, delete))
+    commission_reason = ("client: api, resource: %s, action: %s"
+                         % (resource, action))
     serial = handle_resource_commission(resource=resource, action=action,
+                                        action_fields=action_fields,
                                         commission_name=commission_reason)
 
     # Mark the serial as one to accept and associate it with the resource

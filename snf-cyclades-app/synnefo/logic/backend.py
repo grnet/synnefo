@@ -524,7 +524,7 @@ def update_network_state(network):
 
         # Issue commission
         if network.userid:
-            quotas.issue_and_accept_commission(network, delete=True)
+            quotas.issue_and_accept_commission(network, action="DESTROY")
             # the above has already saved the object and committed;
             # a second save would override others' changes, since the
             # object is now unlocked

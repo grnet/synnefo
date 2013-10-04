@@ -915,7 +915,7 @@ def get_physical_resources(backend):
         can_host_vms = n['vm_capable'] and not (n['drained'] or n['offline'])
         if can_host_vms and n['cnodes']:
             for a in attr:
-                res[a] += int(n[a])
+                res[a] += int(n[a] or 0)
     return res
 
 

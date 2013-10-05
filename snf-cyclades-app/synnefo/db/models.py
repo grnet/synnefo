@@ -763,9 +763,15 @@ class PoolTable(models.Model):
 class BridgePoolTable(PoolTable):
     manager = pools.BridgePool
 
+    def __unicode__(self):
+        return u"<Bridge Pool id:%s>" % self.id
+
 
 class MacPrefixPoolTable(PoolTable):
     manager = pools.MacPrefixPool
+
+    def __unicode__(self):
+        return u"<MAC Prefix Pool id:%s>" % self.id
 
 
 class IPPoolTable(PoolTable):

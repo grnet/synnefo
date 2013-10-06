@@ -705,6 +705,11 @@ class NetworkInterface(models.Model):
                                                deleted=False).exists()
         return False
 
+    class Meta:
+        # Assert than an IPv4 address from the same network will not be
+        # assigned to more than one NICs
+        unique_together = ("network", "ipv4")
+
 
 class FloatingIP(models.Model):
     userid = models.CharField("UUID of the owner", max_length=128,

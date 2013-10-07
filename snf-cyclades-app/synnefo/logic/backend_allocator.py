@@ -104,9 +104,15 @@ def get_available_backends(flavor):
     excluded.
 
     """
+    disk_template = flavor.disk_template
+    # Ganeti knows only the 'ext' disk template, but the flavors disk template
+    # includes the provider.
+    if disk_template.startswith("ext_"):
+        disk_template = "ext"
+
     backends = Backend.objects.select_for_update()
     backends = backends.filter(offline=False, drained=False,
-                               disk_templates__contains=flavor.disk_template)
+                               disk_templates__contains=disk_template)
     backends = list(backends)
     if "SNF:ANY_PUBLIC" in DEFAULT_INSTANCE_NETWORKS:
         backends = filter(lambda x: has_free_ip(x), backends)

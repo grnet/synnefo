@@ -129,6 +129,7 @@ def create_app_object(request, extra_context=None):
         return _create_object(
             request,
             template_name='im/projects/projectapplication_form.html',
+            summary_template_name='im/projects/projectapplication_form_summary.html',
             extra_context=extra_context,
             post_save_redirect=reverse('project_list'),
             form_class=ProjectApplicationForm,
@@ -269,6 +270,7 @@ def update_app_object(request, object_id, extra_context=None):
             request,
             object_id=object_id,
             template_name='im/projects/projectapplication_form.html',
+            summary_template_name='im/projects/projectapplication_form_summary.html',
             extra_context=extra_context,
             post_save_redirect=reverse('project_list'),
             form_class=ProjectApplicationForm,

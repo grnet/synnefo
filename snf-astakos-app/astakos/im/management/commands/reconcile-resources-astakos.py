@@ -34,9 +34,9 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction
 
 from snf_django.management.utils import pprint_table
-from snf_django.lib.db.transaction import commit_on_success_strict
 from astakos.im.models import Component, AstakosUser
 from astakos.im.quotas import service_get_quotas, SYSTEM
 from astakos.im.functions import count_pending_app
@@ -67,7 +67,7 @@ class Command(BaseCommand):
                          " the quota, independently of their value.")
     )
 
-    @commit_on_success_strict()
+    @transaction.commit_on_success
     def handle(self, *args, **options):
         write = self.stdout.write
         force = options['force']

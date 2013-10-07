@@ -33,11 +33,11 @@
 
 from optparse import make_option
 
+from django.db import transaction
 from django.core.management.base import BaseCommand, CommandError
 from astakos.im.functions import (terminate, suspend, unsuspend,
                                   reinstate, check_expiration,
                                   approve_application, deny_application)
-from snf_django.lib.db.transaction import commit_on_success_strict
 
 
 class Command(BaseCommand):
@@ -86,7 +86,7 @@ class Command(BaseCommand):
                           "e.g. when denying a project")),
     )
 
-    @commit_on_success_strict()
+    @transaction.commit_on_success
     def handle(self, *args, **options):
 
         message = options['message']

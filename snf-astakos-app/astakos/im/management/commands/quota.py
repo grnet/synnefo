@@ -33,13 +33,13 @@
 
 from optparse import make_option
 from django.core.management.base import CommandError
+from django.db import transaction
 
 from astakos.im.models import AstakosUser
 from astakos.im.quotas import (
     qh_sync_users_diffs, list_user_quotas, add_base_quota)
 from astakos.im.functions import get_user_by_uuid
 from astakos.im.management.commands._common import is_uuid, is_email
-from snf_django.lib.db.transaction import commit_on_success_strict
 from snf_django.management.commands import SynnefoCommand
 from snf_django.management import utils
 from ._common import show_quotas, style_options, check_style, units
@@ -87,7 +87,7 @@ class Command(SynnefoCommand):
                     ),
     )
 
-    @commit_on_success_strict()
+    @transaction.commit_on_success
     def handle(self, *args, **options):
         sync = options['sync']
         verify = options['verify']

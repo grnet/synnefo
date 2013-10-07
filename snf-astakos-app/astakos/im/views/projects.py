@@ -48,8 +48,7 @@ from django.utils.translation import ugettext as _
 from django.views.generic.list_detail import object_list, object_detail
 from django.core.exceptions import PermissionDenied
 from django.views.decorators.http import require_http_methods
-
-from snf_django.lib.db.transaction import commit_on_success_strict
+from django.db import transaction
 
 import astakos.im.messages as astakos_messages
 
@@ -123,7 +122,7 @@ def project_add(request):
     return redirect(next)
 
 
-@commit_on_success_strict()
+@transaction.commit_on_success
 def create_app_object(request, extra_context=None):
     try:
         summary = 'im/projects/projectapplication_form_summary.html'
@@ -191,7 +190,7 @@ def project_app_cancel(request, application_id):
     return redirect(next)
 
 
-@commit_on_success_strict()
+@transaction.commit_on_success
 def _project_app_cancel(request, application_id):
     chain_id = None
     try:
@@ -264,7 +263,7 @@ def project_modify(request, application_id):
     return redirect(next)
 
 
-@commit_on_success_strict()
+@transaction.commit_on_success
 def update_app_object(request, object_id, extra_context=None):
     try:
         summary = 'im/projects/projectapplication_form_summary.html'
@@ -296,7 +295,7 @@ def project_detail(request, chain_id):
     return common_detail(request, chain_id)
 
 
-@commit_on_success_strict()
+@transaction.commit_on_success
 def addmembers(request, chain_id, addmembers_form):
     if addmembers_form.is_valid():
         try:
@@ -476,7 +475,7 @@ def project_join(request, chain_id):
     return redirect(next)
 
 
-@commit_on_success_strict()
+@transaction.commit_on_success
 def _project_join(request, chain_id):
     try:
         chain_id = int(chain_id)
@@ -505,7 +504,7 @@ def project_leave(request, memb_id):
     return redirect(next)
 
 
-@commit_on_success_strict()
+@transaction.commit_on_success
 def _project_leave(request, memb_id):
     try:
         memb_id = int(memb_id)
@@ -534,7 +533,7 @@ def project_cancel_member(request, memb_id):
     return redirect(next)
 
 
-@commit_on_success_strict()
+@transaction.commit_on_success
 def _project_cancel_member(request, memb_id):
     try:
         cancel_membership(memb_id, request.user)
@@ -555,7 +554,7 @@ def project_accept_member(request, memb_id):
     return redirect_back(request, 'project_list')
 
 
-@commit_on_success_strict()
+@transaction.commit_on_success
 def _project_accept_member(request, memb_id):
     try:
         memb_id = int(memb_id)
@@ -580,7 +579,7 @@ def project_remove_member(request, memb_id):
     return redirect_back(request, 'project_list')
 
 
-@commit_on_success_strict()
+@transaction.commit_on_success
 def _project_remove_member(request, memb_id):
     try:
         memb_id = int(memb_id)
@@ -604,7 +603,7 @@ def project_reject_member(request, memb_id):
     return redirect_back(request, 'project_list')
 
 
-@commit_on_success_strict()
+@transaction.commit_on_success
 def _project_reject_member(request, memb_id):
     try:
         memb_id = int(memb_id)
@@ -641,7 +640,7 @@ def project_app_approve(request, application_id):
     return redirect(reverse('project_detail', args=(chain_id,)))
 
 
-@commit_on_success_strict()
+@transaction.commit_on_success
 def _project_app_approve(request, application_id):
     approve_application(application_id)
 
@@ -671,7 +670,7 @@ def project_app_deny(request, application_id):
     return redirect(reverse('project_list'))
 
 
-@commit_on_success_strict()
+@transaction.commit_on_success
 def _project_app_deny(request, application_id, reason):
     deny_application(application_id, reason=reason)
 

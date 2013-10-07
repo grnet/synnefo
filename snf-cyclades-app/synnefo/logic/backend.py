@@ -415,7 +415,7 @@ def update_network_state(network):
 
 @transaction.commit_on_success
 def process_network_modify(back_network, etime, jobid, opcode, status,
-                           add_reserved_ips, remove_reserved_ips):
+                           add_reserved_ips):
     assert (opcode == "OP_NETWORK_SET_PARAMS")
     if status not in [x[0] for x in BACKEND_STATUSES]:
         raise Network.InvalidBackendMsgError(opcode, status)
@@ -424,15 +424,12 @@ def process_network_modify(back_network, etime, jobid, opcode, status,
     back_network.backendjobstatus = status
     back_network.opcode = opcode
 
-    if add_reserved_ips or remove_reserved_ips:
+    if add_reserved_ips:
         net = back_network.network
         pool = net.get_pool()
         if add_reserved_ips:
             for ip in add_reserved_ips:
                 pool.reserve(ip, external=True)
-        if remove_reserved_ips:
-            for ip in remove_reserved_ips:
-                pool.put(ip, external=True)
         pool.save()
 
     if status == 'success':

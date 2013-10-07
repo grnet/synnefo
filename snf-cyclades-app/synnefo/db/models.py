@@ -764,18 +764,21 @@ class BridgePoolTable(PoolTable):
     manager = pools.BridgePool
 
     def __unicode__(self):
-        return u"<Bridge Pool id:%s>" % self.id
+        return u"<BridgePool id:%s>" % self.id
 
 
 class MacPrefixPoolTable(PoolTable):
     manager = pools.MacPrefixPool
 
     def __unicode__(self):
-        return u"<MAC Prefix Pool id:%s>" % self.id
+        return u"<MACPrefixPool id:%s>" % self.id
 
 
 class IPPoolTable(PoolTable):
     manager = pools.IPPool
+
+    def __unicode__(self):
+        return u"<IPv4AdressPool, network: %s>" % self.network
 
 
 @contextmanager

@@ -200,35 +200,6 @@ class LocalUserCreationForm(UserCreationForm, StoreUserMixin):
         return user
 
 
-class InvitedLocalUserCreationForm(LocalUserCreationForm):
-    """
-    Extends the LocalUserCreationForm: email is readonly.
-    """
-    class Meta:
-        model = AstakosUser
-        fields = ("email", "first_name", "last_name", "has_signed_terms")
-
-    def __init__(self, *args, **kwargs):
-        """
-        Changes the order of fields, and removes the username field.
-        """
-        super(InvitedLocalUserCreationForm, self).__init__(*args, **kwargs)
-
-        #set readonly form fields
-        ro = ('email', 'username',)
-        for f in ro:
-            self.fields[f].widget.attrs['readonly'] = True
-
-    def save(self, commit=True, **kwargs):
-        user = super(InvitedLocalUserCreationForm, self).save(commit=False,
-                                                              **kwargs)
-        user.set_invitations_level()
-        user.email_verified = True
-        if commit:
-            user.save(**kwargs)
-        return user
-
-
 class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
     email = forms.EmailField(
         label='Contact email',
@@ -310,52 +281,6 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
             user.save(**kwargs)
             logger.info('Created user %s' % user.log_display)
         return user
-
-
-class InvitedThirdPartyUserCreationForm(ThirdPartyUserCreationForm):
-    """
-    Extends the ThirdPartyUserCreationForm: email is readonly.
-    """
-    def __init__(self, *args, **kwargs):
-        """
-        Changes the order of fields, and removes the username field.
-        """
-        super(
-            InvitedThirdPartyUserCreationForm, self).__init__(*args, **kwargs)
-
-        #set readonly form fields
-        ro = ('email',)
-        for f in ro:
-            self.fields[f].widget.attrs['readonly'] = True
-
-    def save(self, commit=True, **kwargs):
-        user = \
-            super(InvitedThirdPartyUserCreationForm, self).save(commit=False,
-                                                                **kwargs)
-        user.set_invitation_level()
-        user.email_verified = True
-        if commit:
-            user.save(**kwargs)
-        return user
-
-
-class ShibbolethUserCreationForm(ThirdPartyUserCreationForm):
-    additional_email = forms.CharField(
-        widget=forms.HiddenInput(), label='', required=False)
-
-    def __init__(self, *args, **kwargs):
-        super(ShibbolethUserCreationForm, self).__init__(*args, **kwargs)
-        # copy email value to additional_mail in case user will change it
-        name = 'email'
-        field = self.fields[name]
-        self.initial['additional_email'] = self.initial.get(
-            name, field.initial)
-        self.initial['email'] = None
-
-
-class InvitedShibbolethUserCreationForm(ShibbolethUserCreationForm,
-                                        InvitedThirdPartyUserCreationForm):
-    pass
 
 
 class LoginForm(AuthenticationForm):

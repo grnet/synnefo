@@ -37,6 +37,7 @@ from functools import wraps
 
 from snf_django.lib.api import faults
 from synnefo.api import util
+from synnefo.logic import backend as backend_mod
 from synnefo.logic.rapi import GanetiApiError, GanetiRapiClient
 from synnefo.logic.utils import (id_from_instance_name,
                                  id_from_network_name)
@@ -166,3 +167,23 @@ def convert_api_faults(func):
 
 class Omit(object):
     pass
+
+
+def wait_server_task(server, wait, stdout):
+    jobID = server.task_job_id
+    if wait:
+        msg = "Issued job '%s'. Waiting to complete...\n"
+        stdout.write(msg % jobID)
+        client = server.get_client()
+        wait_ganeti_job(client, jobID, stdout)
+    else:
+        msg = "Issued job '%s'.\n"
+        stdout.write(msg % jobID)
+
+
+def wait_ganeti_job(client, jobID, stdout):
+    status, error = backend_mod.wait_for_job(client, jobID)
+    if status == "success":
+        stdout.write("Job finished successfully.\n")
+    else:
+        raise CommandError("Job failed! Error: %s\n" % error)

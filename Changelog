@@ -76,6 +76,13 @@ Cyclades
   that hosted only archipelago backends. Instead allocation is based on which
   disk-templates are enabled in each backend.
 * Implement 'snf-manage server-remove' management command.
+* Move reconciliation of IP pools from 'reconcile-networks' to
+  'reconcile-pools'. The IP pool reconciliation does not reconcile the IP
+  pools with Ganeti. Instead it checks if the pool is consistent with the
+  IPs that are used by instances.
+* Do not automatically release externally reserved IPs if they are released
+  from a Ganeti backend. Management of externally reserved IPs must be
+  performed from Cyclades with 'network-modify' command.
 
 Pithos
 ------

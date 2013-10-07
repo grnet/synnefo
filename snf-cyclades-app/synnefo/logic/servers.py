@@ -502,3 +502,13 @@ def remove_floating_ip(vm, address):
              vm, floating_ip)
 
     return backend.disconnect_from_network(vm, nic)
+
+
+def rename(server, new_name):
+    """Rename a VirtualMachine."""
+    old_name = server.name
+    server.name = new_name
+    server.save()
+    log.info("Renamed server '%s' from '%s' to '%s'", server, old_name,
+             new_name)
+    return server

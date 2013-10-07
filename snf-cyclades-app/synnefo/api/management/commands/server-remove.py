@@ -34,8 +34,9 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import get_vm, convert_api_faults
-from synnefo.logic import servers, backend as backend_mod
+from synnefo.management.common import (get_vm, convert_api_faults,
+                                       wait_server_task)
+from synnefo.logic import servers
 from snf_django.management.utils import parse_bool
 
 
@@ -63,17 +64,10 @@ class Command(BaseCommand):
         self.stdout.write("Trying to remove server '%s' from backend '%s'\n" %
                           (server.backend_vm_id, server.backend))
 
-        servers.destroy(server)
+        server = servers.destroy(server)
         jobID = server.task_job_id
 
         self.stdout.write("Issued OP_INSTANCE_REMOVE with id: %s\n" % jobID)
 
         wait = parse_bool(options["wait"])
-        if wait:
-            self.stdout.write("Waiting for job to complete...\n")
-            client = server.get_client()
-            status, error = backend_mod.wait_for_job(client, jobID)
-            if status == "success":
-                self.stdout.write("Job '%s' completed successfully.\n" % jobID)
-            else:
-                self.stdout.write("Job '%s' failed: %s\n" % (jobID, error))
+        wait_server_task(server, wait, self.stdout)

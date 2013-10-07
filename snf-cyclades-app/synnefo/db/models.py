@@ -705,6 +705,11 @@ class NetworkInterface(models.Model):
                                                deleted=False).exists()
         return False
 
+    class Meta:
+        # Assert than an IPv4 address from the same network will not be
+        # assigned to more than one NICs
+        unique_together = ("network", "ipv4")
+
 
 class FloatingIP(models.Model):
     userid = models.CharField("UUID of the owner", max_length=128,
@@ -758,13 +763,22 @@ class PoolTable(models.Model):
 class BridgePoolTable(PoolTable):
     manager = pools.BridgePool
 
+    def __unicode__(self):
+        return u"<BridgePool id:%s>" % self.id
+
 
 class MacPrefixPoolTable(PoolTable):
     manager = pools.MacPrefixPool
 
+    def __unicode__(self):
+        return u"<MACPrefixPool id:%s>" % self.id
+
 
 class IPPoolTable(PoolTable):
     manager = pools.IPPool
+
+    def __unicode__(self):
+        return u"<IPv4AdressPool, network: %s>" % self.network
 
 
 @contextmanager

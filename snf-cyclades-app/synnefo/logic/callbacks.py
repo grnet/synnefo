@@ -198,8 +198,7 @@ def update_network(network, msg, event_time):
 
     if opcode == "OP_NETWORK_SET_PARAMS":
         backend_mod.process_network_modify(network, event_time, jobid, opcode,
-                                           status, msg['add_reserved_ips'],
-                                           msg['remove_reserved_ips'])
+                                           status, msg['add_reserved_ips'])
     else:
         backend_mod.process_network_status(network, event_time, jobid, opcode,
                                            status, msg['logmsg'])

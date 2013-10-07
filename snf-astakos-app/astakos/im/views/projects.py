@@ -117,6 +117,7 @@ def project_add(request):
         response = _create_object(
             request,
             template_name='im/projects/projectapplication_form.html',
+            summary_template_name='im/projects/projectapplication_form_summary.html',
             extra_context=extra_context,
             post_save_redirect=reverse('project_list'),
             form_class=ProjectApplicationForm,
@@ -236,6 +237,7 @@ def project_modify(request, application_id):
             request,
             object_id=application_id,
             template_name='im/projects/projectapplication_form.html',
+            summary_template_name='im/projects/projectapplication_form_summary.html',
             extra_context=extra_context,
             post_save_redirect=reverse('project_list'),
             form_class=ProjectApplicationForm,

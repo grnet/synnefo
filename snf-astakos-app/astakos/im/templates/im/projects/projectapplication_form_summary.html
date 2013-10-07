@@ -1,9 +1,19 @@
-{% load filters %}
+{% extends "im/account_base.html" %}
+
+{% load filters astakos_tags %}
 {% block headjs %}
 	{{ block.super }}	 
 	<script src="{{ IM_STATIC_URL }}js/quotas.js"></script>	
 {% endblock %}	
 {% block page.body %}
+
+<h2>
+{% if update_form %}REQUEST PROJECT MODIFICATION{% else %}REQUEST PROJECT{% endif %}
+</h2>
+
+<p>These are the specifications of the Project you want to create. If you hit the "Submit" button
+this form will be officially sent to {{ BRANDING_COMPANY_NAME }} for review. Please make sure the following reflect
+exactly your request.</p>
 
 <div class="projects summary">
 	<form action="?edit=0&verify=0" method="post" class="quotas-form">{% csrf_token %}
@@ -85,9 +95,4 @@
     
     
 </div>
-	 
-<script>
-	
-</script>	 
-
 {% endblock %}

@@ -171,7 +171,7 @@ def vm_to_dict(vm, detail=False):
     d['links'] = util.vm_to_links(vm.id)
     if detail:
         d['user_id'] = vm.userid
-        d['tenant_id'] = vm.userid
+        d['tenant_id'] = vm.project
         d['status'] = logic_utils.get_rsapi_state(vm)
         d['SNF:task_state'] = logic_utils.get_task_state(vm)
         d['progress'] = 100 if d['status'] == 'ACTIVE' else vm.buildpercentage

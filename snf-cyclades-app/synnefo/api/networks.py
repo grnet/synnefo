@@ -201,7 +201,7 @@ def network_to_dict(network, detail=True):
 
         state = "SNF:DRAINED" if network.drained else network.state
         d['user_id'] = network.userid
-        d['tenant_id'] = network.userid
+        d['tenant_id'] = network.project
         d['type'] = network.flavor
         d['updated'] = api.utils.isoformat(network.updated)
         d['created'] = api.utils.isoformat(network.created)

@@ -869,7 +869,7 @@ class ModularBackend(BaseBackend):
         self._apply_versioning(account, container, src_version_id,
                                update_statistics_ancestors_depth=1)
         return dest_version_id
-    
+
     @debug_method
     def get_object_permissions_bulk(self, user, account, container, names):
         """Return the action allowed on the object, the path
@@ -880,7 +880,7 @@ class ModularBackend(BaseBackend):
                 container,names)
         access_objects = self.permissions.access_check_bulk(permissions_path,
                 user)
-        group_parents = access_objects['group_parents']
+        #group_parents = access_objects['group_parents']
         nobject_permissions = {}
         for path in permissions_path:
             allowed = 1
@@ -1713,7 +1713,7 @@ class ModularBackend(BaseBackend):
                 lookup_list.append(p)
 
         if len(lookup_list) > 0:
-            props = self.node.get_props(paths)
+            props = self.node.get_props(lookup_list)
             if props:
                 for prop in props:
                     if prop[1].split(';', 1)[0].strip() in (

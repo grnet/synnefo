@@ -372,7 +372,7 @@ class TestLocal(TestCase):
     @im_settings(RECAPTCHA_ENABLED=True, RATELIMIT_RETRIES_ALLOWED=3)
     def test_login_ratelimit(self):
         from django.core.cache import cache
-        [cache.delete(key) for key in cache._cache.keys()]
+        cache.clear()
 
         credentials = {'username': 'γιού τι έφ', 'password': 'password'}
         r = self.client.post(ui_url('local'), credentials, follow=True)

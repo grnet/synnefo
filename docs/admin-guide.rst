@@ -690,18 +690,38 @@ these resources are:
 * One Bridge corresponding to one physical VLAN which is required for networks of
   type `PRIVATE_MAC_PREFIX`.
 
-Cyclades allocates those resources from pools that are created by the
-administrator with the `snf-manage pool-create` management command.
+IPv4 addresses
+**************
 
-Pool Creation
-`````````````
-Pools are created using the `snf-manage pool-create` command:
+An allocation pool of IPv4 addresses is automatically created for every network
+that has the attribute `dhcp` set to True. The allocation pool contains the
+range of IP addresses that are included in the subnet. The gateway and the
+broadcast address of the network are excluded from the allocation pool. The
+admin can externally reserve IP addresses to exclude them from automatic
+allocation with the `--add-reserved-ips` option of `snf-manage network-modify`
+command. For example the following command will reserve two IP addresses
+from network with ID `42`:
+
+.. code-block:: console
+
+ snf-manage network-modify --add-reserved-ips=10.0.0.21,10.0.0.22 42
+
+.. warning:: Externally reserving IP addresses is also available at the Ganeti.
+ However, when using Cyclades with multiple Ganeti backends, the handling of
+ IP pools must be performed from Cyclades!
+
+Bridges
+*******
+
+As already mentioned Cyclades use a pool of Bridges that must correspond
+to Physical VLAN at the Ganeti level. A bridge from the pool is assigned to
+each network of flavor `PHYSICAL_VLAN`. Creation of this pool is done
+using `snf-manage pool-create` command. For example the following command
+will create a pool containing the brdiges from `prv1` to `prv21`.
 
 .. code-block:: console
 
    # snf-manage pool-create --type=bridge --base=prv --size=20
-
-will create a pool of bridges, containing bridges prv1, prv2,..prv21.
 
 You can verify the creation of the pool, and check its contents by running:
 
@@ -710,16 +730,31 @@ You can verify the creation of the pool, and check its contents by running:
    # snf-manage pool-list
    # snf-manage pool-show --type=bridge 1
 
-With the same commands you can handle a pool of MAC prefixes. For example:
+Finally you can use the `pool-modify` management command in order to externally
+reserve the values from pool, extend or shrink the pool if possible.
+
+MAC Prefixes
+************
+
+Cyclades also use a pool of MAC prefixes to assign to networks of flavor
+`MAC_FILTERED`. Handling of this pool is done exactly as with pool of bridges,
+except that the type option must be set to mac-prefix:
 
 .. code-block:: console
 
    # snf-manage pool-create --type=mac-prefix --base=aa:00:0 --size=65536
 
-will create a pool of MAC prefixes from ``aa:00:1`` to ``b9:ff:f``. The MAC
-prefix pool is responsible for providing only unicast and locally administered
-MAC addresses, so many of these prefixes will be externally reserved, to
-exclude from allocation.
+The above command will create a pool of MAC prefixes from ``aa:00:1`` to
+``b9:ff:f``. The MAC prefix pool is responsible for providing only unicast and
+locally administered MAC addresses, so many of these prefixes will be
+externally reserved, to exclude from allocation.
+
+Pool reconciliation
+*******************
+
+The management command `snf-manage reconcile-pools` can be used that all the
+above mentioned pools are consistent and that all values that come from the
+pool are not used more than once.
 
 
 Cyclades advanced operations

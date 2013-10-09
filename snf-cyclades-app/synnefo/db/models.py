@@ -727,8 +727,6 @@ class NetworkInterface(models.Model):
     updated = models.DateTimeField(auto_now=True)
     index = models.IntegerField(null=True)
     mac = models.CharField(max_length=32, null=True, unique=True)
-    ipv4 = models.CharField(max_length=15, null=True)
-    ipv6 = models.CharField(max_length=100, null=True)
     firewall_profile = models.CharField(choices=FIREWALL_PROFILES,
                                         max_length=30, null=True)
     security_groups = models.ManyToManyField("SecurityGroup", null=True)
@@ -748,30 +746,6 @@ class NetworkInterface(models.Model):
 
 class SecurityGroup(models.Model):
     name = models.CharField('group name', max_length=128)
-
-
-class FloatingIP(models.Model):
-    userid = models.CharField("UUID of the owner", max_length=128,
-                              null=False, db_index=True)
-    ipv4 = models.IPAddressField(null=False, unique=True, db_index=True)
-    network = models.ForeignKey(Network, related_name="floating_ips",
-                                null=False, on_delete=models.CASCADE)
-    machine = models.ForeignKey(VirtualMachine, related_name="floating_ips",
-                                null=True, on_delete=models.SET_NULL)
-    created = models.DateTimeField(auto_now_add=True)
-    deleted = models.BooleanField(default=False, null=False)
-    serial = models.ForeignKey(QuotaHolderSerial,
-                               related_name="floating_ips", null=True,
-                               on_delete=models.SET_NULL)
-
-    def __unicode__(self):
-        return "<FIP: %s@%s>" % (self.ipv4, self.network.id)
-
-    def in_use(self):
-        if self.machine is None:
-            return False
-        else:
-            return (not self.machine.deleted)
 
 
 class PoolTable(models.Model):

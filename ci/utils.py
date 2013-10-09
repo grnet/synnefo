@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# !/usr/bin/env python
 
 """
 Synnefo ci utils module
@@ -155,7 +155,9 @@ class SynnefoCI(object):
         self.temp_config.optionxform = str
         self.temp_config.read(self.temp_config_file)
         self.build_id = build_id
-        self.logger.info("Will use \"%s\" as build id" % _green(self.build_id))
+        if build_id is not None:
+            self.logger.info("Will use \"%s\" as build id" %
+                             _green(self.build_id))
 
         # Set kamaki cloud
         if cloud is not None:
@@ -225,7 +227,7 @@ class SynnefoCI(object):
                 self.logger.error(
                     "Waiting for server to become %s timed out" % new_status)
                 self.destroy_server(False)
-                sys.exit(-1)
+                sys.exit(1)
             elif server['status'] == current_status:
                 # Sleep for #n secs and continue
                 timeout = timeout - sleep_time
@@ -234,7 +236,7 @@ class SynnefoCI(object):
                 self.logger.error(
                     "Server failed with status %s" % server['status'])
                 self.destroy_server(False)
-                sys.exit(-1)
+                sys.exit(1)
 
     @_check_kamaki
     def destroy_server(self, wait=True):
@@ -562,7 +564,7 @@ class SynnefoCI(object):
         self.logger.debug("Remote file has sha256 hash %s" % hash2)
         if hash1 != hash2:
             self.logger.error("Hashes differ.. aborting")
-            sys.exit(-1)
+            sys.exit(1)
 
     @_check_fabric
     def clone_repo(self, local_repo=False):
@@ -577,6 +579,14 @@ class SynnefoCI(object):
                    self.config.get('Global', 'git_config_mail'))
         _run(cmd, False)
 
+        # Clone synnefo_repo
+        synnefo_branch = self.clone_synnefo_repo(local_repo=local_repo)
+        # Clone pithos-web-client
+        self.clone_pithos_webclient_repo(synnefo_branch)
+
+    @_check_fabric
+    def clone_synnefo_repo(self, local_repo=False):
+        """Clone Synnefo repo to remote server"""
         # Find synnefo_repo and synnefo_branch to use
         synnefo_repo = self.config.get('Global', 'synnefo_repo')
         synnefo_branch = self.config.get("Global", "synnefo_branch")
@@ -590,9 +600,9 @@ class SynnefoCI(object):
                     subprocess.Popen(
                         ["git", "rev-parse", "--short", "HEAD"],
                         stdout=subprocess.PIPE).communicate()[0].strip()
-        self.logger.info("Will use branch \"%s\"" % _green(synnefo_branch))
+        self.logger.debug("Will use branch \"%s\"" % _green(synnefo_branch))
 
-        if local_repo or synnefo_branch == "":
+        if local_repo or synnefo_repo == "":
             # Use local_repo
             self.logger.debug("Push local repo to server")
             # Firstly create the remote repo
@@ -609,7 +619,7 @@ class SynnefoCI(object):
                            -q "$@"' > {4}
             chmod u+x {4}
             export GIT_SSH="{4}"
-            echo "{0}" | git push --mirror ssh://{1}@{2}:{3}/~/synnefo
+            echo "{0}" | git push --quiet --mirror ssh://{1}@{2}:{3}/~/synnefo
             rm -f {4}
             """.format(fabric.env.password,
                        fabric.env.user,
@@ -619,46 +629,111 @@ class SynnefoCI(object):
             os.system(cmd)
         else:
             # Clone Synnefo from remote repo
-            # Currently clonning synnefo can fail unexpectedly
-            cloned = False
-            for i in range(10):
-                self.logger.debug("Clone synnefo from %s" % synnefo_repo)
-                try:
-                    _run("git clone %s synnefo" % synnefo_repo, False)
-                    cloned = True
-                    break
-                except BaseException:
-                    self.logger.warning(
-                        "Clonning synnefo failed.. retrying %s" % i)
-            if not cloned:
-                self.logger.error("Can not clone Synnefo repo.")
-                sys.exit(-1)
+            self.logger.debug("Clone synnefo from %s" % synnefo_repo)
+            self._git_clone(synnefo_repo)
 
         # Checkout the desired synnefo_branch
         self.logger.debug("Checkout \"%s\" branch/commit" % synnefo_branch)
         cmd = """
         cd synnefo
-        for branch in `git branch -a | grep remotes | \
-                       grep -v HEAD | grep -v master`; do
+        for branch in `git branch -a | grep remotes | grep -v HEAD`; do
             git branch --track ${branch##*/} $branch
         done
         git checkout %s
         """ % (synnefo_branch)
         _run(cmd, False)
 
+        return synnefo_branch
+
     @_check_fabric
-    def build_synnefo(self):
-        """Build Synnefo packages"""
-        self.logger.info("Build Synnefo packages..")
-        self.logger.debug("Install development packages")
+    def clone_pithos_webclient_repo(self, synnefo_branch):
+        """Clone Pithos WebClient repo to remote server"""
+        # Find pithos_webclient_repo and pithos_webclient_branch to use
+        pithos_webclient_repo = \
+            self.config.get('Global', 'pithos_webclient_repo')
+        pithos_webclient_branch = \
+            self.config.get('Global', 'pithos_webclient_branch')
+
+        # Clone pithos-webclient from remote repo
+        self.logger.debug("Clone pithos-webclient from %s" %
+                          pithos_webclient_repo)
+        self._git_clone(pithos_webclient_repo)
+
+        # Track all pithos-webclient branches
+        cmd = """
+        cd pithos-web-client
+        for branch in `git branch -a | grep remotes | grep -v HEAD`; do
+            git branch --track ${branch##*/} $branch > /dev/null 2>&1
+        done
+        git branch
+        """
+        webclient_branches = _run(cmd, False)
+        webclient_branches = webclient_branches.split()
+
+        # If we have pithos_webclient_branch in config file use this one
+        # else try to use the same branch as synnefo_branch
+        # else use an appropriate one.
+        if pithos_webclient_branch == "":
+            if synnefo_branch in webclient_branches:
+                pithos_webclient_branch = synnefo_branch
+            else:
+                # If synnefo_branch starts with one of
+                # 'master', 'hotfix'; use the master branch
+                if synnefo_branch.startswith('master') or \
+                        synnefo_branch.startswith('hotfix'):
+                    pithos_webclient_branch = "master"
+                # If synnefo_branch starts with one of
+                # 'develop', 'feature'; use the develop branch
+                elif synnefo_branch.startswith('develop') or \
+                        synnefo_branch.startswith('feature'):
+                    pithos_webclient_branch = "develop"
+                else:
+                    self.logger.waring(
+                        "Cannot determine which pithos-web-client branch to "
+                        "use based on \"%s\" synnefo branch. "
+                        "Will use develop." % synnefo_branch)
+                    pithos_webclient_branch = "develop"
+        # Checkout branch
+        self.logger.debug("Checkout \"%s\" branch" %
+                          _green(pithos_webclient_branch))
+        cmd = """
+        cd pithos-web-client
+        git checkout {0}
+        """.format(pithos_webclient_branch)
+        _run(cmd, False)
+
+    def _git_clone(self, repo):
+        """Clone repo to remote server
+
+        Currently clonning from code.grnet.gr can fail unexpectedly.
+        So retry!!
+
+        """
+        cloned = False
+        for i in range(1, 11):
+            try:
+                _run("git clone %s" % repo, False)
+                cloned = True
+                break
+            except BaseException:
+                self.logger.warning("Clonning failed.. retrying %s/10" % i)
+        if not cloned:
+            self.logger.error("Can not clone repo.")
+            sys.exit(1)
+
+    @_check_fabric
+    def build_packages(self):
+        """Build packages needed by Synnefo software"""
+        self.logger.info("Install development packages")
         cmd = """
         apt-get update
         apt-get install zlib1g-dev dpkg-dev debhelper git-buildpackage \
-                python-dev python-all python-pip --yes --force-yes
+                python-dev python-all python-pip ant --yes --force-yes
         pip install -U devflow
         """
         _run(cmd, False)
 
+        # Patch pydist bug
         if self.config.get('Global', 'patch_pydist') == "True":
             self.logger.debug("Patch pydist.py module")
             cmd = r"""
@@ -668,7 +743,15 @@ class SynnefoCI(object):
             _run(cmd, False)
 
         # Build synnefo packages
-        self.logger.debug("Build synnefo packages")
+        self.build_synnefo()
+        # Build pithos-web-client packages
+        self.build_pithos_webclient()
+
+    @_check_fabric
+    def build_synnefo(self):
+        """Build Synnefo packages"""
+        self.logger.info("Build Synnefo packages..")
+
         cmd = """
         devflow-autopkg snapshot -b ~/synnefo_build-area --no-sign
         """
@@ -689,6 +772,24 @@ class SynnefoCI(object):
         self.logger.debug("Copy synnefo debs to snf-deploy packages dir")
         cmd = """
         cp ~/synnefo_build-area/*.deb /var/lib/snf-deploy/packages/
+        """
+        _run(cmd, False)
+
+    @_check_fabric
+    def build_pithos_webclient(self):
+        """Build pithos-web-client packages"""
+        self.logger.info("Build pithos-web-client packages..")
+
+        cmd = """
+        devflow-autopkg snapshot -b ~/webclient_build-area --no-sign
+        """
+        with fabric.cd("pithos-web-client"):
+            _run(cmd, True)
+
+        # Setup pithos-web-client packages for snf-deploy
+        self.logger.debug("Copy webclient debs to snf-deploy packages dir")
+        cmd = """
+        cp ~/webclient_build-area/*.deb /var/lib/snf-deploy/packages/
         """
         _run(cmd, False)
 
@@ -824,6 +925,7 @@ class SynnefoCI(object):
         if not os.path.exists(dest):
             os.makedirs(dest)
         self.fetch_compressed("synnefo_build-area", dest)
+        self.fetch_compressed("webclient_build-area", dest)
         self.logger.info("Downloaded debian packages to %s" %
                          _green(dest))
 

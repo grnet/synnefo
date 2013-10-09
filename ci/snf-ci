@@ -146,7 +146,7 @@ def main():  # Too many branches. pylint: disable-msg=R0912
                                  ssh_keys=options.ssh_keys)
         synnefo_ci.clone_repo(local_repo=options.local_repo)
     if getattr(options, BUILD_SYNNEFO_CMD, False):
-        synnefo_ci.build_synnefo()
+        synnefo_ci.build_packages()
         if options.fetch_packages:
             dest = os.path.abspath(options.fetch_packages)
             synnefo_ci.fetch_packages(dest=dest)

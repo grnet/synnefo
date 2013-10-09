@@ -186,10 +186,15 @@ class NetworkInterfaceFactory(factory.DjangoModelFactory):
         factory.Sequence(round_seq_first(FACTORY_FOR.FIREWALL_PROFILES))
 
 
+class IPPoolTableFactory(factory.DjangoModelFactory):
+    FACTORY_FOR = models.IPPoolTable
+    size = 0
+
+
 class IPv4SubnetFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.Subnet
 
-    network = factory.SubFactory(NetworkFactory)
+    network = factory.SubFactory(NetworkFactory, state="ACTIVE")
     name = factory.LazyAttribute(lambda self: random_string(30))
     ipversion = 4
     cidr = factory.Sequence(lambda n: '192.168.{0}.0/24'.format(n))
@@ -197,6 +202,7 @@ class IPv4SubnetFactory(factory.DjangoModelFactory):
     gateway = factory.Sequence(lambda n: '192.168.{0}.1'.format(n))
     dns_nameservers = []
     host_routes = []
+    pool = factory.RelatedFactory(IPPoolTableFactory, 'subnet')
 
 
 class IPv6SubnetFactory(IPv4SubnetFactory):
@@ -213,6 +219,18 @@ class IPv4AddressFactory(factory.DjangoModelFactory):
     address =\
         factory.LazyAttributeSequence(lambda self, n: self.subnet.cidr[:-4] +
                                       '{0}'.format(int(n) + 2))
+    nic = factory.SubFactory(NetworkInterfaceFactory,
+                             network=factory.SelfAttribute('..network'))
+
+
+class IPv6AddressFactory(IPv4AddressFactory):
+    FACTORY_FOR = models.IPAddress
+
+    subnet = factory.SubFactory(IPv6SubnetFactory)
+    network = factory.SubFactory(NetworkFactory)
+    address = "babe::"
+    nic = factory.SubFactory(NetworkInterfaceFactory,
+                             network=factory.SelfAttribute('..network'))
 
 
 class FloatingIPFactory(IPv4AddressFactory):

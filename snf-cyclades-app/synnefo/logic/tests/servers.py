@@ -122,7 +122,7 @@ class ServerTest(TransactionTestCase):
         mfactory.BackendNetworkFactory(network=net, backend=vm.backend)
         mrapi().ModifyInstance.return_value = 42
         servers.connect(vm, net)
-        pool = net.get_pool(with_lock=False)
+        pool = net.get_pool(locked=False)
         self.assertFalse(pool.is_available("192.168.2.2"))
         args, kwargs = mrapi().ModifyInstance.call_args
         nics = kwargs["nics"][0]
@@ -140,7 +140,7 @@ class ServerTest(TransactionTestCase):
                                       dhcp=False)
         mfactory.BackendNetworkFactory(network=net, backend=vm.backend)
         servers.connect(vm, net)
-        pool = net.get_pool(with_lock=False)
+        pool = net.get_pool(locked=False)
         self.assertTrue(pool.is_available("192.168.2.2"))
         args, kwargs = mrapi().ModifyInstance.call_args
         nics = kwargs["nics"][0]

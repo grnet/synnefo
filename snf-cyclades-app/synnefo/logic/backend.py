@@ -544,12 +544,12 @@ def create_instance(vm, nics, flavor, image):
 
     kw['nics'] = [{"name": nic.backend_uuid,
                    "network": nic.network.backend_id,
-                   "ip": nic.ipv4}
+                   "ip": nic.ipv4_address}
                   for nic in nics]
     backend = vm.backend
     depend_jobs = []
     for nic in nics:
-        network = Network.objects.select_for_update().get(id=nic.network.id)
+        network = Network.objects.select_for_update().get(id=nic.network_id)
         bnet, created = BackendNetwork.objects.get_or_create(backend=backend,
                                                              network=network)
         if bnet.operstate != "ACTIVE":
@@ -714,8 +714,19 @@ def _create_network(network, backend):
     """Create a network."""
 
     tags = network.backend_tag
-    if network.dhcp:
-        tags.append('nfdhcpd')
+    subnet = None
+    subnet6 = None
+    gateway = None
+    gateway6 = None
+    for subnet in network.subnets.all():
+        if subnet.ipversion == 4:
+            if subnet.dhcp:
+                tags.append('nfdhcpd')
+                subnet = subnet.cidr
+                gateway = subnet.gateway
+        elif subnet.ipversion == 6:
+                subnet6 = subnet.cidr
+                gateway6 = subnet.gateway
 
     if network.public:
         conflicts_check = True
@@ -728,7 +739,6 @@ def _create_network(network, backend):
     # not support IPv6 only networks. To bypass this limitation, we create the
     # network with a dummy network subnet, and make Cyclades connect instances
     # to such networks, with address=None.
-    subnet = network.subnet
     if subnet is None:
         subnet = "10.0.0.0/24"
 
@@ -742,9 +752,9 @@ def _create_network(network, backend):
     with pooled_rapi_client(backend) as client:
         return client.CreateNetwork(network_name=network.backend_id,
                                     network=subnet,
-                                    network6=network.subnet6,
-                                    gateway=network.gateway,
-                                    gateway6=network.gateway6,
+                                    network6=subnet6,
+                                    gateway=gateway,
+                                    gateway6=gateway6,
                                     mac_prefix=mac_prefix,
                                     conflicts_check=conflicts_check,
                                     tags=tags)

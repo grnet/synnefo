@@ -122,9 +122,12 @@ class ServerAPITest(ComputeAPITest):
         """Test if a server details are returned."""
         db_vm = self.vm2
         user = self.vm2.userid
-        net = mfactory.NetworkFactory()
-        nic = mfactory.NetworkInterfaceFactory(machine=self.vm2, network=net,
-                                               ipv6="::babe")
+        ip4 = mfactory.IPv4AddressFactory(nic__machine=self.vm2)
+        nic = ip4.nic
+        net = ip4.network
+        ip6 = mfactory.IPv6AddressFactory(nic=nic, network=net)
+        nic.mac = "aa:00:11:22:33:44"
+        nic.save()
 
         db_vm_meta = mfactory.VirtualMachineMetadataFactory(vm=db_vm)
 
@@ -141,14 +144,14 @@ class ServerAPITest(ComputeAPITest):
         self.assertEqual(api_nic['network_id'], str(net.id))
         self.assertEqual(api_nic['mac_address'], nic.mac)
         self.assertEqual(api_nic['firewallProfile'], nic.firewall_profile)
-        self.assertEqual(api_nic['ipv4'], nic.ipv4)
-        self.assertEqual(api_nic['ipv6'], nic.ipv6)
+        self.assertEqual(api_nic['ipv4'], ip4.address)
+        self.assertEqual(api_nic['ipv6'], ip6.address)
         self.assertEqual(api_nic['OS-EXT-IPS:type'], "fixed")
         self.assertEqual(api_nic['id'], nic.id)
         api_address = server["addresses"]
         self.assertEqual(api_address[str(net.id)], [
-            {"version": 4, "addr": nic.ipv4, "OS-EXT-IPS:type": "fixed"},
-            {"version": 6, "addr": nic.ipv6, "OS-EXT-IPS:type": "fixed"}
+            {"version": 4, "addr": ip4.address, "OS-EXT-IPS:type": "fixed"},
+            {"version": 6, "addr": ip6.address, "OS-EXT-IPS:type": "fixed"}
         ])
 
         metadata = server['metadata']
@@ -184,24 +187,22 @@ class ServerAPITest(ComputeAPITest):
             self.assertEqual(server["SNF:fqdn"], "")
 
         # IPv6 NIC
-        nic = mfactory.NetworkInterfaceFactory(machine=vm, ipv4=None,
-                                               ipv6="babe::", state="ACTIVE",
-                                               network__public=True)
+        ipv6_address = mfactory.IPv6AddressFactory(nic__machine=vm,
+                                                   network__public=True)
         with override_settings(settings,
                                CYCLADES_SERVERS_FQDN=None):
             response = self.myget("servers/%d" % vm.id, vm.userid)
             server = json.loads(response.content)['server']
-            self.assertEqual(server["SNF:fqdn"], nic.ipv6)
+            self.assertEqual(server["SNF:fqdn"], ipv6_address.address)
 
         # IPv4 NIC
-        nic = mfactory.NetworkInterfaceFactory(machine=vm,
-                                               network__public=True,
-                                               state="ACTIVE")
+        ipv4_address = mfactory.IPv4AddressFactory(nic__machine=vm,
+                                                   network__public=True)
         with override_settings(settings,
                                CYCLADES_SERVERS_FQDN=None):
             response = self.myget("servers/%d" % vm.id, vm.userid)
             server = json.loads(response.content)['server']
-            self.assertEqual(server["SNF:fqdn"], nic.ipv4)
+            self.assertEqual(server["SNF:fqdn"], ipv4_address.address)
 
     def test_server_port_forwarding(self):
         vm = mfactory.VirtualMachineFactory()
@@ -229,8 +230,9 @@ class ServerAPITest(ComputeAPITest):
             server = json.loads(response.content)['server']
             self.assertEqual(server["SNF:port_forwarding"], {})
 
-        mfactory.NetworkInterfaceFactory(machine=vm, ipv4="192.168.2.2",
-                                         network__public=True)
+        mfactory.IPv4AddressFactory(nic__machine=vm,
+                                    network__public=True,
+                                    address="192.168.2.2")
         with override_settings(settings,
                                CYCLADES_PORT_FORWARDING=ports):
             response = self.myget("servers/%d" % vm.id, vm.userid)
@@ -335,7 +337,8 @@ class ServerCreateAPITest(ComputeAPITest):
     def setUp(self):
         self.flavor = mfactory.FlavorFactory()
         # Create public network and backend
-        self.network = mfactory.NetworkFactory(public=True)
+        subnet = mfactory.IPv4SubnetFactory(network__public=True)
+        self.network = subnet.network
         self.backend = mfactory.BackendFactory()
         mfactory.BackendNetworkFactory(network=self.network,
                                        backend=self.backend,
@@ -386,16 +389,23 @@ class ServerCreateAPITest(ComputeAPITest):
 
     def test_create_network_settings(self, mrapi):
         mrapi().CreateInstance.return_value = 12
-        bnet1 = mfactory.BackendNetworkFactory(operstate="ACTIVE",
-                                               backend=self.backend)
-        bnet2 = mfactory.BackendNetworkFactory(operstate="ACTIVE",
-                                               backend=self.backend)
-        bnet3 = mfactory.BackendNetworkFactory(network__userid="test_user",
-                                               operstate="ACTIVE",
-                                               backend=self.backend)
-        bnet4 = mfactory.BackendNetworkFactory(network__userid="test_user",
-                                               operstate="ACTIVE",
-                                               backend=self.backend)
+        # Create public network and backend
+        subnet1 = mfactory.IPv4SubnetFactory()
+        bnet1 = mfactory.BackendNetworkFactory(network=subnet1.network,
+                                               backend=self.backend,
+                                               operstate="ACTIVE")
+        subnet2 = mfactory.IPv4SubnetFactory()
+        bnet2 = mfactory.BackendNetworkFactory(network=subnet2.network,
+                                               backend=self.backend,
+                                               operstate="ACTIVE")
+        subnet3 = mfactory.IPv4SubnetFactory(network__userid="test_user")
+        bnet3 = mfactory.BackendNetworkFactory(network=subnet3.network,
+                                               backend=self.backend,
+                                               operstate="ACTIVE")
+        subnet4 = mfactory.IPv4SubnetFactory(network__userid="test_user")
+        bnet4 = mfactory.BackendNetworkFactory(network=subnet4.network,
+                                               backend=self.backend,
+                                               operstate="ACTIVE")
         # User requested private networks
         request = deepcopy(self.request)
         request["server"]["networks"] = [bnet3.network.id, bnet4.network.id]
@@ -464,17 +474,13 @@ class ServerCreateAPITest(ComputeAPITest):
         # Test floating IPs
         request = deepcopy(self.request)
         request["server"]["networks"] = [bnet4.network.id]
-        network = mfactory.NetworkFactory(subnet="10.0.0.0/24")
-        mfactory.BackendNetworkFactory(network=network,
-                                       backend=self.backend,
-                                       operstate="ACTIVE")
-        fp1 = mfactory.IPAddressFactory(ipv4="10.0.0.2",
+        fp1 = mfactory.FloatingIPFactory(address="10.0.0.2",
                                          userid="test_user",
-                                         network=network, machine=None)
-        fp2 = mfactory.IPAddressFactory(ipv4="10.0.0.3", network=network,
+                                         nic=None)
+        fp2 = mfactory.FloatingIPFactory(address="10.0.0.3",
                                          userid="test_user",
-                                         machine=None)
-        request["server"]["floating_ips"] = [fp1.ipv4, fp2.ipv4]
+                                         nic=None)
+        request["server"]["floating_ips"] = [fp1.address, fp2.address]
         with override_settings(settings,
                                DEFAULT_INSTANCE_NETWORKS=[bnet3.network.id]):
             with mocked_quotaholder():
@@ -483,18 +489,18 @@ class ServerCreateAPITest(ComputeAPITest):
         self.assertEqual(response.status_code, 202)
         api_server = json.loads(response.content)['server']
         vm = VirtualMachine.objects.get(id=api_server["id"])
-        fp1 = IPAddress.objects.get(id=fp1.id)
-        fp2 = IPAddress.objects.get(id=fp2.id)
-        self.assertEqual(fp1.machine, vm)
-        self.assertEqual(fp2.machine, vm)
+        fp1 = IPAddress.objects.get(floating_ip=True, id=fp1.id)
+        fp2 = IPAddress.objects.get(floating_ip=True, id=fp2.id)
+        self.assertEqual(fp1.nic.machine, vm)
+        self.assertEqual(fp2.nic.machine, vm)
         name, args, kwargs = mrapi().CreateInstance.mock_calls[2]
         self.assertEqual(len(kwargs["nics"]), 4)
         self.assertEqual(kwargs["nics"][0]["network"],
                          bnet3.network.backend_id)
-        self.assertEqual(kwargs["nics"][1]["network"], network.backend_id)
-        self.assertEqual(kwargs["nics"][1]["ip"], fp1.ipv4)
-        self.assertEqual(kwargs["nics"][2]["network"], network.backend_id)
-        self.assertEqual(kwargs["nics"][2]["ip"], fp2.ipv4)
+        self.assertEqual(kwargs["nics"][1]["network"], fp1.network.backend_id)
+        self.assertEqual(kwargs["nics"][1]["ip"], fp1.address)
+        self.assertEqual(kwargs["nics"][2]["network"], fp2.network.backend_id)
+        self.assertEqual(kwargs["nics"][2]["ip"], fp2.address)
         self.assertEqual(kwargs["nics"][3]["network"],
                          bnet4.network.backend_id)
 
@@ -510,10 +516,6 @@ class ServerCreateAPITest(ComputeAPITest):
         """Test if the create server call returns the expected response
            if a valid request has been speficied."""
         mrapi().CreateInstance.side_effect = GanetiApiError("..ganeti is down")
-        # Create public network and backend
-        network = mfactory.NetworkFactory(public=True)
-        backend = mfactory.BackendFactory()
-        mfactory.BackendNetworkFactory(network=network, backend=backend)
 
         request = self.request
         with mocked_quotaholder():

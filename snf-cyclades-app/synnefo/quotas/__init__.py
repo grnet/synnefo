@@ -298,7 +298,8 @@ def prepare_qh_resources(resource):
     elif isinstance(resource, Network):
         return {"cyclades.network.private": 1}
     elif isinstance(resource, IPAddress):
-        return {"cyclades.floating_ip": 1}
+        if resource.floating_ip:
+            return {"cyclades.floating_ip": 1}
     else:
         raise ValueError("Unknown Resource '%s'" % resource)
 

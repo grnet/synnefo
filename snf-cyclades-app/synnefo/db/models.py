@@ -531,22 +531,19 @@ class Network(models.Model):
             if not backend_exists:
                 BackendNetwork.objects.create(backend=backend, network=self)
 
-    def get_pool(self, with_lock=True):
+    def get_pool(self, locked=True):
         try:
             subnet = self.subnets.get(ipversion=4, deleted=False)
         except Subnet.DoesNotExist:
             raise pools.EmptyPool
+        return subnet.get_pool(locked=locked)
+
+    def allocate_address(self, userid):
         try:
-            pool = subnet.ip_pools.all()[0]
-        except IndexError:
-            pool = IPPoolTable.objects.create(available_map='',
-                                              reserved_map='',
-                                              size=0,
-                                              subnet=subnet)
-        objects = IPPoolTable.objects
-        if with_lock:
-            objects = objects.select_for_update()
-        return objects.get(id=pool.id)
+            subnet = self.subnets.get(ipversion=4, deleted=False)
+        except Subnet.DoesNotExist:
+            raise pools.EmptyPool
+        return subnet.allocate_address(userid)
 
     def reserve_address(self, address):
         pool = self.get_pool()
@@ -600,6 +597,21 @@ class Subnet(models.Model):
 
     def __unicode__(self):
         return "<Subnet %s, Network: %s>" % (self.id, self.network_id)
+
+    def get_pool(self, locked=True):
+        if self.ipversion == 6:
+            raise Exception("IPv6 Subnets have no IP Pool.")
+        ip_pools = self.ip_pools
+        if locked:
+            ip_pools = ip_pools.select_for_update()
+        return ip_pools.all()[0].pool
+
+    def allocate_address(self, userid):
+        pool = self.get_pool(locked=True)
+        address = pool.get()
+        pool.save()
+        return IPAddress.objects.create(network=self.network, subnet=self,
+                                        address=address, userid=userid)
 
 
 class BackendNetwork(models.Model):
@@ -754,6 +766,13 @@ class NetworkInterface(models.Model):
     def backend_uuid(self):
         """Return the backend id by prepending backend-prefix."""
         return "%snic-%s" % (settings.BACKEND_PREFIX_ID, str(self.id))
+
+    @property
+    def ipv4_address(self):
+        try:
+            return self.ips.get(subnet__ipversion=4).address
+        except IPAddress.DoesNotExist:
+            return None
 
 
 class SecurityGroup(models.Model):

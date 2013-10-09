@@ -234,7 +234,7 @@ def release_floating_ip(request, floating_ip_id):
 
 
 def network_to_pool(network):
-    pool = network.get_pool(with_lock=False)
+    pool = network.get_pool(locked=False)
     return {"name": str(network.id),
             "size": pool.pool_size,
             "free": pool.count_available()}

@@ -234,14 +234,14 @@ def get_floating_ip(user_id, ipv4, for_update=False):
         raise faults.ItemNotFound("Floating IP does not exist.")
 
 
-def allocate_public_address(backend):
+def allocate_public_address(backend, userid):
     """Get a public IP for any available network of a backend."""
     # Guarantee exclusive access to backend, because accessing the IP pools of
     # the backend networks may result in a deadlock with backend allocator
     # which also checks that backend networks have a free IP.
     backend = Backend.objects.select_for_update().get(id=backend.id)
     public_networks = backend_public_networks(backend)
-    return get_free_ip(public_networks)
+    return get_free_ip(public_networks, userid)
 
 
 def backend_public_networks(backend):
@@ -255,16 +255,14 @@ def backend_public_networks(backend):
                                           network__public=True,
                                           network__deleted=False,
                                           network__floating_ip_pool=False,
-                                          network__subnet__isnull=False,
                                           network__drained=False)
     return [b.network for b in bnets]
 
 
-def get_free_ip(networks):
+def get_free_ip(networks, userid):
     for network in networks:
         try:
-            address = get_network_free_address(network)
-            return network, address
+            return network.allocate_address(userid=userid)
         except faults.OverLimit:
             pass
     msg = "Can not allocate public IP. Public networks are full."
@@ -272,16 +270,13 @@ def get_free_ip(networks):
     raise faults.OverLimit(msg)
 
 
-def get_network_free_address(network):
+def get_network_free_address(network, userid):
     """Reserve an IP address from the IP Pool of the network."""
 
-    pool = network.get_pool()
     try:
-        address = pool.get()
+        return network.allocate_address(userid=userid)
     except EmptyPool:
         raise faults.OverLimit("Network %s is full." % network.backend_id)
-    pool.save()
-    return address
 
 
 def get_vm_nic(vm, nic_id):

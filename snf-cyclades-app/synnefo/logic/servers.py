@@ -13,7 +13,8 @@ from synnefo.api import util
 from synnefo.logic import backend
 from synnefo.logic.backend_allocator import BackendAllocator
 from synnefo.db.models import (NetworkInterface, VirtualMachine, Network,
-                               VirtualMachineMetadata, IPAddress)
+                               VirtualMachineMetadata, IPAddress, Subnet)
+from synnefo.db import query as db_query
 
 from vncauthproxy.client import request_forwarding as request_vnc_forwarding
 
@@ -242,9 +243,11 @@ def create_instance_nics(vm, userid, private_networks=[], floating_ips=[]):
     """
     attachments = []
     for network_id in settings.DEFAULT_INSTANCE_NETWORKS:
-        network, address = None, None
+        network, ipaddress = None, None
         if network_id == "SNF:ANY_PUBLIC":
-            network, address = util.allocate_public_address(backend=vm.backend)
+            ipaddress = util.allocate_public_address(backend=vm.backend,
+                                                     userid=userid)
+            network = ipaddress.network
         else:
             try:
                 network = Network.objects.get(id=network_id, deleted=False)
@@ -254,31 +257,33 @@ def create_instance_nics(vm, userid, private_networks=[], floating_ips=[]):
                       " network '%s'" % network_id
                 log.error(msg)
                 raise Exception(msg)
-            if network.subnet is not None and network.dhcp:
-                address = util.get_network_free_address(network)
-        attachments.append((network, address))
+            try:
+                subnet = network.subnets.get(ipversion=4, dhcp=True)
+                ipaddress = util.get_network_free_address(subnet, userid)
+            except Subnet.DoesNotExist:
+                ipaddress = None
+        attachments.append((network, ipaddress))
     for address in floating_ips:
-        floating_ip = add_floating_ip_to_vm(vm=vm, address=address)
-        network = floating_ip.network
-        attachments.append((network, address))
+        floating_ip = get_floating_ip(userid=vm.userid, address=address)
+        attachments.append((floating_ip.network, floating_ip))
     for network_id in private_networks:
-        network, address = None, None
         network = util.get_network(network_id, userid, non_deleted=True)
         if network.public:
             raise faults.Forbidden("Can not connect to public network")
-        if network.dhcp:
-            address = util.get_network_free_address(network)
-        attachments.append((network, address))
+        attachments.append((network, ipaddress))
 
     nics = []
-    for index, (network, address) in enumerate(attachments):
+    for index, (network, ipaddress) in enumerate(attachments):
         # Create VM's public NIC. Do not wait notification form ganeti
         # hooks to create this NIC, because if the hooks never run (e.g.
         # building error) the VM's public IP address will never be
         # released!
-        nic = NetworkInterface.objects.create(machine=vm, network=network,
-                                              index=index, ipv4=address,
+        nic = NetworkInterface.objects.create(userid=userid, machine=vm,
+                                              network=network, index=index,
                                               state="BUILDING")
+        if ipaddress is not None:
+            ipaddress.nic = nic
+            ipaddress.save()
         nics.append(nic)
     return nics
 
@@ -427,7 +432,7 @@ def console(vm, console_type):
 
 @server_command("CONNECT")
 def add_floating_ip(vm, address):
-    floating_ip = add_floating_ip_to_vm(vm, address)
+    floating_ip = get_floating_ip(userid=vm.userid, address=address)
     nic = NetworkInterface.objects.create(machine=vm,
                                           network=floating_ip.network,
                                           ipv4=floating_ip.ipv4,
@@ -438,56 +443,41 @@ def add_floating_ip(vm, address):
     return backend.connect_to_network(vm, nic)
 
 
-def add_floating_ip_to_vm(vm, address):
-    """Get a floating IP by it's address and add it to VirtualMachine.
+def get_floating_ip(userid, address):
+    """Get a floating IP by it's address.
 
-    Helper function for looking up a IPAddress by it's address and associating
-    it with a VirtualMachine object (without adding the NIC in the Ganeti
-    backend!). This function also checks if the floating IP is currently used
-    by any instance and if it is available in the Backend that hosts the VM.
+    Helper function for looking up a IPAddress by it's address. This function
+    also checks if the floating IP is currently used by any instance.
 
     """
-    user_id = vm.userid
     try:
         # Get lock in VM, to guarantee that floating IP will only by assigned
         # once
-        floating_ip = IPAddress.objects.select_for_update()\
-                                        .get(userid=user_id, ipv4=address,
-                                             deleted=False)
+        floating_ip = db_query.get_user_floating_ip(userid=userid,
+                                                    address=address,
+                                                    for_update=True)
     except IPAddress.DoesNotExist:
-        raise faults.ItemNotFound("Floating IP '%s' does not exist" % address)
+        raise faults.ItemNotFound("Floating IP with address '%s' does not"
+                                  " exist" % address)
 
-    if floating_ip.in_use():
+    if floating_ip.nic is not None:
         raise faults.Conflict("Floating IP '%s' already in use" %
                               floating_ip.id)
 
-    bnet = floating_ip.network.backend_networks.filter(backend=vm.backend_id)
-    if not bnet.exists():
-        msg = "Network '%s' is a floating IP pool, but it not connected"\
-              " to backend '%s'" % (floating_ip.network, vm.backend)
-        raise faults.ServiceUnavailable(msg)
-
-    floating_ip.machine = vm
-    floating_ip.save()
     return floating_ip
 
 
 @server_command("DISCONNECT")
 def remove_floating_ip(vm, address):
-    user_id = vm.userid
     try:
-        floating_ip = IPAddress.objects.select_for_update()\
-                                        .get(userid=user_id, ipv4=address,
-                                             deleted=False, machine=vm)
+        floating_ip = db_query.get_server_floating_ip(server=vm,
+                                                      address=address,
+                                                      for_update=True)
     except IPAddress.DoesNotExist:
-        raise faults.ItemNotFound("Floating IP '%s' does not exist" % address)
+        raise faults.BadRequest("Server '%s' has no floating ip with"
+                                " address '%s'" % (vm, address))
 
-    try:
-        nic = NetworkInterface.objects.get(machine=vm, ipv4=address)
-    except NetworkInterface.DoesNotExist:
-        raise faults.ItemNotFound("Floating IP '%s' is not attached to"
-                                  "VM '%s'" % (floating_ip, vm))
-
+    nic = floating_ip.nic
     log.info("Removing NIC %s from VM %s. Floating IP '%s'", str(nic.index),
              vm, floating_ip)
 

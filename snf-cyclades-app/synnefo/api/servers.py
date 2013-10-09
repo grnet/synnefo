@@ -43,6 +43,7 @@ from snf_django.lib import api
 from snf_django.lib.api import faults, utils
 
 from synnefo.api import util
+from synnefo.db import query as db_query
 from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata)
 from synnefo.logic import servers, utils as logic_utils
 
@@ -108,9 +109,16 @@ def nic_to_dict(nic):
     d = {'id': nic.id,
          'network_id': str(nic.network.id),
          'mac_address': nic.mac,
-         'ipv4': nic.ipv4,
-         'ipv6': nic.ipv6,
-         'OS-EXT-IPS:type': nic.ip_type.lower()}
+         'ipv4': '',
+         'ipv6': ''}
+    for ip in nic.ips.filter(deleted=False).select_related("subnet"):
+        ip_type = "floating" if ip.floating_ip else "fixed"
+        if ip.subnet.ipversion == 4:
+            d["ipv4"] = ip.address
+            d["OS-EXT-IPS:type"] = ip_type
+        else:
+            d["ipv6"] = ip.address
+            d["OS-EXT-IPS:type"] = ip_type
 
     if nic.firewall_profile:
         d['firewallProfile'] = nic.firewall_profile
@@ -121,9 +129,10 @@ def attachments_to_addresses(attachments):
     addresses = {}
     for nic in attachments:
         net_nics = []
-        net_nics.append({"version": 4,
-                         "addr": nic["ipv4"],
-                         "OS-EXT-IPS:type": nic["OS-EXT-IPS:type"]})
+        if nic["ipv4"]:
+            net_nics.append({"version": 4,
+                             "addr": nic["ipv4"],
+                             "OS-EXT-IPS:type": nic["OS-EXT-IPS:type"]})
         if nic["ipv6"]:
             net_nics.append({"version": 6,
                              "addr": nic["ipv6"],
@@ -180,16 +189,15 @@ def vm_to_dict(vm, detail=False):
 def get_server_fqdn(vm):
     fqdn_setting = settings.CYCLADES_SERVERS_FQDN
     if fqdn_setting is None:
-        public_nics = vm.nics.filter(network__public=True, state="ACTIVE")
         # Return the first public IPv4 address if exists
-        ipv4_nics = public_nics.exclude(ipv4=None)
-        if ipv4_nics:
-            return ipv4_nics[0].ipv4
-        # Else return the first public IPv6 address if exists
-        ipv6_nics = public_nics.exclude(ipv6=None)
-        if ipv6_nics:
-            return ipv6_nics[0].ipv6
-        return ""
+        address = db_query.get_server_public_ip(server=vm, version=4)
+        if address is None:
+            # Else return the first public IPv6 address if exists
+            address = db_query.get_server_public_ip(server=vm, version=6)
+        if address is None:
+            return ""
+        else:
+            return address
     elif isinstance(fqdn_setting, basestring):
         return fqdn_setting % {"id": vm.id}
     else:
@@ -214,13 +222,8 @@ def get_server_port_forwarding(vm, fqdn):
     port_forwarding = {}
     for dport, to_dest in settings.CYCLADES_PORT_FORWARDING.items():
         if hasattr(to_dest, "__call__"):
-            public_nics = vm.nics.filter(network__public=True, state="ACTIVE")\
-                                 .exclude(ipv4=None).order_by('index')
-            if public_nics:
-                vm_ipv4 = public_nics[0].ipv4
-            else:
-                vm_ipv4 = None
-            to_dest = to_dest(vm_ipv4, vm.id, fqdn, vm.userid)
+            address = db_query.get_server_public_ip(server=vm, version=4)
+            to_dest = to_dest(address, vm.id, fqdn, vm.userid)
         msg = ("Invalid setting: CYCLADES_PORT_FOWARDING."
                " Value must be a tuple of two elements (host, port).")
         if to_dest is None:

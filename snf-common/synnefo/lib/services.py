@@ -39,16 +39,16 @@ from urlparse import urlparse
 
 def fill_endpoints(services, base_url):
     for name, service in services.iteritems():
-        prefix = get_path(service, 'prefix')
-        endpoints = get_path(service, 'endpoints')
+        prefix = get_path(service, ['prefix'])
+        endpoints = get_path(service, ['endpoints'])
         for endpoint in endpoints:
-            version = get_path(endpoint, 'versionId')
-            publicURL = get_path(endpoint, 'publicURL')
+            version = get_path(endpoint, ['versionId'])
+            publicURL = get_path(endpoint, ['publicURL'])
             if publicURL is not None:
                 continue
 
             publicURL = join_urls(base_url, prefix, version).rstrip('/')
-            set_path(endpoint, 'publicURL', publicURL)
+            set_path(endpoint, ['publicURL'], publicURL)
 
 
 def filter_public(services):

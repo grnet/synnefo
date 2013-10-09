@@ -34,4 +34,5 @@
 from astakos.im.settings import astakos_services
 from synnefo.util.keypath import get_path
 
-resources = get_path(astakos_services, 'astakos_account.resources').values()
+resources = get_path(
+    astakos_services, ['astakos_account', 'resources']).values()

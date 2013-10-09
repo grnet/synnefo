@@ -209,7 +209,7 @@ class ModularBackend(BaseBackend):
                   'MATCH_PREFIX', 'MATCH_EXACT']:
             setattr(self, x, getattr(self.db_module, x))
 
-        self.ALLOWED =  ['read','write']
+        self.ALLOWED = ['read', 'write']
 
         self.block_module = load_module(block_module)
         self.block_params = block_params
@@ -876,10 +876,10 @@ class ModularBackend(BaseBackend):
         from which the object gets its permissions from,
         along with a dictionary containing the permissions."""
 
-        permissions_path = self._get_permissions_path_bulk(account,
-                container,names)
+        permissions_path = self._get_permissions_path_bulk(account, container,
+                                                           names)
         access_objects = self.permissions.access_check_bulk(permissions_path,
-                user)
+                                                            user)
         #group_parents = access_objects['group_parents']
         nobject_permissions = {}
         for path in permissions_path:
@@ -896,7 +896,6 @@ class ModularBackend(BaseBackend):
                                          access_dict)
         self._lookup_objects(permissions_path)
         return nobject_permissions
-
 
     @debug_method
     def get_object_permissions(self, user, account, container, name):
@@ -1660,17 +1659,17 @@ class ModularBackend(BaseBackend):
         # raise ValueError('Bad characters in permissions')
         pass
 
-
     def _get_formatted_paths(self, paths):
         formatted = []
-        if len(paths) == 0 :
+        if len(paths) == 0:
             return formatted
         props = self.node.get_props(paths)
         if props:
             for prop in props:
                 if prop[1].split(';', 1)[0].strip() in (
                         'application/directory', 'application/folder'):
-                    formatted.append((prop[0].rstrip('/') + '/', self.MATCH_PREFIX))
+                    formatted.append((prop[0].rstrip('/') + '/',
+                                      self.MATCH_PREFIX))
                 formatted.append((prop[0], self.MATCH_EXACT))
         return formatted
 
@@ -1690,7 +1689,8 @@ class ModularBackend(BaseBackend):
                 if node is not None:
                     props = self.node.version_lookup(node, inf, CLUSTER_NORMAL)
                 if props is not None:
-                    if props[self.TYPE].split(';', 1)[0].strip() in ('application/directory', 'application/folder'):
+                    if props[self.TYPE].split(';', 1)[0].strip() in (
+                            'application/directory', 'application/folder'):
                         return p
         return None
 
@@ -1699,7 +1699,8 @@ class ModularBackend(BaseBackend):
         for name in names:
             path = '/'.join((account, container, name))
             formatted_paths.append(path)
-        permission_paths = self.permissions.access_inherit_bulk(formatted_paths)
+        permission_paths = self.permissions.access_inherit_bulk(
+            formatted_paths)
         permission_paths.sort()
         permission_paths.reverse()
         permission_paths_list = []
@@ -1718,7 +1719,8 @@ class ModularBackend(BaseBackend):
                 for prop in props:
                     if prop[1].split(';', 1)[0].strip() in (
                             'application/directory', 'application/folder'):
-                        permission_paths_list.append((prop[0].rstrip('/') + '/',self.MATCH_PREFIX))
+                        permission_paths_list.append((
+                            prop[0].rstrip('/') + '/', self.MATCH_PREFIX))
 
         if len(permission_paths_list) > 0:
             return permission_paths_list

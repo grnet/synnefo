@@ -669,6 +669,40 @@ class BackendNetwork(models.Model):
         return '<%s@%s>' % (self.network, self.backend)
 
 
+class IPAddress(models.Model):
+    subnet = models.ForeignKey("Subnet", related_name="ips", null=False,
+                               on_delete=models.CASCADE)
+    network = models.ForeignKey(Network, related_name="ips", null=False,
+                                on_delete=models.CASCADE)
+    nic = models.ForeignKey("NetworkInterface", related_name="ips", null=True,
+                            on_delete=models.SET_NULL)
+    userid = models.CharField("UUID of the owner", max_length=128, null=False,
+                              db_index=True)
+    address = models.CharField("IP Address", max_length=64, null=False)
+    floating_ip = models.BooleanField("Floating IP", null=False, default=False)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    deleted = models.BooleanField(default=False, null=False)
+
+    serial = models.ForeignKey(QuotaHolderSerial,
+                               related_name="ips", null=True,
+                               on_delete=models.SET_NULL)
+
+    def __unicode__(self):
+        ip_type = "floating" if self.floating_ip else "static"
+        return u"<IPAddress: %s, Network: %s, Subnet: %s, Type: %s>"\
+               % (self.address, self.network_id, self.subnet_id, ip_type)
+
+    def in_use(self):
+        if self.machine is None:
+            return False
+        else:
+            return (not self.machine.deleted)
+
+    class Meta:
+        unique_together = ("network", "address")
+
+
 class NetworkInterface(models.Model):
     FIREWALL_PROFILES = (
         ('ENABLED', 'Enabled'),
@@ -682,11 +716,9 @@ class NetworkInterface(models.Model):
         ("ERROR", "Error"),
     )
 
-    IP_TYPES = (
-        ("FIXED", "Fixed IP Address"),
-        ("FLOATING", "Floating IP Address"),
-    )
-
+    name = models.CharField('NIC name', max_length=128, null=True)
+    userid = models.CharField("UUID of the owner", max_length=128,
+                              null=True, db_index=True)
     machine = models.ForeignKey(VirtualMachine, related_name='nics',
                                 on_delete=models.CASCADE)
     network = models.ForeignKey(Network, related_name='nics',
@@ -699,38 +731,23 @@ class NetworkInterface(models.Model):
     ipv6 = models.CharField(max_length=100, null=True)
     firewall_profile = models.CharField(choices=FIREWALL_PROFILES,
                                         max_length=30, null=True)
+    security_groups = models.ManyToManyField("SecurityGroup", null=True)
     state = models.CharField(max_length=32, null=False, default="ACTIVE",
                              choices=STATES)
-    ip_type = models.CharField(max_length=32, null=False, default="FIXED",
-                               choices=IP_TYPES)
+    device_owner = models.CharField('Device owner', max_length=128, null=True)
+
+    def __unicode__(self):
+        return "<%s:vm:%s network:%s>" % (self.id, self.machine_id,
+                                          self.network_id)
 
     @property
     def backend_uuid(self):
         """Return the backend id by prepending backend-prefix."""
         return "%snic-%s" % (settings.BACKEND_PREFIX_ID, str(self.id))
 
-    def __unicode__(self):
-        return "<%s:vm:%s network:%s ipv4:%s ipv6:%s>" % \
-            (self.id, self.machine_id, self.network_id, self.ipv4,
-             self.ipv6)
 
-    class Meta:
-        # Assert than an IPv4 address from the same network will not be
-        # assigned to more than one NICs
-        unique_together = ("network", "ipv4")
-
-    def delete(self):
-        """Custom method for deleting NetworkInterfaces.
-
-        In case the NIC is of 'FLOATING' type, this method clears the 'machine'
-        flag of the FloatingIP object, before deleting the NIC.
-
-        """
-        if self.ip_type == "FLOATING":
-            FloatingIP.objects.filter(machine=self.machine_id,
-                                      network=self.network_id,
-                                      ipv4=self.ipv4).update(machine=None)
-        super(NetworkInterface, self).delete()
+class SecurityGroup(models.Model):
+    name = models.CharField('group name', max_length=128)
 
 
 class FloatingIP(models.Model):

@@ -544,16 +544,17 @@ class NetworkReconciler(object):
             # Check that externally reserved IPs of the network in Ganeti are
             # also externally reserved to the IP pool
             externally_reserved = gnet['external_reservations']
-            for ip in externally_reserved.split(","):
-                ip = ip.strip()
-                if not network_ip_pool.is_reserved(ip):
-                    msg = ("D: IP '%s' is reserved for network '%s' in"
-                           " backend '%s' but not in DB.")
-                    self.log.info(msg, ip, network, bend)
-                    if self.fix:
-                        network_ip_pool.reserve(ip, external=True)
-                        network_ip_pool.save()
-                        self.log.info("F: Reserved IP '%s'", ip)
+            if externally_reserved:
+                for ip in externally_reserved.split(","):
+                    ip = ip.strip()
+                    if not network_ip_pool.is_reserved(ip):
+                        msg = ("D: IP '%s' is reserved for network '%s' in"
+                               " backend '%s' but not in DB.")
+                        self.log.info(msg, ip, network, bend)
+                        if self.fix:
+                            network_ip_pool.reserve(ip, external=True)
+                            network_ip_pool.save()
+                            self.log.info("F: Reserved IP '%s'", ip)
 
     def reconcile_parted_network(self, network, backend):
         self.log.info("D: Missing DB entry for network %s in backend %s",

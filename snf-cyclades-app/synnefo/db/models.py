@@ -475,13 +475,6 @@ class Network(models.Model):
     name = models.CharField('Network Name', max_length=128)
     userid = models.CharField('User ID of the owner', max_length=128,
                               null=True, db_index=True)
-    # subnet will be null for IPv6 only networks
-    subnet = models.CharField('Subnet', max_length=32, null=True)
-    # subnet6 will be null for IPv4 only networks
-    subnet6 = models.CharField('IPv6 Subnet', max_length=64, null=True)
-    gateway = models.CharField('Gateway', max_length=32, null=True)
-    gateway6 = models.CharField('IPv6 Gateway', max_length=64, null=True)
-    dhcp = models.BooleanField('DHCP', default=True)
     flavor = models.CharField('Flavor', max_length=32, null=False)
     mode = models.CharField('Network Mode', max_length=16, null=True)
     link = models.CharField('Network Link', max_length=32, null=True)
@@ -500,7 +493,7 @@ class Network(models.Model):
     drained = models.BooleanField("Drained", default=False, null=False)
     floating_ip_pool = models.BooleanField('Floating IP Pool', null=False,
                                            default=False)
-    pool = models.OneToOneField('IPPoolTable', related_name='network', null=True)
+    external_router = models.BooleanField(default=False)
     serial = models.ForeignKey(QuotaHolderSerial, related_name='network',
                                null=True, on_delete=models.SET_NULL)
 
@@ -811,6 +804,7 @@ class IPPoolTable(PoolTable):
 
     def __unicode__(self):
         return u"<IPv4AdressPool, Subnet: %s>" % self.subnet_id
+
 
 @contextmanager
 def pooled_rapi_client(obj):

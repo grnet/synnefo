@@ -126,10 +126,11 @@ def project_add(request):
 @commit_on_success_strict()
 def create_app_object(request, extra_context=None):
     try:
+        summary = 'im/projects/projectapplication_form_summary.html'
         return _create_object(
             request,
             template_name='im/projects/projectapplication_form.html',
-            summary_template_name='im/projects/projectapplication_form_summary.html',
+            summary_template_name=summary,
             extra_context=extra_context,
             post_save_redirect=reverse('project_list'),
             form_class=ProjectApplicationForm,
@@ -266,11 +267,12 @@ def project_modify(request, application_id):
 @commit_on_success_strict()
 def update_app_object(request, object_id, extra_context=None):
     try:
+        summary = 'im/projects/projectapplication_form_summary.html'
         return _update_object(
             request,
             object_id=object_id,
             template_name='im/projects/projectapplication_form.html',
-            summary_template_name='im/projects/projectapplication_form_summary.html',
+            summary_template_name=summary,
             extra_context=extra_context,
             post_save_redirect=reverse('project_list'),
             form_class=ProjectApplicationForm,

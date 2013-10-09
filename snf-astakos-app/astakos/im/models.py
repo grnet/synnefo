@@ -1564,7 +1564,7 @@ class ProjectManager(ForUpdateManager):
         relevant = model.o_states_q(model.RELEVANT_STATES)
         return self.filter(flt, relevant).order_by(
             'application__issue_date').select_related(
-            'application', 'application__owner', 'application__applicant')
+                'application', 'application__owner', 'application__applicant')
 
     def search_by_name(self, *search_strings):
         q = Q()

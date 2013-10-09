@@ -584,10 +584,11 @@ class Subnet(models.Model):
     name = models.CharField('Subnet Name', max_length=SUBNET_NAME_LENGTH,
                             null=True)
     ipversion = models.IntegerField('IP Version', default=4, null=False)
-    cidr = models.CharField('Subnet', max_length=64, null=True)
+    cidr = models.CharField('Subnet', max_length=64, null=False)
     gateway = models.CharField('Gateway', max_length=64, null=True)
-    dhcp = models.BooleanField('DHCP', default=True)
-    deleted = models.BooleanField('Deleted', default=False, db_index=True)
+    dhcp = models.BooleanField('DHCP', default=True, null=False)
+    deleted = models.BooleanField('Deleted', default=False, db_index=True,
+                                  null=False)
     host_routes = fields.SeparatedValuesField('Host Routes', null=True)
     dns_nameservers = fields.SeparatedValuesField('DNS Nameservers', null=True)
 

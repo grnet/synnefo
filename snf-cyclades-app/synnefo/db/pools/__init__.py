@@ -248,12 +248,12 @@ class MacPrefixPool(PoolManager):
 class IPPool(PoolManager):
     def __init__(self, pool_table):
         do_init = False if pool_table.available_map else True
-        network = pool_table.network
-        self.net = ipaddr.IPNetwork(network.subnet)
+        subnet = pool_table.subnet
+        self.net = ipaddr.IPNetwork(subnet.cidr)
         if not pool_table.size:
             pool_table.size = self.net.numhosts
         super(IPPool, self).__init__(pool_table)
-        gateway = network.gateway
+        gateway = subnet.gateway
         self.gateway = gateway and ipaddr.IPAddress(gateway) or None
         if do_init:
             self._reserve(0, external=True)

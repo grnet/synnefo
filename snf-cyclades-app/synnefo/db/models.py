@@ -532,15 +532,21 @@ class Network(models.Model):
                 BackendNetwork.objects.create(backend=backend, network=self)
 
     def get_pool(self, with_lock=True):
-        if not self.pool_id:
-            self.pool = IPPoolTable.objects.create(available_map='',
-                                                   reserved_map='',
-                                                   size=0)
-            self.save()
+        try:
+            subnet = self.subnets.get(ipversion=4, deleted=False)
+        except Subnet.DoesNotExist:
+            raise pools.EmptyPool
+        try:
+            pool = subnet.ip_pools.all()[0]
+        except IndexError:
+            pool = IPPoolTable.objects.create(available_map='',
+                                              reserved_map='',
+                                              size=0,
+                                              subnet=subnet)
         objects = IPPoolTable.objects
         if with_lock:
             objects = objects.select_for_update()
-        return objects.get(id=self.pool_id).pool
+        return objects.get(id=pool.id)
 
     def reserve_address(self, address):
         pool = self.get_pool()

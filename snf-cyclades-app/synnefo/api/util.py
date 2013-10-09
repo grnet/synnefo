@@ -206,7 +206,7 @@ def get_flavor_provider(flavor):
         disk_template, provider = disk_template.split("_", 1)
     return disk_template, provider
 
-
+'''
 def get_network(network_id, user_id, for_update=False, non_deleted=False):
     """Return a Network instance or raise ItemNotFound."""
 
@@ -220,6 +220,21 @@ def get_network(network_id, user_id, for_update=False, non_deleted=False):
         if non_deleted and network.deleted:
             raise faults.BadRequest("Network has been deleted.")
         return network
+    except (ValueError, Network.DoesNotExist):
+        raise faults.ItemNotFound('Network not found.')
+'''
+def get_network(network_id, user_id, public=False, for_update=False):
+    """
+    Return a Network instance or raise ItemNotFound.
+    This is the same as util.get_network
+    """
+    try:
+        objects = Network.objects
+        if for_update:
+            objects = objects.select_for_update()
+        if public:
+            objects = objects.filter(public=True)
+        return objects.get(Q(userid=user_id) | Q(public=True), id=network_id)
     except (ValueError, Network.DoesNotExist):
         raise faults.ItemNotFound('Network not found.')
 

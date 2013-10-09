@@ -38,4 +38,4 @@ from .flavors import *
 from .images import *
 from .versions import *
 from .extensions import *
-from .floating_ips import *
+#from .floating_ips import *

@@ -306,8 +306,9 @@ class FloatingIPActionsTest(BaseAPITest):
         ip1_after = FloatingIP.objects.get(id=ip1.id)
         self.assertEqual(ip1_after.machine, self.vm)
         self.assertTrue(ip1_after.in_use())
-        self.vm.nics.create(ipv4=ip1_after.ipv4, network=ip1_after.network,
-                            state="ACTIVE", index=0)
+        nic = self.vm.nics.get(ipv4=ip1_after.ipv4)
+        nic.state = "ACTIVE"
+        nic.save()
         response = self.get(SERVERS_URL + "/%s" % self.vm.id,
                             self.vm.userid)
         self.assertSuccess(response)

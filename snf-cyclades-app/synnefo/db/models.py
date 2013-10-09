@@ -500,12 +500,7 @@ class Network(models.Model):
     drained = models.BooleanField("Drained", default=False, null=False)
     floating_ip_pool = models.BooleanField('Floating IP Pool', null=False,
                                            default=False)
-    pool = models.OneToOneField('IPPoolTable', related_name='network',
-                                default=lambda: IPPoolTable.objects.create(
-                                                            available_map='',
-                                                            reserved_map='',
-                                                            size=0),
-                                null=True)
+    pool = models.OneToOneField('IPPoolTable', related_name='network', null=True)
     serial = models.ForeignKey(QuotaHolderSerial, related_name='network',
                                null=True, on_delete=models.SET_NULL)
 
@@ -584,6 +579,25 @@ class Network(models.Model):
 
         def __str__(self):
             return repr(str(self._action))
+
+
+class Subnet(models.Model):
+    SUBNET_NAME_LENGTH = 128
+
+    network = models.ForeignKey('Network', null=False, db_index=True,
+                                related_name="subnets")
+    name = models.CharField('Subnet Name', max_length=SUBNET_NAME_LENGTH,
+                            null=True)
+    ipversion = models.IntegerField('IP Version', default=4, null=False)
+    cidr = models.CharField('Subnet', max_length=64, null=True)
+    gateway = models.CharField('Gateway', max_length=64, null=True)
+    dhcp = models.BooleanField('DHCP', default=True)
+    deleted = models.BooleanField('Deleted', default=False, db_index=True)
+    host_routes = fields.SeparatedValuesField('Host Routes', null=True)
+    dns_nameservers = fields.SeparatedValuesField('DNS Nameservers', null=True)
+
+    def __unicode__(self):
+        return "<Subnet %s, Network: %s>" % (self.id, self.network_id)
 
 
 class BackendNetwork(models.Model):
@@ -792,9 +806,11 @@ class MacPrefixPoolTable(PoolTable):
 class IPPoolTable(PoolTable):
     manager = pools.IPPool
 
-    def __unicode__(self):
-        return u"<IPv4AdressPool, network: %s>" % self.network
+    subnet = models.ForeignKey('Subnet', related_name="ip_pools",
+                               db_index=True, null=True)
 
+    def __unicode__(self):
+        return u"<IPv4AdressPool, Subnet: %s>" % self.subnet_id
 
 @contextmanager
 def pooled_rapi_client(obj):

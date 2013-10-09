@@ -33,6 +33,8 @@
 
 import factory
 from synnefo.db import models
+from random import choice
+from string import letters, digits
 
 
 def prefix_seq(x):
@@ -51,6 +53,11 @@ def round_seq(x):
 def round_seq_first(x):
     size = len(x)
     return lambda n: x[int(n) % size][0]
+
+
+def random_string(x):
+    """Returns a random string of length x"""
+    return ''.join([choice(digits + letters) for i in range(x)])
 
 
 class FlavorFactory(factory.DjangoModelFactory):
@@ -141,10 +148,6 @@ class NetworkFactory(factory.DjangoModelFactory):
 
     name = factory.Sequence(prefix_seq('network'))
     userid = factory.Sequence(user_seq())
-    subnet = factory.Sequence(lambda n: '192.168.{0}.0/24'.format(n))
-    gateway = factory.LazyAttribute(lambda a: a.subnet[:-4] + '1')
-    subnet6 = "2001:648:2ffc:1112::/64"
-    dhcp = False
     flavor = factory.Sequence(round_seq(models.Network.FLAVORS.keys()))
     mode = factory.LazyAttribute(lambda a:
                                  models.Network.FLAVORS[a.flavor]['mode'])
@@ -155,11 +158,6 @@ class NetworkFactory(factory.DjangoModelFactory):
     public = False
     deleted = False
     state = factory.Sequence(round_seq_first(models.Network.OPER_STATES))
-
-
-class IPv6NetworkFactory(NetworkFactory):
-    subnet = None
-    gateway = None
 
 
 class DeletedNetwork(NetworkFactory):
@@ -177,26 +175,50 @@ class BackendNetworkFactory(factory.DjangoModelFactory):
 class NetworkInterfaceFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.NetworkInterface
 
+    name = factory.LazyAttribute(lambda self: random_string(30))
     machine = factory.SubFactory(VirtualMachineFactory)
     network = factory.SubFactory(NetworkFactory)
     index = factory.Sequence(lambda x: x, type=int)
     mac = factory.Sequence(lambda n: 'aa:{0}{0}:{0}{0}:aa:{0}{0}:{0}{0}'
                            .format(hex(int(n) % 15)[2:3]))
-    ipv4 = factory.LazyAttributeSequence(lambda a, n: a.network.subnet[:-4] +
-                                         '{0}'.format(int(n) + 2))
     state = "ACTIVE"
     firewall_profile =\
         factory.Sequence(round_seq_first(FACTORY_FOR.FIREWALL_PROFILES))
 
 
-class FloatingIPFactory(factory.DjangoModelFactory):
-    FACTORY_FOR = models.FloatingIP
+class IPv4SubnetFactory(factory.DjangoModelFactory):
+    FACTORY_FOR = models.Subnet
 
-    machine = factory.SubFactory(VirtualMachineFactory)
-    network = factory.SubFactory(NetworkFactory, public=False, deleted=False,
+    network = factory.SubFactory(NetworkFactory)
+    name = factory.LazyAttribute(lambda self: random_string(30))
+    ipversion = 4
+    cidr = factory.Sequence(lambda n: '192.168.{0}.0/24'.format(n))
+    dhcp = True
+    gateway = factory.Sequence(lambda n: '192.168.{0}.1'.format(n))
+    dns_nameservers = []
+    host_routes = []
+
+
+class IPv6SubnetFactory(IPv4SubnetFactory):
+    ipversion = 6
+    cidr = "2001:648:2ffc:1112::/64"
+    gateway = None
+
+
+class IPv4AddressFactory(factory.DjangoModelFactory):
+    FACTORY_FOR = models.IPAddress
+
+    subnet = factory.SubFactory(IPv4SubnetFactory)
+    network = factory.SubFactory(NetworkFactory)
+    address =\
+        factory.LazyAttributeSequence(lambda self, n: self.subnet.cidr[:-4] +
+                                      '{0}'.format(int(n) + 2))
+
+
+class FloatingIPFactory(IPv4AddressFactory):
+    network = factory.SubFactory(NetworkFactory, public=False,
                                  floating_ip_pool=True)
-    ipv4 = factory.LazyAttributeSequence(lambda a, n: a.network.subnet[:-4] +
-                                         '{0}'.format(int(n) + 2))
+    floating_ip = True
 
 
 class BridgePoolTableFactory(factory.DjangoModelFactory):

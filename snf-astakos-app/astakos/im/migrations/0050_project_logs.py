@@ -27,9 +27,7 @@ class Migration(DataMigration):
                     reason=project.deactivation_reason,
                     from_state=NORMAL, to_state=TERMINATED))
 
-        # use bulk_create in 1.4
-        for log in logs:
-            log.save()
+        orm.ProjectLog.objects.bulk_create(logs)
 
     def backwards(self, orm):
         "Write your backwards methods here."

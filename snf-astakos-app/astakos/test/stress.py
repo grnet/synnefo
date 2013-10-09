@@ -46,11 +46,11 @@ path = os.path.dirname(os.path.realpath(__file__))
 os.environ['SYNNEFO_SETTINGS_DIR'] = path + '/settings'
 os.environ['DJANGO_SETTINGS_MODULE'] = 'synnefo.settings'
 
+from django.db import transaction
 from astakos.im.models import AstakosUser
 from astakos.im.functions import ProjectError
 from astakos.im import quotas
 from views import submit, approve, join, leave
-from snf_django.lib.db.transaction import commit_on_success_strict
 
 USERS = {}
 PROJECTS = {}
@@ -90,7 +90,7 @@ def new_user():
     return None
 
 
-@commit_on_success_strict()
+@transaction.commit_on_success
 def new_users(count):
     for i in range(count):
         while True:

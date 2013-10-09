@@ -36,8 +36,8 @@ from django.utils import simplejson as json
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 from django.db.models import Q
+from django.db import transaction
 
-from snf_django.lib.db.transaction import commit_on_success_strict
 from astakos.api.util import json_response
 
 from snf_django.lib import api
@@ -271,7 +271,7 @@ def projects(request):
 
 @api.api_method(http_method="GET", token_required=True, user_required=False)
 @user_from_token
-@commit_on_success_strict()
+@transaction.commit_on_success
 def get_projects(request):
     user = request.user
     input_data = read_json_body(request, default={})
@@ -299,7 +299,7 @@ def _get_projects(query, request_user=None):
 
 @api.api_method(http_method="POST", token_required=True, user_required=False)
 @user_from_token
-@commit_on_success_strict()
+@transaction.commit_on_success
 def create_project(request):
     user = request.user
     data = request.body
@@ -319,7 +319,7 @@ def project(request, project_id):
 
 @api.api_method(http_method="GET", token_required=True, user_required=False)
 @user_from_token
-@commit_on_success_strict()
+@transaction.commit_on_success
 def get_project(request, project_id):
     user = request.user
     with ExceptionHandler():
@@ -337,7 +337,7 @@ def _get_project(project_id, request_user=None):
 
 @api.api_method(http_method="POST", token_required=True, user_required=False)
 @user_from_token
-@commit_on_success_strict()
+@transaction.commit_on_success
 def modify_project(request, project_id):
     user = request.user
     data = request.body
@@ -466,7 +466,7 @@ PROJECT_ACTION = {
 @csrf_exempt
 @api.api_method(http_method="POST", token_required=True, user_required=False)
 @user_from_token
-@commit_on_success_strict()
+@transaction.commit_on_success
 def project_action(request, project_id):
     user = request.user
     data = request.body
@@ -497,7 +497,7 @@ def make_application_query(input_data):
 
 @api.api_method(http_method="GET", token_required=True, user_required=False)
 @user_from_token
-@commit_on_success_strict()
+@transaction.commit_on_success
 def get_applications(request):
     user = request.user
     input_data = read_json_body(request, default={})
@@ -520,7 +520,7 @@ def _get_applications(query, request_user=None):
 @csrf_exempt
 @api.api_method(http_method="GET", token_required=True, user_required=False)
 @user_from_token
-@commit_on_success_strict()
+@transaction.commit_on_success
 def application(request, app_id):
     user = request.user
     with ExceptionHandler():
@@ -547,7 +547,7 @@ APPLICATION_ACTION = {
 @csrf_exempt
 @api.api_method(http_method="POST", token_required=True, user_required=False)
 @user_from_token
-@commit_on_success_strict()
+@transaction.commit_on_success
 def application_action(request, app_id):
     user = request.user
     data = request.body
@@ -581,7 +581,7 @@ def make_membership_query(input_data):
 
 @api.api_method(http_method="GET", token_required=True, user_required=False)
 @user_from_token
-@commit_on_success_strict()
+@transaction.commit_on_success
 def get_memberships(request):
     user = request.user
     input_data = read_json_body(request, default={})
@@ -631,7 +631,7 @@ MEMBERSHIPS_ACTION = {
 
 @api.api_method(http_method="POST", token_required=True, user_required=False)
 @user_from_token
-@commit_on_success_strict()
+@transaction.commit_on_success
 def post_memberships(request):
     user = request.user
     data = request.body
@@ -642,7 +642,7 @@ def post_memberships(request):
 
 @api.api_method(http_method="GET", token_required=True, user_required=False)
 @user_from_token
-@commit_on_success_strict()
+@transaction.commit_on_success
 def membership(request, memb_id):
     user = request.user
     with ExceptionHandler():
@@ -669,7 +669,7 @@ MEMBERSHIP_ACTION = {
 @csrf_exempt
 @api.api_method(http_method="POST", token_required=True, user_required=False)
 @user_from_token
-@commit_on_success_strict()
+@transaction.commit_on_success
 def membership_action(request, memb_id):
     user = request.user
     input_data = read_json_body(request, default={})

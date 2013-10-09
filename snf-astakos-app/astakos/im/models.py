@@ -62,7 +62,6 @@ from astakos.im import settings as astakos_settings
 from astakos.im import auth_providers as auth
 
 import astakos.im.messages as astakos_messages
-from snf_django.lib.db.managers import ForUpdateManager
 from synnefo.lib.ordereddict import OrderedDict
 
 from snf_django.lib.db.fields import intDecimalField
@@ -236,8 +235,6 @@ class Resource(models.Model):
     unit = models.CharField(_('Unit'), null=True, max_length=255)
     uplimit = intDecimalField(default=0)
     allow_in_projects = models.BooleanField(default=True)
-
-    objects = ForUpdateManager()
 
     def __str__(self):
         return self.name
@@ -455,7 +452,6 @@ class AstakosUser(User):
                                           default=False, db_index=True)
 
     objects = AstakosUserManager()
-    forupdate = ForUpdateManager()
 
     def __init__(self, *args, **kwargs):
         super(AstakosUser, self).__init__(*args, **kwargs)
@@ -1261,8 +1257,6 @@ class UserSetting(models.Model):
     setting = models.CharField(max_length=255)
     value = models.IntegerField()
 
-    objects = ForUpdateManager()
-
     class Meta:
         unique_together = ("user", "setting")
 
@@ -1272,7 +1266,6 @@ class UserSetting(models.Model):
 
 class Chain(models.Model):
     chain = models.AutoField(primary_key=True)
-    objects = ForUpdateManager()
 
     def __str__(self):
         return "%s" % (self.chain,)
@@ -1283,7 +1276,7 @@ def new_chain():
     return c
 
 
-class ProjectApplicationManager(ForUpdateManager):
+class ProjectApplicationManager(models.Manager):
 
     def pending_per_project(self, projects):
         apps = self.filter(state=self.model.PENDING,
@@ -1527,7 +1520,7 @@ def invert_dict(d):
     return dict((v, k) for k, v in d.iteritems())
 
 
-class ProjectManager(ForUpdateManager):
+class ProjectManager(models.Manager):
 
     def all_with_pending(self, flt=None):
         flt = Q() if flt is None else flt
@@ -1564,7 +1557,7 @@ class ProjectManager(ForUpdateManager):
         relevant = model.o_states_q(model.RELEVANT_STATES)
         return self.filter(flt, relevant).order_by(
             'application__issue_date').select_related(
-            'application', 'application__owner', 'application__applicant')
+                'application', 'application__owner', 'application__applicant')
 
     def search_by_name(self, *search_strings):
         q = Q()
@@ -1802,10 +1795,10 @@ class ProjectLog(models.Model):
 
 
 class ProjectLock(models.Model):
-    objects = ForUpdateManager()
+    pass
 
 
-class ProjectMembershipManager(ForUpdateManager):
+class ProjectMembershipManager(models.Manager):
 
     def any_accepted(self):
         q = self.model.Q_ACCEPTED_STATES

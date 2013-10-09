@@ -61,9 +61,7 @@ class Migration(DataMigration):
                         membership=m, date=m.leave_request_date,
                         from_state=ACCEPTED, to_state=LEAVE_REQUESTED))
 
-        # use bulk_create in 1.4
-        for log in logs:
-            log.save()
+        orm.ProjectMembershipLog.objects.bulk_create(logs)
 
         membs = {}
         for m in memberships:
@@ -79,9 +77,7 @@ class Migration(DataMigration):
                     person_id=mh.person, project_id=mh.project,
                     state=H2S[mh.reason])
 
-        # use bulk_create in 1.4
-        for nm in new_membs.values():
-            nm.save()
+        orm.ProjectMembership.objects.bulk_create(new_membs.values())
 
         memberships = orm.ProjectMembership.objects.all()
         membs = {}
@@ -98,9 +94,7 @@ class Migration(DataMigration):
                     membership=m, date=mh.date,
                     from_state=from_state, to_state=to_state))
 
-        # use bulk_create in 1.4
-        for log in logs:
-            log.save()
+        orm.ProjectMembershipLog.objects.bulk_create(logs)
 
     def backwards(self, orm):
         "Write your backwards methods here."

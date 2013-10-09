@@ -109,7 +109,7 @@ class Command(BaseCommand):
 
     def get_resource(self, resource_name):
         try:
-            return Resource.objects.get_for_update(name=resource_name)
+            return Resource.objects.select_for_update().get(name=resource_name)
         except Resource.DoesNotExist:
             raise CommandError("Resource %s does not exist."
                                % resource_name)

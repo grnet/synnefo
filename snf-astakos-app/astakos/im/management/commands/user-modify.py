@@ -36,6 +36,7 @@ import string
 from optparse import make_option
 
 from django.core import management
+from django.db import transaction
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
@@ -47,7 +48,6 @@ from astakos.im import quotas
 from astakos.im import activation_backends
 from ._common import (remove_user_permission, add_user_permission, is_uuid,
                       show_resource_value)
-from snf_django.lib.db.transaction import commit_on_success_strict
 
 activation_backend = activation_backends.get_backend()
 
@@ -151,7 +151,7 @@ class Command(BaseCommand):
                     help="Delete user"),
     )
 
-    @commit_on_success_strict()
+    @transaction.commit_on_success
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a user ID")

@@ -34,8 +34,7 @@
 from django.utils import simplejson as json
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
-
-from snf_django.lib.db.transaction import commit_on_success_strict
+from django.db import transaction
 
 from snf_django.lib import api
 from snf_django.lib.api.faults import BadRequest, ItemNotFound
@@ -175,7 +174,7 @@ def issue_commission(request):
     return json_response(data, status_code=status_code)
 
 
-@commit_on_success_strict()
+@transaction.commit_on_success
 def _issue_commission(clientkey, provisions, name, force, accept):
     serial = qh.issue_commission(clientkey=clientkey,
                                  provisions=provisions,
@@ -204,7 +203,7 @@ def conflictingCF(serial):
 @csrf_exempt
 @api.api_method(http_method='POST', token_required=True, user_required=False)
 @component_from_token
-@commit_on_success_strict()
+@transaction.commit_on_success
 def resolve_pending_commissions(request):
     data = request.body
     try:
@@ -260,7 +259,7 @@ def get_commission(request, serial):
 @csrf_exempt
 @api.api_method(http_method='POST', token_required=True, user_required=False)
 @component_from_token
-@commit_on_success_strict()
+@transaction.commit_on_success
 def serial_action(request, serial):
     data = request.body
     try:

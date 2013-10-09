@@ -290,7 +290,7 @@ def get_project_by_id(project_id):
 
 def get_project_for_update(project_id):
     try:
-        return Project.objects.get_for_update(id=project_id)
+        return Project.objects.select_for_update().get(id=project_id)
     except Project.DoesNotExist:
         m = _(astakos_messages.UNKNOWN_PROJECT_ID) % project_id
         raise ProjectNotFound(m)
@@ -302,7 +302,7 @@ def get_project_of_application_for_update(app_id):
 
 
 def get_project_lock():
-    ProjectLock.objects.get_for_update(pk=1)
+    ProjectLock.objects.select_for_update().get(pk=1)
 
 
 def get_application(application_id):
@@ -965,7 +965,7 @@ def get_pending_app_diff(user, project):
 
 
 def qh_add_pending_app(user, project=None, force=False):
-    user = AstakosUser.forupdate.get_for_update(id=user.id)
+    user = AstakosUser.objects.select_for_update().get(id=user.id)
     diff = get_pending_app_diff(user, project)
     return register_pending_apps(user, diff, force)
 
@@ -982,5 +982,5 @@ def check_pending_app_quota(user, project=None):
 
 def qh_release_pending_app(user, locked=False):
     if not locked:
-        user = AstakosUser.forupdate.get_for_update(id=user.id)
+        user = AstakosUser.objects.select_for_update().get(id=user.id)
     register_pending_apps(user, -1)

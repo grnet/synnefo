@@ -33,10 +33,10 @@
 
 from optparse import make_option
 
+from django.db import transaction
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import simplejson as json
 
-from snf_django.lib.db.transaction import commit_on_success_strict
 from astakos.im.register import add_service, add_resource, RegisterException
 from astakos.im.models import Component
 from ._common import read_from_file
@@ -52,7 +52,7 @@ class Command(BaseCommand):
                     help="Load service definitions from a json file"),
     )
 
-    @commit_on_success_strict()
+    @transaction.commit_on_success
     def handle(self, *args, **options):
 
         json_file = options['json']

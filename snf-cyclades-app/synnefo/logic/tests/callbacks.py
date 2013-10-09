@@ -34,7 +34,7 @@ from random import randint
 
 from django.test import TestCase
 
-from synnefo.db.models import (VirtualMachine, FloatingIP, BackendNetwork,
+from synnefo.db.models import (VirtualMachine, IPAddress, BackendNetwork,
                                Network, BridgePoolTable, MacPrefixPoolTable)
 from synnefo.db import models_factory as mfactory
 from synnefo.lib.utils import split_time
@@ -151,8 +151,8 @@ class UpdateDBTest(TestCase):
         self.assertTrue(nic.network.get_pool().is_available(nic.ipv4))
         vm2 = mfactory.VirtualMachineFactory()
         network = mfactory.NetworkFactory(floating_ip_pool=True)
-        fp1 = mfactory.FloatingIPFactory(machine=vm2, network=network)
-        fp2 = mfactory.FloatingIPFactory(machine=vm2, network=network)
+        fp1 = mfactory.IPAddressFactory(machine=vm2, network=network)
+        fp2 = mfactory.IPAddressFactory(machine=vm2, network=network)
         mfactory.NetworkInterfaceFactory(machine=vm2, network=network,
                                          ipv4=fp1.ipv4)
         mfactory.NetworkInterfaceFactory(machine=vm2, network=network,
@@ -169,8 +169,8 @@ class UpdateDBTest(TestCase):
         db_vm = VirtualMachine.objects.get(id=vm.id)
         self.assertEqual(db_vm.operstate, 'DESTROYED')
         self.assertTrue(db_vm.deleted)
-        self.assertEqual(FloatingIP.objects.get(id=fp1.id).machine, None)
-        self.assertEqual(FloatingIP.objects.get(id=fp2.id).machine, None)
+        self.assertEqual(IPAddress.objects.get(id=fp1.id).machine, None)
+        self.assertEqual(IPAddress.objects.get(id=fp2.id).machine, None)
         pool = network.get_pool()
         # Test that floating ips are not released
         self.assertFalse(pool.is_available(fp1.ipv4))

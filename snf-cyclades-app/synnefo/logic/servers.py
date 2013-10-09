@@ -13,7 +13,7 @@ from synnefo.api import util
 from synnefo.logic import backend
 from synnefo.logic.backend_allocator import BackendAllocator
 from synnefo.db.models import (NetworkInterface, VirtualMachine, Network,
-                               VirtualMachineMetadata, FloatingIP)
+                               VirtualMachineMetadata, IPAddress)
 
 from vncauthproxy.client import request_forwarding as request_vnc_forwarding
 
@@ -441,7 +441,7 @@ def add_floating_ip(vm, address):
 def add_floating_ip_to_vm(vm, address):
     """Get a floating IP by it's address and add it to VirtualMachine.
 
-    Helper function for looking up a FloatingIP by it's address and associating
+    Helper function for looking up a IPAddress by it's address and associating
     it with a VirtualMachine object (without adding the NIC in the Ganeti
     backend!). This function also checks if the floating IP is currently used
     by any instance and if it is available in the Backend that hosts the VM.
@@ -451,10 +451,10 @@ def add_floating_ip_to_vm(vm, address):
     try:
         # Get lock in VM, to guarantee that floating IP will only by assigned
         # once
-        floating_ip = FloatingIP.objects.select_for_update()\
+        floating_ip = IPAddress.objects.select_for_update()\
                                         .get(userid=user_id, ipv4=address,
                                              deleted=False)
-    except FloatingIP.DoesNotExist:
+    except IPAddress.DoesNotExist:
         raise faults.ItemNotFound("Floating IP '%s' does not exist" % address)
 
     if floating_ip.in_use():
@@ -476,10 +476,10 @@ def add_floating_ip_to_vm(vm, address):
 def remove_floating_ip(vm, address):
     user_id = vm.userid
     try:
-        floating_ip = FloatingIP.objects.select_for_update()\
+        floating_ip = IPAddress.objects.select_for_update()\
                                         .get(userid=user_id, ipv4=address,
                                              deleted=False, machine=vm)
-    except FloatingIP.DoesNotExist:
+    except IPAddress.DoesNotExist:
         raise faults.ItemNotFound("Floating IP '%s' does not exist" % address)
 
     try:

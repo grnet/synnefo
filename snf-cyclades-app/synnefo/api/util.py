@@ -49,7 +49,7 @@ from snf_django.lib.api import faults
 from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
                                Network, BackendNetwork, NetworkInterface,
                                BridgePoolTable, MacPrefixPoolTable, Backend,
-                               FloatingIP)
+                               IPAddress)
 from synnefo.db.pools import EmptyPool
 
 from synnefo.plankton.utils import image_backend
@@ -226,11 +226,11 @@ def get_network(network_id, user_id, for_update=False, non_deleted=False):
 
 def get_floating_ip(user_id, ipv4, for_update=False):
     try:
-        objects = FloatingIP.objects
+        objects = IPAddress.objects
         if for_update:
             objects = objects.select_for_update()
         return objects.get(userid=user_id, ipv4=ipv4, deleted=False)
-    except FloatingIP.DoesNotExist:
+    except IPAddress.DoesNotExist:
         raise faults.ItemNotFound("Floating IP does not exist.")
 
 

@@ -37,7 +37,7 @@ from copy import deepcopy
 from snf_django.utils.testing import (BaseAPITest, mocked_quotaholder,
                                       override_settings)
 from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata,
-                               FloatingIP)
+                               IPAddress)
 from synnefo.db import models_factory as mfactory
 from synnefo.logic.utils import get_rsapi_state
 from synnefo.cyclades_settings import cyclades_services
@@ -468,10 +468,10 @@ class ServerCreateAPITest(ComputeAPITest):
         mfactory.BackendNetworkFactory(network=network,
                                        backend=self.backend,
                                        operstate="ACTIVE")
-        fp1 = mfactory.FloatingIPFactory(ipv4="10.0.0.2",
+        fp1 = mfactory.IPAddressFactory(ipv4="10.0.0.2",
                                          userid="test_user",
                                          network=network, machine=None)
-        fp2 = mfactory.FloatingIPFactory(ipv4="10.0.0.3", network=network,
+        fp2 = mfactory.IPAddressFactory(ipv4="10.0.0.3", network=network,
                                          userid="test_user",
                                          machine=None)
         request["server"]["floating_ips"] = [fp1.ipv4, fp2.ipv4]
@@ -483,8 +483,8 @@ class ServerCreateAPITest(ComputeAPITest):
         self.assertEqual(response.status_code, 202)
         api_server = json.loads(response.content)['server']
         vm = VirtualMachine.objects.get(id=api_server["id"])
-        fp1 = FloatingIP.objects.get(id=fp1.id)
-        fp2 = FloatingIP.objects.get(id=fp2.id)
+        fp1 = IPAddress.objects.get(id=fp1.id)
+        fp2 = IPAddress.objects.get(id=fp2.id)
         self.assertEqual(fp1.machine, vm)
         self.assertEqual(fp2.machine, vm)
         name, args, kwargs = mrapi().CreateInstance.mock_calls[2]

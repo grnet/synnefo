@@ -31,7 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from synnefo.db.models import FloatingIP
+from synnefo.db.models import IPAddress
 from snf_django.management.commands import ListCommand
 from synnefo.settings import CYCLADES_SERVICE_TOKEN, ASTAKOS_BASE_URL
 from logging import getLogger
@@ -40,7 +40,7 @@ log = getLogger(__name__)
 
 class Command(ListCommand):
     help = "List Floating IPs"
-    object_class = FloatingIP
+    object_class = IPAddress
     deleted_field = "deleted"
     user_uuid_field = "userid"
     astakos_url = ASTAKOS_BASE_URL

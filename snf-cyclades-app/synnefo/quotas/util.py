@@ -33,7 +33,7 @@
 
 from django.db.models import Sum, Count, Q
 
-from synnefo.db.models import VirtualMachine, Network, FloatingIP
+from synnefo.db.models import VirtualMachine, Network, IPAddress
 from synnefo.quotas import Quotaholder, ASTAKOS_TOKEN
 
 
@@ -43,7 +43,7 @@ def get_db_holdings(user=None):
 
     vms = VirtualMachine.objects.filter(deleted=False)
     networks = Network.objects.filter(deleted=False)
-    floating_ips = FloatingIP.objects.filter(deleted=False)
+    floating_ips = IPAddress.objects.filter(deleted=False)
 
     if user is not None:
         vms = vms.filter(userid=user)

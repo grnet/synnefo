@@ -40,7 +40,7 @@ from snf_django.lib import api
 from snf_django.lib.api import faults, utils
 from synnefo.api import util
 from synnefo import quotas
-from synnefo.db.models import Network, FloatingIP, NetworkInterface
+from synnefo.db.models import Network, IPAddress, NetworkInterface
 
 
 from logging import getLogger
@@ -92,7 +92,7 @@ def list_floating_ips(request):
     log.debug("list_floating_ips")
 
     userid = request.user_uniq
-    floating_ips = FloatingIP.objects.filter(userid=userid).order_by("id")
+    floating_ips = IPAddress.objects.filter(userid=userid).order_by("id")
     floating_ips = utils.filter_modified_since(request, objects=floating_ips)
 
     floating_ips = map(ip_to_dict, floating_ips)
@@ -109,10 +109,10 @@ def get_floating_ip(request, floating_ip_id):
     """Return information for a floating IP."""
     userid = request.user_uniq
     try:
-        floating_ip = FloatingIP.objects.get(id=floating_ip_id,
+        floating_ip = IPAddress.objects.get(id=floating_ip_id,
                                              deleted=False,
                                              userid=userid)
-    except FloatingIP.DoesNotExist:
+    except IPAddress.DoesNotExist:
         raise faults.ItemNotFound("Floating IP '%s' does not exist" %
                                   floating_ip_id)
     request.serialization = "json"
@@ -155,7 +155,7 @@ def allocate_floating_ip(request):
             else:
                 # User specified an IP address. Check that it is not a used
                 # floating IP
-                if FloatingIP.objects.filter(network=network,
+                if IPAddress.objects.filter(network=network,
                                              deleted=False,
                                              ipv4=address).exists():
                     msg = "Floating IP '%s' is reserved" % address
@@ -178,7 +178,7 @@ def allocate_floating_ip(request):
                     except NetworkInterface.DoesNotExist:
                         msg = "Address '%s' is already in use" % address
                         raise faults.Conflict(msg)
-        floating_ip = FloatingIP.objects.create(ipv4=address, network=network,
+        floating_ip = IPAddress.objects.create(ipv4=address, network=network,
                                                 userid=userid, machine=machine)
         quotas.issue_and_accept_commission(floating_ip)
     except:
@@ -202,11 +202,11 @@ def release_floating_ip(request, floating_ip_id):
     userid = request.user_uniq
     log.info("release_floating_ip '%s'. User '%s'.", floating_ip_id, userid)
     try:
-        floating_ip = FloatingIP.objects.select_for_update()\
+        floating_ip = IPAddress.objects.select_for_update()\
                                         .get(id=floating_ip_id,
                                              deleted=False,
                                              userid=userid)
-    except FloatingIP.DoesNotExist:
+    except IPAddress.DoesNotExist:
         raise faults.ItemNotFound("Floating IP '%s' does not exist" %
                                   floating_ip_id)
 

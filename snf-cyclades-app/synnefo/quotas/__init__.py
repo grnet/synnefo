@@ -32,7 +32,7 @@ from django.db import transaction
 
 from snf_django.lib.api import faults
 from synnefo.db.models import (QuotaHolderSerial, VirtualMachine, Network,
-                               FloatingIP)
+                               IPAddress)
 
 from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
                               ASTAKOS_BASE_URL)
@@ -297,7 +297,7 @@ def prepare_qh_resources(resource):
                 'cyclades.active_ram': 1048576 * flavor.ram}
     elif isinstance(resource, Network):
         return {"cyclades.network.private": 1}
-    elif isinstance(resource, FloatingIP):
+    elif isinstance(resource, IPAddress):
         return {"cyclades.floating_ip": 1}
     else:
         raise ValueError("Unknown Resource '%s'" % resource)

@@ -35,9 +35,10 @@ from django.db import transaction
 from datetime import datetime, timedelta
 
 from synnefo.db.models import (Backend, VirtualMachine, Network,
+                               IPAddress,
                                BackendNetwork, BACKEND_STATUSES,
                                pooled_rapi_client, VirtualMachineDiagnostic,
-                               Flavor, FloatingIP)
+                               Flavor)
 from synnefo.logic import utils
 from synnefo import quotas
 from synnefo.api.util import release_resource
@@ -339,9 +340,9 @@ def release_nic_address(nic):
 
     if nic.ipv4:
         if nic.ip_type == "FLOATING":
-            FloatingIP.objects.filter(machine=nic.machine_id,
-                                      network=nic.network_id,
-                                      ipv4=nic.ipv4).update(machine=None)
+            IPAddress.objects.filter(machine=nic.machine_id,
+                                     network=nic.network_id,
+                                     ipv4=nic.ipv4).update(machine=None)
         else:
             nic.network.release_address(nic.ipv4)
 

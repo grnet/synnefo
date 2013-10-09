@@ -352,10 +352,11 @@ metadata    Custom metadata      ✔        ✔
   There are no semantic limitations.
 
 * **personality** (optional) is a list of personality injections. A personality
-  injection is a small set of changes to a virtual server. Each change modifies
-  a file on the virtual server, by injecting some data in it. The injected data
-  (``contents``) should exceed 10240 *bytes* in size and must be base64
-  encoded. A personality injection contains the following attributes:
+  injection is a way to add a file into a virtual server while creating it.
+  Each change modifies/creates a file on the virtual server. The injected data
+  (``contents``) should not exceed 10240 *bytes* in size and must be base64
+  encoded. The file mode should be a number, not a string. A personality
+  injection contains the following attributes:
 
 ====================== =================== ======== ==========
 Personality Attributes Description         Cyclades OS/Compute
@@ -381,13 +382,13 @@ owner                  File owner          ✔        **✘**
           "path": "/Users/myusername/personlities/example1.file",
           "contents": "some data to inject",
           "group": "remotely-set user group",
-          "mode": "rw",
+          "mode": 0600,
           "owner": "ausername"
         }, {
           "path": "/Users/myusername/personlities/example2.file",
           "contents": "some more data to inject",
           "group": "",
-          "mode": "r",
+          "mode": 0777,
           "owner": "anotherusername"
         }
       ],

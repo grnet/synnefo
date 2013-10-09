@@ -303,6 +303,14 @@ def get_resource_names():
     return _RESOURCE_NAMES
 
 
+def split_realname(value):
+    parts = value.split(' ')
+    if len(parts) == 2:
+        return parts
+    else:
+        return ('', value)
+
+
 class AstakosUserManager(UserManager):
 
     def get_auth_provider_user(self, provider, **kwargs):
@@ -476,12 +484,9 @@ class AstakosUser(User):
 
     @realname.setter
     def realname(self, value):
-        parts = value.split(' ')
-        if len(parts) == 2:
-            self.first_name = parts[0]
-            self.last_name = parts[1]
-        else:
-            self.last_name = parts[0]
+        first, last = split_realname(value)
+        self.first_name = first
+        self.last_name = last
 
     def add_permission(self, pname):
         if self.has_perm(pname):
@@ -1199,12 +1204,9 @@ class PendingThirdPartyUser(models.Model):
 
     @realname.setter
     def realname(self, value):
-        parts = value.split(' ')
-        if len(parts) == 2:
-            self.first_name = parts[0]
-            self.last_name = parts[1]
-        else:
-            self.last_name = parts[0]
+        first, last = split_realname(value)
+        self.first_name = first
+        self.last_name = last
 
     def save(self, *args, **kwargs):
         if not self.id:

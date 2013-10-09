@@ -35,7 +35,7 @@ from django.utils.importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import ugettext as _
 
-from astakos.im.models import AstakosUser
+from astakos.im import models
 from astakos.im import functions
 from astakos.im import settings
 from astakos.im import forms
@@ -444,13 +444,11 @@ class InvitationsBackend(ActivationBackend):
         initial_data = None
         if request.method == 'GET':
             if invitation:
-                # create a tmp user with the invitation realname
-                # to extract first and last name
-                u = AstakosUser(realname=invitation.realname)
+                first, last = models.split_realname(invitation.realname)
                 initial_data = {'email': invitation.username,
                                 'inviter': invitation.inviter.realname,
-                                'first_name': u.first_name,
-                                'last_name': u.last_name,
+                                'first_name': first,
+                                'last_name': last,
                                 'provider': provider}
         else:
             if provider == request.POST.get('provider', ''):

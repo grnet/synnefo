@@ -472,7 +472,9 @@ class Network(models.Model):
         },
     }
 
-    name = models.CharField('Network Name', max_length=128)
+    NETWORK_NAME_LENGTH = 128
+
+    name = models.CharField('Network Name', max_length=NETWORK_NAME_LENGTH)
     userid = models.CharField('User ID of the owner', max_length=128,
                               null=True, db_index=True)
     flavor = models.CharField('Flavor', max_length=32, null=False)
@@ -716,8 +718,11 @@ class NetworkInterface(models.Model):
         ("ERROR", "Error"),
     )
 
+    NETWORK_IFACE_NAME_LENGTH = 128
+
     name = models.CharField('NIC name', max_length=128, null=True)
-    userid = models.CharField("UUID of the owner", max_length=128,
+    userid = models.CharField("UUID of the owner",
+                              max_length=NETWORK_IFACE_NAME_LENGTH,
                               null=True, db_index=True)
     machine = models.ForeignKey(VirtualMachine, related_name='nics',
                                 on_delete=models.CASCADE)
@@ -745,7 +750,9 @@ class NetworkInterface(models.Model):
 
 
 class SecurityGroup(models.Model):
-    name = models.CharField('group name', max_length=128)
+    SECURITY_GROUP_NAME_LENGTH = 128
+    name = models.CharField('group name',
+                            max_length=SECURITY_GROUP_NAME_LENGTH)
 
 
 class PoolTable(models.Model):

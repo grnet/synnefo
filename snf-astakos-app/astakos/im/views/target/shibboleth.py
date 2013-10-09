@@ -38,7 +38,8 @@ from django.views.decorators.http import require_http_methods
 from django.http import HttpResponseRedirect
 
 from astakos.im.util import login_url
-from astakos.im.models import AstakosUser
+from astakos.im.models import AstakosUser, AstakosUserAuthProvider, \
+    PendingThirdPartyUser
 from astakos.im import settings
 from astakos.im.views.target import get_pending_key, \
     handle_third_party_signup, handle_third_party_login, \
@@ -49,6 +50,38 @@ import astakos.im.messages as astakos_messages
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+def migrate_eppn_to_remote_id(eppn, remote_id):
+    """
+    Retrieve active and pending accounts that are associated with shibboleth
+    using EPPN as the third party unique identifier update them by storing
+    REMOTE_USER value instead.
+    """
+    if eppn == remote_id:
+        return
+
+    try:
+        provider = AstakosUserAuthProvider.objects.get(module='shibboleth',
+                                                       identifier=eppn)
+        msg = "Migrating user %r eppn (%s -> %s)"
+        logger.info(msg, provider.user.log_display, eppn, remote_id)
+        provider.identifier = remote_id
+        provider.save()
+    except AstakosUserAuthProvider.DoesNotExist:
+        pass
+
+    pending_users = \
+            PendingThirdPartyUser.objects.filter(third_party_identifier=eppn,
+                                                 provider='shibboleth')
+
+    for pending in pending_users:
+        msg = "Migrating pending user %s eppn (%s -> %s)"
+        logger.info(msg, pending.email, eppn, remote_id)
+        pending.third_party_identifier = remote_id
+        pending.save()
+
+    return remote_id
 
 
 class Tokens:
@@ -89,51 +122,64 @@ def login(request,
     logger.info("shibboleth request: %r" % shibboleth_headers)
 
     try:
-        eppn = tokens.get(Tokens.SHIB_EPPN)
-
+        eppn = tokens.get(Tokens.SHIB_EPPN, None)
+        user_id = tokens.get(Tokens.SHIB_REMOTE_USER)
+        fullname, first_name, last_name, email = None, None, None, None
         if global_settings.DEBUG and not eppn:
+            user_id = getattr(global_settings, 'SHIBBOLETH_TEST_REMOTE_USER',
+                              None)
             eppn = getattr(global_settings, 'SHIBBOLETH_TEST_EPPN', None)
-            realname = getattr(global_settings, 'SHIBBOLETH_TEST_REALNAME',
+            fullname = getattr(global_settings, 'SHIBBOLETH_TEST_FULLNAME',
                                None)
 
-        if not eppn:
-            raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_EPPN) % {
+        if not user_id:
+            raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_USER_ID) % {
                 'domain': settings.BASE_HOST,
                 'contact_email': settings.CONTACT_EMAIL
             })
         if Tokens.SHIB_DISPLAYNAME in tokens:
-            realname = tokens[Tokens.SHIB_DISPLAYNAME]
+            fullname = tokens[Tokens.SHIB_DISPLAYNAME]
         elif Tokens.SHIB_CN in tokens:
-            realname = tokens[Tokens.SHIB_CN]
-        elif Tokens.SHIB_NAME in tokens and Tokens.SHIB_SURNAME in tokens:
-            realname = tokens[Tokens.SHIB_NAME] + ' ' + \
-                tokens[Tokens.SHIB_SURNAME]
-        else:
-            if settings.SHIBBOLETH_REQUIRE_NAME_INFO:
-                raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_NAME))
-            else:
-                realname = ''
+            fullname = tokens[Tokens.SHIB_CN]
+        if Tokens.SHIB_NAME in tokens:
+            first_name = tokens[Tokens.SHIB_NAME]
+        if Tokens.SHIB_SURNAME in tokens:
+            last_name = tokens[Tokens.SHIB_SURNAME]
+
+        if fullname:
+            splitted = fullname.split(' ', 1)
+            if len(splitted) == 2:
+                first_name, last_name = splitted
+        fullname = '%s %s' % (first_name, last_name)
+
+        if not any([first_name, last_name]) and \
+                    settings.SHIBBOLETH_REQUIRE_NAME_INFO:
+            raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_NAME))
 
     except KeyError, e:
         # invalid shibboleth headers, redirect to login, display message
         messages.error(request, e.message)
         return HttpResponseRedirect(login_url(request))
 
+    if settings.SHIBBOLETH_MIGRATE_EPPN:
+        migrate_eppn_to_remote_id(eppn, user_id)
+
     affiliation = tokens.get(Tokens.SHIB_EP_AFFILIATION, 'Shibboleth')
     email = tokens.get(Tokens.SHIB_MAIL, '')
-    eppn_info = tokens.get(Tokens.SHIB_EPPN)
-    provider_info = {'eppn': eppn_info, 'email': email, 'name': realname,
-                     'headers': shibboleth_headers}
-    userid = eppn
+    provider_info = {'eppn': eppn, 'email': email, 'name': fullname,
+                     'headers': shibboleth_headers, 'user_id': user_id}
 
     try:
         return handle_third_party_login(request, 'shibboleth',
-                                        eppn, provider_info,
+                                        user_id, provider_info,
                                         affiliation, third_party_key)
     except AstakosUser.DoesNotExist, e:
         third_party_key = get_pending_key(request)
-        user_info = {'affiliation': affiliation, 'realname': realname}
-        return handle_third_party_signup(request, userid, 'shibboleth',
+        user_info = {'affiliation': affiliation,
+                     'first_name': first_name,
+                     'last_name': last_name,
+                     'email': email}
+        return handle_third_party_signup(request, user_id, 'shibboleth',
                                          third_party_key,
                                          provider_info,
                                          user_info,

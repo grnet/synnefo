@@ -172,6 +172,9 @@ class PoolManager(object):
     def value_to_index(self, value):
         raise NotImplementedError
 
+    def __repr__(self):
+        return repr(self.pool_table)
+
 
 class EmptyPool(Exception):
     pass

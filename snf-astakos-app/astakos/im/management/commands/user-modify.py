@@ -35,9 +35,12 @@ import string
 
 from optparse import make_option
 
+from django.core import management
+from django.db import transaction
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 
 from synnefo.util import units
 from astakos.im.models import AstakosUser, Resource
@@ -45,7 +48,6 @@ from astakos.im import quotas
 from astakos.im import activation_backends
 from ._common import (remove_user_permission, add_user_permission, is_uuid,
                       show_resource_value)
-from snf_django.lib.db.transaction import commit_on_success_strict
 
 activation_backend = activation_backends.get_backend()
 
@@ -140,9 +142,16 @@ class Command(BaseCommand):
                     default=False,
                     dest='force',
                     help="Do not ask for confirmation"),
+        make_option('--set-email',
+                    dest='set-email',
+                    help="Change user's email"),
+        make_option('--delete',
+                    dest='delete',
+                    action='store_true',
+                    help="Delete user"),
     )
 
-    @commit_on_success_strict()
+    @transaction.commit_on_success
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a user ID")
@@ -296,6 +305,35 @@ class Command(BaseCommand):
         if set_base_quota is not None:
             resource, capacity = set_base_quota
             self.set_limit(user, resource, capacity, force)
+
+        delete = options.get('delete')
+        if delete:
+            management.call_command('user-show', str(user.pk),
+                                    list_quotas=True)
+            m = "Are you sure you want to permanently delete the user " \
+                "(yes/no) ? "
+
+            self.stdout.write("\n")
+            confirm = raw_input(m)
+            if confirm == "yes":
+                user.delete()
+
+        # Change users email address
+        newemail = options.get('set-email', None)
+        if newemail is not None:
+            newemail = newemail.strip()
+            try:
+                validate_email(newemail)
+            except ValidationError:
+                m = "Invalid email address."
+                raise CommandError(m)
+
+            if AstakosUser.objects.user_exists(newemail):
+                m = "A user with this email address already exists."
+                raise CommandError(m)
+
+            user.email = newemail
+            user.save()
 
     def set_limit(self, user, resource, capacity, force):
         style = None

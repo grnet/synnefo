@@ -16,6 +16,14 @@ from snfdeploy.lib import *
 
 def print_available_actions(command):
 
+  if command == "keygen":
+    print """
+Usage: snf-deploy keygen [--force]
+
+  Generate new ssh keys (both rsa and dsa keypairs)
+
+  """
+
   if command == "vcluster":
     print """
 Usage: snf-deploy vcluster
@@ -73,7 +81,7 @@ Usage: snf-deploy run <action> [<action>...]
       setup_apt              add_rapi_user                 add_backend
       setup_astakos          add_nodes                     add_image_locally
       setup_cms              astakos_loaddata              add_network
-      setup_common           astakos_register_services     add_ns
+      setup_common           astakos_register_components   add_ns
       setup_cyclades         cms_loaddata                  add_user
       setup_db               cyclades_loaddata             connect_bridges
       setup_ganeti           enable_drbd                   create_bridges
@@ -276,7 +284,10 @@ autoconf={5},disable_colors={6},key_inject={7} \
   print(fabcmd)
 
   if not args.dry_run:
-    os.system(fabcmd)
+    ret = os.system(fabcmd)
+    if ret != 0:
+        status = "exit with status %s" % ret
+        sys.exit(status)
 
 
 def cluster(args, env):
@@ -372,9 +383,9 @@ def parse_options():
   parser.add_argument("--vnc", dest="vnc",
                       default=False, action="store_true",
                       help="Wheter virtual nodes will have a vnc console or not")
-  parser.add_argument("-k", "--keygen", dest="keygen",
+  parser.add_argument("--force", dest="force",
                       default=False, action="store_true",
-                      help="Whether to create new ssh key pairs")
+                      help="Force the creation of new ssh key pairs")
 
   parser.add_argument("-i", "--ssh-key", dest="ssh_key",
                       default=None,
@@ -399,7 +410,7 @@ def parse_options():
                       choices=["packages", "vcluster", "prepare",
                                "synnefo", "backend", "ganeti",
                                "run", "cleanup", "test",
-                               "all", "add"],
+                               "all", "add", "keygen"],
                       help="Run on of the supported deployment commands")
 
   # available actions for the run command
@@ -434,10 +445,12 @@ def get_actions(*args):
         "setup_astakos",
         #TODO: astakos-quota fails if no user is added.
         #      add_user fails if no groups found
-        "astakos_loaddata", "add_user", "activate_user", "astakos_register_services",
+        "astakos_loaddata", "add_user", "activate_user",
+        "astakos_register_components",
         "setup_cms", "cms_loaddata",
         "setup_pithos",
-        "setup_cyclades", "cyclades_loaddata", "add_pools", "setup_vncauthproxy",
+        "setup_cyclades", "cyclades_loaddata", "add_pools",
+        "export_services", "import_services", "setup_vncauthproxy",
         "setup_kamaki", "upload_image", "register_image",
         "setup_burnin"
         ],
@@ -447,6 +460,7 @@ def get_actions(*args):
         ],
       # backend actions
       "backend": [
+        "setup_hosts",
         "update_ns_for_ganeti",
         "setup_ganeti", "init_cluster",
         "add_rapi_user", "add_nodes",
@@ -485,9 +499,34 @@ def get_actions(*args):
     return ret
 
 
-def create_keys(args, env):
+def must_create_keys(force, env):
+    """Check if we need to create ssh keys
+
+    If force is true we are going to overide the old keys.
+    Else if there are already generated keys to use, don't create new ones.
+
+    """
+    if force:
+        return True
+    d = os.path.join(env.templates, "root/.ssh")
+    auth_keys_exists = os.path.exists(os.path.join(d, "authorized_keys"))
+    dsa_exists = os.path.exists(os.path.join(d, "id_dsa"))
+    dsa_pub_exists = os.path.exists(os.path.join(d, "id_dsa.pub"))
+    rsa_exists = os.path.exists(os.path.join(d, "id_rsa"))
+    rsa_pub_exists = os.path.exists(os.path.join(d, "id_rsa.pub"))
+    # If any of the above doesn't exist return True
+    return not (dsa_exists and dsa_pub_exists
+                and rsa_exists and rsa_pub_exists
+                and auth_keys_exists)
+
+
+def do_create_keys(args, env):
   d = os.path.join(env.templates, "root/.ssh")
   a = os.path.join(d, "authorized_keys")
+  # Delete old keys
+  for filename in os.listdir(d):
+      os.remove(os.path.join(d, filename))
+  # Generate new keys
   for t in ("dsa", "rsa"):
     f = os.path.join(d, "id_" + t)
     cmd = 'ssh-keygen -q -t {0} -f {1} -N ""'.format(t, f)
@@ -539,14 +578,25 @@ def main():
   create_dir(env.run, False)
   create_dir(env.dns, False)
 
+  # Check if there are keys to use
+  if args.command == "keygen":
+    if must_create_keys(args.force, env):
+      do_create_keys(args, env)
+      return 0
+    else:
+      print "Keys already existed.. aborting"
+      return 1
+  else:
+    if (args.key_inject and (args.ssh_key is None)
+        and must_create_keys(False, env)):
+      print "No ssh keys to use. Run `snf-deploy keygen' first."
+      return 1
+
   if args.command == "test":
     conf.print_config()
 
   if args.command == "cleanup":
     cleanup(args, env)
-
-  if args.keygen:
-    create_keys(args, env)
 
   if args.command == "packages":
     create_dir(env.packages, True)
@@ -572,7 +622,7 @@ def main():
     fabcommand(args, env, actions)
 
   if args.command == "ganeti":
-    actions += get_actions("ganeti")
+    actions = get_actions("ganeti")
     fabcommand(args, env, actions)
 
 

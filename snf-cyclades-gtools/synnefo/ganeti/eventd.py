@@ -188,7 +188,8 @@ class JobFileHandler(pyinotify.ProcessEvent):
         self.client.exchange_declare(settings.EXCHANGE_GANETI, type='topic')
 
         self.op_handlers = {"INSTANCE": self.process_instance_op,
-                            "NETWORK": self.process_network_op}
+                            "NETWORK": self.process_network_op,
+                            "CLUSTER": self.process_cluster_op}
                             # "GROUP": self.process_group_op}
 
     def process_IN_CLOSE_WRITE(self, event):
@@ -247,9 +248,10 @@ class JobFileHandler(pyinotify.ProcessEvent):
             if op.status == "success":
                 msg["result"] = op.result
 
-            if op_id in ["OP_INSTANCE_CREATE", "OP_INSTANCE_SET_PARAMS",
-                         "OP_INSTANCE_STARTUP"]:
-                if op.status == "success":
+            if ((op_id in ["OP_INSTANCE_CREATE", "OP_INSTANCE_STARTUP"] and
+                 op.status == "success") or
+                (op_id == "OP_INSTANCE_SET_PARAMS" and
+                 op.status in ["success", "error", "cancelled"])):
                     nics = get_instance_nics(msg["instance"], self.logger)
                     msg["nics"] = nics
 
@@ -328,12 +330,22 @@ class JobFileHandler(pyinotify.ProcessEvent):
 
         return msg, routekey
 
+    def process_cluster_op(self, op, job_id):
+        """ Process OP_CLUSTER_* opcodes.
 
-    # def process_group_op(self, op, job_id):
-    #     """ Process OP_GROUP_* opcodes.
+        """
 
-    #     """
-    #     return None, None
+        input = op.input
+        op_id = input.OP_ID
+
+        self.logger.debug("Job: %d: %s %s", job_id, op_id, op.status)
+
+        msg = {'operation':    op_id,
+               'type':         "ganeti-cluster-status"}
+
+        routekey = "ganeti.event.cluster"
+
+        return msg, routekey
 
 
 def find_cluster_name():

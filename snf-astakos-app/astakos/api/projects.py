@@ -31,12 +31,13 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import re
 from django.utils import simplejson as json
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 from django.db.models import Q
+from django.db import transaction
 
-from snf_django.lib.db.transaction import commit_on_success_strict
 from astakos.api.util import json_response
 
 from snf_django.lib import api
@@ -270,7 +271,7 @@ def projects(request):
 
 @api.api_method(http_method="GET", token_required=True, user_required=False)
 @user_from_token
-@commit_on_success_strict()
+@transaction.commit_on_success
 def get_projects(request):
     user = request.user
     input_data = read_json_body(request, default={})
@@ -298,10 +299,10 @@ def _get_projects(query, request_user=None):
 
 @api.api_method(http_method="POST", token_required=True, user_required=False)
 @user_from_token
-@commit_on_success_strict()
+@transaction.commit_on_success
 def create_project(request):
     user = request.user
-    data = request.raw_post_data
+    data = request.body
     app_data = json.loads(data)
     return submit_application(app_data, user, project_id=None)
 
@@ -318,7 +319,7 @@ def project(request, project_id):
 
 @api.api_method(http_method="GET", token_required=True, user_required=False)
 @user_from_token
-@commit_on_success_strict()
+@transaction.commit_on_success
 def get_project(request, project_id):
     user = request.user
     with ExceptionHandler():
@@ -336,10 +337,10 @@ def _get_project(project_id, request_user=None):
 
 @api.api_method(http_method="POST", token_required=True, user_required=False)
 @user_from_token
-@commit_on_success_strict()
+@transaction.commit_on_success
 def modify_project(request, project_id):
     user = request.user
-    data = request.raw_post_data
+    data = request.body
     app_data = json.loads(data)
     return submit_application(app_data, user, project_id=project_id)
 
@@ -362,6 +363,15 @@ def _get_maybe_string(d, key):
     return value
 
 
+DOMAIN_VALUE_REGEX = re.compile(
+    r'^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,6}$',
+    re.IGNORECASE)
+
+
+def valid_project_name(name):
+    return DOMAIN_VALUE_REGEX.match(name) is not None
+
+
 def submit_application(app_data, user, project_id=None):
     uuid = app_data.get("owner")
     if uuid is None:
@@ -376,6 +386,9 @@ def submit_application(app_data, user, project_id=None):
         name = app_data["name"]
     except KeyError:
         raise faults.BadRequest("Name missing.")
+
+    if not valid_project_name(name):
+        raise faults.BadRequest("Project name should be in domain format")
 
     join_policy = app_data.get("join_policy", "moderated")
     try:
@@ -396,8 +409,7 @@ def submit_application(app_data, user, project_id=None):
         raise faults.BadRequest("Missing end date")
 
     max_members = app_data.get("max_members")
-    if max_members is not None and \
-            (not isinstance(max_members, (int, long)) or max_members < 0):
+    if not isinstance(max_members, (int, long)) or max_members < 0:
         raise faults.BadRequest("Invalid max_members")
 
     homepage = _get_maybe_string(app_data, "homepage")
@@ -454,10 +466,10 @@ PROJECT_ACTION = {
 @csrf_exempt
 @api.api_method(http_method="POST", token_required=True, user_required=False)
 @user_from_token
-@commit_on_success_strict()
+@transaction.commit_on_success
 def project_action(request, project_id):
     user = request.user
-    data = request.raw_post_data
+    data = request.body
     input_data = json.loads(data)
 
     func, action_data = get_action(PROJECT_ACTION, input_data)
@@ -485,7 +497,7 @@ def make_application_query(input_data):
 
 @api.api_method(http_method="GET", token_required=True, user_required=False)
 @user_from_token
-@commit_on_success_strict()
+@transaction.commit_on_success
 def get_applications(request):
     user = request.user
     input_data = read_json_body(request, default={})
@@ -508,7 +520,7 @@ def _get_applications(query, request_user=None):
 @csrf_exempt
 @api.api_method(http_method="GET", token_required=True, user_required=False)
 @user_from_token
-@commit_on_success_strict()
+@transaction.commit_on_success
 def application(request, app_id):
     user = request.user
     with ExceptionHandler():
@@ -535,10 +547,10 @@ APPLICATION_ACTION = {
 @csrf_exempt
 @api.api_method(http_method="POST", token_required=True, user_required=False)
 @user_from_token
-@commit_on_success_strict()
+@transaction.commit_on_success
 def application_action(request, app_id):
     user = request.user
-    data = request.raw_post_data
+    data = request.body
     input_data = json.loads(data)
 
     func, action_data = get_action(APPLICATION_ACTION, input_data)
@@ -569,7 +581,7 @@ def make_membership_query(input_data):
 
 @api.api_method(http_method="GET", token_required=True, user_required=False)
 @user_from_token
-@commit_on_success_strict()
+@transaction.commit_on_success
 def get_memberships(request):
     user = request.user
     input_data = read_json_body(request, default={})
@@ -619,10 +631,10 @@ MEMBERSHIPS_ACTION = {
 
 @api.api_method(http_method="POST", token_required=True, user_required=False)
 @user_from_token
-@commit_on_success_strict()
+@transaction.commit_on_success
 def post_memberships(request):
     user = request.user
-    data = request.raw_post_data
+    data = request.body
     input_data = json.loads(data)
     func, action_data = get_action(MEMBERSHIPS_ACTION, input_data)
     return func(action_data, user)
@@ -630,7 +642,7 @@ def post_memberships(request):
 
 @api.api_method(http_method="GET", token_required=True, user_required=False)
 @user_from_token
-@commit_on_success_strict()
+@transaction.commit_on_success
 def membership(request, memb_id):
     user = request.user
     with ExceptionHandler():
@@ -657,7 +669,7 @@ MEMBERSHIP_ACTION = {
 @csrf_exempt
 @api.api_method(http_method="POST", token_required=True, user_required=False)
 @user_from_token
-@commit_on_success_strict()
+@transaction.commit_on_success
 def membership_action(request, memb_id):
     user = request.user
     input_data = read_json_body(request, default={})

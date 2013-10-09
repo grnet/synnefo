@@ -36,13 +36,16 @@ import distribute_setup
 distribute_setup.use_setuptools()
 
 import os
+import sys
 
 from distutils.util import convert_path
 from fnmatch import fnmatchcase
 from setuptools import setup, find_packages
-from snfdeploy.version import __version__
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 
+# Add snfdeploy to sys.path and load version module
+sys.path.insert(0, "snfdeploy")
+from version import __version__
 
 # Package info
 VERSION = __version__

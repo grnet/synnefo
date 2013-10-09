@@ -33,25 +33,25 @@
 
 from datetime import datetime, timedelta
 
+from django.db import transaction
 from astakos.im.models import AstakosUser, Project
 from astakos.im.functions import (join_project, leave_project,
                                   submit_application, approve_application,
                                   check_pending_app_quota,
                                   ProjectForbidden)
-from snf_django.lib.db.transaction import commit_on_success_strict
 
 
-@commit_on_success_strict()
+@transaction.commit_on_success
 def join(proj_id, user):
     return join_project(proj_id, user)
 
 
-@commit_on_success_strict()
+@transaction.commit_on_success
 def leave(memb_id, request_user):
     return leave_project(memb_id, request_user)
 
 
-@commit_on_success_strict()
+@transaction.commit_on_success
 def submit(name, user_id, project_id=None):
     try:
         owner = AstakosUser.objects.get(id=user_id)
@@ -79,6 +79,6 @@ def submit(name, user_id, project_id=None):
     return app.id, app.chain_id
 
 
-@commit_on_success_strict()
+@transaction.commit_on_success
 def approve(app_id):
     approve_application(app_id)

@@ -44,6 +44,7 @@ from synnefo.cyclades_settings import cyclades_services
 from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
 from django.conf import settings
+from synnefo.logic.rapi import GanetiApiError
 
 from mock import patch, Mock
 
@@ -324,6 +325,7 @@ fixed_image.return_value = {'location': 'pithos://foo',
                             'checksum': '1234',
                             "id": 1,
                             "name": "test_image",
+                            "size": "41242",
                             'disk_format': 'diskdump'}
 
 
@@ -503,6 +505,27 @@ class ServerCreateAPITest(ComputeAPITest):
             response = self.mypost('servers', 'test_user',
                                    json.dumps(request), 'json')
         self.assertItemNotFound(response)
+
+    def test_create_server_error(self, mrapi):
+        """Test if the create server call returns the expected response
+           if a valid request has been speficied."""
+        mrapi().CreateInstance.side_effect = GanetiApiError("..ganeti is down")
+        # Create public network and backend
+        network = mfactory.NetworkFactory(public=True)
+        backend = mfactory.BackendFactory()
+        mfactory.BackendNetworkFactory(network=network, backend=backend)
+
+        request = self.request
+        with mocked_quotaholder():
+            response = self.mypost('servers', 'test_user',
+                                   json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 202)
+        mrapi().CreateInstance.assert_called_once()
+        vm = VirtualMachine.objects.get()
+        # The VM has not been deleted
+        self.assertFalse(vm.deleted)
+        # but is in "ERROR" operstate
+        self.assertEqual(vm.operstate, "ERROR")
 
 
 @patch('synnefo.logic.rapi_pool.GanetiRapiClient')

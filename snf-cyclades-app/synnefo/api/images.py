@@ -36,7 +36,7 @@ from itertools import ifilter
 
 from dateutil.parser import parse as date_parse
 
-from django.conf.urls.defaults import patterns
+from django.conf.urls import patterns
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json

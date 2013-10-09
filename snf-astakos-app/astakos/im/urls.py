@@ -31,13 +31,11 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import patterns, url
-
+from django.conf.urls import patterns, url
 from astakos.im.forms import (
     ExtendedPasswordResetForm,
     ExtendedPasswordChangeForm,
     ExtendedSetPasswordForm, LoginForm)
-
 from astakos.im import settings
 
 urlpatterns = patterns(

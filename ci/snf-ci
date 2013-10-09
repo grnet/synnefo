@@ -7,7 +7,7 @@ Continuous Integration script for Synnefo.
 """
 
 import os
-from utils import SynnefoCI
+import utils
 from optparse import OptionParser
 
 CREATE_SERVER_CMD = "create"
@@ -16,9 +16,10 @@ BUILD_DOCS_SYNNEFO_CMD = "docs"
 DEPLOY_SYNNEFO_CMD = "deploy"
 TEST_SYNNEFO_CMD = "test"
 RUN_BURNIN_CMD = "burnin"
+CREATE_X2GO_FILE = "x2goplugin"
 ALL_CMDS = "all"
 
-AVAILABLE_COMMANDS = [
+COMMANDS_IN_ALL_MODE = [
     CREATE_SERVER_CMD,
     BUILD_SYNNEFO_CMD,
     BUILD_DOCS_SYNNEFO_CMD,
@@ -27,9 +28,11 @@ AVAILABLE_COMMANDS = [
     RUN_BURNIN_CMD,
 ]
 
-CLEAN_CONFIG_CMDS = [CREATE_SERVER_CMD, ALL_CMDS]
+AVAILABLE_COMMANDS = [
+    CREATE_X2GO_FILE,
+] + COMMANDS_IN_ALL_MODE
 
-USAGE = """usage: %%prog [options] command
+USAGE = """usage: %%prog [options] command[,command...]
 
 command:
     * %s: Create the slave server
@@ -38,6 +41,7 @@ command:
     * %s: Deploy Synnefo in created server
     * %s: Run Synnefo unittests
     * %s: Run snf-burnin in the deployed Synnefo
+    * %s: Create x2go plugin file
 
     * %s: Run all the available commands
 """ % tuple([CREATE_SERVER_CMD,
@@ -46,6 +50,7 @@ command:
              DEPLOY_SYNNEFO_CMD,
              TEST_SYNNEFO_CMD,
              RUN_BURNIN_CMD,
+             CREATE_X2GO_FILE,
              ALL_CMDS])
 
 
@@ -57,27 +62,51 @@ def main():  # Too many branches. pylint: disable-msg=R0912
     parser.add_option("--cloud", dest="kamaki_cloud", default=None,
                       help="Use specified cloud, as is in .kamakirc")
     parser.add_option("-f", "--flavor", dest="flavor", default=None,
-                      help="Name of flavor to use for the server.")
+                      help="Flavor to use for the server."
+                           " Supports both search by name (reg expression)"
+                           " with \"name:flavor name\" or by id with"
+                           " \"id:flavor id\".")
     parser.add_option("-i", "--image", dest="image", default=None,
-                      help="UUID of image to use for the server.")
+                      help="Image to use for the server."
+                           " Supports both search by name (reg expression)"
+                           " with \"name:image name\" or by id with"
+                           " \"id:image id\".")
     parser.add_option("--ssh-keys", dest="ssh_keys", default=None,
                       help="Upload/Install the public ssh keys contained"
                            " in this file to the server")
+    parser.add_option("-n", "--build-id", dest="build_id", default=None,
+                      type="int",
+                      help="Specify a number to use to identify this build."
+                           " One can later use this number to retrieve"
+                           " information (such as IPs, passwords etc) about"
+                           " the machines created. If not given this script"
+                           " will create a new build-id.")
     parser.add_option("--fetch-packages", dest="fetch_packages",
                       default=None,
                       help="Download the debian packages that were created"
-                           " during the '%s' step in this directory" %
+                           " during the '%s' step in this directory." %
                            BUILD_SYNNEFO_CMD)
     parser.add_option("--fetch-docs", dest="fetch_docs",
                       default=None,
                       help="Download the documentation that was created"
-                           " during the '%s' step in this directory" %
+                           " during the '%s' step in this directory." %
                            BUILD_DOCS_SYNNEFO_CMD)
     parser.add_option("--schema", dest="schema", default=None,
                       help="Schema for snf-deploy.")
+    parser.add_option("--local-repo", dest="local_repo", default=False,
+                      action="store_true",
+                      help="Instead of cloning from the official Synnefo"
+                           " repo, copy and use the local one.")
+    parser.add_option("--x2go-output", dest="x2go_output", default=None,
+                      help="File where to save the x2go plugin html page.")
+    parser.add_option("--no-colors", dest="use_colors",
+                      default=True, action="store_false",
+                      help="Don't use colorful output messages.")
 
     (options, args) = parser.parse_args()
 
+    # ----------------------------------
+    # Check arguments
     if len(args) != 1:
         msg = "ERROR: Command takes exactly one argument"
         parser.print_help()
@@ -85,29 +114,37 @@ def main():  # Too many branches. pylint: disable-msg=R0912
         print msg
         return
 
-    command = args[0]
-    if command == ALL_CMDS:
-        for cmd in AVAILABLE_COMMANDS:
+    commands = args[0]
+    if commands == ALL_CMDS:
+        for cmd in COMMANDS_IN_ALL_MODE:
             setattr(options, cmd, True)
-    elif command not in AVAILABLE_COMMANDS:
-        msg = "ERROR: Unknown command: %s" % command
-        parser.print_help()
-        print
-        print msg
-        return
+
     else:
-        setattr(options, command, True)
+        commands = commands.split(",")
+        for command in commands:
+            if command not in AVAILABLE_COMMANDS:
+                msg = "ERROR: Unknown command: %s" % command
+                parser.print_help()
+                print
+                print msg
+                return
+            else:
+                setattr(options, command, True)
 
-    cleanup_config = command in CLEAN_CONFIG_CMDS
-    synnefo_ci = SynnefoCI(config_file=options.config_file,
-                           cleanup_config=cleanup_config,
-                           cloud=options.kamaki_cloud)
+    # ----------------------------------
+    # Initialize SynnefoCi
+    utils.USE_COLORS = options.use_colors
+    synnefo_ci = utils.SynnefoCI(config_file=options.config_file,
+                                 build_id=options.build_id,
+                                 cloud=options.kamaki_cloud)
 
+    # ----------------------------------
+    # Run commands
     if getattr(options, CREATE_SERVER_CMD, False):
-        synnefo_ci.create_server(flavor_name=options.flavor,
-                                 image_id=options.image,
+        synnefo_ci.create_server(flavor=options.flavor,
+                                 image=options.image,
                                  ssh_keys=options.ssh_keys)
-        synnefo_ci.clone_repo()
+        synnefo_ci.clone_repo(local_repo=options.local_repo)
     if getattr(options, BUILD_SYNNEFO_CMD, False):
         synnefo_ci.build_synnefo()
         if options.fetch_packages:
@@ -124,6 +161,8 @@ def main():  # Too many branches. pylint: disable-msg=R0912
         synnefo_ci.unit_test()
     if getattr(options, RUN_BURNIN_CMD, False):
         synnefo_ci.run_burnin()
+    if getattr(options, CREATE_X2GO_FILE, False):
+        synnefo_ci.x2go_plugin(options.x2go_output)
 
 
 if __name__ == "__main__":

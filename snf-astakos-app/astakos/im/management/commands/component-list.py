@@ -42,9 +42,10 @@ class Command(ListCommand):
     FIELDS = {
         "id": ("id", "Component ID"),
         "name": ("name", "Component Name"),
-        "url": ("url", "Component URL"),
+        "base_url": ("base_url", "Component base URL"),
+        "ui_url": ("url", "Component UI URL"),
         "token": ("auth_token", "Authentication token"),
-        "token created": ("auth_token_created", "Token creation date"),
+        "token_created": ("auth_token_created", "Token creation date"),
     }
 
-    fields = ["id", "name", "url", "token"]
+    fields = ["id", "name", "base_url"]

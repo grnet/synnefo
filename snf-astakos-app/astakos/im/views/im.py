@@ -143,7 +143,7 @@ def update_token(request):
 @require_http_methods(["GET", "POST"])
 @cookie_fix
 @valid_astakos_user_required
-@transaction.commit_manually
+@transaction.commit_on_success
 def invite(request, template_name='im/invitations.html', extra_context=None):
     """
     Allows a user to invite somebody else.
@@ -153,9 +153,8 @@ def invite(request, template_name='im/invitations.html', extra_context=None):
     In case of POST checks whether the user has not run out of invitations and
     then sends an invitation email to singup to the service.
 
-    The view uses commit_manually decorator in order to ensure the number of
-    the user invitations is going to be updated only if the email has been
-    successfully sent.
+    The number of the user invitations is going to be updated only if the email
+    has been successfully sent.
 
     If the user isn't logged in, redirects to settings.LOGIN_URL.
 
@@ -188,17 +187,11 @@ def invite(request, template_name='im/invitations.html', extra_context=None):
         form = InvitationForm(request.POST)
         if inviter.invitations > 0:
             if form.is_valid():
-                try:
-                    email = form.cleaned_data.get('username')
-                    realname = form.cleaned_data.get('realname')
-                    invite_func(inviter, email, realname)
-                    message = _(astakos_messages.INVITATION_SENT) % locals()
-                    messages.success(request, message)
-                except Exception, e:
-                    transaction.rollback()
-                    raise
-                else:
-                    transaction.commit()
+                email = form.cleaned_data.get('username')
+                realname = form.cleaned_data.get('realname')
+                invite_func(inviter, email, realname)
+                message = _(astakos_messages.INVITATION_SENT) % locals()
+                messages.success(request, message)
         else:
             message = _(astakos_messages.MAX_INVITATION_NUMBER_REACHED)
             messages.error(request, message)
@@ -364,7 +357,7 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
                                                         extra_context))
 
 
-@transaction.commit_manually
+@transaction.commit_on_success
 @require_http_methods(["GET", "POST"])
 @cookie_fix
 def signup(request, template_name='im/signup.html', on_success='index',
@@ -408,13 +401,11 @@ def signup(request, template_name='im/signup.html', on_success='index',
     if request.user.is_authenticated():
         logger.info("%s already signed in, redirect to index",
                     request.user.log_display)
-        transaction.rollback()
         return HttpResponseRedirect(reverse('index'))
 
     provider = get_query(request).get('provider', 'local')
     if not auth.get_provider(provider).get_create_policy:
         logger.error("%s provider not available for signup", provider)
-        transaction.rollback()
         raise PermissionDenied
 
     instance = None
@@ -422,6 +413,7 @@ def signup(request, template_name='im/signup.html', on_success='index',
     # user registered using third party provider
     third_party_token = request.REQUEST.get('third_party_token', None)
     unverified = None
+    pending = None
     if third_party_token:
         # retreive third party entry. This was created right after the initial
         # third party provider handshake.
@@ -455,8 +447,16 @@ def signup(request, template_name='im/signup.html', on_success='index',
     if third_party_token:
         form_kwargs['third_party_token'] = third_party_token
 
+    if pending:
+        form_kwargs['initial'] = {
+            'first_name': pending.first_name,
+            'last_name': pending.last_name,
+            'email': pending.email
+        }
+
     form = activation_backend.get_signup_form(
         provider, None, **form_kwargs)
+
 
     if request.method == 'POST':
         form = activation_backend.get_signup_form(
@@ -465,47 +465,36 @@ def signup(request, template_name='im/signup.html', on_success='index',
             **form_kwargs)
 
         if form.is_valid():
-            commited = False
-            try:
-                user = form.save(commit=False)
+            user = form.save(commit=False)
 
-                # delete previously unverified accounts
-                if AstakosUser.objects.user_exists(user.email):
-                    AstakosUser.objects.get_by_identifier(user.email).delete()
+            # delete previously unverified accounts
+            if AstakosUser.objects.user_exists(user.email):
+                AstakosUser.objects.get_by_identifier(user.email).delete()
 
-                # store_user so that user auth providers get initialized
-                form.store_user(user, request)
-                result = activation_backend.handle_registration(user)
-                if result.status == \
-                        activation_backend.Result.PENDING_MODERATION:
-                    # user should be warned that his account is not active yet
-                    status = messages.WARNING
-                else:
-                    status = messages.SUCCESS
-                message = result.message
-                activation_backend.send_result_notifications(result, user)
+            # store_user so that user auth providers get initialized
+            form.store_user(user, request)
+            result = activation_backend.handle_registration(user)
+            if result.status == \
+                    activation_backend.Result.PENDING_MODERATION:
+                # user should be warned that his account is not active yet
+                status = messages.WARNING
+            else:
+                status = messages.SUCCESS
+            message = result.message
+            activation_backend.send_result_notifications(result, user)
 
-                # commit user entry
-                transaction.commit()
-                # commited flag
-                # in case an exception get raised from this point
-                commited = True
+            # commit user entry
+            transaction.commit()
 
-                if user and user.is_active:
-                    # activation backend directly activated the user
-                    # log him in
-                    next = request.POST.get('next', '')
-                    response = prepare_response(request, user, next=next)
-                    return response
+            if user and user.is_active:
+                # activation backend directly activated the user
+                # log him in
+                next = request.POST.get('next', '')
+                response = prepare_response(request, user, next=next)
+                return response
 
-                messages.add_message(request, status, message)
-                return HttpResponseRedirect(reverse(on_success))
-            except Exception, e:
-                if not commited:
-                    transaction.rollback()
-                raise
-    else:
-        transaction.commit()
+            messages.add_message(request, status, message)
+            return HttpResponseRedirect(reverse(on_success))
 
     return render_response(
         template_name,
@@ -614,15 +603,14 @@ def logout(request, template='registration/logged_out.html',
 
 @require_http_methods(["GET", "POST"])
 @cookie_fix
-@transaction.commit_manually
+@transaction.commit_on_success
 def activate(request, greeting_email_template_name='im/welcome_email.txt',
              helpdesk_email_template_name='im/helpdesk_notification.txt'):
     """
     Activates the user identified by the ``auth`` request parameter, sends a
     welcome email and renews the user token.
 
-    The view uses commit_manually decorator in order to ensure the user state
-    will be updated only if the email will be send successfully.
+    The user state will be updated only if the email will be send successfully.
     """
     token = request.GET.get('auth')
     next = request.GET.get('next')
@@ -636,7 +624,6 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
     try:
         user = AstakosUser.objects.get(verification_code=token)
     except AstakosUser.DoesNotExist:
-        transaction.rollback()
         raise Http404
 
     if user.email_verified:
@@ -644,23 +631,37 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
         messages.error(request, message)
         return HttpResponseRedirect(reverse('index'))
 
-    try:
-        backend = activation_backends.get_backend()
-        result = backend.handle_verification(user, token)
-        backend.send_result_notifications(result, user)
-        next = settings.ACTIVATION_REDIRECT_URL or next
-        response = HttpResponseRedirect(reverse('index'))
-        if user.is_active:
-            response = prepare_response(request, user, next, renew=True)
-            messages.success(request, _(result.message))
-        else:
-            messages.warning(request, _(result.message))
-    except Exception:
-        transaction.rollback()
-        raise
+    backend = activation_backends.get_backend()
+    result = backend.handle_verification(user, token)
+    backend.send_result_notifications(result, user)
+    next = settings.ACTIVATION_REDIRECT_URL or next
+    response = HttpResponseRedirect(reverse('index'))
+    if user.is_active:
+        response = prepare_response(request, user, next, renew=True)
+        messages.success(request, _(result.message))
     else:
-        transaction.commit()
-        return response
+        messages.warning(request, _(result.message))
+
+    return response
+
+
+@login_required
+def _approval_terms_post(request, template_name, terms, extra_context):
+    next = restrict_next(
+        request.POST.get('next'),
+        domain=settings.COOKIE_DOMAIN
+    )
+    if not next:
+        next = reverse('index')
+    form = SignApprovalTermsForm(request.POST, instance=request.user)
+    if not form.is_valid():
+        return render_response(template_name,
+                               terms=terms,
+                               approval_terms_form=form,
+                               context_instance=get_context(request,
+                                                            extra_context))
+    user = form.save()
+    return HttpResponseRedirect(next)
 
 
 @require_http_methods(["GET", "POST"])
@@ -668,24 +669,24 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
 def approval_terms(request, term_id=None,
                    template_name='im/approval_terms.html', extra_context=None):
     extra_context = extra_context or {}
-    term = None
+    terms_record = None
     terms = None
     if not term_id:
         try:
-            term = ApprovalTerms.objects.order_by('-id')[0]
+            terms_record = ApprovalTerms.objects.order_by('-id')[0]
         except IndexError:
             pass
     else:
         try:
-            term = ApprovalTerms.objects.get(id=term_id)
+            terms_record = ApprovalTerms.objects.get(id=term_id)
         except ApprovalTerms.DoesNotExist, e:
             pass
 
-    if not term:
+    if not terms_record:
         messages.error(request, _(astakos_messages.NO_APPROVAL_TERMS))
         return HttpResponseRedirect(reverse('index'))
     try:
-        f = open(term.location, 'r')
+        f = open(terms_record.location, 'r')
     except IOError:
         messages.error(request, _(astakos_messages.GENERIC_ERROR))
         return render_response(
@@ -695,21 +696,8 @@ def approval_terms(request, term_id=None,
     terms = f.read()
 
     if request.method == 'POST':
-        next = restrict_next(
-            request.POST.get('next'),
-            domain=settings.COOKIE_DOMAIN
-        )
-        if not next:
-            next = reverse('index')
-        form = SignApprovalTermsForm(request.POST, instance=request.user)
-        if not form.is_valid():
-            return render_response(template_name,
-                                   terms=terms,
-                                   approval_terms_form=form,
-                                   context_instance=get_context(request,
-                                                                extra_context))
-        user = form.save()
-        return HttpResponseRedirect(next)
+        return _approval_terms_post(request, template_name, terms,
+                                    extra_context)
     else:
         form = None
         if request.user.is_authenticated() and not request.user.signed_terms:
@@ -723,7 +711,7 @@ def approval_terms(request, term_id=None,
 
 @require_http_methods(["GET", "POST"])
 @cookie_fix
-@transaction.commit_manually
+@transaction.commit_on_success
 def change_email(request, activation_key=None,
                  email_template_name='registration/email_change_email.txt',
                  form_template_name='registration/email_change_form.html',
@@ -740,7 +728,6 @@ def change_email(request, activation_key=None,
                 email_change = EmailChange.objects.get(
                     activation_key=activation_key)
             except EmailChange.DoesNotExist:
-                transaction.rollback()
                 logger.error("[change-email] Invalid or used activation "
                              "code, %s", activation_key)
                 raise Http404
@@ -758,7 +745,6 @@ def change_email(request, activation_key=None,
             else:
                 logger.error("[change-email] Access from invalid user, %s %s",
                              email_change.user, request.user.log_display)
-                transaction.rollback()
                 raise PermissionDenied
         except ValueError, e:
             messages.error(request, e)
@@ -767,8 +753,9 @@ def change_email(request, activation_key=None,
 
         return render_response(confirm_template_name,
                                modified_user=user if 'user' in locals()
-                               else None, context_instance=get_context(request,
-                               extra_context))
+                               else None,
+                               context_instance=get_context(request,
+                                                            extra_context))
 
     if not request.user.is_authenticated():
         path = quote(request.get_full_path())
@@ -785,16 +772,11 @@ def change_email(request, activation_key=None,
 
     form = EmailChangeForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
-        try:
-            ec = form.save(request, email_template_name, request)
-        except Exception, e:
-            transaction.rollback()
-            raise
-        else:
-            msg = _(astakos_messages.EMAIL_CHANGE_REGISTERED)
-            messages.success(request, msg)
-            transaction.commit()
-            return HttpResponseRedirect(reverse('edit_profile'))
+        ec = form.save(request, email_template_name, request)
+        msg = _(astakos_messages.EMAIL_CHANGE_REGISTERED)
+        messages.success(request, msg)
+        transaction.commit()
+        return HttpResponseRedirect(reverse('edit_profile'))
 
     if request.user.email_change_is_pending():
         messages.warning(request,

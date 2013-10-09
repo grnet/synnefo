@@ -86,7 +86,8 @@ def render_response(template, tab=None, status=200, context_instance=None,
 def _create_object(request, model=None, template_name=None,
                    template_loader=template_loader, extra_context=None,
                    post_save_redirect=None, login_required=False,
-                   context_processors=None, form_class=None, msg=None):
+                   context_processors=None, form_class=None, msg=None,
+                   summary_template_name=None):
     """
     Based of django.views.generic.create_update.create_object which displays a
     summary page before creating the object.
@@ -107,6 +108,7 @@ def _create_object(request, model=None, template_name=None,
             if verify == '1':
                 extra_context['show_form'] = False
                 extra_context['form_data'] = form.cleaned_data
+                template_name = summary_template_name
             elif edit == '1':
                 extra_context['show_form'] = True
             else:
@@ -137,7 +139,7 @@ def _update_object(request, model=None, object_id=None, slug=None,
                    template_loader=template_loader, extra_context=None,
                    post_save_redirect=None, login_required=False,
                    context_processors=None, template_object_name='object',
-                   form_class=None, msg=None):
+                   form_class=None, msg=None, summary_template_name=None):
     """
     Based of django.views.generic.create_update.update_object which displays a
     summary page before updating the object.
@@ -159,6 +161,7 @@ def _update_object(request, model=None, object_id=None, slug=None,
             if verify == '1':
                 extra_context['show_form'] = False
                 extra_context['form_data'] = form.cleaned_data
+                template_name = summary_template_name
             elif edit == '1':
                 extra_context['show_form'] = True
             else:

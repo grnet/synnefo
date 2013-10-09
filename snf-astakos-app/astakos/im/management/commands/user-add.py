@@ -33,10 +33,10 @@
 
 from optparse import make_option
 
+from django.db import transaction
 from django.core.management.base import BaseCommand, CommandError
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
-from snf_django.lib.db import transaction
 
 from astakos.im.models import AstakosUser
 
@@ -67,7 +67,7 @@ class Command(BaseCommand):
                     help="Add user permission (may be used multiple times)")
     )
 
-    @transaction.commit_on_success_strict()
+    @transaction.commit_on_success
     def handle(self, *args, **options):
         if len(args) != 3:
             raise CommandError("Invalid number of arguments")

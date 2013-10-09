@@ -9,7 +9,7 @@
 
 {% if approval_terms_form %}
 <div class="section">
-    <form action="{% url latest_terms %}" method="post" class="login innerlabels">{% csrf_token %}
+    <form name="approval_terms_form" action="{% url latest_terms %}" method="post" class="login innerlabels">{% csrf_token %}
             {% with approval_terms_form as form %}
             {% include "im/form_render.html" %}
             {% endwith %}

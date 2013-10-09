@@ -32,8 +32,8 @@
 # or implied, of GRNET S.A.
 
 from logging import getLogger
+from django.conf.urls import patterns
 
-from django.conf.urls.defaults import patterns
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json

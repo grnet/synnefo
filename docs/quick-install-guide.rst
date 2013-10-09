@@ -33,7 +33,7 @@ following line in your ``/etc/apt/sources.list`` file:
 
 .. code-block:: console
 
-   deb http://apt.dev.grnet.gr stable/
+   deb http://apt.dev.grnet.gr squeeze/
 
 Then run:
 
@@ -43,11 +43,22 @@ Then run:
    # apt-get update
    # apt-get install snf-deploy
 
-Synnefo installation
-====================
+Synnefo configuration & installation
+====================================
 
-Now that you have `snf-deploy` successfully installed on your system, to install
-the whole Synnefo stack run:
+Configuration
+-------------
+
+Now that you have `snf-deploy` successfully installed on your system, you can
+continue with configuring and installing Synnefo. Configuration files for
+snf-deploy can be found in ``/etc/snf-deploy``, the defaults should work out of
+the box for most setups. If for some reason you encounter any problems, you
+should check there for network conflicts, etc.
+
+Installation
+------------
+
+To install the whole Synnefo stack run:
 
 .. code-block:: console
 
@@ -78,7 +89,7 @@ to access.
 
 Then open a browser and point to:
 
-`https://accounts.synnefo.live/im/`
+`https://synnefo.live/`
 
 Local access
 ------------
@@ -86,9 +97,9 @@ Local access
 If you want to access the installation from the same machine it runs on, just
 open a browser and point to:
 
-`https://accounts.synnefo.live/im/`
+`https://synnefo.live/`
 
-The <domain> is automatically set to ``synnefo.live``. A local BIND is already
+The default <domain> is set to ``synnefo.live``. A local BIND is already
 set up by `snf-deploy` to serve all FQDNs.
 
 Login
@@ -117,37 +128,6 @@ for domains:
 * pithos.synnefo.live
 * cms.synnefo.live
 
-
-Spawning VMs
-------------
-By default, snf-deploy can't spawn VMs. To be able to do so, edit 
-``/etc/synnefo/cyclades.conf`` and change line 29 from:
-
-.. code-block:: console  
-    
-    'no_install': True,
-
-to:
-
-.. code-block:: console                                                         
-
-    'no_install': False,  
-
-
-Networks
---------
-In order to create private networks, you have to edit
-``/etc/synnefo/cyclades.conf`` and change line 3 from:
-
-.. code-block:: console  
-
-    PRIVATE_MAC_FILTERED_BRIDGE = 'br0'
-
-to:
-
-.. code-block:: console  
-    
-    DEFAULT_MAC_FILTERED_BRIDGE = 'br0'
 
 
 Using the installation

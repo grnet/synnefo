@@ -255,7 +255,7 @@ def list_user_quotas(users):
 
 def get_users_for_update(user_ids):
     uids = sorted(user_ids)
-    objs = AstakosUser.forupdate
+    objs = AstakosUser.objects
     return list(objs.filter(id__in=uids).order_by('id').select_for_update())
 
 
@@ -313,8 +313,8 @@ def qh_sync_project(project):
 
 
 def qh_add_resource_limit(resource, diff):
-    objs = AstakosUser.forupdate.filter(Q(email_verified=True) &
-                                        ~Q(policy=resource))
+    objs = AstakosUser.objects.filter(Q(email_verified=True) &
+                                      ~Q(policy=resource))
     users = objs.order_by('id').select_for_update()
     uuids = [u.uuid for u in users]
     qh.add_resource_limit(holders=uuids, sources=[SYSTEM],
@@ -322,7 +322,7 @@ def qh_add_resource_limit(resource, diff):
 
 
 def qh_sync_new_resource(resource, limit):
-    users = AstakosUser.forupdate.filter(
+    users = AstakosUser.objects.filter(
         email_verified=True).order_by('id').select_for_update()
 
     resource_name = resource.name

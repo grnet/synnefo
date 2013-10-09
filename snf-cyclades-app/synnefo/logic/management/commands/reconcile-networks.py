@@ -49,7 +49,6 @@ Network reconciliation can detect and fix the following cases:
     - Missing Ganeti networks
     - Ganeti networks that are not connected to all Ganeti nodegroups
     - Networks that have unsynced state
-    - Networks that have unsynced IP pools
     - Orphan networks in the Ganeti backend
 """
 
@@ -58,13 +57,9 @@ Network reconciliation can detect and fix the following cases:
         make_option('--fix-all', action='store_true',
                     dest='fix', default=False,
                     help='Fix all issues.'),
-        make_option('--conflicting-ips', action='store_true',
-                    dest='conflicting_ips', default=False,
-                    help='Detect conflicting ips')
     )
 
     def handle(self, **options):
-        conflicting_ips = options['conflicting_ips']
         verbosity = int(options["verbosity"])
         fix = options["fix"]
 
@@ -84,8 +79,5 @@ Network reconciliation can detect and fix the following cases:
             logger.setLevel(logging.WARNING)
 
         logger.addHandler(log_handler)
-        reconciler = reconciliation.NetworkReconciler(
-            logger=logger,
-            fix=fix,
-            conflicting_ips=conflicting_ips)
+        reconciler = reconciliation.NetworkReconciler(logger=logger, fix=fix)
         reconciler.reconcile_networks()

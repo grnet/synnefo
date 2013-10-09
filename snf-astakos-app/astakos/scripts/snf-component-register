@@ -11,9 +11,9 @@ desc[cyclades]='compute component'
 desc[pithos]='file storage component'
 
 declare -A ex_url
-ex_url[astakos]='https://accounts.example.synnefo.org/astakos/'
-ex_url[cyclades]='https://compute.example.synnefo.org/cyclades/'
-ex_url[pithos]='https://storage.example.synnefo.org/pithos/'
+ex_url[astakos]='https://accounts.example.synnefo.org/astakos'
+ex_url[cyclades]='https://compute.example.synnefo.org/cyclades'
+ex_url[pithos]='https://storage.example.synnefo.org/pithos'
 
 
 register_services () {
@@ -22,7 +22,7 @@ register_services () {
 }
 
 ex_ui_url () {
-    echo "$(echo $1 | sed -e 's/\/*$//g')/ui/"
+    echo "$(echo $1 | sed -e 's/\/*$//g')/ui"
 }
 
 changed=0
@@ -42,6 +42,7 @@ decide () {
 
 register_component () {
     component=$1
+    exists=$2
     component_desc=${desc[$component]}
     component_ex_url=${ex_url[$component]}
     echo "Registering the $component_desc ($component):"
@@ -55,29 +56,18 @@ register_component () {
     read ui_url
     decide "Register $component with the given URLs (y/n)? "
     if [ $? -eq 0 ]; then
-        snf-manage component-add $component $ui_url
-        if [ $? -eq 0 ]; then
-            read -p "Please write down the token and press Enter to continue. "
-            register_services $component $base_url
-            changed=1
-            echo
+        if [ $exists -eq 0 ]; then
+            snf-manage component-add $component --base-url $base_url \
+                --ui-url $ui_url
+            if [ $? -eq 0 ]; then
+                read -p "Please write down the token and press Enter to continue. "
+                changed=1
+            fi
+        else
+            snf-manage component-modify $component --base-url $base_url \
+                --ui-url $ui_url --purge-services
         fi
-    fi
-}
-
-register_comp_serv () {
-    component=$1
-    component_desc=${desc[$component]}
-    component_ex_url=${ex_url[$component]}
-    echo "Registering services for $component:"
-    echo "Give the URL of $component base installation" \
-        "(e.g. $component_ex_url)"
-    echo -n 'Base URL: '
-    read base_url
-    decide "Register ${component}'s services with the given URL (y/n)? "
-    if [ $? -eq 0 ]; then
         register_services $component $base_url
-        echo
     fi
 }
 
@@ -91,13 +81,13 @@ register_one () {
     if [ $? -ne 0 ]; then
         decide "Register the ${desc[$component]} ($component) (y/n)? "
         if [ $? -eq 0 ]; then
-            register_component $component
+            register_component $component 0
         fi
     else
         echo "The ${desc[$component]} ($component) is registered."
-        decide "Update its registered services (y/n)? "
+        decide "Re-register (y/n)? "
         if [ $? -eq 0 ]; then
-            register_comp_serv $component
+            register_component $component 1
         fi
     fi
 }

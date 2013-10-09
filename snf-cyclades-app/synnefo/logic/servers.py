@@ -12,7 +12,6 @@ from synnefo import quotas
 from synnefo.api import util
 from synnefo.logic import backend
 from synnefo.logic.backend_allocator import BackendAllocator
-from synnefo.logic.rapi import GanetiApiError
 from synnefo.db.models import (NetworkInterface, VirtualMachine, Network,
                                VirtualMachineMetadata, FloatingIP)
 
@@ -42,11 +41,13 @@ def validate_server_action(vm, action):
 
     # Check if action can be performed to VM's operstate
     operstate = vm.operstate
-    if operstate == "BUILD":
+    if operstate == "BUILD" and action != "BUILD":
         raise faults.BuildInProgress("Server '%s' is being build." % vm.id)
-    elif (action == "START" and operstate == "STARTED") or\
-         (action == "STOP" and operstate == "STOPPED") or\
-         (action == "RESIZE" and operstate == "STARTED"):
+    elif (action == "START" and operstate != "STOPPED") or\
+         (action == "STOP" and operstate != "STARTED") or\
+         (action == "RESIZE" and operstate != "STOPPED") or\
+         (action in ["CONNECT", "DISCONNECT"] and operstate != "STOPPED"
+          and not settings.GANETI_USE_HOTPLUG):
         raise faults.BadRequest("Can not perform '%s' action while server is"
                                 " in '%s' state." % (action, operstate))
     return
@@ -77,26 +78,23 @@ def server_command(action):
         def wrapper(vm, *args, **kwargs):
             user_id = vm.userid
             validate_server_action(vm, action)
+            vm.action = action
 
-            # Resolve(reject) previous serial if it is still pending!!
-            previous_serial = vm.serial
-            if previous_serial and not previous_serial.resolved:
-                quotas.resolve_vm_commission(serial=previous_serial)
+            commission_name = "client: api, resource: %s" % vm
+            quotas.handle_resource_commission(vm, action=action,
+                                              commission_name=commission_name)
+            vm.save()
 
-            # Check if action is quotable and issue the corresponding
-            # commission
-            serial = None
-            commission_info = quotas.get_commission_info(vm, action=action)
-            if commission_info is not None:
-                # Issue new commission, associate it with the VM
-                commission_name = "client: api, resource %s" % vm
-                serial = quotas.issue_commission(user=user_id,
-                                                 source=quotas.DEFAULT_SOURCE,
-                                                 provisions=commission_info,
-                                                 name=commission_name,
-                                                 force=False,
-                                                 auto_accept=False)
-            vm.serial = serial
+            # XXX: Special case for server creation!
+            if action == "BUILD":
+                # Perform a commit, because the VirtualMachine must be saved to
+                # DB before the OP_INSTANCE_CREATE job in enqueued in Ganeti.
+                # Otherwise, messages will arrive from snf-dispatcher about
+                # this instance, before the VM is stored in DB.
+                transaction.commit()
+                # After committing the locks are released. Refetch the instance
+                # to guarantee x-lock.
+                vm = VirtualMachine.objects.select_for_update().get(id=vm.id)
 
             # Send the job to Ganeti and get the associated jobID
             try:
@@ -110,6 +108,13 @@ def server_command(action):
                     quotas.reject_serial(vm.serial)
                     transaction.commit()
                 raise
+
+            if action == "BUILD" and vm.serial is not None:
+                # XXX: Special case for server creation: we must accept the
+                # commission because the VM has been stored in DB. Also, if
+                # communication with Ganeti fails, the job will never reach
+                # Ganeti, and the commission will never be resolved.
+                quotas.accept_serial(vm.serial)
 
             log.info("user: %s, vm: %s, action: %s, job_id: %s, serial: %s",
                      user_id, vm.id, action, job_id, vm.serial)
@@ -125,24 +130,13 @@ def server_command(action):
     return decorator
 
 
-@transaction.commit_manually
+@transaction.commit_on_success
 def create(userid, name, password, flavor, image, metadata={},
            personality=[], private_networks=None, floating_ips=None,
            use_backend=None):
     if use_backend is None:
-        # Allocate backend to host the server. Commit after allocation to
-        # release the locks hold by the backend allocator.
-        try:
-            backend_allocator = BackendAllocator()
-            use_backend = backend_allocator.allocate(userid, flavor)
-            if use_backend is None:
-                log.error("No available backend for VM with flavor %s", flavor)
-                raise faults.ServiceUnavailable("No available backends")
-        except:
-            transaction.rollback()
-            raise
-        else:
-            transaction.commit()
+        # Allocate server to a Ganeti backend
+        use_backend = allocate_new_server(userid, flavor)
 
     if private_networks is None:
         private_networks = []
@@ -161,72 +155,80 @@ def create(userid, name, password, flavor, image, metadata={},
     else:
         flavor.disk_provider = None
 
-    try:
-        # We must save the VM instance now, so that it gets a valid
-        # vm.backend_vm_id.
-        vm = VirtualMachine.objects.create(
-            name=name,
-            backend=use_backend,
-            userid=userid,
-            imageid=image["id"],
-            flavor=flavor,
-            action="CREATE")
+    # We must save the VM instance now, so that it gets a valid
+    # vm.backend_vm_id.
+    vm = VirtualMachine.objects.create(name=name,
+                                       backend=use_backend,
+                                       userid=userid,
+                                       imageid=image["id"],
+                                       flavor=flavor,
+                                       operstate="BUILD")
+    log.info("Created entry in DB for VM '%s'", vm)
 
-        log.info("Created entry in DB for VM '%s'", vm)
+    nics = create_instance_nics(vm, userid, private_networks, floating_ips)
 
-        # dispatch server created signal
-        server_created.send(sender=vm, created_vm_params={
-            'img_id': image['backend_id'],
-            'img_passwd': password,
-            'img_format': str(image['format']),
-            'img_personality': json.dumps(personality),
-            'img_properties': json.dumps(image['metadata']),
-        })
+    for key, val in metadata.items():
+        VirtualMachineMetadata.objects.create(
+            meta_key=key,
+            meta_value=val,
+            vm=vm)
 
-        nics = create_instance_nics(vm, userid, private_networks, floating_ips)
-
-        # Also we must create the VM metadata in the same transaction.
-        for key, val in metadata.items():
-            VirtualMachineMetadata.objects.create(
-                meta_key=key,
-                meta_value=val,
-                vm=vm)
-        # Issue commission to Quotaholder and accept it since at the end of
-        # this transaction the VirtualMachine object will be created in the DB.
-        # Note: the following call does a commit!
-        quotas.issue_and_accept_commission(vm)
-    except:
-        transaction.rollback()
-        raise
-    else:
-        transaction.commit()
-
-    try:
-        jobID = backend.create_instance(vm, nics, flavor, image)
-        # At this point the job is enqueued in the Ganeti backend
-        vm.backendjobid = jobID
-        vm.task = "BUILD"
-        vm.task_job_id = jobID
-        vm.save()
-        transaction.commit()
-        log.info("User %s created VM %s, NICs %s, Backend %s, JobID %s",
-                 userid, vm, nics, backend, str(jobID))
-    except GanetiApiError as e:
-        log.exception("Can not communicate to backend %s: %s.",
-                      backend, e)
-        # Failed while enqueuing OP_INSTANCE_CREATE to backend. Restore
-        # already reserved quotas by issuing a negative commission
-        vm.operstate = "ERROR"
-        vm.backendlogmsg = "Can not communicate to backend."
-        vm.deleted = True
-        vm.save()
-        quotas.issue_and_accept_commission(vm, delete=True)
-        raise
-    except:
-        transaction.rollback()
-        raise
+    # Create the server in Ganeti.
+    vm = create_server(vm, nics, flavor, image, personality, password)
 
     return vm
+
+
+@transaction.commit_on_success
+def allocate_new_server(userid, flavor):
+    """Allocate a new server to a Ganeti backend.
+
+    Allocation is performed based on the owner of the server and the specified
+    flavor. Also, backends that do not have a public IPv4 address are excluded
+    from server allocation.
+
+    This function runs inside a transaction, because after allocating the
+    instance a commit must be performed in order to release all locks.
+
+    """
+    backend_allocator = BackendAllocator()
+    use_backend = backend_allocator.allocate(userid, flavor)
+    if use_backend is None:
+        log.error("No available backend for VM with flavor %s", flavor)
+        raise faults.ServiceUnavailable("No available backends")
+    return use_backend
+
+
+@server_command("BUILD")
+def create_server(vm, nics, flavor, image, personality, password):
+    # dispatch server created signal needed to trigger the 'vmapi', which
+    # enriches the vm object with the 'config_url' attribute which must be
+    # passed to the Ganeti job.
+    server_created.send(sender=vm, created_vm_params={
+        'img_id': image['backend_id'],
+        'img_passwd': password,
+        'img_format': str(image['format']),
+        'img_personality': json.dumps(personality),
+        'img_properties': json.dumps(image['metadata']),
+    })
+    # send job to Ganeti
+    try:
+        jobID = backend.create_instance(vm, nics, flavor, image)
+    except:
+        log.exception("Failed create instance '%s'", vm)
+        jobID = None
+        vm.operstate = "ERROR"
+        vm.backendlogmsg = "Failed to send job to Ganeti."
+        vm.save()
+        vm.nics.all().update(state="ERROR")
+
+    # At this point the job is enqueued in the Ganeti backend
+    vm.backendjobid = jobID
+    vm.save()
+    log.info("User %s created VM %s, NICs %s, Backend %s, JobID %s",
+             vm.userid, vm, nics, backend, str(jobID))
+
+    return jobID
 
 
 def create_instance_nics(vm, userid, private_networks=[], floating_ips=[]):
@@ -356,7 +358,12 @@ def connect(vm, network):
 
     log.info("Connecting VM %s to Network %s(%s)", vm, network, address)
 
-    return backend.connect_to_network(vm, network, address)
+    nic = NetworkInterface.objects.create(machine=vm,
+                                          network=network,
+                                          ipv4=address,
+                                          state="BUILDING")
+
+    return backend.connect_to_network(vm, nic)
 
 
 @server_command("DISCONNECT")
@@ -432,8 +439,13 @@ def console(vm, console_type):
 @server_command("CONNECT")
 def add_floating_ip(vm, address):
     floating_ip = add_floating_ip_to_vm(vm, address)
-    log.info("Connecting VM %s to floating IP %s", vm, floating_ip)
-    return backend.connect_to_network(vm, floating_ip.network, address)
+    nic = NetworkInterface.objects.create(machine=vm,
+                                          network=floating_ip.network,
+                                          ipv4=floating_ip.ipv4,
+                                          state="BUILDING")
+    log.info("Connecting VM %s to floating IP %s. NIC: %s", vm, floating_ip,
+             nic)
+    return backend.connect_to_network(vm, nic)
 
 
 def add_floating_ip_to_vm(vm, address):
@@ -490,3 +502,13 @@ def remove_floating_ip(vm, address):
              vm, floating_ip)
 
     return backend.disconnect_from_network(vm, nic)
+
+
+def rename(server, new_name):
+    """Rename a VirtualMachine."""
+    old_name = server.name
+    server.name = new_name
+    server.save()
+    log.info("Renamed server '%s' from '%s' to '%s'", server, old_name,
+             new_name)
+    return server

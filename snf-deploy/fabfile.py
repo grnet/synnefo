@@ -1,30 +1,37 @@
+# Too many lines in module pylint: disable-msg=C0302
+# Too many arguments (7/5) pylint: disable-msg=R0913
+"""
+Fabric file for snf-deploy
+
+"""
+
 from __future__ import with_statement
-from fabric.api import *
-from fabric.contrib.console import confirm
-from random import choice
-from fabric.operations import run, put
+from fabric.api import hide, env, settings, local, roles
+from fabric.operations import run, put, get
+import fabric
 import re
-import shutil, os
-from functools import wraps
-import imp
-import ConfigParser
-import sys
+import os
+import shutil
 import tempfile
 import ast
-from snfdeploy.lib import *
+from snfdeploy.lib import debug, Conf, Env, disable_color
 from snfdeploy import massedit
 
 
-def setup_env(confdir="conf", packages="packages",
-              templates="files", cluster_name="ganeti1", autoconf=False, disable_colors=False, key_inject=False):
+def setup_env(confdir="conf", packages="packages", templates="files",
+              cluster_name="ganeti1", autoconf=False, disable_colors=False,
+              key_inject=False):
+    """Setup environment"""
     print("Loading configuration for synnefo...")
     print(" * Using config files under %s..." % confdir)
-    print(" * Using %s and %s for packages and templates accordingly..." % (packages, templates))
+    print(" * Using %s and %s for packages and templates accordingly..."
+          % (packages, templates))
 
     autoconf = ast.literal_eval(autoconf)
     disable_colors = ast.literal_eval(disable_colors)
     env.key_inject = ast.literal_eval(key_inject)
-    conf = Conf.configure(confdir=confdir, cluster_name=cluster_name, autoconf=autoconf)
+    conf = Conf.configure(confdir=confdir, cluster_name=cluster_name,
+                          autoconf=autoconf)
     env.env = Env(conf)
 
     env.local = autoconf
@@ -35,16 +42,18 @@ def setup_env(confdir="conf", packages="packages",
     if disable_colors:
         disable_color()
 
-    if env.env.cms.hostname in [env.env.accounts.hostname, env.env.cyclades.hostname, env.env.pithos.hostname]:
-      env.cms_pass = True
+    if env.env.cms.hostname in \
+            [env.env.accounts.hostname, env.env.cyclades.hostname,
+             env.env.pithos.hostname]:
+        env.cms_pass = True
     else:
-      env.cms_pass = False
+        env.cms_pass = False
 
-    if env.env.accounts.hostname in [env.env.cyclades.hostname, env.env.pithos.hostname]:
-      env.csrf_disable = True
+    if env.env.accounts.hostname in \
+            [env.env.cyclades.hostname, env.env.pithos.hostname]:
+        env.csrf_disable = True
     else:
-      env.csrf_disable = False
-
+        env.csrf_disable = False
 
     env.roledefs = {
         "nodes": env.env.ips,
@@ -53,6 +62,8 @@ def setup_env(confdir="conf", packages="packages",
         "cyclades": [env.env.cyclades.ip],
         "pithos": [env.env.pithos.ip],
         "cms": [env.env.cms.ip],
+        "mq": [env.env.mq.ip],
+        "db": [env.env.db.ip],
         "mq": [env.env.mq.ip],
         "db": [env.env.db.ip],
         "ns": [env.env.ns.ip],
@@ -74,34 +85,46 @@ def setup_env(confdir="conf", packages="packages",
 
 def install_package(package):
     debug(env.host, " * Installing package %s..." % package)
-    APT_GET = "export DEBIAN_FRONTEND=noninteractive ;apt-get install -y --force-yes "
+    apt_get = "export DEBIAN_FRONTEND=noninteractive ;" + \
+              "apt-get install -y --force-yes "
 
+    host_info = env.env.ips_info[env.host]
+    env.env.update_packages(host_info.os)
     if ast.literal_eval(env.env.use_local_packages):
         with settings(warn_only=True):
-            deb = local("ls %s/%s*deb" % (env.env.packages, package))
+            deb = local("ls %s/%s*%s_*.deb"
+                        % (env.env.packages, package, host_info.os),
+                        capture=True)
             if deb:
-                debug(env.host, " * Package %s found in %s..." % (package, env.env.packages))
-                put(deb, "/tmp/")
-                try_run("dpkg -i /tmp/%s*deb || " % package + APT_GET + "-f")
-                try_run("rm /tmp/%s*deb" % package)
+                debug(env.host,
+                      " * Package %s found in %s..."
+                      % (package, env.env.packages))
+                try_put(deb, "/tmp/")
+                try_run("dpkg -i /tmp/%s || "
+                        % os.path.basename(deb) + apt_get + "-f")
+                try_run("rm /tmp/%s" % os.path.basename(deb))
                 return
 
     info = getattr(env.env, package)
-    if info in ["stable", "squeeze-backports", "testing", "unstable"]:
-        APT_GET += " -t %s %s " % (info, package)
+    if info in \
+            ["squeeze-backports", "squeeze", "stable",
+             "testing", "unstable", "wheezy"]:
+        apt_get += " -t %s %s " % (info, package)
     elif info:
-        APT_GET += " %s=%s " % (package, info)
+        apt_get += " %s=%s " % (package, info)
     else:
-        APT_GET += package
+        apt_get += package
 
-    try_run(APT_GET)
+    try_run(apt_get)
 
     return
 
 
 @roles("ns")
 def update_ns_for_ganeti():
-    debug(env.host, "Updating name server entries for backend %s..." % env.env.cluster.fqdn)
+    debug(env.host,
+          "Updating name server entries for backend %s..."
+          % env.env.cluster.fqdn)
     update_arecord(env.env.cluster)
     update_ptrrecord(env.env.cluster)
     try_run("/etc/init.d/bind9 restart")
@@ -141,10 +164,12 @@ def update_ptrrecord(host):
     """.format(host.ptrrecord, filename)
     try_run(cmd)
 
+
 @roles("nodes")
 def apt_get_update():
     debug(env.host, "apt-get update....")
     try_run("apt-get update")
+
 
 @roles("ns")
 def setup_ns():
@@ -156,35 +181,35 @@ def setup_ns():
     install_package("bind9")
     tmpl = "/etc/bind/named.conf.local"
     replace = {
-      "domain": env.env.domain,
-      }
+        "domain": env.env.domain,
+    }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
+    try_put(custom, tmpl)
 
     try_run("mkdir -p /etc/bind/zones")
     tmpl = "/etc/bind/zones/example.com"
     replace = {
-      "domain": env.env.domain,
-      "ns_node_ip": env.env.ns.ip,
-      }
+        "domain": env.env.domain,
+        "ns_node_ip": env.env.ns.ip,
+    }
     custom = customize_settings_from_tmpl(tmpl, replace)
     remote = "/etc/bind/zones/" + env.env.domain
-    put(custom, remote)
+    try_put(custom, remote)
 
     try_run("mkdir -p /etc/bind/rev")
     tmpl = "/etc/bind/rev/synnefo.in-addr.arpa.zone"
     replace = {
-      "domain": env.env.domain,
-      }
+        "domain": env.env.domain,
+    }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
+    try_put(custom, tmpl)
 
     tmpl = "/etc/bind/named.conf.options"
     replace = {
-      "NODE_IPS": ";".join(env.env.ips),
-      }
+        "NODE_IPS": ";".join(env.env.ips),
+    }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl, mode=0644)
+    try_put(custom, tmpl, mode=0644)
 
     for role, info in env.env.roles.iteritems():
         if role == "ns":
@@ -201,37 +226,39 @@ def setup_ns():
 def check_dhcp():
     debug(env.host, "Checking IPs for synnefo..")
     for n, info in env.env.nodes_info.iteritems():
-        try_run("ping -c 1 " + info.ip, True)
+        try_run("ping -c 1 " + info.ip)
+
 
 @roles("nodes")
 def check_dns():
     debug(env.host, "Checking fqdns for synnefo..")
     for n, info in env.env.nodes_info.iteritems():
-        try_run("ping -c 1 " + info.fqdn, True)
+        try_run("ping -c 1 " + info.fqdn)
 
     for n, info in env.env.roles.iteritems():
-        try_run("ping -c 1 " + info.fqdn, True)
+        try_run("ping -c 1 " + info.fqdn)
+
 
 @roles("nodes")
 def check_connectivity():
     debug(env.host, "Checking internet connectivity..")
-    try_run("ping -c 1 www.google.com", True)
+    try_run("ping -c 1 www.google.com")
 
 
 @roles("nodes")
 def check_ssh():
     debug(env.host, "Checking password-less ssh..")
     for n, info in env.env.nodes_info.iteritems():
-        try_run("ssh " + info.fqdn + "  date", True)
+        try_run("ssh " + info.fqdn + "  date")
 
 
 @roles("ips")
 def add_keys():
     if not env.key_inject:
-      debug(env.host, "Skipping ssh keys injection..")
-      return
+        debug(env.host, "Skipping ssh keys injection..")
+        return
     else:
-      debug(env.host, "Adding rsa/dsa keys..")
+        debug(env.host, "Adding rsa/dsa keys..")
     try_run("mkdir -p /root/.ssh")
     cmd = """
 for f in $(ls /root/.ssh/*); do
@@ -242,10 +269,10 @@ done
     files = ["authorized_keys", "id_dsa", "id_dsa.pub",
              "id_rsa", "id_rsa.pub"]
     for f in files:
-      tmpl = "/root/.ssh/" + f
-      replace = {}
-      custom = customize_settings_from_tmpl(tmpl, replace)
-      put(custom, tmpl, mode=0600)
+        tmpl = "/root/.ssh/" + f
+        replace = {}
+        custom = customize_settings_from_tmpl(tmpl, replace)
+        try_put(custom, tmpl, mode=0600)
 
     cmd = """
 if [ -e /root/.ssh/authorized_keys.bak ]; then
@@ -255,25 +282,38 @@ fi
     debug(env.host, "Updating exising authorized keys..")
     try_run(cmd)
 
+
 @roles("ips")
 def setup_resolv_conf():
     debug(env.host, "Tweak /etc/resolv.conf...")
-    try_run("/etc/init.d/network-manager stop")
+    try_run("/etc/init.d/network-manager stop", abort=False)
     tmpl = "/etc/dhcp/dhclient-enter-hooks.d/nodnsupdate"
     replace = {}
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl, mode=0644)
+    try_put(custom, tmpl, mode=0644)
     try_run("cp /etc/resolv.conf /etc/resolv.conf.bak")
     tmpl = "/etc/resolv.conf"
     replace = {
-      "domain": env.env.domain,
-      "ns_node_ip": env.env.ns.ip,
-      }
+        "domain": env.env.domain,
+        "ns_node_ip": env.env.ns.ip,
+    }
     custom = customize_settings_from_tmpl(tmpl, replace)
     try:
-      put(custom, tmpl)
+        try_put(custom, tmpl)
+        cmd = """
+        echo "\
+# This has been generated automatically by snf-deploy, at
+# $(date).
+# The immutable bit (+i attribute) has been used to avoid it being
+# overwritten by software such as NetworkManager or resolvconf.
+# Use lsattr/chattr to view or modify its file attributes.
+
+
+$(cat {0})" > {0}
+""".format(tmpl)
+        try_run(cmd)
     except:
-      pass
+        pass
     try_run("chattr +i /etc/resolv.conf")
 
 
@@ -281,7 +321,7 @@ def setup_resolv_conf():
 def setup_hosts():
     debug(env.host, "Tweaking /etc/hosts and ssh_config files...")
     try_run("echo StrictHostKeyChecking no >> /etc/ssh/ssh_config")
-    cmd = " sed -i 's/^127.*/127.0.0.1 localhost/' /etc/hosts "
+    cmd = "sed -i 's/^127.*$/127.0.0.1 localhost/g' /etc/hosts "
     try_run(cmd)
     host_info = env.env.ips_info[env.host]
     cmd = "hostname %s" % host_info.hostname
@@ -290,16 +330,38 @@ def setup_hosts():
     try_run(cmd)
 
 
-def try_run(cmd, abort=False):
+def try_run(cmd, abort=True):
     try:
-      if env.local:
-        return local(cmd, capture=True)
-      else:
-        return run(cmd)
-    except:
-      debug(env.host, "WARNING: command failed. Continuing anyway...")
-      if abort:
-        raise
+        if env.local:
+            return local(cmd, capture=True)
+        else:
+            return run(cmd)
+    except BaseException as e:
+        if abort:
+            fabric.utils.abort(e)
+        else:
+            debug(env.host, "WARNING: command failed. Continuing anyway...")
+
+
+def try_put(local_path=None, remote_path=None, abort=True, **kwargs):
+    try:
+        put(local_path=local_path, remote_path=remote_path, **kwargs)
+    except BaseException as e:
+        if abort:
+            fabric.utils.abort(e)
+        else:
+            debug(env.host, "WARNING: command failed. Continuing anyway...")
+
+
+def try_get(remote_path, local_path=None, abort=True, **kwargs):
+    try:
+        get(remote_path, local_path=local_path, **kwargs)
+    except BaseException as e:
+        if abort:
+            fabric.utils.abort(e)
+        else:
+            debug(env.host, "WARNING: command failed. Continuing anyway...")
+
 
 def create_bridges():
     debug(env.host, " * Creating bridges...")
@@ -312,9 +374,9 @@ def create_bridges():
 
 def connect_bridges():
     debug(env.host, " * Connecting bridges...")
-    cmd = """
-    brctl addif {0} {1}
-    """.format(env.env.common_bridge, env.env.public_iface)
+    #cmd = """
+    #brctl addif {0} {1}
+    #""".format(env.env.common_bridge, env.env.public_iface)
     #try_run(cmd)
 
 
@@ -358,10 +420,14 @@ def setup_apt():
     curl -k https://dev.grnet.gr/files/apt-grnetdev.pub | apt-key add -
     """
     try_run(cmd)
-    tmpl = "/etc/apt/sources.list.d/okeanos.list"
+    host_info = env.env.ips_info[env.host]
+    if host_info.os == "squeeze":
+        tmpl = "/etc/apt/sources.list.d/synnefo.squeeze.list"
+    else:
+        tmpl = "/etc/apt/sources.list.d/synnefo.wheezy.list"
     replace = {}
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
+    try_put(custom, tmpl)
     apt_get_update()
 
 
@@ -378,7 +444,7 @@ def setup_gunicorn():
     tmpl = "/etc/gunicorn.d/synnefo"
     replace = {}
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl, mode=0644)
+    try_put(custom, tmpl, mode=0644)
     try_run("/etc/init.d/gunicorn restart")
 
 
@@ -391,10 +457,10 @@ def setup_apache():
         "HOST": host_info.fqdn,
     }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
+    try_put(custom, tmpl)
     tmpl = "/etc/apache2/sites-available/synnefo-ssl"
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
+    try_put(custom, tmpl)
     cmd = """
     a2enmod ssl
     a2enmod rewrite
@@ -426,10 +492,17 @@ def setup_mq():
 @roles("db")
 def allow_access_in_db(ip, user="all", method="md5"):
     cmd = """
-    echo host all {0} {1}/32 {2} >> /etc/postgresql/8.4/main/pg_hba.conf
+    pg_hba=$(ls /etc/postgresql/*/main/pg_hba.conf)
+    echo host all {0} {1}/32 {2} >> $pg_hba
     """.format(user, ip, method)
     try_run(cmd)
+    cmd = """
+    pg_hba=$(ls /etc/postgresql/*/main/pg_hba.conf)
+    sed -i 's/\(host.*127.0.0.1.*\)md5/\\1trust/' $pg_hba
+    """
+    try_run(cmd)
     try_run("/etc/init.d/postgresql restart")
+
 
 @roles("db")
 def setup_db():
@@ -442,13 +515,21 @@ def setup_db():
         "synnefo_db_passwd": env.env.synnefo_db_passwd,
         }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
+    try_put(custom, tmpl)
     cmd = 'su - postgres -c "psql -w -f %s" ' % tmpl
     try_run(cmd)
     cmd = """
-    echo "listen_addresses = '*'" >> /etc/postgresql/8.4/main/postgresql.conf
+    conf=$(ls /etc/postgresql/*/main/postgresql.conf)
+    echo "listen_addresses = '*'" >> $conf
     """
     try_run(cmd)
+
+    if env.env.testing_vm:
+        cmd = """
+        conf=$(ls /etc/postgresql/*/main/postgresql.conf)
+        echo "fsync=off\nsynchronous_commit=off\nfull_page_writes=off" >> $conf
+        """
+        try_run(cmd)
 
     allow_access_in_db(env.host, "all", "trust")
     try_run("/etc/init.d/postgresql restart")
@@ -468,6 +549,7 @@ def setup_webproject():
     install_package("snf-webproject")
     install_package("python-psycopg2")
     install_package("python-gevent")
+    install_package("python-django")
     tmpl = "/etc/synnefo/webproject.conf"
     replace = {
         "synnefo_user": env.env.synnefo_user,
@@ -476,7 +558,7 @@ def setup_webproject():
         "domain": env.env.domain,
     }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl, mode=0644)
+    try_put(custom, tmpl, mode=0644)
     with settings(host_string=env.env.db.ip):
         host_info = env.env.ips_info[env.host]
         allow_access_in_db(host_info.ip, "all", "trust")
@@ -497,10 +579,13 @@ def setup_common():
         "EMAIL_SUBJECT_PREFIX": env.host,
         "domain": env.env.domain,
         "HOST": host_info.fqdn,
+        "MAIL_DIR": env.env.mail_dir,
     }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl, mode=0644)
+    try_put(custom, tmpl, mode=0644)
+    try_run("mkdir -p {0}; chmod 777 {0}".format(env.env.mail_dir))
     try_run("/etc/init.d/gunicorn restart")
+
 
 @roles("accounts")
 def astakos_loaddata():
@@ -512,42 +597,30 @@ def astakos_loaddata():
 
 
 @roles("accounts")
-def astakos_register_services():
+def astakos_register_components():
     debug(env.host, " * Register services in astakos...")
+
+    cyclades_base_url = "https://%s/cyclades" % env.env.cyclades.fqdn
+    pithos_base_url = "https://%s/pithos" % env.env.pithos.fqdn
+    astakos_base_url = "https://%s/astakos" % env.env.accounts.fqdn
+
     cmd = """
-    snf-manage component-add "home" https://{0} home-icon.png
-    snf-manage component-add "cyclades" https://{1}/cyclades/ui/
-    snf-manage component-add "pithos" https://{2}/pithos/ui/
-    snf-manage component-add "astakos" https://{3}/astakos/ui/
-    """.format(env.env.cms.fqdn, env.env.cyclades.fqdn, env.env.pithos.fqdn, env.env.accounts.fqdn)
-    try_run(cmd)
-    import_service("astakos")
-    import_service("pithos")
-    import_service("cyclades")
-    tmpl = "/tmp/resources.json"
-    replace = {}
-    custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
-    try_run("snf-manage resource-import --json %s" % tmpl)
-    cmd = """
-    snf-manage resource-modify --limit 40G pithos.diskspace
-    snf-manage resource-modify --limit 2 astakos.pending_app
-    snf-manage resource-modify --limit 4 cyclades.vm
-    snf-manage resource-modify --limit 40G cyclades.disk
-    snf-manage resource-modify --limit 8G cyclades.ram
-    snf-manage resource-modify --limit 16 cyclades.cpu
-    snf-manage resource-modify --limit 4 cyclades.network.private
-    """
+    snf-manage component-add "home" --ui-url https://{0}
+    snf-manage component-add "cyclades" --base-url {1} --ui-url {1}/ui
+    snf-manage component-add "pithos" --base-url {2} --ui-url {2}/ui
+    snf-manage component-add "astakos" --base-url {3} --ui-url {3}/ui
+    """.format(env.env.cms.fqdn, cyclades_base_url,
+               pithos_base_url, astakos_base_url)
     try_run(cmd)
 
 
 @roles("accounts")
 def add_user():
     debug(env.host, " * adding user %s to astakos..." % env.env.user_email)
-    email=env.env.user_email
-    name=env.env.user_name
-    lastname=env.env.user_lastname
-    passwd=env.env.user_passwd
+    email = env.env.user_email
+    name = env.env.user_name
+    lastname = env.env.user_lastname
+    passwd = env.env.user_passwd
     cmd = """
     snf-manage user-add {0} {1} {2}
     """.format(email, name, lastname)
@@ -563,7 +636,7 @@ def add_user():
 @roles("accounts")
 def activate_user(user_email=None):
     if not user_email:
-      user_email = env.env.user_email
+        user_email = env.env.user_email
     debug(env.host, " * Activate user %s..." % user_email)
     with settings(host_string=env.env.db.ip):
         uid, user_auth_token, user_uuid = get_auth_token_from_db(user_email)
@@ -573,6 +646,7 @@ def activate_user(user_email=None):
     snf-manage user-modify --accept {0}
     """.format(uid)
     try_run(cmd)
+
 
 @roles("accounts")
 def setup_astakos():
@@ -586,15 +660,15 @@ def setup_astakos():
 
     tmpl = "/etc/synnefo/astakos.conf"
     replace = {
-      "ACCOUNTS": env.env.accounts.fqdn,
-      "domain": env.env.domain,
-      "CYCLADES": env.env.cyclades.fqdn,
-      "PITHOS": env.env.pithos.fqdn,
+        "ACCOUNTS": env.env.accounts.fqdn,
+        "domain": env.env.domain,
+        "CYCLADES": env.env.cyclades.fqdn,
+        "PITHOS": env.env.pithos.fqdn,
     }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl, mode=0644)
+    try_put(custom, tmpl, mode=0644)
     if env.csrf_disable:
-      cmd = """
+        cmd = """
 cat <<EOF >> /etc/synnefo/astakos.conf
 try:
   MIDDLEWARE_CLASSES.remove('django.middleware.csrf.CsrfViewMiddleware')
@@ -602,7 +676,7 @@ except:
   pass
 EOF
 """
-      try_run(cmd)
+        try_run(cmd)
 
     try_run("/etc/init.d/gunicorn restart")
 
@@ -613,21 +687,14 @@ EOF
     """
     try_run(cmd)
 
-def import_service(service):
-    tmpl = "/tmp/%s.json" % service
-    replace = {
-      "DOMAIN": env.env.domain,
-      }
-    custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
-    try_run("snf-manage service-import --json %s" % tmpl)
 
 @roles("accounts")
 def get_service_details(service="pithos"):
-    debug(env.host, " * Getting registered details for %s service..." % service)
-    result = try_run("snf-manage component-list")
+    debug(env.host,
+          " * Getting registered details for %s service..." % service)
+    result = try_run("snf-manage component-list -o id,name,token")
     r = re.compile(r".*%s.*" % service, re.M)
-    service_id, _, _, service_token = r.search(result).group().split()
+    service_id, _, service_token = r.search(result).group().split()
     # print("%s: %s %s" % (service, service_id, service_token))
     return (service_id, service_token)
 
@@ -635,12 +702,16 @@ def get_service_details(service="pithos"):
 @roles("db")
 def get_auth_token_from_db(user_email=None):
     if not user_email:
-        user_email=env.env.user_email
-    debug(env.host, " * Getting authentication token and uuid for user %s..." % user_email)
+        user_email = env.env.user_email
+    debug(env.host,
+          " * Getting authentication token and uuid for user %s..."
+          % user_email)
     cmd = """
-    echo "select id, auth_token, uuid, email from auth_user, im_astakosuser where auth_user.id = im_astakosuser.user_ptr_id and auth_user.email = '{0}';" > /tmp/psqlcmd
-    su - postgres -c  "psql -w -d snf_apps -f /tmp/psqlcmd"
-    """.format(user_email)
+echo "select id, auth_token, uuid, email from auth_user, im_astakosuser \
+where auth_user.id = im_astakosuser.user_ptr_id and auth_user.email = '{0}';" \
+> /tmp/psqlcmd
+su - postgres -c  "psql -w -d snf_apps -f /tmp/psqlcmd"
+""".format(user_email)
 
     result = try_run(cmd)
     r = re.compile(r"(\d+)[ |]*(\S+)[ |]*(\S+)[ |]*" + user_email, re.M)
@@ -655,17 +726,17 @@ def get_auth_token_from_db(user_email=None):
 def cms_loaddata():
     debug(env.host, " * Loading cms initial data...")
     if env.cms_pass:
-      debug(env.host, "Aborting. Prerequisites not met.")
-      return
+        debug(env.host, "Aborting. Prerequisites not met.")
+        return
     tmpl = "/tmp/sites.json"
     replace = {}
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
+    try_put(custom, tmpl)
 
     tmpl = "/tmp/page.json"
     replace = {}
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
+    try_put(custom, tmpl)
 
     cmd = """
     snf-manage loaddata /tmp/sites.json
@@ -679,8 +750,8 @@ def cms_loaddata():
 def setup_cms():
     debug(env.host, "Setting up cms...")
     if env.cms_pass:
-      debug(env.host, "Aborting. Prerequisites not met.")
-      return
+        debug(env.host, "Aborting. Prerequisites not met.")
+        return
     with settings(hide("everything")):
         try_run("ping -c1 accounts." + env.env.domain)
     setup_gunicorn()
@@ -693,9 +764,8 @@ def setup_cms():
         "ACCOUNTS": env.env.accounts.fqdn,
         }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl, mode=0644)
+    try_put(custom, tmpl, mode=0644)
     try_run("/etc/init.d/gunicorn restart")
-
 
     cmd = """
     snf-manage syncdb
@@ -712,27 +782,46 @@ def setup_nfs_dirs():
     mkdir -p data
     chown www-data:www-data data
     chmod g+ws data
-    mkdir -p /srv/okeanos
-    """.format(env.env.pithos_dir)
+    mkdir -p {1}
+    """.format(env.env.pithos_dir, env.env.image_dir)
     try_run(cmd)
 
 
 @roles("nodes")
 def setup_nfs_clients():
     if env.host == env.env.pithos.ip:
-      return
+        return
 
+    host_info = env.env.ips_info[env.host]
     debug(env.host, " * Mounting pithos NFS mount point...")
     with settings(hide("everything")):
         try_run("ping -c1 " + env.env.pithos.hostname)
+    with settings(host_string=env.env.pithos.ip):
+        update_nfs_exports(host_info.ip)
+
     install_package("nfs-common")
-    for d in [env.env.pithos_dir, "/srv/okeanos"]:
-      try_run("mkdir -p " + d)
-      cmd = """
-      echo "{0}:/{1} {2}  nfs4 defaults,rw,noatime,nodiratime,intr,rsize=1048576,wsize=1048576,noacl" >> /etc/fstab
-      """.format(env.env.pithos.hostname, os.path.basename(d), d)
-      try_run(cmd)
-      try_run("mount " + d)
+    for d in [env.env.pithos_dir, env.env.image_dir]:
+        try_run("mkdir -p " + d)
+        cmd = """
+echo "{0}:{1} {1}  nfs defaults,rw,noatime,rsize=131072,\
+wsize=131072,timeo=14,intr,noacl" >> /etc/fstab
+""".format(env.env.pithos.ip, d)
+        try_run(cmd)
+        try_run("mount " + d)
+
+
+@roles("pithos")
+def update_nfs_exports(ip):
+    tmpl = "/tmp/exports"
+    replace = {
+        "pithos_dir": env.env.pithos_dir,
+        "image_dir": env.env.image_dir,
+        "ip": ip,
+    }
+    custom = customize_settings_from_tmpl(tmpl, replace)
+    try_put(custom, tmpl)
+    try_run("cat %s >> /etc/exports" % tmpl)
+    try_run("/etc/init.d/nfs-kernel-server restart")
 
 
 @roles("pithos")
@@ -740,15 +829,6 @@ def setup_nfs_server():
     debug(env.host, " * Setting up NFS server for pithos...")
     setup_nfs_dirs()
     install_package("nfs-kernel-server")
-    tmpl = "/etc/exports"
-    replace = {
-      "pithos_dir": env.env.pithos_dir,
-      "srv": os.path.dirname(env.env.pithos_dir),
-      "subnet": env.env.subnet
-      }
-    custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
-    try_run("/etc/init.d/nfs-kernel-server restart")
 
 
 @roles("pithos")
@@ -779,7 +859,7 @@ def setup_pithos():
         "proxy": env.env.pithos.hostname == env.env.accounts.hostname
         }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl, mode=0644)
+    try_put(custom, tmpl, mode=0644)
     try_run("/etc/init.d/gunicorn restart")
 
     install_package("snf-pithos-webclient")
@@ -789,7 +869,7 @@ def setup_pithos():
         "PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE": service_id,
         }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl, mode=0644)
+    try_put(custom, tmpl, mode=0644)
 
     try_run("/etc/init.d/gunicorn restart")
     #TOFIX: the previous command lets pithos-backend create blocks and maps
@@ -797,19 +877,6 @@ def setup_pithos():
     try_run("chown -R www-data:www-data %s/data " % env.env.pithos_dir)
     #try_run("pithos-migrate stamp 4c8ccdc58192")
     #try_run("pithos-migrate upgrade head")
-
-
-def add_wheezy():
-    tmpl = "/etc/apt/sources.list.d/wheezy.list"
-    replace = {}
-    custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
-    apt_get_update()
-
-
-def remove_wheezy():
-    try_run("rm -f /etc/apt/sources.list.d/wheezy.list")
-    apt_get_update()
 
 
 @roles("ganeti")
@@ -827,9 +894,7 @@ def setup_ganeti():
         #try_run("apt-get update")
     install_package("qemu-kvm")
     install_package("python-bitarray")
-    add_wheezy()
     install_package("ganeti-htools")
-    remove_wheezy()
     install_package("snf-ganeti")
     try_run("mkdir -p /srv/ganeti/file-storage/")
     cmd = """
@@ -845,14 +910,17 @@ EOF
 def add_rapi_user():
     debug(env.host, " * Adding RAPI user to Ganeti backend...")
     cmd = """
-    echo -n "{0}:Ganeti Remote API:{1}" | openssl md5
+    echo -n "{0}:Ganeti Remote API:{1}" | openssl md5 | sed 's/^.* //'
     """.format(env.env.synnefo_user, env.env.synnefo_rapi_passwd)
     result = try_run(cmd)
+    if result.startswith("(stdin)= "):
+        result = result.split("(stdin)= ")[1]
     cmd = """
     echo "{0} {1}{2} write" >> /var/lib/ganeti/rapi/users
-    """.format(env.env.synnefo_user, '{ha1}',result)
+    """.format(env.env.synnefo_user, '{ha1}', result)
     try_run(cmd)
     try_run("/etc/init.d/ganeti restart")
+
 
 @roles("master")
 def add_nodes():
@@ -862,29 +930,37 @@ def add_nodes():
     for n in nodes:
         add_node(n)
 
+
 @roles("master")
 def add_node(node):
     node_info = env.env.nodes_info[node]
     debug(env.host, " * Adding node %s to Ganeti backend..." % node_info.fqdn)
-    cmd = "gnt-node add --no-ssh-key-check --master-capable=yes --vm-capable=yes " + node_info.fqdn
+    cmd = "gnt-node add --no-ssh-key-check --master-capable=yes " + \
+          "--vm-capable=yes " + node_info.fqdn
     try_run(cmd)
+
 
 @roles("ganeti")
 def enable_drbd():
     if env.enable_drbd:
         debug(env.host, " * Enabling DRBD...")
+        install_package("drbd8-utils")
         try_run("modprobe drbd minor_count=255 usermode_helper=/bin/true")
-        try_run("echo drbd minor_count=255 usermode_helper=/bin/true >> /etc/modules")
+        try_run("echo drbd minor_count=255 usermode_helper=/bin/true " +
+                ">> /etc/modules")
+
 
 @roles("master")
 def setup_drbd_dparams():
     if env.enable_drbd:
-        debug(env.host, " * Twicking drbd related disk parameters in Ganeti...")
+        debug(env.host,
+              " * Twicking drbd related disk parameters in Ganeti...")
         cmd = """
         gnt-cluster modify --disk-parameters=drbd:metavg={0}
         gnt-group modify --disk-parameters=drbd:metavg={0} default
         """.format(env.env.vg)
         try_run(cmd)
+
 
 @roles("master")
 def enable_lvm():
@@ -898,6 +974,7 @@ def enable_lvm():
         debug(env.host, " * Disabling LVM...")
         try_run("gnt-cluster modify --no-lvm-storage")
 
+
 @roles("master")
 def destroy_cluster():
     debug(env.host, " * Destroying Ganeti cluster...")
@@ -905,10 +982,10 @@ def destroy_cluster():
     allnodes = env.env.cluster_hostnames[:]
     allnodes.remove(env.host)
     for n in allnodes:
-      host_info = env.env.ips_info[host]
-      debug(env.host, " * Removing node %s..." % n)
-      cmd = "gnt-node remove  " + host_info.fqdn
-      try_run(cmd)
+        host_info = env.env.ips_info[env.host]
+        debug(env.host, " * Removing node %s..." % n)
+        cmd = "gnt-node remove  " + host_info.fqdn
+        try_run(cmd)
     try_run("gnt-cluster destroy --yes-do-it")
 
 
@@ -925,14 +1002,13 @@ def init_cluster():
     extra = " --no-lvm-storage --no-drbd-storage "
     cmd = """
     gnt-cluster init --enabled-hypervisors=kvm \
-                     {0} \
-                     --nic-parameters link={1},mode=bridged \
-                     --master-netdev {2} \
-                     --default-iallocator hail \
-                     --hypervisor-parameters kvm:kernel_path=,vnc_bind_address=0.0.0.0 \
-                     --no-ssh-init --no-etc-hosts \
-                    {3}
-
+        {0} \
+        --nic-parameters link={1},mode=bridged \
+        --master-netdev {2} \
+        --default-iallocator hail \
+        --hypervisor-parameters kvm:kernel_path=,vnc_bind_address=0.0.0.0 \
+        --no-ssh-init --no-etc-hosts \
+        {3}
     """.format(extra, env.env.common_bridge,
                env.env.cluster_netdev, env.env.cluster.fqdn)
     try_run(cmd)
@@ -948,16 +1024,17 @@ def setup_image_host():
     debug(env.host, "Setting up snf-image...")
     install_package("snf-pithos-backend")
     install_package("snf-image")
-    try_run("mkdir -p /srv/okeanos")
+    try_run("mkdir -p %s" % env.env.image_dir)
     tmpl = "/etc/default/snf-image"
     replace = {
         "synnefo_user": env.env.synnefo_user,
         "synnefo_db_passwd": env.env.synnefo_db_passwd,
         "pithos_dir": env.env.pithos_dir,
         "db_node": env.env.db.ip,
+        "image_dir": env.env.image_dir,
     }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
+    try_put(custom, tmpl)
 
 
 @roles("ganeti")
@@ -983,7 +1060,7 @@ def setup_gtools():
         "mq_node": env.env.mq.ip,
     }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
+    try_put(custom, tmpl)
 
     cmd = """
     sed -i 's/false/true/' /etc/default/snf-ganeti-eventd
@@ -996,31 +1073,38 @@ def setup_gtools():
 def setup_iptables():
     debug(env.host, " * Setting up iptables to mangle DHCP requests...")
     cmd = """
-    iptables -t mangle -A PREROUTING -i br+ -p udp -m udp --dport 67 -j NFQUEUE --queue-num 42
-    iptables -t mangle -A PREROUTING -i tap+ -p udp -m udp --dport 67 -j NFQUEUE --queue-num 42
-    iptables -t mangle -A PREROUTING -i prv+ -p udp -m udp --dport 67 -j NFQUEUE --queue-num 42
+    iptables -t mangle -A PREROUTING -i br+ -p udp -m udp --dport 67 \
+            -j NFQUEUE --queue-num 42
+    iptables -t mangle -A PREROUTING -i tap+ -p udp -m udp --dport 67 \
+            -j NFQUEUE --queue-num 42
+    iptables -t mangle -A PREROUTING -i prv+ -p udp -m udp --dport 67 \
+            -j NFQUEUE --queue-num 42
 
-    ip6tables -t mangle -A PREROUTING -i br+ -p ipv6-icmp -m icmp6 --icmpv6-type 133 -j NFQUEUE --queue-num 43
-    ip6tables -t mangle -A PREROUTING -i br+ -p ipv6-icmp -m icmp6 --icmpv6-type 135 -j NFQUEUE --queue-num 44
+    ip6tables -t mangle -A PREROUTING -i br+ -p ipv6-icmp -m icmp6 \
+            --icmpv6-type 133 -j NFQUEUE --queue-num 43
+    ip6tables -t mangle -A PREROUTING -i br+ -p ipv6-icmp -m icmp6 \
+            --icmpv6-type 135 -j NFQUEUE --queue-num 44
     """
     try_run(cmd)
 
+
 @roles("ganeti")
 def setup_network():
-    debug(env.host, "Setting up networking for Ganeti instances (nfdhcpd, etc.)...")
+    debug(env.host,
+          "Setting up networking for Ganeti instances (nfdhcpd, etc.)...")
     install_package("nfqueue-bindings-python")
     install_package("nfdhcpd")
     tmpl = "/etc/nfdhcpd/nfdhcpd.conf"
     replace = {
-      "ns_node_ip": env.env.ns.ip
-      }
+        "ns_node_ip": env.env.ns.ip
+    }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
+    try_put(custom, tmpl)
     try_run("/etc/init.d/nfdhcpd restart")
 
     install_package("snf-network")
     cmd = """
-    sed -i 's/MAC_MASK.*/MAC_MASK = ff:ff:f0:00:00:00/' /etc/default/snf-network
+sed -i 's/MAC_MASK.*/MAC_MASK = ff:ff:f0:00:00:00/' /etc/default/snf-network
     """
     try_run(cmd)
 
@@ -1038,14 +1122,14 @@ def setup_router():
                env.env.common_bridge, env.env.public_iface)
     try_run(cmd)
 
+
 @roles("cyclades")
 def cyclades_loaddata():
     debug(env.host, " * Loading initial data for cyclades...")
-    tmpl = "/tmp/flavor.json"
-    replace = {}
-    custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl)
-    try_run("snf-manage loaddata " + tmpl)
+    try_run("snf-manage flavor-create %s %s %s %s" % (env.env.flavor_cpu,
+                                                      env.env.flavor_ram,
+                                                      env.env.flavor_disk,
+                                                      env.env.flavor_storage))
     #run("snf-manage loaddata flavors")
 
 
@@ -1086,7 +1170,7 @@ def setup_cyclades():
         "proxy": env.env.cyclades.hostname == env.env.accounts.hostname
         }
     custom = customize_settings_from_tmpl(tmpl, replace)
-    put(custom, tmpl, mode=0644)
+    try_put(custom, tmpl, mode=0644)
     try_run("/etc/init.d/gunicorn restart")
 
     cmd = """
@@ -1101,13 +1185,15 @@ def setup_cyclades():
 
 @roles("cyclades")
 def get_backend_id(cluster_name="ganeti1.synnefo.deploy.local"):
-    backend_id = try_run("snf-manage backend-list 2>/dev/null | grep %s | awk '{print $1}'" % cluster_name)
+    backend_id = try_run("snf-manage backend-list 2>/dev/null " +
+                         "| grep %s | awk '{print $1}'" % cluster_name)
     return backend_id
 
 
 @roles("cyclades")
 def add_backend():
-    debug(env.host, "adding %s ganeti backend to cyclades..." % env.env.cluster.fqdn)
+    debug(env.host,
+          "adding %s ganeti backend to cyclades..." % env.env.cluster.fqdn)
     with settings(hide("everything")):
         try_run("ping -c1 " + env.env.cluster.fqdn)
     cmd = """
@@ -1118,6 +1204,7 @@ def add_backend():
     backend_id = get_backend_id(env.env.cluster.fqdn)
     try_run("snf-manage backend-modify --drained=False " + backend_id)
 
+
 @roles("cyclades")
 def pin_user_to_backend(user_email):
     backend_id = get_backend_id(env.env.cluster.fqdn)
@@ -1126,19 +1213,66 @@ def pin_user_to_backend(user_email):
 cat <<EOF >> /etc/synnefo/cyclades.conf
 
 BACKEND_PER_USER = {
-  '%s': %s,
+  '{0}': {1},
 }
 
 EOF
 /etc/init.d/gunicorn restart
-    """  % (user_email, backend_id)
+""".format(user_email, backend_id)
     try_run(cmd)
+
 
 @roles("cyclades")
 def add_pools():
-    debug(env.host, " * Creating pools of resources (brigdes, mac prefixes) in cyclades...")
-    try_run("snf-manage pool-create --type=mac-prefix --base=aa:00:0 --size=65536")
+    debug(env.host,
+          " * Creating pools of resources (brigdes, mac prefixes) " +
+          "in cyclades...")
+    try_run("snf-manage pool-create --type=mac-prefix " +
+            "--base=aa:00:0 --size=65536")
     try_run("snf-manage pool-create --type=bridge --base=prv --size=20")
+
+
+@roles("accounts", "cyclades", "pithos")
+def export_services():
+    debug(env.host, " * Exporting services...")
+    host = env.host
+    services = []
+    if host == env.env.cyclades.ip:
+        services.append("cyclades")
+    if host == env.env.pithos.ip:
+        services.append("pithos")
+    if host == env.env.accounts.ip:
+        services.append("astakos")
+    for service in services:
+        filename = "%s_services.json" % service
+        cmd = "snf-manage service-export-%s > %s" % (service, filename)
+        run(cmd)
+        try_get(filename, filename+".local")
+
+
+@roles("accounts")
+def import_services():
+    debug(env.host, " * Registering services to astakos...")
+    for service in ["cyclades", "pithos", "astakos"]:
+        filename = "%s_services.json" % service
+        try_put(filename + ".local", filename)
+        cmd = "snf-manage service-import --json=%s" % filename
+        run(cmd)
+
+    debug(env.host, " * Setting default quota...")
+    cmd = """
+    snf-manage resource-modify --limit 40G pithos.diskspace
+    snf-manage resource-modify --limit 2 astakos.pending_app
+    snf-manage resource-modify --limit 4 cyclades.vm
+    snf-manage resource-modify --limit 40G cyclades.disk
+    snf-manage resource-modify --limit 16G cyclades.ram
+    snf-manage resource-modify --limit 8G cyclades.active_ram
+    snf-manage resource-modify --limit 32 cyclades.cpu
+    snf-manage resource-modify --limit 16 cyclades.active_cpu
+    snf-manage resource-modify --limit 4 cyclades.network.private
+    snf-manage resource-modify --limit 4 cyclades.floating_ip
+    """
+    try_run(cmd)
 
 
 @roles("cyclades")
@@ -1146,7 +1280,9 @@ def add_network():
     debug(env.host, " * Adding public network in cyclades...")
     backend_id = get_backend_id(env.env.cluster.fqdn)
     cmd = """
-    snf-manage network-create --subnet={0} --gateway={1} --public --dhcp --flavor={2} --mode=bridged --link={3} --name=Internet --backend-id={4}
+    snf-manage network-create --subnet={0} --gateway={1} --public \
+        --dhcp=True --flavor={2} --mode=bridged --link={3} --name=Internet \
+        --backend-id={4}
     """.format(env.env.synnefo_public_network_subnet,
                env.env.synnefo_public_network_gateway,
                env.env.synnefo_public_network_type,
@@ -1165,6 +1301,7 @@ def setup_vncauthproxy():
     try_run(cmd)
     try_run("/etc/init.d/vncauthproxy restart")
 
+
 @roles("client")
 def setup_kamaki():
     debug(env.host, "Setting up kamaki client...")
@@ -1174,7 +1311,8 @@ def setup_kamaki():
         try_run("ping -c1 pithos." + env.env.domain)
 
     with settings(host_string=env.env.db.ip):
-        uid, user_auth_token, user_uuid = get_auth_token_from_db(env.env.user_email)
+        uid, user_auth_token, user_uuid = \
+            get_auth_token_from_db(env.env.user_email)
 
     install_package("python-progress")
     install_package("kamaki")
@@ -1185,6 +1323,7 @@ def setup_kamaki():
     try_run(cmd)
     try_run("kamaki file create images")
 
+
 @roles("client")
 def upload_image(image="debian_base.diskdump"):
     debug(env.host, " * Uploading initial image to pithos...")
@@ -1192,18 +1331,26 @@ def upload_image(image="debian_base.diskdump"):
     try_run("wget {0} -O /tmp/{1}".format(env.env.debian_base_url, image))
     try_run("kamaki file upload --container images /tmp/{0} {0}".format(image))
 
+
 @roles("client")
 def register_image(image="debian_base.diskdump"):
     debug(env.host, " * Register image to plankton...")
-    with settings(host_string=env.env.db.ip):
-        uid, user_auth_token, user_uuid = get_auth_token_from_db(env.env.user_email)
+    # with settings(host_string=env.env.db.ip):
+    #     uid, user_auth_token, user_uuid = \
+    #        get_auth_token_from_db(env.env.user_email)
 
-    pithos_url = "pithos://{0}/images/{1}".format(user_uuid, image)
+    image_location = "images:{0}".format(image)
     cmd = """
     sleep 5
-    kamaki image register "Debian Base" {0} --public --disk-format=diskdump --property OSFAMILY=linux --property ROOT_PARTITION=1 --property description="Debian Squeeze Base System" --property size=450M --property kernel=2.6.32 --property GUI="No GUI" --property sortorder=1 --property USERS=root --property OS=debian
-    """.format(pithos_url)
+    kamaki image register "Debian Base" {0} --public --disk-format=diskdump \
+            --property OSFAMILY=linux --property ROOT_PARTITION=1 \
+            --property description="Debian Squeeze Base System" \
+            --property size=450M --property kernel=2.6.32 \
+            --property GUI="No GUI" --property sortorder=1 \
+            --property USERS=root --property OS=debian
+    """.format(image_location)
     try_run(cmd)
+
 
 @roles("client")
 def setup_burnin():
@@ -1211,30 +1358,41 @@ def setup_burnin():
     install_package("kamaki")
     install_package("snf-tools")
 
+
 @roles("pithos")
 def add_image_locally():
-    debug(env.host, " * Getting image locally in order snf-image to use it directly..")
+    debug(env.host,
+          " * Getting image locally in order snf-image to use it directly..")
     image = "debian_base.diskdump"
-    try_run("wget {0} -O /srv/okeanos/{1}".format(env.env.debian_base_url, image))
+    try_run("wget {0} -O {1}/{2}".format(
+            env.env.debian_base_url, env.env.image_dir, image))
 
 
 @roles("master")
 def gnt_instance_add(name="test"):
     debug(env.host, " * Adding test instance to Ganeti...")
-    osp="""img_passwd=gamwtosecurity,img_format=diskdump,img_id=debian_base,img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}'"""
+    osp = """img_passwd=gamwtosecurity,\
+img_format=diskdump,img_id=debian_base,\
+img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}'"""
     cmd = """
-    gnt-instance add  -o snf-image+default --os-parameters {0} -t plain --disk 0:size=1G --no-name-check --no-ip-check --net 0:ip=pool,network=test --no-install --hypervisor-parameters kvm:machine_version=pc-1.0 {1}
+    gnt-instance add  -o snf-image+default --os-parameters {0} \
+            -t plain --disk 0:size=1G --no-name-check --no-ip-check \
+            --net 0:ip=pool,network=test --no-install \
+            --hypervisor-parameters kvm:machine_version=pc-1.0 {1}
     """.format(osp, name)
     try_run(cmd)
 
+
 @roles("master")
-def gnt_network_add(name="test", subnet="10.0.0.0/26", gw="10.0.0.1", mode="bridged", link="br0"):
+def gnt_network_add(name="test", subnet="10.0.0.0/26", gw="10.0.0.1",
+                    mode="bridged", link="br0"):
     debug(env.host, " * Adding test network to Ganeti...")
     cmd = """
     gnt-network add --network={1} --gateway={2} {0}
     gnt-network connect {0} {3} {4}
     """.format(name, subnet, gw, mode, link)
     try_run(cmd)
+
 
 @roles("ips")
 def test():

@@ -32,7 +32,8 @@
 # or implied, of GRNET S.A.
 
 from django.conf import settings
-from django.conf.urls.defaults import patterns
+from django.conf.urls import patterns
+
 from django.db import transaction
 from django.http import HttpResponse
 from django.template.loader import render_to_string
@@ -391,6 +392,7 @@ def get_server_details(request, server_id):
 
 
 @api.api_method(http_method='PUT', user_required=True, logger=log)
+@transaction.commit_on_success
 def update_server_name(request, server_id):
     # Normal Response Code: 204
     # Error Response Codes: computeFault (400, 500),
@@ -412,8 +414,8 @@ def update_server_name(request, server_id):
 
     vm = util.get_vm(server_id, request.user_uniq, for_update=True,
                      non_suspended=True)
-    vm.name = name
-    vm.save()
+
+    servers.rename(vm, new_name=name)
 
     return HttpResponse(status=204)
 
@@ -489,7 +491,7 @@ def list_addresses(request, server_id):
 
     log.debug('list_addresses %s', server_id)
     vm = util.get_vm(server_id, request.user_uniq)
-    attachments = [nic_to_dict(nic) for nic in vm.nics.all()]
+    attachments = [nic_to_dict(nic) for nic in vm.nics.filter(state="ACTIVE")]
     addresses = attachments_to_addresses(attachments)
 
     if request.serialization == 'xml':
@@ -513,7 +515,7 @@ def list_addresses_by_network(request, server_id, network_id):
     log.debug('list_addresses_by_network %s %s', server_id, network_id)
     machine = util.get_vm(server_id, request.user_uniq)
     network = util.get_network(network_id, request.user_uniq)
-    nics = machine.nics.filter(network=network).all()
+    nics = machine.nics.filter(network=network, state="ACTIVE").all()
     addresses = attachments_to_addresses(map(nic_to_dict, nics))
 
     if request.serialization == 'xml':
@@ -541,6 +543,7 @@ def list_metadata(request, server_id):
 
 
 @api.api_method(http_method='POST', user_required=True, logger=log)
+@transaction.commit_on_success
 def update_metadata(request, server_id):
     # Normal Response Code: 201
     # Error Response Codes: computeFault (400, 500),
@@ -733,10 +736,8 @@ def reboot(request, vm, args):
     #                       buildInProgress (409),
     #                       overLimit (413)
 
-    reboot_type = args.get("type")
-    if reboot_type is None:
-        raise faults.BadRequest("Missing 'type' attribute.")
-    elif reboot_type not in ["SOFT", "HARD"]:
+    reboot_type = args.get("type", "SOFT")
+    if reboot_type not in ["SOFT", "HARD"]:
         raise faults.BadRequest("Invalid 'type' attribute.")
     vm = servers.reboot(vm, reboot_type=reboot_type)
     return HttpResponse(status=202)

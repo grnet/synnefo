@@ -30,20 +30,20 @@
 
 from django.core.management.base import BaseCommand, CommandError
 from synnefo.management.common import get_backend
-from synnefo.db.models import VirtualMachine, BackendNetwork
+from synnefo.logic import backend as backend_mod
+from synnefo.db.models import Backend
+from django.db import transaction, models
+
+
+HELP_MSG = """\
+Remove a backend from the Database. Backend should be set to drained before
+trying to remove it, in order to avoid the allocation of a new instances in
+this Backend.  Removal of a backend will fail if the backend hosts any
+non-deleted instances."""
 
 
 class Command(BaseCommand):
-    can_import_settings = True
-
-    help = "Remove a backend from the Database. Backend should be set\n" \
-           "to drained before trying to remove it, in order to avoid the\n" \
-           "allocation of a new instances in this Backend.\n\n" \
-           "Removal of a backend will fail if the backend hosts any\n" \
-           "non-deleted instances."
-
-    output_transaction = True  # The management command runs inside
-                               # an SQL transaction
+    help = HELP_MSG
 
     def handle(self, *args, **options):
         write = self.stdout.write
@@ -52,23 +52,37 @@ class Command(BaseCommand):
 
         backend = get_backend(args[0])
 
-        write('Trying to remove backend: %s\n' % backend.clustername)
+        write("Trying to remove backend: %s\n" % backend.clustername)
 
-        vms_in_backend = VirtualMachine.objects.filter(backend=backend,
-                                                       deleted=False)
-
-        if vms_in_backend:
+        if backend.virtual_machines.filter(deleted=False).exists():
             raise CommandError('Backend hosts non-deleted vms. Can not delete')
 
-        networks = BackendNetwork.objects.filter(backend=backend,
-                                                 deleted=False)
-        networks = [net.network.backend_id for net in networks]
+        # Get networks before deleting backend, because after deleting the
+        # backend, all BackendNetwork objects are deleted!
+        networks = [bn.network for bn in backend.networks.all()]
 
-        backend.delete()
+        try:
+            delete_backend(backend)
+        except models.ProtectedError as e:
+            msg = ("Can not delete backend because it contains"
+                   "non-deleted VMs:\n%s" % e)
+            raise CommandError(msg)
 
-        write('Successfully removed backend.\n')
+        write('Successfully removed backend from DB.\n')
 
         if networks:
-            write('Left the following orphans networks in Ganeti:\n')
-            write('  ' + '\n  * '.join(networks) + '\n')
-            write('Manually remove them.\n')
+            write("Clearing networks from %s..\n" % backend.clustername)
+            for network in networks:
+                backend_mod.delete_network(network=network, backend=backend)
+            write("Successfully issued jobs to remove all networks.\n")
+
+
+@transaction.commit_on_success
+def delete_backend(backend):
+    # Get X-Lock
+    backend = Backend.objects.select_for_update().get(id=backend.id)
+    # Clear 'backend' field of 'deleted' VirtualMachines
+    backend.virtual_machines.filter(deleted=True).update(backend=None)
+    # Delete all BackendNetwork objects of this backend
+    backend.networks.all().delete()
+    backend.delete()

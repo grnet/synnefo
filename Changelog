@@ -30,6 +30,18 @@ Astakos
 
 * Implement API calls for projects.
 
+* Store the base URL of a component. Deployer should provide it when adding
+  a new component. Service endpoints originating from a component are
+  expected to match its base URL; otherwise, a warning is issued.
+  Re-registration with `snf-component-register' affects both the base and
+  the ui URL.
+
+* Management commands:
+  * Introduced new commands:
+     * component-show
+  * Changed commands:
+     * component-add got options --base-url and --ui-url
+
 Cyclades
 --------
 
@@ -60,6 +72,17 @@ Cyclades
   setting.
 * Change --dhcp option of network management commands from a flag to a boolean
   value, e.g. --dhcp=True
+* Remove 'ARCHIPELAGO_BACKENDS' setting used to distinquish between backends
+  that hosted only archipelago backends. Instead allocation is based on which
+  disk-templates are enabled in each backend.
+* Implement 'snf-manage server-remove' management command.
+* Move reconciliation of IP pools from 'reconcile-networks' to
+  'reconcile-pools'. The IP pool reconciliation does not reconcile the IP
+  pools with Ganeti. Instead it checks if the pool is consistent with the
+  IPs that are used by instances.
+* Do not automatically release externally reserved IPs if they are released
+  from a Ganeti backend. Management of externally reserved IPs must be
+  performed from Cyclades with 'network-modify' command.
 
 Pithos
 ------
@@ -68,6 +91,46 @@ Pithos
 objects by domain attribute. This is used by Plankton for listing VM images.
 
 * Enforce container-level atomicity in (most) Pithos API calls.
+
+
+.. _Changelog-0.14.7:
+
+v0.14.7
+=======
+
+Released: Wed Sep 18 17:50:12 EEST 2013
+
+Cyclades
+--------
+
+* Fix bug in helpdesk view
+
+.. _Changelog-0.14.6:
+
+v0.14.6
+=======
+
+Released: Wed Sep 18 16:18:58 EEST 2013
+
+Pithos
+------
+
+* Substitute the PITHOS_BACKEND_QUOTA setting with two
+  distinct settings: PITHOS_BACKEND_ACCOUNT_QUOTA &
+  PITHOS_BACKEND_CONTAINER_QUOTA
+* Set PITHOS_BACKEND_CONTAINER_QUOTA default value to 0 (unlimited)
+* Fix bug that resulted in DB deadlocks.
+
+Cyclades
+--------
+
+* Fix bug in snf-dispatcher that resulted in servers to be deleted from the
+  DB even if the corresponding Ganeti job failed.
+
+Branding
+--------
+
+* Add new BRANDING_FOOTER_EXTRA_MESSAGE setting.
 
 
 .. _Changelog-0.14.5:

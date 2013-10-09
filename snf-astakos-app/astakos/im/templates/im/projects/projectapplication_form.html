@@ -9,17 +9,9 @@
 
 {% block page.body %}
 <h2>
-    {% if update_form %}REQUEST PROJECT MODIFICATION{% else %}REQUEST PROJECT{% endif %}
-     
+{% if update_form %}REQUEST PROJECT MODIFICATION{% else %}REQUEST PROJECT{% endif %}
 </h2>
 
-{% if not show_form %}
-<p>These are the specifications of the Project you want to create. If you hit the "Submit" button
-this form will be officially sent to {{ BRANDING_COMPANY_NAME }} for review. Please make sure the following reflect
-exactly your request.</p>
-{% endif %}
-
-{% if show_form %}
 <form action="?verify=1" method="post" class="withlabels quotas-form" id="group_create_form">{% csrf_token %}
 
     <fieldset class="with-info" id="top">
@@ -191,12 +183,4 @@ exactly your request.</p>
    		<input type="submit" value="CONTINUE" class="submit altcol" >
 	</div>
 </form>
-{% else %}
-    {% include "im/projects/projectapplication_form_summary.html" %}
-{% endif %}
-
-<script>
-	
-</script>	 
-
 {% endblock %}

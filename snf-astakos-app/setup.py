@@ -65,7 +65,7 @@ CLASSIFIERS = [
 
 # Package requirements
 INSTALL_REQUIRES = [
-    'Django>=1.2, <1.3',
+    'Django>=1.4, <1.5',
     'South>=0.7.3',
     'httplib2>=0.6.0',
     'snf-common',
@@ -213,7 +213,6 @@ setup(
             'web_static = astakos.synnefo_settings:static_files'
         ],
         'console_scripts': [
-            'astakos-migrate-0.14 = astakos.scripts.upgrade.migrate_014:main',
             'snf-service-export = astakos.scripts.snf_service_export:main',
         ],
     }

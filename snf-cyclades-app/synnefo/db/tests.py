@@ -96,24 +96,14 @@ class BackendTest(TestCase):
             mfact.BackendFactory()
         self.assertRaises(Exception, mfact.BackendFactory, ())
 
-    def test_delete_backend(self):
-        vm = mfact.VirtualMachineFactory(backend=self.backend, deleted=True)
-        bnet = mfact.BackendNetworkFactory(backend=self.backend)
-        self.backend.delete()
-        self.assertRaises(Backend.DoesNotExist, Backend.objects.get,
-                          id=self.backend.id)
-        # Test that VM is not deleted
-        vm2 = VirtualMachine.objects.get(id=vm.id)
-        self.assertEqual(vm2.backend, None)
-        # Test tha backend networks are deleted, but not the network
-        self.assertRaises(BackendNetwork.DoesNotExist,
-                          BackendNetwork.objects.get, id=bnet.id)
-        Network.objects.get(id=bnet.network.id)
-
     def test_delete_active_backend(self):
         """Test that a backend with non-deleted VMS is not deleted"""
-        mfact.VirtualMachineFactory(backend=self.backend)
-        self.assertRaises(IntegrityError, self.backend.delete, ())
+        backend = mfact.BackendFactory()
+        vm = mfact.VirtualMachineFactory(backend=backend)
+        self.assertRaises(IntegrityError, backend.delete, ())
+        vm.backend = None
+        vm.save()
+        backend.delete()
 
     def test_password_encryption(self):
         password_hash = self.backend.password

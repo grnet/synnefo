@@ -44,7 +44,8 @@ from synnefo.api.util import allocate_resource
 from synnefo.logic.callbacks import (update_db, update_network,
                                      update_build_progress)
 from snf_django.utils.testing import mocked_quotaholder
-from synnefo import settings
+from django.conf import settings
+from synnefo.logic.rapi import GanetiApiError
 
 now = datetime.now
 from time import time
@@ -174,6 +175,31 @@ class UpdateDBTest(TestCase):
         # Test that floating ips are not released
         self.assertFalse(pool.is_available(fp1.ipv4))
         self.assertFalse(pool.is_available(fp2.ipv4))
+
+    @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
+    def test_remove_error(self, rapi, client):
+        vm = mfactory.VirtualMachineFactory()
+        # Also create a NIC
+        msg = self.create_msg(operation='OP_INSTANCE_REMOVE',
+                              status="error",
+                              instance=vm.backend_vm_id)
+        rapi().GetInstance.return_value = {}
+        update_db(client, msg)
+        db_vm = VirtualMachine.objects.get(id=vm.id)
+        self.assertFalse(db_vm.deleted)
+
+        rapi().GetInstance.side_effect = GanetiApiError(msg="msg",
+                                                        code=503)
+        update_db(client, msg)
+        db_vm = VirtualMachine.objects.get(id=vm.id)
+        self.assertFalse(db_vm.deleted)
+
+        rapi().GetInstance.side_effect = GanetiApiError(msg="msg",
+                                                        code=404)
+        with mocked_quotaholder():
+            update_db(client, msg)
+        db_vm = VirtualMachine.objects.get(id=vm.id)
+        self.assertTrue(db_vm.deleted)
 
     def test_create(self, client):
         vm = mfactory.VirtualMachineFactory()
@@ -515,6 +541,26 @@ class UpdateNetworkTest(TestCase):
                 if flavor == 'MAC_FILTERED':
                     pool = MacPrefixPoolTable.get_pool()
                     self.assertTrue(pool.is_available(net.mac_prefix))
+
+    @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
+    def test_remove_error(self, rapi, client):
+        mfactory.MacPrefixPoolTableFactory()
+        mfactory.BridgePoolTableFactory()
+        bn = mfactory.BackendNetworkFactory(operstate='ACTIVE')
+        network = bn.network
+        msg = self.create_msg(operation='OP_NETWORK_REMOVE',
+                              network=network.backend_id,
+                              status="error",
+                              cluster=bn.backend.clustername)
+        rapi().GetNetwork.return_value = {}
+        update_network(client, msg)
+        bn = BackendNetwork.objects.get(id=bn.id)
+        self.assertNotEqual(bn.operstate, "DELETED")
+        rapi().GetNetwork.side_effect = GanetiApiError(msg="foo", code=404)
+        with mocked_quotaholder():
+            update_network(client, msg)
+        bn = BackendNetwork.objects.get(id=bn.id)
+        self.assertEqual(bn.operstate, "DELETED")
 
     def test_remove_offline_backend(self, client):
         """Test network removing when a backend is offline"""

@@ -1,6 +1,0 @@
-# Backports repository
-deb http://backports.debian.org/debian-backports squeeze-backports main contrib non-free
-
-deb http://www.rabbitmq.com/debian/ testing main
-
-deb http://apt.dev.grnet.gr squeeze/

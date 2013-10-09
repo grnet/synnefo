@@ -34,8 +34,9 @@ import logging
 import json
 from functools import wraps
 
+from django.db import transaction
 from synnefo.db.models import Backend, VirtualMachine, Network, BackendNetwork
-from synnefo.logic import utils, backend
+from synnefo.logic import utils, backend as backend_mod
 
 from synnefo.lib.utils import merge_time
 
@@ -172,9 +173,10 @@ def update_db(vm, msg, event_time):
 
     nics = msg.get("nics", None)
     beparams = msg.get("beparams", None)
-    backend.process_op_status(vm, event_time, msg['jobId'], msg['operation'],
-                              msg['status'], msg['logmsg'], nics=nics,
-                              beparams=beparams)
+    backend_mod.process_op_status(vm, event_time, msg['jobId'],
+                                  msg['operation'], msg['status'],
+                                  msg['logmsg'], nics=nics,
+                                  beparams=beparams)
 
     log.debug("Done processing ganeti-op-status msg for vm %s.",
               msg['instance'])
@@ -195,12 +197,11 @@ def update_network(network, msg, event_time):
     jobid = msg['jobId']
 
     if opcode == "OP_NETWORK_SET_PARAMS":
-        backend.process_network_modify(network, event_time, jobid, opcode,
-                                       status, msg['add_reserved_ips'],
-                                       msg['remove_reserved_ips'])
+        backend_mod.process_network_modify(network, event_time, jobid, opcode,
+                                           status, msg['add_reserved_ips'])
     else:
-        backend.process_network_status(network, event_time, jobid, opcode,
-                                       status, msg['logmsg'])
+        backend_mod.process_network_status(network, event_time, jobid, opcode,
+                                           status, msg['logmsg'])
 
     log.debug("Done processing ganeti-network-status msg for network %s.",
               msg['network'])
@@ -221,7 +222,7 @@ def update_build_progress(vm, msg, event_time):
         return
 
     if msg['type'] == 'image-copy-progress':
-        backend.process_create_progress(vm, event_time, msg['progress'])
+        backend_mod.process_create_progress(vm, event_time, msg['progress'])
         # we do not add diagnostic messages for copy-progress messages
         return
 
@@ -261,11 +262,22 @@ def update_build_progress(vm, msg, event_time):
         message = " ".join(source.split("-")).capitalize()
 
     # create the diagnostic entry
-    backend.create_instance_diagnostic(vm, message, source, level, event_time,
-                                       details=details)
+    backend_mod.create_instance_diagnostic(vm, message, source, level,
+                                           event_time, details=details)
 
     log.debug("Done processing ganeti-create-progress msg for vm %s.",
               msg['instance'])
+
+
+@handle_message_delivery
+@transaction.commit_on_success()
+def update_cluster(msg):
+    clustername = msg.get("cluster")
+    if clustername is None:
+        return
+    backend = Backend.objects.select_for_update().get(clustername=clustername)
+    backend_mod.update_backend_disk_templates(backend)
+    backend_mod.update_backend_resources(backend)
 
 
 def dummy_proc(client, message, *args, **kwargs):

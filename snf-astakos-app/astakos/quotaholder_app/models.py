@@ -35,7 +35,6 @@ from snf_django.lib.db.fields import intDecimalField
 
 from django.db.models import (Model, BigIntegerField, CharField, DateTimeField,
                               ForeignKey, AutoField)
-from snf_django.lib.db.managers import ForUpdateManager
 
 
 class Holding(Model):
@@ -48,8 +47,6 @@ class Holding(Model):
     usage_min = intDecimalField(default=0)
     usage_max = intDecimalField(default=0)
 
-    objects = ForUpdateManager()
-
     class Meta:
         unique_together = (('holder', 'source', 'resource'),)
 
@@ -60,8 +57,6 @@ class Commission(Model):
     name = CharField(max_length=4096, default="")
     clientkey = CharField(max_length=4096, null=False)
     issue_datetime = DateTimeField()
-
-    objects = ForUpdateManager()
 
 
 class Provision(Model):
@@ -74,8 +69,6 @@ class Provision(Model):
     resource = CharField(max_length=4096, null=False)
 
     quantity = intDecimalField()
-
-    objects = ForUpdateManager()
 
     def todict(self):
         return {'holder':   self.holder,
@@ -102,5 +95,3 @@ class ProvisionLog(Model):
     usage_max = intDecimalField()
     delta_quantity = intDecimalField()
     reason = CharField(max_length=4096)
-
-    objects = ForUpdateManager()

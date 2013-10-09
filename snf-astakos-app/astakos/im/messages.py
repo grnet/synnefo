@@ -125,7 +125,7 @@ SHIBBOLETH_INACTIVE_ACC = (
     'yet activated. '
     'If that is your account, you need to activate it before being able to '
     'associate it with this shibboleth account.')
-SHIBBOLETH_MISSING_EPPN = (
+SHIBBOLETH_MISSING_USER_ID = (
     'Your request is missing a unique ' +
     'token. This means your academic ' +
     'institution does not yet allow its users to log ' +
@@ -193,9 +193,9 @@ MISSING_NEXT_PARAMETER = 'The next parameter is missing.'
 
 INVITATION_SENT = 'Invitation sent to %(email)s.'
 VERIFICATION_SENT = (
-    'Your information has been submitted successfully. A verification email, '
-    'with an activation link has been sent to the email address you provided. '
-    'Please follow the activation link on this email to complete the '
+    'Your information has been submitted successfully. An email, containing a '
+    'verification link has been sent to the email address you provided. '
+    'Please follow the verification link on this email to continue with the '
     'registration process.')
 VERIFICATION_FAILED = 'Email verification process failed.'
 SWITCH_ACCOUNT_LINK_SENT = (

@@ -58,12 +58,12 @@ CLASSIFIERS = []
 
 # Package requirements
 INSTALL_REQUIRES = [
-    'Django >=1.2, <1.3',
+    'Django>=1.4, <1.5',
     'simplejson>=2.1.1',
     'astakosclient',
     'snf-common',
     'python-dateutil>=1.4.1',
-    'objpool>=0.2',
+    'objpool>=0.3',
 ]
 
 

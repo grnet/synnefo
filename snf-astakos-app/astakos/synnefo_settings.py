@@ -54,6 +54,7 @@ context_processors = [
     'django.core.context_processors.media',
     'django.core.context_processors.request',
     'django.core.context_processors.csrf',
+    'django.contrib.messages.context_processors.messages',
     'astakos.im.context_processors.media',
     'astakos.im.context_processors.im_modules',
     'astakos.im.context_processors.auth_providers',
@@ -64,14 +65,14 @@ context_processors = [
     'astakos.im.context_processors.custom_messages',
     'astakos.im.context_processors.last_login_method',
     'astakos.im.context_processors.membership_policies',
-    'synnefo.lib.context_processors.cloudbar'
+    'synnefo.webproject.context_processors.cloudbar'
 ]
 
 middlware_classes = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'synnefo.lib.middleware.LoggingConfigMiddleware',
-    'synnefo.lib.middleware.SecureMiddleware',
+    'synnefo.webproject.middleware.LoggingConfigMiddleware',
+    'synnefo.webproject.middleware.SecureMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     # 'debug_toolbar.middleware.DebugToolbarMiddleware',

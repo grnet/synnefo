@@ -61,9 +61,6 @@ DEFAULT_FIREWALL_PROFILE = 'DISABLED'
 # e.g. BACKEND_PER_USER = {'example@synnefo.org': 2}
 BACKEND_PER_USER = {}
 
-# List of backend IDs used *only* for archipelago.
-ARCHIPELAGO_BACKENDS = []
-
 
 # URL templates for the stat graphs.
 # The API implementation replaces '%s' with the encrypted backend id.

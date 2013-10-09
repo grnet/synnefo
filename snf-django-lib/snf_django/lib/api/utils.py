@@ -94,7 +94,7 @@ def get_request_dict(request):
     Only JSON format is supported
 
     """
-    data = request.raw_post_data
+    data = request.body
     content_type = request.META.get("CONTENT_TYPE")
     if content_type is None:
         raise faults.BadRequest("Missing Content-Type header field")
@@ -108,10 +108,10 @@ def get_request_dict(request):
                                 content_type)
 
 
-def prefix_pattern(prefix):
+def prefix_pattern(prefix, append_slash=True):
     """Return a reliable urls.py pattern from a prefix"""
     prefix = prefix.strip('/')
-    if prefix:
+    if prefix and append_slash:
         prefix += '/'
     pattern = '^' + prefix
     return pattern

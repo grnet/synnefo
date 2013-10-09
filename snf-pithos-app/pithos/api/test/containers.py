@@ -83,6 +83,65 @@ class ContainerHead(PithosAPITest):
         (self.assertTrue('foo%s' % i in r['X-Container-Object-Meta'])
             for i in range(len(objects)))
 
+    def test_get_container_meta_until(self):
+        self.create_container('apples')
+
+        # populate with objects
+        objects = {}
+        metalist = []
+        for i in range(random.randint(1, 100)):
+            # upload object
+            metakey = 'Foo%s' % i
+            meta = {metakey: 'bar'}
+            name, data, resp = self.upload_object('apples', **meta)
+            objects[name] = data
+            metalist.append(metakey) 
+
+        self.update_container_meta('apples', {'foo': 'bar'})
+
+        container_info = self.get_container_info('apples')
+        t = datetime.datetime.strptime(container_info['Last-Modified'],
+                                       DATE_FORMATS[2])
+        t1 = t + datetime.timedelta(seconds=1)
+        until = int(_time.mktime(t1.timetuple()))
+
+        _time.sleep(2)
+
+        for i in range(random.randint(1, 100)):
+            # upload object
+            meta = {'foo%s' % i: 'bar'}
+            self.upload_object('apples', **meta)
+
+        self.update_container_meta('apples', {'quality': 'AAA'})
+
+        container_info = self.get_container_info('apples')
+        self.assertTrue('X-Container-Meta-Quality' in container_info)
+        self.assertTrue('X-Container-Meta-Foo' in container_info)
+        self.assertTrue('X-Container-Object-Count' in container_info)
+        self.assertTrue(int(container_info['X-Container-Object-Count']) > len(objects))
+        self.assertTrue('X-Container-Bytes-Used' in container_info)
+
+        t = datetime.datetime.strptime(container_info['Last-Modified'],
+                                       DATE_FORMATS[-1])
+        last_modified = int(_time.mktime(t.timetuple()))
+        assert until < last_modified
+
+        container_info = self.get_container_info('apples', until=until)
+        self.assertTrue('X-Container-Meta-Quality' not in container_info)
+        self.assertTrue('X-Container-Meta-Foo' in container_info)
+        self.assertTrue('X-Container-Until-Timestamp' in container_info)
+        t = datetime.datetime.strptime(
+            container_info['X-Container-Until-Timestamp'], DATE_FORMATS[2])
+        self.assertTrue(int(_time.mktime(t1.timetuple())) <= until)
+        self.assertTrue('X-Container-Object-Count' in container_info)
+        self.assertEqual(int(container_info['X-Container-Object-Count']), len(objects))
+        self.assertTrue('X-Container-Bytes-Used' in container_info)
+        self.assertEqual(int(container_info['X-Container-Bytes-Used']),
+                         sum([len(data) for data in objects.values()]))
+        self.assertTrue('X-Container-Object-Meta' in container_info)
+        self.assertEqual(container_info['X-Container-Object-Meta'],
+                         ','.join(sorted(metalist))) 
+
 
 class ContainerGet(PithosAPITest):
     def setUp(self):
@@ -101,6 +160,36 @@ class ContainerGet(PithosAPITest):
         for o in o_names[8:]:
             name, data, resp = self.upload_object('apples', o)
             self.objects['apples'][name] = data
+
+    def test_list_until(self):
+        account_info = self.get_account_info()
+        t = datetime.datetime.strptime(account_info['Last-Modified'],
+                                       DATE_FORMATS[2])
+        t1 = t + datetime.timedelta(seconds=1)
+        until = int(_time.mktime(t1.timetuple()))
+
+        _time.sleep(2)
+
+        cname = self.cnames[0]
+        self.upload_object(cname)
+
+        url = join_urls(self.pithos_path, self.user, cname)
+        r = self.get('%s?until=%s' % (url, until))
+        self.assertTrue(r.status_code, 200)
+        objects = r.content.split('\n')
+        if '' in objects:
+            objects.remove('')
+        self.assertEqual(objects,
+                         sorted(self.objects[cname].keys()))
+
+        r = self.get('%s?until=%s&format=json' % (url, until))
+        self.assertTrue(r.status_code, 200)
+        try:
+            objects = json.loads(r.content)
+        except:
+            self.fail('json format expected')
+        self.assertEqual([o['name'] for o in objects],
+                         sorted(self.objects[cname].keys()))
 
     def test_list_shared(self):
         # share an object
@@ -739,7 +828,7 @@ class ContainerPost(PithosAPITest):
         self.assertTrue('x-container-policy-quota' in info)
         self.assertEqual(info['x-container-policy-quota'], '100')
 
-        r = self.upload_object('c1', length=101, verify=False)[2]
+        r = self.upload_object('c1', length=101, verify_status=False)[2]
         self.assertEqual(r.status_code, 413)
 
         url = join_urls(self.pithos_path, self.user, 'c1')

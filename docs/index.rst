@@ -3,28 +3,24 @@ Welcome to Synnefo's documentation
 
 .. image:: /images/synnefo-logo.png
 
-| Synnefo is open source cloud software, used to create massively scalable IaaS
-  clouds.
-| Synnefo uses `Google Ganeti <http://code.google.com/p/ganeti/>`_ for the low
-  level VM management part.
+Synnefo is a complete open source cloud stack written in Python that provides
+Compute, Network, Image, Volume and Storage services, similar to the ones
+offered by AWS. Synnefo manages multiple `Ganeti
+<http://code.google.com/p/ganeti>`_ clusters at the backend for handling of
+low-level VM operations. To boost 3rd-party compatibility, Synnefo exposes the
+OpenStack APIs to users.
 
-| You can see Synnefo in action, powering GRNET's
-  `~okeanos public cloud service <http://okeanos.io>`_.
-| It is a collection of components (``snf-*``), most of them written in python, that
-  are used as the building bricks to provide the following services:
+You can see Synnefo in action, powering GRNET's
+`~okeanos public cloud service <http://okeanos.grnet.gr>`_.
+
+Synnefo has three main components providing the corresponding services:
 
 .. toctree::
    :maxdepth: 1
 
-   Identity Management (codename: astakos) <astakos>
-   Object Storage Service (codename: pithos) <pithos>
-   Compute Service (codename: cyclades) <cyclades>
-   Network Service (part of Cyclades) <networks>
-   Image Service (part of Cyclades) <plankton>
-   Volume Storage Service (codename: archipelago) <archipelago>
-
-.. image:: images/synnefo-overview.png
-   :target: _images/synnefo-overview.png
+   Astakos: Identity/Account services <astakos>
+   Pithos: File/Object Storage service <pithos>
+   Cyclades: Compute/Network/Image/Volume services <cyclades>
 
 There are also the following tools:
 
@@ -34,9 +30,13 @@ There are also the following tools:
    kamaki: Command-line client <http://www.synnefo.org/docs/kamaki/latest/index.html>
    snf-deploy: Synnefo deployment tool <snf-deploy>
    snf-image-creator: Image bundling/uploading/registering tool <http://www.synnefo.org/docs/snf-image-creator/latest/index.html>
-   snf-image: Secure image deployment tool <snf-image>
+   snf-image: Secure image deployment tool <http://www.synnefo.org/docs/snf-image/latest/index.html>
    snf-burnin: Integration testing tool for a running Synnefo deployment <snf-burnin>
 
+This is an overview of the Synnefo services:
+
+.. image:: images/synnefo-overview.png
+   :target: _images/synnefo-overview.png
 
 Synnefo is designed to be as simple, scalable and production ready as possible.
 Furthermore, although it can be deployed in small configurations, its prime
@@ -52,16 +52,20 @@ node. All settings are stored in a single location.
 Synnefo General Architecture
 ============================
 
-The following graph shows the whole Synnefo architecture and how it interacts
-with multiple Ganeti clusters.
+The following graph shows the whole Synnefo stack and how it interacts with
+multiple Ganeti clusters and the storage backends. Synnefo decouples the cloud
+from the cluster layer enhancing robustness, stability and ease of
+administration. As shown in the figure below, Synnefo sits on the cloud layer:
 
-.. image:: images/synnefo-arch2.png
+.. image:: images/snf-architecture.png
    :width: 100%
-   :target: _images/synnefo-arch2.png
+   :target: _images/snf-architecture.png
 
-Synnefo also supports RADOS as an alternative storage backend for
-Files/Images/VM disks. :ref:`Here <syn+archip+rados>` is a graph that shows
-Synnefo running with two different storage backends.
+Synnefo manages multiple Ganeti clusters and different kind of storage backends
+such as a Ceph/RADOS cluster or an NFS-based backend.
+
+For an extensive view of all components and APIs between them, please take a
+look at the Admin Guide's :ref:`corresponding figure <syn+archip>`.
 
 
 Synnefo Guides
@@ -128,7 +132,7 @@ They are also available from our apt repository: ``apt.dev.grnet.gr``
  * `snf-cyclades-gtools <http://www.synnefo.org/docs/snf-cyclades-gtools/latest/index.html>`_
  * `astakosclient <http://www.synnefo.org/docs/astakosclient/latest/index.html>`_
  * `snf-vncauthproxy <https://code.grnet.gr/projects/vncauthproxy>`_
- * `snf-image <https://code.grnet.gr/projects/snf-image/wiki/>`_ 
+ * `snf-image <http://www.synnefo.org/docs/snf-image/latest/index.html/>`_
  * `snf-image-creator <http://www.synnefo.org/docs/snf-image-creator/latest/index.html>`_
  * `snf-occi <http://www.synnefo.org/docs/snf-occi/latest/index.html>`_
  * `snf-cloudcms <http://www.synnefo.org/docs/snf-cloudcms/latest/index.html>`_
@@ -145,6 +149,7 @@ Drafts
    :maxdepth: 1
 
    Sample design <design/sample>
+   Resource-pool projects design <design/resource-pool-projects>
 
 
 Contact
@@ -158,7 +163,6 @@ You can contact the Synnefo team at the following mailing lists:
 The official site is:
 
  `http://www.synnefo.org <http://www.synnefo.org>`_
-
 
 Indices and tables
 ==================

@@ -220,12 +220,12 @@ pithos_services = {
     },
 
     'pithos_public': {
-        'type': 'public',
+        'type': 'pithos_public',
         'component': 'pithos',
         'prefix': 'public',
         'public': False,
         'endpoints': [
-            {'versionId': 'v1.0',
+            {'versionId': '',
              'publicURL': None},
         ],
         'resources': {},

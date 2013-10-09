@@ -37,6 +37,7 @@ from synnefo.lib import join_urls
 
 import django.utils.simplejson as json
 
+
 class ListSharing(PithosAPITest):
     def _build_structure(self, user=None):
         user = user or self.user
@@ -58,7 +59,7 @@ class ListSharing(PithosAPITest):
 
     def test_list_share_with_me(self):
         self._build_structure('alice')
-        url = join_urls(self.pithos_path)
+        url = join_urls(self.pithos_path, '/')
         r = self.get(url)
         self.assertEqual(r.status_code, 200)
         allowed_accounts = r.content.split('\n')

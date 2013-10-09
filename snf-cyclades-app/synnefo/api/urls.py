@@ -31,7 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls.defaults import include, patterns
+from django.conf.urls import include, patterns
 
 from snf_django.lib.api import api_endpoint_not_found
 from synnefo.api import (servers, flavors, images, networks, extensions,

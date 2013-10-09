@@ -64,6 +64,7 @@ class DBWrapper(object):
 
     def close(self):
         self.conn.close()
+        self.conn = None
 
     def execute(self):
         self.trans = self.conn.begin()

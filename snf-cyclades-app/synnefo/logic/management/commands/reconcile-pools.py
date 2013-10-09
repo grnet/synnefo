@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -27,122 +27,53 @@
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of GRNET S.A.
 #
+import logging
+from optparse import make_option
 from django.core.management.base import BaseCommand
+from synnefo.logic import reconciliation
 
-from synnefo.db.models import (Network, BackendNetwork,
-                               BridgePoolTable, MacPrefixPoolTable)
-from synnefo.db.pools import EmptyPool
+
+HELP_MSG = """\
+Check the consistency of pools of resources and fix them if possible.
+
+This command checks that values that come from pools are not used more than
+once. Also, it checks that are no stale reserved values in a pool by checking
+that the reserved values are only the ones that are currently used.
+
+The pools for the following resources are checked:
+    * Pool of bridges
+    * Pool of MAC prefixes
+    * Pool of IPv4 addresses for each network"""
 
 
 class Command(BaseCommand):
-    help = 'Check consistency of unique resources.'
+    help = HELP_MSG
+
+    option_list = BaseCommand.option_list + (
+        make_option("--fix", action="store_true",
+                    dest="fix", default=False,
+                    help='Fix all issues.'),
+    )
 
     def handle(self, **options):
-        self.detect_bridges()
-        self.detect_mac_prefixes()
-        self.detect_unique_mac_prefixes()
+        verbosity = int(options["verbosity"])
+        fix = options["fix"]
 
-    def detect_bridges(self):
-        write = self.stdout.write
+        logger = logging.getLogger("reconcile-pools")
+        logger.propagate = 0
 
-        write("---------------------------------------\n")
-        write("Checking consistency of the Bridge Pool\n")
-        write("---------------------------------------\n")
+        formatter = logging.Formatter("%(message)s")
+        log_handler = logging.StreamHandler()
+        log_handler.setFormatter(formatter)
+        if verbosity == 2:
+            formatter = logging.Formatter("%(asctime)s: %(message)s")
+            log_handler.setFormatter(formatter)
+            logger.setLevel(logging.DEBUG)
+        elif verbosity == 1:
+            logger.setLevel(logging.INFO)
+        else:
+            logger.setLevel(logging.WARNING)
 
-        try:
-            bridge_pool = BridgePoolTable.get_pool()
-        except EmptyPool:
-            write("No Bridge Pool\n")
-            return
-        bridges = []
-        for i in xrange(0, bridge_pool.size()):
-            used_bridge = not (bridge_pool.is_available(i, index=True) or
-                               bridge_pool.is_reserved(i, index=True))
-            if used_bridge:
-                    bridges.append(bridge_pool.index_to_value(i))
-
-        write("Used bridges from Pool: %d\n" % len(bridges))
-
-        network_bridges = Network.objects.filter(flavor='PHYSICAL_VLAN',
-                                                 deleted=False)\
-                                         .values_list('link', flat=True)
-
-        write("Used bridges from Networks: %d\n" % len(network_bridges))
-
-        set_network_bridges = set(network_bridges)
-        if len(network_bridges) > len(set_network_bridges):
-            write("Found duplicated bridges:\n")
-            duplicates = list(network_bridges)
-            for bridge in set_network_bridges:
-                duplicates.remove(bridge)
-            for bridge in set(duplicates):
-                write("Duplicated bridge: %s. " % bridge)
-                write("Used by the following Networks:\n")
-                nets = Network.objects.filter(deleted=False, link=bridge)
-                write("  " + "\n  ".join([str(net.id) for net in nets]) + "\n")
-
-    def detect_mac_prefixes(self):
-        write = self.stdout.write
-
-        write("---------------------------------------\n")
-        write("Checking consistency of the MAC Prefix Pool\n")
-        write("---------------------------------------\n")
-
-        try:
-            macp_pool = MacPrefixPoolTable.get_pool()
-        except EmptyPool:
-            write("No mac-prefix pool\n")
-            return
-
-        macs = []
-        for i in xrange(1, macp_pool.size()):
-            used_macp = not (macp_pool.is_available(i, index=True) or
-                             macp_pool.is_reserved(i, index=True))
-            if used_macp:
-                value = macp_pool.index_to_value(i)
-                macs.append(value)
-
-        write("Used MAC prefixes from Pool: %d\n" % len(macs))
-
-        network_mac_prefixes = \
-            Network.objects.filter(deleted=False, flavor='MAC_FILTERED')\
-                           .values_list('mac_prefix', flat=True)
-        write("Used MAC prefixes from Networks: %d\n" %
-              len(network_mac_prefixes))
-
-        set_network_mac_prefixes = set(network_mac_prefixes)
-        if len(network_mac_prefixes) > len(set_network_mac_prefixes):
-            write("Found duplicated mac_prefixes:\n")
-            duplicates = list(network_mac_prefixes)
-            for mac_prefix in set_network_mac_prefixes:
-                duplicates.remove(mac_prefix)
-            for mac_prefix in set(duplicates):
-                write("Duplicated mac_prefix: %s. " % mac_prefix)
-                write("Used by the following Networks:\n")
-                nets = Network.objects.filter(deleted=False,
-                                              mac_prefix=mac_prefix)
-                write("  " + "\n  ".join([str(net.id) for net in nets]) + "\n")
-
-    def detect_unique_mac_prefixes(self):
-        write = self.stdout.write
-
-        write("---------------------------------------\n")
-        write("Checking uniqueness of BackendNetwork prefixes.\n")
-        write("---------------------------------------\n")
-
-        back_networks = BackendNetwork.objects
-        mac_prefixes = back_networks.filter(deleted=False,
-                                            network__flavor='MAC_FILTERED')\
-                                    .values_list('mac_prefix', flat=True)
-        set_mac_prefixes = set(mac_prefixes)
-        if len(mac_prefixes) > len(set_mac_prefixes):
-            write("Found duplicated mac_prefixes:\n")
-            duplicates = list(mac_prefixes)
-            for mac_prefix in set_mac_prefixes:
-                duplicates.remove(mac_prefix)
-            for mac_prefix in set(duplicates):
-                write("Duplicated mac_prefix: %s. " % mac_prefix)
-                write("Used by the following BackendNetworks:\n")
-                nets = BackendNetwork.objects.filter(deleted=False,
-                                                     mac_prefix=mac_prefix)
-                write("  " + "\n  ".join([str(net.id) for net in nets]) + "\n")
+        logger.addHandler(log_handler)
+        reconciler = reconciliation.PoolReconciler(logger=logger, fix=fix)
+        reconciler.reconcile()

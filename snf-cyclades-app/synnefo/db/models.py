@@ -32,7 +32,6 @@ import datetime
 from copy import deepcopy
 from django.conf import settings
 from django.db import models
-from django.db import IntegrityError
 
 import utils
 from contextlib import contextmanager
@@ -41,8 +40,7 @@ from snf_django.lib.api import faults
 from django.conf import settings as snf_settings
 from aes_encrypt import encrypt_db_charfield, decrypt_db_charfield
 
-from synnefo.db.managers import ForUpdateManager, ProtectedDeleteManager
-from synnefo.db import pools
+from synnefo.db import pools, fields
 
 from synnefo.logic.rapi_pool import (get_rapi_client,
                                      put_rapi_client)
@@ -90,6 +88,7 @@ class Backend(models.Model):
     # Type of hypervisor
     hypervisor = models.CharField('Hypervisor', max_length=32, default="kvm",
                                   null=False)
+    disk_templates = fields.SeparatedValuesField("Disk Templates", null=True)
     # Last refresh of backend resources
     updated = models.DateTimeField(auto_now_add=True)
     # Backend resources
@@ -101,8 +100,6 @@ class Backend(models.Model):
                                             null=False)
     ctotal = models.PositiveIntegerField('Total number of logical processors',
                                          default=0, null=False)
-    # Custom object manager to protect from cascade delete
-    objects = ProtectedDeleteManager()
 
     HYPERVISORS = (
         ("kvm", "Linux KVM hypervisor"),
@@ -158,24 +155,6 @@ class Backend(models.Model):
             # Populate the new hash to the new instances
             self.virtual_machines.filter(deleted=False)\
                                  .update(backend_hash=self.hash)
-
-    def delete(self, *args, **kwargs):
-        # Integrity Error if non-deleted VMs are associated with Backend
-        if self.virtual_machines.filter(deleted=False).count():
-            raise IntegrityError("Non-deleted virtual machines are associated "
-                                 "with backend: %s" % self)
-        else:
-            # ON_DELETE = SET NULL
-            for vm in self.virtual_machines.all():
-                vm.backend = None
-                vm.save()
-            self.virtual_machines.all().backend = None
-            # Remove BackendNetworks of this Backend.
-            # Do not use networks.all().delete(), since delete() method of
-            # BackendNetwork will not be called!
-            for net in self.networks.all():
-                net.delete()
-            super(Backend, self).delete(*args, **kwargs)
 
     def __init__(self, *args, **kwargs):
         super(Backend, self).__init__(*args, **kwargs)
@@ -319,18 +298,20 @@ class VirtualMachine(models.Model):
     userid = models.CharField('User ID of the owner', max_length=100,
                               db_index=True, null=False)
     backend = models.ForeignKey(Backend, null=True,
-                                related_name="virtual_machines",)
+                                related_name="virtual_machines",
+                                on_delete=models.PROTECT)
     backend_hash = models.CharField(max_length=128, null=True, editable=False)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     imageid = models.CharField(max_length=100, null=False)
     hostid = models.CharField(max_length=100)
-    flavor = models.ForeignKey(Flavor)
+    flavor = models.ForeignKey(Flavor, on_delete=models.PROTECT)
     deleted = models.BooleanField('Deleted', default=False, db_index=True)
     suspended = models.BooleanField('Administratively Suspended',
                                     default=False)
     serial = models.ForeignKey(QuotaHolderSerial,
-                               related_name='virtual_machine', null=True)
+                               related_name='virtual_machine', null=True,
+                               on_delete=models.SET_NULL)
 
     # VM State
     # The following fields are volatile data, in the sense
@@ -358,8 +339,6 @@ class VirtualMachine(models.Model):
     # by the API
     task = models.CharField(max_length=64, null=True)
     task_job_id = models.BigIntegerField(null=True)
-
-    objects = ForUpdateManager()
 
     def get_client(self):
         if self.backend:
@@ -425,7 +404,8 @@ class VirtualMachine(models.Model):
 class VirtualMachineMetadata(models.Model):
     meta_key = models.CharField(max_length=50)
     meta_value = models.CharField(max_length=500)
-    vm = models.ForeignKey(VirtualMachine, related_name='metadata')
+    vm = models.ForeignKey(VirtualMachine, related_name='metadata',
+                           on_delete=models.CASCADE)
 
     class Meta:
         unique_together = (('meta_key', 'vm'),)
@@ -527,9 +507,7 @@ class Network(models.Model):
                                                             size=0),
                                 null=True)
     serial = models.ForeignKey(QuotaHolderSerial, related_name='network',
-                               null=True)
-
-    objects = ForUpdateManager()
+                               null=True, on_delete=models.SET_NULL)
 
     def __unicode__(self):
         return "<Network: %s>" % str(self.id)
@@ -641,8 +619,10 @@ class BackendNetwork(models.Model):
         'OP_NETWORK_QUERY_DATA': None
     }
 
-    network = models.ForeignKey(Network, related_name='backend_networks')
-    backend = models.ForeignKey(Backend, related_name='networks')
+    network = models.ForeignKey(Network, related_name='backend_networks',
+                                on_delete=models.CASCADE)
+    backend = models.ForeignKey(Backend, related_name='networks',
+                                on_delete=models.PROTECT)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     deleted = models.BooleanField('Deleted', default=False)
@@ -692,13 +672,16 @@ class NetworkInterface(models.Model):
     STATES = (
         ("ACTIVE", "Active"),
         ("BUILDING", "Building"),
+        ("ERROR", "Error"),
     )
 
-    machine = models.ForeignKey(VirtualMachine, related_name='nics')
-    network = models.ForeignKey(Network, related_name='nics')
+    machine = models.ForeignKey(VirtualMachine, related_name='nics',
+                                on_delete=models.CASCADE)
+    network = models.ForeignKey(Network, related_name='nics',
+                                on_delete=models.CASCADE)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
-    index = models.IntegerField(null=False)
+    index = models.IntegerField(null=True)
     mac = models.CharField(max_length=32, null=True, unique=True)
     ipv4 = models.CharField(max_length=15, null=True)
     ipv6 = models.CharField(max_length=100, null=True)
@@ -722,21 +705,25 @@ class NetworkInterface(models.Model):
                                                deleted=False).exists()
         return False
 
+    class Meta:
+        # Assert than an IPv4 address from the same network will not be
+        # assigned to more than one NICs
+        unique_together = ("network", "ipv4")
+
 
 class FloatingIP(models.Model):
     userid = models.CharField("UUID of the owner", max_length=128,
                               null=False, db_index=True)
     ipv4 = models.IPAddressField(null=False, unique=True, db_index=True)
     network = models.ForeignKey(Network, related_name="floating_ips",
-                                null=False)
+                                null=False, on_delete=models.CASCADE)
     machine = models.ForeignKey(VirtualMachine, related_name="floating_ips",
-                                null=True)
+                                null=True, on_delete=models.CASCADE)
     created = models.DateTimeField(auto_now_add=True)
     deleted = models.BooleanField(default=False, null=False)
     serial = models.ForeignKey(QuotaHolderSerial,
-                               related_name="floating_ips", null=True)
-
-    objects = ForUpdateManager()
+                               related_name="floating_ips", null=True,
+                               on_delete=models.SET_NULL)
 
     def __unicode__(self):
         return "<FIP: %s@%s>" % (self.ipv4, self.network.id)
@@ -757,8 +744,6 @@ class PoolTable(models.Model):
     base = models.CharField(null=True, max_length=32)
     offset = models.IntegerField(null=True)
 
-    objects = ForUpdateManager()
-
     class Meta:
         abstract = True
 
@@ -778,18 +763,27 @@ class PoolTable(models.Model):
 class BridgePoolTable(PoolTable):
     manager = pools.BridgePool
 
+    def __unicode__(self):
+        return u"<BridgePool id:%s>" % self.id
+
 
 class MacPrefixPoolTable(PoolTable):
     manager = pools.MacPrefixPool
+
+    def __unicode__(self):
+        return u"<MACPrefixPool id:%s>" % self.id
 
 
 class IPPoolTable(PoolTable):
     manager = pools.IPPool
 
+    def __unicode__(self):
+        return u"<IPv4AdressPool, network: %s>" % self.network
+
 
 @contextmanager
 def pooled_rapi_client(obj):
-        if isinstance(obj, VirtualMachine):
+        if isinstance(obj, (VirtualMachine, BackendNetwork)):
             backend = obj.backend
         else:
             backend = obj
@@ -848,7 +842,8 @@ class VirtualMachineDiagnostic(models.Model):
     objects = VirtualMachineDiagnosticManager()
 
     created = models.DateTimeField(auto_now_add=True)
-    machine = models.ForeignKey('VirtualMachine', related_name="diagnostics")
+    machine = models.ForeignKey('VirtualMachine', related_name="diagnostics",
+                                on_delete=models.CASCADE)
     level = models.CharField(max_length=20, choices=TYPES)
     source = models.CharField(max_length=100)
     source_date = models.DateTimeField(null=True)

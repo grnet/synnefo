@@ -36,6 +36,7 @@ import distribute_setup
 distribute_setup.use_setuptools()
 
 import os
+import sys
 
 from distutils.util import convert_path
 from fnmatch import fnmatchcase
@@ -59,8 +60,8 @@ CLASSIFIERS = []
 INSTALL_REQUIRES = [
     'snf-common',
     'snf-pithos-backend',
-    'Django>=1.2, <1.3',
-    'objpool>=0.2',
+    'Django>=1.4, <1.5',
+    'objpool>=0.3',
     'astakosclient',
     'snf-django-lib',
     'snf-webproject',

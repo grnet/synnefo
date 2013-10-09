@@ -48,12 +48,11 @@ The extended class provides the following:
 - override of --version command to display the snf-webproject version
 """
 
-from django.core.management import ManagementUtility, setup_environ, \
+from django.core.management import ManagementUtility, \
     BaseCommand, LaxOptionParser, handle_default_options, find_commands, \
     load_command_class
 
 from django.core import management
-from django.utils.importlib import import_module
 from optparse import make_option
 from synnefo.util.version import get_component_version
 from synnefo.lib.dictconfig import dictConfig
@@ -174,14 +173,6 @@ def get_commands():
         except (AttributeError, EnvironmentError, ImportError):
             apps = []
 
-        # Find the project directory
-        try:
-            from django.conf import settings
-            module = import_module(settings.SETTINGS_MODULE)
-            project_directory = setup_environ(module, settings.SETTINGS_MODULE)
-        except (AttributeError, EnvironmentError, ImportError, KeyError):
-            project_directory = None
-
         # Find and load the management module for each installed app.
         for app_name in apps:
             try:
@@ -191,16 +182,10 @@ def get_commands():
             except ImportError:
                 pass  # No management module - ignore this app
 
-        if project_directory:
+        if apps:
             # Remove the "startproject" command from self.commands, because
             # that's a django-admin.py command, not a manage.py command.
             del _commands['startproject']
-
-            # Override the startapp command so that it always uses the
-            # project_directory, not the current working directory
-            # (which is default).
-            from django.core.management.commands.startapp import ProjectCommand
-            _commands['startapp'] = ProjectCommand(project_directory)
 
     return _commands
 
@@ -343,8 +328,6 @@ class EncodedStdOut(object):
 
 
 def main():
-    # no need to run setup_environ
-    # we already know our project
     os.environ['DJANGO_SETTINGS_MODULE'] = \
         os.environ.get('DJANGO_SETTINGS_MODULE', 'synnefo.settings')
     configure_logging()

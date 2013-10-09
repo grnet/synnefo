@@ -89,10 +89,27 @@ class ServerReconciliationTest(TestCase):
         vm1 = mfactory.VirtualMachineFactory(backend=self.backend,
                                              deleted=False,
                                              operstate="ERROR")
+
         with mocked_quotaholder():
             self.reconciler.reconcile()
         vm1 = VirtualMachine.objects.get(id=vm1.id)
-        self.assertTrue(vm1.deleted)
+        self.assertFalse(vm1.deleted)
+        vm2 = mfactory.VirtualMachineFactory(backend=self.backend,
+                                             deleted=False,
+                                             action="DESTROY",
+                                             operstate="ERROR")
+        with mocked_quotaholder():
+            self.reconciler.reconcile()
+        vm2 = VirtualMachine.objects.get(id=vm2.id)
+        self.assertTrue(vm2.deleted)
+        vm3 = mfactory.VirtualMachineFactory(backend=self.backend,
+                                             deleted=False,
+                                             action="DESTROY",
+                                             operstate="ACTIVE")
+        with mocked_quotaholder():
+            self.reconciler.reconcile()
+        vm3 = VirtualMachine.objects.get(id=vm3.id)
+        self.assertTrue(vm3.deleted)
 
     def test_orphan_server(self, mrapi):
         cmrapi = self.reconciler.client

@@ -32,16 +32,25 @@
 # or implied, of GRNET S.A.
 
 from functools import partial
-from django.conf.urls.defaults import include, patterns
+from django.conf.urls import include, patterns
+
 from snf_django.lib.api.proxy import proxy
 from snf_django.lib.api.utils import prefix_pattern
 from snf_django.lib.api.urls import api_patterns
 from snf_django.lib.api import api_endpoint_not_found
+from snf_django.utils.urls import extend_endpoint_with_slash
 from pithos.api.settings import (
+    pithos_services,
     BASE_PATH, ASTAKOS_BASE_URL, BASE_ASTAKOS_PROXY_PATH,
     ASTAKOS_ACCOUNTS_PREFIX, PROXY_USER_SERVICES,
     PITHOS_PREFIX, PUBLIC_PREFIX, UI_PREFIX)
 
+
+urlpatterns = []
+
+# Redirects should be first, otherwise they may get overridden by wildcards
+extend_endpoint_with_slash(urlpatterns, pithos_services, "pithos_ui")
+extend_endpoint_with_slash(urlpatterns, pithos_services, "pithos_public")
 
 # TODO: This only works when in this order.
 pithos_api_patterns = api_patterns(
@@ -69,7 +78,7 @@ pithos_patterns = patterns(
     (r'{0}'.format(prefix_pattern(UI_PREFIX)),
         include(pithos_view_patterns)))
 
-urlpatterns = patterns(
+urlpatterns += patterns(
     '',
     (prefix_pattern(BASE_PATH), include(pithos_patterns)),
 )

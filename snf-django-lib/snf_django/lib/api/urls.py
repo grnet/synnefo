@@ -33,28 +33,25 @@
 
 from django.core import urlresolvers
 from django.views.decorators import csrf
-from django.conf.urls.defaults import patterns
+from django.conf.urls import patterns
 
 
 def _patch_pattern(regex_pattern):
     """
     Patch pattern callback using csrf_exempt. Enforce
     RegexURLPattern callback to get resolved if required.
-    """
-    if not regex_pattern._callback:
-        # enforce _callback resolving
-        regex_pattern._get_callback()
 
+    """
     regex_pattern._callback = \
-        csrf.csrf_exempt(regex_pattern._callback)
+        csrf.csrf_exempt(regex_pattern.callback)
 
 
 def _patch_resolver(r):
     """
     Patch all patterns found in resolver with _patch_pattern
     """
-    if hasattr(r, '_get_url_patterns'):
-        entries = r._get_url_patterns()
+    if hasattr(r, 'url_patterns'):
+        entries = r.url_patterns
     else:
         # first level view in patterns ?
         entries = [r]

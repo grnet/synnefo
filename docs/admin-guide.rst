@@ -6,42 +6,45 @@ Synnefo Administrator's Guide
 This is the complete Synnefo Administrator's Guide.
 
 
+.. _syn+archip:
 
 General Synnefo Architecture
 ============================
 
-The following graph shows the whole Synnefo architecture and how it interacts
-with multiple Ganeti clusters. We hope that after reading the Administrator's
-Guide you will be able to understand every component and all the interactions
-between them. It is a good idea to first go through the Administrator's Guide
-before proceeding.
+The following figure shows a detailed view of the whole Synnefo architecture
+and how it interacts with multiple Ganeti clusters. We hope that after reading
+the Administrator's Guide you will be able to understand every component and
+all the interactions between them.
 
 .. image:: images/synnefo-arch2.png
    :width: 100%
    :target: _images/synnefo-arch2.png
 
+Synnefo also supports RADOS as an alternative storage backend for
+Files/Images/VM disks. You will find the :ref:`corresponding figure
+<syn+archip+rados>` later in this guide.
 
 
 Identity Service (Astakos)
 ==========================
 
 
-Overview
---------
-
 Authentication methods
-~~~~~~~~~~~~~~~~~~~~~~
+----------------------
 
-Local Authentication
-````````````````````
+Astakos supports multiple authentication methods:
 
-LDAP Authentication
-```````````````````
+ * local username/password
+ * LDAP / Active Directory
+ * SAML 2.0 (Shibboleth) federated logins
+ * Google
+ * Twitter
+ * LinkedIn
 
 .. _shibboleth-auth:
 
 Shibboleth Authentication
-`````````````````````````
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Astakos can delegate user authentication to a Shibboleth federation.
 
@@ -90,7 +93,7 @@ Finally, add 'shibboleth' in ``ASTAKOS_IM_MODULES`` list. The variable resides
 inside the file ``/etc/synnefo/20-snf-astakos-app-settings.conf``
 
 Twitter Authentication
-```````````````````````
+~~~~~~~~~~~~~~~~~~~~~~
 
 To enable twitter authentication while signed in under a Twitter account,
 visit dev.twitter.com/apps.
@@ -104,9 +107,8 @@ Fill the necessary information and for callback URL give::
 Finally, add 'twitter' in ``ASTAKOS_IM_MODULES`` list. The variable resides
 inside the file ``/etc/synnefo/20-snf-astakos-app-settings.conf``
 
-
 Google Authentication
-`````````````````````
+~~~~~~~~~~~~~~~~~~~~~
 
 To enable google authentication while signed in under a Google account,
 visit https://code.google.com/apis/console/.
@@ -123,17 +125,6 @@ Fill the necessary information and for callback URL give::
 Finally, add 'google' in ``ASTAKOS_IM_MODULES`` list. The variable resides
 inside the file ``/etc/synnefo/20-snf-astakos-app-settings.conf``
 
-Architecture
-------------
-
-Prereqs
--------
-
-Installation
-------------
-
-Configuration
--------------
 
 Working with Astakos
 --------------------
@@ -161,11 +152,9 @@ command:
   email               : user@synnefo.org
   ....
 
-
-Based on how your configuration of `astakos-app`, there are several ways for a 
-user to get activated and be able to login. We discuss the user activation 
-flow in the following section.
-
+Based on the `astakos-app` configuration, there are several ways for a user to
+get verified and activated in order to be able to login. We discuss the user
+verification and activation flow in the following section.
 
 User activation flow
 ````````````````````
@@ -174,7 +163,6 @@ A user can register for an account using the astakos signup form. Once the form
 is submited successfully a user entry is created in astakos database. That entry
 is passed through the astakos activation backend which handles whether the user
 should be automatically verified and activated.
-
 
 Email verification
 ``````````````````
@@ -196,15 +184,14 @@ At this stage:
     * administrator may also enforce a user to get verified using the
       ``snf-manage user-modify --verify <userid>`` command.
 
-
 Account activation
 ``````````````````
 
-Once user gets verified it is time for astakos to decide whether or not to
+Once the user gets verified, it is time for Astakos to decide whether or not to
 proceed through user activation process. If ``ASTAKOS_MODERATION_ENABLED``
 setting is set to ``False`` (default value) user gets activated automatically. 
 
-In case the moderation is enabled astakos may still automatically activate the
+In case the moderation is enabled Astakos may still automatically activate the
 user in the following cases:
 
     * User email matches any of the regular expressions defined in
@@ -213,11 +200,12 @@ user in the following cases:
       activation is enabled (see 
       :ref:`authentication methods policies <auth_methods_policies>`).
 
-If all of the above fail to trigger automatic activation, an email is sent 
-to the persons listed in ``HELPDESK``, ``MANAGERS`` and ``ADMINS`` settings, 
-notifing that there is a new user pending for moderation and that it's 
-up to the administrator to decide if the user should be activated, using the 
-``user-modify`` command.
+If all of the above fail to trigger automatic activation, an email is sent to
+the persons listed in ``HELPDESK``, ``MANAGERS`` and ``ADMINS`` settings,
+notifing that there is a new user pending for moderation and that it's up to
+the administrator to decide if the user should be activated. The UI also shows
+a corresponding 'pending moderation' message to the user. The administrator can
+activate a user using the ``snf-manage user-modify`` command:
 
 .. code-block:: console
 
@@ -227,11 +215,10 @@ up to the administrator to decide if the user should be activated, using the
     # command to reject a pending user
     $ snf-manage user-modify --reject --reject-reason="spammer" <userid>
 
-Once activation process finish, a greeting message is sent to the user email
-address and a notification for the activation to the persons listed in 
-``HELPDESK``, ``MANAGERS`` and ``ADMINS`` settings. Once activated the user is 
-able to login and access the synnefo services.
-
+Once the activation process finishes, a greeting message is sent to the user
+email address and a notification for the activation to the persons listed in
+``HELPDESK``, ``MANAGERS`` and ``ADMINS`` settings. Once activated the user is
+able to login and access the Synnefo services.
 
 Additional authentication methods
 `````````````````````````````````
@@ -293,6 +280,20 @@ locally signed up users under moderation you can apply the following settings.
     ASTAKOS_AUTH_PROVIDER_SHIBBOLETH_AUTOMODERATE_POLICY = True
     ASTAKOS_AUTH_PROVIDER_SHIBBOLETH_REMOVE_POLICY = False
 
+User login
+~~~~~~~~~~
+
+During the logging procedure, the user is authenticated by the respective
+identity provider.
+
+If ``ASTAKOS_RECAPTCHA_ENABLED`` is set and the user fails several times
+(``ASTAKOS_RATELIMIT_RETRIES_ALLOWED`` setting) to provide the correct
+credentials for a local account, he/she is then prompted to solve a captcha
+challenge.
+
+Upon success, the system renews the token (if it has expired), logins the user
+and sets the cookie, before redirecting the user to the ``next`` parameter
+value.
 
 Setting quota limits
 ~~~~~~~~~~~~~~~~~~~~
@@ -377,9 +378,9 @@ html file that will contain your terms. For example, create the file
 
 .. code-block:: console
 
-   <h1>~okeanos terms</h1>
+   <h1>My cloud service terms</h1>
 
-   These are the example terms for ~okeanos
+   These are the example terms for my cloud service
 
 Then, add those terms-of-use with the snf-manage command:
 
@@ -389,6 +390,15 @@ Then, add those terms-of-use with the snf-manage command:
 
 Your terms have been successfully added and you will see the corresponding link
 appearing in the Astakos web pages' footer.
+
+During the account registration, if there are approval terms, the user is
+presented with an "I agree with the Terms" checkbox that needs to get checked
+in order to proceed.
+
+In case there are new approval terms that the user has not signed yet, the
+``signed_terms_required`` view decorator redirects to the ``approval_terms``
+view, so the user will be presented with the new terms the next time he/she
+logins.
 
 Enabling reCAPTCHA
 ~~~~~~~~~~~~~~~~~~
@@ -417,100 +427,76 @@ Checkout your new Sign up page. If you see the reCAPTCHA box, you have setup
 everything correctly.
 
 
+Astakos internals
+-----------------
 
-File Storage Service (Pithos)
-=============================
+X-Auth-Token
+~~~~~~~~~~~~
 
-Overview
---------
+Alice requests a specific resource from a cloud service e.g.: Pithos. In the
+request she supplies the `X-Auth-Token` to identify whether she is eligible to
+perform the specific task. The service contacts Astakos through its
+``/account/v1.0/authenticate`` api call (see :ref:`authenticate-api-label`)
+providing the specific ``X-Auth-Token``. Astakos checkes whether the token
+belongs to an active user and it has not expired and returns a dictionary
+containing user related information. Finally the service uses the ``uniq``
+field included in the dictionary as the account string to identify the user
+accessible resources.
 
-Architecture
-------------
+.. _authentication-label:
 
-Prereqs
--------
+Django Auth methods and Backends
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Installation
-------------
+Astakos incorporates Django user authentication system and extends its User model.
 
-Configuration
--------------
+Since username field of django User model has a limitation of 30 characters,
+AstakosUser is **uniquely** identified by the ``email`` instead. Therefore,
+``astakos.im.authentication_backends.EmailBackend`` is served to authenticate a
+user using email if the first argument is actually an email, otherwise tries
+the username.
 
-Working with Pithos
--------------------
+A new AstakosUser instance is assigned with a uui as username and also with a
+``auth_token`` used by the cloud services to authenticate the user.
+``astakos.im.authentication_backends.TokenBackend`` is also specified in order
+to authenticate the user using the email and the token fields.
 
-Pithos advanced operations
---------------------------
+Logged on users can perform a number of actions:
+
+ * access and edit their profile via: ``/im/profile``.
+ * change their password via: ``/im/password``
+ * send feedback for grnet services via: ``/im/send_feedback``
+ * logout (and delete cookie) via: ``/im/logout``
+
+Internal Astakos requests are handled using cookie-based Django user sessions.
+
+External systems should forward to the ``/login`` URI. The server,
+depending on its configuration will redirect to the appropriate login page.
+When done with logging in, the service's login URI should redirect to the URI
+provided with next, adding user and token parameters, which contain the email
+and token fields respectively.
+
+The login URI accepts the following parameters:
+
+======================  =========================
+Request Parameter Name  Value
+======================  =========================
+next                    The URI to redirect to when the process is finished
+renew                   Force token renewal (no value parameter)
+force                   Force logout current user (no value parameter)
+======================  =========================
+
+External systems inside the ``ASTAKOS_COOKIE_DOMAIN`` scope can acquire the
+user information by the cookie identified by ``ASTAKOS_COOKIE_NAME`` setting
+(set during the login procedure).
+
+Finally, backend systems having acquired a token can use the
+:ref:`authenticate-api-label` API call from a private network or through HTTPS.
 
 
 
 Compute/Network/Image Service (Cyclades)
 ========================================
-
-Compute Overview
-----------------
-
-Network Overview
-----------------
-
-Image Overview
---------------
-
-Architecture
-------------
-
-Asynchronous communication with Ganeti backends
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Synnefo uses Google Ganeti backends for VM cluster management. In order for
-Cyclades to be able to handle thousands of user requests, Cyclades and Ganeti
-communicate asynchronously. Briefly, requests are submitted to Ganeti through
-Ganeti's RAPI/HTTP interface, and then asynchronous notifications about the
-progress of Ganeti jobs are being created and pushed upwards to Cyclades. The
-architecture and communication with a Ganeti backend is shown in the graph
-below:
-
-.. image:: images/cyclades-ganeti-communication.png
-   :width: 50%
-   :target: _images/cyclades-ganeti-communication.png
-
-The Cyclades API server is responsible for handling user requests. Read-only
-requests are directly served by looking up the Cyclades DB. If the request
-needs an action in the Ganeti backend, Cyclades submit jobs to the Ganeti
-master using the `Ganeti RAPI interface
-<http://docs.ganeti.org/ganeti/2.2/html/rapi.html>`_.
-
-While Ganeti executes the job, `snf-ganeti-eventd`, `snf-ganeti-hook` and
-`snf-progress-monitor` are monitoring the progress of the job and send
-corresponding messages to the RabbitMQ servers. These components are part
-of `snf-cyclades-gtools` and must be installed on all Ganeti nodes. Specially:
-
-* *snf-ganeti-eventd* sends messages about operations affecting the operating
-  state of instances and networks. Works by monitoring the Ganeti job queue.
-* *snf-ganeti_hook* sends messages about the NICs of instances. It includes a
-  number of `Ganeti hooks <http://docs.ganeti.org/ganeti/2.2/html/hooks.html>`_
-  for customisation of operations.
-* *snf-progress_monitor* sends messages about the progress of the Image deployment
-  phase which is done by the Ganeti OS Definition `snf-image`.
-
-Finally, `snf-dispatcher` consumes messages from the RabbitMQ queues, processes
-these messages and properly updates the state of the Cyclades DB. Subsequent
-requests to the Cyclades API, will retrieve the updated state from the DB.
-
-
-Prereqs
--------
-
-Work in progress. Please refer to :ref:`administrator's install quide <quick-install-admin-guide>`.
-
-Installation
-------------
-
-Work in progress. Please refer to :ref:`administrator's install quide <quick-install-admin-guide>`.
-
-Configuration
--------------
-
-Work in progress. Please refer to :ref:`administrator's install quide <quick-install-admin-guide>`.
 
 Working with Cyclades
 ---------------------
@@ -617,6 +603,32 @@ between users and backends. If the user is found in ``BACKEND_PER_USER``, then
 Synnefo allocates all his/hers VMs to the specific backend in the variable,
 even if is marked as drained (useful for testing).
 
+Allocation based on disk-templates
+**********************************
+
+Besides the available resources of each Ganeti backend, the allocator takes
+into consideration the disk template of the instance when trying to allocate it
+to a Ganeti backend. Specifically, the allocator checks if the flavor of the
+instance belongs to the available disk templates of each Ganeti backend.
+
+A Ganeti cluster has a list of enabled disk templates
+(`--enabled-disk-templates`) and a list of allowed disk templates for new
+instances (`--ipolicy-disk-templates`). See the `gnt-cluster` manpage for more
+details about these options.
+
+When Synnefo allocates an instance, it checks whether the disk template of the
+new instance belongs both in the enabled and ipolicy disk templates. You can
+see the list of the available disk-templates by running `snf-manage
+backend-list`. This list should be updated automatically after changing
+these options in Ganeti and it can also be updated by running `snf-manage
+backend-update-status`.
+
+So the administrator, can route instances on different backends based on their
+flavor disk template, by modifying the enabled or ipolicy disk templates of
+each backend.  Also, the administrator can route instances between different
+nodes of the same Ganeti backend, by modifying the same options at the
+nodegroup level (see `gnt-group` manpage for mor details).
+
 
 Managing Virtual Machines
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -678,18 +690,38 @@ these resources are:
 * One Bridge corresponding to one physical VLAN which is required for networks of
   type `PRIVATE_MAC_PREFIX`.
 
-Cyclades allocates those resources from pools that are created by the
-administrator with the `snf-manage pool-create` management command.
+IPv4 addresses
+**************
 
-Pool Creation
-`````````````
-Pools are created using the `snf-manage pool-create` command:
+An allocation pool of IPv4 addresses is automatically created for every network
+that has the attribute `dhcp` set to True. The allocation pool contains the
+range of IP addresses that are included in the subnet. The gateway and the
+broadcast address of the network are excluded from the allocation pool. The
+admin can externally reserve IP addresses to exclude them from automatic
+allocation with the `--add-reserved-ips` option of `snf-manage network-modify`
+command. For example the following command will reserve two IP addresses
+from network with ID `42`:
+
+.. code-block:: console
+
+ snf-manage network-modify --add-reserved-ips=10.0.0.21,10.0.0.22 42
+
+.. warning:: Externally reserving IP addresses is also available at the Ganeti.
+ However, when using Cyclades with multiple Ganeti backends, the handling of
+ IP pools must be performed from Cyclades!
+
+Bridges
+*******
+
+As already mentioned Cyclades use a pool of Bridges that must correspond
+to Physical VLAN at the Ganeti level. A bridge from the pool is assigned to
+each network of flavor `PHYSICAL_VLAN`. Creation of this pool is done
+using `snf-manage pool-create` command. For example the following command
+will create a pool containing the brdiges from `prv1` to `prv21`.
 
 .. code-block:: console
 
    # snf-manage pool-create --type=bridge --base=prv --size=20
-
-will create a pool of bridges, containing bridges prv1, prv2,..prv21.
 
 You can verify the creation of the pool, and check its contents by running:
 
@@ -698,16 +730,32 @@ You can verify the creation of the pool, and check its contents by running:
    # snf-manage pool-list
    # snf-manage pool-show --type=bridge 1
 
-With the same commands you can handle a pool of MAC prefixes. For example:
+Finally you can use the `pool-modify` management command in order to externally
+reserve the values from pool, extend or shrink the pool if possible.
+
+MAC Prefixes
+************
+
+Cyclades also use a pool of MAC prefixes to assign to networks of flavor
+`MAC_FILTERED`. Handling of this pool is done exactly as with pool of bridges,
+except that the type option must be set to mac-prefix:
 
 .. code-block:: console
 
    # snf-manage pool-create --type=mac-prefix --base=aa:00:0 --size=65536
 
-will create a pool of MAC prefixes from ``aa:00:1`` to ``b9:ff:f``. The MAC
-prefix pool is responsible for providing only unicast and locally administered
-MAC addresses, so many of these prefixes will be externally reserved, to
-exclude from allocation.
+The above command will create a pool of MAC prefixes from ``aa:00:1`` to
+``b9:ff:f``. The MAC prefix pool is responsible for providing only unicast and
+locally administered MAC addresses, so many of these prefixes will be
+externally reserved, to exclude from allocation.
+
+Pool reconciliation
+*******************
+
+The management command `snf-manage reconcile-pools` can be used that all the
+above mentioned pools are consistent and that all values that come from the
+pool are not used more than once.
+
 
 Cyclades advanced operations
 ----------------------------
@@ -744,7 +792,6 @@ Adding the `--fix-all` option, will do the actual synchronization:
 
 Please see ``snf-manage reconcile --help`` for all the details.
 
-
 Reconciling Networks
 ````````````````````
 
@@ -768,6 +815,47 @@ Adding the `--fix-all` option, will do the actual synchronization:
   $ snf-manage reconcile-networks --fix-all
 
 Please see ``snf-manage reconcile-networks --help`` for all the details.
+
+
+Cyclades internals
+------------------
+
+Asynchronous communication with Ganeti backends
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Synnefo uses Google Ganeti backends for VM cluster management. In order for
+Cyclades to be able to handle thousands of user requests, Cyclades and Ganeti
+communicate asynchronously. Briefly, requests are submitted to Ganeti through
+Ganeti's RAPI/HTTP interface, and then asynchronous notifications about the
+progress of Ganeti jobs are being created and pushed upwards to Cyclades. The
+architecture and communication with a Ganeti backend is shown in the graph
+below:
+
+.. image:: images/cyclades-ganeti-communication.png
+   :width: 50%
+   :target: _images/cyclades-ganeti-communication.png
+
+The Cyclades API server is responsible for handling user requests. Read-only
+requests are directly served by looking up the Cyclades DB. If the request
+needs an action in the Ganeti backend, Cyclades submit jobs to the Ganeti
+master using the `Ganeti RAPI interface
+<http://docs.ganeti.org/ganeti/2.2/html/rapi.html>`_.
+
+While Ganeti executes the job, `snf-ganeti-eventd`, `snf-ganeti-hook` and
+`snf-progress-monitor` are monitoring the progress of the job and send
+corresponding messages to the RabbitMQ servers. These components are part
+of `snf-cyclades-gtools` and must be installed on all Ganeti nodes. Specially:
+
+* *snf-ganeti-eventd* sends messages about operations affecting the operating
+  state of instances and networks. Works by monitoring the Ganeti job queue.
+* *snf-ganeti_hook* sends messages about the NICs of instances. It includes a
+  number of `Ganeti hooks <http://docs.ganeti.org/ganeti/2.2/html/hooks.html>`_
+  for customisation of operations.
+* *snf-progress_monitor* sends messages about the progress of the Image deployment
+  phase which is done by the Ganeti OS Definition `snf-image`.
+
+Finally, `snf-dispatcher` consumes messages from the RabbitMQ queues, processes
+these messages and properly updates the state of the Cyclades DB. Subsequent
+requests to the Cyclades API, will retrieve the updated state from the DB.
 
 
 
@@ -1040,6 +1128,7 @@ commission-show               Show details for a pending commission
 component-add                 Register a component
 component-list                List components
 component-modify              Modify component attributes
+component-show                Show component details
 project-control               Manage projects and applications
 project-list                  List projects
 project-show                  Show project details
@@ -1301,7 +1390,7 @@ uncommenting and setting the following:
   BRANDING_COMPANY_URL = 'https://www.company-ltd.synnefo.org/'
 
 
-**Copyright options:**
+**Copyright and footer options:**
 
 By default, no Copyright message is shown in the UI footer. If you want to make
 it visible in the footer of Astakos, Pithos and Cyclades UI, you can uncomment
@@ -1318,6 +1407,15 @@ setting the following option:
 .. code-block:: python
 
   BRANDING_COPYRIGHT_MESSAGE = 'Copyright (c) 2011-2013 GRNET'
+
+If you want to include a custom message in the footer, you can uncomment and 
+set the ``BRANDING_FOOTER_EXTRA_MESSAGE`` setting. You can use html markup. 
+Your custom message will appear  above Copyright message at the Compute 
+templates and the Dashboard UI.
+
+.. code-block:: python
+
+  #BRANDING_FOOTER_EXTRA_MESSAGE = ''
 
 
 **Images:**
@@ -1803,12 +1901,16 @@ Upgrade Notes
    v0.12 -> v0.13 <upgrade/upgrade-0.13>
    v0.13 -> v0.14 <upgrade/upgrade-0.14>
    v0.14 -> v0.14.2 <upgrade/upgrade-0.14.2>
+   v0.14.5 -> v0.14.6 <upgrade/upgrade-0.14.6>
+   v0.14 -> v0.15 <upgrade/upgrade-0.15>
 
 
 Changelog, NEWS
 ===============
 
 
+* v0.14.7 :ref:`Changelog <Changelog-0.14.6>`, :ref:`NEWS <NEWS-0.14.7>`
+* v0.14.6 :ref:`Changelog <Changelog-0.14.6>`, :ref:`NEWS <NEWS-0.14.6>`
 * v0.14.5 :ref:`Changelog <Changelog-0.14.5>`, :ref:`NEWS <NEWS-0.14.5>`
 * v0.14.4 :ref:`Changelog <Changelog-0.14.4>`, :ref:`NEWS <NEWS-0.14.4>`
 * v0.14.3 :ref:`Changelog <Changelog-0.14.3>`, :ref:`NEWS <NEWS-0.14.3>`

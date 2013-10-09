@@ -693,7 +693,7 @@
 
         get_connectable_vms: function() {
             return storage.vms.filter(function(vm){
-                return !vm.in_error_state() && !vm.is_building();
+                return !vm.in_error_state() && !vm.is_building() && !vm.is_rebooting();
             });
         },
 
@@ -1168,6 +1168,10 @@
             return models.VM.BUILDING_STATES.indexOf(this.state()) > -1;
         },
         
+        is_rebooting: function() {
+            return this.state() == 'REBOOT';
+        },
+
         in_error_state: function() {
             return this.state() === "ERROR"
         },
@@ -1438,7 +1442,7 @@
                 case 'reboot':
                     this.__make_api_call(this.get_action_url(), // vm actions url
                                          "create", // create so that sync later uses POST to make the call
-                                         {reboot:{type:"HARD"}}, // payload
+                                         {reboot:{}}, // payload
                                          function() {
                                              // set state after successful call
                                              self.state("REBOOT"); 

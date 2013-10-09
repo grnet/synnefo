@@ -31,13 +31,14 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from sqlalchemy.sql import select, literal, or_
+from sqlalchemy.sql import select, literal, or_, and_
 from sqlalchemy.sql.expression import join, union
 
 from xfeatures import XFeatures
 from groups import Groups
 from public import Public
 from node import Node
+from collections import defaultdict
 
 from dbworker import ESCAPE_CHAR
 
@@ -80,6 +81,23 @@ class Permissions(XFeatures, Groups, Public, Node):
             self.feature_setmany(feature, READ, r)
         if w:
             self.feature_setmany(feature, WRITE, w)
+
+    def access_get_for_bulk(self, perms):
+        """Get permissions for path."""
+        allowed = None
+        d = defaultdict(list)
+        for value, feature_id, key in perms:
+            d[key].append(value)
+        permissions = d
+        if READ in permissions:
+            allowed = 0
+            permissions['read'] = permissions[READ]
+            del(permissions[READ])
+        if WRITE in permissions:
+            allowed = 1
+            permissions['write'] = permissions[WRITE]
+            del(permissions[WRITE])
+        return (permissions, allowed)
 
     def access_get(self, path):
         """Get permissions for path."""
@@ -139,6 +157,29 @@ class Permissions(XFeatures, Groups, Public, Node):
                 return True
         return False
 
+    def access_check_bulk(self, paths, member):
+        rows = None
+        xfeatures_xfeaturevals = self.xfeaturevals.join(self.xfeatures,
+                onclause=and_(self.xfeatures.c.feature_id ==
+                    self.xfeaturevals.c.feature_id, self.xfeatures.c.path.in_(paths)))
+        s = select([self.xfeatures.c.path,
+                    self.xfeaturevals.c.value,
+                    self.xfeaturevals.c.feature_id,
+                    self.xfeaturevals.c.key], from_obj=[xfeatures_xfeaturevals])
+        r = self.conn.execute(s)
+        rows = r.fetchall()
+        r.close()
+        if rows:
+            access_check_paths = {}
+            for path, value, feature_id, key in rows:
+                try:
+                    access_check_paths[path].append((value, feature_id, key))
+                except KeyError:
+                    access_check_paths[path] = [(value, feature_id, key)]
+            access_check_paths['group_parents'] = self.group_parents(member)
+            return access_check_paths
+        return None
+
     def access_inherit(self, path):
         """Return the paths influencing the access for path."""
 
@@ -157,6 +198,21 @@ class Permissions(XFeatures, Groups, Public, Node):
             if subp != path:
                 valid.append(subp + '/')
         return [x for x in valid if self.xfeature_get(x)]
+
+    def access_inherit_bulk(self, paths):
+        """Return the paths influencing the access for path."""
+
+        # Only keep path components.
+        valid = []
+        for path in paths:
+            parts = path.rstrip('/').split('/')
+            for i in range(1, len(parts)):
+                subp = '/'.join(parts[:i + 1])
+                valid.append(subp)
+                if subp != path:
+                    valid.append(subp + '/')
+        valid = self.xfeature_get_bulk(valid)
+        return [x[1] for x in valid]
 
     def access_list_paths(self, member, prefix=None, include_owned=False,
                           include_containers=True):

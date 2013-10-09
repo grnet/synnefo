@@ -106,9 +106,12 @@ def printable_header_dict(d):
     Format 'last_modified' timestamp.
     """
 
-    if 'last_modified' in d and d['last_modified']:
-        d['last_modified'] = utils.isoformat(
-            datetime.fromtimestamp(d['last_modified']))
+    timestamps = ('last_modified', 'x_container_until_timestamp',
+                  'x_acount_until_timestamp')
+    for timestamp in timestamps:
+        if timestamp in d and d[timestamp]:
+            d[timestamp] = utils.isoformat(
+                    datetime.fromtimestamp(d[timestamp]))
     return dict([(k.lower().replace('-', '_'), v) for k, v in d.iteritems()])
 
 
@@ -1134,15 +1137,11 @@ def view_method():
             request.META['HTTP_X_AUTH_TOKEN'] = token
             # Get the response object
             response = func(request, *args, **kwargs)
-            if response.status_code in [200, 206, 304, 412, 416]:
-                return response
-            elif response.status_code == 404:
+            if response.status_code == 404:
                 raise Http404()
             elif response.status_code in [401, 403]:
                 return HttpResponseForbidden()
-            else:
-                # unexpected response status
-                raise Exception(response.status_code)
+            return response
         return wrapper
     return decorator
 

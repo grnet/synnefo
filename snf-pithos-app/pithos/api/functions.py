@@ -66,7 +66,7 @@ from pithos.api import settings
 
 from pithos.backends.base import (
     NotAllowedError, QuotaError, ContainerNotEmpty, ItemNotExists,
-    VersionNotExists, ContainerExists)
+    VersionNotExists, ContainerExists, InvalidHash)
 
 from pithos.backends.filter import parse_filters
 
@@ -508,7 +508,8 @@ def container_create(request, v_account, v_container):
     return HttpResponse(status=ret)
 
 
-@api_method('POST', format_allowed=True, user_required=True, logger=logger)
+@api_method('POST', format_allowed=True, user_required=True, logger=logger,
+            lock_container_path=True)
 def container_update(request, v_account, v_container):
     # Normal Response Codes: 202
     # Error Response Codes: internalServerError (500),
@@ -563,7 +564,8 @@ def container_update(request, v_account, v_container):
     return response
 
 
-@api_method('DELETE', user_required=True, logger=logger)
+@api_method('DELETE', user_required=True, logger=logger,
+            lock_container_path=True)
 def container_delete(request, v_account, v_container):
     # Normal Response Codes: 204
     # Error Response Codes: internalServerError (500),
@@ -700,17 +702,20 @@ def object_list(request, v_account, v_container):
         if until is None:
             name = '/'.join((v_account, v_container, ''))
             name_idx = len(name)
+            objects_bulk = []
             for x in request.backend.list_object_permissions(
                     request.user_uniq, v_account, v_container, prefix):
 
                 # filter out objects which are not under the container
                 if name != x[:name_idx]:
                     continue
-
-                object = x[name_idx:]
-                object_permissions[object] = \
-                    request.backend.get_object_permissions(
-                        request.user_uniq, v_account, v_container, object)
+                objects_bulk.append(x[name_idx:])
+                
+            if len(objects_bulk) > 0:
+                object_permissions = \
+                    request.backend.get_object_permissions_bulk(
+                        request.user_uniq, v_account, v_container,
+                        objects_bulk)
 
             if request.user_uniq == v_account:
                 # Bring public information only if the request user
@@ -1115,6 +1120,8 @@ def object_write(request, v_account, v_container, v_object):
         raise faults.BadRequest('Invalid sharing header')
     except QuotaError, e:
         raise faults.RequestEntityTooLarge('Quota error: %s' % e)
+    except InvalidHash, e:
+        raise faults.BadRequest('Invalid hash: %s' % e)
     if not checksum and UPDATE_MD5:
         # Update the MD5 after the hashmap, as there may be missing hashes.
         checksum = hashmap_md5(request.backend, hashmap, size)

@@ -1661,7 +1661,7 @@ class TestRunnerProcess(Process):
                     fail.write(str(res[0].shortDescription()) + '\n')
                     fail.write('\n')
                     if not NOFAILFAST:
-                        sys.exit()
+                        sys.exit(1)
 
                 if (len(result.failures) == 0) and (len(result.errors) == 0):
                     log.debug("Passed testcase: %s" % msg)
@@ -1676,6 +1676,8 @@ class TestRunnerProcess(Process):
 
 def _run_cases_in_series(cases, image_folder):
     """Run instances of TestCase in series"""
+
+    error_found = False
 
     for case in cases:
 
@@ -1709,6 +1711,7 @@ def _run_cases_in_series(cases, image_folder):
             error.write(str(res[0]) + '\n')
             error.write(str(res[0].shortDescription()) + '\n')
             error.write('\n')
+            error_found = True
 
         for res in result.failures:
             log.error("snf-burnin failed in testcase: %s" % test)
@@ -1716,11 +1719,18 @@ def _run_cases_in_series(cases, image_folder):
             fail.write(str(res[0]) + '\n')
             fail.write(str(res[0].shortDescription()) + '\n')
             fail.write('\n')
+            error_found = True
             if not NOFAILFAST:
-                sys.exit()
+                sys.exit(1)
 
         if (len(result.failures) == 0) and (len(result.errors) == 0):
             log.debug("Passed testcase: %s" % test)
+
+    # Return
+    if error_found:
+        return 1
+    else:
+        return 0
 
 
 def _run_cases_in_parallel(cases, fanout, image_folder):
@@ -2065,10 +2075,10 @@ def parse_arguments(args):
     _mandatory_argument(opts.token, "--token")
     # `auth_url' is mandatory
     _mandatory_argument(opts.auth_url, "--auth-url")
-    # `system_images_user' is mandatory
-    _mandatory_argument(opts.system_images_user, "--system-images-user")
 
     if not opts.show_stale:
+        # `system_images_user' is mandatory
+        _mandatory_argument(opts.system_images_user, "--system-images-user")
         # `image-id' is mandatory
         _mandatory_argument(opts.force_imageid, "--image-id")
         if opts.force_imageid != 'all':
@@ -2231,9 +2241,9 @@ def main():
 
         # Run each test
         if opts.fanout > 1:
-            _run_cases_in_parallel(seq_cases, opts.fanout, image_folder)
+            return _run_cases_in_parallel(seq_cases, opts.fanout, image_folder)
         else:
-            _run_cases_in_series(seq_cases, image_folder)
+            return _run_cases_in_series(seq_cases, image_folder)
 
 
 # --------------------------------------------------------------------

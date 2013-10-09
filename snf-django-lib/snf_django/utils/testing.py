@@ -35,6 +35,7 @@
 from contextlib import contextmanager
 from django.test import TestCase
 from django.utils import simplejson as json
+from synnefo.util import text
 from mock import patch
 
 
@@ -132,7 +133,7 @@ def astakos_user(user):
     with patch("snf_django.lib.api.get_token") as get_token:
         get_token.return_value = "DummyToken"
         with patch('astakosclient.AstakosClient.get_user_info') as m:
-            m.return_value = {"uuid": unicode(user, 'utf8')}
+            m.return_value = {"uuid": text.udec(user, 'utf8')}
             with patch('astakosclient.AstakosClient.get_quotas') as m2:
                 m2.return_value = {
                     "system": {
@@ -143,7 +144,8 @@ def astakos_user(user):
                         }
                     }
                 }
-                with patch('astakosclient.AstakosClient.issue_one_commission') as m3:
+                issue_fun = "astakosclient.AstakosClient.issue_one_commission"
+                with patch(issue_fun) as m3:
                     serials = []
                     append = serials.append
 
@@ -154,11 +156,14 @@ def astakos_user(user):
                         return serial
 
                     m3.side_effect = get_serial
-                    with patch('astakosclient.AstakosClient.resolve_commissions') as m4:
+                    resolv_fun = \
+                        'astakosclient.AstakosClient.resolve_commissions'
+                    with patch(resolv_fun) as m4:
                         m4.return_value = {'accepted': serials,
                                            'rejected': [],
                                            'failed': []}
-                        with patch('astakosclient.AstakosClient.get_usernames') as m5:
+                        users_fun = 'astakosclient.AstakosClient.get_usernames'
+                        with patch(users_fun) as m5:
 
                             def get_usernames(*args, **kwargs):
                                 uuids = args[-1]
@@ -168,12 +173,19 @@ def astakos_user(user):
                             yield
 
 
+serial = 0
+
+
 @contextmanager
 def mocked_quotaholder(success=True):
     with patch("synnefo.quotas.Quotaholder.get") as astakos:
         global serial
-        serial += 1
-        astakos.return_value.issue_one_commission.return_value = serial
+        serial += 10
+
+        def foo(*args, **kwargs):
+            return (len(astakos.return_value.issue_one_commission.mock_calls) +
+                    serial)
+        astakos.return_value.issue_one_commission.side_effect = foo
         astakos.return_value.resolve_commissions.return_value = {"failed": []}
         yield astakos.return_value
 

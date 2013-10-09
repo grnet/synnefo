@@ -43,6 +43,7 @@ from synnefo.logic import utils
 from synnefo import quotas
 from synnefo.api.util import release_resource
 from synnefo.util.mac2eui64 import mac2eui64
+from synnefo.logic.rapi import GanetiApiError
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -68,17 +69,22 @@ def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields):
 
     """
     if job_status not in ["success", "error", "canceled"]:
-        return
+        return vm
 
     # Check successful completion of a job will trigger any quotable change in
     # the VM state.
     action = utils.get_action_from_opcode(job_opcode, job_fields)
+    if action == "BUILD":
+        # Quotas for new VMs are automatically accepted by the API
+        return vm
     commission_info = quotas.get_commission_info(vm, action=action,
                                                  action_fields=job_fields)
 
     if vm.task_job_id == job_id and vm.serial is not None:
         # Commission for this change has already been issued. So just
-        # accept/reject it
+        # accept/reject it. Special case is OP_INSTANCE_CREATE, which even
+        # if fails, must be accepted, as the user must manually remove the
+        # failed server
         serial = vm.serial
         if job_status == "success":
             quotas.accept_serial(serial)
@@ -93,20 +99,14 @@ def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields):
         # Commission for this change has not been issued, or the issued
         # commission was unaware of the current change. Reject all previous
         # commissions and create a new one in forced mode!
-        previous_serial = vm.serial
-        if previous_serial and not previous_serial.resolved:
-            quotas.resolve_vm_commission(previous_serial)
         commission_name = ("client: dispatcher, resource: %s, ganeti_job: %s"
                            % (vm, job_id))
-        serial = quotas.issue_commission(user=vm.userid,
-                                         source=quotas.DEFAULT_SOURCE,
-                                         provisions=commission_info,
-                                         name=commission_name,
-                                         force=True,
-                                         auto_accept=True)
-        # Clear VM's serial. Expected job may arrive later. However correlated
-        # serial must not be accepted, since it reflects a previous VM state
-        vm.serial = None
+        quotas.handle_resource_commission(vm, action,
+                                          commission_info=commission_info,
+                                          commission_name=commission_name,
+                                          force=True,
+                                          auto_accept=True)
+        log.debug("Issued new commission: %s", vm.serial)
 
     return vm
 
@@ -136,13 +136,11 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
         return
 
     state_for_success = VirtualMachine.OPER_STATE_FROM_OPCODE.get(opcode)
+
     # Notifications of success change the operating state
     if status == "success":
         if state_for_success is not None:
             vm.operstate = state_for_success
-        if nics is not None:
-            # Update the NICs of the VM
-            _process_net_status(vm, etime, nics)
         if beparams:
             # Change the flavor of the VM
             _process_resize(vm, beparams)
@@ -153,18 +151,20 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
         # in reversed order.
         vm.backendtime = etime
 
+    if status in ["success", "error", "canceled"] and nics is not None:
+        # Update the NICs of the VM
+        _process_net_status(vm, etime, nics)
+
     # Special case: if OP_INSTANCE_CREATE fails --> ERROR
     if opcode == 'OP_INSTANCE_CREATE' and status in ('canceled', 'error'):
         vm.operstate = 'ERROR'
         vm.backendtime = etime
     elif opcode == 'OP_INSTANCE_REMOVE':
-        # Set the deleted flag explicitly, cater for admin-initiated removals
         # Special case: OP_INSTANCE_REMOVE fails for machines in ERROR,
         # when no instance exists at the Ganeti backend.
         # See ticket #799 for all the details.
-        if (status == 'success' or
-           (status == 'error' and (vm.operstate == 'ERROR' or
-                                   vm.action == 'DESTROY'))):
+        if status == 'success' or (status == 'error' and
+                                   not vm_exists_in_backend(vm)):
             # VM has been deleted. Release the instance IPs
             release_instance_ips(vm, [])
             # And delete the releated NICs (must be performed after release!)
@@ -340,9 +340,9 @@ def process_network_status(back_network, etime, jobid, opcode, status, logmsg):
         back_network.backendtime = etime
 
     if opcode == 'OP_NETWORK_REMOVE':
-        if (status == 'success' or
-           (status == 'error' and (back_network.operstate == 'ERROR' or
-                                   network.action == 'DESTROY'))):
+        network_is_deleted = (status == "success")
+        if network_is_deleted or (status == "error" and not
+                                  network_exists_in_backend(back_network)):
             back_network.operstate = state_for_success
             back_network.deleted = True
             back_network.backendtime = etime
@@ -404,6 +404,10 @@ def update_network_state(network):
         # Issue commission
         if network.userid:
             quotas.issue_and_accept_commission(network, delete=True)
+            # the above has already saved the object and committed;
+            # a second save would override others' changes, since the
+            # object is now unlocked
+            return
         elif not network.public:
             log.warning("Network %s does not have an owner!", network.id)
     network.save()
@@ -411,7 +415,7 @@ def update_network_state(network):
 
 @transaction.commit_on_success
 def process_network_modify(back_network, etime, jobid, opcode, status,
-                           add_reserved_ips, remove_reserved_ips):
+                           add_reserved_ips):
     assert (opcode == "OP_NETWORK_SET_PARAMS")
     if status not in [x[0] for x in BACKEND_STATUSES]:
         raise Network.InvalidBackendMsgError(opcode, status)
@@ -420,15 +424,12 @@ def process_network_modify(back_network, etime, jobid, opcode, status,
     back_network.backendjobstatus = status
     back_network.opcode = opcode
 
-    if add_reserved_ips or remove_reserved_ips:
+    if add_reserved_ips:
         net = back_network.network
         pool = net.get_pool()
         if add_reserved_ips:
             for ip in add_reserved_ips:
                 pool.reserve(ip, external=True)
-        if remove_reserved_ips:
-            for ip in remove_reserved_ips:
-                pool.put(ip, external=True)
         pool.save()
 
     if status == 'success':
@@ -572,9 +573,20 @@ def delete_instance(vm):
 
 def reboot_instance(vm, reboot_type):
     assert reboot_type in ('soft', 'hard')
+    kwargs = {"instance": vm.backend_vm_id,
+              "reboot_type": "hard"}
+    # XXX: Currently shutdown_timeout parameter is not supported from the
+    # Ganeti RAPI. Until supported, we will fallback for both reboot types
+    # to the default shutdown timeout of Ganeti (120s). Note that reboot
+    # type of Ganeti job must be always hard. The 'soft' and 'hard' type
+    # of OS API is different from the one in Ganeti, and maps to
+    # 'shutdown_timeout'.
+    #if reboot_type == "hard":
+    #    kwargs["shutdown_timeout"] = 0
+    if settings.TEST:
+        kwargs["dry_run"] = True
     with pooled_rapi_client(vm) as client:
-        return client.RebootInstance(vm.backend_vm_id, reboot_type,
-                                     dry_run=settings.TEST)
+        return client.RebootInstance(**kwargs)
 
 
 def startup_instance(vm):
@@ -625,7 +637,31 @@ def get_instance_console(vm):
 
 def get_instance_info(vm):
     with pooled_rapi_client(vm) as client:
-        return client.GetInstanceInfo(vm.backend_vm_id)
+        return client.GetInstance(vm.backend_vm_id)
+
+
+def vm_exists_in_backend(vm):
+    try:
+        get_instance_info(vm)
+        return True
+    except GanetiApiError as e:
+        if e.code == 404:
+            return False
+        raise e
+
+
+def get_network_info(backend_network):
+    with pooled_rapi_client(backend_network) as client:
+        return client.GetNetwork(backend_network.network.backend_id)
+
+
+def network_exists_in_backend(backend_network):
+    try:
+        get_network_info(backend_network)
+        return True
+    except GanetiApiError as e:
+        if e.code == 404:
+            return False
 
 
 def create_network(network, backend, connect=True):
@@ -731,7 +767,8 @@ def disconnect_network(network, backend, group=None):
     return job_ids
 
 
-def connect_to_network(vm, network, address=None):
+def connect_to_network(vm, nic):
+    network = nic.network
     backend = vm.backend
     network = Network.objects.select_for_update().get(id=network.id)
     bnet, created = BackendNetwork.objects.get_or_create(backend=backend,
@@ -742,26 +779,38 @@ def connect_to_network(vm, network, address=None):
 
     depends = [[job, ["success", "error", "canceled"]] for job in depend_jobs]
 
-    nic = {'ip': address, 'network': network.backend_id}
+    nic = {'ip': nic.ipv4, 'network': network.backend_id}
 
-    log.debug("Connecting vm %s to network %s(%s)", vm, network, address)
+    log.debug("Connecting NIC %s to VM %s", nic, vm)
+
+    kwargs = {
+        "instance": vm.backend_vm_id,
+        "nics": [("add", nic)],
+        "depends": depends,
+    }
+    if vm.backend.use_hotplug():
+        kwargs["hotplug"] = True
+    if settings.TEST:
+        kwargs["dry_run"] = True
 
     with pooled_rapi_client(vm) as client:
-        return client.ModifyInstance(vm.backend_vm_id, nics=[('add',  nic)],
-                                     hotplug=vm.backend.use_hotplug(),
-                                     depends=depends,
-                                     dry_run=settings.TEST)
+        return client.ModifyInstance(**kwargs)
 
 
 def disconnect_from_network(vm, nic):
-    op = [('remove', nic.index, {})]
-
     log.debug("Removing nic of VM %s, with index %s", vm, str(nic.index))
 
+    kwargs = {
+        "instance": vm.backend_vm_id,
+        "nics": [("remove", nic.index, {})],
+    }
+    if vm.backend.use_hotplug():
+        kwargs["hotplug"] = True
+    if settings.TEST:
+        kwargs["dry_run"] = True
+
     with pooled_rapi_client(vm) as client:
-        jobID = client.ModifyInstance(vm.backend_vm_id, nics=op,
-                                      hotplug=vm.backend.use_hotplug(),
-                                      dry_run=settings.TEST)
+        jobID = client.ModifyInstance(**kwargs)
         # If the NIC has a tag for a firewall profile it must be deleted,
         # otherwise it may affect another NIC. XXX: Deleting the tag should
         # depend on the removing the NIC, but currently RAPI client does not
@@ -842,7 +891,7 @@ def get_physical_resources(backend):
     return res
 
 
-def update_resources(backend, resources=None):
+def update_backend_resources(backend, resources=None):
     """ Update the state of the backend resources in db.
 
     """
@@ -873,6 +922,32 @@ def get_memory_from_instances(backend):
     for i in instances:
         mem += i['oper_ram']
     return mem
+
+
+def get_available_disk_templates(backend):
+    """Get the list of available disk templates of a Ganeti backend.
+
+    The list contains the disk templates that are enabled in the Ganeti backend
+    and also included in ipolicy-disk-templates.
+
+    """
+    with pooled_rapi_client(backend) as c:
+        info = c.GetInfo()
+    ipolicy_disk_templates = info["ipolicy"]["disk-templates"]
+    try:
+        enabled_disk_templates = info["enabled_disk_templates"]
+        return [dp for dp in enabled_disk_templates
+                if dp in ipolicy_disk_templates]
+    except KeyError:
+        # Ganeti < 2.8 does not have 'enabled_disk_templates'
+        return ipolicy_disk_templates
+
+
+def update_backend_disk_templates(backend):
+    disk_templates = get_available_disk_templates(backend)
+    backend.disk_templates = disk_templates
+    backend.save()
+
 
 ##
 ## Synchronized operations for reconciliation

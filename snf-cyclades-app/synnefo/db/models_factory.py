@@ -239,6 +239,12 @@ class FloatingIPFactory(IPv4AddressFactory):
     floating_ip = True
 
 
+class SecurityGroupFactory(factory.DjangoModelFactory):
+    FACTORY_FOR = models.SecurityGroup
+
+    name = factory.LazyAttribute(lambda self: random_string(30))
+
+
 class BridgePoolTableFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.BridgePoolTable
 

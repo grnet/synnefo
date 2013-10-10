@@ -34,6 +34,7 @@
 # Import TestCases
 from .servers import *
 from .networks import *
+from .ports import *
 from .flavors import *
 from .images import *
 from .versions import *

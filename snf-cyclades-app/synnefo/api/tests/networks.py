@@ -40,7 +40,6 @@ class NetworkTest(BaseAPITest):
         test_net = dbmf.NetworkFactory.create()
         url = join_urls(NETWORKS_URL, str(test_net.id))
         response = self.get(url, user=test_net.userid)
-        print response.content
         # validate response
         res = json.loads(response.content)
         net = res['network']

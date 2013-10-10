@@ -32,7 +32,6 @@
 # or implied, of GRNET S.A.
 
 from astakos.im.tests.common import *
-from snf_django.utils.testing import assertGreater, assertIn, assertRaises
 
 
 class ProjectAPITest(TestCase):

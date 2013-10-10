@@ -37,10 +37,11 @@ import copy
 import datetime
 import functools
 
-from snf_django.utils.testing import with_settings, override_settings, assertIn
+from snf_django.utils.testing import with_settings, override_settings, \
+    assertIn, assertGreater, assertRaises
 
 from django.test import Client
-from django.test import TransactionTestCase as TestCase
+from django.test import TestCase
 from django.core import mail
 from django.http import SimpleCookie, HttpRequest, QueryDict
 from django.utils.importlib import import_module

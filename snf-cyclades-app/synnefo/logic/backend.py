@@ -466,6 +466,12 @@ def update_network_state(network):
             return
         elif not network.public:
             log.warning("Network %s does not have an owner!", network.id)
+
+        # TODO!!!!!
+        # Set all subnets as deleted
+        network.subnets.update(deleted=True)
+        # And delete the IP pools
+        network.subnets.ip_pools.all().delete()
     network.save()
 
 

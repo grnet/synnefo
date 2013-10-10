@@ -44,7 +44,7 @@ class NetworkTest(TestCase):
     def test_create(self):
         kwargs = {
             "name": "test",
-            "user_id": "user",
+            "userid": "user",
             "subnet": "192.168.20.0/24",
             "flavor": "CUSTOM",
         }
@@ -130,7 +130,7 @@ class NetworkTest(TestCase):
     def test_create_network_ipv6(self):
         kwargs = {
             "name": "test",
-            "user_id": "user",
+            "userid": "user",
             "flavor": "CUSTOM",
             "subnet6": "2001:648:2ffc:1112::/64",
         }

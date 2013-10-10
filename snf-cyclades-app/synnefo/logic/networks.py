@@ -65,7 +65,7 @@ def network_command(action):
 
 
 @transaction.commit_on_success
-def create(user_id, name, flavor, subnet=None, gateway=None, subnet6=None,
+def create(userid, name, flavor, subnet=None, gateway=None, subnet6=None,
            gateway6=None, public=False, dhcp=True, link=None, mac_prefix=None,
            mode=None, floating_ip_pool=False, tags=None, backends=None,
            lazy_create=True):
@@ -80,7 +80,7 @@ def create(user_id, name, flavor, subnet=None, gateway=None, subnet6=None,
         raise faults.BadRequest("Can not override PHYSICAL_VLAN link")
 
     if subnet is None and floating_ip_pool:
-        raise faults.BadRequest("IPv6 only networks can not be"
+        raise faults.BadRequest("IPv6 only networks can not be floating"
                                 " pools.")
     # Check that network parameters are valid
     validate_network_params(subnet, gateway, subnet6, gateway6)
@@ -107,7 +107,7 @@ def create(user_id, name, flavor, subnet=None, gateway=None, subnet6=None,
 
     network = Network.objects.create(
         name=name,
-        userid=user_id,
+        userid=userid,
         flavor=flavor,
         mode=mode,
         link=link,
@@ -160,11 +160,11 @@ def rename(network, name):
 @network_command("DESTROY")
 def delete(network):
     if network.machines.exists():
-        raise faults.NetworkInUse("Can not delete network. Servers connected"
-                                  " to this network exists.")
-    if network.floating_ips.filter(deleted=False).exists():
+        raise faults.Conflict("Can not delete network. Servers connected"
+                              " to this network exists.")
+    if network.ips.filter(deleted=False, floating_ip=True).exists():
         msg = "Can not delete netowrk. Network has allocated floating IPs."
-        raise faults.NetworkInUse(msg)
+        raise faults.Conflict(msg)
 
     network.action = "DESTROY"
     network.save()
@@ -180,9 +180,6 @@ def delete(network):
 
 def validate_network_params(subnet=None, gateway=None, subnet6=None,
                             gateway6=None):
-    if (subnet is None) and (subnet6 is None):
-        raise faults.BadRequest("subnet or subnet6 is required")
-
     if subnet:
         try:
             # Use strict option to not all subnets with host bits set

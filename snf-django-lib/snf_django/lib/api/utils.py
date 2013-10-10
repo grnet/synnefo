@@ -133,3 +133,11 @@ def filter_modified_since(request, objects):
         return modified_objs
     else:
         return objects.filter(deleted=False)
+
+
+def get_attribute(request, attribute, required=True):
+    value = request.get(attribute, None)
+    if required and value is None:
+        raise faults.BadRequest("Malformed request. Missing attribute '%s'." %
+                                attribute)
+    return value

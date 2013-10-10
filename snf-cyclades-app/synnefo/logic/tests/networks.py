@@ -70,11 +70,11 @@ class NetworkTest(TestCase):
         kwargs["dhcp"] = False
         with mocked_quotaholder():
             net = networks.create(**kwargs)
-        self.assertEqual(net.subnet, "192.168.20.0/24")
-        self.assertEqual(net.gateway, "192.168.20.1")
+        self.assertEqual(net.subnet4, "192.168.20.0/24")
+        self.assertEqual(net.subnets.get(ipversion=4).gateway, "192.168.20.1")
         self.assertEqual(net.public, True)
         self.assertEqual(net.flavor, "CUSTOM")
-        self.assertEqual(net.dhcp, False)
+        self.assertEqual(net.subnets.get(ipversion=4).dhcp, False)
         self.assertEqual(net.action, "CREATE")
         self.assertEqual(net.state, "ACTIVE")
         self.assertEqual(net.name, "test")
@@ -149,6 +149,7 @@ class NetworkTest(TestCase):
         kwargs["gateway6"] = "2001:648:2ffc:1112::1"
         with mocked_quotaholder():
             net = networks.create(**kwargs)
-        self.assertEqual(net.subnet6, "2001:648:2ffc:1112::/64")
-        self.assertEqual(net.gateway6, "2001:648:2ffc:1112::1")
+        subnet6 = net.subnets.get(ipversion=6)
+        self.assertEqual(subnet6.cidr, "2001:648:2ffc:1112::/64")
+        self.assertEqual(subnet6.gateway, "2001:648:2ffc:1112::1")
         self.assertRaises(Exception, net.get_pool)

@@ -39,7 +39,7 @@ from django.conf import settings
 from snf_django.lib.api import faults
 from synnefo.api import util
 from synnefo import quotas
-from synnefo.db.models import Network, Backend
+from synnefo.db.models import Network, Backend, Subnet
 from synnefo.db.utils import validate_mac
 from synnefo.db.pools import EmptyPool
 from synnefo.logic import backend as backend_mod
@@ -108,11 +108,6 @@ def create(user_id, name, flavor, subnet=None, gateway=None, subnet6=None,
     network = Network.objects.create(
         name=name,
         userid=user_id,
-        subnet=subnet,
-        subnet6=subnet6,
-        gateway=gateway,
-        gateway6=gateway6,
-        dhcp=dhcp,
         flavor=flavor,
         mode=mode,
         link=link,
@@ -122,6 +117,19 @@ def create(user_id, name, flavor, subnet=None, gateway=None, subnet6=None,
         floating_ip_pool=floating_ip_pool,
         action='CREATE',
         state='ACTIVE')
+
+    if subnet:
+        Subnet.objects.create(network=network,
+                              ipversion=4,
+                              cidr=subnet,
+                              gateway=gateway,
+                              dhcp=dhcp)
+    if subnet6:
+        Subnet.objects.create(network=network,
+                              ipversion=6,
+                              cidr=subnet6,
+                              gateway=gateway6,
+                              dhcp=dhcp)
 
     # Issue commission to Quotaholder and accept it since at the end of
     # this transaction the Network object will be created in the DB.

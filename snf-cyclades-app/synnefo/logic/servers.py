@@ -357,12 +357,17 @@ def connect(vm, network):
         raise faults.BuildInProgress('Network not active yet')
 
     address = None
-    if network.subnet is not None and network.dhcp:
-        # Get a free IP from the address pool.
-        address = util.get_network_free_address(network)
+    try:
+        subnet = network.subnets.get(ipversion=4, dhcp=True)
+        address = util.get_network_free_address(subnet, userid=vm.userid)
+    except Subnet.DoesNotExist:
+        subnet = None
+
     nic = NetworkInterface.objects.create(machine=vm, network=network,
-                                          ip_type="STATIC", ipv4=address,
                                           state="BUILDING")
+    if address is not None:
+        address.nic = nic
+        address.save()
     log.info("Connecting VM %s to Network %s. NIC: %s", vm, network, nic)
 
     return backend.connect_to_network(vm, nic)

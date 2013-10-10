@@ -60,8 +60,8 @@ class ServerCreationTest(TransactionTestCase):
         self.assertRaises(faults.ServiceUnavailable, servers.create, **kwargs)
         self.assertEqual(models.VirtualMachine.objects.count(), 0)
 
-        mfactory.BackendFactory(drained=False)
-        mfactory.BackendNetworkFactory(network__public=True)
+        subnet = mfactory.IPv4SubnetFactory(network__public=True)
+        mfactory.BackendNetworkFactory(network=subnet.network)
 
         # error in nics
         req = deepcopy(kwargs)
@@ -94,7 +94,8 @@ class ServerCreationTest(TransactionTestCase):
         self.assertEqual(vm.task, "BUILD")
 
         # test connect in IPv6 only network
-        net = mfactory.IPv6NetworkFactory(state="ACTIVE")
+        subnet = mfactory.IPv6SubnetFactory()
+        net = subnet.network
         mfactory.BackendNetworkFactory(network=net)
         with override_settings(settings,
                                DEFAULT_INSTANCE_NETWORKS=[str(net.id)]):
@@ -102,7 +103,7 @@ class ServerCreationTest(TransactionTestCase):
                 vm = servers.create(**kwargs)
         nics = vm.nics.all()
         self.assertEqual(len(nics), 1)
-        self.assertEqual(nics[0].ipv4, None)
+        self.assertFalse(nics[0].ips.filter(subnet__ipversion=4).exists())
         args, kwargs = mrapi().CreateInstance.call_args
         ganeti_nic = kwargs["nics"][0]
         self.assertEqual(ganeti_nic["ip"], None)
@@ -113,11 +114,11 @@ class ServerCreationTest(TransactionTestCase):
 class ServerTest(TransactionTestCase):
     def test_connect_network(self, mrapi):
         # Common connect
-        net = mfactory.NetworkFactory(subnet="192.168.2.0/24",
-                                      gateway="192.168.2.1",
-                                      state="ACTIVE",
-                                      dhcp=True,
-                                      flavor="CUSTOM")
+        subnet = mfactory.IPv4SubnetFactory(network__flavor="CUSTOM",
+                                            cidr="192.168.2.0/24",
+                                            gateway="192.168.2.1",
+                                            dhcp=True)
+        net = subnet.network
         vm = mfactory.VirtualMachineFactory(operstate="STARTED")
         mfactory.BackendNetworkFactory(network=net, backend=vm.backend)
         mrapi().ModifyInstance.return_value = 42
@@ -132,12 +133,12 @@ class ServerTest(TransactionTestCase):
         self.assertEqual(nics[2]["ip"], "192.168.2.2")
         self.assertEqual(nics[2]["network"], net.backend_id)
 
-        # No dhcp
+        # no dhcp
         vm = mfactory.VirtualMachineFactory(operstate="STARTED")
-        net = mfactory.NetworkFactory(subnet="192.168.2.0/24",
-                                      gateway="192.168.2.1",
-                                      state="ACTIVE",
-                                      dhcp=False)
+        subnet = mfactory.IPv4SubnetFactory(cidr="192.168.2.0/24",
+                                            gateway="192.168.2.1",
+                                            dhcp=False)
+        net = subnet.network
         mfactory.BackendNetworkFactory(network=net, backend=vm.backend)
         servers.connect(vm, net)
         pool = net.get_pool(locked=False)
@@ -152,9 +153,9 @@ class ServerTest(TransactionTestCase):
 
         # Test connect to IPv6 only network
         vm = mfactory.VirtualMachineFactory(operstate="STARTED")
-        net = mfactory.NetworkFactory(subnet6="2000::/64",
-                                      state="ACTIVE",
-                                      gateway="2000::1")
+        subnet = mfactory.IPv6SubnetFactory(cidr="2000::/64",
+                                            gateway="2000::1")
+        net = subnet.network
         mfactory.BackendNetworkFactory(network=net, backend=vm.backend)
         servers.connect(vm, net)
         args, kwargs = mrapi().ModifyInstance.call_args

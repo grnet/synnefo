@@ -157,7 +157,7 @@ class NetworkFactory(factory.DjangoModelFactory):
                                  models.Network.FLAVORS[a.flavor]['tags'])
     public = False
     deleted = False
-    state = factory.Sequence(round_seq_first(models.Network.OPER_STATES))
+    state = "ACTIVE"
 
 
 class DeletedNetwork(NetworkFactory):
@@ -191,31 +191,39 @@ class IPPoolTableFactory(factory.DjangoModelFactory):
     size = 0
 
 
-class IPv4SubnetFactory(factory.DjangoModelFactory):
+class SubnetFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.Subnet
-
     network = factory.SubFactory(NetworkFactory, state="ACTIVE")
     name = factory.LazyAttribute(lambda self: random_string(30))
-    ipversion = 4
-    cidr = factory.Sequence(lambda n: '192.168.{0}.0/24'.format(n))
     dhcp = True
-    gateway = factory.Sequence(lambda n: '192.168.{0}.1'.format(n))
     dns_nameservers = []
     host_routes = []
+
+
+class IPv4SubnetFactory(SubnetFactory):
+    ipversion = 4
+    cidr = factory.Sequence(lambda n: '192.168.{0}.0/24'.format(n))
+    gateway = factory.Sequence(lambda n: '192.168.{0}.1'.format(n))
     pool = factory.RelatedFactory(IPPoolTableFactory, 'subnet')
 
 
-class IPv6SubnetFactory(IPv4SubnetFactory):
+class IPv6SubnetFactory(SubnetFactory):
     ipversion = 6
     cidr = "2001:648:2ffc:1112::/64"
     gateway = None
 
 
+class NetworkWithSubnetFactory(NetworkFactory):
+    subnet = factory.RelatedFactory(IPv4SubnetFactory, 'network')
+    subnet6 = factory.RelatedFactory(IPv6SubnetFactory, 'network')
+
+
 class IPv4AddressFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.IPAddress
 
-    subnet = factory.SubFactory(IPv4SubnetFactory)
     network = factory.SubFactory(NetworkFactory)
+    subnet = factory.SubFactory(IPv4SubnetFactory,
+                                network=factory.SelfAttribute('..network'))
     address =\
         factory.LazyAttributeSequence(lambda self, n: self.subnet.cidr[:-4] +
                                       '{0}'.format(int(n) + 2))

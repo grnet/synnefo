@@ -341,14 +341,15 @@ NIC_MSG = ": %s\t".join(["ID", "State", "IP", "Network", "MAC", "Index",
 
 
 def format_db_nic(nic):
-    return NIC_MSG % (nic.id, nic.state, nic.ipv4, nic.network_id, nic.mac,
-                      nic.index, nic.firewall_profile)
+    return NIC_MSG % (nic.id, nic.state, nic.ipv4_address, nic.network_id,
+                      nic.mac, nic.index, nic.firewall_profile)
 
 
 def format_gnt_nic(nic):
     nic_name, nic = nic
-    return NIC_MSG % (nic_name, nic["state"], nic["ipv4"], nic["network"].id,
-                      nic["mac"], nic["index"], nic["firewall_profile"])
+    return NIC_MSG % (nic_name, nic["state"], nic["ipv4_address"],
+                      nic["network"].id, nic["mac"], nic["index"],
+                      nic["firewall_profile"])
 
 
 #

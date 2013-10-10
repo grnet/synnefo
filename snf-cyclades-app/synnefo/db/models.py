@@ -555,6 +555,19 @@ class Network(models.Model):
         pool.put(address)
         pool.save()
 
+    @property
+    def subnet4(self):
+        return self.get_subnet(version=4)
+
+    @property
+    def subnet6(self):
+        return self.get_subnet(version=6)
+
+    def get_subnet(self, version=4):
+        for subnet in self.subnets.all():
+            if subnet.ipversion == version:
+                return subnet.cidr
+
     class InvalidBackendIdError(Exception):
         def __init__(self, value):
             self.value = value
@@ -596,7 +609,8 @@ class Subnet(models.Model):
     dns_nameservers = fields.SeparatedValuesField('DNS Nameservers', null=True)
 
     def __unicode__(self):
-        return "<Subnet %s, Network: %s>" % (self.id, self.network_id)
+        msg = u"<Subnet %s, Network: %s, CIDR: %s>"
+        return msg % (self.id, self.network_id, self.cidr)
 
     def get_pool(self, locked=True):
         if self.ipversion == 6:
@@ -769,10 +783,17 @@ class NetworkInterface(models.Model):
 
     @property
     def ipv4_address(self):
-        try:
-            return self.ips.get(subnet__ipversion=4).address
-        except IPAddress.DoesNotExist:
-            return None
+        return self.get_ip_address(version=4)
+
+    @property
+    def ipv6_address(self):
+        return self.get_ip_address(version=6)
+
+    def get_ip_address(self, version=4):
+        for ip in self.ips.all():
+            if ip.subnet.ipversion == version:
+                return ip.address
+        return None
 
 
 class SecurityGroup(models.Model):

@@ -35,10 +35,9 @@ from django.db import transaction
 from datetime import datetime, timedelta
 
 from synnefo.db.models import (Backend, VirtualMachine, Network,
-                               IPAddress,
                                BackendNetwork, BACKEND_STATUSES,
                                pooled_rapi_client, VirtualMachineDiagnostic,
-                               Flavor)
+                               Flavor, IPAddress)
 from synnefo.logic import utils
 from synnefo import quotas
 from synnefo.api.util import release_resource
@@ -60,8 +59,8 @@ _reverse_tags = dict((v.split(':')[3], k) for k, v in _firewall_tags.items())
 # stale and removed from DB.
 BUILDING_NIC_TIMEOUT = timedelta(seconds=180)
 
-NIC_FIELDS = ["state", "mac", "ipv4", "ipv6", "network", "firewall_profile",
-              "index"]
+NIC_FIELDS = ["state", "mac", "ipv4_address", "ipv6_address", "network",
+              "firewall_profile", "index"]
 UNKNOWN_NIC_PREFIX = "unknown-"
 
 
@@ -260,21 +259,46 @@ def _process_net_status(vm, etime, nics):
                       " valid name." % ganeti_nic
                 log.error(msg)
                 continue
-            if ganeti_nic["ipv4"]:
-                network = ganeti_nic["network"]
-                network.reserve_address(ganeti_nic["ipv4"])
-            vm.nics.create(id=nic_name, **ganeti_nic)
+            ipaddress = None
+            network = ganeti_nic["network"]
+            ipv4_address = ganeti_nic["ipv4_address"]
+            if ipv4_address:
+                network.reserve_address(ipv4_address)
+                subnet = network.subnets.get(ipversion=4)
+                ipaddress = IPAddress.objects.create(address=ipv4_address,
+                                                     network=network,
+                                                     subnet=subnet,
+                                                     userid=vm.userid)
+            # TODO
+            ganeti_nic.pop("ipv4_address")
+            ganeti_nic.pop("ip", None)
+            ganeti_nic.pop("ipv6_address")
+            nic = vm.nics.create(id=nic_name, **ganeti_nic)
+            if ipaddress is not None:
+                ipaddress.nic = nic
+                ipaddress.save()
         elif not nics_are_equal(db_nic, ganeti_nic):
             # Special case where the IPv4 address has changed, because you
             # need to release the old IPv4 address and reserve the new one
-            if db_nic.ipv4 != ganeti_nic["ipv4"]:
+            ipv4_address = ganeti_nic["ipv4_address"]
+            if db_nic.ipv4_address != ipv4_address:
                 release_nic_address(db_nic)
-                if ganeti_nic["ipv4"]:
-                    ganeti_nic["network"].reserve_address(ganeti_nic["ipv4"])
+                if ipv4_address:
+                    network = ganeti_nic["network"]
+                    network.reserve_address(ipv4_address)
+                    subnet = network.subnets.get(ipversion=4)
+                    ipaddress, _ =\
+                        IPAddress.objects.get_or_create(network=network,
+                                                        subnet=subnet,
+                                                        userid=vm.userid,
+                                                        address=ipv4_address)
+                    ipaddress.nic = nic
+                    ipaddress.save()
 
-            # Update the NIC in DB with the values from Ganeti NIC
-            [setattr(db_nic, f, ganeti_nic[f]) for f in NIC_FIELDS]
-            db_nic.save()
+            for f in ["state", "mac", "network", "firewall_profile", "index"]:
+                # Update the NIC in DB with the values from Ganeti NIC
+                setattr(db_nic, f, ganeti_nic[f])
+                db_nic.save()
 
             # Dummy update the network, to work with 'changed-since'
             db_nic.network.save()
@@ -308,8 +332,8 @@ def process_ganeti_nics(ganeti_nics):
         # Get the new nic info
         mac = gnic.get('mac')
         ipv4 = gnic.get('ip')
-        ipv6 = mac2eui64(mac, network.subnet6)\
-            if network.subnet6 is not None else None
+        subnet6 = network.subnet6
+        ipv6 = mac2eui64(mac, subnet6) if subnet6 else None
 
         firewall = gnic.get('firewall')
         firewall_profile = _reverse_tags.get(firewall)
@@ -320,8 +344,8 @@ def process_ganeti_nics(ganeti_nics):
             'index': index,
             'network': network,
             'mac': mac,
-            'ipv4': ipv4,
-            'ipv6': ipv6,
+            'ipv4_address': ipv4,
+            'ipv6_address': ipv6,
             'firewall_profile': firewall_profile,
             'state': 'ACTIVE'}
 
@@ -338,13 +362,16 @@ def release_nic_address(nic):
 
     """
 
-    if nic.ipv4:
-        if nic.ip_type == "FLOATING":
-            IPAddress.objects.filter(machine=nic.machine_id,
-                                     network=nic.network_id,
-                                     ipv4=nic.ipv4).update(machine=None)
+    for ip in nic.ips.all():
+        if ip.subnet.ipversion == 4:
+            if ip.floating_ip:
+                ip.nic = None
+                ip.save()
+            else:
+                ip.network.release_address(ip.address)
+                ip.delete()
         else:
-            nic.network.release_address(nic.ipv4)
+            ip.delete()
 
 
 @transaction.commit_on_success
@@ -718,15 +745,15 @@ def _create_network(network, backend):
     subnet6 = None
     gateway = None
     gateway6 = None
-    for subnet in network.subnets.all():
-        if subnet.ipversion == 4:
-            if subnet.dhcp:
+    for dbsubnet in network.subnets.all():
+        if dbsubnet.ipversion == 4:
+            if dbsubnet.dhcp:
                 tags.append('nfdhcpd')
-                subnet = subnet.cidr
-                gateway = subnet.gateway
-        elif subnet.ipversion == 6:
-                subnet6 = subnet.cidr
-                gateway6 = subnet.gateway
+                subnet = dbsubnet.cidr
+                gateway = dbsubnet.gateway
+        elif dbsubnet.ipversion == 6:
+                subnet6 = dbsubnet.cidr
+                gateway6 = dbsubnet.gateway
 
     if network.public:
         conflicts_check = True
@@ -823,7 +850,7 @@ def connect_to_network(vm, nic):
 
     nic = {'name': nic.backend_uuid,
            'network': network.backend_id,
-           'ip': nic.ipv4}
+           'ip': nic.ipv4_address}
 
     log.debug("Adding NIC %s to VM %s", nic, vm)
 

@@ -199,7 +199,8 @@ class BaseAPITest(TestCase):
 
     def delete(self, url, user='user'):
         with astakos_user(user):
-            with mocked_quotaholder():
+            with mocked_quotaholder() as m:
+                self.mocked_quotaholder = m
                 response = self.client.delete(url)
         return response
 
@@ -207,7 +208,8 @@ class BaseAPITest(TestCase):
         if ctype == 'json':
             content_type = 'application/json'
         with astakos_user(user):
-            with mocked_quotaholder():
+            with mocked_quotaholder() as m:
+                self.mocked_quotaholder = m
                 response = self.client.post(url, params,
                                             content_type=content_type,
                                             *args, **kwargs)
@@ -217,7 +219,8 @@ class BaseAPITest(TestCase):
         if ctype == 'json':
             content_type = 'application/json'
         with astakos_user(user):
-            with mocked_quotaholder():
+            with mocked_quotaholder() as m:
+                self.mocked_quotaholder = m
                 response = self.client.put(url, params,
                                            content_type=content_type,
                                            *args, **kwargs)

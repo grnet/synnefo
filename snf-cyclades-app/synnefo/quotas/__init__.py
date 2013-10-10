@@ -74,10 +74,29 @@ class Quotaholder(object):
 
 class AstakosClientExceptionHandler(object):
     def __init__(self, *args, **kwargs):
-        pass
+        self.user = kwargs.get("user")
+        self.projects = kwargs.get("projects")
 
     def __enter__(self):
         pass
+
+    def check_notFound(self):
+        if not self.user or not self.projects:
+            return
+        try:
+            qh = Quotaholder.get()
+            user_quota = qh.service_get_quotas(self.user)
+        except errors.AstakosClientException as e:
+            log.exception("Unexpected error %s" % e.message)
+            raise faults.InternalServerError("Unexpected error")
+
+        user_quota = user_quota[self.user]
+        for project in self.projects:
+            try:
+                user_quota[project]
+            except KeyError:
+                m = "User %s not in project %s" % (self.user, project)
+                raise faults.BadRequest(m)
 
     def __exit__(self, exc_type, value, traceback):
         if value is not None:  # exception
@@ -86,6 +105,8 @@ class AstakosClientExceptionHandler(object):
             if exc_type is errors.QuotaLimit:
                 msg, details = render_overlimit_exception(value)
                 raise faults.OverLimit(msg, details=details)
+            if exc_type is errors.NotFound:
+                self.check_notFound()
 
             log.exception("Unexpected error %s" % value.message)
             raise faults.InternalServerError("Unexpected error")
@@ -111,7 +132,7 @@ def issue_commission(resource, action, name="", force=False, auto_accept=False,
 
     qh = Quotaholder.get()
     if True:  # placeholder
-        with AstakosClientExceptionHandler():
+        with AstakosClientExceptionHandler(user=user, projects=[source]):
             serial = qh.issue_one_commission(user, source,
                                              provisions, name=name,
                                              force=force,

@@ -10,7 +10,7 @@ def vm_public_ip(vm):
     address
     """
     try:
-        return vm.nics.filter(network__public=True)[0].ipv4
+        return vm.nics.filter(network__public=True)[0].ipv4_address
     except IndexError:
         return "No public ip"
 

@@ -111,12 +111,15 @@ class HelpdeskTests(TestCase):
         vm2u2 = mfactory.VirtualMachineFactory(userid=USER2, name="user2 vm2",
                                                pk=1003)
 
-        netpub = mfactory.NetworkFactory(public=True)
-        net1u1 = mfactory.NetworkFactory(public=False, userid=USER1)
-
-        nic1 = mfactory.NetworkInterfaceFactory(machine=vm1u2, network=net1u1)
-        nic2 = mfactory.NetworkInterfaceFactory(machine=vm1u1, network=netpub,
-                                                ipv4="195.251.222.211")
+        nic1 = mfactory.NetworkInterfaceFactory(machine=vm1u2,
+                                                userid=vm1u2.userid,
+                                                network__public=False,
+                                                network__userid=USER1)
+        ip2 = mfactory.IPv4AddressFactory(nic__machine=vm1u1,
+                                          userid=vm1u1.userid,
+                                          network__public=True,
+                                          network__userid=None,
+                                          address="195.251.222.211")
 
     def test_enabled_setting(self):
         settings.HELPDESK_ENABLED = False

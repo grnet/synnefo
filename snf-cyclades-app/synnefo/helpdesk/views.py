@@ -46,7 +46,7 @@ from urllib import unquote
 import astakosclient
 from snf_django.lib import astakos
 
-from synnefo.db.models import VirtualMachine, NetworkInterface, Network
+from synnefo.db.models import VirtualMachine, IPAddress, Network
 
 # server actions specific imports
 from synnefo.api import util
@@ -185,11 +185,11 @@ def account(request, search_query):
 
     if is_ip:
         try:
-            nic = NetworkInterface.objects.filter(ipv4=search_query).exclude(
-                machine__deleted=True).get()
-            search_query = nic.machine.userid
+            ip = IPAddress.objects.filter(address=search_query, deleted=False)\
+                                  .get()
+            search_query = ip.userid
             is_uuid = True
-        except NetworkInterface.DoesNotExist:
+        except IPAddress.DoesNotExist:
             account_exists = False
             account = None
 

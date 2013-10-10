@@ -35,16 +35,23 @@ from logging import getLogger
 from snf_django.lib import api
 from snf_django.lib.api import faults
 
+from django.conf.urls import patterns
 from django.http import HttpResponse
 from django.utils import simplejson as json
 
 from snf_django.lib.api import utils
-from models import Subnet, Network
+from synnefo.db.models import Subnet, Network
 from synnefo.logic import networks
 
-from ipaddr import IPv4Network, IPv6Network, IPv4Address
+from ipaddr import IPv4Network, IPv6Network, IPv4Address, IPAddress
 
 log = getLogger(__name__)
+
+
+urlpatterns = patterns(
+    'synnefo.api.subnets',
+    (r'^(?:/|.json|.xml)?$', 'demux'),
+    (r'^/([-\w]+)(?:/|.json|.xml)?$', 'subnet_demux'))
 
 
 def demux(request):
@@ -274,7 +281,7 @@ def subnet_to_dict(subnet):
 
 def check_number_of_subnets(network, version):
     """Check if a user can add a subnet in a network"""
-    if network.subnet_set.filter(ipversion=version):
+    if network.subnets.filter(ipversion=version):
         raise api.faults.BadRequest("Only one subnet of IPv4/IPv6 per "
                                     "network is allowed")
 

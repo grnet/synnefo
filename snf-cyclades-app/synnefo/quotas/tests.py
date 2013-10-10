@@ -86,7 +86,6 @@ class GetDBHoldingsTestCase(TestCase):
         holdings = util.get_db_holdings(user="user3")
         self.assertEqual(holdings, user_holdings)
 
-
     def test_network_holdings(self):
         mfactory.NetworkFactory(userid="user1")
         mfactory.NetworkFactory(userid="user2")
@@ -97,10 +96,10 @@ class GetDBHoldingsTestCase(TestCase):
         self.assertEqual(holdings["user2"], user_holdings["user2"])
 
     def test_floating_ip_holdings(self):
-        mfactory.IPAddressFactory(userid="user1")
-        mfactory.IPAddressFactory(userid="user1")
-        mfactory.IPAddressFactory(userid="user2")
-        mfactory.IPAddressFactory(userid="user3")
+        mfactory.IPv4AddressFactory(userid="user1", floating_ip=True)
+        mfactory.IPv4AddressFactory(userid="user1", floating_ip=True)
+        mfactory.IPv4AddressFactory(userid="user2", floating_ip=True)
+        mfactory.IPv4AddressFactory(userid="user3", floating_ip=True)
         holdings = util.get_db_holdings()
         self.assertEqual(holdings["user1"]["cyclades.floating_ip"], 2)
         self.assertEqual(holdings["user2"]["cyclades.floating_ip"], 1)
@@ -176,7 +175,7 @@ class GetCommissionInfoTest(TestCase):
         self.assertEqual(None, commission)
         commission = quotas.get_commission_info(vm, "RESIZE",
                                                 {"beparams": {"vcpus": 4,
-                                                              "maxmem":2048}})
+                                                              "maxmem": 2048}})
         self.assertEqual({"cyclades.cpu": 2,
                           "cyclades.ram": 1048576 * 1024}, commission)
         vm.operstate = "STOPPED"

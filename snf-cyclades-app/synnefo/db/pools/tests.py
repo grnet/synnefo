@@ -210,10 +210,10 @@ class MacPrefixPoolTestCase(TestCase):
 class IPPoolTestCase(TestCase):
     def test_auto_reservations(self):
         obj = DummyObject(0)
-        network = DummyObject(0)
-        obj.network = network
-        network.subnet = '192.168.2.0/24'
-        network.gateway = '192.168.2.1'
+        subnet = DummyObject(0)
+        obj.subnet = subnet
+        subnet.cidr = '192.168.2.0/24'
+        subnet.gateway = '192.168.2.1'
         pool = IPPool(obj)
         self.assertEqual(pool.is_available('192.168.2.0'), False)
         self.assertEqual(pool.is_available('192.168.2.1'), False)
@@ -225,10 +225,10 @@ class IPPoolTestCase(TestCase):
 
     def test_auto_reservations_2(self):
         obj = DummyObject(0)
-        network = DummyObject(0)
-        obj.network = network
-        network.subnet = '192.168.2.0/31'
-        network.gateway = '192.168.2.1'
+        subnet = DummyObject(0)
+        obj.subnet = subnet
+        subnet.cidr = '192.168.2.0/31'
+        subnet.gateway = '192.168.2.1'
         pool = IPPool(obj)
         self.assertEqual(pool.is_available('192.168.2.0'), False)
         self.assertEqual(pool.is_available('192.168.2.1'), False)

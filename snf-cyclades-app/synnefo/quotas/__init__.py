@@ -37,8 +37,7 @@ from synnefo.db.models import (QuotaHolderSerial, VirtualMachine, Network,
 from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
                               ASTAKOS_AUTH_URL)
 from astakosclient import AstakosClient
-from astakosclient.errors import AstakosClientException, QuotaLimit
-from functools import wraps
+from astakosclient import errors
 
 import logging
 log = logging.getLogger(__name__)
@@ -71,19 +70,25 @@ class Quotaholder(object):
         return cls._object
 
 
-def handle_astakosclient_error(func):
-    """Decorator for converting astakosclient errors to 500."""
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except AstakosClientException:
-            log.exception("Unexpected error")
+class AstakosClientExceptionHandler(object):
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, value, traceback):
+        if value is not None:  # exception
+            if not isinstance(value, errors.AstakosClientException):
+                return False  # reraise
+            if exc_type is errors.QuotaLimit:
+                msg, details = render_overlimit_exception(value)
+                raise faults.OverLimit(msg, details=details)
+
+            log.exception("Unexpected error %s" % value.message)
             raise faults.InternalServerError("Unexpected error")
-    return wrapper
 
 
-@handle_astakosclient_error
 def issue_commission(resource, action, name="", force=False, auto_accept=False,
                      action_fields=None):
     """Issue a new commission to the quotaholder.
@@ -103,15 +108,12 @@ def issue_commission(resource, action, name="", force=False, auto_accept=False,
     source = DEFAULT_SOURCE
 
     qh = Quotaholder.get()
-    try:
-        if True:  # placeholder
+    if True:  # placeholder
+        with AstakosClientExceptionHandler():
             serial = qh.issue_one_commission(user, source,
                                              provisions, name=name,
                                              force=force,
                                              auto_accept=auto_accept)
-    except QuotaLimit as e:
-        msg, details = render_overlimit_exception(e)
-        raise faults.OverLimit(msg, details=details)
 
     if serial:
         serial_info = {"serial": serial}
@@ -152,7 +154,6 @@ def reject_commissions(rejected, strict=True):
     return resolve_commissions(reject=rejected, strict=strict)
 
 
-@handle_astakosclient_error
 def resolve_commissions(accept=None, reject=None, strict=True):
     if accept is None:
         accept = []
@@ -160,7 +161,8 @@ def resolve_commissions(accept=None, reject=None, strict=True):
         reject = []
 
     qh = Quotaholder.get()
-    response = qh.resolve_commissions(accept, reject)
+    with AstakosClientExceptionHandler():
+        response = qh.resolve_commissions(accept, reject)
 
     if strict:
         failed = response["failed"]

@@ -23,8 +23,9 @@ log = getLogger(__name__)
 
 urlpatterns = patterns(
     'synnefo.api.networks',
-     (r'^(?:/|.json|.xml)?$', 'demux'),
-     (r'^/(\w+)(?:/|.json|.xml)?$', 'network_demux'))
+    (r'^(?:/|.json|.xml)?$', 'demux'),
+    (r'^/(\w+)(?:/|.json|.xml)?$', 'network_demux'))
+
 
 def demux(request):
     if request.method == 'GET':
@@ -88,7 +89,7 @@ def create_network(request):
         try:
             flavor = d['type']
         except KeyError:
-            raise faults.BadRequest("Missing request parameter 'type'")
+            raise api.faults.BadRequest("Missing request parameter 'type'")
 
         if flavor not in Network.FLAVORS.keys():
             raise api.faults.BadRequest("Invalid network type '%s'"

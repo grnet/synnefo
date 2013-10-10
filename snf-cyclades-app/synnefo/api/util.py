@@ -206,7 +206,7 @@ def get_flavor_provider(flavor):
         disk_template, provider = disk_template.split("_", 1)
     return disk_template, provider
 
-'''
+
 def get_network(network_id, user_id, for_update=False, non_deleted=False):
     """Return a Network instance or raise ItemNotFound."""
 
@@ -222,26 +222,13 @@ def get_network(network_id, user_id, for_update=False, non_deleted=False):
         return network
     except (ValueError, Network.DoesNotExist):
         raise faults.ItemNotFound('Network not found.')
-'''
-def get_network(network_id, user_id, public=False, for_update=False):
-    """
-    Return a Network instance or raise ItemNotFound.
-    """
-    try:
-        objects = Network.objects
-        if for_update:
-            objects = objects.select_for_update()
-        if public:
-            objects = objects.filter(public=True)
-        return objects.get(Q(userid=user_id) | Q(public=True), id=network_id)
-    except (ValueError, Network.DoesNotExist):
-        raise faults.ItemNotFound('Network not found.')
+
 
 def get_port(port_id, user_id, for_update=False):
-     """
-     Return a NetworkInteface instance or raise ItemNotFound.
-     """
-     try:
+    """
+    Return a NetworkInteface instance or raise ItemNotFound.
+    """
+    try:
         objects = NetworkInterface.objects
         if for_update:
             objects = objects.select_for_update()
@@ -249,11 +236,12 @@ def get_port(port_id, user_id, for_update=False):
         port = objects.get(network__userid=user_id, id=port_id)
 
         if (port.device_owner != "vm") and for_update:
-            raise api.faults.BadRequest('Can not update non vm port')
+            raise faults.BadRequest('Can not update non vm port')
 
         return port
-     except (ValueError, NetworkInterface.DoesNotExist):
-         raise faults.ItemNotFound('Port not found.')
+    except (ValueError, NetworkInterface.DoesNotExist):
+        raise faults.ItemNotFound('Port not found.')
+
 
 def get_floating_ip(user_id, ipv4, for_update=False):
     try:

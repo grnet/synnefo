@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,19 +31,20 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import NoArgsCommand
+from datetime import datetime
+from django.core.management.base import NoArgsCommand, CommandError
 
 from optparse import make_option
 
 from pithos.api.util import get_backend
-from pithos.api.resources import resources
-from pithos.backends.modular import DEFAULT_SOURCE
 
 from snf_django.management import utils
 
 from astakosclient.errors import QuotaLimit, NotFound
+from snf_django.utils import reconcile
 
 backend = get_backend()
+RESOURCES = ['pithos.diskspace']
 
 
 class Command(NoArgsCommand):
@@ -57,6 +58,8 @@ class Command(NoArgsCommand):
         make_option("--userid", dest="userid",
                     default=None,
                     help="Reconcile resources only for this user"),
+        make_option("--project",
+                    help="Reconcile resources only for this project"),
         make_option("--fix", dest="fix",
                     default=False,
                     action="store_true",
@@ -69,103 +72,78 @@ class Command(NoArgsCommand):
     )
 
     def handle_noargs(self, **options):
+        write = self.stdout.write
         try:
             backend.pre_exec()
             userid = options['userid']
+            project = options['project']
 
             # Get holding from Pithos DB
-            db_usage = backend.node.node_account_usage(userid)
+            db_usage = backend.node.node_account_usage(userid, project)
+            db_project_usage = backend.node.node_project_usage(project)
 
             users = set(db_usage.keys())
             if userid and userid not in users:
                 if backend._lookup_account(userid) is None:
-                    self.stdout.write("User '%s' does not exist in DB!\n" %
-                                      userid)
+                    write("User '%s' does not exist in DB!\n" % userid)
                     return
 
             # Get holding from Quotaholder
             try:
                 qh_result = backend.astakosclient.service_get_quotas(userid)
             except NotFound:
-                self.stdout.write(
-                    "User '%s' does not exist in Quotaholder!\n" % userid)
+                write("User '%s' does not exist in Quotaholder!\n" % userid)
                 return
 
-            users.update(qh_result.keys())
+            try:
+                qh_project_result = \
+                    backend.astakosclient.service_get_project_quotas(project)
+            except NotFound:
+                write("Project '%s' does not exist in Quotaholder!\n" %
+                      project)
 
-            pending_exists = False
-            unknown_user_exists = False
-            unsynced = []
-            for uuid in users:
-                db_value = db_usage.get(uuid, 0)
-                try:
-                    qh_all = qh_result[uuid]
-                except KeyError:
-                    self.stdout.write(
-                        "User '%s' does not exist in Quotaholder!\n" % uuid)
-                    unknown_user_exists = True
-                    continue
-                else:
-                    qh = qh_all.get(DEFAULT_SOURCE, {})
-                    for resource in [r['name'] for r in resources]:
-                        try:
-                            qh_resource = qh[resource]
-                        except KeyError:
-                            self.stdout.write(
-                                "Resource '%s' does not exist in Quotaholder "
-                                "for user '%s'!\n" % (resource, uuid))
-                            continue
+            unsynced_users, users_pending, users_unknown =\
+                reconcile.check_users(self.stderr, RESOURCES,
+                                      db_usage, qh_result)
 
-                        if qh_resource['pending']:
-                            self.stdout.write(
-                                "Pending commission. "
-                                "User '%s', resource '%s'.\n" %
-                                (uuid, resource))
-                            pending_exists = True
-                            continue
+            unsynced_projects, projects_pending, projects_unknown =\
+            reconcile.check_projects(self.stderr, RESOURCES,
+                                     db_project_usage, qh_project_result)
+            pending_exists = users_pending or projects_pending
+            unknown_exists = users_unknown or projects_unknown
 
-                        qh_value = qh_resource['usage']
-
-                        if db_value != qh_value:
-                            data = (uuid, resource, db_value, qh_value)
-                            unsynced.append(data)
-
+            headers = ("Type", "Holder", "Source", "Resource",
+                       "Database", "Quotaholder")
+            unsynced = unsynced_users + unsynced_projects
             if unsynced:
-                headers = ("User", "Resource", "Database", "Quotaholder")
                 utils.pprint_table(self.stdout, unsynced, headers)
-                if options['fix']:
-                    request = {}
-                    request['force'] = options['force']
-                    request['auto_accept'] = True
-                    request['name'] = "RECONCILE"
-                    request['provisions'] = map(create_provision, unsynced)
+                if options["fix"]:
+                    force = options["force"]
+                    name = ("client: reconcile-resources-pithos, time: %s"
+                            % datetime.now())
+                    user_provisions = reconcile.create_user_provisions(
+                        unsynced_users)
+                    project_provisions = reconcile.create_project_provisions(
+                        unsynced_projects)
                     try:
-                        backend.astakosclient.issue_commission(request)
+                        backend.astakosclient.issue_commission_generic(
+                            user_provisions, project_provisions, name=name,
+                            force=force, auto_accept=True)
                     except QuotaLimit:
-                        self.stdout.write(
-                            "Reconciling failed because a limit has been "
-                            "reached. Use --force to ignore the check.\n")
+                        write("Reconciling failed because a limit has been "
+                              "reached. Use --force to ignore the check.\n")
                         return
-                    self.stdout.write("Fixed unsynced resources\n")
+                    write("Fixed unsynced resources\n")
 
             if pending_exists:
-                self.stdout.write(
-                    "Found pending commissions. Run 'snf-manage"
-                    " reconcile-commissions-pithos'\n")
-            elif not (unsynced or unknown_user_exists):
-                self.stdout.write("Everything in sync.\n")
+                write("Found pending commissions. Run 'snf-manage"
+                      " reconcile-commissions-pithos'\n")
+            elif not (unsynced or unknown_exists):
+                write("Everything in sync.\n")
         except BaseException as e:
             backend.post_exec(False)
-            self.stdout.write(str(e) + "\n")
+            raise CommandError(e)
         else:
             backend.post_exec(True)
         finally:
             backend.close()
-
-
-def create_provision(provision_info):
-    user, resource, db_value, qh_value = provision_info
-    return {"holder": user,
-            "source": DEFAULT_SOURCE,
-            "resource": resource,
-            "quantity": int(db_value - qh_value)}

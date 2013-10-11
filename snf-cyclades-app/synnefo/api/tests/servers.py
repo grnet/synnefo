@@ -186,6 +186,8 @@ class ServerAPITest(ComputeAPITest):
             server = json.loads(response.content)['server']
             self.assertEqual(server["SNF:fqdn"], "snf-%d.vm-%d.example.org" %
                              (vm.id, vm.id))
+
+        vm = mfactory.VirtualMachineFactory()
         # No setting, no NICs
         with override_settings(settings,
                                CYCLADES_SERVERS_FQDN=None):
@@ -240,6 +242,7 @@ class ServerAPITest(ComputeAPITest):
         ports = {
             22: lambda ip, id, fqdn, user:
             ip and ("gate", _port_from_ip(ip, 10000)) or None}
+        vm = mfactory.VirtualMachineFactory()
         with override_settings(settings,
                                CYCLADES_PORT_FORWARDING=ports):
             response = self.myget("servers/%d" % vm.id, vm.userid)

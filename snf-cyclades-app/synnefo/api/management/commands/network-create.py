@@ -187,7 +187,7 @@ class Command(BaseCommand):
                     backend = get_backend(backend_id)
                     backends.append(backend)
 
-        network = networks.create(user_id=userid, name=name, flavor=flavor,
+        network = networks.create(userid=userid, name=name, flavor=flavor,
                                   subnet=subnet, gateway=gateway,
                                   subnet6=subnet6, gateway6=gateway6,
                                   dhcp=dhcp, public=public, mode=mode,

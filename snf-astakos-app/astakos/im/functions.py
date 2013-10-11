@@ -42,6 +42,7 @@ from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.db.models import Q
 
 from synnefo_branding.utils import render_to_string
+from synnefo.util.keypath import set_path
 
 from synnefo.lib import join_urls
 from astakos.im.models import AstakosUser, Invitation, ProjectMembership, \
@@ -1178,7 +1179,9 @@ def count_pending_app(users):
     usage = {}
     for user in users:
         uuid = user.uuid
-        usage[uuid] = len(apps_d.get(uuid, []))
+        set_path(usage,
+                 [uuid, user.base_project.uuid, quotas.PENDING_APP_RESOURCE],
+                 len(apps_d.get(uuid, [])), createpath=True)
     return usage
 
 

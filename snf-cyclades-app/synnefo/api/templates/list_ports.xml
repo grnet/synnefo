@@ -1,0 +1,21 @@
+{% spaceless %}
+<?xml version="1.0" encoding="UTF-8"?>
+<ports xmlns="http://docs.openstack.org/compute/api/v1.1" xmlns:atom="http://www.w3.org/2005/Atom">
+  {% for port in ports %}
+  <port id="{{ port.id }}" name="{{ port.name }}"{% if detail %} updated="{{ port.updated }}" created="{{ port.created }}" mac_address="{{port.mac_address}}"{% endif %}>
+
+  {% if port.fixed_ips %}
+  <fixed_ips>
+    {% for ip in port.fixed_ips.values %}
+    <ip>
+    <ip_address id="{{ ip.ip_address }}"></ip_address>
+    <subnet id="{{ ip.subnet }}"></subnet>
+    </ip>
+    {% endfor %}
+  </fixed_ips>
+  {% endif %}
+
+  </port>
+  {% endfor %}
+</ports>
+{% endspaceless %}

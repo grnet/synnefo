@@ -167,17 +167,6 @@ class NetworkTest(BaseAPITest):
         response = self.delete(url)
         self.assertItemNotFound(response)
 
-    def test_put_network(self):
-        test_net = dbmf.NetworkFactory()
-        url = join_urls(NETWORKS_URL, str(test_net.id))
-        request = {
-            "network": {
-                "name": "new_name"}
-        }
-        response = self.put(url, params=json.dumps(request),
-                            user=test_net.userid)
-        self.assertEqual(response.status_code, 200)
-
     def test_put_network_wrong_data(self):
         test_net = dbmf.NetworkFactory()
         url = join_urls(NETWORKS_URL, str(test_net.id))

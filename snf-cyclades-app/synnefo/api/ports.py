@@ -1,17 +1,46 @@
+# Copyright 2011-2013 GRNET S.A. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or
+# without modification, are permitted provided that the following
+# conditions are met:
+#
+#   1. Redistributions of source code must retain the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer.
+#
+#   2. Redistributions in binary form must reproduce the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer in the documentation and/or other materials
+#      provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
+# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and
+# documentation are those of the authors and should not be
+# interpreted as representing official policies, either expressed
+# or implied, of GRNET S.A.
+
 from django.conf import settings
 from django.conf.urls import patterns
-
 from django.http import HttpResponse
 from django.utils import simplejson as json
 from django.db import transaction
 from django.db.models import Q
-from synnefo.db.pools import EmptyPool
-from synnefo.db.utils import validate_mac
-from django.conf import settings
-from snf_django.lib import api
-from snf_django.lib.api import utils
-from synnefo.logic import backend
 from django.template.loader import render_to_string
+
+from snf_django.lib import api
+
 from synnefo.api import util
 from synnefo.db.models import NetworkInterface, SecurityGroup, IPAddress
 
@@ -24,28 +53,24 @@ urlpatterns = patterns(
     (r'^(?:/|.json|.xml)?$', 'demux'),
     (r'^/([-\w]+)(?:/|.json|.xml)?$', 'port_demux'))
 
+
 def demux(request):
     if request.method == 'GET':
-        #return HttpResponse("list ports")
         return list_ports(request)
     elif request.method == 'POST':
         return create_port(request)
-        #return HttpResponse("create port")
     else:
         return api.api_method_not_allowed(request)
 
 
-def port_demux(request, offset):
+def port_demux(request, port_id):
 
     if request.method == 'GET':
-        #return HttpResponse("get single port")
-        return get_port(request, offset)
+        return get_port_details(request, port_id)
     elif request.method == 'DELETE':
-        #return HttpResponse("delete port")
-        return delete_port(request, offset)
+        return delete_port(request, port_id)
     elif request.method == 'PUT':
-        #return HttpResponse("put port")
-        return update_port(request, offset)
+        return update_port(request, port_id)
     else:
         return api.api_method_not_allowed(request)
 
@@ -58,85 +83,16 @@ def list_ports(request, detail=False):
     user_ports = NetworkInterface.objects.filter(
         network__userid=request.user_uniq)
 
-    ports = [port_to_dict(port, detail)
+    port_dicts = [port_to_dict(port, detail)
              for port in user_ports.order_by('id')]
 
     if request.serialization == 'xml':
-        data = render_to_string('list_networks.xml', {
-            "ports": ports})
+        data = render_to_string('list_ports.xml', {
+            "ports": port_dicts})
     else:
-        data = json.dumps({'ports': ports})
+        data = json.dumps({'ports': port_dicts})
 
     return HttpResponse(data, status=200)
-
-
-@api.api_method(http_method='GET', user_required=True, logger=log)
-def get_port(request, port_id):
-    log.debug('get_port_details %s', port_id)
-    port = util.get_port(port_id, request.user_uniq)
-
-    portdict = port_to_dict(port)
-    return render_port(request, portdict)
-
-
-@api.api_method(http_method='DELETE', user_required=True, logger=log)
-@transaction.commit_on_success
-def delete_port(request, port_id):
-    log.info('delete_port %s', port_id)
-    port = util.get_port(port_id, request.user_uniq, for_update=True)
-
-
-    '''
-    FIXME delete the port
-    skip the backend part...
-    release the ips associated with the port
-    '''
-
-
-    return HttpResponse(status=204)
-
-
-@api.api_method(http_method='PUT', user_required=True, logger=log)
-def update_port(request, port_id):
-    '''
-    You can update only name, security_groups
-    '''
-    port = util.get_port(port_id, request.user_uniq, for_update=True)
-    info = utils.get_request_dict(request)
-    try:
-        info = info["port"]
-    except KeyError:
-        raise api.faults.BadRequest("Malformed request")
-
-    try:
-        name = info['name']
-        port.name = name
-    except KeyError:
-        pass
-    sg_list = []
-    try:
-        s_groups = info['security_groups']
-        #validate security groups
-        # like get security group from db
-        for gid in s_groups:
-            try:
-                sg = SecurityGroup.objects.get(id=int(gid))
-                sg_list.append(sg)
-            except (ValueError, SecurityGroup.DoesNotExist):
-                raise api.faults.ItemNotFound("Not valid security group")
-
-        #clear the old security groups
-        port.security_groups.clear()
-
-        #add the new groups
-        for group in sg_list:
-            port.security_groups.add(group)
-    except KeyError:
-        pass
-
-    port.save()
-    portdict = port_to_dict(port)
-    return render_port(request, portdict, 200)
 
 
 @api.api_method(http_method='POST', user_required=True, logger=log)
@@ -145,57 +101,53 @@ def create_port(request):
     '''
     '''
     user_id = request.user_uniq
-    req = utils.get_request_dict(request)
+    req = api.utils.get_request_dict(request)
     log.info('create_port %s', req)
     try:
-        try:
-            info = req['port']
-            net_id = info['network_id']
-            dev_id = info['device_id']
-        except KeyError:
-            raise api.faults.BadRequest("Malformed request")
+        port_dict = api.utils.get_attribute(req, "port")
+        net_id = api.utils.get_attribute(port_dict, "network_id")
+        dev_id = api.utils.get_attribute(port_dict, "device_id")
 
-        net = util.get_network(net_id, request.user_uniq)
+        network = util.get_network(net_id, request.user_uniq)
 
         vm = util.get_vm(dev_id, request.user_uniq)
 
-        try:
-            name = info['name']
-        except KeyError:
-            name = "random_name"
+        name = api.utils.get_attribute(port_dict, "name", required=False)
+
+        if name is None:
+            name = ""
 
         sg_list = []
-        try:
-            s_groups = info['security_groups']
-            #validate security groups
-            # like get security group from db
-            for gid in s_groups:
+        security_groups = api.utils.get_attribute(port_dict,
+                                                  "security_groups",
+                                                  required=False)
+        #validate security groups
+        # like get security group from db
+        if security_groups:
+            for gid in security_groups:
                 try:
                     sg = SecurityGroup.objects.get(id=int(gid))
                     sg_list.append(sg)
                 except (ValueError, SecurityGroup.DoesNotExist):
                     raise api.faults.ItemNotFound("Not valid security group")
-        except KeyError:
-            pass
 
         #create the port
         new_port = NetworkInterface.objects.create(name=name,
-                                                   network=net,
+                                                   network=network,
                                                    machine=vm,
                                                    device_owner="vm",
                                                    state="BUILDING")
         #add the security groups
         new_port.security_groups.add(*sg_list)
 
-        #add every to every subnet of the network
-        for subn in net.subnets.all():
+        #add new port to every subnet of the network
+        for subn in network.subnets.all():
             IPAddress.objects.create(subnet=subn,
-                                     network=net,
+                                     network=network,
                                      nic=new_port,
                                      userid=user_id,
-                                     address="192.168.0."+str(subn.id)  # FIXME
-                                     )
-
+                                     # FIXME
+                                     address="192.168.0." + str(subn.id))
 
     except:
         transaction.rollback()
@@ -206,11 +158,66 @@ def create_port(request):
         transaction.commit()
         log.info("commit")
 
-    portdict = port_to_dict(new_port)
-    response = render_port(request, portdict, status=201)
+    response = render_port(request, port_to_dict(new_port), status=201)
 
     return response
 
+
+@api.api_method(http_method='GET', user_required=True, logger=log)
+def get_port_details(request, port_id):
+    log.debug('get_port_details %s', port_id)
+    port = util.get_port(port_id, request.user_uniq)
+    return render_port(request, port_to_dict(port))
+
+
+@api.api_method(http_method='PUT', user_required=True, logger=log)
+def update_port(request, port_id):
+    '''
+    You can update only name, security_groups
+    '''
+    port = util.get_port(port_id, request.user_uniq, for_update=True)
+    req = api.utils.get_request_dict(request)
+
+    port_info = api.utils.get_attribute(req, "port", required=True)
+    name = api.utils.get_attribute(port_info, "name", required=False)
+
+    if name:
+        port.name = name
+
+    security_groups = api.utils.get_attribute(port_info, "security_groups",
+                                              required=False)
+    if security_groups:
+        sg_list = []
+        #validate security groups
+        # like get security group from db
+        for gid in security_groups:
+            try:
+                sg = SecurityGroup.objects.get(id=int(gid))
+                sg_list.append(sg)
+            except (ValueError, SecurityGroup.DoesNotExist):
+                raise api.faults.ItemNotFound("Not valid security group")
+
+        #clear the old security groups
+        port.security_groups.clear()
+
+        #add the new groups
+        port.security_groups.add(*sg_list)
+
+    port.save()
+    return render_port(request, port_to_dict(port), 200)
+
+
+@api.api_method(http_method='DELETE', user_required=True, logger=log)
+@transaction.commit_on_success
+def delete_port(request, port_id):
+    log.info('delete_port %s', port_id)
+    port = util.get_port(port_id, request.user_uniq, for_update=True)
+    '''
+    FIXME delete the port
+    skip the backend part...
+    release the ips associated with the port
+    '''
+    return HttpResponse(status=204)
 
 #util functions
 
@@ -226,18 +233,21 @@ def port_to_dict(port, detail=True):
         d['status'] = port.state
         d['device_owner'] = port.device_owner
         d['network_id'] = str(port.network.id)
+        d['updated'] = api.utils.isoformat(port.updated)
+        d['created'] = api.utils.isoformat(port.created)
         d['fixed_ips'] = []
         for ip in port.ips.all():
             d['fixed_ips'].append({"ip_address": ip.address,
-                                      "subnet": ip.subnet.id})
-        d['security_groups'] = [str(sg.id)
-                                for sg in port.security_groups.all()]
+                                      "subnet": str(ip.subnet.id)})
+        sg_list = list(port.security_groups.values_list('id', flat=True))
+        d['security_groups'] = map(str, sg_list)
+
     return d
 
 
 def render_port(request, portdict, status=200):
     if request.serialization == 'xml':
-        data = render_to_string('network.xml', {'port': portdict})
+        data = render_to_string('port.xml', {'port': portdict})
     else:
         data = json.dumps({'port': portdict})
     return HttpResponse(data, status=status)

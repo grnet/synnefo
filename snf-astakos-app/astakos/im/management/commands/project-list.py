@@ -42,34 +42,24 @@ from ._common import is_uuid, is_email
 
 
 class Command(SynnefoCommand):
-    help = """
-    List projects and project status.
+    help = """List projects and project status.
 
     Project status can be one of:
-      Pending              an application <AppId> for a new project
+      Pending              an uninitialized project, pending review
 
       Active               an active project
 
-      Active - Pending     an active project with
-                           a pending modification <AppId>
-
-      Denied               an application for a new project,
-                           denied by the admin
+      Denied               an uninitialized project, denied by the admin
 
       Dismissed            a denied project, dismissed by the applicant
 
-      Cancelled            an application for a new project,
-                           cancelled by the applicant
+      Cancelled            an uninitialized project, cancelled by the applicant
 
       Suspended            a project suspended by the admin;
                            it can later be resumed
 
-      Suspended - Pending  a suspended project with
-                           a pending modification <AppId>
-
       Terminated           a terminated project; its name can be claimed
-                           by a new project
-"""
+                           by a new project"""
 
     option_list = SynnefoCommand.option_list + (
         make_option('--all',
@@ -81,7 +71,7 @@ class Command(SynnefoCommand):
                     action='store_true',
                     dest='new',
                     default=False,
-                    help="List only new project applications"),
+                    help="List only new pending uninitialized projects"),
         make_option('--modified',
                     action='store_true',
                     dest='modified',

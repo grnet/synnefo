@@ -108,7 +108,13 @@ def create_port(request):
         net_id = api.utils.get_attribute(port_dict, "network_id")
         dev_id = api.utils.get_attribute(port_dict, "device_id")
 
-        network = util.get_network(net_id, request.user_uniq)
+        network = util.get_network(net_id, request.user_uniq, non_deleted=True)
+
+        if network.public:
+            raise api.faults.Forbidden('forbidden')
+
+        if network.state != 'ACTIVE':
+            raise api.faults.Conflict('Network build in process')
 
         vm = util.get_vm(dev_id, request.user_uniq)
 

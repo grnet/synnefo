@@ -69,6 +69,11 @@ class PortTest(BaseAPITest):
         response = self.delete(url, user=nic.network.userid)
         self.assertEqual(response.status_code, 204)
 
+    def test_remove_nic_malformed(self):
+        url = join_urls(PORTS_URL, "123")
+        response = self.delete(url)
+        self.assertItemNotFound(response)
+
     def test_update_port_name(self):
         nic = dbmf.NetworkInterfaceFactory.create(device_owner='vm')
         url = join_urls(PORTS_URL, str(nic.id))
@@ -134,3 +139,100 @@ class PortTest(BaseAPITest):
         response = self.post(PORTS_URL, params=json.dumps(request),
                              user=net.userid)
         self.assertEqual(response.status_code, 201)
+
+    def test_add_nic_to_deleted_network(self):
+        user = 'userr'
+        vm = dbmf.VirtualMachineFactory(name='yo', userid=user,
+                                            operstate="ACTIVE")
+        net = dbmf.NetworkFactory(state='ACTIVE', userid=user,
+                                      deleted=True)
+        request = {
+            "port": {
+                "device_id": str(vm.id),
+                "name": "port1",
+                "network_id": str(net.id)
+            }
+        }
+        response = self.post(PORTS_URL, params=json.dumps(request),
+                             user=net.userid)
+        self.assertBadRequest(response)
+
+    def test_add_nic_to_public_network(self):
+        user = 'userr'
+        vm = dbmf.VirtualMachineFactory(name='yo', userid=user)
+        net = dbmf.NetworkFactory(state='ACTIVE', userid=user, public=True)
+        request = {
+            "port": {
+                "device_id": str(vm.id),
+                "name": "port1",
+                "network_id": str(net.id)
+            }
+        }
+        response = self.post(PORTS_URL, params=json.dumps(request),
+                             user=net.userid)
+        self.assertFault(response, 403, 'forbidden')
+
+    def test_add_nic_malformed_1(self):
+        user = 'userr'
+        vm = dbmf.VirtualMachineFactory(name='yo', userid=user)
+        net = dbmf.NetworkFactory(state='ACTIVE', userid=user)
+        request = {
+            "port": {
+                "name": "port1",
+                "network_id": str(net.id)
+            }
+        }
+        response = self.post(PORTS_URL, params=json.dumps(request),
+                             user=net.userid)
+        self.assertBadRequest(response)
+
+    def test_add_nic_malformed_2(self):
+        user = 'userr'
+        vm = dbmf.VirtualMachineFactory(name='yo', userid=user)
+        net = dbmf.NetworkFactory(state='ACTIVE', userid=user)
+        request = {
+            "port": {
+                "device_id": str(vm.id),
+                "name": "port1"
+            }
+        }
+        response = self.post(PORTS_URL, params=json.dumps(request),
+                             user=net.userid)
+        self.assertBadRequest(response)
+
+    def test_add_nic_not_active(self):
+        """Test connecting VM to non-active network"""
+        user = 'dummy'
+        vm = dbmf.VirtualMachineFactory(name='yo', userid=user)
+        net = dbmf.NetworkFactory(state='PENDING', userid=user)
+        request = {
+            "port": {
+                "device_id": str(vm.id),
+                "name": "port1",
+                "network_id": str(net.id)
+            }
+        }
+        response = self.post(PORTS_URL, params=json.dumps(request),
+                             user=net.userid)
+        # Test that returns BuildInProgress
+        self.assertEqual(response.status_code, 409)
+
+#    def test_add_nic_full_network(self, mrapi):
+#        """Test connecting VM to a full network"""
+#        user = 'userr'
+#        vm = dbmf.VirtualMachineFactory(name='yo', userid=user,
+#                                            operstate="STARTED")
+#        net = dbmf.NetworkFactory(state='ACTIVE', subnet='10.0.0.0/30',
+#                                      userid=user, dhcp=True)
+#        pool = net.get_pool()
+#        while not pool.empty():
+#            pool.get()
+#        pool.save()
+#        pool = net.get_pool()
+#        self.assertTrue(pool.empty())
+#        request = {'add': {'serverRef': vm.id}}
+#        response = self.mypost('networks/%d/action' % net.id,
+#                               net.userid, json.dumps(request), 'json')
+#        # Test that returns OverLimit
+#        self.assertEqual(response.status_code, 413)
+#        self.assertFalse(mrapi.called)

@@ -43,7 +43,6 @@ from snf_django.lib import api
 from snf_django.lib.api import faults, utils
 
 from synnefo.api import util
-from synnefo.db import query as db_query
 from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata)
 from synnefo.logic import servers, utils as logic_utils
 
@@ -105,39 +104,57 @@ def metadata_item_demux(request, server_id, key):
         return api.api_method_not_allowed(request)
 
 
-def nic_to_dict(nic):
+def nic_to_attachments(nic):
+    """Convert a NIC object to 'attachments attribute.
+
+    Convert a NIC object to match the format of 'attachments' attribute of the
+    response to the /servers API call.
+
+    NOTE: The 'ips' of the NIC object have been prefetched in order to avoid DB
+    queries. No subsequent queries for 'ips' (like filtering) should be
+    performed because this will return in a new DB query.
+
+    """
     d = {'id': nic.id,
-         'network_id': str(nic.network.id),
+         'network_id': str(nic.network_id),
          'mac_address': nic.mac,
          'ipv4': '',
          'ipv6': ''}
-    for ip in nic.ips.filter(deleted=False).select_related("subnet"):
-        ip_type = "floating" if ip.floating_ip else "fixed"
-        if ip.subnet.ipversion == 4:
-            d["ipv4"] = ip.address
-            d["OS-EXT-IPS:type"] = ip_type
-        else:
-            d["ipv6"] = ip.address
-            d["OS-EXT-IPS:type"] = ip_type
 
     if nic.firewall_profile:
         d['firewallProfile'] = nic.firewall_profile
+
+    for ip in nic.ips.all():
+        if not ip.deleted:
+            ip_type = "floating" if ip.floating_ip else "fixed"
+            if ip.ipversion == 4:
+                d["ipv4"] = ip.address
+                d["OS-EXT-IPS:type"] = ip_type
+            else:
+                d["ipv6"] = ip.address
+                d["OS-EXT-IPS:type"] = ip_type
     return d
 
 
 def attachments_to_addresses(attachments):
+    """Convert 'attachments' attribute to 'addresses'.
+
+    Convert a a list of 'attachments' attribute to a list of 'addresses'
+    attribute, as expected in the response to /servers API call.
+
+    """
     addresses = {}
     for nic in attachments:
-        net_nics = []
+        net_addrs = []
         if nic["ipv4"]:
-            net_nics.append({"version": 4,
-                             "addr": nic["ipv4"],
-                             "OS-EXT-IPS:type": nic["OS-EXT-IPS:type"]})
+            net_addrs.append({"version": 4,
+                              "addr": nic["ipv4"],
+                              "OS-EXT-IPS:type": nic["OS-EXT-IPS:type"]})
         if nic["ipv6"]:
-            net_nics.append({"version": 6,
-                             "addr": nic["ipv6"],
-                             "OS-EXT-IPS:type": nic["OS-EXT-IPS:type"]})
-        addresses[nic["network_id"]] = net_nics
+            net_addrs.append({"version": 6,
+                              "addr": nic["ipv6"],
+                              "OS-EXT-IPS:type": nic["OS-EXT-IPS:type"]})
+        addresses[nic["network_id"]] = net_addrs
     return addresses
 
 
@@ -162,8 +179,10 @@ def vm_to_dict(vm, detail=False):
         metadata = dict((m.meta_key, m.meta_value) for m in vm.metadata.all())
         d['metadata'] = metadata
 
-        vm_nics = vm.nics.filter(state="ACTIVE").order_by("id")
-        attachments = map(nic_to_dict, vm_nics)
+        nics = vm.nics.all()
+        active_nics = filter(lambda nic: nic.state == "ACTIVE", nics)
+        active_nics.sort(key=lambda nic: nic.id)
+        attachments = map(nic_to_attachments, active_nics)
         d['attachments'] = attachments
         d['addresses'] = attachments_to_addresses(attachments)
 
@@ -179,25 +198,34 @@ def vm_to_dict(vm, detail=False):
         d["config_drive"] = ""
         d["accessIPv4"] = ""
         d["accessIPv6"] = ""
-        fqdn = get_server_fqdn(vm)
+        fqdn = get_server_fqdn(vm, active_nics)
         d["SNF:fqdn"] = fqdn
-        d["SNF:port_forwarding"] = get_server_port_forwarding(vm, fqdn)
-
+        d["SNF:port_forwarding"] = get_server_port_forwarding(vm, active_nics,
+                                                              fqdn)
     return d
 
 
-def get_server_fqdn(vm):
+def get_server_public_ip(vm_nics, version=4):
+    """Get the first public IP address of a server.
+
+    NOTE: 'vm_nics' objects have prefetched the ips
+    """
+    for version in [4, 6]:
+        for nic in vm_nics:
+            for ip in nic.ips.all():
+                if ip.ipversion == version and ip.public:
+                    return ip
+    return None
+
+
+def get_server_fqdn(vm, vm_nics):
+    public_ip = get_server_public_ip(vm_nics)
+    if public_ip is None:
+        return ""
+
     fqdn_setting = settings.CYCLADES_SERVERS_FQDN
     if fqdn_setting is None:
-        # Return the first public IPv4 address if exists
-        address = db_query.get_server_public_ip(server=vm, version=4)
-        if address is None:
-            # Else return the first public IPv6 address if exists
-            address = db_query.get_server_public_ip(server=vm, version=6)
-        if address is None:
-            return ""
-        else:
-            return address
+        return public_ip.address
     elif isinstance(fqdn_setting, basestring):
         return fqdn_setting % {"id": vm.id}
     else:
@@ -206,7 +234,7 @@ def get_server_fqdn(vm):
         raise faults.InternalServerError(msg)
 
 
-def get_server_port_forwarding(vm, fqdn):
+def get_server_port_forwarding(vm, vm_nics, fqdn):
     """Create API 'port_forwarding' attribute from corresponding setting.
 
     Create the 'port_forwarding' API vm attribute based on the corresponding
@@ -218,16 +246,17 @@ def get_server_port_forwarding(vm, fqdn):
     * fqdn
     * owner UUID
 
+    NOTE: 'vm_nics' objects have prefetched the ips
     """
     port_forwarding = {}
+    public_ip = get_server_public_ip(vm_nics)
+    if public_ip is None:
+        return port_forwarding
     for dport, to_dest in settings.CYCLADES_PORT_FORWARDING.items():
         if hasattr(to_dest, "__call__"):
-            address = db_query.get_server_public_ip(server=vm, version=4)
-            to_dest = to_dest(address, vm.id, fqdn, vm.userid)
+            to_dest = to_dest(public_ip.address, vm.id, fqdn, vm.userid)
         msg = ("Invalid setting: CYCLADES_PORT_FOWARDING."
                " Value must be a tuple of two elements (host, port).")
-        if to_dest is None:
-            continue
         if not isinstance(to_dest, tuple) or len(to_dest) != 2:
                 raise faults.InternalServerError(msg)
         else:
@@ -307,6 +336,8 @@ def list_servers(request, detail=False):
 
     log.debug('list_servers detail=%s', detail)
     user_vms = VirtualMachine.objects.filter(userid=request.user_uniq)
+    if detail:
+        user_vms = user_vms.prefetch_related("nics__ips")
 
     user_vms = utils.filter_modified_since(request, objects=user_vms)
 
@@ -388,7 +419,8 @@ def get_server_details(request, server_id):
     #                       overLimit (413)
 
     log.debug('get_server_details %s', server_id)
-    vm = util.get_vm(server_id, request.user_uniq)
+    vm = util.get_vm(server_id, request.user_uniq,
+                     prefetch_related="nics__ips")
     server = vm_to_dict(vm, detail=True)
     return render_server(request, server)
 
@@ -492,8 +524,9 @@ def list_addresses(request, server_id):
     #                       overLimit (413)
 
     log.debug('list_addresses %s', server_id)
-    vm = util.get_vm(server_id, request.user_uniq)
-    attachments = [nic_to_dict(nic) for nic in vm.nics.filter(state="ACTIVE")]
+    vm = util.get_vm(server_id, request.user_uniq, prefetch_related="nic__ips")
+    attachments = [nic_to_attachments(nic)
+                   for nic in vm.nics.filter(state="ACTIVE")]
     addresses = attachments_to_addresses(attachments)
 
     if request.serialization == 'xml':
@@ -518,7 +551,7 @@ def list_addresses_by_network(request, server_id, network_id):
     machine = util.get_vm(server_id, request.user_uniq)
     network = util.get_network(network_id, request.user_uniq)
     nics = machine.nics.filter(network=network, state="ACTIVE")
-    addresses = attachments_to_addresses(map(nic_to_dict, nics))
+    addresses = attachments_to_addresses(map(nic_to_attachments, nics))
 
     if request.serialization == 'xml':
         data = render_to_string('address.xml', {'addresses': addresses})

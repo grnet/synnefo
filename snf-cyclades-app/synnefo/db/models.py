@@ -737,6 +737,14 @@ class IPAddress(models.Model):
     class Meta:
         unique_together = ("network", "address")
 
+    @property
+    def ipversion(self):
+        return self.subnet.ipversion
+
+    @property
+    def public(self):
+        return self.network.public
+
 
 class NetworkInterface(models.Model):
     FIREWALL_PROFILES = (

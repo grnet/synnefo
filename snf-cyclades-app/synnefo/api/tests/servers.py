@@ -161,6 +161,13 @@ class ServerAPITest(ComputeAPITest):
 
     def test_server_fqdn(self):
         vm = mfactory.VirtualMachineFactory()
+        # test no public ip
+        with override_settings(settings,
+                               CYCLADES_SERVERS_FQDN="vm.example.org"):
+            response = self.myget("servers/%d" % vm.id, vm.userid)
+            server = json.loads(response.content)['server']
+            self.assertEqual(server["SNF:fqdn"], "")
+        mfactory.IPv4AddressFactory(nic__machine=vm, network__public=True)
         with override_settings(settings,
                                CYCLADES_SERVERS_FQDN="vm.example.org"):
             response = self.myget("servers/%d" % vm.id, vm.userid)
@@ -206,16 +213,25 @@ class ServerAPITest(ComputeAPITest):
 
     def test_server_port_forwarding(self):
         vm = mfactory.VirtualMachineFactory()
+        # test None if the server has no public IP
         ports = {
             22: ("foo", 61000),
             80: lambda ip, id, fqdn, user: ("bar", 61001)}
         with override_settings(settings,
                                CYCLADES_PORT_FORWARDING=ports):
             response = self.myget("servers/%d" % vm.id, vm.userid)
-            server = json.loads(response.content)['server']
-            self.assertEqual(server["SNF:port_forwarding"],
-                             {"22": {"host": "foo", "port": "61000"},
-                              "80": {"host": "bar", "port": "61001"}})
+        server = json.loads(response.content)['server']
+        self.assertEqual(server["SNF:port_forwarding"], {})
+
+        # Add with public IP
+        mfactory.IPv4AddressFactory(nic__machine=vm, network__public=True)
+        with override_settings(settings,
+                               CYCLADES_PORT_FORWARDING=ports):
+            response = self.myget("servers/%d" % vm.id, vm.userid)
+        server = json.loads(response.content)['server']
+        self.assertEqual(server["SNF:port_forwarding"],
+                         {"22": {"host": "foo", "port": "61000"},
+                          "80": {"host": "bar", "port": "61001"}})
 
         def _port_from_ip(ip, base):
             fields = ip.split('.', 4)

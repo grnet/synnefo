@@ -853,7 +853,7 @@ def parse_endpoints(endpoints, ep_name=None, ep_type=None,
     ep_region     -- return only endpoints with this region (optional)
     ep_version_id -- return only endpoints with this versionId (optional)
 
-    In case on of the `name', `type', `region', `version_id' parameters
+    In case one of the `name', `type', `region', `version_id' parameters
     is given, return only the endpoints that match all of these criteria.
     If no match is found then raise NoEndpoints exception.
 

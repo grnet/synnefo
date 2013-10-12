@@ -110,10 +110,10 @@ def get_available_backends(flavor):
     if disk_template.startswith("ext_"):
         disk_template = "ext"
 
-    backends = Backend.objects.select_for_update()
-    backends = backends.filter(offline=False, drained=False,
-                               disk_templates__contains=disk_template)
-    backends = list(backends)
+    backends = Backend.objects.select_for_update().filter(offline=False,
+                                                          drained=False)
+    backends = filter(lambda b: disk_template in b.disk_templates,
+                      list(backends))
     if "SNF:ANY_PUBLIC" in DEFAULT_INSTANCE_NETWORKS:
         backends = filter(lambda x: has_free_ip(x), backends)
     return backends

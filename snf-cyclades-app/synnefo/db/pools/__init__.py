@@ -55,15 +55,22 @@ class PoolManager(object):
     def pool(self):
         return (self.available & self.reserved)
 
-    def get(self):
+    def get(self, value=None):
         """Get a value from the pool."""
         if self.empty():
             raise EmptyPool
-        # Get the first available index
-        index = int(self.pool.index(AVAILABLE))
-        assert(index < self.pool_size)
-        self._reserve(index)
-        return self.index_to_value(index)
+        if value is None:
+            # Get the first available index
+            index = int(self.pool.index(AVAILABLE))
+            assert(index < self.pool_size)
+            self._reserve(index)
+            return self.index_to_value(index)
+        else:
+            if self.is_available(value):
+                self.reserve(value)
+                return value
+            else:
+                raise ValueNotAvailable("Value %s is not available" % value)
 
     def put(self, value, external=False):
         """Return a value to the pool."""
@@ -177,6 +184,10 @@ class PoolManager(object):
 
 
 class EmptyPool(Exception):
+    pass
+
+
+class ValueNotAvailable(Exception):
     pass
 
 

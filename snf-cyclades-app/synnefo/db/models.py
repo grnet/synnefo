@@ -803,6 +803,9 @@ class NetworkInterface(models.Model):
                 return ip.address
         return None
 
+    def get_ip_addresses_subnets(self):
+        return self.ips.values_list("address", "subnet__id")
+
 
 class SecurityGroup(models.Model):
     SECURITY_GROUP_NAME_LENGTH = 128

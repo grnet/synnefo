@@ -72,14 +72,6 @@ class Command(BaseCommand):
                  " conversation the network will be created to all"
                  " available Ganeti backends."),
         make_option(
-            '--add-reserved-ips',
-            dest="add_reserved_ips",
-            help="Comma seperated list of IPs to externally reserve."),
-        make_option(
-            '--remove-reserved-ips',
-            dest="remove_reserved_ips",
-            help="Comma seperated list of IPs to externally release."),
-        make_option(
             "--add-to-backend",
             dest="add_to_backend",
             metavar="BACKEND_ID",
@@ -147,20 +139,6 @@ class Command(BaseCommand):
                         msg = ("Sent job to create network '%s' in backend"
                                " '%s'\n" % (network, backend))
                         self.stdout.write(msg)
-
-        add_reserved_ips = options.get('add_reserved_ips')
-        remove_reserved_ips = options.get('remove_reserved_ips')
-        if add_reserved_ips or remove_reserved_ips:
-            if add_reserved_ips:
-                add_reserved_ips = add_reserved_ips.split(",")
-            if remove_reserved_ips:
-                remove_reserved_ips = remove_reserved_ips.split(",")
-
-            for bnetwork in network.backend_networks.filter(offline=False):
-                with pooled_rapi_client(bnetwork.backend) as c:
-                    c.ModifyNetwork(network=network.backend_id,
-                                    add_reserved_ips=add_reserved_ips,
-                                    remove_reserved_ips=remove_reserved_ips)
 
         add_to_backend = options["add_to_backend"]
         if add_to_backend is not None:

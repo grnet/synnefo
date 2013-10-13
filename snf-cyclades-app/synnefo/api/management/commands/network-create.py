@@ -157,17 +157,15 @@ class Command(BaseCommand):
         dhcp = parse_bool(options["dhcp"])
 
         if not name:
-            raise CommandError("name is required")
+            name=""
+
         if not flavor:
             raise CommandError("flavor is required")
 
-        if (subnet is None) and (subnet6 is None):
-            raise CommandError("subnet or subnet6 is required")
         if subnet is None and gateway is not None:
             raise CommandError("Can not use gateway without subnet")
         if subnet6 is None and gateway6 is not None:
             raise CommandError("Can not use gateway6 without subnet6")
-
         if public and not (backend_ids or floating_ip_pool):
             raise CommandError("backend-ids is required")
         if not userid and not public:

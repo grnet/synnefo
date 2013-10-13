@@ -52,12 +52,6 @@ class Command(ListCommand):
             dest='public',
             default=False,
             help="List only public networks"),
-        make_option(
-            '--ipv6',
-            action='store_true',
-            dest='ipv6',
-            default=False,
-            help="Include IPv6 information"),
     )
 
     object_class = Network
@@ -65,6 +59,15 @@ class Command(ListCommand):
     user_uuid_field = "userid"
     astakos_url = ASTAKOS_BASE_URL
     astakos_token = ASTAKOS_TOKEN
+
+    def get_subnets(network):
+
+        def help_str((a, b)):
+            return (str(a), b)
+        lista = network.subnets.values_list("id", "cidr")
+        lista = map(help_str, lista)
+        lista = map(" ".join, lista)
+        return " ".join(lista)
 
     def get_machines(network):
         return network.machines.filter(deleted=False).count()
@@ -79,11 +82,6 @@ class Command(ListCommand):
         "public": ("public", "Whether network is public or private"),
         "flavor": ("flavor", "The network's flavor"),
         "state": ("state", "The network's state"),
-        "dhcp": ("dhcp", "Whether network uses nfdhcpd or not"),
-        "subnet.ipv4": ("subnet", "The IPv4 subnet of the network"),
-        "gateway.ipv4": ("gateway", "The IPv4 gateway of the network"),
-        "subnet.ipv6": ("subnet6", "The IPv6 subnet of the network"),
-        "gateway.ipv6": ("gateway6", "The IPv6 gateway of the network"),
         "created": ("created", "The date the network was created"),
         "updated": ("updated", "The date the network was updated"),
         "deleted": ("deleted", "Whether the network is deleted or not"),
@@ -94,15 +92,15 @@ class Command(ListCommand):
         "vms": (get_machines, "Number of connected servers"),
         "backends": (get_backends, "IDs of Ganeti backends that the network is"
                                    " connected to"),
+        "subnets": (get_subnets, "IDs of subnets that the network is"
+                                   " associated with"),
         "pool": ("floating_ip_pool", "Whether the network is a floating"
                                      " IP pool"),
     }
 
-    fields = ["id", "name", "user.uuid", "state", "public", "subnet.ipv4",
-              "gateway.ipv4", "link", "mac_prefix", "dhcp", "drained", "pool"]
+    fields = ["id", "name", "user.uuid", "state", "public", "link",
+              "mac_prefix", "drained", "pool", "subnets"]
 
     def handle_args(self, *args, **options):
         if options["public"]:
             self.filters["public"] = True
-        if options["ipv6"]:
-            self.fields.extend(["subnet.ipv6", "gateway.ipv6"])

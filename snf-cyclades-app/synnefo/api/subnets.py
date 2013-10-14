@@ -43,7 +43,7 @@ from snf_django.lib.api import utils
 from synnefo.db.models import Subnet, Network
 from synnefo.logic import networks
 
-from ipaddr import IPv4Network, IPv6Network, IPv4Address, IPAddress
+from ipaddr import IPv4Network, IPv6Network, IPv4Address, IPAddress, IPNetwork
 
 log = getLogger(__name__)
 
@@ -89,7 +89,10 @@ def list_subnets(request):
 
 @api.api_method(http_method='POST', user_required=True, logger=log)
 def create_subnet(request):
-    """Create a subnet"""
+    """
+    Create a subnet
+    network_id and the desired cidr are mandatory, everything else is optional
+    """
 
     dictionary = utils.get_request_dict(request)
     log.info('create subnet %s', dictionary)
@@ -129,29 +132,25 @@ def create_subnet(request):
     else:
         networks.validate_network_params(cidr, gateway)
 
-    allocation_pools = subnet.get('allocation_pools', None)
-
-    if allocation_pools:
-        if ipversion == 6:
-            raise api.faults.BadRequest("Can't allocate an IP Pool in IPv6")
-        for pool in allocation_pools:
-            start = pool['start']
-            end = pool['end']
-            networks.validate_network_params(cidr, start)
-            networks.validate_network_params(cidr, end)
-            start = IPv4Address(start)
-            end = IPv4Address(end)
-            if start >= end:
-                raise api.faults.BadRequest("Invalid IP pool range")
-    else:
-        # FIX ME
-        pass
-
     dhcp = check_dhcp_value(subnet.get('enable_dhcp', True))
     name = check_name_length(subnet.get('name', None))
 
     dns = subnet.get('dns_nameservers', None)
     hosts = subnet.get('host_routes', None)
+
+    gateway_ip = IPAddress(gateway)
+    cidr_ip = IPNetwork(cidr)
+
+    allocation_pools = subnet.get('allocation_pools', None)
+
+    if allocation_pools:
+        if ipversion == 6:
+            raise api.faults.Conflict("Can't allocate an IP Pool in IPv6")
+        pools = parse_ip_pools(allocation_pools)
+        validate_subpools(pools, cidr_ip, gateway_ip)
+    else:
+        # FIX ME
+        pass
 
     # FIX ME
     try:
@@ -356,9 +355,9 @@ def validate_subpools(pools, cidr, gateway):
     pool_list = sorted(pool_list)
 
     if pool_list[0][0] <= cidr.network:
-        raise api.faults.BadRequest("IP Pool out of bounds")
+        raise api.faults.Conflict("IP Pool out of bounds")
     elif pool_list[-1][1] >= cidr.broadcast:
-        raise api.faults.BadRequest("IP Pool out of bounds")
+        raise api.faults.Conflict("IP Pool out of bounds")
 
     for start, end in pool_list:
         if start >= end:

@@ -47,8 +47,9 @@ from django.db.models import Q
 
 from snf_django.lib.api import faults
 from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
-                               Network, NetworkInterface, BridgePoolTable,
-                               MacPrefixPoolTable, IPAddress, IPPoolTable)
+                               Network, NetworkInterface, SecurityGroup,
+                               BridgePoolTable, MacPrefixPoolTable, IPAddress,
+                               IPPoolTable)
 from synnefo.db import pools
 
 from synnefo.plankton.utils import image_backend
@@ -243,6 +244,12 @@ def get_port(port_id, user_id, for_update=False):
     except (ValueError, NetworkInterface.DoesNotExist):
         raise faults.ItemNotFound('Port not found.')
 
+def get_security_group(sg_id):
+    try:
+        sg = SecurityGroup.objects.get(id=sg_id)
+        return sg
+    except (ValueError, SecurityGroup.DoesNotExist):
+        raise faults.ItemNotFound("Not valid security group")
 
 def get_floating_ip_by_address(userid, address, for_update=False):
     try:

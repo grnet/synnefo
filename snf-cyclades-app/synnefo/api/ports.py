@@ -121,19 +121,16 @@ def create_port(request):
     if name is None:
         name = ""
 
-    sg_list = []
     security_groups = api.utils.get_attribute(port_dict,
                                               "security_groups",
                                               required=False)
     #validate security groups
     # like get security group from db
+    sg_list = []
     if security_groups:
         for gid in security_groups:
-            try:
-                sg = SecurityGroup.objects.get(id=int(gid))
-                sg_list.append(sg)
-            except (ValueError, SecurityGroup.DoesNotExist):
-                raise api.faults.ItemNotFound("Not valid security group")
+            sg = util.get_security_group(int(gid))
+            sg_list.append(sg)
 
     new_port = ports.create(user_id, network, vm, security_groups=sg_list)
 
@@ -168,13 +165,9 @@ def update_port(request, port_id):
     if security_groups:
         sg_list = []
         #validate security groups
-        # like get security group from db
         for gid in security_groups:
-            try:
-                sg = SecurityGroup.objects.get(id=int(gid))
-                sg_list.append(sg)
-            except (ValueError, SecurityGroup.DoesNotExist):
-                raise api.faults.ItemNotFound("Not valid security group")
+            sg = util.get_security_group(int(gid))
+            sg_list.append(sg)
 
         #clear the old security groups
         port.security_groups.clear()

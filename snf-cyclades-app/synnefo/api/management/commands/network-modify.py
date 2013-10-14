@@ -35,7 +35,7 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 
-from synnefo.db.models import (Backend, BackendNetwork, pooled_rapi_client)
+from synnefo.db.models import (Backend, BackendNetwork)
 from synnefo.management.common import (get_network, get_backend)
 from snf_django.management.utils import parse_bool
 from synnefo.logic import networks, backend as backend_mod
@@ -71,6 +71,14 @@ class Command(BaseCommand):
             help="Convert network to a floating IP pool. During this"
                  " conversation the network will be created to all"
                  " available Ganeti backends."),
+        make_option(
+            '--add-reserved-ips',
+            dest="add_reserved_ips",
+            help="Comma seperated list of IPs to externally reserve."),
+        make_option(
+            '--remove-reserved-ips',
+            dest="remove_reserved_ips",
+            help="Comma seperated list of IPs to externally release."),
         make_option(
             "--add-to-backend",
             dest="add_to_backend",
@@ -139,6 +147,18 @@ class Command(BaseCommand):
                         msg = ("Sent job to create network '%s' in backend"
                                " '%s'\n" % (network, backend))
                         self.stdout.write(msg)
+
+        add_reserved_ips = options.get('add_reserved_ips')
+        remove_reserved_ips = options.get('remove_reserved_ips')
+        if add_reserved_ips or remove_reserved_ips:
+            if add_reserved_ips:
+                add_reserved_ips = add_reserved_ips.split(",")
+                for ip in add_reserved_ips:
+                    network.reserve_address(ip, external=True)
+            if remove_reserved_ips:
+                remove_reserved_ips = remove_reserved_ips.split(",")
+                for ip in remove_reserved_ips:
+                    network.release_address(ip, external=True)
 
         add_to_backend = options["add_to_backend"]
         if add_to_backend is not None:

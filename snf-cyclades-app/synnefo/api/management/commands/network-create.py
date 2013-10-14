@@ -156,12 +156,13 @@ class Command(BaseCommand):
         floating_ip_pool = parse_bool(options["floating_ip_pool"])
         dhcp = parse_bool(options["dhcp"])
 
-        if not name:
-            name=""
-
-        if not flavor:
+        if name is None:
+            name = ""
+        if flavor is None:
             raise CommandError("flavor is required")
 
+        if (subnet is None) and (subnet6 is None):
+            raise CommandError("subnet or subnet6 is required")
         if subnet is None and gateway is not None:
             raise CommandError("Can not use gateway without subnet")
         if subnet6 is None and gateway6 is not None:

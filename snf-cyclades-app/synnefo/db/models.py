@@ -550,9 +550,9 @@ class Network(models.Model):
         pool.reserve(address, external=external)
         pool.save()
 
-    def release_address(self, address):
+    def release_address(self, address, external=True):
         pool = self.get_pool()
-        pool.put(address)
+        pool.put(address, external=external)
         pool.save()
 
     @property

@@ -43,6 +43,7 @@ from snf_django.lib import api
 
 from synnefo.api import util
 from synnefo.db.models import NetworkInterface, SecurityGroup, IPAddress
+from synnefo.logic import ports
 
 from logging import getLogger
 
@@ -96,73 +97,45 @@ def list_ports(request, detail=False):
 
 
 @api.api_method(http_method='POST', user_required=True, logger=log)
-@transaction.commit_manually
 def create_port(request):
     '''
     '''
     user_id = request.user_uniq
     req = api.utils.get_request_dict(request)
     log.info('create_port %s', req)
-    try:
-        port_dict = api.utils.get_attribute(req, "port")
-        net_id = api.utils.get_attribute(port_dict, "network_id")
-        dev_id = api.utils.get_attribute(port_dict, "device_id")
 
-        network = util.get_network(net_id, request.user_uniq, non_deleted=True)
+    port_dict = api.utils.get_attribute(req, "port")
+    net_id = api.utils.get_attribute(port_dict, "network_id")
+    dev_id = api.utils.get_attribute(port_dict, "device_id")
 
-        if network.public:
-            raise api.faults.Forbidden('forbidden')
+    network = util.get_network(net_id, request.user_uniq, non_deleted=True)
 
-        if network.state != 'ACTIVE':
-            raise api.faults.Conflict('Network build in process')
+    if network.public:
+        raise api.faults.Forbidden('forbidden')
 
-        vm = util.get_vm(dev_id, request.user_uniq)
 
-        name = api.utils.get_attribute(port_dict, "name", required=False)
+    vm = util.get_vm(dev_id, request.user_uniq)
 
-        if name is None:
-            name = ""
+    name = api.utils.get_attribute(port_dict, "name", required=False)
 
-        sg_list = []
-        security_groups = api.utils.get_attribute(port_dict,
-                                                  "security_groups",
-                                                  required=False)
-        #validate security groups
-        # like get security group from db
-        if security_groups:
-            for gid in security_groups:
-                try:
-                    sg = SecurityGroup.objects.get(id=int(gid))
-                    sg_list.append(sg)
-                except (ValueError, SecurityGroup.DoesNotExist):
-                    raise api.faults.ItemNotFound("Not valid security group")
+    if name is None:
+        name = ""
 
-        #create the port
-        new_port = NetworkInterface.objects.create(name=name,
-                                                   network=network,
-                                                   machine=vm,
-                                                   device_owner="vm",
-                                                   state="BUILDING")
-        #add the security groups
-        new_port.security_groups.add(*sg_list)
+    sg_list = []
+    security_groups = api.utils.get_attribute(port_dict,
+                                              "security_groups",
+                                              required=False)
+    #validate security groups
+    # like get security group from db
+    if security_groups:
+        for gid in security_groups:
+            try:
+                sg = SecurityGroup.objects.get(id=int(gid))
+                sg_list.append(sg)
+            except (ValueError, SecurityGroup.DoesNotExist):
+                raise api.faults.ItemNotFound("Not valid security group")
 
-        #add new port to every subnet of the network
-        for subn in network.subnets.all():
-            IPAddress.objects.create(subnet=subn,
-                                     network=network,
-                                     nic=new_port,
-                                     userid=user_id,
-                                     # FIXME
-                                     address="192.168.0." + str(subn.id))
-
-    except:
-        transaction.rollback()
-        log.info("roll")
-        raise
-
-    else:
-        transaction.commit()
-        log.info("commit")
+    new_port = ports.create(user_id, network, vm, security_groups=sg_list)
 
     response = render_port(request, port_to_dict(new_port), status=201)
 

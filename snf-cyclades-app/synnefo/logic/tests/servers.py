@@ -61,7 +61,8 @@ class ServerCreationTest(TransactionTestCase):
         self.assertEqual(models.VirtualMachine.objects.count(), 0)
 
         subnet = mfactory.IPv4SubnetFactory(network__public=True)
-        mfactory.BackendNetworkFactory(network=subnet.network)
+        bn = mfactory.BackendNetworkFactory(network=subnet.network)
+        backend = bn.backend
 
         # error in nics
         req = deepcopy(kwargs)
@@ -94,9 +95,10 @@ class ServerCreationTest(TransactionTestCase):
         self.assertEqual(vm.task, "BUILD")
 
         # test connect in IPv6 only network
-        subnet = mfactory.IPv6SubnetFactory()
+        subnet = mfactory.IPv6SubnetFactory(network__public=True)
         net = subnet.network
-        mfactory.BackendNetworkFactory(network=net)
+        mfactory.BackendNetworkFactory(network=net, backend=backend,
+                                       operstate="ACTIVE")
         with override_settings(settings,
                                DEFAULT_INSTANCE_NETWORKS=[str(net.id)]):
             with mocked_quotaholder():
@@ -114,42 +116,25 @@ class ServerCreationTest(TransactionTestCase):
 class ServerTest(TransactionTestCase):
     def test_connect_network(self, mrapi):
         # Common connect
-        subnet = mfactory.IPv4SubnetFactory(network__flavor="CUSTOM",
-                                            cidr="192.168.2.0/24",
-                                            gateway="192.168.2.1",
-                                            dhcp=True)
-        net = subnet.network
-        vm = mfactory.VirtualMachineFactory(operstate="STARTED")
-        mfactory.BackendNetworkFactory(network=net, backend=vm.backend)
-        mrapi().ModifyInstance.return_value = 42
-        servers.connect(vm, net)
-        pool = net.get_pool(locked=False)
-        self.assertFalse(pool.is_available("192.168.2.2"))
-        args, kwargs = mrapi().ModifyInstance.call_args
-        nics = kwargs["nics"][0]
-        self.assertEqual(kwargs["instance"], vm.backend_vm_id)
-        self.assertEqual(nics[0], "add")
-        self.assertEqual(nics[1], "-1")
-        self.assertEqual(nics[2]["ip"], "192.168.2.2")
-        self.assertEqual(nics[2]["network"], net.backend_id)
-
-        # no dhcp
-        vm = mfactory.VirtualMachineFactory(operstate="STARTED")
-        subnet = mfactory.IPv4SubnetFactory(cidr="192.168.2.0/24",
-                                            gateway="192.168.2.1",
-                                            dhcp=False)
-        net = subnet.network
-        mfactory.BackendNetworkFactory(network=net, backend=vm.backend)
-        servers.connect(vm, net)
-        pool = net.get_pool(locked=False)
-        self.assertTrue(pool.is_available("192.168.2.2"))
-        args, kwargs = mrapi().ModifyInstance.call_args
-        nics = kwargs["nics"][0]
-        self.assertEqual(kwargs["instance"], vm.backend_vm_id)
-        self.assertEqual(nics[0], "add")
-        self.assertEqual(nics[1], "-1")
-        self.assertEqual(nics[2]["ip"], None)
-        self.assertEqual(nics[2]["network"], net.backend_id)
+        for dhcp in [True, False]:
+            subnet = mfactory.IPv4SubnetFactory(network__flavor="CUSTOM",
+                                                cidr="192.168.2.0/24",
+                                                gateway="192.168.2.1",
+                                                dhcp=True)
+            net = subnet.network
+            vm = mfactory.VirtualMachineFactory(operstate="STARTED")
+            mfactory.BackendNetworkFactory(network=net, backend=vm.backend)
+            mrapi().ModifyInstance.return_value = 42
+            servers.connect(vm, net)
+            pool = net.get_pool(locked=False)
+            self.assertFalse(pool.is_available("192.168.2.2"))
+            args, kwargs = mrapi().ModifyInstance.call_args
+            nics = kwargs["nics"][0]
+            self.assertEqual(kwargs["instance"], vm.backend_vm_id)
+            self.assertEqual(nics[0], "add")
+            self.assertEqual(nics[1], "-1")
+            self.assertEqual(nics[2]["ip"], "192.168.2.2")
+            self.assertEqual(nics[2]["network"], net.backend_id)
 
         # Test connect to IPv6 only network
         vm = mfactory.VirtualMachineFactory(operstate="STARTED")

@@ -12,9 +12,9 @@ from synnefo import quotas
 from synnefo.api import util
 from synnefo.logic import backend
 from synnefo.logic.backend_allocator import BackendAllocator
-from synnefo.db.models import (NetworkInterface, VirtualMachine, Network,
-                               VirtualMachineMetadata, IPAddress, Subnet)
-from synnefo.db import query as db_query
+from synnefo.db.models import (NetworkInterface, VirtualMachine,
+                               VirtualMachineMetadata, IPAddress)
+from synnefo.db import query as db_query, pools
 
 from vncauthproxy.client import request_forwarding as request_vnc_forwarding
 
@@ -241,51 +241,77 @@ def create_instance_nics(vm, userid, private_networks=[], floating_ips=[]):
     networks defined by the user.
 
     """
-    attachments = []
+    nics = []
     for network_id in settings.DEFAULT_INSTANCE_NETWORKS:
-        network, ipaddress = None, None
         if network_id == "SNF:ANY_PUBLIC":
-            ipaddress = util.allocate_public_address(backend=vm.backend,
-                                                     userid=userid)
-            network = ipaddress.network
+            ipaddress = util.allocate_public_ip(userid=userid,
+                                                backend=vm.backend)
+            nic, ipaddress = create_nic(vm, ipaddress=ipaddress)
         else:
             try:
-                network = Network.objects.get(id=network_id, deleted=False)
-            except Network.DoesNotExist:
+                network = util.get_network(network_id, userid,
+                                           non_deleted=True)
+            except faults.ItemNotFound:
                 msg = "Invalid configuration. Setting"\
                       " 'DEFAULT_INSTANCE_NETWORKS' contains invalid"\
                       " network '%s'" % network_id
                 log.error(msg)
-                raise Exception(msg)
-            try:
-                subnet = network.subnets.get(ipversion=4, dhcp=True)
-                ipaddress = util.get_network_free_address(subnet, userid)
-            except Subnet.DoesNotExist:
-                ipaddress = None
-        attachments.append((network, ipaddress))
+                raise faults.InternalServerError(msg)
+            nic, ipaddress = create_nic(vm, network=network)
+        nics.append(nic)
     for address in floating_ips:
-        floating_ip = get_floating_ip(userid=vm.userid, address=address)
-        attachments.append((floating_ip.network, floating_ip))
+        floating_ip = util.get_floating_ip_by_address(vm.userid, address,
+                                                      for_update=True)
+        nic, ipaddress = create_nic(vm, ipaddress=floating_ip)
+        nics.append(nic)
     for network_id in private_networks:
         network = util.get_network(network_id, userid, non_deleted=True)
         if network.public:
             raise faults.Forbidden("Can not connect to public network")
-        attachments.append((network, ipaddress))
-
-    nics = []
-    for index, (network, ipaddress) in enumerate(attachments):
-        # Create VM's public NIC. Do not wait notification form ganeti
-        # hooks to create this NIC, because if the hooks never run (e.g.
-        # building error) the VM's public IP address will never be
-        # released!
-        nic = NetworkInterface.objects.create(userid=userid, machine=vm,
-                                              network=network, index=index,
-                                              state="BUILDING")
-        if ipaddress is not None:
-            ipaddress.nic = nic
-            ipaddress.save()
+        nic, ipaddress = create_nic(vm, network=network)
         nics.append(nic)
+    for index, nic in enumerate(nics):
+        nic.index = index
+        nic.save()
     return nics
+
+
+def create_nic(vm, network=None, ipaddress=None, address=None):
+    """Helper functions for create NIC objects.
+
+    Create a NetworkInterface connecting a VirtualMachine to a network with the
+    IPAddress specified. If no 'ipaddress' is passed and the network has an
+    IPv4 subnet, then an IPv4 address will be automatically be allocated.
+
+    """
+    userid = vm.userid
+
+    if ipaddress is None:
+        if network.subnets.filter(ipversion=4).exists():
+            try:
+                ipaddress = util.allocate_ip(network, userid=userid,
+                                             address=address)
+            except pools.ValueNotAvailable:
+                raise faults.badRequest("Address '%s' is not available." %
+                                        address)
+
+    if ipaddress is not None and ipaddress.nic is not None:
+        raise faults.Conflict("IP address '%s' already in use" %
+                              ipaddress.address)
+
+    if network is None:
+        network = ipaddress.network
+    elif network.state != 'ACTIVE':
+        # TODO: What if is in settings ?
+        raise faults.BuildInProgress('Network not active yet')
+
+    nic = NetworkInterface.objects.create(machine=vm, network=network,
+                                          state="BUILDING")
+    if ipaddress is not None:
+        ipaddress.nic = nic
+        ipaddress.save()
+
+    return nic, ipaddress
 
 
 @server_command("DESTROY")
@@ -353,22 +379,9 @@ def set_firewall_profile(vm, profile, nic):
 
 @server_command("CONNECT")
 def connect(vm, network):
-    if network.state != 'ACTIVE':
-        raise faults.BuildInProgress('Network not active yet')
+    nic, ipaddress = create_nic(vm, network)
 
-    address = None
-    try:
-        subnet = network.subnets.get(ipversion=4, dhcp=True)
-        address = util.get_network_free_address(subnet, userid=vm.userid)
-    except Subnet.DoesNotExist:
-        subnet = None
-
-    nic = NetworkInterface.objects.create(machine=vm, network=network,
-                                          state="BUILDING")
-    if address is not None:
-        address.nic = nic
-        address.save()
-    log.info("Connecting VM %s to Network %s. NIC: %s", vm, network, nic)
+    log.info("Creating NIC %s with IPAddress %s", nic, ipaddress)
 
     return backend.connect_to_network(vm, nic)
 
@@ -437,39 +450,13 @@ def console(vm, console_type):
 
 @server_command("CONNECT")
 def add_floating_ip(vm, address):
-    floating_ip = get_floating_ip(userid=vm.userid, address=address)
-    nic = NetworkInterface.objects.create(machine=vm,
-                                          network=floating_ip.network,
-                                          ipv4=floating_ip.ipv4,
-                                          ip_type="FLOATING",
-                                          state="BUILDING")
-    log.info("Connecting VM %s to floating IP %s. NIC: %s", vm, floating_ip,
-             nic)
+    # Use for_update, to guarantee that floating IP will only by assigned once
+    # and that it can not be released will it is being attached!
+    floating_ip = util.get_floating_ip_by_address(vm.userid, address,
+                                                  for_update=True)
+    nic, floating_ip = create_nic(vm, ipaddress=floating_ip)
+    log.info("Created NIC %s with floating IP %s", nic, floating_ip)
     return backend.connect_to_network(vm, nic)
-
-
-def get_floating_ip(userid, address):
-    """Get a floating IP by it's address.
-
-    Helper function for looking up a IPAddress by it's address. This function
-    also checks if the floating IP is currently used by any instance.
-
-    """
-    try:
-        # Get lock in VM, to guarantee that floating IP will only by assigned
-        # once
-        floating_ip = db_query.get_user_floating_ip(userid=userid,
-                                                    address=address,
-                                                    for_update=True)
-    except IPAddress.DoesNotExist:
-        raise faults.ItemNotFound("Floating IP with address '%s' does not"
-                                  " exist" % address)
-
-    if floating_ip.nic is not None:
-        raise faults.Conflict("Floating IP '%s' already in use" %
-                              floating_ip.id)
-
-    return floating_ip
 
 
 @server_command("DISCONNECT")

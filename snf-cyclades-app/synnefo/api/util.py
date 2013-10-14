@@ -47,10 +47,9 @@ from django.db.models import Q
 
 from snf_django.lib.api import faults
 from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
-                               Network, BackendNetwork, NetworkInterface,
-                               BridgePoolTable, MacPrefixPoolTable, Backend,
-                               IPAddress)
-from synnefo.db.pools import EmptyPool
+                               Network, NetworkInterface, BridgePoolTable,
+                               MacPrefixPoolTable, IPAddress, IPPoolTable)
+from synnefo.db import pools
 
 from synnefo.plankton.utils import image_backend
 
@@ -223,7 +222,7 @@ def get_network(network_id, user_id, for_update=False, non_deleted=False):
             raise faults.BadRequest("Network has been deleted.")
         return network
     except (ValueError, Network.DoesNotExist):
-        raise faults.ItemNotFound('Network not found.')
+        raise faults.ItemNotFound('Network %s not found.' % network_id)
 
 
 def get_port(port_id, user_id, for_update=False):
@@ -245,59 +244,126 @@ def get_port(port_id, user_id, for_update=False):
         raise faults.ItemNotFound('Port not found.')
 
 
-def get_floating_ip(user_id, ipv4, for_update=False):
+def get_floating_ip_by_address(userid, address, for_update=False):
     try:
         objects = IPAddress.objects
         if for_update:
             objects = objects.select_for_update()
-        return objects.get(userid=user_id, ipv4=ipv4, deleted=False)
+        return objects.get(userid=userid, floating_ip=True,
+                           address=address, deleted=False)
     except IPAddress.DoesNotExist:
         raise faults.ItemNotFound("Floating IP does not exist.")
 
 
-def allocate_public_address(backend, userid):
-    """Get a public IP for any available network of a backend."""
-    # Guarantee exclusive access to backend, because accessing the IP pools of
-    # the backend networks may result in a deadlock with backend allocator
-    # which also checks that backend networks have a free IP.
-    backend = Backend.objects.select_for_update().get(id=backend.id)
-    public_networks = backend_public_networks(backend)
-    return get_free_ip(public_networks, userid)
+def get_floating_ip_by_id(userid, floating_ip_id, for_update=False):
+    try:
+        objects = IPAddress.objects
+        if for_update:
+            objects = objects.select_for_update()
+        return objects.get(id=floating_ip_id, floating_ip=True, userid=userid,
+                           deleted=False)
+    except IPAddress.DoesNotExist:
+        raise faults.ItemNotFound("Floating IP %s does not exist." %
+                                  floating_ip_id)
+
+
+def allocate_ip_from_pools(pool_rows, userid, address=None, floating_ip=False):
+    """Try to allocate a value from a number of pools.
+
+    This function takes as argument a number of PoolTable objects and tries to
+    allocate a value from them. If all pools are empty EmptyPool is raised.
+
+    """
+    for pool_row in pool_rows:
+        pool = pool_row.pool
+        try:
+            value = pool.get(value=address)
+            pool.save()
+            subnet = pool_row.subnet
+            ipaddress = IPAddress.objects.create(subnet=subnet,
+                                                 network=subnet.network,
+                                                 userid=userid,
+                                                 address=value,
+                                                 floating_ip=floating_ip)
+            return ipaddress
+        except pools.EmptyPool:
+            pass
+    raise pools.EmptyPool("No more IP addresses available on pools %s" %
+                          pool_rows)
+
+
+def allocate_ip(network, userid, address=None, floating_ip=False):
+    """Try to allocate an IP from networks IP pools."""
+    ip_pools = IPPoolTable.objects.select_for_update()\
+        .filter(subnet__network=network)
+    try:
+        return allocate_ip_from_pools(ip_pools, userid, address=address,
+                                      floating_ip=floating_ip)
+    except pools.EmptyPool:
+        raise faults.Conflict("No more IP addresses available on network %s"
+                              % network.id)
+    except pools.ValueNotAvailable:
+        raise faults.Conflict("IP address %s is already used." % address)
+
+
+def allocate_public_ip(userid, floating_ip=False, backend=None):
+    """Try to allocate a public or floating IP address.
+
+    Try to allocate a a public IPv4 address from one of the available networks.
+    If 'floating_ip' is set, only networks which are floating IP pools will be
+    used and the IPAddress that will be created will be marked as a floating
+    IP. If 'backend' is set, only the networks that exist in this backend will
+    be used.
+
+    """
+
+    ip_pool_rows = IPPoolTable.objects.select_for_update()\
+        .prefetch_related("subnet__network")\
+        .filter(subnet__deleted=False)\
+        .filter(subnet__network__public=True)\
+        .filter(subnet__network__drained=False)
+    if floating_ip:
+        ip_pool_rows = ip_pool_rows\
+            .filter(subnet__network__floating_ip_pool=True)
+    if backend is not None:
+        ip_pool_rows = ip_pool_rows\
+            .filter(subnet__network__backend_networks__backend=backend)
+
+    try:
+        return allocate_ip_from_pools(ip_pool_rows, userid,
+                                      floating_ip=floating_ip)
+    except pools.EmptyPool:
+        ip_type = "floating" if floating_ip else "public"
+        log_msg = "Failed to allocate a %s IP. Reason:" % ip_type
+        if ip_pool_rows:
+            log_msg += " No network exists."
+        else:
+            log_msg += " All network are full."
+        if backend is not None:
+            log_msg += " Backend: %s" % backend
+        log.error(log_msg)
+        exception_msg = "Can not allocate a %s IP address." % ip_type
+        raise faults.ServiceUnavailable(exception_msg)
+
+
+def backend_has_free_public_ip(backend):
+    """Check if a backend has a free public IPv4 address."""
+    ip_pool_rows = IPPoolTable.objects.select_for_update()\
+        .filter(subnet__network__public=True)\
+        .filter(subnet__network__drained=False)\
+        .filter(subnet__deleted=False)\
+        .filter(subnet__network__backend_networks__backend=backend)
+    for pool_row in ip_pool_rows:
+        pool = pool_row.pool
+        if pool.empty():
+            continue
+        else:
+            return True
 
 
 def backend_public_networks(backend):
-    """Return available public networks of the backend.
-
-    Iterator for non-deleted public networks that are available
-    to the specified backend.
-
-    """
-    bnets = BackendNetwork.objects.filter(backend=backend,
-                                          network__public=True,
-                                          network__deleted=False,
-                                          network__floating_ip_pool=False,
-                                          network__drained=False)
-    return [b.network for b in bnets]
-
-
-def get_free_ip(networks, userid):
-    for network in networks:
-        try:
-            return network.allocate_address(userid=userid)
-        except faults.OverLimit:
-            pass
-    msg = "Can not allocate public IP. Public networks are full."
-    log.error(msg)
-    raise faults.OverLimit(msg)
-
-
-def get_network_free_address(network, userid):
-    """Reserve an IP address from the IP Pool of the network."""
-
-    try:
-        return network.allocate_address(userid=userid)
-    except EmptyPool:
-        raise faults.OverLimit("Network %s is full." % network.backend_id)
+    return Network.objects.filter(deleted=False, public=True,
+                                  backend_networks__backend=backend)
 
 
 def get_vm_nic(vm, nic_id):

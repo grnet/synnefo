@@ -409,50 +409,41 @@ class ServerCreateAPITest(ComputeAPITest):
     def test_create_network_settings(self, mrapi):
         mrapi().CreateInstance.return_value = 12
         # Create public network and backend
-        subnet1 = mfactory.IPv4SubnetFactory()
+        subnet1 = mfactory.IPv4SubnetFactory(network__userid="test_user")
         bnet1 = mfactory.BackendNetworkFactory(network=subnet1.network,
                                                backend=self.backend,
                                                operstate="ACTIVE")
-        subnet2 = mfactory.IPv4SubnetFactory()
+        subnet2 = mfactory.IPv4SubnetFactory(network__userid="test_user")
         bnet2 = mfactory.BackendNetworkFactory(network=subnet2.network,
-                                               backend=self.backend,
-                                               operstate="ACTIVE")
-        subnet3 = mfactory.IPv4SubnetFactory(network__userid="test_user")
-        bnet3 = mfactory.BackendNetworkFactory(network=subnet3.network,
-                                               backend=self.backend,
-                                               operstate="ACTIVE")
-        subnet4 = mfactory.IPv4SubnetFactory(network__userid="test_user")
-        bnet4 = mfactory.BackendNetworkFactory(network=subnet4.network,
                                                backend=self.backend,
                                                operstate="ACTIVE")
         # User requested private networks
         request = deepcopy(self.request)
-        request["server"]["networks"] = [bnet3.network.id, bnet4.network.id]
+        request["server"]["networks"] = [bnet1.network.id, bnet2.network.id]
         with override_settings(settings,
                                DEFAULT_INSTANCE_NETWORKS=[
-                                   "SNF:ANY_PUBLIC",
-                                   bnet1.network.id,
-                                   bnet2.network.id]):
+                                   "SNF:ANY_PUBLIC"]):
             with mocked_quotaholder():
                 response = self.mypost('servers', 'test_user',
                                        json.dumps(request), 'json')
         self.assertEqual(response.status_code, 202)
         name, args, kwargs = mrapi().CreateInstance.mock_calls[0]
-        self.assertEqual(len(kwargs["nics"]), 5)
+        self.assertEqual(len(kwargs["nics"]), 3)
         self.assertEqual(kwargs["nics"][0]["network"],
                          self.network.backend_id)
         self.assertEqual(kwargs["nics"][1]["network"],
                          bnet1.network.backend_id)
         self.assertEqual(kwargs["nics"][2]["network"],
                          bnet2.network.backend_id)
-        self.assertEqual(kwargs["nics"][3]["network"],
-                         bnet3.network.backend_id)
-        self.assertEqual(kwargs["nics"][4]["network"],
-                         bnet4.network.backend_id)
 
+        subnet3 = mfactory.IPv4SubnetFactory(network__public=True,
+                                             network__floating_ip_pool=True)
+        bnet3 = mfactory.BackendNetworkFactory(network=subnet3.network,
+                                               backend=self.backend,
+                                               operstate="ACTIVE")
         request["server"]["floating_ips"] = []
         with override_settings(settings,
-                               DEFAULT_INSTANCE_NETWORKS=[bnet2.network.id]):
+                               DEFAULT_INSTANCE_NETWORKS=[bnet3.network.id]):
             with mocked_quotaholder():
                 response = self.mypost('servers', 'test_user',
                                        json.dumps(request), 'json')
@@ -460,11 +451,11 @@ class ServerCreateAPITest(ComputeAPITest):
         name, args, kwargs = mrapi().CreateInstance.mock_calls[1]
         self.assertEqual(len(kwargs["nics"]), 3)
         self.assertEqual(kwargs["nics"][0]["network"],
-                         bnet2.network.backend_id)
-        self.assertEqual(kwargs["nics"][1]["network"],
                          bnet3.network.backend_id)
+        self.assertEqual(kwargs["nics"][1]["network"],
+                         bnet1.network.backend_id)
         self.assertEqual(kwargs["nics"][2]["network"],
-                         bnet4.network.backend_id)
+                         bnet2.network.backend_id)
 
         # test invalid network in DEFAULT_INSTANCE_NETWORKS
         with override_settings(settings, DEFAULT_INSTANCE_NETWORKS=[42]):
@@ -480,9 +471,10 @@ class ServerCreateAPITest(ComputeAPITest):
             response = self.mypost('servers', 'test_user',
                                    json.dumps(request), 'json')
         self.assertFault(response, 403, "forbidden")
+
         # test wrong user
         request = deepcopy(self.request)
-        request["server"]["networks"] = [bnet3.network.id]
+        request["server"]["networks"] = [bnet1.network.id]
         with override_settings(settings,
                                DEFAULT_INSTANCE_NETWORKS=["SNF:ANY_PUBLIC"]):
             with mocked_quotaholder():
@@ -492,12 +484,14 @@ class ServerCreateAPITest(ComputeAPITest):
 
         # Test floating IPs
         request = deepcopy(self.request)
-        request["server"]["networks"] = [bnet4.network.id]
+        request["server"]["networks"] = [bnet1.network.id]
         fp1 = mfactory.FloatingIPFactory(address="10.0.0.2",
                                          userid="test_user",
+                                         network=self.network,
                                          nic=None)
         fp2 = mfactory.FloatingIPFactory(address="10.0.0.3",
                                          userid="test_user",
+                                         network=self.network,
                                          nic=None)
         request["server"]["floating_ips"] = [fp1.address, fp2.address]
         with override_settings(settings,
@@ -521,7 +515,7 @@ class ServerCreateAPITest(ComputeAPITest):
         self.assertEqual(kwargs["nics"][2]["network"], fp2.network.backend_id)
         self.assertEqual(kwargs["nics"][2]["ip"], fp2.address)
         self.assertEqual(kwargs["nics"][3]["network"],
-                         bnet4.network.backend_id)
+                         bnet1.network.backend_id)
 
     def test_create_server_no_flavor(self, mrapi):
         request = deepcopy(self.request)

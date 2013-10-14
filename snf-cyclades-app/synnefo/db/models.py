@@ -568,6 +568,17 @@ class Network(models.Model):
             if subnet.ipversion == version:
                 return subnet.cidr
 
+    def ip_count(self):
+        """Return the total and free IPv4 addresses of the network."""
+        subnets = self.subnets.filter(ipversion=4).prefetch_related("ip_pools")
+        total, free = 0, 0
+        for subnet in subnets:
+            for ip_pool in subnet.ip_pools.all():
+                pool = ip_pool.pool
+                total += pool.pool_size
+                free += pool.count_available()
+        return total, free
+
     class InvalidBackendIdError(Exception):
         def __init__(self, value):
             self.value = value
@@ -744,6 +755,15 @@ class IPAddress(models.Model):
     @property
     def public(self):
         return self.network.public
+
+    def release_address(self):
+        """Release the IPv4 address."""
+        if self.ipversion == 4:
+            for pool_row in self.subnet.ip_pools.all():
+                ip_pool = pool_row.pool
+                if ip_pool.contains(self.address):
+                    ip_pool.put(self.address)
+                    ip_pool.save()
 
 
 class NetworkInterface(models.Model):

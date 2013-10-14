@@ -242,7 +242,7 @@ class IPv6AddressFactory(IPv4AddressFactory):
 
 
 class FloatingIPFactory(IPv4AddressFactory):
-    network = factory.SubFactory(NetworkFactory, public=False,
+    network = factory.SubFactory(NetworkFactory, public=True,
                                  floating_ip_pool=True)
     floating_ip = True
 

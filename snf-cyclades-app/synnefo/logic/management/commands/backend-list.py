@@ -53,9 +53,9 @@ class Command(ListCommand):
         free_ips = 0
         total_ips = 0
         for network in util.backend_public_networks(backend):
-            pool = network.get_pool(locked=False)
-            free_ips += pool.count_available()
-            total_ips += pool.pool_size
+            total, free = network.ip_count()
+            total_ips += total
+            free_ips += free
         return "%s/%s" % (free_ips, total_ips)
 
     FIELDS = {

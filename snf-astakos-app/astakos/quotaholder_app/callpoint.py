@@ -36,7 +36,7 @@ from django.db.models import Q
 from astakos.quotaholder_app.exception import (
     QuotaholderError,
     NoCommissionError,
-    CorruptedError, InvalidDataError,
+    CorruptedError,
     NoHoldingError,
     DuplicateError)
 
@@ -148,9 +148,6 @@ def issue_commission(clientkey, provisions, name="", force=False):
     try:
         checked = []
         for key, quantity in provisions:
-            if not isinstance(quantity, (int, long)):
-                raise InvalidDataError("Malformed provision")
-
             if key in checked:
                 m = "Duplicate provision for %s" % str(key)
                 provision = _mkProvision(key, quantity)

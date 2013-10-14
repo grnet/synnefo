@@ -326,3 +326,50 @@ def get_subnet_fromdb(subnet_id, user_id, for_update=False):
         return Subnet.objects.get(id=subnet_id, network__userid=user_id)
     except (ValueError, Subnet.DoesNotExist):
         raise api.faults.ItemNotFound('Subnet not found.')
+
+
+def parse_ip_pools(pools):
+    """
+    Convert [{'start': '192.168.42.1', 'end': '192.168.42.15'},
+             {'start': '192.168.42.30', 'end': '192.168.42.60'}]
+    to
+            [["192.168.42.1", "192.168.42.15"],
+             ["192.168.42.30", "192.168.42.60"]]
+    """
+    pool_list = list()
+    for pool in pools:
+        asd = [pool["start"], pool["end"]]
+        pool_list.append(asd)
+    return pool_list
+
+
+def validate_subpools(pools, cidr, gateway):
+    """
+    Validate the given IP pools are inside the cidr range
+    Validate there are no overlaps in the given pools
+    Input must be a list containing a sublist with start/end ranges as strings
+    [["192.168.42.1", "192.168.42.15"], ["192.168.42.30", "192.168.42.60"]]
+    """
+    pool_list = list()
+    for pool in pools:
+        pool_list.append(map(lambda a: IPAddress(a), pool))
+    pool_list = sorted(pool_list)
+
+    if pool_list[0][0] <= cidr.network:
+        raise api.faults.BadRequest("IP Pool out of bounds")
+    elif pool_list[-1][1] >= cidr.broadcast:
+        raise api.faults.BadRequest("IP Pool out of bounds")
+
+    for start, end in pool_list:
+        if start >= end:
+            raise api.faults.Conflict("Invalid IP pool range")
+        # Raise BadRequest if gateway is inside the pool range
+        if not (gateway < start or gateway > end):
+            raise api.faults.Conflict("Gateway cannot be in pool range")
+
+    # Check if there is a conflict between the IP Poll ranges
+    end = cidr.network
+    for pool in pool_list:
+        if end >= pool[1]:
+            raise api.faults.Conflict("IP Pool range conflict")
+        end = pool[1]

@@ -237,6 +237,9 @@ class BaseAPITest(TestCase):
     def assertBadRequest(self, response):
         self.assertFault(response, 400, 'badRequest')
 
+    def assertConflict(self, response):
+        self.assertFault(response, 409, 'conflict')
+
     def assertItemNotFound(self, response):
         self.assertFault(response, 404, 'itemNotFound')
 

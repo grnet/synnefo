@@ -35,10 +35,9 @@ import json
 
 from snf_django.utils.testing import BaseAPITest, mocked_quotaholder
 from synnefo.db.models import IPAddress
-from synnefo.db.models_factory import (FloatingIPFactory, NetworkFactory,
-                                       VirtualMachineFactory,
-                                       NetworkInterfaceFactory,
-                                       BackendNetworkFactory)
+from synnefo.db import models_factory as mf
+from synnefo.db.models_factory import (NetworkFactory,
+                                       VirtualMachineFactory)
 from mock import patch, Mock
 from functools import partial
 
@@ -59,156 +58,124 @@ FloatingIPPoolFactory = partial(NetworkFactory, public=True, deleted=False,
 
 
 class FloatingIPAPITest(BaseAPITest):
+    def setUp(self):
+        self.pool = mf.NetworkWithSubnetFactory(floating_ip_pool=True,
+                                                public=True,
+                                                subnet__cidr="192.168.2.0/24",
+                                                subnet__gateway="192.168.2.1")
+
     def test_no_floating_ip(self):
         response = self.get(URL)
         self.assertSuccess(response)
         self.assertEqual(json.loads(response.content)["floating_ips"], [])
 
     def test_list_ips(self):
-        ip = FloatingIPFactory(userid="user1")
-        FloatingIPFactory(userid="user1", deleted=True)
+        ip = mf.IPv4AddressFactory(userid="user1", floating_ip=True)
         with mocked_quotaholder():
             response = self.get(URL, "user1")
         self.assertSuccess(response)
         api_ip = json.loads(response.content)["floating_ips"][0]
         self.assertEqual(api_ip,
-                         {"instance_id": str(ip.machine.id), "ip": ip.ipv4,
-                          "fixed_ip": None, "id": str(ip.id),  "pool":
-                          str(ip.network.id)})
+                         {"instance_id": str(ip.nic.machine_id),
+                          "ip": ip.address,
+                          "fixed_ip": None,
+                          "id": str(ip.id),
+                          "pool": str(ip.network_id)})
 
     def test_get_ip(self):
-        ip = FloatingIPFactory(userid="user1")
+        ip = mf.IPv4AddressFactory(userid="user1", floating_ip=True)
         with mocked_quotaholder():
             response = self.get(URL + "/%s" % ip.id, "user1")
         self.assertSuccess(response)
         api_ip = json.loads(response.content)["floating_ip"]
         self.assertEqual(api_ip,
-                         {"instance_id": str(ip.machine.id), "ip": ip.ipv4,
-                          "fixed_ip": None, "id": str(ip.id),  "pool":
-                          str(ip.network.id)})
+                         {"instance_id": str(ip.nic.machine_id),
+                          "ip": ip.address,
+                          "fixed_ip": None,
+                          "id": str(ip.id),
+                          "pool": str(ip.network_id)})
 
     def test_wrong_user(self):
-        ip = FloatingIPFactory(userid="user1")
-        with mocked_quotaholder():
-            response = self.delete(URL + "/%s" % ip.id, "user2")
+        ip = mf.IPv4AddressFactory(userid="user1", floating_ip=True)
+        response = self.delete(URL + "/%s" % ip.id, "user2")
         self.assertItemNotFound(response)
 
     def test_deleted_ip(self):
-        ip = FloatingIPFactory(userid="user1", deleted=True)
-        with mocked_quotaholder():
-            response = self.delete(URL + "/%s" % ip.id, "user1")
+        ip = mf.IPv4AddressFactory(userid="user1", floating_ip=True,
+                                   deleted=True)
+        response = self.delete(URL + "/%s" % ip.id, "user1")
         self.assertItemNotFound(response)
 
     def test_reserve(self):
-        net = FloatingIPPoolFactory(userid="test_user",
-                                    subnet="192.168.2.0/24",
-                                    gateway=None)
-        request = {'pool': net.id}
+        request = {'pool': self.pool.id}
         with mocked_quotaholder():
             response = self.post(URL, "test_user", json.dumps(request), "json")
         self.assertSuccess(response)
         ip = floating_ips.get()
-        self.assertEqual(ip.ipv4, "192.168.2.1")
-        self.assertEqual(ip.machine, None)
-        self.assertEqual(ip.network, net)
+        self.assertEqual(ip.address, "192.168.2.2")
+        self.assertEqual(ip.nic, None)
+        self.assertEqual(ip.network, self.pool)
         self.assertEqual(json.loads(response.content)["floating_ip"],
-                         {"instance_id": None, "ip": "192.168.2.1",
+                         {"instance_id": None, "ip": "192.168.2.2",
                           "fixed_ip": None, "id": str(ip.id),
-                          "pool": str(net.id)})
+                          "pool": str(self.pool.id)})
 
     def test_reserve_no_pool(self):
-        # No networks
-        with mocked_quotaholder():
-            response = self.post(URL, "test_user", json.dumps({}), "json")
-        self.assertFault(response, 413, "overLimit")
-        # Full network
-        FloatingIPPoolFactory(userid="test_user",
-                              subnet="192.168.2.0/32",
-                              gateway=None)
-        with mocked_quotaholder():
-            response = self.post(URL, "test_user", json.dumps({}), "json")
-        self.assertFault(response, 413, "overLimit")
-        # Success
-        net2 = FloatingIPPoolFactory(userid="test_user",
-                                     subnet="192.168.2.0/24",
-                                     gateway=None)
-        with mocked_quotaholder():
-            response = self.post(URL, "test_user", json.dumps({}), "json")
-        self.assertSuccess(response)
-        ip = floating_ips.get()
-        self.assertEqual(json.loads(response.content)["floating_ip"],
-                         {"instance_id": None, "ip": "192.168.2.1",
-                          "fixed_ip": None, "id": str(ip.id),
-                          "pool": str(net2.id)})
+        # No floating IP pools
+        self.pool.delete()
+        response = self.post(URL, "test_user", json.dumps({}), "json")
+        self.assertFault(response, 503, 'serviceUnavailable')
 
-    def test_reserve_full(self):
-        net = FloatingIPPoolFactory(userid="test_user",
-                                    subnet="192.168.2.0/32")
-        request = {'pool': net.id}
-        with mocked_quotaholder():
-            response = self.post(URL, "test_user", json.dumps(request), "json")
-        self.assertEqual(response.status_code, 413)
+        # Full network
+        pool = mf.NetworkWithSubnetFactory(floating_ip_pool=True,
+                                           public=True,
+                                           subnet__cidr="192.168.2.0/31",
+                                           subnet__gateway="192.168.2.1")
+        response = self.post(URL, "test_user", json.dumps({}), "json")
+        self.assertFault(response, 503, 'serviceUnavailable')
+
+        request = {'pool': pool.id}
+        response = self.post(URL, "test_user", json.dumps(request), "json")
+        self.assertConflict(response)
 
     def test_reserve_with_address(self):
-        net = FloatingIPPoolFactory(userid="test_user",
-                                    subnet="192.168.2.0/24")
-        request = {'pool': net.id, "address": "192.168.2.10"}
+        request = {'pool': self.pool.id, "address": "192.168.2.10"}
         with mocked_quotaholder():
             response = self.post(URL, "test_user", json.dumps(request), "json")
         self.assertSuccess(response)
         ip = floating_ips.get()
         self.assertEqual(json.loads(response.content)["floating_ip"],
                          {"instance_id": None, "ip": "192.168.2.10",
-                          "fixed_ip": None, "id": str(ip.id), "pool":
-                          str(net.id)})
+                          "fixed_ip": None, "id": str(ip.id),
+                          "pool": str(self.pool.id)})
 
         # Already reserved
-        FloatingIPFactory(network=net, ipv4="192.168.2.3")
-        request = {'pool': net.id, "address": "192.168.2.3"}
         with mocked_quotaholder():
             response = self.post(URL, "test_user", json.dumps(request), "json")
         self.assertFault(response, 409, "conflict")
 
-        # Already used
-        pool = net.get_pool()
-        pool.reserve("192.168.2.5")
-        pool.save()
-        # ..by another_user
-        nic = NetworkInterfaceFactory(network=net, ipv4="192.168.2.5",
-                                      machine__userid="test2")
-        request = {'pool': net.id, "address": "192.168.2.5"}
+        # Used by instance
+        self.pool.reserve_address("192.168.2.20")
+        request = {'pool': self.pool.id, "address": "192.168.2.20"}
         with mocked_quotaholder():
             response = self.post(URL, "test_user", json.dumps(request), "json")
         self.assertFault(response, 409, "conflict")
-        # ..and by him
-        nic.delete()
-        NetworkInterfaceFactory(network=net, ipv4="192.168.2.5",
-                                machine__userid="test_user")
-        request = {'pool': net.id, "address": "192.168.2.5"}
-        with mocked_quotaholder():
-            response = self.post(URL, "test_user", json.dumps(request), "json")
-        self.assertSuccess(response)
 
         # Address out of pool
-        request = {'pool': net.id, "address": "192.168.3.5"}
+        request = {'pool': self.pool.id, "address": "192.168.3.5"}
         with mocked_quotaholder():
             response = self.post(URL, "test_user", json.dumps(request), "json")
         self.assertBadRequest(response)
 
     def test_release_in_use(self):
-        ip = FloatingIPFactory()
-        vm = ip.machine
-        vm.operstate = "ACTIVE"
-        vm.userid = ip.userid
-        vm.save()
-        vm.nics.create(index=0, ipv4=ip.ipv4, network=ip.network,
-                       state="ACTIVE")
+        ip = mf.IPv4AddressFactory(userid="user1", floating_ip=True)
+        vm = ip.nic.machine
         with mocked_quotaholder():
             response = self.delete(URL + "/%s" % ip.id, ip.userid)
         self.assertFault(response, 409, "conflict")
         # Also send a notification to remove the NIC and assert that FIP is in
         # use until notification from ganeti arrives
-        request = {"removeFloatingIp": {"address": ip.ipv4}}
+        request = {"removeFloatingIp": {"address": ip.address}}
         url = SERVERS_URL + "/%s/action" % vm.id
         with patch('synnefo.logic.rapi_pool.GanetiRapiClient') as c:
             c().ModifyInstance.return_value = 10
@@ -220,7 +187,7 @@ class FloatingIPAPITest(BaseAPITest):
         self.assertFault(response, 409, "conflict")
 
     def test_release(self):
-        ip = FloatingIPFactory(machine=None)
+        ip = mf.IPv4AddressFactory(userid="user1", floating_ip=True, nic=None)
         with mocked_quotaholder():
             response = self.delete(URL + "/%s" % ip.id, ip.userid)
         self.assertSuccess(response)
@@ -229,19 +196,23 @@ class FloatingIPAPITest(BaseAPITest):
 
     @patch("synnefo.logic.backend", Mock())
     def test_delete_network_with_floating_ips(self):
-        ip = FloatingIPFactory(machine=None, network__flavor="IP_LESS_ROUTED")
-        net = ip.network
+        ip = mf.IPv4AddressFactory(userid="user1", floating_ip=True,
+                                   network=self.pool, nic=None)
+        # Mark the network as non-pubic to not get 403
+        network = ip.network
+        network.public = False
+        network.save()
         # Can not remove network with floating IPs
         with mocked_quotaholder():
-            response = self.delete(NETWORKS_URL + "/%s" % net.id,
-                                   net.userid)
-        self.assertFault(response, 421, "networkInUse")
+            response = self.delete(NETWORKS_URL + "/%s" % self.pool.id,
+                                   self.pool.userid)
+        self.assertConflict(response)
         # But we can with only deleted Floating Ips
         ip.deleted = True
         ip.save()
         with mocked_quotaholder():
-            response = self.delete(NETWORKS_URL + "/%s" % net.id,
-                                   net.userid)
+            response = self.delete(NETWORKS_URL + "/%s" % self.pool.id,
+                                   self.pool.userid)
         self.assertSuccess(response)
 
 
@@ -255,11 +226,13 @@ class FloatingIPPoolsAPITest(BaseAPITest):
         self.assertEqual(json.loads(response.content)["floating_ip_pools"], [])
 
     def test_list_pools(self):
-        net = FloatingIPPoolFactory(subnet="192.168.0.0/30",
-                                    gateway="192.168.0.1")
-        NetworkFactory(public=True, deleted=True)
-        NetworkFactory(public=False, deleted=False)
-        NetworkFactory(public=True, deleted=False)
+        net = mf.NetworkWithSubnetFactory(floating_ip_pool=True,
+                                          public=True,
+                                          subnet__cidr="192.168.2.0/30",
+                                          subnet__gateway="192.168.2.1")
+        mf.NetworkWithSubnetFactory(public=True, deleted=True)
+        mf.NetworkWithSubnetFactory(public=False, deleted=False)
+        mf.NetworkWithSubnetFactory(public=True, floating_ip_pool=False)
         response = self.get(POOLS_URL)
         self.assertSuccess(response)
         self.assertEqual(json.loads(response.content)["floating_ip_pools"],
@@ -268,10 +241,9 @@ class FloatingIPPoolsAPITest(BaseAPITest):
 
 class FloatingIPActionsTest(BaseAPITest):
     def setUp(self):
-        vm = VirtualMachineFactory()
-        vm.operstate = "ACTIVE"
-        vm.save()
-        self.vm = vm
+        self.vm = VirtualMachineFactory()
+        self.vm.operstate = "ACTIVE"
+        self.vm.save()
 
     def test_bad_request(self):
         url = SERVERS_URL + "/%s/action" % self.vm.id
@@ -290,25 +262,20 @@ class FloatingIPActionsTest(BaseAPITest):
         response = self.post(url, self.vm.userid, json.dumps(request), "json")
         self.assertItemNotFound(response)
         # In use
-        vm1 = VirtualMachineFactory()
-        ip1 = FloatingIPFactory(userid=self.vm.userid, machine=vm1)
-        BackendNetworkFactory(network=ip1.network, backend=vm1.backend,
-                              operstate='ACTIVE')
-        request = {"addFloatingIp": {"address": ip1.ipv4}}
+        ip = mf.IPv4AddressFactory(floating_ip=True, userid=self.vm.userid)
+        request = {"addFloatingIp": {"address": ip.address}}
         response = self.post(url, self.vm.userid, json.dumps(request), "json")
-        self.assertFault(response, 409, "conflict")
+        self.assertConflict(response)
         # Success
-        ip1 = FloatingIPFactory(userid=self.vm.userid, machine=None)
-        BackendNetworkFactory(network=ip1.network, backend=self.vm.backend,
-                              operstate='ACTIVE')
-        request = {"addFloatingIp": {"address": ip1.ipv4}}
+        ip = mf.IPv4AddressFactory(floating_ip=True, nic=None,
+                                   userid=self.vm.userid)
+        request = {"addFloatingIp": {"address": ip.address}}
         mock().ModifyInstance.return_value = 1
         response = self.post(url, self.vm.userid, json.dumps(request), "json")
         self.assertEqual(response.status_code, 202)
-        ip1_after = floating_ips.get(id=ip1.id)
-        self.assertEqual(ip1_after.machine, self.vm)
-        self.assertTrue(ip1_after.in_use())
-        nic = self.vm.nics.get(ipv4=ip1_after.ipv4)
+        ip_after = floating_ips.get(id=ip.id)
+        self.assertEqual(ip_after.nic.machine, self.vm)
+        nic = self.vm.nics.get()
         nic.state = "ACTIVE"
         nic.save()
         response = self.get(SERVERS_URL + "/%s" % self.vm.id,
@@ -323,20 +290,20 @@ class FloatingIPActionsTest(BaseAPITest):
         url = SERVERS_URL + "/%s/action" % self.vm.id
         request = {"removeFloatingIp": {"address": "10.0.0.1"}}
         response = self.post(url, self.vm.userid, json.dumps(request), "json")
-        self.assertItemNotFound(response)
+        self.assertBadRequest(response)
         # Not In Use
-        ip1 = FloatingIPFactory(userid=self.vm.userid, machine=None)
-        request = {"removeFloatingIp": {"address": ip1.ipv4}}
+        ip = mf.IPv4AddressFactory(floating_ip=True, nic=None,
+                                   userid=self.vm.userid)
+        request = {"removeFloatingIp": {"address": ip.address}}
         response = self.post(url, self.vm.userid, json.dumps(request), "json")
-        self.assertItemNotFound(response)
+        self.assertBadRequest(response)
         # Success
-        ip1 = FloatingIPFactory(userid=self.vm.userid, machine=self.vm)
-        NetworkInterfaceFactory(machine=self.vm, ipv4=ip1.ipv4)
-        request = {"removeFloatingIp": {"address": ip1.ipv4}}
+        ip = mf.IPv4AddressFactory(floating_ip=True,
+                                   userid=self.vm.userid, nic__machine=self.vm)
+        request = {"removeFloatingIp": {"address": ip.address}}
         mock().ModifyInstance.return_value = 2
         response = self.post(url, self.vm.userid, json.dumps(request), "json")
         self.assertEqual(response.status_code, 202)
         # Yet used. Wait for the callbacks
-        ip1_after = floating_ips.get(id=ip1.id)
-        self.assertEqual(ip1_after.machine, self.vm)
-        self.assertTrue(ip1_after.in_use())
+        ip_after = floating_ips.get(id=ip.id)
+        self.assertEqual(ip_after.nic.machine, self.vm)

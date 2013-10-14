@@ -35,7 +35,8 @@
 from django.test import TestCase
 from synnefo.db.pools import (PoolManager, EmptyPool, BridgePool,
                               MacPrefixPool, IPPool, find_padding,
-                              bitarray_to_map, ValueNotAvailable)
+                              bitarray_to_map, ValueNotAvailable,
+                              InvalidValue)
 from bitarray import bitarray
 
 
@@ -248,3 +249,5 @@ class IPPoolTestCase(TestCase):
         # Test if externally reserved
         pool.reserve("192.168.2.3", external=True)
         self.assertRaises(ValueNotAvailable, pool.get, "192.168.2.3")
+        self.assertRaises(ValueNotAvailable, pool.get, "192.168.2.15")
+        self.assertRaises(InvalidValue, pool.get, "192.168.2.16")

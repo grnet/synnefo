@@ -304,6 +304,9 @@ def allocate_ip(network, userid, address=None, floating_ip=False):
                               % network.id)
     except pools.ValueNotAvailable:
         raise faults.Conflict("IP address %s is already used." % address)
+    except pools.InvalidValue:
+        raise faults.BadRequest("Address %s does not belong to network %s" %
+                                (address, network.id))
 
 
 def allocate_public_ip(userid, floating_ip=False, backend=None):

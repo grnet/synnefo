@@ -66,6 +66,8 @@ class PoolManager(object):
             self._reserve(index)
             return self.index_to_value(index)
         else:
+            if not self.contains(value):
+                raise InvalidValue("Value %s does not belong to pool." % value)
             if self.is_available(value):
                 self.reserve(value)
                 return value
@@ -111,6 +113,10 @@ class PoolManager(object):
             self.reserved[index] = AVAILABLE
         else:
             self.available[index] = AVAILABLE
+
+    def contains(self, value):
+        index = self.value_to_index(value)
+        return index >= 0 and index < self.pool_size
 
     def count_available(self):
         return self.pool.count(AVAILABLE)
@@ -188,6 +194,10 @@ class EmptyPool(Exception):
 
 
 class ValueNotAvailable(Exception):
+    pass
+
+
+class InvalidValue(Exception):
     pass
 
 

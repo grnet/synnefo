@@ -545,9 +545,9 @@ class Network(models.Model):
             raise pools.EmptyPool
         return subnet.allocate_address(userid)
 
-    def reserve_address(self, address):
+    def reserve_address(self, address, external=False):
         pool = self.get_pool()
-        pool.reserve(address)
+        pool.reserve(address, external=external)
         pool.save()
 
     def release_address(self, address):

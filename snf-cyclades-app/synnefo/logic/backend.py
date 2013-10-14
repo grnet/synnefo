@@ -37,10 +37,10 @@ from datetime import datetime, timedelta
 from synnefo.db.models import (Backend, VirtualMachine, Network,
                                BackendNetwork, BACKEND_STATUSES,
                                pooled_rapi_client, VirtualMachineDiagnostic,
-                               Flavor, IPAddress)
+                               Flavor)
 from synnefo.logic import utils
 from synnefo import quotas
-from synnefo.api.util import release_resource
+from synnefo.api.util import release_resource, allocate_ip
 from synnefo.util.mac2eui64 import mac2eui64
 from synnefo.logic.rapi import GanetiApiError
 
@@ -59,8 +59,9 @@ _reverse_tags = dict((v.split(':')[3], k) for k, v in _firewall_tags.items())
 # stale and removed from DB.
 BUILDING_NIC_TIMEOUT = timedelta(seconds=180)
 
-NIC_FIELDS = ["state", "mac", "ipv4_address", "ipv6_address", "network",
-              "firewall_profile", "index"]
+SIMPLE_NIC_FIELDS = ["state", "mac", "network", "firewall_profile", "index"]
+COMPLEX_NIC_FIELDS = ["ipv4_address", "ipv6_address"]
+NIC_FIELDS = SIMPLE_NIC_FIELDS + COMPLEX_NIC_FIELDS
 UNKNOWN_NIC_PREFIX = "unknown-"
 
 
@@ -178,7 +179,7 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
             # VM has been deleted
             for nic in vm.nics.all():
                 # Release the IP
-                release_nic_address(nic)
+                remove_nic_ips(nic)
                 # And delete the NIC.
                 nic.delete()
             vm.deleted = True
@@ -231,7 +232,8 @@ def _process_net_status(vm, etime, nics):
 
     """
     ganeti_nics = process_ganeti_nics(nics)
-    db_nics = dict([(nic.id, nic) for nic in vm.nics.all()])
+    db_nics = dict([(nic.id, nic)
+                    for nic in vm.nics.prefetch_related("ips__subnet")])
 
     # Get X-Lock on backend before getting X-Lock on network IP pools, to
     # guarantee that no deadlock will occur with Backend allocator.
@@ -248,60 +250,31 @@ def _process_net_status(vm, etime, nics):
             if db_nic.state != "BUILDING" or\
                 (db_nic.state == "BUILDING" and
                  etime > db_nic.created + BUILDING_NIC_TIMEOUT):
-                release_nic_address(db_nic)
+                remove_nic_ips(db_nic)
                 db_nic.delete()
             else:
                 log.warning("Ignoring recent building NIC: %s", db_nic)
         elif db_nic is None:
-            # NIC exists in Ganeti but not in DB
-            if str(nic_name).startswith(UNKNOWN_NIC_PREFIX):
-                msg = "Can not process NIC! NIC '%s' does not have a"\
-                      " valid name." % ganeti_nic
-                log.error(msg)
-                continue
-            ipaddress = None
-            network = ganeti_nic["network"]
-            ipv4_address = ganeti_nic["ipv4_address"]
-            if ipv4_address:
-                network.reserve_address(ipv4_address)
-                subnet = network.subnets.get(ipversion=4)
-                ipaddress = IPAddress.objects.create(address=ipv4_address,
-                                                     network=network,
-                                                     subnet=subnet,
-                                                     userid=vm.userid)
-            # TODO
-            ganeti_nic.pop("ipv4_address")
-            ganeti_nic.pop("ip", None)
-            ganeti_nic.pop("ipv6_address")
-            nic = vm.nics.create(id=nic_name, **ganeti_nic)
-            if ipaddress is not None:
-                ipaddress.nic = nic
-                ipaddress.save()
+            msg = ("NIC/%s of VM %s does not exist in DB! Cannot automatically"
+                   " fix this issue!" % (nic_name, vm))
+            log.error(msg)
+            continue
         elif not nics_are_equal(db_nic, ganeti_nic):
+            for f in SIMPLE_NIC_FIELDS:
+                # Update the NIC in DB with the values from Ganeti NIC
+                setattr(db_nic, f, ganeti_nic[f])
+                db_nic.save()
             # Special case where the IPv4 address has changed, because you
             # need to release the old IPv4 address and reserve the new one
             ipv4_address = ganeti_nic["ipv4_address"]
             if db_nic.ipv4_address != ipv4_address:
-                release_nic_address(db_nic)
+                remove_nic_ips(db_nic)
                 if ipv4_address:
                     network = ganeti_nic["network"]
-                    network.reserve_address(ipv4_address)
-                    subnet = network.subnets.get(ipversion=4)
-                    ipaddress, _ =\
-                        IPAddress.objects.get_or_create(network=network,
-                                                        subnet=subnet,
-                                                        userid=vm.userid,
-                                                        address=ipv4_address)
+                    ipaddress = allocate_ip(network, vm.userid,
+                                            address=ipv4_address)
                     ipaddress.nic = nic
                     ipaddress.save()
-
-            for f in ["state", "mac", "network", "firewall_profile", "index"]:
-                # Update the NIC in DB with the values from Ganeti NIC
-                setattr(db_nic, f, ganeti_nic[f])
-                db_nic.save()
-
-            # Dummy update the network, to work with 'changed-since'
-            db_nic.network.save()
 
     vm.backendtime = etime
     vm.save()
@@ -353,24 +326,23 @@ def process_ganeti_nics(ganeti_nics):
     return dict(new_nics)
 
 
-def release_nic_address(nic):
-    """Release the IPv4 address of a NIC.
+def remove_nic_ips(nic):
+    """Remove IP addresses associated with a NetworkInterface.
 
-    Check if an instance's NIC has an IPv4 address and release it if it is not
-    a Floating IP. If it is as Floating IP, then disassociate the FloatingIP
-    from the machine.
+    Remove all IP addresses that are associated with the NetworkInterface
+    object, by returning them to the pool and deleting the IPAddress object. If
+    the IP is a floating IP, then it is just disassociated from the NIC.
 
     """
 
     for ip in nic.ips.all():
-        if ip.subnet.ipversion == 4:
+        if ip.ipversion == 4:
             if ip.floating_ip:
                 ip.nic = None
                 ip.save()
             else:
-                ip.network.release_address(ip.address)
-                ip.delete()
-        else:
+                ip.release_address()
+        if not ip.floating_ip:
             ip.delete()
 
 
@@ -488,12 +460,9 @@ def process_network_modify(back_network, etime, jobid, opcode, status,
 
     add_reserved_ips = job_fields.get("add_reserved_ips")
     if add_reserved_ips:
-        net = back_network.network
-        pool = net.get_pool()
-        if add_reserved_ips:
-            for ip in add_reserved_ips:
-                pool.reserve(ip, external=True)
-        pool.save()
+        network = back_network.network
+        for ip in add_reserved_ips:
+            network.reserve_address(ip, external=True)
 
     if status == 'success':
         back_network.backendtime = etime
@@ -751,15 +720,15 @@ def _create_network(network, backend):
     subnet6 = None
     gateway = None
     gateway6 = None
-    for dbsubnet in network.subnets.all():
-        if dbsubnet.ipversion == 4:
-            if dbsubnet.dhcp:
+    for _subnet in network.subnets.all():
+        if _subnet.ipversion == 4:
+            if _subnet.dhcp:
                 tags.append('nfdhcpd')
-                subnet = dbsubnet.cidr
-                gateway = dbsubnet.gateway
-        elif dbsubnet.ipversion == 6:
-                subnet6 = dbsubnet.cidr
-                gateway6 = dbsubnet.gateway
+                subnet = _subnet.cidr
+                gateway = _subnet.gateway
+        elif _subnet.ipversion == 6:
+                subnet6 = _subnet.cidr
+                gateway6 = _subnet.gateway
 
     if network.public:
         conflicts_check = True

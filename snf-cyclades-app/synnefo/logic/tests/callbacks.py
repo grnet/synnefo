@@ -44,7 +44,6 @@ from synnefo.api.util import allocate_resource
 from synnefo.logic.callbacks import (update_db, update_network,
                                      update_build_progress)
 from snf_django.utils.testing import mocked_quotaholder
-from django.conf import settings
 from synnefo.logic.rapi import GanetiApiError
 
 now = datetime.now
@@ -362,40 +361,20 @@ class UpdateNetTest(TestCase):
         db_vm = VirtualMachine.objects.get(id=vm.id)
         self.assertEqual(len(db_vm.nics.all()), 0)
 
-    def test_empty_nic(self, client):
-        vm = mfactory.VirtualMachineFactory(operstate='ERROR')
-        for public in [True, False]:
-            net = mfactory.NetworkFactory(public=public)
-            msg = self.create_msg(instance_nics=[{'network': net.backend_id,
-                                                  'name': 'snf-nic-100'}],
-                                  instance=vm.backend_vm_id)
-            update_db(client, msg)
-            self.assertTrue(client.basic_ack.called)
-            db_vm = VirtualMachine.objects.get(id=vm.id)
-            nics = db_vm.nics.all()
-            self.assertEqual(len(nics), 1)
-            self.assertEqual(nics[0].index, 0)
-            self.assertEqual(nics[0].ipv4_address, None)
-            self.assertEqual(nics[0].ipv6_address, None)
-            self.assertEqual(nics[0].mac, None)
-            if public:
-                self.assertEqual(nics[0].firewall_profile,
-                                 settings.DEFAULT_FIREWALL_PROFILE)
-            else:
-                self.assertEqual(nics[0].firewall_profile, None)
-
-    def test_full_nic(self, client):
-        vm = mfactory.VirtualMachineFactory(operstate='ERROR')
-        net = mfactory.NetworkWithSubnetFactory(subnet__cidr='10.0.0.0/24',
-                                                subnet__gateway="10.0.0.1",
-                                                subnet6=None)
-        pool = net.get_pool()
-        self.assertTrue(pool.is_available('10.0.0.22'))
+    def test_changed_nic(self, client):
+        ip = mfactory.IPv4AddressFactory(subnet__cidr="10.0.0.0/24",
+                                         address="10.0.0.2")
+        network = ip.network
+        subnet = ip.subnet
+        vm = ip.nic.machine
+        pool = subnet.get_pool()
+        pool.reserve("10.0.0.2")
         pool.save()
-        msg = self.create_msg(instance_nics=[{'network': net.backend_id,
-                                              'ip': '10.0.0.22',
+
+        msg = self.create_msg(instance_nics=[{'network': network.backend_id,
+                                              'ip': '10.0.0.3',
                                               'mac': 'aa:bb:cc:00:11:22',
-                                              'name': 'snf-nic-200'}],
+                                              'name': ip.nic.backend_uuid}],
                               instance=vm.backend_vm_id)
         update_db(client, msg)
         self.assertTrue(client.basic_ack.called)
@@ -403,11 +382,11 @@ class UpdateNetTest(TestCase):
         nics = db_vm.nics.all()
         self.assertEqual(len(nics), 1)
         self.assertEqual(nics[0].index, 0)
-        self.assertEqual(nics[0].ipv4_address, '10.0.0.22')
-        self.assertEqual(nics[0].ipv6_address, None)
+        self.assertEqual(nics[0].ipv4_address, '10.0.0.3')
         self.assertEqual(nics[0].mac, 'aa:bb:cc:00:11:22')
-        pool = net.get_pool()
-        self.assertFalse(pool.is_available('10.0.0.22'))
+        pool = subnet.get_pool()
+        self.assertTrue(pool.is_available('10.0.0.2'))
+        self.assertFalse(pool.is_available('10.0.0.3'))
         pool.save()
 
 

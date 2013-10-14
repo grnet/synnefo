@@ -396,7 +396,8 @@ def get_online_backends():
 
 
 def get_database_servers(backend):
-    servers = backend.virtual_machines.select_related("nics", "flavor")\
+    servers = backend.virtual_machines.select_related("flavor")\
+                                      .prefetch_related("nics__ips__subnet")\
                                       .filter(deleted=False)
     return dict([(s.id, s) for s in servers])
 

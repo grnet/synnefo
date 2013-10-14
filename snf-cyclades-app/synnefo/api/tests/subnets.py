@@ -114,8 +114,8 @@ class SubnetTest(BaseAPITest):
                 'cidr': '10.0.3.0/24',
                 'ip_version': 4,
                 'allocation_pools': [{
-                    'start': '10.0.3.0',
-                    'end': '10.0.3.255'}
+                    'start': '10.0.3.2',
+                    'end': '10.0.3.252'}
                 ]}
         }
         response = self.post(SUBNETS_URL, test_net.userid,
@@ -131,7 +131,7 @@ class SubnetTest(BaseAPITest):
                 'cidr': '10.0.3.0/24',
                 'ip_version': 4,
                 'allocation_pools': [{
-                    'start': '10.0.3.0',
+                    'start': '10.0.3.2',
                     'end': '10.0.3.100'}, {
                     'start': '10.0.3.200',
                     'end': '10.0.3.220'}
@@ -140,6 +140,24 @@ class SubnetTest(BaseAPITest):
         response = self.post(SUBNETS_URL, test_net.userid,
                              json.dumps(request), "json")
         self.assertSuccess(response)
+
+    def test_create_subnet_with_gateway_inside_of_ip_pool_range(self):
+        """Test create a subnet with an IP pool outside of network range"""
+        test_net = mf.NetworkFactory()
+        request = {
+            'subnet': {
+                'network_id': test_net.id,
+                'cidr': '10.0.3.0/24',
+                'ip_version': 4,
+                'gateway_ip': '10.0.3.1',
+                'allocation_pools': [{
+                    'start': '10.0.3.0',
+                    'end': '10.0.3.255'}
+                ]}
+        }
+        response = self.post(SUBNETS_URL, test_net.userid,
+                             json.dumps(request), "json")
+        self.assertConflict(response)
 
     def test_create_subnet_with_ip_pool_outside_of_network_range(self):
         """Test create a subnet with an IP pool outside of network range"""
@@ -151,12 +169,12 @@ class SubnetTest(BaseAPITest):
                 'ip_version': 4,
                 'allocation_pools': [{
                     'start': '10.0.8.0',
-                    'end': '10.0.1.255'}
+                    'end': '10.0.1.250'}
                 ]}
         }
         response = self.post(SUBNETS_URL, test_net.userid,
                              json.dumps(request), "json")
-        self.assertBadRequest(response)
+        self.assertConflict(response)
 
     def test_create_subnet_with_ip_pool_end_lower_than_start(self):
         """Test create a subnet with a pool where end is lower than start"""
@@ -173,7 +191,7 @@ class SubnetTest(BaseAPITest):
         }
         response = self.post(SUBNETS_URL, test_net.userid,
                              json.dumps(request), "json")
-        self.assertBadRequest(response)
+        self.assertConflict(response)
 
     def test_create_subnet_with_ip_pool_in_a_ipv6_subnet(self):
         """Test create a subnet with an ip pool, in an IPv6 subnet """
@@ -190,7 +208,7 @@ class SubnetTest(BaseAPITest):
         }
         response = self.post(SUBNETS_URL, test_net.userid,
                              json.dumps(request), "json")
-        self.assertBadRequest(response)
+        self.assertConflict(response)
 
     def test_create_subnet_with_invalid_network_id(self):
         """Test create a subnet with a network id that doesn't exist"""

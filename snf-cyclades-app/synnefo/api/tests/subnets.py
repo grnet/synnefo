@@ -92,6 +92,48 @@ class SubnetTest(BaseAPITest):
                              json.dumps(request), "json")
         self.assertSuccess(response)
 
+    def test_create_subnet_success_ipv4_with_slac(self):
+        """Test create an IPv4 subnet, with a slac that will be ingored"""
+        test_net = mf.NetworkFactory()
+        request = {
+            'subnet': {
+                'network_id': test_net.id,
+                'cidr': '10.0.3.0/24',
+                'ip_version': 4,
+                'slac': False}
+        }
+        response = self.post(SUBNETS_URL, test_net.userid,
+                             json.dumps(request), "json")
+        self.assertSuccess(response)
+
+    def test_create_subnet_success_ipv6_with_slac(self):
+        """Test create a subnet with ipv6 and slac"""
+        test_net = mf.NetworkFactory()
+        request = {
+            'subnet': {
+                'network_id': test_net.id,
+                'cidr': 'fdc1:4992:1130:fc0b::/64',
+                'ip_version': 6,
+                'slac': False}
+        }
+        response = self.post(SUBNETS_URL, test_net.userid,
+                             json.dumps(request), "json")
+        self.assertSuccess(response)
+
+    def test_create_subnet_with_malformed_slac(self):
+        """Test create a subnet with ipv6 and a malformed slac"""
+        test_net = mf.NetworkFactory()
+        request = {
+            'subnet': {
+                'network_id': test_net.id,
+                'cidr': 'fdc1:4992:1130:fc0b::/64',
+                'ip_version': 6,
+                'slac': 'Random'}
+        }
+        response = self.post(SUBNETS_URL, test_net.userid,
+                             json.dumps(request), "json")
+        self.assertBadRequest(response)
+
     def test_create_subnet_success_ipv6(self):
         """Test create an IPv6 subnet successfully"""
         test_net = mf.NetworkFactory()
@@ -286,6 +328,19 @@ class SubnetTest(BaseAPITest):
         response = self.post(SUBNETS_URL, test_net.userid, json.dumps(request),
                              "json")
         self.assertBadRequest(response)
+
+    def test_create_subnet_with_dhcp_set_to_false(self):
+        """Create a subnet with a dhcp set to false"""
+        test_net = mf.NetworkFactory()
+        request = {
+            'subnet': {
+                'network_id': test_net.id,
+                'cidr': '192.168.3.0/24',
+                'enable_dhcp': False}
+        }
+        response = self.post(SUBNETS_URL, test_net.userid, json.dumps(request),
+                             "json")
+        self.assertSuccess(response)
 
     def test_create_subnet_with_dns_nameservers(self):
         """Create a subnet with dns nameservers"""

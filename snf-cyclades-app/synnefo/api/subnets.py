@@ -129,10 +129,15 @@ def create_subnet(request):
 
     if ipversion == 6:
         networks.validate_network_params(None, None, cidr, gateway)
+        slac = subnet.get('slac', None)
+        if slac is not None:
+            dhcp = check_dhcp_value(slac)
+        else:
+            dhcp = check_dhcp_value(subnet.get('enable_dhcp', True))
     else:
         networks.validate_network_params(cidr, gateway)
+        dhcp = check_dhcp_value(subnet.get('enable_dhcp', True))
 
-    dhcp = check_dhcp_value(subnet.get('enable_dhcp', True))
     name = check_name_length(subnet.get('name', None))
 
     dns = subnet.get('dns_nameservers', None)
@@ -275,6 +280,10 @@ def subnet_to_dict(subnet):
                        'dns_nameservers': subnet.dns_nameservers,
                        'host_routes': subnet.host_routes,
                        'allocation_pools': []})
+
+    if subnet.ipversion == 6:
+        dictionary['slac'] = subnet.dhcp
+
     return dictionary
 
 
@@ -288,8 +297,8 @@ def check_number_of_subnets(network, version):
 def check_dhcp_value(dhcp):
     """Check if dhcp value is in acceptable values"""
     if dhcp not in [True, False]:
-        raise api.faults.BadRequest("Malformed request, enable_dhcp must be "
-                                    "True or False")
+        raise api.faults.BadRequest("Malformed request, enable_dhcp/slac must "
+                                    "be True or False")
     return dhcp
 
 

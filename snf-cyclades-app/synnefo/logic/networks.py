@@ -119,11 +119,13 @@ def create(userid, name, flavor, subnet=None, gateway=None, subnet6=None,
         state='ACTIVE')
 
     if subnet:
-        Subnet.objects.create(network=network,
-                              ipversion=4,
-                              cidr=subnet,
-                              gateway=gateway,
-                              dhcp=dhcp)
+        s = Subnet.objects.create(network=network,
+                                  ipversion=4,
+                                  cidr=subnet,
+                                  gateway=gateway,
+                                  dhcp=dhcp)
+        s.ip_pools.create(size=0)
+
     if subnet6:
         Subnet.objects.create(network=network,
                               ipversion=6,

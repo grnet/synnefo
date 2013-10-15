@@ -39,6 +39,7 @@ from snf_django.management.utils import parse_bool
 
 from synnefo.db.models import Network, NetworkInterface, SecurityGroup
 from synnefo.api import util
+from synnefo.management.common import get_network, get_vm
 from synnefo.logic import ports
 
 
@@ -54,11 +55,6 @@ class Command(BaseCommand):
             dest='name',
             default=None,
             help="Name of port"),
-        make_option(
-            '--owner',
-            dest='owner',
-            default=None,
-            help="The owner of the port"),
         make_option(
             '--network',
             dest='network',
@@ -86,7 +82,6 @@ class Command(BaseCommand):
         device = options['device_id']
         #assume giving security groups comma separated
         security_groups = options['security-groups']
-        userid = options["owner"]
 
         if not name:
             name=""
@@ -95,14 +90,12 @@ class Command(BaseCommand):
             raise CommandError("network is required")
         if not device:
             raise CommandError("device is required")
-        if not userid:
-            raise CommandError("owner is required")
 
         #get the network
-        network = util.get_network(network, userid, non_deleted=True)
+        network = get_network(network)
 
         #get the vm
-        vm = util.get_vm(device, userid)
+        vm = get_vm(device)
 
         #validate security groups
         sg_list = []
@@ -112,5 +105,5 @@ class Command(BaseCommand):
                 sg = util.get_security_group(int(gid))
                 sg_list.append(sg)
 
-        new_port = ports.create(userid, network, vm, security_groups=sg_list)
+        new_port = ports.create(network, vm, security_groups=sg_list)
         self.stdout.write("Created port '%s' in DB.\n" % new_port)

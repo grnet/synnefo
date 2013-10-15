@@ -77,4 +77,4 @@ class Command(ListCommand):
     }
 
     fields = ["id", "name", "user.uuid", "mac_address", "network",
-               "fixed_ips"]
+               "device_id", "fixed_ips"]

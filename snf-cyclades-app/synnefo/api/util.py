@@ -235,7 +235,10 @@ def get_port(port_id, user_id, for_update=False):
         if for_update:
             objects = objects.select_for_update()
 
-        port = objects.get(network__userid=user_id, id=port_id)
+        if not user_id:
+            port = objects.get(id=port_id)
+        else:
+            port = objects.get(network__userid=user_id, id=port_id)
 
         if (port.device_owner != "vm") and for_update:
             raise faults.BadRequest('Can not update non vm port')

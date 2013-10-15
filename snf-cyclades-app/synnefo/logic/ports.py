@@ -55,7 +55,7 @@ def port_command(action):
     return decorator
 
 @transaction.commit_on_success
-def create(userid, network, machine, name="", security_groups=None,
+def create(network, machine, name="", security_groups=None,
            device_owner='vm'):
 
     if network.state != 'ACTIVE':
@@ -65,6 +65,7 @@ def create(userid, network, machine, name="", security_groups=None,
     port = NetworkInterface.objects.create(name=name,
                                            network=network,
                                            machine=machine,
+                                           userid=machine.userid,
                                            device_owner=device_owner,
                                            state="BUILDING")
     #add the security groups if any
@@ -76,7 +77,7 @@ def create(userid, network, machine, name="", security_groups=None,
         IPAddress.objects.create(subnet=subn,
                                  network=network,
                                  nic=port,
-                                 userid=userid,
+                                 userid=machine.userid,
                                  # FIXME
                                  address="192.168.0." + str(subn.id))
 
@@ -86,3 +87,8 @@ def create(userid, network, machine, name="", security_groups=None,
     #quotas.issue_and_accept_commission(new_port)
 
     return port
+
+@transaction.commit_on_success
+def delete(port):
+    port.ips.all().delete()
+    port.delete()

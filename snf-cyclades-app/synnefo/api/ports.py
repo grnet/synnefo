@@ -132,7 +132,7 @@ def create_port(request):
             sg = util.get_security_group(int(gid))
             sg_list.append(sg)
 
-    new_port = ports.create(user_id, network, vm, security_groups=sg_list)
+    new_port = ports.create(network, vm, security_groups=sg_list)
 
     response = render_port(request, port_to_dict(new_port), status=201)
 

@@ -82,12 +82,15 @@ class Command(BaseCommand):
         qh_holdings = service_get_quotas(astakos, query)
 
         if userid is None:
-            users = AstakosUser.objects.moderated()
+            users = AstakosUser.objects.accepted()
         else:
             try:
-                users = [AstakosUser.objects.get(uuid=userid)]
+                user = AstakosUser.objects.get(uuid=userid)
             except AstakosUser.DoesNotExist:
                 raise CommandError("There is no user with uuid '%s'." % userid)
+            if not user.is_accepted():
+                raise CommandError("%s is not an accepted user." % userid)
+            users = [user]
 
         db_holdings = count_pending_app(users)
 

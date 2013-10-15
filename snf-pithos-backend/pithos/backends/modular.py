@@ -124,6 +124,28 @@ DEFAULT_SOURCE = 'system'
 logger = logging.getLogger(__name__)
 
 
+def backend_method(func):
+    @wraps(func)
+    def wrapper(self, *args, **kw):
+        # if we are inside a database transaction
+        # just proceed with the method execution
+        # otherwise manage a new transaction
+        if self.in_transaction:
+            return func(self, *args, **kw)
+
+        try:
+            self.pre_exec()
+            result = func(self, *args, **kw)
+            success_status = True
+            return result
+        except:
+            success_status = False
+            raise
+        finally:
+            self.post_exec(success_status)
+    return wrapper
+
+
 def debug_method(func):
     @wraps(func)
     def wrapper(self, *args, **kw):
@@ -257,9 +279,13 @@ class ModularBackend(BaseBackend):
 
         self.lock_container_path = False
 
+        self.in_transaction = False
+
     def pre_exec(self, lock_container_path=False):
         self.lock_container_path = lock_container_path
         self.wrapper.execute()
+        self.serials = []
+        self.in_transaction = True
 
     def post_exec(self, success_status=True):
         if success_status:
@@ -294,6 +320,7 @@ class ModularBackend(BaseBackend):
                 self.commission_serials.delete_many(
                     r['rejected'])
             self.wrapper.rollback()
+        self.in_transaction = False
 
     def close(self):
         self.wrapper.close()
@@ -304,6 +331,7 @@ class ModularBackend(BaseBackend):
         return not isinstance(self.astakosclient, DisabledAstakosClient)
 
     @debug_method
+    @backend_method
     def list_accounts(self, user, marker=None, limit=10000):
         """Return a list of accounts the user can access."""
 
@@ -312,6 +340,7 @@ class ModularBackend(BaseBackend):
         return allowed[start:start + limit]
 
     @debug_method
+    @backend_method
     def get_account_meta(
             self, user, account, domain, until=None, include_user_defined=True,
             external_quota=None):
@@ -354,6 +383,7 @@ class ModularBackend(BaseBackend):
         return meta
 
     @debug_method
+    @backend_method
     def update_account_meta(self, user, account, domain, meta, replace=False):
         """Update the metadata associated with the account for the domain."""
 
@@ -364,6 +394,7 @@ class ModularBackend(BaseBackend):
                            update_statistics_ancestors_depth=-1)
 
     @debug_method
+    @backend_method
     def get_account_groups(self, user, account):
         """Return a dictionary with the user groups defined for the account."""
 
@@ -375,6 +406,7 @@ class ModularBackend(BaseBackend):
         return self.permissions.group_dict(account)
 
     @debug_method
+    @backend_method
     def update_account_groups(self, user, account, groups, replace=False):
         """Update the groups associated with the account."""
 
@@ -391,6 +423,7 @@ class ModularBackend(BaseBackend):
                 self.permissions.group_addmany(account, k, v)
 
     @debug_method
+    @backend_method
     def get_account_policy(self, user, account, external_quota=None):
         """Return a dictionary with the account policy."""
 
@@ -406,6 +439,7 @@ class ModularBackend(BaseBackend):
         return policy
 
     @debug_method
+    @backend_method
     def update_account_policy(self, user, account, policy, replace=False):
         """Update the policy associated with the account."""
 
@@ -416,6 +450,7 @@ class ModularBackend(BaseBackend):
         self._put_policy(node, policy, replace, is_account_policy=True)
 
     @debug_method
+    @backend_method
     def put_account(self, user, account, policy=None):
         """Create a new account with the given name."""
 
@@ -432,6 +467,7 @@ class ModularBackend(BaseBackend):
         self._put_policy(node, policy, True, is_account_policy=True)
 
     @debug_method
+    @backend_method
     def delete_account(self, user, account):
         """Delete the account with the given name."""
 
@@ -446,6 +482,7 @@ class ModularBackend(BaseBackend):
         self.permissions.group_destroy(account)
 
     @debug_method
+    @backend_method
     def list_containers(self, user, account, marker=None, limit=10000,
                         shared=False, until=None, public=False):
         """Return a list of containers existing under an account."""
@@ -475,6 +512,7 @@ class ModularBackend(BaseBackend):
         return containers[start:start + limit]
 
     @debug_method
+    @backend_method
     def list_container_meta(self, user, account, container, domain,
                             until=None):
         """Return a list of the container's object meta keys for a domain."""
@@ -494,6 +532,7 @@ class ModularBackend(BaseBackend):
                                                CLUSTER_DELETED, allowed)
 
     @debug_method
+    @backend_method
     def get_container_meta(self, user, account, container, domain, until=None,
                            include_user_defined=True):
         """Return a dictionary with the container metadata for the domain."""
@@ -528,6 +567,7 @@ class ModularBackend(BaseBackend):
         return meta
 
     @debug_method
+    @backend_method
     def update_container_meta(self, user, account, container, domain, meta,
                               replace=False):
         """Update the metadata associated with the container for the domain."""
@@ -546,6 +586,7 @@ class ModularBackend(BaseBackend):
                                          update_statistics_ancestors_depth=0)
 
     @debug_method
+    @backend_method
     def get_container_policy(self, user, account, container):
         """Return a dictionary with the container policy."""
 
@@ -557,6 +598,7 @@ class ModularBackend(BaseBackend):
         return self._get_policy(node, is_account_policy=False)
 
     @debug_method
+    @backend_method
     def update_container_policy(self, user, account, container, policy,
                                 replace=False):
         """Update the policy associated with the container."""
@@ -568,6 +610,7 @@ class ModularBackend(BaseBackend):
         self._put_policy(node, policy, replace, is_account_policy=False)
 
     @debug_method
+    @backend_method
     def put_container(self, user, account, container, policy=None):
         """Create a new container with the given name."""
 
@@ -589,6 +632,7 @@ class ModularBackend(BaseBackend):
         self._put_policy(node, policy, True, is_account_policy=False)
 
     @debug_method
+    @backend_method
     def delete_container(self, user, account, container, until=None, prefix='',
                          delimiter=None):
         """Delete/purge the container with the given name."""
@@ -759,6 +803,7 @@ class ModularBackend(BaseBackend):
         return allowed
 
     @debug_method
+    @backend_method
     def list_objects(self, user, account, container, prefix='', delimiter=None,
                      marker=None, limit=10000, virtual=True, domain=None,
                      keys=None, shared=False, until=None, size_range=None,
@@ -771,6 +816,7 @@ class ModularBackend(BaseBackend):
             virtual, domain, keys, shared, until, size_range, False, public)
 
     @debug_method
+    @backend_method
     def list_object_meta(self, user, account, container, prefix='',
                          delimiter=None, marker=None, limit=10000,
                          virtual=True, domain=None, keys=None, shared=False,
@@ -800,6 +846,7 @@ class ModularBackend(BaseBackend):
         return objects
 
     @debug_method
+    @backend_method
     def list_object_permissions(self, user, account, container, prefix=''):
         """Return a list of paths enforce permissions under a container."""
 
@@ -807,6 +854,7 @@ class ModularBackend(BaseBackend):
                                              True, False)
 
     @debug_method
+    @backend_method
     def list_object_public(self, user, account, container, prefix=''):
         """Return a mapping of object paths to public ids under a container."""
 
@@ -818,6 +866,7 @@ class ModularBackend(BaseBackend):
         return public
 
     @debug_method
+    @backend_method
     def get_object_meta(self, user, account, container, name, domain,
                         version=None, include_user_defined=True):
         """Return a dictionary with the object metadata for the domain."""
@@ -855,6 +904,7 @@ class ModularBackend(BaseBackend):
         return meta
 
     @debug_method
+    @backend_method
     def update_object_meta(self, user, account, container, name, domain, meta,
                            replace=False):
         """Update object metadata for a domain and return the new version."""
@@ -871,6 +921,7 @@ class ModularBackend(BaseBackend):
         return dest_version_id
 
     @debug_method
+    @backend_method
     def get_object_permissions_bulk(self, user, account, container, names):
         """Return the action allowed on the object, the path
         from which the object gets its permissions from,
@@ -900,6 +951,7 @@ class ModularBackend(BaseBackend):
         return nobject_permissions
 
     @debug_method
+    @backend_method
     def get_object_permissions(self, user, account, container, name):
         """Return the action allowed on the object, the path
         from which the object gets its permissions from,
@@ -922,6 +974,7 @@ class ModularBackend(BaseBackend):
                 self.permissions.access_get(permissions_path))
 
     @debug_method
+    @backend_method
     def update_object_permissions(self, user, account, container, name,
                                   permissions):
         """Update the permissions associated with the object."""
@@ -940,6 +993,7 @@ class ModularBackend(BaseBackend):
                                         self.permissions.access_members(path)})
 
     @debug_method
+    @backend_method
     def get_object_public(self, user, account, container, name):
         """Return the public id of the object if applicable."""
 
@@ -949,6 +1003,7 @@ class ModularBackend(BaseBackend):
         return p
 
     @debug_method
+    @backend_method
     def update_object_public(self, user, account, container, name, public):
         """Update the public status of the object."""
 
@@ -962,6 +1017,7 @@ class ModularBackend(BaseBackend):
                 path, self.public_url_security, self.public_url_alphabet)
 
     @debug_method
+    @backend_method
     def get_object_hashmap(self, user, account, container, name, version=None):
         """Return the object's size and a list with partial hashes."""
 
@@ -1072,6 +1128,7 @@ class ModularBackend(BaseBackend):
         return dest_version_id, hexlified
 
     @debug_method
+    @backend_method
     def update_object_checksum(self, user, account, container, name, version,
                                checksum):
         """Update an object's checksum."""
@@ -1167,6 +1224,7 @@ class ModularBackend(BaseBackend):
                 dest_version_ids)
 
     @debug_method
+    @backend_method
     def copy_object(self, user, src_account, src_container, src_name,
                     dest_account, dest_container, dest_name, type, domain,
                     meta=None, replace_meta=False, permissions=None,
@@ -1181,6 +1239,7 @@ class ModularBackend(BaseBackend):
         return dest_version_id
 
     @debug_method
+    @backend_method
     def move_object(self, user, src_account, src_container, src_name,
                     dest_account, dest_container, dest_name, type, domain,
                     meta=None, replace_meta=False, permissions=None,
@@ -1288,6 +1347,7 @@ class ModularBackend(BaseBackend):
             self.permissions.access_clear_bulk(paths)
 
     @debug_method
+    @backend_method
     def delete_object(self, user, account, container, name, until=None,
                       prefix='', delimiter=None):
         """Delete/purge an object."""
@@ -1295,6 +1355,7 @@ class ModularBackend(BaseBackend):
         self._delete_object(user, account, container, name, until, delimiter)
 
     @debug_method
+    @backend_method
     def list_versions(self, user, account, container, name):
         """Return a list of all object (version, version_timestamp) tuples."""
 
@@ -1305,6 +1366,7 @@ class ModularBackend(BaseBackend):
                 x[self.CLUSTER] != CLUSTER_DELETED]
 
     @debug_method
+    @backend_method
     def get_uuid(self, user, uuid):
         """Return the (account, container, name) for the UUID given."""
 
@@ -1317,6 +1379,7 @@ class ModularBackend(BaseBackend):
         return (account, container, name)
 
     @debug_method
+    @backend_method
     def get_public(self, user, public):
         """Return the (account, container, name) for the public id given."""
 
@@ -1556,6 +1619,7 @@ class ModularBackend(BaseBackend):
     # Reporting functions.
 
     @debug_method
+    @backend_method
     def _report_size_change(self, user, account, size, details=None):
         details = details or {}
 
@@ -1585,6 +1649,7 @@ class ModularBackend(BaseBackend):
             self.serials.append(serial)
 
     @debug_method
+    @backend_method
     def _report_object_change(self, user, account, path, details=None):
         details = details or {}
         details.update({'user': user})
@@ -1593,6 +1658,7 @@ class ModularBackend(BaseBackend):
                               details))
 
     @debug_method
+    @backend_method
     def _report_sharing_change(self, user, account, path, details=None):
         details = details or {}
         details.update({'user': user})
@@ -1771,6 +1837,7 @@ class ModularBackend(BaseBackend):
     # Domain functions
 
     @debug_method
+    @backend_method
     def get_domain_objects(self, domain, user=None):
         allowed_paths = self.permissions.access_list_paths(
             user, include_owned=user is not None, include_containers=False)

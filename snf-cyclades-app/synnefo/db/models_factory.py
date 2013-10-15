@@ -287,3 +287,10 @@ class IPAddressLogFactory(factory.DjangoModelFactory):
     server_id = 1
     network_id = 1
     active = True
+
+
+class VolumeFactory(factory.DjangoModelFactory):
+    FACTORY_FOR = models.Volume
+    userid = factory.Sequence(user_seq())
+    size = factory.Sequence(lambda x: x, type=int)
+    name = factory.Sequence(lambda x: "volume-name-"+x, type=str)

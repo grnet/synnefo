@@ -983,3 +983,80 @@ class VirtualMachineDiagnostic(models.Model):
 
     class Meta:
         ordering = ['-created']
+
+
+class Volume(models.Model):
+    """Model representing a detachable block storage device."""
+
+    STATUS_VALUES = (
+        ("CREATING", "The volume is being created"),
+        ("AVAILABLE", "The volume is ready to be attached to an instance"),
+        ("ATTACHING", "The volume is attaching to an instance"),
+        ("DETACHING", "The volume is detaching from an instance"),
+        ("IN_USE", "The volume is attached to an instance"),
+        ("DELETING", "The volume is being deleted"),
+        ("ERROR", "An error has occured with the volume"),
+        ("ERROR_DELETING", "There was an error deleting this volume"),
+        ("BACKING_UP", "The volume is being backed up"),
+        ("RESTORING_BACKUP", "A backup is being restored to the volume"),
+        ("ERROR_RESTORING", "There was an error restoring a backup from the"
+                            " volume")
+    )
+
+    name = models.CharField("Name", max_length=255, null=True)
+    description = models.CharField("Description", max_length=256, null=True)
+    userid = models.CharField("Owner's UUID", max_length=100, null=False,
+                              db_index=True)
+    size = models.IntegerField("Volume size in GB",  null=False)
+    source_image_id = models.CharField(max_length=100, null=True)
+    source_snapshot_id = models.CharField(max_length=100, null=True)
+    source_volume = models.ForeignKey("Volume",
+                                      related_name="cloned_volumes",
+                                      null=True)
+    delete_on_termination = models.BooleanField("Delete on Server Termination",
+                                                default=True, null=False)
+
+    # TODO: volume_type should be foreign key to VolumeType model
+    volume_type = None
+    deleted = models.BooleanField("Deleted", default=False, null=False)
+    # Datetime fields
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    # Status
+    status = models.CharField("Status", max_length=64,
+                              choices=STATUS_VALUES,
+                              default="CREATING", null=False)
+    snapshot_counter = models.PositiveIntegerField(default=0, null=False)
+
+    machine = models.ForeignKey("VirtualMachine",
+                                related_name="volumes",
+                                null=True)
+    index = models.IntegerField("Index", null=True)
+    backendjobid = models.PositiveIntegerField(null=True)
+
+    @property
+    def backend_volume_uuid(self):
+        return u"%svolume-%d" % (settings.BACKEND_PREFIX_ID, self.id)
+
+    @property
+    def backend_disk_uuid(self):
+        return u"%sdisk-%d" % (settings.BACKEND_PREFIX_ID, self.id)
+
+
+class Metadata(models.Model):
+    key = models.CharField("Metadata Key", max_length=64)
+    value = models.CharField("Metadata Value", max_length=255)
+
+    class Meta:
+        abstract = True
+
+    def __unicode__(self):
+        return u"<%s: %s>" % (self.key, self.value)
+
+
+class VolumeMetadata(Metadata):
+    volume = models.ForeignKey("Volume", related_name="metadata")
+
+    class Meta:
+        unique_together = (("volume", "key"),)
+        verbose_name = u"Key-Value pair of Volumes metadata"

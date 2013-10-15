@@ -315,8 +315,8 @@ class AstakosUserManager(UserManager):
     def verified(self):
         return self.filter(email_verified=True)
 
-    def moderated(self):
-        return self.filter(moderated=True)
+    def accepted(self):
+        return self.filter(moderated=True, is_rejected=False)
 
     def uuid_catalog(self, l=None):
         """
@@ -481,6 +481,9 @@ class AstakosUser(User):
     def add_group(self, gname):
         group, _ = Group.objects.get_or_create(name=gname)
         self.groups.add(group)
+
+    def is_accepted(self):
+        return self.moderated and not self.is_rejected
 
     def is_project_admin(self, application_id=None):
         return self.uuid in astakos_settings.PROJECT_ADMINS

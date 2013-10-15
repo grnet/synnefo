@@ -74,7 +74,11 @@ class QuotaAPITest(TestCase):
         # create user
         user = get_local_user('test@grnet.gr')
         backend.accept_user(user)
-        non_moderated_user = get_local_user('nonmon@example.com')
+        non_moderated_user = get_local_user('nonmon@example.com',
+                                            is_active=False)
+        r_user = get_local_user('rej@example.com',
+                                is_active=False, email_verified=True)
+        backend.reject_user(r_user, "reason")
 
         component2 = Component.objects.create(name="comp2")
         register.add_service(component2, "service2", "type2", [])
@@ -112,9 +116,13 @@ class QuotaAPITest(TestCase):
 
         nmheaders = {'HTTP_X_AUTH_TOKEN': non_moderated_user.auth_token}
         r = client.get(u('quotas/'), **nmheaders)
-        self.assertEqual(r.status_code, 200)
-        body = json.loads(r.content)
-        self.assertEqual(body, {})
+        self.assertEqual(r.status_code, 401)
+
+        q = quotas.get_user_quotas(non_moderated_user)
+        self.assertEqual(q, {})
+
+        q = quotas.get_user_quotas(r_user)
+        self.assertEqual(q, {})
 
         r = client.get(u('service_quotas'))
         self.assertEqual(r.status_code, 401)

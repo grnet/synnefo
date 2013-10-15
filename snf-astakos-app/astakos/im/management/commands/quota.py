@@ -113,7 +113,7 @@ class Command(SynnefoCommand):
         if user_ident is not None:
             users = [self.get_user(user_ident)]
         else:
-            users = AstakosUser.objects.moderated()
+            users = AstakosUser.objects.accepted()
 
         if list_only:
             qh_quotas, astakos_i = list_user_quotas(users)
@@ -150,8 +150,8 @@ class Command(SynnefoCommand):
         else:
             raise CommandError('Please specify user by uuid or email')
 
-        if not user.moderated:
-            raise CommandError('%s is not an accepted user.\n' % user.uuid)
+        if not user.is_accepted():
+            raise CommandError('%s is not an accepted user.' % user.uuid)
 
         return user
 

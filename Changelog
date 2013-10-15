@@ -26,6 +26,10 @@ Astakos
     of its `reference' application (current definition). Lock Project rather
     than Chain (the latter is semantically obsolete).
 
+  * Project states "Active - Pending" and "Suspended - Pending" have been
+    removed. In management command `project-list', the existence of a pending
+    modification is indicated by a non-blank `Pending AppID'.
+
   * Improve recording of project, application, and membership actions.
 
 * Implement API calls for projects.

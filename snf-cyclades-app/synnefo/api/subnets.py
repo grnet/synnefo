@@ -40,7 +40,7 @@ from django.http import HttpResponse
 from django.utils import simplejson as json
 
 from snf_django.lib.api import utils
-from synnefo.db.models import Subnet, Network
+from synnefo.db.models import Subnet, Network, IPPoolTable
 from synnefo.logic import networks
 
 from ipaddr import IPv4Network, IPv6Network, IPv4Address, IPAddress, IPNetwork
@@ -148,24 +148,33 @@ def create_subnet(request):
 
     allocation_pools = subnet.get('allocation_pools', None)
 
-    if allocation_pools:
+    # FIX ME
+    sub = Subnet.objects.create(name=name, network=network, cidr=cidr,
+                                ipversion=ipversion, gateway=gateway,
+                                dhcp=dhcp, host_routes=hosts,
+                                dns_nameservers=dns)
+
+    pool_list = list()
+    if allocation_pools is not None:
+        # If the user specified IP allocation pools, validate them and use them
         if ipversion == 6:
             raise api.faults.Conflict("Can't allocate an IP Pool in IPv6")
         pools = parse_ip_pools(allocation_pools)
-        validate_subpools(pools, cidr_ip, gateway_ip)
-    else:
-        # FIX ME
-        pass
+        pool_list = string_to_ipaddr(pools)
+        validate_subpools(pool_list, cidr_ip, gateway_ip)
+    if allocation_pools is None and ipversion == 4:
+        # Check if the gateway is the first IP of the subnet, in this case
+        # create a single ip pool
+        if int(gateway_ip) - int(cidr_ip) == 1:
+            pool_list = [[gateway_ip + 1, cidr_ip.broadcast - 1]]
+        else:
+            # If the gateway isn't the first available ip, create two different
+            # ip pools adjacent to said ip
+            pool_list.append([cidr_ip.network + 1, gateway_ip - 1])
+            pool_list.append([gateway_ip + 1, cidr_ip.broadcast - 1])
 
-    # FIX ME
-    try:
-        sub = Subnet.objects.create(name=name, network=network, cidr=cidr,
-                                    ipversion=ipversion, gateway=gateway,
-                                    dhcp=dhcp, host_routes=hosts,
-                                    dns_nameservers=dns)
-    except:
-        raise
-        return "Error"
+    if pool_list:
+        create_ip_pools(pool_list, cidr_ip, sub)
 
     subnet_dict = subnet_to_dict(sub)
     data = json.dumps({'subnet': subnet_dict})
@@ -246,7 +255,15 @@ def subnet_to_dict(subnet):
     """Returns a dictionary containing the info of a subnet"""
     dns = check_empty_lists(subnet.dns_nameservers)
     hosts = check_empty_lists(subnet.host_routes)
-    #allocation_pools =
+    allocation_pools = subnet.ip_pools.all()
+    pools = list()
+
+    if allocation_pools:
+        for pool in allocation_pools:
+            cidr = IPNetwork(pool.base)
+            start = str(cidr.network + pool.offset)
+            end = str(cidr.network + pool.offset + pool.size - 1)
+            pools.append([{"start": start, "end": end}])
 
     dictionary = dict({'id': str(subnet.id),
                        'network_id': str(subnet.network.id),
@@ -259,12 +276,37 @@ def subnet_to_dict(subnet):
                        'enable_dhcp': subnet.dhcp,
                        'dns_nameservers': dns,
                        'host_routes': hosts,
-                       'allocation_pools': []})
+                       'allocation_pools': pools if pools is not None else []})
 
     if subnet.ipversion == 6:
         dictionary['slac'] = subnet.dhcp
 
     return dictionary
+
+
+def string_to_ipaddr(pools):
+    """
+    Convert [["192.168.42.1", "192.168.42.15"],
+            ["192.168.42.30", "192.168.42.60"]]
+    to
+            [[IPv4Address('192.168.42.1'), IPv4Address('192.168.42.15')],
+            [IPv4Address('192.168.42.30'), IPv4Address('192.168.42.60')]]
+    and sort the output
+    """
+    pool_list = [(map(lambda ip_str: IPAddress(ip_str), pool))
+                 for pool in pools]
+    pool_list.sort()
+    return pool_list
+
+
+def create_ip_pools(pools, cidr, subnet):
+    """Placeholder"""
+    for pool in pools:
+        size = int(pool[1]) - int(pool[0]) + 1
+        base = str(cidr)
+        offset = int(pool[0]) - int(cidr.network)
+        ip_pool = IPPoolTable.objects.create(size=size, offset=offset,
+                                             base=base, subnet=subnet)
 
 
 def check_empty_lists(value):
@@ -338,18 +380,16 @@ def parse_ip_pools(pools):
     return pool_list
 
 
-def validate_subpools(pools, cidr, gateway):
+def validate_subpools(pool_list, cidr, gateway):
     """
     Validate the given IP pools are inside the cidr range
     Validate there are no overlaps in the given pools
     Finally, validate the gateway isn't in the given ip pools
-    Input must be a list containing a sublist with start/end ranges as strings
-    [["192.168.42.1", "192.168.42.15"], ["192.168.42.30", "192.168.42.60"]]
+    Input must be a list containing a sublist with start/end ranges as
+    ipaddr.IPAddress items eg.,
+    [[IPv4Address('192.168.42.11'), IPv4Address('192.168.42.15')],
+     [IPv4Address('192.168.42.30'), IPv4Address('192.168.42.60')]]
     """
-    pool_list = [(map(lambda ip_str: IPAddress(ip_str), pool))
-                 for pool in pools]
-    pool_list.sort()
-
     if pool_list[0][0] <= cidr.network:
         raise api.faults.Conflict("IP Pool out of bounds")
     elif pool_list[-1][1] >= cidr.broadcast:

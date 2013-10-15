@@ -188,7 +188,6 @@ class NetworkInterfaceFactory(factory.DjangoModelFactory):
 
 class IPPoolTableFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.IPPoolTable
-    size = 0
 
 
 class SubnetFactory(factory.DjangoModelFactory):
@@ -204,7 +203,8 @@ class IPv4SubnetFactory(SubnetFactory):
     ipversion = 4
     cidr = factory.Sequence(lambda n: '192.168.{0}.0/24'.format(n))
     gateway = factory.LazyAttribute(lambda a: a.cidr[:-4] + '1')
-    pool = factory.RelatedFactory(IPPoolTableFactory, 'subnet')
+    pool = factory.RelatedFactory(IPPoolTableFactory, 'subnet', base=cidr,
+                                  offset=10, size=5)
 
 
 class IPv6SubnetFactory(SubnetFactory):

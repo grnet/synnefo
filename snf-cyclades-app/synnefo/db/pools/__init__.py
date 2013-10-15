@@ -271,11 +271,7 @@ class IPPool(PoolManager):
         do_init = False if pool_table.available_map else True
         subnet = pool_table.subnet
         self.net = ipaddr.IPNetwork(subnet.cidr)
-        if not pool_table.size:
-            pool_table.size = self.net.numhosts
         super(IPPool, self).__init__(pool_table)
-        gateway = subnet.gateway
-        self.gateway = gateway and ipaddr.IPAddress(gateway) or None
         if do_init:
             self._reserve(0, external=True)
             if gateway:
@@ -292,3 +288,9 @@ class IPPool(PoolManager):
     def contains(self, address):
         addr = ipaddr.IPAddress(address)
         return addr in self.net
+
+    def return_start(self):
+        return str(ipaddr.IPAddress(self.base) + self.offset)
+
+    def return_end(self):
+        return str(ipaddr.IPAddress(self.base) + self.offset + self.size - 1)

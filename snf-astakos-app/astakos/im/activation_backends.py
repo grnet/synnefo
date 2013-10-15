@@ -330,6 +330,7 @@ class ActivationBackend(object):
                                          str(obj))
         user.is_rejected = True
         user.rejected_reason = reason
+        user.save()
         logger.info("User rejected: %s", user.log_display)
         return ActivationResult(self.Result.REJECTED)
 

@@ -53,7 +53,7 @@ class SubnetTest(BaseAPITest):
         """Test list subnets with data"""
         test_net = mf.NetworkFactory()
         test_subnet_ipv4 = mf.IPv4SubnetFactory(network=test_net)
-        test_subnet_ipv6 = mf.IPv4SubnetFactory(network=test_net, ipversion=6,
+        test_subnet_ipv6 = mf.IPv6SubnetFactory(network=test_net, ipversion=6,
                                                 cidr=
                                                 'fd4b:638e:fd7a:f998::/64')
         response = self.get(SUBNETS_URL, user=test_net.userid)

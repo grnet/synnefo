@@ -131,12 +131,12 @@ def create_subnet(request):
         networks.validate_network_params(None, None, cidr, gateway)
         slac = subnet.get('slac', None)
         if slac is not None:
-            dhcp = check_dhcp_value(slac)
+            dhcp = check_boolean_value(slac, "slac")
         else:
-            dhcp = check_dhcp_value(subnet.get('enable_dhcp', True))
+            dhcp = check_boolean_value(subnet.get('enable_dhcp', True), "dhcp")
     else:
         networks.validate_network_params(cidr, gateway)
-        dhcp = check_dhcp_value(subnet.get('enable_dhcp', True))
+        dhcp = check_boolean_value(subnet.get('enable_dhcp', True), "dhcp")
 
     name = check_name_length(subnet.get('name', None))
 
@@ -227,37 +227,10 @@ def update_subnet(request, sub_id):
     if not name:
         raise api.faults.BadRequest("Only the name of subnet can be updated")
 
-    #if subnet.get('ip_version', None):
-    #    raise api.faults.BadRequest("Malformed request, ip_version cannot be "
-    #                                "updated")
-    #if subnet.get('cidr', None):
-    #    raise api.faults.BadRequest("Malformed request, cidr cannot be "
-    #                                "updated")
-    #if subnet.get('allocation_pools', None):
-    #    raise api.faults.BadRequest("Malformed request, allocation pools "
-    #                                "cannot be updated")
-    #
-    # Check if request contained host/dns information
-    #check_for_hosts_dns(subnet)
-    #
-    #name = subnet.get('name', original_dict['name'])
     check_name_length(name)
 
-    #dhcp = subnet.get('enable_dhcp', original_dict['enable_dhcp'])
-    #check_dhcp_value(dhcp)
-    #
-    #gateway = subnet.get('gateway_ip', original_dict['gateway_ip'])
-    #FIX ME, check if IP is in use
-    #if original_dict['ip_version'] == 6:
-    #    networks.validate_network_params(None, None, original_dict['cidr'],
-    #                                     gateway)
-    #else:
-    #    networks.validate_network_params(original_dict['cidr'], gateway)
-    #
     try:
-        #original_subnet.gateway = gateway
         original_subnet.name = name
-        #original_subnet.dhcp = dhcp
         original_subnet.save()
     except:
         #Fix me
@@ -271,20 +244,34 @@ def update_subnet(request, sub_id):
 #Utility functions
 def subnet_to_dict(subnet):
     """Returns a dictionary containing the info of a subnet"""
-    # FIX ME, allocation pools
-    dictionary = dict({'id': subnet.id, 'network_id': subnet.network.id,
-                       'name': subnet.name, 'tenant_id': subnet.network.userid,
+    dns = check_empty_lists(subnet.dns_nameservers)
+    hosts = check_empty_lists(subnet.host_routes)
+    #allocation_pools =
+
+    dictionary = dict({'id': str(subnet.id),
+                       'network_id': str(subnet.network.id),
+                       'name': subnet.name if subnet.name is not None else "",
+                       'tenant_id': subnet.network.userid,
+                       'user_id': subnet.network.userid,
                        'gateway_ip': subnet.gateway,
-                       'ip_version': subnet.ipversion, 'cidr': subnet.cidr,
+                       'ip_version': subnet.ipversion,
+                       'cidr': subnet.cidr,
                        'enable_dhcp': subnet.dhcp,
-                       'dns_nameservers': subnet.dns_nameservers,
-                       'host_routes': subnet.host_routes,
+                       'dns_nameservers': dns,
+                       'host_routes': hosts,
                        'allocation_pools': []})
 
     if subnet.ipversion == 6:
         dictionary['slac'] = subnet.dhcp
 
     return dictionary
+
+
+def check_empty_lists(value):
+    """Check if value is Null/None, in which case we return an empty list"""
+    if value is None:
+        return []
+    return value
 
 
 def check_number_of_subnets(network, version):
@@ -294,12 +281,12 @@ def check_number_of_subnets(network, version):
                                     "network is allowed")
 
 
-def check_dhcp_value(dhcp):
+def check_boolean_value(value, key):
     """Check if dhcp value is in acceptable values"""
-    if dhcp not in [True, False]:
-        raise api.faults.BadRequest("Malformed request, enable_dhcp/slac must "
-                                    "be True or False")
-    return dhcp
+    if value not in [True, False]:
+        raise api.faults.BadRequest("Malformed request, %s must "
+                                    "be True or False" % key)
+    return value
 
 
 def check_name_length(name):
@@ -333,7 +320,7 @@ def get_subnet_fromdb(subnet_id, user_id, for_update=False):
                                                           user_id)
         return Subnet.objects.get(id=subnet_id, network__userid=user_id)
     except (ValueError, Subnet.DoesNotExist):
-        raise api.faults.ItemNotFound('Subnet not found.')
+        raise api.faults.ItemNotFound('Subnet not found')
 
 
 def parse_ip_pools(pools):
@@ -346,8 +333,8 @@ def parse_ip_pools(pools):
     """
     pool_list = list()
     for pool in pools:
-        asd = [pool["start"], pool["end"]]
-        pool_list.append(asd)
+        parse = [pool["start"], pool["end"]]
+        pool_list.append(parse)
     return pool_list
 
 
@@ -355,13 +342,13 @@ def validate_subpools(pools, cidr, gateway):
     """
     Validate the given IP pools are inside the cidr range
     Validate there are no overlaps in the given pools
+    Finally, validate the gateway isn't in the given ip pools
     Input must be a list containing a sublist with start/end ranges as strings
     [["192.168.42.1", "192.168.42.15"], ["192.168.42.30", "192.168.42.60"]]
     """
-    pool_list = list()
-    for pool in pools:
-        pool_list.append(map(lambda a: IPAddress(a), pool))
-    pool_list = sorted(pool_list)
+    pool_list = [(map(lambda ip_str: IPAddress(ip_str), pool))
+                 for pool in pools]
+    pool_list.sort()
 
     if pool_list[0][0] <= cidr.network:
         raise api.faults.Conflict("IP Pool out of bounds")
@@ -369,7 +356,7 @@ def validate_subpools(pools, cidr, gateway):
         raise api.faults.Conflict("IP Pool out of bounds")
 
     for start, end in pool_list:
-        if start >= end:
+        if start > end:
             raise api.faults.Conflict("Invalid IP pool range")
         # Raise BadRequest if gateway is inside the pool range
         if not (gateway < start or gateway > end):
@@ -378,6 +365,6 @@ def validate_subpools(pools, cidr, gateway):
     # Check if there is a conflict between the IP Poll ranges
     end = cidr.network
     for pool in pool_list:
-        if end >= pool[1]:
+        if end >= pool[0]:
             raise api.faults.Conflict("IP Pool range conflict")
         end = pool[1]

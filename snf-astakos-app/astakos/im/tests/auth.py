@@ -256,7 +256,8 @@ class ShibbolethTests(TestCase):
         self.assertEqual(r.status_code, 200)
 
         # cannot add the same eppn
-        client.set_tokens(mail="secondary@shibboleth.gr", remote_user="kpapeppn",
+        client.set_tokens(mail="secondary@shibboleth.gr",
+                          remote_user="kpapeppn",
                           cn="Kostas Papadimitriou", )
         r = client.get(ui_url("login/shibboleth?"), follow=True)
         self.assertRedirects(r, ui_url('landing'))
@@ -264,7 +265,8 @@ class ShibbolethTests(TestCase):
         self.assertEquals(existing_user.auth_providers.count(), 2)
 
         # only one allowed by default
-        client.set_tokens(mail="secondary@shibboleth.gr", remote_user="kpapeppn2",
+        client.set_tokens(mail="secondary@shibboleth.gr",
+                          remote_user="kpapeppn2",
                           cn="Kostas Papadimitriou", ep_affiliation="affil2")
         prov = auth_providers.get_provider('shibboleth')
         r = client.get(ui_url("login/shibboleth?"), follow=True)
@@ -276,7 +278,8 @@ class ShibbolethTests(TestCase):
         client.reset_tokens()
 
         # cannot login with another eppn
-        client.set_tokens(mail="kpap@synnefo.org", remote_user="kpapeppninvalid",
+        client.set_tokens(mail="kpap@synnefo.org",
+                          remote_user="kpapeppninvalid",
                           cn="Kostas Papadimitriou")
         r = client.get(ui_url("login/shibboleth?"), follow=True)
         self.assertFalse(r.context['request'].user.is_authenticated())
@@ -352,7 +355,8 @@ class ShibbolethTests(TestCase):
         r = client.get(ui_url("login/shibboleth?"), follow=True)
         # try to assign existing shibboleth identifier of another user
         client.set_tokens(mail="kpap_second@shibboleth.gr",
-                          remote_user="existingeppn", cn="Kostas Papadimitriou")
+                          remote_user="existingeppn",
+                          cn="Kostas Papadimitriou")
         r = client.get(ui_url("login/shibboleth?"), follow=True)
         self.assertContains(r, "is already in use")
 
@@ -747,7 +751,6 @@ class TestAuthProviderViews(TestCase):
         eppn_user.add_auth_provider('shibboleth', 'EPPN')
         tid_user.add_auth_provider('shibboleth', TEST_TARGETED_ID1)
 
-
         get_user = lambda r: r.context['request'].user
 
         client = ShibbolethClient()
@@ -757,14 +760,12 @@ class TestAuthProviderViews(TestCase):
         self.assertEqual(eppn_user.get_auth_provider('shibboleth').identifier,
                          TEST_TARGETED_ID2)
 
-
         client = ShibbolethClient()
         client.set_tokens(eppn="EPPN", remote_user=TEST_TARGETED_ID1)
         r = client.get(ui_url('login/shibboleth?'), follow=True)
         self.assertTrue(get_user(r).is_authenticated())
         self.assertEqual(tid_user.get_auth_provider('shibboleth').identifier,
                          TEST_TARGETED_ID1)
-
 
     @shibboleth_settings(CREATION_GROUPS_POLICY=['academic-login'],
                          AUTOMODERATE_POLICY=True)
@@ -796,7 +797,8 @@ class TestAuthProviderViews(TestCase):
 
         # new academic user
         self.assertFalse(academic_users.filter(email='newuser@synnefo.org'))
-        cl_newuser.set_tokens(remote_user="newusereppn", mail="newuser@synnefo.org",
+        cl_newuser.set_tokens(remote_user="newusereppn",
+                              mail="newuser@synnefo.org",
                               surname="Lastname")
         r = cl_newuser.get(ui_url('login/shibboleth?'), follow=True)
         initial = r.context['signup_form'].initial

@@ -457,7 +457,6 @@ def signup(request, template_name='im/signup.html', on_success='index',
     form = activation_backend.get_signup_form(
         provider, None, **form_kwargs)
 
-
     if request.method == 'POST':
         form = activation_backend.get_signup_form(
             provider,

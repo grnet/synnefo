@@ -62,7 +62,7 @@ LIST_FIELDS = ('status', 'name', 'disk_format', 'container_format', 'size',
 
 DETAIL_FIELDS = ('name', 'disk_format', 'container_format', 'size', 'checksum',
                  'location', 'created_at', 'updated_at', 'deleted_at',
-                 'status', 'is_public', 'owner', 'properties', 'id')
+                 'status', 'is_public', 'owner', 'properties', 'id', "is_snapshot")
 
 ADD_FIELDS = ('name', 'id', 'store', 'disk_format', 'container_format', 'size',
               'checksum', 'is_public', 'owner', 'properties', 'location')

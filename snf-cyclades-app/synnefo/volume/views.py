@@ -101,15 +101,19 @@ def create_volume(request):
 
     req = utils.get_request_dict(request)
     log.debug("create_volume %s", req)
-
     user_id = request.user_uniq
+
+    new_volume = req.get("volume")
+    if new_volume is None:
+        raise faults.BadRequest("Missing 'volume' attribute.")
+
     # Get and validate 'name' parameter
     # TODO: auto generate name
-    name = req.get("name", None)
+    name = new_volume.get("name", None)
     if name is None:
         raise faults.BadRequest("Volume 'name' is needed.")
     # Get and validate 'size' parameter
-    size = req.get("size")
+    size = new_volume.get("size")
     if size is None:
         raise faults.BadRequest("Volume 'size' is needed.")
     try:
@@ -121,25 +125,25 @@ def create_volume(request):
                                 " value. '%s' cannot be accepted." % size)
 
     # TODO: Fix volume type, validate, etc..
-    volume_type = req.get("volume_type", None)
+    volume_type = new_volume.get("volume_type", None)
 
     # Optional parameters
-    description = req.get("description", "")
-    metadata = req.get("metadata", {})
+    description = new_volume.get("description", "")
+    metadata = new_volume.get("metadata", {})
     if not isinstance(metadata, dict):
         msg = "Volume 'metadata' needs to be a dictionary of key-value pairs."\
               " '%s' can not be accepted." % metadata
         raise faults.BadRequest(msg)
 
     # Id of the volume to clone from
-    source_volume_id = req.get("source_volid")
+    source_volume_id = new_volume.get("source_volid")
     # Id of the snapshot to create the volume from
-    source_snapshot_id = req.get("snapshot_id")
+    source_snapshot_id = new_volume.get("snapshot_id")
     # Reference to an Image stored in Glance
-    source_image_id = req.get("imageRef")
+    source_image_id = new_volume.get("imageRef")
     # TODO: Check that not all of them are used
 
-    server_id = req.get("server_id")
+    server_id = new_volume.get("server_id")
     if server_id is None:
         raise faults.BadRequest("Attribute 'server_id' is mandatory")
 
@@ -217,9 +221,10 @@ def update_volume(request, volume_id):
 
 
 def snapshot_to_dict(snapshot, detail=True):
-    owner = snapshot["owner"]
-    status = snapshot["status"]
-    progress = snapshot["progress"]
+    owner = snapshot['owner']
+    status = snapshot['status']
+    progress = "%s%%" % 100 if status == "ACTIVE" else 0
+
     data = {
         "id": snapshot["uuid"],
         "size": int(snapshot["size"]) >> 30,  # gigabytes
@@ -244,30 +249,34 @@ def create_snapshot(request):
 
     req = utils.get_request_dict(request)
     log.debug("create_snapshot %s", req)
-
     user_id = request.user_uniq
+
+    new_snapshot = req.get("snapshot")
+    if new_snapshot is None:
+        raise faults.BadRequest("Missing 'snapshot' attribute.")
+
     # Get and validate 'name' parameter
     # TODO: auto generate name
-    metadata = req.get("metadata", {})
+    metadata = new_snapshot.get("metadata", {})
     if not isinstance(metadata, dict):
         msg = "Snapshot 'metadata' needs to be a dictionary of key-value"\
               " pairs. '%s' can not be accepted." % metadata
         raise faults.BadRequest(msg)
 
-    volume_id = req.get("volume_id", None)
+    volume_id = new_snapshot.get("volume_id", None)
     if volume_id is None:
         raise faults.BadRequest("'volume_id' attribute is missing.")
     volume = util.get_volume(user_id, volume_id, for_update=True,
                              exception=faults.BadRequest)
 
-    name = req.get("name", None)
+    name = new_snapshot.get("name", None)
     if name is None:
         name = "snapshot_volume_%s_%s" %\
             (volume.id, str(datetime.datetime.now()))
-    description = req.get("description", "")
+    description = new_snapshot.get("description", "")
 
     # TODO: What to do with force ?
-    force = req.get("force", False)
+    force = new_snapshot.get("force", False)
     if not isinstance(force, bool):
         raise faults.BadRequest("Invalid value for 'force' attribute.")
 
@@ -277,7 +286,7 @@ def create_snapshot(request):
 
     # Render response
     data = json.dumps(dict(snapshot=snapshot_to_dict(snapshot, detail=False)))
-    return HttpResponse(data, status=200)  # TOO: Maybe 202 ?
+    return HttpResponse(data, status=202)
 
 
 @api.api_method(http_method="GET", user_required=True, logger=log)

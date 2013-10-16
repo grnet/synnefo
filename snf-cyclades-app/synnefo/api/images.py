@@ -117,6 +117,7 @@ def image_to_dict(image, detail=True):
             d['metadata'] = image['properties']
         else:
             d['metadata'] = {}
+        d["is_snapshot"] = image["is_snapshot"]
     return d
 
 

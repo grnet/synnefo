@@ -176,12 +176,20 @@ def get_image_dict(image_id, user_id):
     image["id"] = img["id"]
     image["name"] = img["name"]
     image["format"] = img["disk_format"]
-    image["checksum"] = img["checksum"]
     image["location"] = img["location"]
-
-    checksum = image["checksum"] = img["checksum"]
     size = image["size"] = img["size"]
-    image["backend_id"] = PITHOSMAP_PREFIX + "/".join([checksum, str(size)])
+
+    checksum = img["checksum"]
+    if checksum.startswith("archip:"):
+        unprefixed_checksum, _ = checksum.split("archip:")
+        checksum = unprefixed_checksum
+    else:
+        unprefixed_checksum = checksum
+        checksum = "pithos:" + checksum
+
+    image["backend_id"] = PITHOSMAP_PREFIX + "/".join([unprefixed_checksum,
+                                                       str(size)])
+    image["checksum"] = checksum
 
     properties = img.get("properties", {})
     image["metadata"] = dict((key.upper(), val)

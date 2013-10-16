@@ -609,7 +609,7 @@ def create_instance_diagnostic(vm, message, source, level="DEBUG", etime=None,
                                                    details=details)
 
 
-def create_instance(vm, nics, flavor, image):
+def create_instance(vm, nics, volumes, flavor, image):
     """`image` is a dictionary which should contain the keys:
             'backend_id', 'format' and 'metadata'
 
@@ -628,14 +628,21 @@ def create_instance(vm, nics, flavor, image):
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
 
     kw['disk_template'] = flavor.disk_template
-    kw['disks'] = [{"size": flavor.disk * 1024}]
-    provider = flavor.disk_provider
-    if provider:
-        kw['disks'][0]['provider'] = provider
-        kw['disks'][0]['origin'] = flavor.disk_origin
-        extra_disk_params = settings.GANETI_DISK_PROVIDER_KWARGS.get(provider)
-        if extra_disk_params is not None:
-            kw["disks"][0].update(extra_disk_params)
+    disks = []
+    for volume in volumes:
+        disk = {}
+        disk["size"] = volume.size * 1024
+        provider = flavor.disk_provider
+        if provider is not None:
+            disk["provider"] = provider
+            disk["origin"] = volume.source_image["checksum"]
+            extra_disk_params = settings.GANETI_DISK_PROVIDER_KWARGS\
+                                        .get(provider)
+            if extra_disk_params is not None:
+                disk.update(extra_disk_params)
+        disks.append(disk)
+
+    kw["disks"] = disks
 
     kw['nics'] = [{"name": nic.backend_uuid,
                    "network": nic.network.backend_id,

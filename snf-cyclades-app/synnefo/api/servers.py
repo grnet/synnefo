@@ -194,6 +194,8 @@ def vm_to_dict(vm, detail=False):
         d['attachments'] = attachments
         d['addresses'] = attachments_to_addresses(attachments)
 
+        d['volumes'] = [v.id for v in vm.volumes.order_by('id')]
+
         # include the latest vm diagnostic, if set
         diagnostic = vm.get_last_diagnostic()
         if diagnostic:

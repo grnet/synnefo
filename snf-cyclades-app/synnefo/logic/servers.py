@@ -44,7 +44,7 @@ from synnefo.logic import backend, ips, utils
 from synnefo.logic.backend_allocator import BackendAllocator
 from synnefo.db.models import (NetworkInterface, VirtualMachine,
                                VirtualMachineMetadata, IPAddressLog, Network,
-                               pooled_rapi_client)
+                               Volume, pooled_rapi_client)
 from vncauthproxy.client import request_forwarding as request_vnc_forwarding
 from synnefo.logic import rapi
 
@@ -210,6 +210,8 @@ def create(userid, name, password, flavor, image, metadata={},
         port.index = index
         port.save()
 
+    volumes = create_instance_volumes(vm, flavor, image)
+
     for key, val in metadata.items():
         VirtualMachineMetadata.objects.create(
             meta_key=key,
@@ -217,7 +219,8 @@ def create(userid, name, password, flavor, image, metadata={},
             vm=vm)
 
     # Create the server in Ganeti.
-    vm = create_server(vm, ports, flavor, image, personality, password)
+    vm = create_server(vm, ports, volumes, flavor, image, personality,
+                       password)
 
     return vm
 
@@ -243,7 +246,7 @@ def allocate_new_server(userid, flavor):
 
 
 @server_command("BUILD")
-def create_server(vm, nics, flavor, image, personality, password):
+def create_server(vm, nics, volumes, flavor, image, personality, password):
     # dispatch server created signal needed to trigger the 'vmapi', which
     # enriches the vm object with the 'config_url' attribute which must be
     # passed to the Ganeti job.
@@ -256,7 +259,7 @@ def create_server(vm, nics, flavor, image, personality, password):
     })
     # send job to Ganeti
     try:
-        jobID = backend.create_instance(vm, nics, flavor, image)
+        jobID = backend.create_instance(vm, nics, volumes, flavor, image)
     except:
         log.exception("Failed create instance '%s'", vm)
         jobID = None
@@ -273,6 +276,21 @@ def create_server(vm, nics, flavor, image, personality, password):
              vm.userid, vm, nics, vm.backend, str(jobID))
 
     return jobID
+
+
+def create_instance_volumes(vm, flavor, image):
+    name = "Root volume of server: %s" % vm.id
+    volume = Volume.objects.create(userid=vm.userid,
+                                   machine=vm,
+                                   name=name,
+                                   size=flavor.disk,
+                                   source_image_id=image["id"],
+                                   status="CREATING")
+
+    volume.source_image = image
+    volume.save()
+
+    return [volume]
 
 
 @server_command("DESTROY")

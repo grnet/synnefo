@@ -563,7 +563,7 @@ def snapshot_to_dict(snapshot_url, meta, permissions):
     snapshot["location"] = snapshot_url
     snapshot["file_name"] = name
 
-    created = meta.get("created_at", meta["modified"])
+    created = meta["version_timestamp"]
     snapshot["created_at"] = format_timestamp(created)
 
     for key, val in meta.items():

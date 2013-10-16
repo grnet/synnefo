@@ -100,7 +100,7 @@ class SubnetTest(BaseAPITest):
                 'network_id': test_net.id,
                 'cidr': '10.0.3.0/24',
                 'ip_version': 4,
-                'slac': False}
+                'enable_slac': False}
         }
         response = self.post(SUBNETS_URL, test_net.userid,
                              json.dumps(request), "json")
@@ -114,7 +114,7 @@ class SubnetTest(BaseAPITest):
                 'network_id': test_net.id,
                 'cidr': 'fdc1:4992:1130:fc0b::/64',
                 'ip_version': 6,
-                'slac': False}
+                'enable_slac': False}
         }
         response = self.post(SUBNETS_URL, test_net.userid,
                              json.dumps(request), "json")
@@ -128,7 +128,7 @@ class SubnetTest(BaseAPITest):
                 'network_id': test_net.id,
                 'cidr': 'fdc1:4992:1130:fc0b::/64',
                 'ip_version': 6,
-                'slac': 'Random'}
+                'enable_slac': 'Random'}
         }
         response = self.post(SUBNETS_URL, test_net.userid,
                              json.dumps(request), "json")

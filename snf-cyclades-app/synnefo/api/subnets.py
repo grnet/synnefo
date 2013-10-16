@@ -129,9 +129,9 @@ def create_subnet(request):
 
     if ipversion == 6:
         networks.validate_network_params(None, None, cidr, gateway)
-        slac = subnet.get('slac', None)
+        slac = subnet.get('enable_slac', None)
         if slac is not None:
-            dhcp = check_boolean_value(slac, "slac")
+            dhcp = check_boolean_value(slac, "enable_slac")
         else:
             dhcp = check_boolean_value(subnet.get('enable_dhcp', True), "dhcp")
     else:
@@ -278,7 +278,7 @@ def subnet_to_dict(subnet):
                        'allocation_pools': pools if pools is not None else []})
 
     if subnet.ipversion == 6:
-        dictionary['slac'] = subnet.dhcp
+        dictionary['enable_slac'] = subnet.dhcp
 
     return dictionary
 

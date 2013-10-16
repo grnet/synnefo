@@ -109,13 +109,12 @@ Extended information on the user serialized in the json format will be returned:
 ===========================  ============================
 Name                         Description
 ===========================  ============================
-displayname                     User displayname
+displayname                  User displayname
 uuid                         User unique identifier
 email                        List with user emails
 name                         User full name
 auth_token_created           Token creation date
 auth_token_expires           Token expiration date
-usage                        List of user resource usage (if usage request parameter is present)
 ===========================  ============================
 
 Example reply:

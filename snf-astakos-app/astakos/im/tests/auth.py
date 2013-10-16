@@ -530,6 +530,11 @@ class TestLocal(TestCase):
         r = tmp_client.get(user.get_activation_url(), follow=True)
         self.assertContains(r, messages.LOGGED_IN_WARNING)
 
+        # empty activation code is not allowed
+        r = self.client.get(user.get_activation_url().split("?")[0],
+                            follow=True)
+        self.assertEqual(r.status_code, 403)
+
         r = self.client.get(user.get_activation_url(), follow=True)
         # previous code got invalidated
         self.assertEqual(r.status_code, 404)

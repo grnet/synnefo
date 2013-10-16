@@ -91,6 +91,11 @@ class SubnetTest(BaseAPITest):
         response = self.post(SUBNETS_URL, test_net.userid,
                              json.dumps(request), "json")
         self.assertSuccess(response)
+        resp = json.loads(response.content)['subnet']
+        self.assertEqual("10.0.3.1", resp['gateway_ip'])
+        self.assertEqual([{"start": "10.0.3.2", "end": "10.0.3.254"}],
+                         resp['allocation_pools'])
+        self.assertEqual(True, resp['enable_dhcp'])
 
     def test_create_subnet_success_ipv4_with_slac(self):
         """Test create an IPv4 subnet, with a slac that will be ingored"""
@@ -119,6 +124,10 @@ class SubnetTest(BaseAPITest):
         response = self.post(SUBNETS_URL, test_net.userid,
                              json.dumps(request), "json")
         self.assertSuccess(response)
+        resp = json.loads(response.content)['subnet']
+        self.assertEqual("fdc1:4992:1130:fc0b::1", resp['gateway_ip'])
+        self.assertEqual([], resp['allocation_pools'])
+        self.assertEqual(False, resp['enable_slac'])
 
     def test_create_subnet_with_malformed_slac(self):
         """Test create a subnet with ipv6 and a malformed slac"""
@@ -182,6 +191,10 @@ class SubnetTest(BaseAPITest):
         response = self.post(SUBNETS_URL, test_net.userid,
                              json.dumps(request), "json")
         self.assertSuccess(response)
+        resp = json.loads(response.content)['subnet']
+        self.assertEqual([{"start": "10.0.3.2", "end": "10.0.3.100"},
+                          {"start": "10.0.3.200", "end": "10.0.3.220"}],
+                         resp['allocation_pools'])
 
     def test_create_subnet_with_gateway_inside_of_ip_pool_range(self):
         """Test create a subnet with an IP pool outside of network range"""
@@ -367,6 +380,8 @@ class SubnetTest(BaseAPITest):
         response = self.post(SUBNETS_URL, test_net.userid, json.dumps(request),
                              "json")
         self.assertSuccess(response)
+        resp = json.loads(response.content)['subnet']
+        self.assertEqual(["8.8.8.8", "1.1.1.1"], resp["host_routes"])
 
     def test_create_subnet_with_same_ipversion(self):
         """

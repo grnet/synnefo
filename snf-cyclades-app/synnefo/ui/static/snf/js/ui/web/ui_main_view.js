@@ -696,6 +696,7 @@
 
         init_overlays: function() {
             this.create_vm_view = new views.CreateVMView();
+            this.create_snapshot_view = new views.CreateSnapshotView();
             this.api_info_view = new views.ApiInfoView();
             this.details_view = new views.DetailsView();
             this.suspended_view = new views.SuspendedVMView();

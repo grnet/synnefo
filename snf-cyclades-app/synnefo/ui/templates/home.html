@@ -113,6 +113,7 @@
         
         //populate available image icons array
         var os_icons = {{image_icons|safe}};
+        os_icons.push('snapshot');
         
         // timeout value from settings.py
         var TIMEOUT = {{ timeout }};

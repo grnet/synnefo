@@ -53,7 +53,114 @@
     var debug = _.bind(logger.debug, logger);
     
     var hasKey = Object.prototype.hasOwnProperty;
-    
+
+    views.CreateSnapshotView = views.Overlay.extend({
+        view_id: "snapshot_create_view",
+        content_selector: "#snapshot-create-content",
+        css_class: 'overlay-snapshot-create overlay-info',
+        overlay_id: "snapshot-create-overlay",
+
+        title: "Create new snapshot",
+        subtitle: "Machines",
+
+        initialize: function(options) {
+            views.CreateSnapshotView.__super__.initialize.apply(this);
+
+            this.create_button = this.$("form .form-action.create");
+            this.text = this.$(".snapshot-create-name");
+            this.description = this.$(".snapshot-create-desc");
+            this.form = this.$("form");
+            this.init_handlers();
+        },
+        
+        show: function(vm) {
+          this.vm = vm;
+          views.CreateSnapshotView.__super__.show.apply(this);
+        },
+
+        init_handlers: function() {
+
+            this.create_button.click(_.bind(function(e){
+                this.submit();
+            }, this));
+
+            this.form.submit(_.bind(function(e){
+                e.preventDefault();
+                this.submit();
+                return false;
+            }, this))
+
+            this.text.keypress(_.bind(function(e){
+                if (e.which == 13) {this.submit()};
+            },this))
+        },
+
+        submit: function() {
+            if (this.validate()) {
+                this.create();
+            };
+        },
+        
+        validate: function() {
+            // sanitazie
+            var t = this.text.val();
+            t = t.replace(/^\s+|\s+$/g,"");
+            this.text.val(t);
+
+            if (this.text.val() == "") {
+                this.text.closest(".form-field").addClass("error");
+                this.text.focus();
+                return false;
+            } else {
+                this.text.closest(".form-field").removeClass("error");
+            }
+            return true;
+        },
+        
+        create: function() {
+            this.create_button.addClass("in-progress");
+
+            var name = this.text.val();
+            var desc = this.description.val();
+            
+            this.vm.create_snapshot(name, desc, _.bind(function() {
+              this.hide();
+            }, this));
+        },
+        
+        _default_values: function() {
+          var date = (new Date()).toString();
+          var vmname = this.vm.get('name');
+          var id = this.vm.id;
+
+          var name = "snf-{0} '{1}' snapshot ({2})".format(id, vmname, date);
+          var description = "Snapshot created at: {0}".format(date);
+          description += "\n" + "Machine name: '{0}'".format(vmname);
+          description += "\n" + "Machine id: '{0}'".format(id);
+
+          return {
+            'name': name,
+            'description': description
+          }
+        },
+
+        beforeOpen: function() {
+            this.create_button.removeClass("in-progress")
+            this.text.closest(".form-field").removeClass("error");
+            var defaults = this._default_values();
+
+            this.text.val(defaults.name);
+            this.description.val(defaults.description);
+            this.text.show();
+            this.text.focus();
+            this.description.show();
+        },
+
+        onOpen: function() {
+            this.text.focus();
+        }
+    });
+
     // base class for views that contain/handle VMS
     views.VMListView = views.View.extend({
 
@@ -640,6 +747,11 @@
             // initial hide
             if (this.hide) { $(this.el).hide() };
             
+            if (this.$('.snapshot').length) {
+              this.$('.snapshot').click(_.bind(function() {
+                synnefo.ui.main.create_snapshot_view.show(this.vm);
+              }, this));
+            }
             // action links events
             _.each(models.VM.ACTIONS, function(action) {
                 var action = action;

@@ -42,6 +42,9 @@
             return this.get('owner') || 'Unknown';
         },
 
+        is_snapshot: function() {
+          return this.get('checksum').indexOf('arch') === 0;
+        },
 
         display_size: function() {
             return this.get_readable_size();
@@ -49,7 +52,11 @@
 
         display_users: function() {
             try {
-              return this.get_meta('users').split(' ').join(", ");
+              if (this.get_meta('users')) {
+                return this.get_meta('users').split(' ').join(", ");
+              } else {
+                return "";
+              }
             } catch(err) { console.log(err); return ''}
         }
         
@@ -61,8 +68,9 @@
 
         type_selections: {'personal':'My images', 
                           'shared': 'Shared with me', 
-                          'public': 'Public'},
-        type_selections_order: ['system', 'personal', 'shared', 'public'],
+                          'public': 'Public',
+                          'snapshot': 'Snapshots'},
+        type_selections_order: ['system', 'personal', 'shared', 'public', 'snapshot'],
         display_metadata: ['size', 'users', 'osfamily', 'status', 'created_at', 'updated_at', 
             'filename', 'format', 'root_partition'],
         meta_labels: {'OS':'OS', 'osfamily':'OS Family', 'GUI':'GUI'},
@@ -115,7 +123,23 @@
             }
 
             img = models.GlanceImages.__super__.parse_meta.call(this, img);
+            if (img.checksum && img.checksum.indexOf('arch') == 0) {
+              img.OS = 'snapshot';
+              img.metadata.OS = 'snapshot';
+            }
             return img;
+        },
+
+        active: function() {
+            return this.filter(function(img) {
+              return img.get('status') != "DELETED" && !img.is_snapshot()
+            });
+        },
+
+        active_snapshots: function() {
+            return this.filter(function(img) {
+              return img.get('status') != "DELETED" && img.is_snapshot()
+            });
         },
 
         get_system_images: function() {
@@ -142,7 +166,11 @@
                                i.get_owner_uuid() != snf.user.get_username() &&
                                !i.is_public();
             });
-        }
+        },
+
+        get_snapshot_images: function() {
+            return this.active_snapshots()
+        },
 
     })
         

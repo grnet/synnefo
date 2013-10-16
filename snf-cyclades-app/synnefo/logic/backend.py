@@ -1002,6 +1002,48 @@ def set_firewall_profile(vm, profile, nic):
     return None
 
 
+def attach_volume(vm, volume, depends=[]):
+    log.debug("Attaching volume %s to vm %s", vm, volume)
+
+    disk = {"size": volume.size,
+            "name": volume.backend_volume_uuid,
+            "volume_name": volume.backend_volume_uuid}
+    if volume.source_volume_id is not None:
+        disk["origin"] = volume.source_volume.backend_volume_uuid
+    elif volume.source_snapshot is not None:
+        disk["origin"] = volume.source_snapshot["checksum"]
+    elif volume.source_image is not None:
+        disk["origin"] = volume.source_image["checksum"]
+
+    kwargs = {
+        "instance": vm.backend_vm_id,
+        "disks": [("add", "-1", disk)],
+        "depends": depends,
+    }
+    if vm.backend.use_hotplug():
+        kwargs["hotplug"] = True
+    if settings.TEST:
+        kwargs["dry_run"] = True
+
+    with pooled_rapi_client(vm) as client:
+        return client.ModifyInstance(**kwargs)
+
+
+def detach_volume(vm, volume):
+    log.debug("Removing volume %s from vm %s", volume, vm)
+    kwargs = {
+        "instance": vm.backend_vm_id,
+        "disks": [("remove", volume.backend_volume_uuid, {})],
+    }
+    if vm.backend.use_hotplug():
+        kwargs["hotplug"] = True
+    if settings.TEST:
+        kwargs["dry_run"] = True
+
+    with pooled_rapi_client(vm) as client:
+        return client.ModifyInstance(**kwargs)
+
+
 def get_instances(backend, bulk=True):
     with pooled_rapi_client(backend) as c:
         return c.GetInstances(bulk=bulk)

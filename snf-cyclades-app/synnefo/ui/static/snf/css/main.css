@@ -7828,3 +7828,20 @@ option.project.select-item.selected {
   border: 1px solid #aaa;
   margin-top: 3px;
 }
+
+
+/* snapshots */
+.snapshot-create-form .form-field {
+  margin-bottom: 10px;
+}
+
+.snapshot-create-form .form-field input {
+  width: 100%;
+}
+
+.snapshot-create-desc {
+  width: 99.5%;
+  height: 90px;
+  border: 1px solid #aaa;
+  margin-top: 3px;
+}

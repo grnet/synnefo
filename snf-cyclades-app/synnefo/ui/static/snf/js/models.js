@@ -1514,6 +1514,22 @@
             skip_api_error: false
           });
         },
+        
+        create_snapshot: function(snapshot_params, callback) {
+          var volume = this.get('volumes') && this.get('volumes').length ? 
+                       this.get('volumes')[0] : undefined;
+          var params = _.extend({
+            'metadata': {},
+            'volume_id': volume
+          }, snapshot_params);
+
+          snf.api.sync('create', undefined, {
+              url: synnefo.config.api_urls.volume,
+              data: params,
+              success: callback, 
+              skip_api_error: false
+          });
+        },
 
         // action helper
         call: function(action_name, success, error, params) {

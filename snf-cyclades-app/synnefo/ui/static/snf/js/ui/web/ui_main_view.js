@@ -964,7 +964,11 @@
             $("#createcontainer #create").click(function(e){
                 e.preventDefault();
                 if ($(this).hasClass("disabled")) { return }
-                self.router.vm_create_view();
+                synnefo.storage.images.fetch({
+                  complete: function() {
+                    self.router.vm_create_view();
+                  }
+                });
             });
         },
 

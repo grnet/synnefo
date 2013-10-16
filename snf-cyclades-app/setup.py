@@ -36,6 +36,7 @@ import distribute_setup
 distribute_setup.use_setuptools()
 
 import os
+import sys
 
 from distutils.util import convert_path
 from fnmatch import fnmatchcase

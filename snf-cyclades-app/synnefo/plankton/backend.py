@@ -82,6 +82,10 @@ PLANKTON_META = ('container_format', 'disk_format', 'name',
 MAX_META_KEY_LENGTH = 128 - len(PLANKTON_DOMAIN) - len(PROPERTY_PREFIX)
 MAX_META_VALUE_LENGTH = 256
 
+# TODO: Change domain!
+SNAPSHOTS_DOMAIN = PLANKTON_DOMAIN
+SNAPSHOTS_PREFIX = PLANKTON_PREFIX
+
 from pithos.backends.util import PithosBackendPool
 _pithos_backend_pool = \
     PithosBackendPool(
@@ -458,31 +462,30 @@ class PlanktonBackend(object):
         images = self._list_images(user=None, filters=filters, params=params)
         return filter(lambda img: img["is_public"], images)
 
-    # # Snapshots
-    # def list_snapshots(self, user=None):
-    #     _snapshots = self.list_images()
-    #     return [s for s in _snapshots if s["is_snapshot"]]
+    # Snapshots
+    def list_snapshots(self, user=None):
+        _snapshots = self.list_images()
+        return [s for s in _snapshots if s["is_snapshot"]]
 
-    # @handle_pithos_backend
-    # def get_snapshot(self, user, snapshot_uuid):
-    #     snap = self._get_image(snapshot_uuid)
-    #     if snap.get("is_snapshot", False) is False:
-    #         raise faults.ItemNotFound("Snapshots '%s' does not exist" %
-    #                                   snapshot_uuid)
-    #     return snap
+    @handle_pithos_backend
+    def get_snapshot(self, user, snapshot_uuid):
+        snap = self._get_image(snapshot_uuid)
+        if snap.get("is_snapshot", False) is False:
+            raise faults.ItemNotFound("Snapshots '%s' does not exist" %
+                                      snapshot_uuid)
+        return snap
 
-    # @handle_pithos_backend
-    # def delete_snapshot(self, snapshot_uuid):
-    #     self.backend.delete_object_for_uuid(self.user, snapshot_uuid)
+    @handle_pithos_backend
+    def delete_snapshot(self, snapshot_uuid):
+        self.backend.delete_object_for_uuid(self.user, snapshot_uuid)
 
-    # @handle_pithos_backend
-    # def update_status(self, image_uuid, status):
-    #     """Update status of snapshot"""
-    #     location, _ = self._get_raw_metadata(image_uuid)
-    #     properties = {"status": status.upper()}
-    #     self._update_metadata(image_uuid, location, properties,
-    #     replace=False)
-    #     return self._get_image(image_uuid)
+    @handle_pithos_backend
+    def update_status(self, image_uuid, status):
+        """Update status of snapshot"""
+        location, _ = self._get_raw_metadata(image_uuid)
+        properties = {"status": status.upper()}
+        self._update_metadata(image_uuid, location, properties, replace=False)
+        return self._get_image(image_uuid)
 
 
 def create_url(account, container, name):
@@ -513,8 +516,7 @@ def image_to_dict(location, metadata, permissions):
     image["size"] = metadata["bytes"]
     image['owner'] = account
     image["store"] = u"pithos"
-    #image["is_snapshot"] = metadata.pop(PLANKTON_PREFIX + "is_snapshot",
-    #False)
+    image["is_snapshot"] = metadata.pop(PLANKTON_PREFIX + "is_snapshot", False)
     # Permissions
     users = list(permissions.get("read", []))
     image["is_public"] = "*" in users
@@ -546,6 +548,34 @@ def image_to_dict(location, metadata, permissions):
     image["properties"] = properties
 
     return image
+
+
+def snapshot_to_dict(snapshot_url, meta, permissions):
+    """Render an snapshot to a dictionary"""
+    account, container, name = split_url(snapshot_url)
+
+    snapshot = {}
+    snapshot["uuid"] = meta["uuid"]
+    snapshot["map"] = meta["hash"]
+    snapshot["size"] = meta["bytes"]
+
+    snapshot['owner'] = account
+    snapshot["location"] = snapshot_url
+    snapshot["file_name"] = name
+
+    created = meta.get("created_at", meta["modified"])
+    snapshot["created_at"] = format_timestamp(created)
+
+    for key, val in meta.items():
+        if key.startswith(SNAPSHOTS_PREFIX):
+            # Remove plankton prefix
+            key = key.replace(SNAPSHOTS_PREFIX, "")
+            if key == "metadata":
+                snapshot[key] = json.loads(val)
+            else:
+                snapshot[key] = val
+
+    return snapshot
 
 
 class JSONFileBackend(object):

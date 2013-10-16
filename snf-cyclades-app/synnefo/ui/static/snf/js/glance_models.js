@@ -124,8 +124,12 @@
 
             img = models.GlanceImages.__super__.parse_meta.call(this, img);
             if (img.checksum && img.checksum.indexOf('arch') == 0) {
-              img.OS = 'snapshot';
-              img.metadata.OS = 'snapshot';
+              if (!img.OS) {
+                img.OS = 'snapshot';
+              }
+              if (!img.metadata || !img.metadata.OS) {
+                img.metadata.OS = 'snapshot';
+              }
             }
             return img;
         },

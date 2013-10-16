@@ -148,7 +148,6 @@ def create_subnet(request):
 
     allocation_pools = subnet.get('allocation_pools', None)
 
-    # FIX ME
     sub = Subnet.objects.create(name=name, network=network, cidr=cidr,
                                 ipversion=ipversion, gateway=gateway,
                                 dhcp=dhcp, host_routes=hosts,
@@ -263,7 +262,7 @@ def subnet_to_dict(subnet):
             cidr = IPNetwork(pool.base)
             start = str(cidr.network + pool.offset)
             end = str(cidr.network + pool.offset + pool.size - 1)
-            pools.append([{"start": start, "end": end}])
+            pools.append({"start": start, "end": end})
 
     dictionary = dict({'id': str(subnet.id),
                        'network_id': str(subnet.network.id),

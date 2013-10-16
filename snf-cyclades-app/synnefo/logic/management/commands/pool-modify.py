@@ -63,6 +63,7 @@ class Command(BaseCommand):
         base = options['base']
         add_reserved = options['add-reserved']
         remove_reserved = options['remove-reserved']
+        size = options['size']
 
         if not type_:
             raise CommandError("Type of pool is mandatory")

@@ -377,6 +377,7 @@ def render_metadata(request, metadata, use_values=False, status=200):
 
 def render_meta(request, meta, status=200):
     if request.serialization == 'xml':
+        key, val = meta.items()[0]
         data = render_to_string('meta.xml', dict(key=key, val=val))
     else:
         data = json.dumps(dict(meta=meta))

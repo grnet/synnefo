@@ -546,6 +546,30 @@ class GanetiRapiClient(object): # pylint: disable=R0904
                              ("/%s/instances/%s/deactivate-disks" %
                               (GANETI_RAPI_VERSION, instance)), None, None)
 
+  def SnapshotInstance(self, instance, snapshot_name, dry_run=False):
+    """Replaces disks on an instance.
+
+    @type instance: str
+    @param instance: instance whose disks to replace
+    @type snapshot_name: str
+    @param snapshot_name: name of the new snapshot
+
+    @rtype: string
+    @return: job id
+
+    """
+
+    body = {
+      "disks": [(0, {"snapshot_name": snapshot_name})],
+      }
+
+    query = []
+    _AppendDryRunIf(query, dry_run)
+
+    return self._SendRequest(HTTP_PUT,
+                             ("/%s/instances/%s/snapshot" %
+                              (GANETI_RAPI_VERSION, instance)), query, body)
+
   def RecreateInstanceDisks(self, instance, disks=None, nodes=None):
     """Recreate an instance's disks.
 

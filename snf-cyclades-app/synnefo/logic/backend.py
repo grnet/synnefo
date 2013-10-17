@@ -1051,6 +1051,13 @@ def detach_volume(vm, volume):
         return client.ModifyInstance(**kwargs)
 
 
+def snapshot_instance(vm, snapshot_name):
+    #volume = instance.volumes.all()[0]
+    with pooled_rapi_client(vm) as client:
+        return client.SnapshotInstance(instance=vm.backend_vm_id,
+                                       snapshot_name=snapshot_name)
+
+
 def get_instances(backend, bulk=True):
     with pooled_rapi_client(backend) as c:
         return c.GetInstances(bulk=bulk)

@@ -129,14 +129,19 @@
         },
         
         _default_values: function() {
-          var date = (new Date()).toString();
+          var d = new Date();
           var vmname = this.vm.get('name');
+          var vmid = this.vm.id;
+          var index = this.volume_index;
           var id = this.vm.id;
-
-          var name = "snf-{0} '{1}' snapshot ({2})".format(id, vmname, date);
-          var description = "Snapshot created at: {0}".format(date);
-          description += "\n" + "Machine name: '{0}'".format(vmname);
-          description += "\n" + "Machine id: '{0}'".format(id);
+          var date = '{0}-{1}-{2} {3}:{4}:{5}'.format(
+            d.getFullYear(), d.getMonth()+1, d.getDate(), d.getHours(), 
+            d.getMinutes(), d.getSeconds());
+          var name = "Snapshot @ {0} of Volume {1} of Server {2} ({3})".format(date, index, vmid, vmname);
+          var description = "Volume id: {0}".format(this.volume);
+          description += "\n" + "Server id: {0}".format(vmid);
+          description += "\n" + "Server name: {0}".format(vmname);
+          description += "\n" + "Timestamp: {0}".format(d.toJSON());
 
           return {
             'name': name,

@@ -293,6 +293,8 @@ class ModularBackend(BaseBackend):
                     token=self.service_token,
                     accept_serials=[],
                     reject_serials=self.serials)
+                self.commission_serials.delete_many(
+                    r['rejected'])
             self.wrapper.rollback()
 
     def close(self):

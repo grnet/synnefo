@@ -112,9 +112,9 @@ URI                 Method Cyclades OS/Compute
 ``/servers/detail`` GET    ✔        ✔
 =================== ====== ======== ==========
 
-* Both requests return a list of servers. The first returns just ``id`` and
-  ``name``, while the second returns the full collections of server
-  attributes.
+* Both requests return a list of servers. The first returns just ``id``,
+  ``name`` and ``links``, while the second returns the full collections of
+  server attributes.
 
 |
 
@@ -180,6 +180,7 @@ Server Attributes Description            Cyclades OS/Compute
 ================= ====================== ======== ==========
 id                The server id          ✔        ✔
 name              The server name        ✔        ✔
+links             Reference links        ✔        ✔
 hostId            Server playground      empty    ✔
 created           Creation date          ✔        ✔
 updated           Creation date          ✔        ✔
@@ -216,12 +217,46 @@ metadata          Server custom metadata ✔        ✔
   nic-<server-id>-<ordinal-number>. More details can be found `here
   <#nic-ref>`_.
 
-*Example List Servers: JSON*
+
+*Example List Servers: JSON (regular)*
 
 .. code-block:: javascript
 
-  {
-    "servers": [
+    [
+      {
+        "links": [
+            {
+                "href": "https://example.org/compute/v2.0/servers/42", 
+                "rel": "self"
+            }, 
+            {
+                "href": "https://example.org/compute/v2.0/servers/42", 
+                "rel": "bookmark"
+            }
+        ],
+        "id": "42",
+        "name": "My Server",
+      }, {
+        "links": [
+            {
+                "href": "https://example.org/compute/v2.0/servers/43", 
+                "rel": "self"
+            }, 
+            {
+                "href": "https://example.org/compute/v2.0/servers/43", 
+                "rel": "bookmark"
+            }
+        ],
+        "id": "43",
+        "name": "My Server",
+      }
+    ]
+
+*Example List Servers: JSON (detail)*
+
+.. code-block:: javascript
+
+    [
       {
         "attachments": [
             {
@@ -233,11 +268,50 @@ metadata          Server custom metadata ✔        ✔
               "ipv6": "2001:648:2ffc:1222:a800:ff:fef5:3f5b"
             }
         ],
+        "links": [
+            {
+                "href": "https://example.org/compute/v2.0/servers/42", 
+                "rel": "self"
+            }, 
+            {
+                "href": "https://example.org/compute/v2.0/servers/42", 
+                "rel": "bookmark"
+            }
+        ],
         "created': '2011-04-19T10:18:52.085737+00:00',
-        "flavorRef": "1",
+        "flavor": {
+            "id": 1",
+            "links": [
+                {
+                    "href": "https://example.org/compute/v2.0/flavors/1", 
+                    "rel": "self"
+                }, 
+                {
+                    "href": "https://example.org/compute/v2.0/flavors/1", 
+                    "rel": "bookmark"
+                }
+            ]
+
+        },
         "hostId": "",
         "id": "42",
-        "imageRef": "3",
+        "image": {
+            "id": "im4g3-1d",
+            "links": [
+                {
+                    "href": "https://example.org/compute/v2.0/images/im4g3-1d", 
+                    "rel": "self"
+                }, 
+                {
+                    "href": "https://example.org/compute/v2.0/images/im4g3-1d", 
+                    "rel": "bookmark"
+                }, 
+                {
+                    "href": "https://example.org/image/v1.0/images/im4g3-1d", 
+                    "rel": "alternate"
+                }
+            ]
+        },
         "metadata": {{"foo": "bar"},
         "name": "My Server",
         "status": "ACTIVE",
@@ -265,11 +339,50 @@ metadata          Server custom metadata ✔        ✔
               "ipv6": "2001:638:2eec:1222:a800:ff:fef5:3f5c"
             }
         ],
+        "links": [
+            {
+                "href": "https://example.org/compute/v2.0/servers/43", 
+                "rel": "self"
+            }, 
+            {
+                "href": "https://example.org/compute/v2.0/servers/43", 
+                "rel": "bookmark"
+            }
+        ],
         "created": "2011-05-02T20:51:08.527759+00:00",
-        "flavorRef": "1",
+        "flavor": {
+            "id": 1",
+            "links": [
+                {
+                    "href": "https://example.org/compute/v2.0/flavors/1", 
+                    "rel": "self"
+                }, 
+                {
+                    "href": "https://example.org/compute/v2.0/flavors/1", 
+                    "rel": "bookmark"
+                }
+            ]
+
+        },
         "hostId": "",
         "id": "43",
-        "imageRef": "3",
+        "image": {
+            "id": "im4g3-1d",
+            "links": [
+                {
+                    "href": "https://example.org/compute/v2.0/images/im4g3-1d", 
+                    "rel": "self"
+                }, 
+                {
+                    "href": "https://example.org/compute/v2.0/images/im4g3-1d", 
+                    "rel": "bookmark"
+                }, 
+                {
+                    "href": "https://example.org/image/v1.0/images/im4g3-1d", 
+                    "rel": "alternate"
+                }
+            ]
+        },
         "name": "Other Server",
         "description": "A sample server to showcase server requests",
         "progress": "0",
@@ -277,7 +390,6 @@ metadata          Server custom metadata ✔        ✔
         "updated": "2011-05-29T14:59:11.267087+00:00"
       }
     ]
-  }
 
 
 Create Server
@@ -435,14 +547,51 @@ Server attributes are `listed here <#server-ref>`_.
 
   {
     "server": {
-      "id": 28130
+      "addresses": 
+      "id": 28130,
+        "links": [
+            {
+                "href": "https://example.org/compute/v2.0/servers/42", 
+                "rel": "self"
+            }, 
+            {
+                "href": "https://example.org/compute/v2.0/servers/42", 
+                "rel": "bookmark"
+            }
+        ],
+
+      "image": {
+        "id": im4g3-1d
+        "links": [
+            {
+                "href": "https://example.org/compute/v2.0/images/im4g3-1d"
+                "rel": "self"
+            }, {
+                "href": "https://example.org/compute/v2.0/images/im4g3-1d"
+                "rel": "bookmark"
+            }, {
+                "href": "https://example.org/image/v1.0/images/im4g3-1d"
+                "rel": "alternate"
+            }
+        ]
+      },
+      "flavor": {
+        "id": 289
+        "links": [
+            {
+                "href": "https://example.org/compute/v2.0/flavors/289"
+                "rel": "self"
+            }, {
+                "href": "https://example.org/compute/v2.0/flavors/289"
+                "rel": "bookmark"
+            }
+        ]
+      },
       "status": "BUILD",
       "updated": "2013-04-10T13:52:18.140686+00:00",
       "hostId": "",
       "name": "My Server Name: Example Name",
-      "imageRef": "da7a211f-...-f901ce81a3e6",
       "created": "2013-04-10T13:52:17.085402+00:00",
-      "flavorRef": 289,
       "adminPass": "fKCqlZe2at",
       "suspended": false,
       "progress": 0
@@ -464,12 +613,11 @@ Server attributes are `listed here <#server-ref>`_.
     status="BUILD"
     hostId="",
     name="My Server Name: Example Name"
-    imageRef="da7a211f-...-f901ce81a3e6"
     created="2013-04-10T13:52:17.085402+00:00"
-    flavorRef="289"
     adminPass="fKCqlZe2at"
     suspended="false"
     progress="0"
+    ...
   />
 
 Get Server Stats
@@ -773,39 +921,76 @@ diagnostics       Diagnostic information ✔        **✘**
 
   {
     "server": {
-      "id": 42042,
-      "name": "My Example Server",
-      "status": "ACTIVE",
-      "updated": "2013-04-18T10:09:57.824266+00:00",
-      "hostId": "",
-      "imageRef": "926a1bc5-2d85-49d4-aebe-0fc127ed89b9",
-      "created": "2013-04-18T10:06:58.288273+00:00",
-      "flavorRef": 22,
-      "attachments": [
-        {
-          "network_id": "1888",
-          "mac_address": "aa:0c:f5:ad:16:41",
-          "firewallProfile": "DISABLED",
-          "ipv4": "83.212.112.56",
-          "ipv6": "2001:648:2ffc:1119:a80c:f5ff:fead:1641",
-          "id": "nic-42042-0"
-        }
-      ],
-      "suspended": false,
-      "diagnostics": [
-        {
-          "level": "DEBUG",
-          "created": "2013-04-18T10:09:52.776920+00:00",
-          "source": "image-info",
-          "source_date": "2013-04-18T10:09:52.709791+00:00",
-          "message": "Image customization finished successfully.",
-          "details": null
-        }
-      ],
-      "progress": 100,
-      "metadata": {
-        "OS": "windows",
-        "users": "Administrator"
+        "attachments": [
+            {
+              "network_id": "1888",
+              "mac_address": "aa:0c:f5:ad:16:41",
+              "firewallProfile": "DISABLED",
+              "ipv4": "83.212.112.56",
+              "ipv6": "2001:648:2ffc:1119:a80c:f5ff:fead:1641",
+              "id": "nic-42042-0"
+            }
+        ],
+        "links": [
+            {
+                "href": "https://example.org/compute/v2.0/servers/42031", 
+                "rel": "self"
+            }, 
+            {
+                "href": "https://example.org/compute/v2.0/servers/42042",
+                "rel": "bookmark"
+            }
+        ],
+        "created": "2011-05-02T20:51:08.527759+00:00",
+        "flavor": {
+            "id": 1,
+            "links": [
+                {
+                    "href": "https://example.org/compute/v2.0/flavors/1", 
+                    "rel": "self"
+                }, 
+                {
+                    "href": "https://example.org/compute/v2.0/flavors/1", 
+                    "rel": "bookmark"
+                }
+            ]
+
+        },
+        "hostId": "",
+        "id": "42042",
+        "image": {
+            "id": "im4g3-1d",
+            "links": [
+                {
+                    "href": "https://example.org/compute/v2.0/images/im4g3-1d", 
+                    "rel": "self"
+                }, 
+                {
+                    "href": "https://example.org/compute/v2.0/images/im4g3-1d", 
+                    "rel": "bookmark"
+                }, 
+                {
+                    "href": "https://example.org/image/v1.0/images/im4g3-1d", 
+                    "rel": "alternate"
+                }
+            ]
+        },
+        "name": "My Example Server",
+        "description": "A sample server to showcase server requests",
+        "progress": "0",
+        "status": "ACTIVE",
+        "updated": "2011-05-29T14:59:11.267087+00:00",
+        "suspended": false,
+        "diagnostics": [
+            {
+                "level": "DEBUG",
+                "created": "2013-04-18T10:09:52.776920+00:00",
+                "source": "image-info",
+                "source_date": "2013-04-18T10:09:52.709791+00:00",
+                "message": "Image customization finished successfully.",
+                "details": null
+            }
+        ],
       }
     }
   }
@@ -1710,9 +1895,29 @@ only ``id`` and ``name`` attributes.
       {
         "id": 1,
         "name": "One code",
+        "links": [
+            {
+                "href": "https://example.org/compute/v2.0/flavors/1", 
+                "rel": "self"
+            }, 
+            {
+                "href": "https://example.org/compute/v2.0/flavors/1", 
+                "rel": "bookmark"
+            }
+        ]
       }, {
         "id": 3,
         "name": "Four core",
+        "links": [
+            {
+                "href": "https://example.org/compute/v2.0/flavors/3", 
+                "rel": "self"
+            }, 
+            {
+                "href": "https://example.org/compute/v2.0/flavors/3", 
+                "rel": "bookmark"
+            }
+        ]
       }
     ]
   }
@@ -1741,14 +1946,34 @@ only ``id`` and ``name`` attributes.
         "ram": 1024,
         "SNF:disk_template": "drbd",
         "disk": 20,
-        "cpu": 1
+        "cpu": 1,
+        "links": [
+            {
+                "href": "https://example.org/compute/v2.0/flavors/1", 
+                "rel": "self"
+            }, 
+            {
+                "href": "https://example.org/compute/v2.0/flavors/1", 
+                "rel": "bookmark"
+            }
+        ]
       }, {
         "id": 3,
         "name": "Four core",
         "ram": 1024,
         "SNF:disk_template": "drbd",
         "disk": 40,
-        "cpu": 4
+        "cpu": 4,
+        "links": [
+            {
+                "href": "https://example.org/compute/v2.0/flavors/3", 
+                "rel": "self"
+            }, 
+            {
+                "href": "https://example.org/compute/v2.0/flavors/3", 
+                "rel": "bookmark"
+            }
+        ]
       }
     ]
   }
@@ -1823,7 +2048,17 @@ All flavor attributes are `listed here <flavor-ref>`_.
         "ram": 1024,
         "SNF:disk_template": "drbd",
         "disk": 20,
-        "cpu": 1
+        "cpu": 1,
+        "links": [
+            {
+                "href": "https://example.org/compute/v2.0/flavors/1", 
+                "rel": "self"
+            }, 
+            {
+                "href": "https://example.org/compute/v2.0/flavors/1", 
+                "rel": "bookmark"
+            }
+        ]
       }
     }
   }
@@ -1949,6 +2184,20 @@ a collections of the `image attributes listed here <#image-ref>`_.
         "created": "2013-03-02T12:21:00+00:00",
         "progress": 100,
         "id": "175716...526236",
+        "links": [
+          {
+            "href": "https://example.org/compute/v2.0/images/175716...526236", 
+            "rel": "self"
+          }, 
+          {
+            "href": "https://example.org/compute/v2.0/images/175716...526236", 
+            "rel": "bookmark"
+          }, 
+          {
+            "href": "https://example.org/image/v1.0/images/175716...526236", 
+            "rel": "alternate"
+          }
+        ],
         "metadata": {
           "partition_table": "msdos",
           "osfamily": "linux",
@@ -1965,6 +2214,20 @@ a collections of the `image attributes listed here <#image-ref>`_.
         "created": "2013-03-02T12:21:00+00:00",
         "progress": 100,
         "id": "1357163d...c526206",
+        "links": [
+          {
+            "href": "https://example.org/compute/v2.0/images/1357163d...c526206", 
+            "rel": "self"
+          }, 
+          {
+            "href": "https://example.org/compute/v2.0/images/1357163d...c526206", 
+            "rel": "bookmark"
+          }, 
+          {
+            "href": "https://example.org/image/v1.0/images/1357163d...c526206", 
+            "rel": "alternate"
+          }
+        ],
         "metadata": {
           "partition_table": "msdos",
           "osfamily": "windows",
@@ -2045,6 +2308,20 @@ Image attributes are `listed here <#image-ref>`_.
     "updated": "2013-04-24T12:06:02+00:00",
     "created": "2013-04-24T11:52:16+00:00",
     "progress": 100,
+    "links": [
+      {
+        "href": "https://example.org/compute/v2.0/images/6404619d-...-aef57eaff4af", 
+        "rel": "self"
+      }, 
+      {
+        "href": "https://example.org/compute/v2.0/images/6404619d-...-aef57eaff4af", 
+        "rel": "bookmark"
+      }, 
+      {
+        "href": "https://example.org/image/v1.0/images/6404619d-...-aef57eaff4af", 
+        "rel": "alternate"
+      }
+    ],
     "metadata": {
       "kernel": "9.1 RELEASE",
       "osfamily": "freebsd",
@@ -2539,8 +2816,32 @@ while the regular operation returns only the ``id`` and ``name`` attributes.
 
   {
     "networks": [
-      {"id": "1", "name": "public"},
-      {"id": "2", "name": "my private network"}
+      {
+        "id": "1",
+        "name": "public",
+        "links": [
+            {
+                "href": "https://example.org/compute/v2.0/networks/1",
+                "rel": "self"
+            }, {
+                "href": "https://example.org/compute/v2.0/networks/1",
+                "rel": "bookmark"
+            }
+        ], 
+      },
+      {
+        "id": "2",
+        "name": "my private network",
+        "links": [
+            {
+                "href": "https://example.org/compute/v2.0/networks/2",
+                "rel": "self"
+            }, {
+                "href": "https://example.org/compute/v2.0/networks/2",
+                "rel": "bookmark"
+            }
+        ],
+      }
     ]
   }
 
@@ -2553,12 +2854,32 @@ while the regular operation returns only the ``id`` and ``name`` attributes.
       {
         "id": "1",
         "name": "public",
+        "links": [
+            {
+                "href": "https://example.org/compute/v2.0/networks/1", 
+                "rel": "self"
+            }, 
+            {
+                "href": "https://example.org/compute/v2.0/networks/1", 
+                "rel": "bookmark"
+            }
+        ], 
         "created": "2011-04-20T15:31:08.199640+00:00",
         "updated": "2011-05-06T12:47:05.582679+00:00",
         "attachments": ["nic-42-0", "nic-73-0"]
       }, {
         "id": 2,
         "name": "my private network",
+        "links": [
+            {
+                "href": "https://example.org/compute/v2.0/networks/2", 
+                "rel": "self"
+            }, 
+            {
+                "href": "https://example.org/compute/v2.0/networks/2", 
+                "rel": "bookmark"
+            }
+        ], 
         "created": "2011-04-20T14:32:08.199640+00:00",
         "updated": "2011-05-06T11:40:05.582679+00:00",
         "attachments": ["nic-42-2", "nic-7-3"]
@@ -2671,6 +2992,15 @@ A list of the valid network attributes can be found `here <#network-ref>`_.
       "status": "PENDING",
       "updated": "2013-04-25T13:31:17.165237+00:00",
       "name": "my private network",
+      "links": [
+        {
+            "href": "https://example.org/compute/v2.0/networks/6567",
+            "rel": "self"
+        }, {
+            "href": "https://example.org/compute/v2.0/networks/6567",
+            "rel": "bookmark"
+        }
+      ], 
       "created": "2013-04-25T13:31:17.165088+00:00",
       "cidr6": null,
       "id": "6567",
@@ -2741,6 +3071,15 @@ A list of network attributes can be found `here <#network-ref>`_.
       "status": "PENDING",
       "updated": "2013-04-25T13:31:17.165237+00:00",
       "name": "my private network",
+      "links": [
+        {
+            "href": "https://example.org/compute/v2.0/networks/6567", 
+            "rel": "self"
+        }, {
+            "href": "https://example.org/compute/v2.0/networks/6567", 
+            "rel": "bookmark"
+        }
+      ],
       "created": "2013-04-25T13:31:17.165088+00:00",
       "cidr6": null,
       "id": "6567",

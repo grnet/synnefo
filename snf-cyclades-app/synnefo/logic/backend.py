@@ -192,6 +192,8 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
             new_operstate = state_for_success
             vm.backendtime = etime
             status = rapi.JOB_STATUS_SUCCESS
+            #status = "success"
+            vm.volumes.all().update(deleted=True, machine=None)
 
     if status in rapi.JOB_STATUS_FINALIZED:
         # Job is finalized: Handle quotas/commissioning

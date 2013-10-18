@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,20 +31,19 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import json
-
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import get_network, Omit
+from synnefo.management.common import get_network
 
-from synnefo.db.models import (Backend, BackendNetwork,
-                               pooled_rapi_client)
+from synnefo.db.models import (Backend, pooled_rapi_client)
 from synnefo.logic.rapi import GanetiApiError
 from snf_django.lib.astakos import UserCache
 from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
                               ASTAKOS_BASE_URL)
 from util import pool_map_chunks
+from snf_django.management.utils import pprint_table
+from synnefo.lib.ordereddict import OrderedDict
 
 
 class Command(BaseCommand):
@@ -64,50 +63,57 @@ class Command(BaseCommand):
         if len(args) != 1:
             raise CommandError("Please provide a network ID.")
 
-        net = get_network(args[0])
+        network = get_network(args[0])
 
         ucache = UserCache(ASTAKOS_BASE_URL, ASTAKOS_TOKEN)
 
         displayname = options['displayname']
 
         sep = '-' * 80 + '\n'
-        labels = filter(lambda x: x is not Omit,
-                        ['name', 'backend-name', 'state', 'owner uuid',
-                         'owner_name' if displayname else Omit, 'subnet',
-                         'gateway', 'mac_prefix', 'link', 'public', 'dhcp',
-                         'flavor', 'deleted', 'action', 'pool'])
-
-        uuid = net.userid
-        if displayname:
-            dname = ucache.get_name(uuid)
-
-        fields = filter(lambda x: x is not Omit,
-                        [net.name, net.backend_id, net.state, uuid or '-',
-                         dname or '-' if displayname else Omit,
-                         str(net.subnet), str(net.gateway),
-                         str(net.mac_prefix),
-                         str(net.link), str(net.public),  str(net.dhcp),
-                         str(net.flavor), str(net.deleted), str(net.action),
-                         str(splitPoolMap(net.get_pool().to_map(), 64))])
+        userid = network.userid
+        db_network = OrderedDict([
+            ("name", network.name),
+            ("backend-name", network.backend_id),
+            ("state", network.state),
+            ("userid", userid),
+            ("username", ucache.get_name(userid) if displayname else ""),
+            ("public", network.public),
+            ("floating_ip_pool", network.floating_ip_pool),
+            ("external_router", network.external_router),
+            ("drained", network.drained),
+            ("MAC prefix", network.mac_prefix),
+            ("flavor", network.flavor),
+            ("link", network.link),
+            ("mode", network.mode),
+            ("deleted", network.deleted),
+            ("tags", "), ".join(network.backend_tag)),
+            ("action", network.action)])
 
         write(sep)
         write('State of Network in DB\n')
         write(sep)
-        for l, f in zip(labels, fields):
-            write(l.ljust(20) + ': ' + f.ljust(20) + '\n')
+        pprint_table(self.stdout, db_network.items(), None, separator=" | ")
 
-        labels = ('Backend', 'State', 'Deleted', 'JobID', 'OpCode',
-                  'JobStatus')
-        for back_net in BackendNetwork.objects.filter(network=net):
-            write('\n')
-            fields = (back_net.backend.clustername, back_net.operstate,
-                      str(back_net.deleted),  str(back_net.backendjobid),
-                      str(back_net.backendopcode),
-                      str(back_net.backendjobstatus))
-            for l, f in zip(labels, fields):
-                write(l.ljust(20) + ': ' + f.ljust(20) + '\n')
-        write('\n')
+        subnets = list(network.subnets.values_list("id", "name", "ipversion",
+                                                   "cidr", "gateway", "dhcp",
+                                                   "deleted"))
+        headers = ["ID", "Name", "Version", "CIDR", "Gateway", "DHCP",
+                   "Deleted"]
+        write("\nSubnets\n")
+        write(sep)
+        pprint_table(self.stdout, subnets, headers, separator=" | ")
 
+        bnets = list(network.backend_networks.values_list(
+            "backend__clustername",
+            "operstate", "deleted", "backendjobid",
+            "backendopcode", "backendjobstatus"))
+        headers = ["Backend", "State", "Deleted", "JobID", "Opcode",
+                   "JobStatus"]
+        write("\nBackend Networks\n")
+        write(sep)
+        pprint_table(self.stdout, bnets, headers, separator=" | ")
+
+        write("\n\n")
         write(sep)
         write('State of Network in Ganeti\n')
         write(sep)
@@ -115,10 +121,15 @@ class Command(BaseCommand):
         for backend in Backend.objects.exclude(offline=True):
             with pooled_rapi_client(backend) as client:
                 try:
-                    g_net = client.GetNetwork(net.backend_id)
-                    write("Backend: %s\n" % backend.clustername)
-                    print json.dumps(g_net, indent=2)
+                    g_net = client.GetNetwork(network.backend_id)
+                    write("\n")
                     write(sep)
+                    write("Backend: %s\n" % backend.clustername)
+                    write(sep)
+                    ip_map = g_net.pop("map")
+                    pprint_table(self.stdout, g_net.items(), None)
+                    write(splitPoolMap(ip_map, 80))
+                    write("\n")
                 except GanetiApiError as e:
                     if e.code == 404:
                         write('Network does not exist in backend %s\n' %

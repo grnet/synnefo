@@ -121,7 +121,8 @@ class Backend(models.Model):
     def get_client(self):
         """Get or create a client. """
         if self.offline:
-            raise faults.ServiceUnavailable
+            raise faults.ServiceUnavailable("Backend '%s' is offline" %
+                                            self)
         return get_rapi_client(self.id, self.hash,
                                self.clustername,
                                self.port,
@@ -344,7 +345,7 @@ class VirtualMachine(models.Model):
         if self.backend:
             return self.backend.get_client()
         else:
-            raise faults.ServiceUnavailable
+            raise faults.ServiceUnavailable("VirtualMachine without backend")
 
     def get_last_diagnostic(self, **filters):
         try:

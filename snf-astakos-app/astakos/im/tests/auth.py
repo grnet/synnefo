@@ -384,6 +384,7 @@ class TestLocal(TestCase):
     @im_settings(RECAPTCHA_ENABLED=True, RATELIMIT_RETRIES_ALLOWED=3)
     def test_login_ratelimit(self):
         from django.core.cache import cache
+        cache.clear()
         [cache.delete(key) for key in cache._cache.keys()]
 
         credentials = {'username': 'γιού τι έφ', 'password': 'password'}

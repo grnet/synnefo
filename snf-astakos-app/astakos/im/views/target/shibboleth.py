@@ -72,13 +72,8 @@ def migrate_eppn_to_remote_id(eppn, remote_id):
         pass
 
     pending_users = \
-<<<<<<< HEAD
         PendingThirdPartyUser.objects.filter(third_party_identifier=eppn,
                                              provider='shibboleth')
-=======
-            PendingThirdPartyUser.objects.filter(third_party_identifier=eppn,
-                                                 provider='shibboleth')
->>>>>>> astakos: Shibboleth EPPN migration functionality
 
     for pending in pending_users:
         msg = "Migrating pending user %s eppn (%s -> %s)"
@@ -168,6 +163,7 @@ def login(request,
 
     except KeyError, e:
         # invalid shibboleth headers, redirect to login, display message
+        logger.exception(e)
         messages.error(request, e.message)
         return HttpResponseRedirect(login_url(request))
 

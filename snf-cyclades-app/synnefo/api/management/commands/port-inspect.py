@@ -108,6 +108,8 @@ class Command(BaseCommand):
                 self.stdout.write("NIC seems attached to server %s, but"
                                   " server does not exist in backend.\n"
                                   % vm)
+                return
+            raise e
 
         nics = nics_from_instance(vm_info)
         try:

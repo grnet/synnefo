@@ -35,7 +35,7 @@ from django.core.management import CommandError
 from synnefo.db.models import (Backend, VirtualMachine, Network,
                                Flavor, IPAddress, Subnet,
                                BridgePoolTable, MacPrefixPoolTable,
-                               NetworkInterface)
+                               NetworkInterface, Volume)
 from functools import wraps
 
 from django.conf import settings
@@ -61,6 +61,7 @@ RESOURCE_MAP = {
     "backend": Backend.objects,
     "flavor": Flavor.objects,
     "server": VirtualMachine.objects,
+    "volume": Volume.objects,
     "network": Network.objects,
     "subnet": Subnet.objects,
     "port": NetworkInterface.objects,

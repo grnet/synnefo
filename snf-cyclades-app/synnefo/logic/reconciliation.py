@@ -479,14 +479,19 @@ def nics_from_instance(i):
     return nics
 
 
+def disks_from_instance(i):
+    sizes = zip(itertools.repeat('size'), i['disk.sizes'])
+    names = zip(itertools.repeat('name'), i['disk.names'])
+    uuids = zip(itertools.repeat('uuid'), i['disk.uuids'])
+    disks = zip(sizes, names, uuids)
+    disks = map(lambda x: dict(x), disks)
+    #disks = dict(enumerate(disks))
+    return disks
+
+
 def get_ganeti_jobs(backend):
     gnt_jobs = backend_mod.get_jobs(backend)
     return dict([(int(j["id"]), j) for j in gnt_jobs])
-
-
-def disks_from_instance(i):
-    return dict([(index, {"size": size})
-                 for index, size in enumerate(i["disk.sizes"])])
 
 
 class NetworkReconciler(object):

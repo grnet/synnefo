@@ -1230,7 +1230,6 @@ class ModularBackend(BaseBackend):
                      permissions=None, src_version=None, is_move=False,
                      delimiter=None):
 
-        report_size_change = not is_move
         dest_meta = dest_meta or {}
         dest_version_ids = []
         self._can_read_object(user, src_account, src_container, src_name)
@@ -1239,11 +1238,25 @@ class ModularBackend(BaseBackend):
         dest_container_path = '/'.join((dest_account, dest_container))
         # Lock container paths in alphabetical order
         if src_container_path < dest_container_path:
-            self._lookup_container(src_account, src_container)
-            self._lookup_container(dest_account, dest_container)
+            src_container_node = self._lookup_container(src_account,
+							src_container)[-1]
+            dest_container_node = self._lookup_container(dest_account,
+							 dest_container)[-1]
         else:
-            self._lookup_container(dest_account, dest_container)
-            self._lookup_container(src_account, src_container)
+            dest_container_node = self._lookup_container(dest_account,
+							 dest_container)[-1]
+            src_container_node = self._lookup_container(src_account,
+							src_container)[-1]
+
+        cross_account = src_account != dest_account
+        cross_container = src_container != dest_container
+        if not cross_account and cross_container:
+            src_project = self._get_project(src_container_node)
+            dest_project = self._get_project(dest_container_node)
+            cross_project = src_project != dest_project
+        else:
+            cross_project = False
+        report_size_change = not is_move or cross_account or cross_project
 
         path, node = self._lookup_object(src_account, src_container, src_name)
         # TODO: Will do another fetch of the properties in duplicate version...

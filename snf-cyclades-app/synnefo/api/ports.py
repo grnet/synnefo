@@ -36,7 +36,6 @@ from django.conf.urls import patterns
 from django.http import HttpResponse
 from django.utils import simplejson as json
 from django.db import transaction
-from django.db.models import Q
 from django.template.loader import render_to_string
 
 from snf_django.lib import api
@@ -85,7 +84,7 @@ def list_ports(request, detail=False):
         network__userid=request.user_uniq)
 
     port_dicts = [port_to_dict(port, detail)
-             for port in user_ports.order_by('id')]
+                  for port in user_ports.order_by('id')]
 
     if request.serialization == 'xml':
         data = render_to_string('list_ports.xml', {
@@ -98,8 +97,6 @@ def list_ports(request, detail=False):
 
 @api.api_method(http_method='POST', user_required=True, logger=log)
 def create_port(request):
-    '''
-    '''
     user_id = request.user_uniq
     req = api.utils.get_request_dict(request)
     log.info('create_port %s', req)
@@ -108,13 +105,12 @@ def create_port(request):
     net_id = api.utils.get_attribute(port_dict, "network_id")
     dev_id = api.utils.get_attribute(port_dict, "device_id")
 
-    network = util.get_network(net_id, request.user_uniq, non_deleted=True)
+    network = util.get_network(net_id, user_id, non_deleted=True)
 
     if network.public:
         raise api.faults.Forbidden('forbidden')
 
-
-    vm = util.get_vm(dev_id, request.user_uniq)
+    vm = util.get_vm(dev_id, user_id)
 
     name = api.utils.get_attribute(port_dict, "name", required=False)
 
@@ -210,7 +206,7 @@ def port_to_dict(port, detail=True):
         d['fixed_ips'] = []
         for ip in port.ips.all():
             d['fixed_ips'].append({"ip_address": ip.address,
-                                      "subnet": str(ip.subnet.id)})
+                                   "subnet": str(ip.subnet.id)})
         sg_list = list(port.security_groups.values_list('id', flat=True))
         d['security_groups'] = map(str, sg_list)
 

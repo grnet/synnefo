@@ -724,11 +724,11 @@ def _create_network(network, backend):
         if _subnet.ipversion == 4:
             if _subnet.dhcp:
                 tags.append('nfdhcpd')
-                subnet = _subnet.cidr
-                gateway = _subnet.gateway
+            subnet = _subnet.cidr
+            gateway = _subnet.gateway
         elif _subnet.ipversion == 6:
-                subnet6 = _subnet.cidr
-                gateway6 = _subnet.gateway
+            subnet6 = _subnet.cidr
+            gateway6 = _subnet.gateway
 
     if network.public:
         conflicts_check = True

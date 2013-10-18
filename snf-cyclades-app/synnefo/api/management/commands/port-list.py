@@ -31,7 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
+#from optparse import make_option
 
 from snf_django.management.commands import ListCommand
 from synnefo.db.models import NetworkInterface
@@ -45,7 +45,6 @@ log = getLogger(__name__)
 class Command(ListCommand):
     help = "List ports"
 
-
     object_class = NetworkInterface
     user_uuid_field = "userid"
     astakos_url = ASTAKOS_BASE_URL
@@ -54,7 +53,7 @@ class Command(ListCommand):
     def get_fixed_ips(ip):
 
         def labels((a, b)):
-            return str({"subnet": b, "ip_address": str(a) })
+            return str({"subnet": b, "ip_address": str(a)})
 
         lista = ip.get_ip_addresses_subnets()
         lista = map(labels, lista)
@@ -66,7 +65,7 @@ class Command(ListCommand):
         "user.uuid": ("userid", "The UUID of the port's owner"),
         "mac_address": ("mac", "The MAC address of the port"),
         "device_id": ("machine.id", "The vm's id the port is conncted to"),
-        "status": ("status", "The port's status"),
+        "state": ("state", "The port's status"),
         "device_owner": ("device_owner", "The owner of the port (vm/router)"),
         "network": ("network.id", "The network's ID the port is\
                         connected to"),
@@ -77,4 +76,4 @@ class Command(ListCommand):
     }
 
     fields = ["id", "name", "user.uuid", "mac_address", "network",
-               "device_id", "fixed_ips"]
+              "device_id", "fixed_ips", "state"]

@@ -31,19 +31,16 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from datetime import datetime
 from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 
-from synnefo.lib.utils import merge_time
-from snf_django.lib.astakos import UserCache
 from synnefo.logic.rapi import GanetiApiError
-from synnefo.management.common import Omit, convert_api_faults
-from synnefo.management import common
-from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
-                              ASTAKOS_BASE_URL)
-
+from synnefo.management.common import convert_api_faults
+from synnefo.logic.reconciliation import nics_from_instance
+from snf_django.management.utils import pprint_table
 from synnefo.api.util import get_port
+
+
 class Command(BaseCommand):
     help = "Inspect a port on DB and Ganeti"
     args = "<port ID>"
@@ -71,89 +68,55 @@ class Command(BaseCommand):
         port = get_port(args[0], None)
 
         sep = '-' * 80 + '\n'
-        labels =  ['name',  'id', 'device_id', 'network_id',
-                   'device_owner', 'mac_address', 'ipv4', 'subnet4',
-                   'ipv6', 'subnet6', 'state',
-                   'security_groups', 'user_id']
 
-        uuid = port.userid
-        security_groups = port.security_groups.values_list('id',
-                                                                 flat=True)
-        sg_csv = ','.join(map(str, security_groups))
-
-        ipv4 = ''
-        ipv6 = ''
-        subnet4 = ''
-        subnet6 = ''
-        for ip in port.ips.all():
-            if ip.subnet.ipversion == 4:
-                ipv4 = ip.address
-                subnet4 = str(ip.subnet.id)
-            else:
-                ipv6 = ip.address
-                subnet6 = str(ip.subnet.id)
-
-        fields = [port.name, str(port.id), str(port.machine.id),
-                  str(port.network.id), port.device_owner, port.mac,
-                  ipv4, subnet4, ipv6, subnet6, port.state, sg_csv, uuid]
+        db_nic = {
+            "id": port.id,
+            "name": port.name,
+            "userid": port.userid,
+            "server": port.machine_id,
+            "network": port.network_id,
+            "device_owner": port.device_owner,
+            "mac": port.mac,
+            "state": port.state}
 
         self.stdout.write(sep)
         self.stdout.write('State of port in DB\n')
         self.stdout.write(sep)
-        for l, f in zip(labels, fields):
-            if f:
-                self.stdout.write(l.ljust(18) + ': ' + f.ljust(20) + '\n')
-            else:
-                self.stdout.write(l.ljust(18) + ': ' + '\n')
+        pprint_table(self.stdout, db_nic.items(), None, separator=" | ")
 
-        self.stdout.write('\n')
-        '''
-        client = vm.get_client()
-        try:
-            g_vm = client.GetInstance(vm.backend_vm_id)
-            self.stdout.write('\n')
-            self.stdout.write(sep)
-            self.stdout.write('State of Server in Ganeti\n')
-            self.stdout.write(sep)
-            for i in GANETI_INSTANCE_FIELDS:
-                try:
-                    value = g_vm[i]
-                    if i.find('time') != -1:
-                        value = datetime.fromtimestamp(value)
-                    self.stdout.write(i.ljust(14) + ': ' + str(value) + '\n')
-                except KeyError:
-                    pass
-        except GanetiApiError as e:
-            if e.code == 404:
-                self.stdout.write('Server does not exist in backend %s\n' %
-                                  vm.backend.clustername)
-            else:
-                raise e
+        self.stdout.write('\n\n')
+        ips = list(port.ips.values_list("address", "network_id", "subnet_id",
+                                        "subnet__cidr", "floating_ip"))
+        headers = ["Address", "Network", "Subnet", "CIDR", "is_floating"]
+        pprint_table(self.stdout, ips, headers, separator=" | ")
 
-        if not options['jobs']:
+        self.stdout.write('\n\n')
+
+        self.stdout.write(sep)
+        self.stdout.write('State of port in Ganeti\n')
+        self.stdout.write(sep)
+        vm = port.machine
+        if vm is None:
+            self.stdout.write("Port is not attached to any instance.\n")
             return
 
-        self.stdout.write('\n')
-        self.stdout.write(sep)
-        self.stdout.write('Non-archived jobs concerning Server in Ganeti\n')
-        self.stdout.write(sep)
-        jobs = client.GetJobs()
-        for j in jobs:
-            info = client.GetJobStatus(j)
-            summary = ' '.join(info['summary'])
-            job_is_relevant = summary.startswith("INSTANCE") and\
-                (summary.find(vm.backend_vm_id) != -1)
-            if job_is_relevant:
-                for i in GANETI_JOB_FIELDS:
-                    value = info[i]
-                    if i.find('_ts') != -1:
-                        value = merge_time(value)
-                    try:
-                        self.stdout.write(i.ljust(14) + ': ' + str(value) +
-                                          '\n')
-                    except KeyError:
-                        pass
-                self.stdout.write('\n' + sep)
-        # Return the RAPI client to pool
+        client = vm.get_client()
+        try:
+            vm_info = client.GetInstance(vm.backend_vm_id)
+        except GanetiApiError as e:
+            if e.code == 404:
+                self.stdout.write("NIC seems attached to server %s, but"
+                                  " server does not exist in backend.\n"
+                                  % vm)
+
+        nics = nics_from_instance(vm_info)
+        try:
+            gnt_nic = filter(lambda nic: nic.get("name") == port.backend_uuid,
+                             nics)[0]
+        except IndexError:
+            self.stdout.write("NIC %s is not attached to instance %s"
+                              % (port, vm))
+            return
+        pprint_table(self.stdout, gnt_nic.items(), None, separator=" | ")
+
         vm.put_client(client)
-        '''

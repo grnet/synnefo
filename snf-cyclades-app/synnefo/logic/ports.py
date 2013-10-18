@@ -30,16 +30,14 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
-import ipaddr
-
 from functools import wraps
 from django.db import transaction
 
-from django.conf import settings
-from snf_django.lib.api import faults
+#from django.conf import settings
 from synnefo.api import util
-from synnefo import quotas
-from synnefo.db.models import NetworkInterface, IPAddress
+from snf_django.lib.api import faults
+from synnefo.db.models import NetworkInterface
+from synnefo.logic import backend
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -54,6 +52,7 @@ def port_command(action):
         return wrapper
     return decorator
 
+
 @transaction.commit_on_success
 def create(network, machine, name="", security_groups=None,
            device_owner='vm'):
@@ -61,34 +60,44 @@ def create(network, machine, name="", security_groups=None,
     if network.state != 'ACTIVE':
         raise faults.Conflict('Network build in process')
 
+    user_id = machine.userid
     #create the port
     port = NetworkInterface.objects.create(name=name,
                                            network=network,
                                            machine=machine,
-                                           userid=machine.userid,
+                                           userid=user_id,
                                            device_owner=device_owner,
                                            state="BUILDING")
     #add the security groups if any
     if security_groups:
         port.security_groups.add(*security_groups)
 
-    #add new port to every subnet of the network
-    for subn in network.subnets.all():
-        IPAddress.objects.create(subnet=subn,
-                                 network=network,
-                                 nic=port,
-                                 userid=machine.userid,
-                                 # FIXME
-                                 address="192.168.0." + str(subn.id))
+    ipaddress = None
+    if network.subnets.filter(ipversion=4).exists():
+            ipaddress = util.allocate_ip(network, user_id)
+            ipaddress.nic = port
+            ipaddress.save()
 
-    # Issue commission to Quotaholder and accept it since at the end of
-    # this transaction the Network object will be created in the DB.
-    # Note: the following call does a commit!
-    #quotas.issue_and_accept_commission(new_port)
+    jobID = backend.connect_to_network(machine, port)
+
+    log.info("Created Port %s with IP Address: %s. Job: %s",
+             port, ipaddress, jobID)
+
+    # TODO: Consider quotas for Ports
 
     return port
 
+
 @transaction.commit_on_success
 def delete(port):
-    port.ips.all().delete()
-    port.delete()
+    """Delete a port by removing the NIC card the instance.
+
+    Send a Job to remove the NIC card from the instance. The port
+    will be deleted and the associated IPv4 addressess will be released
+    when the job completes successfully.
+
+    """
+
+    jobID = backend.disconnect_from_network(port.machine, port)
+    log.info("Removing port %s, Job: %s", port, jobID)
+    return port

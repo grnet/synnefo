@@ -31,7 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf import settings
+#from django.conf import settings
 from django.conf.urls import patterns
 from django.http import HttpResponse
 from django.utils import simplejson as json
@@ -41,7 +41,7 @@ from django.template.loader import render_to_string
 from snf_django.lib import api
 
 from synnefo.api import util
-from synnefo.db.models import NetworkInterface, SecurityGroup, IPAddress
+from synnefo.db.models import NetworkInterface
 from synnefo.logic import ports
 
 from logging import getLogger
@@ -81,7 +81,7 @@ def list_ports(request, detail=False):
     log.debug('list_ports detail=%s', detail)
 
     user_ports = NetworkInterface.objects.filter(
-        network__userid=request.user_uniq)
+        machine__userid=request.user_uniq)
 
     port_dicts = [port_to_dict(port, detail)
                   for port in user_ports.order_by('id')]
@@ -110,10 +110,9 @@ def create_port(request):
     if network.public:
         raise api.faults.Forbidden('forbidden')
 
-    vm = util.get_vm(dev_id, user_id)
+    vm = util.get_vm(dev_id, user_id, non_deleted=True, non_suspended=True)
 
     name = api.utils.get_attribute(port_dict, "name", required=False)
-
     if name is None:
         name = ""
 
@@ -179,12 +178,9 @@ def update_port(request, port_id):
 @transaction.commit_on_success
 def delete_port(request, port_id):
     log.info('delete_port %s', port_id)
-    port = util.get_port(port_id, request.user_uniq, for_update=True)
-    '''
-    FIXME delete the port
-    skip the backend part...
-    release the ips associated with the port
-    '''
+    user_id = request.user_uniq
+    port = util.get_port(port_id, user_id, for_update=True)
+    ports.delete(port)
     return HttpResponse(status=204)
 
 #util functions
@@ -193,9 +189,11 @@ def delete_port(request, port_id):
 def port_to_dict(port, detail=True):
     d = {'id': str(port.id), 'name': port.name}
     if detail:
-        d['user_id'] = port.network.userid
-        d['tenant_id'] = port.network.userid
+        user_id = port.machine.id
+        d['user_id'] = user_id
+        d['tenant_id'] = user_id
         d['device_id'] = str(port.machine.id)
+        # TODO: Change this based on the status of VM
         d['admin_state_up'] = True
         d['mac_address'] = port.mac
         d['status'] = port.state

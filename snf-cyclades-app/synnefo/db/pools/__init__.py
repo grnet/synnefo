@@ -268,15 +268,17 @@ class MacPrefixPool(PoolManager):
 
 class IPPool(PoolManager):
     def __init__(self, pool_table):
-        do_init = False if pool_table.available_map else True
         subnet = pool_table.subnet
         self.net = ipaddr.IPNetwork(subnet.cidr)
+        if pool_table.base is None:
+            self.base = pool_table.subnet.cidr
+        else:
+            self.base = pool_table.base
+        if pool_table.offset is None:
+            self.offset = 0
+        else:
+            self.offset = pool_table.offset
         super(IPPool, self).__init__(pool_table)
-        if do_init:
-            self._reserve(0, external=True)
-            if gateway:
-                self.reserve(gateway, external=True)
-            self._reserve(self.pool_size - 1, external=True)
 
     def value_to_index(self, value):
         addr = ipaddr.IPAddress(value)

@@ -125,7 +125,8 @@ def add_endpoint(component, service, endpoint_dict, out=None):
     endpoint = Endpoint.objects.create(service=service)
     for key, value in endpoint_dict.iteritems():
         base_url = component.base_url
-        if key == "publicURL" and not value.startswith(base_url):
+        if key == "publicURL" and (base_url is None or
+                                   not value.startswith(base_url)):
             warn = out.write if out is not None else logger.warning
             warn("Warning: Endpoint URL '%s' does not start with "
                  "assumed component base URL '%s'.\n" % (value, base_url))

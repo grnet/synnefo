@@ -1153,10 +1153,12 @@ class ModularBackend(BaseBackend):
                     user, dest_account, dest_container, vdest_name, size,
                     vtype, hash, None, dest_domain, meta={},
                     replace_meta=False, permissions=None, src_node=node,
-                    src_version_id=src_version_id, is_copy=is_copy))
+                    src_version_id=src_version_id, is_copy=is_copy,
+                    report_size_change=report_size_change))
                 if is_move and ((src_account, src_container, src_name) !=
                                 (dest_account, dest_container, dest_name)):
-                    self._delete_object(user, src_account, src_container, path)
+                    self._delete_object(user, src_account, src_container, path,
+                                        report_size_change=report_size_change)
         return (dest_version_ids[0] if len(dest_version_ids) == 1 else
                 dest_version_ids)
 

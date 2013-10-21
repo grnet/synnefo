@@ -257,6 +257,7 @@
 
             // handlers initialization
             this.create_types_selection_options();
+            this.create_snapshot_types_selection_options();
             this.init_handlers();
             this.init_position();
         },
@@ -300,7 +301,7 @@
         },
 
         create_types_selection_options: function() {
-            var list = this.$("ul.type-filter");
+            var list = this.$(".image-types-cont ul.type-filter");
             _.each(this.type_selections_order, _.bind(function(key) {
                 list.append('<li id="type-select-{0}">{1}</li>'.format(key, this.type_selections[key]));
             }, this));
@@ -378,6 +379,7 @@
         select_type: function(type) {
             this.selected_type = type;
             this.types.removeClass("selected");
+            var selection = "#type-select-" + this.selected_type;
             this.types.filter("#type-select-" + this.selected_type).addClass("selected");
             this.images_storage.update_images_for_type(
                 this.selected_type, 

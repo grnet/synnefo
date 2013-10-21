@@ -1992,10 +1992,11 @@
         },
         
         get_images_for_type: function(type) {
-            if (this['get_{0}_images'.format(type)]) {
-                return this['get_{0}_images'.format(type)]();
+            var method = 'get_{0}_images'.format(type.replace("-", "_"));
+            console.log("filtering using", method);
+            if (this[method]) {
+                return this[method]();
             }
-
             return this.active();
         },
 

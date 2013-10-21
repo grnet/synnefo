@@ -68,9 +68,8 @@
 
         type_selections: {'personal':'My images', 
                           'shared': 'Shared with me', 
-                          'public': 'Public',
-                          'snapshot': 'Snapshots'},
-        type_selections_order: ['system', 'personal', 'shared', 'public', 'snapshot'],
+                          'public': 'Public'},
+        type_selections_order: ['system', 'personal', 'shared', 'public'],
         display_metadata: ['size', 'users', 'osfamily', 'status', 'created_at', 'updated_at', 
             'filename', 'format', 'root_partition'],
         meta_labels: {'OS':'OS', 'osfamily':'OS Family', 'GUI':'GUI'},
@@ -172,8 +171,30 @@
             });
         },
 
-        get_snapshot_images: function() {
-            return this.active_snapshots()
+        get_snapshot_system_images: function() {
+            return _.filter(this.active_snapshots(), function(i) { 
+                return _.include(_.keys(snf.config.system_images_owners), 
+                                 i.get_owner());
+            })
+        },
+
+        get_snapshot_personal_images: function() {
+            return _.filter(this.active_snapshots(), function(i) { 
+                return i.get_owner_uuid() == snf.user.get_username();
+            });
+        },
+
+        get_snapshot_public_images: function() {
+            return _.filter(this.active_snapshots(), function(i){ return i.is_public() })
+        },
+
+        get_snapshot_shared_images: function() {
+            return _.filter(this.active_snapshots(), function(i){ 
+                return !_.include(_.keys(snf.config.system_images_owners), 
+                                  i.get_owner()) && 
+                               i.get_owner_uuid() != snf.user.get_username() &&
+                               !i.is_public();
+            });
         },
 
     })

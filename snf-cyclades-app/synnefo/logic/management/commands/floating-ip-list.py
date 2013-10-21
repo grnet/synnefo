@@ -45,13 +45,20 @@ class Command(ListCommand):
     user_uuid_field = "userid"
     astakos_url = ASTAKOS_BASE_URL
     astakos_token = CYCLADES_SERVICE_TOKEN
+    filters = {'floating_ip' : True}
+
+    def get_machine(ip):
+        try:
+            machine = ip.nic.machine
+        except AttributeError:
+            return None
 
     FIELDS = {
         "id": ("id", "Floating IP UUID"),
         "user.uuid": ("userid", "The UUID of the server's owner"),
-        "address": ("ipv4", "IPv4 Address"),
+        "address": ("address", "IP Address"),
         "pool": ("network", "Floating IP Pool (network)"),
-        "machine": ("machine", "VM using this Floating IP"),
+        "machine": (get_machine, "VM using this Floating IP"),
         "created": ("created", "Datetime this IP was reserved"),
         "deleted": ("deleted", "If the floating IP is deleted"),
     }

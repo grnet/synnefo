@@ -61,10 +61,15 @@ class Command(BaseCommand):
             default=None,
             help='The network to attach the port to'),
         make_option(
-            '--device',
-            dest='device_id',
+            '--server',
+            dest='server_id',
             default=None,
-            help='The VM id the port will be connected to'),
+            help='The server id the port will be connected to'),
+        make_option(
+            '--router',
+            dest='router_id',
+            default=None,
+            help='The router id the port will be connected to'),
         make_option(
             '--security-groups',
             dest='security-groups',
@@ -79,17 +84,26 @@ class Command(BaseCommand):
 
         name = options['name']
         network = options['network']
-        device = options['device_id']
+        server = options['server_id']
+        router = options['router_id']
         #assume giving security groups comma separated
         security_groups = options['security-groups']
 
         if not name:
             name=""
 
+        if (server and router) or not (server or router):
+            raise CommandError('Please give either a server or a router id')
+
         if not network:
             raise CommandError("network is required")
-        if not device:
-            raise CommandError("device is required")
+
+        if server:
+            device = server
+            owner = 'vm'
+        else:
+            device = router
+            owner = 'router'
 
         #get the network
         network = get_network(network)
@@ -105,5 +119,6 @@ class Command(BaseCommand):
                 sg = util.get_security_group(int(gid))
                 sg_list.append(sg)
 
-        new_port = ports.create(network, vm, security_groups=sg_list)
+        new_port = ports.create(network, vm, name, security_groups=sg_list,
+                                device_owner=owner)
         self.stdout.write("Created port '%s' in DB.\n" % new_port)

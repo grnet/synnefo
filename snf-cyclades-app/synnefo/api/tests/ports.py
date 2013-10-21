@@ -69,6 +69,12 @@ class PortTest(BaseAPITest):
         response = self.delete(url, user=nic.network.userid)
         self.assertEqual(response.status_code, 204)
 
+    def test_delete_port_from_nonvm(self):
+        nic = dbmf.NetworkInterfaceFactory.create(device_owner='router')
+        url = join_urls(PORTS_URL, str(nic.id))
+        response = self.delete(url, user=nic.network.userid)
+        self.assertEqual(response.status_code, 400)
+
     def test_remove_nic_malformed(self):
         url = join_urls(PORTS_URL, "123")
         response = self.delete(url)

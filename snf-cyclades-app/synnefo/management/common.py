@@ -32,7 +32,8 @@
 # or implied, of GRNET S.A.
 
 from django.core.management import CommandError
-from synnefo.db.models import Backend, VirtualMachine, Network, Flavor, Subnet
+from synnefo.db.models import (Backend, VirtualMachine, Network,
+                               Flavor, IPAddress)
 from functools import wraps
 
 from snf_django.lib.api import faults
@@ -147,6 +148,16 @@ def get_flavor(flavor_id):
         raise CommandError("Flavor with ID %s not found in DB."
                            " Use snf-manage flavor-list to find out"
                            " available flavor IDs." % flavor_id)
+
+
+def get_floating_ip_by_address(address, for_update=False):
+    try:
+        objects = IPAddress.objects
+        if for_update:
+            objects = objects.select_for_update()
+        return objects.get(floating_ip=True, address=address, deleted=False)
+    except IPAddress.DoesNotExist:
+        raise CommandError("Floating IP does not exist.")
 
 
 def check_backend_credentials(clustername, port, username, password):

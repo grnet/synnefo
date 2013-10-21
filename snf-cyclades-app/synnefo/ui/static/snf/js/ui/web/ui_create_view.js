@@ -1759,6 +1759,15 @@
 
             this.history = this.$(".steps-history");
             this.history_steps = this.$(".steps-history .steps-history-step");
+
+            this.loading_view = $("<div>Loading images...</div>");
+            this.$(".container").after(this.loading_view);
+            this.loading_view.css({
+              backgroundColor: "#97C3D6", 
+              padding: '15px',
+              fontSize: '0.7em',
+              color: '#333'
+            });
             
             this.init_handlers();
         },
@@ -1926,9 +1935,18 @@
                 this.$(".steps-container").css({"margin-left":0 + "px"});
                 this.show_step(1);
             }
-            
+
+            this.loading_view.show();
+            this.$(".container").hide();
+            var complete = _.bind(function() {
+              this.loading_view.hide();
+              this.$(".container").slideDown();
+              this.update_layout();
+            }, this);
+
+            synnefo.storage.images.fetch({complete: complete});
+
             this.skip_reset_on_next_open = false;
-            this.update_layout();
         },
         
         set_step: function(step) {

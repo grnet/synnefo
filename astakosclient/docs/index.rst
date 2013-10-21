@@ -74,10 +74,9 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
 
     This class provides the following methods:
 
-    **get_user_info(**\ usage=False\ **)**
-        It returns a dict with the corresponding user's info. If usage is set
-        to 'True' more information about user's resources will be returned.  In
-        case of error, it raises an AstakosClientException exception.
+    **get_user_info()**
+        It returns a dict with the corresponding user's info. In case of
+        error, it raises an AstakosClientException exception.
 
     **get_usernames(**\ uuids\ **)**
         Given a list of UUIDs it returns a uuid_catalog, that is a dictionary

@@ -38,33 +38,30 @@ from astakosclient.errors import (Unauthorized, NoUUID, NoUserName,
                                   AstakosClientException)
 
 
-def user_for_token(token, astakos_auth_url, usage=False, logger=None):
+def user_for_token(token, astakos_auth_url, logger=None):
     if token is None:
         return None
     client = AstakosClient(token, astakos_auth_url,
                            retry=2, use_pool=True, logger=logger)
     try:
-        return client.get_user_info(usage=True)
+        return client.get_user_info()
     except Unauthorized:
         return None
 
 
-def get_user(request, astakos_auth_url, fallback_token=None,
-             usage=False, logger=None):
+def get_user(request, astakos_auth_url, fallback_token=None, logger=None):
     request.user = None
     request.user_uniq = None
 
     # Try to find token in a parameter or in a request header.
     user = user_for_token(
-        request.GET.get('X-Auth-Token'), astakos_auth_url,
-        usage, logger)
+        request.GET.get('X-Auth-Token'), astakos_auth_url, logger)
     if not user:
         user = user_for_token(
-            request.META.get('HTTP_X_AUTH_TOKEN'), astakos_auth_url,
-            usage, logger)
+            request.META.get('HTTP_X_AUTH_TOKEN'), astakos_auth_url, logger)
     if not user:
         user = user_for_token(
-            fallback_token, astakos_auth_url, usage, logger)
+            fallback_token, astakos_auth_url, logger)
     if not user:
         return None
 

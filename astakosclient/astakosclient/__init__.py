@@ -249,21 +249,14 @@ class AstakosClient(object):
 
     # ------------------------
     # do a GET to ``API_AUTHENTICATE``
-    def get_user_info(self, usage=False):
+    def get_user_info(self):
         """Authenticate user and get user's info as a dictionary
-
-        Keyword arguments:
-        usage   -- return usage information for user (boolean)
 
         In case of success return user information (json parsed format).
         Otherwise raise an AstakosClientException.
 
         """
-        # Send request
-        auth_path = self.api_authenticate
-        if usage:
-            auth_path += "?usage=1"
-        return self._call_astakos(auth_path)
+        return self._call_astakos(self.api_authenticate)
 
     # ----------------------------------
     # do a POST to ``API_USERCATALOGS`` (or ``API_SERVICE_USERCATALOGS``)

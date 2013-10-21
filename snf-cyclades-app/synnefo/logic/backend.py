@@ -43,7 +43,7 @@ from synnefo.logic import utils
 from synnefo import quotas
 from synnefo.api.util import release_resource
 from synnefo.util.mac2eui64 import mac2eui64
-from synnefo.logic.rapi import GanetiApiError, JOB_STATUS_FINALIZED
+from synnefo.logic.rapi import GanetiApiError
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -567,16 +567,8 @@ def create_instance(vm, nics, flavor, image):
 
 
 def delete_instance(vm):
-    depends = []
-    if ((vm.backendopcode == "OP_INSTANCE_CREATE") and
-       (vm.backendjobid is not None) and
-       (vm.backendjobstatus not in JOB_STATUS_FINALIZED) and
-       (job_is_still_running(vm, vm.backendjobid))):
-        depends.append(vm.backendjobid)
-    depends = [[job, ["success", "error", "canceled"]] for job in depends]
     with pooled_rapi_client(vm) as client:
-        return client.DeleteInstance(vm.backend_vm_id, dry_run=settings.TEST,
-                                     depends=depends)
+        return client.DeleteInstance(vm.backend_vm_id, dry_run=settings.TEST)
 
 
 def reboot_instance(vm, reboot_type):
@@ -641,17 +633,6 @@ def get_instance_console(vm):
     console['port'] = i['network_port']
 
     return console
-
-
-def job_is_still_running(vm, job_id):
-    """Check if a Ganeti job still running."""
-    with pooled_rapi_client(vm) as client:
-        job_status = client.GetJobStatus(job_id)
-    if job_status is None:
-        return False
-    if job_status in JOB_STATUS_FINALIZED:
-        return False
-    return True
 
 
 def get_instance_info(vm):

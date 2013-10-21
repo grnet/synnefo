@@ -307,6 +307,17 @@
             this.types = this.$(".type-filter li");
         },
 
+        create_snapshot_types_selection_options: function() {
+            var exclude = [];
+            var list = this.$(".snapshot-types-cont ul.type-filter");
+            _.each(this.type_selections_order, _.bind(function(key) {
+                if (_.includes(exclude, key)) { return }
+                var label = this.type_selections[key].replace("images", "snapshots");
+                list.append('<li id="type-select-snapshot-{0}">{1}</li>'.format(key, label));
+            }, this));
+            this.types = this.$(".type-filter li");
+        },
+
         update_layout: function() {
             if (!this.selected_type) {
                 this.selected_type = _.keys(this.type_selections)[0];

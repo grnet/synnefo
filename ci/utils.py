@@ -856,6 +856,7 @@ class SynnefoCI(object):
         cmd = """
         pip install -U mock
         pip install -U factory_boy
+        pip install -U nose
         """
         _run(cmd, False)
 

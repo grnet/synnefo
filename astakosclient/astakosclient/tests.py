@@ -44,9 +44,12 @@ import re
 import sys
 import socket
 import simplejson
+from mock import patch
+from contextlib import contextmanager
 
 import astakosclient
 from astakosclient import AstakosClient
+from astakosclient.utils import join_urls
 from astakosclient.errors import \
     AstakosClientException, Unauthorized, BadRequest, NotFound, \
     NoUserName, NoUUID, BadValue, QuotaLimit
@@ -62,378 +65,43 @@ except ImportError:
 
 # --------------------------------------------------------------------
 # Helper functions
+auth_url = "https://example.org/identity/v2.0"
+account_prefix = "/account_prefix"
+ui_prefix = "/ui_prefix"
+api_authenticate = join_urls(account_prefix, "authenticate")
+api_usercatalogs = join_urls(account_prefix, "user_catalogs")
+api_resources = join_urls(account_prefix, "resources")
+api_quotas = join_urls(account_prefix, "quotas")
+api_commissions = join_urls(account_prefix, "commissions")
 
-# ----------------------------
-# This functions will be used as mocked requests
-def _request_offline(conn, method, url, **kwargs):
-    """This request behaves as we were offline"""
-    raise socket.gaierror
-
-
-def _request_status_302(conn, method, url, **kwargs):
-    """This request returns 302"""
-    message = "FOUND"
-    status = 302
-    data = '<html>\r\n<head><title>302 Found</title></head>\r\n' \
-        '<body bgcolor="white">\r\n<center><h1>302 Found</h1></center>\r\n' \
-        '<hr><center>nginx/0.7.67</center>\r\n</body>\r\n</html>\r\n'
-    return (message, data, status)
-
-
-def _request_status_404(conn, method, url, **kwargs):
-    """This request returns 404"""
-    message = "Not Found"
-    status = 404
-    data = '<html><head><title>404 Not Found</title></head>' \
-        '<body><h1>Not Found</h1><p>The requested URL /foo was ' \
-        'not found on this server.</p><hr><address>Apache Server ' \
-        'at example.com Port 80</address></body></html>'
-    return (message, data, status)
-
-
-def _request_status_403(conn, method, url, **kwargs):
-    """This request returns 403"""
-    message = "UNAUTHORIZED"
-    status = 403
-    data = "Forbidden"
-    return (message, data, status)
-
-
-def _request_status_401(conn, method, url, **kwargs):
-    """This request returns 401"""
-    message = "UNAUTHORIZED"
-    status = 401
-    data = "Invalid X-Auth-Token\n"
-    return (message, data, status)
-
-
-def _request_status_400(conn, method, url, **kwargs):
-    """This request returns 400"""
-    message = "BAD REQUEST"
-    status = 400
-    data = "Method not allowed.\n"
-    return (message, data, status)
-
-
-def _request_ok(conn, method, url, **kwargs):
-    """This request behaves like original Astakos does"""
-    if re.match('/?' + astakosclient.API_AUTHENTICATE, url) is not None:
-        print "here 1"
-        return _req_authenticate(conn, method, url, **kwargs)
-    elif re.match('/?' + astakosclient.API_USERCATALOGS, url) is not None:
-        print "here 2"
-        return _req_catalogs(conn, method, url, **kwargs)
-    elif re.match('/?' + astakosclient.API_RESOURCES, url) is not None:
-        print "here 3"
-        return _req_resources(conn, method, url, **kwargs)
-    elif re.match('/?' + astakosclient.API_QUOTAS, url) is not None:
-        return _req_quotas(conn, method, url, **kwargs)
-    elif re.match('/?' + astakosclient.API_COMMISSIONS, url) is not None:
-        return _req_commission(conn, method, url, **kwargs)
-    elif re.match('/?' + astakosclient.API_TOKENS, url) is not None:
-        return _req_endpoints(conn, method, url, **kwargs)
-    else:
-        print "here 4"
-        return _request_status_404(conn, method, url, **kwargs)
-
-
-def _req_authenticate(conn, method, url, **kwargs):
-    """Check if user exists and return his profile"""
-    global user_1, user_2, token_1, token_2
-
-    # Check input
-    if conn.__class__.__name__ != "HTTPSConnection":
-        return _request_status_302(conn, method, url, **kwargs)
-    if method != "GET":
-        return _request_status_400(conn, method, url, **kwargs)
-    token = kwargs['headers'].get('X-Auth-Token')
-    if token == token_1:
-        user = dict(user_1)
-    elif token == token_2:
-        user = dict(user_2)
-    else:
-        # No user found
-        return _request_status_401(conn, method, url, **kwargs)
-
-    # Return
-    if "usage=1" not in url:
-        # Strip `usage' key from `user'
-        del user['usage']
-    return ("", simplejson.dumps(user), 200)
-
-
-def _req_catalogs(conn, method, url, **kwargs):
-    """Return user catalogs"""
-    global token_1, token_2, user_1, user_2
-
-    # Check input
-    if conn.__class__.__name__ != "HTTPSConnection":
-        return _request_status_302(conn, method, url, **kwargs)
-    if method != "POST":
-        return _request_status_400(conn, method, url, **kwargs)
-    token = kwargs['headers'].get('X-Auth-Token')
-    if token != token_1 and token != token_2:
-        return _request_status_401(conn, method, url, **kwargs)
-
-    # Return
-    body = simplejson.loads(kwargs['body'])
-    if 'uuids' in body:
-        # Return uuid_catalog
-        uuids = body['uuids']
-        catalogs = {}
-        if user_1['uuid'] in uuids:
-            catalogs[user_1['uuid']] = user_1['username']
-        if user_2['uuid'] in uuids:
-            catalogs[user_2['uuid']] = user_2['username']
-        return_catalog = {"displayname_catalog": {}, "uuid_catalog": catalogs}
-    elif 'displaynames' in body:
-        # Return displayname_catalog
-        names = body['displaynames']
-        catalogs = {}
-        if user_1['username'] in names:
-            catalogs[user_1['username']] = user_1['uuid']
-        if user_2['username'] in names:
-            catalogs[user_2['username']] = user_2['uuid']
-        return_catalog = {"displayname_catalog": catalogs, "uuid_catalog": {}}
-    else:
-        return_catalog = {"displayname_catalog": {}, "uuid_catalog": {}}
-    return ("", simplejson.dumps(return_catalog), 200)
-
-
-def _req_resources(conn, method, url, **kwargs):
-    """Return quota resources"""
-    global resources
-
-    # Check input
-    if conn.__class__.__name__ != "HTTPSConnection":
-        return _request_status_302(conn, method, url, **kwargs)
-    if method != "GET":
-        return _request_status_400(conn, method, url, **kwargs)
-
-    # Return
-    return ("", simplejson.dumps(resources), 200)
-
-
-def _req_quotas(conn, method, url, **kwargs):
-    """Return quotas for user_1"""
-    global token_1, quotas
-
-    # Check input
-    if conn.__class__.__name__ != "HTTPSConnection":
-        return _request_status_302(conn, method, url, **kwargs)
-    if method != "GET":
-        return _request_status_400(conn, method, url, **kwargs)
-    token = kwargs['headers'].get('X-Auth-Token')
-    if token != token_1:
-        return _request_status_401(conn, method, url, **kwargs)
-
-    # Return
-    return ("", simplejson.dumps(quotas), 200)
-
-
-def _req_commission(conn, method, url, **kwargs):
-    """Perform a commission for user_1"""
-    global token_1, pending_commissions, \
-        commission_successful_response, commission_failure_response
-
-    # Check input
-    if conn.__class__.__name__ != "HTTPSConnection":
-        return _request_status_302(conn, method, url, **kwargs)
-    token = kwargs['headers'].get('X-Auth-Token')
-    if token != token_1:
-        return _request_status_401(conn, method, url, **kwargs)
-
-    if method == "POST":
-        if 'body' not in kwargs:
-            return _request_status_400(conn, method, url, **kwargs)
-        body = simplejson.loads(unicode(kwargs['body']))
-        if re.match('/?'+astakosclient.API_COMMISSIONS+'$', url) is not None:
-            # Issue Commission
-            # Check if we have enough resources to give
-            if body['provisions'][1]['quantity'] > 420000000:
-                return ("", simplejson.dumps(commission_failure_response), 413)
-            else:
-                return \
-                    ("", simplejson.dumps(commission_successful_response), 200)
-        else:
-            # Issue commission action
-            serial = url.split('/')[4]
-            if serial == "action":
-                # Resolve multiple actions
-                if body == resolve_commissions_req:
-                    return ("", simplejson.dumps(resolve_commissions_rep), 200)
-                else:
-                    return _request_status_400(conn, method, url, **kwargs)
-            else:
-                # Issue action for one commission
-                if serial != str(57):
-                    return _request_status_404(conn, method, url, **kwargs)
-                if len(body) != 1:
-                    return _request_status_400(conn, method, url, **kwargs)
-                if "accept" not in body.keys() and "reject" not in body.keys():
-                    return _request_status_400(conn, method, url, **kwargs)
-                return ("", "", 200)
-
-    elif method == "GET":
-        if re.match('/?'+astakosclient.API_COMMISSIONS+'$', url) is not None:
-            # Return pending commission
-            return ("", simplejson.dumps(pending_commissions), 200)
-        else:
-            # Return commissions's description
-            serial = re.sub('/?' + astakosclient.API_COMMISSIONS, '', url)[1:]
-            if serial == str(57):
-                return ("", simplejson.dumps(commission_description), 200)
-            else:
-                return _request_status_404(conn, method, url, **kwargs)
-    else:
-        return _request_status_400(conn, method, url, **kwargs)
-
-
-def _req_endpoints(conn, method, url, **kwargs):
-    """Request endpoints"""
-    global token_1, endpoints
-
-    # Check input
-    if conn.__class__.__name__ != "HTTPSConnection":
-        return _request_status_302(conn, method, url, **kwargs)
-    if method != "POST":
-        return _request_status_400(conn, method, url, **kwargs)
-
-    token_head = kwargs['headers'].get('X-Auth-Token')
-    if method != "POST":
-        return _request_status_400(conn, method, url, **kwargs)
-    body = simplejson.loads(kwargs['body'])
-    token_body = body['auth']['token']['id']
-    if token_head != token_body:
-        return _request_status_403(conn, method, url, **kwargs)
-    if token_body != token_1:
-        return _request_status_401(conn, method, url, **kwargs)
-    # Return
-    return ("", simplejson.dumps(user_info_endpoints), 200)
-
-
-# ----------------------------
-# Mock the actual _doRequest
-def _mock_request(new_requests):
-    """Mock the actual request
-
-    Given a list of requests to use (in rotation),
-    replace the original _doRequest function with
-    a new one
-
-    """
-    def _mock(conn, method, url, **kwargs):
-        # Get first request
-        request = _mock.requests[0]
-        # Rotate requests
-        _mock.requests = _mock.requests[1:] + _mock.requests[:1]
-        # Use first request
-        return request(conn, method, url, **kwargs)
-
-    _mock.requests = new_requests
-    # Replace `_doRequest' with our `_mock'
-    astakosclient._do_request = _mock
-
-
-# ----------------------------
+# --------------------------------------
 # Local users
 token_1 = "skzleaFlBl+fasFdaf24sx"
 user_1 = \
     {"username": "user1@example.com",
-     "auth_token_created": 1359386939000,
      "name": "Example User One",
      "email": ["user1@example.com"],
-     "auth_token_expires": 1361978939000,
-     "id": 108,
-     "uuid": "73917abc-abcd-477e-a1f1-1763abcdefab",
-     "usage": [
-         {"currValue": 42949672960,
-          "display_name": "System Disk",
-          "name": "cyclades.disk"},
-         {"currValue": 4,
-          "display_name": "CPU",
-          "name": "cyclades.cpu"},
-         {"currValue": 4294967296,
-          "display_name": "RAM",
-          "name": "cyclades.ram"},
-         {"currValue": 3,
-          "display_name": "VM",
-          "name": "cyclades.vm"},
-         {"currValue": 0,
-          "display_name": "private network",
-          "name": "cyclades.network.private"},
-         {"currValue": 152,
-          "display_name": "Storage Space",
-          "name": "pithos+.diskspace"}]}
-
-token_2 = "fasdfDSFdf98923DF+sdfk"
-user_2 = \
-    {"username": "user2@example.com",
-     "auth_token_created": 1358386938997,
-     "name": "Example User Two",
-     "email": ["user1@example.com"],
-     "auth_token_expires": 1461998939000,
-     "id": 109,
-     "uuid": "73917bca-1234-5678-a1f1-1763abcdefab",
-     "usage": [
-         {"currValue": 68719476736,
-          "display_name": "System Disk",
-          "name": "cyclades.disk"},
-         {"currValue": 1,
-          "display_name": "CPU",
-          "name": "cyclades.cpu"},
-         {"currValue": 1073741824,
-          "display_name": "RAM",
-          "name": "cyclades.ram"},
-         {"currValue": 2,
-          "display_name": "VM",
-          "name": "cyclades.vm"},
-         {"currValue": 1,
-          "display_name": "private network",
-          "name": "cyclades.network.private"},
-         {"currValue": 2341634510,
-          "display_name": "Storage Space",
-          "name": "pithos+.diskspace"}]}
+     "uuid": "73917abc-abcd-477e-a1f1-1763abcdefab"}
 
 resources = {
-    "cyclades.vm": {
-        "unit": None,
-        "description": "Number of virtual machines",
-        "service": "cyclades"},
     "cyclades.ram": {
         "unit": "bytes",
         "description": "Virtual machine memory",
         "service": "cyclades"}}
 
-user_info_endpoints = \
-    {'serviceCatalog': [
-        {'endpoints': [{
-            'SNF:uiURL': 'https://node1.example.com/ui/',
-            'adminURL': 'https://node1.example.com/v1',
-            'internalUrl': 'https://node1.example.com/v1',
-            'publicURL': 'https://node1.example.com/v1',
-            'region': 'cyclades'}],
-         'name': 'cyclades',
-         'type': 'compute'},
-        {'endpoints': [{
-            'SNF:uiURL': 'https://node2.example.com/ui/',
-            'adminURL': 'https://node2.example.com/v1',
-            'internalUrl': 'https://node2.example.com/v1',
-            'publicURL': 'https://node2.example.com/v1',
-            'region': 'pithos'}],
-         'name': 'pithos',
-         'type': 'storage'}],
-     'token': {
-         'expires': '2013-06-19T15:23:59.975572+00:00',
-         'id': token_1,
-         'tenant': {
-             'id': user_1,
-             'name': 'Firstname Lastname'}},
-     'user': {
-         'id': user_1,
-         'name': 'Firstname Lastname',
-         'roles': [{'id': 1, 'name': 'default'}],
-         'roles_links': []}}
+endpoints = {
+    "access": {
+        "serviceCatalog": [{
+            "endpoints": [{"SNF:uiURL": join_urls("https://example.org/",
+                                                  ui_prefix),
+                           "publicURL": join_urls("https://example.org/",
+                                                  account_prefix),
+                           "region": "default",
+                           "versionId": "v1.0"}],
+            "name": "astakos_account",
+            "type": "account"}]
+        }
+    }
 
 quotas = {
     "system": {
@@ -527,6 +195,243 @@ resolve_commissions_rep = {
                 "code": 404}}]]}
 
 
+# ----------------------------
+# These functions will be used as mocked requests
+def _request_offline(conn, method, url, **kwargs):
+    """This request behaves as we were offline"""
+    raise socket.gaierror
+
+
+def _request_status_302(conn, method, url, **kwargs):
+    """This request returns 302"""
+    message = "FOUND"
+    status = 302
+    data = "302 Found"
+    return (message, data, status)
+
+
+def _request_status_404(conn, method, url, **kwargs):
+    """This request returns 404"""
+    message = "Not Found"
+    status = 404
+    data = "404 Not Found"
+    return (message, data, status)
+
+
+def _request_status_403(conn, method, url, **kwargs):
+    """This request returns 403"""
+    message = "UNAUTHORIZED"
+    status = 403
+    data = "Forbidden"
+    return (message, data, status)
+
+
+def _request_status_401(conn, method, url, **kwargs):
+    """This request returns 401"""
+    message = "UNAUTHORIZED"
+    status = 401
+    data = "Invalid X-Auth-Token\n"
+    return (message, data, status)
+
+
+def _request_status_400(conn, method, url, **kwargs):
+    """This request returns 400"""
+    message = "BAD REQUEST"
+    status = 400
+    data = "Method not allowed.\n"
+    return (message, data, status)
+
+
+def _request_ok(conn, method, url, **kwargs):
+    """This request behaves like original Astakos does"""
+    if api_authenticate == url:
+        return _req_authenticate(conn, method, url, **kwargs)
+    elif api_usercatalogs == url:
+        return _req_catalogs(conn, method, url, **kwargs)
+    elif api_resources == url:
+        return _req_resources(conn, method, url, **kwargs)
+    elif api_quotas == url:
+        return _req_quotas(conn, method, url, **kwargs)
+    elif url.startswith(api_commissions):
+        return _req_commission(conn, method, url, **kwargs)
+    else:
+        return _request_status_404(conn, method, url, **kwargs)
+
+
+def _req_authenticate(conn, method, url, **kwargs):
+    """Check if user exists and return his profile"""
+    global user_1, token_1
+
+    # Check input
+    if conn.__class__.__name__ != "HTTPSConnection":
+        return _request_status_302(conn, method, url, **kwargs)
+    if method != "GET":
+        return _request_status_400(conn, method, url, **kwargs)
+    token = kwargs['headers'].get('X-Auth-Token')
+    if token == token_1:
+        user = dict(user_1)
+        return ("", simplejson.dumps(user), 200)
+    else:
+        # No user found
+        return _request_status_401(conn, method, url, **kwargs)
+
+
+def _req_catalogs(conn, method, url, **kwargs):
+    """Return user catalogs"""
+    global token_1, token_2, user_1, user_2
+
+    # Check input
+    if conn.__class__.__name__ != "HTTPSConnection":
+        return _request_status_302(conn, method, url, **kwargs)
+    if method != "POST":
+        return _request_status_400(conn, method, url, **kwargs)
+    token = kwargs['headers'].get('X-Auth-Token')
+    if token != token_1:
+        return _request_status_401(conn, method, url, **kwargs)
+
+    # Return
+    body = simplejson.loads(kwargs['body'])
+    if 'uuids' in body:
+        # Return uuid_catalog
+        uuids = body['uuids']
+        catalogs = {}
+        if user_1['uuid'] in uuids:
+            catalogs[user_1['uuid']] = user_1['username']
+        return_catalog = {"displayname_catalog": {}, "uuid_catalog": catalogs}
+    elif 'displaynames' in body:
+        # Return displayname_catalog
+        names = body['displaynames']
+        catalogs = {}
+        if user_1['username'] in names:
+            catalogs[user_1['username']] = user_1['uuid']
+        return_catalog = {"displayname_catalog": catalogs, "uuid_catalog": {}}
+    else:
+        return_catalog = {"displayname_catalog": {}, "uuid_catalog": {}}
+    return ("", simplejson.dumps(return_catalog), 200)
+
+
+def _req_resources(conn, method, url, **kwargs):
+    """Return quota resources"""
+    global resources
+
+    # Check input
+    if conn.__class__.__name__ != "HTTPSConnection":
+        return _request_status_302(conn, method, url, **kwargs)
+    if method != "GET":
+        return _request_status_400(conn, method, url, **kwargs)
+
+    # Return
+    return ("", simplejson.dumps(resources), 200)
+
+
+def _req_quotas(conn, method, url, **kwargs):
+    """Return quotas for user_1"""
+    global token_1, quotas
+
+    # Check input
+    if conn.__class__.__name__ != "HTTPSConnection":
+        return _request_status_302(conn, method, url, **kwargs)
+    if method != "GET":
+        return _request_status_400(conn, method, url, **kwargs)
+    token = kwargs['headers'].get('X-Auth-Token')
+    if token != token_1:
+        return _request_status_401(conn, method, url, **kwargs)
+
+    # Return
+    return ("", simplejson.dumps(quotas), 200)
+
+
+def _req_commission(conn, method, url, **kwargs):
+    """Perform a commission for user_1"""
+    global token_1, pending_commissions, \
+        commission_successful_response, commission_failure_response
+
+    # Check input
+    if conn.__class__.__name__ != "HTTPSConnection":
+        return _request_status_302(conn, method, url, **kwargs)
+    token = kwargs['headers'].get('X-Auth-Token')
+    if token != token_1:
+        return _request_status_401(conn, method, url, **kwargs)
+
+    if method == "POST":
+        if 'body' not in kwargs:
+            return _request_status_400(conn, method, url, **kwargs)
+        body = simplejson.loads(unicode(kwargs['body']))
+        if re.match('/?'+api_commissions+'$', url) is not None:
+            # Issue Commission
+            # Check if we have enough resources to give
+            if body['provisions'][1]['quantity'] > 420000000:
+                return ("", simplejson.dumps(commission_failure_response), 413)
+            else:
+                return \
+                    ("", simplejson.dumps(commission_successful_response), 200)
+        else:
+            # Issue commission action
+            serial = url.split('/')[3]
+            if serial == "action":
+                # Resolve multiple actions
+                if body == resolve_commissions_req:
+                    return ("", simplejson.dumps(resolve_commissions_rep), 200)
+                else:
+                    return _request_status_400(conn, method, url, **kwargs)
+            else:
+                # Issue action for one commission
+                if serial != str(57):
+                    return _request_status_404(conn, method, url, **kwargs)
+                if len(body) != 1:
+                    return _request_status_400(conn, method, url, **kwargs)
+                if "accept" not in body.keys() and "reject" not in body.keys():
+                    return _request_status_400(conn, method, url, **kwargs)
+                return ("", "", 200)
+
+    elif method == "GET":
+        if re.match('/?'+api_commissions+'$', url) is not None:
+            # Return pending commission
+            return ("", simplejson.dumps(pending_commissions), 200)
+        else:
+            # Return commissions's description
+            serial = re.sub('/?' + api_commissions, '', url)[1:]
+            if serial == str(57):
+                return ("", simplejson.dumps(commission_description), 200)
+            else:
+                return _request_status_404(conn, method, url, **kwargs)
+    else:
+        return _request_status_400(conn, method, url, **kwargs)
+
+
+# ----------------------------
+# Mock the actual _doRequest
+def _mock_request(new_requests):
+    """Mock the actual request
+
+    Given a list of requests to use (in rotation),
+    replace the original _doRequest function with
+    a new one
+
+    """
+    def _mock(conn, method, url, **kwargs):
+        # Get first request
+        request = _mock.requests[0]
+        # Rotate requests
+        _mock.requests = _mock.requests[1:] + _mock.requests[:1]
+        # Use first request
+        return request(conn, method, url, **kwargs)
+
+    _mock.requests = new_requests
+    # Replace `_doRequest' with our `_mock'
+    astakosclient._do_request = _mock
+
+
+# --------------------------------------
+# Mock the get_endpoints method
+@contextmanager
+def patch_astakosclient(new_requests):
+    _mock_request(new_requests)
+    with patch('astakosclient.AstakosClient.get_endpoints') as patcher:
+        patcher.return_value = endpoints
+        yield
+
+
 # --------------------------------------------------------------------
 # The actual tests
 
@@ -536,11 +441,11 @@ class TestCallAstakos(unittest.TestCase):
     # ----------------------------------
     # Test the response we get if we don't have internet access
     def _offline(self, pool):
-        global token_1
+        global token_1, auth_url
         _mock_request([_request_offline])
         try:
-            client = AstakosClient("https://example.com", use_pool=pool)
-            client._call_astakos(token_1, astakosclient.API_AUTHENTICATE)
+            client = AstakosClient(token_1, auth_url, use_pool=pool)
+            client._call_astakos("offline")
         except AstakosClientException:
             pass
         else:
@@ -557,11 +462,12 @@ class TestCallAstakos(unittest.TestCase):
     # ----------------------------------
     # Test the response we get if we send invalid token
     def _invalid_token(self, pool):
+        global auth_url
         token = "skaksaFlBl+fasFdaf24sx"
-        _mock_request([_request_ok])
         try:
-            client = AstakosClient("https://example.com", use_pool=pool)
-            client._call_astakos(token, astakosclient.API_AUTHENTICATE)
+            with patch_astakosclient([_request_ok]):
+                client = AstakosClient(token, auth_url, use_pool=pool)
+                client.get_user_info()
         except Unauthorized:
             pass
         except Exception:
@@ -580,15 +486,15 @@ class TestCallAstakos(unittest.TestCase):
     # ----------------------------------
     # Test the response we get if we send invalid url
     def _invalid_url(self, pool):
-        global token_1
-        _mock_request([_request_ok])
+        global token_1, auth_url
         try:
-            client = AstakosClient("https://example.com", use_pool=pool)
-            client._call_astakos(token_1, "/astakos/api/misspelled")
+            with patch_astakosclient([_request_ok]):
+                client = AstakosClient(token_1, auth_url, use_pool=pool)
+                client._call_astakos("/astakos/api/misspelled")
         except NotFound:
             pass
-        except Exception:
-            self.fail("Should have returned 404 (Not Found)")
+        except Exception, e:
+            self.fail("Got \"%s\" instead of 404" % e)
         else:
             self.fail("Should have returned 404 (Not Found)")
 
@@ -603,11 +509,12 @@ class TestCallAstakos(unittest.TestCase):
     # ----------------------------------
     # Test the response we get if we use an unsupported scheme
     def _unsupported_scheme(self, pool):
-        global token_1
-        _mock_request([_request_ok])
+        global token_1, auth_url
         try:
-            client = AstakosClient("ftp://example.com", use_pool=pool)
-            client._call_astakos(token_1, astakosclient.API_AUTHENTICATE)
+            with patch_astakosclient([_request_ok]):
+                client = AstakosClient(token_1, "ftp://example.com",
+                                       use_pool=pool)
+                client.get_user_info()
         except BadValue:
             pass
         except Exception:
@@ -627,10 +534,11 @@ class TestCallAstakos(unittest.TestCase):
     # Test the response we get if we use http instead of https
     def _http_scheme(self, pool):
         global token_1
-        _mock_request([_request_ok])
+        http_auth_url = "http://example.org/identity/v2.0"
         try:
-            client = AstakosClient("http://example.com", use_pool=pool)
-            client._call_astakos(token_1, astakosclient.API_AUTHENTICATE)
+            with patch_astakosclient([_request_ok]):
+                client = AstakosClient(token_1, http_auth_url, use_pool=pool)
+                client.get_user_info()
         except AstakosClientException as err:
             if err.status != 302:
                 self.fail("Should have returned 302 (Found)")
@@ -648,12 +556,11 @@ class TestCallAstakos(unittest.TestCase):
     # ----------------------------------
     # Test the response we get if we use authenticate with POST
     def _post_authenticate(self, pool):
-        global token_1
-        _mock_request([_request_ok])
+        global token_1, auth_url
         try:
-            client = AstakosClient("https://example.com", use_pool=pool)
-            client._call_astakos(
-                token_1, astakosclient.API_AUTHENTICATE, method="POST")
+            with patch_astakosclient([_request_ok]):
+                client = AstakosClient(token_1, auth_url, use_pool=pool)
+                client._call_astakos(api_authenticate, method="POST")
         except BadRequest:
             pass
         except Exception:
@@ -672,11 +579,11 @@ class TestCallAstakos(unittest.TestCase):
     # ----------------------------------
     # Test the response if we request user_catalogs with GET
     def _get_user_catalogs(self, pool):
-        global token_1
-        _mock_request([_request_ok])
+        global token_1, auth_url, api_usercatalogs
         try:
-            client = AstakosClient("https://example.com", use_pool=pool)
-            client._call_astakos(token_1, astakosclient.API_USERCATALOGS)
+            with patch_astakosclient([_request_ok]):
+                client = AstakosClient(token_1, auth_url, use_pool=pool)
+                client._call_astakos(api_usercatalogs)
         except BadRequest:
             pass
         except Exception:
@@ -700,11 +607,11 @@ class TestAuthenticate(unittest.TestCase):
     # Test the response we get if we don't have internet access
     def test_offline(self):
         """Test offline after 3 retries"""
-        global token_1
-        _mock_request([_request_offline])
+        global token_1, auth_url
         try:
-            client = AstakosClient("https://example.com", retry=3)
-            client.get_user_info(token_1)
+            with patch_astakosclient([_request_offline]):
+                client = AstakosClient(token_1, auth_url, retry=3)
+                client.get_user_info()
         except AstakosClientException:
             pass
         else:
@@ -713,11 +620,12 @@ class TestAuthenticate(unittest.TestCase):
     # ----------------------------------
     # Test the response we get for invalid token
     def _invalid_token(self, pool):
+        global auth_url
         token = "skaksaFlBl+fasFdaf24sx"
-        _mock_request([_request_ok])
         try:
-            client = AstakosClient("https://example.com", use_pool=pool)
-            client.get_user_info(token)
+            with patch_astakosclient([_request_ok]):
+                client = AstakosClient(token, auth_url, use_pool=pool)
+                client.get_user_info()
         except Unauthorized:
             pass
         except Exception:
@@ -734,61 +642,41 @@ class TestAuthenticate(unittest.TestCase):
         self._invalid_token(True)
 
     #- ---------------------------------
-    # Test response for user 1
-    def _auth_user(self, token, user_info, usage, pool):
-        _mock_request([_request_ok])
+    # Test response for user
+    def _auth_user(self, token, user_info, pool):
+        global auth_url
         try:
-            client = AstakosClient("https://example.com", use_pool=pool)
-            auth_info = client.get_user_info(token, usage=usage)
+            with patch_astakosclient([_request_ok]):
+                client = AstakosClient(token, auth_url, use_pool=pool)
+                auth_info = client.get_user_info()
         except:
             self.fail("Shouldn't raise an Exception")
         self.assertEqual(user_info, auth_info)
 
-    def test_auth_user_one(self):
-        """Test _auth_user for User 1 without pool, without usage"""
+    def test_auth_user(self):
+        """Test _auth_user without pool"""
         global token_1, user_1
         user_info = dict(user_1)
-        del user_info['usage']
-        self._auth_user(token_1, user_info, False, False)
+        self._auth_user(token_1, user_info, False)
 
-    def test_auth_user_one_usage(self):
-        """Test _auth_user for User 1 without pool, with usage"""
-        global token_1, user_1
-        self._auth_user(token_1, user_1, True, False)
-
-    def test_auth_user_one_usage_pool(self):
+    def test_auth_user_pool(self):
         """Test _auth_user for User 1 using pool, with usage"""
         global token_1, user_1
-        self._auth_user(token_1, user_1, True, True)
-
-    def test_auth_user_two(self):
-        """Test _auth_user for User 2 without pool, without usage"""
-        global token_2, user_2
-        user_info = dict(user_2)
-        del user_info['usage']
-        self._auth_user(token_2, user_info, False, False)
-
-    def test_auth_user_two_usage(self):
-        """Test _auth_user for User 2 without pool, with usage"""
-        global token_2, user_2
-        self._auth_user(token_2, user_2, True, False)
-
-    def test_auth_user_two_usage_pool(self):
-        """Test _auth_user for User 2 using pool, with usage"""
-        global token_2, user_2
-        self._auth_user(token_2, user_2, True, True)
+        self._auth_user(token_1, user_1, True)
 
     # ----------------------------------
     # Test retry functionality
     def test_offline_retry(self):
         """Test retry functionality for getUserInfo"""
-        global token_1, user_1
+        global token_1, user_1, auth_url
         _mock_request([_request_offline, _request_offline, _request_ok])
         try:
-            client = AstakosClient("https://example.com", retry=2)
-            auth_info = client.get_user_info(token_1, usage=True)
-        except:
-            self.fail("Shouldn't raise an Exception")
+            with patch_astakosclient([_request_offline, _request_offline,
+                                      _request_ok]):
+                client = AstakosClient(token_1, auth_url, retry=2)
+                auth_info = client.get_user_info()
+        except Exception, e:
+            self.fail("Shouldn't raise an Exception \"%s\"" % e)
         self.assertEqual(user_1, auth_info)
 
 
@@ -799,12 +687,12 @@ class TestDisplayNames(unittest.TestCase):
     # Test the response we get for invalid token
     def test_invalid_token(self):
         """Test the response we get for invalid token (without pool)"""
-        global user_1
+        global user_1, auth_url
         token = "skaksaFlBl+fasFdaf24sx"
-        _mock_request([_request_ok])
         try:
-            client = AstakosClient("https://example.com")
-            client.get_usernames(token, [user_1['uuid']])
+            with patch_astakosclient([_request_ok]):
+                client = AstakosClient(token, auth_url)
+                client.get_usernames([user_1['uuid']])
         except Unauthorized:
             pass
         except Exception:
@@ -813,30 +701,15 @@ class TestDisplayNames(unittest.TestCase):
             self.fail("Should have returned 401 (Invalid X-Auth-Token)")
 
     # ----------------------------------
-    # Get Info for both users
-    def test_usernames(self):
-        """Test get_usernames with both users"""
-        global token_1, user_1, user_2
-        _mock_request([_request_ok])
-        try:
-            client = AstakosClient("https://example.com")
-            catalog = client.get_usernames(
-                token_1, [user_1['uuid'], user_2['uuid']])
-        except:
-            self.fail("Shouldn't raise an Exception")
-        self.assertEqual(catalog[user_1['uuid']], user_1['username'])
-        self.assertEqual(catalog[user_2['uuid']], user_2['username'])
-
-    # ----------------------------------
     # Get info for user 1
     def test_username_user_one(self):
         """Test get_username for User One"""
-        global token_2, user_1
-        _mock_request([_request_offline, _request_ok])
+        global token_1, user_1, auth_url
         try:
-            client = AstakosClient(
-                "https://example.com", use_pool=True, retry=2)
-            info = client.get_username(token_2, user_1['uuid'])
+            with patch_astakosclient([_request_offline, _request_ok]):
+                client = AstakosClient(token_1, auth_url,
+                                       use_pool=True, retry=2)
+                info = client.get_username(user_1['uuid'])
         except:
             self.fail("Shouldn't raise an Exception")
         self.assertEqual(info, user_1['username'])
@@ -844,11 +717,11 @@ class TestDisplayNames(unittest.TestCase):
     # ----------------------------------
     # Get info with wrong uuid
     def test_no_username(self):
-        global token_1
-        _mock_request([_request_ok])
+        global token_1, auth_url
         try:
-            client = AstakosClient("https://example.com")
-            client.get_username(token_1, "1234")
+            with patch_astakosclient([_request_ok]):
+                client = AstakosClient(token_1, auth_url)
+                client.get_username("1234")
         except NoUserName:
             pass
         except:
@@ -864,12 +737,12 @@ class TestGetUUIDs(unittest.TestCase):
     # Test the response we get for invalid token
     def test_invalid_token(self):
         """Test the response we get for invalid token (using pool)"""
-        global user_1
+        global user_1, auth_url
         token = "skaksaFlBl+fasFdaf24sx"
-        _mock_request([_request_ok])
         try:
-            client = AstakosClient("https://example.com")
-            client.get_uuids(token, [user_1['username']])
+            with patch_astakosclient([_request_ok]):
+                client = AstakosClient(token, auth_url)
+                client.get_uuids([user_1['username']])
         except Unauthorized:
             pass
         except Exception:
@@ -878,41 +751,26 @@ class TestGetUUIDs(unittest.TestCase):
             self.fail("Should have returned 401 (Invalid X-Auth-Token)")
 
     # ----------------------------------
-    # Get info for both users
-    def test_uuids(self):
-        """Test get_uuids with both users"""
-        global token_1, user_1, user_2
-        _mock_request([_request_ok])
+    # Get uuid for user 1
+    def test_get_uuid_user_two(self):
+        """Test get_uuid for User Two"""
+        global token_1, user_1, auth_url
         try:
-            client = AstakosClient("https://example.com")
-            catalog = client.get_uuids(
-                token_1, [user_1['username'], user_2['username']])
+            with patch_astakosclient([_request_ok]):
+                client = AstakosClient(token_1, auth_url, retry=1)
+                catalog = client.get_uuids([user_1['username']])
         except:
             self.fail("Shouldn't raise an Exception")
         self.assertEqual(catalog[user_1['username']], user_1['uuid'])
-        self.assertEqual(catalog[user_2['username']], user_2['uuid'])
-
-    # ----------------------------------
-    # Get uuid for user 2
-    def test_get_uuid_user_two(self):
-        """Test get_uuid for User Two"""
-        global token_1, user_2
-        _mock_request([_request_offline, _request_ok])
-        try:
-            client = AstakosClient("https://example.com", retry=1)
-            info = client.get_uuid(token_2, user_1['username'])
-        except:
-            self.fail("Shouldn't raise an Exception")
-        self.assertEqual(info, user_1['uuid'])
 
     # ----------------------------------
     # Get uuid with wrong username
     def test_no_uuid(self):
-        global token_1
-        _mock_request([_request_ok])
+        global token_1, auth_url
         try:
-            client = AstakosClient("https://example.com")
-            client.get_uuid(token_1, "1234")
+            with patch_astakosclient([_request_ok]):
+                client = AstakosClient(token_1, auth_url)
+                client.get_uuid("1234")
         except NoUUID:
             pass
         except:
@@ -927,11 +785,11 @@ class TestResources(unittest.TestCase):
     # ----------------------------------
     def test_get_resources(self):
         """Test function call of get_resources"""
-        global resources
-        _mock_request([_request_offline, _request_ok])
+        global resources, auth_url, token_1
         try:
-            client = AstakosClient("https://example.com", retry=1)
-            result = client.get_resources()
+            with patch_astakosclient([_request_offline, _request_ok]):
+                client = AstakosClient(token_1, auth_url, retry=1)
+                result = client.get_resources()
         except Exception as err:
             self.fail("Shouldn't raise Exception %s" % err)
         self.assertEqual(resources, result)
@@ -943,11 +801,11 @@ class TestQuotas(unittest.TestCase):
     # ----------------------------------
     def test_get_quotas(self):
         """Test function call of get_quotas"""
-        global quotas, token_1
-        _mock_request([_request_ok])
+        global quotas, token_1, auth_url
         try:
-            client = AstakosClient("https://example.com")
-            result = client.get_quotas(token_1)
+            with patch_astakosclient([_request_ok]):
+                client = AstakosClient(token_1, auth_url)
+                result = client.get_quotas()
         except Exception as err:
             self.fail("Shouldn't raise Exception %s" % err)
         self.assertEqual(quotas, result)
@@ -955,25 +813,12 @@ class TestQuotas(unittest.TestCase):
     # -----------------------------------
     def test_get_quotas_unauthorized(self):
         """Test function call of get_quotas with wrong token"""
-        global token_2
-        _mock_request([_request_ok])
+        global auth_url
+        token = "buahfhsda"
         try:
-            client = AstakosClient("https://example.com")
-            client.get_quotas(token_2)
-        except Unauthorized:
-            pass
-        except Exception as err:
-            self.fail("Shouldn't raise Exception %s" % err)
-        else:
-            self.fail("Should have raised Unauthorized Exception")
-
-    # ----------------------------------
-    def test_get_quotas_without_token(self):
-        """Test function call of get_quotas without token"""
-        _mock_request([_request_ok])
-        try:
-            client = AstakosClient("https://example.com")
-            client.get_quotas(None)
+            with patch_astakosclient([_request_ok]):
+                client = AstakosClient(token, auth_url)
+                client.get_quotas()
         except Unauthorized:
             pass
         except Exception as err:
@@ -989,10 +834,11 @@ class TestCommissions(unittest.TestCase):
     def test_issue_commission(self):
         """Test function call of issue_commission"""
         global token_1, commission_request, commission_successful_reqsponse
-        _mock_request([_request_ok])
+        global auth_url
         try:
-            client = AstakosClient("https://example.com")
-            response = client.issue_commission(token_1, commission_request)
+            with patch_astakosclient([_request_ok]):
+                client = AstakosClient(token_1, auth_url)
+                response = client.issue_commission(commission_request)
         except Exception as err:
             self.fail("Shouldn't raise Exception %s" % err)
         self.assertEqual(response, commission_successful_response['serial'])
@@ -1001,12 +847,13 @@ class TestCommissions(unittest.TestCase):
     def test_issue_commission_quota_limit(self):
         """Test function call of issue_commission with limit exceeded"""
         global token_1, commission_request, commission_failure_response
-        _mock_request([_request_ok])
+        global auth_url
         new_request = dict(commission_request)
         new_request['provisions'][1]['quantity'] = 520000000
         try:
-            client = AstakosClient("https://example.com")
-            client.issue_commission(token_1, new_request)
+            with patch_astakosclient([_request_ok]):
+                client = AstakosClient(token_1, auth_url)
+                client.issue_commission(new_request)
         except QuotaLimit:
             pass
         except Exception as err:
@@ -1017,13 +864,13 @@ class TestCommissions(unittest.TestCase):
     # ----------------------------------
     def test_issue_one_commission(self):
         """Test function call of issue_one_commission"""
-        global token_1, commission_successful_response
-        _mock_request([_request_ok])
+        global token_1, commission_successful_response, auth_url
         try:
-            client = AstakosClient("https://example.com")
-            response = client.issue_one_commission(
-                token_1, "c02f315b-7d84-45bc-a383-552a3f97d2ad",
-                "system", {"cyclades.vm": 1, "cyclades.ram": 30000})
+            with patch_astakosclient([_request_ok]):
+                client = AstakosClient(token_1, auth_url)
+                response = client.issue_one_commission(
+                    "c02f315b-7d84-45bc-a383-552a3f97d2ad",
+                    "system", {"cyclades.vm": 1, "cyclades.ram": 30000})
         except Exception as err:
             self.fail("Shouldn't have raised Exception %s" % err)
         self.assertEqual(response, commission_successful_response['serial'])
@@ -1031,11 +878,11 @@ class TestCommissions(unittest.TestCase):
     # ----------------------------------
     def test_get_pending_commissions(self):
         """Test function call of get_pending_commissions"""
-        global token_1, pending_commissions
-        _mock_request([_request_ok])
+        global token_1, pending_commissions, auth_url
         try:
-            client = AstakosClient("https://example.com")
-            response = client.get_pending_commissions(token_1)
+            with patch_astakosclient([_request_ok]):
+                client = AstakosClient(token_1, auth_url)
+                response = client.get_pending_commissions()
         except Exception as err:
             self.fail("Shouldn't raise Exception %s" % err)
         self.assertEqual(response, pending_commissions)
@@ -1043,12 +890,12 @@ class TestCommissions(unittest.TestCase):
     # ----------------------------------
     def test_get_commission_info(self):
         """Test function call of get_commission_info"""
-        global token_1, commission_description
-        _mock_request([_request_ok])
+        global token_1, commission_description, auth_url
         try:
-            client = AstakosClient("https://example.com", use_pool=True,
-                                   pool_size=2)
-            response = client.get_commission_info(token_1, 57)
+            with patch_astakosclient([_request_ok]):
+                client = AstakosClient(token_1, auth_url,
+                                       use_pool=True, pool_size=2)
+                response = client.get_commission_info(57)
         except Exception as err:
             self.fail("Shouldn't raise Exception %s" % err)
         self.assertEqual(response, commission_description)
@@ -1056,11 +903,12 @@ class TestCommissions(unittest.TestCase):
     # ----------------------------------
     def test_get_commission_info_not_found(self):
         """Test function call of get_commission_info with invalid serial"""
-        global token_1
+        global token_1, auth_url
         _mock_request([_request_ok])
         try:
-            client = AstakosClient("https://example.com")
-            client.get_commission_info(token_1, "57lala")
+            with patch_astakosclient([_request_ok]):
+                client = AstakosClient(token_1, auth_url)
+                client.get_commission_info("57lala")
         except NotFound:
             pass
         except Exception as err:
@@ -1071,11 +919,11 @@ class TestCommissions(unittest.TestCase):
     # ----------------------------------
     def test_get_commission_info_without_serial(self):
         """Test function call of get_commission_info without serial"""
-        global token_1
-        _mock_request([_request_ok])
+        global token_1, auth_url
         try:
-            client = AstakosClient("https://example.com")
-            client.get_commission_info(token_1, None)
+            with patch_astakosclient([_request_ok]):
+                client = AstakosClient(token_1, auth_url)
+                client.get_commission_info(None)
         except BadValue:
             pass
         except Exception as err:
@@ -1086,11 +934,11 @@ class TestCommissions(unittest.TestCase):
     # ----------------------------------
     def test_commision_action(self):
         """Test function call of commision_action with wrong action"""
-        global token_1
-        _mock_request([_request_ok])
+        global token_1, auth_url
         try:
-            client = AstakosClient("https://example.com")
-            client.commission_action(token_1, 57, "lala")
+            with patch_astakosclient([_request_ok]):
+                client = AstakosClient(token_1, auth_url)
+                client.commission_action(57, "lala")
         except BadRequest:
             pass
         except Exception as err:
@@ -1101,33 +949,33 @@ class TestCommissions(unittest.TestCase):
     # ----------------------------------
     def test_accept_commission(self):
         """Test function call of accept_commission"""
-        global token_1
-        _mock_request([_request_ok])
+        global token_1, auth_url
         try:
-            client = AstakosClient("https://example.com")
-            client.accept_commission(token_1, 57)
+            with patch_astakosclient([_request_ok]):
+                client = AstakosClient(token_1, auth_url)
+                client.accept_commission(57)
         except Exception as err:
             self.fail("Shouldn't raise Exception %s" % err)
 
     # ----------------------------------
     def test_reject_commission(self):
         """Test function call of reject_commission"""
-        global token_1
-        _mock_request([_request_ok])
+        global token_1, auth_url
         try:
-            client = AstakosClient("https://example.com")
-            client.reject_commission(token_1, 57)
+            with patch_astakosclient([_request_ok]):
+                client = AstakosClient(token_1, auth_url)
+                client.reject_commission(57)
         except Exception as err:
             self.fail("Shouldn't raise Exception %s" % err)
 
     # ----------------------------------
     def test_accept_commission_not_found(self):
         """Test function call of accept_commission with wrong serial"""
-        global token_1
-        _mock_request([_request_ok])
+        global token_1, auth_url
         try:
-            client = AstakosClient("https://example.com")
-            client.reject_commission(token_1, 20)
+            with patch_astakosclient([_request_ok]):
+                client = AstakosClient(token_1, auth_url)
+                client.reject_commission(20)
         except NotFound:
             pass
         except Exception as err:
@@ -1138,34 +986,17 @@ class TestCommissions(unittest.TestCase):
     # ----------------------------------
     def test_resolve_commissions(self):
         """Test function call of resolve_commissions"""
-        global token_1
-        _mock_request([_request_ok])
+        global token_1, auth_url
         try:
-            client = AstakosClient("https://example.com")
-            result = client.resolve_commissions(token_1, [56, 57],
-                                                [56, 58, 59])
+            with patch_astakosclient([_request_ok]):
+                client = AstakosClient(token_1, auth_url)
+                result = client.resolve_commissions([56, 57], [56, 58, 59])
         except Exception as err:
             self.fail("Shouldn't raise Exception %s" % err)
         self.assertEqual(result, resolve_commissions_rep)
 
 
-class TestEndPoints(unittest.TestCase):
-    """Test cases for endpoints requests"""
-
-    # ----------------------------------
-    def test_get_endpoints(self):
-        """Test function call of get_endpoints"""
-        global token_1, user_info_endpoints
-        _mock_request([_request_ok])
-        try:
-            client = AstakosClient("https://example.com")
-            response = client.get_endpoints(token_1)
-        except Exception as err:
-            self.fail("Shouldn't raise Exception %s" % err)
-        self.assertEqual(response, user_info_endpoints)
-
-
 # ----------------------------
 # Run tests
 if __name__ == "__main__":
-    unittest.main()
+        unittest.main()

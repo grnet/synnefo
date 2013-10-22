@@ -61,6 +61,7 @@ CLASSIFIERS = []
 INSTALL_REQUIRES = [
     'argparse',
     'ipaddr',
+    'fabric>=1.3',
 ]
 
 setup(

@@ -1,6 +1,5 @@
 #!/usr/bin/python
 
-import json
 import time
 import ipaddr
 import os
@@ -10,10 +9,7 @@ import sys
 import re
 import random
 import subprocess
-import shutil
 import imp
-import tempfile
-from snfdeploy import massedit
 
 
 HEADER = '\033[95m'
@@ -85,7 +81,7 @@ class Env(object):
 
     def update_packages(self, os):
         for section in self.conf.files[os]:
-          self.evaluate(os, section)
+            self.evaluate(os, section)
 
     def evaluate(self, filename, section):
         for k, v in self.conf.get_section(filename, section):
@@ -151,7 +147,6 @@ class Conf(object):
 
     def get_ganeti(self, cluster_name):
         self.files["ganeti"] = [cluster_name]
-
 
     def __init__(self, args):
         self.confdir = args.confdir
@@ -220,7 +215,7 @@ def check_pidfile(pidfile):
         pass
 
 
-def randomMAC():
+def random_mac():
     mac = [0x52, 0x54, 0x56,
            random.randint(0x00, 0xff),
            random.randint(0x00, 0xff),

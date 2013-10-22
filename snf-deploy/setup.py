@@ -38,8 +38,6 @@ distribute_setup.use_setuptools()
 import os
 import sys
 
-from distutils.util import convert_path
-from fnmatch import fnmatchcase
 from setuptools import setup, find_packages
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 
@@ -65,30 +63,30 @@ INSTALL_REQUIRES = [
 ]
 
 setup(
-    name = 'snf-deploy',
-    version = VERSION,
-    license = 'BSD',
-    url = 'http://code.grnet.gr/',
-    description = SHORT_DESCRIPTION,
-    long_description = SHORT_DESCRIPTION,
-    classifiers = CLASSIFIERS,
+    name='snf-deploy',
+    version=VERSION,
+    license='BSD',
+    url='http://code.grnet.gr/',
+    description=SHORT_DESCRIPTION,
+    long_description=SHORT_DESCRIPTION,
+    classifiers=CLASSIFIERS,
 
     author='Synnefo development team',
     author_email='synnefo-devel@googlegroups.com',
     maintainer='Synnefo development team',
     maintainer_email='synnefo-devel@googlegroups.com',
 
-    packages = PACKAGES,
-    package_dir= {'': PACKAGES_ROOT},
-    include_package_data = True,
-    zip_safe = False,
+    packages=PACKAGES,
+    package_dir={'': PACKAGES_ROOT},
+    include_package_data=True,
+    zip_safe=False,
 
-    install_requires = INSTALL_REQUIRES,
+    install_requires=INSTALL_REQUIRES,
 
-    dependency_links = ['http://docs.dev.grnet.gr/pypi'],
+    dependency_links=['http://docs.dev.grnet.gr/pypi'],
     entry_points={
-     'console_scripts': [
-         'snf-deploy=snfdeploy:main',
-         ],
-      },
+        'console_scripts': [
+            'snf-deploy=snfdeploy:main',
+            ],
+        },
 )

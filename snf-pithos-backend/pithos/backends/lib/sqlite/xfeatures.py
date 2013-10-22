@@ -82,6 +82,19 @@ class XFeatures(DBWorker):
             return r[0]
         return None
 
+    def xfeature_get_bulk(self, paths):
+        """Return features for paths."""
+
+        paths = list(set(paths))
+        q = ("select feature_id, path from xfeatures "
+             "where path in (%s) "
+             "order by path") % ','.join('?' for _ in paths)
+        self.execute(q, paths)
+        rows = self.fetchall()
+        if rows:
+            return rows
+        return None
+
     def xfeature_create(self, path):
         """Create and return a feature for path.
            If the path has a feature, return it.

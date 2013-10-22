@@ -261,11 +261,11 @@ def fabcommand(args, env, actions, nodes=[]):
   else:
     fabcmd = "fab "
 
-  fabcmd += " --fabfile {4}/fabfile.py \
+  fabcmd += " --fabfile /usr/share/pyshared/snfdeploy/fabfile.py \
 setup_env:confdir={0},packages={1},templates={2},cluster_name={3},\
-autoconf={5},disable_colors={6},key_inject={7} \
+autoconf={4},disable_colors={5},key_inject={6} \
 ".format(args.confdir, env.packages, env.templates, args.cluster_name,
-         env.lib, args.autoconf, args.disable_colors, args.key_inject)
+         args.autoconf, args.disable_colors, args.key_inject)
 
   if nodes:
     hosts = [env.nodes_info[n].hostname for n in nodes]

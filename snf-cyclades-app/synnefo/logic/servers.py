@@ -306,7 +306,10 @@ def create_nic(vm, network=None, ipaddress=None, address=None):
         raise faults.BuildInProgress('Network not active yet')
 
     nic = NetworkInterface.objects.create(machine=vm, network=network,
-                                          state="BUILDING")
+                                          state="BUILDING",
+                                          device_owner='router'
+                                                          if vm.router
+                                                            else 'vm')
     if ipaddress is not None:
         ipaddress.nic = nic
         ipaddress.save()

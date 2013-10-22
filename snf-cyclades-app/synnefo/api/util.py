@@ -270,11 +270,7 @@ def get_floating_ip_by_id(userid, floating_ip_id, for_update=False):
         objects = IPAddress.objects
         if for_update:
             objects = objects.select_for_update()
-        if not userid:
-            return objects.get(id=floating_ip_id, floating_ip=True,
-                               deleted=False)
-        else:
-            return objects.get(id=floating_ip_id, floating_ip=True,
+        return objects.get(id=floating_ip_id, floating_ip=True,
                                userid=userid, deleted=False)
     except IPAddress.DoesNotExist:
         raise faults.ItemNotFound("Floating IP %s does not exist." %

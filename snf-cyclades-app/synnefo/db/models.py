@@ -313,6 +313,7 @@ class VirtualMachine(models.Model):
     serial = models.ForeignKey(QuotaHolderSerial,
                                related_name='virtual_machine', null=True,
                                on_delete=models.SET_NULL)
+    router = models.BooleanField('Router', default=False)
 
     # VM State
     # The following fields are volatile data, in the sense
@@ -375,7 +376,8 @@ class VirtualMachine(models.Model):
         get_latest_by = 'created'
 
     def __unicode__(self):
-        return u"<vm:%s@backend:%s>" % (self.id, self.backend_id)
+        return u"<vm:%s@backend:%s router:%s>" % (self.id, self.backend_id,
+                                                  self.router)
 
     # Error classes
     class InvalidBackendIdError(Exception):

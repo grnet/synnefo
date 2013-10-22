@@ -56,7 +56,7 @@ def port_command(action):
 @transaction.commit_on_success
 def create(network, machine, name="", security_groups=None,
            device_owner='vm'):
-
+    """Create a new port by giving a vm and a network"""
     if network.state != 'ACTIVE':
         raise faults.Conflict('Network build in process')
 
@@ -86,7 +86,6 @@ def create(network, machine, name="", security_groups=None,
     # TODO: Consider quotas for Ports
 
     return port
-
 
 @transaction.commit_on_success
 def delete(port):

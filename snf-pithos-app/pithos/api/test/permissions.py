@@ -343,3 +343,21 @@ class TestPermissions(PithosAPITest):
         self.assertEqual(r.status_code, 403)
         r = self.delete(url, user='chuck')
         self.assertEqual(r.status_code, 403)
+
+    def test_multiple_inheritance(self):
+        cname = self.container
+        folder = self.create_folder(cname, HTTP_X_OBJECT_SHARING='write=*')[0]
+        subfolder = self.create_folder(cname, '%s/%s' % (folder,
+                                                         get_random_name()))[0]
+        self.upload_object(cname, '%s/%s' % (subfolder, get_random_name()))
+
+        self._assert_read(subfolder, self.users)
+        self._assert_write(subfolder, self.users)
+
+        # share object for read only
+        url = join_urls(self.pithos_path, self.user, cname, subfolder)
+        self.post(url, content_type='', HTTP_CONTENT_RANGE='bytes */*',
+                  HTTP_X_OBJECT_SHARING='read=*')
+
+        self._assert_read(subfolder, self.users)
+        self._assert_write(subfolder, [])

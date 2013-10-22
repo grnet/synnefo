@@ -118,7 +118,8 @@ class ContainerHead(PithosAPITest):
         self.assertTrue('X-Container-Meta-Quality' in container_info)
         self.assertTrue('X-Container-Meta-Foo' in container_info)
         self.assertTrue('X-Container-Object-Count' in container_info)
-        self.assertTrue(int(container_info['X-Container-Object-Count']) > len(objects))
+        self.assertTrue(int(container_info['X-Container-Object-Count']) >
+                        len(objects))
         self.assertTrue('X-Container-Bytes-Used' in container_info)
 
         t = datetime.datetime.strptime(container_info['Last-Modified'],
@@ -134,13 +135,15 @@ class ContainerHead(PithosAPITest):
             container_info['X-Container-Until-Timestamp'], DATE_FORMATS[2])
         self.assertTrue(int(_time.mktime(t1.timetuple())) <= until)
         self.assertTrue('X-Container-Object-Count' in container_info)
-        self.assertEqual(int(container_info['X-Container-Object-Count']), len(objects))
+        self.assertEqual(int(container_info['X-Container-Object-Count']),
+                         len(objects))
         self.assertTrue('X-Container-Bytes-Used' in container_info)
         self.assertEqual(int(container_info['X-Container-Bytes-Used']),
                          sum([len(data) for data in objects.values()]))
         self.assertTrue('X-Container-Object-Meta' in container_info)
-        self.assertEqual(container_info['X-Container-Object-Meta'],
-                         ','.join(sorted(metalist))) 
+        self.assertEqual(
+            sorted(container_info['X-Container-Object-Meta'].split(',')),
+            sorted(metalist))
 
 
 class ContainerGet(PithosAPITest):

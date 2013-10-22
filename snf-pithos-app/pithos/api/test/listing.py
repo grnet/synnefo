@@ -49,13 +49,19 @@ class ListSharing(PithosAPITest):
             self.create_folder(cname, 'f1/f2', user=user)
             self.upload_object(cname, 'f1/f2/obj', user=user)
 
-        # share /c0/f1 path
+        # share /c0/f1 path for read
         url = join_urls(self.pithos_path, user, 'c0', 'f1')
         r = self.post(url, user=user, content_type='',
                       HTTP_CONTENT_RANGE='bytes */*',
                       HTTP_X_OBJECT_SHARING='read=*')
         self.assertEqual(r.status_code, 202)
-        r = self.get(url)
+
+        # share /c0/f1/f2 path for write
+        url = join_urls(self.pithos_path, user, 'c0', 'f1/f2')
+        r = self.post(url, user=user, content_type='',
+                      HTTP_CONTENT_RANGE='bytes */*',
+                      HTTP_X_OBJECT_SHARING='write=*')
+        self.assertEqual(r.status_code, 202)
 
     def test_list_share_with_me(self):
         self._build_structure('alice')

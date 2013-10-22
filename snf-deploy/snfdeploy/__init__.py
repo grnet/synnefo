@@ -13,6 +13,8 @@ import subprocess
 import imp
 import ast
 from snfdeploy.lib import *
+from snfdeploy import fabfile
+from fabric.api import hide, env, settings, local, roles, execute, show
 
 def print_available_actions(command):
 
@@ -243,51 +245,38 @@ def fabcommand(args, env, actions, nodes=[]):
     "everything": ["warnings", "running", "user", "output"]
     }
 
-  hide = ",".join(level_aliases["everything"])
-  show = None
+  lhide = level_aliases["everything"]
+  lshow = []
 
   if args.verbose == 1:
-    show = ",".join(levels[:3])
-    hide = ",".join(levels[3:])
+    lshow = levels[:3]
+    lhide = levels[3:]
   elif args.verbose == 2:
-    show = ",".join(levels[:4])
-    hide = ",".join(levels[4:])
+    lshow = levels[:4]
+    lhide = levels[4:]
   elif args.verbose >= 3 or args.debug:
-    show = ",".join(levels)
-    hide = None
+    lshow = levels
+    lhide = []
 
-  if args.ssh_key:
-    fabcmd = "fab -i %s " % args.ssh_key
-  else:
-    fabcmd = "fab "
-
-  fabcmd += " --fabfile /usr/share/pyshared/snfdeploy/fabfile.py \
-setup_env:confdir={0},packages={1},templates={2},cluster_name={3},\
-autoconf={4},disable_colors={5},key_inject={6} \
-".format(args.confdir, env.packages, env.templates, args.cluster_name,
-         args.autoconf, args.disable_colors, args.key_inject)
+#   fabcmd += " --fabfile {4}/fabfile.py \
+# setup_env:confdir={0},packages={1},templates={2},cluster_name={3},\
+# autoconf={5},disable_colors={6},key_inject={7} \
+# ".format(args.confdir, env.packages, env.templates, args.cluster_name,
+#          env.lib, args.autoconf, args.disable_colors, args.key_inject)
 
   if nodes:
-    hosts = [env.nodes_info[n].hostname for n in nodes]
-    actions = [a + ':hosts="%s"' % ";".join(hosts) for a in actions]
+    ips = [env.nodes_info[n].ip for n in nodes]
 
-  extra = " ".join(actions)
-
-  fabcmd += extra
-
-  if show:
-    fabcmd += " --show %s " % show
-  if hide:
-    fabcmd += " --hide %s " % hide
-
-  # print("snf-deploy run " + " ".join(actions) + " -vvv")
-  print(fabcmd)
-
-  if not args.dry_run:
-    ret = os.system(fabcmd)
-    if ret != 0:
-        status = "exit with status %s" % ret
-        sys.exit(status)
+  fabfile.setup_env(args)
+  with settings(hide(*lhide), show(*lshow)):
+      print " ".join(actions)
+      for a in actions:
+        fn = getattr(fabfile, a)
+        if not args.dry_run:
+          if nodes:
+             execute(fn, hosts=ips)
+          else:
+             execute(fn)
 
 
 def cluster(args, env):
@@ -572,7 +561,7 @@ def add_node(args, env):
 def main():
   args = parse_options()
 
-  conf = Conf.configure(args.confdir, args.cluster_name, args, args.autoconf)
+  conf = Conf(args)
   env = Env(conf)
 
   create_dir(env.run, False)

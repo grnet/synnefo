@@ -18,28 +18,21 @@ from snfdeploy.lib import debug, Conf, Env, disable_color
 from snfdeploy import massedit
 
 
-def setup_env(confdir="conf", packages="packages", templates="files",
-              cluster_name="ganeti1", autoconf=False, disable_colors=False,
-              key_inject=False):
+def setup_env(args):
     """Setup environment"""
     print("Loading configuration for synnefo...")
-    print(" * Using config files under %s..." % confdir)
-    print(" * Using %s and %s for packages and templates accordingly..."
-          % (packages, templates))
 
-    autoconf = ast.literal_eval(autoconf)
-    disable_colors = ast.literal_eval(disable_colors)
-    env.key_inject = ast.literal_eval(key_inject)
-    conf = Conf.configure(confdir=confdir, cluster_name=cluster_name,
-                          autoconf=autoconf)
+    conf = Conf(args)
     env.env = Env(conf)
 
-    env.local = autoconf
+    env.local = args.autoconf
+    env.key_inject = args.key_inject
     env.password = env.env.password
     env.user = env.env.user
     env.shell = "/bin/bash -c"
+    env.key_filename = args.ssh_key
 
-    if disable_colors:
+    if args.disable_colors:
         disable_color()
 
     if env.env.cms.hostname in \

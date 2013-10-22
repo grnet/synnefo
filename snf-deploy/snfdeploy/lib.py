@@ -146,14 +146,36 @@ class Conf(object):
         "synnefo": ["cred", "synnefo", "roles"],
         "squeeze": ["debian", "ganeti", "synnefo", "other"],
         "wheezy": ["debian", "ganeti", "synnefo", "other"],
-        "ganeti": [],
     }
+    confdir = "/etc/snf-deploy"
 
-    def __init__(self, confdir, cluster_name):
-        self.confdir = confdir
+    def get_ganeti(self, cluster_name):
         self.files["ganeti"] = [cluster_name]
+
+
+    def __init__(self, args):
+        self.confdir = args.confdir
+        self.get_ganeti(args.cluster_name)
         for f in self.files.keys():
             setattr(self, f, self.read_config(f))
+        for f, sections in self.files.iteritems():
+            for s in sections:
+                for k, v in self.get_section(f, s):
+                    if getattr(args, k, None):
+                        self.set(f, s, k, getattr(args, k))
+        if args.autoconf:
+            self.autoconf()
+
+    def autoconf(self):
+        #domain = get_domain()
+        #if domain:
+        #    self.nodes.set("network", "domain", get_domain())
+        # self.nodes.set("network", "subnet", "/".join(get_netinfo()))
+        # self.nodes.set("network", "gateway", get_default_route()[0])
+        self.nodes.set("hostnames", "node1", get_hostname())
+        self.nodes.set("ips", "node1", get_netinfo()[0])
+        self.nodes.set("info", "nodes", "node1")
+        self.nodes.set("info", "public_iface", get_default_route()[1])
 
     def read_config(self, f):
         config = ConfigParser.ConfigParser()
@@ -177,37 +199,6 @@ class Conf(object):
     def print_config(self):
         for f in self.files.keys():
             getattr(self, f).write(sys.stdout)
-
-    def _configure(self, args):
-        for f, sections in self.files.iteritems():
-            for s in sections:
-                for k, v in self.get_section(f, s):
-                    if getattr(args, k, None):
-                        self.set(f, s, k, getattr(args, k))
-
-    @classmethod
-    def configure(cls, confdir="/etc/snf-deploy",
-                  cluster_name="ganeti1", args=None, autoconf=False):
-
-        conf = cls(confdir, cluster_name)
-        if args:
-            conf._configure(args)
-        if autoconf:
-            conf.autoconf()
-
-        return conf
-
-    def autoconf(self):
-        #domain = get_domain()
-        #if domain:
-        #    self.nodes.set("network", "domain", get_domain())
-        # self.nodes.set("network", "subnet", "/".join(get_netinfo()))
-        # self.nodes.set("network", "gateway", get_default_route()[0])
-        self.nodes.set("hostnames", "node1", get_hostname())
-        self.nodes.set("ips", "node1", get_netinfo()[0])
-        self.nodes.set("info", "nodes", "node1")
-        self.nodes.set("info", "public_iface", get_default_route()[1])
-
 
 
 def debug(host, msg):

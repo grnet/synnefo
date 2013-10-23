@@ -115,7 +115,8 @@ class View(object):
                                 'non_field_key': NON_FIELD_ERRORS}))
 
         else:
-            allowed_methods = [m for m in self.method_names if hasattr(self, m)]
+            allowed_methods = \
+                [m for m in self.method_names if hasattr(self, m)]
             return http.HttpResponseNotAllowed(allowed_methods)
 
 

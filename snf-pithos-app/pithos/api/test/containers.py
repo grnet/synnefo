@@ -95,7 +95,7 @@ class ContainerHead(PithosAPITest):
             meta = {metakey: 'bar'}
             name, data, resp = self.upload_object('apples', **meta)
             objects[name] = data
-            metalist.append(metakey) 
+            metalist.append(metakey)
 
         self.update_container_meta('apples', {'foo': 'bar'})
 

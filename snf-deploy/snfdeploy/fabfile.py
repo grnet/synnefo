@@ -434,6 +434,7 @@ def restart_services():
 def setup_gunicorn():
     debug(env.host, " * Setting up gunicorn...")
     install_package("gunicorn")
+    try_run("chown root.www-data /var/log/gunicorn")
     tmpl = "/etc/gunicorn.d/synnefo"
     replace = {}
     custom = customize_settings_from_tmpl(tmpl, replace)

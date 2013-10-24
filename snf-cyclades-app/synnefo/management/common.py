@@ -32,7 +32,7 @@
 # or implied, of GRNET S.A.
 
 from django.core.management import CommandError
-from synnefo.db.models import Backend, VirtualMachine, Network, Flavor
+from synnefo.db.models import Backend, VirtualMachine, Network, Flavor, Subnet
 from functools import wraps
 
 from snf_django.lib.api import faults
@@ -125,6 +125,16 @@ def get_network(network_id, for_update=True):
         raise CommandError("Network with ID %s not found in DB."
                            " Use snf-manage network-list to find out"
                            " available network IDs." % network_id)
+
+
+def get_subnet(subnet_id, for_update=True):
+    """Get a Subnet object by its ID."""
+    try:
+        return Subnet.objects.get(id=subnet_id)
+    except Subnet.DoesNotExist:
+        raise CommandError("Subnet with ID %s not found in DB."
+                           " Use snf-manage subnet-list to find out"
+                           " available subnet IDs" % subnet_id)
 
 
 def get_flavor(flavor_id):

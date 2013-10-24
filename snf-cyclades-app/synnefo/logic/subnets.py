@@ -34,6 +34,7 @@
 from logging import getLogger
 from snf_django.lib import api
 from snf_django.lib.api import faults
+from django.db import transaction
 
 from django.conf.urls import patterns
 from django.http import HttpResponse
@@ -63,10 +64,7 @@ def list_subnets(user_id):
     log.debug('list_subnets')
 
     user_subnets = Subnet.objects.filter(network__userid=user_id)
-    subnets_dict = [subnet_to_dict(sub)
-                    for sub in user_subnets.order_by('id')]
-
-    return subnets_dict
+    return user_subnets
 
 
 @transaction.commit_on_success
@@ -81,6 +79,9 @@ def create_subnet(network_id, cidr, name, ipversion, gateway, dhcp, slac,
     except Network.DoesNotExist:
         raise api.faults.ItemNotFound("No networks found with that id")
 
+    if user_id != network.userid:
+        raise api.faults.Unauthorized("Unauthorized operation")
+
     if ipversion not in [4, 6]:
         raise api.faults.BadRequest("Malformed IP version type")
 
@@ -91,6 +92,9 @@ def create_subnet(network_id, cidr, name, ipversion, gateway, dhcp, slac,
     else:
         potential_gateway = str(IPv4Network(cidr).network + 1)
         check_number_of_subnets(network, 4)
+
+    if gateway is None:
+        gateway = potential_gateway
 
     if ipversion == 6:
         networks.validate_network_params(None, None, cidr, gateway)
@@ -109,28 +113,27 @@ def create_subnet(network_id, cidr, name, ipversion, gateway, dhcp, slac,
 
     sub = Subnet.objects.create(name=name, network=network, cidr=cidr,
                                 ipversion=ipversion, gateway=gateway,
-                                dhcp=dhcp, host_routes=hosts,
-                                dns_nameservers=dns)
+                                dhcp=dhcp, host_routes=host_routes,
+                                dns_nameservers=dns_nameservers)
 
-    pool_list = list()
     if allocation_pools is not None:
         # If the user specified IP allocation pools, validate them and use them
         if ipversion == 6:
             raise api.faults.Conflict("Can't allocate an IP Pool in IPv6")
-        validate_subpools(pool_list, cidr_ip, gateway_ip)
+        validate_subpools(allocation_pools, cidr_ip, gateway_ip)
     if allocation_pools is None and ipversion == 4:
         # Check if the gateway is the first IP of the subnet, in this case
         # create a single ip pool
         if int(gateway_ip) - int(cidr_ip) == 1:
-            pool_list = [[gateway_ip + 1, cidr_ip.broadcast - 1]]
+            allocation_pools = [[gateway_ip + 1, cidr_ip.broadcast - 1]]
         else:
             # If the gateway isn't the first available ip, create two different
             # ip pools adjacent to said ip
-            pool_list.append([cidr_ip.network + 1, gateway_ip - 1])
-            pool_list.append([gateway_ip + 1, cidr_ip.broadcast - 1])
+            allocation_pools.append([cidr_ip.network + 1, gateway_ip - 1])
+            allocation_pools.append([gateway_ip + 1, cidr_ip.broadcast - 1])
 
-    if pool_list:
-        create_ip_pools(pool_list, cidr_ip, sub)
+    if allocation_pools:
+        create_ip_pools(allocation_pools, cidr_ip, sub)
 
     return sub
 
@@ -143,8 +146,7 @@ def get_subnet(sub_id):
     except Subnet.DoesNotExist:
         raise api.faults.ItemNotFound("Subnet not found")
 
-    subnet_dict = subnet_to_dict(subnet)
-    return subnet_dict
+    return subnet
 
 
 def delete_subnet():
@@ -161,7 +163,7 @@ def update_subnet(sub_id, name):
     Update the fields of a subnet
     Only the name can be updated
     """
-    log.info('Update subnet %s, name %s', % (sub_id, name))
+    log.info('Update subnet %s, name %s' % (sub_id, name))
 
     try:
         subnet = Subnet.objects.get(id=sub_id)

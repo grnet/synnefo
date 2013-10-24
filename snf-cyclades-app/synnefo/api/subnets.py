@@ -77,7 +77,10 @@ def subnet_demux(request, sub_id):
 @api.api_method(http_method='GET', user_required=True, logger=log)
 def list_subnets(request):
     """List all subnets of a user"""
-    subnets_dict = subnets.list_subnets(request.user_uniq)
+    subnet_list = subnets.list_subnets(request.user_uniq)
+    subnets_dict = [subnet_to_dict(sub)
+                    for sub in subnet_list.order_by('id')]
+
     data = json.dumps({'subnets': subnets_dict})
 
     return HttpResponse(data, status=200)
@@ -103,6 +106,14 @@ def create_subnet(request):
     if allocation_pools is not None:
         pool = parse_ip_pools(allocation_pools)
         allocation_pools = string_to_ipaddr(pool)
+
+    name = subnet.get('name', None)
+    ipversion = subnet.get('ip_version', 4)
+    gateway = subnet.get('gateway_ip', None)
+    dhcp = subnet.get('enable_dhcp', True)
+    slac = subnet.get('enable_slac', None)
+    dns = subnet.get('dns_nameservers', None)
+    hosts = subnet.get('host_routes', None)
 
     sub = subnets.create_subnet(network_id=network_id,
                                 cidr=cidr,
@@ -130,7 +141,7 @@ def get_subnet(request, sub_id):
     if subnet.network.userid != user_id:
         raise api.failts.Unauthorized("You're not allowed to view this subnet")
 
-    subnet_dict = subnet
+    subnet_dict = subnet_to_dict(subnet)
     data = json.dumps({'subnet': subnet_dict})
     return HttpResponse(data, status=200)
 
@@ -159,7 +170,7 @@ def update_subnet(request, sub_id):
     except KeyError:
         raise api.faults.BadRequest("Malformed request")
 
-    if len(subnet) != 1:
+    if len(subnet) != 1 or "name" not in subnet:
         raise api.faults.BadRequest("Only the name of subnet can be updated")
 
     name = subnet.get("name", None)

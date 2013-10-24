@@ -41,7 +41,7 @@ from django.utils import simplejson as json
 
 from snf_django.lib.api import utils
 from synnefo.db.models import Subnet, Network, IPPoolTable
-from synnefo.logic import networks
+from synnefo.logic import networks, subnets
 
 from ipaddr import IPv4Network, IPv6Network, IPv4Address, IPAddress, IPNetwork
 
@@ -77,11 +77,7 @@ def subnet_demux(request, sub_id):
 @api.api_method(http_method='GET', user_required=True, logger=log)
 def list_subnets(request):
     """List all subnets of a user"""
-    log.debug('list_subnets')
-
-    user_subnets = Subnet.objects.filter(network__userid=request.user_uniq)
-    subnets_dict = [subnet_to_dict(sub)
-                    for sub in user_subnets.order_by('id')]
+    subnets_dict = subnets.list_subnets(request.user_uniq)
     data = json.dumps({'subnets': subnets_dict})
 
     return HttpResponse(data, status=200)
@@ -93,10 +89,8 @@ def create_subnet(request):
     Create a subnet
     network_id and the desired cidr are mandatory, everything else is optional
     """
-
     dictionary = utils.get_request_dict(request)
     log.info('create subnet %s', dictionary)
-    user_id = request.user_uniq
 
     try:
         subnet = dictionary['subnet']
@@ -105,75 +99,22 @@ def create_subnet(request):
     except KeyError:
         raise api.faults.BadRequest("Malformed request")
 
-    try:
-        network = Network.objects.get(id=network_id)
-    except Network.DoesNotExist:
-        raise api.faults.ItemNotFound("No networks found with that id")
-
-    if user_id != network.userid:
-        raise api.faults.Unauthorized("Unauthorized operation")
-
-    ipversion = subnet.get('ip_version', 4)
-    if ipversion not in [4, 6]:
-        raise api.faults.BadRequest("Malformed IP version type")
-
-    # Returns the first available IP in the subnet
-    if ipversion == 6:
-        potential_gateway = str(IPv6Network(cidr).network + 1)
-        check_number_of_subnets(network, 6)
-    else:
-        potential_gateway = str(IPv4Network(cidr).network + 1)
-        check_number_of_subnets(network, 4)
-
-    gateway = subnet.get('gateway_ip', potential_gateway)
-
-    if ipversion == 6:
-        networks.validate_network_params(None, None, cidr, gateway)
-        slac = subnet.get('enable_slac', None)
-        if slac is not None:
-            dhcp = check_boolean_value(slac, "enable_slac")
-        else:
-            dhcp = check_boolean_value(subnet.get('enable_dhcp', True), "dhcp")
-    else:
-        networks.validate_network_params(cidr, gateway)
-        dhcp = check_boolean_value(subnet.get('enable_dhcp', True), "dhcp")
-
-    name = check_name_length(subnet.get('name', None))
-
-    dns = subnet.get('dns_nameservers', None)
-    hosts = subnet.get('host_routes', None)
-
-    gateway_ip = IPAddress(gateway)
-    cidr_ip = IPNetwork(cidr)
-
     allocation_pools = subnet.get('allocation_pools', None)
-
-    sub = Subnet.objects.create(name=name, network=network, cidr=cidr,
-                                ipversion=ipversion, gateway=gateway,
-                                dhcp=dhcp, host_routes=hosts,
-                                dns_nameservers=dns)
-
-    pool_list = list()
     if allocation_pools is not None:
-        # If the user specified IP allocation pools, validate them and use them
-        if ipversion == 6:
-            raise api.faults.Conflict("Can't allocate an IP Pool in IPv6")
-        pools = parse_ip_pools(allocation_pools)
-        pool_list = string_to_ipaddr(pools)
-        validate_subpools(pool_list, cidr_ip, gateway_ip)
-    if allocation_pools is None and ipversion == 4:
-        # Check if the gateway is the first IP of the subnet, in this case
-        # create a single ip pool
-        if int(gateway_ip) - int(cidr_ip) == 1:
-            pool_list = [[gateway_ip + 1, cidr_ip.broadcast - 1]]
-        else:
-            # If the gateway isn't the first available ip, create two different
-            # ip pools adjacent to said ip
-            pool_list.append([cidr_ip.network + 1, gateway_ip - 1])
-            pool_list.append([gateway_ip + 1, cidr_ip.broadcast - 1])
+        pool = parse_ip_pools(allocation_pools)
+        allocation_pools = string_to_ipaddr(pool)
 
-    if pool_list:
-        create_ip_pools(pool_list, cidr_ip, sub)
+    sub = subnets.create_subnet(network_id=network_id,
+                                cidr=cidr,
+                                name=name,
+                                ipversion=ipversion,
+                                gateway=gateway,
+                                dhcp=dhcp,
+                                slac=slac,
+                                dns_nameservers=dns,
+                                allocation_pools=allocation_pools,
+                                host_routes=hosts,
+                                user_id=request.user_uniq)
 
     subnet_dict = subnet_to_dict(sub)
     data = json.dumps({'subnet': subnet_dict})
@@ -183,18 +124,13 @@ def create_subnet(request):
 @api.api_method(http_method='GET', user_required=True, logger=log)
 def get_subnet(request, sub_id):
     """Show info of a specific subnet"""
-    log.debug('get_subnet %s', sub_id)
     user_id = request.user_uniq
-
-    try:
-        subnet = Subnet.objects.get(id=sub_id)
-    except Subnet.DoesNotExist:
-        raise api.faults.ItemNotFound("Subnet not found")
+    subnet = subnets.get_subnet(sub_id)
 
     if subnet.network.userid != user_id:
         raise api.failts.Unauthorized("You're not allowed to view this subnet")
 
-    subnet_dict = subnet_to_dict(subnet)
+    subnet_dict = subnet
     data = json.dumps({'subnet': subnet_dict})
     return HttpResponse(data, status=200)
 
@@ -216,7 +152,6 @@ def update_subnet(request, sub_id):
     """
 
     dictionary = utils.get_request_dict(request)
-    log.info('Update subnet %s', dictionary)
     user_id = request.user_uniq
 
     try:
@@ -224,27 +159,12 @@ def update_subnet(request, sub_id):
     except KeyError:
         raise api.faults.BadRequest("Malformed request")
 
-    original_subnet = get_subnet_fromdb(sub_id, user_id)
-    original_dict = subnet_to_dict(original_subnet)
-
     if len(subnet) != 1:
         raise api.faults.BadRequest("Only the name of subnet can be updated")
 
     name = subnet.get("name", None)
 
-    if not name:
-        raise api.faults.BadRequest("Only the name of subnet can be updated")
-
-    check_name_length(name)
-
-    try:
-        original_subnet.name = name
-        original_subnet.save()
-    except:
-        #Fix me
-        return "Unknown Error"
-
-    subnet_dict = subnet_to_dict(original_subnet)
+    subnet_dict = subnet_to_dict(subnets.update_subnet(sub_id, name))
     data = json.dumps({'subnet': subnet_dict})
     return HttpResponse(data, status=200)
 
@@ -298,35 +218,10 @@ def string_to_ipaddr(pools):
     return pool_list
 
 
-def create_ip_pools(pools, cidr, subnet):
-    """Placeholder"""
-    for pool in pools:
-        size = int(pool[1]) - int(pool[0]) + 1
-        base = str(cidr)
-        offset = int(pool[0]) - int(cidr.network)
-        ip_pool = IPPoolTable.objects.create(size=size, offset=offset,
-                                             base=base, subnet=subnet)
-
-
 def check_empty_lists(value):
     """Check if value is Null/None, in which case we return an empty list"""
     if value is None:
         return []
-    return value
-
-
-def check_number_of_subnets(network, version):
-    """Check if a user can add a subnet in a network"""
-    if network.subnets.filter(ipversion=version):
-        raise api.faults.BadRequest("Only one subnet of IPv4/IPv6 per "
-                                    "network is allowed")
-
-
-def check_boolean_value(value, key):
-    """Check if dhcp value is in acceptable values"""
-    if value not in [True, False]:
-        raise api.faults.BadRequest("Malformed request, %s must "
-                                    "be True or False" % key)
     return value
 
 
@@ -335,17 +230,6 @@ def check_name_length(name):
     if len(str(name)) > Subnet.SUBNET_NAME_LENGTH:
         raise api.faults.BadRequest("Subnet name too long")
     return name
-
-
-def check_for_hosts_dns(subnet):
-    """
-    Check if a request contains host_routes or dns_nameservers options
-    Expects the request in a dictionary format
-    """
-    if subnet.get('host_routes', None):
-        raise api.faults.BadRequest("Setting host routes isn't supported")
-    if subnet.get('dns_nameservers', None):
-        raise api.faults.BadRequest("Setting dns nameservers isn't supported")
 
 
 def get_subnet_fromdb(subnet_id, user_id, for_update=False):
@@ -377,33 +261,3 @@ def parse_ip_pools(pools):
         parse = [pool["start"], pool["end"]]
         pool_list.append(parse)
     return pool_list
-
-
-def validate_subpools(pool_list, cidr, gateway):
-    """
-    Validate the given IP pools are inside the cidr range
-    Validate there are no overlaps in the given pools
-    Finally, validate the gateway isn't in the given ip pools
-    Input must be a list containing a sublist with start/end ranges as
-    ipaddr.IPAddress items eg.,
-    [[IPv4Address('192.168.42.11'), IPv4Address('192.168.42.15')],
-     [IPv4Address('192.168.42.30'), IPv4Address('192.168.42.60')]]
-    """
-    if pool_list[0][0] <= cidr.network:
-        raise api.faults.Conflict("IP Pool out of bounds")
-    elif pool_list[-1][1] >= cidr.broadcast:
-        raise api.faults.Conflict("IP Pool out of bounds")
-
-    for start, end in pool_list:
-        if start > end:
-            raise api.faults.Conflict("Invalid IP pool range")
-        # Raise BadRequest if gateway is inside the pool range
-        if not (gateway < start or gateway > end):
-            raise api.faults.Conflict("Gateway cannot be in pool range")
-
-    # Check if there is a conflict between the IP Poll ranges
-    end = cidr.network
-    for pool in pool_list:
-        if end >= pool[0]:
-            raise api.faults.Conflict("IP Pool range conflict")
-        end = pool[1]

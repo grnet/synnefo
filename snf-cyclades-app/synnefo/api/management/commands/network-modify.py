@@ -127,7 +127,7 @@ class Command(BaseCommand):
         if floating_ip_pool is not None:
             floating_ip_pool = parse_bool(floating_ip_pool)
             if floating_ip_pool is False and network.floating_ip_pool is True:
-                if network.floating_ips.filter(deleted=False).exists():
+                if network.ips.filter(deleted=False, floating_ip=True).exists():
                     msg = ("Can not make network a non floating IP pool."
                            " There are still reserved floating IPs.")
                     raise CommandError(msg)

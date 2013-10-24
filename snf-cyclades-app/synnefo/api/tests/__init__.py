@@ -40,4 +40,5 @@ from .images import *
 from .versions import *
 from .extensions import *
 from .subnets import *
+from .routers import *
 from .floating_ips import *

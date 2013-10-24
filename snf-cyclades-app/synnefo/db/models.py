@@ -492,7 +492,8 @@ class Network(models.Model):
     state = models.CharField(choices=OPER_STATES, max_length=32,
                              default='PENDING')
     machines = models.ManyToManyField(VirtualMachine,
-                                      through='NetworkInterface')
+                                      through='NetworkInterface',
+                                      related_name='networks')
     action = models.CharField(choices=ACTIONS, max_length=32, null=True,
                               default=None)
     drained = models.BooleanField("Drained", default=False, null=False)
@@ -956,3 +957,4 @@ class VirtualMachineDiagnostic(models.Model):
 
     class Meta:
         ordering = ['-created']
+# Copyright 2011-2012 GRNET S.A. All rights reserved.

@@ -884,9 +884,11 @@ class ModularBackend(BaseBackend):
                                                             user)
         #group_parents = access_objects['group_parents']
         nobject_permissions = {}
+        cpath = '/'.join((account, container, ''))
+        cpath_idx = len(cpath)
         for path in permissions_path:
             allowed = 1
-            name = path.split('/')[-1]
+            name = path[cpath_idx:]
             if user != account:
                 try:
                     allowed = access_objects[path]
@@ -1723,8 +1725,7 @@ class ModularBackend(BaseBackend):
                 for prop in props:
                     if prop[1].split(';', 1)[0].strip() in (
                             'application/directory', 'application/folder'):
-                        permission_paths_list.append((
-                            prop[0].rstrip('/') + '/', self.MATCH_PREFIX))
+                        permission_paths_list.append(prop[0])
 
         if len(permission_paths_list) > 0:
             return permission_paths_list

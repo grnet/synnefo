@@ -127,61 +127,99 @@ class AstakosClient(object):
         self.auth_prefix = parsed_auth_url.path
         self.api_tokens = join_urls(self.auth_prefix, "tokens")
 
-        # ------------------------------
-        # API urls under account_url
-        # Get account_url from get_endpoints
-        # get_endpoints needs self.api_tokens
-        endpoints = self.get_endpoints(non_authentication=True)
-        account_service_catalog = parse_endpoints(
+    def _fill_endpoints(self, endpoints):
+        astakos_service_catalog = parse_endpoints(
             endpoints, ep_name="astakos_account", ep_version_id="v1.0")
-        self.account_url = \
-            account_service_catalog[0]['endpoints'][0]['publicURL']
-        parsed_account_url = urlparse.urlparse(self.account_url)
+        self._account_url = \
+            astakos_service_catalog[0]['endpoints'][0]['publicURL']
+        parsed_account_url = urlparse.urlparse(self._account_url)
 
-        self.account_prefix = parsed_account_url.path
-        self.logger.debug("Got account_prefix \"%s\"" % self.account_prefix)
+        self._account_prefix = parsed_account_url.path
+        self.logger.debug("Got account_prefix \"%s\"" % self._account_prefix)
 
-        self.api_authenticate = join_urls(
-            self.account_prefix, "authenticate")
-        self.api_usercatalogs = join_urls(
-            self.account_prefix, "user_catalogs")
-        self.api_service_usercatalogs = join_urls(
-            self.account_prefix, "service/user_catalogs")
-        self.api_resources = join_urls(
-            self.account_prefix, "resources")
-        self.api_quotas = join_urls(
-            self.account_prefix, "quotas")
-        self.api_service_quotas = join_urls(
-            self.account_prefix, "service_quotas")
-        self.api_commissions = join_urls(
-            self.account_prefix, "commissions")
-        self.api_commissions_action = join_urls(
-            self.api_commissions, "action")
-        self.api_feedback = join_urls(
-            self.account_prefix, "feedback")
-        self.api_projects = join_urls(
-            self.account_prefix, "projects")
-        self.api_applications = join_urls(
-            self.api_projects, "apps")
-        self.api_memberships = join_urls(
-            self.api_projects, "memberships")
+        self._ui_url = \
+            astakos_service_catalog[0]['endpoints'][0]['SNF:uiURL']
+        parsed_ui_url = urlparse.urlparse(self._ui_url)
 
-        # ------------------------------
-        # API urls under ui_url
-        # Get ui url from get_endpoints
-        # get_endpoints needs self.api_tokens
-        ui_service_catalog = parse_endpoints(
-            endpoints, ep_name="astakos_account", ep_version_id="v1.0")
-        parsed_ui_url = urlparse.urlparse(
-            ui_service_catalog[0]['endpoints'][0]['SNF:uiURL'])
-        self.ui_url = \
-            ui_service_catalog[0]['endpoints'][0]['SNF:uiURL']
-        parsed_ui_url = urlparse.urlparse(self.ui_url)
+        self._ui_prefix = parsed_ui_url.path
+        self.logger.debug("Got ui_prefix \"%s\"" % self._ui_prefix)
 
-        self.ui_prefix = parsed_ui_url.path
-        self.logger.debug("Got ui_prefix \"%s\"" % self.ui_prefix)
+    def _get_value(self, s):
+        assert s in ['_account_url', '_account_prefix',
+                     '_ui_url', '_ui_prefix']
+        try:
+            return getattr(self, s)
+        except AttributeError:
+            self.get_endpoints()
+            return getattr(self, s)
 
-        self.api_getservices = join_urls(self.ui_prefix, "get_services")
+    @property
+    def account_url(self):
+        return self._get_value('_account_url')
+
+    @property
+    def account_prefix(self):
+        return self._get_value('_account_prefix')
+
+    @property
+    def ui_url(self):
+        return self._get_value('_ui_url')
+
+    @property
+    def ui_prefix(self):
+        return self._get_value('_ui_prefix')
+
+    @property
+    def api_authenticate(self):
+        return join_urls(self.account_prefix, "authenticate")
+
+    @property
+    def api_usercatalogs(self):
+        return join_urls(self.account_prefix, "user_catalogs")
+
+    @property
+    def api_service_usercatalogs(self):
+        return join_urls(self.account_prefix, "service/user_catalogs")
+
+    @property
+    def api_resources(self):
+        return join_urls(self.account_prefix, "resources")
+
+    @property
+    def api_quotas(self):
+        return join_urls(self.account_prefix, "quotas")
+
+    @property
+    def api_service_quotas(self):
+        return join_urls(self.account_prefix, "service_quotas")
+
+    @property
+    def api_commissions(self):
+        return join_urls(self.account_prefix, "commissions")
+
+    @property
+    def api_commissions_action(self):
+        return join_urls(self.api_commissions, "action")
+
+    @property
+    def api_feedback(self):
+        return join_urls(self.account_prefix, "feedback")
+
+    @property
+    def api_projects(self):
+        return join_urls(self.account_prefix, "projects")
+
+    @property
+    def api_applications(self):
+        return join_urls(self.api_projects, "apps")
+
+    @property
+    def api_memberships(self):
+        return join_urls(self.api_projects, "memberships")
+
+    @property
+    def api_getservices(self):
+        return join_urls(self.ui_prefix, "get_services")
 
     # ----------------------------------
     @retry_dec
@@ -393,40 +431,49 @@ class AstakosClient(object):
         self._call_astakos(self.api_feedback, headers=None,
                            body=req_body, method="POST")
 
-    # ----------------------------------
-    # do a POST to ``API_TOKENS``
-    def get_endpoints(self, tenant_name=None, non_authentication=False):
-        """ Authenticate and get services' endpoints
-
-        Keyword arguments:
-        tenant_name         -- user's uniq id (optional)
-        non_authentication  -- get only non authentication protected info
-
-
-        It returns back the token as well as information about the token
-        holder and the services he/she can acess (in json format).
-
-        The tenant_name is optional and if it is given it must match the
-        user's uuid.
-
-        In case on of the `name', `type', `region', `version_id' parameters
-        is given, return only the endpoints that match all of these criteria.
-        If no match is found then raise NoEndpoints exception.
+    # -----------------------------------------
+    # do a POST to ``API_TOKENS`` with no token
+    def get_endpoints(self):
+        """ Get services' endpoints
 
         In case of error raise an AstakosClientException.
 
         """
         req_headers = {'content-type': 'application/json'}
-        if non_authentication:
-            req_body = None
-        else:
-            body = {'auth': {'token': {'id': self.token}}}
-            if tenant_name is not None:
-                body['auth']['tenantName'] = tenant_name
-            req_body = parse_request(body, self.logger)
-        return self._call_astakos(self.api_tokens, headers=req_headers,
-                                  body=req_body, method="POST",
-                                  log_body=False)
+        req_body = None
+        r = self._call_astakos(self.api_tokens, headers=req_headers,
+                               body=req_body, method="POST",
+                               log_body=False)
+        self._fill_endpoints(r)
+        return r
+
+    # --------------------------------------
+    # do a POST to ``API_TOKENS`` with a token
+    def authenticate(self, tenant_name=None):
+        """ Authenticate and get services' endpoints
+
+        Keyword arguments:
+        tenant_name         -- user's uniq id (optional)
+
+        It returns back the token as well as information about the token
+        holder and the services he/she can access (in json format).
+
+        The tenant_name is optional and if it is given it must match the
+        user's uuid.
+
+        In case of error raise an AstakosClientException.
+
+        """
+        req_headers = {'content-type': 'application/json'}
+        body = {'auth': {'token': {'id': self.token}}}
+        if tenant_name is not None:
+            body['auth']['tenantName'] = tenant_name
+        req_body = parse_request(body, self.logger)
+        r = self._call_astakos(self.api_tokens, headers=req_headers,
+                               body=req_body, method="POST",
+                               log_body=False)
+        self._fill_endpoints(r)
+        return r
 
     # ----------------------------------
     # do a GET to ``API_QUOTAS``
@@ -885,7 +932,7 @@ def parse_endpoints(endpoints, ep_name=None, ep_type=None,
 
 # --------------------------------------------------------------------
 # Private functions
-# We want _doRequest to be a distinct function
+# We want _do_request to be a distinct function
 # so that we can replace it during unit tests.
 def _do_request(conn, method, url, **kwargs):
     """The actual request. This function can easily be mocked"""

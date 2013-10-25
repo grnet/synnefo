@@ -42,10 +42,7 @@ the astakos client library
 
 import re
 import sys
-import socket
 import simplejson
-from mock import patch
-from contextlib import contextmanager
 
 import astakosclient
 from astakosclient import AstakosClient
@@ -68,7 +65,7 @@ except ImportError:
 auth_url = "https://example.org/identity/v2.0"
 account_prefix = "/account_prefix"
 ui_prefix = "/ui_prefix"
-api_authenticate = join_urls(account_prefix, "authenticate")
+api_tokens = "/identity/v2.0/tokens"
 api_usercatalogs = join_urls(account_prefix, "user_catalogs")
 api_resources = join_urls(account_prefix, "resources")
 api_quotas = join_urls(account_prefix, "quotas")
@@ -76,12 +73,21 @@ api_commissions = join_urls(account_prefix, "commissions")
 
 # --------------------------------------
 # Local users
-token_1 = "skzleaFlBl+fasFdaf24sx"
-user_1 = \
-    {"username": "user1@example.com",
-     "name": "Example User One",
-     "email": ["user1@example.com"],
-     "uuid": "73917abc-abcd-477e-a1f1-1763abcdefab"}
+token = {
+    'id': "skzleaFlBl+fasFdaf24sx",
+    'tenant': {
+        'id': "73917abc-abcd-477e-a1f1-1763abcdefab",
+        'name': "Example User One",
+        },
+    }
+
+user = {
+    'id': "73917abc-abcd-477e-a1f1-1763abcdefab",
+    'name': "Example User One",
+    'roles': [{u'id': 1, u'name': u'default'},
+              {u'id': 5, u'name': u'academic-login-users'}],
+    'roles_links': []
+    }
 
 resources = {
     "cyclades.ram": {
@@ -102,6 +108,10 @@ endpoints = {
             "type": "account"}]
         }
     }
+
+endpoints_with_info = dict(endpoints)
+endpoints_with_info['access']['token'] = dict(token)
+endpoints_with_info['access']['user'] = dict(user)
 
 quotas = {
     "system": {
@@ -197,11 +207,6 @@ resolve_commissions_rep = {
 
 # ----------------------------
 # These functions will be used as mocked requests
-def _request_offline(conn, method, url, **kwargs):
-    """This request behaves as we were offline"""
-    raise socket.gaierror
-
-
 def _request_status_302(conn, method, url, **kwargs):
     """This request returns 302"""
     message = "FOUND"
@@ -242,10 +247,10 @@ def _request_status_400(conn, method, url, **kwargs):
     return (message, data, status)
 
 
-def _request_ok(conn, method, url, **kwargs):
+def _mock_request(conn, method, url, **kwargs):
     """This request behaves like original Astakos does"""
-    if api_authenticate == url:
-        return _req_authenticate(conn, method, url, **kwargs)
+    if api_tokens == url:
+        return _req_tokens(conn, method, url, **kwargs)
     elif api_usercatalogs == url:
         return _req_catalogs(conn, method, url, **kwargs)
     elif api_resources == url:
@@ -258,35 +263,38 @@ def _request_ok(conn, method, url, **kwargs):
         return _request_status_404(conn, method, url, **kwargs)
 
 
-def _req_authenticate(conn, method, url, **kwargs):
-    """Check if user exists and return his profile"""
-    global user_1, token_1
-
-    # Check input
-    if conn.__class__.__name__ != "HTTPSConnection":
-        return _request_status_302(conn, method, url, **kwargs)
-    if method != "GET":
-        return _request_status_400(conn, method, url, **kwargs)
-    token = kwargs['headers'].get('X-Auth-Token')
-    if token == token_1:
-        user = dict(user_1)
-        return ("", simplejson.dumps(user), 200)
-    else:
-        # No user found
-        return _request_status_401(conn, method, url, **kwargs)
-
-
-def _req_catalogs(conn, method, url, **kwargs):
-    """Return user catalogs"""
-    global token_1, token_2, user_1, user_2
+def _req_tokens(conn, method, url, **kwargs):
+    """Return endpoints"""
+    global token, user, endpoints
 
     # Check input
     if conn.__class__.__name__ != "HTTPSConnection":
         return _request_status_302(conn, method, url, **kwargs)
     if method != "POST":
         return _request_status_400(conn, method, url, **kwargs)
-    token = kwargs['headers'].get('X-Auth-Token')
-    if token != token_1:
+    req_token = kwargs['headers'].get('X-Auth-Token')
+    if req_token != token['id']:
+        return _request_status_401(conn, method, url, **kwargs)
+
+    if 'body' in kwargs:
+        # Return endpoints with authenticate info
+        return ("", simplejson.dumps(endpoints_with_info), 200)
+    else:
+        # Return endpoints without authenticate info
+        return ("", simplejson.dumps(endpoints), 200)
+
+
+def _req_catalogs(conn, method, url, **kwargs):
+    """Return user catalogs"""
+    global token, user
+
+    # Check input
+    if conn.__class__.__name__ != "HTTPSConnection":
+        return _request_status_302(conn, method, url, **kwargs)
+    if method != "POST":
+        return _request_status_400(conn, method, url, **kwargs)
+    req_token = kwargs['headers'].get('X-Auth-Token')
+    if req_token != token['id']:
         return _request_status_401(conn, method, url, **kwargs)
 
     # Return
@@ -295,15 +303,15 @@ def _req_catalogs(conn, method, url, **kwargs):
         # Return uuid_catalog
         uuids = body['uuids']
         catalogs = {}
-        if user_1['uuid'] in uuids:
-            catalogs[user_1['uuid']] = user_1['username']
+        if user['id'] in uuids:
+            catalogs[user['id']] = user['name']
         return_catalog = {"displayname_catalog": {}, "uuid_catalog": catalogs}
     elif 'displaynames' in body:
         # Return displayname_catalog
         names = body['displaynames']
         catalogs = {}
-        if user_1['username'] in names:
-            catalogs[user_1['username']] = user_1['uuid']
+        if user['name'] in names:
+            catalogs[user['name']] = user['id']
         return_catalog = {"displayname_catalog": catalogs, "uuid_catalog": {}}
     else:
         return_catalog = {"displayname_catalog": {}, "uuid_catalog": {}}
@@ -326,15 +334,15 @@ def _req_resources(conn, method, url, **kwargs):
 
 def _req_quotas(conn, method, url, **kwargs):
     """Return quotas for user_1"""
-    global token_1, quotas
+    global token, quotas
 
     # Check input
     if conn.__class__.__name__ != "HTTPSConnection":
         return _request_status_302(conn, method, url, **kwargs)
     if method != "GET":
         return _request_status_400(conn, method, url, **kwargs)
-    token = kwargs['headers'].get('X-Auth-Token')
-    if token != token_1:
+    req_token = kwargs['headers'].get('X-Auth-Token')
+    if req_token != token['id']:
         return _request_status_401(conn, method, url, **kwargs)
 
     # Return
@@ -343,14 +351,14 @@ def _req_quotas(conn, method, url, **kwargs):
 
 def _req_commission(conn, method, url, **kwargs):
     """Perform a commission for user_1"""
-    global token_1, pending_commissions, \
+    global token, pending_commissions, \
         commission_successful_response, commission_failure_response
 
     # Check input
     if conn.__class__.__name__ != "HTTPSConnection":
         return _request_status_302(conn, method, url, **kwargs)
-    token = kwargs['headers'].get('X-Auth-Token')
-    if token != token_1:
+    req_token = kwargs['headers'].get('X-Auth-Token')
+    if req_token != token['id']:
         return _request_status_401(conn, method, url, **kwargs)
 
     if method == "POST":
@@ -399,65 +407,15 @@ def _req_commission(conn, method, url, **kwargs):
         return _request_status_400(conn, method, url, **kwargs)
 
 
-# ----------------------------
-# Mock the actual _doRequest
-def _mock_request(new_requests):
-    """Mock the actual request
-
-    Given a list of requests to use (in rotation),
-    replace the original _doRequest function with
-    a new one
-
-    """
-    def _mock(conn, method, url, **kwargs):
-        # Get first request
-        request = _mock.requests[0]
-        # Rotate requests
-        _mock.requests = _mock.requests[1:] + _mock.requests[:1]
-        # Use first request
-        return request(conn, method, url, **kwargs)
-
-    _mock.requests = new_requests
-    # Replace `_doRequest' with our `_mock'
-    astakosclient._do_request = _mock
-
-
-# --------------------------------------
-# Mock the get_endpoints method
-@contextmanager
-def patch_astakosclient(new_requests):
-    _mock_request(new_requests)
-    with patch('astakosclient.AstakosClient.get_endpoints') as patcher:
-        patcher.return_value = endpoints
-        yield
-
-
 # --------------------------------------------------------------------
 # The actual tests
 
 class TestCallAstakos(unittest.TestCase):
     """Test cases for function _callAstakos"""
 
-    # ----------------------------------
-    # Test the response we get if we don't have internet access
-    def _offline(self, pool):
-        global token_1, auth_url
-        _mock_request([_request_offline])
-        try:
-            client = AstakosClient(token_1, auth_url, use_pool=pool)
-            client._call_astakos("offline")
-        except AstakosClientException:
-            pass
-        else:
-            self.fail("Should have raised AstakosClientException")
-
-    def test_offline(self):
-        """Test _offline without pool"""
-        self._offline(False)
-
-    def test_offline_pool(self):
-        """Test _offline using pool"""
-        self._offline(True)
+    # Patch astakosclient's _do_request function
+    def setUp(self):
+        astakosclient._do_request = _mock_request
 
     # ----------------------------------
     # Test the response we get if we send invalid token
@@ -465,9 +423,8 @@ class TestCallAstakos(unittest.TestCase):
         global auth_url
         token = "skaksaFlBl+fasFdaf24sx"
         try:
-            with patch_astakosclient([_request_ok]):
-                client = AstakosClient(token, auth_url, use_pool=pool)
-                client.get_user_info()
+            client = AstakosClient(token, auth_url, use_pool=pool)
+            client.authenticate()
         except Unauthorized:
             pass
         except Exception:
@@ -486,11 +443,10 @@ class TestCallAstakos(unittest.TestCase):
     # ----------------------------------
     # Test the response we get if we send invalid url
     def _invalid_url(self, pool):
-        global token_1, auth_url
+        global token, auth_url
         try:
-            with patch_astakosclient([_request_ok]):
-                client = AstakosClient(token_1, auth_url, use_pool=pool)
-                client._call_astakos("/astakos/api/misspelled")
+            client = AstakosClient(token['id'], auth_url, use_pool=pool)
+            client._call_astakos("/astakos/api/misspelled")
         except NotFound:
             pass
         except Exception, e:
@@ -509,12 +465,11 @@ class TestCallAstakos(unittest.TestCase):
     # ----------------------------------
     # Test the response we get if we use an unsupported scheme
     def _unsupported_scheme(self, pool):
-        global token_1, auth_url
+        global token, auth_url
         try:
-            with patch_astakosclient([_request_ok]):
-                client = AstakosClient(token_1, "ftp://example.com",
-                                       use_pool=pool)
-                client.get_user_info()
+            client = AstakosClient(
+                token['id'], "ftp://example.com", use_pool=pool)
+            client.authenticate()
         except BadValue:
             pass
         except Exception:
@@ -533,12 +488,11 @@ class TestCallAstakos(unittest.TestCase):
     # ----------------------------------
     # Test the response we get if we use http instead of https
     def _http_scheme(self, pool):
-        global token_1
+        global token
         http_auth_url = "http://example.org/identity/v2.0"
         try:
-            with patch_astakosclient([_request_ok]):
-                client = AstakosClient(token_1, http_auth_url, use_pool=pool)
-                client.get_user_info()
+            client = AstakosClient(token['id'], http_auth_url, use_pool=pool)
+            client.authenticate()
         except AstakosClientException as err:
             if err.status != 302:
                 self.fail("Should have returned 302 (Found)")
@@ -554,13 +508,12 @@ class TestCallAstakos(unittest.TestCase):
         self._http_scheme(True)
 
     # ----------------------------------
-    # Test the response we get if we use authenticate with POST
-    def _post_authenticate(self, pool):
-        global token_1, auth_url
+    # Test the response we get if we use authenticate with GET
+    def _get_authenticate(self, pool):
+        global token, auth_url
         try:
-            with patch_astakosclient([_request_ok]):
-                client = AstakosClient(token_1, auth_url, use_pool=pool)
-                client._call_astakos(api_authenticate, method="POST")
+            client = AstakosClient(token['id'], auth_url, use_pool=pool)
+            client._call_astakos(api_tokens, method="GET")
         except BadRequest:
             pass
         except Exception:
@@ -568,22 +521,21 @@ class TestCallAstakos(unittest.TestCase):
         else:
             self.fail("Should have returned 400 (Method not allowed)")
 
-    def test_post_authenticate(self):
-        """Test _post_authenticate without pool"""
-        self._post_authenticate(False)
+    def test_get_authenticate(self):
+        """Test _get_authenticate without pool"""
+        self._get_authenticate(False)
 
-    def test_post_authenticate_pool(self):
-        """Test _post_authenticate using pool"""
-        self._post_authenticate(True)
+    def test_get_authenticate_pool(self):
+        """Test _get_authenticate using pool"""
+        self._get_authenticate(True)
 
     # ----------------------------------
     # Test the response if we request user_catalogs with GET
     def _get_user_catalogs(self, pool):
-        global token_1, auth_url, api_usercatalogs
+        global token, auth_url, api_usercatalogs
         try:
-            with patch_astakosclient([_request_ok]):
-                client = AstakosClient(token_1, auth_url, use_pool=pool)
-                client._call_astakos(api_usercatalogs)
+            client = AstakosClient(token['id'], auth_url, use_pool=pool)
+            client._call_astakos(api_usercatalogs)
         except BadRequest:
             pass
         except Exception:
@@ -603,19 +555,9 @@ class TestCallAstakos(unittest.TestCase):
 class TestAuthenticate(unittest.TestCase):
     """Test cases for function getUserInfo"""
 
-    # ----------------------------------
-    # Test the response we get if we don't have internet access
-    def test_offline(self):
-        """Test offline after 3 retries"""
-        global token_1, auth_url
-        try:
-            with patch_astakosclient([_request_offline]):
-                client = AstakosClient(token_1, auth_url, retry=3)
-                client.get_user_info()
-        except AstakosClientException:
-            pass
-        else:
-            self.fail("Should have raised AstakosClientException exception")
+    # Patch astakosclient's _do_request function
+    def setUp(self):
+        astakosclient._do_request = _mock_request
 
     # ----------------------------------
     # Test the response we get for invalid token
@@ -623,9 +565,8 @@ class TestAuthenticate(unittest.TestCase):
         global auth_url
         token = "skaksaFlBl+fasFdaf24sx"
         try:
-            with patch_astakosclient([_request_ok]):
-                client = AstakosClient(token, auth_url, use_pool=pool)
-                client.get_user_info()
+            client = AstakosClient(token, auth_url, use_pool=pool)
+            client.authenticate()
         except Unauthorized:
             pass
         except Exception:
@@ -641,58 +582,42 @@ class TestAuthenticate(unittest.TestCase):
         """Test _invalid_token using pool"""
         self._invalid_token(True)
 
-    #- ---------------------------------
+    # ----------------------------------
     # Test response for user
-    def _auth_user(self, token, user_info, pool):
-        global auth_url
+    def _auth_user(self, pool):
+        global token, endpoints_with_info, auth_url
         try:
-            with patch_astakosclient([_request_ok]):
-                client = AstakosClient(token, auth_url, use_pool=pool)
-                auth_info = client.get_user_info()
+            client = AstakosClient(token['id'], auth_url, use_pool=pool)
+            auth_info = client.authenticate()
         except:
             self.fail("Shouldn't raise an Exception")
-        self.assertEqual(user_info, auth_info)
+        self.assertEqual(endpoints_with_info, auth_info)
 
     def test_auth_user(self):
         """Test _auth_user without pool"""
-        global token_1, user_1
-        user_info = dict(user_1)
-        self._auth_user(token_1, user_info, False)
+        self._auth_user(False)
 
     def test_auth_user_pool(self):
         """Test _auth_user for User 1 using pool, with usage"""
-        global token_1, user_1
-        self._auth_user(token_1, user_1, True)
-
-    # ----------------------------------
-    # Test retry functionality
-    def test_offline_retry(self):
-        """Test retry functionality for getUserInfo"""
-        global token_1, user_1, auth_url
-        _mock_request([_request_offline, _request_offline, _request_ok])
-        try:
-            with patch_astakosclient([_request_offline, _request_offline,
-                                      _request_ok]):
-                client = AstakosClient(token_1, auth_url, retry=2)
-                auth_info = client.get_user_info()
-        except Exception, e:
-            self.fail("Shouldn't raise an Exception \"%s\"" % e)
-        self.assertEqual(user_1, auth_info)
+        self._auth_user(True)
 
 
 class TestDisplayNames(unittest.TestCase):
     """Test cases for functions getDisplayNames/getDisplayName"""
 
+    # Patch astakosclient's _do_request function
+    def setUp(self):
+        astakosclient._do_request = _mock_request
+
     # ----------------------------------
     # Test the response we get for invalid token
     def test_invalid_token(self):
         """Test the response we get for invalid token (without pool)"""
-        global user_1, auth_url
+        global auth_url
         token = "skaksaFlBl+fasFdaf24sx"
         try:
-            with patch_astakosclient([_request_ok]):
-                client = AstakosClient(token, auth_url)
-                client.get_usernames([user_1['uuid']])
+            client = AstakosClient(token, auth_url)
+            client.get_usernames(["12412351"])
         except Unauthorized:
             pass
         except Exception:
@@ -701,27 +626,25 @@ class TestDisplayNames(unittest.TestCase):
             self.fail("Should have returned 401 (Invalid X-Auth-Token)")
 
     # ----------------------------------
-    # Get info for user 1
-    def test_username_user_one(self):
-        """Test get_username for User One"""
-        global token_1, user_1, auth_url
+    # Get username
+    def test_username(self):
+        """Test get_username"""
+        global token, user, auth_url
         try:
-            with patch_astakosclient([_request_offline, _request_ok]):
-                client = AstakosClient(token_1, auth_url,
-                                       use_pool=True, retry=2)
-                info = client.get_username(user_1['uuid'])
-        except:
-            self.fail("Shouldn't raise an Exception")
-        self.assertEqual(info, user_1['username'])
+            client = AstakosClient(token['id'], auth_url,
+                                   use_pool=False, retry=2)
+            info = client.get_username(user['id'])
+        except Exception, e:
+            self.fail("Shouldn't raise an Exception: %s" % e)
+        self.assertEqual(info, user['name'])
 
     # ----------------------------------
     # Get info with wrong uuid
     def test_no_username(self):
-        global token_1, auth_url
+        global token, auth_url
         try:
-            with patch_astakosclient([_request_ok]):
-                client = AstakosClient(token_1, auth_url)
-                client.get_username("1234")
+            client = AstakosClient(token['id'], auth_url)
+            client.get_username("1234")
         except NoUserName:
             pass
         except:
@@ -733,16 +656,19 @@ class TestDisplayNames(unittest.TestCase):
 class TestGetUUIDs(unittest.TestCase):
     """Test cases for functions getUUIDs/getUUID"""
 
+    # Patch astakosclient's _do_request function
+    def setUp(self):
+        astakosclient._do_request = _mock_request
+
     # ----------------------------------
     # Test the response we get for invalid token
     def test_invalid_token(self):
         """Test the response we get for invalid token (using pool)"""
-        global user_1, auth_url
+        global user, auth_url
         token = "skaksaFlBl+fasFdaf24sx"
         try:
-            with patch_astakosclient([_request_ok]):
-                client = AstakosClient(token, auth_url)
-                client.get_uuids([user_1['username']])
+            client = AstakosClient(token, auth_url)
+            client.get_uuids([user['name']])
         except Unauthorized:
             pass
         except Exception:
@@ -751,26 +677,24 @@ class TestGetUUIDs(unittest.TestCase):
             self.fail("Should have returned 401 (Invalid X-Auth-Token)")
 
     # ----------------------------------
-    # Get uuid for user 1
-    def test_get_uuid_user_two(self):
-        """Test get_uuid for User Two"""
-        global token_1, user_1, auth_url
+    # Get uuid
+    def test_get_uuid(self):
+        """Test get_uuid"""
+        global token, user, auth_url
         try:
-            with patch_astakosclient([_request_ok]):
-                client = AstakosClient(token_1, auth_url, retry=1)
-                catalog = client.get_uuids([user_1['username']])
+            client = AstakosClient(token['id'], auth_url, retry=1)
+            catalog = client.get_uuids([user['name']])
         except:
             self.fail("Shouldn't raise an Exception")
-        self.assertEqual(catalog[user_1['username']], user_1['uuid'])
+        self.assertEqual(catalog[user['name']], user['id'])
 
     # ----------------------------------
     # Get uuid with wrong username
     def test_no_uuid(self):
-        global token_1, auth_url
+        global token, auth_url
         try:
-            with patch_astakosclient([_request_ok]):
-                client = AstakosClient(token_1, auth_url)
-                client.get_uuid("1234")
+            client = AstakosClient(token['id'], auth_url)
+            client.get_uuid("1234")
         except NoUUID:
             pass
         except:
@@ -782,14 +706,17 @@ class TestGetUUIDs(unittest.TestCase):
 class TestResources(unittest.TestCase):
     """Test cases for function get_resources"""
 
+    # Patch astakosclient's _do_request function
+    def setUp(self):
+        astakosclient._do_request = _mock_request
+
     # ----------------------------------
     def test_get_resources(self):
         """Test function call of get_resources"""
-        global resources, auth_url, token_1
+        global resources, auth_url, token
         try:
-            with patch_astakosclient([_request_offline, _request_ok]):
-                client = AstakosClient(token_1, auth_url, retry=1)
-                result = client.get_resources()
+            client = AstakosClient(token['id'], auth_url, retry=1)
+            result = client.get_resources()
         except Exception as err:
             self.fail("Shouldn't raise Exception %s" % err)
         self.assertEqual(resources, result)
@@ -798,14 +725,17 @@ class TestResources(unittest.TestCase):
 class TestQuotas(unittest.TestCase):
     """Test cases for function get_quotas"""
 
+    # Patch astakosclient's _do_request function
+    def setUp(self):
+        astakosclient._do_request = _mock_request
+
     # ----------------------------------
     def test_get_quotas(self):
         """Test function call of get_quotas"""
-        global quotas, token_1, auth_url
+        global quotas, token, auth_url
         try:
-            with patch_astakosclient([_request_ok]):
-                client = AstakosClient(token_1, auth_url)
-                result = client.get_quotas()
+            client = AstakosClient(token['id'], auth_url)
+            result = client.get_quotas()
         except Exception as err:
             self.fail("Shouldn't raise Exception %s" % err)
         self.assertEqual(quotas, result)
@@ -816,9 +746,8 @@ class TestQuotas(unittest.TestCase):
         global auth_url
         token = "buahfhsda"
         try:
-            with patch_astakosclient([_request_ok]):
-                client = AstakosClient(token, auth_url)
-                client.get_quotas()
+            client = AstakosClient(token, auth_url)
+            client.get_quotas()
         except Unauthorized:
             pass
         except Exception as err:
@@ -830,15 +759,18 @@ class TestQuotas(unittest.TestCase):
 class TestCommissions(unittest.TestCase):
     """Test cases for quota commissions"""
 
+    # Patch astakosclient's _do_request function
+    def setUp(self):
+        astakosclient._do_request = _mock_request
+
     # ----------------------------------
     def test_issue_commission(self):
         """Test function call of issue_commission"""
-        global token_1, commission_request, commission_successful_reqsponse
+        global token, commission_request, commission_successful_reqsponse
         global auth_url
         try:
-            with patch_astakosclient([_request_ok]):
-                client = AstakosClient(token_1, auth_url)
-                response = client.issue_commission(commission_request)
+            client = AstakosClient(token['id'], auth_url)
+            response = client.issue_commission(commission_request)
         except Exception as err:
             self.fail("Shouldn't raise Exception %s" % err)
         self.assertEqual(response, commission_successful_response['serial'])
@@ -846,14 +778,13 @@ class TestCommissions(unittest.TestCase):
     # ----------------------------------
     def test_issue_commission_quota_limit(self):
         """Test function call of issue_commission with limit exceeded"""
-        global token_1, commission_request, commission_failure_response
+        global token, commission_request, commission_failure_response
         global auth_url
         new_request = dict(commission_request)
         new_request['provisions'][1]['quantity'] = 520000000
         try:
-            with patch_astakosclient([_request_ok]):
-                client = AstakosClient(token_1, auth_url)
-                client.issue_commission(new_request)
+            client = AstakosClient(token['id'], auth_url)
+            client.issue_commission(new_request)
         except QuotaLimit:
             pass
         except Exception as err:
@@ -864,13 +795,12 @@ class TestCommissions(unittest.TestCase):
     # ----------------------------------
     def test_issue_one_commission(self):
         """Test function call of issue_one_commission"""
-        global token_1, commission_successful_response, auth_url
+        global token, commission_successful_response, auth_url
         try:
-            with patch_astakosclient([_request_ok]):
-                client = AstakosClient(token_1, auth_url)
-                response = client.issue_one_commission(
-                    "c02f315b-7d84-45bc-a383-552a3f97d2ad",
-                    "system", {"cyclades.vm": 1, "cyclades.ram": 30000})
+            client = AstakosClient(token['id'], auth_url)
+            response = client.issue_one_commission(
+                "c02f315b-7d84-45bc-a383-552a3f97d2ad",
+                "system", {"cyclades.vm": 1, "cyclades.ram": 30000})
         except Exception as err:
             self.fail("Shouldn't have raised Exception %s" % err)
         self.assertEqual(response, commission_successful_response['serial'])
@@ -878,11 +808,10 @@ class TestCommissions(unittest.TestCase):
     # ----------------------------------
     def test_get_pending_commissions(self):
         """Test function call of get_pending_commissions"""
-        global token_1, pending_commissions, auth_url
+        global token, pending_commissions, auth_url
         try:
-            with patch_astakosclient([_request_ok]):
-                client = AstakosClient(token_1, auth_url)
-                response = client.get_pending_commissions()
+            client = AstakosClient(token['id'], auth_url)
+            response = client.get_pending_commissions()
         except Exception as err:
             self.fail("Shouldn't raise Exception %s" % err)
         self.assertEqual(response, pending_commissions)
@@ -890,12 +819,11 @@ class TestCommissions(unittest.TestCase):
     # ----------------------------------
     def test_get_commission_info(self):
         """Test function call of get_commission_info"""
-        global token_1, commission_description, auth_url
+        global token, commission_description, auth_url
         try:
-            with patch_astakosclient([_request_ok]):
-                client = AstakosClient(token_1, auth_url,
-                                       use_pool=True, pool_size=2)
-                response = client.get_commission_info(57)
+            client = AstakosClient(token['id'], auth_url,
+                                   use_pool=True, pool_size=2)
+            response = client.get_commission_info(57)
         except Exception as err:
             self.fail("Shouldn't raise Exception %s" % err)
         self.assertEqual(response, commission_description)
@@ -903,12 +831,10 @@ class TestCommissions(unittest.TestCase):
     # ----------------------------------
     def test_get_commission_info_not_found(self):
         """Test function call of get_commission_info with invalid serial"""
-        global token_1, auth_url
-        _mock_request([_request_ok])
+        global token, auth_url
         try:
-            with patch_astakosclient([_request_ok]):
-                client = AstakosClient(token_1, auth_url)
-                client.get_commission_info("57lala")
+            client = AstakosClient(token['id'], auth_url)
+            client.get_commission_info("57lala")
         except NotFound:
             pass
         except Exception as err:
@@ -919,11 +845,10 @@ class TestCommissions(unittest.TestCase):
     # ----------------------------------
     def test_get_commission_info_without_serial(self):
         """Test function call of get_commission_info without serial"""
-        global token_1, auth_url
+        global token, auth_url
         try:
-            with patch_astakosclient([_request_ok]):
-                client = AstakosClient(token_1, auth_url)
-                client.get_commission_info(None)
+            client = AstakosClient(token['id'], auth_url)
+            client.get_commission_info(None)
         except BadValue:
             pass
         except Exception as err:
@@ -934,11 +859,10 @@ class TestCommissions(unittest.TestCase):
     # ----------------------------------
     def test_commision_action(self):
         """Test function call of commision_action with wrong action"""
-        global token_1, auth_url
+        global token, auth_url
         try:
-            with patch_astakosclient([_request_ok]):
-                client = AstakosClient(token_1, auth_url)
-                client.commission_action(57, "lala")
+            client = AstakosClient(token['id'], auth_url)
+            client.commission_action(57, "lala")
         except BadRequest:
             pass
         except Exception as err:
@@ -949,33 +873,30 @@ class TestCommissions(unittest.TestCase):
     # ----------------------------------
     def test_accept_commission(self):
         """Test function call of accept_commission"""
-        global token_1, auth_url
+        global token, auth_url
         try:
-            with patch_astakosclient([_request_ok]):
-                client = AstakosClient(token_1, auth_url)
-                client.accept_commission(57)
+            client = AstakosClient(token['id'], auth_url)
+            client.accept_commission(57)
         except Exception as err:
             self.fail("Shouldn't raise Exception %s" % err)
 
     # ----------------------------------
     def test_reject_commission(self):
         """Test function call of reject_commission"""
-        global token_1, auth_url
+        global token, auth_url
         try:
-            with patch_astakosclient([_request_ok]):
-                client = AstakosClient(token_1, auth_url)
-                client.reject_commission(57)
+            client = AstakosClient(token['id'], auth_url)
+            client.reject_commission(57)
         except Exception as err:
             self.fail("Shouldn't raise Exception %s" % err)
 
     # ----------------------------------
     def test_accept_commission_not_found(self):
         """Test function call of accept_commission with wrong serial"""
-        global token_1, auth_url
+        global token, auth_url
         try:
-            with patch_astakosclient([_request_ok]):
-                client = AstakosClient(token_1, auth_url)
-                client.reject_commission(20)
+            client = AstakosClient(token['id'], auth_url)
+            client.reject_commission(20)
         except NotFound:
             pass
         except Exception as err:
@@ -986,11 +907,10 @@ class TestCommissions(unittest.TestCase):
     # ----------------------------------
     def test_resolve_commissions(self):
         """Test function call of resolve_commissions"""
-        global token_1, auth_url
+        global token, auth_url
         try:
-            with patch_astakosclient([_request_ok]):
-                client = AstakosClient(token_1, auth_url)
-                result = client.resolve_commissions([56, 57], [56, 58, 59])
+            client = AstakosClient(token['id'], auth_url)
+            result = client.resolve_commissions([56, 57], [56, 58, 59])
         except Exception as err:
             self.fail("Shouldn't raise Exception %s" % err)
         self.assertEqual(result, resolve_commissions_rep)
@@ -999,4 +919,4 @@ class TestCommissions(unittest.TestCase):
 # ----------------------------
 # Run tests
 if __name__ == "__main__":
-        unittest.main()
+    unittest.main()

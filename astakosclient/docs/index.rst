@@ -74,6 +74,11 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
 
     This class provides the following methods:
 
+    **authenticate(**\ tenant_name=None\ **)**
+        It authenticates the user and returns information about the user,
+        their token as well as the service endpoints one can access. In
+        case of error, it raises an AstakosClientException exception.
+
     **get_user_info()**
         It returns a dict with the corresponding user's info. In case of
         error, it raises an AstakosClientException exception.
@@ -124,10 +129,9 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
         success it returns nothing.  Otherwise it raises an
         AstakosClientException exception.
 
-    **get_endpoints(**\ uuid=None\ **)**
-        It returns the token as well as information about the token holder and
-        the services he/she can access. In case of error it raises an
-        AstakosClientException exception.
+    **get_endpoints()**
+        It returns the services URLs one can access. In case of error it
+        raises an AstakosClientException exception.
 
     **get_quotas()**
         It returns user's current quotas (as dict of dicts). In case of error

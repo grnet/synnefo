@@ -33,11 +33,13 @@
 
 from optparse import make_option
 
-from snf_django.management.commands import ListCommand
+from snf_django.management.commands import ListCommand, CommandError
 from synnefo.management.common import get_backend
 from synnefo.api.util import get_subnet
 from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
                               ASTAKOS_BASE_URL)
+from synnefo.db.models import Subnet, Network
+
 from logging import getLogger
 log = getLogger(__name__)
 
@@ -66,25 +68,29 @@ class Command(ListCommand):
             help="List only subnets that have DHCP/SLAC enabled"),
     )
 
+    def get_userid(sub):
+        return Network.objects.get(id=sub.network.id).userid
+
+    def get_network(net):
+        return Network.objects.get(id=net.network.id).id
+
     object_class = Subnet
-    # FIX ME, fix user id
-    user_uuid_field = "userid"
     astakos_url = ASTAKOS_BASE_URL
     astakos_token = ASTAKOS_TOKEN
 
     FIELDS = {
         "id": ("id", "ID of the subnet"),
+        "network": (get_network, "ID of the network the subnet belongs to"),
         "name": ("name", "Name of the subnet"),
-        "user.uuid": ("userid", "The UUID of the subnet's owner"),
+        "user.uuid": (get_userid, "The UUID of the subnet's owner"),
         "cidr": ("cidr", "The CIDR of the subnet"),
         "ipversion": ("ipversion", "The IP version of the subnet"),
-        "gateway": ("The gateway IP of the subnet"),
-        "dhcp": ("DHCP flag of the subnet"),
-        "created": ("created", "The date the server was created"),
+        "gateway": ("gateway", "The gateway IP of the subnet"),
+        "dhcp": ("dhcp", "DHCP flag of the subnet"),
     }
 
-    fields = ["id", "name", "user.uuid", "cidr", "ipversion", "gateway",
-              "dhcp", "created"]
+    fields = ["id", "network", "name", "user.uuid", "cidr", "ipversion",
+              "gateway", "dhcp"]
 
     def handle_args(self, *args, **options):
         if options["ipv4"] and options["ipv6"]:
@@ -96,5 +102,5 @@ class Command(ListCommand):
         if options["ipv6"]:
             self.filters["ipversion"] = 6
 
-        if options["build"]:
+        if options["dhcp"]:
             self.filters["dhcp"] = True

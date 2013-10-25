@@ -54,13 +54,28 @@ def port_command(action):
 
 
 @transaction.commit_on_success
-def create(network, machine, name="", security_groups=None,
+def create(network, machine, ipaddress, name="", security_groups=None,
            device_owner='vm'):
-    """Create a new port by giving a vm and a network"""
+    """Create a new port connecting a server/router to a network.
+
+    Connect a server/router to a network by creating a new Port. If
+    'ipaddress' argument is specified, the port will be assigned this
+    IPAddress. Otherwise, an IPv4 address from the IPv4 subnet will be
+    allocated.
+
+    """
     if network.state != 'ACTIVE':
         raise faults.Conflict('Network build in process')
 
     user_id = machine.userid
+
+    if ipaddress is None:
+        if network.subnets.filter(ipversion=4).exists():
+            ipaddress = util.allocate_ip(network, user_id)
+    else:
+        if ipaddress.nic is not None:
+            raise faults.BadRequest("Address '%s' already in use." %
+                                    ipaddress.address)
     #create the port
     port = NetworkInterface.objects.create(name=name,
                                            network=network,
@@ -72,11 +87,14 @@ def create(network, machine, name="", security_groups=None,
     if security_groups:
         port.security_groups.add(*security_groups)
 
-    ipaddress = None
-    if network.subnets.filter(ipversion=4).exists():
-            ipaddress = util.allocate_ip(network, user_id)
-            ipaddress.nic = port
-            ipaddress.save()
+    # If no IPAddress is specified, try to allocate one
+    if ipaddress is None and network.subnets.filter(ipversion=4).exists():
+        ipaddress = util.allocate_ip(network, user_id)
+
+    # Associate the IPAddress with the NIC
+    if ipaddress is not None:
+        ipaddress.nic = port
+        ipaddress.save()
 
     jobID = backend.connect_to_network(machine, port)
 

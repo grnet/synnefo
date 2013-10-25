@@ -37,13 +37,16 @@ from django.core.management.base import BaseCommand, CommandError
 from synnefo.management.common import convert_api_faults
 
 from synnefo.api import util
-from synnefo.management.common import get_network, get_vm
+from synnefo.management.common import (get_network, get_vm,
+                                       get_floating_ip_by_id)
 from synnefo.logic import ports
 
 HELP_MSG = """Create a new port.
 
-Connect a server/router to a network by creating a new port. The port will
-get an IP address for each Subnet that is associated with the network."""
+Connect a server/router to a network by creating a new port. If 'floating_ip'
+option is used, the specified floating IP will be assigned to the new port.
+Otherwise, the port will get an IP address for each Subnet that is associated
+with the network."""
 
 
 class Command(BaseCommand):
@@ -71,6 +74,11 @@ class Command(BaseCommand):
             default=None,
             help="The ID of the router that the port will be connected to."),
         make_option(
+            "--floating-ip",
+            dest="floating_ip_id",
+            default=None,
+            help="The ID of the floating IP to use for the port."),
+        make_option(
             "--security-groups",
             dest="security-groups",
             default=None,
@@ -87,6 +95,7 @@ class Command(BaseCommand):
         network_id = options["network_id"]
         server_id = options["server_id"]
         router_id = options["router_id"]
+        floating_ip_id = options["floating_ip_id"]
         # assume giving security groups comma separated
         security_group_ids = options["security-groups"]
 
@@ -112,6 +121,13 @@ class Command(BaseCommand):
         else:
             raise CommandError("Neither server or router is specified")
 
+        if floating_ip_id:
+            floating_ip = get_floating_ip_by_id(floating_ip_id,
+                                                for_update=True)
+            if floating_ip.userid != vm.userid:
+                msg = "Floating IP %s does not belong to server/router owner."
+                raise CommandError(msg % floating_ip)
+
         # get the network
         network = get_network(network_id)
 
@@ -123,7 +139,8 @@ class Command(BaseCommand):
                 sg = util.get_security_group(int(gid))
                 sg_list.append(sg)
 
-        new_port = ports.create(network, vm, name, security_groups=sg_list,
+        new_port = ports.create(network, vm, name=name, ipaddress=floating_ip,
+                                security_groups=sg_list,
                                 device_owner=owner)
         self.stdout.write("Created port '%s' in DB.\n" % new_port)
         # TODO: Display port information, like ip address

@@ -33,7 +33,7 @@
 
 from django.core.management import CommandError
 from synnefo.db.models import (Backend, VirtualMachine, Network,
-                               Flavor, IPAddress)
+                               Flavor, IPAddress, Subnet)
 from functools import wraps
 
 from snf_django.lib.api import faults
@@ -156,6 +156,16 @@ def get_floating_ip_by_address(address, for_update=False):
         if for_update:
             objects = objects.select_for_update()
         return objects.get(floating_ip=True, address=address, deleted=False)
+    except IPAddress.DoesNotExist:
+        raise CommandError("Floating IP does not exist.")
+
+
+def get_floating_ip_by_id(floating_ip_id, for_update=False):
+    try:
+        objects = IPAddress.objects
+        if for_update:
+            objects = objects.select_for_update()
+        return objects.get(floating_ip=True, id=floating_ip_id, deleted=False)
     except IPAddress.DoesNotExist:
         raise CommandError("Floating IP does not exist.")
 

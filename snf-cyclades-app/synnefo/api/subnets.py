@@ -109,7 +109,9 @@ def create_subnet(request):
 
     name = subnet.get('name', None)
     ipversion = subnet.get('ip_version', 4)
-    gateway = subnet.get('gateway_ip', None)
+    # If no gateway is specified, send an empty string, because None is used
+    # if the user wants no gateway at all
+    gateway = subnet.get('gateway_ip', "")
     dhcp = subnet.get('enable_dhcp', True)
     slac = subnet.get('enable_slac', None)
     dns = subnet.get('dns_nameservers', None)

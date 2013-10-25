@@ -44,7 +44,7 @@ from snf_django.lib.api import utils
 from synnefo.db.models import Subnet, Network, IPPoolTable
 from synnefo.logic import networks
 
-from ipaddr import IPv4Network, IPv6Network, IPv4Address, IPAddress, IPNetwork
+from ipaddr import IPv4Address, IPAddress, IPNetwork
 
 log = getLogger(__name__)
 
@@ -85,15 +85,16 @@ def create_subnet(network_id, cidr, name, ipversion, gateway, dhcp, slac,
     if ipversion not in [4, 6]:
         raise api.faults.BadRequest("Malformed IP version type")
 
-    # Returns the first available IP in the subnet
-    if ipversion == 6:
-        potential_gateway = str(IPv6Network(cidr).network + 1)
-        check_number_of_subnets(network, 6)
-    else:
-        potential_gateway = str(IPv4Network(cidr).network + 1)
-        check_number_of_subnets(network, 4)
+    check_number_of_subnets(network, ipversion)
 
-    if gateway is None:
+    # Returns the first available IP in the subnet
+    try:
+        cidr_ip = IPNetwork(cidr)
+    except ValueError:
+        raise api.faults.BadRequest("Malformed CIDR")
+    potential_gateway = str(IPNetwork(cidr).network + 1)
+
+    if gateway is "":
         gateway = potential_gateway
 
     if ipversion == 6:
@@ -109,7 +110,6 @@ def create_subnet(network_id, cidr, name, ipversion, gateway, dhcp, slac,
     name = check_name_length(name)
 
     gateway_ip = IPAddress(gateway)
-    cidr_ip = IPNetwork(cidr)
 
     sub = Subnet.objects.create(name=name, network=network, cidr=cidr,
                                 ipversion=ipversion, gateway=gateway,

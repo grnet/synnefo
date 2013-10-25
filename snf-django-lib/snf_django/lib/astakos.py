@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -44,7 +44,7 @@ def user_for_token(token, astakos_auth_url, logger=None):
     client = AstakosClient(token, astakos_auth_url,
                            retry=2, use_pool=True, logger=logger)
     try:
-        return client.get_user_info()
+        return client.authenticate()
     except Unauthorized:
         return None
 
@@ -65,11 +65,8 @@ def get_user(request, astakos_auth_url, fallback_token=None, logger=None):
     if not user:
         return None
 
-    # use user uuid, instead of email, keep email/displayname reference
-    # to user_id
-    request.user_uniq = user['uuid']
+    request.user_uniq = user['access']['user']['id']
     request.user = user
-    request.user_id = user.get('displayname')
     return user
 
 

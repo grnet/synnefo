@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -95,8 +95,13 @@ def token_check(func):
             raise PermissionDenied
 
         token = request.POST.get('token', None)
-        if token and token == request.user.get('auth_token', None):
-            return func(request, *args, **kwargs)
+        if token:
+            try:
+                req_token = request.user["access"]["token"]["id"]
+                if token == req_token:
+                    return func(request, *args, **kwargs)
+            except KeyError:
+                pass
 
         raise PermissionDenied
 
@@ -117,7 +122,8 @@ def helpdesk_user_required(func, permitted_groups=PERMITTED_GROUPS):
         astakos.get_user(request, settings.ASTAKOS_AUTH_URL,
                          fallback_token=token, logger=logger)
         if hasattr(request, 'user') and request.user:
-            groups = request.user.get('groups', [])
+            groups = request.user['access']['user']['roles']
+            groups = [g["name"] for g in groups]
 
             if not groups:
                 logger.error("Failed to access helpdesk view. User: %r",
@@ -181,7 +187,7 @@ def account(request, search_query):
     is_uuid = UUID_SEARCH_REGEX.match(search_query)
     is_vm = VM_SEARCH_REGEX.match(search_query)
     account_name = search_query
-    auth_token = request.user.get('auth_token')
+    auth_token = request.user['access']['token']['id']
 
     if is_ip:
         try:
@@ -258,7 +264,7 @@ def account(request, search_query):
         'vms': vms,
         'show_deleted': show_deleted,
         'account_name': account_name,
-        'token': request.user['auth_token'],
+        'token': request.user['access']['token']['id'],
         'networks': networks,
         'HELPDESK_MEDIA_URL': HELPDESK_MEDIA_URL,
         'UI_MEDIA_URL': UI_MEDIA_URL

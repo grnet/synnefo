@@ -49,6 +49,9 @@ Astakos
   Re-registration with `snf-component-register' affects both the base and
   the ui URL.
 
+* Remove API call GET /account/v1.0/authenticate in favor of
+  POST /identity/v2.0/tokens.
+
 * Management commands:
   * Introduced new commands:
      * component-show

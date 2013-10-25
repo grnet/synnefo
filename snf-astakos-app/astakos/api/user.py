@@ -31,14 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.http import HttpResponse
-from django.utils import simplejson as json
 from django.views.decorators.csrf import csrf_exempt
-
 from snf_django.lib import api
-from snf_django.lib.api import faults
-
-from astakos.im.util import epoch
 
 from .util import (
     get_uuid_displayname_catalogs as get_uuid_displayname_catalogs_util,
@@ -47,36 +41,6 @@ from .util import (
 
 import logging
 logger = logging.getLogger(__name__)
-
-
-@api.api_method(http_method="GET", token_required=True, user_required=False,
-                logger=logger)
-@user_from_token  # Authenticate user!!
-def authenticate(request):
-    # Normal Response Codes: 200
-    # Error Response Codes: internalServerError (500)
-    #                       badRequest (400)
-    #                       unauthorised (401)
-    user = request.user
-    if not user:
-        raise faults.BadRequest('No user')
-
-    response = HttpResponse()
-    user_info = {
-        'id': user.id,
-        'username': user.username,
-        'uuid': user.uuid,
-        'email': [user.email],
-        'name': user.realname,
-        'groups': list(user.groups.all().values_list('name', flat=True)),
-        'auth_token': request.META.get('HTTP_X_AUTH_TOKEN'),
-        'auth_token_created': epoch(user.auth_token_created),
-        'auth_token_expires': epoch(user.auth_token_expires)}
-
-    response.content = json.dumps(user_info)
-    response['Content-Type'] = 'application/json; charset=UTF-8'
-    response['Content-Length'] = len(response.content)
-    return response
 
 
 @csrf_exempt

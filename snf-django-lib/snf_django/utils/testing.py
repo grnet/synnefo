@@ -132,8 +132,24 @@ def astakos_user(user):
     """
     with patch("snf_django.lib.api.get_token") as get_token:
         get_token.return_value = "DummyToken"
-        with patch('astakosclient.AstakosClient.get_user_info') as m2:
-            m2.return_value = {"uuid": text.udec(user, 'utf8')}
+        with patch('astakosclient.AstakosClient.authenticate') as m2:
+            m2.return_value = {"access": {
+                    "token": {
+                        "expires": "2013-06-19T15:23:59.975572+00:00",
+                        "id": "DummyToken",
+                        "tenant": {
+                            "id": text.udec(user, 'utf8'),
+                            "name": "Firstname Lastname"
+                            }
+                        },
+                    "serviceCatalog": [],
+                    "user": {
+                        "roles_links": [],
+                        "id": text.udec(user, 'utf8'),
+                        "roles": [{"id": 1, "name": "default"}],
+                        "name": "Firstname Lastname"}}
+                               }
+
             with patch('astakosclient.AstakosClient.get_quotas') as m3:
                 m3.return_value = {
                     "system": {

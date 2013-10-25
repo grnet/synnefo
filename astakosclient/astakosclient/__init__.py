@@ -170,10 +170,6 @@ class AstakosClient(object):
         return self._get_value('_ui_prefix')
 
     @property
-    def api_authenticate(self):
-        return join_urls(self.account_prefix, "authenticate")
-
-    @property
     def api_usercatalogs(self):
         return join_urls(self.account_prefix, "user_catalogs")
 
@@ -284,17 +280,6 @@ class AstakosClient(object):
             msg = "Cannot parse response \"%s\" with simplejson: %s"
             self.logger.error(msg % (data, str(err)))
             raise InvalidResponse(str(err), data)
-
-    # ------------------------
-    # do a GET to ``API_AUTHENTICATE``
-    def get_user_info(self):
-        """Authenticate user and get user's info as a dictionary
-
-        In case of success return user information (json parsed format).
-        Otherwise raise an AstakosClientException.
-
-        """
-        return self._call_astakos(self.api_authenticate)
 
     # ----------------------------------
     # do a POST to ``API_USERCATALOGS`` (or ``API_SERVICE_USERCATALOGS``)

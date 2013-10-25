@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -83,13 +83,42 @@ def get_user_mock(request, *args, **kwargs):
     request.user = None
     if request.META.get('HTTP_X_AUTH_TOKEN', None) == '0000':
         request.user_uniq = 'test'
-        request.user = {'uniq': 'test', 'auth_token': '0000'}
+        request.user = {"access": {
+                        "token": {
+                            "expires": "2013-06-19T15:23:59.975572+00:00",
+                            "id": "0000",
+                            "tenant": {
+                                "id": "test",
+                                "name": "Firstname Lastname"
+                                }
+                            },
+                        "serviceCatalog": [],
+                        "user": {
+                            "roles_links": [],
+                            "id": "test",
+                            "roles": [{"id": 1, "name": "default"}],
+                            "name": "Firstname Lastname"}}
+                        }
+
     if request.META.get('HTTP_X_AUTH_TOKEN', None) == '0001':
         request.user_uniq = 'test'
-        request.user = {'uniq': 'test', 'groups': ['default',
-                                                   'helpdesk'],
-                        'auth_token': '0001'}
-
+        request.user = {"access": {
+                        "token": {
+                            "expires": "2013-06-19T15:23:59.975572+00:00",
+                            "id": "0001",
+                            "tenant": {
+                                "id": "test",
+                                "name": "Firstname Lastname"
+                                }
+                            },
+                        "serviceCatalog": [],
+                        "user": {
+                            "roles_links": [],
+                            "id": "test",
+                            "roles": [{"id": 1, "name": "default"},
+                                      {"id": 2, "name": "helpdesk"}],
+                            "name": "Firstname Lastname"}}
+                        }
 
 @mock.patch("astakosclient.AstakosClient", new=AstakosClientMock)
 @mock.patch("snf_django.lib.astakos.get_user", new=get_user_mock)

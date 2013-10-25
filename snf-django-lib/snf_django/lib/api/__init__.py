@@ -109,8 +109,8 @@ def api_method(http_method=None, token_required=True, user_required=True,
                                             use_pool=True,
                                             retry=2,
                                             logger=logger)
-                    user_info = astakos.get_user_info()
-                    request.user_uniq = user_info["uuid"]
+                    user_info = astakos.authenticate()
+                    request.user_uniq = user_info["access"]["user"]["id"]
                     request.user = user_info
 
                 # Get the response object

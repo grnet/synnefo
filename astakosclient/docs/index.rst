@@ -40,8 +40,8 @@ demonstrates how to get user's info using ``astakosclient``.
 
     client = AstakosClient("UQpYas7ElzWGD5yCcEXtjw",
                            "https://accounts.example.com")
-    user_info = client.get_user_info()
-    print user_info['username']
+    user_info = client.authenticate()
+    print user_info['access']['user']['id']
 
 Another example where we ask for the username of a user with UUID:
 ``b3de8eb0-3958-477e-als9-789af8dd352c``
@@ -78,10 +78,6 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
         It authenticates the user and returns information about the user,
         their token as well as the service endpoints one can access. In
         case of error, it raises an AstakosClientException exception.
-
-    **get_user_info()**
-        It returns a dict with the corresponding user's info. In case of
-        error, it raises an AstakosClientException exception.
 
     **get_usernames(**\ uuids\ **)**
         Given a list of UUIDs it returns a uuid_catalog, that is a dictionary

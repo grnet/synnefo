@@ -127,8 +127,8 @@ class PortTest(BaseAPITest):
         response = self.post(PORTS_URL, params=json.dumps(request))
         self.assertEqual(response.status_code, 404)
 
-    def test_create_port(self):
-        net = dbmf.NetworkFactory.create()
+    def test_create_port_private_net(self):
+        net = dbmf.NetworkFactory.create(public=False)
         subnet1 = dbmf.IPv4SubnetFactory.create(network=net)
         subnet2 = dbmf.IPv6SubnetFactory.create(network=net)
         sg1 = dbmf.SecurityGroupFactory.create()
@@ -145,6 +145,84 @@ class PortTest(BaseAPITest):
         response = self.post(PORTS_URL, params=json.dumps(request),
                              user=net.userid)
         self.assertEqual(response.status_code, 201)
+
+    def test_create_port_public_net_no_ip(self):
+        net = dbmf.NetworkFactory.create(public=True)
+        vm = dbmf.VirtualMachineFactory.create(userid=net.userid)
+        request = {
+            "port": {
+                "name": "port1",
+                "network_id": str(net.id),
+                "device_id": str(vm.id),
+            }
+        }
+        response = self.post(PORTS_URL, params=json.dumps(request),
+                             user=net.userid)
+        self.assertEqual(response.status_code, 400)
+
+    def test_create_port_public_net_wrong_ip(self):
+        net = dbmf.NetworkFactory.create(public=True)
+        vm = dbmf.VirtualMachineFactory.create(userid=net.userid)
+        request = {
+            "port": {
+                "name": "port1",
+                "network_id": str(net.id),
+                "device_id": str(vm.id),
+                "fixed_ips" : [{"ip_address":"8.8.8.8"}]
+            }
+        }
+        response = self.post(PORTS_URL, params=json.dumps(request),
+                             user=net.userid)
+        self.assertEqual(response.status_code, 404)
+
+    def test_create_port_public_net_conflict(self):
+        net = dbmf.NetworkFactory.create(public=True)
+        fip = dbmf.FloatingIPFactory(nic=None, userid=net.userid)
+        vm = dbmf.VirtualMachineFactory.create(userid=net.userid)
+        request = {
+            "port": {
+                "name": "port1",
+                "network_id": str(net.id),
+                "device_id": str(vm.id),
+                "fixed_ips" : [{"ip_address":fip.address}]
+            }
+        }
+        response = self.post(PORTS_URL, params=json.dumps(request),
+                             user=net.userid)
+        self.assertEqual(response.status_code, 409)
+
+    def test_create_port_public_net_taken_ip(self):
+        net = dbmf.NetworkFactory.create(public=True)
+        fip = dbmf.FloatingIPFactory(network=net, userid=net.userid)
+        vm = dbmf.VirtualMachineFactory.create(userid=net.userid)
+        request = {
+            "port": {
+                "name": "port1",
+                "network_id": str(net.id),
+                "device_id": str(vm.id),
+                "fixed_ips" : [{"ip_address":fip.address}]
+            }
+        }
+        response = self.post(PORTS_URL, params=json.dumps(request),
+                             user=net.userid)
+        self.assertEqual(response.status_code, 400)
+
+    def test_create_port_public_net(self):
+        net = dbmf.NetworkFactory.create(public=True)
+        fip = dbmf.FloatingIPFactory(network=net, nic=None, userid=net.userid)
+        vm = dbmf.VirtualMachineFactory.create(userid=net.userid)
+        request = {
+            "port": {
+                "name": "port1",
+                "network_id": str(net.id),
+                "device_id": str(vm.id),
+                "fixed_ips" : [{"ip_address":fip.address}]
+            }
+        }
+        response = self.post(PORTS_URL, params=json.dumps(request),
+                             user=net.userid)
+        print response.content
+        self.assertEqual(response.status_code, 200)
 
     def test_add_nic_to_deleted_network(self):
         user = 'userr'

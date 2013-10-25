@@ -107,8 +107,17 @@ def create_port(request):
 
     network = util.get_network(net_id, user_id, non_deleted=True)
 
+    ipaddress = None
     if network.public:
-        raise api.faults.Forbidden('forbidden')
+        fixed_ips = api.utils.get_attribute(port_dict, "fixed_ips",
+                                            required=True)
+        fip_address = api.utils.get_attribute(fixed_ips[0], 'ip_address',
+                                              required=True)
+        ipaddress = util.get_floating_ip_by_address(user_id, fip_address,
+                                                      for_update=True)
+        if ipaddress.network.id != network.id:
+            raise api.faults.Conflict("The given ip is not on the \
+                                       given network")
 
     vm = util.get_vm(dev_id, user_id, non_deleted=True, non_suspended=True)
 
@@ -127,7 +136,7 @@ def create_port(request):
             sg = util.get_security_group(int(gid))
             sg_list.append(sg)
 
-    new_port = ports.create(network, vm, security_groups=sg_list)
+    new_port = ports.create(network, vm, ipaddress, security_groups=sg_list)
 
     response = render_port(request, port_to_dict(new_port), status=201)
 

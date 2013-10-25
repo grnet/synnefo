@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 #
 
+from django import http
 from django.test import TransactionTestCase
 from django.conf import settings
 from django.test.client import Client
@@ -54,10 +55,14 @@ class TestRestViews(TransactionTestCase):
     fixtures = ['users']
 
     def setUp(self):
+        settings.USERDATA_MAX_SSH_KEYS_PER_USER = 10
+
         def get_user_mock(request, *Args, **kwargs):
             if request.META.get('HTTP_X_AUTH_TOKEN', None) == '0000':
                 request.user_uniq = 'test'
-                request.user = {'uniq': 'test'}
+                request.user = {'id': 'id',
+                                'username': 'username',
+                                'uuid': 'test'}
 
         # mock the astakos authentication function
         from snf_django.lib import astakos
@@ -135,7 +140,7 @@ class TestRestViews(TransactionTestCase):
                                             'content':"""key 2 content"""}),
                                 content_type='application/json')
         self.assertEqual(PublicKeyPair.objects.count(), 1)
-        pk = PublicKeyPair.objects.get(pk=1)
+        pk = PublicKeyPair.objects.get()
         self.assertEqual(pk.name, "key pair 2")
         self.assertEqual(pk.content, "key 2 content")
 
@@ -165,6 +170,16 @@ class TestRestViews(TransactionTestCase):
         new_key.user = 'test'
         new_key.full_clean()
         new_key.save()
+
+    def test_generate_limit(self):
+        settings.USERDATA_MAX_SSH_KEYS_PER_USER = 1
+        resp = self.client.post(self.keys_url,
+                                json.dumps({'name':'key1',
+                                            'content':"""key 1 content"""}),
+                                content_type='application/json')
+        genpath = self.keys_url + "/generate"
+        r = self.client.post(genpath)
+        assert isinstance(r, http.HttpResponseServerError)
 
     def test_invalid_data(self):
         resp = self.client.post(self.keys_url,

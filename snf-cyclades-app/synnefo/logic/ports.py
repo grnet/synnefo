@@ -84,8 +84,10 @@ def create(network, machine, name="", security_groups=None,
              port, ipaddress, jobID)
 
     # TODO: Consider quotas for Ports
+    # TODO: Associate jobID with the port
 
     return port
+
 
 @transaction.commit_on_success
 def delete(port):

@@ -40,15 +40,30 @@ from django.core.urlresolvers import clear_url_caches
 from django.utils import simplejson as json
 from django.conf import settings
 from django.core.urlresolvers import reverse
+from mock import patch
 
 from synnefo.userdata.models import *
+
+
+def get_user_mock(request, *args, **kwargs):
+    if request.META.get('HTTP_X_AUTH_TOKEN', None) == '0000':
+        request.user_uniq = 'test'
+        request.user = {'id': 'id',
+                        'username': 'username',
+                        'uuid': 'test'}
 
 
 class AaiClient(Client):
 
     def request(self, **request):
-        request['HTTP_X_AUTH_TOKEN'] = '0000'
-        return super(AaiClient, self).request(**request)
+        # mock the astakos authentication function
+        with patch("synnefo.userdata.rest.get_user",
+                   new=get_user_mock):
+            with patch("synnefo.userdata.views.get_user",
+                       new=get_user_mock):
+                request['HTTP_X_AUTH_TOKEN'] = '0000'
+                return super(AaiClient, self).request(**request)
+
 
 class TestRestViews(TransactionTestCase):
 
@@ -56,17 +71,6 @@ class TestRestViews(TransactionTestCase):
 
     def setUp(self):
         settings.USERDATA_MAX_SSH_KEYS_PER_USER = 10
-
-        def get_user_mock(request, *Args, **kwargs):
-            if request.META.get('HTTP_X_AUTH_TOKEN', None) == '0000':
-                request.user_uniq = 'test'
-                request.user = {'id': 'id',
-                                'username': 'username',
-                                'uuid': 'test'}
-
-        # mock the astakos authentication function
-        from snf_django.lib import astakos
-        astakos.get_user = get_user_mock
 
         settings.SKIP_SSH_VALIDATION = True
         self.client = AaiClient()

@@ -1012,6 +1012,8 @@ def init_cluster():
     """.format(extra, env.env.common_bridge,
                env.env.cluster_netdev, env.env.cluster.fqdn)
     try_run(cmd)
+    cmd = """gnt-cluster modify --enabled-disk-templates file,plain,ext"""
+    try_run(cmd)
 
 
 @roles("ganeti")

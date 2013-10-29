@@ -34,8 +34,6 @@
 from optparse import make_option
 
 from snf_django.management.commands import ListCommand, CommandError
-from synnefo.management.common import get_backend
-from synnefo.api.util import get_subnet
 from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
                               ASTAKOS_BASE_URL)
 from synnefo.db.models import Subnet, Network

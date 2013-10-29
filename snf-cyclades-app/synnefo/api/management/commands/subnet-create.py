@@ -96,22 +96,29 @@ class Command(BaseCommand):
         if not cidr:
             raise CommandError("cidr is mandatory")
 
-        user_id = common.get_network(id=network_id).userid
-        name = options.get["name", None]
-        allocation_pools = options.get["allocation_pools", None]
-        ipversion = options.get["ipversion", 4]
-        gateway = options.get["gateway", ""]
-        dhcp = options.get["dhcp", True]
-        dns = options.get["dns", None]
-        host_routes = options.get["host_routes", None]
+        user_id = common.get_network(network_id).userid
+        name = options["name"]
+        allocation_pools = options["allocation_pools"]
+        ipversion = int(options["ipversion"])
+        if not ipversion:
+            ipversion = 4
+        gateway = options["gateway"]
+        if not gateway:
+            gateway = ""
+        dhcp = options["dhcp"]
+        if not dhcp:
+            dhcp = True
+        dns = options["dns"]
+        host_routes = options["host_routes"]
 
-        subnets.create(name=name,
-                       network_id=network_id,
-                       cidr=cidr,
-                       allocation_pools=allocation_pools,
-                       gateway=gateway,
-                       ipversion=ipversion,
-                       dhcp=dhcp,
-                       dns_nameservers=dns,
-                       host_routes=host_routes,
-                       user_id=user_id)
+        subnets.create_subnet(name=name,
+                              network_id=network_id,
+                              cidr=cidr,
+                              allocation_pools=allocation_pools,
+                              gateway=gateway,
+                              ipversion=ipversion,
+                              dhcp=dhcp,
+                              slac=dhcp,
+                              dns_nameservers=dns,
+                              host_routes=host_routes,
+                              user_id=user_id)

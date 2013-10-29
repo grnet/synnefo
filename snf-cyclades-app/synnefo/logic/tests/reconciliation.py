@@ -202,7 +202,7 @@ class ServerReconciliationTest(TestCase):
              "mtime": time(),
              "disk.sizes": [],
              "nic.names": [nic.backend_uuid],
-             "nic.ips": ["192.168.2.1"],
+             "nic.ips": ["192.168.2.5"],
              "nic.macs": ["aa:00:bb:cc:dd:ee"],
              "nic.networks.names": [network2.backend_id],
              "tags": []}]
@@ -212,7 +212,7 @@ class ServerReconciliationTest(TestCase):
         self.assertEqual(vm1.operstate, "STARTED")
         nic = vm1.nics.all()[0]
         self.assertEqual(nic.network, network2)
-        self.assertEqual(nic.ipv4_address, "192.168.2.1")
+        self.assertEqual(nic.ipv4_address, "192.168.2.5")
         self.assertEqual(nic.mac, "aa:00:bb:cc:dd:ee")
 
 

@@ -120,13 +120,13 @@ class ServerTest(TransactionTestCase):
             subnet = mfactory.IPv4SubnetFactory(network__flavor="CUSTOM",
                                                 cidr="192.168.2.0/24",
                                                 gateway="192.168.2.1",
-                                                dhcp=True)
+                                                dhcp=dhcp)
             net = subnet.network
             vm = mfactory.VirtualMachineFactory(operstate="STARTED")
             mfactory.BackendNetworkFactory(network=net, backend=vm.backend)
             mrapi().ModifyInstance.return_value = 42
             servers.connect(vm, net)
-            pool = net.get_pool(locked=False)
+            pool = net.get_ip_pools(locked=False)[0]
             self.assertFalse(pool.is_available("192.168.2.2"))
             args, kwargs = mrapi().ModifyInstance.call_args
             nics = kwargs["nics"][0]

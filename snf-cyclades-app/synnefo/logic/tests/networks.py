@@ -152,4 +152,4 @@ class NetworkTest(TestCase):
         subnet6 = net.subnets.get(ipversion=6)
         self.assertEqual(subnet6.cidr, "2001:648:2ffc:1112::/64")
         self.assertEqual(subnet6.gateway, "2001:648:2ffc:1112::1")
-        self.assertRaises(Exception, net.get_pool)
+        self.assertEqual(net.get_ip_pools(), [])

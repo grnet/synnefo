@@ -137,7 +137,7 @@ class UpdateDBTest(TestCase):
         # Also create a NIC
         ip = mfactory.IPv4AddressFactory(nic__machine=vm)
         nic = ip.nic
-        nic.network.get_pool().reserve(nic.ipv4_address)
+        nic.network.get_ip_pools()[0].reserve(nic.ipv4_address)
         msg = self.create_msg(operation='OP_INSTANCE_REMOVE',
                               instance=vm.backend_vm_id)
         with mocked_quotaholder():
@@ -148,7 +148,7 @@ class UpdateDBTest(TestCase):
         self.assertTrue(db_vm.deleted)
         # Check that nics are deleted
         self.assertFalse(db_vm.nics.all())
-        self.assertTrue(nic.network.get_pool().is_available(ip.address))
+        self.assertTrue(nic.network.get_ip_pools()[0].is_available(ip.address))
         vm2 = mfactory.VirtualMachineFactory()
         fp1 = mfactory.IPv4AddressFactory(nic__machine=vm2, floating_ip=True,
                                           network__floating_ip_pool=True)
@@ -156,7 +156,7 @@ class UpdateDBTest(TestCase):
         nic1 = mfactory.NetworkInterfaceFactory(machine=vm2)
         fp1.nic = nic1
         fp1.save()
-        pool = network.get_pool()
+        pool = network.get_ip_pools()[0]
         pool.reserve(fp1.address)
         pool.save()
         msg = self.create_msg(operation='OP_INSTANCE_REMOVE',
@@ -168,7 +168,7 @@ class UpdateDBTest(TestCase):
         self.assertEqual(db_vm.operstate, 'DESTROYED')
         self.assertTrue(db_vm.deleted)
         self.assertEqual(IPAddress.objects.get(id=fp1.id).nic, None)
-        pool = network.get_pool()
+        pool = network.get_ip_pools()[0]
         # Test that floating ips are not released
         self.assertFalse(pool.is_available(fp1.address))
 
@@ -367,7 +367,7 @@ class UpdateNetTest(TestCase):
         network = ip.network
         subnet = ip.subnet
         vm = ip.nic.machine
-        pool = subnet.get_pool()
+        pool = subnet.get_ip_pools()[0]
         pool.reserve("10.0.0.2")
         pool.save()
 
@@ -384,7 +384,7 @@ class UpdateNetTest(TestCase):
         self.assertEqual(nics[0].index, 0)
         self.assertEqual(nics[0].ipv4_address, '10.0.0.3')
         self.assertEqual(nics[0].mac, 'aa:bb:cc:00:11:22')
-        pool = subnet.get_pool()
+        pool = subnet.get_ip_pools()[0]
         self.assertTrue(pool.is_available('10.0.0.2'))
         self.assertFalse(pool.is_available('10.0.0.3'))
         pool.save()
@@ -600,7 +600,7 @@ class UpdateNetworkTest(TestCase):
                                                                "10.0.0.20"]})
         update_network(client, msg)
         self.assertTrue(client.basic_ack.called)
-        pool = network.get_pool()
+        pool = network.get_ip_pools()[0]
         self.assertTrue(pool.is_reserved('10.0.0.10'))
         self.assertTrue(pool.is_reserved('10.0.0.20'))
         pool.save()
@@ -613,7 +613,7 @@ class UpdateNetworkTest(TestCase):
                                                           "10.0.0.20"]})
         update_network(client, msg)
         #self.assertTrue(client.basic_ack.called)
-        pool = network.get_pool()
+        pool = network.get_ip_pools()[0]
         self.assertTrue(pool.is_reserved('10.0.0.10'))
         self.assertTrue(pool.is_reserved('10.0.0.20'))
 

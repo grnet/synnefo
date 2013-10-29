@@ -78,11 +78,15 @@ class PoolManager(object):
         """Return a value to the pool."""
         if value is None:
             raise ValueError
+        if not self.contains(value):
+            raise InvalidValue("%s does not belong to pool." % value)
         index = self.value_to_index(value)
         self._release(index, external)
 
     def reserve(self, value, external=False):
         """Reserve a value."""
+        if not self.contains(value):
+            raise InvalidValue("%s does not belong to pool." % value)
         index = self.value_to_index(value)
         self._reserve(index, external)
         return True
@@ -114,8 +118,9 @@ class PoolManager(object):
         else:
             self.available[index] = AVAILABLE
 
-    def contains(self, value):
-        index = self.value_to_index(value)
+    def contains(self, value, index=False):
+        if index is False:
+            index = self.value_to_index(value)
         return index >= 0 and index < self.pool_size
 
     def count_available(self):
@@ -131,6 +136,8 @@ class PoolManager(object):
         return self.pool_size - self.count_reserved()
 
     def is_available(self, value, index=False):
+        if not self.contains(value, index=index):
+            raise InvalidValue("%s does not belong to pool." % value)
         if not index:
             idx = self.value_to_index(value)
         else:
@@ -138,6 +145,8 @@ class PoolManager(object):
         return self.pool[idx] == AVAILABLE
 
     def is_reserved(self, value, index=False):
+        if not self.contains(value, index=index):
+            raise InvalidValue("%s does not belong to pool." % value)
         if not index:
             idx = self.value_to_index(value)
         else:

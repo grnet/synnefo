@@ -88,9 +88,9 @@ def list_subnets(request):
 
 @api.api_method(http_method='POST', user_required=True, logger=log)
 def create_subnet(request):
-    """
-    Create a subnet
+    """Create a subnet
     network_id and the desired cidr are mandatory, everything else is optional
+
     """
     dictionary = utils.get_request_dict(request)
     log.info('create subnet %s', dictionary)
@@ -150,18 +150,18 @@ def get_subnet(request, sub_id):
 
 @api.api_method(http_method='DELETE', user_required=True, logger=log)
 def delete_subnet(request, sub_id):
-    """
-    Delete a subnet, raises BadRequest
+    """Delete a subnet, raises BadRequest
     A subnet is deleted ONLY when the network that it belongs to is deleted
+
     """
     raise api.faults.BadRequest("Deletion of a subnet is not supported")
 
 
 @api.api_method(http_method='PUT', user_required=True, logger=log)
 def update_subnet(request, sub_id):
-    """
-    Update the fields of a subnet
+    """Update the fields of a subnet
     Only the name can be updated, everything else returns BadRequest
+
     """
 
     dictionary = utils.get_request_dict(request)
@@ -217,13 +217,13 @@ def subnet_to_dict(subnet):
 
 
 def string_to_ipaddr(pools):
-    """
-    Convert [["192.168.42.1", "192.168.42.15"],
-            ["192.168.42.30", "192.168.42.60"]]
+    """Convert [["192.168.42.1", "192.168.42.15"],
+                ["192.168.42.30", "192.168.42.60"]]
     to
-            [[IPv4Address('192.168.42.1'), IPv4Address('192.168.42.15')],
-            [IPv4Address('192.168.42.30'), IPv4Address('192.168.42.60')]]
+                [[IPv4Address('192.168.42.1'), IPv4Address('192.168.42.15')],
+                [IPv4Address('192.168.42.30'), IPv4Address('192.168.42.60')]]
     and sort the output
+
     """
     pool_list = [(map(lambda ip_str: IPAddress(ip_str), pool))
                  for pool in pools]
@@ -246,9 +246,9 @@ def check_name_length(name):
 
 
 def get_subnet_fromdb(subnet_id, user_id, for_update=False):
-    """
-    Return a Subnet instance or raise ItemNotFound.
+    """Return a Subnet instance or raise ItemNotFound.
     This is the same as util.get_network
+
     """
     try:
         subnet_id = int(subnet_id)
@@ -262,12 +262,12 @@ def get_subnet_fromdb(subnet_id, user_id, for_update=False):
 
 
 def parse_ip_pools(pools):
-    """
-    Convert [{'start': '192.168.42.1', 'end': '192.168.42.15'},
+    """Convert [{'start': '192.168.42.1', 'end': '192.168.42.15'},
              {'start': '192.168.42.30', 'end': '192.168.42.60'}]
     to
             [["192.168.42.1", "192.168.42.15"],
              ["192.168.42.30", "192.168.42.60"]]
+
     """
     pool_list = list()
     for pool in pools:

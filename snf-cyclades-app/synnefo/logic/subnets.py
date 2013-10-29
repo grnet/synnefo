@@ -70,9 +70,9 @@ def list_subnets(user_id):
 @transaction.commit_on_success
 def create_subnet(network_id, cidr, name, ipversion, gateway, dhcp, slac,
                   dns_nameservers, allocation_pools, host_routes, user_id):
-    """
-    Create a subnet
+    """Create a subnet
     network_id and the desired cidr are mandatory, everything else is optional
+
     """
     try:
         network = Network.objects.get(id=network_id)
@@ -150,18 +150,18 @@ def get_subnet(sub_id):
 
 
 def delete_subnet():
-    """
-    Delete a subnet, raises BadRequest
+    """Delete a subnet, raises BadRequest
     A subnet is deleted ONLY when the network that it belongs to is deleted
+
     """
     raise api.faults.BadRequest("Deletion of a subnet is not supported")
 
 
 @transaction.commit_on_success
 def update_subnet(sub_id, name):
-    """
-    Update the fields of a subnet
+    """Update the fields of a subnet
     Only the name can be updated
+
     """
     log.info('Update subnet %s, name %s' % (sub_id, name))
 
@@ -179,54 +179,6 @@ def update_subnet(sub_id, name):
 
 
 #Utility functions
-def subnet_to_dict(subnet):
-    """Returns a dictionary containing the info of a subnet"""
-    dns = check_empty_lists(subnet.dns_nameservers)
-    hosts = check_empty_lists(subnet.host_routes)
-    allocation_pools = subnet.ip_pools.all()
-    pools = list()
-
-    if allocation_pools:
-        for pool in allocation_pools:
-            cidr = IPNetwork(pool.base)
-            start = str(cidr.network + pool.offset)
-            end = str(cidr.network + pool.offset + pool.size - 1)
-            pools.append({"start": start, "end": end})
-
-    dictionary = dict({'id': str(subnet.id),
-                       'network_id': str(subnet.network.id),
-                       'name': subnet.name if subnet.name is not None else "",
-                       'tenant_id': subnet.network.userid,
-                       'user_id': subnet.network.userid,
-                       'gateway_ip': subnet.gateway,
-                       'ip_version': subnet.ipversion,
-                       'cidr': subnet.cidr,
-                       'enable_dhcp': subnet.dhcp,
-                       'dns_nameservers': dns,
-                       'host_routes': hosts,
-                       'allocation_pools': pools if pools is not None else []})
-
-    if subnet.ipversion == 6:
-        dictionary['enable_slac'] = subnet.dhcp
-
-    return dictionary
-
-
-def string_to_ipaddr(pools):
-    """
-    Convert [["192.168.42.1", "192.168.42.15"],
-            ["192.168.42.30", "192.168.42.60"]]
-    to
-            [[IPv4Address('192.168.42.1'), IPv4Address('192.168.42.15')],
-            [IPv4Address('192.168.42.30'), IPv4Address('192.168.42.60')]]
-    and sort the output
-    """
-    pool_list = [(map(lambda ip_str: IPAddress(ip_str), pool))
-                 for pool in pools]
-    pool_list.sort()
-    return pool_list
-
-
 def create_ip_pools(pools, cidr, subnet):
     """Create IP Pools in the database"""
     for pool in pools:
@@ -266,21 +218,10 @@ def check_name_length(name):
     return name
 
 
-def check_for_hosts_dns(subnet):
-    """
-    Check if a request contains host_routes or dns_nameservers options
-    Expects the request in a dictionary format
-    """
-    if subnet.get('host_routes', None):
-        raise api.faults.BadRequest("Setting host routes isn't supported")
-    if subnet.get('dns_nameservers', None):
-        raise api.faults.BadRequest("Setting dns nameservers isn't supported")
-
-
 def get_subnet_fromdb(subnet_id, user_id, for_update=False):
-    """
-    Return a Subnet instance or raise ItemNotFound.
+    """Return a Subnet instance or raise ItemNotFound.
     This is the same as util.get_network
+
     """
     try:
         subnet_id = int(subnet_id)
@@ -293,23 +234,9 @@ def get_subnet_fromdb(subnet_id, user_id, for_update=False):
         raise api.faults.ItemNotFound('Subnet not found')
 
 
-def parse_ip_pools(pools):
-    """
-    Convert [{'start': '192.168.42.1', 'end': '192.168.42.15'},
-             {'start': '192.168.42.30', 'end': '192.168.42.60'}]
-    to
-            [["192.168.42.1", "192.168.42.15"],
-             ["192.168.42.30", "192.168.42.60"]]
-    """
-    pool_list = list()
-    for pool in pools:
-        parse = [pool["start"], pool["end"]]
-        pool_list.append(parse)
-    return pool_list
-
-
 def validate_subpools(pool_list, cidr, gateway):
-    """
+    """Validate IP Pools
+
     Validate the given IP pools are inside the cidr range
     Validate there are no overlaps in the given pools
     Finally, validate the gateway isn't in the given ip pools
@@ -317,6 +244,7 @@ def validate_subpools(pool_list, cidr, gateway):
     ipaddr.IPAddress items eg.,
     [[IPv4Address('192.168.42.11'), IPv4Address('192.168.42.15')],
      [IPv4Address('192.168.42.30'), IPv4Address('192.168.42.60')]]
+
     """
     if pool_list[0][0] <= cidr.network:
         raise api.faults.Conflict("IP Pool out of bounds")

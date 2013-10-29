@@ -31,20 +31,16 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import ipaddr
 from logging import getLogger
+from functools import wraps
+
+from django.conf import settings
+from django.db import transaction
 from snf_django.lib import api
 from snf_django.lib.api import faults
-from django.db import transaction
 
-from django.conf.urls import patterns
-from django.http import HttpResponse
-from django.utils import simplejson as json
-
-from snf_django.lib.api import utils
 from synnefo.db.models import Subnet, Network, IPPoolTable
-from synnefo.logic import networks
-
-from ipaddr import IPv4Address, IPAddress, IPNetwork
 
 log = getLogger(__name__)
 
@@ -68,9 +64,15 @@ def list_subnets(user_id):
 
 
 @transaction.commit_on_success
-def create_subnet(network_id, cidr, name, ipversion, gateway, dhcp, slac,
-                  dns_nameservers, allocation_pools, host_routes, user_id):
+def create_subnet(*args, **kwargs):
+    return _create_subnet(*args, **kwargs)
+
+
+def _create_subnet(network_id, user_id, cidr, name, ipversion=4, gateway=None,
+                   dhcp=True, slac=True, dns_nameservers=None,
+                   allocation_pools=None, host_routes=None):
     """Create a subnet
+
     network_id and the desired cidr are mandatory, everything else is optional
 
     """
@@ -89,27 +91,27 @@ def create_subnet(network_id, cidr, name, ipversion, gateway, dhcp, slac,
 
     # Returns the first available IP in the subnet
     try:
-        cidr_ip = IPNetwork(cidr)
+        cidr_ip = ipaddr.IPNetwork(cidr)
     except ValueError:
         raise api.faults.BadRequest("Malformed CIDR")
-    potential_gateway = str(IPNetwork(cidr).network + 1)
+    potential_gateway = str(ipaddr.IPNetwork(cidr).network + 1)
 
     if gateway is "":
         gateway = potential_gateway
 
     if ipversion == 6:
-        networks.validate_network_params(None, None, cidr, gateway)
+        validate_subnet_params(None, None, cidr, gateway)
         if slac is not None:
             dhcp = check_boolean_value(slac, "enable_slac")
         else:
             dhcp = check_boolean_value(dhcp, "dhcp")
     else:
-        networks.validate_network_params(cidr, gateway)
+        validate_subnet_params(cidr, gateway)
         dhcp = check_boolean_value(dhcp, "dhcp")
 
     name = check_name_length(name)
 
-    gateway_ip = IPAddress(gateway)
+    gateway_ip = ipaddr.IPAddress(gateway)
 
     sub = Subnet.objects.create(name=name, network=network, cidr=cidr,
                                 ipversion=ipversion, gateway=gateway,
@@ -184,12 +186,15 @@ def update_subnet(sub_id, name, user_id):
 #Utility functions
 def create_ip_pools(pools, cidr, subnet):
     """Create IP Pools in the database"""
+    ip_pools = []
     for pool in pools:
         size = int(pool[1]) - int(pool[0]) + 1
         base = str(cidr)
         offset = int(pool[0]) - int(cidr.network)
         ip_pool = IPPoolTable.objects.create(size=size, offset=offset,
                                              base=base, subnet=subnet)
+        ip_pools.append(ip_pool)
+    return ip_pools
 
 
 def check_empty_lists(value):
@@ -267,3 +272,48 @@ def validate_subpools(pool_list, cidr, gateway):
         if end >= pool[0]:
             raise api.faults.Conflict("IP Pool range conflict")
         end = pool[1]
+
+
+def validate_subnet_params(subnet=None, gateway=None, subnet6=None,
+                           gateway6=None):
+    if subnet:
+        try:
+            # Use strict option to not all subnets with host bits set
+            network = ipaddr.IPv4Network(subnet, strict=True)
+        except ValueError:
+            raise faults.BadRequest("Invalid network IPv4 subnet")
+
+        # Check that network size is allowed!
+        prefixlen = network.prefixlen
+        if prefixlen > 29 or prefixlen <= settings.MAX_CIDR_BLOCK:
+            raise faults.OverLimit(
+                message="Unsupported network size",
+                details="Netmask must be in range: (%s, 29]" %
+                settings.MAX_CIDR_BLOCK)
+        if gateway:  # Check that gateway belongs to network
+            try:
+                gateway = ipaddr.IPv4Address(gateway)
+            except ValueError:
+                raise faults.BadRequest("Invalid network IPv4 gateway")
+            if not gateway in network:
+                raise faults.BadRequest("Invalid network IPv4 gateway")
+
+    if subnet6:
+        try:
+            # Use strict option to not all subnets with host bits set
+            network6 = ipaddr.IPv6Network(subnet6, strict=True)
+        except ValueError:
+            raise faults.BadRequest("Invalid network IPv6 subnet")
+        # Check that network6 is an /64 subnet, because this is imposed by
+        # 'mac2eui64' utiity.
+        if network6.prefixlen != 64:
+            msg = ("Unsupported IPv6 subnet size. Network netmask must be"
+                   " /64")
+            raise faults.BadRequest(msg)
+        if gateway6:
+            try:
+                gateway6 = ipaddr.IPv6Address(gateway6)
+            except ValueError:
+                raise faults.BadRequest("Invalid network IPv6 gateway")
+            if not gateway6 in network6:
+                raise faults.BadRequest("Invalid network IPv6 gateway")

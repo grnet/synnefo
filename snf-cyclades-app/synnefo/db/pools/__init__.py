@@ -282,14 +282,14 @@ class IPPool(PoolManager):
 
     def value_to_index(self, value):
         addr = ipaddr.IPAddress(value)
-        return int(addr) - int(self.net.network)
+        return int(addr) - int(self.net.network) - int(self.offset)
 
     def index_to_value(self, index):
-        return str(self.net[index])
+        return str(self.net[index + int(self.offset)])
 
     def contains(self, address):
         addr = ipaddr.IPAddress(address)
-        return addr in self.net
+        return addr in self.net and super(IPPool, self).contains(address)
 
     def return_start(self):
         return str(ipaddr.IPAddress(self.base) + self.offset)

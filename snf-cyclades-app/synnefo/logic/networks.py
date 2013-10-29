@@ -30,19 +30,17 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
-import ipaddr
 
 from functools import wraps
 from django.db import transaction
 
-from django.conf import settings
 from snf_django.lib.api import faults
 from synnefo.api import util
 from synnefo import quotas
-from synnefo.db.models import Network, Backend, Subnet
+from synnefo.db.models import Network, Backend
 from synnefo.db.utils import validate_mac
 from synnefo.db.pools import EmptyPool
-from synnefo.logic import backend as backend_mod
+from synnefo.logic import backend as backend_mod, subnets
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -83,7 +81,7 @@ def create(userid, name, flavor, subnet=None, gateway=None, subnet6=None,
         raise faults.BadRequest("IPv6 only networks can not be floating"
                                 " pools.")
     # Check that network parameters are valid
-    validate_network_params(subnet, gateway, subnet6, gateway6)
+    subnets.validate_subnet_params(subnet, gateway, subnet6, gateway6)
 
     try:
         fmode, flink, fmac_prefix, ftags = util.values_from_flavor(flavor)
@@ -120,19 +118,11 @@ def create(userid, name, flavor, subnet=None, gateway=None, subnet6=None,
         state='ACTIVE')
 
     if subnet:
-        s = Subnet.objects.create(network=network,
-                                  ipversion=4,
-                                  cidr=subnet,
-                                  gateway=gateway,
-                                  dhcp=dhcp)
-        s.ip_pools.create(size=0)
-
+        subnets._create_subnet(network.id, cidr=subnet, name="", ipversion=4,
+                               gateway=gateway, dhcp=dhcp, user_id=userid)
     if subnet6:
-        Subnet.objects.create(network=network,
-                              ipversion=6,
-                              cidr=subnet6,
-                              gateway=gateway6,
-                              dhcp=dhcp)
+        subnets._create_subnet(network.id, cidr=subnet6, name="", ipversion=6,
+                               gateway=gateway6, dhcp=dhcp, user_id=userid)
 
     # Issue commission to Quotaholder and accept it since at the end of
     # this transaction the Network object will be created in the DB.
@@ -179,48 +169,3 @@ def delete(network):
         # If network does not exist in any backend, update the network state
         backend_mod.update_network_state(network)
     return network
-
-
-def validate_network_params(subnet=None, gateway=None, subnet6=None,
-                            gateway6=None):
-    if subnet:
-        try:
-            # Use strict option to not all subnets with host bits set
-            network = ipaddr.IPv4Network(subnet, strict=True)
-        except ValueError:
-            raise faults.BadRequest("Invalid network IPv4 subnet")
-
-        # Check that network size is allowed!
-        prefixlen = network.prefixlen
-        if prefixlen > 29 or prefixlen <= settings.MAX_CIDR_BLOCK:
-            raise faults.OverLimit(
-                message="Unsupported network size",
-                details="Netmask must be in range: (%s, 29]" %
-                settings.MAX_CIDR_BLOCK)
-        if gateway:  # Check that gateway belongs to network
-            try:
-                gateway = ipaddr.IPv4Address(gateway)
-            except ValueError:
-                raise faults.BadRequest("Invalid network IPv4 gateway")
-            if not gateway in network:
-                raise faults.BadRequest("Invalid network IPv4 gateway")
-
-    if subnet6:
-        try:
-            # Use strict option to not all subnets with host bits set
-            network6 = ipaddr.IPv6Network(subnet6, strict=True)
-        except ValueError:
-            raise faults.BadRequest("Invalid network IPv6 subnet")
-        # Check that network6 is an /64 subnet, because this is imposed by
-        # 'mac2eui64' utiity.
-        if network6.prefixlen != 64:
-            msg = ("Unsupported IPv6 subnet size. Network netmask must be"
-                   " /64")
-            raise faults.BadRequest(msg)
-        if gateway6:
-            try:
-                gateway6 = ipaddr.IPv6Address(gateway6)
-            except ValueError:
-                raise faults.BadRequest("Invalid network IPv6 gateway")
-            if not gateway6 in network6:
-                raise faults.BadRequest("Invalid network IPv6 gateway")

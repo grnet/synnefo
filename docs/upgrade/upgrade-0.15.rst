@@ -102,6 +102,23 @@ The upgrade to v0.15 consists in the following steps:
 
     pithos-host$ pithos-migrate upgrade head
 
+2.3 Update configuration files
+------------------------------
+
+The ``ASTAKOS_BASE_URL`` setting has been replaced (both in Cyclades and
+Pithos services) with the ``ASTAKOS_AUTH_URL`` setting.
+
+For Cyclades service we have to change the ``20-snf-cyclades-app-api.conf``
+file, remove the ``ASTAKOS_BASE_URL`` setting and replace it with
+``ASTAKOS_AUTH_URL``. Typically it is sufficient to add ``/identity/v2.0/``
+at the end of base url to get the auth url. For example if base url had the
+value of 'https://accounts.example.synnefo.org/' then the ``ASTAKOS_AUTH_URL``
+setting will have the value of
+'https://accounts.example.synnefo.org/identity/v2.0/'.
+
+For Pithos service we have to change the ``20-snf-pithos-app-settings.conf``
+file in the same way as above.
+
 3. Re-register components and services in astakos
 =================================================
 

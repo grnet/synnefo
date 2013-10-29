@@ -129,8 +129,8 @@ def create_subnet(network_id, cidr, name, ipversion, gateway, dhcp, slac,
         else:
             # If the gateway isn't the first available ip, create two different
             # ip pools adjacent to said ip
-            allocation_pools.append([cidr_ip.network + 1, gateway_ip - 1])
-            allocation_pools.append([gateway_ip + 1, cidr_ip.broadcast - 1])
+            allocation_pools = (([cidr_ip.network + 1, gateway_ip - 1]),
+                                ([gateway_ip + 1, cidr_ip.broadcast - 1]))
 
     if allocation_pools:
         create_ip_pools(allocation_pools, cidr_ip, sub)
@@ -158,7 +158,7 @@ def delete_subnet():
 
 
 @transaction.commit_on_success
-def update_subnet(sub_id, name):
+def update_subnet(sub_id, name, user_id):
     """Update the fields of a subnet
     Only the name can be updated
 
@@ -169,6 +169,9 @@ def update_subnet(sub_id, name):
         subnet = Subnet.objects.get(id=sub_id)
     except:
         raise api.faults.ItemNotFound("Subnet not found")
+
+    if user_id != subnet.network.userid:
+        raise api.faults.Unauthorized("Unauthorized operation")
 
     check_name_length(name)
 

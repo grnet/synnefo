@@ -72,7 +72,8 @@ class Command(BaseCommand):
                     " The IP must be inside the CIDR range and cannot be the"
                     " subnet or broadcast IP. If no value is specified, the"
                     " first available IP of the subnet will be used."),
-        make_option("--dhcp", action="store_true", dest="dhcp", default=True,
+        make_option("--no-dhcp", action="store_true", dest="dhcp",
+                    default=False,
                     help="True/False value for DHCP/SLAAC. True by default."),
         make_option("--dns", dest="dns",
                     help="DNS nameservers to be used by the VMs in the subnet."
@@ -92,22 +93,27 @@ class Command(BaseCommand):
         cidr = options["cidr"]
 
         if not network_id:
-            raise CommandError("network_id is mandatory")
+            raise CommandError("network-id is mandatory")
         if not cidr:
             raise CommandError("cidr is mandatory")
 
         user_id = common.get_network(network_id).userid
         name = options["name"]
         allocation_pools = options["allocation_pools"]
-        ipversion = int(options["ipversion"])
+        ipversion = options["ipversion"]
         if not ipversion:
             ipversion = 4
+        else:
+            try:
+                ipversion = int(ipversion)
+            except ValueError:
+                raise CommandError("ip-version must be 4 or 6")
+
         gateway = options["gateway"]
         if not gateway:
             gateway = ""
         dhcp = options["dhcp"]
-        if not dhcp:
-            dhcp = True
+        dhcp = False if dhcp else True
         dns = options["dns"]
         host_routes = options["host_routes"]
 

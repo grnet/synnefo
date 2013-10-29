@@ -177,7 +177,7 @@ def update_subnet(request, sub_id):
 
     name = subnet.get("name", None)
 
-    subnet_dict = subnet_to_dict(subnets.update_subnet(sub_id, name))
+    subnet_dict = subnet_to_dict(subnets.update_subnet(sub_id, name, user_id))
     data = json.dumps({'subnet': subnet_dict})
     return HttpResponse(data, status=200)
 

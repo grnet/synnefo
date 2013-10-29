@@ -68,11 +68,11 @@ class Command(BaseCommand):
             dest="server_id",
             default=None,
             help="The ID of the server that the port will be connected to."),
-        make_option(
-            "--router",
-            dest="router_id",
-            default=None,
-            help="The ID of the router that the port will be connected to."),
+        #make_option(
+        #    "--router",
+        #    dest="router_id",
+        #    default=None,
+        #    help="The ID of the router that the port will be connected to."),
         make_option(
             "--floating-ip",
             dest="floating_ip_id",
@@ -94,13 +94,14 @@ class Command(BaseCommand):
         name = options["name"]
         network_id = options["network_id"]
         server_id = options["server_id"]
-        router_id = options["router_id"]
+        #router_id = options["router_id"]
+        router_id = None
         floating_ip_id = options["floating_ip_id"]
         # assume giving security groups comma separated
         security_group_ids = options["security-groups"]
 
         if not name:
-            name=""
+            name = ""
 
         if (server_id and router_id) or not (server_id or router_id):
             raise CommandError("Please give either a server or a router id")
@@ -111,8 +112,8 @@ class Command(BaseCommand):
         if server_id:
             owner = "vm"
             vm = get_vm(server_id)
-            if vm.router:
-                raise CommandError("Server '%s' does not exist." % server_id)
+            #if vm.router:
+            #    raise CommandError("Server '%s' does not exist." % server_id)
         elif router_id:
             owner = "router"
             vm = get_vm(router_id)
@@ -121,6 +122,7 @@ class Command(BaseCommand):
         else:
             raise CommandError("Neither server or router is specified")
 
+        floating_ip = None
         if floating_ip_id:
             floating_ip = get_floating_ip_by_id(floating_ip_id,
                                                 for_update=True)

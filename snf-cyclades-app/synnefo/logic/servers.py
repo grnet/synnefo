@@ -305,7 +305,8 @@ def create_nic(vm, network=None, ipaddress=None, address=None):
         # TODO: What if is in settings ?
         raise faults.BuildInProgress('Network not active yet')
 
-    device_owner = "router" if vm.router else "vm"
+    #device_owner = "router" if vm.router else "vm"
+    device_owner = "vm"
     nic = NetworkInterface.objects.create(machine=vm, network=network,
                                           state="BUILDING",
                                           device_owner=device_owner)

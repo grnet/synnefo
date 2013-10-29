@@ -1882,6 +1882,20 @@ class ObjectPost(PithosAPITest):
         content = r.content
         self.assertEqual(content, d2 + d3[-1])
 
+    def test_update_invalid_permissions(self):
+        url = join_urls(self.pithos_path, self.user, self.container,
+                        self.object)
+        r = self.post(url, content_type='', HTTP_CONTENT_RANGE='bytes */*',
+                      HTTP_X_OBJECT_SHARING='%s' % (257*'a'))
+        self.assertEqual(r.status_code, 400)
+
+        r = self.post(url, content_type='', HTTP_CONTENT_RANGE='bytes */*',
+                      HTTP_X_OBJECT_SHARING='read=%s' % (257*'a'))
+        self.assertEqual(r.status_code, 400)
+
+        r = self.post(url, content_type='', HTTP_CONTENT_RANGE='bytes */*',
+                      HTTP_X_OBJECT_SHARING='write=%s' % (257*'a'))
+        self.assertEqual(r.status_code, 400)
 
 class ObjectDelete(PithosAPITest):
     def setUp(self):

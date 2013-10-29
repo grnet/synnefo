@@ -933,9 +933,13 @@ class ModularBackend(BaseBackend):
         path = self._lookup_object(account, container, name,
                                    lock_container=True)[0]
         self._check_permissions(path, permissions)
-        self.permissions.access_set(path, permissions)
-        self._report_sharing_change(user, account, path, {'members':
-                                    self.permissions.access_members(path)})
+        try:
+            self.permissions.access_set(path, permissions)
+        except:
+            raise ValueError
+        else:
+            self._report_sharing_change(user, account, path, {'members':
+                                        self.permissions.access_members(path)})
 
     @debug_method
     def get_object_public(self, user, account, container, name):

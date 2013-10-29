@@ -31,12 +31,12 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.i
 
-from snf_django.utils.testing import (BaseAPITest, override_settings)
 from snf_django.utils.testing import BaseAPITest
 from django.utils import simplejson as json
 from synnefo.cyclades_settings import cyclades_services
 from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
+from mock import patch
 import synnefo.db.models_factory as dbmf
 
 COMPUTE_URL = get_service_path(cyclades_services, 'compute',
@@ -63,7 +63,8 @@ class PortTest(BaseAPITest):
         response = self.get(url, user=nic.network.userid)
         self.assertEqual(response.status_code, 200)
 
-    def test_delete_port(self):
+    @patch("synnefo.db.models.get_rapi_client")
+    def test_delete_port(self, mrapi):
         nic = dbmf.NetworkInterfaceFactory.create(device_owner='vm')
         url = join_urls(PORTS_URL, str(nic.id))
         response = self.delete(url, user=nic.network.userid)
@@ -127,10 +128,11 @@ class PortTest(BaseAPITest):
         response = self.post(PORTS_URL, params=json.dumps(request))
         self.assertEqual(response.status_code, 404)
 
-    def test_create_port_private_net(self):
+    @patch("synnefo.db.models.get_rapi_client")
+    def test_create_port_private_net(self, mrapi):
         net = dbmf.NetworkFactory.create(public=False)
-        subnet1 = dbmf.IPv4SubnetFactory.create(network=net)
-        subnet2 = dbmf.IPv6SubnetFactory.create(network=net)
+        dbmf.IPv4SubnetFactory.create(network=net)
+        dbmf.IPv6SubnetFactory.create(network=net)
         sg1 = dbmf.SecurityGroupFactory.create()
         sg2 = dbmf.SecurityGroupFactory.create()
         vm = dbmf.VirtualMachineFactory.create(userid=net.userid)
@@ -168,7 +170,7 @@ class PortTest(BaseAPITest):
                 "name": "port1",
                 "network_id": str(net.id),
                 "device_id": str(vm.id),
-                "fixed_ips" : [{"ip_address":"8.8.8.8"}]
+                "fixed_ips": [{"ip_address": "8.8.8.8"}]
             }
         }
         response = self.post(PORTS_URL, params=json.dumps(request),
@@ -184,7 +186,7 @@ class PortTest(BaseAPITest):
                 "name": "port1",
                 "network_id": str(net.id),
                 "device_id": str(vm.id),
-                "fixed_ips" : [{"ip_address":fip.address}]
+                "fixed_ips": [{"ip_address": fip.address}]
             }
         }
         response = self.post(PORTS_URL, params=json.dumps(request),
@@ -200,14 +202,15 @@ class PortTest(BaseAPITest):
                 "name": "port1",
                 "network_id": str(net.id),
                 "device_id": str(vm.id),
-                "fixed_ips" : [{"ip_address":fip.address}]
+                "fixed_ips": [{"ip_address": fip.address}]
             }
         }
         response = self.post(PORTS_URL, params=json.dumps(request),
                              user=net.userid)
         self.assertEqual(response.status_code, 400)
 
-    def test_create_port_public_net(self):
+    @patch("synnefo.db.models.get_rapi_client")
+    def test_create_port_public_net(self, mrapi):
         net = dbmf.NetworkFactory.create(public=True)
         fip = dbmf.FloatingIPFactory(network=net, nic=None, userid=net.userid)
         vm = dbmf.VirtualMachineFactory.create(userid=net.userid)
@@ -216,20 +219,19 @@ class PortTest(BaseAPITest):
                 "name": "port1",
                 "network_id": str(net.id),
                 "device_id": str(vm.id),
-                "fixed_ips" : [{"ip_address":fip.address}]
+                "fixed_ips": [{"ip_address": fip.address}]
             }
         }
         response = self.post(PORTS_URL, params=json.dumps(request),
                              user=net.userid)
-        print response.content
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 201)
 
     def test_add_nic_to_deleted_network(self):
         user = 'userr'
         vm = dbmf.VirtualMachineFactory(name='yo', userid=user,
-                                            operstate="ACTIVE")
+                                        operstate="ACTIVE")
         net = dbmf.NetworkFactory(state='ACTIVE', userid=user,
-                                      deleted=True)
+                                  deleted=True)
         request = {
             "port": {
                 "device_id": str(vm.id),
@@ -254,11 +256,12 @@ class PortTest(BaseAPITest):
         }
         response = self.post(PORTS_URL, params=json.dumps(request),
                              user=net.userid)
-        self.assertFault(response, 403, 'forbidden')
+        self.assertBadRequest(response)
+        #self.assertFault(response, 403, 'forbidden')
 
     def test_add_nic_malformed_1(self):
         user = 'userr'
-        vm = dbmf.VirtualMachineFactory(name='yo', userid=user)
+        dbmf.VirtualMachineFactory(name='yo', userid=user)
         net = dbmf.NetworkFactory(state='ACTIVE', userid=user)
         request = {
             "port": {

@@ -1115,8 +1115,6 @@ def api_method(http_method=None, token_required=True, user_required=True,
 
 
 def get_token_from_cookie(request):
-    assert(request.method == 'GET'),\
-        "Cookie based authentication is only allowed to GET requests"
     token = None
     if COOKIE_NAME in request.COOKIES:
         cookie_value = unquote(request.COOKIES.get(COOKIE_NAME, ''))

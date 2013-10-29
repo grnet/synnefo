@@ -54,6 +54,62 @@ import time as _time
 import random
 
 
+class NotAllowedView(PithosAPITest):
+    def head(self, url, *args, **kwargs):
+        with patch("pithos.api.util.get_token_from_cookie") as m:
+            m.return_value = 'token'
+            return super(NotAllowedView, self).head(url, *args, **kwargs)
+
+    def delete(self, url, *args, **kwargs):
+        with patch("pithos.api.util.get_token_from_cookie") as m:
+            m.return_value = 'token'
+            return super(NotAllowedView, self).delete(url, *args, **kwargs)
+
+    def post(self, url, *args, **kwargs):
+        with patch("pithos.api.util.get_token_from_cookie") as m:
+            m.return_value = 'token'
+            return super(NotAllowedView, self).post(url, *args, **kwargs)
+
+    def put(self, url, *args, **kwargs):
+        with patch("pithos.api.util.get_token_from_cookie") as m:
+            m.return_value = 'token'
+            return super(NotAllowedView, self).put(url, *args, **kwargs)
+
+    def copy(self, url, *args, **kwargs):
+        with patch("pithos.api.util.get_token_from_cookie") as m:
+            m.return_value = 'token'
+            return super(NotAllowedView, self).copy(url, *args, **kwargs)
+
+    def move(self, url, *args, **kwargs):
+        with patch("pithos.api.util.get_token_from_cookie") as m:
+            m.return_value = 'token'
+            return super(NotAllowedView, self).move(url, *args, **kwargs)
+
+    def test_not_allowed(self):
+        self.view_path = join_urls(get_service_path(
+            pithos_settings.pithos_services, 'pithos_ui'), 'view')
+        self.view_url = join_urls(self.view_path, self.user, get_random_name(),
+                                  get_random_name())
+
+        r = self.head(self.view_url)
+        self.assertEqual(r.status_code, 400)
+
+        r = self.delete(self.view_url)
+        self.assertEqual(r.status_code, 400)
+
+        r = self.post(self.view_url)
+        self.assertEqual(r.status_code, 400)
+
+        r = self.put(self.view_url)
+        self.assertEqual(r.status_code, 400)
+
+        r = self.copy(self.view_url)
+        self.assertEqual(r.status_code, 400)
+
+        r = self.move(self.view_url)
+        self.assertEqual(r.status_code, 400)
+
+
 class ObjectGetView(PithosAPITest):
     def setUp(self):
         PithosAPITest.setUp(self)

@@ -1520,7 +1520,7 @@ class ObjectPost(PithosAPITest):
         block_size = pithos_settings.BACKEND_BLOCK_SIZE
         oname, odata = self.upload_object(
             self.container, length=random.randint(
-                block_size + 1, 2 * block_size))[:2]
+                block_size + 2, 2 * block_size))[:2]
 
         length = len(odata)
         first_byte_pos = random.randint(1, block_size)

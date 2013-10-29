@@ -547,10 +547,10 @@ class Network(models.Model):
         raise pools.InvalidValue("Network %s does not have an IP pool that"
                                  " contains address %s" % (self, address))
 
-    def release_address(self, address, external=True):
+    def release_address(self, address, external=False):
         for ip_pool in self.get_ip_pools():
             if ip_pool.contains(address):
-                ip_pool.release(address, external=external)
+                ip_pool.put(address, external=external)
                 ip_pool.save()
                 return
         raise pools.InvalidValue("Network %s does not have an IP pool that"

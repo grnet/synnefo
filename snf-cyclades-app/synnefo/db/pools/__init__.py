@@ -287,9 +287,12 @@ class IPPool(PoolManager):
     def index_to_value(self, index):
         return str(self.net[index + int(self.offset)])
 
-    def contains(self, address):
-        addr = ipaddr.IPAddress(address)
-        return addr in self.net and super(IPPool, self).contains(address)
+    def contains(self, address, index=False):
+        if index is False:
+            addr = ipaddr.IPAddress(address)
+            if addr not in self.net:
+                return False
+        return super(IPPool, self).contains(address, index=False)
 
     def return_start(self):
         return str(ipaddr.IPAddress(self.base) + self.offset)

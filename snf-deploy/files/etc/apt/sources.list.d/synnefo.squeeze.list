@@ -1,0 +1,4 @@
+# Backports repository
+deb http://backports.debian.org/debian-backports squeeze-backports main contrib non-free
+
+deb http://apt.dev.grnet.gr squeeze/

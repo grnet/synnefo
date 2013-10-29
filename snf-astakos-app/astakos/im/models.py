@@ -315,6 +315,9 @@ class AstakosUserManager(UserManager):
     def verified(self):
         return self.filter(email_verified=True)
 
+    def accepted(self):
+        return self.filter(moderated=True, is_rejected=False)
+
     def uuid_catalog(self, l=None):
         """
         Returns a uuid to username mapping for the uuids appearing in l.
@@ -478,6 +481,9 @@ class AstakosUser(User):
     def add_group(self, gname):
         group, _ = Group.objects.get_or_create(name=gname)
         self.groups.add(group)
+
+    def is_accepted(self):
+        return self.moderated and not self.is_rejected
 
     def is_project_admin(self, application_id=None):
         return self.uuid in astakos_settings.PROJECT_ADMINS
@@ -1222,7 +1228,7 @@ class PendingThirdPartyUser(models.Model):
         else:
             self.last_name = parts[0]
 
-    def save(self, **kwargs):
+    def save(self, *args, **kwargs):
         if not self.id:
             # set username
             while not self.username:
@@ -1231,7 +1237,7 @@ class PendingThirdPartyUser(models.Model):
                     AstakosUser.objects.get(username = username)
                 except AstakosUser.DoesNotExist, e:
                     self.username = username
-        super(PendingThirdPartyUser, self).save(**kwargs)
+        super(PendingThirdPartyUser, self).save(*args, **kwargs)
 
     def generate_token(self):
         self.password = self.third_party_identifier

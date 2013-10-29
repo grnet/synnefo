@@ -1,4 +1,8 @@
-from django.conf.urls.defaults import patterns, url
+try:
+    from django.conf.urls import patterns, url
+except ImportError:  # Django==1.2
+    from django.conf.urls.defaults import patterns, url
+
 
 urlpatterns = patterns('',
     url(r'^$', 'synnefo.helpdesk.views.index', name='helpdesk-index'),

@@ -114,6 +114,7 @@ def create(userid, name, flavor, subnet=None, gateway=None, subnet6=None,
         mac_prefix=mac_prefix,
         tags=tags,
         public=public,
+        external_router=public,
         floating_ip_pool=floating_ip_pool,
         action='CREATE',
         state='ACTIVE')

@@ -508,7 +508,7 @@ class NetworkReconciler(object):
         corresponding Ganeti networks in all Ganeti backends.
 
         """
-        network_ip_pool = network.get_pool()  # X-Lock on IP Pool
+        ip_pools = network.get_ip_pools()  # X-Lock on IP pools
         for bend in self.backends:
             bnet = get_backend_network(network, bend)
             gnet = self.ganeti_networks[bend].get(network.id)
@@ -563,14 +563,16 @@ class NetworkReconciler(object):
             if externally_reserved:
                 for ip in externally_reserved.split(","):
                     ip = ip.strip()
-                    if not network_ip_pool.is_reserved(ip):
-                        msg = ("D: IP '%s' is reserved for network '%s' in"
-                               " backend '%s' but not in DB.")
-                        self.log.info(msg, ip, network, bend)
-                        if self.fix:
-                            network_ip_pool.reserve(ip, external=True)
-                            network_ip_pool.save()
-                            self.log.info("F: Reserved IP '%s'", ip)
+                    for ip_pool in ip_pools:
+                        if ip_pool.contains(ip):
+                            if not ip_pool.is_reserved(ip):
+                                msg = ("D: IP '%s' is reserved for network"
+                                       " '%s' in backend '%s' but not in DB.")
+                                self.log.info(msg, ip, network, bend)
+                                if self.fix:
+                                    ip_pool.reserve(ip, external=True)
+                                    ip_pool.save()
+                                    self.log.info("F: Reserved IP '%s'", ip)
 
     def reconcile_parted_network(self, network, backend):
         self.log.info("D: Missing DB entry for network %s in backend %s",
@@ -699,24 +701,17 @@ class PoolReconciler(object):
     @transaction.commit_on_success
     def reconcile_ip_pool(self, network):
         # Check that all NICs have unique IPv4 address
-        nics = network.nics.filter(ipv4__isnull=False)
-        check_unique_values(objects=nics, field='ipv4', logger=self.log)
+        nics = network.ips.all()
+        check_unique_values(objects=nics, field="address", logger=self.log)
 
-        # Check that all Floating IPs have unique IPv4 address
-        floating_ips = network.floating_ips.filter(deleted=False)
-        check_unique_values(objects=floating_ips, field='ipv4',
-                            logger=self.log)
-
-        # First get(lock) the IP pool of the network to prevent new NICs
-        # from being created.
-        network_ip_pool = network.get_pool()
-        used_ips = set(list(nics.values_list("ipv4", flat=True)) +
-                       list(floating_ips.values_list("ipv4", flat=True)))
-
-        check_pool_consistent(pool=network_ip_pool,
-                              pool_class=pools.IPPool,
-                              used_values=used_ips,
-                              fix=self.fix, logger=self.log)
+        for ip_pool in network.get_ip_pools():
+            used_ips = ip_pool.pool_table.subnet.ips.values_list("address",
+                                                                 flat=True)
+            used_ips = filter(lambda x: ip_pool.contains(x), used_ips)
+            check_pool_consistent(pool=ip_pool,
+                                  pool_class=pools.IPPool,
+                                  used_values=used_ips,
+                                  fix=self.fix, logger=self.log)
 
 
 def check_unique_values(objects, field, logger):

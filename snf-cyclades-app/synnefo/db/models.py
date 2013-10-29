@@ -532,29 +532,29 @@ class Network(models.Model):
             if not backend_exists:
                 BackendNetwork.objects.create(backend=backend, network=self)
 
-    def get_pool(self, locked=True):
-        try:
-            subnet = self.subnets.get(ipversion=4, deleted=False)
-        except Subnet.DoesNotExist:
-            raise pools.EmptyPool
-        return subnet.get_pool(locked=locked)
-
-    def allocate_address(self, userid):
-        try:
-            subnet = self.subnets.get(ipversion=4, deleted=False)
-        except Subnet.DoesNotExist:
-            raise pools.EmptyPool
-        return subnet.allocate_address(userid)
+    def get_ip_pools(self, locked=True):
+        subnets = self.subnets.filter(ipversion=4, deleted=False)\
+                              .prefetch_related("ip_pools")
+        return [ip_pool for subnet in subnets
+                for ip_pool in subnet.get_ip_pools(locked=locked)]
 
     def reserve_address(self, address, external=False):
-        pool = self.get_pool()
-        pool.reserve(address, external=external)
-        pool.save()
+        for ip_pool in self.get_ip_pools():
+            if ip_pool.contains(address):
+                ip_pool.reserve(address, external=external)
+                ip_pool.save()
+                return
+        raise pools.InvalidValue("Network %s does not have an IP pool that"
+                                 " contains address %s" % (self, address))
 
     def release_address(self, address, external=True):
-        pool = self.get_pool()
-        pool.put(address, external=external)
-        pool.save()
+        for ip_pool in self.get_ip_pools():
+            if ip_pool.contains(address):
+                ip_pool.release(address, external=external)
+                ip_pool.save()
+                return
+        raise pools.InvalidValue("Network %s does not have an IP pool that"
+                                 " contains address %s" % (self, address))
 
     @property
     def subnet4(self):
@@ -571,13 +571,11 @@ class Network(models.Model):
 
     def ip_count(self):
         """Return the total and free IPv4 addresses of the network."""
-        subnets = self.subnets.filter(ipversion=4).prefetch_related("ip_pools")
         total, free = 0, 0
-        for subnet in subnets:
-            for ip_pool in subnet.ip_pools.all():
-                pool = ip_pool.pool
-                total += pool.pool_size
-                free += pool.count_available()
+        ip_pools = self.get_ip_pools(locked=False)
+        for ip_pool in ip_pools:
+            total += ip_pool.pool_size
+            free += ip_pool.count_available()
         return total, free
 
     class InvalidBackendIdError(Exception):
@@ -624,20 +622,11 @@ class Subnet(models.Model):
         msg = u"<Subnet %s, Network: %s, CIDR: %s>"
         return msg % (self.id, self.network_id, self.cidr)
 
-    def get_pool(self, locked=True):
-        if self.ipversion == 6:
-            raise Exception("IPv6 Subnets have no IP Pool.")
+    def get_ip_pools(self, locked=True):
         ip_pools = self.ip_pools
         if locked:
             ip_pools = ip_pools.select_for_update()
-        return ip_pools.all()[0].pool
-
-    def allocate_address(self, userid):
-        pool = self.get_pool(locked=True)
-        address = pool.get()
-        pool.save()
-        return IPAddress.objects.create(network=self.network, subnet=self,
-                                        address=address, userid=userid)
+        return map(lambda ip_pool: ip_pool.pool, ip_pools.all())
 
 
 class BackendNetwork(models.Model):

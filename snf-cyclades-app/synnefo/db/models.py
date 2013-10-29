@@ -375,8 +375,7 @@ class VirtualMachine(models.Model):
         get_latest_by = 'created'
 
     def __unicode__(self):
-        return u"<vm:%s@backend:%s router:%s>" % (self.id, self.backend_id,
-                                                  self.router)
+        return u"<vm:%s@backend:%s>" % (self.id, self.backend_id)
 
     # Error classes
     class InvalidBackendIdError(Exception):

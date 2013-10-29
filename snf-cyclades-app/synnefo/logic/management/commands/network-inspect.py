@@ -69,7 +69,6 @@ class Command(BaseCommand):
 
         displayname = options['displayname']
 
-        sep = '-' * 80 + '\n'
         userid = network.userid
         db_network = OrderedDict([
             ("name", network.name),
@@ -89,19 +88,17 @@ class Command(BaseCommand):
             ("tags", "), ".join(network.backend_tag)),
             ("action", network.action)])
 
-        write(sep)
-        write('State of Network in DB\n')
-        write(sep)
-        pprint_table(self.stdout, db_network.items(), None, separator=" | ")
+        pprint_table(self.stdout, db_network.items(), None, separator=" | ",
+                     title="State of Network in DB")
 
         subnets = list(network.subnets.values_list("id", "name", "ipversion",
                                                    "cidr", "gateway", "dhcp",
                                                    "deleted"))
         headers = ["ID", "Name", "Version", "CIDR", "Gateway", "DHCP",
                    "Deleted"]
-        write("\nSubnets\n")
-        write(sep)
-        pprint_table(self.stdout, subnets, headers, separator=" | ")
+        write("\n\n")
+        pprint_table(self.stdout, subnets, headers, separator=" | ",
+                     title="Subnets")
 
         bnets = list(network.backend_networks.values_list(
             "backend__clustername",
@@ -109,27 +106,21 @@ class Command(BaseCommand):
             "backendopcode", "backendjobstatus"))
         headers = ["Backend", "State", "Deleted", "JobID", "Opcode",
                    "JobStatus"]
-        write("\nBackend Networks\n")
-        write(sep)
-        pprint_table(self.stdout, bnets, headers, separator=" | ")
+        write("\n\n")
+        pprint_table(self.stdout, bnets, headers, separator=" | ",
+                     title="Backend Networks")
 
         write("\n\n")
-        write(sep)
-        write('State of Network in Ganeti\n')
-        write(sep)
 
         for backend in Backend.objects.exclude(offline=True):
             with pooled_rapi_client(backend) as client:
                 try:
                     g_net = client.GetNetwork(network.backend_id)
-                    write("\n")
-                    write(sep)
-                    write("Backend: %s\n" % backend.clustername)
-                    write(sep)
                     ip_map = g_net.pop("map")
-                    pprint_table(self.stdout, g_net.items(), None)
-                    write(splitPoolMap(ip_map, 80))
-                    write("\n")
+                    pprint_table(self.stdout, g_net.items(), None,
+                                 title="State of network in backend: %s" %
+                                       backend.clustername)
+                    write(splitPoolMap(ip_map, 80) + "\n\n")
                 except GanetiApiError as e:
                     if e.code == 404:
                         write('Network does not exist in backend %s\n' %

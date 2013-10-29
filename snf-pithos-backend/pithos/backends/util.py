@@ -46,7 +46,7 @@ class PithosBackendPool(ObjectPool):
                  block_size=None, hash_algorithm=None,
                  queue_module=None, queue_hosts=None,
                  queue_exchange=None, free_versioning=True,
-                 astakos_url=None, service_token=None,
+                 astakos_auth_url=None, service_token=None,
                  astakosclient_poolsize=None,
                  block_params=None,
                  public_url_security=None,
@@ -66,7 +66,7 @@ class PithosBackendPool(ObjectPool):
         self.block_params = block_params
         self.queue_hosts = queue_hosts
         self.queue_exchange = queue_exchange
-        self.astakos_url = astakos_url
+        self.astakos_auth_url = astakos_auth_url
         self.service_token = service_token
         self.astakosclient_poolsize = astakosclient_poolsize
         self.free_versioning = free_versioning
@@ -89,7 +89,7 @@ class PithosBackendPool(ObjectPool):
             block_params=self.block_params,
             queue_hosts=self.queue_hosts,
             queue_exchange=self.queue_exchange,
-            astakos_url=self.astakos_url,
+            astakos_auth_url=self.astakos_auth_url,
             service_token=self.service_token,
             astakosclient_poolsize=self.astakosclient_poolsize,
             free_versioning=self.free_versioning,

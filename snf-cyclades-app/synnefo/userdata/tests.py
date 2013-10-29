@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -46,9 +46,22 @@ from synnefo.userdata.models import PublicKeyPair
 def get_user_mock(request, *args, **kwargs):
     if request.META.get('HTTP_X_AUTH_TOKEN', None) == '0000':
         request.user_uniq = 'test'
-        request.user = {'id': 'id',
-                        'username': 'username',
-                        'uuid': 'test'}
+        request.user = {"access": {
+                        "token": {
+                            "expires": "2013-06-19T15:23:59.975572+00:00",
+                            "id": "token",
+                            "tenant": {
+                                "id": "test",
+                                "name": "Firstname Lastname"
+                                }
+                            },
+                        "serviceCatalog": [],
+                        "user": {
+                            "roles_links": [],
+                            "id": "test",
+                            "roles": [{"id": 1, "name": "default"}],
+                            "name": "Firstname Lastname"}}
+                        }
 
 
 class AaiClient(Client):

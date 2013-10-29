@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -34,8 +34,6 @@
 
 import os
 
-from urlparse import urlparse
-
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from django.template import loader
@@ -45,13 +43,9 @@ from django.utils import simplejson as json
 from synnefo_branding.utils import render_to_string
 from django.core.urlresolvers import reverse
 from django.template import RequestContext
-from synnefo_branding import settings as snf_settings
 
 from synnefo.util.version import get_component_version
-from synnefo.lib import join_urls
 
-from snf_django.lib.astakos import get_user
-from synnefo import cyclades_settings
 from synnefo.ui import settings as uisettings
 
 SYNNEFO_JS_LIB_VERSION = get_component_version('app')
@@ -102,7 +96,7 @@ SKIP_TIMEOUTS = getattr(settings, "UI_SKIP_TIMEOUTS", 1)
 # Additional settings
 VM_NAME_TEMPLATE = getattr(settings, "VM_CREATE_NAME_TPL", "My {0} server")
 VM_HOSTNAME_FORMAT = getattr(settings, "UI_VM_HOSTNAME_FORMAT",
-                                    'snf-%(id)s.vm.synnefo.org')
+                             'snf-%(id)s.vm.synnefo.org')
 
 if isinstance(VM_HOSTNAME_FORMAT, basestring):
     VM_HOSTNAME_FORMAT = VM_HOSTNAME_FORMAT % {'id': '{0}'}
@@ -174,82 +168,80 @@ def template(name, request, context):
     current_template = template_path + name + '.html'
     t = loader.get_template(current_template)
     media_context = {
-       'UI_MEDIA_URL': UI_MEDIA_URL,
-       'SYNNEFO_JS_URL': UI_SYNNEFO_JS_URL,
-       'SYNNEFO_JS_LIB_URL': UI_SYNNEFO_JS_LIB_URL,
-       'SYNNEFO_JS_WEB_URL': UI_SYNNEFO_JS_WEB_URL,
-       'SYNNEFO_IMAGES_URL': UI_SYNNEFO_IMAGES_URL,
-       'SYNNEFO_CSS_URL': UI_SYNNEFO_CSS_URL,
-       'SYNNEFO_JS_LIB_VERSION': SYNNEFO_JS_LIB_VERSION,
-       'DEBUG': settings.DEBUG
+        'UI_MEDIA_URL': UI_MEDIA_URL,
+        'SYNNEFO_JS_URL': UI_SYNNEFO_JS_URL,
+        'SYNNEFO_JS_LIB_URL': UI_SYNNEFO_JS_LIB_URL,
+        'SYNNEFO_JS_WEB_URL': UI_SYNNEFO_JS_WEB_URL,
+        'SYNNEFO_IMAGES_URL': UI_SYNNEFO_IMAGES_URL,
+        'SYNNEFO_CSS_URL': UI_SYNNEFO_CSS_URL,
+        'SYNNEFO_JS_LIB_VERSION': SYNNEFO_JS_LIB_VERSION,
+        'DEBUG': settings.DEBUG
     }
     context.update(media_context)
     return HttpResponse(t.render(RequestContext(request, context)))
 
 
 def home(request):
-    context = {'timeout': TIMEOUT,
-               'project': '+nefo',
-               'request': request,
-               'current_lang': get_language() or 'en',
-               'compute_api_url': json.dumps(uisettings.COMPUTE_URL),
-               'user_catalog_url': json.dumps(uisettings.USER_CATALOG_URL),
-               'feedback_post_url': json.dumps(uisettings.FEEDBACK_URL),
-               'accounts_api_url': json.dumps(uisettings.ACCOUNT_URL),
-               'logout_redirect': json.dumps(uisettings.LOGOUT_REDIRECT),
-               'login_redirect': json.dumps(uisettings.LOGIN_URL),
-               'glance_api_url': json.dumps(uisettings.GLANCE_URL),
-               'translate_uuids': json.dumps(True),
-               # update interval settings
-               'update_interval': UPDATE_INTERVAL,
-               'update_interval_increase': UPDATE_INTERVAL_INCREASE,
-               'update_interval_increase_after_calls':
-                UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT,
-               'update_interval_fast': UPDATE_INTERVAL_FAST,
-               'update_interval_max': UPDATE_INTERVAL_MAX,
-               'changes_since_alignment': CHANGES_SINCE_ALIGNMENT,
-               'image_icons': IMAGE_ICONS,
-               'auth_cookie_name': AUTH_COOKIE_NAME,
-               'auth_skip_redirects': json.dumps(AUTH_SKIP_REDIRECTS),
-               'suggested_flavors': json.dumps(SUGGESTED_FLAVORS),
-               'suggested_roles': json.dumps(SUGGESTED_ROLES),
-               'vm_image_common_metadata': json.dumps(VM_IMAGE_COMMON_METADATA),
-               'synnefo_version': SYNNEFO_JS_LIB_VERSION,
-               'delay_on_blur': json.dumps(DELAY_ON_BLUR),
-               'update_hidden_views': json.dumps(UPDATE_HIDDEN_VIEWS),
-               'handle_window_exceptions': json.dumps(HANDLE_WINDOW_EXCEPTIONS),
-               'skip_timeouts': json.dumps(SKIP_TIMEOUTS),
-               'vm_name_template': json.dumps(VM_NAME_TEMPLATE),
-               'flavors_disk_templates_info':
-               json.dumps(FLAVORS_DISK_TEMPLATES_INFO),
-               'support_ssh_os_list': json.dumps(SUPPORT_SSH_OS_LIST),
-               'unknown_os': json.dumps(UNKNOWN_OS),
-               'os_created_users': json.dumps(OS_CREATED_USERS),
-               'userdata_keys_limit': json.dumps(MAX_SSH_KEYS_PER_USER),
-               'use_glance': json.dumps(ENABLE_GLANCE),
-               'system_images_owners': json.dumps(SYSTEM_IMAGES_OWNERS),
-               'custom_image_help_url': CUSTOM_IMAGE_HELP_URL,
-               'image_deleted_title': json.dumps(IMAGE_DELETED_TITLE),
-               'image_deleted_size_title': json.dumps(IMAGE_DELETED_SIZE_TITLE),
-               'network_suggested_subnets': json.dumps(NETWORK_SUBNETS),
-               'network_available_types': json.dumps(NETWORK_TYPES),
-               'network_allow_duplicate_vm_nics':
-               json.dumps(NETWORK_DUPLICATE_NICS),
-               'network_strict_destroy': json.dumps(NETWORK_STRICT_DESTROY),
-               'network_allow_multiple_destroy':
-               json.dumps(NETWORK_ALLOW_MULTIPLE_DESTROY),
-               'automatic_network_range_format':
-               json.dumps(AUTOMATIC_NETWORK_RANGE_FORMAT),
-               'grouped_public_network_name':
-               json.dumps(GROUPED_PUBLIC_NETWORK_NAME),
-               'group_public_networks': json.dumps(GROUP_PUBLIC_NETWORKS),
-               'private_networks_nic_hotplug':
-                   json.dumps(PRIVATE_NETWORKS_NIC_HOTPLUG),
-               'diagnostics_update_interval':
-               json.dumps(DIAGNOSTICS_UPDATE_INTERVAL),
-               'vm_hostname_format': json.dumps(VM_HOSTNAME_FORMAT)
-               }
+    context = {
+        'timeout': TIMEOUT,
+        'project': '+nefo',
+        'request': request,
+        'current_lang': get_language() or 'en',
+        'compute_api_url': json.dumps(uisettings.COMPUTE_URL),
+        'user_catalog_url': json.dumps(uisettings.USER_CATALOG_URL),
+        'feedback_post_url': json.dumps(uisettings.FEEDBACK_URL),
+        'accounts_api_url': json.dumps(uisettings.ACCOUNT_URL),
+        'logout_redirect': json.dumps(uisettings.LOGOUT_REDIRECT),
+        'login_redirect': json.dumps(uisettings.LOGIN_URL),
+        'glance_api_url': json.dumps(uisettings.GLANCE_URL),
+        'translate_uuids': json.dumps(True),
+        # update interval settings
+        'update_interval': UPDATE_INTERVAL,
+        'update_interval_increase': UPDATE_INTERVAL_INCREASE,
+        'update_interval_increase_after_calls':
+        UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT,
+        'update_interval_fast': UPDATE_INTERVAL_FAST,
+        'update_interval_max': UPDATE_INTERVAL_MAX,
+        'changes_since_alignment': CHANGES_SINCE_ALIGNMENT,
+        'image_icons': IMAGE_ICONS,
+        'auth_cookie_name': AUTH_COOKIE_NAME,
+        'auth_skip_redirects': json.dumps(AUTH_SKIP_REDIRECTS),
+        'suggested_flavors': json.dumps(SUGGESTED_FLAVORS),
+        'suggested_roles': json.dumps(SUGGESTED_ROLES),
+        'vm_image_common_metadata': json.dumps(VM_IMAGE_COMMON_METADATA),
+        'synnefo_version': SYNNEFO_JS_LIB_VERSION,
+        'delay_on_blur': json.dumps(DELAY_ON_BLUR),
+        'update_hidden_views': json.dumps(UPDATE_HIDDEN_VIEWS),
+        'handle_window_exceptions': json.dumps(HANDLE_WINDOW_EXCEPTIONS),
+        'skip_timeouts': json.dumps(SKIP_TIMEOUTS),
+        'vm_name_template': json.dumps(VM_NAME_TEMPLATE),
+        'flavors_disk_templates_info': json.dumps(FLAVORS_DISK_TEMPLATES_INFO),
+        'support_ssh_os_list': json.dumps(SUPPORT_SSH_OS_LIST),
+        'unknown_os': json.dumps(UNKNOWN_OS),
+        'os_created_users': json.dumps(OS_CREATED_USERS),
+        'userdata_keys_limit': json.dumps(MAX_SSH_KEYS_PER_USER),
+        'use_glance': json.dumps(ENABLE_GLANCE),
+        'system_images_owners': json.dumps(SYSTEM_IMAGES_OWNERS),
+        'custom_image_help_url': CUSTOM_IMAGE_HELP_URL,
+        'image_deleted_title': json.dumps(IMAGE_DELETED_TITLE),
+        'image_deleted_size_title': json.dumps(IMAGE_DELETED_SIZE_TITLE),
+        'network_suggested_subnets': json.dumps(NETWORK_SUBNETS),
+        'network_available_types': json.dumps(NETWORK_TYPES),
+        'network_allow_duplicate_vm_nics': json.dumps(NETWORK_DUPLICATE_NICS),
+        'network_strict_destroy': json.dumps(NETWORK_STRICT_DESTROY),
+        'network_allow_multiple_destroy':
+        json.dumps(NETWORK_ALLOW_MULTIPLE_DESTROY),
+        'automatic_network_range_format':
+        json.dumps(AUTOMATIC_NETWORK_RANGE_FORMAT),
+        'grouped_public_network_name': json.dumps(GROUPED_PUBLIC_NETWORK_NAME),
+        'group_public_networks': json.dumps(GROUP_PUBLIC_NETWORKS),
+        'private_networks_nic_hotplug':
+        json.dumps(PRIVATE_NETWORKS_NIC_HOTPLUG),
+        'diagnostics_update_interval': json.dumps(DIAGNOSTICS_UPDATE_INTERVAL),
+        'vm_hostname_format': json.dumps(VM_HOSTNAME_FORMAT)
+    }
     return template('home', request, context)
+
 
 def machines_console(request):
     host, port, password = ('', '', '')
@@ -260,7 +252,8 @@ def machines_console(request):
     host_ip = request.GET.get('host_ip', '')
     host_ip_v6 = request.GET.get('host_ip_v6', '')
     context = {'host': host, 'port': port, 'password': password,
-               'machine': machine, 'host_ip': host_ip, 'host_ip_v6': host_ip_v6}
+               'machine': machine, 'host_ip': host_ip,
+               'host_ip_v6': host_ip_v6}
     return template('machines_console', request, context)
 
 
@@ -279,7 +272,8 @@ CONNECT_LINUX_WINDOWS_MESSAGE = \
 <a target="_blank"
 href="http://en.wikipedia.org/wiki/Remote_Desktop_Services">
 Remote Desktop Service</a>.
-To do so, open the following file with an appropriate remote desktop client.""")
+To do so, open the following file with an appropriate \
+remote desktop client.""")
 CONNECT_LINUX_WINDOWS_SUBMESSAGE = \
     _("""If you don't have a Remote Desktop client already installed,
 we suggest the use of <a target="_blank"
@@ -390,7 +384,7 @@ def machines_connect(request):
                         'ip_address': ip_address,
                         'hostname': hostname,
                         'user': username
-                      }
+                    }
 
         rdp_context = {
             'username': username,
@@ -455,4 +449,3 @@ def machines_connect(request):
                          mimetype='application/json')  # no windows, no rdp
 
     return response
-

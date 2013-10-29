@@ -1042,16 +1042,13 @@ this options:
 
 .. code-block:: console
 
-   ASTAKOS_BASE_URL = 'https://node1.example.com/astakos'
+   ASTAKOS_AUTH_URL = 'https://node1.example.com/astakos/identity/v2.0'
 
    PITHOS_BASE_URL = 'https://node2.example.com/pithos'
    PITHOS_BACKEND_DB_CONNECTION = 'postgresql://synnefo:example_passw0rd@node1.example.com:5432/snf_pithos'
    PITHOS_BACKEND_BLOCK_PATH = '/srv/pithos/data'
 
    PITHOS_SERVICE_TOKEN = 'pithos_service_token22w'
-
-   # Set to False if astakos & pithos are on the same host
-   PITHOS_PROXY_USER_SERVICES = True
 
 
 The ``PITHOS_BACKEND_DB_CONNECTION`` option tells to the Pithos app where to
@@ -1065,7 +1062,7 @@ the Pithos backend data. Above we tell Pithos to store its data under
 ``/srv/pithos/data``, which is visible by both nodes. We have already setup this
 directory at node1's "Pithos data directory setup" section.
 
-The ``ASTAKOS_BASE_URL`` option informs the Pithos app where Astakos is.
+The ``ASTAKOS_AUTH_URL`` option informs the Pithos app where Astakos is.
 The Astakos service is used for user management (authentication, quotas, etc.)
 
 The ``PITHOS_BASE_URL`` setting must point to the top-level Pithos URL.
@@ -1856,17 +1853,14 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-api.conf``:
 .. code-block:: console
 
    CYCLADES_BASE_URL = 'https://node1.example.com/cyclades'
-   ASTAKOS_BASE_URL = 'https://node1.example.com/astakos'
-
-   # Set to False if astakos & cyclades are on the same host
-   CYCLADES_PROXY_USER_SERVICES = False
+   ASTAKOS_AUTH_URL = 'https://node1.example.com/astakos/identity/v2.0'
 
    CYCLADES_SERVICE_TOKEN = 'cyclades_service_token22w'
 
-The ``ASTAKOS_BASE_URL`` denotes the Astakos endpoint for Cyclades,
+The ``ASTAKOS_AUTH_URL`` denotes the Astakos endpoint for Cyclades,
 which is used for all user management, including authentication.
 Since our Astakos, Cyclades, and Pithos installations belong together,
-they should all have identical ``ASTAKOS_BASE_URL`` setting
+they should all have identical ``ASTAKOS_AUTH_URL`` setting
 (see also, :ref:`previously <conf-pithos>`).
 
 The ``CYCLADES_BASE_URL`` setting must point to the top-level Cyclades URL.

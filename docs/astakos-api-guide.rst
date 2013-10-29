@@ -20,6 +20,7 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
+0.15 (October 29, 2013)    Remove GET /authenticate in favor of POST /tokens
 0.14 (June 03, 2013)       Remove endpoint listing
 0.14 (May 28, 2013)        Extend token api with authenticate call
 0.14 (May 23, 2013)        Extend api to list endpoints
@@ -79,70 +80,10 @@ Example reply if request user is authenticated:
 User API Operations
 --------------------
 
-The operations described in this chapter allow users to authenticate themselves, send feedback and get user uuid/displayname mappings.
+The operations described in this chapter allow users to send feedback and
+get user uuid/displayname mappings.
 
 All the operations require a valid user token.
-
-.. _authenticate-api-label:
-
-Authenticate
-^^^^^^^^^^^^
-
-Authenticate API requests require a token. An application that wishes to connect to Astakos, but does not have a token, should redirect the user to ``/login``. (see :ref:`authentication-label`)
-
-============================== =========  ==================
-Uri                            Method     Description
-============================== =========  ==================
-``/account/v1.0/authenticate`` GET        Authenticate user using token
-============================== =========  ==================
-
-|
-
-====================  ===========================
-Request Header Name   Value
-====================  ===========================
-X-Auth-Token          User authentication token
-====================  ===========================
-
-Extended information on the user serialized in the json format will be returned:
-
-===========================  ============================
-Name                         Description
-===========================  ============================
-displayname                  User displayname
-uuid                         User unique identifier
-email                        List with user emails
-name                         User full name
-auth_token_created           Token creation date
-auth_token_expires           Token expiration date
-===========================  ============================
-
-Example reply:
-
-::
-
-  {"id": "12",
-  "displayname": "user@example.com",
-  "uuid": "a9dc21d2-bcb2-4104-9a9e-402b7c70d6d8",
-  "email": "[user@example.com]",
-  "name": "Firstname Lastname",
-  "auth_token_created": "Wed, 30 May 2012 10:03:37 GMT",
-  "auth_token_expires": "Fri, 29 Jun 2012 10:03:37 GMT"}
-
-|
-
-=========================== =====================
-Return Code                 Description
-=========================== =====================
-204 (No Content)            The request succeeded
-400 (Bad Request)           Method not allowed or no user found
-401 (Unauthorized)          Missing token or inactive user or penging approval terms
-500 (Internal Server Error) The request cannot be completed because of an internal error
-=========================== =====================
-
-.. warning:: The service is also available under ``/ui/authenticate``.
-     It  will be removed in the next version.
-
 
 Send feedback
 ^^^^^^^^^^^^^
@@ -310,12 +251,12 @@ Tokens API Operations
 Authenticate
 ^^^^^^^^^^^^
 
-Fallback call which receives the user token or the user uuid/token pair and
-returns back the token as well as information about the token holder and the
-services he/she can access.
-If not request body is provided (the request content length is missing or
-equals to 0) the response contains only non authentication protected
-information (the service catalog).
+This call takes the user token or the user uuid/token pair, authenticates
+the user and returns information about the token, its holder as well as
+a list of services the user can access.
+If no request body is provided (the request content length is missing or
+equals to 0), the call operates in public mode, attempts no authentication
+and returns only the service catalog.
 
 ========================================= =========  ==================
 Uri                                       Method     Description

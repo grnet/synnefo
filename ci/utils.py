@@ -303,6 +303,7 @@ class SynnefoCI(object):
         self.logger.debug("Setup apt. Install x2goserver and firefox")
         cmd = """
         echo 'APT::Install-Suggests "false";' >> /etc/apt/apt.conf
+        echo 'precedence ::ffff:0:0/96  100' >> /etc/gai.conf
         apt-get update
         apt-get install curl --yes --force-yes
         echo -e "\n\n{0}" >> /etc/apt/sources.list
@@ -856,6 +857,7 @@ class SynnefoCI(object):
         cmd = """
         pip install -U mock
         pip install -U factory_boy
+        pip install -U nose
         """
         _run(cmd, False)
 

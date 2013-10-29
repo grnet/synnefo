@@ -1897,6 +1897,7 @@ class ObjectPost(PithosAPITest):
                       HTTP_X_OBJECT_SHARING='write=%s' % (257*'a'))
         self.assertEqual(r.status_code, 400)
 
+
 class ObjectDelete(PithosAPITest):
     def setUp(self):
         PithosAPITest.setUp(self)

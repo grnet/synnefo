@@ -81,8 +81,8 @@ MAX_PERSONALITY = 5
 MAX_PERSONALITY_SIZE = 10240
 
 
-# Top-level URL of the astakos instance to be used for user management
-ASTAKOS_BASE_URL = 'https://accounts.example.synnefo.org/'
+# Authentication URL of the astakos instance to be used for user management
+ASTAKOS_AUTH_URL = 'https://accounts.example.synnefo.org/identity/v2.0'
 
 # Tune the size of the Astakos http client connection pool
 # This limit the number of concurrent requests to Astakos.
@@ -99,11 +99,6 @@ SECRET_ENCRYPTION_KEY = "Password Encryption Key"
 # The token used for astakos service api calls (e.g. api to retrieve user email
 # using a user uuid)
 CYCLADES_SERVICE_TOKEN = ''
-
-# Let cyclades proxy user specific api calls to astakos, via self served
-# endpoints. Set this to False if you deploy cyclades-app/astakos-app on the
-# same machine.
-CYCLADES_PROXY_USER_SERVICES = True
 
 # Template to use to build the FQDN of VMs. The setting will be formated with
 # the id of the VM. If set to 'None' the first public IPv4 or IPv6 address

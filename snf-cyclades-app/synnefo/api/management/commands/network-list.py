@@ -36,7 +36,7 @@ from optparse import make_option
 from snf_django.management.commands import ListCommand
 from synnefo.db.models import Network
 from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
-                              ASTAKOS_BASE_URL)
+                              ASTAKOS_AUTH_URL)
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -63,7 +63,7 @@ class Command(ListCommand):
     object_class = Network
     deleted_field = "deleted"
     user_uuid_field = "userid"
-    astakos_url = ASTAKOS_BASE_URL
+    astakos_auth_url = ASTAKOS_AUTH_URL
     astakos_token = ASTAKOS_TOKEN
 
     def get_machines(network):

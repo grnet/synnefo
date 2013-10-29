@@ -151,7 +151,7 @@ class ModularBackend(BaseBackend):
                  block_module=None, block_path=None, block_umask=None,
                  block_size=None, hash_algorithm=None,
                  queue_module=None, queue_hosts=None, queue_exchange=None,
-                 astakos_url=None, service_token=None,
+                 astakos_auth_url=None, service_token=None,
                  astakosclient_poolsize=None,
                  free_versioning=True, block_params=None,
                  public_url_security=None,
@@ -236,17 +236,17 @@ class ModularBackend(BaseBackend):
 
             self.queue = NoQueue()
 
-        self.astakos_url = astakos_url
+        self.astakos_auth_url = astakos_auth_url
         self.service_token = service_token
 
-        if not astakos_url or not AstakosClient:
+        if not astakos_auth_url or not AstakosClient:
             self.astakosclient = DisabledAstakosClient(
-                astakos_url,
+                service_token, astakos_auth_url,
                 use_pool=True,
                 pool_size=astakosclient_poolsize)
         else:
             self.astakosclient = AstakosClient(
-                astakos_url,
+                service_token, astakos_auth_url,
                 use_pool=True,
                 pool_size=astakosclient_poolsize)
 
@@ -280,7 +280,6 @@ class ModularBackend(BaseBackend):
                 self.wrapper.execute()
 
                 r = self.astakosclient.resolve_commissions(
-                    token=self.service_token,
                     accept_serials=self.serials,
                     reject_serials=[])
                 self.commission_serials.delete_many(
@@ -290,7 +289,6 @@ class ModularBackend(BaseBackend):
         else:
             if self.serials:
                 self.astakosclient.resolve_commissions(
-                    token=self.service_token,
                     accept_serials=[],
                     reject_serials=self.serials)
                 self.commission_serials.delete_many(
@@ -1577,7 +1575,6 @@ class ModularBackend(BaseBackend):
         try:
             name = details['path'] if 'path' in details else ''
             serial = self.astakosclient.issue_one_commission(
-                token=self.service_token,
                 holder=account,
                 source=DEFAULT_SOURCE,
                 provisions={'pithos.diskspace': size},

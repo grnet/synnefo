@@ -850,7 +850,6 @@ def setup_pithos():
         "synnefo_db_passwd": env.env.synnefo_db_passwd,
         "pithos_dir": env.env.pithos_dir,
         "PITHOS_SERVICE_TOKEN": service_token,
-        "proxy": env.env.pithos.hostname == env.env.accounts.hostname
         }
     custom = customize_settings_from_tmpl(tmpl, replace)
     try_put(custom, tmpl, mode=0644)
@@ -1161,7 +1160,6 @@ def setup_cyclades():
         "HOST": env.env.cyclades.ip,
         "domain": env.env.domain,
         "CYCLADES_SERVICE_TOKEN": service_token,
-        "proxy": env.env.cyclades.hostname == env.env.accounts.hostname
         }
     custom = customize_settings_from_tmpl(tmpl, replace)
     try_put(custom, tmpl, mode=0644)
@@ -1311,7 +1309,7 @@ def setup_kamaki():
     install_package("python-progress")
     install_package("kamaki")
     cmd = """
-    kamaki config set cloud.default.url "https://{0}/astakos/identity/v2.0/"
+    kamaki config set cloud.default.url "https://{0}/astakos/identity/v2.0"
     kamaki config set cloud.default.token {1}
     """.format(env.env.accounts.fqdn, user_auth_token)
     try_run(cmd)

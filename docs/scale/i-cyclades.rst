@@ -48,7 +48,7 @@ In `/etc/synnefo/cyclades.conf` add:
     NET_BAR_GRAPH_URL = 'https://cyclades.example.com/stats/%s/net-bar.png'
     NET_TIMESERIES_GRAPH_URL = 'https://cyclades.example.com/stats/%s/net-ts.png'
 
-    ASTAKOS_BASE_URL = 'https://accounts.example.synnefo.org/'
+    ASTAKOS_AUTH_URL = 'https://accounts.example.synnefo.org/identity/v2.0'
 
     SECRET_ENCRYPTION_KEY= "oEs0pt7Di1mkxA0P6FiK"
 

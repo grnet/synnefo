@@ -34,7 +34,7 @@ FAILURE_SUBJECT="Burnin Failed"
 
 # ----------------------------------------
 # Some burnin parameters
-AUTH_URL="https://accounts.synnefo.org/identity/v2.0/"
+AUTH_URL="https://accounts.synnefo.org/identity/v2.0"
 SYSTEM_IMAGES_USER="uuid-of-owner-of-system-images"
 TIMEOUT=240
 

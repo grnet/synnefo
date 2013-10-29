@@ -50,7 +50,6 @@ astakos_account_v1_0 += patterns(
     'astakos.api.user',
     url(r'^feedback/?$', 'send_feedback'),
     url(r'^user_catalogs/?$', 'get_uuid_displayname_catalogs'),
-    url(r'^authenticate/?$', 'authenticate'),
 )
 
 astakos_account_v1_0 += patterns(

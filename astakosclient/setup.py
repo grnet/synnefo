@@ -176,6 +176,7 @@ setup(
     zip_safe=False,
 
     install_requires=INSTALL_REQUIRES,
+    tests_require=['mock'],
 
     entry_points={},
 )

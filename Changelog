@@ -16,6 +16,15 @@ Synnefo-wide
 
 * Integrate Pithos tests in continuous integration.
 
+* Change astakosclient to accept AUTH_URL instead of BASE_URL
+	ASTAKOS_BASE_URL settings has been removed from Pithos and Cyclades
+	and has been replaced with ASTAKOS_AUTH_URL. Both Pithos and Cyclades
+	proxy the Astakos services under ASTAKOS_PROXY_PREFIX path.
+	ASTAKOS_PROXY_PREFIX by default has a value of '_astakos'.
+	More specifically, Astakos' identity service is proxied under
+	'_astakos/identity', Astakos' account service is under '_astakos/account'
+	and Astakos' ui service is under '_astakos/ui'.
+
 Astakos
 -------
 
@@ -39,6 +48,9 @@ Astakos
   expected to match its base URL; otherwise, a warning is issued.
   Re-registration with `snf-component-register' affects both the base and
   the ui URL.
+
+* Remove API call GET /account/v1.0/authenticate in favor of
+  POST /identity/v2.0/tokens.
 
 * Management commands:
   * Introduced new commands:

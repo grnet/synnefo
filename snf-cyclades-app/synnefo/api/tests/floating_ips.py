@@ -38,7 +38,7 @@ from synnefo.db import models_factory as mf
 from synnefo.db.models_factory import (NetworkFactory,
                                        VirtualMachineFactory)
 
-from mock import patch
+from mock import patch, Mock
 from functools import partial
 
 from synnefo.cyclades_settings import cyclades_services
@@ -257,19 +257,39 @@ class FloatingIPAPITest(BaseAPITest):
 
     def test_release_in_use(self):
         ip = mf.IPv4AddressFactory(userid="user1", floating_ip=True)
-        vm = ip.nic.machine
+        vm = mf.VirtualMachineFactory(userid="user1")
+        request = {"floatingip": {
+            "device_id": vm.id}
+            }
         with mocked_quotaholder():
-            response = self.delete(URL + "/%s" % ip.id, ip.userid)
-        self.assertFault(response, 409, "conflict")
-        # Also send a notification to remove the NIC and assert that FIP is in
-        # use until notification from ganeti arrives
-        request = {"removeFloatingIp": {"address": ip.address}}
-        url = SERVERS_URL + "/%s/action" % vm.id
-        with patch('synnefo.logic.rapi_pool.GanetiRapiClient') as c:
-            c().ModifyInstance.return_value = 10
-            response = self.post(url, vm.userid, json.dumps(request),
-                                 "json")
+            response = self.put(URL + "/%s" % ip.id, "user1",
+                                json.dumps(request), "json")
+        self.assertEqual(response.status_code, 409)
+
+    @patch("synnefo.db.models.get_rapi_client")
+    def test_update_dettach(self, mrapi):
+        ip = mf.IPv4AddressFactory(userid="user1", floating_ip=True)
+        request = {"floatingip": {
+            "device_id": None}
+            }
+        mrapi().ModifyInstance.return_value = 42
+        with mocked_quotaholder():
+            response = self.put(URL + "/%s" % ip.id, "user1",
+                                json.dumps(request), "json")
+        print response.content
         self.assertEqual(response.status_code, 202)
+
+    def test_update_dettach_unassociated(self):
+        ip = mf.IPv4AddressFactory(userid="user1", floating_ip=True, nic=None)
+        request = {"floatingip": {}}
+        with mocked_quotaholder():
+            response = self.put(URL + "/%s" % ip.id, "user1",
+                                json.dumps(request), "json")
+        self.assertEqual(response.status_code, 400)
+
+    def test_release_in_use(self):
+        ip = mf.IPv4AddressFactory(userid="user1", floating_ip=True)
+        vm = ip.nic.machine
         with mocked_quotaholder():
             response = self.delete(URL + "/%s" % ip.id, ip.userid)
         self.assertFault(response, 409, "conflict")
@@ -281,7 +301,7 @@ class FloatingIPAPITest(BaseAPITest):
         self.assertSuccess(response)
         ips_after = floating_ips.filter(id=ip.id)
         self.assertEqual(len(ips_after), 0)
-'''
+
     @patch("synnefo.logic.backend", Mock())
     def test_delete_network_with_floating_ips(self):
         ip = mf.IPv4AddressFactory(userid="user1", floating_ip=True,
@@ -303,7 +323,7 @@ class FloatingIPAPITest(BaseAPITest):
                                    self.pool.userid)
         self.assertSuccess(response)
 
-
+'''
 POOLS_URL = join_urls(compute_path, "os-floating-ip-pools")
 
 

@@ -67,8 +67,6 @@ class Command(BaseCommand):
 
         port = get_port(args[0], None)
 
-        sep = '-' * 80 + '\n'
-
         db_nic = {
             "id": port.id,
             "name": port.name,
@@ -79,22 +77,17 @@ class Command(BaseCommand):
             "mac": port.mac,
             "state": port.state}
 
-        self.stdout.write(sep)
-        self.stdout.write('State of port in DB\n')
-        self.stdout.write(sep)
-        pprint_table(self.stdout, db_nic.items(), None, separator=" | ")
-
+        pprint_table(self.stdout, db_nic.items(), None, separator=" | ",
+                     title="State of port in DB")
         self.stdout.write('\n\n')
+
         ips = list(port.ips.values_list("address", "network_id", "subnet_id",
                                         "subnet__cidr", "floating_ip"))
         headers = ["Address", "Network", "Subnet", "CIDR", "is_floating"]
-        pprint_table(self.stdout, ips, headers, separator=" | ")
-
+        pprint_table(self.stdout, ips, headers, separator=" | ",
+                     title="IP Addresses")
         self.stdout.write('\n\n')
 
-        self.stdout.write(sep)
-        self.stdout.write('State of port in Ganeti\n')
-        self.stdout.write(sep)
         vm = port.machine
         if vm is None:
             self.stdout.write("Port is not attached to any instance.\n")
@@ -119,6 +112,7 @@ class Command(BaseCommand):
             self.stdout.write("NIC %s is not attached to instance %s"
                               % (port, vm))
             return
-        pprint_table(self.stdout, gnt_nic.items(), None, separator=" | ")
+        pprint_table(self.stdout, gnt_nic.items(), None, separator=" | ",
+                     title="State of port in Ganeti")
 
         vm.put_client(client)

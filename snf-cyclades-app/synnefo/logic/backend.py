@@ -555,16 +555,7 @@ def create_instance(vm, nics, flavor, image):
         bnet, created = BackendNetwork.objects.get_or_create(backend=backend,
                                                              network=network)
         if bnet.operstate != "ACTIVE":
-            if network.public:
-                msg = "Can not connect instance to network %s. Network is not"\
-                      " ACTIVE in backend %s." % (network, backend)
-                raise Exception(msg)
-            else:
-                jobs = create_network(network, backend, connect=True)
-                if isinstance(jobs, list):
-                    depend_jobs.extend(jobs)
-                else:
-                    depend_jobs.append(jobs)
+            depend_jobs = create_network(network, backend, connect=True)
     kw["depends"] = [[job, ["success", "error", "canceled"]]
                      for job in depend_jobs]
 

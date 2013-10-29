@@ -36,7 +36,7 @@ from optparse import make_option
 from snf_django.management.commands import ListCommand, CommandError
 from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
                               ASTAKOS_BASE_URL)
-from synnefo.db.models import Subnet, Network
+from synnefo.db.models import Subnet
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -66,21 +66,15 @@ class Command(ListCommand):
             help="List only subnets that have DHCP/SLAC enabled"),
     )
 
-    def get_userid(sub):
-        return Network.objects.get(id=sub.network.id).userid
-
-    def get_network(net):
-        return Network.objects.get(id=net.network.id).id
-
     object_class = Subnet
     astakos_url = ASTAKOS_BASE_URL
     astakos_token = ASTAKOS_TOKEN
 
     FIELDS = {
         "id": ("id", "ID of the subnet"),
-        "network": (get_network, "ID of the network the subnet belongs to"),
+        "network": ("network_id", "ID of the network the subnet belongs to"),
         "name": ("name", "Name of the subnet"),
-        "user.uuid": (get_userid, "The UUID of the subnet's owner"),
+        "user.uuid": ("network.userid", "The UUID of the subnet's owner"),
         "cidr": ("cidr", "The CIDR of the subnet"),
         "ipversion": ("ipversion", "The IP version of the subnet"),
         "gateway": ("gateway", "The gateway IP of the subnet"),

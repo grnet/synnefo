@@ -120,6 +120,7 @@ def get_user_mock(request, *args, **kwargs):
                             "name": "Firstname Lastname"}}
                         }
 
+
 @mock.patch("astakosclient.AstakosClient", new=AstakosClientMock)
 @mock.patch("snf_django.lib.astakos.get_user", new=get_user_mock)
 class HelpdeskTests(TestCase):

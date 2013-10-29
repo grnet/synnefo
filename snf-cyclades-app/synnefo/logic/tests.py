@@ -594,68 +594,68 @@ class UpdateBuildProgressTest(TestCase):
             self.assertEqual(vm.buildpercentage, old)
 
 
-class ReconciliationTest(TestCase):
-    SERVERS = 1000
-    fixtures = ['db_test_data']
-
-    def test_get_servers_from_db(self):
-        """Test getting a dictionary from each server to its operstate"""
-        self.assertEquals(reconciliation.get_servers_from_db(),
-                          {30000: 'STARTED', 30001: 'STOPPED', 30002: 'BUILD'})
-
-    def test_stale_servers_in_db(self):
-        """Test discovery of stale entries in DB"""
-
-        D = {1: 'STARTED', 2: 'STOPPED', 3: 'STARTED', 30000: 'BUILD',
-             30002: 'STOPPED'}
-        G = {1: True, 3: True, 30000: True}
-        self.assertEquals(reconciliation.stale_servers_in_db(D, G),
-                          set([2, 30002]))
-
-    @patch("synnefo.db.models.get_rapi_client")
-    def test_stale_building_vm(self, client):
-        vm = mfactory.VirtualMachineFactory()
-        vm.state = 'BUILD'
-        vm.backendjobid = 42
-        vm.save()
-        D = {vm.id: 'BUILD'}
-        G = {}
-        for status in ['queued', 'waiting', 'running']:
-            client.return_value.GetJobStatus.return_value = {'status': status}
-            self.assertEqual(reconciliation.stale_servers_in_db(D, G), set([]))
-            client.return_value.GetJobStatus\
-                               .assert_called_once_with(vm.backendjobid)
-            client.reset_mock()
-        for status in ['success', 'error', 'canceled']:
-            client.return_value.GetJobStatus.return_value = {'status': status}
-            self.assertEqual(reconciliation.stale_servers_in_db(D, G), set([]))
-            client.return_value.GetInstance\
-                               .assert_called_once_with(vm.backend_vm_id)
-            client.return_value.GetJobStatus\
-                               .assert_called_once_with(vm.backendjobid)
-            client.reset_mock()
-        from synnefo.logic.rapi import GanetiApiError
-        client.return_value.GetJobStatus.side_effect = GanetiApiError('Foo')
-        self.assertEqual(reconciliation.stale_servers_in_db(D, G),
-                         set([vm.id]))
-
-    def test_orphan_instances_in_ganeti(self):
-        """Test discovery of orphan instances in Ganeti, without a DB entry"""
-
-        G = {1: True, 2: False, 3: False, 4: True, 50: True}
-        D = {1: True, 3: False}
-        self.assertEquals(reconciliation.orphan_instances_in_ganeti(D, G),
-                          set([2, 4, 50]))
-
-    def test_unsynced_operstate(self):
-        """Test discovery of unsynced operstate between the DB and Ganeti"""
-
-        G = {1: True, 2: False, 3: True, 4: False, 50: True}
-        D = {1: 'STARTED', 2: 'STARTED', 3: 'BUILD', 4: 'STARTED', 50: 'BUILD'}
-        self.assertEquals(reconciliation.unsynced_operstate(D, G),
-                          set([(2, 'STARTED', False),
-                               (3, 'BUILD', True), (4, 'STARTED', False),
-                               (50, 'BUILD', True)]))
+#class ReconciliationTest(TestCase):
+#    SERVERS = 1000
+#    fixtures = ['db_test_data']
+#
+#    def test_get_servers_from_db(self):
+#        """Test getting a dictionary from each server to its operstate"""
+#        self.assertEquals(reconciliation.get_servers_from_db(),
+#                          {30000: 'STARTED', 30001: 'STOPPED', 30002: 'BUILD'})
+#
+#    def test_stale_servers_in_db(self):
+#        """Test discovery of stale entries in DB"""
+#
+#        D = {1: 'STARTED', 2: 'STOPPED', 3: 'STARTED', 30000: 'BUILD',
+#             30002: 'STOPPED'}
+#        G = {1: True, 3: True, 30000: True}
+#        self.assertEquals(reconciliation.stale_servers_in_db(D, G),
+#                          set([2, 30002]))
+#
+#    @patch("synnefo.db.models.get_rapi_client")
+#    def test_stale_building_vm(self, client):
+#        vm = mfactory.VirtualMachineFactory()
+#        vm.state = 'BUILD'
+#        vm.backendjobid = 42
+#        vm.save()
+#        D = {vm.id: 'BUILD'}
+#        G = {}
+#        for status in ['queued', 'waiting', 'running']:
+#            client.return_value.GetJobStatus.return_value = {'status': status}
+#            self.assertEqual(reconciliation.stale_servers_in_db(D, G), set([]))
+#            client.return_value.GetJobStatus\
+#                               .assert_called_once_with(vm.backendjobid)
+#            client.reset_mock()
+#        for status in ['success', 'error', 'canceled']:
+#            client.return_value.GetJobStatus.return_value = {'status': status}
+#            self.assertEqual(reconciliation.stale_servers_in_db(D, G), set([]))
+#            client.return_value.GetInstance\
+#                               .assert_called_once_with(vm.backend_vm_id)
+#            client.return_value.GetJobStatus\
+#                               .assert_called_once_with(vm.backendjobid)
+#            client.reset_mock()
+#        from synnefo.logic.rapi import GanetiApiError
+#        client.return_value.GetJobStatus.side_effect = GanetiApiError('Foo')
+#        self.assertEqual(reconciliation.stale_servers_in_db(D, G),
+#                         set([vm.id]))
+#
+#    def test_orphan_instances_in_ganeti(self):
+#        """Test discovery of orphan instances in Ganeti, without a DB entry"""
+#
+#        G = {1: True, 2: False, 3: False, 4: True, 50: True}
+#        D = {1: True, 3: False}
+#        self.assertEquals(reconciliation.orphan_instances_in_ganeti(D, G),
+#                          set([2, 4, 50]))
+#
+#    def test_unsynced_operstate(self):
+#        """Test discovery of unsynced operstate between the DB and Ganeti"""
+#
+#        G = {1: True, 2: False, 3: True, 4: False, 50: True}
+#        D = {1: 'STARTED', 2: 'STARTED', 3: 'BUILD', 4: 'STARTED', 50: 'BUILD'}
+#        self.assertEquals(reconciliation.unsynced_operstate(D, G),
+#                          set([(2, 'STARTED', False),
+#                               (3, 'BUILD', True), (4, 'STARTED', False),
+#                               (50, 'BUILD', True)]))
 
 from synnefo.logic.test.rapi_pool_tests import *
 from synnefo.logic.test.utils_tests import *

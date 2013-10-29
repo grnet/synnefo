@@ -87,8 +87,8 @@ class Command(BaseCommand):
             u = AstakosUser(email=email,
                             first_name=first_name,
                             last_name=last_name,
-                            password=password,
                             is_superuser=options['is_superuser'])
+            u.set_password(password)
             u.save()
 
         except BaseException, e:

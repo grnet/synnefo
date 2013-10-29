@@ -740,9 +740,9 @@ Adding the `--fix-all` option, will do the actual synchronization:
 
 .. code-block:: console
 
-  $ snf-manage reconcile --fix-all
+  $ snf-manage reconcile-servers --fix-all
 
-Please see ``snf-manage reconcile --help`` for all the details.
+Please see ``snf-manage reconcile-servers --help`` for all the details.
 
 
 Reconciling Networks
@@ -1812,13 +1812,15 @@ Upgrade Notes
    v0.12 -> v0.13 <upgrade/upgrade-0.13>
    v0.13 -> v0.14 <upgrade/upgrade-0.14>
    v0.14 -> v0.14.2 <upgrade/upgrade-0.14.2>
-   v0.14.2 -> v0.14.6 <upgrade/upgrade-0.14.6>
+   v0.14.5 -> v0.14.6 <upgrade/upgrade-0.14.6>
 
 
 Changelog, NEWS
 ===============
 
 
+* v0.14.7 :ref:`Changelog <Changelog-0.14.6>`, :ref:`NEWS <NEWS-0.14.7>`
+* v0.14.6 :ref:`Changelog <Changelog-0.14.6>`, :ref:`NEWS <NEWS-0.14.6>`
 * v0.14.5 :ref:`Changelog <Changelog-0.14.5>`, :ref:`NEWS <NEWS-0.14.5>`
 * v0.14.4 :ref:`Changelog <Changelog-0.14.4>`, :ref:`NEWS <NEWS-0.14.4>`
 * v0.14.3 :ref:`Changelog <Changelog-0.14.3>`, :ref:`NEWS <NEWS-0.14.3>`

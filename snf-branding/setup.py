@@ -36,6 +36,7 @@ import distribute_setup
 distribute_setup.use_setuptools()
 
 import os
+import sys
 
 from setuptools import setup, find_packages
 from fnmatch import fnmatchcase

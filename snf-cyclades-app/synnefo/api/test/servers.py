@@ -241,6 +241,7 @@ class ServerCreateAPITest(ComputeAPITest):
         mimage.return_value = {'location': 'pithos://foo',
                                'checksum': '1234',
                                "id": 1,
+                               "size": "41242",
                                "name": "test_image",
                                'disk_format': 'diskdump'}
         mrapi().CreateInstance.return_value = 12
@@ -300,6 +301,12 @@ class ServerCreateAPITest(ComputeAPITest):
                         "personality": []
                     }
         }
+        mimage.return_value = {'location': 'pithos://foo',
+                               'checksum': '1234',
+                               "id": 1,
+                               "name": "test_image",
+                               "size": "41242",
+                               'disk_format': 'diskdump'}
         response = self.mypost('servers', 'test_user',
                                json.dumps(request), 'json')
         self.assertItemNotFound(response)
@@ -311,6 +318,7 @@ class ServerCreateAPITest(ComputeAPITest):
                                'checksum': '1234',
                                "id": 1,
                                "name": "test_image",
+                               "size": "41242",
                                'disk_format': 'diskdump'}
         mrapi().CreateInstance.side_effect = GanetiApiError("..ganeti is down")
         flavor = mfactory.FlavorFactory()

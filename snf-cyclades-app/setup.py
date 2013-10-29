@@ -36,6 +36,7 @@ import distribute_setup
 distribute_setup.use_setuptools()
 
 import os
+import sys
 
 from distutils.util import convert_path
 from fnmatch import fnmatchcase
@@ -57,18 +58,17 @@ CLASSIFIERS = []
 
 # Package requirements
 INSTALL_REQUIRES = [
-    'Django >=1.2, <1.3',
+    'Django >=1.2, <=1.4.5',
     'simplejson>=2.1.1',
     'pycurl>=7.19.0',
     'python-dateutil>=1.4.1',
     'IPy>=0.70',
-    'South>=0.7',
+    'South>=0.7.3',
     'pycrypto>=2.1.0',
     'puka',
     'python-daemon>=1.5.5, <1.6',
     'snf-common',
     'vncauthproxy>=1.2',
-    'south>=0.7, <=0.7.3',
     'snf-pithos-backend',
     'lockfile>=0.8, <0.9',
     'ipaddr',

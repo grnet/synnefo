@@ -32,7 +32,11 @@
 # or implied, of GRNET S.A.
 
 
-from django.conf.urls.defaults import url, patterns
+try:
+    from django.conf.urls import url, patterns
+except ImportError:  # Django==1.2
+    from django.conf.urls.defaults import url, patterns
+
 from snf_django.lib.api.utils import prefix_pattern
 from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls

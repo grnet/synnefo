@@ -133,8 +133,8 @@ class FlavorAPITest(BaseAPITest):
     def test_wrong_flavor(self):
         """Test 404 result when requesting a flavor that does not exist."""
 
-        # XXX: flavors/22 below fails for no apparent reason
-        response = self.myget('flavors/%d' % 23)
+        max_flavor_id = max(Flavor.objects.values_list('id', flat=True))
+        response = self.myget('flavors/%s' % (max_flavor_id + 1))
         self.assertItemNotFound(response)
 
     def test_catch_wrong_api_paths(self, *args):

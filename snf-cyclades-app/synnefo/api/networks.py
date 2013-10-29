@@ -33,7 +33,11 @@
 
 
 from django.conf import settings
-from django.conf.urls.defaults import patterns
+try:
+    from django.conf.urls import patterns
+except ImportError:  # Django==1.2
+    from django.conf.urls.defaults import patterns
+
 from django.db import transaction
 from django.db.models import Q
 from django.http import HttpResponse
@@ -151,7 +155,7 @@ def list_networks(request, detail=False):
 
 
 @api.api_method(http_method='POST', user_required=True, logger=log)
-@transaction.commit_manually
+@transaction.commit_on_success
 def create_network(request):
     # Normal Response Code: 202
     # Error Response Codes: computeFault (400, 500),
@@ -162,75 +166,68 @@ def create_network(request):
     #                       forbidden (403)
     #                       overLimit (413)
 
+    req = utils.get_request_dict(request)
+    log.info('create_network %s', req)
+
+    user_id = request.user_uniq
     try:
-        req = utils.get_request_dict(request)
-        log.info('create_network %s', req)
+        d = req['network']
+        name = d['name']
+    except KeyError:
+        raise faults.BadRequest("Malformed request")
 
-        user_id = request.user_uniq
-        try:
-            d = req['network']
-            name = d['name']
-        except KeyError:
-            raise faults.BadRequest("Malformed request")
+    # Get and validate flavor. Flavors are still exposed as 'type' in the
+    # API.
+    flavor = d.get("type", None)
+    if flavor is None:
+        raise faults.BadRequest("Missing request parameter 'type'")
+    elif flavor not in Network.FLAVORS.keys():
+        raise faults.BadRequest("Invalid network type '%s'" % flavor)
+    elif flavor not in settings.API_ENABLED_NETWORK_FLAVORS:
+        raise faults.Forbidden("Can not create network of type '%s'" %
+                               flavor)
 
-        # Get and validate flavor. Flavors are still exposed as 'type' in the
-        # API.
-        flavor = d.get("type", None)
-        if flavor is None:
-            raise faults.BadRequest("Missing request parameter 'type'")
-        elif flavor not in Network.FLAVORS.keys():
-            raise faults.BadRequest("Invalid network type '%s'" % flavor)
-        elif flavor not in settings.API_ENABLED_NETWORK_FLAVORS:
-            raise faults.Forbidden("Can not create network of type '%s'" %
-                                   flavor)
+    public = d.get("public", False)
+    if public:
+        raise faults.Forbidden("Can not create a public network.")
 
-        public = d.get("public", False)
-        if public:
-            raise faults.Forbidden("Can not create a public network.")
+    dhcp = d.get('dhcp', True)
 
-        dhcp = d.get('dhcp', True)
+    # Get and validate network parameters
+    subnet = d.get('cidr', '192.168.1.0/24')
+    subnet6 = d.get('cidr6', None)
+    gateway = d.get('gateway', None)
+    gateway6 = d.get('gateway6', None)
+    # Check that user provided a valid subnet
+    util.validate_network_params(subnet, gateway, subnet6, gateway6)
 
-        # Get and validate network parameters
-        subnet = d.get('cidr', '192.168.1.0/24')
-        subnet6 = d.get('cidr6', None)
-        gateway = d.get('gateway', None)
-        gateway6 = d.get('gateway6', None)
-        # Check that user provided a valid subnet
-        util.validate_network_params(subnet, gateway, subnet6, gateway6)
+    try:
+        mode, link, mac_prefix, tags = util.values_from_flavor(flavor)
+        validate_mac(mac_prefix + "0:00:00:00")
+        network = Network.objects.create(
+            name=name,
+            userid=user_id,
+            subnet=subnet,
+            subnet6=subnet6,
+            gateway=gateway,
+            gateway6=gateway6,
+            dhcp=dhcp,
+            flavor=flavor,
+            mode=mode,
+            link=link,
+            mac_prefix=mac_prefix,
+            tags=tags,
+            action='CREATE',
+            state='ACTIVE')
+    except EmptyPool:
+        log.error("Failed to allocate resources for network of type: %s",
+                  flavor)
+        raise faults.ServiceUnavailable("Failed to allocate network resources")
 
-        try:
-            mode, link, mac_prefix, tags = util.values_from_flavor(flavor)
-            validate_mac(mac_prefix + "0:00:00:00")
-            network = Network.objects.create(
-                name=name,
-                userid=user_id,
-                subnet=subnet,
-                subnet6=subnet6,
-                gateway=gateway,
-                gateway6=gateway6,
-                dhcp=dhcp,
-                flavor=flavor,
-                mode=mode,
-                link=link,
-                mac_prefix=mac_prefix,
-                tags=tags,
-                action='CREATE',
-                state='ACTIVE')
-        except EmptyPool:
-            log.error("Failed to allocate resources for network of type: %s",
-                      flavor)
-            raise faults.ServiceUnavailable("Failed to allocate network"
-                                            " resources")
-
-        # Issue commission to Quotaholder and accept it since at the end of
-        # this transaction the Network object will be created in the DB.
-        # Note: the following call does a commit!
-        quotas.issue_and_accept_commission(network)
-    except:
-        transaction.rollback()
-        raise
-    else:
-        transaction.commit()
+    # Issue commission to Quotaholder and accept it since at the end of
+    # this transaction the Network object will be created in the DB.
+    # Note: the following call does a commit!
+    quotas.issue_and_accept_commission(network)
 
     networkdict = network_to_dict(network, request.user_uniq)
     response = render_network(request, networkdict, status=202)

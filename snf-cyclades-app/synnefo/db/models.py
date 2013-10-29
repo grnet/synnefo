@@ -611,7 +611,7 @@ class Subnet(models.Model):
     network = models.ForeignKey('Network', null=False, db_index=True,
                                 related_name="subnets")
     name = models.CharField('Subnet Name', max_length=SUBNET_NAME_LENGTH,
-                            null=True)
+                            null=True, default="")
     ipversion = models.IntegerField('IP Version', default=4, null=False)
     cidr = models.CharField('Subnet', max_length=64, null=False)
     gateway = models.CharField('Gateway', max_length=64, null=True)
@@ -783,7 +783,7 @@ class NetworkInterface(models.Model):
 
     NETWORK_IFACE_NAME_LENGTH = 128
 
-    name = models.CharField('NIC name', max_length=128, null=True)
+    name = models.CharField('NIC name', max_length=128, null=True, default="")
     userid = models.CharField("UUID of the owner",
                               max_length=NETWORK_IFACE_NAME_LENGTH,
                               null=True, db_index=True)

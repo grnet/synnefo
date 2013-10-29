@@ -204,7 +204,8 @@ class IPv4SubnetFactory(SubnetFactory):
     cidr = factory.Sequence(lambda n: '192.168.{0}.0/24'.format(n))
     gateway = factory.LazyAttribute(lambda a: a.cidr[:-4] + '1')
     pool = factory.RelatedFactory(IPPoolTableFactory, 'subnet', base=cidr,
-                                  offset=10, size=5)
+                                  offset=2,
+                                  size=253)
 
 
 class IPv6SubnetFactory(SubnetFactory):

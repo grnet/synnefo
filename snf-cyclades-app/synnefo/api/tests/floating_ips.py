@@ -127,14 +127,15 @@ class FloatingIPAPITest(BaseAPITest):
         self.assertFault(response, 503, 'serviceUnavailable')
 
         # Full network
-        pool = mf.NetworkWithSubnetFactory(floating_ip_pool=True,
-                                           public=True,
-                                           subnet__cidr="192.168.2.0/31",
-                                           subnet__gateway="192.168.2.1")
+        net = mf.NetworkWithSubnetFactory(floating_ip_pool=True,
+                                          public=True,
+                                          subnet__cidr="192.168.2.0/31",
+                                          subnet__gateway="192.168.2.1",
+                                          subnet__pool__size=0)
         response = self.post(URL, "test_user", json.dumps({}), "json")
         self.assertFault(response, 503, 'serviceUnavailable')
 
-        request = {'pool': pool.id}
+        request = {'pool': net.id}
         response = self.post(URL, "test_user", json.dumps(request), "json")
         self.assertConflict(response)
 
@@ -229,14 +230,16 @@ class FloatingIPPoolsAPITest(BaseAPITest):
         net = mf.NetworkWithSubnetFactory(floating_ip_pool=True,
                                           public=True,
                                           subnet__cidr="192.168.2.0/30",
-                                          subnet__gateway="192.168.2.1")
+                                          subnet__gateway="192.168.2.1",
+                                          subnet__pool__size=1,
+                                          subnet__pool__offset=1)
         mf.NetworkWithSubnetFactory(public=True, deleted=True)
         mf.NetworkWithSubnetFactory(public=False, deleted=False)
         mf.NetworkWithSubnetFactory(public=True, floating_ip_pool=False)
         response = self.get(POOLS_URL)
         self.assertSuccess(response)
         self.assertEqual(json.loads(response.content)["floating_ip_pools"],
-                         [{"name": str(net.id), "size": 4, "free": 1}])
+                         [{"name": str(net.id), "size": 1, "free": 1}])
 
 
 class FloatingIPActionsTest(BaseAPITest):

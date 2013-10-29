@@ -247,12 +247,14 @@ def get_port(port_id, user_id, for_update=False):
     except (ValueError, NetworkInterface.DoesNotExist):
         raise faults.ItemNotFound('Port not found.')
 
+
 def get_security_group(sg_id):
     try:
         sg = SecurityGroup.objects.get(id=sg_id)
         return sg
     except (ValueError, SecurityGroup.DoesNotExist):
         raise faults.ItemNotFound("Not valid security group")
+
 
 def get_floating_ip_by_address(userid, address, for_update=False):
     try:
@@ -271,7 +273,7 @@ def get_floating_ip_by_id(userid, floating_ip_id, for_update=False):
         if for_update:
             objects = objects.select_for_update()
         return objects.get(id=floating_ip_id, floating_ip=True,
-                               userid=userid, deleted=False)
+                           userid=userid, deleted=False)
     except IPAddress.DoesNotExist:
         raise faults.ItemNotFound("Floating IP %s does not exist." %
                                   floating_ip_id)

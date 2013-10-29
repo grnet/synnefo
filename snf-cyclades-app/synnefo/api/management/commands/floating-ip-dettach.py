@@ -35,7 +35,7 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 from synnefo.management.common import get_floating_ip_by_address
-from synnefo.logic import backend
+from synnefo.logic import servers
 
 class Command(BaseCommand):
     can_import_settings = True
@@ -58,6 +58,6 @@ class Command(BaseCommand):
         nic = floating_ip.nic
         vm = nic.machine
 
-        backend.disconnect_from_network(vm, nic)
+        servers.disconnect(vm, nic)
         self.stdout.write("Dettached floating IP %s from  %s.\n"
                            % (floating_ip_id, vm))

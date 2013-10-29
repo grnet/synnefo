@@ -51,8 +51,8 @@ api20_patterns = patterns(
     (r'^ports', include(ports)),
     (r'^subnets', include(subnets)),
     (r'^extensions', include(extensions)),
-    (r'^os-floating-ips', include(floating_ips.ips_urlpatterns)),
-    (r'^os-floating-ip-pools', include(floating_ips.pools_urlpatterns)),
+    (r'^floatingips', include(floating_ips.ips_urlpatterns)),
+#    (r'^os-floating-ip-pools', include(floating_ips.pools_urlpatterns)),
 )
 
 

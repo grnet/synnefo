@@ -37,7 +37,6 @@ from django.core.management.base import BaseCommand, CommandError
 from synnefo.management.common import get_floating_ip_by_address
 from synnefo.logic import backend
 
-
 class Command(BaseCommand):
     can_import_settings = True
     output_transaction = True
@@ -45,7 +44,7 @@ class Command(BaseCommand):
     help = "Dettach a floating IP from a VM or router"
 
     def handle(self, *args, **options):
-        if not args or len(args) > 1:
+        if not args or len(args)>1:
             raise CommandError("Command accepts exactly one argument")
 
         address = args[0]

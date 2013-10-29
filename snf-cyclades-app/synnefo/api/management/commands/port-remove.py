@@ -31,8 +31,7 @@
 from django.core.management.base import BaseCommand, CommandError
 from synnefo.logic import ports
 from synnefo.api.util import get_port
-from synnefo.management.common import convert_api_faults
-
+from synnefo.management.common  import convert_api_faults
 
 class Command(BaseCommand):
     can_import_settings = True

@@ -39,7 +39,6 @@ from django.core.management.base import BaseCommand, CommandError
 from synnefo.management.common import get_floating_ip_by_address
 from synnefo import quotas
 
-
 class Command(BaseCommand):
     can_import_settings = True
     output_transaction = True

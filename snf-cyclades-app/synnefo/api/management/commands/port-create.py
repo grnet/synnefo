@@ -100,7 +100,7 @@ class Command(BaseCommand):
         security_group_ids = options["security-groups"]
 
         if not name:
-            name = ""
+            name=""
 
         if (server_id and router_id) or not (server_id or router_id):
             raise CommandError("Please give either a server or a router id")

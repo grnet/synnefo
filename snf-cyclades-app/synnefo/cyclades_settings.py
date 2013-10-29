@@ -71,7 +71,7 @@ COMPUTE_ROOT_URL = join_urls(BASE_URL, COMPUTE_PREFIX)
 
 ASTAKOS_AUTH_URL = getattr(
     settings, 'ASTAKOS_AUTH_URL',
-    'https://accounts.example.synnefo.org/astakos/identity/v2.0/')
+    'https://accounts.example.synnefo.org/astakos/identity/v2.0')
 
 
 # --------------------------------------

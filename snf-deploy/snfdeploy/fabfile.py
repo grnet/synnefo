@@ -1309,7 +1309,7 @@ def setup_kamaki():
     install_package("python-progress")
     install_package("kamaki")
     cmd = """
-    kamaki config set cloud.default.url "https://{0}/astakos/identity/v2.0/"
+    kamaki config set cloud.default.url "https://{0}/astakos/identity/v2.0"
     kamaki config set cloud.default.token {1}
     """.format(env.env.accounts.fqdn, user_auth_token)
     try_run(cmd)

@@ -110,11 +110,11 @@ Pithos services) with the ``ASTAKOS_AUTH_URL`` setting.
 
 For Cyclades service we have to change the ``20-snf-cyclades-app-api.conf``
 file, remove the ``ASTAKOS_BASE_URL`` setting and replace it with
-``ASTAKOS_AUTH_URL``. Typically it is sufficient to add ``/identity/v2.0/``
+``ASTAKOS_AUTH_URL``. Typically it is sufficient to add ``/identity/v2.0``
 at the end of base url to get the auth url. For example if base url had the
 value of 'https://accounts.example.synnefo.org/' then the ``ASTAKOS_AUTH_URL``
 setting will have the value of
-'https://accounts.example.synnefo.org/identity/v2.0/'.
+'https://accounts.example.synnefo.org/identity/v2.0'.
 
 For Pithos service we have to change the ``20-snf-pithos-app-settings.conf``
 file in the same way as above.

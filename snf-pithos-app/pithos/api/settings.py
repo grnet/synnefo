@@ -34,7 +34,7 @@ COOKIE_NAME = getattr(settings, 'PITHOS_ASTAKOS_COOKIE_NAME', '_pithos2_a')
 
 ASTAKOS_AUTH_URL = getattr(
     settings, 'ASTAKOS_AUTH_URL',
-    'https://accounts.example.synnefo.org/astakos/identity/v2.0/')
+    'https://accounts.example.synnefo.org/astakos/identity/v2.0')
 
 ASTAKOSCLIENT_POOLSIZE = \
     getattr(settings, 'PITHOS_ASTAKOSCLIENT_POOLSIZE', 200)

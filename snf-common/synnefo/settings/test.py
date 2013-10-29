@@ -58,7 +58,7 @@ ASTAKOS_IM_MODULES = ['local', 'shibboleth']
 
 
 ASTAKOS_BASE_URL = 'http://accounts.example.synnefo.org/astakos/'
-ASTAKOS_AUTH_URL = 'http://accounts.example.synnefo.org/astakos/identity/v2.0/'
+ASTAKOS_AUTH_URL = 'http://accounts.example.synnefo.org/astakos/identity/v2.0'
 COMPUTE_BASE_URL = 'http://compute.example.synnefo.org/cyclades/'
 PITHOS_BASE_URL = 'http://storage.example.synnefo.org/pithos/'
 

@@ -170,6 +170,8 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
     if opcode == 'OP_INSTANCE_CREATE' and status in ('canceled', 'error'):
         vm.operstate = 'ERROR'
         vm.backendtime = etime
+        # Update state of associated NICs
+        vm.nics.all().update(state="ERROR")
     elif opcode == 'OP_INSTANCE_REMOVE':
         # Special case: OP_INSTANCE_REMOVE fails for machines in ERROR,
         # when no instance exists at the Ganeti backend.

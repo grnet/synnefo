@@ -96,7 +96,7 @@ def commissions(request):
         return get_pending_commissions(request)
     elif method == 'POST':
         return issue_commission(request)
-    return api.api_method_not_allowed(request)
+    return api.api_method_not_allowed(request, allowed_methods=['GET', 'POST'])
 
 
 @api.api_method(http_method='GET', token_required=True, user_required=False)

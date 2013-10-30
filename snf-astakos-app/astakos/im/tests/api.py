@@ -401,7 +401,8 @@ class QuotaAPITest(TestCase):
 
         # Bad Request
         r = client.head(u('commissions'))
-        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.status_code, 405)
+        self.assertTrue('Allow' in r)
 
 
 class TokensApiTest(TestCase):
@@ -451,7 +452,9 @@ class TokensApiTest(TestCase):
 
         # Check not allowed method
         r = client.get(url, post_data={})
-        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.status_code, 405)
+        self.assertTrue('Allow' in r)
+        self.assertEqual(r['Allow'], 'POST')
 
         # check public mode
         r = client.post(url, CONTENT_LENGTH=0)

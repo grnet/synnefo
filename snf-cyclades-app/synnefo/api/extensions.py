@@ -52,14 +52,14 @@ def demux(request):
     if request.method == 'GET':
         return list_extensions(request)
     else:
-        return api.api_method_not_allowed(request)
+        return api.api_method_not_allowed(request, allowed_methods=['GET'])
 
 
 def demux_extension(request, extension_alias):
     if request.method == 'GET':
         return get_extension(request, extension_alias)
     else:
-        return api.api_method_not_allowed(request)
+        return api.api_method_not_allowed(request, allowed_methods=['GET'])
 
 
 @api.api_method(http_method='GET', user_required=True, logger=log)

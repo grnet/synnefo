@@ -33,17 +33,16 @@
 
 from logging import getLogger
 from snf_django.lib import api
-from snf_django.lib.api import faults
 
 from django.conf.urls import patterns
 from django.http import HttpResponse
 from django.utils import simplejson as json
 
 from snf_django.lib.api import utils
-from synnefo.db.models import Subnet, Network, IPPoolTable
-from synnefo.logic import networks, subnets
+from synnefo.db.models import Subnet
+from synnefo.logic import subnets
 
-from ipaddr import IPv4Network, IPv6Network, IPv4Address, IPAddress, IPNetwork
+import ipaddr
 
 log = getLogger(__name__)
 
@@ -109,11 +108,30 @@ def create_subnet(request):
 
     name = subnet.get('name', None)
     ipversion = subnet.get('ip_version', 4)
+
     # If no gateway is specified, send an empty string, because None is used
     # if the user wants no gateway at all
     gateway = subnet.get('gateway_ip', "")
+    try:
+        cidr_ip = ipaddr.IPNetwork(cidr)
+    except ValueError:
+        raise api.faults.BadRequest("Malformed CIDR")
+    potential_gateway = str(ipaddr.IPNetwork(cidr).network + 1)
+
+    if gateway is "":
+        gateway = potential_gateway
+
     dhcp = subnet.get('enable_dhcp', True)
-    slac = subnet.get('enable_slac', None)
+    slaac = subnet.get('enable_slaac', None)
+
+    if ipversion == 6:
+        if slaac is not None:
+            dhcp = check_boolean_value(slaac, "enable_slaac")
+        else:
+            dhcp = check_boolean_value(dhcp, "dhcp")
+    else:
+        dhcp = check_boolean_value(dhcp, "dhcp")
+
     dns = subnet.get('dns_nameservers', None)
     hosts = subnet.get('host_routes', None)
 
@@ -123,7 +141,7 @@ def create_subnet(request):
                                 ipversion=ipversion,
                                 gateway=gateway,
                                 dhcp=dhcp,
-                                slac=slac,
+                                slaac=slaac,
                                 dns_nameservers=dns,
                                 allocation_pools=allocation_pools,
                                 host_routes=hosts,
@@ -192,7 +210,7 @@ def subnet_to_dict(subnet):
 
     if allocation_pools:
         for pool in allocation_pools:
-            cidr = IPNetwork(pool.base)
+            cidr = ipaddr.IPNetwork(pool.base)
             start = str(cidr.network + pool.offset)
             end = str(cidr.network + pool.offset + pool.size - 1)
             pools.append({"start": start, "end": end})
@@ -211,7 +229,7 @@ def subnet_to_dict(subnet):
                        'allocation_pools': pools if pools is not None else []})
 
     if subnet.ipversion == 6:
-        dictionary['enable_slac'] = subnet.dhcp
+        dictionary['enable_slaac'] = subnet.dhcp
 
     return dictionary
 
@@ -225,7 +243,7 @@ def string_to_ipaddr(pools):
     and sort the output
 
     """
-    pool_list = [(map(lambda ip_str: IPAddress(ip_str), pool))
+    pool_list = [(map(lambda ip_str: ipaddr.IPAddress(ip_str), pool))
                  for pool in pools]
     pool_list.sort()
     return pool_list
@@ -274,3 +292,11 @@ def parse_ip_pools(pools):
         parse = [pool["start"], pool["end"]]
         pool_list.append(parse)
     return pool_list
+
+
+def check_boolean_value(value, key):
+    """Check if dhcp value is in acceptable values"""
+    if value not in [True, False]:
+        raise api.faults.BadRequest("Malformed request, %s must "
+                                    "be True or False" % key)
+    return value

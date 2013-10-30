@@ -49,25 +49,22 @@ class Command(BaseCommand):
     help = "Update a Subnet." + HELP_MSG
 
     option_list = BaseCommand.option_list + (
-        make_option("--subnet-id", dest="subnet_id",
-                    help="Specify the Subnet ID to update. To get all"
-                         " subnets, use snf-manage subnet-list."),
         make_option("--name", dest="name",
                     help="The new subnet name."),
     )
 
     @common.convert_api_faults
     def handle(self, *args, **options):
-        if args:
-            raise CommandError("Command doesn't accept any arguments")
+        if len(args) != 1:
+            raise CommandError("Command accepts only the subnet ID as an"
+                               " argument. Use snf-manage subnet-modify --help"
+                               " for more info.")
 
-        subnet_id = options["subnet_id"]
+        subnet_id = args[0]
         name = options["name"]
 
-        if not subnet_id:
-            raise CommandError("subnet-id is mandatory")
         if not name:
-            raise CommandError("name is mandatory")
+            raise CommandError("--name is mandatory")
 
         subnet = common.get_subnet(subnet_id)
         user_id = common.get_network(subnet.network.id).userid

@@ -97,29 +97,29 @@ class SubnetTest(BaseAPITest):
                          resp['allocation_pools'])
         self.assertEqual(True, resp['enable_dhcp'])
 
-    def test_create_subnet_success_ipv4_with_slac(self):
-        """Test create an IPv4 subnet, with a slac that will be ingored"""
+    def test_create_subnet_success_ipv4_with_slaac(self):
+        """Test create an IPv4 subnet, with a slaac that will be ingored"""
         test_net = mf.NetworkFactory()
         request = {
             'subnet': {
                 'network_id': test_net.id,
                 'cidr': '10.0.3.0/24',
                 'ip_version': 4,
-                'enable_slac': False}
+                'enable_slaac': False}
         }
         response = self.post(SUBNETS_URL, test_net.userid,
                              json.dumps(request), "json")
         self.assertSuccess(response)
 
-    def test_create_subnet_success_ipv6_with_slac(self):
-        """Test create a subnet with ipv6 and slac"""
+    def test_create_subnet_success_ipv6_with_slaac(self):
+        """Test create a subnet with ipv6 and slaac"""
         test_net = mf.NetworkFactory()
         request = {
             'subnet': {
                 'network_id': test_net.id,
                 'cidr': 'fdc1:4992:1130:fc0b::/64',
                 'ip_version': 6,
-                'enable_slac': False}
+                'enable_slaac': False}
         }
         response = self.post(SUBNETS_URL, test_net.userid,
                              json.dumps(request), "json")
@@ -127,17 +127,17 @@ class SubnetTest(BaseAPITest):
         resp = json.loads(response.content)['subnet']
         self.assertEqual("fdc1:4992:1130:fc0b::1", resp['gateway_ip'])
         self.assertEqual([], resp['allocation_pools'])
-        self.assertEqual(False, resp['enable_slac'])
+        self.assertEqual(False, resp['enable_slaac'])
 
-    def test_create_subnet_with_malformed_slac(self):
-        """Test create a subnet with ipv6 and a malformed slac"""
+    def test_create_subnet_with_malformed_slaac(self):
+        """Test create a subnet with ipv6 and a malformed slaac"""
         test_net = mf.NetworkFactory()
         request = {
             'subnet': {
                 'network_id': test_net.id,
                 'cidr': 'fdc1:4992:1130:fc0b::/64',
                 'ip_version': 6,
-                'enable_slac': 'Random'}
+                'enable_slaac': 'Random'}
         }
         response = self.post(SUBNETS_URL, test_net.userid,
                              json.dumps(request), "json")

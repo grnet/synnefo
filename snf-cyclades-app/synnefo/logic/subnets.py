@@ -69,7 +69,7 @@ def create_subnet(*args, **kwargs):
 
 
 def _create_subnet(network_id, user_id, cidr, name, ipversion=4, gateway=None,
-                   dhcp=True, slac=True, dns_nameservers=None,
+                   dhcp=True, slaac=True, dns_nameservers=None,
                    allocation_pools=None, host_routes=None):
     """Create a subnet
 
@@ -79,7 +79,7 @@ def _create_subnet(network_id, user_id, cidr, name, ipversion=4, gateway=None,
     try:
         network = Network.objects.get(id=network_id)
     except Network.DoesNotExist:
-        raise api.faults.ItemNotFound("No networks found with that id")
+        raise api.faults.ItemNotFound("No network found with that id")
 
     if user_id != network.userid:
         raise api.faults.Unauthorized("Unauthorized operation")
@@ -94,29 +94,19 @@ def _create_subnet(network_id, user_id, cidr, name, ipversion=4, gateway=None,
         cidr_ip = ipaddr.IPNetwork(cidr)
     except ValueError:
         raise api.faults.BadRequest("Malformed CIDR")
-    potential_gateway = str(ipaddr.IPNetwork(cidr).network + 1)
-
-    if gateway is "":
-        gateway = potential_gateway
 
     if ipversion == 6:
         validate_subnet_params(None, None, cidr, gateway)
-        if slac is not None:
-            dhcp = check_boolean_value(slac, "enable_slac")
-        else:
-            dhcp = check_boolean_value(dhcp, "dhcp")
     else:
         validate_subnet_params(cidr, gateway)
-        dhcp = check_boolean_value(dhcp, "dhcp")
 
     name = check_name_length(name)
-
-    gateway_ip = ipaddr.IPAddress(gateway)
-
     sub = Subnet.objects.create(name=name, network=network, cidr=cidr,
                                 ipversion=ipversion, gateway=gateway,
                                 dhcp=dhcp, host_routes=host_routes,
                                 dns_nameservers=dns_nameservers)
+
+    gateway_ip = ipaddr.IPAddress(gateway) if gateway else None
 
     if allocation_pools is not None:
         # If the user specified IP allocation pools, validate them and use them
@@ -126,13 +116,16 @@ def _create_subnet(network_id, user_id, cidr, name, ipversion=4, gateway=None,
     if allocation_pools is None and ipversion == 4:
         # Check if the gateway is the first IP of the subnet, in this case
         # create a single ip pool
-        if int(gateway_ip) - int(cidr_ip) == 1:
-            allocation_pools = [[gateway_ip + 1, cidr_ip.broadcast - 1]]
+        if gateway_ip:
+            if int(gateway_ip) - int(cidr_ip) == 1:
+                allocation_pools = [[gateway_ip + 1, cidr_ip.broadcast - 1]]
+            else:
+                # If the gateway isn't the first available ip, create two
+                # different ip pools adjacent to said ip
+                allocation_pools = (([cidr_ip.network + 1, gateway_ip - 1]),
+                                    ([gateway_ip + 1, cidr_ip.broadcast - 1]))
         else:
-            # If the gateway isn't the first available ip, create two different
-            # ip pools adjacent to said ip
-            allocation_pools = (([cidr_ip.network + 1, gateway_ip - 1]),
-                                ([gateway_ip + 1, cidr_ip.broadcast - 1]))
+            allocation_pools = [[cidr_ip.network + 1, cidr_ip.broadcast - 1]]
 
     if allocation_pools:
         create_ip_pools(allocation_pools, cidr_ip, sub)
@@ -197,13 +190,6 @@ def create_ip_pools(pools, cidr, subnet):
     return ip_pools
 
 
-def check_empty_lists(value):
-    """Check if value is Null/None, in which case we return an empty list"""
-    if value is None:
-        return []
-    return value
-
-
 def check_number_of_subnets(network, version):
     """Check if a user can add a subnet in a network"""
     if network.subnets.filter(ipversion=version):
@@ -211,35 +197,11 @@ def check_number_of_subnets(network, version):
                                     "network is allowed")
 
 
-def check_boolean_value(value, key):
-    """Check if dhcp value is in acceptable values"""
-    if value not in [True, False]:
-        raise api.faults.BadRequest("Malformed request, %s must "
-                                    "be True or False" % key)
-    return value
-
-
 def check_name_length(name):
     """Check if the length of a name is within acceptable value"""
     if len(str(name)) > Subnet.SUBNET_NAME_LENGTH:
         raise api.faults.BadRequest("Subnet name too long")
     return name
-
-
-def get_subnet_fromdb(subnet_id, user_id, for_update=False):
-    """Return a Subnet instance or raise ItemNotFound.
-    This is the same as util.get_network
-
-    """
-    try:
-        subnet_id = int(subnet_id)
-        if for_update:
-            return Subnet.objects.select_for_update().get(id=subnet_id,
-                                                          network__userid=
-                                                          user_id)
-        return Subnet.objects.get(id=subnet_id, network__userid=user_id)
-    except (ValueError, Subnet.DoesNotExist):
-        raise api.faults.ItemNotFound('Subnet not found')
 
 
 def validate_subpools(pool_list, cidr, gateway):
@@ -263,8 +225,9 @@ def validate_subpools(pool_list, cidr, gateway):
         if start > end:
             raise api.faults.Conflict("Invalid IP pool range")
         # Raise BadRequest if gateway is inside the pool range
-        if not (gateway < start or gateway > end):
-            raise api.faults.Conflict("Gateway cannot be in pool range")
+        if gateway:
+            if not (gateway < start or gateway > end):
+                raise api.faults.Conflict("Gateway cannot be in pool range")
 
     # Check if there is a conflict between the IP Poll ranges
     end = cidr.network

@@ -117,7 +117,8 @@ def create_port(request):
                                                     for_update=True)
         if ipaddress.network.id != network.id:
             raise api.faults.Conflict("Floating IP address %s does not belong"
-                                      " to network %s." % fip_address, net_id)
+                                      " to network %s."
+                                      % (fip_address, net_id))
 
     vm = util.get_vm(dev_id, user_id, for_update=True, non_deleted=True,
                      non_suspended=True)

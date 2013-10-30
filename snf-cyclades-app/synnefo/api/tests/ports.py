@@ -67,6 +67,7 @@ class PortTest(BaseAPITest):
     def test_delete_port(self, mrapi):
         nic = dbmf.NetworkInterfaceFactory.create(device_owner='vm')
         url = join_urls(PORTS_URL, str(nic.id))
+        mrapi().ModifyInstance.return_value = 42
         response = self.delete(url, user=nic.network.userid)
         self.assertEqual(response.status_code, 204)
 
@@ -144,6 +145,7 @@ class PortTest(BaseAPITest):
                 "security_groups": [str(sg1.id), str(sg2.id)]
             }
         }
+        mrapi().ModifyInstance.return_value = 42
         response = self.post(PORTS_URL, params=json.dumps(request),
                              user=net.userid)
         self.assertEqual(response.status_code, 201)
@@ -222,6 +224,7 @@ class PortTest(BaseAPITest):
                 "fixed_ips": [{"ip_address": fip.address}]
             }
         }
+        mrapi().ModifyInstance.return_value = 42
         response = self.post(PORTS_URL, params=json.dumps(request),
                              user=net.userid)
         self.assertEqual(response.status_code, 201)

@@ -276,7 +276,7 @@ def create_instance_nics(vm, userid, private_networks=[], floating_ips=[]):
     return nics
 
 
-def create_nic(vm, network=None, ipaddress=None, address=None):
+def create_nic(vm, network=None, ipaddress=None, address=None, name=None):
     """Helper functions for create NIC objects.
 
     Create a NetworkInterface connecting a VirtualMachine to a network with the
@@ -292,8 +292,8 @@ def create_nic(vm, network=None, ipaddress=None, address=None):
                 ipaddress = util.allocate_ip(network, userid=userid,
                                              address=address)
             except pools.ValueNotAvailable:
-                raise faults.badRequest("Address '%s' is not available." %
-                                        address)
+                raise faults.Conflict("Address '%s' is not available." %
+                                      address)
 
     if ipaddress is not None and ipaddress.nic is not None:
         raise faults.Conflict("IP address '%s' already in use" %
@@ -309,7 +309,9 @@ def create_nic(vm, network=None, ipaddress=None, address=None):
     device_owner = "vm"
     nic = NetworkInterface.objects.create(machine=vm, network=network,
                                           state="BUILD",
-                                          device_owner=device_owner)
+                                          userid=vm.userid,
+                                          device_owner=device_owner,
+                                          name=name)
     if ipaddress is not None:
         ipaddress.nic = nic
         ipaddress.save()
@@ -381,8 +383,12 @@ def set_firewall_profile(vm, profile, nic):
 
 
 @server_command("CONNECT")
-def connect(vm, network):
-    nic, ipaddress = create_nic(vm, network)
+def connect(vm, network, port=None):
+    if port is None:
+        nic, ipaddress = create_nic(vm, network)
+    else:
+        nic = port
+        ipaddress = port.ips.all()[0]
 
     log.info("Creating NIC %s with IPAddress %s", nic, ipaddress)
 

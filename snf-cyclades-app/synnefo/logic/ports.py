@@ -32,12 +32,7 @@
 # or implied, of GRNET S.A.
 from functools import wraps
 from django.db import transaction
-
-#from django.conf import settings
-from synnefo.api import util
-from snf_django.lib.api import faults
-from synnefo.db.models import NetworkInterface
-from synnefo.logic import backend
+from synnefo.logic import servers
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -54,7 +49,7 @@ def port_command(action):
 
 
 @transaction.commit_on_success
-def create(network, machine, ipaddress, name="", security_groups=None,
+def create(network, machine, ipaddress=None, name="", security_groups=None,
            device_owner='vm'):
     """Create a new port connecting a server/router to a network.
 
@@ -64,39 +59,15 @@ def create(network, machine, ipaddress, name="", security_groups=None,
     allocated.
 
     """
-    if network.state != 'ACTIVE':
-        raise faults.Conflict('Network build in process')
+    port, ipaddress = servers.create_nic(machine, network, ipaddress=ipaddress,
+                                         name=name)
 
-    user_id = machine.userid
-
-    if ipaddress is None:
-        if network.subnets.filter(ipversion=4).exists():
-            ipaddress = util.allocate_ip(network, user_id)
-    else:
-        if ipaddress.nic is not None:
-            raise faults.BadRequest("Address '%s' already in use." %
-                                    ipaddress.address)
-    #create the port
-    port = NetworkInterface.objects.create(name=name,
-                                           network=network,
-                                           machine=machine,
-                                           userid=user_id,
-                                           device_owner=device_owner,
-                                           state="BUILD")
-    #add the security groups if any
+    # add the security groups if any
     if security_groups:
         port.security_groups.add(*security_groups)
 
-    # If no IPAddress is specified, try to allocate one
-    if ipaddress is None and network.subnets.filter(ipversion=4).exists():
-        ipaddress = util.allocate_ip(network, user_id)
-
-    # Associate the IPAddress with the NIC
-    if ipaddress is not None:
-        ipaddress.nic = port
-        ipaddress.save()
-
-    jobID = backend.connect_to_network(machine, port)
+    machine = servers.connect(machine, network, port)
+    jobID = machine.task_job_id
 
     log.info("Created Port %s with IP Address: %s. Job: %s",
              port, ipaddress, jobID)
@@ -109,7 +80,7 @@ def create(network, machine, ipaddress, name="", security_groups=None,
 
 @transaction.commit_on_success
 def delete(port):
-    """Delete a port by removing the NIC card the instance.
+    """Delete a port by removing the NIC card from the instance.
 
     Send a Job to remove the NIC card from the instance. The port
     will be deleted and the associated IPv4 addressess will be released
@@ -117,6 +88,7 @@ def delete(port):
 
     """
 
-    jobID = backend.disconnect_from_network(port.machine, port)
-    log.info("Removing port %s, Job: %s", port, jobID)
+    vm = servers.disconnect(port.machine, port)
+    log.info("Removing port %s, Job: %s", port, vm.task_job_id)
+
     return port

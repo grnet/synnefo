@@ -33,7 +33,8 @@
 
 from django.core.management import CommandError
 from synnefo.db.models import (Backend, VirtualMachine, Network,
-                               Flavor, IPAddress, Subnet)
+                               Flavor, IPAddress, Subnet,
+                               BridgePoolTable, MacPrefixPoolTable)
 from functools import wraps
 
 from snf_django.lib.api import faults
@@ -218,3 +219,14 @@ def wait_ganeti_job(client, jobID, stdout):
         stdout.write("Job finished successfully.\n")
     else:
         raise CommandError("Job failed! Error: %s\n" % error)
+
+
+def pool_table_from_type(type_):
+    if type_ == "mac-prefix":
+        return MacPrefixPoolTable
+    elif type_ == "bridge":
+        return BridgePoolTable
+    # elif type == "ip":
+    #     return IPPoolTable
+    else:
+        raise ValueError("Invalid pool type")

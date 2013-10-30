@@ -35,8 +35,7 @@ from django.core.management.base import BaseCommand, CommandError
 from optparse import make_option
 
 from synnefo.db.pools import bitarray_to_map
-from synnefo.db.models import MacPrefixPoolTable, BridgePoolTable
-from synnefo.management import pprint
+from synnefo.management import pprint, common
 
 POOL_CHOICES = ['bridge', 'mac-prefix']
 
@@ -58,7 +57,7 @@ class Command(BaseCommand):
         if not type_:
             raise CommandError("Type of pool is mandatory")
 
-        pool_table = pool_table_from_type(type_)
+        pool_table = common.pool_table_from_type(type_)
 
         try:
             pool_id = int(args[0])
@@ -86,14 +85,3 @@ class Command(BaseCommand):
         pprint.pprint_pool('Reserved',
                            bitarray_to_map(pool.reserved[:pool_row.size]),
                            step, self.stdout)
-
-
-def pool_table_from_type(type_):
-    if type_ == "mac-prefix":
-        return MacPrefixPoolTable
-    elif type_ == "bridge":
-        return BridgePoolTable
-    # elif type == "ip":
-    #     return IPPoolTable
-    else:
-        raise ValueError("Invalid pool type")

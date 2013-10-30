@@ -33,8 +33,7 @@
 
 from django.core.management.base import BaseCommand, CommandError
 from optparse import make_option
-
-from util import pool_table_from_type
+from synnefo.management.common import pool_table_from_type
 
 POOL_CHOICES = ['bridge', 'mac-prefix']
 
@@ -94,6 +93,7 @@ class Command(BaseCommand):
         # Save now, to avoid conflict with resizing pool.save()
         pool_row.save()
 
+        size = options["size"]
         if size:
             try:
                 size = int(size)

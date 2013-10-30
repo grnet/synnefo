@@ -34,8 +34,9 @@
 from django.core.management.base import BaseCommand, CommandError
 from optparse import make_option
 
-from util import pool_table_from_type, pool_map_chunks
 from synnefo.db.pools import bitarray_to_map
+from synnefo.db.models import MacPrefixPoolTable, BridgePoolTable
+from synnefo.management import pprint
 
 POOL_CHOICES = ['bridge', 'mac-prefix']
 
@@ -81,19 +82,18 @@ class Command(BaseCommand):
             self.stdout.write(line.encode('utf8'))
 
         step = (type_ == 'bridge') and 64 or 80
-        print_map('Pool', pool.to_map(), step, self.stdout)
-        print_map('Reserved', bitarray_to_map(pool.reserved[:pool_row.size]),
-                  step, self.stdout)
+        pprint.pprint_pool('Available', pool.to_map(), step, self.stdout)
+        pprint.pprint_pool('Reserved',
+                           bitarray_to_map(pool.reserved[:pool_row.size]),
+                           step, self.stdout)
 
 
-def print_map(name, pool_map, step, out):
-    sep = '*' * 80
-    out.write(sep + "\n")
-    out.write("%s: \n" % name)
-    out.write(sep + "\n")
-    count = 0
-    for chunk in pool_map_chunks(pool_map, step):
-        chunk_len = len(chunk)
-        out.write(("%s " % count).rjust(4))
-        out.write((chunk + " %d\n") % (count + chunk_len - 1))
-        count += chunk_len
+def pool_table_from_type(type_):
+    if type_ == "mac-prefix":
+        return MacPrefixPoolTable
+    elif type_ == "bridge":
+        return BridgePoolTable
+    # elif type == "ip":
+    #     return IPPoolTable
+    else:
+        raise ValueError("Invalid pool type")

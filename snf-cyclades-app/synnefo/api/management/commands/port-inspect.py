@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -34,11 +34,9 @@
 from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 
-from synnefo.logic.rapi import GanetiApiError
 from synnefo.management.common import convert_api_faults
-from synnefo.logic.reconciliation import nics_from_instance
-from snf_django.management.utils import pprint_table
 from synnefo.api.util import get_port
+from synnefo.management import pprint
 
 
 class Command(BaseCommand):
@@ -67,52 +65,10 @@ class Command(BaseCommand):
 
         port = get_port(args[0], None)
 
-        db_nic = {
-            "id": port.id,
-            "name": port.name,
-            "userid": port.userid,
-            "server": port.machine_id,
-            "network": port.network_id,
-            "device_owner": port.device_owner,
-            "mac": port.mac,
-            "state": port.state}
-
-        pprint_table(self.stdout, db_nic.items(), None, separator=" | ",
-                     title="State of port in DB")
+        pprint.pprint_port(port, stdout=self.stdout)
         self.stdout.write('\n\n')
 
-        ips = list(port.ips.values_list("address", "network_id", "subnet_id",
-                                        "subnet__cidr", "floating_ip"))
-        headers = ["Address", "Network", "Subnet", "CIDR", "is_floating"]
-        pprint_table(self.stdout, ips, headers, separator=" | ",
-                     title="IP Addresses")
+        pprint.pprint_port_ips(port, stdout=self.stdout)
         self.stdout.write('\n\n')
 
-        vm = port.machine
-        if vm is None:
-            self.stdout.write("Port is not attached to any instance.\n")
-            return
-
-        client = vm.get_client()
-        try:
-            vm_info = client.GetInstance(vm.backend_vm_id)
-        except GanetiApiError as e:
-            if e.code == 404:
-                self.stdout.write("NIC seems attached to server %s, but"
-                                  " server does not exist in backend.\n"
-                                  % vm)
-                return
-            raise e
-
-        nics = nics_from_instance(vm_info)
-        try:
-            gnt_nic = filter(lambda nic: nic.get("name") == port.backend_uuid,
-                             nics)[0]
-        except IndexError:
-            self.stdout.write("NIC %s is not attached to instance %s"
-                              % (port, vm))
-            return
-        pprint_table(self.stdout, gnt_nic.items(), None, separator=" | ",
-                     title="State of port in Ganeti")
-
-        vm.put_client(client)
+        pprint.pprint_port_in_ganeti(port, stdout=self.stdout)

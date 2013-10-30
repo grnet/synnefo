@@ -34,16 +34,7 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import get_network
-
-from synnefo.db.models import (Backend, pooled_rapi_client)
-from synnefo.logic.rapi import GanetiApiError
-from snf_django.lib.astakos import UserCache
-from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
-                              ASTAKOS_BASE_URL)
-from util import pool_map_chunks
-from snf_django.management.utils import pprint_table
-from synnefo.lib.ordereddict import OrderedDict
+from synnefo.management import pprint, common
 
 
 class Command(BaseCommand):
@@ -59,83 +50,17 @@ class Command(BaseCommand):
     )
 
     def handle(self, *args, **options):
-        write = self.stdout.write
         if len(args) != 1:
             raise CommandError("Please provide a network ID.")
 
-        network = get_network(args[0])
-
-        ucache = UserCache(ASTAKOS_BASE_URL, ASTAKOS_TOKEN)
-
+        network = common.get_network(args[0])
         displayname = options['displayname']
 
-        userid = network.userid
-        db_network = OrderedDict([
-            ("name", network.name),
-            ("backend-name", network.backend_id),
-            ("state", network.state),
-            ("userid", userid),
-            ("username", ucache.get_name(userid) if displayname else ""),
-            ("public", network.public),
-            ("floating_ip_pool", network.floating_ip_pool),
-            ("external_router", network.external_router),
-            ("drained", network.drained),
-            ("MAC prefix", network.mac_prefix),
-            ("flavor", network.flavor),
-            ("link", network.link),
-            ("mode", network.mode),
-            ("deleted", network.deleted),
-            ("tags", "), ".join(network.backend_tag)),
-            ("action", network.action)])
-
-        pprint_table(self.stdout, db_network.items(), None, separator=" | ",
-                     title="State of Network in DB")
-
-        subnets = list(network.subnets.values_list("id", "name", "ipversion",
-                                                   "cidr", "gateway", "dhcp",
-                                                   "deleted"))
-        headers = ["ID", "Name", "Version", "CIDR", "Gateway", "DHCP",
-                   "Deleted"]
-        write("\n\n")
-        pprint_table(self.stdout, subnets, headers, separator=" | ",
-                     title="Subnets")
-
-        bnets = list(network.backend_networks.values_list(
-            "backend__clustername",
-            "operstate", "deleted", "backendjobid",
-            "backendopcode", "backendjobstatus"))
-        headers = ["Backend", "State", "Deleted", "JobID", "Opcode",
-                   "JobStatus"]
-        write("\n\n")
-        pprint_table(self.stdout, bnets, headers, separator=" | ",
-                     title="Backend Networks")
-
-        write("\n\n")
-
-        for backend in Backend.objects.exclude(offline=True):
-            with pooled_rapi_client(backend) as client:
-                try:
-                    g_net = client.GetNetwork(network.backend_id)
-                    ip_map = g_net.pop("map")
-                    pprint_table(self.stdout, g_net.items(), None,
-                                 title="State of network in backend: %s" %
-                                       backend.clustername)
-                    write(splitPoolMap(ip_map, 80) + "\n\n")
-                except GanetiApiError as e:
-                    if e.code == 404:
-                        write('Network does not exist in backend %s\n' %
-                              backend.clustername)
-                    else:
-                        raise e
-
-
-def splitPoolMap(s, count):
-    chunks = pool_map_chunks(s, count)
-    acc = []
-    count = 0
-    for chunk in chunks:
-        chunk_len = len(chunk)
-        acc.append(str(count).rjust(3) + ' ' + chunk + ' ' +
-                   str(count + chunk_len - 1).ljust(4))
-        count += chunk_len
-    return '\n' + '\n'.join(acc)
+        pprint.pprint_network(network, display_mails=displayname,
+                              stdout=self.stdout)
+        self.stdout.write("\n\n")
+        pprint.pprint_network_subnets(network, stdout=self.stdout)
+        self.stdout.write("\n\n")
+        pprint.pprint_network_backends(network, stdout=self.stdout)
+        self.stdout.write("\n\n")
+        pprint.pprint_network_in_ganeti(network, stdout=self.stdout)

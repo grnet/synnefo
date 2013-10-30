@@ -39,6 +39,7 @@ from snf_django.management.utils import parse_bool
 
 from synnefo.db.models import Network, Backend
 from synnefo.logic import networks
+from synnefo.management import pprint
 
 NETWORK_FLAVORS = Network.FLAVORS.keys()
 
@@ -194,4 +195,6 @@ class Command(BaseCommand):
                                   floating_ip_pool=floating_ip_pool,
                                   backends=backends, lazy_create=False)
 
-        self.stdout.write("Created network '%s' in DB.\n" % network)
+        self.stdout.write("Created network '%s' in DB:\n" % network)
+        pprint.pprint_network(network, stdout=self.stdout)
+        pprint.pprint_network_subnets(network, stdout=self.stdout)

@@ -37,8 +37,7 @@ from django.core.management.base import BaseCommand, CommandError
 from synnefo.management.common import convert_api_faults
 
 from synnefo.api import util
-from synnefo.management.common import (get_network, get_vm,
-                                       get_floating_ip_by_id)
+from synnefo.management import common, pprint
 from synnefo.logic import ports
 
 HELP_MSG = """Create a new port.
@@ -111,12 +110,12 @@ class Command(BaseCommand):
 
         if server_id:
             owner = "vm"
-            vm = get_vm(server_id)
+            vm = common.get_vm(server_id)
             #if vm.router:
             #    raise CommandError("Server '%s' does not exist." % server_id)
         elif router_id:
             owner = "router"
-            vm = get_vm(router_id)
+            vm = common.get_vm(router_id)
             if not vm.router:
                 raise CommandError("Router '%s' does not exist." % router_id)
         else:
@@ -124,14 +123,14 @@ class Command(BaseCommand):
 
         floating_ip = None
         if floating_ip_id:
-            floating_ip = get_floating_ip_by_id(floating_ip_id,
-                                                for_update=True)
+            floating_ip = common.get_floating_ip_by_id(floating_ip_id,
+                                                       for_update=True)
             if floating_ip.userid != vm.userid:
                 msg = "Floating IP %s does not belong to server/router owner."
                 raise CommandError(msg % floating_ip)
 
         # get the network
-        network = get_network(network_id)
+        network = common.get_network(network_id)
 
         # validate security groups
         sg_list = []
@@ -144,6 +143,8 @@ class Command(BaseCommand):
         new_port = ports.create(network, vm, name=name, ipaddress=floating_ip,
                                 security_groups=sg_list,
                                 device_owner=owner)
-        self.stdout.write("Created port '%s' in DB.\n" % new_port)
+        self.stdout.write("Created port '%s' in DB:\n" % new_port)
+        pprint.pprint_port(new_port, stdout=self.stdout)
+        pprint.pprint_port_ips(new_port, stdout=self.stdout)
         # TODO: Display port information, like ip address
         # TODO: Add --wait argument to report progress about the Ganeti job.

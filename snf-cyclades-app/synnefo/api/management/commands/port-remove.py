@@ -28,16 +28,28 @@
 # policies, either expressed or implied, of GRNET S.A.
 #
 
+from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 from synnefo.logic import ports
 from synnefo.api.util import get_port
-from synnefo.management.common  import convert_api_faults
+from synnefo.management import common
+from snf_django.management.utils import parse_bool
+
 
 class Command(BaseCommand):
     can_import_settings = True
     help = "Remove a port from the Database and from the VMs attached to"
+    option_list = BaseCommand.option_list + (
+        make_option(
+            "--wait",
+            dest="wait",
+            default="True",
+            choices=["True", "False"],
+            metavar="True|False",
+            help="Wait for Ganeti jobs to complete."),
+    )
 
-    @convert_api_faults
+    @common.convert_api_faults
     def handle(self, *args, **options):
         if len(args) < 1:
             raise CommandError("Please provide a port ID")
@@ -46,4 +58,5 @@ class Command(BaseCommand):
 
         ports.delete(port)
 
-        self.stdout.write("Successfully removed port\n")
+        wait = parse_bool(options["wait"])
+        common.wait_server_task(port.machine, wait, stdout=self.stdout)

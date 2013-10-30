@@ -34,10 +34,10 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import convert_api_faults
 
 from synnefo.api import util
 from synnefo.management import common, pprint
+from snf_django.management.utils import parse_bool
 from synnefo.logic import ports
 
 HELP_MSG = """Create a new port.
@@ -83,9 +83,16 @@ class Command(BaseCommand):
             default=None,
             help="Comma separated list of Security Group IDs to associate"
                  " with the port."),
+        make_option(
+            "--wait",
+            dest="wait",
+            default="True",
+            choices=["True", "False"],
+            metavar="True|False",
+            help="Wait for Ganeti jobs to complete."),
     )
 
-    @convert_api_faults
+    @common.convert_api_faults
     def handle(self, *args, **options):
         if args:
             raise CommandError("Command doesn't accept any arguments")
@@ -98,6 +105,7 @@ class Command(BaseCommand):
         floating_ip_id = options["floating_ip_id"]
         # assume giving security groups comma separated
         security_group_ids = options["security-groups"]
+        wait = parse_bool(options["wait"])
 
         if not name:
             name = ""
@@ -146,5 +154,5 @@ class Command(BaseCommand):
         self.stdout.write("Created port '%s' in DB:\n" % new_port)
         pprint.pprint_port(new_port, stdout=self.stdout)
         pprint.pprint_port_ips(new_port, stdout=self.stdout)
-        # TODO: Display port information, like ip address
-        # TODO: Add --wait argument to report progress about the Ganeti job.
+        self.stdout.write("\n")
+        common.wait_server_task(new_port.machine, wait, stdout=self.stdout)

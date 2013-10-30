@@ -41,8 +41,6 @@ from snf_django.lib.api import faults, utils
 from synnefo.api import util
 from synnefo import quotas
 from synnefo.db.models import Network, IPAddress
-from synnefo.db import pools
-from synnefo.logic import servers, backend
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -148,13 +146,8 @@ def allocate_floating_ip(request):
     network_pool = api.utils.get_attribute(floating_ip_dict,
                                            "floating_network_id",
                                            required=True)
-    device_id = api.utils.get_attribute(floating_ip_dict, "device_id",
-                                        required=False)
     address = api.utils.get_attribute(floating_ip_dict, "floating_ip_address",
                                       required=False)
-
-    if device_id:
-        vm = util.get_vm(device_id, userid, non_deleted=False)
 
     try:
         network_id = int(network_pool)
@@ -162,22 +155,20 @@ def allocate_floating_ip(request):
         raise faults.BadRequest("Invalid networkd ID.")
     network = util.get_network(network_id, userid, for_update=True,
                                non_deleted=True)
+
     if not network.floating_ip_pool:
         # Check that it is a floating IP pool
         raise faults.ItemNotFound("Floating IP pool %s does not exist." %
                                   network_id)
+
+    # Allocate the floating IP
     floating_ip = util.allocate_ip(network, userid, address=address,
                                    floating_ip=True)
-
+    # Issue commission (quotas)
     quotas.issue_and_accept_commission(floating_ip)
     transaction.commit()
 
     log.info("User '%s' allocated floating IP '%s'", userid, floating_ip)
-
-    # connect to the given vm if any
-    if device_id:
-        nic, ipaddress = servers.create_nic(vm, ipaddress=floating_ip)
-        servers.backend.connect_to_network(vm, nic)
 
     request.serialization = "json"
     data = json.dumps({"floating_ip": ip_to_dict(floating_ip)})
@@ -221,30 +212,31 @@ def release_floating_ip(request, floating_ip_id):
 @transaction.commit_on_success
 def update_floating_ip(request, floating_ip_id):
     """Update a floating IP."""
-    userid = request.user_uniq
-    log.info("update_floating_ip '%s'. User '%s'.", floating_ip_id, userid)
+    raise faults.NotImplented("Updating a floating IP is not supported.")
+    #userid = request.user_uniq
+    #log.info("update_floating_ip '%s'. User '%s'.", floating_ip_id, userid)
 
-    req = utils.get_request_dict(request)
-    info = api.utils.get_attribute(req, "floatingip", required=True)
+    #req = utils.get_request_dict(request)
+    #info = api.utils.get_attribute(req, "floatingip", required=True)
 
-    device_id = api.utils.get_attribute(info, "device_id", required=False)
+    #device_id = api.utils.get_attribute(info, "device_id", required=False)
 
-    floating_ip = util.get_floating_ip_by_id(userid, floating_ip_id,
-                                             for_update=True)
-    if device_id:
-        # attach
-        vm = util.get_vm(device_id, userid)
-        nic, floating_ip = servers.create_nic(vm, ipaddress=floating_ip)
-        backend.connect_to_network(vm, nic)
-    else:
-        # dettach
-        nic = floating_ip.nic
-        if not nic:
-            raise faults.BadRequest("The floating IP is not associated\
-                                    with any device")
-        vm = nic.machine
-        servers.disconnect(vm, nic)
-    return HttpResponse(status=202)
+    #floating_ip = util.get_floating_ip_by_id(userid, floating_ip_id,
+    #                                         for_update=True)
+    #if device_id:
+    #    # attach
+    #    vm = util.get_vm(device_id, userid)
+    #    nic, floating_ip = servers.create_nic(vm, ipaddress=floating_ip)
+    #    backend.connect_to_network(vm, nic)
+    #else:
+    #    # dettach
+    #    nic = floating_ip.nic
+    #    if not nic:
+    #        raise faults.BadRequest("The floating IP is not associated\
+    #                                with any device")
+    #    vm = nic.machine
+    #    servers.disconnect(vm, nic)
+    #return HttpResponse(status=202)
 
 
 # Floating IP pools
@@ -254,9 +246,9 @@ def list_floating_ip_pools(request):
     networks = Network.objects.filter(public=True, floating_ip_pool=True,
                                       deleted=False)
     networks = utils.filter_modified_since(request, objects=networks)
-    pools = map(network_to_floating_ip_pool, networks)
+    floating_ip_pools = map(network_to_floating_ip_pool, networks)
     request.serialization = "json"
-    data = json.dumps({"floating_ip_pools": pools})
+    data = json.dumps({"floating_ip_pools": floating_ip_pools})
     request.serialization = "json"
     return HttpResponse(data, status=200)
 

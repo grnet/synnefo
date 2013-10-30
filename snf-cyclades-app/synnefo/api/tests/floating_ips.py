@@ -67,14 +67,14 @@ class FloatingIPAPITest(BaseAPITest):
     def test_no_floating_ip(self):
         response = self.get(URL)
         self.assertSuccess(response)
-        self.assertEqual(json.loads(response.content)["floating_ips"], [])
+        self.assertEqual(json.loads(response.content)["floatingips"], [])
 
     def test_list_ips(self):
         ip = mf.IPv4AddressFactory(userid="user1", floating_ip=True)
         with mocked_quotaholder():
             response = self.get(URL, "user1")
         self.assertSuccess(response)
-        api_ip = json.loads(response.content)["floating_ips"][0]
+        api_ip = json.loads(response.content)["floatingips"][0]
         self.assertEqual(api_ip,
                          {"instance_id": str(ip.nic.machine_id),
                           "floating_ip_address": ip.address,
@@ -88,7 +88,7 @@ class FloatingIPAPITest(BaseAPITest):
         with mocked_quotaholder():
             response = self.get(URL + "/%s" % ip.id, "user1")
         self.assertSuccess(response)
-        api_ip = json.loads(response.content)["floating_ip"]
+        api_ip = json.loads(response.content)["floatingip"]
         self.assertEqual(api_ip,
                          {"instance_id": str(ip.nic.machine_id),
                           "floating_ip_address": ip.address,
@@ -115,7 +115,7 @@ class FloatingIPAPITest(BaseAPITest):
         with mocked_quotaholder():
             response = self.post(URL, "test_user", json.dumps(request), "json")
         self.assertSuccess(response)
-        api_ip = json.loads(response.content, encoding="utf-8")["floating_ip"]
+        api_ip = json.loads(response.content, encoding="utf-8")["floatingip"]
         ip = floating_ips.get()
         self.assertEqual(ip.address, "192.168.2.2")
         self.assertEqual(ip.nic, None)
@@ -161,7 +161,7 @@ class FloatingIPAPITest(BaseAPITest):
             response = self.post(URL, "test_user", json.dumps(request), "json")
         self.assertSuccess(response)
         ip = floating_ips.get()
-        self.assertEqual(json.loads(response.content)["floating_ip"],
+        self.assertEqual(json.loads(response.content)["floatingip"],
                          {"instance_id": None,
                           "floating_ip_address": "192.168.2.10",
                           "fixed_ip_address": None,
@@ -193,6 +193,7 @@ class FloatingIPAPITest(BaseAPITest):
             response = self.post(URL, "test_user", json.dumps(request), "json")
         self.assertBadRequest(response)
 
+    '''
     @patch("synnefo.db.models.get_rapi_client")
     def test_reserve_and_connect(self, mrapi):
         vm = mf.VirtualMachineFactory(userid="test_user")
@@ -203,7 +204,7 @@ class FloatingIPAPITest(BaseAPITest):
             }
         response = self.post(URL, "test_user", json.dumps(request), "json")
         ip = floating_ips.get()
-        api_ip = json.loads(response.content, "utf-8")["floating_ip"]
+        api_ip = json.loads(response.content, "utf-8")["floatingip"]
         self.assertEqual(api_ip,
                          {"instance_id": str(vm.id),
                           "floating_ip_address": "192.168.2.12",
@@ -276,7 +277,6 @@ class FloatingIPAPITest(BaseAPITest):
         with mocked_quotaholder():
             response = self.put(URL + "/%s" % ip.id, "user1",
                                 json.dumps(request), "json")
-        print response.content
         self.assertEqual(response.status_code, 202)
 
     def test_update_dettach_unassociated(self):
@@ -293,6 +293,13 @@ class FloatingIPAPITest(BaseAPITest):
         with mocked_quotaholder():
             response = self.delete(URL + "/%s" % ip.id, ip.userid)
         self.assertFault(response, 409, "conflict")
+    '''
+
+    def test_update(self):
+        ip = mf.IPv4AddressFactory(userid="user1", floating_ip=True, nic=None)
+        with mocked_quotaholder():
+            response = self.put(URL + "/%s" % ip.id, ip.userid)
+        self.assertEqual(response.status_code, 501)
 
     def test_release(self):
         ip = mf.IPv4AddressFactory(userid="user1", floating_ip=True, nic=None)

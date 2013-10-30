@@ -765,8 +765,9 @@ class NetworkInterface(models.Model):
 
     STATES = (
         ("ACTIVE", "Active"),
-        ("BUILDING", "Building"),
+        ("BUILD", "Building"),
         ("ERROR", "Error"),
+        ("DOWN", "Down"),
     )
 
     NETWORK_IFACE_NAME_LENGTH = 128

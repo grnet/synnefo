@@ -287,7 +287,7 @@ class BackendReconciler(object):
     def reconcile_unsynced_nics(self, server_id, db_server, gnt_server):
         building_time = (self.event_time -
                          backend_mod.BUILDING_NIC_TIMEOUT)
-        db_nics = db_server.nics.exclude(state="BUILDING",
+        db_nics = db_server.nics.exclude(state="BUILD",
                                          created__lte=building_time) \
                                 .order_by("id")
         gnt_nics = gnt_server["nics"]

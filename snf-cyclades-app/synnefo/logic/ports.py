@@ -82,7 +82,7 @@ def create(network, machine, ipaddress, name="", security_groups=None,
                                            machine=machine,
                                            userid=user_id,
                                            device_owner=device_owner,
-                                           state="BUILDING")
+                                           state="BUILD")
     #add the security groups if any
     if security_groups:
         port.security_groups.add(*security_groups)

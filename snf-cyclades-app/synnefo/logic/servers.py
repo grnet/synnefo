@@ -308,7 +308,7 @@ def create_nic(vm, network=None, ipaddress=None, address=None):
     #device_owner = "router" if vm.router else "vm"
     device_owner = "vm"
     nic = NetworkInterface.objects.create(machine=vm, network=network,
-                                          state="BUILDING",
+                                          state="BUILD",
                                           device_owner=device_owner)
     if ipaddress is not None:
         ipaddress.nic = nic

@@ -247,8 +247,8 @@ def _process_net_status(vm, etime, nics):
             # state for more than 5 minutes, then we remove the NIC.
             # TODO: This is dangerous as the job may be stack in the queue, and
             # releasing the IP may lead to duplicate IP use.
-            if db_nic.state != "BUILDING" or\
-                (db_nic.state == "BUILDING" and
+            if db_nic.state != "BUILD" or\
+                (db_nic.state == "BUILD" and
                  etime > db_nic.created + BUILDING_NIC_TIMEOUT):
                 remove_nic_ips(db_nic)
                 db_nic.delete()

@@ -266,11 +266,11 @@ class ServerAPITest(ComputeAPITest):
         net2 = mfactory.NetworkFactory()
         net3 = mfactory.NetworkFactory()
         mfactory.NetworkInterfaceFactory(machine=self.vm2, network=net1,
-                                         state="BUILDING")
+                                         state="BUILD")
         nic2 = mfactory.NetworkInterfaceFactory(machine=self.vm2, network=net2,
                                                 state="ACTIVE")
         mfactory.NetworkInterfaceFactory(machine=self.vm2, network=net3,
-                                         state="BUILDING")
+                                         state="BUILD")
 
         response = self.myget('servers/%d' % db_vm.id, user)
         server = json.loads(response.content)['server']

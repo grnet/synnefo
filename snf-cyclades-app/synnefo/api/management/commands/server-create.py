@@ -34,7 +34,8 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management import common
+from synnefo.management import common, pprint
+from snf_django.management.utils import parse_bool
 
 from synnefo.logic import servers
 
@@ -67,7 +68,15 @@ class Command(BaseCommand):
                          " Use snf-manage flavor-list to find out"
                          " available flavors."),
         make_option("--password", dest="password",
-                    help="Password for the new server")
+                    help="Password for the new server"),
+        make_option(
+            '--wait',
+            dest='wait',
+            default="True",
+            choices=["True", "False"],
+            metavar="True|False",
+            help="Wait for Ganeti job to complete."),
+
     )
 
     @common.convert_api_faults
@@ -100,5 +109,9 @@ class Command(BaseCommand):
         else:
             backend = None
 
-        servers.create(user_id, name, password, flavor, image,
-                       use_backend=backend)
+        server = servers.create(user_id, name, password, flavor, image,
+                                use_backend=backend)
+        pprint.pprint_server(server, stdout=self.stdout)
+
+        wait = parse_bool(options["wait"])
+        common.wait_server_task(server, wait, self.stdout)

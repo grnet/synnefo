@@ -40,6 +40,7 @@ from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
 from synnefo.db.models import Backend, pooled_rapi_client
 from synnefo.logic.rapi import GanetiApiError
 from synnefo.logic.reconciliation import nics_from_instance
+from synnefo.management.common import get_image
 
 
 def pprint_network(network, display_mails=False, stdout=None, title=None):
@@ -56,7 +57,7 @@ def pprint_network(network, display_mails=False, stdout=None, title=None):
         ("backend-name", network.backend_id),
         ("state", network.state),
         ("userid", userid),
-        ("username", ucache.get_name(userid) if display_mails else userid),
+        ("username", ucache.get_name(userid) if display_mails else None),
         ("public", network.public),
         ("floating_ip_pool", network.floating_ip_pool),
         ("external_router", network.external_router),
@@ -214,3 +215,114 @@ def pprint_port_in_ganeti(port, stdout=None, title=None):
                  title=title)
 
     vm.put_client(client)
+
+
+def pprint_server(server, display_mails=False, stdout=None, title=None):
+    if stdout is None:
+        stdout = sys.stdout
+    if title is None:
+        title = "State of Server %s in DB" % server.id
+
+    ucache = UserCache(ASTAKOS_BASE_URL, ASTAKOS_TOKEN)
+    userid = server.userid
+
+    try:
+        image = get_image(server.imageid, server.userid)['name']
+    except:
+        image = server.imageid
+
+    server_dict = OrderedDict([
+        ("id", server.id),
+        ("name", server.name),
+        ("userid", server.userid),
+        ("username", ucache.get_name(userid) if display_mails else None),
+        ("flavor_id", server.flavor_id),
+        ("flavor_name", server.flavor.name),
+        ("imageid", server.imageid),
+        ("image_name", image),
+        ("state", server.operstate),
+        ("backend", server.backend),
+        ("deleted", server.deleted),
+        ("action", server.action),
+        ("task", server.task),
+        ("task_job_id", server.task_job_id),
+        ("backendjobid", server.backendjobid),
+        ("backendopcode", server.backendopcode),
+        ("backendjobstatus", server.backendjobstatus),
+        ("backend_time", server.backendtime),
+        ])
+
+    pprint_table(stdout, server_dict.items(), None, separator=" | ",
+                 title=title)
+
+
+def pprint_server_nics(server, stdout=None, title=None):
+    if title is None:
+        title = "NICs of Server %s" % server.id
+    if stdout is None:
+        stdout = sys.stdout
+
+    nics = []
+    for nic in server.nics.all():
+        nics.append((nic.name, nic.index, nic.mac, nic.ipv4_address,
+                     nic.ipv6_address, nic.network, nic.firewall_profile,
+                     nic.state))
+
+    headers = ["Name", "Index", "MAC", "IPv4 Address", "IPv6 Address",
+               "Network", "Firewall", "State"]
+    pprint_table(stdout, nics, headers, separator=" | ",
+                 title=title)
+
+
+def pprint_server_in_ganeti(server, print_jobs=False, stdout=None, title=None):
+    if stdout is None:
+        stdout = sys.stdout
+    if title is None:
+        title = "State of Server %s in Ganeti" % server.id
+
+    client = server.get_client()
+    try:
+        server_info = client.GetInstance(server.backend_vm_id)
+    except GanetiApiError as e:
+        if e.code == 404:
+            stdout.write("NIC seems attached to server %s, but"
+                         " server does not exist in backend.\n"
+                         % server)
+            return
+        raise e
+    server.put_client(client)
+
+    GANETI_INSTANCE_FIELDS = ('name', 'oper_state', 'admin_state', 'status',
+                              'pnode', 'snode', 'network_port',
+                              'disk_template', 'disk_usage',
+                              'oper_ram', 'oper_vcpus', 'mtime')
+    server_dict = OrderedDict([(k, server_info.get(k))
+                              for k in GANETI_INSTANCE_FIELDS])
+
+    pprint_table(stdout, server_dict.items(), None, separator=" | ",
+                 title="NICs of Server %s in Ganeti" % server.id)
+    stdout.write("\n")
+
+    nics = nics_from_instance(server_info)
+    nics_keys = ["ip", "mac", "name", "network"]
+    nics_values = [[nic[key] for key in nics_keys] for nic in nics]
+    pprint_table(stdout, nics_values, nics_keys, separator=" | ",
+                 title=title)
+
+    if not print_jobs:
+        return
+
+    client = server.get_client()
+    jobs = client.GetJobs(bulk=True)
+    server_jobs = filter(
+        lambda x: server.backend_vm_id in (" ".join(x.get("summary"))), jobs)
+
+    GANETI_JOB_FIELDS = ('id', 'status', 'summary', 'opresult', 'opstatus',
+                         'oplog', 'start_ts', 'end_ts')
+    for server_job in server_jobs:
+        stdout.write("\n")
+        values = [server_job.get(k) for k in GANETI_JOB_FIELDS]
+        pprint_table(stdout, zip(GANETI_JOB_FIELDS, values), None,
+                     separator=" | ",
+                     title="Ganeti Job %s" % server_job["id"])
+    server.put_client(client)

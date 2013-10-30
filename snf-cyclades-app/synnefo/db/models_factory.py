@@ -109,7 +109,8 @@ class VirtualMachineFactory(factory.DjangoModelFactory):
     flavor = factory.SubFactory(FlavorFactory)
     deleted = False
     suspended = False
-    operstate = factory.Sequence(round_seq_first(FACTORY_FOR.OPER_STATES))
+    #operstate = factory.Sequence(round_seq_first(FACTORY_FOR.OPER_STATES))
+    operstate = "STARTED"
 
 
 class DeletedVirtualMachine(VirtualMachineFactory):
@@ -168,7 +169,7 @@ class DeletedNetwork(NetworkFactory):
 class BackendNetworkFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.BackendNetwork
 
-    network = factory.SubFactory(NetworkFactory)
+    network = factory.SubFactory(NetworkFactory, state="ACTIVE")
     backend = factory.SubFactory(BackendFactory)
     operstate = factory.Sequence(round_seq_first(FACTORY_FOR.OPER_STATES))
 
@@ -177,8 +178,8 @@ class NetworkInterfaceFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.NetworkInterface
 
     name = factory.LazyAttribute(lambda self: random_string(30))
-    machine = factory.SubFactory(VirtualMachineFactory)
-    network = factory.SubFactory(NetworkFactory)
+    machine = factory.SubFactory(VirtualMachineFactory, operstate="STARTED")
+    network = factory.SubFactory(NetworkFactory, state="ACTIVE")
     index = factory.Sequence(lambda x: x, type=int)
     mac = factory.Sequence(lambda n: 'aa:{0}{0}:{0}{0}:aa:{0}{0}:{0}{0}'
                            .format(hex(int(n) % 15)[2:3]))
@@ -223,7 +224,7 @@ class NetworkWithSubnetFactory(NetworkFactory):
 class IPv4AddressFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.IPAddress
 
-    network = factory.SubFactory(NetworkFactory)
+    network = factory.SubFactory(NetworkFactory, state="ACTIVE")
     subnet = factory.SubFactory(IPv4SubnetFactory,
                                 network=factory.SelfAttribute('..network'))
     address =\
@@ -237,7 +238,7 @@ class IPv6AddressFactory(IPv4AddressFactory):
     FACTORY_FOR = models.IPAddress
 
     subnet = factory.SubFactory(IPv6SubnetFactory)
-    network = factory.SubFactory(NetworkFactory)
+    network = factory.SubFactory(NetworkFactory, state="ACTIVE")
     address = "babe::"
     nic = factory.SubFactory(NetworkInterfaceFactory,
                              network=factory.SelfAttribute('..network'))
@@ -245,7 +246,7 @@ class IPv6AddressFactory(IPv4AddressFactory):
 
 class FloatingIPFactory(IPv4AddressFactory):
     network = factory.SubFactory(NetworkFactory, public=True,
-                                 floating_ip_pool=True)
+                                 floating_ip_pool=True, state="ACTIVE")
     floating_ip = True
 
 

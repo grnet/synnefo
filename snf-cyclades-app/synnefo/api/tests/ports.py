@@ -31,7 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.i
 
-from snf_django.utils.testing import BaseAPITest
+from django.conf import settings
+from snf_django.utils.testing import BaseAPITest, override_settings
 from django.utils import simplejson as json
 from synnefo.cyclades_settings import cyclades_services
 from synnefo.lib.services import get_service_path
@@ -58,21 +59,25 @@ class PortTest(BaseAPITest):
         self.assertEqual(response.status_code, 404)
 
     def test_get_port(self):
-        nic = dbmf.NetworkInterfaceFactory.create()
+        nic = dbmf.NetworkInterfaceFactory()
         url = join_urls(PORTS_URL, str(nic.id))
         response = self.get(url, user=nic.network.userid)
         self.assertEqual(response.status_code, 200)
 
     @patch("synnefo.db.models.get_rapi_client")
     def test_delete_port(self, mrapi):
-        nic = dbmf.NetworkInterfaceFactory.create(device_owner='vm')
+        nic = dbmf.NetworkInterfaceFactory(device_owner='vm')
         url = join_urls(PORTS_URL, str(nic.id))
         mrapi().ModifyInstance.return_value = 42
-        response = self.delete(url, user=nic.network.userid)
+        with override_settings(settings, GANETI_USE_HOTPLUG=True):
+            response = self.delete(url, user=nic.network.userid)
         self.assertEqual(response.status_code, 204)
+        with override_settings(settings, GANETI_USE_HOTPLUG=False):
+            response = self.delete(url, user=nic.network.userid)
+        self.assertEqual(response.status_code, 400)
 
     def test_delete_port_from_nonvm(self):
-        nic = dbmf.NetworkInterfaceFactory.create(device_owner='router')
+        nic = dbmf.NetworkInterfaceFactory(device_owner='router')
         url = join_urls(PORTS_URL, str(nic.id))
         response = self.delete(url, user=nic.network.userid)
         self.assertEqual(response.status_code, 400)
@@ -83,7 +88,7 @@ class PortTest(BaseAPITest):
         self.assertItemNotFound(response)
 
     def test_update_port_name(self):
-        nic = dbmf.NetworkInterfaceFactory.create(device_owner='vm')
+        nic = dbmf.NetworkInterfaceFactory(device_owner='vm')
         url = join_urls(PORTS_URL, str(nic.id))
         request = {'port': {"name": "test-name"}}
         response = self.put(url, params=json.dumps(request),
@@ -93,8 +98,8 @@ class PortTest(BaseAPITest):
         self.assertEqual(res['port']['name'], "test-name")
 
     def test_update_port_sg_unfound(self):
-        sg1 = dbmf.SecurityGroupFactory.create()
-        nic = dbmf.NetworkInterfaceFactory.create(device_owner='vm')
+        sg1 = dbmf.SecurityGroupFactory()
+        nic = dbmf.NetworkInterfaceFactory(device_owner='vm')
         nic.security_groups.add(sg1)
         nic.save()
         url = join_urls(PORTS_URL, str(nic.id))
@@ -104,10 +109,10 @@ class PortTest(BaseAPITest):
         self.assertEqual(response.status_code, 404)
 
     def test_update_port_sg(self):
-        sg1 = dbmf.SecurityGroupFactory.create()
-        sg2 = dbmf.SecurityGroupFactory.create()
-        sg3 = dbmf.SecurityGroupFactory.create()
-        nic = dbmf.NetworkInterfaceFactory.create(device_owner='vm')
+        sg1 = dbmf.SecurityGroupFactory()
+        sg2 = dbmf.SecurityGroupFactory()
+        sg3 = dbmf.SecurityGroupFactory()
+        nic = dbmf.NetworkInterfaceFactory(device_owner='vm')
         nic.security_groups.add(sg1)
         nic.save()
         url = join_urls(PORTS_URL, str(nic.id))
@@ -131,12 +136,12 @@ class PortTest(BaseAPITest):
 
     @patch("synnefo.db.models.get_rapi_client")
     def test_create_port_private_net(self, mrapi):
-        net = dbmf.NetworkFactory.create(public=False)
-        dbmf.IPv4SubnetFactory.create(network=net)
-        dbmf.IPv6SubnetFactory.create(network=net)
-        sg1 = dbmf.SecurityGroupFactory.create()
-        sg2 = dbmf.SecurityGroupFactory.create()
-        vm = dbmf.VirtualMachineFactory.create(userid=net.userid)
+        net = dbmf.NetworkFactory(public=False)
+        dbmf.IPv4SubnetFactory(network=net)
+        dbmf.IPv6SubnetFactory(network=net)
+        sg1 = dbmf.SecurityGroupFactory()
+        sg2 = dbmf.SecurityGroupFactory()
+        vm = dbmf.VirtualMachineFactory(userid=net.userid)
         request = {
             "port": {
                 "name": "port1",
@@ -146,13 +151,18 @@ class PortTest(BaseAPITest):
             }
         }
         mrapi().ModifyInstance.return_value = 42
-        response = self.post(PORTS_URL, params=json.dumps(request),
-                             user=net.userid)
+        with override_settings(settings, GANETI_USE_HOTPLUG=False):
+            response = self.post(PORTS_URL, params=json.dumps(request),
+                                 user=net.userid)
+        self.assertEqual(response.status_code, 400)
+        with override_settings(settings, GANETI_USE_HOTPLUG=True):
+            response = self.post(PORTS_URL, params=json.dumps(request),
+                                 user=net.userid)
         self.assertEqual(response.status_code, 201)
 
     def test_create_port_public_net_no_ip(self):
-        net = dbmf.NetworkFactory.create(public=True)
-        vm = dbmf.VirtualMachineFactory.create(userid=net.userid)
+        net = dbmf.NetworkFactory(public=True)
+        vm = dbmf.VirtualMachineFactory(userid=net.userid)
         request = {
             "port": {
                 "name": "port1",
@@ -165,8 +175,8 @@ class PortTest(BaseAPITest):
         self.assertEqual(response.status_code, 400)
 
     def test_create_port_public_net_wrong_ip(self):
-        net = dbmf.NetworkFactory.create(public=True)
-        vm = dbmf.VirtualMachineFactory.create(userid=net.userid)
+        net = dbmf.NetworkFactory(public=True)
+        vm = dbmf.VirtualMachineFactory(userid=net.userid)
         request = {
             "port": {
                 "name": "port1",
@@ -180,9 +190,9 @@ class PortTest(BaseAPITest):
         self.assertEqual(response.status_code, 404)
 
     def test_create_port_public_net_conflict(self):
-        net = dbmf.NetworkFactory.create(public=True)
+        net = dbmf.NetworkFactory(public=True)
         fip = dbmf.FloatingIPFactory(nic=None, userid=net.userid)
-        vm = dbmf.VirtualMachineFactory.create(userid=net.userid)
+        vm = dbmf.VirtualMachineFactory(userid=net.userid)
         request = {
             "port": {
                 "name": "port1",
@@ -196,9 +206,9 @@ class PortTest(BaseAPITest):
         self.assertEqual(response.status_code, 409)
 
     def test_create_port_public_net_taken_ip(self):
-        net = dbmf.NetworkFactory.create(public=True)
+        net = dbmf.NetworkFactory(public=True)
         fip = dbmf.FloatingIPFactory(network=net, userid=net.userid)
-        vm = dbmf.VirtualMachineFactory.create(userid=net.userid)
+        vm = dbmf.VirtualMachineFactory(userid=net.userid)
         request = {
             "port": {
                 "name": "port1",
@@ -209,24 +219,25 @@ class PortTest(BaseAPITest):
         }
         response = self.post(PORTS_URL, params=json.dumps(request),
                              user=net.userid)
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 409)
 
     @patch("synnefo.db.models.get_rapi_client")
-    def test_create_port_public_net(self, mrapi):
-        net = dbmf.NetworkFactory.create(public=True)
-        fip = dbmf.FloatingIPFactory(network=net, nic=None, userid=net.userid)
-        vm = dbmf.VirtualMachineFactory.create(userid=net.userid)
+    def test_create_port_with_floating_ip(self, mrapi):
+        vm = dbmf.VirtualMachineFactory()
+        fip = dbmf.FloatingIPFactory(network__public=True, nic=None,
+                                     userid=vm.userid)
         request = {
             "port": {
                 "name": "port1",
-                "network_id": str(net.id),
+                "network_id": str(fip.network_id),
                 "device_id": str(vm.id),
                 "fixed_ips": [{"ip_address": fip.address}]
             }
         }
         mrapi().ModifyInstance.return_value = 42
-        response = self.post(PORTS_URL, params=json.dumps(request),
-                             user=net.userid)
+        with override_settings(settings, GANETI_USE_HOTPLUG=True):
+            response = self.post(PORTS_URL, params=json.dumps(request),
+                                 user=vm.userid)
         self.assertEqual(response.status_code, 201)
 
     def test_add_nic_to_deleted_network(self):

@@ -137,7 +137,7 @@ class NetworkTest(BaseAPITest):
         self.assertItemNotFound(response)
 
     def test_delete_network(self):
-        test_net = dbmf.NetworkFactory()
+        test_net = dbmf.NetworkFactory(flavor="CUSTOM")
         dbmf.IPv4SubnetFactory(network=test_net)
         url = join_urls(NETWORKS_URL, str(test_net.id))
         response = self.delete(url, user=test_net.userid)

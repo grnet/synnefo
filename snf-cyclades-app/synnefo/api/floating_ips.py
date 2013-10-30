@@ -114,7 +114,7 @@ def list_floating_ips(request):
     floating_ips = map(ip_to_dict, floating_ips)
 
     request.serialization = "json"
-    data = json.dumps({"floating_ips": floating_ips})
+    data = json.dumps({"floatingips": floating_ips})
 
     return HttpResponse(data, status=200)
 
@@ -126,7 +126,7 @@ def get_floating_ip(request, floating_ip_id):
     userid = request.user_uniq
     floating_ip = util.get_floating_ip_by_id(userid, floating_ip_id)
     request.serialization = "json"
-    data = json.dumps({"floating_ip": ip_to_dict(floating_ip)})
+    data = json.dumps({"floatingip": ip_to_dict(floating_ip)})
     return HttpResponse(data, status=200)
 
 
@@ -171,7 +171,7 @@ def allocate_floating_ip(request):
     log.info("User '%s' allocated floating IP '%s'", userid, floating_ip)
 
     request.serialization = "json"
-    data = json.dumps({"floating_ip": ip_to_dict(floating_ip)})
+    data = json.dumps({"floatingip": ip_to_dict(floating_ip)})
     return HttpResponse(data, status=200)
 
 

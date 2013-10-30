@@ -212,7 +212,7 @@ def release_floating_ip(request, floating_ip_id):
 @transaction.commit_on_success
 def update_floating_ip(request, floating_ip_id):
     """Update a floating IP."""
-    raise faults.NotImplented("Updating a floating IP is not supported.")
+    raise faults.NotImplemented("Updating a floating IP is not supported.")
     #userid = request.user_uniq
     #log.info("update_floating_ip '%s'. User '%s'.", floating_ip_id, userid)
 

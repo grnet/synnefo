@@ -173,6 +173,7 @@ def network_to_dict(network, detail=True):
         d['external_router'] = network.external_router
         d['admin_state_up'] = True
         d['subnets'] = list(network.subnets.values_list('id', flat=True))
+        d['SNF:floating_ip_pool'] = network.floating_ip_pool
     return d
 
 

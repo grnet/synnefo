@@ -157,10 +157,9 @@ def allocate_floating_ip(request):
         network = util.get_network(network_id, userid, for_update=True,
                                    non_deleted=True)
         if not network.floating_ip_pool:
-            # TODO: Maybe 409 ??
-            # Check that it is a floating IP pool
-            raise faults.ItemNotFound("Floating IP pool %s does not exist." %
-                                      network_id)
+            msg = ("Can not allocate floating IP from network %s. Network is"
+                   " not a floating IP pool." % network)
+            raise faults.Conflict(msg)
 
         address = api.utils.get_attribute(floating_ip_dict,
                                           "floating_ip_address",

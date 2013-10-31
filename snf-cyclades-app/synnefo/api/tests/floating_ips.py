@@ -163,7 +163,7 @@ class FloatingIPAPITest(BaseAPITest):
             'floating_network_id': pool2.id}
             }
         response = self.post(URL, "test_user", json.dumps(request), "json")
-        self.assertEqual(response.status_code, 404)
+        self.assertConflict(response)
 
         # Full network
         net = mf.NetworkWithSubnetFactory(floating_ip_pool=True,

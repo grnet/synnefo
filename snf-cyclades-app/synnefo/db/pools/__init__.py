@@ -57,9 +57,9 @@ class PoolManager(object):
 
     def get(self, value=None):
         """Get a value from the pool."""
-        if self.empty():
-            raise EmptyPool
         if value is None:
+            if self.empty():
+                raise EmptyPool
             # Get the first available index
             index = int(self.pool.index(AVAILABLE))
             assert(index < self.pool_size)

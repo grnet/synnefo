@@ -284,6 +284,8 @@ def allocate_ip_from_pools(pool_rows, userid, address=None, floating_ip=False):
 
     This function takes as argument a number of PoolTable objects and tries to
     allocate a value from them. If all pools are empty EmptyPool is raised.
+    If an address is specified and does not belong to any of the pools,
+    InvalidValue is raised.
 
     """
     for pool_row in pool_rows:
@@ -300,8 +302,14 @@ def allocate_ip_from_pools(pool_rows, userid, address=None, floating_ip=False):
             return ipaddress
         except pools.EmptyPool:
             pass
-    raise pools.EmptyPool("No more IP addresses available on pools %s" %
-                          pool_rows)
+        except pools.InvalidValue:
+            pass
+    if address is None:
+        raise pools.EmptyPool("No more IP addresses available on pools %s" %
+                              pool_rows)
+    else:
+        raise pools.InvalidValue("Address %s does not belong to pools %s" %
+                                 (address, pool_rows))
 
 
 def allocate_ip(network, userid, address=None, floating_ip=False):

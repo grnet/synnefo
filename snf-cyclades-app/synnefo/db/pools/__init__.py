@@ -304,7 +304,9 @@ class IPPool(PoolManager):
         return super(IPPool, self).contains(address, index=False)
 
     def return_start(self):
-        return str(ipaddr.IPAddress(self.base) + self.offset)
+        return str(ipaddr.IPAddress(ipaddr.IPNetwork(self.base).network) +
+                   self.offset)
 
     def return_end(self):
-        return str(ipaddr.IPAddress(self.base) + self.offset + self.size - 1)
+        return str(ipaddr.IPAddress(ipaddr.IPNetwork(self.base).network) +
+                   self.offset + self.pool_size - 1)

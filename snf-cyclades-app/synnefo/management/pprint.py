@@ -38,6 +38,8 @@ from snf_django.lib.astakos import UserCache
 from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
                               ASTAKOS_BASE_URL)
 from synnefo.db.models import Backend, pooled_rapi_client
+from synnefo.db.pools import bitarray_to_map
+
 from synnefo.logic.rapi import GanetiApiError
 from synnefo.logic.reconciliation import nics_from_instance
 from synnefo.management.common import get_image
@@ -122,6 +124,47 @@ def pprint_network_in_ganeti(network, stdout=None):
                                  backend.clustername)
                 else:
                     raise e
+
+
+def pprint_subnet_in_db(subnet, stdout=None, title=None):
+    if stdout is None:
+        stdout = sys.stdout
+    if title is None:
+        title = "State of Subnet %s in DB" % subnet.id
+    info = OrderedDict([("ID", subnet.id),
+                        ("Network_ID", subnet.network.id),
+                        # If a user names his subnet "-", what happens then?
+                        ("Name", "-" if subnet.name == "" else subnet.name),
+                        ("IP_Version", subnet.ipversion),
+                        ("CIDR", subnet.cidr),
+                        ("Gateway", subnet.gateway),
+                        ("DHCP/SLAAC", subnet.dhcp),
+                        ("Host_Routes", subnet.host_routes),
+                        ("DNS_Nameservers", subnet.dns_nameservers)])
+    pprint_table(stdout, info.items(), None, separator=" | ", title=title)
+
+
+def pprint_ippool(subnet, stdout=None, title=None):
+    """Pretty print IP Pools of a subnet. Only IPv4 subnets have IP Pools"""
+
+    if int(subnet.ipversion) != 4:
+        return 0
+
+    if stdout is None:
+        stdout = sys.stdout
+
+    stdout.write("IP Pools of subnet %s" % subnet.id)
+
+    for pool in subnet.get_ip_pools():
+        size = pool.pool_size
+        available = pool.available.count()
+        info = OrderedDict([("First_IP", pool.return_start()),
+                            ("Last_IP", pool.return_end()),
+                            ("Size", size),
+                            ("Available", available)])
+        pprint_table(stdout, info.items(), None, separator=" | ", title=None)
+        stdout.write(bitarray_to_map(pool.available[:size]))
+        stdout.write("\n\n")
 
 
 def pool_map_chunks(smap, step=64):

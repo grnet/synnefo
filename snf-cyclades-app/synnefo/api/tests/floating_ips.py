@@ -33,13 +33,10 @@
 
 from django.utils import simplejson as json
 from snf_django.utils.testing import BaseAPITest, mocked_quotaholder
-from synnefo.db.models import IPAddress
+from synnefo.db.models import IPAddress, Network
 from synnefo.db import models_factory as mf
-from synnefo.db.models_factory import (NetworkFactory,
-                                       VirtualMachineFactory)
 
 from mock import patch, Mock
-from functools import partial
 
 from synnefo.cyclades_settings import cyclades_services
 from synnefo.lib.services import get_service_path
@@ -53,8 +50,6 @@ SERVERS_URL = join_urls(compute_path, "servers")
 
 
 floating_ips = IPAddress.objects.filter(floating_ip=True)
-FloatingIPPoolFactory = partial(NetworkFactory, public=True, deleted=False,
-                                floating_ip_pool=True)
 
 
 class FloatingIPAPITest(BaseAPITest):
@@ -127,6 +122,36 @@ class FloatingIPAPITest(BaseAPITest):
                           "id": str(ip.id),
                           "port_id": None,
                           "floating_network_id": str(self.pool.id)})
+
+    def test_reserve_empty_body(self):
+        """Test reserve FIP without specifying network."""
+        request = {"floatingip": {}}
+        # delete all pools..
+        Network.objects.all().delete()
+        # CASE: no floating IP pool
+        with mocked_quotaholder():
+            response = self.post(URL, "test_user", json.dumps(request), "json")
+        self.assertConflict(response)
+        # CASE: Full floating IP pool
+        mf.NetworkWithSubnetFactory(floating_ip_pool=True, public=True,
+                                    subnet__pool__size=0)
+        with mocked_quotaholder():
+            response = self.post(URL, "test_user", json.dumps(request), "json")
+        self.assertConflict(response)
+        # CASE: Available floating IP pool
+        p1 = mf.NetworkWithSubnetFactory(floating_ip_pool=True, public=True,
+                                         subnet__cidr="192.168.2.0/30",
+                                         subnet__pool__size=1)
+        with mocked_quotaholder():
+            response = self.post(URL, "test_user", json.dumps(request), "json")
+        self.assertSuccess(response)
+        floating_ip = json.loads(response.content)["floatingip"]
+        db_fip = IPAddress.objects.get(id=floating_ip["id"])
+        self.assertEqual(db_fip.address, floating_ip["floating_ip_address"])
+        self.assertTrue(db_fip.floating_ip)
+        # Test that address is reserved
+        ip_pool = p1.get_ip_pools()[0]
+        self.assertFalse(ip_pool.is_available(db_fip.address))
 
     def test_reserve_no_pool(self):
         # Network is not a floating IP pool

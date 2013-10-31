@@ -358,7 +358,10 @@ def allocate_public_ip(userid, floating_ip=False, backend=None):
             log_msg += " Backend: %s" % backend
         log.error(log_msg)
         exception_msg = "Can not allocate a %s IP address." % ip_type
-        raise faults.ServiceUnavailable(exception_msg)
+        if floating_ip:
+            raise faults.Conflict(exception_msg)
+        else:
+            raise faults.ServiceUnavailable(exception_msg)
 
 
 def backend_has_free_public_ip(backend):

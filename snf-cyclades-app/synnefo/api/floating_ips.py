@@ -143,27 +143,33 @@ def allocate_floating_ip(request):
     userid = request.user_uniq
 
     # the network_pool is a mandatory field
-    network_pool = api.utils.get_attribute(floating_ip_dict,
-                                           "floating_network_id",
-                                           required=True)
-    address = api.utils.get_attribute(floating_ip_dict, "floating_ip_address",
-                                      required=False)
+    network_id = api.utils.get_attribute(floating_ip_dict,
+                                         "floating_network_id",
+                                         required=False)
+    if network_id is None:
+        floating_ip = util.allocate_public_ip(userid, floating_ip=True)
+    else:
+        try:
+            network_id = int(network_id)
+        except ValueError:
+            raise faults.BadRequest("Invalid networkd ID.")
 
-    try:
-        network_id = int(network_pool)
-    except ValueError:
-        raise faults.BadRequest("Invalid networkd ID.")
-    network = util.get_network(network_id, userid, for_update=True,
-                               non_deleted=True)
+        network = util.get_network(network_id, userid, for_update=True,
+                                   non_deleted=True)
+        if not network.floating_ip_pool:
+            # TODO: Maybe 409 ??
+            # Check that it is a floating IP pool
+            raise faults.ItemNotFound("Floating IP pool %s does not exist." %
+                                      network_id)
 
-    if not network.floating_ip_pool:
-        # Check that it is a floating IP pool
-        raise faults.ItemNotFound("Floating IP pool %s does not exist." %
-                                  network_id)
+        address = api.utils.get_attribute(floating_ip_dict,
+                                          "floating_ip_address",
+                                          required=False)
 
-    # Allocate the floating IP
-    floating_ip = util.allocate_ip(network, userid, address=address,
-                                   floating_ip=True)
+        # Allocate the floating IP
+        floating_ip = util.allocate_ip(network, userid, address=address,
+                                       floating_ip=True)
+
     # Issue commission (quotas)
     quotas.issue_and_accept_commission(floating_ip)
     transaction.commit()

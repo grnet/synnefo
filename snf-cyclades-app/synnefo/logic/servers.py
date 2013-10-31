@@ -13,7 +13,8 @@ from synnefo.api import util
 from synnefo.logic import backend
 from synnefo.logic.backend_allocator import BackendAllocator
 from synnefo.db.models import (NetworkInterface, VirtualMachine,
-                               VirtualMachineMetadata, IPAddress)
+                               VirtualMachineMetadata, IPAddress,
+                               IPAddressLog)
 from synnefo.db import query as db_query, pools
 
 from vncauthproxy.client import request_forwarding as request_vnc_forwarding
@@ -312,9 +313,18 @@ def create_nic(vm, network=None, ipaddress=None, address=None, name=None):
                                           userid=vm.userid,
                                           device_owner=device_owner,
                                           name=name)
+    log.debug("Created NIC %s with IP %s", nic, ipaddress)
     if ipaddress is not None:
         ipaddress.nic = nic
         ipaddress.save()
+
+        if ipaddress.network.public:
+            ip_log = IPAddressLog.objects.create(
+                server_id=vm.id,
+                network_id=ipaddress.network_id,
+                address=ipaddress.address,
+                active=True)
+            log.debug("Created IP log entry %s", ip_log)
 
     return nic, ipaddress
 

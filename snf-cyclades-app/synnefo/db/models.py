@@ -756,6 +756,24 @@ class IPAddress(models.Model):
                     ip_pool.save()
 
 
+class IPAddressLog(models.Model):
+    address = models.CharField("IP Address", max_length=64, null=False,
+                               db_index=True)
+    server_id = models.IntegerField("Server", null=False)
+    network_id = models.IntegerField("Network", null=False)
+    allocated_at = models.DateTimeField("Datetime IP allocated to server",
+                                        auto_now_add=True)
+    released_at = models.DateTimeField("Datetime IP released from server",
+                                       null=True)
+    active = models.BooleanField("Whether IP still allocated to server",
+                                 default=True)
+
+    def __unicode__(self):
+        return u"<Address: %s, Server: %s, Network: %s, Allocated at: %s>"\
+               % (self.address, self.network_id, self.server_id,
+                  self.allocated_at)
+
+
 class NetworkInterface(models.Model):
     FIREWALL_PROFILES = (
         ('ENABLED', 'Enabled'),

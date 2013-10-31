@@ -37,7 +37,7 @@ from datetime import datetime, timedelta
 from synnefo.db.models import (Backend, VirtualMachine, Network,
                                BackendNetwork, BACKEND_STATUSES,
                                pooled_rapi_client, VirtualMachineDiagnostic,
-                               Flavor)
+                               Flavor, IPAddressLog)
 from synnefo.logic import utils
 from synnefo import quotas
 from synnefo.api.util import release_resource, allocate_ip
@@ -338,6 +338,9 @@ def remove_nic_ips(nic):
     """
 
     for ip in nic.ips.all():
+        # Update the DB table holding the logging of all IP addresses
+        update_ip_address_log(nic, ip)
+
         if ip.ipversion == 4:
             if ip.floating_ip:
                 ip.nic = None
@@ -346,6 +349,33 @@ def remove_nic_ips(nic):
                 ip.release_address()
         if not ip.floating_ip:
             ip.delete()
+
+
+def update_ip_address_log(nic, ip):
+    """Update DB logging entry for this IP address."""
+    if not ip.network.public:
+        return
+    try:
+        ip_log, created = \
+            IPAddressLog.objects.get_or_create(server_id=nic.machine_id,
+                                               network_id=ip.network_id,
+                                               address=ip.address,
+                                               active=True)
+    except IPAddressLog.MultipleObjectsReturned:
+        logmsg = ("Multiple active log entries for IP %s, Network %s,"
+                  "Server %s. Can not proceed!"
+                  % (ip.address, ip.network, nic.machine))
+        log.error(logmsg)
+        raise
+
+    if created:
+        logmsg = ("No log entry for IP %s, Network %s, Server %s. Created new"
+                  " but with wrong creation timestamp."
+                  % (ip.address, ip.network, nic.machine))
+        log.error(logmsg)
+    ip_log.released_at = datetime.now()
+    ip_log.active = False
+    ip_log.save()
 
 
 @transaction.commit_on_success

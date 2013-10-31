@@ -33,6 +33,7 @@
 from functools import wraps
 from django.db import transaction
 from synnefo.logic import servers
+from snf_django.lib.api import faults
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -59,6 +60,11 @@ def create(network, machine, ipaddress=None, name="", security_groups=None,
     allocated.
 
     """
+    if ipaddress:
+        if ipaddress.network.id != network.id:
+            raise faults.Conflict("Floating IP address %s does not belong"
+                                      " to network %s."
+                                      % (ipaddress.address, network.id))
     port, ipaddress = servers.create_nic(machine, network, ipaddress=ipaddress,
                                          name=name)
 

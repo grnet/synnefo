@@ -235,6 +235,9 @@ class AstakosClient(object):
             headers = {}
         if body is None:
             body = {}
+        # Initialize log_request and log_response attributes
+        self.log_request = None
+        self.log_response = None
 
         # Build request's header and body
         kwargs = {}
@@ -250,10 +253,20 @@ class AstakosClient(object):
         try:
             # Get the connection object
             with self.conn_class(self.astakos_base_url) as conn:
+                # Log the request so other clients (like kamaki)
+                # can use them to produce their own log messages.
+                self.log_request = dict(method=method, path=request_path)
+                self.log_request.update(kwargs)
+
                 # Send request
                 # Used * or ** magic. pylint: disable-msg=W0142
                 (message, data, status) = \
                     _do_request(conn, method, request_path, **kwargs)
+
+                # Log the response so other clients (like kamaki)
+                # can use them to produce their own log messages.
+                self.log_response = dict(
+                    status=status, message=message, data=data)
         except Exception as err:
             self.logger.error("Failed to send request: %s" % repr(err))
             raise AstakosClientException(str(err))

@@ -30,13 +30,14 @@
 
 from django.core.management.base import BaseCommand, CommandError
 from synnefo.logic import networks
-from synnefo.management.common import get_network
+from synnefo.management.common import get_network, convert_api_faults
 
 
 class Command(BaseCommand):
     can_import_settings = True
     help = "Remove a network from the Database, and Ganeti"
 
+    @convert_api_faults
     def handle(self, *args, **options):
         if len(args) < 1:
             raise CommandError("Please provide a network ID")

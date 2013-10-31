@@ -240,6 +240,44 @@ class PortTest(BaseAPITest):
                                  user=vm.userid)
         self.assertEqual(response.status_code, 201)
 
+    @patch("synnefo.db.models.get_rapi_client")
+    def test_create_port_with_address(self, mrapi):
+        """Test creation if IP address is specified."""
+        mrapi().ModifyInstance.return_value = 42
+        vm = dbmf.VirtualMachineFactory()
+        net = dbmf.NetworkWithSubnetFactory(userid=vm.userid,
+                                            public=False,
+                                            subnet__cidr="192.168.2.0/24",
+                                            subnet__pool__size=1,
+                                            subnet__pool__offset=1)
+        request = {
+            "port": {
+                "name": "port_with_address",
+                "network_id": str(net.id),
+                "device_id": str(vm.id),
+                "fixed_ips": [{"ip_address": "192.168.2.1"}]
+            }
+        }
+        with override_settings(settings, GANETI_USE_HOTPLUG=True):
+            response = self.post(PORTS_URL, params=json.dumps(request),
+                                 user=vm.userid)
+        self.assertEqual(response.status_code, 201)
+        new_port_ip = json.loads(response.content)["port"]["fixed_ips"][0]
+        self.assertEqual(new_port_ip["ip_address"], "192.168.2.1")
+
+        # But 409 if address is already used
+        with override_settings(settings, GANETI_USE_HOTPLUG=True):
+            response = self.post(PORTS_URL, params=json.dumps(request),
+                                 user=vm.userid)
+        self.assertConflict(response)
+
+        # And bad request if IPv6 address is specified
+        request["port"]["fixed_ips"][0]["ip_address"] = "babe::"
+        with override_settings(settings, GANETI_USE_HOTPLUG=True):
+            response = self.post(PORTS_URL, params=json.dumps(request),
+                                 user=vm.userid)
+        self.assertBadRequest(response)
+
     def test_add_nic_to_deleted_network(self):
         user = 'userr'
         vm = dbmf.VirtualMachineFactory(name='yo', userid=user,

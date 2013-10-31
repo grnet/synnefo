@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 #from django.conf import settings
+import ipaddr
 from django.conf.urls import patterns
 from django.http import HttpResponse
 from django.utils import simplejson as json
@@ -39,6 +40,7 @@ from django.db import transaction
 from django.template.loader import render_to_string
 
 from snf_django.lib import api
+from snf_django.lib.api import faults
 
 from synnefo.api import util
 from synnefo.db.models import NetworkInterface
@@ -107,14 +109,39 @@ def create_port(request):
 
     network = util.get_network(net_id, user_id, non_deleted=True)
 
+    # Check if the request contains a valid IPv4 address
+    fixed_ips = api.utils.get_attribute(port_dict, "fixed_ips", required=False)
+    if fixed_ips is not None and len(fixed_ips) > 0:
+        if len(fixed_ips) > 1:
+            msg = "'fixed_ips' attribute must contain only one fixed IP."
+            raise faults.BadRequest(msg)
+        fixed_ip_address = fixed_ips[0].get("ip_address")
+        if fixed_ip_address is not None:
+            try:
+                ip = ipaddr.IPAddress(fixed_ip_address)
+                if ip.version == 6:
+                    msg = "'ip_address' can be only an IPv4 address'"
+                    raise faults.BadRequest(msg)
+            except ValueError:
+                msg = "%s is not a valid IPv4 Address" % fixed_ip_address
+                raise faults.BadRequest(msg)
+    else:
+        fixed_ip_address = None
+
     ipaddress = None
     if network.public:
-        fixed_ips = api.utils.get_attribute(port_dict, "fixed_ips",
-                                            required=True)
-        fip_address = api.utils.get_attribute(fixed_ips[0], 'ip_address',
-                                              required=True)
-        ipaddress = util.get_floating_ip_by_address(user_id, fip_address,
+        # Creating a port to a public network is only allowed if the user has
+        # already a floating IP address in this network which is specified
+        # as the fixed IP address of the port
+        if fixed_ip_address is None:
+            msg = ("'fixed_ips' attribute must contain a floating IP address"
+                   " in order to connect to a public network.")
+            raise faults.BadRequest(msg)
+        ipaddress = util.get_floating_ip_by_address(user_id, fixed_ip_address,
                                                     for_update=True)
+    elif fixed_ip_address:
+        ipaddress = util.allocate_ip(network, user_id,
+                                     address=fixed_ip_address)
 
     vm = util.get_vm(dev_id, user_id, for_update=True, non_deleted=True,
                      non_suspended=True)
@@ -134,7 +161,8 @@ def create_port(request):
             sg = util.get_security_group(int(gid))
             sg_list.append(sg)
 
-    new_port = ports.create(network, vm, ipaddress, security_groups=sg_list)
+    new_port = ports.create(network, vm, ipaddress=ipaddress,
+                            security_groups=sg_list)
 
     response = render_port(request, port_to_dict(new_port), status=201)
 

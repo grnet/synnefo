@@ -60,11 +60,10 @@ def create(network, machine, ipaddress=None, name="", security_groups=None,
     allocated.
 
     """
-    if ipaddress:
-        if ipaddress.network.id != network.id:
-            raise faults.Conflict("Floating IP address %s does not belong"
-                                      " to network %s."
-                                      % (ipaddress.address, network.id))
+    if ipaddress and (ipaddress.network.id != network.id):
+        raise faults.Conflict("Floating IP address %s does not belong"
+                              " to network %s."
+                              % (ipaddress.address, network.id))
     port, ipaddress = servers.create_nic(machine, network, ipaddress=ipaddress,
                                          name=name)
 

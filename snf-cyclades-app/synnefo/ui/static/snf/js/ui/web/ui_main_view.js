@@ -379,8 +379,7 @@
         set_handlers: function() {
             var self = this;
             this.pane_view_selector.find("a").hover(function(){
-                // FIXME: title from href ? omg
-                self.title.text($(this).attr("href"));
+                self.title.text($(this).data("hover-title"));
             }, function(){
                 self.title.text(self.parent.get_title());
             });

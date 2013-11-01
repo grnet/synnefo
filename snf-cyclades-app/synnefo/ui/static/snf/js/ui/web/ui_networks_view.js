@@ -1,4 +1,4 @@
-// Copyright 2011 GRNET S.A. All rights reserved.
+// Copyright 2013 GRNET S.A. All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or
 // without modification, are permitted provided that the following
@@ -52,149 +52,6 @@
     var logger = new snf.logging.logger("SNF-VIEWS");
     var debug = _.bind(logger.debug, logger);
     
-    
-    views.NetworkConnectVMsOverlay = views.Overlay.extend({
-        title: "Connect machine",
-        overlay_id: "overlay-select-vms",
-        content_selector: "#network-vms-select-content",
-        css_class: "overlay-info",
-
-        initialize: function() {
-            views.NetworkConnectVMsOverlay.__super__.initialize.apply(this);
-            this.list = this.$(".vms-list ul");
-            this.empty_message = this.$(".empty-message");
-
-            // flag for submit handler to avoid duplicate bindings
-            this.submit_handler_set = false;
-        },
-        
-        handle_vm_click: function(el) {
-            $(el).toggleClass("selected");
-        },
-
-        init_handlers: function() {
-            var self = this;
-            this.list.find("li").click(function() {
-                self.handle_vm_click($(this));
-            });
-            
-            if (!this.submit_handler_set) {
-                // avoid duplicate submits
-                this.el.find(".create").click(_.bind(function() {
-                    this.submit();
-                }, this));
-                this.submit_handler_set = true;
-            }
-        },
-
-        reset: function() {
-            this.list.find("li").remove();
-        },
-
-        beforeOpen: function() {
-            this.reset();
-            this.update_layout();
-        },
-        
-        vm: function(vm) {
-            if (vm.id) { var id = vm.id } else {var id = vm}
-            return this.list.find(".vm-" + id);
-        },
-
-        get_selected: function() {
-            return this.list.find(".selected").map(function() {return $(this).data('vm')})
-        },
-
-        update_layout: function() {
-            if (this.vms.length == 0) {
-                this.empty_message.show();
-            } else {
-                this.empty_message.hide();
-            }
-
-            _.each(this.vms, _.bind(function(vm){
-                
-                var html = '<li class="vm option options-object vm-{0}">' +
-                           '<div class="options-object-cont">' +
-                           '{2}' + 
-                           '<span class="title">{1}</span>' + 
-                           '<span class="value">{3}</span></div>' + 
-                           '</li>';
-                var el = $(html.format(vm.id, 
-                                       util.truncate(_.escape(vm.get("name")), 23), 
-                                       snf.ui.helpers.vm_icon_tag(vm, "small", {'class':'os'}),
-                                       _.escape(vm.get_os())
-                                      ))
-                el.data({vm:vm, vm_id:vm.id})
-                this.list.append(el);
-
-                vm.bind("remove", function(){ el.remove()})
-                vm.bind("change:name", function(i,v){el.find(".title").text(v)})
-            }, this));
-            
-            this.init_handlers();
-            this.set_selected();
-        },
-
-        set_selected: function() {
-            _.each(this.selected, _.bind(function(el){
-                this.vm(el).addClass("selected");
-            }, this));
-        },
-
-        show_vms: function(network, vms, selected, callback, subtitle) {
-            this.network = network;
-            this.reset();
-            if (network) {
-              this.set_subtitle(network.escape("name"));
-            } else {
-              this.set_subtitle(subtitle);
-            }
-
-            this.vms = vms;
-            if (!synnefo.config.network_allow_duplicate_vm_nics && this.network) {
-                this.vms = _.filter(this.vms, function(vm) {
-                    return !vm.connected_to(this.network);
-                }, this);
-            }
-
-            this.selected = selected;
-            this.cb = callback;
-            this.show();
-        },
-
-        submit: function() {
-            this.cb(this.get_selected());
-        }
-    })
-
-    views.NetworkActionsView = views.View.extend({
-        
-        initialize: function(view, net, el, opts) {
-            this.parent = view
-            this.network = net;
-            this.el = el;
-            
-            this.actions = this.$(".actions");
-            this.selected = undefined;
-
-            this.destroy = this.$(".actions .destroy a");
-            this.connect = this.$(".actions .add");
-
-            this.init_handlers();
-            this.update_layout();
-        },
-
-        init_handlers: function() {
-            this.connect.click(_.bind(function(e){
-                e.preventDefault();
-            }))
-        },
-
-        update_layout: function() {
-        }
-    });
-
     views.NetworkCreateView = views.Overlay.extend({
         view_id: "network_create_view",
         content_selector: "#networks-create-content",
@@ -380,984 +237,449 @@
         }
     });
 
-    views.NetworkNICView = views.View.extend({
+    views.NetworkPortView = views.ext.ModelView.extend({
+      tpl: '#network-port-view-tpl',
+      
+      vm_logo_url: function(vm) {
+        if (!this.model.get('vm')) { return '' }
+        return synnefo.ui.helpers.vm_icon_path(this.model.get('vm'), 'medium');
+      },
+      
+      set_confirm: function() {
+        var parent = this.parent_view.parent_view.el;
+        parent.addClass("subactionpending");
+      },
 
-        initialize: function(nic, parent, firewall_controls, el) {
-            this.firewall_controls = firewall_controls || false;
-            this.nic = nic;
-            this.vm = nic.get_vm();
-            // parent view di
-            this.parent = parent;
-            // TODO make it better
-            this.el = el || this.parent.get_nic_view(nic);
+      unset_confirm: function() {
+        var parent = this.parent_view.parent_view.el;
+        parent.removeClass("subactionpending");
+      },
 
-            this.init_layout();
-            this.update_layout();
+      post_init_element: function() {
+        this.in_progress = false;
+        this.firewall = this.$(".firewall-content").hide();
+        this.firewall_toggler = this.$(".firewall-toggle");
+        this.firewall_apply = this.$(".firewall-apply");
+        this.firewall_legends = this.firewall.find(".checkbox-legends");
+        this.firewall_inputs = this.firewall.find("input");
+        this.firewall_apply = this.firewall.find("button");
+        this.firewall_visible = false;
 
-            this.disconnect = this.$(".action-disconnect");
-            this.confirm_el = this.$(".confirm_single");
-            this.cancel = this.$("button.no");
-            this.confirm = this.$("button.yes");
-            this.details = this.$(".action-details");
-            this.vm_connect = this.$(".machine-connect");
-            this.actions = this.$(".net-vm-actions");
+        this.firewall_toggler.click(_.bind(function() {
+          this.toggle_firewall();
+        }, this));
 
-            this.init_handlers();
-            this.connect_overlay = new views.VMConnectView();
-            
-            this.firewall_view = undefined;
-            if (this.firewall_controls) {
-                this.firewall_view = new views.FirewallEditView(this.nic, this.parent.network, this);
-            }
-
-        },
-        
-        reset_all_net_actions: function(act_types) {
-            synnefo.storage.networks.each(function(n){
-                var actions = n.get('actions');
-                _.each(act_types, function(type){
-                    actions.remove_all(type);
-                })
-            })
-        },
-
-        init_handlers: function() {
-            if (!this.parent.network.is_public()) {
-                this.disconnect.click(_.bind(function(e){
-                    e.preventDefault();
-                    this.reset_all_net_actions(['destroy','disconnect']);
-                    this.parent.network.get("actions").remove_all("disconnect");
-                    this.parent.network.get("actions").add("disconnect", this.nic.id);
-                    this.parent.network.get("actions").remove("destroy");
-                }, this));
-                this.cancel.click(_.bind(function(e){
-                    this.parent.network.get("actions").remove("disconnect", this.nic.id);
-                    e.preventDefault()
-                }, this));
-
-                this.confirm.click(_.bind(function(e){
-                    e.preventDefault()
-                    this.disconnect_nic();
-                    this.confirm_el.hide();
-                    this.disconnect.removeClass("selected");
-                    this.actions.find("a").removeClass("visible");
-                }, this));
-
-                snf.ui.main.bind("view:change", _.bind(function(v) {
-                    if (v == "networks" ){ return }
-                    this.confirm_el.hide();
-                    this.disconnect.removeClass("selected");
-                }, this));
-
-                this.$(".remove-icon").click(_.bind(function(){
-                    this.reset_all_net_actions(['destroy','disconnect']);
-                    this.parent.network.get("actions").remove_all("disconnect");
-                    this.parent.network.get("actions").add("disconnect", this.nic.id);
-                    this.parent.network.get("actions").remove("destroy");
-                }, this));
-
-                this.vm_connect.click(_.bind(function() {
-                    this.connect_overlay.show(this.vm);
-                }, this));
-                
-                this.parent.network.bind("change:actions", _.bind(function(model, action){
-                    if (this.parent.network.get("actions").contains("disconnect", this.nic.id)) {
-                        this.confirm_disconnect();
-                    } else {
-                        this.cancel_disconnect();
-                    }
-                }, this));
-            }
-            
-            var vm = this.vm;
-            this.details.click(function(e){
-                e.preventDefault();
-                snf.ui.main.show_vm_details(vm);
-            });
-
-        },
-
-        cancel_disconnect: function() {
-            this.confirm_el.hide();
-            this.disconnect.removeClass("selected");
-            this.$(".net-vm-actions a").removeClass("visible");
-        },
-
-        confirm_disconnect: function() {
-            this.confirm_el.show();
-            this.disconnect.addClass("selected");
-            this.$(".net-vm-actions a").addClass("visible");
-        },
-
-        init_layout: function() {
-            if (!this.firewall_controls) { return };
-        },
-
-        update_layout: function() {
-            this.$(".vm-name").text(snf.util.truncate(this.vm.get("name"), 40));
-            this.$("img.logo").attr("src", ui.helpers.vm_icon_path(this.vm, "medium"));
-
-            if (this.firewall_view) {
-                this.$(".ipv4-text").text(this.nic.get_v4_address());
-                this.$(".ipv6-text").text(this.nic.get_v6_address());
-            }
-
-            if (this.firewall_view) {
-                this.firewall_view.update_layout();
-            }
-
-            if (!this.firewall_view) {
-                this.$(".ip4-container").hide();
-                this.$(".ip6-container").hide();
-                
-                if (this.nic.get("ipv4")) {
-                    this.$(".ipv4-text").text(this.nic.get_v4_address());
-                    this.$(".ip4-container").show();
-                    this.$(".machine-connect .content").hide();
-                } else if (this.nic.get("ipv6")) {
-                    this.$(".ipv6-text").text(this.nic.get_v6_address());
-                    this.$(".ip6-container").show();
-                    this.$(".machine-connect .content").hide();
-                } else {
-                    this.$(".machine-connect .content").show();
-                }
-            } else {
-            }
-        },
-
-        disconnect_nic: function() {
-            this.$("a.selected").removeClass("selected");
-            this.nic.get_network().remove_nic(this.nic);
+        this.firewall.find(".checkbox-legends, input").click(
+          _.bind(this.handle_firewall_choice_click, this));
+        this.update_firewall();
+      },
+      
+      toggle_firewall: function(e, hide, cb) {
+          hide = hide === undefined ? false : hide;
+          if (hide) {
+            this.firewall.stop().hide();
+          } else {
+            if (!cb) { cb = function() {}}
+            this.firewall.slideToggle(cb);
+          }
+          this.firewall_toggler.toggleClass("open");
+          this.firewall_visible = this.firewall_toggler.hasClass("open");
+          if (!this.firewall_visible) {
+            this.firewall_apply.fadeOut(50);
+          }
+          this.update_firewall();
+      },
+    
+      post_hide: function() {
+        views.NetworkPortView.__super__.post_hide.apply(this);
+        if (this.firewall_visible) {
+          this.toggle_firewall({}, true);
         }
-    })
+      },
 
-    views.NetworkModelRenameView = views.View.extend({
-        initialize: function(parent, network) {
-            this.parent = parent;
-            this.network = network;
-            this.el = this.parent.el.find(".name-div");
+      handle_firewall_choice_click: function(e) {
+          var el = $(e.currentTarget);
+          if (el.get(0).tagName == "INPUT") {
+            el = el.next();
+          }
+          var current = this.model.get("firewall_status");
+          var selected = el.prev().val();
 
-            this.icon = this.$(".rename-network");
-            this.save = this.$("span.save");
-            this.cancel = this.$("span.cancel");
-            this.buttons = this.$(".editbuttons");
-            this.name = this.$("span.name");
-            this.editing = false;
-            this.init_handlers();
-            this.update_layout();
-        },
+          el.parent().find("input").attr("checked", false);
+          el.prev().attr("checked", true);
 
-        init_handlers: function() {
-            this.icon.click(_.bind(function(){
-                this.editing = true;
-                this.update_layout();
-            }, this));
-            this.cancel.click(_.bind(function(){
-                this.editing = false;
-                this.update_layout();
-            }, this));
-            this.save.click(_.bind(function(){
-                this.submit();
-            }, this))
-        },
-        
-        submit: function() {
-            var value = _(this.input.val()).trim();
-            if (value == "") { return }
+          if (selected != current) {
+            this.firewall_apply.show();
+          } else {
+            this.firewall_apply.hide();
+          }
+      },
+      
+      disconnect_port: function(model, e) {
+        e && e.stopPropagation();
+        this.model.actions.reset_pending();
+        this.model.disconnect(_.bind(this.disconnect_port_complete, this));
+      },
 
-            this.network.rename(value, _.bind(function(){
-                this.editing = false;
-                this.update_layout();
-            }, this));
-        },
+      disconnect_port_complete: function() {
+      },
 
-        create_input: function() {
-            this.input = $('<input type="text" class="network-rename-input" />');
-            this.input.val(this.network.get("name"));
-            this.el.append(this.input);
-            this.input.focus();
-            this.input.bind("keydown", _.bind(function(ev){
-                ev.keyCode = ev.keyCode || ev.which;
-                if (ev.keyCode == 13) { this.submit(); };
-                if (ev.keyCode == 27) {this.editing = false; this.update_layout()};
-            }, this));
-        },
+      set_firewall: function() {
+        var value = this.get_selected_value();
+        this.firewall_apply.addClass("in-progress");
+        this.model.set({'pending_firewall': value});
+        this.model.set_firewall(value, this.set_firewall_complete, 
+                                       this.set_firewall_complete);
+        this.in_progress = true;
+      },
+      
+      set_firewall_complete: function() {
+        this.in_progress = false;
+        this.toggle_firewall({}, false, _.bind(function() {
+          this.firewall_apply.removeClass("in-progress").show();
+        }, this));
+      },
 
-        remove_input: function() {
-            if (!this.input) { return }
-            this.input.remove();
-        },
+      get_selected_value: function() {
+        return this.firewall_inputs.filter(":checked").val();
+      },
 
-        update_layout: function() {
-            if (this.editing) {
-                if (this.buttons.is(":visible")) { return }
-                this.icon.hide();
-                this.buttons.show();
-                this.create_input();
-                this.name.hide();
-            } else {
-                this.buttons.hide();
-                this.remove_input();
-                this.name.show();
-                this.icon.show();
-            }
+      update_firewall: function() {
+        var value = this.model.get("firewall_status");
+        var value_selector = "[value=" + value + "]"
+        var status_span = this.firewall_toggler.find("span span");
+        var current_choice = this.firewall_inputs.filter(value_selector);
+
+        if (_.contains(["PROTECTED", "ENABLED"], value)) {
+          status_span.removeClass("firewall-off").addClass("firewall-on");
+          status_span.text("On");
+        } else {
+          status_span.removeClass("firewall-on").addClass("firewall-off");
+          status_span.text("Off");
         }
-    })
-
-    views.FirewallEditView = views.View.extend({
-
-        initialize: function(nic, network, parent) {
-            this.parent = parent;
-            this.vm = nic.get_vm();
-            this.nic = nic;
-            this.network = network;
-            this.el = this.parent.el;
-
-            views.FirewallEditView.__super__.initialize.apply(this);
-
-            // elements
-            this.toggler = this.$(".firewall-toggle");
-            this.indicator = this.$(".machines-label span");
-            this.progress = this.$(".network-progress-indicator");
-            this.content = this.$(".firewall-content");
-            this.inputs = this.$("input[type=radio]");
-            this.labels = this.$("span.checkbox-legends, label.checkbox-legends");
-            this.apply = this.$(".firewall-apply");
-
-            this.$(".firewall-content").hide();
-            this.$(".firewall-content input[type=radio]").attr("name", "firewall-opt-for-{0}".format(this.vm.id))
-            var mode = this.vm.get_firewall_profile();
-            this.$(".firewall-content input[value={0}]".format(mode)).attr("checked", true);
-
-            this.init_handlers();
-            this.update_layout();
-
-            var self = this;
-            this.nic.bind("change:pending_firewall_sending", function(nic, value) {
-                if (value) {
-                    self.apply.addClass("in-progress");       
-                    self.progress.show();
-                } else {
-                    self.apply.removeClass("in-progress");       
-                    self.progress.hide();
-                    self.toggler.click();
-                }
-            });
-
-            this.nic.bind("change:firewallProfile", function(nic){
-                self.update_layout();
-                self.reset_value();
-            })
-
-        },
         
-        _get_selected: function() {
-            return this.inputs.filter(":checked");
-        },
-
-        reset_selected: function() {
-        },
-
-        submit: function() {
-        },
-
-        reset_value: function() {
-            this.inputs.filter("[value={0}]".format(
-              this.nic.get('firewallProfile'))).attr("checked", true);
-        },
-
-        init_handlers: function() {
-            this.toggler.click(_.bind(function(){
-                cont = this.content;
-                if (cont.is(":visible")) {
-                    this.hide_firewall();
-                    this.reset_value();
-                } else {
-                    this.show_firewall();
-                }
-
-                $(window).trigger("resize");
-            }, this))
-            
-            this.apply.click(_.bind(function(){
-                this.nic.set_firewall(this.value());
-            }, this))
-
-            this.inputs.change(_.bind(function(){
-                this.update_selected();
-            }, this))
-            
-            var self = this;
-            this.$(".checkbox-legends").click(function(el) {
-                var el = $(this);
-                el.prev().click();
-                self.update_selected();
-            })
-        },
-
-        update_selected: function() {
-            this.update_layout();
-        },
-
-        show_firewall: function() {
-            this.content.slideDown(100, function(){$(window).trigger("resize")});
-            this.toggler.addClass("open");
-        },
-
-        hide_firewall: function() {
-            this.content.slideUp(100, function(){$(window).trigger("resize")});
-            this.toggler.removeClass("open");
-        },
-
-        value: function() {
-            return this._get_selected().val();
-        },
-
-        update_layout: function() {
-            if (this.value() == this.vm.get_firewall_profile()) {
-                this.apply.hide();
-            } else {
-                this.apply.show();
-            }
-
-            var profile = this.vm.get_firewall_profile();
-            if (this.vm.has_firewall(this.network.id)) {
-                this.$(".firewall-toggle .label span").text("On");
-                this.$(".firewall-toggle .label span").removeClass("firewall-off");
-                this.$(".firewall-toggle .label span").addClass("firewall-on");
-            } else {
-                this.$(".firewall-toggle .label span").text("Off");
-                this.$(".firewall-toggle .label span").removeClass("firewall-on");
-                this.$(".firewall-toggle .label span").addClass("firewall-off");
-            }
-            
-            this.$("span.checkbox-legends").removeClass("current");
-            this.inputs.filter("[value={0}]".format(profile)).next().addClass("current");
-            
-        }
-    })
-
-    views.NetworkModelView = views.View.extend({
-        
-        firewall: false,
-
-        initialize: function(network, view) {
-            this.parent_view = view;
-            this.network = network;
-            this.main_view_id = this.main_view_id ? this.main_view_id : "networks_view_" + network.id;
-            this.is_public = network.is_public();
-
-            this.init_nics_handlers();
-            
-            this.view_id = "networks_view_" + network.id;
-            views.NetworkModelView.__super__.initialize.call(this);
-
-            this.nics_views = {};
-
-            this.el = this.create_el();
-
-            // element helpers
-            this.nics_list = this.$(".machines-list");
-            this.nics_list_toggler = this.$(".list-toggle");
-            
-            this.init_handlers();
-            this.init_toggler_handlers();
-            this.update_nics();
-            this.update_layout();
-
-            this.hide_nics_list();
-            this.nics_list.hide();
-
-            this.rename_view = undefined;
-            if (!this.network.is_public()) {
-                // allow network rename for non public networks only
-                this.rename_view = new views.NetworkModelRenameView(this, network);
-            }
-            
-            var self = this;
-            this.network.bind('change:status', function() {
-                self.update_layout();
-            });
-
-        },
-
-        init_nics_handlers: function() {
-            storage.nics.bind("add", _.bind(this.nic_added_handler, this, "add"));
-            storage.nics.bind("change", _.bind(this.nic_changed_handler, this, "change"));
-            storage.nics.bind("reset", _.bind(this.nic_changed_handler, this, "reset"));
-            storage.nics.bind("remove", _.bind(this.nic_removed_handler, this, "remove"));
-        },
-
-
-        show_nics_list: function() {
-            //if (this.nics_empty()) { return }
-            var self = this;
-            this.nics_list_toggler.addClass("open");
-            this.nics_list.slideDown(function(){
-                $(window).trigger("resize");
-            }).closest(".network").addClass("expand");
-            this.$(".empty-network-slot").slideDown();
-            this.nics_visible = true;
-        },
-
-        hide_nics_list: function() {
-            this.nics_list_toggler.removeClass("open");
-            this.nics_list.slideUp(function(){
-                $(window).trigger("resize");
-            }).closest(".network").removeClass("expand");
-            this.$(".empty-network-slot").slideUp();
-            this.nics_visible = false;
-        },
-        
-        init_toggler_handlers: function() {
-            this.nics_list_toggler.click(_.bind(function(){
-                if (this.nics_list.is(":visible")) {
-                    this.hide_nics_list();
-                } else {
-                    this.show_nics_list();
-                    this.fix_left_border();
-                }
-
-            }, this));
-            $(window).bind("resize", _.bind(function() {
-                this.fix_left_border();
-            }, this));
-        },
-
-        init_handlers: function() {
-            var self = this;
-
-
-            this.$(".action-add").click(_.bind(function(e){
-                e.preventDefault();
-                this.network.get("actions").remove("destroy");
-                this.show_connect_vms();
-            }, this))
-
-            this.$(".add-icon").click(_.bind(function(e){
-                e.preventDefault();
-                this.show_connect_vms();
-            }, this))
-
-            this.$(".net-actions .destroy a").click(_.bind(function(e){
-                e.preventDefault();
-                synnefo.storage.networks.each(function(n) {
-                    n.get('actions').remove_all("disconnect");
-                    if (!synnefo.config.network_allow_multiple_destory) {
-                        n.get('actions').remove_all("destroy");
-                    }
-                });
-                self.network.get("actions").add("destroy");
-                self.network.get("actions").remove_all("disconnect");
-            }, this));
-
-            self.network.bind("change:actions", _.bind(function(net, action) {
-                if (this.network.get("actions").contains("destroy")) {
-                    this.confirm_destroy();
-                } else {
-                    this.cancel_destroy();
-                }
-            }, this));
-            
-
-            // reset pending destory action after successful removal
-            self.network.bind("remove", _.bind(function(net){
-                net.get("actions").remove_all("destroy");
-            }));
-
-            this.$(".net-actions button.no").click(function(e){
-                e.preventDefault();
-                self.network.get("actions").remove("destroy");
-            });
-
-            this.$(".net-actions button.yes").click(function(e){
-                e.preventDefault();
-                var el = $(this);
-                el.closest(".confirm_single").hide();
-                el.parent().parent().find(".selected").removeClass("selected");
-                self.network.call('destroy', {}, function(){
-                    el.closest(".confirm_single").removeClass("in-progress");
-                });
-                el.closest(".confirm_single").addClass("in-progress");
-            });
-
-            snf.ui.main.bind("view:change", _.bind(function(v) {
-                if (v == "networks" ){ return }
-                this.$(".confirm_single").hide();
-                this.$("a.selected").removeClass("selected");
-            }, this));
-            
-            this.$(".empty-network-slot").hide();
-        },
-
-        show_connect_vms: function() {
-            this.$(".confirm_single").hide();
-            this.$("a.selected").removeClass("selected");
-            var vms = this.network.get_connectable_vms();
-            this.parent_view.connect_machines_view.show_vms(this.network,
-                                                            vms, [], 
-                                                            _.bind(this.connect_vms, this));
-        },
-
-        cancel_destroy: function() {
-            this.$(".net-actions .destroy .confirm_single").hide();
-            this.$(".net-actions .destroy a.selected").removeClass("selected");
-            this.$(".net-actions a").removeClass("visible");
-        },
-
-        confirm_destroy: function() {
-            this.$(".destroy .confirm_single").show();
-            this.$(".destroy a").addClass("selected");
-            this.$(".net-actions a").addClass("visible");
-        },
-
-        connect_vms: function(vms) {
-            _.each(vms, _.bind(function(vm){
-                this.network.add_vm(vm, function() {
-                  if (!synnefo.config.private_networks_nic_hotplug) {
-                    vm.require_reboot();
-                  }
-                });
-            }, this));
-
-            this.parent_view.connect_machines_view.hide();
-        },
-
-        create_el: function() {
-            return this.$(this.tpl).clone().attr("id", this.main_view_id);
-        },
-
-        get_nic_id: function(nic) {
-            return this.nic_id_tpl.format(nic.id);
-        },
-
-        get_nic_view: function(nic) {
-            return $(this.get_nic_id(nic));
-        },
-        
-        nic_in_network: function(nic) {
-          return nic.get_network().id == this.network.id;
-        },
-
-        nic_added_handler: function(action, nic) {
-            if (!this.nic_in_network(nic)) { return };
-            this.add_or_update_nic(nic);
-            this.update_layout();
-            this.fix_left_border();
-        },
-
-        nic_changed_handler: function(action, nics, model, changes) {
-            var nics = nics || [];
-
-            // reset or update
-            if (action == "reset") {
-                nics = nics;
-            } else {
-                if (!_.isArray(nics)) {
-                    nics = [nics]
-                }
-            }
-            
-            _.each(nics, _.bind(function(nic) {
-                if (!this.nic_in_network(nic)) { return };
-                this.add_or_update_nic(nic);
-            }, this));
-
-            this.update_layout();
-        },
-
-        nic_removed_handler: function(action, nic, model) {
-            if (!this.nic_in_network(nic)) { return };
-            this.fix_left_border();
-            this.remove_nic(nic);
-            this.update_layout();
-        },
-
-        remove_nic: function(nic) {
-            var nic_view = this.get_nic_view(nic);
-            if (nic_view.length) {
-                nic_view.remove();
-                try {
-                    delete this.nics_views[nic.id]
-                } catch (err) {
-                }
-            }
-        },
-        
-        create_nic_view: function(nic) {
-            var nic_el = $(this.nic_tpl).clone().attr({
-                id: this.get_nic_id(nic).replace("#","")
-            });
-            this.nics_list.append(nic_el);
-            this.post_nic_add(nic);
-
-            if (!this.nics_views[nic.id]) {
-                var nic_view = this.nics_views[nic.id] = new views.NetworkNICView(nic, this, this.firewall, nic_el);
-            }
-        },
-
-        add_or_update_nic: function(nic) {
-            if (!nic) { return };
-                
-            var nic_el = this.get_nic_view(nic);
-            var nic_view = this.nics_views[nic.id];
-
-            if (nic_el.length == 0) {
-                nic_view = this.create_nic_view(nic);
-            }
-            
-            if (nic_view) { nic_view.update_layout() };
-
-            this.update_nic(nic);
-            this.post_nic_update(nic);
-        },
-
-        update_nic: function(vm){},
-        post_nic_add: function(vm){},
-        post_nic_update: function(vm){},
-        
-        get_nics: function() {
-          return this.network.get_nics();
-        },
-
-        update_nics: function(nics) {
-            if (!nics) { nics = this.get_nics() };
-            _.each(nics, _.bind(function(nic){
-                this.add_or_update_nic(nic);
-            }, this));
-        },
-
-        check_empty_nics: function() {
-            if (this.get_nics().length == 0) {
-                this.hide_nics_list();
-            }
-        },
-
-        nics_empty: function() {
-            return this.get_nics().length == 0;
-        },
-
-        remove: function() {
-            $(this.el).remove();
-        },
-        
-        get_name: function() {
-          var net_name = this.network.get('name');
-          if (net_name == "public") { net_name = "Internet" };
-          return net_name;
-        },
-
-        update_layout: function() {
-            // has vms ???
-            this.check_empty_nics();
-
-            // is expanded ???
-            //
-            // whats the network status ???
-            //
-            this.$(".machines-count").text(this.get_nics().length);
-
-            var net_name = this.get_name();
-            this.$(".name-div span.name").text(net_name);
-
-            if (this.rename_view) {
-                this.rename_view.update_layout();
-            }
-            
-            this.$(".net-status").text(this.network.state_message());
-
-            if (this.network.in_progress())  {
-                this.$(".spinner").show();
-                this.$(".network-indicator").addClass("in-progress");
-            } else {
-                this.$(".spinner").hide();
-                this.$(".network-indicator").removeClass("in-progress");
-            }
-                
-            if (this.network.get('state') == 'PENDING') {
-                this.el.addClass("pending");
-            } else {
-                this.el.removeClass("pending");
-            }
-
-            if (this.network.get('state') == 'ERROR') {
-                this.el.addClass("in-error");
-                this.$(".network-indicator").addClass("error-state");
-            } else {
-                this.el.removeClass("in-error");
-                this.$(".network-indicator").removeClass("error-state");
-            }
-
-            if (synnefo.config.network_strict_destroy) {
-                if (this.get_nics().length == 0 && 
-                        !this.network.in_progress()) {
-                    this.el.removeClass("disable-destroy");
-                } else {
-                    this.el.addClass("disable-destroy");
-                }
-            }
-
-            if (this.network.get("state") == "DESTROY") {
-                this.$(".spinner").show();
-                this.$(".state").addClass("destroying-state");
-                this.$(".actions").hide();
-            } else {
-                this.$(".state").removeClass("destroying-state");
-                this.$(".actions").show();
-                this.$(".actions a").removeClass("visible");
-            }
-        },
-
-        // fix left border position
-        fix_left_border: function(force) {
-            if (!this.nics_visible && !force) { return };
-            
-            var imgheight = 2783;
-            var opened_vm_height = 133 + 18;
-            var closed_vm_height = 61 + 20;
-            var additional_height = 25;
-
-            if (!this.is_public) { 
-                imgheight = 2700;
-                additional_height = 65;
-            };
-            
-            var contents = this.$(".network-contents");
-            var last_vm = this.$(".network-machine:last .cont-toggler.open").length;
-            var last_vm_height = closed_vm_height;
-            if (last_vm > 0){
-                last_vm_height = opened_vm_height;
-            }
-
-            var nics_opened = this.$(".network-machine .cont-toggler.open").length;
-            var nics_closed = this.$(".network-machine").length - nics_opened;
-
-            var calc_height = (nics_opened * opened_vm_height) + (nics_closed * closed_vm_height) + additional_height; 
-            var bgpos = imgheight - calc_height + last_vm_height - 30;
-            this.$(".network-contents").css({'background-position':'33px ' + (-bgpos) + 'px'});
-        }
-    })
-
-    views.PublicNetworkView = views.NetworkModelView.extend({
-        firewall: true,
-        tpl: "#public-template",
-        nic_tpl: "#public-nic-template",
-        nic_id_tpl: "#nic-{0}",
-        
-        initialize: function(network, view) {
-          views.PublicNetworkView.__super__.initialize.call(this, network, view);
-          this.fix_left_border(1);
-        },
-
-        init_handlers: function(vm) {
-          $(window).bind("resize", _.bind(function() {
-              this.fix_left_border();
-          }, this));
-        }
+        this.firewall_inputs.attr("checked", false);
+        this.firewall_legends.removeClass("current");
+        current_choice.attr("checked", true)
+        current_choice.next().addClass("current");
+      },
+
+      show_vm_details: function() {
+        var vm = this.model.get('vm');
+        if (vm) { snf.ui.main.show_vm_details(vm) }
+      }
     });
 
-    views.GroupedPublicNetworkView = views.PublicNetworkView.extend({
-        main_view_id: "grouped-public",
+    views.NetworkPortCollectionView = views.ext.CollectionView.extend({
+      tpl: '#network-port-collection-view-tpl',
+      model_view_cls: views.NetworkPortView,
+      rivets_view: true,
+      get_rivet_object: function() {
+        return {
+          model: this.collection.network
+        }
+      },
+      resolve_storage_object: function() {
+        return this.collection
+      },
 
-        initialize: function(network, view) {
-          this.networks = {};
-          this.add_network(network);
-          views.GroupedPublicNetworkView.__super__.initialize.call(this, 
-                                                                   network, 
-                                                                   view);
-        },
-          
-        get_name: function() {
-          return synnefo.config.grouped_public_network_name || views.GroupedPublicNetworkView.__super__.get_name.call(this);
-        },
+      show_connect_vms_overlay: function() {
+        this.parent_view.show_connect_vms_overlay();
+      }
+    });
 
-        nic_in_network: function(nic) {
-          var nic_net  = nic.get_network();
-          return _.filter(this.networks, function(n) { 
-            return nic_net.id == n.id;
-          }).length > 0;
-        },
+    views.NetworkView = views.ext.ModelView.extend({
+      tpl: '#network-view-tpl',
+      auto_bind: ['connect_vm'],
+      post_init_element: function() {
+        this.ports = this.$(".ports.nested-model-list");
+        this.ports.hide();
+        this.ports_toggler = this.$(".network-ports-toggler");
+        this.ports_toggler.click(this.toggle_ports);
+        this.ports_visible = false;
+      },
 
-        get_nics: function() {
-          var n = _.flatten(_.map(this.networks, function(n){ return n.get_nics(); }));
-          return n
-        },
+      toggle_ports: function(e, hide) {
+        hide = hide === undefined ? false : hide;
+        if (hide) {
+          this.ports.stop().hide();
+        } else {
+          this.ports.stop().slideToggle();
+        }
+        this.ports_toggler.find(".cont-toggler").toggleClass("open");
+        this.ports_visible = this.ports_toggler.find(".cont-toggler").hasClass("open");
+      },
 
-        add_network: function(net) {
-          this.networks[net.id] = net;
-        },
+      post_hide: function() {
+        views.NetworkView.__super__.post_hide.apply(this);
+        if (this.ports_visible) {
+          this.toggle_ports({}, true);
+        }
+      },
+      
+      status_map: {
+        'ACTIVE': 'Active',
+        'CONNECTING': 'Connecting',
+        'DISCONNECTING': 'Disconnecting',
+        'REMOVING': 'Removing'
+      },
 
-        remove_network: function(net) {
-          delete this.networks[net.id];
-          this.update_nics();
+      status_cls_map: {
+        'ACTIVE': 'status-active',
+        'DISCONNECTING': 'status-progress',
+        'CONNECTING': 'status-progress',
+        'REMOVING': 'status-progress'
+      },
+      
+      status_cls: function(status) {    
+        return this.status_cls_map[this.model.get('ext_status')]
+      },
+
+      status_display: function(status) {
+        var status;
+        if (this.model.id == "snf-combined-public-network") {
+          return "Internet"
         }
 
-    })
-    
-    views.PrivateNetworkView = views.NetworkModelView.extend({
-        tpl: "#private-template",
-        nic_tpl: "#private-nic-template",
-        nic_id_tpl: "#nic-{0}"
-    })
+        status = this.status_map[this.model.get('ext_status')];
+        return status;
+      },
+      
+      connect_vms: function(vms, cb) {
+        var finished = 0;
+        var completed = function() {
+          finished++;
+          if (finished == vms.length) {
+            cb();
+          }
+        }
+        _.each(vms, function(vm) {
+          this.model.connect_vm(vm, completed);
+        }, this);
+      },
+      
+      remove: function(e) {
+        e.stopPropagation();
+        this.model.actions.reset_pending();
+        this.model.destroy({
+          complete: _.bind(function() {
+            this.model.set({status: 'REMOVING'})
+          }, this),
+          silent: true
+        });
+      },
 
-    views.NetworksView = views.View.extend({
-        
-        view_id: "networks",
-        pane: "#networks-pane",
-        el: "#networks-pane",
+      show_connect_vms_overlay: function() {
+        var view = new views.NetworkConnectVMsOverlay();
+        vms = this.model.pluggable_vms();
+        var cb = _.bind(function(vms) {
+          view.set_in_progress();
+          var cbinner = function() {
+            view.hide();
+            delete view;
+          }
+          this.connect_vms(vms, cbinner);
+        }, this);
+        view.show_vms(this.model, vms, [], cb, "subtitle");
+      }
+
+    });
+    
+    views.NetworksCollectionView = views.ext.CollectionView.extend({
+      collection: storage.networks,
+      collection_name: 'networks',
+      model_view_cls: views.NetworkView,
+      create_view_cls: views.NetworkCreateView,
+      
+      init: function() {
+        this.public_added = false;
+        views.NetworksCollectionView.__super__.init.apply(this, arguments);
+      },
+      
+      check_empty: function() {
+        views.NetworksCollectionView.__super__.check_empty.apply(this, arguments);
+        //if (this.$(".private").children().length == 0) {
+          //this.$(".private").hide();
+        //} else {
+          //this.$(".private").show();
+        //}
+      },
+
+      add_model: function(m) {
+        if (m.get('is_public') && !this.public_added) {
+          this.combined_public = new models.networks.CombinedPublicNetwork();
+          this.combined_public_view = new views.NetworkView({
+            model: this.combined_public
+          });
+          this.add_model_view(this.combined_public_view, this.combined_public, 0);
+          this.combined_public_view.$("i").hide();
+          this.public_added = true;
+        }
+        return views.NetworksCollectionView.__super__.add_model.call(this, m);
+      },
+
+      remove_model: function(m) {
+        if (m.id == 'snf-combined-public-network') {
+          return;
+        } else {
+          return views.NetworksCollectionView.__super__.remove_model.call(this, m);
+        }
+      },
+
+      get_model_view_cls: function(m) {
+        if (!this.public_added) {
+        }
+        if (m.get('is_public')) {
+          return false;
+        }
+        return views.NetworksCollectionView.__super__.get_model_view_cls.apply(this, [m]);
+      },
+      
+      parent_for_model: function(m) {
+        if (m.get('is_public')) {
+          return this.list_el.find(".public");
+        } else {
+          return this.list_el.find(".private");
+        }
+      }
+    });
+
+    views.NetworksPaneView = views.ext.PaneView.extend({
+      id: "pane",
+      el: '#networks-pane',
+      collection_view_cls: views.NetworksCollectionView,
+      collection_view_selector: '#networks-list-view'
+    });
+
+    views.NetworkConnectVMsOverlay = views.Overlay.extend({
+        title: "Connect machine",
+        overlay_id: "overlay-select-vms",
+        content_selector: "#network-vms-select-content",
+        css_class: "overlay-info",
+        allow_multiple: true,
 
         initialize: function() {
-            // elements shortcuts
-            this.create_cont = this.$("#networks-createcontainer");
-            this.container = this.$("#networks-container");
-            this.public_list = this.$(".public-networks");
-            this.private_list = this.$(".private-networks");
-            views.NetworksView.__super__.initialize.call(this);
-            this.init_handlers();
-            this.network_views = {};
-            this.public_network = false;
-            this.update_networks(storage.networks.models);
-            this.create_view = new views.NetworkCreateView();
-            this.connect_machines_view = new views.NetworkConnectVMsOverlay();
+            views.NetworkConnectVMsOverlay.__super__.initialize.apply(this);
+            this.list = this.$(".vms-list ul");
+            this.empty_message = this.$(".empty-message");
+            // flag for submit handler to avoid duplicate bindings
+            this.submit_handler_set = false;
+            this.in_progress = false;
         },
         
-        exists: function(net) {
-            return this.network_views[net.id];
-        },
-
-        add_or_update: function(net) {
-            var nv = this.exists(net);
-            if (!nv) {
-                if (net.is_public()){
-                  if (synnefo.config.group_public_networks) {
-                    if (!this.public_network) {
-                      // grouped public not initialized
-                      this.public_network = this.create_network_view(net);
-                    } else {
-                      // grouped public initialized, append
-                      this.public_network.add_network(net);
-                    }
-                    nv = this.public_network;
-                  } else {
-                    // no grouped view asked, fallback to default create
-                    nv = this.create_network_view(net);
-                  }
-                } else {
-                  nv = this.create_network_view(net);
-                }
-
-                this.network_views[net.id] = nv;
-                
-                if (net.is_public()) {
-                    this.public_list.append(nv.el);
-                    this.public_list.show();
-                } else {
-                    this.private_list.append(nv.el);
-                    this.private_list.show();
-                }
-            }
-
-            // update vms
-            // for cases where network servers list
-            // get updated after vm addition and
-            // vm_added_handler fails to append the
-            // vm to the list
-            nv.update_nics();
-            nv.update_layout();
-        },
-        
-        create_network_view: function(net) {
-            if (net.is_public()) {
-                if (synnefo.config.group_public_networks) {
-                  if (self.public_network) { return self.public_network }
-                  return new views.GroupedPublicNetworkView(net, this);
-                } else {
-                  return new views.PublicNetworkView(net, this);
-                }
-            }
-            return new views.PrivateNetworkView(net, this);
-        },
-        
-        init_handlers: function() {
-            storage.networks.bind("add", _.bind(this.network_added_handler, this, "add"));
-            storage.networks.bind("change", _.bind(this.network_changed_handler, this, "change"));
-            storage.networks.bind("reset", _.bind(this.network_changed_handler, this, "reset"));
-            storage.networks.bind("remove", _.bind(this.network_removed_handler, this, "remove"));
-
-            this.$("#networkscreate").click(_.bind(function(e){
-              e.preventDefault();
-              if ($(this.$("#networkscreate")).hasClass("disabled")) { return }
-              this.create_view.show();
-            }, this));
-            
-            var self = this;
-            storage.networks.bind("quota_reached", function(){
-              self.$("#networkscreate").addClass("disabled").attr("title", 
-                                                            "Networks limit reached");
-            });
-            storage.networks.bind("quota_free", function(){
-              self.$("#networkscreate").removeClass("disabled").attr("title", 
-                                                            "");
-            });
-        },
-
-        update_networks: function(nets) {
-            _.each(nets, _.bind(function(net){
-                if (net.get("status") == "DELETED") { return };
-                view = this.add_or_update(net);
-            }, this));
-        },
-
-        show: function() {
-            this.container.show();
-            $(this.el).show();
-        },
-
-        network_added_handler: function(type, net) {
-            this.update_networks([net]);
-        },
-
-        network_changed_handler: function(type, models) {
-            var nets = [];
-            if (type == "change") {
-                nets = [models]
+        handle_vm_click: function(el) {
+            if (!this.allow_multiple) {
+              $(el).closest("ul").find(".selected").removeClass("selected");
+              $(el).addClass("selected");
             } else {
-                nets = models.models;
+              $(el).toggleClass("selected");
             }
-
-            this.update_networks(nets)
         },
 
-        network_removed_handler: function(type, net) {
-            this.remove_net(net)
-            if (this.private_list.find(".network").length == 0) {
-                this.private_list.hide();
-            }
+        init_handlers: function() {
+            var self = this;
+            this.list.find("li").click(function() {
+                self.handle_vm_click($(this));
+            });
             
-        },
-
-        network_added: function(net) {
-            return this.network_views[net.id];
-        },
-
-        get_network_view: function(net) {
-            return this.network_views[net.id];
-        },
-
-        remove_net: function(net) {
-            if (this.network_added(net)) {
-                var view = this.get_network_view(net);
-                if (view == this.public_network) {
-                  this.public_network.remove_network(net);
-                } else {
-                  view.remove();
-                }
-                delete this.network_views[net.id];
+            if (!this.submit_handler_set) {
+                // avoid duplicate submits
+                this.el.find(".create, .assign").click(_.bind(function() {
+                  if (!this.in_progress) {
+                    this.submit();
+                  }
+                }, this));
+                this.submit_handler_set = true;
             }
         },
 
-        __update_layout: function() {
+        reset: function() {
+            this.list.find("li").remove();
+        },
+
+        beforeOpen: function() {
+            this.reset();
+            this.update_layout();
+        },
+        
+        vm: function(vm) {
+            if (vm.id) { var id = vm.id } else {var id = vm}
+            return this.list.find(".vm-" + id);
+        },
+
+        get_selected: function() {
+            return this.list.find(".selected").map(function() {return $(this).data('vm')})
+        },
+
+        update_layout: function() {
+            this.unset_in_progress();
+            this.in_progress = false;
+
+            if (this.vms.length == 0) {
+                this.empty_message.show();
+            } else {
+                this.empty_message.hide();
+            }
+
+            _.each(this.vms, _.bind(function(vm){
+                var html = '<li class="vm option options-object vm-{0}">' +
+                           '<div class="options-object-cont">' +
+                           '{2}' + 
+                           '<span class="title">{1}</span>' + 
+                           '<span class="value">{3}</span></div>' + 
+                           '</li>';
+                var el = $(html.format(vm.id, 
+                       util.truncate(_.escape(vm.get("name")), 23), 
+                       snf.ui.helpers.vm_icon_tag(vm, "small", {'class':'os'}),
+                       _.escape(vm.get_os())
+                ));
+                el.data({vm:vm, vm_id:vm.id});
+                this.list.append(el);
+
+                vm.bind("remove", function(){ el.remove()})
+                vm.bind("change:name", function(i,v){el.find(".title").text(v)})
+            }, this));
+            
+            this.init_handlers();
+            this.set_selected();
+        },
+
+        set_selected: function() {
+            _.each(this.selected, _.bind(function(el){
+                this.vm(el).addClass("selected");
+            }, this));
+        },
+        
+        set_in_progress: function() {
+          this.$(".form-action").addClass("in-progress");
+          this.in_progress = true;
+        },
+
+        unset_in_progress: function() {
+          this.$(".form-action").removeClass("in-progress");
+          this.in_progress = false;
+        },
+
+        show_vms: function(network, vms, selected, callback, subtitle) {
+            this.network = network;
+            this.reset();
+            if (network) {
+              this.set_subtitle(network.escape("name"));
+            } else {
+              this.set_subtitle(subtitle);
+            }
+
+            this.vms = vms;
+            this.selected = selected;
+            this.cb = callback;
+            this.unset_in_progress();
+            this.show(true);
+        },
+
+        submit: function() {
+            if (!this.get_selected().length) { return }
+            this.cb(this.get_selected());
         }
     });
-
+ 
 })(this);

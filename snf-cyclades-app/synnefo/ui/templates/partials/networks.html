@@ -1,26 +1,4 @@
 {% load i18n %}
-<!-- the create button -->
-<div class="pane-top">
-<div id="networks-createcontainer" class="create-container">
-    <a class="createbutton" id="networkscreate" rel="#networks-wizard"
-        href="#">{% trans "New Network +" %}</a>
-</div>
-</div>
-
-<!-- vm select -->
-<div id="network-vms-select-content" class="overlay-content hidden">
-    <div class="description">
-        <p>{% trans "Select machines to add" %}</p>
-    </div>
-    <div class="clearfix vms-list">
-        <ul class="options-list three">
-        </ul>
-        <div class="empty-message">{% trans "No available machines to connect" %}</div>
-    </div>
-    <div class="form-actions clearfix">
-        <span class="form-action create">{% trans "connect machines" %}</span>
-    </div>
-</div>
 
 <!-- add new network overlay -->
 <div id="networks-create-content" class="overlay-content hidden">
@@ -44,11 +22,11 @@
                 <input type="checkbox" class="use-dhcp" name="network-create-dhcp"
                   id="network-create-dhcp" checked />
                   <p class="description noborder fields-desc">
-                  {% blocktrans %}If you enable DHCP on the private network,
+                  If you enable DHCP on the private network,
                   connected virtual machines will automatically be assigned
                   an IP address based on the given subnet. You may disable this option
                   if you want to assign IP addresses to the connected
-                  virtual machines manually. {% endblocktrans %}
+                  virtual machines manually. 
             </p>
             </div>
             <div id="network-create-dhcp-fields">
@@ -66,7 +44,7 @@
             </div>
           </div>
             <div class="form-actions plain clearfix">
-                <span class="form-action create">{% trans "create network" %}</span>
+                <span class="form-action create">create network</span>
             </div>
         </form>
     </div>
@@ -74,232 +52,191 @@
     <div class="ajax-submit"></div>
 </div>
 
-<!-- networks list -->
-<div id="networks-container" class="clearfix">
-    <!-- spinner while loading list -->
-    
-    <div class="templates hidden">
-    <!-- public network template -->
-    <div class="network" id="public-template">
-        <img class="network-logos" src="{{ SYNNEFO_IMAGES_URL }}internet.png" />
-        <div href="#" class="name-div">
-            <h5 class="namecontainer">
-                <span class="name">{% trans "Internet" %}</span>
-            </h5>
-        </div>
-        <div class="network-machines">
-            <div class="cont-toggler list-toggle">
-                <span class="label machines-label">{% trans "machines" %}
-                    (<span class="machines-count">0</span>)
-                </span>
-            </div>
-        </div>
-        <div class="network-contents">
-            <div class="network-placeholder">
-                <div class="machines-list">
-                <!-- append machines here -->
-                </div>
-                <!-- Adding servers to public network is not supported in 0.5
-                <div class="empty-network-slot" id="machine-template">
-                    <div class='network-add-machine'>
-                        <span class="add-icon">+</span>
-                    </div>
-                </div>
-                -->
-            </div>
-        </div>
-        <div class="state">
-            <div class="net-status status">{% trans "Public Network" %}</div>
-            <div class="indicators network-indicator">
-                <div class="indicator1"></div>
-                <div class="indicator2"></div>
-                <div class="indicator3"></div>
-                <div class="indicator4"></div>
-            </div>
-        </div>
-        <div class="actions vm-actions">
-             <!-- Adding servers to public network is not supported in 0.5
-            <a href="#" class="action-add">{% trans "Add Machine" %}</a>
-            -->
-        </div>
-        <div class="confirm_single">
-            <button class="yes">{% trans "Confirm" %}</button>
-            <button class="no">{% trans "Cancel" %}</button>
-        </div>
-        <div class="action_error" align="center">
-            {% trans "<span>Error</span> on" %} <span class="action">{% trans "error action" %}</span>
-            <span class="code"></span>
-            <span class="message"></span>
-            <button class="details">{% trans "Details" %}</button>
-        </div>
+<!-- vm select -->
+<div id="network-vms-select-content" class="overlay-content hidden">
+    <div class="description">
+        <p>{% trans "Select machines to add" %}</p>
     </div>
-
-    <!-- template for machines in public network -->
-    <div class="network-machine" id="public-nic-template">
-        <div class="machine-actions vm-actions">
-            <a href="#" class="action-details">{% trans "Details" %}</a>
-        </div>
-        <div class="confirm_single">
-            <button class="yes">{% trans "Confirm" %}</button>
-            <button class="no">{% trans "Cancel" %}</button>
-        </div>
-        <div class="action_error" align="center">
-            {% trans "<span>Error</span> on" %} <span class="action">{% trans "error action" %}</span>
-            <span class="code"></span>
-            <span class="message"></span>
-            <button class="details">{% trans "Details" %}</button>
-        </div>
-        <div class="ips">
-            <div class="ip4-container status">
-                {% trans "IPv4" %}:
-                <span class="ip4 ipv4-text">192.94.73.15</span>
-            </div>
-            <div class="ip6-container status">
-                {% trans "IPv6" %}:
-                <span class="ip6 ipv6-text"></span>
-            </div>
-        </div>
-        <img class="logo" src="{{ SYNNEFO_IMAGES_URL }}icons/machines/medium/debian-on.png" />
-        <div class='network-remove-machine'>
-            <!-- Removing servers from public network is not supported in 0.5
-            <span class="remove-icon">X</span>
-            -->
-            <span>&nbsp;</span>
-        </div>
-        <div href="#" class="machine-name-div">
-            <h5 class="namecontainer">
-                <span class="name vm-name">my desktop1</span>
-            </h5>
-        </div>
-        <div class="firewall">
-            <div class="toggler-wrap clearfix">
-                <div class="cont-toggler firewall-toggle">
-                    <span class="label machines-label">{% trans "Firewall" %}
-                        (<span class="firewall-off">{% trans "Off" %}</span>)
-                    </span>
-                    <span class="network-progress-indicator">
-                        <img src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" alt="{% trans "updating firewall settings" %}" title="{% trans "updating firewall settings" %}" />
-                    </span>
-                </div>
-            </div>
-        </div>
-        <div class="firewall-content clearix">
-            <div class="firewall-options">
-                <input type="radio" class="checkboxes" value="DISABLED" name="firewall" />
-                <span class="checkbox-legends">{% trans "Unprotected mode (Firewall off)" %}</span>
-                <br />
-                <input type="radio" class="checkboxes" value="ENABLED" name="firewall" />
-                <span class="checkbox-legends">{% trans "Fully protected mode (Firewall on)" %}</span>
-                <br />
-                <input type="radio" class="checkboxes" value="PROTECTED" name="firewall" />
-                <span class="checkbox-legends">{% trans "Basically protected mode (Firewall on)" %}</span>
-            </div>
-            <button type="submit" class="firewall-apply">{% trans "Apply" %}</button>
-        </div>
+    <div class="clearfix vms-list">
+        <ul class="options-list three">
+        </ul>
+        <div class="empty-message">{% trans "No available machines to connect" %}</div>
     </div>
-
-
-    <!-- private network template -->
-    <div class="network-cont" id="private-template">
-        <div class="network">
-            <div class="actions vm-actions machine-actions net-actions">
-                    <a href="#" class="action-add">{% trans "Add Machine" %}</a>
-                    <div class="action-container destroy">
-                        <a href="#" class="action-destroy">{% trans "Destroy" %}</a>
-                        <div class="confirm_single">
-                            <button class="yes">{% trans "Confirm" %}</button>
-                            <button class="no">X</button>
-                        </div>
-                    </div>
-            </div>
-            <div class="state">
-                <div class="net-status status">{% trans "Private Network" %}</div>
-                <div class="indicators network-indicator">
-                    <div class="indicator1"></div>
-                    <div class="indicator2"></div>
-                    <div class="indicator3"></div>
-                    <div class="indicator4"></div>
-                </div>
-                <img class="spinner" style="display:none" src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/medium/progress.gif" />
-                <img class="wave" style="display:none" src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/medium/wave.gif" />
-            </div>
-            <img class="network-logos" src="{{ SYNNEFO_IMAGES_URL }}network.png" />
-            <div href="#" class="name-div">
-                <h5 class="namecontainer editable">
-                    <span class="name">{% trans "My Network 1" %}</span>
-                    <span class="rename-network"></span>
-                    <div class="editbuttons" style="display:none">
-                        <span class="save"></span>
-                        <span class="cancel"></span>
-                    </div>
-                </h5>
-              </div>
-              <div class="cidr">
-              </div>
-            <div class="network-machines">
-                <div class="cont-toggler list-toggle">
-                    <span class="label machines-label">{% trans "machines" %}
-                        (<span class="machines-count">0</span>)
-                    </span>
-                </div>
-            </div>
-            <div class="network-contents">
-                <div class="network-placeholder">
-                    <div class="machines-list">
-                    <!-- append machines here -->
-                    </div>
-                    <div class="empty-network-slot" id="machine-template">
-                        <div class='network-add-machine'><div class="add-icon">+</div></div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="form-actions clearfix">
+        <span class="form-action create">{% trans "connect machines" %}</span>
+        <span class="form-action assign">{% trans "connect machine" %}</span>
     </div>
-
-    <!-- template for machines in private network -->
-    <div class="network-machine" id="private-nic-template">
-        <div class="machine-actions vm-actions net-vm-actions">
-            <div class="action-destroy">
-                <a href="#" class="action-disconnect">{% trans "Disconnect" %}</a>
-                <div class="confirm_single">
-                    <button class="yes">{% trans "Confirm" %}</button>
-                    <button class="no">X</button>
-                </div>
-            </div>
-            <a href="#" class="action-details">{% trans "Details" %}</a>
-        </div>
-        <div class="action_error" align="center">
-            {% trans "<span>Error</span> on" %} <span class="action">{% trans "error action" %}</span>
-            <span class="code"></span>
-            <span class="message"></span>
-            <button class="details">{% trans "Details" %}</button>
-        </div>
-        <img class="logo" src="{{ SYNNEFO_IMAGES_URL }}icons/machines/medium/debian-on.png" />
-        <div class='network-remove-machine'><span class="remove-icon">X</span></div>
-        <div href="#" class="machine-name-div">
-            <h5 class="namecontainer editable">
-                <span class="name vm-name">my desktop1</span>
-              </h5>
-        </div>
-        <div class="ips">
-            <div class="ip4-container status">
-                {% trans "IPv4" %}:
-                <span class="ip4 ipv4-text">192.94.73.15</span>
-            </div>
-            <div class="ip6-container status">
-                {% trans "IPv6" %}:
-                <span class="ip6 ipv6-text"></span>
-            </div>
-        </div>
-        <h5 class='machine-connect'>
-          <span class="content">
-            <span>{% trans "Connect" %}</span> {% trans "to manage private IPs" %}
-          </span>
-        </h5>
-    </div>
-    </div>
-    <!-- the actual structure to be populated -->
-    <div class="public-networks clearfix"></div>
-    <div class="private-networks clearfix" style="display:none;"></div>
 </div>
 
+
+<div id="network-port-collection-view-tpl" class="collection-list-view hidden">
+  <div class="collection">
+    <div class="empty-list item-list hidden nested">
+      <div class="border">
+        <i class="add" data-rv-on-click="view.show_connect_vms_overlay">+</i>
+      </div>
+      <div class="border2"></div>
+    </div>
+    <div class="items-list clearfix">
+    </div>
+  </div>
+</div>
+
+<div id="network-port-view-tpl" class="hidden model-item"
+  data-rv-class-actionpending="model.actions.pending">
+  <div class="outer">
+    <div class="border">
+      <i data-rv-hide="model.network.is_public" 
+         class="remove" 
+         data-rv-on-click="view.set_disconnect_confirm">X</i>
+      </div>
+    <div class="border2"></div>
+    <div class="inner clearfix main-content">
+      <img class="model-logo" data-rv-src="model.vm.status|vm_logo_url" />
+      <h5 class="title" data-rv-text="model.vm.name"></h5>
+      <h5 class="subtitle" data-rv-text="model.mac_address"></h5>
+      <div data-rv-show="model.network.is_public" class="firewall">
+        <img data-rv-show="model.firewall_running" 
+             src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" 
+             class="progress-indicator" />
+        <div class="toggler-wrap clearfix">
+          <div class="cont-toggler firewall-toggle">
+            <span class="label machines-label">Firewall
+            (<span class="firewall-on">On</span>)
+            </span>
+          </div>
+        </div>
+        <div class="firewall-content clearfix" 
+             data-rv-class-dummy="model.firewall_status|update_firewall">
+          <input type="radio" class="checkboxes" value="DISABLED"
+                 checked="checked" 
+                 data-rv-name="model.id|prefix firewall-" />
+          <span class="checkbox-legends current">Unprotected mode</span>
+          <br />
+          <input type="radio" class="checkboxes" 
+                 value="ENABLED" 
+                 data-rv-name="model.id|prefix firewall-" />
+          <span class="checkbox-legends">Fully protecte mode (Firewall on)</span>
+          <br />
+          <input type="radio" class="checkboxes" 
+                 data-rv-name="model.id|prefix firewall-"
+                 value="PROTECTED" />
+          <span class="checkbox-legends">Basically protected mode (Firewall on)</span>
+          <br />
+          <button data-rv-on-click="view.set_firewall" type="submit" class="firewall-apply hidden">Apply</button> 
+        </div>
+      </div>
+      <ul class="ip-addresses">
+        <li data-rv-each-item="model.fixed_ips">
+          <span data-rv-text="item:ip_address">IP</span>
+        </li>
+      </ul>
+      <div class="actions-content">
+        <div class="action-container isactive" 
+          data-rv-on-click="view.show_vm_details">
+             <a>Details</a>
+        </div>
+        <div class="action-container disconnect warn" 
+           data-rv-class-isactive="model.can_disconnect"
+           data-rv-class-selected="model.actions.disconnect|intEq 1"
+           data-rv-on-click="view.set_disconnect_confirm">
+          <a>Disconnect</a>
+          <div class="confirm-single clearfix">
+            <span class="yes" 
+              data-rv-on-click="view.disconnect_port">
+              {% trans "Confirm" %}
+            </span>
+            <span class="no" data-rv-on-click="view.unset_disconnect_confirm">X</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="network-view-tpl" 
+  data-rv-class-actionpending="model.actions.pending"
+  data-rv-class-clearfix="model.id"
+  class="hidden model-item model-view with-actions">
+  <div class="clearfix">
+    <div class="main-content clearfix">
+      <div class="main-content-inner clearfix">
+        <img class="logo" src="{{ SYNNEFO_IMAGES_URL }}internet.png" />
+        <div class="entry">
+          <div data-rv-show="model" 
+               data-rv-model-view="model|ModelRenameView"></div>
+          <div class="toggler-wrap clearfix network-ports-toggler">
+            <div class="cont-toggler">
+              <span class="label machines-label">
+                Machines (<span
+                  data-rv-text="model.ports|collection_machines_size">0</span>)  
+              </span>
+                <!--| Interfaces (<span data-rv-text="model.ports|collection_size">0</span>)-->
+              <span class="network-progress-indicator">
+                <img src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" />
+              </span>
+            </div>
+          </div>
+          <div class="ports nested-model-list">
+            <div 
+              data-rv-collection-view="model.ports|NetworkPortCollectionView">
+            </div>
+          </div>
+        </div>
+        <div class="entry-right">
+            <div data-rv-class="model.status|status_cls" class="status">
+            <div class="status-title">
+              <span data-rv-text="model.status|status_display">STATUS</span>
+              <span data-rv-show="model.in_progress">...</span>
+            </div>
+            <div class="status-indicator clearfix">
+              <div class="indicator indicator1"></div>
+              <div class="indicator indicator2"></div>
+              <div class="indicator indicator3"></div>
+              <div class="indicator indicator4"></div>
+            </div>
+            <div data-rv-show="model.status|in_progress" class="status-progress"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="actions-content">
+      <div class="action-container" 
+           data-rv-class-isactive="model.can_connect"
+           data-rv-on-click="view.show_connect_vms_overlay">
+             <a>Add machine</a>
+      </div>
+      <div class="action-container remove warn" 
+         data-rv-class-isactive="model.can_remove"
+         data-rv-class-selected="model.actions.remove|intEq 1"
+         data-rv-on-click="view.set_remove_confirm">
+        <a>Remove</a>
+        <div class="confirm-single clearfix">
+          <span class="yes" 
+            data-rv-on-click="view.remove">
+            {% trans "Confirm" %}
+          </span>
+          <span class="no" data-rv-on-click="view.unset_remove_confirm">X</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="networks-list-view" class="collection-list-view">
+  <div class="collection">
+
+    <div id="create-network" class="create-button">
+      <a href="#">{% trans "New network +" %}</a>
+    </div>
+
+    <div class="empty-list hidden">
+      <p>{% trans "The list is empty" %}</p>
+    </div>
+
+    <div class="items-list clearfix">
+      <div class="items-sublist public"></div>
+      <div class="items-sublist private"></div>
+    </div>
+  </div>
+</div>

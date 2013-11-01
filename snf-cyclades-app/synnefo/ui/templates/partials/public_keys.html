@@ -1,0 +1,105 @@
+{% load i18n %}
+
+<!--Create view-->
+<div id="public-key-create-content" class="overlay-content hidden">
+  <div class="form-wrapper model-form-cont clearfix">
+    <div class="error-msg">
+      <p>Something went wrong. Please try again later.</p>
+    </div>
+    <div class="generate-msg model-notice">
+      <p class="success message">Your new keypair has been generated.
+      <span class="download">click here</span> to download the private part 
+      of the key.</p>
+    </div>
+    <div class="model-actions top">
+      <div class="model-action generate add-generate">{% trans "generate new" %}</div>
+    </div>
+    <form class="model-form public-key">
+      <div class="form-messages">
+      </div>
+      <div class="model-form-fields">
+        <div class="form-field">
+          <label for="">{% trans "Key name" %}</label>
+          <div class="errors"></div>
+          <input type="text" class="input-name inline"/>
+        </div>
+        <div class="form-field clearfix">
+          <label for="">{% trans "Key content" %}</label>
+          <div class="errors"></div>
+          <textarea class="input-content"></textarea>
+        </div>
+        <div class="form-field inline clearfix fromfile-field">
+          <label for="">{% trans "Import from file" %}</label>
+          <div class="fromfile">
+            <input type="file" class="content-input-file"
+            title="Import from file" />
+          </div>
+        </div>
+      </div>
+    </form>
+    <div class="model-form-actions form-actions clearfix">
+      <div class="form-action close">{% trans "Close" %}</div>
+      <div class="form-action submit">{% trans "Submit" %}</div>
+      <div class="form-action cancel">{% trans "Cancel" %}</div>
+    </div>
+  </div>
+</div>
+
+
+<div id="public-key-view-tpl" class="hidden model-item model-view with-actions">
+  <div class="clearfix">
+    <div class="main-content clearfix">
+      <div class="main-content-inner clearfix">
+        <img class="logo" src="{{ SYNNEFO_IMAGES_URL }}internet.png" />
+        <div class="entry">
+          <div data-rv-show="model" 
+               data-rv-model-view="model|ModelRenameView"></div>
+          <h5 class="subtitle" data-rv-text="model.fingerprint"></h5>
+          <div class="toggler-wrap clearfix">
+            <div class="cont-toggler">
+              <span class="label">public key</span>
+            </div>
+          </div>
+          <div class="content-cont hidden">
+            <textarea class="content" data-rv-value="model.content">
+              test
+            </textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="actions-content">
+        <div class="action-container remove warn" 
+           data-rv-class-isactive="model.can_remove"
+           data-rv-class-selected="model.actions.remove|intEq 1"
+           data-rv-on-click="view.set_remove_confirm">
+          <a>Delete</a>
+          <div class="confirm-single clearfix">
+            <span class="yes" 
+              data-rv-on-click="view.remove_key">
+              {% trans "Confirm" %}
+            </span>
+            <span class="no" data-rv-on-click="view.unset_remove_confirm">X</span>
+          </div>
+        </div>
+    </div>
+  </div>
+</div>
+
+<div id="public-keys-list-view" class="collection-list-view">
+  <div class="collection">
+
+    <div id="create-keypair" class="create-button">
+      <a href="#">{% trans "New public key +" %}</a>
+    </div>
+
+    <div class="empty-list hidden">
+      <p>{% blocktrans %}You don't have any public keys generated yet. Start by
+ clicking the orange button on the top left.{% endblocktrans %}
+        </p>
+    </div>
+
+    <div class="items-list clearfix">
+    </div>
+  </div>
+</div>

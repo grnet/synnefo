@@ -1,4 +1,4 @@
-// Copyright 2011 GRNET S.A. All rights reserved.
+// Copyright 2013 GRNET S.A. All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or
 // without modification, are permitted provided that the following
@@ -33,316 +33,265 @@
 // 
 
 ;(function(root){
-
+    
     // root
     var root = root;
     
     // setup namepsaces
     var snf = root.synnefo = root.synnefo || {};
-    var api = snf.api = snf.api || {};
     var models = snf.models = snf.models || {}
     var storage = snf.storage = snf.storage || {};
     var ui = snf.ui = snf.ui || {};
-    var util = snf.util = snf.util || {};
-
+    var util = snf.util || {};
     var views = snf.views = snf.views || {}
 
     // shortcuts
     var bb = root.Backbone;
     
-    views.PublicKeysView = views.CollectionView.extend({
-        collection: storage.keys,
-
-        confirm_delete_msg: 'Are you sure you want to remove this key ?',
-        create_success_msg: 'Public key created successfully.',
-        update_success_msg: 'Public key updated successfully.',
-        create_failed_msg: 'Failed to create public key.',
-
-
-        initialize: function(options) {
-            views.PublicKeysView.__super__.initialize.apply(this, arguments);
-            this.$(".private-cont").hide();
-            _.bindAll(this);
-            this.keys_limit = snf.config.userdata_keys_limit || 10000;
-            this.bind("item:add", this.animate_on_add);
-        },
-
-        animate_on_add: function(list, el, model) {
-            el.hide();
-            el.fadeIn(400);
-        },
-
-        append_actions: function(el, model) {
-            var actions = $('<div class="item-actions">' +
-                            '<div class="item-action remove">remove</div>' + 
-                            '<div class="item-action confirm-remove">' + 
-                            '<span class="text do-confirm">confirm</span>' + 
-                            '<span class="cancel-remove cancel">X</span></div>' + 
-                            '<div class="item-action edit">edit</div>' + 
-                            '<div class="item-action show">show key</div>' + 
-                            '</div>');
-            el.append(actions);
-        },
-
-        bind_list_item_actions: function(el, model) {
-            views.PublicKeysView.__super__.bind_list_item_actions.apply(this, arguments);
-            // initialize download link
-            //snf.util.promptSaveFile(el.find(".item-actions .download"), model.get_filename(), model.get("content"))
-        },
+    // logging
+    var logger = new snf.logging.logger("SNF-VIEWS");
+    var debug = _.bind(logger.debug, logger);
+      
+    views.PublicKeyCreateView = views.Overlay.extend({
+        view_id: "public_key_create_view",
         
-        close_private: function() {
-            this.$(".private-cont").hide();
-            this.$(".private-cont textarea").val("");   
-            this.$('.private-cont [name=data]').val("");
-            this.$('.private-cont [name=name]').val("");
-        },
+        content_selector: "#public-key-create-content",
+        css_class: 'overlay-public-key-create overlay-info',
+        overlay_id: "public_key_create_view",
 
-        init_handlers: function() {
-            views.PublicKeysView.__super__.init_handlers.apply(this, arguments);
+        subtitle: "",
+        title: "Create new SSH key",
+        
+        initialize: function() {
+            views.PublicKeyCreateView.__super__.initialize.apply(this, arguments);
+            this.form = this.$("form.model-form");
+            this.submit = this.$(".form-actions .submit");
+            this.cancel = this.$(".form-actions .cancel");
+            this.close = this.$(".form-actions .close");
+            this.error = this.$(".error-msg");
+            this.model_actions = this.$(".model-actions");
+            this.form_actions_cont = this.$(".form-actions");
+            this.form_actions = this.$(".form-actions .form-action");
+
+            this.input_name = this.form.find(".input-name");
+            this.input_key = this.form.find("textarea");
+            this.input_file = this.form.find(".content-input-file");
             
-            this.$(".add-generate").click(_.bind(this.generate_new, this, undefined));
+            this.generate_action = this.$(".model-action.generate");
+            this.generate_msg = this.$(".generate-msg");
+            this.generate_download = this.generate_msg.find(".download");
+            this.generate_success = this.generate_msg.find(".success");
 
-            // browser compat check
-            if (snf.util.canReadFile()) {
-                var self = this;
-                this.form.find(".fromfile").get(0).addEventListener("change", function(e){
-                    var f = undefined;
-                    var files = e.target.files;
-                    if (files.length == 0) { return };
+            this.generating = false;
+            this.in_progress = false;
+            this.init_handlers();
+        },
 
-                    f = files[0];
-                    var data = snf.util.readFileContents(f, _.bind(function(data) {
-                        this.form.find("textarea").val(data);   
-                    }, self));
-                });
+        _init_reader: function() {
+          var opts = {
+            dragClass: "drag",
+            accept: false,
+            readAsDefault: 'BinaryString',
+            on: {
+              loadend: _.bind(function(e, file) {
+                this.input_key.val(e.target.result);
+                this.validate_form();
+              }, this),
+              error: function() {}
             }
-
-            var self = this;
-            this.$(".private-cont .close-private").live("click", function(e) {
-                self.close_private();
-            });
-
-            this.$(".item-action.show, .item-action.hide").live("click", function(e) {
-                var open = $(this).parent().parent().parent().hasClass("expanded");
-                if (open) {
-                    $(this).text("show key");
-                    $(this).addClass("show").removeClass("hide");
-                } else {
-                    $(this).text("hide key");
-                    $(this).removeClass("show").addClass("hide");
-                }
-                $(this).parent().parent().parent().toggleClass("expanded");
-            });
+          }
+          FileReaderJS.setupInput(this.input_file.get(0), opts);
         },
         
-        __save_new: function(generate_text, key) {
-            var self = this;
-            storage.keys.add_crypto_key(key.public,
-                _.bind(function(instance, data) {
-                    self.update_models();
-                    this.generating = false;
-                    this.$(".add-generate").text(generate_text).removeClass(
-                        "in-progress").addClass("download");
-                    this.show_download_private(instance.get('name'), key.private, instance);
-                    this.enable_create();
-                },this),
+        validate_form: function() {
+          this.form.find(".error").removeClass("error");
+          this.form.find(".errors").empty();
 
-                _.bind(function() {
-                    self.show_list_msg("error", "Cannot generate public key, please try again later.");
-                    
-                    this.generating = false;
-                    this.download_private = false;
+          var name = _.trim(this.input_name.val());
+          var key = _.trim(this.input_key.val());
+          var error = false;
 
-                    this.$(".add-generate").text(generate_text).removeClass("in-progress").removeClass("download");
-                    this.enable_create();
-                }, this)
-            );
-        },
+          if (!name) {
+            this.input_name.parent().addClass("error");
+            error = true;
+          }
 
-        __generate_new: function(generate_text) {
-            var self = this;
-            var key = storage.keys.generate_new(_.bind(this.__save_new, this, generate_text), function(xhr){
-                var resp_error = "";
-                // try to parse response
-                try {
-                    json_resp = JSON.parse(xhr.responseText);
-                    resp_error = json_resp.errors[json_resp.non_field_key].join("<br />");
-                } catch (err) {}
-                
-                var msg = "Cannot generate new key pair";
-                if (resp_error) {
-                    msg += " ({0})".format(resp_error);
-                }
-                self.show_list_msg("error", msg);
-                self.generating = false;
-                self.download_private = false;
-                self.$(".add-generate").text(generate_text).removeClass(
-                        "in-progress").addClass("download");
-                self.enable_create();
-            });
-        },
-
-        generate_new: function() {
-            if (this.generating) { return false };
-
-            this.$(".private-cont").hide();
-            this.generating = true;
-            this.download_private = false;
-            this.disable_create();
-            var generate_text = this.$(".add-generate").text();
-            this.$(".add-generate").text("Generating...").addClass("in-progress").removeClass("download");
-            
-            window.setTimeout(_.bind(this.__generate_new, this, generate_text), 400);
-
-        },
-
-        disable_create: function() {
-            this.create_disabled = true;
-            this.$(".collection-action.add").addClass("disabled");
-        },
-        
-        enable_create: function() {
-            this.create_disabled = false;
-            this.$(".collection-action.add").removeClass("disabled");
-        },
-        
-        show_download_private: function(name, private) {
-            var download_cont = this.$(".private-cont");
-            var private_download_filename = "id_rsa";
-
-            download_cont.show();
-            download_cont.find(".key-contents textarea").val("");
-            download_cont.find(".private-msg, .down-button").show();
-            download_cont.find(".private-msg.copy").hide();
-            download_cont.find(".private-msg.download").hide();
-            download_cont.find("textarea").hide();
-            download_cont.find("form").attr({action: snf.config.userdata_keys_url + '/download'})
-            download_cont.find('[name=data]').val(private);
-            download_cont.find('[name=name]').val(private_download_filename);
-        },
-
-        update_list_item: function(el, model) {
-            el.find(".name").text(model.get("name"));
-            el.find(".key-type").text(model.identify_type() || "unknown");
-            el.find(".publicid .param-content textarea").val(model.get("content"));
-            el.find(".fingerprint .text").text(model.get("fingerprint"));
-            el.find(".publicid").attr("title", _(model.get("content")).truncate(1000, "..."));
-            return el;
-        },
-
-        update_list: function() {
-            views.PublicKeysView.__super__.update_list.apply(this, arguments);
-            this.check_limit();
-        },
-
-        check_limit: function() {
-            if (snf.storage.keys.length >= this.keys_limit) {
-                this.$(".collection-action").hide();
-                this.$(".limit-msg").show();
-            } else {
-                this.$(".collection-action").show();
-                this.$(".limit-msg").hide();
-            }
-        },
-
-        update_form_from_model: function(model) {
-            this.form.find("input.input-name").val(model.get("name"));
-            this.form.find("textarea.input-content").val(model.get("content"));
-        },
-
-        get_form_data: function() {
-            return {
-                'name': this.form.find("input.input-name").val(),
-                'content': this.form.find("textarea.input-content").val()
-            }
-        },
-        
-        get_fields_map: function() {
-            return {'name': "input.input-name", 'content': "textarea.input-content"};
-        },
-        
-        validate_data: function(data) {
-            var user_data = _.clone(data)
-            var errors = new snf.util.errorList();
-
-            if (!data.name || _.clean(data.name) == "") {
-                errors.add("name", "Provide a valid public key name");
-            }
-
-            if (!data.content || _.clean(data.content) == "") {
-                errors.add("content", "Provide valid public key content");
-                return errors;
-            }
-            
+          if (!key) {
+            this.input_key.parent().addClass("error");
+            error = true;
+          } else {
             try {
-                var content = snf.util.validatePublicKey(data.content);
-                if (content) {
-                    this.form.find("textarea.input-content").val(content);
-                }
+              key = snf.util.validatePublicKey(key);
             } catch (err) {
-                errors.add("content", "Invalid key content (" + err + ")");
+              this.input_key.parent().addClass("error");
+              this.input_key.parent().find(".errors").append("<span class='error'>"+err+"</span>");
+              error = true;
             }
+          }
 
-            return errors;
+          if (error) { return false }
+          return { key: key, name: name }
         },
 
-        reset: function() {
-            this.$(".private-cont").hide();
-            this.$(".list-messages").empty();
-            this.$(".form-messages").empty();
-            this.$(".model-item").removeClass("expanded");
-            this.close_private();
-            this.close_form();
-        }
-
-    })
-
-    views.PublicKeysOverlay = views.Overlay.extend({
-        
-        view_id: "public_keys_view",
-        content_selector: "#user_public_keys",
-        css_class: 'overlay-public-keys overlay-info',
-        overlay_id: "user_public_keys_overlay",
-
-        title: "Manage your ssh keys",
-        subtitle: "SSH keys",
-
-        initialize: function(options) {
-            views.PublicKeysOverlay.__super__.initialize.apply(this, arguments);
-            this.subview = new views.PublicKeysView({el:this.$(".public-keys-view")});
-            
-            var self = this;
-            this.$(".previous-view-link").live('click', function(){
-                self.hide();
-            })
+        _reset_form: function() {
+          this.input_name.val("");
+          this.input_key.val("");
+          this.input_file.val("");
+          this.form.find(".error").removeClass("error");
+          this.form.find(".errors").empty();
+          this.form.show();
+          this.generate_msg.hide();
+          this.form_actions.show();
+          this.input_file.show();
+          this.close.hide();
+          this.error.hide();
+          this.model_actions.show();
         },
 
-        show: function(view) {
-            this.from_view = view || undefined;
-            
-            if (this.from_view) {
-                this.$(".previous-view-link").show();
-            } else {
-                this.$(".previous-view-link").hide();
-            }
-
-            this.subview.reset();
-            views.PublicKeysOverlay.__super__.show.apply(this, arguments);
+        beforeOpen: function() {
+          this.private_key = undefined;
+          this._reset_form();
+          this._init_reader();
+          this.unset_in_progress();
         },
         
-        onClose: function() {
-            if (this.from_view) {
-                this.hiding = true;
-                this.from_view.skip_reset_on_next_open = true;
-                this.from_view.show();
-                this.from_view = undefined;
-            }
-        },
-
         init_handlers: function() {
-        }
+          this.cancel.click(_.bind(function() { this.hide(); }, this));
+          this.close.click(_.bind(function() { this.hide(); }, this));
+          this.generate_action.click(_.bind(this.generate, this));
+          this.generate_download.click(_.bind(this.download_key, this));
+          this.form.submit(_.bind(function(e){
+            e.preventDefault();
+            this.submit_key(_.bind(function() {
+              this.hide();
+            }, this))
+          }, this));
+          this.submit.click(_.bind(function() {
+            this.form.submit();
+          }, this));
+        },
         
-    });
-})(this);
+        set_in_progress: function() {
+          this.in_progress = true;
+          this.submit.addClass("in-progress");
+        },
 
+        unset_in_progress: function() {
+          this.in_progress = false;
+          this.submit.removeClass("in-progress");
+        },
+
+        submit_key: function(cb) {
+          var data = this.validate_form();
+          if (!data) { return }
+          this.set_in_progress();
+          var params = {
+            complete: _.bind(function() {
+              synnefo.storage.keys.fetch();
+              this.unset_in_progress();
+              cb && cb();
+            }, this)
+          };
+
+          synnefo.storage.keys.create({
+            content: data.key, 
+            name: data.name,
+          }, params);
+        },
+
+        download_key: function() {
+          try {
+            var blob = new Blob([this.private_key], {
+              type: "application/x-perm-key;charset=utf-8"
+            });
+            saveAs(blob, "id_rsa");
+          } catch (err) {
+            alert(this.private_key);
+          }
+        },
+
+        generate: function() {
+          this.error.hide();
+          this.generate_msg.hide();
+
+          if (this.generating) { return }
+          
+          this.generating = true;
+          this.generate_action.addClass("in-progress");
+          
+          var success = _.bind(function(key) {
+            this.generating = false;
+            this.generate_action.removeClass("in-progress");
+            this.input_name.val("Generated ssh key");
+            this.input_key.val(key.public);
+            this.generate_msg.show();
+            this.private_key = key.private;
+            this.form.hide();
+            this.form_actions.hide();
+            this.close.show();
+            this.model_actions.hide();
+            this.submit_key();
+          }, this);
+          var error = _.bind(function() {
+            this.generating = false;
+            this.generate_action.removeClass("in-progress");
+            this.generate_progress.hide();
+            this.private_key = undefined;
+            this.show_error();
+          }, this);
+          var key = storage.keys.generate_new(success, error);
+        },
+
+        show_error: function(msg) {
+          msg = msg === undefined ? "Something went wrong. Please try again later." : msg;
+          if (msg) { this.error.find("p").html(msg) }
+          this.error.show();
+        }
+    });
+
+    views.PublicKeyView = views.ext.ModelView.extend({
+      tpl: '#public-key-view-tpl',
+      post_init_element: function() {
+        this.content = this.$(".content-cont");
+        this.content.hide();
+        this.content_toggler = this.$(".cont-toggler");
+        this.content_toggler.click(this.toggle_content);
+        this.content_visible = false;
+      },
+
+      toggle_content: function() {
+        if (!this.content_visible) {
+          this.content.slideDown();
+          this.content_visible = true;
+          this.content_toggler.addClass("open");
+        } else {
+          this.content.slideUp();
+          this.content_visible = false;
+          this.content_toggler.removeClass("open");
+        }
+      },
+
+      remove_key: function() {
+        this.model.actions.reset_pending();
+        this.model.remove(function() {
+            synnefo.storage.keys.fetch();
+        });
+      }
+    });
+    
+    views.PublicKeysCollectionView = views.ext.CollectionView.extend({
+      collection: storage.keys,
+      collection_name: 'keys',
+      model_view_cls: views.PublicKeyView,
+      create_view_cls: views.PublicKeyCreateView
+    });
+
+    views.PublicKeysPaneView = views.ext.PaneView.extend({
+      id: "pane",
+      el: '#public-keys-pane',
+      collection_view_cls: views.PublicKeysCollectionView,
+      collection_view_selector: '#public-keys-list-view'
+    });
+
+})(this);
 

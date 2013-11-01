@@ -61,8 +61,6 @@
         return baseurl + append + this.path;
     }
 
-    var NIC_REGEX = /^nic-([0-9]+)-([0-9]+)$/
-    
     // i18n
     BUILDING_MESSAGES = window.BUILDING_MESSAGES || {'INIT': 'init', 'COPY': '{0}, {1}, {2}', 'FINAL': 'final'};
 
@@ -670,237 +668,6 @@
 
     });
 
-    // Image model
-    models.Network = models.Model.extend({
-        path: 'networks',
-        has_status: true,
-        defaults: {'connecting':0},
-        
-        initialize: function() {
-            var ret = models.Network.__super__.initialize.apply(this, arguments);
-            this.set({"actions": new models.ParamsList(this, "actions")});
-            this.update_state();
-            this.bind("change:nics", _.bind(synnefo.storage.nics.update_net_nics, synnefo.storage.nics));
-            this.bind("change:status", _.bind(this.update_state, this));
-            return ret;
-        },
-        
-        is_deleted: function() {
-          return this.get('status') == 'DELETED';
-        },
-
-        toJSON: function() {
-            var attrs = _.clone(this.attributes);
-            attrs.actions = _.clone(this.get("actions").actions);
-            return attrs;
-        },
-        
-        set_state: function(val) {
-            if (val == "PENDING" && this.get("state") == "DESTORY") {
-                return "DESTROY";
-            }
-            return val;
-        },
-
-        update_state: function() {
-            if (this.get("connecting") > 0) {
-                this.set({state: "CONNECTING"});
-                return
-            }
-            
-            if (this.get_nics(function(nic){ return nic.get("removing") == 1}).length > 0) {
-                this.set({state: "DISCONNECTING"});
-                return
-            }   
-            
-            if (this.contains_firewalling_nics() > 0) {
-                this.set({state: "FIREWALLING"});
-                return
-            }   
-            
-            if (this.get("state") == "DESTROY") { 
-                this.set({"destroyed":1});
-            }
-            
-            this.set({state:this.get('status')});
-        },
-
-        is_public: function() {
-            return this.get("public");
-        },
-
-        decrease_connecting: function() {
-            var conn = this.get("connecting");
-            if (!conn) { conn = 0 };
-            if (conn > 0) {
-                conn--;
-            }
-            this.set({"connecting": conn});
-            this.update_state();
-        },
-
-        increase_connecting: function() {
-            var conn = this.get("connecting");
-            if (!conn) { conn = 0 };
-            conn++;
-            this.set({"connecting": conn});
-            this.update_state();
-        },
-
-        connected_to: function(vm) {
-            return this.get('linked_to').indexOf(""+vm.id) > -1;
-        },
-
-        connected_with_nic_id: function(nic_id) {
-            return _.keys(this.get('nics')).indexOf(nic_id) > -1;
-        },
-
-        get_nics: function(filter) {
-            var nics = synnefo.storage.nics.filter(function(nic) {
-                return nic.get('network_id') == this.id;
-            }, this);
-
-            if (filter) {
-                return _.filter(nics, filter);
-            }
-            return nics;
-        },
-
-        contains_firewalling_nics: function() {
-            return this.get_nics(function(n){return n.get('pending_firewall')}).length
-        },
-
-        call: function(action, params, success, error) {
-            if (action == "destroy") {
-                var previous_state = this.get('state');
-                var previous_status = this.get('status');
-
-                this.set({state:"DESTROY"});
-
-                var _success = _.bind(function() {
-                    if (success) { success() };
-                    synnefo.storage.quotas.get('cyclades.network.private').decrease();
-                }, this);
-                var _error = _.bind(function() {
-                    this.set({state: previous_state, status: previous_status})
-                    if (error) { error() };
-                }, this);
-
-                this.remove(undefined, _error, _success);
-            }
-            
-            if (action == "disconnect") {
-                if (this.get("state") == "DESTROY") {
-                    return;
-                }
-                
-                _.each(params, _.bind(function(nic_id) {
-                    var nic = snf.storage.nics.get(nic_id);
-                    this.get("actions").remove("disconnect", nic_id);
-                    if (nic) {
-                        this.remove_nic(nic, success, error);
-                    }
-                }, this));
-            }
-        },
-
-        add_vm: function (vm, callback, error, options) {
-            var payload = {add:{serverRef:"" + vm.id}};
-            payload._options = options || {};
-            return this.api_call(this.api_path() + "/action", "create", 
-                                 payload,
-                                 undefined,
-                                 error,
-                                 _.bind(function(){
-                                     //this.vms.add_pending(vm.id);
-                                     this.increase_connecting();
-                                     if (callback) {callback()}
-                                 },this), error);
-        },
-
-        remove_nic: function (nic, callback, error, options) {
-            var payload = {remove:{attachment:"" + nic.get("attachment_id")}};
-            payload._options = options || {};
-            return this.api_call(this.api_path() + "/action", "create", 
-                                 payload,
-                                 undefined,
-                                 error,
-                                 _.bind(function(){
-                                     nic.set({"removing": 1});
-                                     nic.get_network().update_state();
-                                     //this.vms.add_pending_for_remove(vm.id);
-                                     if (callback) {callback()}
-                                 },this), error);
-        },
-
-        rename: function(name, callback) {
-            return this.api_call(this.api_path(), "update", {
-                network:{name:name}, 
-                _options:{
-                    critical: false, 
-                    error_params:{
-                        title: "Network action failed",
-                        ns: "Networks",
-                        extra_details: {"Network id": this.id}
-                    }
-                }}, callback);
-        },
-
-        get_connectable_vms: function() {
-            return storage.vms.filter(function(vm){
-                return !vm.in_error_state() && !vm.is_building() && !vm.is_rebooting();
-            });
-        },
-
-        state_message: function() {
-            if (this.get("state") == "ACTIVE" && !this.is_public()) {
-                if (this.get("cidr") && this.get("dhcp") == true) {
-                    return this.get("cidr");
-                } else {
-                    return "Private network";
-                }
-            }
-            if (this.get("state") == "ACTIVE" && this.is_public()) {
-                  return "Public network";
-            }
-
-            return models.Network.STATES[this.get("state")];
-        },
-
-        in_progress: function() {
-            return models.Network.STATES_TRANSITIONS[this.get("state")] != undefined;
-        },
-
-        do_all_pending_actions: function(success, error) {
-          var params, actions, action_params;
-          actions = _.clone(this.get("actions").actions);
-            _.each(actions, _.bind(function(params, action) {
-                action_params = _.map(actions[action], function(a){ return _.clone(a)});
-                _.each(action_params, _.bind(function(params) {
-                    this.call(action, params, success, error);
-                }, this));
-            }, this));
-            this.get("actions").reset();
-        }
-    });
-    
-    models.Network.STATES = {
-        'ACTIVE': 'Private network',
-        'CONNECTING': 'Connecting...',
-        'DISCONNECTING': 'Disconnecting...',
-        'FIREWALLING': 'Firewall update...',
-        'DESTROY': 'Destroying...',
-        'PENDING': 'Pending...',
-        'ERROR': 'Error'
-    }
-
-    models.Network.STATES_TRANSITIONS = {
-        'CONNECTING': ['ACTIVE'],
-        'DISCONNECTING': ['ACTIVE'],
-        'PENDING': ['ACTIVE'],
-        'FIREWALLING': ['ACTIVE']
-    }
-
     // Virtualmachine model
     models.VM = models.Model.extend({
 
@@ -945,7 +712,6 @@
                 }
             }, this));
 
-            this.bind("change:nics", _.bind(synnefo.storage.nics.update_vm_nics, synnefo.storage.nics));
         },
 
         status: function(st) {
@@ -1333,10 +1099,6 @@
 
         // user can connect to machine
         is_connectable: function() {
-            // check if ips exist
-            if (!this.get_addresses().ip4 && !this.get_addresses().ip6) {
-                return false;
-            }
             return models.VM.CONNECT_STATES.indexOf(this.state()) > -1;
         },
         
@@ -1466,72 +1228,19 @@
             return this.get_meta('GUI');
         },
         
-        connected_to: function(net) {
-            return this.get('linked_to').indexOf(net.id) > -1;
-        },
-
-        connected_with_nic_id: function(nic_id) {
-            return _.keys(this.get('nics')).indexOf(nic_id) > -1;
-        },
-
-        get_nics: function(filter) {
-            ret = synnefo.storage.nics.filter(function(nic) {
-                return parseInt(nic.get('vm_id')) == this.id;
-            }, this);
-
-            if (filter) {
-                return _.filter(ret, filter);
-            }
-
-            return ret;
-        },
-
-        get_net_nics: function(net_id) {
-            return this.get_nics(function(n){return n.get('network_id') == net_id});
-        },
-
-        get_public_nic: function() {
-            return this.get_nics(function(n){ return n.get_network().is_public() === true })[0];
-        },
-
         get_hostname: function() {
           var hostname = this.get_meta('hostname');
           if (!hostname) {
             if (synnefo.config.vm_hostname_format) {
               hostname = synnefo.config.vm_hostname_format.format(this.id);
             } else {
-              hostname = this.get_public_nic().get('ipv4');
+              // TODO: resolve public ip
+              hostname = 'PUBLIC NIC';
             }
           }
           return hostname;
         },
 
-        get_nic: function(net_id) {
-        },
-
-        has_firewall: function() {
-            var nic = this.get_public_nic();
-            if (nic) {
-                var profile = nic.get('firewallProfile'); 
-                return ['ENABLED', 'PROTECTED'].indexOf(profile) > -1;
-            }
-            return false;
-        },
-
-        get_firewall_profile: function() {
-            var nic = this.get_public_nic();
-            if (nic) {
-                return nic.get('firewallProfile');
-            }
-            return null;
-        },
-
-        get_addresses: function() {
-            var pnic = this.get_public_nic();
-            if (!pnic) { return {'ip4': undefined, 'ip6': undefined }};
-            return {'ip4': pnic.get('ipv4'), 'ip6': pnic.get('ipv6')};
-        },
-    
         // get actions that the user can execute
         // depending on the vm state/status
         get_available_actions: function() {
@@ -1562,8 +1271,8 @@
         get_console_url: function(data) {
             var url_params = {
                 machine: this.get("name"),
-                host_ip: this.get_addresses().ip4,
-                host_ip_v6: this.get_addresses().ip6,
+                host_ip: this.get_hostname(),
+                host_ip_v6: this.get_hostname(),
                 host: data.host,
                 port: data.port,
                 password: data.password
@@ -1761,7 +1470,7 @@
             var users = this.get_users();
 
             params = {
-                ip_address: this.get_public_nic().get('ipv4'),
+                ip_address: this.get_hostname(),
                 hostname: this.get_hostname(),
                 os: this.get_os(),
                 host_os: host_os,
@@ -1779,7 +1488,7 @@
                                                          success:success, 
                                                          handles_error:1});
         }
-    })
+    });
     
     models.VM.ACTIONS = [
         'start',
@@ -1875,108 +1584,6 @@
     models.VM.BUILDING_STATES = [
         'BUILD'
     ]
-
-    models.Networks = models.Collection.extend({
-        model: models.Network,
-        path: 'networks',
-        details: true,
-        //noUpdate: true,
-        defaults: {'nics':[],'linked_to':[]},
-        
-        parse: function (resp, xhr) {
-            // FIXME: depricated global var
-            if (!resp) { return []};
-            var data = _.filter(_.map(resp.networks, _.bind(this.parse_net_api_data, this)),
-                               function(e){ return e });
-            return data;
-        },
-
-        add: function() {
-            ret = models.Networks.__super__.add.apply(this, arguments);
-            // update nics after each network addition
-            ret.each(function(r){
-                synnefo.storage.nics.update_net_nics(r);
-            });
-        },
-
-        reset_pending_actions: function() {
-            this.each(function(net) {
-                net.get("actions").reset();
-            });
-        },
-
-        do_all_pending_actions: function() {
-            this.each(function(net) {
-                net.do_all_pending_actions();
-            })
-        },
-
-        parse_net_api_data: function(data) {
-            // append nic metadata
-            // net.get('nics') contains a list of vm/index objects 
-            // e.g. {'vm_id':12231, 'index':1}
-            // net.get('linked_to') contains a list of vms the network is 
-            // connected to e.g. [1001, 1002]
-            if (data.attachments && data.attachments) {
-                data['nics'] = {};
-                data['linked_to'] = [];
-                _.each(data.attachments, function(nic_id){
-                  
-                  var vm_id = NIC_REGEX.exec(nic_id)[1];
-                  var nic_index = parseInt(NIC_REGEX.exec(nic_id)[2]);
-
-                  if (vm_id !== undefined && nic_index !== undefined) {
-                      data['nics'][nic_id] = {
-                          'vm_id': vm_id, 
-                          'index': nic_index, 
-                          'id': nic_id
-                      };
-                      if (data['linked_to'].indexOf(vm_id) == -1) {
-                        data['linked_to'].push(vm_id);
-                      }
-                  }
-                });
-            }
-
-            if (data.status == "DELETED" && !this.get(parseInt(data.id))) {
-              return false;
-            }
-            return data;
-        },
-
-        create: function (name, type, cidr, dhcp, callback) {
-            var params = {
-                network:{
-                    name:name
-                }
-            };
-
-            if (!type) {
-                throw "Network type cannot be empty";
-            }
-            params.network.type = type;
-            if (cidr) {
-                params.network.cidr = cidr;
-            }
-            if (dhcp) {
-                params.network.dhcp = dhcp;
-            }
-
-            if (dhcp === false) {
-                params.network.dhcp = false;
-            }
-            
-            var cb = function() {
-              callback();
-              synnefo.storage.quotas.get('cyclades.network.private').increase();
-            }
-            return this.api_call(this.path, "create", params, cb);
-        },
-
-        get_public: function(){
-          return this.filter(function(n){return n.get('public')});
-        }
-    })
 
     models.Images = models.Collection.extend({
         model: models.Image,
@@ -2308,22 +1915,9 @@
 
             // network metadata
             data['firewalls'] = {};
-            data['nics'] = {};
-            data['linked_to'] = [];
 
-            if (data['attachments'] && data['attachments']) {
-                var nics = data['attachments'];
-                _.each(nics, function(nic) {
-                    var net_id = nic.network_id;
-                    var index = parseInt(NIC_REGEX.exec(nic.id)[2]);
-                    if (data['linked_to'].indexOf(net_id) == -1) {
-                        data['linked_to'].push(net_id);
-                    }
+            data['fqdn'] = synnefo.config.vm_hostname_format.format(data['id']);
 
-                    data['nics'][nic.id] = nic;
-                })
-            }
-            
             // if vm has no metadata, no metadata object
             // is in json response, reset it to force
             // value update
@@ -2340,13 +1934,6 @@
             return data;
         },
 
-        add: function() {
-            ret = models.VMS.__super__.add.apply(this, arguments);
-            ret.each(function(r){
-                synnefo.storage.nics.update_vm_nics(r);
-            });
-        },
-        
         get_reboot_required: function() {
             return this.filter(function(vm){return vm.get("reboot_required") == true})
         },
@@ -2723,45 +2310,6 @@
       }
     });
 
-    models.PublicIP = models.Model.extend({
-        path: 'os-floating-ips',
-        has_status: false,
-        
-        initialize: function() {
-            models.PublicIP.__super__.initialize.apply(this, arguments);
-            this.bind('change:instance_id', _.bind(this.handle_status_change, this));
-        },
-
-        handle_status_change: function() {
-            this.set({state: null});
-        },
-
-        get_vm: function() {
-            if (this.get('instance_id')) {
-                return synnefo.storage.vms.get(parseInt(this.get('instance_id')));
-            }
-            return null;
-        },
-
-        connect_to: function(vm) {
-        }
-    });
-
-    models.PublicIPs = models.Collection.extend({
-        model: models.PublicIP,
-        path: 'os-floating-ips',
-        api_type: 'compute',
-        noUpdate: true,
-
-        parse: function(resp) {
-            resp = _.map(resp.floating_ips, function(ip) {
-              return ip;
-            });
-
-            return resp;
-        }
-    });
-
     models.PublicKeys = models.Collection.extend({
         model: models.PublicKey,
         details: false,
@@ -2777,7 +2325,7 @@
                 skip_api_error: true
             });
         },
-
+        
         add_crypto_key: function(key, success, error, options) {
             var options = options || {};
             var m = new models.PublicKey();
@@ -2942,13 +2490,10 @@
     // storage initialization
     snf.storage.images = new models.Images();
     snf.storage.flavors = new models.Flavors();
-    snf.storage.networks = new models.Networks();
     snf.storage.vms = new models.VMS();
     snf.storage.keys = new models.PublicKeys();
-    snf.storage.nics = new models.NICs();
     snf.storage.resources = new models.Resources();
     snf.storage.quotas = new models.Quotas();
-    snf.storage.public_ips = new models.PublicIPs();
     snf.storage.public_pools = new models.PublicPools();
 
 })(this);

@@ -53,6 +53,7 @@ log = getLogger(__name__)
 urlpatterns = patterns(
     'synnefo.api.ports',
     (r'^(?:/|.json|.xml)?$', 'demux'),
+    (r'^/detail(?:.json|.xml)?$', 'list_ports', {'detail': True}),
     (r'^/([-\w]+)(?:/|.json|.xml)?$', 'port_demux'))
 
 

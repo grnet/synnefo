@@ -313,10 +313,23 @@
             // default to update
             if (!this.noUpdate) {
                 if (options.update === undefined) { options.update = true };
-                if (!options.removeMissing && options.refresh) { options.removeMissing = true };
+                if (!options.removeMissing && options.refresh) { 
+                  options.removeMissing = true;
+                };
+                // for collections which associated models don't support 
+                // deleted state identification through attributes, resolve  
+                // deleted entries by checking for missing objects in fetch 
+                // responses.
+                if (this.updateEntries && options.removeMissing === undefined) {
+                  options.removeMissing = true;
+                }
             } else {
                 if (options.refresh === undefined) {
                     options.refresh = true;
+                    if (this.updateEntries) {
+                      options.update = true;
+                      options.removeMissing = true;
+                    }
                 }
             }
             // custom event foreach fetch

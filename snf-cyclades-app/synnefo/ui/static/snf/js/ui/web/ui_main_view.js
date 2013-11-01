@@ -530,7 +530,7 @@
         },
 
         set_interval_timeouts: function(time) {
-            _.each([this._networks, this._vms], _.bind(function(fetcher){
+            _.each(this._fetchers, _.bind(function(fetcher){
                 if (!fetcher) { return };
                 if (this.focused) {
                     fetcher.interval = fetcher.normal_interval;
@@ -559,6 +559,7 @@
             storage.vms.bind("change:status", _.bind(this.check_empty, this));
             storage.vms.bind("reset", _.bind(this.check_empty, this));
             storage.quotas.bind("change", _.bind(this.update_create_buttons_status, this));
+            // additionally check quotas the first time they get fetched
             storage.quotas.bind("add", _.bind(this.update_create_buttons_status, this));
             
         },
@@ -656,50 +657,49 @@
             }});
 
         },  
-
-        init_intervals: function() {
+        
+        _fetchers: {},
+        init_interval: function(key, collection) {
+            if (this._fetchers[key]) { return }
             var fetcher_params = [snf.config.update_interval, 
                                   snf.config.update_interval_increase || 500,
                                   snf.config.fast_interval || snf.config.update_interval/2, 
                                   snf.config.update_interval_increase_after_calls || 4,
                                   snf.config.update_interval_max || 20000,
                                   true, 
-                                  {is_recurrent: true}]
-            
-            this._networks = storage.networks.get_fetcher.apply(storage.networks, _.clone(fetcher_params));
-            this._vms = storage.vms.get_fetcher.apply(storage.vms, _.clone(fetcher_params));
-            this._quotas = storage.quotas.get_fetcher.apply(storage.quotas, _.clone(fetcher_params));
+                                  {is_recurrent: true}];
+            var fetcher = collection.get_fetcher.apply(collection, _.clone(fetcher_params));
+            this._fetchers[key] = fetcher;
+            collection.fetch();
+
+        },
+
+        init_intervals: function() {
+            _.each({
+              'networks': storage.networks,
+              'vms': storage.vms,
+              'quotas': storage.quotas,
+              'ips': storage.floating_ips,
+              'subnets': storage.subnets,
+              'ports': storage.ports,
+              'keys': storage.keys
+            }, function(col, name) {
+              this.init_interval(name, col)
+            }, this);
         },
 
         stop_intervals: function() {
-            if (this._networks) { this._networks.stop(); }
-            if (this._vms) { this._vms.stop(); }
-            if (this._quotas) { this._quotas.stop(); }
+            _.each(this._fetchers, function(fetcher) {
+                fetcher.stop();
+            });
             this.intervals_stopped = true;
         },
 
         update_intervals: function() {
-            if (this._networks) {
-                this._networks.stop();
-                this._networks.start();
-            } else {
-                this.init_intervals();
-            }
-
-            if (this._vms) {
-                this._vms.stop();
-                this._vms.start();
-            } else {
-                this.init_intervals();
-            }
-
-            if (this._quotas) {
-                this._quotas.stop();
-                this._quotas.start();
-            } else {
-                this.init_intervals();
-            }
-
+            _.each(this._fetchers, function(fetcher) {
+                fetcher.stop();
+                fetcher.start();
+            })
             this.intervals_stopped = false;
         },
 

@@ -392,9 +392,13 @@
                 ev.preventDefault();
                 this.router.networks_view();
             }, this))
-            this.pane_view_selector.find("a#disks_view_link").click(_.bind(function(ev){
+            this.pane_view_selector.find("a#ips_view_link").click(_.bind(function(ev){
                 ev.preventDefault();
-                this.router.disks_view();
+                this.router.ips_view();
+            }, this))
+            this.pane_view_selector.find("a#public_keys_view_link").click(_.bind(function(ev){
+                ev.preventDefault();
+                this.router.public_keys_view();
             }, this))
             
             this.machine_view_selector.find("a#machines_view_icon_link").click(_.bind(function(ev){
@@ -443,23 +447,43 @@
         views_titles: {
             'icon': 'machines', 'single': 'machines', 
             'list': 'machines', 'networks': 'networks',
-            'disks': 'disks'
+            'ips': 'ips',
+            'public-keys': 'public keys'
         },
 
         // indexes registry
-        views_indexes: {0: 'icon', 2:'single', 1: 'list', 3:'networks'},
-        views_pane_indexes: {0:'single', 1:'networks', 2:'disks'},
+        views_indexes: {
+          0: 'icon', 
+          2: 'single', 
+          1: 'list', 
+          3: 'networks', 
+          4: 'ips',
+          5: 'public-keys'
+        },
+
+        views_pane_indexes: {
+          0: 'single', 
+          1: 'networks', 
+          2: 'ips', 
+          3: 'public-keys'
+        },
 
         // views classes registry
-        views_classes: {'icon': views.IconView, 'single': views.SingleView, 
-            'list': views.ListView, 'networks': views.NetworksView, 'disks': views.DisksView},
+        views_classes: {
+            'icon': views.IconView, 
+            'single': views.SingleView, 
+            'list': views.ListView, 
+            'networks': views.NetworksPaneView, 
+            'ips': views.IpsPaneView,
+            'public-keys': views.PublicKeysPaneView
+        },
 
         // view ids
-        views_ids: {'icon':0, 'single':2, 'list':1, 'networks':3, 'disks':4},
+        views_ids: {'icon':0, 'single':2, 'list':1, 'networks':3, 'ips':4, 'public-keys': 5},
 
         // on which pane id each view exists
         // machine views (icon,single,list) are all on first pane
-        pane_ids: {'icon':0, 'single':0, 'list':0, 'networks':1, 'disks':2},
+        pane_ids: {'icon':0, 'single':0, 'list':0, 'networks':1, 'ips':2, 'public-keys': 3},
     
         initialize: function(show_view) {
             if (!show_view) { show_view = 'icon' };
@@ -715,14 +739,13 @@
             }
             this.error_view = new views.ErrorView();
             this.vm_resize_view = new views.VmResizeView();
+
             // api request error handling
             synnefo.api.bind("error", _.bind(this.handle_api_error, this));
             synnefo.api.bind("change:error_state", _.bind(this.handle_api_error_state, this));
             synnefo.ui.bind("error", _.bind(this.handle_ui_error, this));
 
             this.feedback_view = new views.FeedbackView();
-            this.public_keys_view = new views.PublicKeysOverlay();
-            this.public_ips_view = new views.PublicIPsOverlay();
             
             if (synnefo.config.use_glance) {
                 this.custom_images_view = new views.CustomImagesOverlay();
@@ -779,7 +802,8 @@
             this.add_view("list");
             this.add_view("single");
             this.add_view("networks");
-            this.add_view("disks");
+            this.add_view("ips");
+            this.add_view("public-keys");
 
             this.init_menu();
         },
@@ -789,23 +813,6 @@
                 e.preventDefault();
                 this.feedback_view.show();
             }, this));
-            $(".usermenu .public_keys").click(_.bind(function(e){
-                e.preventDefault();
-                this.public_keys_view.show();
-            }, this));
-            $(".usermenu .public_ips").click(_.bind(function(e){
-                e.preventDefault();
-                this.public_ips_view.show();
-            }, this));
-
-            if (snf.glance) {
-                $(".usermenu .custom_images").click(_.bind(function(e){
-                    e.preventDefault();
-                    this.custom_images_view.show();
-                }, this));
-            } else {
-                $(".usermenu .custom_images").hide();
-            }
         },
         
         // initial view based on user cookie
@@ -934,7 +941,7 @@
         hide_views: function(skip) {
             _.each(this.views, function(view) {
                 if (skip.indexOf(view) === -1) {
-                    $(view.el).hide();
+                    view.hide();
                 }
             }, this)
         },
@@ -1020,18 +1027,20 @@
                 $(".large-spinner").remove();
 
                 storage.vms.reset_pending_actions();
-                storage.networks.reset_pending_actions();
+                //storage.networks.reset_pending_actions();
                 storage.vms.stop_stats_update();
 
                 // show current view
                 this.show_view_pane();
-                view.show();
+                view.show(true);
                 
                 // update menus
                 if (this.select_view) {
                     this.select_view.update_layout();
                 }
-                this.current_view.__update_layout();
+
+                var update_layout = this.current_view.__update_layout;
+                update_layout && update_layout.call(this.current_view);
 
                 // update cookies
                 this.update_session();

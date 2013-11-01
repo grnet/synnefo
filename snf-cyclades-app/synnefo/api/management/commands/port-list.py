@@ -64,10 +64,10 @@ class Command(ListCommand):
         "name": ("name", "The name of the port"),
         "user.uuid": ("userid", "The UUID of the port's owner"),
         "mac_address": ("mac", "The MAC address of the port"),
-        "device_id": ("machine.id", "The vm's id the port is conncted to"),
+        "device_id": ("machine_id", "The vm's id the port is conncted to"),
         "state": ("state", "The port's status"),
         "device_owner": ("device_owner", "The owner of the port (vm/router)"),
-        "network": ("network.id", "The network's ID the port is\
+        "network": ("network_id", "The network's ID the port is\
                         connected to"),
         "created": ("created", "The date the port was created"),
         "updated": ("updated", "The date the port was updated"),

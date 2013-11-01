@@ -38,7 +38,7 @@ from django.core.management.base import BaseCommand, CommandError
 from synnefo.api import util
 from synnefo.management import common, pprint
 from snf_django.management.utils import parse_bool
-from synnefo.logic import ports
+from synnefo.logic import servers
 
 HELP_MSG = """Create a new port.
 
@@ -57,6 +57,11 @@ class Command(BaseCommand):
             dest="name",
             default=None,
             help="Name of the port."),
+        make_option(
+            "--owner",
+            dest="user_id",
+            default=None,
+            help="UUID of the owner of the Port."),
         make_option(
             "--network",
             dest="network_id",
@@ -103,6 +108,7 @@ class Command(BaseCommand):
             raise CommandError("Command doesn't accept any arguments")
 
         name = options["name"]
+        user_id = options["user_id"]
         network_id = options["network_id"]
         server_id = options["server_id"]
         #router_id = options["router_id"]
@@ -114,12 +120,14 @@ class Command(BaseCommand):
         if not name:
             name = ""
 
-        if (server_id and router_id) or not (server_id or router_id):
-            raise CommandError("Please give either a server or a router id")
-
         if not network_id:
             raise CommandError("Please specify a 'network'")
 
+        if user_id is None:
+            raise CommandError("Please specify the owner of the port")
+
+        vm = None
+        owner = None
         if server_id:
             owner = "vm"
             vm = common.get_vm(server_id)
@@ -130,8 +138,6 @@ class Command(BaseCommand):
             vm = common.get_vm(router_id)
             if not vm.router:
                 raise CommandError("Router '%s' does not exist." % router_id)
-        else:
-            raise CommandError("Neither server or router is specified")
 
         # get the network
         network = common.get_network(network_id)
@@ -146,9 +152,6 @@ class Command(BaseCommand):
         elif floating_ip_id:
             ipaddress = common.get_floating_ip_by_id(floating_ip_id,
                                                      for_update=True)
-        if ipv4_address is not None:
-            ipaddress = util.allocate_ip(network, vm.userid,
-                                         address=ipv4_address)
 
         # validate security groups
         sg_list = []
@@ -158,11 +161,15 @@ class Command(BaseCommand):
                 sg = util.get_security_group(int(gid))
                 sg_list.append(sg)
 
-        new_port = ports.create(network, vm, name=name, ipaddress=ipaddress,
-                                security_groups=sg_list,
-                                device_owner=owner)
+        new_port = servers.create_port(user_id, network, machine=vm,
+                                       name=name,
+                                       use_ipaddress=ipaddress,
+                                       address=ipv4_address,
+                                       security_groups=sg_list,
+                                       device_owner=owner)
         self.stdout.write("Created port '%s' in DB:\n" % new_port)
         pprint.pprint_port(new_port, stdout=self.stdout)
         pprint.pprint_port_ips(new_port, stdout=self.stdout)
         self.stdout.write("\n")
-        common.wait_server_task(new_port.machine, wait, stdout=self.stdout)
+        if vm is not None:
+            common.wait_server_task(new_port.machine, wait, stdout=self.stdout)

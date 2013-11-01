@@ -34,17 +34,11 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import convert_api_faults
-
-from synnefo.api import util
-from synnefo.management.common import get_network, get_vm
+from synnefo.management import common
 from synnefo.logic import servers
 
 
 class Command(BaseCommand):
-    can_import_settings = True
-    output_transaction = True
-
     help = "Attach a floating IP to a VM or router"
 
     option_list = BaseCommand.option_list + (
@@ -55,20 +49,22 @@ class Command(BaseCommand):
             help='The server id the floating-ip will be attached to'),
     )
 
-    @convert_api_faults
+    @common.convert_api_faults
     def handle(self, *args, **options):
         if not args or len(args) > 1:
             raise CommandError("Command accepts exactly one argument")
 
-        floating_ip = args[0]  # this is the floating-ip address
+        floating_ip_id = args[0]  # this is the floating-ip address
         device = options['machine']
 
         if not device:
             raise CommandError('Please give either a server or a router id')
 
         #get the vm
-        vm = get_vm(device)
-
-        servers.add_floating_ip(vm, floating_ip)
+        vm = common.get_vm(device)
+        floating_ip = common.get_floating_ip_by_id(floating_ip_id,
+                                                   for_update=True)
+        servers.create_port(vm.userid, floating_ip.network,
+                            use_ipaddress=floating_ip, machine=vm)
 
         self.stdout.write("Attached %s to %s.\n" % (floating_ip, vm))

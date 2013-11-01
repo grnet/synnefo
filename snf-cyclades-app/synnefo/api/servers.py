@@ -928,7 +928,11 @@ def add_floating_ip(request, vm, args):
     if address is None:
         raise faults.BadRequest("Missing 'address' attribute")
 
-    servers.add_floating_ip(vm, address)
+    userid = vm.userid
+    floating_ip = util.get_floating_ip_by_address(userid, address,
+                                                  for_update=True)
+    servers.create_port(userid, floating_ip.network, machine=vm,
+                        user_ipaddress=floating_ip)
     return HttpResponse(status=202)
 
 
@@ -937,6 +941,10 @@ def remove_floating_ip(request, vm, args):
     address = args.get("address")
     if address is None:
         raise faults.BadRequest("Missing 'address' attribute")
-
-    servers.remove_floating_ip(vm, address)
+    floating_ip = util.get_floating_ip_by_address(vm.userid, address,
+                                                  for_update=True)
+    if floating_ip.nic is None:
+        raise faults.BadRequest("Floating IP %s not attached to instance"
+                                % address)
+    servers.delete_port(floating_ip.nic)
     return HttpResponse(status=202)

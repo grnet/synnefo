@@ -240,8 +240,8 @@ def get_port(port_id, user_id, for_update=False):
         else:
             port = objects.get(network__userid=user_id, id=port_id)
 
-        if (port.device_owner != "vm") and for_update:
-            raise faults.BadRequest('Can not update non vm port')
+        # if (port.device_owner != "vm") and for_update:
+        #     raise faults.BadRequest('Can not update non vm port')
 
         return port
     except (ValueError, NetworkInterface.DoesNotExist):
@@ -275,7 +275,7 @@ def get_floating_ip_by_id(userid, floating_ip_id, for_update=False):
         return objects.get(id=floating_ip_id, floating_ip=True,
                            userid=userid, deleted=False)
     except IPAddress.DoesNotExist:
-        raise faults.ItemNotFound("Floating IP %s does not exist." %
+        raise faults.ItemNotFound("Floating IP with ID %s does not exist." %
                                   floating_ip_id)
 
 

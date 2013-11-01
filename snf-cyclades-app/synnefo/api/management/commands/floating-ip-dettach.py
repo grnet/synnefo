@@ -31,33 +31,32 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
+#from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import get_floating_ip_by_address
+from synnefo.management import common
 from synnefo.logic import servers
 
-class Command(BaseCommand):
-    can_import_settings = True
-    output_transaction = True
 
+class Command(BaseCommand):
     help = "Dettach a floating IP from a VM or router"
 
+    @common.convert_api_faults
     def handle(self, *args, **options):
-        if not args or len(args)>1:
+        if not args or len(args) > 1:
             raise CommandError("Command accepts exactly one argument")
 
-        address = args[0]
+        floating_ip_id = args[0]
 
         #get the floating-ip
-        floating_ip = get_floating_ip_by_address(address, for_update=True)
+        floating_ip = common.get_floating_ip_by_id(floating_ip_id,
+                                                   for_update=True)
 
         if not floating_ip.nic:
             raise CommandError('This floating IP is not attached to a device')
 
         nic = floating_ip.nic
         vm = nic.machine
-
-        servers.disconnect(vm, nic)
+        servers.delete_port(nic)
         self.stdout.write("Dettached floating IP %s from  %s.\n"
-                           % (floating_ip_id, vm))
+                          % (floating_ip_id, vm))

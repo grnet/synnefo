@@ -44,7 +44,7 @@ from snf_django.lib.api import faults
 
 from synnefo.api import util
 from synnefo.db.models import NetworkInterface
-from synnefo.logic import ports
+from synnefo.logic import servers
 
 from logging import getLogger
 
@@ -98,6 +98,7 @@ def list_ports(request, detail=False):
 
 
 @api.api_method(http_method='POST', user_required=True, logger=log)
+@transaction.commit_on_success
 def create_port(request):
     user_id = request.user_uniq
     req = api.utils.get_request_dict(request)
@@ -105,7 +106,6 @@ def create_port(request):
 
     port_dict = api.utils.get_attribute(req, "port")
     net_id = api.utils.get_attribute(port_dict, "network_id")
-    dev_id = api.utils.get_attribute(port_dict, "device_id")
 
     network = util.get_network(net_id, user_id, non_deleted=True)
 
@@ -143,8 +143,11 @@ def create_port(request):
         ipaddress = util.allocate_ip(network, user_id,
                                      address=fixed_ip_address)
 
-    vm = util.get_vm(dev_id, user_id, for_update=True, non_deleted=True,
-                     non_suspended=True)
+    device_id = api.utils.get_attribute(port_dict, "device_id", required=False)
+    vm = None
+    if device_id is not None:
+        vm = util.get_vm(device_id, user_id, for_update=True, non_deleted=True,
+                         non_suspended=True)
 
     name = api.utils.get_attribute(port_dict, "name", required=False)
     if name is None:
@@ -161,8 +164,8 @@ def create_port(request):
             sg = util.get_security_group(int(gid))
             sg_list.append(sg)
 
-    new_port = ports.create(network, vm, ipaddress=ipaddress,
-                            security_groups=sg_list)
+    new_port = servers.create_port(user_id, network, use_ipaddress=ipaddress,
+                                   machine=vm)
 
     response = render_port(request, port_to_dict(new_port), status=201)
 
@@ -215,7 +218,7 @@ def delete_port(request, port_id):
     log.info('delete_port %s', port_id)
     user_id = request.user_uniq
     port = util.get_port(port_id, user_id, for_update=True)
-    ports.delete(port)
+    servers.delete_port(port)
     return HttpResponse(status=204)
 
 #util functions
@@ -224,10 +227,11 @@ def delete_port(request, port_id):
 def port_to_dict(port, detail=True):
     d = {'id': str(port.id), 'name': port.name}
     if detail:
-        user_id = port.machine.id
+        user_id = port.userid
+        machine_id = port.machine_id
         d['user_id'] = user_id
         d['tenant_id'] = user_id
-        d['device_id'] = str(port.machine.id)
+        d['device_id'] = str(machine_id) if machine_id else None
         # TODO: Change this based on the status of VM
         d['admin_state_up'] = True
         d['mac_address'] = port.mac

@@ -30,7 +30,7 @@
 
 from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.logic import ports
+from synnefo.logic import servers
 from synnefo.api.util import get_port
 from synnefo.management import common
 from snf_django.management.utils import parse_bool
@@ -54,9 +54,12 @@ class Command(BaseCommand):
         if len(args) < 1:
             raise CommandError("Please provide a port ID")
 
-        port = get_port(args[0], None)
+        port = get_port(args[0], None, for_update=True)
 
-        ports.delete(port)
+        servers.delete_port(port)
 
         wait = parse_bool(options["wait"])
-        common.wait_server_task(port.machine, wait, stdout=self.stdout)
+        if port.machine is not None:
+            common.wait_server_task(port.machine, wait, stdout=self.stdout)
+        else:
+            self.stdout.write("Successfully removed port %s\n" % port)

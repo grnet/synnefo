@@ -12,11 +12,9 @@ from synnefo import quotas
 from synnefo.api import util
 from synnefo.logic import backend
 from synnefo.logic.backend_allocator import BackendAllocator
+from synnefo.db import pools
 from synnefo.db.models import (NetworkInterface, VirtualMachine,
-                               VirtualMachineMetadata, IPAddress,
-                               IPAddressLog)
-from synnefo.db import query as db_query, pools
-
+                               VirtualMachineMetadata, IPAddressLog)
 from vncauthproxy.client import request_forwarding as request_vnc_forwarding
 
 log = logging.getLogger(__name__)
@@ -247,7 +245,8 @@ def create_instance_nics(vm, userid, private_networks=[], floating_ips=[]):
         if network_id == "SNF:ANY_PUBLIC":
             ipaddress = util.allocate_public_ip(userid=userid,
                                                 backend=vm.backend)
-            nic, ipaddress = create_nic(vm, ipaddress=ipaddress)
+            nic = _create_port(userid, network=ipaddress.network,
+                               use_ipaddress=ipaddress)
         else:
             try:
                 network = util.get_network(network_id, userid,
@@ -258,75 +257,25 @@ def create_instance_nics(vm, userid, private_networks=[], floating_ips=[]):
                       " network '%s'" % network_id
                 log.error(msg)
                 raise faults.InternalServerError(msg)
-            nic, ipaddress = create_nic(vm, network=network)
+            nic = _create_port(userid, network)
         nics.append(nic)
     for address in floating_ips:
         floating_ip = util.get_floating_ip_by_address(vm.userid, address,
                                                       for_update=True)
-        nic, ipaddress = create_nic(vm, ipaddress=floating_ip)
+        nic = _create_port(userid, network=floating_ip.network,
+                           use_ipaddress=floating_ip)
         nics.append(nic)
     for network_id in private_networks:
         network = util.get_network(network_id, userid, non_deleted=True)
         if network.public:
             raise faults.Forbidden("Can not connect to public network")
-        nic, ipaddress = create_nic(vm, network=network)
+        nic = _create_port(userid, network)
         nics.append(nic)
     for index, nic in enumerate(nics):
+        associate_port_with_machine(nic, vm)
         nic.index = index
         nic.save()
     return nics
-
-
-def create_nic(vm, network=None, ipaddress=None, address=None, name=None):
-    """Helper functions for create NIC objects.
-
-    Create a NetworkInterface connecting a VirtualMachine to a network with the
-    IPAddress specified. If no 'ipaddress' is passed and the network has an
-    IPv4 subnet, then an IPv4 address will be automatically be allocated.
-
-    """
-    userid = vm.userid
-
-    if ipaddress is None:
-        if network.subnets.filter(ipversion=4).exists():
-            try:
-                ipaddress = util.allocate_ip(network, userid=userid,
-                                             address=address)
-            except pools.ValueNotAvailable:
-                raise faults.Conflict("Address '%s' is not available." %
-                                      address)
-
-    if ipaddress is not None and ipaddress.nic is not None:
-        raise faults.Conflict("IP address '%s' already in use" %
-                              ipaddress.address)
-
-    if network is None:
-        network = ipaddress.network
-    elif network.state != 'ACTIVE':
-        # TODO: What if is in settings ?
-        raise faults.BuildInProgress('Network not active yet')
-
-    #device_owner = "router" if vm.router else "vm"
-    device_owner = "vm"
-    nic = NetworkInterface.objects.create(machine=vm, network=network,
-                                          state="BUILD",
-                                          userid=vm.userid,
-                                          device_owner=device_owner,
-                                          name=name)
-    log.debug("Created NIC %s with IP %s", nic, ipaddress)
-    if ipaddress is not None:
-        ipaddress.nic = nic
-        ipaddress.save()
-
-        if ipaddress.network.public:
-            ip_log = IPAddressLog.objects.create(
-                server_id=vm.id,
-                network_id=ipaddress.network_id,
-                address=ipaddress.address,
-                active=True)
-            log.debug("Created IP log entry %s", ip_log)
-
-    return nic, ipaddress
 
 
 @server_command("DESTROY")
@@ -395,14 +344,12 @@ def set_firewall_profile(vm, profile, nic):
 @server_command("CONNECT")
 def connect(vm, network, port=None):
     if port is None:
-        nic, ipaddress = create_nic(vm, network)
-    else:
-        nic = port
-        ipaddress = port.ips.all()[0]
+        port = _create_port(vm.userid, network)
+    associate_port_with_machine(port, vm)
 
-    log.info("Creating NIC %s with IPAddress %s", nic, ipaddress)
+    log.info("Creating NIC %s with IPv4 Address %s", port, port.ipv4_address)
 
-    return backend.connect_to_network(vm, nic)
+    return backend.connect_to_network(vm, port)
 
 
 @server_command("DISCONNECT")
@@ -467,34 +414,6 @@ def console(vm, console_type):
     return console
 
 
-@server_command("CONNECT")
-def add_floating_ip(vm, address):
-    # Use for_update, to guarantee that floating IP will only by assigned once
-    # and that it can not be released will it is being attached!
-    floating_ip = util.get_floating_ip_by_address(vm.userid, address,
-                                                  for_update=True)
-    nic, floating_ip = create_nic(vm, ipaddress=floating_ip)
-    log.info("Created NIC %s with floating IP %s", nic, floating_ip)
-    return backend.connect_to_network(vm, nic)
-
-
-@server_command("DISCONNECT")
-def remove_floating_ip(vm, address):
-    try:
-        floating_ip = db_query.get_server_floating_ip(server=vm,
-                                                      address=address,
-                                                      for_update=True)
-    except IPAddress.DoesNotExist:
-        raise faults.BadRequest("Server '%s' has no floating ip with"
-                                " address '%s'" % (vm, address))
-
-    nic = floating_ip.nic
-    log.info("Removing NIC %s from VM %s. Floating IP '%s'", str(nic.index),
-             vm, floating_ip)
-
-    return backend.disconnect_from_network(vm, nic)
-
-
 def rename(server, new_name):
     """Rename a VirtualMachine."""
     old_name = server.name
@@ -503,3 +422,121 @@ def rename(server, new_name):
     log.info("Renamed server '%s' from '%s' to '%s'", server, old_name,
              new_name)
     return server
+
+
+@transaction.commit_on_success
+def create_port(*args, **kwargs):
+    return _create_port(*args, **kwargs)
+
+
+def _create_port(userid, network, machine=None, use_ipaddress=None,
+                 address=None, name="", security_groups=None,
+                 device_owner=None):
+    """Create a new port on the specified network.
+
+    Create a new Port(NetworkInterface model) on the specified Network. If
+    'machine' is specified, the machine will be connected to the network using
+    this port. If 'use_ipaddress' argument is specified, the port will be
+    assigned this IPAddress. Otherwise, an IPv4 address from the IPv4 subnet
+    will be allocated.
+
+    """
+    if network.state != "ACTIVE":
+        raise faults.BuildInProgress("Can not create port while network is in"
+                                     " state %s" % network.state)
+    ipaddress = None
+    if use_ipaddress is not None:
+        # Use an existing IPAddress object.
+        ipaddress = use_ipaddress
+        if ipaddress and (ipaddress.network_id != network.id):
+            msg = "IP Address %s does not belong to network %s"
+            raise faults.Conflict(msg % (ipaddress.address, network.id))
+    else:
+        # If network has IPv4 subnets, try to allocate the address that the
+        # the user specified or a random one.
+        if network.subnets.filter(ipversion=4).exists():
+            try:
+                ipaddress = util.allocate_ip(network, userid=userid,
+                                             address=address)
+            except pools.ValueNotAvailable:
+                msg = "Address %s is already in use." % address
+                raise faults.Conflict(msg)
+        elif address is not None:
+            raise faults.BadRequest("Address %s is not a valid IP for the"
+                                    " defined network subnets" % address)
+
+    if ipaddress is not None and ipaddress.nic is not None:
+        raise faults.Conflict("IP address '%s' is already in use" %
+                              ipaddress.address)
+
+    port = NetworkInterface.objects.create(network=network,
+                                           state="DOWN",
+                                           userid=userid,
+                                           device_owner=None,
+                                           name=name)
+
+    # add the security groups if any
+    if security_groups:
+        port.security_groups.add(*security_groups)
+
+    if ipaddress is not None:
+        # Associate IPAddress with the Port
+        ipaddress.nic = port
+        ipaddress.save()
+
+    if machine is not None:
+        # Associate Port(NIC) with VirtualMachine
+        port = associate_port_with_machine(port, machine)
+        # Send job to connect port to instance
+        machine = connect(machine, network, port)
+        jobID = machine.task_job_id
+        log.info("Created Port %s with IP %s. Ganeti Job: %s",
+                 port, ipaddress, jobID)
+    else:
+        log.info("Created Port %s with IP %s not attached to any instance",
+                 port, ipaddress)
+
+    return port
+
+
+def associate_port_with_machine(port, machine):
+    """Associate a Port with a VirtualMachine.
+
+    Associate the port with the VirtualMachine and add an entry to the
+    IPAddressLog if the port has a public IPv4 address from a public network.
+
+    """
+    if port.network.public:
+        ipv4_address = port.ipv4_address
+        if ipv4_address is not None:
+            ip_log = IPAddressLog.objects.create(server_id=machine.id,
+                                                 network_id=port.network_id,
+                                                 address=ipv4_address,
+                                                 active=True)
+            log.debug("Created IP log entry %s", ip_log)
+    port.machine = machine
+    port.state = "BUILD"
+    port.device_owner = "vm"
+    port.save()
+    return port
+
+
+@transaction.commit_on_success
+def delete_port(port):
+    """Delete a port by removing the NIC card from the instance.
+
+    Send a Job to remove the NIC card from the instance. The port
+    will be deleted and the associated IPv4 addressess will be released
+    when the job completes successfully.
+
+    """
+
+    if port.machine is not None:
+        vm = disconnect(port.machine, port)
+        log.info("Removing port %s, Job: %s", port, vm.task_job_id)
+    else:
+        backend.remove_nic_ips(port)
+        port.delete()
+        log.info("Removed port %s", port)
+
+    return port

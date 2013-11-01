@@ -795,7 +795,7 @@ class NetworkInterface(models.Model):
                               max_length=NETWORK_IFACE_NAME_LENGTH,
                               null=True, db_index=True)
     machine = models.ForeignKey(VirtualMachine, related_name='nics',
-                                on_delete=models.CASCADE)
+                                on_delete=models.CASCADE, null=True)
     network = models.ForeignKey(Network, related_name='nics',
                                 on_delete=models.CASCADE)
     created = models.DateTimeField(auto_now_add=True)

@@ -76,12 +76,6 @@ class PortTest(BaseAPITest):
             response = self.delete(url, user=nic.network.userid)
         self.assertEqual(response.status_code, 400)
 
-    def test_delete_port_from_nonvm(self):
-        nic = dbmf.NetworkInterfaceFactory(device_owner='router')
-        url = join_urls(PORTS_URL, str(nic.id))
-        response = self.delete(url, user=nic.network.userid)
-        self.assertEqual(response.status_code, 400)
-
     def test_remove_nic_malformed(self):
         url = join_urls(PORTS_URL, "123")
         response = self.delete(url)
@@ -278,6 +272,33 @@ class PortTest(BaseAPITest):
                                  user=vm.userid)
         self.assertBadRequest(response)
 
+    def test_create_port_without_device(self):
+        net = dbmf.NetworkWithSubnetFactory(userid="test_user",
+                                            public=False,
+                                            subnet__cidr="192.168.2.0/24",
+                                            subnet__pool__size=3,
+                                            subnet__pool__offset=1)
+        request = {
+            "port": {
+                "name": "port_with_address",
+                "network_id": str(net.id),
+            }
+        }
+        response = self.post(PORTS_URL, params=json.dumps(request),
+                             user="test_user")
+        self.assertEqual(response.status_code, 201)
+        new_port = json.loads(response.content)["port"]
+        self.assertEqual(new_port["device_id"], None)
+        # And with address
+        request["port"]["fixed_ips"] = [{"ip_address": "192.168.2.2"}]
+        with override_settings(settings, GANETI_USE_HOTPLUG=True):
+            response = self.post(PORTS_URL, params=json.dumps(request),
+                                 user="test_user")
+        self.assertEqual(response.status_code, 201)
+        new_port = json.loads(response.content)["port"]
+        self.assertEqual(new_port["device_id"], None)
+        self.assertEqual(new_port["fixed_ips"][0]["ip_address"], "192.168.2.2")
+
     def test_add_nic_to_deleted_network(self):
         user = 'userr'
         vm = dbmf.VirtualMachineFactory(name='yo', userid=user,
@@ -310,20 +331,6 @@ class PortTest(BaseAPITest):
                              user=net.userid)
         self.assertBadRequest(response)
         #self.assertFault(response, 403, 'forbidden')
-
-    def test_add_nic_malformed_1(self):
-        user = 'userr'
-        dbmf.VirtualMachineFactory(name='yo', userid=user)
-        net = dbmf.NetworkFactory(state='ACTIVE', userid=user)
-        request = {
-            "port": {
-                "name": "port1",
-                "network_id": str(net.id)
-            }
-        }
-        response = self.post(PORTS_URL, params=json.dumps(request),
-                             user=net.userid)
-        self.assertBadRequest(response)
 
     def test_add_nic_malformed_2(self):
         user = 'userr'

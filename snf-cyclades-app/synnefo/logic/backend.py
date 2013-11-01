@@ -353,7 +353,7 @@ def remove_nic_ips(nic):
 
 def update_ip_address_log(nic, ip):
     """Update DB logging entry for this IP address."""
-    if not ip.network.public:
+    if not ip.network.public or nic.machine is None:
         return
     try:
         ip_log, created = \

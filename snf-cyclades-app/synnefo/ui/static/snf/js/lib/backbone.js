@@ -307,7 +307,9 @@
       var model = this;
       var success = options.success;
       options.success = function(resp) {
-        model.trigger('destroy', model, model.collection, options);
+        if (!options.silent) {
+          model.trigger('destroy', model, model.collection, options);
+        }
         if (success) success(model, resp);
       };
       options.error = wrapError(options.error, model, options);

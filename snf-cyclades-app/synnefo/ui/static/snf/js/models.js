@@ -72,17 +72,159 @@
         api: snf.api,
         api_type: 'compute',
         has_status: false,
+        auto_bind: [],
+
 
         initialize: function() {
+            var self = this;
+            
+            this._proxy_model_cache = {};
+            _.each(this.auto_bind, function(fname) {
+              self[fname] = _.bind(self[fname], self);
+            });
+
             if (this.has_status) {
                 this.bind("change:status", this.handle_remove);
                 this.handle_remove();
             }
             
             this.api_call = _.bind(this.api.call, this);
+              
+            if (this.proxy_attrs) {
+              this.init_proxy_attrs();             
+            }
+
+            if (this.storage_attrs) {
+              this.init_storage_attrs();
+            }
+
+            if (this.model_actions) {
+              this.init_model_actions();             
+            }
+
             models.Model.__super__.initialize.apply(this, arguments);
+
+        },
+        
+        // Initialize model actions object
+        // For each entry in model's model_action object register the relevant 
+        // model proxy `can_<actionname>` attributes.
+        init_model_actions: function() {
+          var actions = _.keys(this.model_actions);
+          this.set({
+            "actions": new models._ActionsModel({}, {
+              actions: actions,
+              model: this
+            })
+          });
+          this.actions = this.get("actions");
+
+          _.each(this.model_actions, function(params, key){
+            var attr = 'can_' + key;
+            if (params.length == 0) { return }
+            var deps = params[0];
+            var cb = _.bind(params[1], this);
+            _.each(deps, function(dep) {
+              this._set_proxy_attr(attr, dep, cb);
+            }, this);
+          }, this);
+        },
+        
+        // Initialize proxy storage model attributes. These attribues allows 
+        // us to automatically access cross collection associated objects.
+        init_storage_attrs: function() {
+          _.each(this.storage_attrs, function(params, attr) {
+            var store, key, attr_name;
+            store = synnefo.storage[params[0]];
+            key = params[1];
+            attr_name = attr;
+          
+            var resolve_related_instance = function(storage, attr_name, val) {
+              var data = {};
+
+              if (!val) { 
+                // update with undefined and return
+                data[key] = undefined;
+                this.set(data);
+                return;
+              };
+            
+              // retrieve related object (check if its a Model??)
+              var obj = store.get(val);
+              
+              if (obj) {
+                // set related object
+                data[attr_name] = obj;
+                this.set(data, {silent:true})
+                this.trigger("change:" + attr_name, obj);
+              } else {
+                var self = this;
+                var retry = window.setInterval(function(){
+                  var obj = store.get(val);
+                  if (obj) {
+                    data[key] = obj;
+                    self.set(data, {silent:true})
+                    self.trigger("change:" + attr_name, obj);
+                    clearInterval(retry);
+                  }
+                }, 10);
+              }
+            }
+
+            this.bind('change:' + attr, function() {
+              resolve_related_instance.call(this, store, key, this.get(attr))
+            });
+
+            this.bind('add', function() {
+              resolve_related_instance.call(this, store, key, this.get(attr))
+            });
+          }, this);
+        },
+        
+        _proxy_model_cache: {},
+        
+        _set_proxy_attr: function(attr, check_attr, cb) {
+          // initial set
+          var data = {};
+          data[attr] = cb.call(this, this.get(check_attr));
+          if (data[attr] !== undefined) {
+            this.set(data, {silent:true});
+          }
+          
+          this.bind('change:' + check_attr, function() {
+            if (this.get(check_attr) instanceof models.Model) {
+              var model = this.get(check_attr);
+              var proxy_cache_key = attr + '_' + check_attr;
+              if (this._proxy_model_cache[proxy_cache_key]) {
+                var proxy = this._proxy_model_cache[proxy_cache_key];
+                proxy[0].unbind('change', proxy[1]);
+              }
+              var changebind = _.bind(function() {
+                var data = {};
+                data[attr] = cb.call(this, this.get(check_attr));
+                this.set(data);
+              }, this);
+              model.bind('change', changebind);
+              this._proxy_model_cache[proxy_cache_key] = [model, changebind];
+            }
+            var val = cb.call(this, this.get(check_attr));
+            var data = {};
+            if (this.get(attr) !== val) {
+              data[attr] = val;
+              this.set(data);
+            }
+          }, this);
         },
 
+        init_proxy_attrs: function() {
+          _.each(this.proxy_attrs, function(opts, attr){
+            var cb = opts[1];
+            _.each(opts[0], function(check_attr){
+              this._set_proxy_attr(attr, check_attr, cb)
+            }, this);
+          }, this);
+        },
+        
         handle_remove: function() {
             if (this.get("status") == 'DELETED') {
                 if (this.collection) {
@@ -2492,6 +2634,67 @@
 
     })
     
+    models._ActionsModel = models.Model.extend({
+      defaults: { pending: null },
+      actions: [],
+      status: {
+        INACTIVE: 0,
+        PENDING: 1,
+        CALLED: 2
+      },
+
+      initialize: function(attrs, opts) {
+        models._ActionsModel.__super__.initialize.call(this, attrs);
+        this.actions = opts.actions;
+        this.model = opts.model;
+        this.bind("change", function() {
+          this.set({'pending': this.get_pending()});
+        }, this);
+        this.clear();
+      },
+      
+      _in_status: function(st) {
+        var actions = null;
+        _.each(this.attributes, function(status, action){
+          if (status == st) {
+            if (!actions) {
+              actions = []
+            }
+            actions.push(action);
+          }
+        });
+        return actions;
+      },
+
+      get_pending: function() {
+        return this._in_status(this.status.PENDING);
+      },
+
+      unset_pending_action: function(action) {
+        var data = {};
+        data[action] = this.status.INACTIVE;
+        this.set(data);
+      },
+
+      set_pending_action: function(action, reset_pending) {
+        reset_pending = reset_pending === undefined ? true : reset_pending;
+        var data = {};
+        data[action] = this.status.PENDING;
+        if (reset_pending) {
+          this.reset_pending();
+        }
+        this.set(data);
+      },
+      
+      reset_pending: function() {
+        var data = {};
+        _.each(this.actions, function(action) {
+          data[action] = this.status.INACTIVE;
+        }, this);
+        this.set(data);
+      }
+    });
+
     models.PublicPool = models.Model.extend({});
     models.PublicPools = models.Collection.extend({
       model: models.PublicPool,

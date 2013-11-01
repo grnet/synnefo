@@ -45,11 +45,11 @@ class Command(ListCommand):
     user_uuid_field = "userid"
     astakos_url = ASTAKOS_BASE_URL
     astakos_token = CYCLADES_SERVICE_TOKEN
-    filters = {'floating_ip' : True}
+    filters = {'floating_ip': True}
 
     def get_machine(ip):
         try:
-            machine = ip.nic.machine
+            return ip.nic.machine_id
         except AttributeError:
             return None
 

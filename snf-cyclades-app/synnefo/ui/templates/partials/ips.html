@@ -1,41 +1,104 @@
 {% load i18n %}
-<div class="public-ips-view clearfix">
-  <div class="loading-models">{% trans "Loading..." %}</div>
-  <div class="models-view">
-    <div class="previous-view-link">
-      <div class="change-view-action">Back to machine create wizard
+
+<div id="ip-port-view-tpl" class="hidden ip-port-view model-item">
+  <div class="outer">
+    <div class="border"></div>
+    <div class="border2"></div>
+    <div class="inner clearfix main-content">
+      <div class="model-logo vm-icon medium state1" data-rv-style="model.vm|vm_style"></div>
+      <h5 class="title" data-rv-text="model.vm.name"></h5>
+      <h5 class="subtitle" data-rv-text="model.mac_address"></h5>
+      <div class="actions-content">
       </div>
     </div>
-    <div class="list-wrapper model-list">
-      <h3 class="list-title">{% trans "IP addresses list" %}</h3>
-      <div class="top-actions clearfix">
-        <div class="collection-action add add-new">{% trans "new " %}
-          <span class="quotas">(<span class="available"></span> left)</span></div>
-      </div>
-      <div class="limit-msg">{% trans "IP's limit reached." %}</div>
-      <div class="model-description">
-        <p>From this panel you can manage your IP addresses.</p>
-      </div>
-      <div class="list-messages">
-      </div>
-      <br />
-      <div class="hidden ips-key-item clearfix" id="model-item-tpl">
-        <div class="param address"></div>
-        <div class="param vm-name"></div>
-        <div class="param progress-msg"><span></span></div>
-        <div class="param publicid hidden">
-          <div class="param-content">
-            <textarea></textarea>
+  </div>
+</div>
+
+<div id="ip-view-tpl" data-rv-class-actionpending="model.actions.pending"
+  data-rv-class-clearfix="model.id" class="hidden model-item model-view with-actions">
+  <div class="clearfix">
+    <div class="main-content clearfix">
+      <div class="main-content-inner clearfix">
+        <img class="logo" src="{{ SYNNEFO_IMAGES_URL }}internet.png" />
+        <div class="entry" data-rv-class-connected="model.device_id">
+          <h3 class="title">
+            <span data-rv-text="model.floating_ip_address">IP ADDRESS</span>
+          </h3>
+          <div data-rv-if="model.port_id" class="ports nested-model-list proxy">
+            <div data-rv-if="model.port_id">
+              <div data-rv-show="model.port" data-rv-model-view="model.port|IpPortView"></div>
+            </div>
+          </div>
+        </div>
+        <div class="entry-right">
+          <div data-rv-class="model.status|status_cls" class="status">
+            <div class="status-title">
+              <span data-rv-text="model.status|status_display">Active</span>
+              <span data-rv-show="model.in_progress">...</span>
+            </div>
+            <div class="status-indicator clearfix">
+              <div class="indicator indicator1"></div>
+              <div class="indicator indicator2"></div>
+              <div class="indicator indicator3"></div>
+              <div class="indicator indicator4"></div>
+            </div>
+            <div data-show="model.status|in_progress" class="status-progress"></div>
           </div>
         </div>
       </div>
-      <ul class="items-list">
-        <li class="items-empty-msg hidden msg">
-        <div class="title">
-          {% trans "No public IP's exist" %} <span class="quick-add">allocate one</span> now
+    </div>
+      <div class="actions-content">
+        <div class="action-container connect" 
+           data-rv-class-isactive="model.can_connect"
+           data-rv-class-selected="model.actions.connect|intEq 1"
+           data-rv-on-click="view.show_connect_overlay">
+          <a>Connect</a>
         </div>
-        </li>
-      </ul>
+        <div class="action-container disconnect" 
+             data-rv-class-isactive="model.can_disconnect" 
+             data-rv-class-selected="model.actions.disconnect|intEq 1"
+             data-rv-on-click="view.set_disconnect_confirm">
+             <a>Disconnect</a>
+          <div class="confirm-single clearfix">
+            <span class="yes" data-rv-on-click="view.disconnect">
+              {% trans "Confirm" %}
+            </span>
+            <span class="no" 
+                  data-rv-on-click="view.unset_disconnect_confirm">X</span>
+          </div>
+        </div>
+        <div class="action-container remove warn" 
+           data-rv-class-isactive="model.can_remove"
+           data-rv-class-selected="model.actions.remove|intEq 1"
+           data-rv-on-click="view.set_remove_confirm">
+          <a>Destroy</a>
+          <div class="confirm-single clearfix">
+            <span class="yes" data-rv-on-click="view.remove">
+              {% trans "Confirm" %}
+            </span>
+            <span class="no" data-rv-on-click="view.unset_remove_confirm">X</span>
+          </div>
+        </div>
+      </div>
+  </div>
+</div>
+
+<div id="ips-list-view" class="collection-list-view">
+  <div class="collection">
+
+    <div id="create-ip" class="create-button">
+      <a href="#">{% trans "New IP Address +" %}</a>
+    </div>
+
+    <div class="empty-list hidden">
+      <p>{% blocktrans %}You don't have any IP addresses yet. Start by
+ clicking the orange button on the top left.{% endblocktrans %}
+        </p>
+    </div>
+
+    <div class="items-list clearfix">
+      <div class="items-sublist inactive"></div>
+      <div class="items-sublist active"></div>
     </div>
   </div>
 </div>

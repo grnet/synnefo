@@ -43,7 +43,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 
 from synnefo.util import units
-from astakos.im.models import AstakosUser, Resource
+from astakos.im.models import AstakosUser, AstakosUserQuota
 from astakos.im import quotas
 from astakos.im import activation_backends
 from ._common import (remove_user_permission, add_user_permission, is_uuid,
@@ -345,14 +345,14 @@ class Command(BaseCommand):
                 raise CommandError(m)
 
         try:
-            quota, default_capacity = user.get_resource_policy(resource)
-        except Resource.DoesNotExist:
+            quota = user.get_resource_policy(resource)
+        except AstakosUserQuota.DoesNotExist:
             raise CommandError("No such resource: %s" % resource)
 
+        default_capacity = quota.resource.uplimit
         if not force:
             s_default = show_resource_value(default_capacity, resource, style)
-            s_current = (show_resource_value(quota.capacity, resource, style)
-                         if quota is not None else 'default')
+            s_current = show_resource_value(quota.capacity, resource, style)
             s_capacity = (show_resource_value(capacity, resource, style)
                           if capacity != 'default' else capacity)
             self.stdout.write("user: %s (%s)\n" % (user.uuid, user.username))
@@ -366,14 +366,5 @@ class Command(BaseCommand):
                 return
 
         if capacity == 'default':
-            try:
-                quotas.remove_base_quota(user, resource)
-            except Exception as e:
-                import traceback
-                traceback.print_exc()
-                raise CommandError("Failed to remove policy: %s" % e)
-        else:
-            try:
-                quotas.add_base_quota(user, resource, capacity)
-            except Exception as e:
-                raise CommandError("Failed to add policy: %s" % e)
+            capacity = default_capacity
+        quotas.update_base_quota(quota, capacity)

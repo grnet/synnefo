@@ -300,11 +300,9 @@ Setting quota limits
 
 Set default quota
 `````````````````
+To inspect current default base quota limits, run::
 
-In 20-snf-astakos-app-settings.conf, 
-uncomment the default setting ``ASTAKOS_SERVICES``
-and customize the ``'uplimit'`` values.
-These are the default base quota for all users.
+   # snf-manage resource-list
 
 You can modify the default base quota limit for all future users with::
 

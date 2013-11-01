@@ -104,19 +104,19 @@ def add_resource(resource_dict):
     return r, exists
 
 
-def update_resource(resource, uplimit):
-    old_uplimit = resource.uplimit
-    if uplimit == old_uplimit:
-        logger.info("Resource %s has limit %s; no need to update."
-                    % (resource.name, uplimit))
-        return []
-    else:
-        resource.uplimit = uplimit
-        resource.save()
-        logger.info("Updated resource %s with limit %s."
-                    % (resource.name, uplimit))
-        affected = quotas.qh_change_resource_limit(resource)
-        return affected
+def update_resources(updates):
+    resources = []
+    for resource, uplimit in updates:
+        resources.append(resource)
+        old_uplimit = resource.uplimit
+        if uplimit == old_uplimit:
+            logger.info("Resource %s has limit %s; no need to update."
+                        % (resource.name, uplimit))
+        else:
+            resource.uplimit = uplimit
+            resource.save()
+            logger.info("Updated resource %s with limit %s."
+                        % (resource.name, uplimit))
 
 
 def get_resources(resources=None, services=None):

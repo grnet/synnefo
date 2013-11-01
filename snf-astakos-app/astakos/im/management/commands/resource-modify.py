@@ -37,7 +37,7 @@ from django.utils import simplejson as json
 
 from snf_django.management import utils
 from astakos.im.models import Resource
-from astakos.im.register import update_resource
+from astakos.im.register import update_resources
 from ._common import show_resource_value, style_options, check_style, units
 
 
@@ -139,10 +139,14 @@ class Command(BaseCommand):
         else:
             resources = [self.get_resource(resource_name)]
 
+        updates = []
         for resource in resources:
             limit = config.get(resource.name)
             if limit is not None:
-                self.change_resource_limit(resource, limit)
+                limit = self.parse_limit(limit)
+                updates.append((resource, limit))
+        if updates:
+            update_resources(updates)
 
     def change_interactive(self, resource_name, _placeholder):
         if resource_name is None:
@@ -150,6 +154,7 @@ class Command(BaseCommand):
         else:
             resources = [self.get_resource(resource_name)]
 
+        updates = []
         for resource in resources:
             self.stdout.write("Resource '%s' (%s)\n" %
                               (resource.name, resource.desc))
@@ -166,15 +171,24 @@ class Command(BaseCommand):
                         value = units.parse(response)
                     except units.ParseError:
                         continue
-                    update_resource(resource, value)
+                    updates.append((resource, value))
                     break
+        if updates:
+            self.stdout.write("Updating...\n")
+            update_resources(updates)
+
+    def parse_limit(self, limit):
+        try:
+            if isinstance(limit, (int, long)):
+                return limit
+            if isinstance(limit, basestring):
+                return units.parse(limit)
+            raise units.ParseError()
+        except units.ParseError:
+            m = ("Limit should be an integer, optionally followed by a unit,"
+                 " or 'inf'.")
+            raise CommandError(m)
 
     def change_resource_limit(self, resource, limit):
-        if not isinstance(limit, (int, long)):
-            try:
-                limit = units.parse(limit)
-            except units.ParseError:
-                m = ("Limit should be an integer, optionally followed "
-                     "by a unit.")
-                raise CommandError(m)
-            update_resource(resource, limit)
+        limit = self.parse_limit(limit)
+        update_resources([(resource, limit)])

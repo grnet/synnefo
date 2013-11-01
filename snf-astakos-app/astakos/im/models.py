@@ -519,13 +519,8 @@ class AstakosUser(User):
         return self.astakosuserquota_set.select_related().all()
 
     def get_resource_policy(self, resource):
-        resource = Resource.objects.get(name=resource)
-        default_capacity = resource.uplimit
-        try:
-            policy = AstakosUserQuota.objects.get(user=self, resource=resource)
-            return policy, default_capacity
-        except AstakosUserQuota.DoesNotExist:
-            return None, default_capacity
+        return AstakosUserQuota.objects.select_related("resource").\
+            get(user=self, resource__name=resource)
 
     def update_uuid(self):
         while not self.uuid:

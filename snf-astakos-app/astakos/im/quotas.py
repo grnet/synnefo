@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 import copy
+from synnefo.util import units
 from astakos.im.models import (
     Resource, AstakosUserQuota, AstakosUser, Service,
     Project, ProjectMembership, ProjectResourceGrant, ProjectApplication)
@@ -202,6 +203,10 @@ def get_grant_source(grant):
     return SYSTEM
 
 
+def add_limits(x, y):
+    return min(x+y, units.PRACTICALLY_INFINITE)
+
+
 def astakos_users_quotas(users):
     users = list(users)
     quotas = initial_quotas(users)
@@ -236,7 +241,7 @@ def astakos_users_quotas(users):
 
             resource = grant.resource.full_name()
             prev = source_quotas.get(resource, 0)
-            new = prev + grant.member_capacity
+            new = add_limits(prev, grant.member_capacity)
             source_quotas[resource] = new
             userquotas[source] = source_quotas
         quotas[uuid] = userquotas
@@ -319,11 +324,12 @@ def qh_change_resource_limit(resource):
     _set_user_quota(quota)
 
 
-def qh_sync_new_resource(resource, limit):
+def qh_sync_new_resource(resource):
     users = AstakosUser.objects.filter(
         moderated=True, is_rejected=False).order_by('id').select_for_update()
 
     resource_name = resource.name
+    limit = resource.uplimit
     data = []
     for user in users:
         uuid = user.uuid

@@ -113,8 +113,8 @@ class Command(BaseCommand):
                 if exists:
                     m = "Resource '%s' updated in database.\n" % (r.name)
                 else:
-                    m = ("Resource '%s' created in database with default "
-                         "quota limit 0.\n" % (r.name))
+                    m = ("Resource '%s' created in database with unlimited "
+                         "quota.\n" % (r.name))
                 output.append(m)
 
         for line in output:

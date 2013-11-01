@@ -31,6 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from synnefo.util import units
 from astakos.im.models import Resource, Service, Endpoint, EndpointData
 from astakos.im import quotas
 import logging
@@ -82,7 +83,7 @@ def add_resource(resource_dict):
         r.service_type = service_type
     except Resource.DoesNotExist:
         r = Resource(name=name,
-                     uplimit=0,
+                     uplimit=units.PRACTICALLY_INFINITE,
                      service_type=service_type,
                      service_origin=service_origin)
         exists = False
@@ -94,7 +95,7 @@ def add_resource(resource_dict):
 
     r.save()
     if not exists:
-        quotas.qh_sync_new_resource(r, 0)
+        quotas.qh_sync_new_resource(r)
 
     if exists:
         logger.info("Updated resource %s." % (name))

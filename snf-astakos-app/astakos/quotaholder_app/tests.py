@@ -34,6 +34,7 @@
 from django.test import TestCase
 
 from snf_django.utils.testing import assertGreater, assertIn, assertRaises
+from astakos.quotaholder_app import models
 import astakos.quotaholder_app.callpoint as qh
 from astakos.quotaholder_app.exception import (
     InvalidDataError,
@@ -275,3 +276,25 @@ class QuotaholderTest(TestCase):
         serial = self.issue_commission([])
         r = qh.resolve_pending_commission(self.client, serial)
         self.assertEqual(r, True)
+
+    def test_030_set(self):
+        holder = 'h0'
+        source = 'system'
+        resource1 = 'r1'
+        resource2 = 'r2'
+        limit1 = 10
+        limit2 = 20
+
+        models.Holding.objects.create(
+            holder=holder, source=source, resource=resource1,
+            usage_min=1, usage_max=1, limit=2)
+        models.Holding.objects.create(
+            holder=holder, source=source, resource=resource2,
+            usage_min=2, usage_max=2, limit=22)
+
+        qh.set_quota([((holder, source, resource1), limit1),
+                      ((holder, source, resource1), limit2)])
+
+        r = qh.get_quota(holders=[holder])
+        self.assertEqual(r, {(holder, source, resource1): (limit2, 1, 1),
+                             (holder, source, resource2): (22, 2, 2)})

@@ -72,16 +72,24 @@ def get_quota(holders=None, sources=None, resources=None):
     return quotas
 
 
-def _get_holdings_for_update(holding_keys):
+def _get_holdings_for_update(holding_keys, delete=False):
     holders = set(holder for (holder, source, resource) in holding_keys)
-    objs = Holding.objects
-    hs = objs.filter(holder__in=holders).order_by('pk').select_for_update()
+    objs = Holding.objects.filter(holder__in=holders).order_by('pk')
+    hs = objs.select_for_update()
 
+    keys = set(holding_keys)
     holdings = {}
+    put_back = []
     for h in hs:
         key = h.holder, h.source, h.resource
-        holdings[key] = h
+        if key in keys:
+            holdings[key] = h
+        else:
+            put_back.append(h)
 
+    if delete:
+        objs.delete()
+        Holding.objects.bulk_create(put_back)
     return holdings
 
 
@@ -96,19 +104,24 @@ def _mkProvision(key, quantity):
 
 def set_quota(quotas):
     holding_keys = [key for (key, limit) in quotas]
-    holdings = _get_holdings_for_update(holding_keys)
+    holdings = _get_holdings_for_update(holding_keys, delete=True)
 
+    new_holdings = {}
     for key, limit in quotas:
+        holder, source, resource = key
+        h = Holding(holder=holder,
+                    source=source,
+                    resource=resource,
+                    limit=limit)
         try:
-            h = holdings[key]
+            h_old = holdings[key]
+            h.usage_min = h_old.usage_min
+            h.usage_max = h_old.usage_max
         except KeyError:
-            holder, source, resource = key
-            h = Holding(holder=holder,
-                        source=source,
-                        resource=resource)
-        h.limit = limit
-        h.save()
-        holdings[key] = h
+            pass
+        new_holdings[key] = h
+
+    Holding.objects.bulk_create(new_holdings.values())
 
 
 def add_resource_limit(holders=None, sources=None, resources=None, diff=0):

@@ -61,10 +61,17 @@
         data_from: false,
         selectors: {},
         
-        initialize: function() {
+        pre_show: function() {},
+        post_show: function() {},
+        pre_hide: function() {},
+        post_hide: function() {},
+
+        initialize: function(options) {
+            views.View.__super__.initialize.apply(this, arguments);
             this.log = new snf.logging.logger("SNF-VIEWS:" + this.view_id);
+            this.parent_view = options && options.parent_view;
         },
-    
+
         // is the view visible ?
         visible: function(){
             return $(this.el).is(":visible");
@@ -73,14 +80,19 @@
         // hide view
         hide: function(force) {
             if (!this.visible() && !force) { return this };
-            return $(this.el).hide();
+            this.pre_hide();
+            var ret = $(this.el).hide();
+            this.post_hide();
+            return ret;
         },
         
         // show view
-        show: function() {
-            if (this.visible()) { return this };
+        show: function(force) {
+            if (this.visible() && !force) { return this };
+            this.pre_show();
             $(this.el).show();
             if (this.show_view) { this.show_view.apply(this, arguments)};
+            this.post_show();
         },
 
         sel: function(id) {

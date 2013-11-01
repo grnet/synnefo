@@ -242,27 +242,34 @@
                 <div class="tab-name">{% trans "machines" %}</div>
                 <ul class="css-tabs">
                     <li><a href="machines" title="{% trans "manage your virtual machines" %}"
-                        class="primary" id="machines_view_link">
+                        data-hover-title="machines" class="primary" id="machines_view_link">
                         <img src="{{ SYNNEFO_IMAGES_URL }}machines-icon.png" /></a></li>
                     <li><a href="networks" title="{% trans "configure networking" %}"
-                        class="primary" id="networks_view_link">
+                        data-hover-title="networks" class="primary" id="networks_view_link">
                         <img src="{{ SYNNEFO_IMAGES_URL }}networks-icon.png" /></a></li>
-                    {% comment %}
-                    <li><a href="disks" title="{% trans "manage your storage volumes" %}"
-                        class="primary" id="disks_view_link">
+                    <li><a href="ips" title="{% trans "manage your IP addresses" %}"
+                        data-hover-title="ips" class="primary" id="ips_view_link">
                         <img src="{{ SYNNEFO_IMAGES_URL }}disks-icon.png" /></a></li>
-                    {% endcomment %}
+                    <li><a href="public-keys" title="{% trans "manage your public keys" %}"
+                        data-hover-title="public keys" class="primary" id="public_keys_view_link">
+                        <img src="{{ SYNNEFO_IMAGES_URL }}machines-icon.png" /></a></li>
                 </ul>
                 </div>
                 <div class="css-panes">
                     <div id="machines-pane" class="pane" style="display:block;">
                         {% include "partials/machines.html" %}
                     </div>
-                    <div id="networks-pane" class="pane">
+                    <div id="networks-pane" class="pane-view">
                         {% include "partials/networks.html" %}
                     </div>
                     <div id="disks-pane" class="pane">
                     	{% include "partials/disks.html" %}
+                    </div>
+                    <div id="ips-pane" class="pane-view">
+                    	{% include "partials/ips.html" %}
+                    </div>
+                    <div id="public-keys-pane" class="pane-view">
+                    	{% include "partials/public_keys.html" %}
                     </div>
 
                     <div class="confirm_multiple clearfix" id="multiple_actions_container">
@@ -395,7 +402,25 @@
     <a id="notification" rel="#error-success" href="#"></a>
     <a id="msgbox" rel="#notification-box" href="#"></a>
     <a id="feedbackbox" rel="#feedback-form" href="#"></a>
+    
+    <!-- rename view tpl -->
+    <div id="rename-view-tpl" class="hidden model-rename-view">
+      <div class="model-name">
+        <h3>
+          <span data-rv-text="model.name" class="value"></span>
+          <span class="edit-btn" data-rv-on-click="view.set_edit"></span>
+        </h3>
+      </div>
+      <div class="edit">
+        <input type="text" class="rename-input" />
+        <div class="rename-actions">
+          <div class="btn confirm" data-rv-on-click="view.rename"></div>
+          <div class="btn cancel" data-rv-on-click="view.unset_edit"></div>
+        </div>
+      </div>
+    </div>
 
+    <!-- generic overlay tpl -->
     <div class="overlay" id="generic-overlay-tpl">
         <div class="overlay-inner">
             <h3 class="overlay-header clearfix">
@@ -571,12 +596,6 @@
         <div class="header clearfix vms off">Loading machines...<span></span></div>
         <div class="header clearfix networks off">Loading networks...<span></span></div>
         <div class="header clearfix layout off">Rendering layout...<span></span></div>
-    </div>
-    <div id="user_public_keys" class="overlay-content overlay-content hidden">
-        {% include "userdata/public_keys_view.html" %}
-    </div>
-    <div id="user_public_ips" class="overlay-content overlay-content hidden">
-        {% include "partials/ips.html" %}
     </div>
     <div id="user_custom_images" class="overlay-content overlay-content hidden">
         {% include "partials/custom_images.html" %}

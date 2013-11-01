@@ -325,10 +325,7 @@
 
             // truncate name
             el.find(".machine-detail.name").text(util.truncate(vm.get("name"), 35));
-            // set ips
-            el.find(".machine-detail.ipv4.ipv4-text").text(vm.get_addresses().ip4 || "not set");
-            // TODO: fix ipv6 truncates and tooltip handler
-            el.find(".machine-detail.ipv6.ipv6-text").text(vm.get_addresses().ip6 || "not set");
+            el.find(".fqdn").text(vm.get("fqdn"));
             // set the state (i18n ??)
             el.find(".state-label").text(STATE_TEXTS[vm.state()]);
             // set state class

@@ -128,8 +128,8 @@
             this.vm_view = this.view.vm(vm);
             
             this.info_link = $(".toggler", this.vm_view);
-            this.el = $("div.info-content", this.vm_view);
-            this.toggler = $(".toggler", this.vm_view);
+            this.info_el = $("div.info-content", this.vm_view);
+            this.details_toggler = $(".toggler", this.vm_view);
             this.label = $(".label", this.vm_view);
 
             this.set_handlers();
@@ -137,14 +137,14 @@
 
         set_handlers: function() {
             this.info_link.click(_.bind(function(){
-                this.el.slideToggle();
+                this.info_el.slideToggle();
                 this.view.vm(this.vm).toggleClass("light-background");
 
-                if (this.toggler.hasClass("open")) {
-                    this.toggler.removeClass("open");
+                if (this.details_toggler.hasClass("open")) {
+                    this.details_toggler.removeClass("open");
                     this.vm.stop_stats_update();
                 } else {
-                    this.toggler.addClass("open");
+                    this.details_toggler.addClass("open");
                     this.view.details_views[this.vm.id].update_layout();
                     this.view.tags_views[this.vm.id].update_layout();
                     this.view.stats_views[this.vm.id].update_layout();
@@ -421,12 +421,12 @@
             if (this.toggle) {
                 $(this.el).find(".tags-header").click(_.bind(function(){
                     $(self.el).find(".tags-content").slideToggle(600);
-                    var toggler = $(this.el).find(".tags-header .cont-toggler");
+                    var details_toggler = $(this.el).find(".tags-header .cont-toggler");
                     
-                    if (toggler.hasClass("open")) {
-                        toggler.removeClass("open");
+                    if (details_toggler.hasClass("open")) {
+                        details_toggler.removeClass("open");
                     } else {
-                        toggler.addClass("open");
+                        details_toggler.addClass("open");
                     }
                 }, this));
                 $(self.el).find(".tags-content").hide();
@@ -787,11 +787,8 @@
             var el = this.vm(vm);
             // truncate name
             el.find("span.name").text(util.truncate(vm.get("name"), 40));
-            // set ips
-            el.find("span.ipv4-text").text(vm.get_addresses().ip4 || "not set");
-            // TODO: fix ipv6 truncates and tooltip handler
-            el.find("span.ipv6-text").text(vm.get_addresses().ip6 || "not set");
-            // set the state (i18n ??)
+
+            el.find('.fqdn').text(vm.get('fqdn'));
             el.find("div.status").text(STATE_TEXTS[vm.state()]);
             // set state class
             el.find("div.state").removeClass().addClass(views.IconView.STATE_CLASSES[vm.state()].join(" "));

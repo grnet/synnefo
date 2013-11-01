@@ -673,6 +673,14 @@
 
         path: 'servers',
         has_status: true,
+        proxy_attrs: {
+          'busy': [
+            ['status', 'state'], function() {
+              return !_.contains(['ACTIVE', 'SHUTDOWN'], this.get('status'));
+            }
+          ],
+        },
+
         initialize: function(params) {
             
             this.pending_firewalls = {};
@@ -957,9 +965,16 @@
             });
         },
 
-        get_stats_image: function(stat, type) {
+        get_attachment: function(id) {
+          var attachment = undefined;
+          _.each(this.get("attachments"), function(a) {
+            if (a.id == id) {
+              attachment = a;
+            }
+          });
+          return attachment
         },
-        
+
         _set_stats: function(stats) {
             var silent = silent === undefined ? false : silent;
             // unavailable stats while building
@@ -1126,7 +1141,6 @@
         state: function() {
             var args = slice.call(arguments);
                 
-            // TODO: it might not be a good idea to set the state in set_state method
             if (args.length > 0 && models.VM.STATES.indexOf(args[0]) > -1) {
                 this.set({'state': args[0]});
             }
@@ -1260,9 +1274,7 @@
                         'name': new_name
                     }
                 }, 
-                // do the rename after the method succeeds
                 success: _.bind(function(){
-                    //this.set({name: new_name});
                     snf.api.trigger("call");
                 }, this)
             });
@@ -1278,6 +1290,10 @@
                 password: data.password
             }
             return synnefo.config.ui_console_url + '?' + $.param(url_params);
+        },
+      
+        connect_floating_ip: function(ip, cb) {
+          // TODO: Implement
         },
 
         // action helper
@@ -1413,12 +1429,16 @@
                   self.handle_action_succeed.apply(self, arguments); 
                   success.apply(this, arguments)
                 },
-                error: function(){ self.handle_action_fail.apply(self, arguments); error.apply(this, arguments)},
+                error: function() { 
+                  self.handle_action_fail.apply(self, arguments);
+                  error.apply(this, arguments)
+                },
                 error_params: { ns: "Machines actions", 
                                 title: "'" + this.get("name") + "'" + " " + action + " failed", 
-                                extra_details: {'Machine ID': this.id, 
-                                                'URL': url, 
-                                                'Action': action || "undefined" },
+                                extra_details: {
+                                  'Machine ID': this.id, 
+                                  'URL': url, 
+                                  'Action': action || "undefined" },
                                 allow_reload: false
                               },
                 display: false,
@@ -1884,7 +1904,9 @@
         parse: function (resp, xhr) {
             var data = resp;
             if (!resp) { return [] };
-            data = _.filter(_.map(resp.servers, _.bind(this.parse_vm_api_data, this)), function(v){return v});
+            data = _.filter(_.map(resp.servers, 
+                                  _.bind(this.parse_vm_api_data, this)), 
+                                  function(v){return v});
             return data;
         },
 
@@ -2056,165 +2078,15 @@
         }
     })
     
-    models.NIC = models.Model.extend({
-        
-        initialize: function() {
-            models.NIC.__super__.initialize.apply(this, arguments);
-            this.pending_for_firewall = false;
-            this.bind("change:firewallProfile", _.bind(this.check_firewall, this));
-            this.bind("change:pending_firewall", function(nic) {
-                nic.get_network().update_state();
-            });
-            this.get_vm().bind("remove", function(){
-                try {
-                    this.collection.remove(this);
-                } catch (err) {};
-            }, this);
-            this.get_network().bind("remove", function(){
-                try {
-                    this.collection.remove(this);
-                } catch (err) {};
-            }, this);
-
-        },
-
-        get_vm: function() {
-            return synnefo.storage.vms.get(parseInt(this.get('vm_id')));
-        },
-
-        get_network: function() {
-            return synnefo.storage.networks.get(this.get('network_id'));
-        },
-
-        get_v6_address: function() {
-            return this.get("ipv6");
-        },
-
-        get_v4_address: function() {
-            return this.get("ipv4");
-        },
-
-        set_firewall: function(value, callback, error, options) {
-            var net_id = this.get('network_id');
-            var self = this;
-
-            // api call data
-            var payload = {"firewallProfile":{"profile":value}};
-            payload._options = _.extend({critical: false}, options);
-            
-            this.set({'pending_firewall': value});
-            this.set({'pending_firewall_sending': true});
-            this.set({'pending_firewall_from': this.get('firewallProfile')});
-
-            var success_cb = function() {
-                if (callback) {
-                    callback();
-                }
-                self.set({'pending_firewall_sending': false});
-            };
-
-            var error_cb = function() {
-                self.reset_pending_firewall();
-            }
-            
-            this.get_vm().api_call(this.get_vm().api_path() + "/action", "create", payload, success_cb, error_cb);
-        },
-
-        reset_pending_firewall: function() {
-            this.set({'pending_firewall': false});
-            this.set({'pending_firewall': false});
-        },
-
-        check_firewall: function() {
-            var firewall = this.get('firewallProfile');
-            var pending = this.get('pending_firewall');
-            var previous = this.get('pending_firewall_from');
-            if (previous != firewall) { this.get_vm().require_reboot() };
-            this.reset_pending_firewall();
-        }
-        
-    });
-
-    models.NICs = models.Collection.extend({
-        model: models.NIC,
-        
-        add_or_update: function(nic_id, data, vm) {
-            var params = _.clone(data);
-            var vm;
-            params.attachment_id = params.id;
-            params.id = params.id + '-' + params.network_id;
-            params.vm_id = parseInt(NIC_REGEX.exec(nic_id)[1]);
-
-            if (!this.get(params.id)) {
-                this.add(params);
-                var nic = this.get(params.id);
-                vm = nic.get_vm();
-                nic.get_network().decrease_connecting();
-                nic.bind("remove", function() {
-                    nic.set({"removing": 0});
-                    if (this.get_network()) {
-                        // network might got removed before nic
-                        nic.get_network().update_state();
-                    }
-                });
-
-            } else {
-                this.get(params.id).set(params);
-                vm = this.get(params.id).get_vm();
-            }
-            
-            // vm nics changed, trigger vm update
-            if (vm) { vm.trigger("change", vm)};
-        },
-        
-        reset_nics: function(nics, filter_attr, filter_val) {
-            var nics_to_check = this.filter(function(nic) {
-                return nic.get(filter_attr) == filter_val;
-            });
-            
-            _.each(nics_to_check, function(nic) {
-                if (nics.indexOf(nic.get('id')) == -1) {
-                    this.remove(nic);
-                } else {
-                }
-            }, this);
-        },
-
-        update_vm_nics: function(vm) {
-            var nics = vm.get('nics');
-            this.reset_nics(_.map(nics, function(nic, key){
-                return key + "-" + nic.network_id;
-            }), 'vm_id', vm.id);
-
-            _.each(nics, function(val, key) {
-                var net = synnefo.storage.networks.get(val.network_id);
-                if (net && net.connected_with_nic_id(key) && vm.connected_with_nic_id(key)) {
-                    this.add_or_update(key, vm.get('nics')[key], vm);
-                }
-            }, this);
-        },
-
-        update_net_nics: function(net) {
-            var nics = net.get('nics');
-            this.reset_nics(_.map(nics, function(nic, key){
-                return key + "-" + net.get('id');
-            }), 'network_id', net.id);
-
-            _.each(nics, function(val, key) {
-                var vm = synnefo.storage.vms.get(val.vm_id);
-                if (vm && net.connected_with_nic_id(key) && vm.connected_with_nic_id(key)) {
-                    this.add_or_update(key, vm.get('nics')[key], vm);
-                }
-            }, this);
-        }
-    });
-
     models.PublicKey = models.Model.extend({
         path: 'keys',
         api_type: 'userdata',
-        details: false,
-        noUpdate: true,
-
+        detail: false,
+        model_actions: {
+          'remove': [['name'], function() {
+            return true;
+          }]
+        },
 
         get_public_key: function() {
             return cryptico.publicKeyFromString(this.get("content"));
@@ -2230,8 +2102,18 @@
                 var type = cont.split(" ")[0];
                 return synnefo.util.publicKeyTypesMap[type];
             } catch (err) { return false };
-        }
+        },
 
+        rename: function(new_name) {
+          //this.set({'name': new_name});
+          this.sync("update", this, {
+            critical: true,
+            data: {'name': new_name}, 
+            success: _.bind(function(){
+              snf.api.trigger("call");
+            }, this)
+          });
+        }
     })
     
     models._ActionsModel = models.Model.extend({
@@ -2316,6 +2198,7 @@
         path: 'keys',
         api_type: 'userdata',
         noUpdate: true,
+        updateEntries: true,
 
         generate_new: function(success, error) {
             snf.api.sync('create', undefined, {

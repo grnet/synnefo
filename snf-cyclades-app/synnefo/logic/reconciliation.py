@@ -508,7 +508,10 @@ class NetworkReconciler(object):
         corresponding Ganeti networks in all Ganeti backends.
 
         """
-        ip_pools = network.get_ip_pools()  # X-Lock on IP pools
+        if network.subnets.filter(ipversion=4, dhcp=True).exists():
+            ip_pools = network.get_ip_pools()  # X-Lock on IP pools
+        else:
+            ip_pools = None
         for bend in self.backends:
             bnet = get_backend_network(network, bend)
             gnet = self.ganeti_networks[bend].get(network.id)
@@ -560,7 +563,7 @@ class NetworkReconciler(object):
             # Check that externally reserved IPs of the network in Ganeti are
             # also externally reserved to the IP pool
             externally_reserved = gnet['external_reservations']
-            if externally_reserved:
+            if externally_reserved and ip_pools is not None:
                 for ip in externally_reserved.split(","):
                     ip = ip.strip()
                     for ip_pool in ip_pools:
@@ -663,8 +666,13 @@ class PoolReconciler(object):
     def reconcile(self):
         self.reconcile_bridges()
         self.reconcile_mac_prefixes()
-        for network in Network.objects.filter(deleted=False):
-            self.reconcile_ip_pool(network)
+
+        networks = Network.objects.prefetch_related("subnets")\
+                                  .filter(deleted=False)
+        for network in networks:
+            for subnet in network.subnets.all():
+                if subnet.ipversion == 4 and subnet.dhcp:
+                    self.reconcile_ip_pool(network)
 
     @transaction.commit_on_success
     def reconcile_bridges(self):
@@ -701,12 +709,13 @@ class PoolReconciler(object):
     @transaction.commit_on_success
     def reconcile_ip_pool(self, network):
         # Check that all NICs have unique IPv4 address
-        nics = network.ips.all()
+        nics = network.ips.exclude(address__isnull=True).all()
         check_unique_values(objects=nics, field="address", logger=self.log)
 
         for ip_pool in network.get_ip_pools():
-            used_ips = ip_pool.pool_table.subnet.ips.values_list("address",
-                                                                 flat=True)
+            used_ips = ip_pool.pool_table.subnet\
+                              .ips.exclude(address__isnull=True)\
+                              .values_list("address", flat=True)
             used_ips = filter(lambda x: ip_pool.contains(x), used_ips)
             check_pool_consistent(pool=ip_pool,
                                   pool_class=pools.IPPool,

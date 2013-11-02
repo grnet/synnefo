@@ -37,7 +37,7 @@ from copy import deepcopy
 from snf_django.utils.testing import (BaseAPITest, mocked_quotaholder,
                                       override_settings)
 from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata,
-                               IPAddress)
+                               IPAddress, NetworkInterface)
 from synnefo.db import models_factory as mfactory
 from synnefo.logic.utils import get_rsapi_state
 from synnefo.cyclades_settings import cyclades_services
@@ -406,6 +406,31 @@ class ServerCreateAPITest(ComputeAPITest):
                                    json.dumps(self.request), 'json')
         self.assertEqual(response.status_code, 503, "serviceUnavailable")
 
+    def test_create_server_with_port(self, mrapi):
+        mrapi().CreateInstance.return_value = 42
+        port1 = mfactory.IPv4AddressFactory(nic=None)
+        request = deepcopy(self.request)
+        request["server"]["networks"] = [{"port": port1.id}]
+        with mocked_quotaholder():
+            response = self.mypost("servers", port1.userid,
+                                   json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 202)
+        vm_id = json.loads(response.content)["server"]["id"]
+        port1 = NetworkInterface.objects.get(id=port1.id)
+        self.assertEqual(port1.machine_id, vm_id)
+        # 409 if already used
+        with mocked_quotaholder():
+            response = self.mypost("servers", port1.userid,
+                                   json.dumps(request), 'json')
+        self.assertConflict(response)
+        # Test permissions
+        port2 = mfactory.IPv4AddressFactory(userid="user1")
+        request["server"]["networks"] = [{"port": port2.id}]
+        with mocked_quotaholder():
+            response = self.mypost("servers", "user2",
+                                   json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 404)
+
     def test_create_network_settings(self, mrapi):
         mrapi().CreateInstance.return_value = 12
         # Create public network and backend
@@ -419,7 +444,8 @@ class ServerCreateAPITest(ComputeAPITest):
                                                operstate="ACTIVE")
         # User requested private networks
         request = deepcopy(self.request)
-        request["server"]["networks"] = [bnet1.network.id, bnet2.network.id]
+        request["server"]["networks"] = [{"uuid": bnet1.network.id},
+                                         {"uuid": bnet2.network.id}]
         with override_settings(settings,
                                DEFAULT_INSTANCE_NETWORKS=[
                                    "SNF:ANY_PUBLIC"]):
@@ -465,7 +491,7 @@ class ServerCreateAPITest(ComputeAPITest):
 
         # test connect to public netwok
         request = deepcopy(self.request)
-        request["server"]["networks"] = [self.network.id]
+        request["server"]["networks"] = [{"uuid": self.network.id}]
         with override_settings(settings,
                                DEFAULT_INSTANCE_NETWORKS=["SNF:ANY_PUBLIC"]):
             response = self.mypost('servers', 'test_user',
@@ -474,7 +500,7 @@ class ServerCreateAPITest(ComputeAPITest):
 
         # test wrong user
         request = deepcopy(self.request)
-        request["server"]["networks"] = [bnet1.network.id]
+        request["server"]["networks"] = [{"uuid": bnet1.network.id}]
         with override_settings(settings,
                                DEFAULT_INSTANCE_NETWORKS=["SNF:ANY_PUBLIC"]):
             with mocked_quotaholder():
@@ -484,7 +510,7 @@ class ServerCreateAPITest(ComputeAPITest):
 
         # Test floating IPs
         request = deepcopy(self.request)
-        request["server"]["networks"] = [bnet1.network.id]
+        request["server"]["networks"] = [{"uuid": bnet1.network.id}]
         fp1 = mfactory.FloatingIPFactory(address="10.0.0.2",
                                          userid="test_user",
                                          network=self.network,
@@ -493,7 +519,7 @@ class ServerCreateAPITest(ComputeAPITest):
                                          userid="test_user",
                                          network=self.network,
                                          nic=None)
-        request["server"]["floating_ips"] = [fp1.address, fp2.address]
+        request["server"]["floating_ips"] = [fp1.id, fp2.id]
         with override_settings(settings,
                                DEFAULT_INSTANCE_NETWORKS=[bnet3.network.id]):
             with mocked_quotaholder():

@@ -378,8 +378,8 @@ def create_server(request):
         flavor_id = server['flavorRef']
         personality = server.get('personality', [])
         assert isinstance(personality, list)
-        private_networks = server.get("networks", [])
-        assert isinstance(private_networks, list)
+        networks = server.get("networks", [])
+        assert isinstance(networks, list)
         floating_ips = server.get("floating_ips", [])
         assert isinstance(floating_ips, list)
     except (KeyError, AssertionError):
@@ -396,7 +396,7 @@ def create_server(request):
 
     vm = servers.create(user_id, name, password, flavor, image,
                         metadata=metadata, personality=personality,
-                        private_networks=private_networks,
+                        networks=networks,
                         floating_ips=floating_ips)
 
     server = vm_to_dict(vm, detail=True)

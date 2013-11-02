@@ -32,7 +32,6 @@
 # or implied, of GRNET S.A.
 
 import factory
-from ipaddr import IPNetwork
 from synnefo.db import models
 from random import choice
 from string import letters, digits
@@ -224,6 +223,7 @@ class NetworkWithSubnetFactory(NetworkFactory):
 class IPv4AddressFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.IPAddress
 
+    userid = factory.Sequence(user_seq())
     network = factory.SubFactory(NetworkFactory, state="ACTIVE")
     subnet = factory.SubFactory(IPv4SubnetFactory,
                                 network=factory.SelfAttribute('..network'))

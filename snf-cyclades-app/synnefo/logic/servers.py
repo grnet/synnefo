@@ -132,14 +132,14 @@ def server_command(action):
 
 @transaction.commit_on_success
 def create(userid, name, password, flavor, image, metadata={},
-           personality=[], private_networks=None, floating_ips=None,
+           personality=[], networks=None, floating_ips=None,
            use_backend=None):
     if use_backend is None:
         # Allocate server to a Ganeti backend
         use_backend = allocate_new_server(userid, flavor)
 
-    if private_networks is None:
-        private_networks = []
+    if networks is None:
+        networks = []
     if floating_ips is None:
         floating_ips = []
 
@@ -165,7 +165,7 @@ def create(userid, name, password, flavor, image, metadata={},
                                        operstate="BUILD")
     log.info("Created entry in DB for VM '%s'", vm)
 
-    nics = create_instance_nics(vm, userid, private_networks, floating_ips)
+    nics = create_instance_nics(vm, userid, networks, floating_ips)
 
     for key, val in metadata.items():
         VirtualMachineMetadata.objects.create(
@@ -231,22 +231,22 @@ def create_server(vm, nics, flavor, image, personality, password):
     return jobID
 
 
-def create_instance_nics(vm, userid, private_networks=[], floating_ips=[]):
+def create_instance_nics(vm, userid, networks=[], floating_ips=[]):
     """Create NICs for VirtualMachine.
 
     Helper function for allocating IP addresses and creating NICs in the DB
     for a VirtualMachine. Created NICs are the combination of the default
-    network policy (defined by administration settings) and the private
-    networks defined by the user.
+    network policy (defined by administration settings) and the networks
+    defined by the user.
 
     """
-    nics = []
+    ports = []
     for network_id in settings.DEFAULT_INSTANCE_NETWORKS:
         if network_id == "SNF:ANY_PUBLIC":
             ipaddress = util.allocate_public_ip(userid=userid,
                                                 backend=vm.backend)
-            nic = _create_port(userid, network=ipaddress.network,
-                               use_ipaddress=ipaddress)
+            port = _create_port(userid, network=ipaddress.network,
+                                use_ipaddress=ipaddress)
         else:
             try:
                 network = util.get_network(network_id, userid,
@@ -257,25 +257,37 @@ def create_instance_nics(vm, userid, private_networks=[], floating_ips=[]):
                       " network '%s'" % network_id
                 log.error(msg)
                 raise faults.InternalServerError(msg)
-            nic = _create_port(userid, network)
-        nics.append(nic)
-    for address in floating_ips:
-        floating_ip = util.get_floating_ip_by_address(vm.userid, address,
-                                                      for_update=True)
-        nic = _create_port(userid, network=floating_ip.network,
-                           use_ipaddress=floating_ip)
-        nics.append(nic)
-    for network_id in private_networks:
-        network = util.get_network(network_id, userid, non_deleted=True)
-        if network.public:
-            raise faults.Forbidden("Can not connect to public network")
-        nic = _create_port(userid, network)
-        nics.append(nic)
-    for index, nic in enumerate(nics):
-        associate_port_with_machine(nic, vm)
-        nic.index = index
-        nic.save()
-    return nics
+            port = _create_port(userid, network)
+        ports.append(port)
+
+    for floating_ip_id in floating_ips:
+        floating_ip = util.get_floating_ip_by_id(vm.userid, floating_ip_id,
+                                                 for_update=True)
+        port = _create_port(userid, network=floating_ip.network,
+                            use_ipaddress=floating_ip)
+        ports.append(port)
+
+    for net in networks:
+        port_id = net.get("port")
+        net_id = net.get("uuid")
+        if port_id is not None:
+            port = util.get_port(port_id, userid, for_update=True)
+            ports.append(port)
+        elif net_id is not None:
+            network = util.get_network(net_id, userid, non_deleted=True)
+            if network.public:
+                raise faults.Forbidden("Can not connect to public network")
+            address = net.get("fixed_ip")
+            port = _create_port(userid, network, address=address)
+            ports.append(port)
+        else:
+            raise faults.BadRequest("")
+
+    for index, port in enumerate(ports):
+        associate_port_with_machine(port, vm)
+        port.index = index
+        port.save()
+    return ports
 
 
 @server_command("DESTROY")

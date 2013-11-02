@@ -66,7 +66,7 @@ class ServerCreationTest(TransactionTestCase):
 
         # error in nics
         req = deepcopy(kwargs)
-        req["private_networks"] = [42]
+        req["networks"] = [{"uuid": 42}]
         self.assertRaises(faults.ItemNotFound, servers.create, **req)
         self.assertEqual(models.VirtualMachine.objects.count(), 0)
 

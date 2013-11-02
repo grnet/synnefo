@@ -35,8 +35,7 @@ from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 
 from synnefo.management.common import convert_api_faults
-from synnefo.api.util import get_port
-from synnefo.management import pprint
+from synnefo.management import pprint, common
 
 
 class Command(BaseCommand):
@@ -63,7 +62,7 @@ class Command(BaseCommand):
         if len(args) != 1:
             raise CommandError("Please provide a port ID")
 
-        port = get_port(args[0], None)
+        port = common.get_port(args[0])
 
         pprint.pprint_port(port, stdout=self.stdout)
         self.stdout.write('\n\n')

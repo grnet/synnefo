@@ -408,7 +408,8 @@ class ServerCreateAPITest(ComputeAPITest):
 
     def test_create_server_with_port(self, mrapi):
         mrapi().CreateInstance.return_value = 42
-        port1 = mfactory.IPv4AddressFactory(nic=None)
+        ip = mfactory.IPv4AddressFactory(nic__machine=None)
+        port1 = ip.nic
         request = deepcopy(self.request)
         request["server"]["networks"] = [{"port": port1.id}]
         with mocked_quotaholder():
@@ -424,7 +425,8 @@ class ServerCreateAPITest(ComputeAPITest):
                                    json.dumps(request), 'json')
         self.assertConflict(response)
         # Test permissions
-        port2 = mfactory.IPv4AddressFactory(userid="user1")
+        ip = mfactory.IPv4AddressFactory(userid="user1", nic__userid="user1")
+        port2 = ip.nic
         request["server"]["networks"] = [{"port": port2.id}]
         with mocked_quotaholder():
             response = self.mypost("servers", "user2",

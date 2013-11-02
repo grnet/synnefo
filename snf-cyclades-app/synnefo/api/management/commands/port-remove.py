@@ -31,7 +31,6 @@
 from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 from synnefo.logic import servers
-from synnefo.api.util import get_port
 from synnefo.management import common
 from snf_django.management.utils import parse_bool
 
@@ -54,7 +53,7 @@ class Command(BaseCommand):
         if len(args) < 1:
             raise CommandError("Please provide a port ID")
 
-        port = get_port(args[0], None, for_update=True)
+        port = common.get_port(args[0], for_update=True)
 
         servers.delete_port(port)
 

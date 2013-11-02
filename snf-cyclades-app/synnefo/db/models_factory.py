@@ -176,6 +176,7 @@ class BackendNetworkFactory(factory.DjangoModelFactory):
 class NetworkInterfaceFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.NetworkInterface
 
+    userid = factory.Sequence(user_seq())
     name = factory.LazyAttribute(lambda self: random_string(30))
     machine = factory.SubFactory(VirtualMachineFactory, operstate="STARTED")
     network = factory.SubFactory(NetworkFactory, state="ACTIVE")
@@ -231,6 +232,7 @@ class IPv4AddressFactory(factory.DjangoModelFactory):
         factory.LazyAttributeSequence(lambda self, n: self.subnet.cidr[:-4] +
                                       '{0}'.format(int(n) + 2))
     nic = factory.SubFactory(NetworkInterfaceFactory,
+                             userid=factory.SelfAttribute('..userid'),
                              network=factory.SelfAttribute('..network'))
 
 

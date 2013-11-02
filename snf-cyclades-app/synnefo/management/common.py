@@ -34,7 +34,8 @@
 from django.core.management import CommandError
 from synnefo.db.models import (Backend, VirtualMachine, Network,
                                Flavor, IPAddress, Subnet,
-                               BridgePoolTable, MacPrefixPoolTable)
+                               BridgePoolTable, MacPrefixPoolTable,
+                               NetworkInterface)
 from functools import wraps
 
 from snf_django.lib.api import faults
@@ -132,11 +133,27 @@ def get_network(network_id, for_update=True):
 def get_subnet(subnet_id, for_update=True):
     """Get a Subnet object by its ID."""
     try:
-        return Subnet.objects.get(id=subnet_id)
+        subnets = Subnet.objects
+        if for_update:
+            subnets.select_for_update()
+        return subnets.get(id=subnet_id)
     except Subnet.DoesNotExist:
         raise CommandError("Subnet with ID %s not found in DB."
                            " Use snf-manage subnet-list to find out"
                            " available subnet IDs" % subnet_id)
+
+
+def get_port(port_id, for_update=True):
+    """Get a port object by its ID."""
+    try:
+        ports = NetworkInterface.objects
+        if for_update:
+            ports.select_for_update()
+        return ports.get(id=port_id)
+    except NetworkInterface.DoesNotExist:
+        raise CommandError("Port with ID %s not found in DB."
+                           " Use snf-manage port-list to find out"
+                           " available port IDs" % port_id)
 
 
 def get_flavor(flavor_id):

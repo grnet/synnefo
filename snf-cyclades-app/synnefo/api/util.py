@@ -231,21 +231,14 @@ def get_port(port_id, user_id, for_update=False):
     Return a NetworkInteface instance or raise ItemNotFound.
     """
     try:
-        objects = NetworkInterface.objects
+        objects = NetworkInterface.objects.filter(userid=user_id)
         if for_update:
             objects = objects.select_for_update()
-
-        if not user_id:
-            port = objects.get(id=port_id)
-        else:
-            port = objects.get(network__userid=user_id, id=port_id)
-
         # if (port.device_owner != "vm") and for_update:
         #     raise faults.BadRequest('Can not update non vm port')
-
-        return port
+        return objects.get(id=port_id)
     except (ValueError, NetworkInterface.DoesNotExist):
-        raise faults.ItemNotFound('Port not found.')
+        raise faults.ItemNotFound("Port '%s' not found." % port_id)
 
 
 def get_security_group(sg_id):

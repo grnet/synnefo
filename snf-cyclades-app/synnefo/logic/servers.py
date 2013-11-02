@@ -261,7 +261,7 @@ def create_instance_nics(vm, userid, networks=[], floating_ips=[]):
         ports.append(port)
 
     for floating_ip_id in floating_ips:
-        floating_ip = util.get_floating_ip_by_id(vm.userid, floating_ip_id,
+        floating_ip = util.get_floating_ip_by_id(userid, floating_ip_id,
                                                  for_update=True)
         port = _create_port(userid, network=floating_ip.network,
                             use_ipaddress=floating_ip)

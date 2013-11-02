@@ -61,7 +61,7 @@ class PortTest(BaseAPITest):
     def test_get_port(self):
         nic = dbmf.NetworkInterfaceFactory()
         url = join_urls(PORTS_URL, str(nic.id))
-        response = self.get(url, user=nic.network.userid)
+        response = self.get(url, user=nic.userid)
         self.assertEqual(response.status_code, 200)
 
     @patch("synnefo.db.models.get_rapi_client")
@@ -70,10 +70,10 @@ class PortTest(BaseAPITest):
         url = join_urls(PORTS_URL, str(nic.id))
         mrapi().ModifyInstance.return_value = 42
         with override_settings(settings, GANETI_USE_HOTPLUG=True):
-            response = self.delete(url, user=nic.network.userid)
+            response = self.delete(url, user=nic.userid)
         self.assertEqual(response.status_code, 204)
         with override_settings(settings, GANETI_USE_HOTPLUG=False):
-            response = self.delete(url, user=nic.network.userid)
+            response = self.delete(url, user=nic.userid)
         self.assertEqual(response.status_code, 400)
 
     def test_remove_nic_malformed(self):
@@ -86,7 +86,7 @@ class PortTest(BaseAPITest):
         url = join_urls(PORTS_URL, str(nic.id))
         request = {'port': {"name": "test-name"}}
         response = self.put(url, params=json.dumps(request),
-                            user=nic.network.userid)
+                            user=nic.userid)
         self.assertEqual(response.status_code, 200)
         res = json.loads(response.content)
         self.assertEqual(res['port']['name'], "test-name")
@@ -99,7 +99,7 @@ class PortTest(BaseAPITest):
         url = join_urls(PORTS_URL, str(nic.id))
         request = {'port': {"security_groups": ["123"]}}
         response = self.put(url, params=json.dumps(request),
-                            user=nic.network.userid)
+                            user=nic.userid)
         self.assertEqual(response.status_code, 404)
 
     def test_update_port_sg(self):
@@ -112,7 +112,7 @@ class PortTest(BaseAPITest):
         url = join_urls(PORTS_URL, str(nic.id))
         request = {'port': {"security_groups": [str(sg2.id), str(sg3.id)]}}
         response = self.put(url, params=json.dumps(request),
-                            user=nic.network.userid)
+                            user=nic.userid)
         res = json.loads(response.content)
         self.assertEqual(res['port']['security_groups'],
                          [str(sg2.id), str(sg3.id)])

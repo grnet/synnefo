@@ -69,10 +69,16 @@ class Command(BaseCommand):
                          " available flavors."),
         make_option("--password", dest="password",
                     help="Password for the new server"),
+        make_option("--networks", dest="network_ids",
+                    help="Comma separated list of network IDs to connect"),
+        make_option("--ports", dest="port_ids",
+                    help="Comma separated list of port IDs to connect"),
+        make_option("--floating-ips", dest="floating_ip_ids",
+                    help="Comma separated list of port IDs to connect"),
         make_option(
             '--wait',
             dest='wait',
-            default="True",
+            default="False",
             choices=["True", "False"],
             metavar="True|False",
             help="Wait for Ganeti job to complete."),
@@ -109,9 +115,25 @@ class Command(BaseCommand):
         else:
             backend = None
 
+        network_ids = parse_list(options["network_ids"])
+        port_ids = parse_list(options["port_ids"])
+        floating_ip_ids = parse_list(options["floating_ip_ids"])
+
+        networks = map(lambda x: {"uuid": x}, network_ids)
+        ports = map(lambda x: {"port": x}, port_ids)
+
         server = servers.create(user_id, name, password, flavor, image,
+                                networks=(ports+networks),
+                                floating_ips=floating_ip_ids,
                                 use_backend=backend)
         pprint.pprint_server(server, stdout=self.stdout)
 
         wait = parse_bool(options["wait"])
         common.wait_server_task(server, wait, self.stdout)
+
+
+def parse_list(_list):
+    if _list is None:
+        return []
+    else:
+        return _list.split(",")

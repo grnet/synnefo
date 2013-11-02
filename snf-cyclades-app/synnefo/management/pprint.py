@@ -264,11 +264,11 @@ def pprint_server_nics(server, stdout=None, title=None):
 
     nics = []
     for nic in server.nics.all():
-        nics.append((nic.name, nic.index, nic.mac, nic.ipv4_address,
+        nics.append((nic.id, nic.name, nic.index, nic.mac, nic.ipv4_address,
                      nic.ipv6_address, nic.network, nic.firewall_profile,
                      nic.state))
 
-    headers = ["Name", "Index", "MAC", "IPv4 Address", "IPv6 Address",
+    headers = ["ID", "Name", "Index", "MAC", "IPv4 Address", "IPv6 Address",
                "Network", "Firewall", "State"]
     pprint_table(stdout, nics, headers, separator=" | ",
                  title=title)

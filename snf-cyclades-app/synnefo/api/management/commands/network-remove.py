@@ -42,7 +42,7 @@ class Command(BaseCommand):
         if len(args) < 1:
             raise CommandError("Please provide a network ID")
 
-        network = get_network(args[0])
+        network = get_network(args[0], for_update=True)
 
         self.stdout.write('Removing network: %s\n' % network.backend_id)
 

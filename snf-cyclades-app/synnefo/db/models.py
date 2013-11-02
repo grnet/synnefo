@@ -754,6 +754,10 @@ class IPAddress(models.Model):
                 if ip_pool.contains(self.address):
                     ip_pool.put(self.address)
                     ip_pool.save()
+                    return
+            log.error("Can not release address %s of NIC %s. Address does not"
+                      " belong to any of the IP pools of the subnet %s !",
+                      self.address, self.nic, self.subnet_id)
 
 
 class IPAddressLog(models.Model):

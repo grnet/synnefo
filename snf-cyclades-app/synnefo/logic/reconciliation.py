@@ -715,6 +715,7 @@ class PoolReconciler(object):
         for ip_pool in network.get_ip_pools():
             used_ips = ip_pool.pool_table.subnet\
                               .ips.exclude(address__isnull=True)\
+                              .exclude(deleted=True)\
                               .values_list("address", flat=True)
             used_ips = filter(lambda x: ip_pool.contains(x), used_ips)
             check_pool_consistent(pool=ip_pool,

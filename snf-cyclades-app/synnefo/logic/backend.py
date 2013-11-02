@@ -388,6 +388,7 @@ def process_network_status(back_network, etime, jobid, opcode, status, logmsg):
     back_network.backendopcode = opcode
     back_network.backendlogmsg = logmsg
 
+    # Note: Network is already locked!
     network = back_network.network
 
     # Notifications of success change the operating state
@@ -449,6 +450,10 @@ def update_network_state(network):
 
     # Release the resources on the deletion of the Network
     if deleted:
+        if network.ips.filter(deleted=False, floating_ip=True).exists():
+            msg = "Can not delete network %s! Floating IPs still in use!"
+            log.error(msg % network)
+            raise Exception(msg % network)
         log.info("Network %r deleted. Releasing link %r mac_prefix %r",
                  network.id, network.mac_prefix, network.link)
         network.deleted = True
@@ -461,6 +466,13 @@ def update_network_state(network):
             if network.FLAVORS[network.flavor]["link"] == "pool":
                 release_resource(res_type="bridge", value=network.link)
 
+        # Set all subnets as deleted
+        network.subnets.update(deleted=True)
+        # And delete the IP pools
+        for subnet in network.subnets.all():
+            if subnet.ipversion == 4:
+                subnet.ip_pools.all().delete()
+
         # Issue commission
         if network.userid:
             quotas.issue_and_accept_commission(network, delete=True)
@@ -470,12 +482,6 @@ def update_network_state(network):
             return
         elif not network.public:
             log.warning("Network %s does not have an owner!", network.id)
-
-        # TODO!!!!!
-        # Set all subnets as deleted
-        network.subnets.update(deleted=True)
-        # And delete the IP pools
-        network.subnets.ip_pools.all().delete()
     network.save()
 
 

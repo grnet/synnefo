@@ -152,9 +152,9 @@ def rename(network, name):
 
 @network_command("DESTROY")
 def delete(network):
-    if network.machines.exists():
-        raise faults.Conflict("Can not delete network. Servers connected"
-                              " to this network exists.")
+    if network.nics.exists():
+        raise faults.Conflict("Can not delete network. There are ports still"
+                              " configured on network network %s" % network.id)
     if network.ips.filter(deleted=False, floating_ip=True).exists():
         msg = "Can not delete netowrk. Network has allocated floating IPs."
         raise faults.Conflict(msg)

@@ -176,8 +176,6 @@ class Command(BaseCommand):
                 msg = "Can not remove. There are still connected VMs to this"\
                       " network"
                 raise CommandError(msg)
-            network.action = "DESTROY"
-            network.save()
             backend_mod.delete_network(network, backend, disconnect=True)
             msg = "Sent job to delete network '%s' from backend '%s'\n"
             self.stdout.write(msg % (network, backend))

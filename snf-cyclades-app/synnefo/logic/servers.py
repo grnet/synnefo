@@ -485,9 +485,7 @@ def _create_port(userid, network, machine=None, use_ipaddress=None,
         ipaddress.save()
 
     if machine is not None:
-        # Associate Port(NIC) with VirtualMachine
-        port = associate_port_with_machine(port, machine)
-        # Send job to connect port to instance
+        # Connect port to the instance.
         machine = connect(machine, network, port)
         jobID = machine.task_job_id
         log.info("Created Port %s with IP %s. Ganeti Job: %s",
@@ -506,6 +504,8 @@ def associate_port_with_machine(port, machine):
     IPAddressLog if the port has a public IPv4 address from a public network.
 
     """
+    if port.machine is not None:
+        raise faults.Conflict("Port %s is already in use." % port.id)
     if port.network.public:
         ipv4_address = port.ipv4_address
         if ipv4_address is not None:

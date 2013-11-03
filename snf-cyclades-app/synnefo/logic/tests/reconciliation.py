@@ -281,10 +281,9 @@ class NetworkReconciliationTest(TestCase):
         self.assertFalse(net1.deleted)
         with mocked_quotaholder():
             self.reconciler.reconcile_networks()
-        bn1 = BackendNetwork.objects.get(id=bn1.id)
         net1 = Network.objects.get(id=net1.id)
-        self.assertEqual(bn1.operstate, "DELETED")
         self.assertTrue(net1.deleted)
+        self.assertFalse(net1.backend_networks.filter(id=bn1.id).exists())
         # But not if action is not DESTROY
         net2 = mfactory.NetworkWithSubnetFactory(public=False, action="CREATE")
         mfactory.BackendNetworkFactory(network=net2, backend=self.backend)

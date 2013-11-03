@@ -509,9 +509,8 @@ class UpdateNetworkTest(TestCase):
                 with mocked_quotaholder():
                     update_network(client, msg)
                 self.assertTrue(client.basic_ack.called)
-                db_bnet = BackendNetwork.objects.get(id=bn.id)
-                self.assertEqual(db_bnet.operstate,
-                                 'DELETED')
+                self.assertFalse(BackendNetwork.objects.filter(id=bn.id)
+                                 .exists())
                 db_net = Network.objects.get(id=net.id)
                 self.assertEqual(db_net.state, 'DELETED', flavor)
                 self.assertTrue(db_net.deleted)
@@ -539,8 +538,7 @@ class UpdateNetworkTest(TestCase):
         rapi().GetNetwork.side_effect = GanetiApiError(msg="foo", code=404)
         with mocked_quotaholder():
             update_network(client, msg)
-        bn = BackendNetwork.objects.get(id=bn.id)
-        self.assertEqual(bn.operstate, "DELETED")
+        self.assertFalse(BackendNetwork.objects.filter(id=bn.id) .exists())
 
     def test_remove_offline_backend(self, client):
         """Test network removing when a backend is offline"""
@@ -562,11 +560,19 @@ class UpdateNetworkTest(TestCase):
         self.assertEqual(new_net.state, 'ACTIVE')
         self.assertFalse(new_net.deleted)
 
-    def test_error_opcode(self, client):
+    @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
+    def test_error_opcode(self, rapi, client):
+        # Mock getting network, because code will lookup if network exists
+        # in backend
+        rapi().GetNetwork.return_value = {}
         mfactory.MacPrefixPoolTableFactory()
         mfactory.BridgePoolTableFactory()
+        network = mfactory.NetworkFactory()
+        mfactory.BackendNetworkFactory(network=network,
+                                       operstate="ACTIVE")
         for state, _ in Network.OPER_STATES:
-            bn = mfactory.BackendNetworkFactory(operstate="ACTIVE")
+            bn = mfactory.BackendNetworkFactory(operstate="ACTIVE",
+                                                network=network)
             bn.operstate = state
             bn.save()
             network = bn.network

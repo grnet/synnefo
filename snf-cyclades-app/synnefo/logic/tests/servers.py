@@ -125,7 +125,8 @@ class ServerTest(TransactionTestCase):
             vm = mfactory.VirtualMachineFactory(operstate="STARTED")
             mfactory.BackendNetworkFactory(network=net, backend=vm.backend)
             mrapi().ModifyInstance.return_value = 42
-            servers.connect(vm, net)
+            with override_settings(settings, GANETI_USE_HOTPLUG=True):
+                servers.connect(vm, net)
             pool = net.get_ip_pools(locked=False)[0]
             self.assertFalse(pool.is_available("192.168.2.2"))
             args, kwargs = mrapi().ModifyInstance.call_args
@@ -142,7 +143,8 @@ class ServerTest(TransactionTestCase):
                                             gateway="2000::1")
         net = subnet.network
         mfactory.BackendNetworkFactory(network=net, backend=vm.backend)
-        servers.connect(vm, net)
+        with override_settings(settings, GANETI_USE_HOTPLUG=True):
+            servers.connect(vm, net)
         args, kwargs = mrapi().ModifyInstance.call_args
         nics = kwargs["nics"][0]
         self.assertEqual(kwargs["instance"], vm.backend_vm_id)
@@ -208,7 +210,8 @@ class ServerCommandTest(TransactionTestCase):
         serial = vm.serial
         mrapi().StartupInstance.return_value = 1
         with mocked_quotaholder() as m:
-            servers.start(vm)
+            with override_settings(settings, CYCLADES_SERVICE_TOKEN=''):
+                servers.start(vm)
             m.resolve_commissions.assert_called_once_with('', [],
                                                           [serial.serial])
             self.assertTrue(m.issue_one_commission.called)
@@ -221,7 +224,8 @@ class ServerCommandTest(TransactionTestCase):
         serial = vm.serial
         mrapi().StartupInstance.return_value = 1
         with mocked_quotaholder() as m:
-            servers.start(vm)
+            with override_settings(settings, CYCLADES_SERVICE_TOKEN=''):
+                servers.start(vm)
             m.resolve_commissions.assert_called_once_with('', [],
                                                           [serial.serial])
             self.assertTrue(m.issue_one_commission.called)
@@ -234,7 +238,8 @@ class ServerCommandTest(TransactionTestCase):
         serial = vm.serial
         mrapi().StartupInstance.return_value = 1
         with mocked_quotaholder() as m:
-            servers.start(vm)
+            with override_settings(settings, CYCLADES_SERVICE_TOKEN=''):
+                servers.start(vm)
             m.resolve_commissions.assert_called_once_with('', [serial.serial],
                                                           [])
             self.assertTrue(m.issue_one_commission.called)
@@ -244,11 +249,12 @@ class ServerCommandTest(TransactionTestCase):
         vm.serial = None
         # Test reject if Ganeti erro
         with mocked_quotaholder() as m:
-            try:
-                servers.start(vm)
-            except:
-                m.resolve_commissions\
-                 .assert_called_once_with('', [], [vm.serial.serial])
+            with override_settings(settings, CYCLADES_SERVICE_TOKEN=''):
+                try:
+                    servers.start(vm)
+                except:
+                    m.resolve_commissions\
+                     .assert_called_once_with('', [], [vm.serial.serial])
 
     def test_task_after(self, mrapi):
         return

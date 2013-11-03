@@ -472,6 +472,8 @@ def update_network_state(network):
         for subnet in network.subnets.all():
             if subnet.ipversion == 4:
                 subnet.ip_pools.all().delete()
+        # And all the backend networks since there are useless
+        network.backend_networks.all().delete()
 
         # Issue commission
         if network.userid:

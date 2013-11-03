@@ -157,9 +157,12 @@ def allocate_floating_ip(request):
         network = util.get_network(network_id, userid, for_update=True,
                                    non_deleted=True)
         if not network.floating_ip_pool:
-            msg = ("Can not allocate floating IP from network %s. Network is"
-                   " not a floating IP pool." % network)
-            raise faults.Conflict(msg)
+            msg = ("Can not allocate floating IP. Network %s is"
+                   " not a floating IP pool.")
+            raise faults.Conflict(msg % network.id)
+        if network.action == "DESTROY":
+            msg = "Can not allocate floating IP. Network %s is being deleted."
+            raise faults.Conflict(msg % network.id)
 
         address = api.utils.get_attribute(floating_ip_dict,
                                           "floating_ip_address",

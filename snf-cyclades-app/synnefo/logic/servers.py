@@ -456,6 +456,9 @@ def _create_port(userid, network, machine=None, use_ipaddress=None,
     if network.state != "ACTIVE":
         raise faults.BuildInProgress("Can not create port while network is in"
                                      " state %s" % network.state)
+    if network.action == "DESTROY":
+        msg = "Can not create port. Network %s is being deleted."
+        raise faults.Conflict(msg % network.id)
     ipaddress = None
     if use_ipaddress is not None:
         # Use an existing IPAddress object.

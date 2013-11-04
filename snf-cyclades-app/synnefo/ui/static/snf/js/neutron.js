@@ -178,7 +178,7 @@
         // TODO: filter out vms
         return vms;
       },
-    
+      
       connect_vm: function(vm, cb) {
         var self = this;
         var data = {
@@ -234,19 +234,32 @@
 
       create: function (name, type, cidr, dhcp, callback) {
         var quota = synnefo.storage.quotas;
-        var params = { network: { name:name } };
+        var params = {network:{name:name}};
+        var subnet_params = {subnet:{network_id:undefined}};
         if (!type) { throw "Network type cannot be empty"; }
 
         params.network.type = type;
-        if (cidr) { params.network.cidr = cidr; }
-        if (dhcp) { params.network.dhcp = dhcp; }
-        if (dhcp === false) { params.network.dhcp = false; }
+        if (cidr) { subnet_params.subnet.cidr = cidr; }
+        if (dhcp) { subnet_params.subnet.dhcp_enabled = dhcp; }
+        if (dhcp === false) { subnet_params.subnet.dhcp_enabled = false; }
         
         var cb = function() {
           callback();
+        }
+        
+        var complete = function() {};
+        var error = function() { cb() };
+        // on network create success, try to create the requested 
+        // network subnet
+        var success = function(resp) {
+          var network = resp.network;
+          subnet_params.subnet.network_id = network.id;
+          synnefo.storage.subnets.create(subnet_params, {
+            complete: function () { cb && cb() }
+          });
           quota.get('cyclades.network.private').increase();
         }
-        return this.api_call(this.path, "create", params, cb);
+        return this.api_call(this.path, "create", params, complete, error, success);
       }
     });
 

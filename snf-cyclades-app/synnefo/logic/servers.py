@@ -274,14 +274,24 @@ def create_instance_nics(vm, userid, networks=[], floating_ips=[]):
             port = util.get_port(port_id, userid, for_update=True)
             ports.append(port)
         elif net_id is not None:
+            address = net.get("fixed_ip")
             network = util.get_network(net_id, userid, non_deleted=True)
             if network.public:
-                raise faults.Forbidden("Can not connect to public network")
-            address = net.get("fixed_ip")
-            port = _create_port(userid, network, address=address)
+                if address is None:
+                    msg = ("Can not connect to public network %s. Specify"
+                           " 'fixed_ip'" " attribute to connect to a public"
+                           " network")
+                    raise faults.BadRequest(msg % network.id)
+                floating_ip = util.get_floating_ip_by_address(userid,
+                                                              address,
+                                                              for_update=True)
+                port = _create_port(userid, network, use_ipaddress=floating_ip)
+            else:
+                port = _create_port(userid, network, address=address)
             ports.append(port)
         else:
-            raise faults.BadRequest("")
+            raise faults.BadRequest("Network 'uuid' or 'port' attribute"
+                                    " is required.")
 
     for index, port in enumerate(ports):
         associate_port_with_machine(port, vm)

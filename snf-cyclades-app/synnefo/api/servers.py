@@ -380,8 +380,6 @@ def create_server(request):
         assert isinstance(personality, list)
         networks = server.get("networks", [])
         assert isinstance(networks, list)
-        floating_ips = server.get("floating_ips", [])
-        assert isinstance(floating_ips, list)
     except (KeyError, AssertionError):
         raise faults.BadRequest("Malformed request")
 
@@ -396,8 +394,7 @@ def create_server(request):
 
     vm = servers.create(user_id, name, password, flavor, image,
                         metadata=metadata, personality=personality,
-                        networks=networks,
-                        floating_ips=floating_ips)
+                        networks=networks)
 
     server = vm_to_dict(vm, detail=True)
     server['status'] = 'BUILD'

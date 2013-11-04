@@ -1203,6 +1203,10 @@ queue-inspect                  Inspect the messages of a RabbitMQ queue
 queue-retry                    Resend messages from Dead Letter queues to original exchanges
 resource-export-cyclades       Export Cyclades resources in JSON format.
 service-export-cyclades        Export Cyclades services in JSON format.
+subnet-create                  Create a subnet
+subnet-inspect                 Inspect a subnet in DB
+subnet-list                    List subnets
+subnet-modify                  Modify a subnet
 reconcile-servers              Reconcile servers of Synnefo DB with state of Ganeti backend
 reconcile-networks             Reconcile networks of Synnefo DB with state of Ganeti backend
 reconcile-pools                Check consistency of pool resources

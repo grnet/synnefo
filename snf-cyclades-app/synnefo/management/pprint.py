@@ -153,7 +153,7 @@ def pprint_ippool(subnet, stdout=None, title=None):
     if stdout is None:
         stdout = sys.stdout
 
-    stdout.write("IP Pools of subnet %s" % subnet.id)
+    stdout.write("IP Pools of subnet %s:\n\n" % subnet.id)
 
     for pool in subnet.get_ip_pools():
         size = pool.pool_size
@@ -163,7 +163,7 @@ def pprint_ippool(subnet, stdout=None, title=None):
                             ("Size", size),
                             ("Available", available)])
         pprint_table(stdout, info.items(), None, separator=" | ", title=None)
-        stdout.write(bitarray_to_map(pool.available[:size]))
+        pprint_pool(None, bitarray_to_map(pool.available[:size]), 80, stdout)
         stdout.write("\n\n")
 
 

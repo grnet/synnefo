@@ -441,8 +441,12 @@
           return "Internet"
         }
 
-        status = this.status_map[this.model.get('ext_status')];
-        return status;
+        var cidr = this.model.get('cidr');
+        var status = this.model.get('ext_status');
+        if (status != 'REMOVING' && cidr) {
+          return cidr
+        }
+        return this.status_map[status];
       },
       
       connect_vms: function(vms, cb) {
@@ -462,9 +466,11 @@
         e && e.stopPropagation();
         this.model.actions.reset_pending();
         this.model.destroy({
-          complete: _.bind(function() {
-            this.model.set({status: 'REMOVING'})
-            this.model.set({ext_status: 'REMOVING'})
+          success: _.bind(function() {
+            this.model.set({status: 'REMOVING'});
+            this.model.set({ext_status: 'REMOVING'});
+            // force status display update
+            this.model.set({cidr: 'REMOVING'});
           }, this),
           silent: true
         });

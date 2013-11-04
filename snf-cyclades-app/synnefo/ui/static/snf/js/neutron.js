@@ -68,8 +68,18 @@
             return this.get('router:external') || this.get('public')
           } 
         ],
+        'cidr': [
+          ['subnet'], function() {
+            var subnet = this.get('subnet');
+            if (subnet && subnet.get('cidr')) {
+              return subnet.get('cidr')
+            } else {
+              return undefined
+            }
+          }
+        ],
         'ext_status': [
-          ['status'], function(st) {
+          ['status', 'cidr'], function(st) {
             if (this.get('ext_status') == 'REMOVING') {
               return 'REMOVING'
             }
@@ -78,7 +88,7 @@
             } else if (this.pending_disconnects) {
               return 'DISCONNECTING'
             } else {
-              return st
+              return this.get('status')
             }
         }],
         'in_progress': [
@@ -91,6 +101,13 @@
         ]
       },
       
+      storage_attrs: {
+        'subnets': ['subnets', 'subnet', function(model, attr) {
+          var subnets = model.get(attr);
+          if (subnets.length) { return subnets[0] }
+        }]
+      },
+
       // call rename api
       rename: function(new_name, cb) {
           this.sync("update", this, {
@@ -113,14 +130,13 @@
       pending_disconnects: 0,
 
       initialize: function() {
-        models.Network.__super__.initialize.apply(this, arguments);
         var self = this;
         this.subnets = new Backbone.FilteredCollection(undefined, {
           collection: synnefo.storage.subnets,
           collectionFilter: function(m) {
             return self.id == m.get('network_id')
-          }
-        });
+        }});
+        models.Network.__super__.initialize.apply(this, arguments);
         this.ports = new Backbone.FilteredCollection(undefined, {
           collection: synnefo.storage.ports,
           collectionFilter: function(m) {
@@ -186,7 +202,8 @@
         'status': 'ACTIVE',
         'router:external': true,
         'shared': false,
-        'rename_disabled': true
+        'rename_disabled': true,
+        'subnets': []
       },
       
       initialize: function() {

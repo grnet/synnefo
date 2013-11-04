@@ -291,9 +291,11 @@
         cancel_confirm_remove: function(el, model) {
             el.closest(".model-item").removeClass("pending-delete");
         },
+      
+        _list_el: "<li></li>",
 
         new_list_el: function(model) {
-            var list_el = $("<li></li>");
+            var list_el = $(this._list_el);
             el = this.create_model_element(model);
             list_el.attr("id", this.id_tpl.format(model.id));
             list_el.addClass("model-item");

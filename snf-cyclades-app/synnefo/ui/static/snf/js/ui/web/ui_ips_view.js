@@ -143,13 +143,6 @@
       collection_name: 'floating_ips',
       model_view_cls: views.IpView,
       create_view: views.IpCreateView,
-      parent_for_model: function(m) {
-        if (m.get('port_id')) {
-          return this.list_el.find(".active");
-        } else {
-          return this.list_el.find(".inactive");
-        }
-      },
       initialize: function() {
         views.IpCollectionView.__super__.initialize.apply(this, arguments);
         this.connect_view = new views.IPConnectVmOverlay();

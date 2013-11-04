@@ -209,6 +209,22 @@
             alert(this.private_key);
           }
         },
+        
+        _generated_key_name: function() {
+          var name_tpl = "Generated ssh key name";
+          var name = name_tpl;
+          var exists = function() {
+            return synnefo.storage.keys.filter(function(key){
+              return key.get("name") == name;
+            }).length > 0;
+          }
+
+          var count = 1;
+          while(exists()) {
+            name = name_tpl + " {0}".format(++count);
+          }
+          return name;
+        },
 
         generate: function() {
           this.error.hide();
@@ -222,7 +238,7 @@
           var success = _.bind(function(key) {
             this.generating = false;
             this.generate_action.removeClass("in-progress");
-            this.input_name.val("Generated ssh key");
+            this.input_name.val(this._generated_key_name());
             this.input_key.val(key.public);
             this.generate_msg.show();
             this.private_key = key.private;

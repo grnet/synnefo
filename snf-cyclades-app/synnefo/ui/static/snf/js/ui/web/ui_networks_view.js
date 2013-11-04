@@ -458,12 +458,13 @@
         }, this);
       },
       
-      remove: function(e) {
-        e.stopPropagation();
+      remove: function(model, e) {
+        e && e.stopPropagation();
         this.model.actions.reset_pending();
         this.model.destroy({
           complete: _.bind(function() {
             this.model.set({status: 'REMOVING'})
+            this.model.set({ext_status: 'REMOVING'})
           }, this),
           silent: true
         });

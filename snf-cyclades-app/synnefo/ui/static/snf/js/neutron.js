@@ -70,6 +70,9 @@
         ],
         'ext_status': [
           ['status'], function(st) {
+            if (this.get('ext_status') == 'REMOVING') {
+              return 'REMOVING'
+            }
             if (this.pending_connections) {
               return 'CONNECTING'
             } else if (this.pending_disconnects) {

@@ -1,3 +1,10 @@
+synnefo (0.14.8~rc2-1~squeeze) squeeze; urgency=low
+
+  * New upstream version
+  * Update python-django-south dependency to (>= 0.7.3)
+
+ -- Christos Stavrakakis <cstavr@grnet.gr>  Mon, 04 Nov 2013 17:38:57 +0200
+
 synnefo (0.14.8~rc1-1~squeeze) squeeze; urgency=low
 
   * New upstream version

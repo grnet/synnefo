@@ -1197,7 +1197,7 @@
             var create_view = this.parent;
             if (!this.ips_view) {
               this.ips_view = new views.CreateColumnSelectListView({
-                collection: synnefo.storage.public_ips,
+                collection: synnefo.storage.floating_ips,
                 extra_class: 'public-ips',
                 update_collection: true,
                 title: 'IP addresses <span class="create-ip-address"><a href="#">manage ip\'s</a></span>',
@@ -1206,17 +1206,16 @@
                 empty_msg: 'No IP addresses available. <span><a href="">Create a new IP address.</a></span>',
                 select_first_as_default: true,
                 filter_items: function(model) { 
-                  return !(model.get_vm() || model.get('state'))
+                  return !(model.get('port_id'))
                 },
                 init_events: function() {
                   var msg = this.$(".empty span a");
-                  this.$(".create-ip-address").click(function() {
-                      snf.ui.main.public_ips_view.show(create_view);
-                  });
                   this.$(".empty a").bind('click', function(e) {
                       e.preventDefault();
                       msg.text("Creating...");
-                      synnefo.storage.public_ips.create({address:undefined, pool: undefined}, {
+                      synnefo.storage.floating_ips.create({
+                        address:undefined, pool: undefined
+                      }, {
                         error: function() {
                           alert("Cannot create new ip address");
                         },

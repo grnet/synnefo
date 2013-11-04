@@ -6700,6 +6700,10 @@ input.has-errors {
   cursor: pointer;
 }
 
+.model-item .status-active .status-indicator .indicator {
+  background-color: #63cf1c;
+}
+
 .model-item .status-inactive .status-indicator .indicator {
   background-color: #940606;
 }
@@ -6716,7 +6720,7 @@ input.has-errors {
   width: 10px;
   height: 11px;
   float: right;
-  background-color: #63cf1c;
+  background-color: #EFF7FA;
   margin-right: 3px;
 }
 

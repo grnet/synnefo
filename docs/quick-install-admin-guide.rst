@@ -914,7 +914,7 @@ We now have to specify the limit on resources that each user can employ
 
 .. code-block:: console
 
-    # snf-manage resource-modify --limit-interactive
+    # snf-manage resource-modify --default-quota-interactive
 
 
 Servers Initialization

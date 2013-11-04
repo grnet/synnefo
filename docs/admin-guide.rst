@@ -306,10 +306,9 @@ uncomment the default setting ``ASTAKOS_SERVICES``
 and customize the ``'uplimit'`` values.
 These are the default base quota for all users.
 
-To apply your configuration run::
+You can modify the default base quota limit for all future users with::
 
-    # snf-manage astakos-init --load-service-resources
-    # snf-manage quota --sync
+   # snf-manage resource-modify <resource_name> --default-quota <value>
 
 Set base quota for individual users
 ```````````````````````````````````
@@ -336,7 +335,7 @@ in ``20-snf-astakos-app-settings.conf`` set::
 You can change the maximum allowed number of pending project applications
 per user with::
 
-    # snf-manage resource-modify astakos.pending_app --limit <number>
+    # snf-manage resource-modify astakos.pending_app --default-quota <number>
 
 You can also set a user-specific limit with::
 

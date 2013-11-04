@@ -46,15 +46,16 @@ class Command(BaseCommand):
     help = "Modify a resource's default base quota and boolean flags."
 
     option_list = BaseCommand.option_list + (
-        make_option('--limit',
+        make_option('--default-quota',
+                    metavar='<limit>',
                     help="Specify default base quota"),
-        make_option('--limit-interactive',
+        make_option('--default-quota-interactive',
                     action='store_true',
                     default=None,
                     help=("Prompt user to change default base quota. "
                           "If no resource is given, prompts for all "
                           "resources.")),
-        make_option('--limit-from-file',
+        make_option('--default-quota-from-file',
                     metavar='<limits_file.json>',
                     help=("Read default base quota from a file. "
                           "File should contain a json dict mapping resource "
@@ -73,9 +74,9 @@ class Command(BaseCommand):
         resource_name = args[0] if len(args) > 0 else None
 
         actions = {
-            'limit': self.change_limit,
-            'limit_interactive': self.change_interactive,
-            'limit_from_file': self.change_from_file,
+            'default_quota': self.change_limit,
+            'default_quota_interactive': self.change_interactive,
+            'default_quota_from_file': self.change_from_file,
             'allow_in_projects': self.set_allow_in_projects,
         }
 
@@ -85,8 +86,9 @@ class Command(BaseCommand):
 
         if len(opts) != 1:
             raise CommandError("Please provide exactly one of the options: "
-                               "--limit, --limit-interactive, "
-                               "--limit-from-file, --allow-in-projects.")
+                               "--default-quota, --default-quota-interactive, "
+                               "--default-quota-from-file, "
+                               "--allow-in-projects.")
 
         self.unit_style = options['unit_style']
         check_style(self.unit_style)

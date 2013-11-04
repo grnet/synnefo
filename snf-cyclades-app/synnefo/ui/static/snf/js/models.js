@@ -135,6 +135,12 @@
             var store, key, attr_name;
             store = synnefo.storage[params[0]];
             key = params[1];
+            attr_resolver = params[2];
+            if (!attr_resolver) {
+              attr_resolver = function(model, attr) {
+                return model.get(attr);
+              }
+            }
             attr_name = attr;
           
             var resolve_related_instance = function(storage, attr_name, val) {
@@ -165,17 +171,19 @@
                     self.trigger("change:" + attr_name, obj);
                     clearInterval(retry);
                   }
-                }, 10);
+                }, 500);
               }
             }
+            
+            var self = this;
+            this.bind('change:' + attr, function(model) {
+              resolve_related_instance.call(model, store, key, attr_resolver(model, attr));
+            }, this);
 
-            this.bind('change:' + attr, function() {
-              resolve_related_instance.call(this, store, key, this.get(attr))
-            });
-
-            this.bind('add', function() {
-              resolve_related_instance.call(this, store, key, this.get(attr))
-            });
+            this.bind('add', function(model) {
+              resolve_related_instance.call(model, store, key, attr_resolver(model, attr));
+            }, this);
+            resolve_related_instance.call(this, store, key, attr_resolver(this, attr));
           }, this);
         },
         

@@ -51,7 +51,8 @@ from synnefo.api.actions import server_actions
 from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata,
                                NetworkInterface)
 from synnefo.logic.backend import (create_instance, delete_instance,
-                                   process_op_status)
+                                   process_op_status, job_is_still_running,
+                                   vm_exists_in_backend)
 from synnefo.logic.utils import get_rsapi_state
 from synnefo.logic.backend_allocator import BackendAllocator
 from synnefo import quotas
@@ -403,6 +404,7 @@ def do_create_server(userid, name, password, flavor, image, metadata={},
 
         jobID = create_instance(vm, nic, flavor, image)
         # At this point the job is enqueued in the Ganeti backend
+        vm.backendopcode = "OP_INSTANCE_CREATE"
         vm.backendjobid = jobID
         vm.save()
         transaction.commit()
@@ -482,6 +484,14 @@ def delete_server(request, server_id):
     log.info('delete_server %s', server_id)
     vm = util.get_vm(server_id, request.user_uniq, for_update=True,
                      non_suspended=True)
+    # XXX: Workaround for race where OP_INSTANCE_REMOVE starts executing on
+    # Ganeti before OP_INSTANCE_CREATE. This will be fixed when
+    # OP_INSTANCE_REMOVE supports the 'depends' request attribute.
+    if (vm.backendopcode == "OP_INSTANCE_CREATE" and
+       vm.backendjobstatus != "success"):
+        if job_is_still_running(vm) and not vm_exists_in_backend(vm):
+            raise faults.BuildInProgress("Server is being build")
+
     start_action(vm, 'DESTROY')
     delete_instance(vm)
     return HttpResponse(status=204)

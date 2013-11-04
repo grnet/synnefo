@@ -254,24 +254,6 @@ class QuotaholderTest(TestCase):
         }
         self.assertEqual(r, quotas)
 
-        # add resource limit
-
-        qh.add_resource_limit(sources=[source], resources=[resource1], diff=1)
-        r = qh.get_quota(holders=[holder])
-        quotas = {
-            (holder, source, resource1): (limit1+1, limit1+1, limit1+2),
-            (holder, source, resource2): (limit2, limit2-2, limit2-1),
-        }
-        self.assertEqual(r, quotas)
-
-        qh.add_resource_limit(holders=[holder, "nonex"], diff=10)
-        r = qh.get_quota(holders=[holder, "nonex"])
-        quotas = {
-            (holder, source, resource1): (limit1+11, limit1+1, limit1+2),
-            (holder, source, resource2): (limit2+10, limit2-2, limit2-1),
-        }
-        self.assertEqual(r, quotas)
-
     def test_020_empty_provisions(self):
         serial = self.issue_commission([])
         r = qh.resolve_pending_commission(self.client, serial)

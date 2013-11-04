@@ -311,13 +311,12 @@ def qh_sync_project(project):
     qh_sync_users(users)
 
 
-def qh_add_resource_limit(resource, diff):
+def qh_change_resource_limit(resource):
     objs = AstakosUser.objects.filter(
         Q(moderated=True, is_rejected=False) & ~Q(policy=resource))
     users = objs.order_by('id').select_for_update()
-    uuids = [u.uuid for u in users]
-    qh.add_resource_limit(holders=uuids, sources=[SYSTEM],
-                          resources=[resource.name], diff=diff)
+    quota = astakos_users_quotas(users)
+    _set_user_quota(quota)
 
 
 def qh_sync_new_resource(resource, limit):

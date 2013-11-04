@@ -32,8 +32,7 @@
 # or implied, of GRNET S.A.
 
 from astakos.im.models import Resource, Service, Endpoint, EndpointData
-
-from astakos.im.quotas import qh_add_resource_limit, qh_sync_new_resource
+from astakos.im import quotas
 import logging
 
 logger = logging.getLogger(__name__)
@@ -95,7 +94,7 @@ def add_resource(resource_dict):
 
     r.save()
     if not exists:
-        qh_sync_new_resource(r, 0)
+        quotas.qh_sync_new_resource(r, 0)
 
     if exists:
         logger.info("Updated resource %s." % (name))
@@ -106,14 +105,17 @@ def add_resource(resource_dict):
 
 def update_resource(resource, uplimit):
     old_uplimit = resource.uplimit
-    resource.uplimit = uplimit
-    resource.save()
-
-    logger.info("Updated resource %s with limit %s."
-                % (resource.name, uplimit))
-    diff = uplimit - old_uplimit
-    if diff != 0:
-        qh_add_resource_limit(resource, diff)
+    if uplimit == old_uplimit:
+        logger.info("Resource %s has limit %s; no need to update."
+                    % (resource.name, uplimit))
+        return []
+    else:
+        resource.uplimit = uplimit
+        resource.save()
+        logger.info("Updated resource %s with limit %s."
+                    % (resource.name, uplimit))
+        affected = quotas.qh_change_resource_limit(resource)
+        return affected
 
 
 def get_resources(resources=None, services=None):

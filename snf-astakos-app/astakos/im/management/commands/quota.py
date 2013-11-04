@@ -161,9 +161,10 @@ class Command(SynnefoCommand):
             self.stdout.write("No sync needed.\n")
         else:
             self.stdout.write("Synced %s users:\n" % size)
-            for holder in diff_quotas.keys():
-                user = get_user_by_uuid(holder)
-                self.stdout.write("%s (%s)\n" % (holder, user.username))
+            uuids = diff_quotas.keys()
+            users = AstakosUser.objects.filter(uuid__in=uuids)
+            for user in users:
+                self.stdout.write("%s (%s)\n" % (user.uuid, user.username))
 
     def print_verify(self,
                      qh_limits,

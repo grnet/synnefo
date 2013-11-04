@@ -183,8 +183,9 @@ def initial_quotas(users):
         source_quota = {SYSTEM: dict(default_quotas)}
         initial[uuid] = source_quota
 
+    userids = [user.pk for user in users]
     objs = AstakosUserQuota.objects.select_related()
-    orig_quotas = objs.filter(user__in=users)
+    orig_quotas = objs.filter(user__pk__in=userids)
     for user_quota in orig_quotas:
         uuid = user_quota.user.uuid
         user_init = initial.get(uuid, {})
@@ -201,18 +202,16 @@ def get_grant_source(grant):
     return SYSTEM
 
 
-def astakos_users_quotas(users, initial=None):
+def astakos_users_quotas(users):
     users = list(users)
-    if initial is None:
-        quotas = initial_quotas(users)
-    else:
-        quotas = copy.deepcopy(initial)
+    quotas = initial_quotas(users)
 
+    userids = [user.pk for user in users]
     ACTUALLY_ACCEPTED = ProjectMembership.ACTUALLY_ACCEPTED
     objs = ProjectMembership.objects.select_related(
         'project', 'person', 'project__application')
     memberships = objs.filter(
-        person__in=users,
+        person__pk__in=userids,
         state__in=ACTUALLY_ACCEPTED,
         project__state=Project.NORMAL,
         project__application__state=ProjectApplication.APPROVED)

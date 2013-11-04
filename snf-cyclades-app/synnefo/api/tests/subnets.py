@@ -196,8 +196,27 @@ class SubnetTest(BaseAPITest):
                           {"start": "10.0.3.200", "end": "10.0.3.220"}],
                          resp['allocation_pools'])
 
+    def test_create_subnet_with_gateway(self):
+        """Test create a subnet with a gateway"""
+        test_net = mf.NetworkFactory()
+        request = {
+            'subnet': {
+                'network_id': test_net.id,
+                'cidr': '10.0.3.0/24',
+                'ip_version': 4,
+                'gateway_ip': '10.0.3.150'}
+        }
+        response = self.post(SUBNETS_URL, test_net.userid,
+                             json.dumps(request), "json")
+        self.assertSuccess(response)
+        resp = json.loads(response.content)['subnet']
+        self.assertEqual("10.0.3.150", resp['gateway_ip'])
+        self.assertEqual([{"start": "10.0.3.1", "end": "10.0.3.149"},
+                          {"start": "10.0.3.151", "end": "10.0.3.254"}],
+                         resp['allocation_pools'])
+
     def test_create_subnet_with_gateway_inside_of_ip_pool_range(self):
-        """Test create a subnet with an IP pool outside of network range"""
+        """Test create a subnet with a gateway IP inside the IP pool range"""
         test_net = mf.NetworkFactory()
         request = {
             'subnet': {

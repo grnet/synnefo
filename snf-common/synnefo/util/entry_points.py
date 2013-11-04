@@ -104,12 +104,20 @@ def extend_list_from_entry_point(settings_object, ns, entry_point_name,
 
             if type(row) == dict and (row.get('before', False) or
                                       row.get('after', False)):
+
+                insert_at = len(settings_object)
                 if row.get('before', False):
-                    position = settings_object.index(row.get('before'))
-                    insert_at = position - 1
+                    try:
+                        position = settings_object.index(row.get('before'))
+                        insert_at = position - 1
+                    except ValueError:
+                        pass
                 else:
-                    position = settings_object.index(row.get('after'))
-                    insert_at = position + 1
+                    try:
+                        position = settings_object.index(row.get('after'))
+                        insert_at = position + 1
+                    except ValueError:
+                        pass
 
                 if insert_at < 0:
                     insert_at = 0

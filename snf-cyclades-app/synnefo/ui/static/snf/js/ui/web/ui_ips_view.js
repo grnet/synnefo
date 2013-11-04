@@ -75,9 +75,9 @@
         'CONNECTING': 'Connecting',
         'DISCONNECTING': 'Disconnecting',
         'DOWN': 'Down',
-        'DISCONNECTED': 'Not assigned',
+        'DISCONNECTED': 'Not connected',
         'ACTIVE': 'Active',
-        'REMOVING': 'Removing'
+        'REMOVING': 'Destroying'
       },
 
       status_cls_map: {

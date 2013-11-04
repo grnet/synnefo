@@ -204,13 +204,13 @@
       <div class="action-container" 
            data-rv-class-isactive="model.can_connect"
            data-rv-on-click="view.show_connect_vms_overlay">
-             <a>Add machine</a>
+           <a>{% trans "Connect machine" %}</a>
       </div>
       <div class="action-container remove warn" 
          data-rv-class-isactive="model.can_remove"
          data-rv-class-selected="model.actions.remove|intEq 1"
          data-rv-on-click="view.set_remove_confirm">
-        <a>Remove</a>
+         <a>{% trans "Destroy" %}</a>
         <div class="confirm-single clearfix">
           <span class="yes" 
             data-rv-on-click="view.remove">

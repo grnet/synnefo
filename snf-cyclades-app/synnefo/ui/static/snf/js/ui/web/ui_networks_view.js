@@ -421,7 +421,7 @@
         'ACTIVE': 'Active',
         'CONNECTING': 'Connecting',
         'DISCONNECTING': 'Disconnecting',
-        'REMOVING': 'Removing'
+        'REMOVING': 'Destroying'
       },
 
       status_cls_map: {

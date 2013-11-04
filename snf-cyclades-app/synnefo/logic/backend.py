@@ -38,9 +38,9 @@ from synnefo.db.models import (Backend, VirtualMachine, Network,
                                BackendNetwork, BACKEND_STATUSES,
                                pooled_rapi_client, VirtualMachineDiagnostic,
                                Flavor, IPAddressLog)
-from synnefo.logic import utils
+from synnefo.logic import utils, ips
 from synnefo import quotas
-from synnefo.api.util import release_resource, allocate_ip
+from synnefo.api.util import release_resource
 from synnefo.util.mac2eui64 import mac2eui64
 from synnefo.logic.rapi import GanetiApiError
 
@@ -273,8 +273,8 @@ def _process_net_status(vm, etime, nics):
                 remove_nic_ips(db_nic)
                 if ipv4_address:
                     network = ganeti_nic["network"]
-                    ipaddress = allocate_ip(network, vm.userid,
-                                            address=ipv4_address)
+                    ipaddress = ips.allocate_ip(network, vm.userid,
+                                                address=ipv4_address)
                     ipaddress.nic = nic
                     ipaddress.save()
 

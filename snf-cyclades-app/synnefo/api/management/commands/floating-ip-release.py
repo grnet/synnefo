@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,18 +31,15 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
+#from optparse import make_option
 
 from django.db import transaction
 from django.core.management.base import BaseCommand, CommandError
+from synnefo.management import common
+from synnefo.logic import ips
 
-from synnefo.management.common import get_floating_ip_by_address
-from synnefo import quotas
 
 class Command(BaseCommand):
-    can_import_settings = True
-    output_transaction = True
-
     help = "Release a floating IP"
 
     @transaction.commit_on_success
@@ -50,24 +47,9 @@ class Command(BaseCommand):
         if not args:
             raise CommandError("Please provide a floating-ip address")
 
-        address = args[0]
+        floating_ip_id = args[0]
 
-        floating_ip = get_floating_ip_by_address(address, for_update=True)
-        if floating_ip.nic:
-            # This is safe, you also need for_update to attach floating IP to
-            # instance.
-            msg = "Floating IP '%s' is attached to instance." % floating_ip.id
-            raise CommandError(msg)
-
-        # Return the address of the floating IP back to pool
-        floating_ip.release_address()
-        # And mark the floating IP as deleted
-        floating_ip.deleted = True
-        floating_ip.save()
-        # Release quota for floating IP
-        quotas.issue_and_accept_commission(floating_ip, delete=True)
-        transaction.commit()
-        # Delete the floating IP from DB
-        floating_ip.delete()
-
-        self.stdout.write("Deleted floating IP '%s'.\n" % address)
+        floating_ip = common.get_floating_ip_by_id(floating_ip_id,
+                                                   for_update=True)
+        ips.delete_floating_ip(floating_ip)
+        self.stdout.write("Deleted floating IP '%s'.\n" % floating_ip_id)

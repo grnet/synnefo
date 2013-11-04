@@ -10,9 +10,8 @@ from snf_django.lib.api import faults
 from django.conf import settings
 from synnefo import quotas
 from synnefo.api import util
-from synnefo.logic import backend
+from synnefo.logic import backend, ips
 from synnefo.logic.backend_allocator import BackendAllocator
-from synnefo.db import pools
 from synnefo.db.models import (NetworkInterface, VirtualMachine,
                                VirtualMachineMetadata, IPAddressLog)
 from vncauthproxy.client import request_forwarding as request_vnc_forwarding
@@ -243,8 +242,8 @@ def create_instance_nics(vm, userid, networks=[], floating_ips=[]):
     ports = []
     for network_id in settings.DEFAULT_INSTANCE_NETWORKS:
         if network_id == "SNF:ANY_PUBLIC":
-            ipaddress = util.allocate_public_ip(userid=userid,
-                                                backend=vm.backend)
+            ipaddress = ips.allocate_public_ip(userid=userid,
+                                               backend=vm.backend)
             port = _create_port(userid, network=ipaddress.network,
                                 use_ipaddress=ipaddress)
         else:
@@ -480,12 +479,8 @@ def _create_port(userid, network, machine=None, use_ipaddress=None,
         # If network has IPv4 subnets, try to allocate the address that the
         # the user specified or a random one.
         if network.subnets.filter(ipversion=4).exists():
-            try:
-                ipaddress = util.allocate_ip(network, userid=userid,
-                                             address=address)
-            except pools.ValueNotAvailable:
-                msg = "Address %s is already in use." % address
-                raise faults.Conflict(msg)
+            ipaddress = ips.allocate_ip(network, userid=userid,
+                                        address=address)
         elif address is not None:
             raise faults.BadRequest("Address %s is not a valid IP for the"
                                     " defined network subnets" % address)

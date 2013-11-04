@@ -44,7 +44,7 @@ from snf_django.lib.api import faults
 
 from synnefo.api import util
 from synnefo.db.models import NetworkInterface
-from synnefo.logic import servers
+from synnefo.logic import servers, ips
 
 from logging import getLogger
 
@@ -141,8 +141,8 @@ def create_port(request):
         ipaddress = util.get_floating_ip_by_address(user_id, fixed_ip_address,
                                                     for_update=True)
     elif fixed_ip_address:
-        ipaddress = util.allocate_ip(network, user_id,
-                                     address=fixed_ip_address)
+        ipaddress = ips.allocate_ip(network, user_id,
+                                    address=fixed_ip_address)
 
     device_id = api.utils.get_attribute(port_dict, "device_id", required=False)
     vm = None

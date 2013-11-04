@@ -39,7 +39,7 @@ from django.utils import simplejson as json
 from snf_django.lib import api
 from snf_django.lib.api import faults, utils
 from synnefo.api import util
-from synnefo import quotas
+from synnefo.logic import ips
 from synnefo.db.models import Network, IPAddress
 
 from logging import getLogger
@@ -147,7 +147,7 @@ def allocate_floating_ip(request):
                                          "floating_network_id",
                                          required=False)
     if network_id is None:
-        floating_ip = util.allocate_public_ip(userid, floating_ip=True)
+        floating_ip = ips.create_floating_ip(userid)
     else:
         try:
             network_id = int(network_id)
@@ -156,28 +156,12 @@ def allocate_floating_ip(request):
 
         network = util.get_network(network_id, userid, for_update=True,
                                    non_deleted=True)
-        if not network.floating_ip_pool:
-            msg = ("Can not allocate floating IP. Network %s is"
-                   " not a floating IP pool.")
-            raise faults.Conflict(msg % network.id)
-        if network.action == "DESTROY":
-            msg = "Can not allocate floating IP. Network %s is being deleted."
-            raise faults.Conflict(msg % network.id)
-
         address = api.utils.get_attribute(floating_ip_dict,
                                           "floating_ip_address",
                                           required=False)
-
-        # Allocate the floating IP
-        floating_ip = util.allocate_ip(network, userid, address=address,
-                                       floating_ip=True)
-
-    # Issue commission (quotas)
-    quotas.issue_and_accept_commission(floating_ip)
-    transaction.commit()
+        floating_ip = ips.create_floating_ip(userid, network, address)
 
     log.info("User '%s' allocated floating IP '%s'", userid, floating_ip)
-
     request.serialization = "json"
     data = json.dumps({"floatingip": ip_to_dict(floating_ip)})
     return HttpResponse(data, status=200)
@@ -193,23 +177,7 @@ def release_floating_ip(request, floating_ip_id):
 
     floating_ip = util.get_floating_ip_by_id(userid, floating_ip_id,
                                              for_update=True)
-    if floating_ip.nic:
-        # This is safe, you also need for_update to attach floating IP to
-        # instance.
-        msg = "Floating IP '%s' is attached to instance." % floating_ip.id
-        raise faults.Conflict(msg)
-
-    # Return the address of the floating IP back to pool
-    floating_ip.release_address()
-    # And mark the floating IP as deleted
-    floating_ip.deleted = True
-    floating_ip.save()
-    # Release quota for floating IP
-    quotas.issue_and_accept_commission(floating_ip, delete=True)
-    transaction.commit()
-    # Delete the floating IP from DB
-    floating_ip.delete()
-
+    ips.delete_floating_ip(floating_ip)
     log.info("User '%s' released IP '%s", userid, floating_ip)
 
     return HttpResponse(status=204)

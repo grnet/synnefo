@@ -33,26 +33,21 @@
 
 from optparse import make_option
 
-from django.db import transaction
 from django.core.management.base import BaseCommand, CommandError
 from synnefo.management.common import convert_api_faults
-
+from synnefo.logic import ips
 from synnefo.api import util
-from synnefo.db import pools
-from synnefo import quotas
 
 
 class Command(BaseCommand):
-    can_import_settings = True
-    output_transaction = True
-
     help = "Allocate a new floating IP"
 
     option_list = BaseCommand.option_list + (
         make_option(
             '--pool',
             dest='pool',
-            help="The IP pool to allocate the address from"),
+            help="The ID of the floating IP pool(network) to allocate the"
+                 " address from"),
         make_option(
             '--address',
             dest='address',
@@ -61,48 +56,29 @@ class Command(BaseCommand):
             '--owner',
             dest='owner',
             default=None,
-            # required=True,
             help='The owner of the floating IP'),
     )
 
-    @transaction.commit_on_success
     @convert_api_faults
     def handle(self, *args, **options):
         if args:
             raise CommandError("Command doesn't accept any arguments")
 
-        pool = options['pool']
+        network_id = options['pool']
         address = options['address']
         owner = options['owner']
 
         if not owner:
             raise CommandError("'owner' is required for floating IP creation")
 
-        if pool is None:
-            if address:
-                raise CommandError('Please specify a pool as well')
-
-            # User did not specified a pool. Choose a random public IP
-            try:
-                floating_ip = util.allocate_public_ip(userid=owner,
-                                                      floating_ip=True)
-            except pools.EmptyPool:
-                raise faults.Conflict("No more IP addresses available.")
-        else:
-            try:
-                network_id = int(pool)
-            except ValueError:
-                raise CommandError("Invalid pool ID.")
+        if network_id is not None:
             network = util.get_network(network_id, owner, for_update=True,
                                        non_deleted=True)
-            if not network.floating_ip_pool:
-                # Check that it is a floating IP pool
-                raise CommandError("Floating IP pool %s does not exist." %
-                                           network_id)
-            floating_ip = util.allocate_ip(network, owner, address=address,
-                                           floating_ip=True)
+        else:
+            network = None
 
-        quotas.issue_and_accept_commission(floating_ip)
-        transaction.commit()
+        floating_ip = ips.create_floating_ip(userid=owner,
+                                             network=network,
+                                             address=address)
 
         self.stdout.write("Created floating IP '%s'.\n" % floating_ip)

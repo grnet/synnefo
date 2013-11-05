@@ -159,7 +159,7 @@ def get_subnet(request, sub_id):
     subnet = subnets.get_subnet(sub_id)
 
     if subnet.network.userid != user_id:
-        raise api.failts.Unauthorized("You're not allowed to view this subnet")
+        raise api.faults.Unauthorized("You're not allowed to view this subnet")
 
     subnet_dict = subnet_to_dict(subnet)
     data = json.dumps({'subnet': subnet_dict})

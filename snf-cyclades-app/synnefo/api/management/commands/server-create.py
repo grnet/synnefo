@@ -118,13 +118,18 @@ class Command(BaseCommand):
         network_ids = parse_list(options["network_ids"])
         port_ids = parse_list(options["port_ids"])
         floating_ip_ids = parse_list(options["floating_ip_ids"])
+        floating_ips = \
+            map(lambda x: common.get_floating_ip_by_id(x, for_update=True),
+                floating_ip_ids)
 
+        floating_ips = map(lambda fp: {"uuid": fp.network_id,
+                                       "fixed_ip": fp.address},
+                           floating_ips)
         networks = map(lambda x: {"uuid": x}, network_ids)
         ports = map(lambda x: {"port": x}, port_ids)
 
         server = servers.create(user_id, name, password, flavor, image,
-                                networks=(ports+networks),
-                                floating_ips=floating_ip_ids,
+                                networks=(floating_ips+ports+networks),
                                 use_backend=backend)
         pprint.pprint_server(server, stdout=self.stdout)
 

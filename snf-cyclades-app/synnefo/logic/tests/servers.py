@@ -60,9 +60,9 @@ class ServerCreationTest(TransactionTestCase):
         self.assertRaises(faults.ServiceUnavailable, servers.create, **kwargs)
         self.assertEqual(models.VirtualMachine.objects.count(), 0)
 
-        subnet = mfactory.IPv4SubnetFactory(network__public=True)
-        bn = mfactory.BackendNetworkFactory(network=subnet.network)
-        backend = bn.backend
+        mfactory.IPv4SubnetFactory(network__public=True)
+        mfactory.IPv6SubnetFactory(network__public=True)
+        mfactory.BackendFactory()
 
         # error in nics
         req = deepcopy(kwargs)
@@ -77,39 +77,9 @@ class ServerCreationTest(TransactionTestCase):
         vm = models.VirtualMachine.objects.get()
         self.assertFalse(vm.deleted)
         self.assertEqual(vm.operstate, "ERROR")
-        self.assertEqual(len(vm.nics.all()), 1)
+        self.assertEqual(len(vm.nics.all()), 2)
         for nic in vm.nics.all():
             self.assertEqual(nic.state, "ERROR")
-
-        # success with no nics
-        mrapi().CreateInstance.side_effect = None
-        mrapi().CreateInstance.return_value = 42
-        with override_settings(settings,
-                               DEFAULT_INSTANCE_NETWORKS=[]):
-            with mocked_quotaholder():
-                vm = servers.create(**kwargs)
-        vm = models.VirtualMachine.objects.get(id=vm.id)
-        self.assertEqual(vm.nics.count(), 0)
-        self.assertEqual(vm.backendjobid, 42)
-        self.assertEqual(vm.task_job_id, 42)
-        self.assertEqual(vm.task, "BUILD")
-
-        # test connect in IPv6 only network
-        subnet = mfactory.IPv6SubnetFactory(network__public=True)
-        net = subnet.network
-        mfactory.BackendNetworkFactory(network=net, backend=backend,
-                                       operstate="ACTIVE")
-        with override_settings(settings,
-                               DEFAULT_INSTANCE_NETWORKS=[str(net.id)]):
-            with mocked_quotaholder():
-                vm = servers.create(**kwargs)
-        nics = vm.nics.all()
-        self.assertEqual(len(nics), 1)
-        self.assertFalse(nics[0].ips.filter(subnet__ipversion=4).exists())
-        args, kwargs = mrapi().CreateInstance.call_args
-        ganeti_nic = kwargs["nics"][0]
-        self.assertEqual(ganeti_nic["ip"], None)
-        self.assertEqual(ganeti_nic["network"], net.backend_id)
 
 
 @patch("synnefo.logic.rapi_pool.GanetiRapiClient")

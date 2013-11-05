@@ -34,7 +34,6 @@ from django.utils import importlib
 from django.conf import settings
 from synnefo.db.models import Backend
 from synnefo.logic import backend as backend_mod
-from synnefo.api import util
 
 log = logging.getLogger(__name__)
 
@@ -112,9 +111,6 @@ def get_available_backends(flavor):
     backends = backends.filter(offline=False, drained=False,
                                disk_templates__contains=disk_template)
     backends = list(backends)
-    if "SNF:ANY_PUBLIC" in settings.DEFAULT_INSTANCE_NETWORKS:
-        backends = filter(lambda x: util.backend_has_free_public_ip(x),
-                          backends)
     return backends
 
 

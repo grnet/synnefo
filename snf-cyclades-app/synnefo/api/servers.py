@@ -378,8 +378,9 @@ def create_server(request):
         flavor_id = server['flavorRef']
         personality = server.get('personality', [])
         assert isinstance(personality, list)
-        networks = server.get("networks", [])
-        assert isinstance(networks, list)
+        networks = server.get("networks")
+        if networks is not None:
+            assert isinstance(networks, list)
     except (KeyError, AssertionError):
         raise faults.BadRequest("Malformed request")
 

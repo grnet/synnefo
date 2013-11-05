@@ -61,7 +61,7 @@ def allocate_ip(network, userid, address=None, floating_ip=False):
                                 (address, network.id))
 
 
-def allocate_public_ip(userid, floating_ip=False, backend=None):
+def allocate_public_ip(userid, floating_ip=False, backend=None, networks=None):
     """Try to allocate a public or floating IP address.
 
     Try to allocate a a public IPv4 address from one of the available networks.
@@ -78,6 +78,8 @@ def allocate_public_ip(userid, floating_ip=False, backend=None):
         .filter(subnet__network__deleted=False)\
         .filter(subnet__network__public=True)\
         .filter(subnet__network__drained=False)
+    if networks is not None:
+        ip_pool_rows = ip_pool_rows.filter(subnet__network__in=networks)
     if floating_ip:
         ip_pool_rows = ip_pool_rows\
             .filter(subnet__network__floating_ip_pool=True)
@@ -99,10 +101,7 @@ def allocate_public_ip(userid, floating_ip=False, backend=None):
             log_msg += " Backend: %s" % backend
         log.error(log_msg)
         exception_msg = "Can not allocate a %s IP address." % ip_type
-        if floating_ip:
-            raise faults.Conflict(exception_msg)
-        else:
-            raise faults.ServiceUnavailable(exception_msg)
+        raise faults.Conflict(exception_msg)
 
 
 @transaction.commit_on_success
@@ -129,6 +128,34 @@ def create_floating_ip(userid, network=None, address=None):
     log.info("Created floating IP '%s' for user IP '%s'", floating_ip, userid)
 
     return floating_ip
+
+
+def get_free_floating_ip(userid, network=None):
+    """Get one of the free available floating IPs of the user.
+
+    Get one of the users floating IPs that is not connected to any port
+    or server. If network is specified, the floating IP must be from
+    that network.
+
+    """
+    floating_ips = IPAddress.objects\
+                            .filter(userid=userid, deleted=False, nic=None)
+    if network is not None:
+        floating_ips = floating_ips.filter(network=network)
+
+    for floating_ip in floating_ips:
+        floating_ip = IPAddress.objects.select_for_update()\
+                                       .get(id=floating_ip.id)
+        if floating_ip.nic is None:
+            return floating_ip
+
+    msg = "Cannot allocate a floating IP for connecting new server to"
+    if network is not None:
+        msg += " network '%s'." % network.id
+    else:
+        msg += " a public network."
+    msg += " Please create more floating IPs."
+    raise faults.Conflict(msg)
 
 
 @transaction.commit_on_success

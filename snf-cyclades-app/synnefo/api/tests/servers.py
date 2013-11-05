@@ -340,7 +340,6 @@ class ServerAPITest(ComputeAPITest):
         response = self.mypost('servers/42/metadata/foo')
         self.assertMethodNotAllowed(response)
 
-
 fixed_image = Mock()
 fixed_image.return_value = {'location': 'pithos://foo',
                             'checksum': '1234',
@@ -355,13 +354,7 @@ fixed_image.return_value = {'location': 'pithos://foo',
 class ServerCreateAPITest(ComputeAPITest):
     def setUp(self):
         self.flavor = mfactory.FlavorFactory()
-        # Create public network and backend
-        subnet = mfactory.IPv4SubnetFactory(network__public=True)
-        self.network = subnet.network
         self.backend = mfactory.BackendFactory()
-        mfactory.BackendNetworkFactory(network=self.network,
-                                       backend=self.backend,
-                                       operstate="ACTIVE")
         self.request = {
             "server": {
                 "name": "new-server-test",
@@ -374,13 +367,20 @@ class ServerCreateAPITest(ComputeAPITest):
                 "personality": []
             }
         }
+        # Create dummy public IPv6 network
+        sub6 = mfactory.IPv6SubnetFactory(network__public=True)
+        self.net6 = sub6.network
+        self.network_settings = {
+            "CYCLADES_DEFAULT_SERVER_NETWORKS": [],
+            "CYCLADES_FORCED_SERVER_NETWORKS": ["SNF:ANY_PUBLIC_IPV6"]
+        }
 
     def test_create_server(self, mrapi):
         """Test if the create server call returns the expected response
            if a valid request has been speficied."""
 
         mrapi().CreateInstance.return_value = 12
-        with override_settings(settings, DEFAULT_INSTANCE_NETWORKS=[]):
+        with override_settings(settings, **self.network_settings):
             with mocked_quotaholder():
                 response = self.mypost('servers', 'test_user',
                                        json.dumps(self.request), 'json')
@@ -398,162 +398,13 @@ class ServerCreateAPITest(ComputeAPITest):
         self.assertEqual(api_server['name'], db_vm.name)
         self.assertEqual(api_server['status'], db_vm.operstate)
 
-        # Test drained flag in Network:
-        self.network.drained = True
-        self.network.save()
-        with mocked_quotaholder():
-            response = self.mypost('servers', 'test_user',
-                                   json.dumps(self.request), 'json')
-        self.assertEqual(response.status_code, 503, "serviceUnavailable")
-
-    def test_create_server_with_port(self, mrapi):
-        mrapi().CreateInstance.return_value = 42
-        ip = mfactory.IPv4AddressFactory(nic__machine=None)
-        port1 = ip.nic
-        request = deepcopy(self.request)
-        request["server"]["networks"] = [{"port": port1.id}]
-        with mocked_quotaholder():
-            response = self.mypost("servers", port1.userid,
-                                   json.dumps(request), 'json')
-        self.assertEqual(response.status_code, 202)
-        vm_id = json.loads(response.content)["server"]["id"]
-        port1 = NetworkInterface.objects.get(id=port1.id)
-        self.assertEqual(port1.machine_id, vm_id)
-        # 409 if already used
-        with mocked_quotaholder():
-            response = self.mypost("servers", port1.userid,
-                                   json.dumps(request), 'json')
-        self.assertConflict(response)
-        # Test permissions
-        ip = mfactory.IPv4AddressFactory(userid="user1", nic__userid="user1")
-        port2 = ip.nic
-        request["server"]["networks"] = [{"port": port2.id}]
-        with mocked_quotaholder():
-            response = self.mypost("servers", "user2",
-                                   json.dumps(request), 'json')
-        self.assertEqual(response.status_code, 404)
-
-    def test_create_network_settings(self, mrapi):
-        mrapi().CreateInstance.return_value = 12
-        # Create public network and backend
-        subnet1 = mfactory.IPv4SubnetFactory(network__userid="test_user")
-        bnet1 = mfactory.BackendNetworkFactory(network=subnet1.network,
-                                               backend=self.backend,
-                                               operstate="ACTIVE")
-        subnet2 = mfactory.IPv4SubnetFactory(network__userid="test_user")
-        bnet2 = mfactory.BackendNetworkFactory(network=subnet2.network,
-                                               backend=self.backend,
-                                               operstate="ACTIVE")
-        # User requested private networks
-        request = deepcopy(self.request)
-        request["server"]["networks"] = [{"uuid": bnet1.network.id},
-                                         {"uuid": bnet2.network.id}]
-        with override_settings(settings,
-                               DEFAULT_INSTANCE_NETWORKS=[
-                                   "SNF:ANY_PUBLIC"]):
-            with mocked_quotaholder():
-                response = self.mypost('servers', 'test_user',
-                                       json.dumps(request), 'json')
-        self.assertEqual(response.status_code, 202)
-        name, args, kwargs = mrapi().CreateInstance.mock_calls[0]
-        self.assertEqual(len(kwargs["nics"]), 3)
-        self.assertEqual(kwargs["nics"][0]["network"],
-                         self.network.backend_id)
-        self.assertEqual(kwargs["nics"][1]["network"],
-                         bnet1.network.backend_id)
-        self.assertEqual(kwargs["nics"][2]["network"],
-                         bnet2.network.backend_id)
-
-        subnet3 = mfactory.IPv4SubnetFactory(network__public=True,
-                                             network__floating_ip_pool=True)
-        bnet3 = mfactory.BackendNetworkFactory(network=subnet3.network,
-                                               backend=self.backend,
-                                               operstate="ACTIVE")
-        request["server"]["floating_ips"] = []
-        with override_settings(settings,
-                               DEFAULT_INSTANCE_NETWORKS=[bnet3.network.id]):
-            with mocked_quotaholder():
-                response = self.mypost('servers', 'test_user',
-                                       json.dumps(request), 'json')
-        self.assertEqual(response.status_code, 202)
-        name, args, kwargs = mrapi().CreateInstance.mock_calls[1]
-        self.assertEqual(len(kwargs["nics"]), 3)
-        self.assertEqual(kwargs["nics"][0]["network"],
-                         bnet3.network.backend_id)
-        self.assertEqual(kwargs["nics"][1]["network"],
-                         bnet1.network.backend_id)
-        self.assertEqual(kwargs["nics"][2]["network"],
-                         bnet2.network.backend_id)
-
-        # test invalid network in DEFAULT_INSTANCE_NETWORKS
-        with override_settings(settings, DEFAULT_INSTANCE_NETWORKS=[42]):
-            response = self.mypost('servers', 'test_user',
-                                   json.dumps(request), 'json')
-        self.assertFault(response, 500, "internalServerError")
-
-        # test connect to public netwok
-        request = deepcopy(self.request)
-        request["server"]["networks"] = [{"uuid": self.network.id}]
-        with override_settings(settings,
-                               DEFAULT_INSTANCE_NETWORKS=["SNF:ANY_PUBLIC"]):
-            response = self.mypost('servers', 'test_user',
-                                   json.dumps(request), 'json')
-        self.assertBadRequest(response)
-
-        # test wrong user
-        request = deepcopy(self.request)
-        request["server"]["networks"] = [{"uuid": bnet1.network.id}]
-        with override_settings(settings,
-                               DEFAULT_INSTANCE_NETWORKS=["SNF:ANY_PUBLIC"]):
-            with mocked_quotaholder():
-                response = self.mypost('servers', 'dummy_user',
-                                       json.dumps(request), 'json')
-        self.assertItemNotFound(response)
-
-        # Test floating IPs
-        request = deepcopy(self.request)
-        fp1 = mfactory.FloatingIPFactory(address="10.0.0.2",
-                                         userid="test_user",
-                                         network=self.network,
-                                         nic=None)
-        fp2 = mfactory.FloatingIPFactory(address="10.0.0.3",
-                                         userid="test_user",
-                                         network=self.network,
-                                         nic=None)
-        request["server"]["networks"] = [{"uuid": bnet1.network.id},
-                                         {"uuid": fp1.network.id,
-                                          "fixed_ip": fp1.address},
-                                         {"uuid": fp2.network.id,
-                                          "fixed_ip": fp2.address}]
-        with override_settings(settings,
-                               DEFAULT_INSTANCE_NETWORKS=[bnet3.network.id]):
-            with mocked_quotaholder():
-                response = self.mypost('servers', 'test_user',
-                                       json.dumps(request), 'json')
-        self.assertEqual(response.status_code, 202)
-        api_server = json.loads(response.content)['server']
-        vm = VirtualMachine.objects.get(id=api_server["id"])
-        fp1 = IPAddress.objects.get(floating_ip=True, id=fp1.id)
-        fp2 = IPAddress.objects.get(floating_ip=True, id=fp2.id)
-        self.assertEqual(fp1.nic.machine, vm)
-        self.assertEqual(fp2.nic.machine, vm)
-        name, args, kwargs = mrapi().CreateInstance.mock_calls[2]
-        self.assertEqual(len(kwargs["nics"]), 4)
-        self.assertEqual(kwargs["nics"][0]["network"],
-                         bnet3.network.backend_id)
-        self.assertEqual(kwargs["nics"][1]["network"],
-                         bnet1.network.backend_id)
-        self.assertEqual(kwargs["nics"][2]["network"], fp1.network.backend_id)
-        self.assertEqual(kwargs["nics"][2]["ip"], fp1.address)
-        self.assertEqual(kwargs["nics"][3]["network"], fp2.network.backend_id)
-        self.assertEqual(kwargs["nics"][3]["ip"], fp2.address)
-
     def test_create_server_no_flavor(self, mrapi):
         request = deepcopy(self.request)
         request["server"]["flavorRef"] = 42
-        with mocked_quotaholder():
-            response = self.mypost('servers', 'test_user',
-                                   json.dumps(request), 'json')
+        with override_settings(settings, **self.network_settings):
+            with mocked_quotaholder():
+                response = self.mypost('servers', 'test_user',
+                                       json.dumps(request), 'json')
         self.assertItemNotFound(response)
 
     def test_create_server_error(self, mrapi):
@@ -562,9 +413,10 @@ class ServerCreateAPITest(ComputeAPITest):
         mrapi().CreateInstance.side_effect = GanetiApiError("..ganeti is down")
 
         request = self.request
-        with mocked_quotaholder():
-            response = self.mypost('servers', 'test_user',
-                                   json.dumps(request), 'json')
+        with override_settings(settings, **self.network_settings):
+            with mocked_quotaholder():
+                response = self.mypost('servers', 'test_user',
+                                       json.dumps(request), 'json')
         self.assertEqual(response.status_code, 202)
         mrapi().CreateInstance.assert_called_once()
         vm = VirtualMachine.objects.get()
@@ -572,6 +424,169 @@ class ServerCreateAPITest(ComputeAPITest):
         self.assertFalse(vm.deleted)
         # but is in "ERROR" operstate
         self.assertEqual(vm.operstate, "ERROR")
+
+    def test_create_network_info(self, mrapi):
+        mrapi().CreateInstance.return_value = 12
+
+        # User requested private networks
+        s1 = mfactory.IPv4SubnetFactory(network__userid="test")
+        s2 = mfactory.IPv6SubnetFactory(network__userid="test")
+        # and a public IPv6
+        request = deepcopy(self.request)
+        request["server"]["networks"] = [{"uuid": s1.network_id},
+                                         {"uuid": s2.network_id}]
+        with override_settings(settings, **self.network_settings):
+            with mocked_quotaholder():
+                response = self.mypost('servers', "test",
+                                       json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 202)
+        name, args, kwargs = mrapi().CreateInstance.mock_calls[0]
+        self.assertEqual(len(kwargs["nics"]), 3)
+        self.assertEqual(kwargs["nics"][0]["network"], self.net6.backend_id)
+        self.assertEqual(kwargs["nics"][1]["network"], s1.network.backend_id)
+        self.assertEqual(kwargs["nics"][2]["network"], s2.network.backend_id)
+
+        # but fail if others user network
+        s3 = mfactory.IPv6SubnetFactory(network__userid="test_other")
+        request = deepcopy(self.request)
+        request["server"]["networks"] = [{"uuid": s3.network_id}]
+        response = self.mypost('servers', "test", json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 404)
+
+        # User requested public networks
+        # but no floating IP..
+        s1 = mfactory.IPv4SubnetFactory(network__public=True)
+        request = deepcopy(self.request)
+        request["server"]["networks"] = [{"uuid": s1.network_id}]
+        response = self.mypost('servers', "test", json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 409)
+
+        # Add one floating IP
+        fp1 = mfactory.IPv4AddressFactory(userid="test", subnet=s1,
+                                          network=s1.network,
+                                          floating_ip=True, nic=None)
+        self.assertEqual(fp1.nic, None)
+        request = deepcopy(self.request)
+        request["server"]["networks"] = [{"uuid": s1.network_id,
+                                          "fixed_ip": fp1.address}]
+        with mocked_quotaholder():
+            with override_settings(settings, **self.network_settings):
+                response = self.mypost('servers', "test",
+                                       json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 202)
+        server_id = json.loads(response.content)["server"]["id"]
+        fp1 = IPAddress.objects.get(id=fp1.id)
+        self.assertEqual(fp1.nic.machine_id, server_id)
+
+        # check used floating IP
+        response = self.mypost('servers', "test", json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 409)
+
+        # Add more floating IP. but check auto-reserve
+        fp2 = mfactory.IPv4AddressFactory(userid="test", subnet=s1,
+                                          network=s1.network,
+                                          floating_ip=True, nic=None)
+        self.assertEqual(fp2.nic, None)
+        request = deepcopy(self.request)
+        request["server"]["networks"] = [{"uuid": s1.network_id}]
+        with mocked_quotaholder():
+            with override_settings(settings, **self.network_settings):
+                response = self.mypost('servers', "test",
+                                       json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 202)
+        server_id = json.loads(response.content)["server"]["id"]
+        fp2 = IPAddress.objects.get(id=fp2.id)
+        self.assertEqual(fp2.nic.machine_id, server_id)
+
+        name, args, kwargs = mrapi().CreateInstance.mock_calls[-1]
+        self.assertEqual(len(kwargs["nics"]), 2)
+        self.assertEqual(kwargs["nics"][0]["network"], self.net6.backend_id)
+        self.assertEqual(kwargs["nics"][1]["network"], fp2.network.backend_id)
+
+    def test_create_network_settings(self, mrapi):
+        mrapi().CreateInstance.return_value = 12
+        # User requested private networks
+        # no public IPv4
+        network_settings = {
+            "CYCLADES_DEFAULT_SERVER_NETWORKS": [],
+            "CYCLADES_FORCED_SERVER_NETWORKS": ["SNF:ANY_PUBLIC_IPV4"]
+        }
+        with override_settings(settings, **network_settings):
+            response = self.mypost('servers', "test", json.dumps(self.request),
+                                   'json')
+        self.assertEqual(response.status_code, 503)
+        # no public IPv4, IPv6 exists
+        network_settings = {
+            "CYCLADES_DEFAULT_SERVER_NETWORKS": [],
+            "CYCLADES_FORCED_SERVER_NETWORKS": ["SNF:ANY_PUBLIC"]
+        }
+        with override_settings(settings, **network_settings):
+            response = self.mypost('servers', "test", json.dumps(self.request),
+                                   'json')
+        self.assertEqual(response.status_code, 202)
+        server_id = json.loads(response.content)["server"]["id"]
+        vm = VirtualMachine.objects.get(id=server_id)
+        self.assertEqual(vm.nics.get().ipv4_address, None)
+
+        # IPv4 exists
+        mfactory.IPv4SubnetFactory(network__public=True,
+                                   cidr="192.168.2.0/24",
+                                   pool__offset=2,
+                                   pool__size=1)
+        with override_settings(settings, **network_settings):
+            response = self.mypost('servers', "test", json.dumps(self.request),
+                                   'json')
+        self.assertEqual(response.status_code, 202)
+        server_id = json.loads(response.content)["server"]["id"]
+        vm = VirtualMachine.objects.get(id=server_id)
+        self.assertEqual(vm.nics.get().ipv4_address, "192.168.2.2")
+
+        # Fixed networks
+        net1 = mfactory.NetworkFactory(userid="test")
+        net2 = mfactory.NetworkFactory(userid="test")
+        net3 = mfactory.NetworkFactory(userid="test")
+        network_settings = {
+            "CYCLADES_DEFAULT_SERVER_NETWORKS": [],
+            "CYCLADES_FORCED_SERVER_NETWORKS": [net1.id, [net2.id, net3.id],
+                                                (net3.id, net2.id)]
+        }
+        with override_settings(settings, **network_settings):
+            response = self.mypost('servers', "test", json.dumps(self.request),
+                                   'json')
+        self.assertEqual(response.status_code, 202)
+        server_id = json.loads(response.content)["server"]["id"]
+        vm = VirtualMachine.objects.get(id=server_id)
+        self.assertEqual(len(vm.nics.all()), 3)
+
+    def test_create_server_with_port(self, mrapi):
+        mrapi().CreateInstance.return_value = 42
+        ip = mfactory.IPv4AddressFactory(nic__machine=None)
+        port1 = ip.nic
+        request = deepcopy(self.request)
+        request["server"]["networks"] = [{"port": port1.id}]
+        with override_settings(settings, **self.network_settings):
+            with mocked_quotaholder():
+                response = self.mypost("servers", port1.userid,
+                                       json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 202)
+        vm_id = json.loads(response.content)["server"]["id"]
+        port1 = NetworkInterface.objects.get(id=port1.id)
+        self.assertEqual(port1.machine_id, vm_id)
+        # 409 if already used
+        with override_settings(settings, **self.network_settings):
+            with mocked_quotaholder():
+                response = self.mypost("servers", port1.userid,
+                                       json.dumps(request), 'json')
+        self.assertConflict(response)
+        # Test permissions
+        ip = mfactory.IPv4AddressFactory(userid="user1", nic__userid="user1")
+        port2 = ip.nic
+        request["server"]["networks"] = [{"port": port2.id}]
+        with override_settings(settings, **self.network_settings):
+            with mocked_quotaholder():
+                response = self.mypost("servers", "user2",
+                                       json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 404)
 
 
 @patch('synnefo.logic.rapi_pool.GanetiRapiClient')

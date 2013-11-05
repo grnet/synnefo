@@ -68,6 +68,28 @@ def get_user(email_or_id, **kwargs):
         return None
 
 
+def get_accepted_user(user_ident):
+    if is_uuid(user_ident):
+        try:
+            user = AstakosUser.objects.get(uuid=user_ident)
+        except AstakosUser.DoesNotExist:
+            raise CommandError('There is no user with uuid: %s' %
+                               user_ident)
+    elif is_email(user_ident):
+        try:
+            user = AstakosUser.objects.get(username=user_ident)
+        except AstakosUser.DoesNotExist:
+            raise CommandError('There is no user with email: %s' %
+                               user_ident)
+    else:
+        raise CommandError('Please specify user by uuid or email')
+
+    if not user.is_accepted():
+        raise CommandError('%s is not an accepted user.' % user.uuid)
+
+    return user
+
+
 def get_astakosuser_content_type():
     try:
         return ContentType.objects.get(app_label='im',

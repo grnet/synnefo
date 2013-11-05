@@ -915,7 +915,8 @@ component-show                Show component details
 project-control               Manage projects and applications
 project-list                  List projects
 project-show                  Show project details
-quota                         List and check the integrity of user quota
+quota-list                    List user quota
+quota-verify                  Check the integrity of user quota
 reconcile-resources-astakos   Reconcile resource usage of Quotaholder with Astakos DB
 resource-list                 List resources
 resource-modify               Modify a resource's default base quota and boolean flags

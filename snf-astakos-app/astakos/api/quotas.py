@@ -39,7 +39,7 @@ from django.db import transaction
 from snf_django.lib import api
 from snf_django.lib.api.faults import BadRequest, ItemNotFound
 
-from astakos.im.register import get_resources
+from astakos.im import register
 from astakos.im.quotas import get_user_quotas, service_get_quotas
 
 import astakos.quotaholder_app.exception as qh_exception
@@ -52,7 +52,9 @@ from .util import (json_response, is_integer, are_integer,
 @api.api_method(http_method='GET', token_required=True, user_required=False)
 @user_from_token
 def quotas(request):
-    result = get_user_quotas(request.user)
+    visible_resources = register.get_api_visible_resources()
+    resource_names = [r.name for r in visible_resources]
+    result = get_user_quotas(request.user, resources=resource_names)
     return json_response(result)
 
 
@@ -71,7 +73,8 @@ def service_quotas(request):
 
 @api.api_method(http_method='GET', token_required=False, user_required=False)
 def resources(request):
-    result = get_resources()
+    resources = register.get_api_visible_resources()
+    result = register.resources_to_dict(resources)
     return json_response(result)
 
 

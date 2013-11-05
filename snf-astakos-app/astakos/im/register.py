@@ -123,6 +123,13 @@ def update_resources(updates):
                         % (resource.name, uplimit))
 
 
+def resources_to_dict(resources):
+    resource_dict = {}
+    for r in resources:
+        resource_dict[r.name] = r.get_info()
+    return resource_dict
+
+
 def get_resources(resources=None, services=None):
     if resources is None:
         rs = Resource.objects.all()
@@ -132,11 +139,12 @@ def get_resources(resources=None, services=None):
     if services is not None:
         rs = rs.filter(service__in=services)
 
-    resource_dict = {}
-    for r in rs:
-        resource_dict[r.full_name()] = r.get_info()
+    return rs
 
-    return resource_dict
+
+def get_api_visible_resources(resources=None, services=None):
+    rs = get_resources(resources, services)
+    return rs.filter(api_visible=True)
 
 
 def add_endpoint(component, service, endpoint_dict, out=None):

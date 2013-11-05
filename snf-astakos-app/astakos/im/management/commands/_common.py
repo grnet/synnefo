@@ -40,7 +40,7 @@ from django.core.management import CommandError
 
 from synnefo.util import units
 from astakos.im.models import AstakosUser
-from astakos.im.register import get_resources
+from astakos.im import register
 import sys
 
 
@@ -163,7 +163,8 @@ class ResourceDict(object):
     @classmethod
     def get(cls):
         if cls._object is None:
-            cls._object = get_resources()
+            rs = register.get_resources()
+            cls._object = register.resources_to_dict(rs)
         return cls._object
 
 

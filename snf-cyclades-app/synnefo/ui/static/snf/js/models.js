@@ -684,7 +684,7 @@
         proxy_attrs: {
           'busy': [
             ['status', 'state'], function() {
-              return !_.contains(['ACTIVE', 'SHUTDOWN'], this.get('status'));
+              return !_.contains(['ACTIVE', 'STOPPED'], this.get('status'));
             }
           ],
         },

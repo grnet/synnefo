@@ -382,7 +382,6 @@
       resolve_storage_object: function() {
         return this.collection
       },
-
       show_connect_vms_overlay: function() {
         this.parent_view.show_connect_vms_overlay();
       }
@@ -408,6 +407,11 @@
         }
         this.ports_toggler.find(".cont-toggler").toggleClass("open");
         this.ports_visible = this.ports_toggler.find(".cont-toggler").hasClass("open");
+      },
+      
+      get_network_icon: function() {
+        var ico = this.model.get('is_public') ? 'internet.png' : 'network.png';
+        return synnefo.config.media_url + 'images/' + ico;
       },
 
       post_hide: function() {

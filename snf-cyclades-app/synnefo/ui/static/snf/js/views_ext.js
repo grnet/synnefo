@@ -26,20 +26,31 @@
     views.ext.View = views.View.extend({
       rivets_view: false,
       rivets: undefined,
+      container: undefined,
+      classes:'',
 
       storage_handlers: {},
 
       init: function() {},
       post_init: function() {},
 
-      initialize: function() {
+      initialize: function(options) {
+        this.container = options && options.container;
         this._subviews = [];
         if (this.tpl) {
           this.el = $(this.tpl).clone().removeClass("hidden").removeAttr('id');
         }
         this.init.apply(this, arguments);
         this.post_init.apply(this, arguments);
+        this.append_to_container();
+        $(this.el).addClass(this.classes);
         _.bindAll(this);
+      },
+      
+      append_to_container: function() {
+        if (!this.container) { return }
+        var cont = $(this.container);
+        cont.append(this.el);
       },
 
       create_view: function(view_cls, options) {
@@ -384,7 +395,7 @@
 
     views.ext.ModelView = views.ext.View.extend({
       rivets_view: true,
-
+      
       initialize: function() {
         views.ext.ModelView.__super__.initialize.apply(this, arguments);
         var actions = this.model.get('actions');

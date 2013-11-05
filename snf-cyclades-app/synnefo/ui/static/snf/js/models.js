@@ -690,10 +690,17 @@
         },
 
         initialize: function(params) {
-            
+            var self = this;
+            this.ports = new Backbone.FilteredCollection(undefined, {
+              collection: synnefo.storage.ports,
+              collectionFilter: function(m) {
+                return self.id == m.get('device_id')
+            }});
+
             this.pending_firewalls = {};
             
             models.VM.__super__.initialize.apply(this, arguments);
+
 
             this.set({state: params.status || "ERROR"});
             this.log = new snf.logging.logger("VM " + this.id);

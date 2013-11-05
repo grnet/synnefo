@@ -31,3 +31,32 @@
 {% include "partials/create_vm.html" %}
 {% include "partials/manage_metadata.html" %}
 {% include "partials/vm_connect.html" %}
+
+<div id="vm-port-ips-tpl" class="hidden">
+  <div class="collection fixed-ips-list">
+    <div class="empty-list hidden">loading...</div>
+    <div class="items-list clearfix"></div>
+  </div>
+</div>
+
+<div id="vm-port-ip-tpl" class="hidden clearfix port-ip-item">
+  <div class="type" data-rv-text="model.type"></div>
+  <div class="ip" data-rv-text="model.ip_address"></div>
+  <div class="cidr" data-rv-text="model.subnet.cidr"></div>
+</div>
+
+<div id="vm-port-view-tpl">
+  <img data-rv-src="model.network.is_public|get_network_icon" />
+  <div class="port" data-rv-text="model.network.name|get_network_name"></div>
+  <div class="ips" data-rv-collection-view="model.ips|VMPortIpsView"></div>
+</div>
+
+<div id="vm-port-list-view-tpl" class="collection-list-view hidden info-content ips">
+  <div class="collection">
+    <div class="empty-list hidden">
+      <p>{% trans "No IP addresses" %}</p>
+    </div>
+    <div class="items-list ports-list clearfix">
+    </div>
+  </div>
+</div>

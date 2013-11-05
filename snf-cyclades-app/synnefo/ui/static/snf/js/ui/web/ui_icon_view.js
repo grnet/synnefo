@@ -127,24 +127,28 @@
             this.view = view;
             this.vm_view = this.view.vm(vm);
             
-            this.info_link = $(".toggler", this.vm_view);
-            this.info_el = $("div.info-content", this.vm_view);
-            this.details_toggler = $(".toggler", this.vm_view);
+            this.info_toggle = $(".cont-toggler-wrapper.info .toggler", this.vm_view);
+            this.ips_toggle = $(".cont-toggler-wrapper.ips .toggler", this.vm_view);
+            this.info_el = $("div.info-content.vm-info", this.vm_view);
+            this.ips_el = $("div.info-content.ips", this.vm_view);
             this.label = $(".label", this.vm_view);
 
             this.set_handlers();
         },
 
         set_handlers: function() {
-            this.info_link.click(_.bind(function(){
+            this.info_toggle.click(_.bind(function(){
+                this.ips_el.slideUp();
+                this.ips_toggle.removeClass("open");
+
                 this.info_el.slideToggle();
                 this.view.vm(this.vm).toggleClass("light-background");
 
-                if (this.details_toggler.hasClass("open")) {
-                    this.details_toggler.removeClass("open");
+                if (this.info_toggle.hasClass("open")) {
+                    this.info_toggle.removeClass("open");
                     this.vm.stop_stats_update();
                 } else {
-                    this.details_toggler.addClass("open");
+                    this.info_toggle.addClass("open");
                     this.view.details_views[this.vm.id].update_layout();
                     this.view.tags_views[this.vm.id].update_layout();
                     this.view.stats_views[this.vm.id].update_layout();
@@ -153,6 +157,22 @@
                 var self = this;
                 window.setTimeout(function() {$(self.view).trigger("resize")}, 300);
             }, this));
+
+            this.ips_toggle.click(_.bind(function(){
+                this.info_el.slideUp();
+                this.info_toggle.removeClass("open");
+
+                this.ips_el.slideToggle();
+                this.view.vm(this.vm).toggleClass("light-background");
+                var self = this;
+                if (this.ips_toggle.hasClass("open")) {
+                    this.ips_toggle.removeClass("open");
+                } else {
+                    this.ips_toggle.addClass("open");
+                }
+                window.setTimeout(function() {$(self.view).trigger("resize")}, 300);
+            }, this));
+
 
             this.$(".stats-report").click(_.bind(function(e){
                 e.preventDefault();
@@ -416,17 +436,27 @@
                 this.parent.metadata_view.show(this.vm);
             }, this));
 
-            // tags have show/hide control ? bind events for them
+            // tags/ips have show/hide control ? bind events for them
             var self = this;
             if (this.toggle) {
                 $(this.el).find(".tags-header").click(_.bind(function(){
                     $(self.el).find(".tags-content").slideToggle(600);
-                    var details_toggler = $(this.el).find(".tags-header .cont-toggler");
+
+                    var details_toggler = $(this.el).find(".tags-header " +
+                                                          ".cont-toggler.info");
+                    var ips_toggler = $(this.el).find(".tags-header " +
+                                                      ".cont-toggler.ips");
                     
                     if (details_toggler.hasClass("open")) {
                         details_toggler.removeClass("open");
                     } else {
                         details_toggler.addClass("open");
+                    }
+
+                    if (ips_toggler.hasClass("open")) {
+                        ips_toggler.removeClass("open");
+                    } else {
+                        ips_toggler.addClass("open");
                     }
                 }, this));
                 $(self.el).find(".tags-content").hide();
@@ -716,6 +746,7 @@
             this.info_views = this.info_views || {};
             this.action_error_views = this.action_error_views || {};
             this.action_views = this.action_views || {};
+            this.ports_views = this.ports_views || {};
 
             this.action_views[vm.id] = new views.VMActionsView(vm, this, this.vm(vm), this.hide_actions);
             this.rename_views[vm.id] = new views.IconRenameView(vm, this);
@@ -723,8 +754,19 @@
             this.connect_views[vm.id] = new views.IconVMConnectView(vm, this);
             this.tags_views[vm.id] = new views.VMTagsView(vm, this);
             this.details_views[vm.id] = new views.VMDetailsView(vm, this);
-            this.info_views[vm.id] = new views.IconInfoView(vm, this);
             this.action_error_views[vm.id] = new views.VMActionErrorView(vm, this);
+            
+            var ports_container = this.vm(vm).find(".machine-data");
+            var ports_view = new views.VMPortListView({
+              collection: vm.ports, 
+              container: ports_container,
+              parent: this
+            });
+            this.ports_views[vm.id] = ports_view
+            ports_view.show();
+            ports_view.el.hide();
+
+            this.info_views[vm.id] = new views.IconInfoView(vm, this);
         },
         
         // vm specific event handlers

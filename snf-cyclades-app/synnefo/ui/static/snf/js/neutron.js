@@ -262,16 +262,47 @@
         return this.api_call(this.path, "create", params, complete, error, success);
       }
     });
+    
+    // dummy model/collection
+    models.FixedIP = models.NetworkModel.extend({
+      storage_attrs: {
+        'subnet_id': ['subnets', 'subnet']
+      }
+    });
+    models.FixedIPs = models.NetworkCollection.extend({
+      model: models.FixedIP
+    });
 
     models.Port = models.NetworkModel.extend({
-      
       path: 'ports',
-
       initialize: function() {
         models.Port.__super__.initialize.apply(this, arguments);
+        var ips = new models.FixedIPs();
+        this.set({'ips': ips});
+        this.bind('change:fixed_ips', function() {
+          var ips = this.get('ips');
+          //var ips = _.map(ips, function(ip) { ip.id = ip.a})
+          this.update_ips()
+        }, this);
+        this.update_ips();
         this.set({'pending_firewall': null});
       },
       
+      update_ips: function() {
+        var ips = _.map(this.get('fixed_ips'), function(ip) {
+          var type = "v4";
+          if (ip.ip_address.indexOf(":") >= 0) {
+            type = "v6";
+          }
+          ip.id = ip.ip_address;
+          ip.type = type;
+          ip.subnet_id = ip.subnet;
+          delete ip.subnet;
+          return ip;
+        });
+        this.get('ips').update(ips, {removeMissing: true});
+      },
+
       model_actions: {
         'disconnect': [['status', 'network', 'vm'], function() {
           var network = this.get('network');
@@ -298,7 +329,7 @@
             return attachment.firewallProfile
           } 
         ],
-
+        
         'firewall_running': [
           ['firewall_status', 'pending_firewall'], function(status, pending) {
               var pending = this.get('pending_firewall');

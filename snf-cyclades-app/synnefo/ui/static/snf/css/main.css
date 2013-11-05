@@ -829,8 +829,7 @@ div.image-container {
     
 }
 
-.icon .machine-container .info,
-.icon .machine-container .ips {
+.icon .machine-container .info {
     margin-top: 2px;
     height: 17px;
 }
@@ -3228,6 +3227,83 @@ div.reboot-dialog button.details:hover {
     display: none;
 }
 
+.machine .info-content.ips .collection {
+  padding: 0;
+}
+
+.machine .info-content.ips .ips .model-item .subnet {
+  padding-top: 2px;
+  width: 35%;
+  float: left;
+}
+
+.machine .info-content.ips .ips .port-ip-item:last-child {
+  margin-bottom: 0;
+}
+
+.machine .info-content.ips .ips .port-ip-item:hover {
+  background-color: #75A7BF;
+}
+
+.machine .info-content.ips .ips .port-ip-item {
+  padding: 4px;
+  margin-bottom: 2px;
+}
+
+.machine .info-content.ips .ips .model-item .ip {
+  padding-top: 2px;
+  width: 55%;
+  float: left;
+}
+
+.machine .info-content.ips .ips .model-item .type {
+  float: left;
+  margin-right: 10px;
+  vertical-align: middle;
+  color: #fff;
+  background-color: #4085A5;
+  padding: 3px;
+}
+
+.machine .info-content.ips .port {
+  width: 15%;
+  float: left;
+}
+
+.machine .info-content.ips .ips {
+  width: 80%;
+  float: right;
+}
+
+.machine .info-content.ips .port-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+
+.machine .info-content.ips .port-item {
+  border-bottom: 1px solid #6F93A4;
+  padding: 5px 0;
+  margin-bottom: 5px;
+}
+
+.machine .info-content.ips .port-item img {
+  float: left;
+  margin-top: 6px;
+  margin-right: 3%;
+}
+
+.machine .info-content.ips .port-item .port {
+  font-weight: bold;
+  padding-top: 6px;
+}
+
+.machine .info-content.ips {
+    background-color: #84B7D0;
+    padding: 5px 10px;
+    font-size: 0.6em;
+}
+
 .metadata-container {
     line-height: 12px;
     height: 85px;
@@ -3596,7 +3672,7 @@ div.machine a.manage-metadata:hover {
     height: auto;
     padding-bottom: 5px;
     padding-top: 5px;
-    width: 300px;
+    width: 339px;
 }
 
 .single .column3 {

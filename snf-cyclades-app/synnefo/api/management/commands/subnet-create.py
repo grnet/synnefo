@@ -36,6 +36,7 @@ from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 from synnefo.management import common
 from snf_django.management.utils import parse_bool
+from synnefo.management import pprint
 
 from synnefo.logic import subnets
 
@@ -107,14 +108,18 @@ class Command(BaseCommand):
         dns = options["dns"]
         host_routes = options["host_routes"]
 
-        subnets.create_subnet(name=name,
-                              network_id=network_id,
-                              cidr=cidr,
-                              allocation_pools=allocation_pools,
-                              gateway=gateway,
-                              ipversion=ipversion,
-                              dhcp=dhcp,
-                              slaac=dhcp,
-                              dns_nameservers=dns,
-                              host_routes=host_routes,
-                              user_id=user_id)
+        sub = subnets.create_subnet(name=name,
+                                    network_id=network_id,
+                                    cidr=cidr,
+                                    allocation_pools=allocation_pools,
+                                    gateway=gateway,
+                                    ipversion=ipversion,
+                                    dhcp=dhcp,
+                                    slaac=dhcp,
+                                    dns_nameservers=dns,
+                                    host_routes=host_routes,
+                                    user_id=user_id)
+
+        pprint.pprint_subnet_in_db(sub, stdout=self.stdout)
+        self.stdout.write("\n\n")
+        pprint.pprint_ippool(sub, stdout=self.stdout)

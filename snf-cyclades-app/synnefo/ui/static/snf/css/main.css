@@ -3246,7 +3246,7 @@ div.reboot-dialog button.details:hover {
 }
 
 .machine .info-content.ips .ips .port-ip-item {
-  padding: 4px;
+  padding: 6px;
   margin-bottom: 2px;
 }
 
@@ -3268,6 +3268,7 @@ div.reboot-dialog button.details:hover {
 .machine .info-content.ips .port {
   width: 15%;
   float: left;
+  margin-top: 9px;
 }
 
 .machine .info-content.ips .ips {
@@ -3282,25 +3283,24 @@ div.reboot-dialog button.details:hover {
 }
 
 .machine .info-content.ips .port-item {
-  border-bottom: 1px solid #6F93A4;
-  padding: 5px 0;
-  margin-bottom: 5px;
+  border-bottom: 1px solid #75A9C1;
 }
 
 .machine .info-content.ips .port-item img {
   float: left;
-  margin-top: 6px;
+  position: relative;
+  left: 4px;
+  margin-top: 10px;
   margin-right: 3%;
 }
 
 .machine .info-content.ips .port-item .port {
   font-weight: bold;
-  padding-top: 6px;
 }
 
 .machine .info-content.ips {
     background-color: #84B7D0;
-    padding: 5px 10px;
+    padding: 0px 10px;
     font-size: 0.6em;
 }
 
@@ -7211,4 +7211,78 @@ input.has-errors {
 
 .model-rename-view .rename-actions .btn.cancel:hover {
   background-image: url("../images/cancel-onhover.png"); 
+}
+
+
+.select-item input {
+  cursor: pointer;
+}
+
+.select-item {
+  font-size: 0.9em;
+  padding: 5px 4px;
+  margin-bottom: 3px;
+  background-color: #efefef;
+  cursor: pointer;
+}
+
+.select-item.selected {
+  background-color: #4085A5;
+}
+
+.select-item.selected * {
+  color: #fff;
+}
+
+.items-list.floating-ips {
+  margin-top: -5px;
+}
+
+.select-item.floating-ip.not-available {
+  background-image: none;
+}
+
+.select-item.floating-ip.create {
+  padding-left: 34px;
+  margin-bottom: 5px;
+  background-image: url("../images/option-action-add-dark.png");
+  background-repeat: no-repeat;
+  background-position: 9px 7px;
+}
+
+.select-item.floating-ip.selected * {
+  color: #222 !important;
+  font-weight: bold;
+}
+
+.select-item.floating-ip {
+  border-left: 10px solid #efefef;
+  background-color: #ddd;
+  margin-bottom: 0;
+  border-bottom: 1px solid #efefef;
+}
+
+.select-item.private-network .name {
+  float: left;
+  width: 50%;
+}
+
+.select-item.private-network .cidr {
+  float: left;
+  width: 40%;
+}
+
+.select-item .name {
+  float: left;
+  width: 90%;
+}
+
+.select-item .ico {
+  float: left;
+  width: 5%;
+}
+
+.select-item .checkbox {
+  float: left;
+  width: 5%;
 }

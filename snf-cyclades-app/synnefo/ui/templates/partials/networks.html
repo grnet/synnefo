@@ -240,3 +240,71 @@
     </div>
   </div>
 </div>
+
+<div id="networks-select-floating-ip-tpl" class="hidden">
+  <div class="select-item floating-ip clearfix">
+    <div class="checkbox">
+      <input type="checkbox" data-rv-data-id="model.id" />
+    </div>
+    <div class="name" data-rv-text="model.floating_ip_address"></div>
+  </div>
+</div>
+
+<div id="networks-select-floating-ips-tpl" class="hidden">
+  <div class="collection">
+    <div class="empty-list hidden">{% trans "No ip addresses available" %}</div>
+    <div class="items-list floating-ips clearfix">
+    </div>
+    <div class="create model-item select-item floating-ip">create...</div>
+  </div>
+</div>
+
+<div id="networks-select-public-item-tpl" class="hidden">
+  <div class="select-item clearfix">
+    <div class="checkbox">
+      <input type="checkbox" data-rv-data-id="model.id" />
+    </div>
+    <div class="ico"><img data-rv-src="model.is_public|get_network_icon" /></div>
+    <div class="name"><span class="" data-rv-text="model.name"></span></div>
+  </div>
+  <div data-rv-show="model.is_public" class="floating-ips">
+    <div data-rv-collection-view="model.available_floating_ips|NetworkSelectFloatingIpsView">
+    </div>
+  </div>
+</div>
+
+<div id="networks-select-private-item-tpl" class="hidden">
+  <div class="select-item private-network clearfix">
+    <div class="checkbox"><input type="checkbox" data-rv-data-id="model.id"></div>
+    <div class="ico"><img data-rv-src="model.is_public|get_network_icon" /></div>
+    <div class="name"><span class="" data-rv-text="model.name"></span></div>
+    <div class="cidr"><span class="" data-rv-text="model.subnet.cidr"></span></div>
+  </div>
+</div>
+
+<div id="networks-select-public-tpl" class="hidden">
+  <div class="collection">
+    <div class="items-list">
+    </div>
+  </div>
+</div>
+
+<div id="networks-select-private-tpl" class="hidden">
+  <div class="collection">
+    <div class="items-list">
+    </div>
+  </div>
+</div>
+
+<div id="networks-select-view-tpl" class="hidden list-cont">
+  <h4>{% trans "Available networks" %}</h4>
+  <p class="desc">Select the networks you want your machine to get connected to.</p>
+  <div class="network-select">
+    <div class="public-list" 
+      data-rv-collection-view="model.public_collection|NetworkSelectPublicNetworks">
+    </div>
+    <div class="private-list" 
+      data-rv-collection-view="model.private_collection|NetworkSelectPrivateNetworks">
+    </div>
+  </div>
+</div>

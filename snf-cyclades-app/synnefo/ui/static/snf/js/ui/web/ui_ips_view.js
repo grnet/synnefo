@@ -155,9 +155,7 @@
       handle_create_click: function() {
         network = synnefo.storage.networks.get_floating_ips_network();
         this.collection.create({
-          floatingip: {
-            floating_network_id: network.id
-          }
+          floatingip: {}
         }, 
         {
           complete: _.bind(function() {

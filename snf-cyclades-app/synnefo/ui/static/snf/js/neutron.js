@@ -104,7 +104,7 @@
       storage_attrs: {
         'subnets': ['subnets', 'subnet', function(model, attr) {
           var subnets = model.get(attr);
-          if (subnets.length) { return subnets[0] }
+          if (subnets && subnets.length) { return subnets[0] }
         }]
       },
 
@@ -216,6 +216,16 @@
           }
         });
         this.set({ports: this.ports});
+        this.floating_ips = synnefo.storage.floating_ips;
+        this.set({floating_ips: this.floating_ips});
+
+        this.available_floating_ips = new Backbone.FilteredCollection(undefined, {
+          collection: synnefo.storage.floating_ips,
+          collectionFilter: function(m) {
+            return !m.get('port_id');
+          }
+        });
+        this.set({available_floating_ips: this.available_floating_ips});
       },
 
     })

@@ -679,7 +679,6 @@
             } else {
               this.set_subtitle(subtitle);
             }
-
             this.vms = vms;
             this.selected = selected;
             this.cb = callback;
@@ -691,6 +690,284 @@
             if (!this.get_selected().length) { return }
             this.cb(this.get_selected());
         }
+    });
+    
+    views.NetworkSelectModelView = views.ext.ModelView.extend({
+      select: function() {
+        if (!this.delegate_input) {
+          this.input.attr("checked", true);
+          this.item.addClass("selected");
+        }
+        this.selected = true;
+        this.trigger("change:select", this, this.selected);
+      },
+
+      deselect: function() {
+        if (!this.delegate_input) {
+          this.input.attr("checked", false);
+          this.item.removeClass("selected");
+        }
+        this.selected = false;
+        this.trigger("change:select", this, this.selected);
+      },
+      
+      toggle_select: function() {
+        if (this.selected) { 
+          this.deselect();
+        } else {
+          this.select();
+        }
+      },
+
+      post_init_element: function() {
+        this.input = $(this.$("input").get(0));
+        this.item = $(this.$(".select-item").get(0));
+        this.delegate_input = this.model.get('noselect');
+        this.deselect();
+
+        var self = this;
+        if (self.model.get('forced')) {
+          this.select();
+          this.input.attr("disabled", true);
+          $(this.el).attr('title', this.forced_title);
+          $(this.el).tooltip({
+            'tipClass': 'tooltip', 
+            'position': 'top center',
+            'offset': [-5, 0]
+          });
+        }
+
+        $(this.item).click(function(e) {
+          if (self.model.get('forced')) { return }
+          e.stopPropagation();
+          e.preventDefault();
+          self.toggle_select();
+        });
+        
+        views.NetworkSelectModelView.__super__.post_init_element.apply(this,
+                                                                       arguments);
+      }
+    });
+
+    views.NetworkSelectNetworkTypeModelView = views.NetworkSelectModelView.extend({
+      get_network_icon: function() {
+        var ico = this.model.get('is_public') ? 'internet-small.png' : 'network-small.png';
+        return synnefo.config.media_url + 'images/' + ico;
+      },
+      forced_title: 'You machine will be automatically connected ' +
+                    'to this network.'
+    });
+
+    views.NetworkSelectPublicNetwork = views.NetworkSelectNetworkTypeModelView.extend({
+      tpl: '#networks-select-public-item-tpl',
+      classes: 'public-network',
+      post_init_element: function() {
+        views.NetworkSelectPublicNetwork.__super__.post_init_element.apply(this);
+        //$(this.el).attr('title', 'Public network tooltip');
+        //$(this.el).tooltip({
+          //'tipClass': 'tooltip', 
+          //'position': 'top center',
+          //'offset': [-5, 0]
+        //});
+
+      }
+    });
+
+    views.NetworkSelectPrivateNetwork = views.NetworkSelectNetworkTypeModelView.extend({
+      tpl: '#networks-select-private-item-tpl',
+      classes: 'private-network'
+    });
+    
+    views.NetworkSelectTypeView = views.ext.CollectionView.extend({});
+    views.NetworkSelectPublicNetworks = views.NetworkSelectTypeView.extend({
+      tpl: '#networks-select-public-tpl',
+      model_view_cls: views.NetworkSelectPublicNetwork,
+      get_floating_ips: function() {
+        return _.map(this._subviews[1]._subviews[0].selected, function(m) {
+          return m.id;
+        });
+      }
+    });
+    
+    views.NetworkSelectFloatingIpView = views.NetworkSelectModelView.extend({
+      tpl: '#networks-select-floating-ip-tpl'
+    });
+
+    views.NetworkSelectFloatingIpsView = views.ext.CollectionView.extend({
+      tpl: '#networks-select-floating-ips-tpl',
+      model_view_cls: views.NetworkSelectFloatingIpView,
+
+      select_available: function() {
+        var selected = false;
+        this.each_ip_view(function(v) { 
+          if (selected) { return }
+          v.select();
+          selected = true;
+        });
+      },
+
+      deselect_all: function() {
+        this.each_ip_view(function(v) { v.deselect() });
+      },
+
+      each_ip_view: function(cb) {
+        _.each(this._subviews, function(view) {
+          if (view instanceof views.NetworkSelectFloatingIpView) {
+            cb(view);
+          }
+        })
+      },
+
+      post_init: function() {
+        this.selected = [];
+        var parent = this.parent_view;
+        var self = this;
+        this.handle_ip_select = _.bind(this.handle_ip_select, this);
+        this.create = this.$(".floating-ip.create");
+        parent.bind("change:select", function(selected) {
+          if (parent.selected) {
+            self.show(true);
+            self.select_available();
+          } else {
+            self.deselect_all();
+            self.hide(true);
+          }
+        });
+
+        this.create.click(function() {
+          self.create_ip();
+        })
+      },
+      
+      post_add_model_view: function(view) {
+        view.bind("change:select", this.handle_ip_select)
+      },
+
+      post_remove_model_view: function(view) {
+        view.unbind("change:select", this.handle_ip_select)
+      },
+
+      handle_create_error: function() {},
+
+      create_ip: function() {
+        synnefo.storage.floating_ips.create({floatingip:{}}, {
+          error: _.bind(this.handle_create_error, this),
+          skip_api_error: true
+        });
+      },
+
+      handle_ip_select: function(view) {
+        if (view.selected) {
+          this.selected.push(view.model);
+        } else {
+          this.selected = _.without(this.selected, view.model);
+        }
+        this.update_selected();
+      },
+      
+      update_selected: function() {
+        var selected = this.selected.length;
+        if (selected) {
+          this.parent_view.input.attr("checked", true);
+          this.parent_view.item.addClass("selected");
+          $(this.parent_view.el).addClass("selected");
+        } else {
+          this.parent_view.input.attr("checked", false);
+          this.parent_view.item.removeClass("selected");
+          $(this.parent_view.el).removeClass("selected");
+        }
+      },
+
+      post_show: function() {
+        if (!this.parent_view.selected) {
+          this.hide(true);
+        }
+      },
+
+      get_floating_ips: function() {
+        return this.selected;
+      }
+    });
+
+    views.NetworkSelectPrivateNetworks = views.NetworkSelectTypeView.extend({
+      tpl: '#networks-select-private-tpl',
+      model_view_cls: views.NetworkSelectPrivateNetwork,
+      get_networks: function() {
+        return _.filter(_.map(this._subviews, function(view) {
+          if (view.selected) { return view.model.id }
+        }), function(id) { return id });
+      }
+
+    });
+
+    views.NetworkSelectView = views.ext.ModelView.extend({
+      rivets_view: true,
+      tpl: '#networks-select-view-tpl',
+      select_public: true,
+
+      initialize: function(options) {
+        this.quotas = synnefo.storage.quotas.get('cyclades.private_network');
+        options = options || {};
+        options.model = options.model || new models.Model();
+        this.private_networks = new Backbone.FilteredCollection(undefined, {
+          collection: synnefo.storage.networks,
+          collectionFilter: function(m) {
+            return !m.get('is_public')
+        }});
+
+        this.public_networks = new Backbone.Collection();
+
+        // forced networks
+        // TODO: check config
+        this.forced = new models.networks.Network({
+          name: 'Public IPv6 Network', 
+          subnets: [],
+          is_public: true,
+          forced: true
+        });
+        this.public_networks.add(this.forced);
+
+        // combined public
+        this.combined_public = new models.networks.CombinedPublicNetwork();
+        this.combined_public.set({noselect: true, name: 'Internet'});
+        this.public_networks.add(this.combined_public);
+
+        model_attrs = {
+          public_collection: this.public_networks,
+          private_collection: this.private_networks,
+          floating_selected: true
+        }
+
+        options.model.set(model_attrs);
+        this._configure(options);
+        return views.NetworkSelectView.__super__.initialize.call(this, options);
+      },
+
+      get_selected_floating_ips: function() {
+        var ips = [];
+        _.each(this._subviews, function(view) {
+          if (view.get_floating_ips) {
+            ips = _.union(ips, view.get_floating_ips());
+          }
+        }, this);
+        return _.filter(
+          _.map(ips, function(ipid) { 
+          return synnefo.storage.floating_ips.get(parseInt(ipid))
+        }), function(ip) { console.log("IP", ip); return ip });
+      },
+
+      get_selected_networks: function() {
+        var networks = [];
+        _.each(this._subviews, function(view) {
+          if (view.get_networks) {
+            networks = _.union(networks, view.get_networks());
+          }
+        }, this);
+        return _.filter(
+          _.map(networks, function(netid) { 
+          return synnefo.storage.networks.get(netid)
+        }), function(net) { return net });
+      }
     });
  
 })(this);

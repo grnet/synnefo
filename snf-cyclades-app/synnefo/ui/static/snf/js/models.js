@@ -1308,6 +1308,13 @@
         },
       
         connect_floating_ip: function(ip, cb) {
+          synnefo.storage.ports.create({
+            port: {
+              network_id: ip.get('floating_network_id'),
+              device_id: this.id,
+              fixed_ips: [{'ip_address': ip.get('floating_ip_address')}]
+            }
+          }, {complete: cb, skip_api_error: false})
           // TODO: Implement
         },
 

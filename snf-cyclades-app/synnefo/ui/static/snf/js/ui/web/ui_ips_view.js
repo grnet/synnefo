@@ -62,11 +62,10 @@
         return views.IconView.VM_OS_ICON_TPLS()[icon_type].format(os);
       },
 
-      ventdisconnect: function() {
+      disconnect: function() {
         this.model.actions.reset_pending();
         this.model.set({status: 'DISCONNECTING'});
       }
-
     });
 
     views.IpView = views.ext.ModelView.extend({
@@ -81,6 +80,7 @@
       },
 
       status_cls_map: {
+        'CONNECTED': 'status-active',
         'CONNECTING': 'status-active',
         'DISCONNECTING': 'status-inactive',
         'DOWN': 'status-inactive',
@@ -133,8 +133,12 @@
       remove: function(model, e) {
         e && e.stopPropagation();
         this.model.actions.reset_pending();
-        this.model.set({status: 'REMOVING'});
-        this.model.remove();
+        this.model.destroy({
+          success: _.bind(function() {
+            this.model.set({status: 'REMOVING'});
+          }, this),
+          silent: true
+        });
       }
     });
       

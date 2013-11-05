@@ -31,7 +31,6 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import copy
 from synnefo.util import units
 from astakos.im.models import (
     Resource, AstakosUserQuota, AstakosUser, Service,
@@ -70,17 +69,18 @@ def transform_data(holdings, func=None):
     return quota
 
 
-def get_counters(users, resources=None, sources=None):
+def get_counters(users, resources=None, sources=None, flt=None):
     uuids = [user.uuid for user in users]
 
     counters = qh.get_quota(holders=uuids,
                             resources=resources,
-                            sources=sources)
+                            sources=sources,
+                            flt=flt)
     return counters
 
 
-def get_users_quotas(users, resources=None, sources=None):
-    counters = get_counters(users, resources, sources)
+def get_users_quotas(users, resources=None, sources=None, flt=None):
+    counters = get_counters(users, resources, sources, flt=flt)
     quotas = transform_data(counters)
     return quotas
 
@@ -149,10 +149,14 @@ def update_base_quota(quota, capacity):
     qh_sync_locked_user(quota.user)
 
 
-def initial_quotas(users):
+
+def initial_quotas(users, flt=None):
+    if flt is None:
+        flt = Q()
+
     userids = [user.pk for user in users]
     objs = AstakosUserQuota.objects.select_related()
-    orig_quotas = objs.filter(user__pk__in=userids)
+    orig_quotas = objs.filter(user__pk__in=userids).filter(flt)
     initial = {}
     for user_quota in orig_quotas:
         uuid = user_quota.user.uuid
@@ -216,9 +220,9 @@ def astakos_users_quotas(users):
     return quotas
 
 
-def list_user_quotas(users):
-    qh_quotas = get_users_quotas(users)
-    astakos_initial = initial_quotas(users)
+def list_user_quotas(users, qhflt=None, initflt=None):
+    qh_quotas = get_users_quotas(users, flt=qhflt)
+    astakos_initial = initial_quotas(users, flt=initflt)
     return qh_quotas, astakos_initial
 
 

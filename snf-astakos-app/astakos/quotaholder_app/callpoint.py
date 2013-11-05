@@ -32,7 +32,7 @@
 # or implied, of GRNET S.A.
 
 from datetime import datetime
-from django.db.models import F
+from django.db.models import Q
 from astakos.quotaholder_app.exception import (
     QuotaholderError,
     NoCommissionError,
@@ -51,8 +51,11 @@ def format_datetime(d):
     return d.strftime('%Y-%m-%dT%H:%M:%S.%f')[:24]
 
 
-def get_quota(holders=None, sources=None, resources=None):
-    holdings = Holding.objects.all()
+def get_quota(holders=None, sources=None, resources=None, flt=None):
+    if flt is None:
+        flt = Q()
+
+    holdings = Holding.objects.filter(flt)
 
     if holders is not None:
         holdings = holdings.filter(holder__in=holders)

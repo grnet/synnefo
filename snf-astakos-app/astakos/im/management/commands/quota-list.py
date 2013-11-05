@@ -36,9 +36,11 @@ from django.db import transaction
 
 from astakos.im.models import AstakosUser
 from astakos.im.quotas import list_user_quotas
-from snf_django.management.commands import SynnefoCommand
+from snf_django.management.commands import SynnefoCommand, CommandError
 from snf_django.management import utils
 from astakos.im.management.commands import _common as common
+from astakos.im.management.commands import _filtering as filtering
+from django.db.models import Q, F
 
 import logging
 logger = logging.getLogger(__name__)
@@ -53,29 +55,77 @@ class Command(SynnefoCommand):
                     help=("Specify display unit for resource values "
                           "(one of %s); defaults to mb") %
                     common.style_options),
-        make_option('--user',
-                    metavar='<uuid or email>',
-                    dest='user',
-                    help="List quota for a specified user"),
+        make_option('--overlimit',
+                    action='store_true',
+                    help="Show quota that is over limit"),
+        make_option('--with-custom',
+                    metavar='True|False',
+                    help=("Filter quota different from the default or "
+                          "equal to it")),
+        make_option('--filter-by',
+                    help="Filter by field; "
+                    "e.g. \"user=uuid,usage>=10M,base_quota<inf\""),
+        make_option('--displayname',
+                    action='store_true',
+                    help="Show user display name"),
     )
+
+    QHFLT = {
+        "total_quota": ("limit", filtering.parse_with_unit),
+        "usage": ("usage_max", filtering.parse_with_unit),
+        "user": ("holder", lambda x: x),
+        "resource": ("resource", lambda x: x),
+        "source": ("source", lambda x: x),
+        }
+
+    INITFLT = {
+        "base_quota": ("capacity", filtering.parse_with_unit),
+        }
 
     @transaction.commit_on_success
     def handle(self, *args, **options):
         output_format = options["output_format"]
-        user_ident = options['user']
+        displayname = bool(options["displayname"])
         unit_style = options["unit_style"]
         common.check_style(unit_style)
 
-        if user_ident is not None:
-            users = [common.get_accepted_user(user_ident)]
+        filteropt = options["filter_by"]
+        if filteropt is not None:
+            filters = filteropt.split(",")
         else:
-            users = AstakosUser.objects.accepted()
+            filters = []
 
-        qh_quotas, astakos_i = list_user_quotas(users)
+        QHQ, INITQ = Q(), Q()
+        for flt in filters:
+            q = filtering.make_query(flt, self.QHFLT)
+            if q is not None:
+                QHQ &= q
+            q = filtering.make_query(flt, self.INITFLT)
+            if q is not None:
+                INITQ &= q
 
-        info = {}
-        for user in users:
-            info[user.uuid] = user.email
+        overlimit = bool(options["overlimit"])
+        if overlimit:
+            QHQ &= Q(usage_max__gt=F("limit"))
+
+        with_custom = options["with_custom"]
+        if with_custom is not None:
+            qeq = Q(capacity=F("resource__uplimit"))
+            try:
+                INITQ &= ~qeq if utils.parse_bool(with_custom) else qeq
+            except ValueError as e:
+                raise CommandError(e)
+
+        users = AstakosUser.objects.accepted()
+        qh_quotas, astakos_i = list_user_quotas(
+            users, qhflt=QHQ, initflt=INITQ)
+
+        if displayname:
+            info = {}
+            for user in users:
+                info[user.uuid] = user.email
+        else:
+            info = None
 
         print_data, labels = common.show_quotas(
             qh_quotas, astakos_i, info, style=unit_style)

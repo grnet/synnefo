@@ -319,6 +319,11 @@ you can set it for each resource like this::
 
     # snf-manage user-modify 'user-uuid' --set-base-quota 'cyclades.vm' 10
 
+All quota for which values different from the default have been set,
+can be listed with::
+
+    # snf-manage quota-list --with-custom=True
+
 
 Enable the Projects feature
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~

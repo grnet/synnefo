@@ -233,7 +233,8 @@ class Resource(models.Model):
     service_origin = models.CharField(max_length=255, db_index=True)
     unit = models.CharField(_('Unit'), null=True, max_length=255)
     uplimit = models.BigIntegerField(default=0)
-    allow_in_projects = models.BooleanField(default=True)
+    ui_visible = models.BooleanField(default=True)
+    api_visible = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
@@ -245,7 +246,8 @@ class Resource(models.Model):
         return {'service': self.service_origin,
                 'description': self.desc,
                 'unit': self.unit,
-                'allow_in_projects': self.allow_in_projects,
+                'ui_visible': self.ui_visible,
+                'api_visible': self.api_visible,
                 }
 
     @property

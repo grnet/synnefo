@@ -46,7 +46,7 @@ class ProjectAPITest(TestCase):
                       "desc": "resource11 desc",
                       "service_type": "type1",
                       "service_origin": "service1",
-                      "allow_in_projects": True}
+                      "ui_visible": True}
         r, _ = register.add_resource(resource11)
         register.update_resources([(r, 100)])
         resource12 = {"name": "service1.resource12",
@@ -74,7 +74,8 @@ class ProjectAPITest(TestCase):
                        "desc": "pend app desc",
                        "service_type": "account",
                        "service_origin": "astakos_account",
-                       "allow_in_projects": False}
+                       "ui_visible": False,
+                       "api_visible": False}
         r, _ = register.add_resource(pending_app)
         register.update_resources([(r, 3)])
 
@@ -598,7 +599,8 @@ class TestProjects(TestCase):
         # astakos resources
         self.resource = Resource.objects.create(name="astakos.pending_app",
                                                 uplimit=0,
-                                                allow_in_projects=False,
+                                                ui_visible=False,
+                                                api_visible=False,
                                                 service_type="astakos")
 
         # custom service resources
@@ -638,11 +640,11 @@ class TestProjects(TestCase):
         self.assertRedirects(r, reverse('project_add'))
 
     @im_settings(PROJECT_ADMINS=['uuid1'])
-    def test_allow_in_project(self):
+    def test_ui_visible(self):
         dfrom = datetime.now()
         dto = datetime.now() + timedelta(days=30)
 
-        # astakos.pending_uplimit allow_in_project flag is False
+        # astakos.pending_app ui_visible flag is False
         # we shouldn't be able to create a project application using this
         # resource.
         application_data = {

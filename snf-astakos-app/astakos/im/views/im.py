@@ -826,7 +826,7 @@ def resource_usage(request):
 
     current_usage = quotas.get_user_quotas(request.user)
     current_usage = json.dumps(current_usage['system'])
-    resource_catalog, resource_groups = _resources_catalog(for_usage=True)
+    resource_catalog, resource_groups = _resources_catalog()
     if resource_catalog is False:
         # on fail resource_groups contains the result object
         result = resource_groups

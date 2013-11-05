@@ -62,7 +62,7 @@ class QuotaAPITest(TestCase):
                       "desc": "resource11 desc",
                       "service_type": "type1",
                       "service_origin": "service1",
-                      "allow_in_projects": True}
+                      "ui_visible": True}
         r, _ = register.add_resource(resource11)
         register.update_resources([(r, 100)])
         resource12 = {"name": "service1.resource12",
@@ -89,7 +89,7 @@ class QuotaAPITest(TestCase):
                       "desc": "resource11 desc",
                       "service_type": "type2",
                       "service_origin": "service2",
-                      "allow_in_projects": False}
+                      "ui_visible": False}
         r, _ = register.add_resource(resource21)
         register.update_resources([(r, 3)])
 

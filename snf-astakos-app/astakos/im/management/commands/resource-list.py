@@ -55,12 +55,13 @@ class Command(ListCommand):
         "service origin": ("service_origin", "Service"),
         "default_quota": ("limit_with_unit", "Default Quota"),
         "description": ("desc", "Description"),
-        "allow_in_projects": ("allow_in_projects",
-                              "Make resource available in projects"),
+        "api_visible": ("api_visible",
+                        "Resource accessibility through the API"),
+        "ui_visible": ("ui_visible",
+                       "Resource accessibility through the UI"),
     }
 
-    fields = ["id", "name", "service origin", "default_quota",
-              "description"]
+    fields = ["id", "name", "default_quota", "api_visible", "ui_visible"]
 
     def show_limit(self, resource):
         limit = resource.uplimit

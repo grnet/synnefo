@@ -195,7 +195,6 @@ RESOURCES = {
                         'cyclades.floating_ip',
                         'astakos.pending_app'
                         ],
-    'exclude_from_usage': ['astakos.pending_app']
 }
 
 # extend from settings

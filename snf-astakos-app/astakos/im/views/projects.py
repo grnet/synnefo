@@ -97,7 +97,7 @@ def project_add(request):
                       "end_date", "comments"]
     membership_fields = ["member_join_policy", "member_leave_policy",
                          "limit_on_members_number"]
-    resource_catalog, resource_groups = _resources_catalog(for_project=True)
+    resource_catalog, resource_groups = _resources_catalog()
     if resource_catalog is False:
         # on fail resource_groups contains the result object
         result = resource_groups
@@ -235,7 +235,7 @@ def project_modify(request, application_id):
                       "end_date", "comments"]
     membership_fields = ["member_join_policy", "member_leave_policy",
                          "limit_on_members_number"]
-    resource_catalog, resource_groups = _resources_catalog(for_project=True)
+    resource_catalog, resource_groups = _resources_catalog()
     if resource_catalog is False:
         # on fail resource_groups contains the result object
         result = resource_groups

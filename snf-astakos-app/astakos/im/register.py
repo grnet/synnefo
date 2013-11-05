@@ -38,7 +38,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-resource_fields = ['desc', 'unit', 'allow_in_projects']
+resource_fields = ['desc', 'unit', 'ui_visible', 'api_visible']
 
 
 class RegisterException(Exception):
@@ -92,6 +92,10 @@ def add_resource(resource_dict):
         value = resource_dict.get(field)
         if value is not None:
             setattr(r, field, value)
+
+    if r.ui_visible and not r.api_visible:
+        m = "Flag 'ui_visible' should entail 'api_visible'."
+        raise RegisterException(m)
 
     r.save()
     if not exists:

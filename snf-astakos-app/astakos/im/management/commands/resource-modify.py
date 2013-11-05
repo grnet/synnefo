@@ -64,10 +64,12 @@ class Command(BaseCommand):
                     default='mb',
                     help=("Specify display unit for resource values "
                           "(one of %s); defaults to mb") % style_options),
-        make_option('--allow-in-projects',
+        make_option('--api-visible',
                     metavar='True|False',
-                    help=("Specify whether to allow this resource "
-                          "in projects.")),
+                    help="Control visibility of this resource in the API"),
+        make_option('--ui-visible',
+                    metavar='True|False',
+                    help="Control visibility of this resource in the UI"),
     )
 
     def handle(self, *args, **options):
@@ -77,7 +79,8 @@ class Command(BaseCommand):
             'default_quota': self.change_limit,
             'default_quota_interactive': self.change_interactive,
             'default_quota_from_file': self.change_from_file,
-            'allow_in_projects': self.set_allow_in_projects,
+            'api_visible': self.set_api_visible,
+            'ui_visible': self.set_ui_visible,
         }
 
         opts = [(key, value)
@@ -88,7 +91,7 @@ class Command(BaseCommand):
             raise CommandError("Please provide exactly one of the options: "
                                "--default-quota, --default-quota-interactive, "
                                "--default-quota-from-file, "
-                               "--allow-in-projects.")
+                               "--api-visible, --ui-visible.")
 
         self.unit_style = options['unit_style']
         check_style(self.unit_style)
@@ -97,7 +100,7 @@ class Command(BaseCommand):
         action = actions[key]
         action(resource_name, value)
 
-    def set_allow_in_projects(self, resource_name, allow):
+    def set_api_visible(self, resource_name, allow):
         if resource_name is None:
             raise CommandError("Please provide a resource name.")
 
@@ -106,7 +109,26 @@ class Command(BaseCommand):
         except ValueError:
             raise CommandError("Expecting a boolean value.")
         resource = self.get_resource(resource_name)
-        resource.allow_in_projects = allow
+        resource.api_visible = allow
+        if not allow and resource.ui_visible:
+            self.stdout.write("Also resetting 'ui_visible' for consistency.\n")
+            resource.ui_visible = False
+        resource.save()
+
+    def set_ui_visible(self, resource_name, allow):
+        if resource_name is None:
+            raise CommandError("Please provide a resource name.")
+
+        try:
+            allow = utils.parse_bool(allow)
+        except ValueError:
+            raise CommandError("Expecting a boolean value.")
+        resource = self.get_resource(resource_name)
+
+        resource.ui_visible = allow
+        if allow and not resource.api_visible:
+            self.stdout.write("Also setting 'api_visible' for consistency.\n")
+            resource.api_visible = True
         resource.save()
 
     def get_resource(self, resource_name):

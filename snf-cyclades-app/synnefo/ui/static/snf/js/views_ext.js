@@ -35,6 +35,7 @@
       post_init: function() {},
 
       initialize: function(options) {
+        views.ext.View.__super__.initialize.apply(this, arguments);
         this.container = options && options.container;
         this._subviews = [];
         if (this.tpl) {
@@ -124,6 +125,7 @@
 
       rivets_unbind: function() {
         if (!this.rivets_view) { return }
+        if (!this.rivets) { return }
         this.rivets.unbind();
       },
 
@@ -345,8 +347,10 @@
         // make it visible by default
         this.add_subview(view);
         view.show(true);
+        this.post_add_model_view(view, model);
       },
-      
+      post_add_model_view: function() {},
+
       each_model_view: function(cb, context) {
         if (!context) { context = this };
         _.each(this._model_views, function(view, model_id){
@@ -356,7 +360,6 @@
       },
 
       remove_model: function(m) {
-        console.log("REMOVING MODEL", m);
         var model_view = this._model_views[m.id];
         if (!model_view) {
           console.error("no view found");
@@ -365,9 +368,12 @@
         model_view.hide();
         model_view.el.remove();
         this.remove_view(model_view);
+        this.post_remove_model_view(model_view, model);
         delete this._model_views[m.id];
         this.check_empty();
       },
+
+      post_remove_model_view: function() {},
 
       update_models: function(m) {
         this.check_empty();

@@ -67,7 +67,7 @@
         post_hide: function() {},
 
         initialize: function(options) {
-            views.View.__super__.initialize.apply(this, arguments);
+            views.View.__super__.initialize.apply(this, [options]);
             this.log = new snf.logging.logger("SNF-VIEWS:" + this.view_id);
             this.parent_view = options && options.parent_view;
         },

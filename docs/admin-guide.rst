@@ -920,10 +920,9 @@ project-list                  List projects
 project-show                  Show project details
 quota                         List and check the integrity of user quota
 reconcile-resources-astakos   Reconcile resource usage of Quotaholder with Astakos DB
-resource-export-astakos       Export astakos resources in json format
-resource-import               Register resources
 resource-list                 List resources
 resource-modify               Modify a resource's default base quota and boolean flags
+service-export-astakos        Export Astakos services and resources in JSON format
 service-import                Register services
 service-list                  List services
 service-show                  Show service details
@@ -949,7 +948,7 @@ Pithos snf-manage commands
 Name                          Description
 ============================  ===========================
 reconcile-commissions-pithos  Display unresolved commissions and trigger their recovery
-resource-export-pithos        Export pithos resources in json format
+service-export-pithos         Export Pithos services and resources in JSON format
 reconcile-resources-pithos    Detect unsynchronized usage between Astakos and Pithos DB resources and synchronize them if specified so.
 ============================  ===========================
 
@@ -996,8 +995,7 @@ floating-ip-list               List floating IPs
 floating-ip-remove             Delete a floating IP
 queue-inspect                  Inspect the messages of a RabbitMQ queue
 queue-retry                    Resend messages from Dead Letter queues to original exchanges
-resource-export-cyclades       Export Cyclades resources in JSON format.
-service-export-cyclades        Export Cyclades services in JSON format.
+service-export-cyclades        Export Cyclades services and resources in JSON format
 subnet-create                  Create a subnet
 subnet-inspect                 Inspect a subnet in DB
 subnet-list                    List subnets

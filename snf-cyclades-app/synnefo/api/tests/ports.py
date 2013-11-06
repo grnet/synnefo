@@ -242,6 +242,7 @@ class PortTest(BaseAPITest):
         net = dbmf.NetworkWithSubnetFactory(userid=vm.userid,
                                             public=False,
                                             subnet__cidr="192.168.2.0/24",
+                                            subnet__gateway=None,
                                             subnet__pool__size=1,
                                             subnet__pool__offset=1)
         request = {
@@ -276,6 +277,7 @@ class PortTest(BaseAPITest):
         net = dbmf.NetworkWithSubnetFactory(userid="test_user",
                                             public=False,
                                             subnet__cidr="192.168.2.0/24",
+                                            subnet__gateway=None,
                                             subnet__pool__size=3,
                                             subnet__pool__offset=1)
         request = {

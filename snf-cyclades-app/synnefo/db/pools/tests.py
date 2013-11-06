@@ -214,6 +214,7 @@ class IPPoolTestCase(TestCase):
         subnet = DummyObject(0)
         obj.subnet = subnet
         subnet.cidr = "192.168.2.0/28"
+        subnet.gateway = None
         obj.base = "192.168.2.0/28"
         obj.offset = 0
         pool = IPPool(obj)

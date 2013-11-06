@@ -40,7 +40,10 @@ def validate_server_action(vm, action):
 
     # Check if action can be performed to VM's operstate
     operstate = vm.operstate
-    if operstate == "BUILD" and action != "BUILD":
+    if operstate == "ERROR":
+        raise faults.BadRequest("Can not perform '%s' action while server is"
+                                " in 'ERROR' state." % action)
+    elif operstate == "BUILD" and action != "BUILD":
         raise faults.BuildInProgress("Server '%s' is being build." % vm.id)
     elif (action == "START" and operstate != "STOPPED") or\
          (action == "STOP" and operstate != "STARTED") or\

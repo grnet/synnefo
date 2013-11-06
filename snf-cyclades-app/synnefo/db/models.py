@@ -567,7 +567,8 @@ class Network(models.Model):
     def get_subnet(self, version=4):
         for subnet in self.subnets.all():
             if subnet.ipversion == version:
-                return subnet.cidr
+                return subnet
+        return None
 
     def ip_count(self):
         """Return the total and free IPv4 addresses of the network."""

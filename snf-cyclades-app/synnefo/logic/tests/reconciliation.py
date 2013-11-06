@@ -239,7 +239,7 @@ class NetworkReconciliationTest(TestCase):
                                              "group_list": [["default",
                                                              "bridged",
                                                              "prv0"]],
-                                             "network": net1.subnet4,
+                                             "network": net1.subnet4.cidr,
                                              "map": "....",
                                              "external_reservations": ""}]
         self.reconciler.reconcile_networks()
@@ -308,7 +308,7 @@ class NetworkReconciliationTest(TestCase):
                                             operstate="PENDING")
         mrapi().GetNetworks.return_value = [{"name": net.backend_id,
                                              "group_list": [],
-                                             "network": net.subnet4,
+                                             "network": net.subnet4.cidr,
                                              "map": "....",
                                              "external_reservations": ""}]
         self.assertEqual(bn.operstate, "PENDING")
@@ -321,7 +321,7 @@ class NetworkReconciliationTest(TestCase):
                                                 deleted=True)
         mrapi().GetNetworks.return_value = [{"name": net.backend_id,
                                              "group_list": [],
-                                             "network": net.subnet4,
+                                             "network": net.subnet4.cidr,
                                              "map": "....",
                                              "external_reservations": ""}]
         self.reconciler.reconcile_networks()

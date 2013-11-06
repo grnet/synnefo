@@ -37,7 +37,7 @@ from datetime import datetime, timedelta
 from synnefo.db.models import (Backend, VirtualMachine, Network,
                                BackendNetwork, BACKEND_STATUSES,
                                pooled_rapi_client, VirtualMachineDiagnostic,
-                               Flavor, IPAddressLog)
+                               Flavor, IPAddress, IPAddressLog)
 from synnefo.logic import utils, ips
 from synnefo import quotas
 from synnefo.api.util import release_resource
@@ -266,20 +266,60 @@ def _process_net_status(vm, etime, nics):
                 # Update the NIC in DB with the values from Ganeti NIC
                 setattr(db_nic, f, ganeti_nic[f])
                 db_nic.save()
+
             # Special case where the IPv4 address has changed, because you
             # need to release the old IPv4 address and reserve the new one
             ipv4_address = ganeti_nic["ipv4_address"]
             if db_nic.ipv4_address != ipv4_address:
-                remove_nic_ips(db_nic)
-                if ipv4_address:
-                    network = ganeti_nic["network"]
-                    ipaddress = ips.allocate_ip(network, vm.userid,
-                                                address=ipv4_address)
-                    ipaddress.nic = nic
-                    ipaddress.save()
+                change_address_of_port(db_nic, vm.userid,
+                                       old_address=db_nic.ipv4_address,
+                                       new_address=ipv4_address,
+                                       version=4)
+
+            ipv6_address = ganeti_nic["ipv6_address"]
+            if db_nic.ipv6_address != ipv6_address:
+                change_address_of_port(db_nic, vm.userid,
+                                       old_address=db_nic.ipv6_address,
+                                       new_address=ipv6_address,
+                                       version=6)
 
     vm.backendtime = etime
     vm.save()
+
+
+def change_address_of_port(port, userid, old_address, new_address, version):
+    """Change."""
+    if old_address is not None:
+        msg = ("IPv%s Address of server '%s' changed from '%s' to '%s'"
+               % (version, port.machine_id, old_address, new_address))
+        log.critical(msg)
+
+    # Remove the old IP address
+    remove_nic_ips(port, version=version)
+
+    if version == 4:
+        ipaddress = ips.allocate_ip(port.network, userid, address=new_address)
+        ipaddress.nic = port
+        ipaddress.save()
+    elif version == 6:
+        subnet6 = port.network.subnet6
+        ipaddress = IPAddress.objects.create(userid=userid,
+                                             network=port.network,
+                                             subnet=subnet6,
+                                             nic=port,
+                                             address=new_address)
+    else:
+        raise ValueError("Unknown version: %s" % version)
+
+    # New address log
+    ip_log = IPAddressLog.objects.create(server_id=port.machine_id,
+                                         network_id=port.network_id,
+                                         address=new_address,
+                                         active=True)
+    log.info("Created IP log entry '%s' for address '%s' to server '%s'",
+             ip_log.id, new_address, port.machine_id)
+
+    return ipaddress
 
 
 def nics_are_equal(db_nic, gnt_nic):
@@ -308,7 +348,7 @@ def process_ganeti_nics(ganeti_nics):
         mac = gnic.get('mac')
         ipv4 = gnic.get('ip')
         subnet6 = network.subnet6
-        ipv6 = mac2eui64(mac, subnet6) if subnet6 else None
+        ipv6 = mac2eui64(mac, subnet6.cidr) if subnet6 else None
 
         firewall = gnic.get('firewall')
         firewall_profile = _reverse_tags.get(firewall)
@@ -328,30 +368,33 @@ def process_ganeti_nics(ganeti_nics):
     return dict(new_nics)
 
 
-def remove_nic_ips(nic):
+def remove_nic_ips(nic, version=None):
     """Remove IP addresses associated with a NetworkInterface.
 
     Remove all IP addresses that are associated with the NetworkInterface
     object, by returning them to the pool and deleting the IPAddress object. If
     the IP is a floating IP, then it is just disassociated from the NIC.
+    If version is specified, then only IP addressses of that version will be
+    removed.
 
     """
-
     for ip in nic.ips.all():
-        # Update the DB table holding the logging of all IP addresses
-        update_ip_address_log(nic, ip)
+        if version and ip.ipversion != version:
+            continue
 
-        if ip.ipversion == 4:
-            if ip.floating_ip:
-                ip.nic = None
-                ip.save()
-            else:
-                ip.release_address()
-        if not ip.floating_ip:
+        # Update the DB table holding the logging of all IP addresses
+        terminate_active_ipaddress_log(nic, ip)
+
+        if ip.floating_ip:
+            ip.nic = None
+            ip.save()
+        else:
+            # Release the IPv4 address
+            ip.release_address()
             ip.delete()
 
 
-def update_ip_address_log(nic, ip):
+def terminate_active_ipaddress_log(nic, ip):
     """Update DB logging entry for this IP address."""
     if not ip.network.public or nic.machine is None:
         return

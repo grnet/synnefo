@@ -45,36 +45,18 @@ class NetworkTest(TestCase):
         kwargs = {
             "name": "test",
             "userid": "user",
-            "subnet": "192.168.20.0/24",
             "flavor": "CUSTOM",
         }
-        # wrong gateway
-        kw = copy(kwargs)
-        kw["gateway"] = "192.168.3.1"
-        self.assertRaises(faults.BadRequest, networks.create, **kw)
-        # wrong subnet
-        kw = copy(kwargs)
-        kw["subnet"] = "192.168.2.0"
-        self.assertRaises(faults.OverLimit, networks.create, **kw)
-        kw["subnet"] = "192.168.0.0/16"
-        self.assertRaises(faults.OverLimit, networks.create, **kw)
-        kw["subnet"] = "192.168.0.3/24"
-        self.assertRaises(faults.BadRequest, networks.create, **kw)
         # wrong flavor
         kw = copy(kwargs)
         kw["flavor"] = "UNKNOWN"
         self.assertRaises(faults.BadRequest, networks.create, **kw)
         # Test create objet
-        kwargs["gateway"] = "192.168.20.1"
         kwargs["public"] = True
-        kwargs["dhcp"] = False
         with mocked_quotaholder():
             net = networks.create(**kwargs)
-        self.assertEqual(net.subnet4, "192.168.20.0/24")
-        self.assertEqual(net.subnets.get(ipversion=4).gateway, "192.168.20.1")
         self.assertEqual(net.public, True)
         self.assertEqual(net.flavor, "CUSTOM")
-        self.assertEqual(net.subnets.get(ipversion=4).dhcp, False)
         self.assertEqual(net.action, "CREATE")
         self.assertEqual(net.state, "ACTIVE")
         self.assertEqual(net.name, "test")
@@ -126,30 +108,3 @@ class NetworkTest(TestCase):
         self.assertEqual(net.mac_prefix, settings.DEFAULT_MAC_PREFIX)
         self.assertEqual(net.link, settings.DEFAULT_BRIDGE)
         self.assertEqual(net.backend_tag, [])
-
-    def test_create_network_ipv6(self):
-        kwargs = {
-            "name": "test",
-            "userid": "user",
-            "flavor": "CUSTOM",
-            "subnet6": "2001:648:2ffc:1112::/64",
-        }
-        # Wrong subnet
-        kw = copy(kwargs)
-        kw["subnet6"] = "2001:64q:2ffc:1112::/64"
-        self.assertRaises(faults.BadRequest, networks.create, **kw)
-        # Wrong gateway
-        kw = copy(kwargs)
-        kw["gateway6"] = "2001:64q:2ffc:1119::1"
-        self.assertRaises(faults.BadRequest, networks.create, **kw)
-        # floating_ip_pools cannot be ipv6 only
-        kw = copy(kwargs)
-        kw["floating_ip_pool"] = True
-        self.assertRaises(faults.BadRequest, networks.create, **kw)
-        kwargs["gateway6"] = "2001:648:2ffc:1112::1"
-        with mocked_quotaholder():
-            net = networks.create(**kwargs)
-        subnet6 = net.subnets.get(ipversion=6)
-        self.assertEqual(subnet6.cidr, "2001:648:2ffc:1112::/64")
-        self.assertEqual(subnet6.gateway, "2001:648:2ffc:1112::1")
-        self.assertEqual(net.get_ip_pools(), [])

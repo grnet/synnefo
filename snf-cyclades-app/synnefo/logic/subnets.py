@@ -37,6 +37,8 @@ from functools import wraps
 
 from django.conf import settings
 from django.db import transaction
+from django.db.models import Q
+
 from snf_django.lib import api
 from snf_django.lib.api import faults
 
@@ -57,9 +59,11 @@ def subnet_command(action):
 
 def list_subnets(user_id):
     """List all subnets of a user"""
-    log.debug('list_subnets')
+    log.debug('list_subnets %s', user_id)
 
-    user_subnets = Subnet.objects.filter(network__userid=user_id)
+    user_subnets = Subnet.objects.filter((Q(network__userid=user_id) &
+                                          Q(network__public=False)) |
+                                         Q(network__public=True))
     return user_subnets
 
 

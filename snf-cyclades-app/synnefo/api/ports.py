@@ -83,8 +83,7 @@ def list_ports(request, detail=False):
 
     log.debug('list_ports detail=%s', detail)
 
-    user_ports = NetworkInterface.objects.filter(
-        machine__userid=request.user_uniq)
+    user_ports = NetworkInterface.objects.filter(userid=request.user_uniq)
 
     port_dicts = [port_to_dict(port, detail)
                   for port in user_ports.order_by('id')]

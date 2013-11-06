@@ -43,10 +43,10 @@ from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
 
 
-compute_path = get_service_path(cyclades_services, "compute", version="v2.0")
-URL = join_urls(compute_path, "floatingips")
-NETWORKS_URL = join_urls(compute_path, "networks")
-SERVERS_URL = join_urls(compute_path, "servers")
+network_path = get_service_path(cyclades_services, "network", version="v2.0")
+URL = join_urls(network_path, "floatingips")
+NETWORKS_URL = join_urls(network_path, "networks")
+SERVERS_URL = join_urls(network_path, "servers")
 
 
 floating_ips = IPAddress.objects.filter(floating_ip=True)

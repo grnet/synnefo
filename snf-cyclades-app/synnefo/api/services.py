@@ -85,18 +85,6 @@ cyclades_services = {
                 "service_type": "compute",
                 "service_origin": "cyclades_compute",
             },
-            'network-private': {
-                "name": "cyclades.network.private",
-                "desc": "Number of private networks",
-                "service_type": "compute",
-                "service_origin": "cyclades_compute",
-            },
-            'floating_ip': {
-                "name": "cyclades.floating_ip",
-                "desc": "Number of Floating IP addresses",
-                "service_type": "compute",
-                "service_origin": "cyclades_compute",
-            },
         },
     },
 
@@ -110,6 +98,31 @@ cyclades_services = {
              'publicURL': None},
         ],
         'resources': {},
+    },
+
+    'cyclades_network': {
+        'type': 'network',
+        'component': 'cyclades',
+        'prefix': 'network',
+        'public': True,
+        'endpoints': [
+            {'versionId': 'v2.0',
+             'publicURL': None},
+        ],
+        'resources': {
+            'network-private': {
+                "name": "cyclades.network.private",
+                "desc": "Number of private networks",
+                "service_type": "compute",
+                "service_origin": "cyclades_network",
+            },
+            'floating_ip': {
+                "name": "cyclades.floating_ip",
+                "desc": "Number of Floating IP addresses",
+                "service_type": "compute",
+                "service_origin": "cyclades_network",
+            },
+        },
     },
 
     'cyclades_vmapi': {

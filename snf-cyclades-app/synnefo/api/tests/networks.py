@@ -40,9 +40,9 @@ import synnefo.db.models_factory as dbmf
 from synnefo.db.models import Network
 from django.conf import settings
 
-COMPUTE_URL = get_service_path(cyclades_services, 'compute',
+NETWORK_URL = get_service_path(cyclades_services, 'network',
                                version='v2.0')
-NETWORKS_URL = join_urls(COMPUTE_URL, "networks/")
+NETWORKS_URL = join_urls(NETWORK_URL, "networks/")
 
 
 class NetworkTest(BaseAPITest):

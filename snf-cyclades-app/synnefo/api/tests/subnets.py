@@ -37,8 +37,8 @@ import json
 import synnefo.db.models_factory as mf
 
 
-COMPUTE_URL = get_service_path(cyclades_services, 'compute', version='v2.0')
-SUBNETS_URL = join_urls(COMPUTE_URL, "subnets/")
+NETWORK_URL = get_service_path(cyclades_services, 'network', version='v2.0')
+SUBNETS_URL = join_urls(NETWORK_URL, "subnets/")
 
 
 class SubnetTest(BaseAPITest):

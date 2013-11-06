@@ -60,13 +60,20 @@ COMPUTE_URL = \
     join_urls(BASE_HOST,
               get_service_path(cyclades_services, "compute", version="v2.0"))
 SERVERS_URL = join_urls(COMPUTE_URL, "servers/")
-NETWORKS_URL = join_urls(COMPUTE_URL, "networks/")
 FLAVORS_URL = join_urls(COMPUTE_URL, "flavors/")
 IMAGES_URL = join_urls(COMPUTE_URL, "images/")
 PLANKTON_URL = \
     join_urls(BASE_HOST,
               get_service_path(cyclades_services, "image", version="v1.0"))
 IMAGES_PLANKTON_URL = join_urls(PLANKTON_URL, "images/")
+
+NETWORK_URL = \
+    join_urls(BASE_HOST,
+              get_service_path(cyclades_services, "network", version="v2.0"))
+NETWORKS_URL = join_urls(NETWORK_URL, "networks/")
+PORTS_URL = join_urls(NETWORK_URL, "ports/")
+SUBNETS_URL = join_urls(NETWORK_URL, "subnets/")
+FLOATING_IPS_URL = join_urls(NETWORK_URL, "floatingips/")
 
 PITHOSMAP_PREFIX = "pithosmap://"
 

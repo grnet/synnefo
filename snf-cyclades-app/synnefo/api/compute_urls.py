@@ -1,4 +1,4 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,9 +31,30 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from synnefo.util.keypath import get_path
-from synnefo.api.services import cyclades_services
+from django.conf.urls import include, patterns
 
-resources = \
-    get_path(cyclades_services, 'cyclades_compute.resources').values() +\
-    get_path(cyclades_services, 'cyclades_network.resources').values()
+from snf_django.lib.api import api_endpoint_not_found
+from synnefo.api import (servers, flavors, images, extensions)
+from synnefo.api.versions import versions_list, version_details
+
+
+#
+# The OpenStack Compute API v2.0
+#
+compute_api20_patterns = patterns(
+    '',
+    (r'^servers', include(servers)),
+    (r'^flavors', include(flavors)),
+    (r'^images', include(images)),
+    (r'^extensions', include(extensions)),
+)
+
+
+urlpatterns = patterns(
+    '',
+    (r'^(?:.json|.xml|.atom)?$', versions_list),
+    (r'^v2.0/(?:.json|.xml|.atom)?$', version_details,
+        {'api_version': 'v1.1'}),
+    (r'^v2.0/', include(compute_api20_patterns)),
+    (r'^.*', api_endpoint_not_found),
+)

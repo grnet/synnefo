@@ -40,9 +40,9 @@ from synnefo.lib import join_urls
 from mock import patch
 import synnefo.db.models_factory as dbmf
 
-COMPUTE_URL = get_service_path(cyclades_services, 'compute',
+NETWORK_URL = get_service_path(cyclades_services, 'network',
                                version='v2.0')
-PORTS_URL = join_urls(COMPUTE_URL, "ports/")
+PORTS_URL = join_urls(NETWORK_URL, "ports/")
 
 
 class PortTest(BaseAPITest):

@@ -54,6 +54,7 @@ for path, value in CUSTOMIZE_SERVICES:
     set_path(cyclades_services, path, value, createpath=True)
 
 COMPUTE_PREFIX = get_path(cyclades_services, 'cyclades_compute.prefix')
+NETWORK_PREFIX = get_path(cyclades_services, 'cyclades_network.prefix')
 VMAPI_PREFIX = get_path(cyclades_services, 'cyclades_vmapi.prefix')
 PLANKTON_PREFIX = get_path(cyclades_services, 'cyclades_plankton.prefix')
 HELPDESK_PREFIX = get_path(cyclades_services, 'cyclades_helpdesk.prefix')

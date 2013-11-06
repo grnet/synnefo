@@ -38,7 +38,7 @@ from synnefo.management.common import get_backend, convert_api_faults
 from snf_django.management.utils import parse_bool
 
 from synnefo.db.models import Network, Backend
-from synnefo.logic import networks
+from synnefo.logic import networks, subnets
 from synnefo.management import pprint
 
 NETWORK_FLAVORS = Network.FLAVORS.keys()
@@ -54,7 +54,15 @@ class Command(BaseCommand):
         make_option(
             '--name',
             dest='name',
-            help="Name of network"),
+            help="Name of the network"),
+        make_option(
+            '--name4',
+            dest='name4',
+            help="Name of the IPv4 subnet"),
+        make_option(
+            '--name6',
+            dest='name6',
+            help="Name of the IPv6 subnet"),
         make_option(
             '--owner',
             dest='owner',
@@ -64,12 +72,12 @@ class Command(BaseCommand):
             dest='subnet',
             default=None,
             # required=True,
-            help='Subnet of the network'),
+            help='IPv4 subnet of the network'),
         make_option(
             '--gateway',
             dest='gateway',
             default=None,
-            help='Gateway of the network'),
+            help='IPv4 gateway of the network'),
         make_option(
             '--subnet6',
             dest='subnet6',
@@ -87,6 +95,13 @@ class Command(BaseCommand):
             choices=["True", "False"],
             metavar="True|False",
             help='Automatically assign IPs'),
+        make_option(
+            '--slaac',
+            dest='slaac',
+            default="False",
+            choices=["True", "False"],
+            metavar="True|False",
+            help='Automatically assign IPs for the IPv6 subnet'),
         make_option(
             '--public',
             dest='public',
@@ -142,6 +157,8 @@ class Command(BaseCommand):
             raise CommandError("Command doesn't accept any arguments")
 
         name = options['name']
+        name4 = options['name4']
+        name6 = options['name6']
         subnet = options['subnet']
         gateway = options['gateway']
         subnet6 = options['subnet6']
@@ -156,6 +173,7 @@ class Command(BaseCommand):
         userid = options["owner"]
         floating_ip_pool = parse_bool(options["floating_ip_pool"])
         dhcp = parse_bool(options["dhcp"])
+        slaac = parse_bool(options["slaac"])
 
         if name is None:
             name = ""
@@ -166,10 +184,19 @@ class Command(BaseCommand):
             raise CommandError("subnet or subnet6 is required")
         if subnet is None and gateway is not None:
             raise CommandError("Cannot use gateway without subnet")
+        if subnet is None and dhcp is not None:
+            raise CommandError("Cannot use dhcp without subnet")
+        if subnet is None and name4 is not None:
+            raise CommandError("Cannot use name without subnet")
+
         if subnet6 is None and gateway6 is not None:
             raise CommandError("Cannot use gateway6 without subnet6")
+        if subnet6 is None and slaac is not None:
+            raise CommandError("Cannot use slaac without subnet6")
         if public and not (backend_ids or floating_ip_pool):
             raise CommandError("backend-ids is required")
+        if subnet6 is None and name6 is not None:
+            raise CommandError("Cannot use name6 without subnet6")
         if not userid and not public:
             raise CommandError("'owner' is required for private networks")
 
@@ -188,12 +215,18 @@ class Command(BaseCommand):
                     backends.append(backend)
 
         network = networks.create(userid=userid, name=name, flavor=flavor,
-                                  subnet=subnet, gateway=gateway,
-                                  subnet6=subnet6, gateway6=gateway6,
-                                  dhcp=dhcp, public=public, mode=mode,
+                                  public=public, mode=mode,
                                   link=link, mac_prefix=mac_prefix, tags=tags,
                                   floating_ip_pool=floating_ip_pool,
                                   backends=backends, lazy_create=False)
+
+        sub4 = subnets._create_subnet(network.id, cidr=subnet, name=name4,
+                                      ipversion=4, gateway=gateway, dhcp=dhcp,
+                                      user_id=userid)
+
+        sub6 = subnets._create_subnet(network.id, cidr=subnet6, name=name6,
+                                      ipversion=6, gateway=gateway6,
+                                      dhcp=slaac, user_id=userid)
 
         self.stdout.write("Created network '%s' in DB:\n" % network)
         pprint.pprint_network(network, stdout=self.stdout)

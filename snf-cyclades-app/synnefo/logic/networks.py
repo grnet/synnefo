@@ -63,9 +63,8 @@ def network_command(action):
 
 
 @transaction.commit_on_success
-def create(userid, name, flavor, subnet=None, gateway=None, subnet6=None,
-           gateway6=None, public=False, dhcp=True, link=None, mac_prefix=None,
-           mode=None, floating_ip_pool=False, tags=None, backends=None,
+def create(userid, name, flavor, link=None, mac_prefix=None, mode=None,
+           floating_ip_pool=False, tags=None, backends=None, public=False,
            lazy_create=True):
     if flavor is None:
         raise faults.BadRequest("Missing request parameter 'type'")
@@ -76,12 +75,6 @@ def create(userid, name, flavor, subnet=None, gateway=None, subnet6=None,
         raise faults.BadRequest("Cannot override MAC_FILTERED mac-prefix")
     if link is not None and flavor == "PHYSICAL_VLAN":
         raise faults.BadRequest("Cannot override PHYSICAL_VLAN link")
-
-    if subnet is None and floating_ip_pool:
-        raise faults.BadRequest("IPv6 only networks cannot be floating"
-                                " pools.")
-    # Check that network parameters are valid
-    subnets.validate_subnet_params(subnet, gateway, subnet6, gateway6)
 
     try:
         fmode, flink, fmac_prefix, ftags = util.values_from_flavor(flavor)
@@ -116,13 +109,6 @@ def create(userid, name, flavor, subnet=None, gateway=None, subnet6=None,
         floating_ip_pool=floating_ip_pool,
         action='CREATE',
         state='ACTIVE')
-
-    if subnet:
-        subnets._create_subnet(network.id, cidr=subnet, name="", ipversion=4,
-                               gateway=gateway, dhcp=dhcp, user_id=userid)
-    if subnet6:
-        subnets._create_subnet(network.id, cidr=subnet6, name="", ipversion=6,
-                               gateway=gateway6, dhcp=dhcp, user_id=userid)
 
     # Issue commission to Quotaholder and accept it since at the end of
     # this transaction the Network object will be created in the DB.

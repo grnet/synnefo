@@ -102,7 +102,7 @@ class Migration(DataMigration):
 
     def backwards(self, orm):
         "Write your backwards methods here."
-        raise RuntimeError("Can not reverse this migrations")
+        raise RuntimeError("Cannot reverse this migrations")
 
     models = {
         'db.backend': {

@@ -166,12 +166,12 @@ def create_network(request):
     elif flavor not in Network.FLAVORS.keys():
         raise faults.BadRequest("Invalid network type '%s'" % flavor)
     elif flavor not in settings.API_ENABLED_NETWORK_FLAVORS:
-        raise faults.Forbidden("Can not create network of type '%s'" %
+        raise faults.Forbidden("Cannot create network of type '%s'" %
                                flavor)
 
     public = d.get("public", False)
     if public:
-        raise faults.Forbidden("Can not create a public network.")
+        raise faults.Forbidden("Cannot create a public network.")
 
     dhcp = d.get('dhcp', True)
 
@@ -229,7 +229,7 @@ def update_network_name(request, network_id):
 
     network = util.get_network(network_id, request.user_uniq)
     if network.public:
-        raise faults.Forbidden('Can not rename the public network.')
+        raise faults.Forbidden('Cannot rename the public network.')
     network = networks.rename(network, name)
     return HttpResponse(status=204)
 
@@ -247,7 +247,7 @@ def delete_network(request, network_id):
     log.info('delete_network %s', network_id)
     network = util.get_network(network_id, request.user_uniq, for_update=True)
     if network.public:
-        raise faults.Forbidden('Can not delete the public network.')
+        raise faults.Forbidden('Cannot delete the public network.')
     networks.delete(network)
     return HttpResponse(status=204)
 
@@ -265,7 +265,7 @@ def demux_network_action(request, network_id):
 
     net = util.get_network(network_id, request.user_uniq)
     if net.public:
-        raise faults.Forbidden('Can not modify the public network.')
+        raise faults.Forbidden('Cannot modify the public network.')
     if net.deleted:
         raise faults.BadRequest("Network has been deleted.")
 

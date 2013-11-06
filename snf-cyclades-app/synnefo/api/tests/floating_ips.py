@@ -342,7 +342,7 @@ class FloatingIPAPITest(BaseAPITest):
         network = ip.network
         network.public = False
         network.save()
-        # Can not remove network with floating IPs
+        # Cannot remove network with floating IPs
         with mocked_quotaholder():
             response = self.delete(NETWORKS_URL + "/%s" % self.pool.id,
                                    self.pool.userid)

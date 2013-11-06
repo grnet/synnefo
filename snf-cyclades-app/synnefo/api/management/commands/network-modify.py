@@ -128,7 +128,7 @@ class Command(BaseCommand):
             floating_ip_pool = parse_bool(floating_ip_pool)
             if floating_ip_pool is False and network.floating_ip_pool is True:
                 if network.ips.filter(deleted=False, floating_ip=True).exists():
-                    msg = ("Can not make network a non floating IP pool."
+                    msg = ("Cannot make network a non floating IP pool."
                            " There are still reserved floating IPs.")
                     raise CommandError(msg)
             network.floating_ip_pool = floating_ip_pool
@@ -173,7 +173,7 @@ class Command(BaseCommand):
             backend = get_backend(remove_from_backend)
             if network.nics.filter(machine__backend=backend,
                                    machine__deleted=False).exists():
-                msg = "Can not remove. There are still connected VMs to this"\
+                msg = "Cannot remove. There are still connected VMs to this"\
                       " network"
                 raise CommandError(msg)
             backend_mod.delete_network(network, backend, disconnect=True)

@@ -44,7 +44,7 @@ def allocate_ip_from_pools(pool_rows, userid, address=None, floating_ip=False):
 def allocate_ip(network, userid, address=None, floating_ip=False):
     """Try to allocate an IP from networks IP pools."""
     if network.action == "DESTROY":
-        raise faults.Conflict("Can not allocate IP. Network %s is being"
+        raise faults.Conflict("Cannot allocate IP. Network %s is being"
                               " deleted" % network.id)
     ip_pools = IPPoolTable.objects.select_for_update()\
         .filter(subnet__network=network)
@@ -100,7 +100,7 @@ def allocate_public_ip(userid, floating_ip=False, backend=None, networks=None):
         if backend is not None:
             log_msg += " Backend: %s" % backend
         log.error(log_msg)
-        exception_msg = "Can not allocate a %s IP address." % ip_type
+        exception_msg = "Cannot allocate a %s IP address." % ip_type
         raise faults.Conflict(exception_msg)
 
 
@@ -110,11 +110,11 @@ def create_floating_ip(userid, network=None, address=None):
         floating_ip = allocate_public_ip(userid, floating_ip=True)
     else:
         if not network.floating_ip_pool:
-            msg = ("Can not allocate floating IP. Network %s is"
+            msg = ("Cannot allocate floating IP. Network %s is"
                    " not a floating IP pool.")
             raise faults.Conflict(msg % network.id)
         if network.action == "DESTROY":
-            msg = "Can not allocate floating IP. Network %s is being deleted."
+            msg = "Cannot allocate floating IP. Network %s is being deleted."
             raise faults.Conflict(msg % network.id)
 
         # Allocate the floating IP

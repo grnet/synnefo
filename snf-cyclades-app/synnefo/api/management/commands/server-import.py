@@ -215,7 +215,7 @@ def remove_instance_nics(instance, backend_client, stream=sys.stdout):
     jobid = backend_client.ModifyInstance(instance_name, nics=op)
     (status, error) = wait_for_job(backend_client, jobid)
     if status != 'success':
-        raise CommandError("Can not rename instance: %s" % error)
+        raise CommandError("Cannot rename instance: %s" % error)
 
 
 def add_public_nic(instance_name, nic, backend_client, stream=sys.stdout):
@@ -223,7 +223,7 @@ def add_public_nic(instance_name, nic, backend_client, stream=sys.stdout):
     jobid = backend_client.ModifyInstance(instance_name, nics=[('add', nic)])
     (status, error) = wait_for_job(backend_client, jobid)
     if status != 'success':
-        raise CommandError("Can not rename instance: %s" % error)
+        raise CommandError("Cannot rename instance: %s" % error)
 
 
 def shutdown_instance(instance, backend_client, stream=sys.stdout):
@@ -234,7 +234,7 @@ def shutdown_instance(instance, backend_client, stream=sys.stdout):
         jobid = backend_client.ShutdownInstance(instance_name)
         (status, error) = wait_for_job(backend_client, jobid)
         if status != 'success':
-            raise CommandError("Can not shutdown instance: %s" % error)
+            raise CommandError("Cannot shutdown instance: %s" % error)
 
 
 def rename_instance(old_name, new_name, backend_client, stream=sys.stdout):
@@ -244,7 +244,7 @@ def rename_instance(old_name, new_name, backend_client, stream=sys.stdout):
                                           ip_check=False, name_check=False)
     (status, error) = wait_for_job(backend_client, jobid)
     if status != 'success':
-        raise CommandError("Can not rename instance: %s" % error)
+        raise CommandError("Cannot rename instance: %s" % error)
 
 
 def startup_instance(name, backend_client, stream=sys.stdout):
@@ -252,4 +252,4 @@ def startup_instance(name, backend_client, stream=sys.stdout):
     jobid = backend_client.StartupInstance(name)
     (status, error) = wait_for_job(backend_client, jobid)
     if status != 'success':
-        raise CommandError("Can not rename instance: %s" % error)
+        raise CommandError("Cannot rename instance: %s" % error)

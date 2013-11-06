@@ -42,7 +42,7 @@ def allocate(backends, vm):
     if len(backends) == 1:
         return backends[0]
 
-    # Filter those that can not host the vm
+    # Filter those that cannot host the vm
     capable_backends = [backend for backend in backends
                         if vm_fits_in_backend(backend, vm)]
 

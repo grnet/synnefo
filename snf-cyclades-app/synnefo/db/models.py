@@ -166,7 +166,7 @@ class Backend(models.Model):
                 first_free = [x for x in xrange(0, 16) if x not in indexes][0]
                 self.index = first_free
             except IndexError:
-                raise Exception("Can not create more than 16 backends")
+                raise Exception("Cannot create more than 16 backends")
 
     def use_hotplug(self):
         return self.hypervisor == "kvm" and snf_settings.GANETI_USE_HOTPLUG
@@ -755,7 +755,7 @@ class IPAddress(models.Model):
                     ip_pool.put(self.address)
                     ip_pool.save()
                     return
-            log.error("Can not release address %s of NIC %s. Address does not"
+            log.error("Cannot release address %s of NIC %s. Address does not"
                       " belong to any of the IP pools of the subnet %s !",
                       self.address, self.nic, self.subnet_id)
 
@@ -904,7 +904,7 @@ def pooled_rapi_client(obj):
 
         if backend.offline:
             log.warning("Trying to connect with offline backend: %s", backend)
-            raise faults.ServiceUnavailable("Can not connect to offline"
+            raise faults.ServiceUnavailable("Cannot connect to offline"
                                             " backend: %s" % backend)
 
         b = backend

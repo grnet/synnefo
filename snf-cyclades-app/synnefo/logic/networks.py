@@ -73,12 +73,12 @@ def create(userid, name, flavor, subnet=None, gateway=None, subnet6=None,
         raise faults.BadRequest("Invalid network type '%s'" % flavor)
 
     if mac_prefix is not None and flavor == "MAC_FILTERED":
-        raise faults.BadRequest("Can not override MAC_FILTERED mac-prefix")
+        raise faults.BadRequest("Cannot override MAC_FILTERED mac-prefix")
     if link is not None and flavor == "PHYSICAL_VLAN":
-        raise faults.BadRequest("Can not override PHYSICAL_VLAN link")
+        raise faults.BadRequest("Cannot override PHYSICAL_VLAN link")
 
     if subnet is None and floating_ip_pool:
-        raise faults.BadRequest("IPv6 only networks can not be floating"
+        raise faults.BadRequest("IPv6 only networks cannot be floating"
                                 " pools.")
     # Check that network parameters are valid
     subnets.validate_subnet_params(subnet, gateway, subnet6, gateway6)
@@ -153,10 +153,10 @@ def rename(network, name):
 @network_command("DESTROY")
 def delete(network):
     if network.nics.exists():
-        raise faults.Conflict("Can not delete network. There are ports still"
+        raise faults.Conflict("Cannot delete network. There are ports still"
                               " configured on network network %s" % network.id)
     if network.ips.filter(deleted=False, floating_ip=True).exists():
-        msg = "Can not delete netowrk. Network has allocated floating IPs."
+        msg = "Cannot delete netowrk. Network has allocated floating IPs."
         raise faults.Conflict(msg)
 
     network.action = "DESTROY"

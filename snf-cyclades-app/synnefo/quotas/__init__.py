@@ -166,7 +166,7 @@ def resolve_pending_commissions():
     to accepted and rejected, according to the state of the
     QuotaHolderSerial DB table. A pending commission in the quotaholder
     can exist in the QuotaHolderSerial table and be either accepted or
-    rejected, or can not exist in this table, so it is rejected.
+    rejected, or cannot exist in this table, so it is rejected.
 
     """
 

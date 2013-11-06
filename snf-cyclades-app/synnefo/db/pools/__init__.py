@@ -168,7 +168,7 @@ class PoolManager(object):
         size = self.pool_size
         tmp = self.available[(size - bits_num): size]
         if tmp.count(UNAVAILABLE):
-            raise Exception("Can not shrink. In use")
+            raise Exception("Cannot shrink. In use")
         self.resize(-bits_num)
 
     def resize(self, bits_num):

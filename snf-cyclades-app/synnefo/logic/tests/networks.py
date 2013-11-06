@@ -142,7 +142,7 @@ class NetworkTest(TestCase):
         kw = copy(kwargs)
         kw["gateway6"] = "2001:64q:2ffc:1119::1"
         self.assertRaises(faults.BadRequest, networks.create, **kw)
-        # floating_ip_pools can not be ipv6 only
+        # floating_ip_pools cannot be ipv6 only
         kw = copy(kwargs)
         kw["floating_ip_pool"] = True
         self.assertRaises(faults.BadRequest, networks.create, **kw)

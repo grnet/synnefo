@@ -233,7 +233,7 @@ def get_port(port_id, user_id, for_update=False):
         if for_update:
             objects = objects.select_for_update()
         # if (port.device_owner != "vm") and for_update:
-        #     raise faults.BadRequest('Can not update non vm port')
+        #     raise faults.BadRequest('Cannot update non vm port')
         return objects.get(id=port_id)
     except (ValueError, NetworkInterface.DoesNotExist):
         raise faults.ItemNotFound("Port '%s' not found." % port_id)

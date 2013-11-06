@@ -213,7 +213,7 @@ def _process_resize(vm, beparams):
                                         disk=old_flavor.disk,
                                         disk_template=old_flavor.disk_template)
     except Flavor.DoesNotExist:
-        raise Exception("Can not find flavor for VM")
+        raise Exception("Cannot find flavor for VM")
     vm.flavor = new_flavor
     vm.save()
 
@@ -363,7 +363,7 @@ def update_ip_address_log(nic, ip):
                                                active=True)
     except IPAddressLog.MultipleObjectsReturned:
         logmsg = ("Multiple active log entries for IP %s, Network %s,"
-                  "Server %s. Can not proceed!"
+                  "Server %s. Cannot proceed!"
                   % (ip.address, ip.network, nic.machine))
         log.error(logmsg)
         raise
@@ -451,7 +451,7 @@ def update_network_state(network):
     # Release the resources on the deletion of the Network
     if deleted:
         if network.ips.filter(deleted=False, floating_ip=True).exists():
-            msg = "Can not delete network %s! Floating IPs still in use!"
+            msg = "Cannot delete network %s! Floating IPs still in use!"
             log.error(msg % network)
             raise Exception(msg % network)
         log.info("Network %r deleted. Releasing link %r mac_prefix %r",

@@ -35,13 +35,13 @@ def validate_server_action(vm, action):
     if pending_action:
         if pending_action == "BUILD":
             raise faults.BuildInProgress("Server '%s' is being build." % vm.id)
-        raise faults.BadRequest("Can not perform '%s' action while there is a"
+        raise faults.BadRequest("Cannot perform '%s' action while there is a"
                                 " pending '%s'." % (action, pending_action))
 
     # Check if action can be performed to VM's operstate
     operstate = vm.operstate
     if operstate == "ERROR":
-        raise faults.BadRequest("Can not perform '%s' action while server is"
+        raise faults.BadRequest("Cannot perform '%s' action while server is"
                                 " in 'ERROR' state." % action)
     elif operstate == "BUILD" and action != "BUILD":
         raise faults.BuildInProgress("Server '%s' is being build." % vm.id)
@@ -50,7 +50,7 @@ def validate_server_action(vm, action):
          (action == "RESIZE" and operstate != "STOPPED") or\
          (action in ["CONNECT", "DISCONNECT"] and operstate != "STOPPED"
           and not settings.GANETI_USE_HOTPLUG):
-        raise faults.BadRequest("Can not perform '%s' action while server is"
+        raise faults.BadRequest("Cannot perform '%s' action while server is"
                                 " in '%s' state." % (action, operstate))
     return
 
@@ -275,9 +275,9 @@ def resize(vm, flavor):
         return None
     # Check that resize can be performed
     if old_flavor.disk != flavor.disk:
-        raise faults.BadRequest("Can not resize instance disk.")
+        raise faults.BadRequest("Cannot resize instance disk.")
     if old_flavor.disk_template != flavor.disk_template:
-        raise faults.BadRequest("Can not change instance disk template.")
+        raise faults.BadRequest("Cannot change instance disk template.")
 
     log.info("Resizing VM from flavor '%s' to '%s", old_flavor, flavor)
     commission_info = {"cyclades.cpu": flavor.cpu - old_flavor.cpu,
@@ -401,10 +401,10 @@ def _create_port(userid, network, machine=None, use_ipaddress=None,
 
     """
     if network.state != "ACTIVE":
-        raise faults.BuildInProgress("Can not create port while network is in"
+        raise faults.BuildInProgress("Cannot create port while network is in"
                                      " state %s" % network.state)
     if network.action == "DESTROY":
-        msg = "Can not create port. Network %s is being deleted."
+        msg = "Cannot create port. Network %s is being deleted."
         raise faults.Conflict(msg % network.id)
     ipaddress = None
     if use_ipaddress is not None:
@@ -493,7 +493,7 @@ def delete_port(port):
 
     if port.network.public and not port.ips.filter(floating_ip=True,
                                                    deleted=False).exists():
-        raise faults.Forbidden("Can not disconnect from public network.")
+        raise faults.Forbidden("Cannot disconnect from public network.")
 
     if port.machine is not None:
         vm = disconnect(port.machine, port)

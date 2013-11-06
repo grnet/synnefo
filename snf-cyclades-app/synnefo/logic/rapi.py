@@ -460,7 +460,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
 
       conflicts = set(kwargs.iterkeys()) & set(body.iterkeys())
       if conflicts:
-        raise GanetiApiError("Required fields can not be specified as"
+        raise GanetiApiError("Required fields cannot be specified as"
                              " keywords: %s" % ", ".join(conflicts))
 
       body.update((key, value) for key, value in kwargs.iteritems()

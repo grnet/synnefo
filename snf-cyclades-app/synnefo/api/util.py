@@ -435,6 +435,16 @@ def network_to_links(network_id):
     return [{"rel": rel, "href": href} for rel in ("self", "bookmark")]
 
 
+def subnet_to_links(subnet_id):
+    href = join_urls(SUBNETS_URL, str(subnet_id))
+    return [{"rel": rel, "href": href} for rel in ("self", "bookmark")]
+
+
+def port_to_links(port_id):
+    href = join_urls(PORTS_URL, str(port_id))
+    return [{"rel": rel, "href": href} for rel in ("self", "bookmark")]
+
+
 def flavor_to_links(flavor_id):
     href = join_urls(FLAVORS_URL, str(flavor_id))
     return [{"rel": rel, "href": href} for rel in ("self", "bookmark")]

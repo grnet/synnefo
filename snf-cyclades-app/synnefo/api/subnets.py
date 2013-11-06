@@ -41,6 +41,7 @@ from django.utils import simplejson as json
 from snf_django.lib.api import utils
 from synnefo.db.models import Subnet
 from synnefo.logic import subnets
+from synnefo.api import util
 
 import ipaddr
 
@@ -231,6 +232,7 @@ def subnet_to_dict(subnet):
     if subnet.ipversion == 6:
         dictionary['enable_slaac'] = subnet.dhcp
 
+    dictionary['links'] = util.subnet_to_links(subnet.id)
     return dictionary
 
 

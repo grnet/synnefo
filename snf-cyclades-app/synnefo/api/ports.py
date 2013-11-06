@@ -227,6 +227,7 @@ def delete_port(request, port_id):
 
 def port_to_dict(port, detail=True):
     d = {'id': str(port.id), 'name': port.name}
+    d['links'] = util.port_to_links(port.id)
     if detail:
         user_id = port.userid
         machine_id = port.machine_id

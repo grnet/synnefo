@@ -279,15 +279,31 @@ class IPPool(PoolManager):
     def __init__(self, pool_table):
         subnet = pool_table.subnet
         self.net = ipaddr.IPNetwork(subnet.cidr)
-        if pool_table.base is None:
-            self.base = pool_table.subnet.cidr
+        if pool_table.available_map:
+            initialized_pool = True
         else:
-            self.base = pool_table.base
-        if pool_table.offset is None:
-            self.offset = 0
-        else:
-            self.offset = pool_table.offset
+            initialized_pool = False
         super(IPPool, self).__init__(pool_table)
+        if not initialized_pool:
+            self.check_pool_integrity()
+
+    def check_pool_integtiry(self):
+        """Check the integrity of the IP pool
+
+        This check is required only for old IP pools(one IP pool per network
+        that contained the whole subnet cidr) that had not been initialized
+        before the migration. This checks that the network, gateway and
+        broadcast IP addresses are externally reserved, and if not reserves
+        them.
+
+        """
+        subnet = self.pool_table.subnet
+        check_ips = [str(self.net.network), str(self.net.broadcast)]
+        if subnet.gateway is not None:
+            check_ips.append(subnet.gateway)
+        for ip in check_ips:
+            if self.contains(ip):
+                self.reserve(ip, external=True)
 
     def value_to_index(self, value):
         addr = ipaddr.IPAddress(value)

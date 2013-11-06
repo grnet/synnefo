@@ -19,6 +19,8 @@ class Migration(DataMigration):
                                                    deleted=network.deleted)
                 ip_pool = network.pool
                 ip_pool.subnet = subnet
+                ip_pool.base = subnet.cidr
+                ip_pool.offset = 0
                 ip_pool.save()
 
             if network.subnet6:

@@ -40,7 +40,7 @@ from synnefo import quotas
 from synnefo.db.models import Network, Backend
 from synnefo.db.utils import validate_mac
 from synnefo.db.pools import EmptyPool
-from synnefo.logic import backend as backend_mod, subnets
+from synnefo.logic import backend as backend_mod
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -64,8 +64,7 @@ def network_command(action):
 
 @transaction.commit_on_success
 def create(userid, name, flavor, link=None, mac_prefix=None, mode=None,
-           floating_ip_pool=False, tags=None, backends=None, public=False,
-           lazy_create=True):
+           floating_ip_pool=False, tags=None, public=False):
     if flavor is None:
         raise faults.BadRequest("Missing request parameter 'type'")
     elif flavor not in Network.FLAVORS.keys():
@@ -116,17 +115,17 @@ def create(userid, name, flavor, link=None, mac_prefix=None, mode=None,
     if not public:
         quotas.issue_and_accept_commission(network)
 
-    if not lazy_create:
-        if floating_ip_pool:
-            backends = Backend.objects.filter(offline=False)
-        elif backends is None:
-            backends = []
-
-        for bend in backends:
-            network.create_backend_network(bend)
-            backend_mod.create_network(network=network, backend=bend,
-                                       connect=True)
     return network
+
+
+def create_network_in_backends(network):
+    job_ids = []
+    for bend in Backend.objects.filter(offline=False):
+        network.create_backend_network(bend)
+        jobs = backend_mod.create_network(network=network, backend=bend,
+                                          connect=True)
+        job_ids.extend(jobs)
+    return job_ids
 
 
 @network_command("RENAME")

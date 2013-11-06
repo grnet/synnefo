@@ -34,10 +34,10 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import get_backend, convert_api_faults
+from synnefo.management.common import convert_api_faults
 from snf_django.management.utils import parse_bool
 
-from synnefo.db.models import Network, Backend
+from synnefo.db.models import Network
 from synnefo.logic import networks, subnets
 from synnefo.management import pprint
 
@@ -55,14 +55,6 @@ class Command(BaseCommand):
             '--name',
             dest='name',
             help="Name of the network"),
-        make_option(
-            '--name4',
-            dest='name4',
-            help="Name of the IPv4 subnet"),
-        make_option(
-            '--name6',
-            dest='name6',
-            help="Name of the IPv6 subnet"),
         make_option(
             '--owner',
             dest='owner',
@@ -95,13 +87,6 @@ class Command(BaseCommand):
             choices=["True", "False"],
             metavar="True|False",
             help='Automatically assign IPs'),
-        make_option(
-            '--slaac',
-            dest='slaac',
-            default="False",
-            choices=["True", "False"],
-            metavar="True|False",
-            help='Automatically assign IPs for the IPv6 subnet'),
         make_option(
             '--public',
             dest='public',
@@ -140,15 +125,7 @@ class Command(BaseCommand):
             default="False",
             choices=["True", "False"],
             metavar="True|False",
-            help="Use the network as a Floating IP pool. Floating IP pools"
-                 " are created in all available backends."),
-        make_option(
-            "--backend-ids",
-            dest="backend_ids",
-            default=None,
-            help="Comma seperated list of Ganeti backends IDs that the network"
-                 " will be created. Only for public networks. Use 'all' to"
-                 " create network in all available backends."),
+            help="Use the network as a Floating IP pool."),
     )
 
     @convert_api_faults
@@ -157,13 +134,10 @@ class Command(BaseCommand):
             raise CommandError("Command doesn't accept any arguments")
 
         name = options['name']
-        name4 = options['name4']
-        name6 = options['name6']
         subnet = options['subnet']
         gateway = options['gateway']
         subnet6 = options['subnet6']
         gateway6 = options['gateway6']
-        backend_ids = options['backend_ids']
         public = options['public']
         flavor = options['flavor']
         mode = options['mode']
@@ -173,7 +147,6 @@ class Command(BaseCommand):
         userid = options["owner"]
         floating_ip_pool = parse_bool(options["floating_ip_pool"])
         dhcp = parse_bool(options["dhcp"])
-        slaac = parse_bool(options["slaac"])
 
         if name is None:
             name = ""
@@ -182,52 +155,38 @@ class Command(BaseCommand):
 
         if (subnet is None) and (subnet6 is None):
             raise CommandError("subnet or subnet6 is required")
+
         if subnet is None and gateway is not None:
             raise CommandError("Cannot use gateway without subnet")
-        if subnet is None and dhcp is not None:
-            raise CommandError("Cannot use dhcp without subnet")
-        if subnet is None and name4 is not None:
-            raise CommandError("Cannot use name without subnet")
-
         if subnet6 is None and gateway6 is not None:
             raise CommandError("Cannot use gateway6 without subnet6")
-        if subnet6 is None and slaac is not None:
-            raise CommandError("Cannot use slaac without subnet6")
-        if public and not (backend_ids or floating_ip_pool):
-            raise CommandError("backend-ids is required")
-        if subnet6 is None and name6 is not None:
-            raise CommandError("Cannot use name6 without subnet6")
-        if not userid and not public:
-            raise CommandError("'owner' is required for private networks")
 
-        backends = []
-        if backend_ids is not None:
-            if backend_ids == "all":
-                backends = Backend.objects.filter(offline=False)
-            else:
-                for backend_id in backend_ids.split(","):
-                    try:
-                        backend_id = int(backend_id)
-                    except ValueError:
-                        raise CommandError("Invalid backend-id: %s"
-                                           % backend_id)
-                    backend = get_backend(backend_id)
-                    backends.append(backend)
+        if not (userid or public):
+            raise CommandError("'owner' is required for private networks")
 
         network = networks.create(userid=userid, name=name, flavor=flavor,
                                   public=public, mode=mode,
                                   link=link, mac_prefix=mac_prefix, tags=tags,
-                                  floating_ip_pool=floating_ip_pool,
-                                  backends=backends, lazy_create=False)
+                                  floating_ip_pool=floating_ip_pool)
 
-        sub4 = subnets._create_subnet(network.id, cidr=subnet, name=name4,
-                                      ipversion=4, gateway=gateway, dhcp=dhcp,
-                                      user_id=userid)
+        if subnet is not None:
+            name = "IPv4 Subnet of Network %s" % network.id
+            subnets.create_subnet(network.id, cidr=subnet, name=name,
+                                  ipversion=4, gateway=gateway, dhcp=dhcp,
+                                  user_id=userid)
 
-        sub6 = subnets._create_subnet(network.id, cidr=subnet6, name=name6,
-                                      ipversion=6, gateway=gateway6,
-                                      dhcp=slaac, user_id=userid)
+        if subnet6 is not None:
+            name = "IPv6 Subnet of Network %s" % network.id
+            subnets.create_subnet(network.id, cidr=subnet6, name=name,
+                                  ipversion=6, gateway=gateway6,
+                                  dhcp=dhcp, user_id=userid)
 
         self.stdout.write("Created network '%s' in DB:\n" % network)
         pprint.pprint_network(network, stdout=self.stdout)
         pprint.pprint_network_subnets(network, stdout=self.stdout)
+
+        networks.create_network_in_backends(network)
+        # TODO: Add --wait option to track job progress and report successful
+        # creation in each backend.
+        self.stdout.write("\nSuccessfully issued job to create network in"
+                          " in backends\n")

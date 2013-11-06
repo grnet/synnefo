@@ -279,6 +279,8 @@ class IPPool(PoolManager):
     def __init__(self, pool_table):
         subnet = pool_table.subnet
         self.net = ipaddr.IPNetwork(subnet.cidr)
+        self.offset = pool_table.offset
+        self.base = pool_table.base
         if pool_table.available_map:
             initialized_pool = True
         else:
@@ -287,7 +289,7 @@ class IPPool(PoolManager):
         if not initialized_pool:
             self.check_pool_integrity()
 
-    def check_pool_integtiry(self):
+    def check_pool_integrity(self):
         """Check the integrity of the IP pool
 
         This check is required only for old IP pools(one IP pool per network

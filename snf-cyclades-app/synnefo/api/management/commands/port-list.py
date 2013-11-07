@@ -49,15 +49,10 @@ class Command(ListCommand):
     user_uuid_field = "userid"
     astakos_url = ASTAKOS_BASE_URL
     astakos_token = ASTAKOS_TOKEN
+    prefetch_related = ["ips"]
 
-    def get_fixed_ips(ip):
-
-        def labels((a, b)):
-            return str({"subnet": b, "ip_address": str(a)})
-
-        lista = ip.get_ip_addresses_subnets()
-        lista = map(labels, lista)
-        return " ".join(lista)
+    def get_fixed_ips(port):
+        return ",".join(port.ips.values_list("address", flat=True))
 
     FIELDS = {
         "id": ("id", "The ID of the port"),

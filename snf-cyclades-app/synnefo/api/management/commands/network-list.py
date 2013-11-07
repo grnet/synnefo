@@ -61,6 +61,8 @@ class Command(ListCommand):
     )
 
     object_class = Network
+    select_related = []
+    prefetch_related = ["subnets"]
     deleted_field = "deleted"
     user_uuid_field = "userid"
     astakos_url = ASTAKOS_BASE_URL

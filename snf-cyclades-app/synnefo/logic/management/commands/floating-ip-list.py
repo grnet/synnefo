@@ -41,6 +41,7 @@ log = getLogger(__name__)
 class Command(ListCommand):
     help = "List Floating IPs"
     object_class = IPAddress
+    select_related = ["nic"]
     deleted_field = "deleted"
     user_uuid_field = "userid"
     astakos_url = ASTAKOS_BASE_URL

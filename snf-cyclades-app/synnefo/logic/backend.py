@@ -813,9 +813,9 @@ def _create_network(network, backend):
     gateway = None
     gateway6 = None
     for _subnet in network.subnets.all():
+        if _subnet.dhcp and not "nfdhcpd" in tags:
+            tags.append("nfdhcpd")
         if _subnet.ipversion == 4:
-            if _subnet.dhcp:
-                tags.append('nfdhcpd')
             subnet = _subnet.cidr
             gateway = _subnet.gateway
         elif _subnet.ipversion == 6:

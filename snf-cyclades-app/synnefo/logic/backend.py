@@ -42,7 +42,7 @@ from synnefo.logic import utils, ips
 from synnefo import quotas
 from synnefo.api.util import release_resource
 from synnefo.util.mac2eui64 import mac2eui64
-from synnefo.logic.rapi import GanetiApiError
+from synnefo.logic import rapi
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -76,7 +76,7 @@ def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields):
     rejected, since they reflect a previous state of the VM.
 
     """
-    if job_status not in ["success", "error", "canceled"]:
+    if job_status not in rapi.JOB_STATUS_FINALIZED:
         return vm
 
     # Check successful completion of a job will trigger any quotable change in
@@ -94,14 +94,14 @@ def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields):
         # if fails, must be accepted, as the user must manually remove the
         # failed server
         serial = vm.serial
-        if job_status == "success":
+        if job_status == rapi.JOB_STATUS_SUCCESS:
             quotas.accept_serial(serial)
-        elif job_status in ["error", "canceled"]:
+        elif job_status in [rapi.JOB_STATUS_ERROR, rapi.JOB_STATUS_CANCELED]:
             log.debug("Job %s failed. Rejecting related serial %s", job_id,
                       serial)
             quotas.reject_serial(serial)
         vm.serial = None
-    elif job_status == "success" and commission_info is not None:
+    elif job_status == rapi.JOB_STATUS_SUCCESS and commission_info is not None:
         log.debug("Expected job was %s. Processing job %s. Commission for"
                   " this job: %s", vm.task_job_id, job_id, commission_info)
         # Commission for this change has not been issued, or the issued
@@ -139,7 +139,7 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
     vm.backendopcode = opcode
     vm.backendlogmsg = logmsg
 
-    if status in ["queued", "waiting", "running"]:
+    if status not in rapi.JOB_STATUS_FINALIZED:
         vm.save()
         return
 
@@ -148,7 +148,7 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
     state_for_success = VirtualMachine.OPER_STATE_FROM_OPCODE.get(opcode)
 
     # Notifications of success change the operating state
-    if status == "success":
+    if status == rapi.JOB_STATUS_SUCCESS:
         if state_for_success is not None:
             vm.operstate = state_for_success
         beparams = job_fields.get("beparams", None)
@@ -162,12 +162,13 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
         # in reversed order.
         vm.backendtime = etime
 
-    if status in ["success", "error", "canceled"] and nics is not None:
+    if status in rapi.JOB_STATUS_FINALIZED and nics is not None:
         # Update the NICs of the VM
         _process_net_status(vm, etime, nics)
 
     # Special case: if OP_INSTANCE_CREATE fails --> ERROR
-    if opcode == 'OP_INSTANCE_CREATE' and status in ('canceled', 'error'):
+    if opcode == 'OP_INSTANCE_CREATE' and status in (rapi.JOB_STATUS_CANCELED,
+                                                     rapi.JOB_STATUS_ERROR):
         vm.operstate = 'ERROR'
         vm.backendtime = etime
         # Update state of associated NICs
@@ -176,8 +177,8 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
         # Special case: OP_INSTANCE_REMOVE fails for machines in ERROR,
         # when no instance exists at the Ganeti backend.
         # See ticket #799 for all the details.
-        if status == 'success' or (status == 'error' and
-                                   not vm_exists_in_backend(vm)):
+        if (status == rapi.JOB_STATUS_SUCCESS or
+           (status == rapi.JOB_STATUS_ERROR and not vm_exists_in_backend(vm))):
             # VM has been deleted
             for nic in vm.nics.all():
                 # Release the IP
@@ -187,9 +188,9 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
             vm.deleted = True
             vm.operstate = state_for_success
             vm.backendtime = etime
-            status = "success"
+            status = rapi.JOB_STATUS_SUCCESS
 
-    if status in ["success", "error", "canceled"]:
+    if status in rapi.JOB_STATUS_FINALIZED:
         # Job is finalized: Handle quotas/commissioning
         vm = handle_vm_quotas(vm, job_id=jobid, job_opcode=opcode,
                               job_status=status, job_fields=job_fields)
@@ -436,22 +437,23 @@ def process_network_status(back_network, etime, jobid, opcode, status, logmsg):
 
     # Notifications of success change the operating state
     state_for_success = BackendNetwork.OPER_STATE_FROM_OPCODE.get(opcode, None)
-    if status == 'success' and state_for_success is not None:
+    if status == rapi.JOB_STATUS_SUCCESS and state_for_success is not None:
         back_network.operstate = state_for_success
 
-    if status in ('canceled', 'error') and opcode == 'OP_NETWORK_ADD':
+    if (status in (rapi.JOB_STATUS_CANCELED, rapi.JOB_STATUS_ERROR)
+       and opcode == 'OP_NETWORK_ADD'):
         back_network.operstate = 'ERROR'
         back_network.backendtime = etime
 
     if opcode == 'OP_NETWORK_REMOVE':
-        network_is_deleted = (status == "success")
-        if network_is_deleted or (status == "error" and not
+        network_is_deleted = (status == rapi.JOB_STATUS_SUCCESS)
+        if network_is_deleted or (status == rapi.JOB_STATUS_ERROR and not
                                   network_exists_in_backend(back_network)):
             back_network.operstate = state_for_success
             back_network.deleted = True
             back_network.backendtime = etime
 
-    if status == 'success':
+    if status == rapi.JOB_STATUS_SUCCESS:
         back_network.backendtime = etime
     back_network.save()
     # Also you must update the state of the Network!!
@@ -547,7 +549,7 @@ def process_network_modify(back_network, etime, jobid, opcode, status,
         for ip in add_reserved_ips:
             network.reserve_address(ip, external=True)
 
-    if status == 'success':
+    if status == rapi.JOB_STATUS_SUCCESS:
         back_network.backendtime = etime
     back_network.save()
 
@@ -631,16 +633,14 @@ def create_instance(vm, nics, flavor, image):
                    "network": nic.network.backend_id,
                    "ip": nic.ipv4_address}
                   for nic in nics]
+
     backend = vm.backend
     depend_jobs = []
     for nic in nics:
-        network = Network.objects.select_for_update().get(id=nic.network_id)
-        bnet, created = BackendNetwork.objects.get_or_create(backend=backend,
-                                                             network=network)
-        if bnet.operstate != "ACTIVE":
-            depend_jobs = create_network(network, backend, connect=True)
-    kw["depends"] = [[job, ["success", "error", "canceled"]]
-                     for job in depend_jobs]
+        bnet, job_ids = ensure_network_is_active(backend, nic.network_id)
+        depend_jobs.extend(job_ids)
+
+    kw["depends"] = create_job_dependencies(depend_jobs)
 
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
     # kw['os'] = settings.GANETI_OS_PROVIDER
@@ -753,7 +753,7 @@ def vm_exists_in_backend(vm):
     try:
         get_instance_info(vm)
         return True
-    except GanetiApiError as e:
+    except rapi.GanetiApiError as e:
         if e.code == 404:
             return False
         raise e
@@ -768,9 +768,27 @@ def network_exists_in_backend(backend_network):
     try:
         get_network_info(backend_network)
         return True
-    except GanetiApiError as e:
+    except rapi.GanetiApiError as e:
         if e.code == 404:
             return False
+
+
+def ensure_network_is_active(backend, network_id):
+    """Ensure that a network is active in the specified backend
+
+    Check that a network exists and is active in the specified backend. If not
+    (re-)create the network. Return the corresponding BackendNetwork object
+    and the IDs of the Ganeti job to create the network.
+
+    """
+    network = Network.objects.select_for_update().get(id=network_id)
+    bnet, created = BackendNetwork.objects.get_or_create(backend=backend,
+                                                         network=network)
+    job_ids = []
+    if bnet.operstate != "ACTIVE":
+        job_ids = create_network(network, backend, connect=True)
+
+    return bnet, job_ids
 
 
 def create_network(network, backend, connect=True):
@@ -845,7 +863,7 @@ def connect_network(network, backend, depends=[], group=None):
     else:
         conflicts_check = False
 
-    depends = [[job, ["success", "error", "canceled"]] for job in depends]
+    depends = create_job_dependencies(depends)
     with pooled_rapi_client(backend) as client:
         groups = [group] if group is not None else client.GetGroups()
         job_ids = []
@@ -868,7 +886,7 @@ def delete_network(network, backend, disconnect=True):
 
 
 def _delete_network(network, backend, depends=[]):
-    depends = [[job, ["success", "error", "canceled"]] for job in depends]
+    depends = create_job_dependencies(depends)
     with pooled_rapi_client(backend) as client:
         return client.DeleteNetwork(network.backend_id, depends)
 
@@ -888,14 +906,9 @@ def disconnect_network(network, backend, group=None):
 def connect_to_network(vm, nic):
     network = nic.network
     backend = vm.backend
-    network = Network.objects.select_for_update().get(id=network.id)
-    bnet, created = BackendNetwork.objects.get_or_create(backend=backend,
-                                                         network=network)
-    depend_jobs = []
-    if bnet.operstate != "ACTIVE":
-        depend_jobs = create_network(network, backend, connect=True)
+    bnet, depend_jobs = ensure_network_is_active(backend, network.id)
 
-    depends = [[job, ["success", "error", "canceled"]] for job in depend_jobs]
+    depends = create_job_dependencies(depend_jobs)
 
     nic = {'name': nic.backend_uuid,
            'network': network.backend_id,
@@ -1071,7 +1084,7 @@ def update_backend_disk_templates(backend):
 
 def create_network_synced(network, backend):
     result = _create_network_synced(network, backend)
-    if result[0] != 'success':
+    if result[0] != rapi.JOB_STATUS_SUCCESS:
         return result
     result = connect_network_synced(network, backend)
     return result
@@ -1090,7 +1103,7 @@ def connect_network_synced(network, backend):
             job = client.ConnectNetwork(network.backend_id, group,
                                         network.mode, network.link)
             result = wait_for_job(client, job)
-            if result[0] != 'success':
+            if result[0] != rapi.JOB_STATUS_SUCCESS:
                 return result
 
     return result
@@ -1099,13 +1112,21 @@ def connect_network_synced(network, backend):
 def wait_for_job(client, jobid):
     result = client.WaitForJobChange(jobid, ['status', 'opresult'], None, None)
     status = result['job_info'][0]
-    while status not in ['success', 'error', 'cancel']:
+    while status not in rapi.JOB_STATUS_FINALIZED:
         result = client.WaitForJobChange(jobid, ['status', 'opresult'],
                                          [result], None)
         status = result['job_info'][0]
 
-    if status == 'success':
+    if status == rapi.JOB_STATUS_SUCCESS:
         return (status, None)
     else:
         error = result['job_info'][1]
         return (status, error)
+
+
+def create_job_dependencies(job_ids=[], job_states=None):
+    """Transform a list of job IDs to Ganeti 'depends' attribute."""
+    if job_states is None:
+        job_states = list(rapi.JOB_STATUS_FINALIZED)
+    assert(type(job_states) == list)
+    return [[job_id, job_states] for job_id in job_ids]

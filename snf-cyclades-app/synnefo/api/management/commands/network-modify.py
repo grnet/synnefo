@@ -35,7 +35,7 @@ from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 
-from synnefo.db.models import (Backend, BackendNetwork)
+from synnefo.db.models import Backend
 from synnefo.management.common import (get_network, get_backend)
 from snf_django.management.utils import parse_bool
 from synnefo.logic import networks, backend as backend_mod
@@ -127,7 +127,8 @@ class Command(BaseCommand):
         if floating_ip_pool is not None:
             floating_ip_pool = parse_bool(floating_ip_pool)
             if floating_ip_pool is False and network.floating_ip_pool is True:
-                if network.ips.filter(deleted=False, floating_ip=True).exists():
+                if network.ips.filter(deleted=False, floating_ip=True)\
+                              .exists():
                     msg = ("Cannot make network a non floating IP pool."
                            " There are still reserved floating IPs.")
                     raise CommandError(msg)
@@ -137,13 +138,10 @@ class Command(BaseCommand):
                               (network, floating_ip_pool))
             if floating_ip_pool is True:
                 for backend in Backend.objects.filter(offline=False):
-                    try:
-                        bnet = network.backend_networks.get(backend=backend)
-                    except BackendNetwork.DoesNotExist:
-                        bnet = network.create_backend_network(backend=backend)
-                    if bnet.operstate != "ACTIVE":
-                        backend_mod.create_network(network, backend,
-                                                   connect=True)
+                    bnet, jobs =\
+                        backend_mod.ensure_network_is_active(backend,
+                                                             network.id)
+                    if jobs:
                         msg = ("Sent job to create network '%s' in backend"
                                " '%s'\n" % (network, backend))
                         self.stdout.write(msg)
@@ -163,10 +161,11 @@ class Command(BaseCommand):
         add_to_backend = options["add_to_backend"]
         if add_to_backend is not None:
             backend = get_backend(add_to_backend)
-            network.create_backend_network(backend=backend)
-            backend_mod.create_network(network, backend, connect=True)
-            msg = "Sent job to create network '%s' in backend '%s'\n"
-            self.stdout.write(msg % (network, backend))
+            bnet, jobs = backend_mod.ensure_network_is_active(backend,
+                                                              network.id)
+            if jobs:
+                msg = "Sent job to create network '%s' in backend '%s'\n"
+                self.stdout.write(msg % (network, backend))
 
         remove_from_backend = options["remove_from_backend"]
         if remove_from_backend is not None:

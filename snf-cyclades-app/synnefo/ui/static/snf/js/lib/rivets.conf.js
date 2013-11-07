@@ -31,6 +31,11 @@ _.extend(rivets.formatters, {
     return prefix + value.toString();
   },
   
+  list_truncate: function(value, size) {
+    size = size === undefined ? 38 : size;
+    return synnefo.util.truncate(value, size);
+  },
+
   collection_size: function(col) {
     return col.models.length;
   },

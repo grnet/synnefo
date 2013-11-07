@@ -3337,7 +3337,8 @@ div.reboot-dialog button.details:hover {
 
 .machine .info-content.ips {
     background-color: #84B7D0;
-    padding: 0px 10px;
+    padding: 0px 0px;
+    padding-left: 5px;
     font-size: 0.6em;
 }
 

@@ -645,6 +645,7 @@
             synnefo.config.api_urls = {
                 'userdata': '{% url ui_userdata %}', 
                 'compute':  {{ compute_api_url|safe }}, 
+                'network':  {{ network_api_url|safe }}, 
                 'glance': {{ glance_api_url|safe }},
                 'accounts': {{ accounts_api_url|safe }},
             };

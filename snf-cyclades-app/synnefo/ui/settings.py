@@ -46,6 +46,7 @@ if not BASE_PATH.startswith("/"):
 
 GLANCE_URL = endpoint(cyclades_services, 'image', 'v1.0').rstrip('/')
 COMPUTE_URL = endpoint(cyclades_services, 'compute', 'v2.0').rstrip('/')
+NETWORK_URL = endpoint(cyclades_services, 'network', 'v2.0').rstrip('/')
 USERDATA_URL = endpoint(cyclades_services, 'cyclades_userdata', '').rstrip('/')
 ASTAKOS_UI_URL = endpoint(astakos_services, 'astakos_ui', '').rstrip('/')
 

@@ -193,6 +193,7 @@ def home(request):
                'request': request,
                'current_lang': get_language() or 'en',
                'compute_api_url': json.dumps(uisettings.COMPUTE_URL),
+               'network_api_url': json.dumps(uisettings.NETWORK_URL),
                'user_catalog_url': json.dumps(uisettings.USER_CATALOG_URL),
                'feedback_post_url': json.dumps(uisettings.FEEDBACK_URL),
                'accounts_api_url': json.dumps(uisettings.ACCOUNT_URL),

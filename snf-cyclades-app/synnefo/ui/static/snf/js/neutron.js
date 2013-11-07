@@ -21,12 +21,12 @@
     
     // Neutron base model, extending existing synnefo model
     models.NetworkModel = snfmodels.Model.extend({
-      api_type: 'compute'
+      api_type: 'network'
     });
     
     // Neutron base collection, common neutron collection params are shared
     models.NetworkCollection = snfmodels.Collection.extend({
-      api_type: 'compute',
+      api_type: 'network',
       details: true,
       noUpdate: true,
       updateEntries: true

@@ -113,13 +113,13 @@ cyclades_services = {
             'network-private': {
                 "name": "cyclades.network.private",
                 "desc": "Number of private networks",
-                "service_type": "compute",
+                "service_type": "network",
                 "service_origin": "cyclades_network",
             },
             'floating_ip': {
                 "name": "cyclades.floating_ip",
                 "desc": "Number of Floating IP addresses",
-                "service_type": "compute",
+                "service_type": "network",
                 "service_origin": "cyclades_network",
             },
         },

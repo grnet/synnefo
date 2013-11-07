@@ -20,7 +20,8 @@ Synnefo-wide
   can mix and match nodes freely.
 * Update Django dependency to Django>=1.2,<1.5. Django 1.4.5 is available for
   Squeeze through squeeze-backports.
-
+* Since this version, Synnefo ships an example Gunicorn configuration file
+  that is automatically installed at ``/etc/gunicorn.d/synnefo.example``.
 
 Cyclades
 --------

@@ -1283,6 +1283,7 @@ def add_network():
     cmd = """
     snf-manage network-create --subnet={0} --gateway={1} --public \
         --dhcp=True --flavor={2} --mode=bridged --link={3} --name=Internet \
+        --floating-ip-pool=True
     """.format(env.env.synnefo_public_network_subnet,
                env.env.synnefo_public_network_gateway,
                env.env.synnefo_public_network_type,

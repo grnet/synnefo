@@ -515,22 +515,14 @@ class NetworkReconciler(object):
         for bend in self.backends:
             bnet = get_backend_network(network, bend)
             gnet = self.ganeti_networks[bend].get(network.id)
-            if not bnet:
-                if network.floating_ip_pool:
-                    # Network is a floating IP pool and does not exist in
-                    # backend. We need to create it
-                    bnet = self.reconcile_parted_network(network, bend)
-                elif not gnet:
-                    # Network does not exist either in Ganeti nor in BD.
-                    continue
-                else:
-                    # Network exists in Ganeti and not in DB.
-                    if network.action != "DESTROY" and not network.public:
-                        bnet = self.reconcile_parted_network(network, bend)
-                    else:
-                        continue
+            if bnet is None and gnet is not None:
+                # Network exists in backend but not in DB for this backend
+                bnet = self.reconcile_parted_network(network, bend)
 
-            if not gnet:
+            if bnet is None:
+                continue
+
+            if gnet is None:
                 # Network does not exist in Ganeti. If the network action
                 # is DESTROY, we have to mark as deleted in DB, else we
                 # have to create it in Ganeti.

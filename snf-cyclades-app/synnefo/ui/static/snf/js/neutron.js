@@ -299,7 +299,8 @@
       },
       
       update_ips: function() {
-        var ips = _.map(this.get('fixed_ips'), function(ip) {
+        var ips = _.map(this.get('fixed_ips'), function(ip_obj) {
+          var ip = _.clone(ip_obj);
           var type = "v4";
           if (ip.ip_address.indexOf(":") >= 0) {
             type = "v6";
@@ -328,7 +329,7 @@
 
       storage_attrs: {
         'device_id': ['vms', 'vm'],
-        'network_id': ['networks', 'network'],
+        'network_id': ['networks', 'network']
       },
 
       proxy_attrs: {

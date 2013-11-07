@@ -34,7 +34,7 @@
 
 <div id="vm-port-ips-tpl" class="hidden">
   <div class="collection fixed-ips-list">
-    <div class="empty-list hidden">loading...</div>
+    <div class="empty-list hidden">pending ...</div>
     <div class="items-list clearfix"></div>
   </div>
 </div>
@@ -46,8 +46,10 @@
 </div>
 
 <div id="vm-port-view-tpl">
-  <img data-rv-src="model.network.is_public|get_network_icon" />
-  <div class="port" data-rv-text="model.network.name|get_network_name"></div>
+  <div class="clearfix network-header">
+    <img data-rv-src="model.network.is_public|get_network_icon" />
+    <div class="port" data-rv-text="model.network.name|get_network_name"></div>
+  </div>
   <div class="ips" data-rv-collection-view="model.ips|VMPortIpsView"></div>
 </div>
 

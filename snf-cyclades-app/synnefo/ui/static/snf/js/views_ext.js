@@ -368,7 +368,7 @@
         model_view.hide();
         model_view.el.remove();
         this.remove_view(model_view);
-        this.post_remove_model_view(model_view, model);
+        this.post_remove_model_view(model_view, m);
         delete this._model_views[m.id];
         this.check_empty();
       },

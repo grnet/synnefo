@@ -441,24 +441,15 @@
             if (this.toggle) {
                 $(this.el).find(".tags-header").click(_.bind(function(){
                     $(self.el).find(".tags-content").slideToggle(600);
-
                     var details_toggler = $(this.el).find(".tags-header " +
-                                                          ".cont-toggler.info");
-                    var ips_toggler = $(this.el).find(".tags-header " +
-                                                      ".cont-toggler.ips");
-                    
+                                                          ".cont-toggler");
                     if (details_toggler.hasClass("open")) {
                         details_toggler.removeClass("open");
                     } else {
                         details_toggler.addClass("open");
                     }
-
-                    if (ips_toggler.hasClass("open")) {
-                        ips_toggler.removeClass("open");
-                    } else {
-                        ips_toggler.addClass("open");
-                    }
                 }, this));
+                $(this.el).find(".tags-header").find(".toggler").removeClass("open");
                 $(self.el).find(".tags-content").hide();
             }
         },

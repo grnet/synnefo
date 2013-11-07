@@ -3265,8 +3265,22 @@ div.reboot-dialog button.details:hover {
   padding: 3px;
 }
 
+.single .machine .info-content.ips .ips .model-item .ip {
+  width: 85%;
+}
+
+.single .machine .info-content.ips .ips .model-item .cidr {
+  padding-left: 27px;
+}
+
+.single .machine .info-content.ips .ips .model-item .type {
+  font-size: 0.9em;
+  padding: 1px 4px;
+  margin-top: 4px;
+}
+
 .machine .info-content.ips .port {
-  width: 15%;
+  width: 77%;
   float: left;
   margin-top: 9px;
 }
@@ -3291,11 +3305,34 @@ div.reboot-dialog button.details:hover {
   position: relative;
   left: 4px;
   margin-top: 10px;
-  margin-right: 3%;
+  margin-right: 10px;
+}
+
+.single .machine .info-content.ips .port-item img {
+  margin-top: 13px;
+}
+
+.machine .info-content.ips .port-item .network-header {
+  width: 18%;
+  float: left;
+}
+
+.single .machine .info-content.ips .port-item .network-header {
+  width: 100%;
+  float: none;
+}
+
+.single .machine .info-content.ips .ips {
+  width: 100%;
 }
 
 .machine .info-content.ips .port-item .port {
   font-weight: bold;
+}
+
+.single .machine .info-content.ips {
+  font-size: 0.8em;
+  color: #222;
 }
 
 .machine .info-content.ips {
@@ -3650,23 +3687,23 @@ div.machine a.manage-metadata:hover {
     width: 9px;
 }
 
-.single .tags-header .info-header{
+.single .toggler-header .info-header{
     padding-top:0;
     padding-bottom:0;
 }
 
-.single .tags-header {
+.single .toggler-header {
     font-size: 0.62em;
     cursor: pointer;
     float: left;
     margin-bottom:5px;
 }
 
-.single .tags-header span.label {
+.single .toggler-header span.label {
     font-size: 104%;
 }
 
-.single .tags-content {
+.single .toggler-content {
     background-color: #84B7D0;
     clear: both;
     height: auto;
@@ -7176,7 +7213,7 @@ input.has-errors {
   border: 1px solid #aaaaaa;
   font-size: 85%;
   padding: 2px;
-  width: 255px;
+  width: 235px;
 }
 
 .model-rename-view .value {}
@@ -7186,6 +7223,9 @@ input.has-errors {
 .model-rename-view .rename-actions {
   float: right;
   width: 40px;
+  position: relative;
+  top: 1px;
+  left: -6px;
 }
 
 .model-rename-view .rename-actions .btn {

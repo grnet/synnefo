@@ -44,19 +44,30 @@
                     <div class="machine-detail image-name">windos_XP_blah_blah</div>
                     <div class="machine-detail image-size">2.3</div>
                 </div>
-                <div class="tags">
-                    <div class="tags-header">
+                <div class="tags machine">
+                  <div class="togglers clearfix">
+                    <div class="tags-header toggler-header">
                         <span class="info-header cont-toggler toggler">
                             <span class="label">{% trans "tags" %}</span>
                         </span>
                     </div>
-                    <div class="tags-content">
-                        <div class="metadata-keys-container">
-                                <div class="items">
-                                </div>
-                        </div>
-                        <a href="#" class="manage-metadata">{% trans "Manage Tags" %}</a>
+                    <div class="cont-toggler-wrapper toggler-header ips">
+                      <span class="info-header cont-toggler toggler">
+                        <span class="label">{% trans "ip addresses" %}</span>
+                      </span>
                     </div>
+                  </div>
+                  <div class="togglers-content">
+                    <div class="tags-content toggler-content">
+                      <div class="metadata-keys-container">
+                        <div class="items">
+                        </div>
+                      </div>
+                      <a href="#" class="manage-metadata">{% trans "Manage Tags" %}</a>
+                    </div>
+                    <div class="ips-content toggler-content hidden info-content">
+                    </div>
+                  </div>
                 </div>
             </div>
             <div class="col3">

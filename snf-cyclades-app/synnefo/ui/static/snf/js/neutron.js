@@ -447,14 +447,12 @@
       },
 
       disconnect: function(cb) {
-        // MOCK
         var self = this;
-        window.setTimeout(function() {
-          cb()
-        }, 2000);
-        window.setTimeout(function() {
-          self.set({port_id: undefined});
-        }, 3000);
+        var complete = function() {
+          self.set({status: 'DISCONNECTING'});
+          cb();
+        }
+        this.get('port').disconnect(cb);
       }
     });
 

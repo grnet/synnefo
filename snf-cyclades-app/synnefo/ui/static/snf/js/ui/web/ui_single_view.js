@@ -69,12 +69,15 @@
         });
 
         this.tags_toggler.click(function() {
+          var self = this;
           self.toggler.find(".toggler").removeClass("open");
-          self.toggler_content.slideUp();
+          var f = function() { self.hide(true) }
+          self.toggler_content.slideUp(f);
         });
       },
 
       toggle: function() {
+        var self = this;
         this.open = !this.open;
 
         if (this.open) {
@@ -85,6 +88,7 @@
           this.toggler_content.removeClass(".hidden").slideDown();
         } else {
           this.toggler.find(".toggler").removeClass("open");
+          var f = function() { self.hide(true) }
           this.toggler_content.removeClass(".hidden").slideUp();
         }
       }

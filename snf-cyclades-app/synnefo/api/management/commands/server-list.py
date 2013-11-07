@@ -77,11 +77,13 @@ class Command(ListCommand):
     astakos_url = ASTAKOS_BASE_URL
     astakos_token = ASTAKOS_TOKEN
 
-    def get_public_ip(vm):
-        try:
-            return vm.nics.all()[0].ipv4
-        except IndexError:
-            return None
+    def get_ipv4(vm):
+        return vm.nics.filter(ips__subnet__ipversion=4)\
+                      .values_list("ips__address", flat=True)
+
+    def get_ipv6(vm):
+        return vm.nics.filter(ips__subnet__ipversion=6)\
+                      .values_list("ips__address", flat=True)
 
     def format_vm_state(vm):
         if vm.operstate == "BUILD":
@@ -98,7 +100,8 @@ class Command(ListCommand):
         "image.id": ("imageid", "The ID of the server's image"),
         "image.name": ("image", "The name of the server's image"),
         "state": (format_vm_state, "The current state of the server"),
-        "ip": (get_public_ip, "The public IP of the server"),
+        "ipv4": (get_ipv4, "The IPv4 addresses of the server"),
+        "ipv6": (get_ipv6, "The IPv6 addresses of the server"),
         "created": ("created", "The date the server was created"),
         "deleted": ("deleted", "Whether the server is deleted or not"),
         "suspended": ("suspended", "Whether the server is administratively"

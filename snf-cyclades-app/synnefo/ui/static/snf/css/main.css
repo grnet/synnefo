@@ -876,7 +876,7 @@ div.image-container {
 }
 
 .icon .machine-info {
-    padding: 10px 0;
+    padding: 20px 0;
 }
 
 .icon .machine-details .name {
@@ -913,7 +913,7 @@ div.image-container {
 
 .icon .vm-actions, .network .vm-actions {
     width: 180px;
-    height: 76px;
+    height: 96px;
     float: left;
 }
 
@@ -968,6 +968,16 @@ div.image-container {
 }
 
 div.list div.actions a.enabled.destroy {
+}
+
+.vm-actions .action-container.inactive a {
+  color: #aaa;
+}
+
+.vm-actions .action-container.inactive a:hover{
+  background-color: transparent !important;
+  border: none !important;
+  padding-left: 8px;
 }
 
 .vm-actions .action-container.destroy {
@@ -1070,7 +1080,7 @@ div.connect-arrow {
     display: none;
     left: -3px;
     position: absolute;
-    top: 9px;
+    top: 22px;
 }
 
 div.connect-arrow:hover, div.connect-arrow.border-hover, div.connect-arrow-ie, div.connect-arrow.border-ie {
@@ -1098,7 +1108,7 @@ div.connect-border:hover {
     display: none;
     left: -15px;
     position: absolute;
-    top: 9px;
+    top: 22px;
 }
 
 .standard .machine .logo {
@@ -3561,7 +3571,7 @@ div.machine a.manage-metadata:hover {
 
 .single .single-actions {
     width: 150px;
-    height: 60px;
+    height: 77px;
     margin-bottom: 45px;
     margin-left: -10px;
 }
@@ -4098,6 +4108,9 @@ div.state .console, tbody.machines .console {
 }
 div.state .start, tbody.machines .start {
     background-image: url("../images/icons/actions/medium/start.png");
+}
+div.state .resize, tbody.machines .resize {
+    background-image: url("../images/icons/actions/medium/resize.png");
 }
 div.state .reboot, tbody.machines .reboot {
     background-image: url("../images/icons/actions/medium/reboot.png");

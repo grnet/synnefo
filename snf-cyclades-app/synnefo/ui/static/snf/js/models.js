@@ -1556,8 +1556,8 @@
         'UNKNWON'       : ['destroy'],
         'BUILD'         : ['destroy'],
         'REBOOT'        : ['destroy'],
-        'STOPPED'       : ['start', 'destroy'],
-        'ACTIVE'        : ['shutdown', 'destroy', 'reboot', 'console'],
+        'STOPPED'       : ['start', 'destroy', 'resize'],
+        'ACTIVE'        : ['shutdown', 'destroy', 'reboot', 'console', 'resize'],
         'ERROR'         : ['destroy'],
         'DELETED'       : ['destroy'],
         'DESTROY'       : ['destroy'],
@@ -1566,6 +1566,10 @@
         'CONNECT'       : ['destroy'],
         'DISCONNECT'    : ['destroy'],
         'RESIZE'        : ['destroy']
+    }
+    
+    models.VM.AVAILABLE_ACTIONS_INACTIVE = {
+      'resize': ['ACTIVE']
     }
 
     // api status values

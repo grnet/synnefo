@@ -551,6 +551,14 @@
             _.each(models.VM.ACTIONS, function(action, index) {
                 if (actions.indexOf(action) > -1) {
                     this.action(action).removeClass("disabled");
+                    var inactive = models.VM.AVAILABLE_ACTIONS_INACTIVE[action];
+
+                    if (inactive && _.contains(inactive, this.vm.get('status'))) {
+                      this.action(action).addClass("inactive");
+                    } else {
+                      this.action(action).removeClass("inactive");
+                    }
+
                     if (this.selected_action == action) {
                         this.action_confirm_cont(action).css('display', 'block');
                         this.action_confirm(action).show();
@@ -619,7 +627,14 @@
                 // action links click events
                 $(this.el).find(".action-container."+action+" a").click(function(ev) {
                     ev.preventDefault();
-                    self.set(action);
+                    if ($(ev.currentTarget).parent().hasClass("inactive")) {
+                      return;
+                    }
+                    if (action == "resize") {
+                        ui.main.vm_resize_view.show(self.vm);
+                    } else {
+                        self.set(action);
+                    }
                 }).data("action", action);
 
                 // confirms
@@ -672,6 +687,7 @@
         'shutdown':      ['UNKOWN', 'ACTIVE', 'REBOOT'],
         'console':       ['ACTIVE'],
         'start':         ['UNKOWN', 'STOPPED'],
+        'resize':        ['UNKOWN', 'ACTIVE', 'STOPPED', 'REBOOT', 'ERROR', 'BUILD'],
         'destroy':       ['UNKOWN', 'ACTIVE', 'STOPPED', 'REBOOT', 'ERROR', 'BUILD']
     };
 

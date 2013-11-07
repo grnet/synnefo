@@ -103,6 +103,26 @@ def get_quotaholder_holdings(user=None):
     return qh.service_get_quotas(user)
 
 
+def get_qh_users_holdings(users=None):
+    qh = Quotaholder.get()
+    if users is None or len(users) != 1:
+        req = None
+    else:
+        req = users[0]
+    quotas = qh.service_get_quotas(req)
+
+    if users is None:
+        return quotas
+
+    qs = {}
+    for user in users:
+        try:
+            qs[user] = quotas[user]
+        except KeyError:
+            pass
+    return qs
+
+
 def transform_quotas(quotas):
     d = {}
     for resource, counters in quotas.iteritems():

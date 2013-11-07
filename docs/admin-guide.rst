@@ -970,6 +970,7 @@ backend-list                   List backends
 backend-modify                 Modify a backend
 backend-update-status          Update backend statistics for instance allocation
 backend-remove                 Remove a Ganeti backend
+enforce-resources-cyclades     Check and fix quota violations for Cyclades resources
 server-create                  Create a new server
 server-show                    Show server details
 server-list                    List servers

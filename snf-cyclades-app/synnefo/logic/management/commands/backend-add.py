@@ -122,17 +122,19 @@ def create_backend(clustername, port, username, password, hypervisor=None,
         backend_mod.update_backend_resources(backend, resources)
         backend_mod.update_backend_disk_templates(backend)
 
-        networks = Network.objects.filter(deleted=False, floating_ip_pool=True)
+        networks = Network.objects.filter(deleted=False, public=True)
         if not networks:
             return
 
-        stream.write("Creating the follow networks:\n")
-        headers = ('Name', 'Subnet', 'Gateway', 'Mac Prefix', 'Public')
+        stream.write("Creating the following public:\n")
+        headers = ("ID", "Name", 'IPv4 Subnet', "IPv6 Subnet", 'Mac Prefix')
         table = []
 
         for net in networks:
-            table.append((net.backend_id, str(net.subnet), str(net.gateway),
-                         str(net.mac_prefix), str(net.public)))
+            subnet4 = net.subnet4.cidr if net.subnet4 else None
+            subnet6 = net.subnet6.cidr if net.subnet6 else None
+            table.append((net.id, net.backend_id, subnet4,
+                          subnet6, str(net.mac_prefix)))
         pprint_table(stream, table, headers)
 
         for net in networks:

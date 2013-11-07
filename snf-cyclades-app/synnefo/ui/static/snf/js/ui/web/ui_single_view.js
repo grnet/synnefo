@@ -69,7 +69,6 @@
         });
 
         this.tags_toggler.click(function() {
-          var self = this;
           self.toggler.find(".toggler").removeClass("open");
           var f = function() { self.hide(true) }
           self.toggler_content.slideUp(f);

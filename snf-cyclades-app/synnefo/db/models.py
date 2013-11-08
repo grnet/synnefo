@@ -607,7 +607,8 @@ class Subnet(models.Model):
     SUBNET_NAME_LENGTH = 128
 
     network = models.ForeignKey('Network', null=False, db_index=True,
-                                related_name="subnets")
+                                related_name="subnets",
+                                on_delete=models.PROTECT)
     name = models.CharField('Subnet Name', max_length=SUBNET_NAME_LENGTH,
                             null=True, default="")
     ipversion = models.IntegerField('IP Version', default=4, null=False)
@@ -664,7 +665,7 @@ class BackendNetwork(models.Model):
     }
 
     network = models.ForeignKey(Network, related_name='backend_networks',
-                                on_delete=models.CASCADE)
+                                on_delete=models.PROTECT)
     backend = models.ForeignKey(Backend, related_name='networks',
                                 on_delete=models.PROTECT)
     created = models.DateTimeField(auto_now_add=True)
@@ -708,9 +709,9 @@ class BackendNetwork(models.Model):
 
 class IPAddress(models.Model):
     subnet = models.ForeignKey("Subnet", related_name="ips", null=False,
-                               on_delete=models.CASCADE)
+                               on_delete=models.PROTECT)
     network = models.ForeignKey(Network, related_name="ips", null=False,
-                                on_delete=models.CASCADE)
+                                on_delete=models.PROTECT)
     nic = models.ForeignKey("NetworkInterface", related_name="ips", null=True,
                             on_delete=models.SET_NULL)
     userid = models.CharField("UUID of the owner", max_length=128, null=False,
@@ -800,9 +801,9 @@ class NetworkInterface(models.Model):
                               max_length=NETWORK_IFACE_NAME_LENGTH,
                               null=False, db_index=True)
     machine = models.ForeignKey(VirtualMachine, related_name='nics',
-                                on_delete=models.CASCADE, null=True)
+                                on_delete=models.PROTECT, null=True)
     network = models.ForeignKey(Network, related_name='nics',
-                                on_delete=models.CASCADE)
+                                on_delete=models.PROTECT)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     index = models.IntegerField(null=True)
@@ -890,6 +891,7 @@ class IPPoolTable(PoolTable):
     manager = pools.IPPool
 
     subnet = models.ForeignKey('Subnet', related_name="ip_pools",
+                               on_delete=models.PROTECT,
                                db_index=True, null=True)
 
     def __unicode__(self):

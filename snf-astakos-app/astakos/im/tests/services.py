@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,8 +31,38 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from astakos.im.tests.auth import *
-from astakos.im.tests.projects import *
-from astakos.im.tests.api import *
-from astakos.im.tests.views import *
-from astakos.im.tests.services import *
+from astakos.im.tests.common import *
+from snf_django.utils.testing import assertRaises
+
+
+class RegisterTest(TestCase):
+    def test_register(self):
+        component1 = Component.objects.create(name="comp1")
+        component2 = Component.objects.create(name="comp2")
+        register.add_service(component1, "service1", "type1", [])
+        register.add_service(component1, "service1a", "type1a", [])
+        register.add_service(component2, "service2", "type2", [])
+
+        resource = {"name": "service.resource",
+                    "desc": "resource desc",
+                    "service_type": "type1",
+                    "service_origin": "service1"
+                    }
+        r, _ = register.add_resource(resource)
+        self.assertEqual(r.service_type, "type1")
+
+        resource = {"name": "service.resource",
+                    "desc": "resource desc",
+                    "service_type": "type2",
+                    "service_origin": "service2"
+                    }
+        with assertRaises(register.RegisterException):
+            r, _ = register.add_resource(resource)
+
+        resource = {"name": "service.resource",
+                    "desc": "resource desc",
+                    "service_type": "type1a",
+                    "service_origin": "service1a"
+                    }
+        r, _ = register.add_resource(resource)
+        self.assertEqual(r.service_type, "type1a")

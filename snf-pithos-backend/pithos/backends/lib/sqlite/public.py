@@ -75,8 +75,7 @@ class Public(DBWorker):
             )
             q = "insert into public(path, active, url) values(?, 1, ?)"
             self.execute(q, (path, url))
-            if sqlite3_changes() != 0:
-                logger.info('Public url set for path: %s' % path)
+            logger.info('Public url set for path: %s' % path)
 
     def public_unset(self, path):
         q = "delete from public where path = ?"

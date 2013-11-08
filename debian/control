@@ -27,7 +27,8 @@ Description: Synnefo common package
 
 Package: snf-webproject
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}, snf-common, python-django-south (>= 0.7)
+Depends: ${misc:Depends}, ${python:Depends}, snf-common,
+  python-django-south (>= 0.7.3)
 Provides: ${python:Provides}
 XB-Python-Version: ${python:Versions}
 Description: Synnefo webproject package (common settings mechanism)
@@ -42,7 +43,7 @@ Description: Synnefo Branding package for user interface and message customizati
 Package: snf-cyclades-app
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}, snf-common,
- python-django-south (>= 0.7)
+ python-django-south (>= 0.7.3)
 Provides: ${python:Provides}
 Replaces: snf-network
 Recommends: snf-webproject
@@ -140,3 +141,13 @@ Recommends: snf-webproject
 XB-Python-Version: ${python:Versions}
 Description: Synnefo Django library
  Synnefo Django library
+
+Package: snf-deploy
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends}, fabric
+XB-Python-Version: ${python:Versions}
+Description: Auto deploy tool for Synnefo.
+ * Creates virtual cluster
+ * Installs all related software components to the cluster in order to have a
+   local synnefo up-and-running
+

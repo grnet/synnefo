@@ -1,0 +1,30 @@
+#!/bin/sh
+
+# Filename:     /etc/dhcp3/dhclient-exit-hooks.d/hostname
+# Purpose:      Used by dhclient-script to set the hostname of the system
+#               to match the DNS information for the host as provided by
+#               DHCP.
+# Depends:      dhcp3-client (should be in the base install)
+#               hostname (for hostname, again, should be in the base)
+#               bind9-host (for host)
+#               coreutils (for cut and echo)
+#
+
+if [ "$reason" != BOUND ] && [ "$reason" != RENEW ] \
+   && [ "$reason" != REBIND ] && [ "$reason" != REBOOT ]
+then
+        return
+fi
+
+echo dhclient-exit-hooks.d/hostname: Dynamic IP address = $new_ip_address
+
+hostname=$(host $new_ip_address | sed 's/.$//' | cut -d ' ' -f 5)
+
+echo $hostname > /etc/hostname
+
+hostname $hostname
+
+echo dhclient-exit-hooks.d/hostname: Dynamic Hostname = $hostname
+
+# And that _should_ just about do it...
+

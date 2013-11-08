@@ -32,7 +32,11 @@
 # or implied, of GRNET S.A.
 
 from functools import partial
-from django.conf.urls.defaults import include, patterns
+try:
+    from django.conf.urls import include, patterns
+except ImportError:  # Django==1.2
+    from django.conf.urls.defaults import include, patterns
+
 from snf_django.lib.api.proxy import proxy
 from snf_django.lib.api.utils import prefix_pattern
 from snf_django.lib.api.urls import api_patterns

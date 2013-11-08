@@ -1,0 +1,3 @@
+%PITHOS_DIR% %IP%(rw,async,no_subtree_check,no_root_squash)
+%IMAGE_DIR% %IP%(rw,async,no_subtree_check,no_root_squash)
+

@@ -54,6 +54,7 @@ context_processors = [
     'django.core.context_processors.media',
     'django.core.context_processors.request',
     'django.core.context_processors.csrf',
+    'django.contrib.messages.context_processors.messages',
     'astakos.im.context_processors.media',
     'astakos.im.context_processors.im_modules',
     'astakos.im.context_processors.auth_providers',

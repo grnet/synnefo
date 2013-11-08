@@ -46,6 +46,10 @@ def allocate_ip(network, userid, address=None, floating_ip=False):
     if network.action == "DESTROY":
         raise faults.Conflict("Cannot allocate IP. Network %s is being"
                               " deleted" % network.id)
+    elif network.drained:
+        raise faults.Conflict("Can not allocate IP while network '%s' is in"
+                              " 'SNF:DRAINED' status" % network.id)
+
     ip_pools = IPPoolTable.objects.select_for_update()\
         .filter(subnet__network=network)
     try:

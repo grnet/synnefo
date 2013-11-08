@@ -163,12 +163,13 @@ def network_to_dict(network, detail=True):
     d = {'id': str(network.id), 'name': network.name}
     d['links'] = util.network_to_links(network.id)
     if detail:
+        state = "SNF:DRAINED" if network.drained else network.state
         d['user_id'] = network.userid
         d['tenant_id'] = network.userid
         d['type'] = network.flavor
         d['updated'] = api.utils.isoformat(network.updated)
         d['created'] = api.utils.isoformat(network.created)
-        d['status'] = network.state
+        d['status'] = state
         d['public'] = network.public
         d['external_router'] = network.external_router
         d['admin_state_up'] = True

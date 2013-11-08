@@ -1,3 +1,9 @@
+synnefo (0.14.8-1~squeeze) squeeze; urgency=low
+
+  * Release version 0.14.8~rc3 as 0.14.8
+
+ -- Christos Stavrakakis <cstavr@grnet.gr>  Fri, 08 Nov 2013 17:39:19 +0200
+
 synnefo (0.14.8~rc3-1~squeeze) squeeze; urgency=low
 
   * Install example Gunicorn conf file

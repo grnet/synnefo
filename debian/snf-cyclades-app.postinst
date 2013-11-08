@@ -20,7 +20,6 @@ set -e
 
 case "$1" in
     configure)
-        chown www-data:www-data /var/log/synnefo
 
         echo "Updating rc.d links... "
         update-rc.d snf-dispatcher defaults

@@ -51,6 +51,7 @@ u = lambda url: ROOT + url
 class QuotaAPITest(TestCase):
     def test_0(self):
         client = Client()
+        backend = activation_backends.get_backend()
 
         component1 = Component.objects.create(name="comp1")
         register.add_service(component1, "service1", "type1", [])
@@ -72,7 +73,12 @@ class QuotaAPITest(TestCase):
 
         # create user
         user = get_local_user('test@grnet.gr')
-        quotas.qh_sync_user(user)
+        backend.accept_user(user)
+        non_moderated_user = get_local_user('nonmon@example.com',
+                                            is_active=False)
+        r_user = get_local_user('rej@example.com',
+                                is_active=False, email_verified=True)
+        backend.reject_user(r_user, "reason")
 
         component2 = Component.objects.create(name="comp2")
         register.add_service(component2, "service2", "type2", [])
@@ -107,6 +113,16 @@ class QuotaAPITest(TestCase):
         assertIn('system', body)
         for name in resource_names:
             assertIn(name, system_quota)
+
+        nmheaders = {'HTTP_X_AUTH_TOKEN': non_moderated_user.auth_token}
+        r = client.get(u('quotas/'), **nmheaders)
+        self.assertEqual(r.status_code, 401)
+
+        q = quotas.get_user_quotas(non_moderated_user)
+        self.assertEqual(q, {})
+
+        q = quotas.get_user_quotas(r_user)
+        self.assertEqual(q, {})
 
         r = client.get(u('service_quotas'))
         self.assertEqual(r.status_code, 401)
@@ -196,7 +212,8 @@ class QuotaAPITest(TestCase):
         body = json.loads(r.content)
         self.assertEqual(body['serial'], serial)
         assertIn('issue_time', body)
-        self.assertEqual(body['provisions'], commission_request['provisions'])
+        provisions = sorted(body['provisions'], key=lambda p: p['resource'])
+        self.assertEqual(provisions, commission_request['provisions'])
         self.assertEqual(body['name'], commission_request['name'])
 
         r = client.get(u('service_quotas?user=' + user.uuid), **s1_headers)

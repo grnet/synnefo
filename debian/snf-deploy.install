@@ -1,0 +1,4 @@
+snf-deploy/fabfile.py usr/lib/snf-deploy
+snf-deploy/scripts/ifup usr/lib/snf-deploy
+snf-deploy/conf/* etc/snf-deploy
+snf-deploy/files/* var/lib/snf-deploy/files

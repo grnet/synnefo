@@ -1,0 +1,90 @@
+# snf-image defaults file
+
+# IMAGE_NAME: Name of the image to use
+# Generally you use the name of the image with the version of the OS included.
+# Examples include:
+#   centos-5.4 debian-4.0 fedora-12
+# IMAGE_NAME=""
+
+# IMAGE_DIR: directory location for disk images
+# IMAGE_DIR="/var/lib/snf-image"
+IMAGE_DIR=/srv/okeanos
+
+# IMAGE_DEBUG: turn on debugging output for the scripts
+# IMAGE_DEBUG=no
+
+# VERSION_CHECK: Check if host and helper have the
+# same version. This is usefull if snf-image-host is
+# installed as debian package and not from source.
+# VERSION_CHECK="no"
+
+# HELPER_DIR: Directory hosting the helper files
+# HELPER_DIR="/var/lib/snf-image/helper/"
+
+# HELPER_CACHE_DIR: Directory hosting the helper cache files
+# HELPER_CACHE_DIR="/var/cache/snf-image/helper/"
+
+# HELPER_IMG: Path to the helper VM image
+# HELPER_IMG="${HELPER_DIR}/image"
+
+# HELPER_KERNEL: Path to the helper VM kernel
+# HELPER_KERNEL="${HELPER_DIR}/kernel"
+
+# HELPER_INITRD: Path to the helper VM initial ramdisk
+# HELPER_INITRD="${HELPER_DIR}/initrd"
+
+# HELPER_TIMOUT: Soft and hard timeout limits for helper instance.
+# The helper instance will be terminated after a given time if it hasn't exited
+# by itself. A TERM signal will be send if the instance is running after
+# a HELPER_SOFT_TIMEOUT interval. A KILL signal will be sent, if the instance
+# is still running after a HELPER_HARD_TIMEOUT interval since the initial
+# signal was sent. The timeout values are integer numbers with an optional
+# suffix: `s' for seconds (the default), `m' for minutes, `h' for hours or `d'
+# for days.
+# HELPER_SOFT_TIMEOUT="20"
+# HELPER_HARD_TIMEOUT="5"
+HELPER_SOFT_TIMEOUT=100
+
+# HELPER_USER: For security reasons, it is recommended that the helper VM
+# runs as an unprivileged user. KVM drops root privileges and runs as
+# HELPER_USER imeddiately before starting execution of the helper VM.
+# HELPER_USER="nobody"
+
+# MULTISTRAP_CONFIG: Configuration file to be used with multistrap to create
+# the rootfs of the helper image.
+# MULTISTRAP_CONFIG="/etc/snf-image/multistrap.conf"
+
+# MULTISTRAP_APTPREFDIR: Directory where apt preference files are hosted. Those
+# files will be injected to the helper image before multistrap is called.
+# MULTISTRAP_APTPREFDIR="/etc/snf-image/apt.pref.d"
+
+# PITHOS_DB: Pithos database in SQLAlchemy format
+# PITHOS_DB="sqlite:////var/lib/pithos/backend.db"
+PITHOS_DB=postgresql://%SYNNEFO_USER%:%SYNNEFO_DB_PASSWD%@%DB_NODE%:5432/snf_pithos
+
+# PITHOS_DATA: Directory where pithos data are hosted
+# PITHOS_DATA="/var/lib/pithos/data"
+PITHOS_DATA=%PITHOS_DIR%/data
+
+# PROGRESS_MONITOR: External program that monitors the progress of the image
+# deployment. The snf-image monitor messages will be redirected to the standard
+# input of this program.
+# PROGRESS_MONITOR=""
+PROGRESS_MONITOR=snf-progress-monitor
+
+# UNATTEND: This variables overwrites the unattend.xml file used when deploying
+# a windows image. snf-image-helper will use its own unattend.xml file if this
+# variable is empty. Please unless you really know what you are doing, leave
+# this empty.
+# UNATTEND=""
+
+# Paths for needed programs. Uncommend and change the variables below if you
+# don't want to use the default one.
+# LOSETUP="losetup"
+# KPARTX="kpartx"
+# SFDISK="sfdisk"
+# QEMU_IMG="qemu-img"
+# INSTALL_MBR="install-mbr"
+# TIMELIMIT="timelimit"
+# CURL="curl"
+CURL="curl -k"

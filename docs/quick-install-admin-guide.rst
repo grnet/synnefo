@@ -202,25 +202,13 @@ actual IPs. Now, restart the server to apply the changes:
 Gunicorn setup
 ~~~~~~~~~~~~~~
 
-Create the file ``/etc/gunicorn.d/synnefo`` containing the following:
+Rename the file ``/etc/gunicorn.d/synnefo.example`` to
+``/etc/gunicorn.d/synnefo``, to make it a valid gunicorn configuration file:
 
 .. code-block:: console
 
-    CONFIG = {
-     'mode': 'django',
-     'environment': {
-       'DJANGO_SETTINGS_MODULE': 'synnefo.settings',
-     },
-     'working_dir': '/etc/synnefo',
-     'user': 'www-data',
-     'group': 'www-data',
-     'args': (
-       '--bind=127.0.0.1:8080',
-       '--worker-class=gevent',
-       '--workers=8',
-       '--log-level=debug',
-     ),
-    }
+    # mv /etc/gunicorn.d/synnefo.example /etc/gunicorn.d/synnefo
+
 
 .. warning:: Do NOT start the server yet, because it won't find the
     ``synnefo.settings`` module. Also, in case you are using ``/etc/hosts``
@@ -388,27 +376,14 @@ of the purpose of this guide.
 Gunicorn setup
 ~~~~~~~~~~~~~~
 
-Create the file ``/etc/gunicorn.d/synnefo`` containing the following
-(same contents as in node1; you can just copy/paste the file):
+Rename the file ``/etc/gunicorn.d/synnefo.example`` to
+``/etc/gunicorn.d/synnefo``, to make it a valid gunicorn configuration file
+(as happened for node1):
 
 .. code-block:: console
 
-    CONFIG = {
-     'mode': 'django',
-     'environment': {
-      'DJANGO_SETTINGS_MODULE': 'synnefo.settings',
-     },
-     'working_dir': '/etc/synnefo',
-     'user': 'www-data',
-     'group': 'www-data',
-     'args': (
-       '--bind=127.0.0.1:8080',
-       '--worker-class=gevent',
-       '--workers=4',
-       '--log-level=debug',
-       '--timeout=43200'
-     ),
-    }
+    # mv /etc/gunicorn.d/synnefo.example /etc/gunicorn.d/synnefo
+
 
 .. warning:: Do NOT start the server yet, because it won't find the
     ``synnefo.settings`` module. Also, in case you are using ``/etc/hosts``
@@ -533,7 +508,7 @@ uncomment and edit the ``DATABASES`` block to reflect our database:
     DATABASES = {
      'default': {
          # 'postgresql_psycopg2', 'postgresql','mysql', 'sqlite3' or 'oracle'
-         'ENGINE': 'postgresql_psycopg2',
+         'ENGINE': 'django.db.backends.postgresql_psycopg2',
          # ATTENTION: This *must* be the absolute path if using sqlite3.
          # See: http://docs.djangoproject.com/en/dev/ref/settings/#name
          'NAME': 'snf_apps',
@@ -720,7 +695,7 @@ file that looks like this:
     DATABASES = {
      'default': {
          # 'postgresql_psycopg2', 'postgresql','mysql', 'sqlite3' or 'oracle'
-         'ENGINE': 'postgresql_psycopg2',
+         'ENGINE': 'django.db.backends.postgresql_psycopg2',
          'OPTIONS': {'synnefo_poolsize': 8},
 
          # ATTENTION: This *must* be the absolute path if using sqlite3.
@@ -1168,8 +1143,10 @@ snf-image
 Installation
 ~~~~~~~~~~~~
 For :ref:`Cyclades <cyclades>` to be able to launch VMs from specified Images,
-you need the :ref:`snf-image <snf-image>` OS Definition installed on *all*
-VM-capable Ganeti nodes. This means we need :ref:`snf-image <snf-image>` on
+you need the :ref:
+`snf-image <http://www.synnefo.org/docs/snf-image/latest/index.html>` OS
+Definition installed on *all* VM-capable Ganeti nodes. This means we need
+:ref:`snf-image <http://www.synnefo.org/docs/snf-image/latest/index.html>` on
 node1 and node2. You can do this by running on *both* nodes:
 
 .. code-block:: console
@@ -1185,17 +1162,6 @@ VM-capable Ganeti nodes.
     not  work out of the box if you try to use URLs served by servers which do
     not have a valid certificate. To circumvent this you should edit the file
     ``/etc/default/snf-image``. Change ``#CURL="curl"`` to ``CURL="curl -k"``.
-
-After `snf-image` has been installed successfully, create the helper VM by
-running on *both* nodes:
-
-.. code-block:: console
-
-   # snf-image-update-helper
-
-This will create all the needed files under ``/var/lib/snf-image/helper/`` for
-snf-image to run successfully, and it may take a few minutes depending on your
-Internet connection.
 
 Configuration
 ~~~~~~~~~~~~~
@@ -1233,7 +1199,7 @@ This should return ``valid`` for snf-image.
 
 If you are interested to learn more about snf-image's internals (and even use
 it alongside Ganeti without Synnefo), please see
-`here <https://code.grnet.gr/projects/snf-image/wiki>`_ for information
+`here <http://www.synnefo.org/docs/snf-image/latest/index.html>`_ for information
 concerning installation instructions, documentation on the design and
 implementation, and supported Image formats.
 
@@ -1243,13 +1209,15 @@ Actual Images for snf-image
 ---------------------------
 
 Now that snf-image is installed successfully we need to provide it with some
-Images. :ref:`snf-image <snf-image>` supports Images stored in ``extdump``,
-``ntfsdump`` or ``diskdump`` format. We recommend the use of the ``diskdump``
-format. For more information about snf-image Image formats see `here
-<https://code.grnet.gr/projects/snf-image/wiki/Image_Format>`_.
+Images.
+:ref:`snf-image <http://www.synnefo.org/docs/snf-image/latest/index.html>`
+supports Images stored in ``extdump``, ``ntfsdump`` or ``diskdump`` format. We
+recommend the use of the ``diskdump`` format. For more information about
+snf-image Image formats see `here
+<http://www.synnefo.org/docs/snf-image/latest/usage.html#image-format>`_.
 
-:ref:`snf-image <snf-image>` also supports three (3) different locations for the
-above Images to be stored:
+:ref:`snf-image <http://www.synnefo.org/docs/snf-image/latest/index.html>`
+also supports three (3) different locations for the above Images to be stored:
 
     * Under a local folder (usually an NFS mount, configurable as ``IMAGE_DIR``
       in :file:`/etc/default/snf-image`)
@@ -1258,8 +1226,8 @@ above Images to be stored:
 
 For the purpose of this guide, we will use the Debian Squeeze Base Image found
 on the official `snf-image page
-<https://code.grnet.gr/projects/snf-image/wiki#Sample-Images>`_. The image is
-of type ``diskdump``. We will store it in our new Pithos installation.
+<http://www.synnefo.org/docs/snf-image/latest/usage.html#sample-images>`_. The
+image is of type ``diskdump``. We will store it in our new Pithos installation.
 
 To do so, do the following:
 
@@ -1275,7 +1243,7 @@ Ganeti, in the next section.
 
 Of course, you can repeat the procedure to upload more Images, available from
 the `official snf-image page
-<https://code.grnet.gr/projects/snf-image/wiki#Sample-Images>`_.
+<http://www.synnefo.org/docs/snf-image/latest/usage.html#sample-images>`_.
 
 .. _ganeti-with-pithos-images:
 
@@ -1308,7 +1276,7 @@ In the above command:
                * ``filename``: the name of file (visible also from the Web UI)
  * ``img_properties``: taken from the metadata file. Used only the two mandatory
                        properties ``OSFAMILY`` and ``ROOT_PARTITION``. `Learn more
-                       <https://code.grnet.gr/projects/snf-image/wiki/Image_Format#Image-Properties>`_
+                       <http://www.synnefo.org/docs/snf-image/latest/usage.html#image-properties>`_
 
 If the ``gnt-instance add`` command returns successfully, then run:
 

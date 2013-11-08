@@ -76,7 +76,8 @@ class ShibbolethTests(TestCase):
         client.set_tokens(mail="kpap@synnefo.org", eppn="kpapeppn",
                           cn="Kostas Papadimitriou",
                           ep_affiliation="Test Affiliation")
-        r = client.get(ui_url('login/shibboleth?'), follow=True)
+        r = client.get(ui_url('login/shibboleth?'), follow=True,
+                       **{'HTTP_SHIB_CUSTOM_IDP_KEY': 'test'})
         token = PendingThirdPartyUser.objects.get().token
         self.assertRedirects(r, ui_url('signup?third_party_token=%s' % token))
         self.assertEqual(r.status_code, 200)
@@ -127,6 +128,11 @@ class ShibbolethTests(TestCase):
         self.assertEqual(AstakosUser.objects.count(), 1)
         self.assertEqual(AstakosUserAuthProvider.objects.count(), 1)
         self.assertEqual(PendingThirdPartyUser.objects.count(), 0)
+
+        user = AstakosUser.objects.get()
+        provider = user.get_auth_provider("shibboleth")
+        headers = provider.provider_details['info']['headers']
+        self.assertEqual(headers.get('SHIB_CUSTOM_IDP_KEY'), 'test')
 
         # provider info stored
         provider = AstakosUserAuthProvider.objects.get(module="shibboleth")
@@ -238,6 +244,8 @@ class ShibbolethTests(TestCase):
         self.assertTrue(r.context['request'].user.email == "kpap@synnefo.org")
         self.assertRedirects(r, ui_url('landing'))
         self.assertEqual(r.status_code, 200)
+
+        user = r.context['request'].user
         client.logout()
         client.reset_tokens()
 
@@ -521,6 +529,11 @@ class TestLocal(TestCase):
                          password="password")
         r = tmp_client.get(user.get_activation_url(), follow=True)
         self.assertContains(r, messages.LOGGED_IN_WARNING)
+
+        # empty activation code is not allowed
+        r = self.client.get(user.get_activation_url().split("?")[0],
+                            follow=True)
+        self.assertEqual(r.status_code, 403)
 
         r = self.client.get(user.get_activation_url(), follow=True)
         # previous code got invalidated

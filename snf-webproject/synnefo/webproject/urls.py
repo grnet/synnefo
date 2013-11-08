@@ -33,7 +33,13 @@
 
 import os
 
-from django.conf.urls.defaults import *
+
+# Import * in order to import the http exception handlers: handler*
+try:
+    from django.conf.urls.defaults import *
+except ImportError:  # Django==1.4
+    from django.conf.urls import *
+
 from synnefo.util.entry_points import extend_urls
 from django.utils.importlib import import_module
 from django.template import Context, loader, RequestContext

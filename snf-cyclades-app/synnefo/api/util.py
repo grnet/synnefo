@@ -82,6 +82,7 @@ PLANKTON_URL = \
               get_service_path(cyclades_services, "image", version="v1.0"))
 IMAGES_PLANKTON_URL = join_urls(PLANKTON_URL, "images/")
 
+PITHOSMAP_PREFIX = "pithosmap://"
 
 log = getLogger('synnefo.api')
 
@@ -173,14 +174,20 @@ def get_image(image_id, user_id):
 def get_image_dict(image_id, user_id):
     image = {}
     img = get_image(image_id, user_id)
-    properties = img.get('properties', {})
     image["id"] = img["id"]
     image["name"] = img["name"]
-    image['backend_id'] = img['location']
-    image['format'] = img['disk_format']
-    image['metadata'] = dict((key.upper(), val)
+    image["format"] = img["disk_format"]
+    image["checksum"] = img["checksum"]
+    image["location"] = img["location"]
+
+    checksum = image["checksum"] = img["checksum"]
+    size = image["size"] = img["size"]
+    image["backend_id"] = PITHOSMAP_PREFIX + "/".join([checksum, str(size)])
+
+    properties = img.get("properties", {})
+    image["metadata"] = dict((key.upper(), val)
                              for key, val in properties.items())
-    image['checksum'] = img['checksum']
+
 
     return image
 
@@ -370,6 +377,7 @@ def render_metadata(request, metadata, use_values=False, status=200):
 
 def render_meta(request, meta, status=200):
     if request.serialization == 'xml':
+        key, val = meta.items()[0]
         data = render_to_string('meta.xml', dict(key=key, val=val))
     else:
         data = json.dumps(dict(meta=meta))

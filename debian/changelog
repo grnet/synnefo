@@ -1,3 +1,23 @@
+synnefo (0.14.8~rc3-1~wheezy) wheezy; urgency=low
+
+  * Install example Gunicorn conf file
+  * Create '/var/log/synnefo' directory
+
+ -- Christos Stavrakakis <cstavr@grnet.gr>  Fri, 08 Nov 2013 14:32:42 +0200
+
+synnefo (0.14.8~rc2-1~wheezy) wheezy; urgency=low
+
+  * New upstream version
+  * Update python-django-dependency to >=0.7.3
+
+ -- Christos Stavrakakis <cstavr@grnet.gr>  Mon, 04 Nov 2013 17:31:38 +0200
+
+synnefo (0.14.8~rc1-1~wheezy) wheezy; urgency=low
+
+  * New upstream version
+
+ -- Christos Stavrakakis <cstavr@grnet.gr>  Tue, 29 Oct 2013 12:36:01 +0200
+
 synnefo (0.14.7-1~wheezy) wheezy; urgency=low
 
   * New upstream version
@@ -75,7 +95,3 @@ synnefo (0.12.5-1) stable; urgency=low
   [ Dimitris Aragiorgis ]
 
  -- Dimitris Aragiorgis <dimara@grnet.gr>  Fri, 04 Jan 2013 14:46:35 +0200
-
-
-
-

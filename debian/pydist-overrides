@@ -14,3 +14,4 @@ alembic alembic
 snf-django-lib snf-django-lib
 snf-branding snf-branding
 snf-webproject snf-webproject
+django-tables2 python-django-tables2

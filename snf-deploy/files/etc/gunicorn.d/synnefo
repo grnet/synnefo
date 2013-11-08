@@ -1,0 +1,16 @@
+CONFIG = {
+ 'mode': 'django',
+ 'environment': {
+   'DJANGO_SETTINGS_MODULE': 'synnefo.settings',
+ },
+ 'working_dir': '/etc/synnefo',
+ 'user': 'www-data',
+ 'group': 'www-data',
+ 'args': (
+   '--bind=127.0.0.1:8080',
+   '--workers=8',
+   '--worker-class=gevent',
+   # '--worker-class=sync',
+   '--log-level=debug',
+ ),
+}

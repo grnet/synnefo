@@ -34,7 +34,7 @@ There are also the following tools:
    kamaki: Command-line client <http://www.synnefo.org/docs/kamaki/latest/index.html>
    snf-deploy: Synnefo deployment tool <snf-deploy>
    snf-image-creator: Image bundling/uploading/registering tool <http://www.synnefo.org/docs/snf-image-creator/latest/index.html>
-   snf-image: Secure image deployment tool <snf-image>
+   snf-image: Secure image deployment tool <http://www.synnefo.org/docs/snf-image/latest/index.html>
    snf-burnin: Integration testing tool for a running Synnefo deployment <snf-burnin>
 
 
@@ -126,7 +126,7 @@ They are also available from our apt repository: ``apt.dev.grnet.gr``
  * `snf-cyclades-gtools <http://www.synnefo.org/docs/snf-cyclades-gtools/latest/index.html>`_
  * `astakosclient <http://www.synnefo.org/docs/astakosclient/latest/index.html>`_
  * `snf-vncauthproxy <https://code.grnet.gr/projects/vncauthproxy>`_
- * `snf-image <https://code.grnet.gr/projects/snf-image/wiki/>`_ 
+ * `snf-image <http://www.synnefo.org/docs/snf-image/latest/index.html/>`_
  * `snf-image-creator <http://www.synnefo.org/docs/snf-image-creator/latest/index.html>`_
  * `snf-occi <http://www.synnefo.org/docs/snf-occi/latest/index.html>`_
  * `snf-cloudcms <http://www.synnefo.org/docs/snf-cloudcms/latest/index.html>`_

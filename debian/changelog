@@ -1,3 +1,10 @@
+synnefo (0.14.8~rc3-1~squeeze) squeeze; urgency=low
+
+  * Install example Gunicorn conf file
+  * Create '/var/log/synnefo' directory
+
+ -- Christos Stavrakakis <cstavr@grnet.gr>  Fri, 08 Nov 2013 14:32:35 +0200
+
 synnefo (0.14.8~rc2-1~squeeze) squeeze; urgency=low
 
   * New upstream version

@@ -174,11 +174,11 @@ class BurninTestResult(unittest.TextTestResult):
 # --------------------------------------------------------------------
 # Format Results
 class burninFormatter(logging.Formatter):
-    err_fmt = red + "ERROR: %(msg)s" + normal
-    dbg_fmt = green + "* %(msg)s" + normal
-    info_fmt = "%(msg)s"
+    err_fmt = red + "ERROR: %(message)s" + normal
+    dbg_fmt = green + "* %(message)s" + normal
+    info_fmt = "%(message)s"
 
-    def __init__(self, fmt="%(levelno)s: %(msg)s"):
+    def __init__(self, fmt="%(levelno)s: %(message)s"):
         logging.Formatter.__init__(self, fmt)
 
     def format(self, record):

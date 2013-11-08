@@ -86,20 +86,20 @@ class CookieHandler():
         else:
             cookie_value = quote(user.uuid + '|' + user.auth_token)
         self.response.set_cookie(
-            settings.COOKIE_NAME, value=cookie_value, expires=expire_fmt, path='/',
-            domain=settings.COOKIE_DOMAIN, secure=settings.COOKIE_SECURE
-        )
-        msg = str(('Cookie [expiring %s]', 'set for %s')) \
-            % (user.auth_token_expires, user.uuid)
-        logger._log(settings.LOGGING_LEVEL, msg, [])
+            settings.COOKIE_NAME, value=cookie_value, expires=expire_fmt,
+            path='/', domain=settings.COOKIE_DOMAIN,
+            secure=settings.COOKIE_SECURE)
+        msg = 'Cookie [expiring %s] set for %s'
+        logger.log(settings.LOGGING_LEVEL, msg, user.auth_token_expires,
+                   user.uuid)
 
     def __delete(self):
         if not self.response:
             raise ValueError(_(astakos_messages.NO_RESPONSE))
         self.response.delete_cookie(
             settings.COOKIE_NAME, path='/', domain=settings.COOKIE_DOMAIN)
-        msg = 'Cookie deleted for %(uuid)s' % self.__dict__
-        logger._log(settings.LOGGING_LEVEL, msg, [])
+        msg = 'Cookie deleted for %s'
+        logger.log(settings.LOGGING_LEVEL, msg, self.uuid)
 
     def fix(self, response=None):
         self.response = response or self.response

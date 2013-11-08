@@ -568,6 +568,9 @@ class NetworkReconciler(object):
                                     ip_pool.reserve(ip, external=True)
                                     ip_pool.save()
                                     self.log.info("F: Reserved IP '%s'", ip)
+        if network.state != "ACTIVE":
+            network = Network.objects.select_for_update().get(id=network.id)
+            backend_mod.update_network_state(network)
 
     def reconcile_parted_network(self, network, backend):
         self.log.info("D: Missing DB entry for network %s in backend %s",
@@ -677,6 +680,7 @@ class PoolReconciler(object):
             self.log.info("There is no available pool for bridges.")
             return
 
+        # Since pool is locked, no new networks may be created
         used_bridges = set(networks.values_list('link', flat=True))
         check_pool_consistent(pool=pool, pool_class=pools.BridgePool,
                               used_values=used_bridges, fix=self.fix,
@@ -693,6 +697,7 @@ class PoolReconciler(object):
             self.log.info("There is no available pool for MAC prefixes.")
             return
 
+        # Since pool is locked, no new network may be created
         used_mac_prefixes = set(networks.values_list('mac_prefix', flat=True))
         check_pool_consistent(pool=pool, pool_class=pools.MacPrefixPool,
                               used_values=used_mac_prefixes, fix=self.fix,
@@ -705,6 +710,7 @@ class PoolReconciler(object):
         check_unique_values(objects=nics, field="address", logger=self.log)
 
         for ip_pool in network.get_ip_pools():
+            # IP pool is now locked, so no new IPs may be created
             used_ips = ip_pool.pool_table.subnet\
                               .ips.exclude(address__isnull=True)\
                               .exclude(deleted=True)\

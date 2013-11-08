@@ -202,25 +202,13 @@ actual IPs. Now, restart the server to apply the changes:
 Gunicorn setup
 ~~~~~~~~~~~~~~
 
-Create the file ``/etc/gunicorn.d/synnefo`` containing the following:
+Rename the file ``/etc/gunicorn.d/synnefo.example`` to
+``/etc/gunicorn.d/synnefo``, to make it a valid gunicorn configuration file:
 
 .. code-block:: console
 
-    CONFIG = {
-     'mode': 'django',
-     'environment': {
-       'DJANGO_SETTINGS_MODULE': 'synnefo.settings',
-     },
-     'working_dir': '/etc/synnefo',
-     'user': 'www-data',
-     'group': 'www-data',
-     'args': (
-       '--bind=127.0.0.1:8080',
-       '--worker-class=gevent',
-       '--workers=8',
-       '--log-level=debug',
-     ),
-    }
+    # mv /etc/gunicorn.d/synnefo.example /etc/gunicorn.d/synnefo
+
 
 .. warning:: Do NOT start the server yet, because it won't find the
     ``synnefo.settings`` module. Also, in case you are using ``/etc/hosts``
@@ -388,27 +376,14 @@ of the purpose of this guide.
 Gunicorn setup
 ~~~~~~~~~~~~~~
 
-Create the file ``/etc/gunicorn.d/synnefo`` containing the following
-(same contents as in node1; you can just copy/paste the file):
+Rename the file ``/etc/gunicorn.d/synnefo.example`` to
+``/etc/gunicorn.d/synnefo``, to make it a valid gunicorn configuration file
+(as happened for node1):
 
 .. code-block:: console
 
-    CONFIG = {
-     'mode': 'django',
-     'environment': {
-      'DJANGO_SETTINGS_MODULE': 'synnefo.settings',
-     },
-     'working_dir': '/etc/synnefo',
-     'user': 'www-data',
-     'group': 'www-data',
-     'args': (
-       '--bind=127.0.0.1:8080',
-       '--worker-class=gevent',
-       '--workers=4',
-       '--log-level=debug',
-       '--timeout=43200'
-     ),
-    }
+    # mv /etc/gunicorn.d/synnefo.example /etc/gunicorn.d/synnefo
+
 
 .. warning:: Do NOT start the server yet, because it won't find the
     ``synnefo.settings`` module. Also, in case you are using ``/etc/hosts``

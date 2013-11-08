@@ -124,9 +124,10 @@ class Command(ListCommand):
                            for x in self.fields]
 
     def handle_db_objects(self, rows, *args, **kwargs):
-        icache = ImageCache()
-        for vm in rows:
-            vm.image = icache.get_image(vm.imageid, vm.userid)
+        if "image.name" in self.fields:
+            icache = ImageCache()
+            for vm in rows:
+                vm.image = icache.get_image(vm.imageid, vm.userid)
 
 
 class ImageCache(object):

@@ -41,7 +41,7 @@ from synnefo.logic import utils
 from synnefo import quotas
 from synnefo.api.util import release_resource
 from synnefo.util.mac2eui64 import mac2eui64
-from synnefo.logic.rapi import GanetiApiError
+from synnefo.logic.rapi import GanetiApiError, JOB_STATUS_FINALIZED
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -519,6 +519,15 @@ def network_exists_in_backend(backend_network):
         return True
     except GanetiApiError as e:
         if e.code == 404:
+            return False
+
+
+def job_is_still_running(vm):
+    with pooled_rapi_client(vm) as c:
+        try:
+            job_info = c.GetJobStatus(vm.backendjobid)
+            return not (job_info["status"] in JOB_STATUS_FINALIZED)
+        except GanetiApiError:
             return False
 
 

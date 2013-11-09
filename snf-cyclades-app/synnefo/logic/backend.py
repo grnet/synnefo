@@ -434,7 +434,7 @@ def create_instance(vm, public_nic, flavor, image):
         'img_format': image['format']}
 
     # Use opportunistic locking
-    kw['opportunistic_locking'] = True
+    kw['opportunistic_locking'] = settings.GANETI_USE_OPPORTUNISTIC_LOCKING
 
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
     # kw['hvparams'] = dict(serial_console=False)

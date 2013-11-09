@@ -241,7 +241,7 @@ def pprint_port_in_ganeti(port, stdout=None, title=None):
         vm_info = client.GetInstance(vm.backend_vm_id)
     except GanetiApiError as e:
         if e.code == 404:
-            stdout.write("NIC seems attached to server %s, but"
+            stdout.write("Port seems attached to server %s, but"
                          " server does not exist in backend.\n"
                          % vm)
             return
@@ -253,7 +253,7 @@ def pprint_port_in_ganeti(port, stdout=None, title=None):
                          nics)[0]
         gnt_nic["instance"] = vm_info["name"]
     except IndexError:
-        stdout.write("NIC %s is not attached to instance %s" % (port, vm))
+        stdout.write("Port %s is not attached to instance %s" % (port, vm))
         return
     pprint_table(stdout, gnt_nic.items(), None, separator=" | ",
                  title=title)
@@ -302,7 +302,7 @@ def pprint_server(server, display_mails=False, stdout=None, title=None):
 
 def pprint_server_nics(server, stdout=None, title=None):
     if title is None:
-        title = "NICs of Server %s" % server.id
+        title = "Ports of Server %s" % server.id
     if stdout is None:
         stdout = sys.stdout
 
@@ -329,9 +329,8 @@ def pprint_server_in_ganeti(server, print_jobs=False, stdout=None, title=None):
         server_info = client.GetInstance(server.backend_vm_id)
     except GanetiApiError as e:
         if e.code == 404:
-            stdout.write("NIC seems attached to server %s, but"
-                         " server does not exist in backend.\n"
-                         % server)
+            stdout.write("Server '%s' does not exist in backend '%s'\n"
+                         % (server.id, server.backend.clustername))
             return
         raise e
     server.put_client(client)
@@ -344,14 +343,14 @@ def pprint_server_in_ganeti(server, print_jobs=False, stdout=None, title=None):
                               for k in GANETI_INSTANCE_FIELDS])
 
     pprint_table(stdout, server_dict.items(), None, separator=" | ",
-                 title="NICs of Server %s in Ganeti" % server.id)
+                 title=title)
     stdout.write("\n")
 
     nics = nics_from_instance(server_info)
     nics_keys = ["ip", "mac", "name", "network"]
     nics_values = [[nic[key] for key in nics_keys] for nic in nics]
     pprint_table(stdout, nics_values, nics_keys, separator=" | ",
-                 title=title)
+                 title="NICs of Server %s in Ganeti" % server.id)
 
     if not print_jobs:
         return

@@ -157,7 +157,7 @@ def reconcile_networks(conflicting_ips=False):
             reconcile_ip_pools(network, ip_available_maps, ip_reserved_maps)
 
         if conflicting_ips:
-            detect_conflicting_ips()
+            detect_conflicting_ips(network)
 
     # CASE-6: Orphan networks
     reconcile_orphan_networks(networks, ganeti_networks)
@@ -293,9 +293,10 @@ def get_network_pool(gnet):
     r_map = a_map.copy()
     r_map.setall(True)
     for address in reserved.split(','):
-        index = converter.value_to_index(address.strip())
-        a_map[index] = True
-        r_map[index] = False
+        if address:
+            index = converter.value_to_index(address.strip())
+            a_map[index] = True
+            r_map[index] = False
     return a_map, r_map
 
 

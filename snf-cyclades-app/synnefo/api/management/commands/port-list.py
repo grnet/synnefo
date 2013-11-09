@@ -31,7 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-#from optparse import make_option
+from optparse import make_option
 
 from snf_django.management.commands import ListCommand
 from synnefo.db.models import NetworkInterface
@@ -44,6 +44,20 @@ log = getLogger(__name__)
 
 class Command(ListCommand):
     help = "List ports"
+
+    option_list = ListCommand.option_list + (
+        make_option(
+            '--public',
+            dest='public',
+            action='store_true',
+            default=False,
+            help="List only ports connected to public networks"),
+        make_option(
+            '--server',
+            dest='server_id',
+            default=False,
+            help="List ports connected to specific server"),
+    )
 
     object_class = NetworkInterface
     user_uuid_field = "userid"
@@ -72,3 +86,10 @@ class Command(ListCommand):
 
     fields = ["id", "name", "user.uuid", "mac_address", "network",
               "device_id", "fixed_ips", "state"]
+
+    def handle_args(self, *args, **options):
+        if options["public"]:
+            self.filters["network__public"] = True
+
+        if options["server_id"]:
+            self.filters["machine"] = options["server_id"]

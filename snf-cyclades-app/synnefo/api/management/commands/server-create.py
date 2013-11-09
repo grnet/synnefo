@@ -69,10 +69,10 @@ class Command(BaseCommand):
                          " available flavors."),
         make_option("--password", dest="password",
                     help="Password for the new server"),
-        make_option("--networks", dest="network_ids",
-                    help="Comma separated list of network IDs to connect"),
-        make_option("--ports", dest="port_ids",
-                    help="Comma separated list of port IDs to connect"),
+        make_option("--port", dest="connections", action="append",
+                    help="--port network:<network_id>(,address=<ip_address>),"
+                         " --port id:<port_id>"
+                         " --port floatingip:<floatingip_id>."),
         make_option("--floating-ips", dest="floating_ip_ids",
                     help="Comma separated list of port IDs to connect"),
         make_option(
@@ -115,21 +115,9 @@ class Command(BaseCommand):
         else:
             backend = None
 
-        network_ids = parse_list(options["network_ids"])
-        port_ids = parse_list(options["port_ids"])
-        floating_ip_ids = parse_list(options["floating_ip_ids"])
-        floating_ips = \
-            map(lambda x: common.get_floating_ip_by_id(x, for_update=True),
-                floating_ip_ids)
-
-        floating_ips = map(lambda fp: {"uuid": fp.network_id,
-                                       "fixed_ip": fp.address},
-                           floating_ips)
-        networks = map(lambda x: {"uuid": x}, network_ids)
-        ports = map(lambda x: {"port": x}, port_ids)
-
+        connection_list = parse_connections(options["connections"])
         server = servers.create(user_id, name, password, flavor, image,
-                                networks=(floating_ips+ports+networks),
+                                networks=connection_list,
                                 use_backend=backend)
         pprint.pprint_server(server, stdout=self.stdout)
 
@@ -137,8 +125,34 @@ class Command(BaseCommand):
         common.wait_server_task(server, wait, self.stdout)
 
 
-def parse_list(_list):
-    if _list is None:
-        return []
-    else:
-        return _list.split(",")
+def parse_connections(con_list):
+    connections = []
+    if con_list:
+        for opt in con_list:
+            try:
+                con_kind = opt.split(":")[0]
+                if con_kind == "network":
+                    info = opt.split(",")
+                    network_id = info[0].split(":")[1]
+                    try:
+                        address = info[1].split(":")[1]
+                    except:
+                        address = None
+                    if address:
+                        val = {"uuid": network_id, "fixed_ip": address}
+                    else:
+                        val = {"uuid": network_id}
+                elif con_kind == "id":
+                    port_id = opt.split(":")[1]
+                    val = {"port": port_id}
+                elif con_kind == "floatingip":
+                    fip_id = opt.split(":")[1]
+                    fip = common.get_floating_ip_by_id(fip_id, for_update=True)
+                    val = {"uuid": fip.network_id, "fixed_ip": fip.address}
+                else:
+                    raise CommandError("Unknown argument for option --port")
+
+                connections.append(val)
+            except:
+                raise CommandError("Malformed information for option --port")
+    return connections

@@ -83,7 +83,7 @@ class Command(BaseCommand):
         make_option(
             '--dhcp',
             dest='dhcp',
-            default="False",
+            default="True",
             choices=["True", "False"],
             metavar="True|False",
             help='Automatically assign IPs'),

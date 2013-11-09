@@ -117,7 +117,8 @@ def pprint_network_in_ganeti(network, stdout=None):
                 pprint_table(stdout, g_net.items(), None,
                              title="State of network in backend: %s" %
                                    backend.clustername)
-                pprint_pool(None, ip_map, 80, stdout)
+                if network.subnet4 is not None:
+                    pprint_pool(None, ip_map, 80, stdout)
             except GanetiApiError as e:
                 if e.code == 404:
                     stdout.write('Network does not exist in backend %s\n' %

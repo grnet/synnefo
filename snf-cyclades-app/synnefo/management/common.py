@@ -35,7 +35,7 @@ from django.core.management import CommandError
 from synnefo.db.models import (Backend, VirtualMachine, Network,
                                Flavor, IPAddress, Subnet,
                                BridgePoolTable, MacPrefixPoolTable,
-                               NetworkInterface)
+                               NetworkInterface, IPAddressLog)
 from functools import wraps
 
 from snf_django.lib.api import faults
@@ -176,6 +176,15 @@ def get_floating_ip_by_address(address, for_update=False):
         return objects.get(floating_ip=True, address=address, deleted=False)
     except IPAddress.DoesNotExist:
         raise CommandError("Floating IP does not exist.")
+
+
+def get_floating_ip_log_by_address(address):
+    try:
+        objects = IPAddressLog.objects
+        return objects.filter(address=address).order_by("released_at")
+    except IPAddressLog.DoesNotExist:
+        raise CommandError("Floating IP does not exist or it hasn't be"
+                           "attached to any server yet")
 
 
 def get_floating_ip_by_id(floating_ip_id, for_update=False):

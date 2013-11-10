@@ -42,6 +42,7 @@ from synnefo.logic import ips
 class Command(BaseCommand):
     help = "Release a floating IP"
 
+    @common.convert_api_faults
     @transaction.commit_on_success
     def handle(self, *args, **options):
         if not args:

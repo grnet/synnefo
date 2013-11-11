@@ -37,8 +37,9 @@ from django.core.management.base import BaseCommand, CommandError
 from synnefo.management import common
 from snf_django.management.utils import parse_bool
 from synnefo.management import pprint
-
 from synnefo.logic import subnets
+
+import ipaddr
 
 HELP_MSG = """
 
@@ -58,10 +59,11 @@ class Command(BaseCommand):
         make_option("--cidr", dest="cidr",
                     help="The CIDR of the subnet, e.g., 192.168.42.0/24"),
         make_option("--allocation-pools", dest="allocation_pools",
+                    action="append",
                     help="IP allocation pools to be used for assigning IPs to"
-                    " VMs. Syntax: \n"
-                    "'[[192.168.42.100,192.168.42.200],"
-                    "[192.168.42.220,129.168.42.240]]'"),
+                    " VMs. Can be used multiple times. Syntax: \n"
+                    "192.168.42.220,192.168.42.240. Starting IP must proceed "
+                    "ending IP."),
         make_option("--name", dest="name",
                     help="An arbitrary string for naming the subnet."),
         make_option("--ip-version", dest="ipversion", choices=["4", "6"],
@@ -108,10 +110,20 @@ class Command(BaseCommand):
         dns = options["dns"]
         host_routes = options["host_routes"]
 
+        #Parsing allocation pools
+        alloc = list()
+        for pool in allocation_pools:
+            try:
+                start, end = pool.split(',')
+                alloc.append([ipaddr.IPv4Address(start),
+                              ipaddr.IPv4Address(end)])
+            except ValueError:
+                raise CommandError("Malformed IPv4 address")
+
         sub = subnets.create_subnet(name=name,
                                     network_id=network_id,
                                     cidr=cidr,
-                                    allocation_pools=allocation_pools,
+                                    allocation_pools=sorted(alloc),
                                     gateway=gateway,
                                     ipversion=ipversion,
                                     dhcp=dhcp,

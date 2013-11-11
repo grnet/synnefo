@@ -75,9 +75,8 @@ class Public(DBWorker):
                 public_url_security, public_url_alphabet
             )
             q = "insert into public(path, active, url) values(?, 1, ?)"
-            r = self.execute(q, (path, url))
-            if r.rowcount != 0:
-                logger.info('Public url set for path: %s' % path)
+            self.execute(q, (path, url))
+            logger.info('Public url set for path: %s' % path)
 
     def public_unset(self, path):
         q = "delete from public where path = ?"

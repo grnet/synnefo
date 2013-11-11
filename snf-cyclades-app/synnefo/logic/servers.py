@@ -223,6 +223,7 @@ def create_server(vm, nics, flavor, image, personality, password):
         vm.nics.all().update(state="ERROR")
 
     # At this point the job is enqueued in the Ganeti backend
+    vm.backendopcode = "OP_INSTANCE_CREATE"
     vm.backendjobid = jobID
     vm.save()
     log.info("User %s created VM %s, NICs %s, Backend %s, JobID %s",
@@ -285,6 +286,14 @@ def create_instance_nics(vm, userid, private_networks=[], floating_ips=[]):
 
 @server_command("DESTROY")
 def destroy(vm):
+    # XXX: Workaround for race where OP_INSTANCE_REMOVE starts executing on
+    # Ganeti before OP_INSTANCE_CREATE. This will be fixed when
+    # OP_INSTANCE_REMOVE supports the 'depends' request attribute.
+    if (vm.backendopcode == "OP_INSTANCE_CREATE" and
+       vm.backendjobstatus != "success" and
+       backend.job_is_still_running(vm) and
+       not backend.vm_exists_in_backend(vm)):
+            raise faults.BuildInProgress("Server is being build")
     log.info("Deleting VM %s", vm)
     return backend.delete_instance(vm)
 

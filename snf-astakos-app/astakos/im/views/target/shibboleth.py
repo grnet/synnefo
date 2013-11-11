@@ -116,6 +116,11 @@ def login(request,
             shibboleth_headers[token] = request.META.get(getattr(Tokens,
                                                                  token),
                                                          'NOT_SET')
+            # also include arbitrary shibboleth headers
+            for key in request.META.keys():
+                if key.startswith('HTTP_SHIB_'):
+                    shibboleth_headers[key.replace('HTTP_', '')] = \
+                        request.META.get(key)
 
     # log shibboleth headers
     # TODO: info -> debug

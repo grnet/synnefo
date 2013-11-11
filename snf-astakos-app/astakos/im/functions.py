@@ -154,8 +154,8 @@ def send_account_activated_notification(
     send_mail(_(astakos_messages.HELPDESK_NOTIFICATION_EMAIL_SUBJECT) %
               {'user': user.email},
               message, sender, recipient_list, connection=get_connection())
-    msg = 'Sent helpdesk admin notification for %s' % user.email
-    logger.log(settings.LOGGING_LEVEL, msg)
+    msg = 'Sent helpdesk admin notification for %s'
+    logger.log(settings.LOGGING_LEVEL, msg, user.email)
 
 
 def send_invitation(invitation, template_name='im/invitation.txt'):
@@ -174,8 +174,8 @@ def send_invitation(invitation, template_name='im/invitation.txt'):
     sender = settings.SERVER_EMAIL
     send_mail(subject, message, sender, [invitation.username],
               connection=get_connection())
-    msg = 'Sent invitation %s' % invitation
-    logger.log(settings.LOGGING_LEVEL, msg)
+    msg = 'Sent invitation %s'
+    logger.log(settings.LOGGING_LEVEL, msg, invitation)
     inviter_invitations = invitation.inviter.invitations
     invitation.inviter.invitations = max(0, inviter_invitations - 1)
     invitation.inviter.save()
@@ -198,8 +198,8 @@ def send_greeting(user, email_template_name='im/welcome_email.txt'):
     sender = settings.SERVER_EMAIL
     send_mail(subject, message, sender, [user.email],
               connection=get_connection())
-    msg = 'Sent greeting %s' % user.log_display
-    logger.log(settings.LOGGING_LEVEL, msg)
+    msg = 'Sent greeting %s'
+    logger.log(settings.LOGGING_LEVEL, msg, user.log_display)
 
 
 def send_feedback(msg, data, user, email_template_name='im/feedback_mail.txt'):
@@ -212,16 +212,17 @@ def send_feedback(msg, data, user, email_template_name='im/feedback_mail.txt'):
         'user': user})
     send_mail(subject, content, from_email, recipient_list,
               connection=get_connection())
-    msg = 'Sent feedback from %s' % user.log_display
-    logger.log(settings.LOGGING_LEVEL, msg)
+    msg = 'Sent feedback from %s'
+    logger.log(settings.LOGGING_LEVEL, msg, user.log_display)
 
 
-def send_change_email(
-    ec, request, email_template_name='registration/email_change_email.txt'
-):
+def send_change_email(ec, request,
+                      email_template_name=
+                      'registration/email_change_email.txt'):
     url = ec.get_url()
     url = request.build_absolute_uri(url)
-    c = {'url': url, 'site_name': settings.SITENAME,
+    c = {'url': url,
+         'site_name': settings.SITENAME,
          'support': settings.CONTACT_EMAIL,
          'ec': ec}
     message = render_to_string(email_template_name, c)
@@ -229,8 +230,8 @@ def send_change_email(
     send_mail(_(astakos_messages.EMAIL_CHANGE_EMAIL_SUBJECT), message,
               from_email,
               [ec.new_email_address], connection=get_connection())
-    msg = 'Sent change email for %s' % ec.user.log_display
-    logger.log(settings.LOGGING_LEVEL, msg)
+    msg = 'Sent change email for %s'
+    logger.log(settings.LOGGING_LEVEL, msg, ec.user.log_display)
 
 
 def invite(inviter, email, realname):

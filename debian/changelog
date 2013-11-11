@@ -1,3 +1,9 @@
+synnefo (0.14.9-1~squeeze) squeeze; urgency=low
+
+  * Release version 0.14.9~rc1 as 0.14.9
+
+ -- Christos Stavrakakis <cstavr@grnet.gr>  Mon, 11 Nov 2013 12:19:14 +0200
+
 synnefo (0.14.9~rc1-1~squeeze) squeeze; urgency=low
 
   * New upstream version

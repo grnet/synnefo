@@ -58,13 +58,13 @@ class ProjectAPITest(TestCase):
         register.update_resource(r, 1024)
 
         # create user
-        self.user1 = get_local_user("test@grnet.gr")
+        self.user1 = get_local_user("test@grnet.gr", moderated=True)
         quotas.qh_sync_user(self.user1)
-        self.user2 = get_local_user("test2@grnet.gr")
+        self.user2 = get_local_user("test2@grnet.gr", moderated=True)
         self.user2.uuid = "uuid2"
         self.user2.save()
         quotas.qh_sync_user(self.user2)
-        self.user3 = get_local_user("test3@grnet.gr")
+        self.user3 = get_local_user("test3@grnet.gr", moderated=True)
         quotas.qh_sync_user(self.user3)
 
         astakos = Component.objects.create(name="astakos")

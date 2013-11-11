@@ -110,15 +110,7 @@ class Command(BaseCommand):
         dns = options["dns"]
         host_routes = options["host_routes"]
 
-        #Parsing allocation pools
-        alloc = list()
-        for pool in allocation_pools:
-            try:
-                start, end = pool.split(',')
-                alloc.append([ipaddr.IPv4Address(start),
-                              ipaddr.IPv4Address(end)])
-            except ValueError:
-                raise CommandError("Malformed IPv4 address")
+        alloc = subnets.parse_allocation_pools(allocation_pools)
 
         sub = subnets.create_subnet(name=name,
                                     network_id=network_id,

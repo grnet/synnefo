@@ -283,3 +283,16 @@ def validate_subnet_params(subnet=None, gateway=None, subnet6=None,
                 raise faults.BadRequest("Invalid network IPv6 gateway")
             if not gateway6 in network6:
                 raise faults.BadRequest("Invalid network IPv6 gateway")
+
+
+def parse_allocation_pools(allocation_pools):
+    alloc = list()
+    for pool in allocation_pools:
+        try:
+            start, end = pool.split(',')
+            alloc.append([ipaddr.IPv4Address(start),
+                          ipaddr.IPv4Address(end)])
+        except ValueError:
+            raise CommandError("Malformed IPv4 address")
+
+    return alloc

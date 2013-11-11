@@ -41,6 +41,8 @@ from synnefo.db.models import Network
 from synnefo.logic import networks, subnets
 from synnefo.management import pprint
 
+import ipaddr
+
 NETWORK_FLAVORS = Network.FLAVORS.keys()
 
 
@@ -126,6 +128,14 @@ class Command(BaseCommand):
             choices=["True", "False"],
             metavar="True|False",
             help="Use the network as a Floating IP pool."),
+        make_option(
+            '--allocation-pools',
+            dest='allocation_pools',
+            action='append',
+            help="IP allocation pools to be used for assigning IPs to"
+                 " VMs. Can be used multiple times. Syntax: \n"
+                 "192.168.42.220,192.168.42.240. Starting IP must proceed "
+                 "ending IP."),
     )
 
     @convert_api_faults
@@ -145,6 +155,7 @@ class Command(BaseCommand):
         mac_prefix = options['mac_prefix']
         tags = options['tags']
         userid = options["owner"]
+        allocation_pools = options["allocation_pools"]
         floating_ip_pool = parse_bool(options["floating_ip_pool"])
         dhcp = parse_bool(options["dhcp"])
 
@@ -158,6 +169,8 @@ class Command(BaseCommand):
 
         if subnet is None and gateway is not None:
             raise CommandError("Cannot use gateway without subnet")
+        if subnet is None and allocation_pools is not None:
+            raise CommandError("Cannot use allocation-pools without subnet")
         if subnet6 is None and gateway6 is not None:
             raise CommandError("Cannot use gateway6 without subnet6")
 
@@ -170,10 +183,12 @@ class Command(BaseCommand):
                                   floating_ip_pool=floating_ip_pool)
 
         if subnet is not None:
+            alloc = subnets.parse_allocation_pools(allocation_pools)
             name = "IPv4 Subnet of Network %s" % network.id
             subnets.create_subnet(network.id, cidr=subnet, name=name,
                                   ipversion=4, gateway=gateway, dhcp=dhcp,
-                                  user_id=userid)
+                                  user_id=userid,
+                                  allocation_pools=sorted(alloc))
 
         if subnet6 is not None:
             name = "IPv6 Subnet of Network %s" % network.id

@@ -49,16 +49,23 @@ class Command(BaseCommand):
         fip_address = args[0]
 
         floating_ip_log = common.get_floating_ip_log_by_address(fip_address)
-        for entry in floating_ip_log:
-            if entry.active:
-                self.stdout.write("Floating IP '%s' is connected to server"
-                                  " '%s' on network '%s'.\n"
-                                  % (fip_address,
-                                     entry.server_id,
-                                     entry.network_id)
-                                  )
+        if floating_ip_log:
+            for entry in floating_ip_log:
+                if entry.active:
+                    self.stdout.write("Floating IP '%s' is connected to server"
+                                      " '%s' on network '%s'.\n"
+                                      % (fip_address,
+                                         entry.server_id,
+                                         entry.network_id)
+                                      )
 
-            else:
-                self.stdout.write("Floating IP '%s' is not connected to any"
-                                  " server now. It was released at '%s'\n"
-                                  % (fip_address, entry.released_at))
+                else:
+                    self.stdout.write("Floating IP '%s' was connected to server"
+                                      " '%s' from '%s' to '%s'\n"
+                                      % (fip_address, entry.server_id,
+                                         entry.allocated_at,
+                                         entry.released_at))
+        else:
+            self.stdout.write("Floating IP '%s' either doesn't exist or it"
+                               " hasn't been connected to any server yet\n"
+                               % fip_address)

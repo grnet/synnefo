@@ -552,7 +552,7 @@
         },
 
         get_disk_size: function() {
-            return parseInt(this.get("disk") * 1000)
+            return parseInt(this.get("disk") * 1024)
         },
 
         get_ram_size: function() {

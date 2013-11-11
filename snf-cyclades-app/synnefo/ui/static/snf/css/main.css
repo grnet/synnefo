@@ -6695,6 +6695,19 @@ input.has-errors {
   color: #4085A5;
 }
 
+.collection .no-available a {
+  color: #aaa;
+}
+
+.collection span.no-available {
+  float: right;
+}
+
+.collection .no-available {
+  font-size: 0.8em;
+  color: #f00;
+}
+
 .collection .empty-list {
   padding: 10px;
   font-size: 0.8em;
@@ -6783,7 +6796,7 @@ input.has-errors {
 
 .model-item.actionpending .actions-content .action-container.isactive,
 .model-item:hover .actions-content .action-container.isactive,
-.model-item.hovered .actions-content .action-container.isactive,
+/*.model-item.hovered .actions-content .action-container.isactive,*/
 .model-item .actions-content .action-container.selected {
   display: block;
 }
@@ -7041,7 +7054,7 @@ input.has-errors {
   margin-left: 328px;
   text-align: right;
   position: absolute;
-  top: 10px;
+  top: 53px;
   right: 10px;
 }
 
@@ -7294,6 +7307,10 @@ input.has-errors {
 
 .select-item.floating-ip.not-available {
   background-image: none;
+}
+
+.select-item.floating-ip.create.no-available {
+  background-image: url("../images/option-action-add.png");
 }
 
 .select-item.floating-ip.create {

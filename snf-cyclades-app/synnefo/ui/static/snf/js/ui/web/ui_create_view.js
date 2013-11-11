@@ -1679,7 +1679,7 @@
                 _.each(data.networks, function(n) {
                   extra.networks.push({'uuid': n.get('id')})
                 });
-                _.each(data.ips, function(ip) {
+                _.each(data.addresses, function(ip) {
                   extra.networks.push({
                     'uuid': ip.get('network').get('id'),
                     'fixed_ip': ip.get('floating_ip_address')

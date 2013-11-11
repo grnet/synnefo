@@ -252,10 +252,15 @@
 
 <div id="networks-select-floating-ips-tpl" class="hidden">
   <div class="collection">
-    <div class="empty-list hidden">{% trans "No ip addresses available" %}</div>
     <div class="items-list floating-ips clearfix">
     </div>
-    <div class="create model-item select-item floating-ip">create...</div>
+    <div class="create model-item select-item floating-ip">
+      <span class="empty-list hidden" style="padding-left:0;">
+        {% trans "No ip addresses available" %} 
+      </span>
+      <a href="#">create new...</a>
+      <span class="no-available hidden">{% trans "IP's limit reached." %}</span>
+    </div>
   </div>
 </div>
 
@@ -265,7 +270,11 @@
       <input type="checkbox" data-rv-data-id="model.id" />
     </div>
     <div class="ico"><img data-rv-src="model.is_public|get_network_icon" /></div>
-    <div class="name"><span class="" data-rv-text="model.name"></span></div>
+    <div class="name">
+      <span class="" data-rv-text="model.name"></span>
+      <span class="no-available hidden">{% trans "IP address limit reached." %}</span>
+      <span class="available hidden"></span>
+    </div>
   </div>
   <div data-rv-show="model.is_public" class="floating-ips">
     <div data-rv-collection-view="model.available_floating_ips|NetworkSelectFloatingIpsView">

@@ -407,6 +407,11 @@
         }
         this.ports_toggler.find(".cont-toggler").toggleClass("open");
         this.ports_visible = this.ports_toggler.find(".cont-toggler").hasClass("open");
+        if (this.ports_visible) {
+          $(this.el).addClass("hovered");
+        } else {
+          $(this.el).removeClass("hovered");
+        }
       },
       
       get_network_icon: function() {
@@ -694,7 +699,7 @@
     
     views.NetworkSelectModelView = views.ext.ModelView.extend({
       select: function() {
-        if (!this.delegate_input) {
+        if (!this.delegate_checked) {
           this.input.attr("checked", true);
           this.item.addClass("selected");
         }
@@ -703,7 +708,7 @@
       },
 
       deselect: function() {
-        if (!this.delegate_input) {
+        if (!this.delegate_checked) {
           this.input.attr("checked", false);
           this.item.removeClass("selected");
         }
@@ -722,7 +727,7 @@
       post_init_element: function() {
         this.input = $(this.$("input").get(0));
         this.item = $(this.$(".select-item").get(0));
-        this.delegate_input = this.model.get('noselect');
+        this.delegate_checked = this.model.get('noselect');
         this.deselect();
 
         var self = this;
@@ -733,14 +738,13 @@
           $(this.el).tooltip({
             'tipClass': 'tooltip', 
             'position': 'top center',
-            'offset': [-5, 0]
+            'offset': [29, 0]
           });
         }
-
+        
         $(this.item).click(function(e) {
           if (self.model.get('forced')) { return }
           e.stopPropagation();
-          e.preventDefault();
           self.toggle_select();
         });
         
@@ -783,7 +787,7 @@
       tpl: '#networks-select-public-tpl',
       model_view_cls: views.NetworkSelectPublicNetwork,
       get_floating_ips: function() {
-        return _.map(this._subviews[1]._subviews[0].selected, function(m) {
+        return _.map(this._subviews[1]._subviews[0].selected_ips, function(m) {
           return m.id;
         });
       }
@@ -797,13 +801,11 @@
       tpl: '#networks-select-floating-ips-tpl',
       model_view_cls: views.NetworkSelectFloatingIpView,
 
-      select_available: function() {
+      select_if_available: function() {
         var selected = false;
-        this.each_ip_view(function(v) { 
-          if (selected) { return }
-          v.select();
-          selected = true;
-        });
+        if (this._subviews[0]) {
+          this._subviews[0].select();
+        }
       },
 
       deselect_all: function() {
@@ -819,73 +821,146 @@
       },
 
       post_init: function() {
-        this.selected = [];
         var parent = this.parent_view;
         var self = this;
+
+        this.quota = synnefo.storage.quotas.get("cyclades.floating_ip");
+        this.selected_ips = [];
         this.handle_ip_select = _.bind(this.handle_ip_select, this);
         this.create = this.$(".floating-ip.create");
-        parent.bind("change:select", function(selected) {
-          if (parent.selected) {
-            self.show(true);
-            self.select_available();
-          } else {
-            self.deselect_all();
-            self.hide(true);
-          }
-        });
+        
+        this.quota.bind("change", _.bind(this.update_available, this));
+        this.collection.bind("change", _.bind(this.update_available, this))
+        this.collection.bind("add", _.bind(this.update_available, this))
+        this.collection.bind("remove", _.bind(this.update_available, this))
 
-        this.create.click(function() {
+        parent.bind("change:select", function(view, selected) {
+          if (selected) { this.show_parent() } else { this.hide_parent() }
+        }, this);
+
+        this.create.click(function(e) {
+          e.preventDefault();
           self.create_ip();
-        })
+        });
+        this.update_available();
       },
       
-      post_add_model_view: function(view) {
-        view.bind("change:select", this.handle_ip_select)
+      hide_parent: function() {
+        this.parent_view.item.removeClass("selected");
+        this.parent_view.input.attr("checked", false);
+        this.parent_view.selected = false;
+        this.deselect_all();
+        this.hide(true);
+      },
+
+      show_parent: function() {
+        var left = this.quota.get_available();
+        var available = this.collection.length || left;
+        if (!available) { 
+          this.hide_parent();
+          return;
+        }
+        this.parent_view.item.addClass("selected");
+        this.parent_view.input.attr("checked", true);
+        this.parent_view.selected = true;
+        this.show(true);
+        this.select_if_available();
+      },
+
+      update_available: function() {
+        var left = this.quota.get_available();
+        var available = this.collection.length || left;
+        var available_el = this.parent_view.$(".available");
+        var no_available_el = this.parent_view.$(".no-available");
+        var create = this.$(".create.model-item");
+        var create_link = this.$(".create a");
+        var create_no_available = this.$(".create .no-available");
+
+        if (!available) {
+          // no ip's available to select
+          this.hide_parent();
+          available_el.hide();
+          no_available_el.show();
+        } else {
+          // available floating ip
+          var available_text = "{0} IP's available.".format(
+            this.collection.length + this.quota.get_available());
+          available_el.removeClass("hidden").text(available_text).show();
+          available_el.show();
+          no_available_el.hide();
+        }
+
+        if (left) {
+          // available quota
+          create.removeClass("no-available");
+          create.show();
+          //create_link.show();
+          create_no_available.hide();
+        } else {
+          // no available quota
+          create.addClass("no-available");
+          create.show();
+          //create_link.hide();
+          create_no_available.show();
+        }
+        //
+        this.update_selected();
+      },
+      
+      update_selected: function() {
+        if (this.selected_ips.length) {
+          this.parent_view.input.attr("checked", true);
+          this.parent_view.item.addClass("selected");
+          this.parent_view.item.selected = true;
+        } else {
+          this.parent_view.input.attr("checked", false);
+          this.parent_view.item.removeClass("selected");
+          this.parent_view.item.selected = false;
+        }
       },
 
       post_remove_model_view: function(view) {
+        view.deselect();
         view.unbind("change:select", this.handle_ip_select)
       },
 
       handle_create_error: function() {},
 
       create_ip: function() {
+        if (!this.quota.get_available()) { return }
         synnefo.storage.floating_ips.create({floatingip:{}}, {
           error: _.bind(this.handle_create_error, this),
           skip_api_error: true
         });
       },
 
+      post_add_model_view: function(view, model) {
+        view.bind("change:select", this.handle_ip_select)
+        if (!this.selected_ips.length && this._subviews.length == 1) {
+          this._subviews[0].select();
+          if (!_.contains(this.selected_ips, model)) {
+            this.selected_ips.push(model);
+          }
+        }
+      },
+
       handle_ip_select: function(view) {
         if (view.selected) {
-          this.selected.push(view.model);
+          if (!_.contains(this.selected_ips, view.model)) {
+            this.selected_ips.push(view.model);
+          }
         } else {
-          this.selected = _.without(this.selected, view.model);
+          this.selected_ips = _.without(this.selected_ips, view.model);
         }
         this.update_selected();
       },
       
-      update_selected: function() {
-        var selected = this.selected.length;
-        if (selected) {
-          this.parent_view.input.attr("checked", true);
-          this.parent_view.item.addClass("selected");
-          $(this.parent_view.el).addClass("selected");
-        } else {
-          this.parent_view.input.attr("checked", false);
-          this.parent_view.item.removeClass("selected");
-          $(this.parent_view.el).removeClass("selected");
-        }
-      },
-
       post_show: function() {
-        if (!this.parent_view.selected) {
-          this.hide(true);
-        }
+        this.update_available();
       },
 
       get_floating_ips: function() {
-        return this.selected;
+        return this.selected_ips;
       }
     });
 

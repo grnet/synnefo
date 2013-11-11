@@ -53,8 +53,8 @@ class TokenBackend(ModelBackend):
         except AstakosUser.DoesNotExist:
             return None
         else:
-            msg = 'Invalid token during authentication for %s' % email
-            logger._log(settings.LOGGING_LEVEL, msg, [])
+            msg = 'Invalid token during authentication for %s'
+            logger.log(settings.LOGGING_LEVEL, msg, email)
 
     def get_user(self, user_id):
         try:
@@ -80,8 +80,8 @@ class EmailBackend(ModelBackend):
         if user.check_password(password):
             return user
         else:
-            msg = 'Invalid password during authentication for %s' % username
-            logger._log(settings.LOGGING_LEVEL, msg, [])
+            msg = 'Invalid password during authentication for %s'
+            logger.log(settings.LOGGING_LEVEL, msg, username)
 
 
     def get_user(self, user_id):

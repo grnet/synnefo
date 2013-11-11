@@ -6,6 +6,19 @@ Unified Changelog file for Synnefo versions >= 0.13
 Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
+.. _Changelog-0.14.9:
+
+v0.14.9
+=======
+
+Released: UNRELEASED
+
+Astakos
+-------
+
+* Astakos: Fix minor problems with logging in the Astakos module, which could
+  lead to unexpected exceptions
+
 .. _Changelog-0.14.8:
 
 v0.14.8

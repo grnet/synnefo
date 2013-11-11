@@ -135,7 +135,9 @@ class Command(BaseCommand):
             help="IP allocation pools to be used for assigning IPs to"
                  " VMs. Can be used multiple times. Syntax: \n"
                  "192.168.42.220,192.168.42.240. Starting IP must proceed "
-                 "ending IP."),
+                 "ending IP. If no allocation pools are given, the whole "
+                 "subnet range is used, excluding the gateway IP, the "
+                 "broadcast address and the network address"),
     )
 
     @convert_api_faults
@@ -183,12 +185,15 @@ class Command(BaseCommand):
                                   floating_ip_pool=floating_ip_pool)
 
         if subnet is not None:
-            alloc = subnets.parse_allocation_pools(allocation_pools)
+            alloc = None
+            if allocation_pools is not None:
+                alloc = subnets.parse_allocation_pools(allocation_pools)
+                alloc.sort()
             name = "IPv4 Subnet of Network %s" % network.id
             subnets.create_subnet(network.id, cidr=subnet, name=name,
                                   ipversion=4, gateway=gateway, dhcp=dhcp,
                                   user_id=userid,
-                                  allocation_pools=sorted(alloc))
+                                  allocation_pools=alloc)
 
         if subnet6 is not None:
             name = "IPv6 Subnet of Network %s" % network.id

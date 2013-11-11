@@ -63,7 +63,10 @@ class Command(BaseCommand):
                     help="IP allocation pools to be used for assigning IPs to"
                     " VMs. Can be used multiple times. Syntax: \n"
                     "192.168.42.220,192.168.42.240. Starting IP must proceed "
-                    "ending IP."),
+                    "ending IP.20,192.168.42.240. Starting IP must proceed "
+                    "ending IP. If no allocation pools are given, the whole "
+                    "subnet range is used, excluding the gateway IP, the "
+                    "broadcast address and the network address"),
         make_option("--name", dest="name",
                     help="An arbitrary string for naming the subnet."),
         make_option("--ip-version", dest="ipversion", choices=["4", "6"],
@@ -110,12 +113,15 @@ class Command(BaseCommand):
         dns = options["dns"]
         host_routes = options["host_routes"]
 
-        alloc = subnets.parse_allocation_pools(allocation_pools)
+        alloc = None
+        if allocation_pools is not None:
+            alloc = subnets.parse_allocation_pools(allocation_pools)
+            alloc.sort()
 
         sub = subnets.create_subnet(name=name,
                                     network_id=network_id,
                                     cidr=cidr,
-                                    allocation_pools=sorted(alloc),
+                                    allocation_pools=alloc,
                                     gateway=gateway,
                                     ipversion=ipversion,
                                     dhcp=dhcp,

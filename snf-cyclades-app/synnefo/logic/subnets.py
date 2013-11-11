@@ -293,6 +293,6 @@ def parse_allocation_pools(allocation_pools):
             alloc.append([ipaddr.IPv4Address(start),
                           ipaddr.IPv4Address(end)])
         except ValueError:
-            raise CommandError("Malformed IPv4 address")
+            raise faults.BadRequest("Malformed IPv4 address")
 
     return alloc

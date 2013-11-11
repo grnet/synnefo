@@ -169,6 +169,11 @@ GROUPED_PUBLIC_NETWORK_NAME = \
     getattr(settings, 'UI_GROUPED_PUBLIC_NETWORK_NAME', 'Internet')
 
 
+DEFAULT_FORCED_SERVER_NETWORKS = getattr(settings,
+                                         "CYCLADES_FORCED_SERVER_NETWORKS", []);
+FORCED_SERVER_NETWORKS = getattr(settings, "UI_FORCED_SERVER_NETWORKS",
+                                 DEFAULT_FORCED_SERVER_NETWORKS)
+
 def template(name, request, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
     current_template = template_path + name + '.html'
@@ -234,6 +239,7 @@ def home(request):
                'image_deleted_size_title': json.dumps(IMAGE_DELETED_SIZE_TITLE),
                'network_suggested_subnets': json.dumps(NETWORK_SUBNETS),
                'network_available_types': json.dumps(NETWORK_TYPES),
+               'forced_server_networks': json.dumps(FORCED_SERVER_NETWORKS),
                'network_allow_duplicate_vm_nics':
                json.dumps(NETWORK_DUPLICATE_NICS),
                'network_strict_destroy': json.dumps(NETWORK_STRICT_DESTROY),

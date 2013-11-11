@@ -787,9 +787,17 @@
       tpl: '#networks-select-public-tpl',
       model_view_cls: views.NetworkSelectPublicNetwork,
       get_floating_ips: function() {
-        return _.map(this._subviews[1]._subviews[0].selected_ips, function(m) {
-          return m.id;
-        });
+        var ips = [];
+        _.each(this._subviews, function(view) {
+          _.each(view._subviews, function(view) {
+            if (view.selected_ips) {
+              _.each(view.selected_ips, function(m) {
+                ips.push(m.id);
+              }, this);
+            }
+          }, this);
+        }, this);
+        return ips;
       }
     });
     
@@ -979,6 +987,11 @@
       rivets_view: true,
       tpl: '#networks-select-view-tpl',
       select_public: true,
+      
+      forced_values_title_map: {
+        "SNF:ANY_PUBLIC_IPV6": "Public IPv6 Network",
+        "SNF:ANY_PUBLIC_IPV4": "Public IPv4 Network"
+      },
 
       initialize: function(options) {
         this.quotas = synnefo.storage.quotas.get('cyclades.private_network');
@@ -991,20 +1004,36 @@
         }});
 
         this.public_networks = new Backbone.Collection();
-
-        // forced networks
-        // TODO: check config
-        this.forced = new models.networks.Network({
-          name: 'Public IPv6 Network', 
-          subnets: [],
-          is_public: true,
-          forced: true
-        });
-        this.public_networks.add(this.forced);
+        this.public_networks.comparator = function(m) {
+          if (m.get('forced')) {
+            return -1
+          }  
+          return 100;
+        }
+        
+        if (synnefo.config.forced_server_networks.length) {
+          _.each(synnefo.config.forced_server_networks, function(network) {
+            var forced = synnefo.storage.networks.get(network);
+            if (!forced) {
+              var name = this.forced_values_title_map[network];
+              if (!name) { name = "Forced network ({0})".format(network)}
+              forced = new models.networks.Network({
+                id: network,
+                name: name, 
+                subnets: [],
+                is_public: true,
+                forced: true
+              });
+            } else {
+              forced.set({'forced': true});
+            }
+            this.public_networks.add(forced);
+          }, this);
+        }
 
         // combined public
         this.combined_public = new models.networks.CombinedPublicNetwork();
-        this.combined_public.set({noselect: true, name: 'Internet'});
+        this.combined_public.set({noselect: true, name: 'Internet', forced: false});
         this.public_networks.add(this.combined_public);
 
         model_attrs = {

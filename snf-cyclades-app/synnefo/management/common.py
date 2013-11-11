@@ -133,6 +133,11 @@ def get_network(network_id, for_update=True):
 def get_subnet(subnet_id, for_update=True):
     """Get a Subnet object by its ID."""
     try:
+        subet_id = int(subnet_id)
+    except (ValueError, TypeError):
+        raise CommandError("Invalid subnet ID: %s" % subnet_id)
+
+    try:
         subnets = Subnet.objects
         if for_update:
             subnets.select_for_update()

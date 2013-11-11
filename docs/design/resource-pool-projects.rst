@@ -126,10 +126,13 @@ System default base quota
 Each resource registered in the system is assigned a default quota limit.
 A newly-activated user is given these limits as their base quota. Up to now,
 a change in a default quota limit propagates to all users' base quota
-(except if they have been customized). Since all users will now have, in a
-way, `customized' base quota (through their base projects), this effect is
-meaningless. Therefore, semantics of default quota limits will change to
-affect only future users (i.e. construction of new base projects).
+(except if they have been customized). Since all users' base quota will be
+controlled through their base projects, the default behavior of
+``resource-modify`` will change to affect only future users (i.e.
+construction of new base projects). However, new option
+``--update-existing-base-projects`` will allow setting the limits to
+existing base projects, too. This is useful, for example, when setting a
+newly registered resource.
 
 Private projects
 ----------------
@@ -182,7 +185,7 @@ The astakosclient call ``issue_one_commission`` will be adapted to abstract
 away the need to write both the user-level and the project-level provisions.
 The previous commission will be issued with::
 
-  issue_one_commission(token, holder="user-uuid", source="project-uuid",
+  issue_one_commission(holder="user-uuid", source="project-uuid",
                        provisions={"cyclades.vm": 1, "cyclades.cpu": 2})
 
 The service is responsible to record this resource-to-project association.
@@ -200,11 +203,12 @@ Resource reassignment
 
 The system will support reassigning a resource to a new project. One needs
 to specify all related resource values. Astakosclient will provide a
-convenience function ``reassign_resources`` to construct all needed
+convenience function ``issue_resource_reassignment`` to construct all needed
 provisions. For instance, reassigning a VM with two CPUs can be done with::
 
-  reassign_resources(token, holder="user-uuid", from="from-uuid", to="to-uuid",
-                     provisions={"cyclades.vm": 1, "cyclades.cpu": 2})
+  issue_resource_reassignment(holder="user-uuid",
+                              from_source="from-uuid", to_source="to-uuid",
+                              provisions={"cyclades.vm": 1, "cyclades.cpu": 2})
 
 This will issue the following provisions to the Quotaholder::
 
@@ -304,16 +308,28 @@ regardless of user::
   }
 
 All service API calls that create resources can specify the project where
-they will be attributed. For example ``POST /servers`` will receive an extra
-argument ``project``. If it is missing, the user's base project will be
-assumed. Moreover, extra calls will be needed for resource reassignment,
+they will be attributed.
+
+In cyclades, ``POST /servers`` (likewise for networks and floating IPs) will
+receive an extra argument ``project``. If it is missing, the user's base
+project will be assumed. In calls detailing a resource (e.g., ``GET
+/servers/<server_id>``), the field ``tenant_id`` will contain the
+project id.
+
+Moreover, extra calls will be needed for resource reassignment,
 e.g::
 
   POST /servers/<server-id>/action
 
   {
-      "reassign": <project-id>
+      "reassign": {"project": <project-id>}
   }
+
+In pithos, ``PUT`` and ``POST`` calls at the container level will accept an
+extra optional policy ``project``. The former call assigns a newly created
+container to a given project, the latter reassigns an existing container.
+Field ``x-container-policy-project`` will be retrieved by a ``HEAD`` call at
+the container level.
 
 User interface
 --------------
@@ -376,8 +392,8 @@ Quota can be queried per user or project::
   ------------------------
   cyclades.vm 100    50
 
-``snf-manage quota`` will no more be used to list quota; it may be preserved
-for checking the integrity of the Quotaholder.
+``snf-manage quota`` will be removed; checking the integrity of the
+Quotaholder will be provided by a new command ``reconcile-quota``.
 
 A new command ``snf-manage project-modify`` will automate the process of
 applying/approving applications in order to modify some project settings,

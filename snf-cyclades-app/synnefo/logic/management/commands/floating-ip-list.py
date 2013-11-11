@@ -33,7 +33,7 @@
 
 from synnefo.db.models import FloatingIP
 from snf_django.management.commands import ListCommand
-from synnefo.settings import CYCLADES_SERVICE_TOKEN, ASTAKOS_BASE_URL
+from synnefo.settings import CYCLADES_SERVICE_TOKEN, ASTAKOS_AUTH_URL
 from logging import getLogger
 log = getLogger(__name__)
 
@@ -43,7 +43,7 @@ class Command(ListCommand):
     object_class = FloatingIP
     deleted_field = "deleted"
     user_uuid_field = "userid"
-    astakos_url = ASTAKOS_BASE_URL
+    astakos_auth_url = ASTAKOS_AUTH_URL
     astakos_token = CYCLADES_SERVICE_TOKEN
 
     FIELDS = {

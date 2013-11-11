@@ -47,15 +47,22 @@ class ListSharing(PithosAPITest):
             self.upload_object(cname, 'obj', user=user)
             self.create_folder(cname, 'f1', user=user)
             self.create_folder(cname, 'f1/f2', user=user)
-            self.upload_object(cname, 'f1/f2/obj', user=user)
+            self.create_folder(cname, 'f1/f2/f3', user=user)
+            self.upload_object(cname, 'f1/f2/f3/obj', user=user)
 
-        # share /c0/f1 path
+        # share /c0/f1 path for read
         url = join_urls(self.pithos_path, user, 'c0', 'f1')
         r = self.post(url, user=user, content_type='',
                       HTTP_CONTENT_RANGE='bytes */*',
                       HTTP_X_OBJECT_SHARING='read=*')
         self.assertEqual(r.status_code, 202)
-        r = self.get(url)
+
+        # share /c0/f1/f2 path for write
+        url = join_urls(self.pithos_path, user, 'c0', 'f1/f2')
+        r = self.post(url, user=user, content_type='',
+                      HTTP_CONTENT_RANGE='bytes */*',
+                      HTTP_X_OBJECT_SHARING='write=*')
+        self.assertEqual(r.status_code, 202)
 
     def test_list_share_with_me(self):
         self._build_structure('alice')
@@ -86,23 +93,66 @@ class ListSharing(PithosAPITest):
         self.assertEqual([i['name'] for i in allowed_containers], ['c0'])
 
         url = join_urls(url, 'c0')
+        r = self.get('%s?delimiter=/&shared=&' % url)
+        self.assertEqual(r.status_code, 200)
+        shared_objects = r.content.split('\n')
+        if '' in shared_objects:
+            shared_objects.remove('')
+        self.assertEqual(shared_objects, ['f1', 'f1/'])
+
         r = self.get('%s?delimiter=/&shared=&format=json' % url)
         self.assertEqual(r.status_code, 200)
-        shared_objects = [i.get('name', i.get('subdir')) for i in
-                          json.loads(r.content)]
-        self.assertEqual(shared_objects, ['f1', 'f1/'])
+        shared_objects = json.loads(r.content)
+        self.assertEqual([o.get('name', o.get('subdir')) for
+                          o in shared_objects],
+                         ['f1', 'f1/'])
+        folder = (o for o in shared_objects if o['name'] == 'f1').next()
+        self.assertTrue('x_object_sharing' in folder)
+        self.assertTrue(folder['x_object_sharing'] == 'read=*')
+
+        r = self.get('%s?delimiter=/&prefix=f1&shared=&' % url)
+        self.assertEqual(r.status_code, 200)
+        shared_objects = r.content.split('\n')
+        if '' in shared_objects:
+            shared_objects.remove('')
+        self.assertEqual(shared_objects, ['f1/f2', 'f1/f2/'])
 
         r = self.get('%s?delimiter=/&prefix=f1&shared=&format=json' % url)
         self.assertEqual(r.status_code, 200)
-        shared_objects = [i.get('name', i.get('subdir')) for i in
-                          json.loads(r.content)]
-        self.assertEqual(shared_objects, ['f1/f2', 'f1/f2/'])
+        shared_objects = json.loads(r.content)
+        self.assertEqual([o.get('name', o.get('subdir')) for
+                          o in shared_objects],
+                         ['f1/f2', 'f1/f2/'])
+        folder = (o for o in shared_objects if o['name'] == 'f1/f2').next()
+        self.assertTrue('x_object_sharing' in folder)
+        self.assertTrue(folder['x_object_sharing'] == 'write=*')
+
+        r = self.get('%s?delimiter=/&prefix=f1/f2&shared=&' % url)
+        self.assertEqual(r.status_code, 200)
+        shared_objects = r.content.split('\n')
+        if '' in shared_objects:
+            shared_objects.remove('')
+        self.assertEqual(shared_objects, ['f1/f2/f3', 'f1/f2/f3/'])
 
         r = self.get('%s?delimiter=/&prefix=f1/f2&shared=&format=json' % url)
         self.assertEqual(r.status_code, 200)
         shared_objects = [i.get('name', i.get('subdir')) for i in
                           json.loads(r.content)]
-        self.assertEqual(shared_objects, ['f1/f2/obj'])
+        self.assertEqual(shared_objects, ['f1/f2/f3', 'f1/f2/f3/'])
+
+        r = self.get('%s?delimiter=/&prefix=f1/f2/f3&shared=&' % url)
+        self.assertEqual(r.status_code, 200)
+        shared_objects = r.content.split('\n')
+        if '' in shared_objects:
+            shared_objects.remove('')
+        self.assertEqual(shared_objects, ['f1/f2/f3/obj'])
+
+        r = self.get('%s?delimiter=/&prefix=f1/f2/f3&shared=&format=json' %
+                     url)
+        self.assertEqual(r.status_code, 200)
+        shared_objects = [i.get('name', i.get('subdir')) for i in
+                          json.loads(r.content)]
+        self.assertEqual(shared_objects, ['f1/f2/f3/obj'])
 
     def test_list_shared_by_me(self):
         self._build_structure()
@@ -120,20 +170,63 @@ class ListSharing(PithosAPITest):
         self.assertEqual([i['name'] for i in shared_containers], ['c0'])
 
         url = join_urls(url, 'c0')
+        r = self.get('%s?delimiter=/&shared=&' % url)
+        self.assertEqual(r.status_code, 200)
+        shared_objects = r.content.split('\n')
+        if '' in shared_objects:
+            shared_objects.remove('')
+        self.assertEqual(shared_objects, ['f1', 'f1/'])
+
         r = self.get('%s?delimiter=/&shared=&format=json' % url)
         self.assertEqual(r.status_code, 200)
-        shared_objects = [i.get('name', i.get('subdir')) for i in
-                          json.loads(r.content)]
-        self.assertEqual(shared_objects, ['f1', 'f1/'])
+        shared_objects = json.loads(r.content)
+        self.assertEqual([o.get('name', o.get('subdir')) for
+                          o in shared_objects],
+                         ['f1', 'f1/'])
+        folder = (o for o in shared_objects if o['name'] == 'f1').next()
+        self.assertTrue('x_object_sharing' in folder)
+        self.assertTrue(folder['x_object_sharing'] == 'read=*')
+
+        r = self.get('%s?delimiter=/&prefix=f1&shared=&' % url)
+        self.assertEqual(r.status_code, 200)
+        shared_objects = r.content.split('\n')
+        if '' in shared_objects:
+            shared_objects.remove('')
+        self.assertEqual(shared_objects, ['f1/f2', 'f1/f2/'])
 
         r = self.get('%s?delimiter=/&prefix=f1&shared=&format=json' % url)
         self.assertEqual(r.status_code, 200)
-        shared_objects = [i.get('name', i.get('subdir')) for i in
-                          json.loads(r.content)]
-        self.assertEqual(shared_objects, ['f1/f2', 'f1/f2/'])
+        shared_objects = json.loads(r.content)
+        self.assertEqual([o.get('name', o.get('subdir')) for
+                          o in shared_objects],
+                         ['f1/f2', 'f1/f2/'])
+        folder = (o for o in shared_objects if o['name'] == 'f1/f2').next()
+        self.assertTrue('x_object_sharing' in folder)
+        self.assertTrue(folder['x_object_sharing'] == 'write=*')
+
+        r = self.get('%s?delimiter=/&prefix=f1/f2&shared=&' % url)
+        self.assertEqual(r.status_code, 200)
+        shared_objects = r.content.split('\n')
+        if '' in shared_objects:
+            shared_objects.remove('')
+        self.assertEqual(shared_objects, ['f1/f2/f3', 'f1/f2/f3/'])
 
         r = self.get('%s?delimiter=/&prefix=f1/f2&shared=&format=json' % url)
         self.assertEqual(r.status_code, 200)
         shared_objects = [i.get('name', i.get('subdir')) for i in
                           json.loads(r.content)]
-        self.assertEqual(shared_objects, ['f1/f2/obj'])
+        self.assertEqual(shared_objects, ['f1/f2/f3', 'f1/f2/f3/'])
+
+        r = self.get('%s?delimiter=/&prefix=f1/f2/f3&shared=&' % url)
+        self.assertEqual(r.status_code, 200)
+        shared_objects = r.content.split('\n')
+        if '' in shared_objects:
+            shared_objects.remove('')
+        self.assertEqual(shared_objects, ['f1/f2/f3/obj'])
+
+        r = self.get('%s?delimiter=/&prefix=f1/f2/f3&shared=&format=json' %
+                     url)
+        self.assertEqual(r.status_code, 200)
+        shared_objects = [i.get('name', i.get('subdir')) for i in
+                          json.loads(r.content)]
+        self.assertEqual(shared_objects, ['f1/f2/f3/obj'])

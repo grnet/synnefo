@@ -108,7 +108,7 @@ class ListCommand(BaseCommand):
     order_by = None
 
     # Fields used only with user_user_field
-    astakos_url = None
+    astakos_auth_url = None
     astakos_token = None
 
     help = "Generic List Command"
@@ -154,8 +154,9 @@ class ListCommand(BaseCommand):
 
     def __init__(self, *args, **kwargs):
         if self.user_uuid_field:
-            assert(self.astakos_url), "astakos_url attribute is needed when"\
-                                      " user_uuid_field is declared"
+            assert(self.astakos_auth_url), "astakos_auth_url attribute is "\
+                                           "needed when user_uuid_field "\
+                                           "is declared"
             assert(self.astakos_token), "astakos_token attribute is needed"\
                                         " when user_uuid_field is declared"
             self.option_list += (
@@ -218,7 +219,7 @@ class ListCommand(BaseCommand):
         user = options.get("user")
         if user:
             if "@" in user:
-                ucache = UserCache(self.astakos_url, self.astakos_token)
+                ucache = UserCache(self.astakos_auth_url, self.astakos_token)
                 user = ucache.get_uuid(user)
             self.filters[self.user_uuid_field] = user
 
@@ -255,7 +256,7 @@ class ListCommand(BaseCommand):
             self.FIELDS["user.email"] =\
                 ("user_email", "The email of the owner.")
             uuids = [getattr(obj, self.user_uuid_field) for obj in objects]
-            ucache = UserCache(self.astakos_url, self.astakos_token)
+            ucache = UserCache(self.astakos_auth_url, self.astakos_token)
             ucache.fetch_names(list(set(uuids)))
             for obj in objects:
                 uuid = getattr(obj, self.user_uuid_field)

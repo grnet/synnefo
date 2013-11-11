@@ -457,7 +457,6 @@ def signup(request, template_name='im/signup.html', on_success='index',
     form = activation_backend.get_signup_form(
         provider, None, **form_kwargs)
 
-
     if request.method == 'POST':
         form = activation_backend.get_signup_form(
             provider,
@@ -612,13 +611,15 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
 
     The user state will be updated only if the email will be send successfully.
     """
-    token = request.GET.get('auth')
-    next = request.GET.get('next')
+    token = request.GET.get('auth', None)
+    next = request.GET.get('next', None)
+
+    if not token:
+        raise PermissionDenied
 
     if request.user.is_authenticated():
         message = _(astakos_messages.LOGGED_IN_WARNING)
         messages.error(request, message)
-        transaction.rollback()
         return HttpResponseRedirect(reverse('index'))
 
     try:
@@ -634,12 +635,12 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
     backend = activation_backends.get_backend()
     result = backend.handle_verification(user, token)
     backend.send_result_notifications(result, user)
-    next = settings.ACTIVATION_REDIRECT_URL or next
-    response = HttpResponseRedirect(reverse('index'))
+    next = settings.ACTIVATION_REDIRECT_URL or next or reverse('index')
     if user.is_active:
         response = prepare_response(request, user, next, renew=True)
         messages.success(request, _(result.message))
     else:
+        response = HttpResponseRedirect(reverse('index'))
         messages.warning(request, _(result.message))
 
     return response

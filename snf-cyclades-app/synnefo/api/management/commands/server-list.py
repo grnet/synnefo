@@ -38,7 +38,7 @@ from synnefo.db.models import VirtualMachine
 from synnefo.management.common import get_backend
 from synnefo.api.util import get_image
 from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
-                              ASTAKOS_BASE_URL)
+                              ASTAKOS_AUTH_URL)
 from logging import getLogger
 log = getLogger(__name__)
 
@@ -74,7 +74,7 @@ class Command(ListCommand):
     object_class = VirtualMachine
     deleted_field = "deleted"
     user_uuid_field = "userid"
-    astakos_url = ASTAKOS_BASE_URL
+    astakos_auth_url = ASTAKOS_AUTH_URL
     astakos_token = ASTAKOS_TOKEN
 
     def get_public_ip(vm):
@@ -124,9 +124,10 @@ class Command(ListCommand):
                            for x in self.fields]
 
     def handle_db_objects(self, rows, *args, **kwargs):
-        icache = ImageCache()
-        for vm in rows:
-            vm.image = icache.get_image(vm.imageid, vm.userid)
+        if "image.name" in self.fields:
+            icache = ImageCache()
+            for vm in rows:
+                vm.image = icache.get_image(vm.imageid, vm.userid)
 
 
 class ImageCache(object):

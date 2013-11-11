@@ -262,10 +262,10 @@ def _resources_catalog(for_project=False, for_usage=False):
                 resources.remove(resource)
 
     # cleanup empty groups
-    for group_index, group_resources in enumerate(list(resource_catalog)):
-        group, resources = group_resources
+    resource_catalog_new = []
+    for group, resources in list(resource_catalog):
         if len(resources) == 0:
-            resource_catalog.pop(group_index)
             resource_groups.pop(group)
-
-    return resource_catalog, resource_groups
+        else:
+            resource_catalog_new.append((group, resources))
+    return resource_catalog_new, resource_groups

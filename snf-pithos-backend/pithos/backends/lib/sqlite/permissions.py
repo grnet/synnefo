@@ -35,6 +35,7 @@ from xfeatures import XFeatures
 from groups import Groups
 from public import Public
 from node import Node
+from collections import defaultdict
 
 
 READ = 0
@@ -75,6 +76,24 @@ class Permissions(XFeatures, Groups, Public, Node):
             self.feature_setmany(feature, READ, r)
         if w:
             self.feature_setmany(feature, WRITE, w)
+
+    def access_get_for_bulk(self, perms):
+        """Get permissions for paths."""
+
+        allowed = None
+        d = defaultdict(list)
+        for value, feature_id, key in perms:
+            d[key].append(value)
+        permissions = d
+        if READ in permissions:
+            allowed = 0
+            permissions['read'] = permissions[READ]
+            del(permissions[READ])
+        if WRITE in permissions:
+            allowed = 1
+            permissions['write'] = permissions[WRITE]
+            del(permissions[WRITE])
+        return (permissions, allowed)
 
     def access_get(self, path):
         """Get permissions for path."""
@@ -134,6 +153,24 @@ class Permissions(XFeatures, Groups, Public, Node):
                 return True
         return False
 
+    def access_check_bulk(self, paths, member):
+        rows = None
+        q = ("select x.path, xvals.value, xvals.feature_id, xvals.key "
+             "from xfeaturevals xvals join xfeatures x "
+             "on xvals.feature_id = x.feature_id "
+             "where x.path in (%s)") % ','.join('?' for _ in paths)
+        self.execute(q, paths)
+        rows = self.fetchall()
+        if rows:
+            access_check_paths = {}
+            for path, value, feature_id, key in rows:
+                try:
+                    access_check_paths[path].append((value, feature_id, key))
+                except KeyError:
+                    access_check_paths[path] = [(value, feature_id, key)]
+            return access_check_paths
+        return None
+
     def access_inherit(self, path):
         """Return the paths influencing the access for path."""
 
@@ -152,6 +189,21 @@ class Permissions(XFeatures, Groups, Public, Node):
             if subp != path:
                 valid.append(subp + '/')
         return [x for x in valid if self.xfeature_get(x)]
+
+    def access_inherit_bulk(self, paths):
+        """Return the paths influencing the access for paths."""
+
+        # Only keep path components.
+        valid = []
+        for path in paths:
+            parts = path.rstrip('/').split('/')
+            for i in range(1, len(parts)):
+                subp = '/'.join(parts[:i + 1])
+                valid.append(subp)
+                if subp != path:
+                    valid.append(subp + '/')
+        valid = self.xfeature_get_bulk(valid)
+        return [x[1] for x in valid]
 
     def access_list_paths(self, member, prefix=None, include_owned=False,
                           include_containers=True):
@@ -173,10 +225,10 @@ class Permissions(XFeatures, Groups, Public, Node):
              "using (feature_id)")
         p = (member, member)
         if prefix:
-            q += " where"
-            for path in self.access_inherit(prefix) or [prefix]:
-                q += " path like ? escape '\\'"
-                p += (self.escape_like(path) + '%',)
+            q += " where "
+            paths = self.access_inherit(prefix) or [prefix]
+            q += ' or '.join("path like ? escape '\\'" for _ in paths)
+            p += tuple(self.escape_like(path) + '%' for path in paths)
         self.execute(q, p)
 
         l = [r[0] for r in self.fetchall()]
@@ -196,10 +248,9 @@ class Permissions(XFeatures, Groups, Public, Node):
     def access_list_shared(self, prefix=''):
         """Return the list of shared paths."""
 
-        q = "select path from xfeatures where"
-        p = []
-        for path in self.access_inherit(prefix) or [prefix]:
-            q += " path like ? escape '\\'"
-            p += (self.escape_like(path) + '%',)
+        q = "select path from xfeatures where "
+        paths = self.access_inherit(prefix) or [prefix]
+        q += ' or '.join("path like ? escape '\\'" for _ in paths)
+        p = tuple(self.escape_like(path) + '%' for path in paths)
         self.execute(q, p)
         return [r[0] for r in self.fetchall()]

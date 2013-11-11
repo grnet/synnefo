@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -38,52 +38,49 @@ from astakosclient.errors import (Unauthorized, NoUUID, NoUserName,
                                   AstakosClientException)
 
 
-def user_for_token(client, token, usage=False):
-    if not token:
+def user_for_token(token, astakos_auth_url, logger=None):
+    if token is None:
         return None
-
+    client = AstakosClient(token, astakos_auth_url,
+                           retry=2, use_pool=True, logger=logger)
     try:
-        return client.get_user_info(token, usage=True)
+        return client.authenticate()
     except Unauthorized:
         return None
 
 
-def get_user(request, astakos_url, fallback_token=None,
-             usage=False, logger=None):
+def get_user(request, astakos_auth_url, fallback_token=None, logger=None):
     request.user = None
     request.user_uniq = None
 
-    client = AstakosClient(astakos_url, retry=2, use_pool=True, logger=logger)
     # Try to find token in a parameter or in a request header.
-    user = user_for_token(client, request.GET.get('X-Auth-Token'), usage=usage)
+    user = user_for_token(
+        request.GET.get('X-Auth-Token'), astakos_auth_url, logger)
     if not user:
-        user = user_for_token(client,
-                              request.META.get('HTTP_X_AUTH_TOKEN'),
-                              usage=usage)
+        user = user_for_token(
+            request.META.get('HTTP_X_AUTH_TOKEN'), astakos_auth_url, logger)
     if not user:
-        user = user_for_token(client, fallback_token, usage=usage)
+        user = user_for_token(
+            fallback_token, astakos_auth_url, logger)
     if not user:
         return None
 
-    # use user uuid, instead of email, keep email/displayname reference
-    # to user_id
-    request.user_uniq = user['uuid']
+    request.user_uniq = user['access']['user']['id']
     request.user = user
-    request.user_id = user.get('displayname')
     return user
 
 
 class UserCache(object):
     """uuid<->displayname user 'cache'"""
 
-    def __init__(self, astakos_url, astakos_token, split=100, logger=None):
+    def __init__(self, astakos_auth_url, astakos_token,
+                 split=100, logger=None):
         if logger is None:
             logger = logging.getLogger(__name__)
         self.logger = logger
 
-        self.astakos = AstakosClient(astakos_url, retry=2,
-                                     use_pool=True, logger=logger)
-        self.astakos_token = astakos_token
+        self.astakos = AstakosClient(astakos_token, astakos_auth_url,
+                                     retry=2, use_pool=True, logger=logger)
         self.users = {}
 
         self.split = split
@@ -97,8 +94,8 @@ class UserCache(object):
         for start in range(0, total, split):
             end = start + split
             try:
-                names = self.astakos.service_get_usernames(
-                    self.astakos_token, uuid_list[start:end])
+                names = \
+                    self.astakos.service_get_usernames(uuid_list[start:end])
                 count += len(names)
 
                 self.users.update(names)
@@ -119,8 +116,7 @@ class UserCache(object):
 
         if not name in self.users:
             try:
-                uuid = self.astakos.service_get_uuid(
-                    self.astakos_token, name)
+                uuid = self.astakos.service_get_uuid(name)
             except NoUUID:
                 self.logger.debug("Failed to fetch uuid for %s", name)
             except AstakosClientException:
@@ -138,8 +134,7 @@ class UserCache(object):
 
         if not uuid in self.users:
             try:
-                name = self.astakos.service_get_username(
-                    self.astakos_token, uuid)
+                name = self.astakos.service_get_username(uuid)
             except NoUserName:
                 self.logger.debug("Failed to fetch display name for %s", uuid)
             except AstakosClientException:

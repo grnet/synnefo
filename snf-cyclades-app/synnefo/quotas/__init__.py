@@ -35,13 +35,14 @@ from synnefo.db.models import (QuotaHolderSerial, VirtualMachine, Network,
                                FloatingIP)
 
 from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
-                              ASTAKOS_BASE_URL)
+                              ASTAKOS_AUTH_URL)
 from astakosclient import AstakosClient
 from astakosclient.errors import AstakosClientException, QuotaLimit
 from functools import wraps
 
 import logging
 log = logging.getLogger(__name__)
+
 
 DEFAULT_SOURCE = 'system'
 RESOURCES = [
@@ -63,7 +64,8 @@ class Quotaholder(object):
     def get(cls):
         if cls._object is None:
             cls._object = AstakosClient(
-                ASTAKOS_BASE_URL,
+                ASTAKOS_TOKEN,
+                ASTAKOS_AUTH_URL,
                 use_pool=True,
                 retry=3,
                 logger=log)
@@ -94,9 +96,9 @@ def issue_commission(user, source, provisions, name="",
 
     qh = Quotaholder.get()
     try:
-        serial = qh.issue_one_commission(ASTAKOS_TOKEN,
-                                         user, source, provisions, name=name,
-                                         force=force, auto_accept=auto_accept)
+        serial = qh.issue_one_commission(
+            user, source, provisions, name=name,
+            force=force, auto_accept=auto_accept)
     except QuotaLimit as e:
         msg, details = render_overlimit_exception(e)
         raise faults.OverLimit(msg, details=details)
@@ -143,7 +145,7 @@ def resolve_commissions(accept=None, reject=None, strict=True):
         reject = []
 
     qh = Quotaholder.get()
-    response = qh.resolve_commissions(ASTAKOS_TOKEN, accept, reject)
+    response = qh.resolve_commissions(accept, reject)
 
     if strict:
         failed = response["failed"]
@@ -188,7 +190,7 @@ def resolve_pending_commissions():
 
 def get_quotaholder_pending():
     qh = Quotaholder.get()
-    pending_serials = qh.get_pending_commissions(ASTAKOS_TOKEN)
+    pending_serials = qh.get_pending_commissions()
     return pending_serials
 
 

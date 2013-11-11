@@ -72,8 +72,8 @@ def migrate_eppn_to_remote_id(eppn, remote_id):
         pass
 
     pending_users = \
-            PendingThirdPartyUser.objects.filter(third_party_identifier=eppn,
-                                                 provider='shibboleth')
+        PendingThirdPartyUser.objects.filter(third_party_identifier=eppn,
+                                             provider='shibboleth')
 
     for pending in pending_users:
         msg = "Migrating pending user %s eppn (%s -> %s)"
@@ -116,6 +116,11 @@ def login(request,
             shibboleth_headers[token] = request.META.get(getattr(Tokens,
                                                                  token),
                                                          'NOT_SET')
+            # also include arbitrary shibboleth headers
+            for key in request.META.keys():
+                if key.startswith('HTTP_SHIB_'):
+                    shibboleth_headers[key.replace('HTTP_', '')] = \
+                        request.META.get(key)
 
     # log shibboleth headers
     # TODO: info -> debug
@@ -153,7 +158,7 @@ def login(request,
         fullname = '%s %s' % (first_name, last_name)
 
         if not any([first_name, last_name]) and \
-                    settings.SHIBBOLETH_REQUIRE_NAME_INFO:
+                settings.SHIBBOLETH_REQUIRE_NAME_INFO:
             raise KeyError(_(astakos_messages.SHIBBOLETH_MISSING_NAME))
 
     except KeyError, e:

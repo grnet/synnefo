@@ -18,28 +18,21 @@ from snfdeploy.lib import debug, Conf, Env, disable_color
 from snfdeploy import massedit
 
 
-def setup_env(confdir="conf", packages="packages", templates="files",
-              cluster_name="ganeti1", autoconf=False, disable_colors=False,
-              key_inject=False):
+def setup_env(args):
     """Setup environment"""
     print("Loading configuration for synnefo...")
-    print(" * Using config files under %s..." % confdir)
-    print(" * Using %s and %s for packages and templates accordingly..."
-          % (packages, templates))
 
-    autoconf = ast.literal_eval(autoconf)
-    disable_colors = ast.literal_eval(disable_colors)
-    env.key_inject = ast.literal_eval(key_inject)
-    conf = Conf.configure(confdir=confdir, cluster_name=cluster_name,
-                          autoconf=autoconf)
+    conf = Conf(args)
     env.env = Env(conf)
 
-    env.local = autoconf
+    env.local = args.autoconf
+    env.key_inject = args.key_inject
     env.password = env.env.password
     env.user = env.env.user
     env.shell = "/bin/bash -c"
+    env.key_filename = args.ssh_key
 
-    if disable_colors:
+    if args.disable_colors:
         disable_color()
 
     if env.env.cms.hostname in \
@@ -441,6 +434,7 @@ def restart_services():
 def setup_gunicorn():
     debug(env.host, " * Setting up gunicorn...")
     install_package("gunicorn")
+    try_run("chown root.www-data /var/log/gunicorn")
     tmpl = "/etc/gunicorn.d/synnefo"
     replace = {}
     custom = customize_settings_from_tmpl(tmpl, replace)
@@ -856,7 +850,6 @@ def setup_pithos():
         "synnefo_db_passwd": env.env.synnefo_db_passwd,
         "pithos_dir": env.env.pithos_dir,
         "PITHOS_SERVICE_TOKEN": service_token,
-        "proxy": env.env.pithos.hostname == env.env.accounts.hostname
         }
     custom = customize_settings_from_tmpl(tmpl, replace)
     try_put(custom, tmpl, mode=0644)
@@ -1167,7 +1160,6 @@ def setup_cyclades():
         "HOST": env.env.cyclades.ip,
         "domain": env.env.domain,
         "CYCLADES_SERVICE_TOKEN": service_token,
-        "proxy": env.env.cyclades.hostname == env.env.accounts.hostname
         }
     custom = customize_settings_from_tmpl(tmpl, replace)
     try_put(custom, tmpl, mode=0644)
@@ -1317,7 +1309,7 @@ def setup_kamaki():
     install_package("python-progress")
     install_package("kamaki")
     cmd = """
-    kamaki config set cloud.default.url "https://{0}/astakos/identity/v2.0/"
+    kamaki config set cloud.default.url "https://{0}/astakos/identity/v2.0"
     kamaki config set cloud.default.token {1}
     """.format(env.env.accounts.fqdn, user_auth_token)
     try_run(cmd)

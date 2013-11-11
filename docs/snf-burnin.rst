@@ -28,7 +28,7 @@ A typical usage of snf-burnin is:
 ::
 
   snf-burnin --token=USERS_SECRET_TOKEN \
-             --auth-url="https://accounts.synnefo.org/identity/v2.0/" \
+             --auth-url="https://accounts.synnefo.org/identity/v2.0" \
              --system-images-user=SYSTEM_IMAGES_USER_ID \
              --image-id=IMAGE_ID \
              --log-folder=LOG_FOLDER

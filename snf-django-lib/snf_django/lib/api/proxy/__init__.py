@@ -57,6 +57,10 @@ def proxy(request, proxy_base=None, target_base=None):
         m = "proxy() needs both proxy_base and target_base argument not None"
         raise AssertionError(m)
 
+    # Get strings from lazy objects
+    proxy_base = str(proxy_base)
+    target_base = str(target_base)
+
     parsed = urlparse.urlparse(target_base)
     target_base = '/' + parsed.path.strip('/')
     proxy_base = proxy_base.strip('/')

@@ -77,7 +77,7 @@ class View(object):
         Main entry point for a request-response process.
         """
         def view(request, *args, **kwargs):
-            get_user(request, settings.ASTAKOS_BASE_URL)
+            get_user(request, settings.ASTAKOS_AUTH_URL)
             if not request.user_uniq:
                 return HttpResponse(status=401)
             self = cls(*initargs, **initkwargs)
@@ -115,7 +115,8 @@ class View(object):
                                 'non_field_key': NON_FIELD_ERRORS}))
 
         else:
-            allowed_methods = [m for m in self.method_names if hasattr(self, m)]
+            allowed_methods = \
+                [m for m in self.method_names if hasattr(self, m)]
             return http.HttpResponseNotAllowed(allowed_methods)
 
 

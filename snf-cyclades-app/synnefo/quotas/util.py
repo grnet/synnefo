@@ -34,7 +34,7 @@
 from django.db.models import Sum, Count, Q
 
 from synnefo.db.models import VirtualMachine, Network, FloatingIP
-from synnefo.quotas import Quotaholder, ASTAKOS_TOKEN
+from synnefo.quotas import Quotaholder
 
 
 def get_db_holdings(user=None):
@@ -99,7 +99,7 @@ def get_quotaholder_holdings(user=None):
     Returns quotas for all users, unless a single user is specified.
     """
     qh = Quotaholder.get()
-    return qh.service_get_quotas(ASTAKOS_TOKEN, user)
+    return qh.service_get_quotas(user)
 
 
 def transform_quotas(quotas):

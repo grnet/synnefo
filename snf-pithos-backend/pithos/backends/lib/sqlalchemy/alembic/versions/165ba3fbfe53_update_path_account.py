@@ -36,13 +36,12 @@ import sqlalchemy as sa
 catalog = {}
 
 
-def _get_uuid(account, service_token, astakos_client):
+def _get_uuid(account, astakos_client):
     global catalog
     if account in catalog:
         return catalog[account]
     try:
-        catalog[account] = astakos_client.service_get_uuid(service_token,
-                                                           account)
+        catalog[account] = astakos_client.service_get_uuid(account)
         print '\n', account, '-->', catalog[account]
     except NoUUID:
         return None
@@ -54,13 +53,12 @@ def _get_uuid(account, service_token, astakos_client):
 inverse_catalog = {}
 
 
-def _get_displayname(account, service_token, astakos_client):
+def _get_displayname(account, astakos_client):
     global inverse_catalog
     if account in inverse_catalog:
         return inverse_catalog[account]
     try:
-        inverse_catalog[account] = astakos_client.service_get_username(
-            service_token, account)
+        inverse_catalog[account] = astakos_client.service_get_username(account)
         print '\n', account, '-->', inverse_catalog[account]
     except NoUserName:
         return None
@@ -221,9 +219,9 @@ def upgrade():
     except ImportError:
         return
     else:
-        astakos_client = AstakosClient(settings.ASTAKOS_BASE_URL,
-                                       retry=3,
-                                       use_pool=True)
+        astakos_client = AstakosClient(
+            settings.SERVICE_TOKEN, settings.ASTAKOS_AUTH_URL,
+            retry=3, use_pool=True)
         get_uuid = functools.partial(_get_uuid,
                                      service_token=settings.SERVICE_TOKEN,
                                      astakos_client=astakos_client)
@@ -236,11 +234,10 @@ def downgrade():
     except ImportError:
         return
     else:
-        astakos_client = AstakosClient(settings.ASTAKOS_BASE_URL,
-                                       retry=3,
-                                       use_pool=True)
+        astakos_client = AstakosClient(
+            settings.SERVICE_TOKEN, settings.ASTAKOS_AUTH_URL,
+            retry=3, use_pool=True)
         get_displayname = functools.partial(
             _get_displayname,
-            service_token=settings.SERVICE_TOKEN,
             astakos_client=astakos_client)
         migrate(get_displayname)

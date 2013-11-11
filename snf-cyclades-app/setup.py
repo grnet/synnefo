@@ -80,6 +80,7 @@ INSTALL_REQUIRES = [
     'snf-branding',
     'snf-webproject',
     'requests',
+    'paramiko'
 ]
 
 EXTRAS_REQUIRES = {

@@ -40,9 +40,11 @@ from snf_django.utils.urls import \
 from snf_django.lib.api.urls import api_patterns
 from synnefo.cyclades_settings import (
     BASE_PATH, COMPUTE_PREFIX, VMAPI_PREFIX,
-    PLANKTON_PREFIX, HELPDESK_PREFIX, UI_PREFIX, ASTAKOS_BASE_URL,
-    USERDATA_PREFIX, ADMIN_PREFIX, BASE_ASTAKOS_PROXY_PATH,
-    ASTAKOS_ACCOUNTS_PREFIX, ASTAKOS_VIEWS_PREFIX, PROXY_USER_SERVICES,
+    PLANKTON_PREFIX, HELPDESK_PREFIX, UI_PREFIX,
+    USERDATA_PREFIX, ADMIN_PREFIX,
+    ASTAKOS_AUTH_PROXY_PATH, ASTAKOS_AUTH_URL,
+    ASTAKOS_ACCOUNT_PROXY_PATH, ASTAKOS_ACCOUNT_URL,
+    ASTAKOS_UI_PROXY_PATH, ASTAKOS_UI_URL,
     cyclades_services)
 
 from functools import partial
@@ -55,9 +57,6 @@ extend_endpoint_with_slash(urlpatterns, cyclades_services, 'cyclades_ui')
 extend_endpoint_with_slash(urlpatterns, cyclades_services, 'cyclades_helpdesk')
 extend_endpoint_with_slash(urlpatterns, cyclades_services, 'admin')
 extend_endpoint_with_slash(urlpatterns, cyclades_services, 'cyclades_userdata')
-
-astakos_proxy = partial(proxy, proxy_base=BASE_ASTAKOS_PROXY_PATH,
-                        target_base=ASTAKOS_BASE_URL)
 
 cyclades_patterns = api_patterns(
     '',
@@ -79,27 +78,30 @@ urlpatterns += patterns(
     (prefix_pattern(BASE_PATH), include(cyclades_patterns)),
 )
 
-if PROXY_USER_SERVICES:
-    astakos_proxy = partial(proxy, proxy_base=BASE_ASTAKOS_PROXY_PATH,
-                            target_base=ASTAKOS_BASE_URL)
 
-    proxy_patterns = patterns(
-        '',
-        (prefix_pattern(ASTAKOS_VIEWS_PREFIX), astakos_proxy),
-    )
-    proxy_patterns += api_patterns(
-        '',
-        (r'^login/?$', astakos_proxy),
-        (r'^feedback/?$', astakos_proxy),
-        (r'^user_catalogs/?$', astakos_proxy),
-        (prefix_pattern(ASTAKOS_ACCOUNTS_PREFIX), astakos_proxy),
-    )
+# --------------------------------------
+# PROXY settings
+astakos_auth_proxy = \
+    partial(proxy, proxy_base=ASTAKOS_AUTH_PROXY_PATH,
+            target_base=ASTAKOS_AUTH_URL)
+astakos_account_proxy = \
+    partial(proxy, proxy_base=ASTAKOS_ACCOUNT_PROXY_PATH,
+            target_base=ASTAKOS_ACCOUNT_URL)
+astakos_ui_proxy = \
+    partial(proxy, proxy_base=ASTAKOS_UI_PROXY_PATH,
+            target_base=ASTAKOS_UI_URL)
 
-    urlpatterns += patterns(
-        '',
-        (prefix_pattern(BASE_ASTAKOS_PROXY_PATH), include(proxy_patterns)),
-    )
+urlpatterns += api_patterns(
+    '',
+    (prefix_pattern(ASTAKOS_AUTH_PROXY_PATH), astakos_auth_proxy),
+    (prefix_pattern(ASTAKOS_ACCOUNT_PROXY_PATH), astakos_account_proxy),
+)
+urlpatterns += patterns(
+    '',
+    (prefix_pattern(ASTAKOS_UI_PROXY_PATH), astakos_ui_proxy),
+)
 
+# --------------------------------------
 # set utility redirects
 extend_with_root_redirects(urlpatterns, cyclades_services, 'cyclades_ui',
                            BASE_PATH)

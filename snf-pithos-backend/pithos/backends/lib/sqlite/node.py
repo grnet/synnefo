@@ -776,6 +776,7 @@ class Node(DBWorker):
 
     def attribute_copy(self, source, dest):
         q = ("insert or replace into attributes "
+             "(serial, domain, node, is_latest, key, value) "
              "select ?, domain, node, is_latest, key, value from attributes "
              "where serial = ?")
         self.execute(q, (dest, source))
@@ -1133,3 +1134,11 @@ class Node(DBWorker):
         groups = groupby(rows, group_by)
         return [(k[0], k[1:], dict([i[12:] for i in data])) for
                 (k, data) in groups]
+
+    def get_props(self, paths):
+        q = ("select distinct n.path, v.type "
+             "from nodes n inner join versions v "
+             "on v.serial = n.latest_version "
+             "where n.path in (%s)") % ','.join('?' for _ in paths)
+        self.execute(q, paths)
+        return self.fetchall()

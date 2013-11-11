@@ -78,7 +78,7 @@ from pithos.backends.util import PithosBackendPool
 _pithos_backend_pool = \
     PithosBackendPool(
         settings.PITHOS_BACKEND_POOL_SIZE,
-        astakos_url=settings.ASTAKOS_BASE_URL,
+        astakos_auth_url=settings.ASTAKOS_AUTH_URL,
         service_token=settings.CYCLADES_SERVICE_TOKEN,
         astakosclient_poolsize=settings.CYCLADES_ASTAKOSCLIENT_POOLSIZE,
         db_connection=settings.BACKEND_DB_CONNECTION,

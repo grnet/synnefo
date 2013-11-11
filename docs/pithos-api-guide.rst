@@ -1085,6 +1085,7 @@ Return Code                     Description
 ==============================  ==============================
 202 (Accepted)                  The request has been accepted (not a data update)
 204 (No Content)                The request succeeded (data updated)
+400 (Bad Request)               Invalid ``X-Object-Sharing`` or ``X-Object-Bytes`` header or missing ``Content-Range`` header or invalid source object or source object length is smaller than range length or ``Content-Length`` does not match range length
 411 (Length Required)           Missing ``Content-Length`` in the request
 413 (Request Entity Too Large)  Insufficient quota to complete the request
 416 (Range Not Satisfiable)     The supplied range is invalid

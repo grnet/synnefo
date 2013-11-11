@@ -69,7 +69,7 @@ def generate_key_pair(request):
     Response to generate private/public RSA key pair
     """
 
-    get_user(request, settings.ASTAKOS_BASE_URL)
+    get_user(request, settings.ASTAKOS_AUTH_URL)
 
     if request.method != "POST":
         return http.HttpResponseNotAllowed(["POST"])
@@ -77,8 +77,8 @@ def generate_key_pair(request):
     if not SUPPORT_GENERATE_KEYS:
         raise Exception("Application does not support ssh keys generation")
 
-    if PublicKeyPair.user_limit_exceeded(request.user):
-        raise http.HttpResponseServerError("SSH keys limit exceeded")
+    if PublicKeyPair.user_limit_exceeded(request.user_uniq):
+        return http.HttpResponseServerError("SSH keys limit exceeded")
 
     # generate RSA key
     from Crypto import Random

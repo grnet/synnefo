@@ -51,7 +51,7 @@ def override_settings(settings, **kwargs):
     >>> from synnefo.util.testing import override_settings
     >>> from django.conf import settings
     >>> with override_settings(settings, DEBUG=True):
-    >>>     assert settings.DEBUG == True
+    ...     assert settings.DEBUG == True
 
     The special arguemnt ``prefix`` can be set to prefix all setting keys with
     the provided value.
@@ -59,11 +59,11 @@ def override_settings(settings, **kwargs):
     >>> from django.conf import settings
     >>> from django.core import mail
     >>> with override_settings(settings, CONTACT_EMAILS=['kpap@grnet.gr'],
-    >>>                        prefix='MYAPP_'):
-    >>>     from django.core.mail import send_mail
-    >>>     send_mail("hello", "I love you kpap", settings.DEFAULT_FROM_EMAIL,
-    >>>               settings.MYAPP_CONTACT_EMAILS)
-    >>>     assert 'kpap@grnet.gr' in mail.mailbox[0].recipients()
+    ...                        prefix='MYAPP_'):
+    ...     from django.core.mail import send_mail
+    ...     send_mail("hello", "I love you kpap", settings.DEFAULT_FROM_EMAIL,
+    ...               settings.MYAPP_CONTACT_EMAILS)
+    ...     assert 'kpap@grnet.gr' in mail.mailbox[0].recipients()
 
     If you plan to reuse it
 
@@ -71,8 +71,8 @@ def override_settings(settings, **kwargs):
     >>> from synnefo.util.testing import override_settings
     >>> from django.conf import settings
     >>> myapp_settings = functools.partial(override_settings, prefix='MYAPP_')
-    >>> with myapp_settings(CONTACT_EMAILS=['kpap@grnet.gr'])
-    >>>     assert settings.MYAPP_CONTACT_EMAILS == ['kpap@grnet.gr']
+    >>> with myapp_settings(CONTACT_EMAILS=['kpap@grnet.gr']):
+    ...     assert settings.MYAPP_CONTACT_EMAILS == ['kpap@grnet.gr']
 
     """
 
@@ -132,10 +132,26 @@ def astakos_user(user):
     """
     with patch("snf_django.lib.api.get_token") as get_token:
         get_token.return_value = "DummyToken"
-        with patch('astakosclient.AstakosClient.get_user_info') as m:
-            m.return_value = {"uuid": text.udec(user, 'utf8')}
-            with patch('astakosclient.AstakosClient.get_quotas') as m2:
-                m2.return_value = {
+        with patch('astakosclient.AstakosClient.authenticate') as m2:
+            m2.return_value = {"access": {
+                "token": {
+                    "expires": "2013-06-19T15:23:59.975572+00:00",
+                    "id": "DummyToken",
+                    "tenant": {
+                        "id": text.udec(user, 'utf8'),
+                        "name": "Firstname Lastname"
+                        }
+                    },
+                "serviceCatalog": [],
+                "user": {
+                    "roles_links": [],
+                    "id": text.udec(user, 'utf8'),
+                    "roles": [{"id": 1, "name": "default"}],
+                    "name": "Firstname Lastname"}}
+                }
+
+            with patch('astakosclient.AstakosClient.get_quotas') as m3:
+                m3.return_value = {
                     "system": {
                         "pithos.diskspace": {
                             "usage": 0,
@@ -144,7 +160,8 @@ def astakos_user(user):
                         }
                     }
                 }
-                issue_fun = "astakosclient.AstakosClient.issue_one_commission"
+                issue_fun = \
+                    "astakosclient.AstakosClient.issue_one_commission"
                 with patch(issue_fun) as m3:
                     serials = []
                     append = serials.append
@@ -162,7 +179,8 @@ def astakos_user(user):
                         m4.return_value = {'accepted': serials,
                                            'rejected': [],
                                            'failed': []}
-                        users_fun = 'astakosclient.AstakosClient.get_usernames'
+                        users_fun = \
+                            'astakosclient.AstakosClient.get_usernames'
                         with patch(users_fun) as m5:
 
                             def get_usernames(*args, **kwargs):

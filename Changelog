@@ -16,6 +16,15 @@ Synnefo-wide
 
 * Integrate Pithos tests in continuous integration.
 
+* Change astakosclient to accept AUTH_URL instead of BASE_URL
+	ASTAKOS_BASE_URL settings has been removed from Pithos and Cyclades
+	and has been replaced with ASTAKOS_AUTH_URL. Both Pithos and Cyclades
+	proxy the Astakos services under ASTAKOS_PROXY_PREFIX path.
+	ASTAKOS_PROXY_PREFIX by default has a value of '_astakos'.
+	More specifically, Astakos' identity service is proxied under
+	'_astakos/identity', Astakos' account service is under '_astakos/account'
+	and Astakos' ui service is under '_astakos/ui'.
+
 Astakos
 -------
 
@@ -26,6 +35,10 @@ Astakos
     of its `reference' application (current definition). Lock Project rather
     than Chain (the latter is semantically obsolete).
 
+  * Project states "Active - Pending" and "Suspended - Pending" have been
+    removed. In management command `project-list', the existence of a pending
+    modification is indicated by a non-blank `Pending AppID'.
+
   * Improve recording of project, application, and membership actions.
 
 * Implement API calls for projects.
@@ -35,6 +48,9 @@ Astakos
   expected to match its base URL; otherwise, a warning is issued.
   Re-registration with `snf-component-register' affects both the base and
   the ui URL.
+
+* Remove API call GET /account/v1.0/authenticate in favor of
+  POST /identity/v2.0/tokens.
 
 * Management commands:
   * Introduced new commands:
@@ -92,6 +108,48 @@ objects by domain attribute. This is used by Plankton for listing VM images.
 
 * Enforce container-level atomicity in (most) Pithos API calls.
 
+
+.. _Changelog-0.14.9:
+
+v0.14.9
+=======
+
+Released: Mon Nov 11 12:13:31 EET 2013
+
+* Astakos: Fix minor problems with logging in the Astakos module, which could
+  lead to unexpected exceptions
+
+.. _Changelog-0.14.8:
+
+v0.14.8
+=======
+
+Released: Fri Nov  8 17:25:08 EET 2013
+
+Synnefo-wide
+------------
+
+* This is the first release to support Debian Wheezy along with Squeeze. You
+  can mix and match nodes freely.
+* Update Django dependency to Django>=1.2,<1.5. Django 1.4.5 is available for
+  Squeeze through squeeze-backports.
+* Since this version, Synnefo ships an example Gunicorn configuration file
+  that is automatically installed at ``/etc/gunicorn.d/synnefo.example``.
+
+Cyclades
+--------
+
+* On VM creation, pass the hashmap of the image (pithosmap://) instead of the
+  image URL (pithos://). Access to the Pithos DB by Ganeti nodes is no longer
+  required.
+* Workaround race between server creation and server deletion. This will be
+  fixed properly by updating Ganeti to support the 'depends' attribute for
+  OP_INSTANCE_REMOVE.
+
+Astakos
+-------
+
+* For Shibboleth logins, store all attributes along with the user in the DB.
 
 .. _Changelog-0.14.7:
 

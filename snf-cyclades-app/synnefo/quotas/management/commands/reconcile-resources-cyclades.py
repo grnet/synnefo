@@ -40,7 +40,6 @@ from synnefo import quotas
 from synnefo.quotas.util import (get_db_holdings, get_quotaholder_holdings,
                                  transform_quotas)
 from snf_django.management.utils import pprint_table
-from synnefo.settings import CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN
 
 
 class Command(BaseCommand):
@@ -129,7 +128,7 @@ class Command(BaseCommand):
                      % datetime.now())
                 request["provisions"] = map(create_provision, unsynced)
                 try:
-                    qh.issue_commission(ASTAKOS_TOKEN, request)
+                    qh.issue_commission(request)
                 except quotas.QuotaLimit:
                     write("Reconciling failed because a limit has been "
                           "reached. Use --force to ignore the check.\n")

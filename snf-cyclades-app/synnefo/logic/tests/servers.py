@@ -220,7 +220,7 @@ class ServerCommandTest(TransactionTestCase):
         mrapi().StartupInstance.return_value = 1
         with mocked_quotaholder() as m:
             servers.start(vm)
-            m.resolve_commissions.assert_called_once_with('', [],
+            m.resolve_commissions.assert_called_once_with([],
                                                           [serial.serial])
             self.assertTrue(m.issue_one_commission.called)
         # Not pending, rejct
@@ -233,7 +233,7 @@ class ServerCommandTest(TransactionTestCase):
         mrapi().StartupInstance.return_value = 1
         with mocked_quotaholder() as m:
             servers.start(vm)
-            m.resolve_commissions.assert_called_once_with('', [],
+            m.resolve_commissions.assert_called_once_with([],
                                                           [serial.serial])
             self.assertTrue(m.issue_one_commission.called)
         # Not pending, accept
@@ -246,7 +246,7 @@ class ServerCommandTest(TransactionTestCase):
         mrapi().StartupInstance.return_value = 1
         with mocked_quotaholder() as m:
             servers.start(vm)
-            m.resolve_commissions.assert_called_once_with('', [serial.serial],
+            m.resolve_commissions.assert_called_once_with([serial.serial],
                                                           [])
             self.assertTrue(m.issue_one_commission.called)
 
@@ -259,7 +259,7 @@ class ServerCommandTest(TransactionTestCase):
                 servers.start(vm)
             except:
                 m.resolve_commissions\
-                 .assert_called_once_with('', [], [vm.serial.serial])
+                 .assert_called_once_with([], [vm.serial.serial])
 
     def test_task_after(self, mrapi):
         return

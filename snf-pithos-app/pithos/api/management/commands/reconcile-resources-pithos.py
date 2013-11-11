@@ -85,8 +85,7 @@ class Command(NoArgsCommand):
 
             # Get holding from Quotaholder
             try:
-                qh_result = backend.astakosclient.service_get_quotas(
-                    backend.service_token, userid)
+                qh_result = backend.astakosclient.service_get_quotas(userid)
             except NotFound:
                 self.stdout.write(
                     "User '%s' does not exist in Quotaholder!\n" % userid)
@@ -141,8 +140,7 @@ class Command(NoArgsCommand):
                     request['name'] = "RECONCILE"
                     request['provisions'] = map(create_provision, unsynced)
                     try:
-                        backend.astakosclient.issue_commission(
-                            backend.service_token, request)
+                        backend.astakosclient.issue_commission(request)
                     except QuotaLimit:
                         self.stdout.write(
                             "Reconciling failed because a limit has been "
@@ -156,8 +154,9 @@ class Command(NoArgsCommand):
                     " reconcile-commissions-pithos'\n")
             elif not (unsynced or unknown_user_exists):
                 self.stdout.write("Everything in sync.\n")
-        except:
+        except BaseException as e:
             backend.post_exec(False)
+            self.stdout.write(str(e) + "\n")
         else:
             backend.post_exec(True)
         finally:

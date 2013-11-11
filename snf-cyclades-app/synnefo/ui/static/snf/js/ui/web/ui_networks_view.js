@@ -317,6 +317,7 @@
       
       disconnect_port: function(model, e) {
         e && e.stopPropagation();
+        var network = this.model.get("network");
         this.model.actions.reset_pending();
         this.model.disconnect(_.bind(this.disconnect_port_complete, this));
       },
@@ -446,15 +447,16 @@
 
       status_display: function(status) {
         var status;
-        if (this.model.id == "snf-combined-public-network") {
-          return "Internet"
-        }
-
         var cidr = this.model.get('cidr');
         var status = this.model.get('ext_status');
         if (status != 'REMOVING' && cidr) {
           return cidr
         }
+        if (this.model.id == "snf-combined-public-network" && !_.contains(
+          ["CONNECTING", "DISCONNECTING"], status)) {
+          return "Internet"
+        }
+
         return this.status_map[status];
       },
       
@@ -528,7 +530,6 @@
             model: this.combined_public
           });
           this.add_model_view(this.combined_public_view, this.combined_public, 0);
-          this.combined_public_view.$("i").hide();
           this.public_added = true;
         }
         return views.NetworksCollectionView.__super__.add_model.call(this, m);

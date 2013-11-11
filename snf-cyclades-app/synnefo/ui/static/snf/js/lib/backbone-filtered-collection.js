@@ -141,8 +141,6 @@ THE SOFTWARE.
 
     ,removeModel: function(model, colleciton, options) {
       var at = this._mapping.indexOf(options.index);
-      console.log("requested remove", "options.index", options.index, 
-                  "at", at, "model.id", model.id);
       if (at > -1) {
         this._forceRemoveModel(model, _.extend({index: at}, options));
       }

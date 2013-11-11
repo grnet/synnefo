@@ -68,6 +68,11 @@
             return this.get('router:external') || this.get('public')
           } 
         ],
+        'is_floating': [
+          ['SNF:floating_ip_pool'], function() {
+            return this.get('SNF:floating_ip_pool')
+          }
+        ],
         'cidr': [
           ['subnet'], function() {
             var subnet = this.get('subnet');
@@ -317,7 +322,7 @@
       model_actions: {
         'disconnect': [['status', 'network', 'vm'], function() {
           var network = this.get('network');
-          if (!network || network.is_public()) {
+          if ((!network || network.get('is_public')) && (network && !network.get('is_floating'))) {
             return false
           }
           var status_ok = _.contains(['DOWN', 'ACTIVE', 'CONNECTED'], 

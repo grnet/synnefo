@@ -93,16 +93,15 @@ def _create_subnet(network_id, user_id, cidr, name, ipversion=4, gateway=None,
 
     check_number_of_subnets(network, ipversion)
 
-    # Returns the first available IP in the subnet
     try:
         cidr_ip = ipaddr.IPNetwork(cidr)
     except ValueError:
         raise api.faults.BadRequest("Malformed CIDR")
 
     if ipversion == 6:
-        validate_subnet_params(None, None, cidr, gateway)
+        validate_subnet_params(subnet6=cidr, gateway6=gateway)
     else:
-        validate_subnet_params(cidr, gateway)
+        validate_subnet_params(subnet=cidr, gateway=gateway)
 
     name = check_name_length(name)
     sub = Subnet.objects.create(name=name, network=network, cidr=cidr,
@@ -113,25 +112,25 @@ def _create_subnet(network_id, user_id, cidr, name, ipversion=4, gateway=None,
     gateway_ip = ipaddr.IPAddress(gateway) if gateway else None
 
     if allocation_pools is not None:
-        # If the user specified IP allocation pools, validate them and use them
         if ipversion == 6:
             raise api.faults.Conflict("Can't allocate an IP Pool in IPv6")
-        validate_subpools(allocation_pools, cidr_ip, gateway_ip)
-    if allocation_pools is None and ipversion == 4:
+    elif ipversion == 4:
         # Check if the gateway is the first IP of the subnet, in this case
         # create a single ip pool
         if gateway_ip:
             if int(gateway_ip) - int(cidr_ip) == 1:
-                allocation_pools = [[gateway_ip + 1, cidr_ip.broadcast - 1]]
+                allocation_pools = [(gateway_ip + 1, cidr_ip.broadcast - 1)]
             else:
                 # If the gateway isn't the first available ip, create two
                 # different ip pools adjacent to said ip
-                allocation_pools = (([cidr_ip.network + 1, gateway_ip - 1]),
-                                    ([gateway_ip + 1, cidr_ip.broadcast - 1]))
+                allocation_pools = [(cidr_ip.network + 1, gateway_ip - 1),
+                                    (gateway_ip + 1, cidr_ip.broadcast - 1)]
         else:
-            allocation_pools = [[cidr_ip.network + 1, cidr_ip.broadcast - 1]]
+            allocation_pools = [(cidr_ip.network + 1, cidr_ip.broadcast - 1)]
 
     if allocation_pools:
+        # Validate the allocation pools
+        validate_pools(allocation_pools, cidr_ip, gateway_ip)
         create_ip_pools(allocation_pools, cidr_ip, sub)
 
     return sub
@@ -183,15 +182,15 @@ def update_subnet(sub_id, name, user_id):
 #Utility functions
 def create_ip_pools(pools, cidr, subnet):
     """Create IP Pools in the database"""
-    ip_pools = []
-    for pool in pools:
-        size = int(pool[1]) - int(pool[0]) + 1
-        base = str(cidr)
-        offset = int(pool[0]) - int(cidr.network)
-        ip_pool = IPPoolTable.objects.create(size=size, offset=offset,
-                                             base=base, subnet=subnet)
-        ip_pools.append(ip_pool)
-    return ip_pools
+    return [_create_ip_pool(pool, cidr, subnet) for pool in pools]
+
+
+def _create_ip_pool(pool, cidr, subnet):
+    size = int(pool[1]) - int(pool[0]) + 1
+    base = str(cidr)
+    offset = int(pool[0]) - int(cidr.network)
+    return IPPoolTable.objects.create(size=size, offset=offset,
+                                      base=base, subnet=subnet)
 
 
 def check_number_of_subnets(network, version):
@@ -208,7 +207,7 @@ def check_name_length(name):
     return name
 
 
-def validate_subpools(pool_list, cidr, gateway):
+def validate_pools(pool_list, cidr, gateway):
     """Validate IP Pools
 
     Validate the given IP pools are inside the cidr range

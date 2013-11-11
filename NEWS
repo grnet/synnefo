@@ -5,6 +5,15 @@ Unified NEWS file for Synnefo versions >= 0.13
 
 Since v0.13 all Synnefo components have been merged into a single repository.
 
+.. _NEWS-0.14.9:
+
+v0.14.9
+=======
+
+Released: UNRELEASED
+
+* Minor bug-fix release
+
 .. _NEWS-0.14.8:
 
 v0.14.8

@@ -39,7 +39,7 @@ from django.http import HttpResponse
 from django.utils import simplejson as json
 
 from snf_django.lib.api import utils
-from synnefo.db.models import Subnet
+#from synnefo.db.models import Subnet
 from synnefo.logic import subnets
 from synnefo.api import util
 
@@ -102,25 +102,23 @@ def create_subnet(request):
     except KeyError:
         raise api.faults.BadRequest("Malformed request")
 
-    allocation_pools = subnet.get('allocation_pools', None)
-    if allocation_pools is not None:
-        pool = parse_ip_pools(allocation_pools)
-        allocation_pools = string_to_ipaddr(pool)
-
     name = subnet.get('name', None)
     ipversion = subnet.get('ip_version', 4)
+
+    allocation_pools = subnet.get('allocation_pools', None)
+    if allocation_pools is not None:
+        allocation_pools = parse_ip_pools(allocation_pools)
+
+    try:
+        cidr_ip = ipaddr.IPNetwork(cidr)
+    except ValueError:
+        raise api.faults.BadRequest("Malformed CIDR '%s'" % cidr)
 
     # If no gateway is specified, send an empty string, because None is used
     # if the user wants no gateway at all
     gateway = subnet.get('gateway_ip', "")
-    try:
-        cidr_ip = ipaddr.IPNetwork(cidr)
-    except ValueError:
-        raise api.faults.BadRequest("Malformed CIDR")
-    potential_gateway = str(ipaddr.IPNetwork(cidr).network + 1)
-
     if gateway is "":
-        gateway = potential_gateway
+        gateway = str(cidr_ip.network + 1)
 
     dhcp = subnet.get('enable_dhcp', True)
     slaac = subnet.get('enable_slaac', None)
@@ -206,49 +204,55 @@ def subnet_to_dict(subnet):
     """Returns a dictionary containing the info of a subnet"""
     dns = check_empty_lists(subnet.dns_nameservers)
     hosts = check_empty_lists(subnet.host_routes)
-    allocation_pools = subnet.ip_pools.all()
-    pools = list()
 
-    if allocation_pools:
-        for pool in allocation_pools:
-            cidr = ipaddr.IPNetwork(pool.base)
-            start = str(cidr.network + pool.offset)
-            end = str(cidr.network + pool.offset + pool.size - 1)
-            pools.append({"start": start, "end": end})
+    allocation_pools = [render_ip_pool(pool)
+                        for pool in subnet.ip_pools.all()]
 
-    dictionary = dict({'id': str(subnet.id),
-                       'network_id': str(subnet.network.id),
-                       'name': subnet.name if subnet.name is not None else "",
-                       'tenant_id': subnet.network.userid,
-                       'user_id': subnet.network.userid,
-                       'gateway_ip': subnet.gateway,
-                       'ip_version': subnet.ipversion,
-                       'cidr': subnet.cidr,
-                       'enable_dhcp': subnet.dhcp,
-                       'dns_nameservers': dns,
-                       'host_routes': hosts,
-                       'allocation_pools': pools if pools is not None else []})
+    network = subnet.network
+    d = {'id': str(subnet.id),
+         'network_id': str(network.id),
+         'name': subnet.name if subnet.name is not None else "",
+         'tenant_id': network.userid,
+         'user_id': network.userid,
+         'gateway_ip': subnet.gateway,
+         'ip_version': subnet.ipversion,
+         'cidr': subnet.cidr,
+         'enable_dhcp': subnet.dhcp,
+         'dns_nameservers': dns,
+         'host_routes': hosts,
+         'allocation_pools': allocation_pools}
 
     if subnet.ipversion == 6:
-        dictionary['enable_slaac'] = subnet.dhcp
+        d['enable_slaac'] = subnet.dhcp
 
-    dictionary['links'] = util.subnet_to_links(subnet.id)
-    return dictionary
+    d['links'] = util.subnet_to_links(subnet.id)
+
+    return d
 
 
-def string_to_ipaddr(pools):
-    """Convert [["192.168.42.1", "192.168.42.15"],
-                ["192.168.42.30", "192.168.42.60"]]
+def render_ip_pool(pool):
+    network = ipaddr.IPNetwork(pool.base).network
+    start = str(network + pool.offset)
+    end = str(network + pool.offset + pool.size - 1)
+    return {"start": start, "end": end}
+
+
+def parse_ip_pools(pools):
+    """Convert [{'start': '192.168.42.1', 'end': '192.168.42.15'},
+             {'start': '192.168.42.30', 'end': '192.168.42.60'}]
     to
-                [[IPv4Address('192.168.42.1'), IPv4Address('192.168.42.15')],
-                [IPv4Address('192.168.42.30'), IPv4Address('192.168.42.60')]]
-    and sort the output
+            [(IPv4Address("192.168.42.1"), IPv4Address("192.168.42.15")),
+             (IPv4Address("192.168.42.30"), IPv4Address("192.168.42.60"))]
 
     """
-    pool_list = [(map(lambda ip_str: ipaddr.IPAddress(ip_str), pool))
-                 for pool in pools]
-    pool_list.sort()
-    return pool_list
+    try:
+        return sorted([(ipaddr.IPv4Address(p["start"]),
+                        ipaddr.IPv4Address(p["end"])) for p in pools])
+    except KeyError:
+        raise api.faults.BadRequest("Malformed allocation pool.")
+    except ipaddr.AddressValueError:
+        raise api.faults.BadRequest("Allocation pools contain invalid IPv4"
+                                    " address")
 
 
 def check_empty_lists(value):
@@ -256,44 +260,6 @@ def check_empty_lists(value):
     if value is None:
         return []
     return value
-
-
-def check_name_length(name):
-    """Check if the length of a name is within acceptable value"""
-    if len(str(name)) > Subnet.SUBNET_NAME_LENGTH:
-        raise api.faults.BadRequest("Subnet name too long")
-    return name
-
-
-def get_subnet_fromdb(subnet_id, user_id, for_update=False):
-    """Return a Subnet instance or raise ItemNotFound.
-    This is the same as util.get_network
-
-    """
-    try:
-        subnet_id = int(subnet_id)
-        if for_update:
-            return Subnet.objects.select_for_update().get(id=subnet_id,
-                                                          network__userid=
-                                                          user_id)
-        return Subnet.objects.get(id=subnet_id, network__userid=user_id)
-    except (ValueError, Subnet.DoesNotExist):
-        raise api.faults.ItemNotFound('Subnet not found')
-
-
-def parse_ip_pools(pools):
-    """Convert [{'start': '192.168.42.1', 'end': '192.168.42.15'},
-             {'start': '192.168.42.30', 'end': '192.168.42.60'}]
-    to
-            [["192.168.42.1", "192.168.42.15"],
-             ["192.168.42.30", "192.168.42.60"]]
-
-    """
-    pool_list = list()
-    for pool in pools:
-        parse = [pool["start"], pool["end"]]
-        pool_list.append(parse)
-    return pool_list
 
 
 def check_boolean_value(value, key):

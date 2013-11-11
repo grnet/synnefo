@@ -126,8 +126,8 @@ class Component(models.Model):
             self.auth_token_expires = expiration_date
         else:
             self.auth_token_expires = None
-        msg = 'Token renewed for component %s' % self.name
-        logger.log(astakos_settings.LOGGING_LEVEL, msg)
+        msg = 'Token renewed for component %s'
+        logger.log(astakos_settings.LOGGING_LEVEL, msg, self.name)
 
     def __str__(self):
         return self.name
@@ -554,8 +554,8 @@ class AstakosUser(User):
                                   timedelta(hours=astakos_settings.AUTH_TOKEN_DURATION)
         if flush_sessions:
             self.flush_sessions(current_key)
-        msg = 'Token renewed for %s' % self.log_display
-        logger.log(astakos_settings.LOGGING_LEVEL, msg)
+        msg = 'Token renewed for %s'
+        logger.log(astakos_settings.LOGGING_LEVEL, msg, self.log_display)
 
     def token_expired(self):
         return self.auth_token_expires < datetime.now()
@@ -567,8 +567,8 @@ class AstakosUser(User):
 
         keys = q.values_list('session_key', flat=True)
         if keys:
-            msg = 'Flushing sessions: %s' % ','.join(keys)
-            logger.log(astakos_settings.LOGGING_LEVEL, msg, [])
+            msg = 'Flushing sessions: %s'
+            logger.log(astakos_settings.LOGGING_LEVEL, msg, ','.join(keys))
         engine = import_module(settings.SESSION_ENGINE)
         for k in keys:
             s = engine.SessionStore(k)
@@ -1116,10 +1116,8 @@ class EmailChangeManager(models.Manager):
             user.email = email_change.new_email_address
             user.save()
             email_change.delete()
-            msg = "User %s changed email from %s to %s" % (user.log_display,
-                                                           old_email,
-                                                           user.email)
-            logger.log(astakos_settings.LOGGING_LEVEL, msg)
+            msg = "User %s changed email from %s to %s"
+            logger.log(astakos_settings.LOGGING_LEVEL, msg, user.log_display, old_email, user.email)
             return user
         except EmailChange.DoesNotExist:
             raise ValueError(_('Invalid activation key.'))

@@ -1187,6 +1187,60 @@ class ModularBackend(BaseBackend):
         return dest_version_id
 
     @debug_method
+    @backend_method
+    def register_object_map(self, user, account, container, name, size, type,
+                            mapfile, checksum='', domain='pithos', meta=None,
+                            replace_meta=False, permissions=None):
+        """Register an object mapfile without providing any data.
+
+        Lock the container path, create a node pointing to the object path,
+        create a version pointing to the mapfile
+        and issue the size change in the quotaholder.
+
+        :param user: the user account which performs the action
+
+        :param account: the account under which the object resides
+
+        :param container: the container under which the object resides
+
+        :param name: the object name
+
+        :param size: the object size
+
+        :param type: the object mimetype
+
+        :param mapfile: the mapfile pointing to the object data
+
+        :param checkcum: the md5 checksum (optional)
+
+        :param domain: the object domain
+
+        :param meta: a dict with custom object metadata
+
+        :param replace_meta: replace existing metadata or not
+
+        :param permissions: a dict with the read and write object permissions
+
+        :returns: the new object uuid
+
+        :raises: ItemNotExists, NotAllowedError, QuotaError
+        """
+
+        meta = meta or {}
+        try:
+            self.lock_container_path = True
+            self.put_container(user, account, container, policy=None)
+        except ContainerExists:
+            pass
+        finally:
+            self.lock_container_path = False
+        dest_version_id = self._update_object_hash(
+            user, account, container, name, size, type, mapfile, checksum,
+            domain, meta, replace_meta, permissions)
+        return self.node.version_get_properties(dest_version_id,
+                                                keys=('uuid',))[0]
+
+    @debug_method
     def update_object_hashmap(self, user, account, container, name, size, type,
                               hashmap, checksum, domain, meta=None,
                               replace_meta=False, permissions=None):
@@ -1195,7 +1249,7 @@ class ModularBackend(BaseBackend):
         for h in hashmap:
             if h.startswith('archip_'):
                 raise IllegalOperationError(
-                    'Cannot update Archipelago Volume hashmap.')
+                        'Cannot update Archipelago Volume hashmap.')
         meta = meta or {}
         if size == 0:  # No such thing as an empty hashmap.
             hashmap = [self.put_block('')]
@@ -1529,7 +1583,7 @@ class ModularBackend(BaseBackend):
         logger.debug("update_block: %s %s %s", hash, len(data), offset)
         if hash.startswith('archip_'):
             raise IllegalOperationError(
-                'Cannot update an Archipelago Volume block.')
+                    'Cannot update an Archipelago Volume block.')
         if offset == 0 and len(data) == self.block_size:
             return self.put_block(data)
         h = self.store.block_update(self._unhexlify_hash(hash), offset, data)

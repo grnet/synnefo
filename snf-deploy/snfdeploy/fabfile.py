@@ -887,6 +887,7 @@ def setup_ganeti():
         #try_run("apt-get update")
     install_package("qemu-kvm")
     install_package("python-bitarray")
+    install_package("ganeti-haskell")
     install_package("ganeti-htools")
     install_package("snf-ganeti")
     try_run("mkdir -p /srv/ganeti/file-storage/")
@@ -1087,7 +1088,7 @@ def setup_iptables():
 def setup_network():
     debug(env.host,
           "Setting up networking for Ganeti instances (nfdhcpd, etc.)...")
-    install_package("nfqueue-bindings-python")
+    install_package("python-nfqueue")
     install_package("nfdhcpd")
     tmpl = "/etc/nfdhcpd/nfdhcpd.conf"
     replace = {

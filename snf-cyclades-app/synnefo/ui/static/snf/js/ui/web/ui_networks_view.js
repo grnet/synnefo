@@ -903,13 +903,13 @@
           // available quota
           create.removeClass("no-available");
           create.show();
-          //create_link.show();
+          create_link.show();
           create_no_available.hide();
         } else {
           // no available quota
           create.addClass("no-available");
           create.show();
-          //create_link.hide();
+          create_link.hide();
           create_no_available.show();
         }
         //

@@ -345,7 +345,19 @@
             return attachment.firewallProfile
           } 
         ],
-        
+        'ext_status': [
+          ['status'], function() {
+            if (_.contains(["DISCONNECTING"], this.get('ext_status'))) {
+              return this.get("ext_status")
+            }
+            return this.get("status")
+          }
+        ],
+        'in_progress': [
+          ['ext_status'], function() {
+            return _.contains(["DISCONNECTING", "CONNECTING"], this.get("status"))
+          }
+        ],
         'firewall_running': [
           ['firewall_status', 'pending_firewall'], function(status, pending) {
               var pending = this.get('pending_firewall');
@@ -376,7 +388,11 @@
         var network = this.get('network');
         network.pending_disconnects++;
         network.update_connecting_status();
-        this.destroy({complete: cb, silent: true});
+        var complete = _.bind(function() {
+          this.set({'status': 'DISCONNECTING'});
+          cb();
+        }, this);
+        this.destroy({complete: complete, silent: true});
       }
     });
 
@@ -417,12 +433,19 @@
           return status_ok
         }],
         'disconnect': [['status'], function() {
-          var status_ok = _.contains(['CONNECTED'], this.get('status'))
+          var status_ok = _.contains(['ACTIVE', 'CONNECTED'], this.get('status'))
           return status_ok
         }]
       },
 
       proxy_attrs: {
+        'ext_status': [
+          ['status'], function() {
+           if (_.contains(["DISCONNECTING"], this.get("ext_status"))) {
+            return this.get("ext_status")
+           }
+           return this.get("status")
+        }],
         'ip': [
           ['floating_ip_adress'], function() {
             return this.get('floating_ip_address'); 
@@ -439,7 +462,7 @@
           ['port_id', 'port'], function() {
             var val = this.get('port_id');
             if (!val) {
-              return 'DISCONNECTED'
+                return 'DISCONNECTED'
             } else {
               if (this.get('port')) {
                 return 'CONNECTED'
@@ -452,11 +475,6 @@
       },
 
       disconnect: function(cb) {
-        var self = this;
-        var complete = function() {
-          self.set({status: 'DISCONNECTING'});
-          cb();
-        }
         this.get('port').disconnect(cb);
       }
     });

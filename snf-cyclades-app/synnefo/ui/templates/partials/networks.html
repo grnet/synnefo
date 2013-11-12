@@ -96,6 +96,9 @@
       <h5 class="title" data-rv-text="model.vm.name"></h5>
       <h5 class="subtitle" data-rv-text="model.mac_address"></h5>
       <div data-rv-show="model.network.is_public" class="firewall">
+        <img data-rv-show="model.in_progress" 
+             src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" 
+             class="progress-indicator" />
         <img data-rv-show="model.firewall_running" 
              src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" 
              class="progress-indicator" />

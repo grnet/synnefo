@@ -71,16 +71,17 @@
     views.IpView = views.ext.ModelView.extend({
       status_map: {
         'CONNECTED': 'Connected',
+        'ACTIVE': 'Connected',
         'CONNECTING': 'Connecting',
         'DISCONNECTING': 'Disconnecting',
         'DOWN': 'Down',
         'DISCONNECTED': 'Not connected',
-        'ACTIVE': 'Active',
         'REMOVING': 'Destroying'
       },
 
       status_cls_map: {
         'CONNECTED': 'status-active',
+        'ACTIVE': 'status-active',
         'CONNECTING': 'status-active',
         'DISCONNECTING': 'status-inactive',
         'DOWN': 'status-inactive',
@@ -114,6 +115,7 @@
       },
 
       disconnect_complete: function() {
+        this.model.set({status: 'DISCONNECTING'})
       },
 
       connect_vm: function(vms) {

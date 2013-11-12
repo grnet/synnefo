@@ -6705,7 +6705,6 @@ input.has-errors {
 }
 
 .collection span.no-available {
-  float: right;
 }
 
 .collection .no-available {
@@ -7304,6 +7303,9 @@ input.has-errors {
 
 .select-item.selected * {
   color: #fff;
+}
+
+.steps-container .floating-ips .collection {
 }
 
 .items-list.floating-ips {

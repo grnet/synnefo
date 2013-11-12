@@ -43,7 +43,7 @@ def get_db_holdings(user=None):
 
     vms = VirtualMachine.objects.filter(deleted=False)
     networks = Network.objects.filter(deleted=False)
-    floating_ips = IPAddress.objects.filter(deleted=False)
+    floating_ips = IPAddress.objects.filter(deleted=False, floating_ip=True)
 
     if user is not None:
         vms = vms.filter(userid=user)

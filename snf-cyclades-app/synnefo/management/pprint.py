@@ -36,7 +36,7 @@ from snf_django.management.utils import pprint_table
 from synnefo.lib.ordereddict import OrderedDict
 from snf_django.lib.astakos import UserCache
 from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
-                              ASTAKOS_BASE_URL)
+                              ASTAKOS_AUTH_URL)
 from synnefo.db.models import Backend, pooled_rapi_client
 from synnefo.db.pools import bitarray_to_map
 
@@ -51,7 +51,7 @@ def pprint_network(network, display_mails=False, stdout=None, title=None):
     if title is None:
         title = "State of Network %s in DB" % network.id
 
-    ucache = UserCache(ASTAKOS_BASE_URL, ASTAKOS_TOKEN)
+    ucache = UserCache(ASTAKOS_AUTH_URL, ASTAKOS_TOKEN)
     userid = network.userid
 
     db_network = OrderedDict([
@@ -267,7 +267,7 @@ def pprint_server(server, display_mails=False, stdout=None, title=None):
     if title is None:
         title = "State of Server %s in DB" % server.id
 
-    ucache = UserCache(ASTAKOS_BASE_URL, ASTAKOS_TOKEN)
+    ucache = UserCache(ASTAKOS_AUTH_URL, ASTAKOS_TOKEN)
     userid = server.userid
 
     try:

@@ -39,7 +39,7 @@ from snf_django.utils.urls import \
     extend_with_root_redirects, extend_endpoint_with_slash
 from snf_django.lib.api.urls import api_patterns
 from synnefo.cyclades_settings import (
-    BASE_PATH, COMPUTE_PREFIX, VMAPI_PREFIX,
+    BASE_PATH, COMPUTE_PREFIX, NETWORK_PREFIX, VMAPI_PREFIX,
     PLANKTON_PREFIX, HELPDESK_PREFIX, UI_PREFIX,
     USERDATA_PREFIX, ADMIN_PREFIX,
     ASTAKOS_AUTH_PROXY_PATH, ASTAKOS_AUTH_URL,
@@ -62,7 +62,8 @@ cyclades_patterns = api_patterns(
     '',
     (prefix_pattern(VMAPI_PREFIX), include('synnefo.vmapi.urls')),
     (prefix_pattern(PLANKTON_PREFIX), include('synnefo.plankton.urls')),
-    (prefix_pattern(COMPUTE_PREFIX), include('synnefo.api.urls')),
+    (prefix_pattern(COMPUTE_PREFIX), include('synnefo.api.compute_urls')),
+    (prefix_pattern(NETWORK_PREFIX), include('synnefo.api.network_urls')),
     (prefix_pattern(USERDATA_PREFIX), include('synnefo.userdata.urls')),
     (prefix_pattern(ADMIN_PREFIX), include('synnefo.admin.urls')),
 )

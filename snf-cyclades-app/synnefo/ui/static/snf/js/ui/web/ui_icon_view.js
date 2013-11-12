@@ -127,24 +127,28 @@
             this.view = view;
             this.vm_view = this.view.vm(vm);
             
-            this.info_link = $(".toggler", this.vm_view);
-            this.el = $("div.info-content", this.vm_view);
-            this.toggler = $(".toggler", this.vm_view);
+            this.info_toggle = $(".cont-toggler-wrapper.info .toggler", this.vm_view);
+            this.ips_toggle = $(".cont-toggler-wrapper.ips .toggler", this.vm_view);
+            this.info_el = $("div.info-content.vm-info", this.vm_view);
+            this.ips_el = $("div.info-content.ips", this.vm_view);
             this.label = $(".label", this.vm_view);
 
             this.set_handlers();
         },
 
         set_handlers: function() {
-            this.info_link.click(_.bind(function(){
-                this.el.slideToggle();
+            this.info_toggle.click(_.bind(function(){
+                this.ips_el.slideUp();
+                this.ips_toggle.removeClass("open");
+
+                this.info_el.slideToggle();
                 this.view.vm(this.vm).toggleClass("light-background");
 
-                if (this.toggler.hasClass("open")) {
-                    this.toggler.removeClass("open");
+                if (this.info_toggle.hasClass("open")) {
+                    this.info_toggle.removeClass("open");
                     this.vm.stop_stats_update();
                 } else {
-                    this.toggler.addClass("open");
+                    this.info_toggle.addClass("open");
                     this.view.details_views[this.vm.id].update_layout();
                     this.view.tags_views[this.vm.id].update_layout();
                     this.view.stats_views[this.vm.id].update_layout();
@@ -153,6 +157,22 @@
                 var self = this;
                 window.setTimeout(function() {$(self.view).trigger("resize")}, 300);
             }, this));
+
+            this.ips_toggle.click(_.bind(function(){
+                this.info_el.slideUp();
+                this.info_toggle.removeClass("open");
+
+                this.ips_el.slideToggle();
+                this.view.vm(this.vm).toggleClass("light-background");
+                var self = this;
+                if (this.ips_toggle.hasClass("open")) {
+                    this.ips_toggle.removeClass("open");
+                } else {
+                    this.ips_toggle.addClass("open");
+                }
+                window.setTimeout(function() {$(self.view).trigger("resize")}, 300);
+            }, this));
+
 
             this.$(".stats-report").click(_.bind(function(e){
                 e.preventDefault();
@@ -416,19 +436,20 @@
                 this.parent.metadata_view.show(this.vm);
             }, this));
 
-            // tags have show/hide control ? bind events for them
+            // tags/ips have show/hide control ? bind events for them
             var self = this;
             if (this.toggle) {
                 $(this.el).find(".tags-header").click(_.bind(function(){
                     $(self.el).find(".tags-content").slideToggle(600);
-                    var toggler = $(this.el).find(".tags-header .cont-toggler");
-                    
-                    if (toggler.hasClass("open")) {
-                        toggler.removeClass("open");
+                    var details_toggler = $(this.el).find(".tags-header " +
+                                                          ".cont-toggler");
+                    if (details_toggler.hasClass("open")) {
+                        details_toggler.removeClass("open");
                     } else {
-                        toggler.addClass("open");
+                        details_toggler.addClass("open");
                     }
                 }, this));
+                $(this.el).find(".tags-header").find(".toggler").removeClass("open");
                 $(self.el).find(".tags-content").hide();
             }
         },
@@ -716,6 +737,7 @@
             this.info_views = this.info_views || {};
             this.action_error_views = this.action_error_views || {};
             this.action_views = this.action_views || {};
+            this.ports_views = this.ports_views || {};
 
             this.action_views[vm.id] = new views.VMActionsView(vm, this, this.vm(vm), this.hide_actions);
             this.rename_views[vm.id] = new views.IconRenameView(vm, this);
@@ -723,8 +745,20 @@
             this.connect_views[vm.id] = new views.IconVMConnectView(vm, this);
             this.tags_views[vm.id] = new views.VMTagsView(vm, this);
             this.details_views[vm.id] = new views.VMDetailsView(vm, this);
-            this.info_views[vm.id] = new views.IconInfoView(vm, this);
             this.action_error_views[vm.id] = new views.VMActionErrorView(vm, this);
+            
+            var ports_container = this.vm(vm).find(".machine-data");
+            var ports_view = new views.VMPortListView({
+              collection: vm.ports, 
+              container: ports_container,
+              parent: this,
+              truncate: 14
+            });
+            this.ports_views[vm.id] = ports_view
+            ports_view.show();
+            ports_view.el.hide();
+
+            this.info_views[vm.id] = new views.IconInfoView(vm, this);
         },
         
         // vm specific event handlers
@@ -787,11 +821,8 @@
             var el = this.vm(vm);
             // truncate name
             el.find("span.name").text(util.truncate(vm.get("name"), 40));
-            // set ips
-            el.find("span.ipv4-text").text(vm.get_addresses().ip4 || "not set");
-            // TODO: fix ipv6 truncates and tooltip handler
-            el.find("span.ipv6-text").text(vm.get_addresses().ip6 || "not set");
-            // set the state (i18n ??)
+
+            el.find('.fqdn').text(vm.get('fqdn'));
             el.find("div.status").text(STATE_TEXTS[vm.state()]);
             // set state class
             el.find("div.state").removeClass().addClass(views.IconView.STATE_CLASSES[vm.state()].join(" "));

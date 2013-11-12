@@ -17,11 +17,30 @@ POLL_LIMIT = 3600
 # Network Configuration
 #
 
-# List of network IDs. All created instances will get a NIC connected to each
-# network of this list. If the special network ID "SNF:ANY_PUBLIC" is used,
-# Cyclades will automatically choose a public network and connect the server to
-# it.
-DEFAULT_INSTANCE_NETWORKS = ["SNF:ANY_PUBLIC"]
+# CYCLADES_DEFAULT_SERVER_NETWORKS setting contains a list of networks to
+# connect a newly created server to, *if the user has not* specified them
+# explicitly in the POST /server API call.
+# Each member of the list may be a network UUID, a tuple of network UUIDs,
+# "SNF:ANY_PUBLIC_IPV4" [any public network with an IPv4 subnet defined],
+# "SNF:ANY_PUBLIC_IPV6 [any public network with only an IPV6 subnet defined],
+#  or "SNF:ANY_PUBLIC" [any public network].
+#
+# Access control and quota policy are enforced, just as if the user had
+# specified the value of CYCLADES_DEFAULT_SERVER_NETWORKS in the content
+# of the POST /call, after processing of "SNF:*" directives."
+CYCLADES_DEFAULT_SERVER_NETWORKS = ["SNF:ANY_PUBLIC"]
+
+# This setting contains a list of networks which every new server
+# will be forced to connect to, regardless of the contents of the POST
+# /servers call, or the value of CYCLADES_DEFAULT_SERVER_NETWORKS.
+# Its format is identical to that of CYCLADES_DEFAULT_SERVER_NETWORKS.
+
+# WARNING: No access control or quota policy are enforced.
+# The server will get all IPv4/IPv6 addresses needed to connect to the
+# networks specified in CYCLADES_FORCED_SERVER_NETWORKS, regardless
+# of the state of the floating IP pool of the user, and without
+# allocating any floating IPs."
+CYCLADES_FORCED_SERVER_NETWORKS = ["SNF:ANY_PUBLIC_IPV6"]
 
 # Maximum allowed network size for private networks.
 MAX_CIDR_BLOCK = 22
@@ -49,10 +68,10 @@ DEFAULT_MAC_FILTERED_BRIDGE = 'prv0'
 
 
 # Firewalling. Firewall tags should contain '%d' to be filled with the NIC
-# index.
-GANETI_FIREWALL_ENABLED_TAG = 'synnefo:network:%d:protected'
-GANETI_FIREWALL_DISABLED_TAG = 'synnefo:network:%d:unprotected'
-GANETI_FIREWALL_PROTECTED_TAG = 'synnefo:network:%d:limited'
+# ID.
+GANETI_FIREWALL_ENABLED_TAG = 'synnefo:network:%s:protected'
+GANETI_FIREWALL_DISABLED_TAG = 'synnefo:network:%s:unprotected'
+GANETI_FIREWALL_PROTECTED_TAG = 'synnefo:network:%s:limited'
 
 # The default firewall profile that will be in effect if no tags are defined
 DEFAULT_FIREWALL_PROFILE = 'DISABLED'

@@ -31,12 +31,9 @@ import logging
 import datetime
 from django.utils import importlib
 
-from synnefo.settings import (BACKEND_ALLOCATOR_MODULE, BACKEND_REFRESH_MIN,
-                              BACKEND_PER_USER,
-                              DEFAULT_INSTANCE_NETWORKS)
+from django.conf import settings
 from synnefo.db.models import Backend
-from synnefo.logic.backend import update_backend_resources
-from synnefo.api.util import backend_public_networks
+from synnefo.logic import backend as backend_mod
 
 log = logging.getLogger(__name__)
 
@@ -47,7 +44,7 @@ class BackendAllocator():
     """
     def __init__(self):
         self.strategy_mod =\
-            importlib.import_module(BACKEND_ALLOCATOR_MODULE)
+            importlib.import_module(settings.BACKEND_ALLOCATOR_MODULE)
 
     def allocate(self, userid, flavor):
         """Allocate a vm of the specified flavor to a backend.
@@ -114,18 +111,7 @@ def get_available_backends(flavor):
                                                           drained=False)
     backends = filter(lambda b: disk_template in b.disk_templates,
                       list(backends))
-    if "SNF:ANY_PUBLIC" in DEFAULT_INSTANCE_NETWORKS:
-        backends = filter(lambda x: has_free_ip(x), backends)
     return backends
-
-
-def has_free_ip(backend):
-    """Find if Backend has any free public IP."""
-    for network in backend_public_networks(backend):
-        if not network.get_pool().empty():
-            return True
-    log.warning("No available network in backend %r", backend)
-    return False
 
 
 def flavor_disk(flavor):
@@ -164,18 +150,18 @@ def refresh_backends_stats(backends):
     """
 
     now = datetime.datetime.now()
-    delta = datetime.timedelta(minutes=BACKEND_REFRESH_MIN)
+    delta = datetime.timedelta(minutes=settings.BACKEND_REFRESH_MIN)
     for b in backends:
         if now > b.updated + delta:
             log.debug("Updating resources of backend %r. Last Updated %r",
                       b, b.updated)
-            update_backend_resources(b)
+            backend_mod.update_backend_resources(b)
 
 
 def get_backend_for_user(userid):
     """Find fixed Backend for user based on BACKEND_PER_USER setting."""
 
-    backend = BACKEND_PER_USER.get(userid)
+    backend = settings.BACKEND_PER_USER.get(userid)
 
     if not backend:
         return None

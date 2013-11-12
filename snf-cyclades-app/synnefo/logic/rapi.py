@@ -460,7 +460,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
 
       conflicts = set(kwargs.iterkeys()) & set(body.iterkeys())
       if conflicts:
-        raise GanetiApiError("Required fields can not be specified as"
+        raise GanetiApiError("Required fields cannot be specified as"
                              " keywords: %s" % ", ".join(conflicts))
 
       body.update((key, value) for key, value in kwargs.iteritems()
@@ -1412,7 +1412,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
                              None, None)
 
   def CreateNetwork(self, network_name, network, gateway=None, network6=None,
-                    gateway6=None, mac_prefix=None, network_type=None,
+                    gateway6=None, mac_prefix=None,
                     add_reserved_ips=None, tags=[],
                     conflicts_check=False, dry_run=False):
     """Creates a new network.
@@ -1436,7 +1436,6 @@ class GanetiRapiClient(object): # pylint: disable=R0904
       "gateway6": gateway6,
       "network6": network6,
       "mac_prefix": mac_prefix,
-      "network_type": network_type,
       "add_reserved_ips": add_reserved_ips,
       "conflicts_check": conflicts_check,
       "tags": tags,

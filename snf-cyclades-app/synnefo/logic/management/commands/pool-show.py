@@ -34,8 +34,8 @@
 from django.core.management.base import BaseCommand, CommandError
 from optparse import make_option
 
-from util import pool_table_from_type, pool_map_chunks
 from synnefo.db.pools import bitarray_to_map
+from synnefo.management import pprint, common
 
 POOL_CHOICES = ['bridge', 'mac-prefix']
 
@@ -57,7 +57,7 @@ class Command(BaseCommand):
         if not type_:
             raise CommandError("Type of pool is mandatory")
 
-        pool_table = pool_table_from_type(type_)
+        pool_table = common.pool_table_from_type(type_)
 
         try:
             pool_id = int(args[0])
@@ -81,19 +81,7 @@ class Command(BaseCommand):
             self.stdout.write(line.encode('utf8'))
 
         step = (type_ == 'bridge') and 64 or 80
-        print_map('Pool', pool.to_map(), step, self.stdout)
-        print_map('Reserved', bitarray_to_map(pool.reserved[:pool_row.size]),
-                  step, self.stdout)
-
-
-def print_map(name, pool_map, step, out):
-    sep = '*' * 80
-    out.write(sep + "\n")
-    out.write("%s: \n" % name)
-    out.write(sep + "\n")
-    count = 0
-    for chunk in pool_map_chunks(pool_map, step):
-        chunk_len = len(chunk)
-        out.write(("%s " % count).rjust(4))
-        out.write((chunk + " %d\n") % (count + chunk_len - 1))
-        count += chunk_len
+        pprint.pprint_pool('Available', pool.to_map(), step, self.stdout)
+        pprint.pprint_pool('Reserved',
+                           bitarray_to_map(pool.reserved[:pool_row.size]),
+                           step, self.stdout)

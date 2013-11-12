@@ -34,31 +34,19 @@
 from django.conf.urls import include, patterns
 
 from snf_django.lib.api import api_endpoint_not_found
-from synnefo.api import (servers, flavors, images, networks, extensions,
-                         floating_ips)
-from synnefo.api.versions import versions_list, version_details
+from synnefo.api import (networks, ports, floating_ips, subnets)
 
 
-#
-# The OpenStack Compute API v2.0
-#
-api20_patterns = patterns(
+network_api20_patterns = patterns(
     '',
-    (r'^servers', include(servers)),
-    (r'^flavors', include(flavors)),
-    (r'^images', include(images)),
     (r'^networks', include(networks)),
-    (r'^extensions', include(extensions)),
-    (r'^os-floating-ips', include(floating_ips.ips_urlpatterns)),
-    (r'^os-floating-ip-pools', include(floating_ips.pools_urlpatterns)),
+    (r'^ports', include(ports)),
+    (r'^subnets', include(subnets)),
+    (r'^floatingips', include(floating_ips.ips_urlpatterns)),
 )
-
 
 urlpatterns = patterns(
     '',
-    (r'^(?:.json|.xml|.atom)?$', versions_list),
-    (r'^v2.0/(?:.json|.xml|.atom)?$', version_details,
-        {'api_version': 'v1.1'}),
-    (r'^v2.0/', include(api20_patterns)),
+    (r'^v2.0/', include(network_api20_patterns)),
     (r'^.*', api_endpoint_not_found),
 )

@@ -296,7 +296,7 @@ def main():
     (opts, args) = parse_arguments(sys.argv[1:])
 
     # Rename this process so 'ps' output looks like this is a native
-    # executable.  Can not seperate command-line arguments from actual name of
+    # executable.  Cannot seperate command-line arguments from actual name of
     # the executable by NUL bytes, so only show the name of the executable
     # instead.  setproctitle.setproctitle("\x00".join(sys.argv))
     setproctitle.setproctitle(sys.argv[0])

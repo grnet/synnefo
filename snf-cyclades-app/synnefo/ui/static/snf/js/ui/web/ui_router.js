@@ -66,7 +66,8 @@
             // network views
             "networks/":                        "networks_view",
             // network views
-            "disks/":                        	"disks_view",
+            "ips/":                         	"ips_view",
+            "public-keys/":                    	"public_keys_view",
             ":hash":                            "fallback"
         },
           
@@ -133,9 +134,14 @@
             ui.main.show_view("networks");
         },
 
-        disks_view: function() {
-            this.navigate("disks/");
-            ui.main.show_view("disks");
+        ips_view: function() {
+            this.navigate("ips/");
+            ui.main.show_view("ips");
+        },
+
+        public_keys_view: function() {
+            this.navigate("public-keys/");
+            ui.main.show_view("public-keys");
         }
 
     });

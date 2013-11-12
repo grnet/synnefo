@@ -47,11 +47,9 @@ from django.db.models import Q
 
 from snf_django.lib.api import faults
 from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
-                               Network, BackendNetwork, NetworkInterface,
-                               BridgePoolTable, MacPrefixPoolTable, Backend,
-                               FloatingIP)
-from synnefo.db.pools import EmptyPool
-
+                               Network, NetworkInterface, SecurityGroup,
+                               BridgePoolTable, MacPrefixPoolTable, IPAddress,
+                               IPPoolTable)
 from synnefo.plankton.utils import image_backend
 
 from synnefo.cyclades_settings import cyclades_services, BASE_HOST
@@ -62,13 +60,20 @@ COMPUTE_URL = \
     join_urls(BASE_HOST,
               get_service_path(cyclades_services, "compute", version="v2.0"))
 SERVERS_URL = join_urls(COMPUTE_URL, "servers/")
-NETWORKS_URL = join_urls(COMPUTE_URL, "networks/")
 FLAVORS_URL = join_urls(COMPUTE_URL, "flavors/")
 IMAGES_URL = join_urls(COMPUTE_URL, "images/")
 PLANKTON_URL = \
     join_urls(BASE_HOST,
               get_service_path(cyclades_services, "image", version="v1.0"))
 IMAGES_PLANKTON_URL = join_urls(PLANKTON_URL, "images/")
+
+NETWORK_URL = \
+    join_urls(BASE_HOST,
+              get_service_path(cyclades_services, "network", version="v2.0"))
+NETWORKS_URL = join_urls(NETWORK_URL, "networks/")
+PORTS_URL = join_urls(NETWORK_URL, "ports/")
+SUBNETS_URL = join_urls(NETWORK_URL, "subnets/")
+FLOATING_IPS_URL = join_urls(NETWORK_URL, "floatingips/")
 
 PITHOSMAP_PREFIX = "pithosmap://"
 
@@ -123,7 +128,7 @@ def encrypt(plaintext):
 
 
 def get_vm(server_id, user_id, for_update=False, non_deleted=False,
-           non_suspended=False):
+           non_suspended=False, prefetch_related=None):
     """Find a VirtualMachine instance based on ID and owner."""
 
     try:
@@ -131,6 +136,8 @@ def get_vm(server_id, user_id, for_update=False, non_deleted=False,
         servers = VirtualMachine.objects
         if for_update:
             servers = servers.select_for_update()
+        if prefetch_related is not None:
+            servers = servers.prefetch_related(prefetch_related)
         vm = servers.get(id=server_id, userid=user_id)
         if non_deleted and vm.deleted:
             raise faults.BadRequest("Server has been deleted.")
@@ -176,7 +183,6 @@ def get_image_dict(image_id, user_id):
     image["metadata"] = dict((key.upper(), val)
                              for key, val in properties.items())
 
-
     return image
 
 
@@ -213,7 +219,7 @@ def get_network(network_id, user_id, for_update=False, non_deleted=False):
 
     try:
         network_id = int(network_id)
-        objects = Network.objects
+        objects = Network.objects.prefetch_related("subnets")
         if for_update:
             objects = objects.select_for_update()
         network = objects.get(Q(userid=user_id) | Q(public=True),
@@ -222,88 +228,88 @@ def get_network(network_id, user_id, for_update=False, non_deleted=False):
             raise faults.BadRequest("Network has been deleted.")
         return network
     except (ValueError, Network.DoesNotExist):
-        raise faults.ItemNotFound('Network not found.')
+        raise faults.ItemNotFound('Network %s not found.' % network_id)
 
 
-def get_floating_ip(user_id, ipv4, for_update=False):
+def get_port(port_id, user_id, for_update=False):
+    """
+    Return a NetworkInteface instance or raise ItemNotFound.
+    """
     try:
-        objects = FloatingIP.objects
+        objects = NetworkInterface.objects.filter(userid=user_id)
         if for_update:
             objects = objects.select_for_update()
-        return objects.get(userid=user_id, ipv4=ipv4, deleted=False)
-    except FloatingIP.DoesNotExist:
+        # if (port.device_owner != "vm") and for_update:
+        #     raise faults.BadRequest('Cannot update non vm port')
+        return objects.get(id=port_id)
+    except (ValueError, NetworkInterface.DoesNotExist):
+        raise faults.ItemNotFound("Port '%s' not found." % port_id)
+
+
+def get_security_group(sg_id):
+    try:
+        sg = SecurityGroup.objects.get(id=sg_id)
+        return sg
+    except (ValueError, SecurityGroup.DoesNotExist):
+        raise faults.ItemNotFound("Not valid security group")
+
+
+def get_floating_ip_by_address(userid, address, for_update=False):
+    try:
+        objects = IPAddress.objects
+        if for_update:
+            objects = objects.select_for_update()
+        return objects.get(userid=userid, floating_ip=True,
+                           address=address, deleted=False)
+    except IPAddress.DoesNotExist:
         raise faults.ItemNotFound("Floating IP does not exist.")
 
 
-def allocate_public_address(backend):
-    """Get a public IP for any available network of a backend."""
-    # Guarantee exclusive access to backend, because accessing the IP pools of
-    # the backend networks may result in a deadlock with backend allocator
-    # which also checks that backend networks have a free IP.
-    backend = Backend.objects.select_for_update().get(id=backend.id)
-    public_networks = backend_public_networks(backend)
-    return get_free_ip(public_networks)
+def get_floating_ip_by_id(userid, floating_ip_id, for_update=False):
+    try:
+        objects = IPAddress.objects
+        if for_update:
+            objects = objects.select_for_update()
+        return objects.get(id=floating_ip_id, floating_ip=True,
+                           userid=userid, deleted=False)
+    except IPAddress.DoesNotExist:
+        raise faults.ItemNotFound("Floating IP with ID %s does not exist." %
+                                  floating_ip_id)
+
+
+def backend_has_free_public_ip(backend):
+    """Check if a backend has a free public IPv4 address."""
+    ip_pool_rows = IPPoolTable.objects.select_for_update()\
+        .filter(subnet__network__public=True)\
+        .filter(subnet__network__drained=False)\
+        .filter(subnet__deleted=False)\
+        .filter(subnet__network__backend_networks__backend=backend)
+    for pool_row in ip_pool_rows:
+        pool = pool_row.pool
+        if pool.empty():
+            continue
+        else:
+            return True
 
 
 def backend_public_networks(backend):
-    """Return available public networks of the backend.
-
-    Iterator for non-deleted public networks that are available
-    to the specified backend.
-
-    """
-    bnets = BackendNetwork.objects.filter(backend=backend,
-                                          network__public=True,
-                                          network__deleted=False,
-                                          network__floating_ip_pool=False,
-                                          network__subnet__isnull=False,
-                                          network__drained=False)
-    return [b.network for b in bnets]
+    return Network.objects.filter(deleted=False, public=True,
+                                  backend_networks__backend=backend)
 
 
-def get_free_ip(networks):
-    for network in networks:
-        try:
-            address = get_network_free_address(network)
-            return network, address
-        except faults.OverLimit:
-            pass
-    msg = "Can not allocate public IP. Public networks are full."
-    log.error(msg)
-    raise faults.OverLimit(msg)
-
-
-def get_network_free_address(network):
-    """Reserve an IP address from the IP Pool of the network."""
-
-    pool = network.get_pool()
+def get_vm_nic(vm, nic_id):
+    """Get a VMs NIC by its ID."""
     try:
-        address = pool.get()
-    except EmptyPool:
-        raise faults.OverLimit("Network %s is full." % network.backend_id)
-    pool.save()
-    return address
-
-
-def get_nic(machine, network):
-    try:
-        return NetworkInterface.objects.get(machine=machine, network=network)
+        return vm.nics.get(id=nic_id)
     except NetworkInterface.DoesNotExist:
-        raise faults.ItemNotFound('Server not connected to this network.')
+        raise faults.ItemNotFound("NIC '%s' not found" % nic_id)
 
 
-def get_nic_from_index(vm, nic_index):
-    """Returns the nic_index-th nic of a vm
-       Error Response Codes: itemNotFound (404), badMediaType (415)
-    """
-    matching_nics = vm.nics.filter(index=nic_index)
-    matching_nics_len = len(matching_nics)
-    if matching_nics_len < 1:
-        raise faults.ItemNotFound('NIC not found on VM')
-    elif matching_nics_len > 1:
-        raise faults.BadMediaType('NIC index conflict on VM')
-    nic = matching_nics[0]
-    return nic
+def get_nic(nic_id):
+    try:
+        return NetworkInterface.objects.get(id=nic_id)
+    except NetworkInterface.DoesNotExist:
+        raise faults.ItemNotFound("NIC '%s' not found" % nic_id)
 
 
 def render_metadata(request, metadata, use_values=False, status=200):
@@ -325,10 +331,6 @@ def render_meta(request, meta, status=200):
     else:
         data = json.dumps(dict(meta=meta))
     return HttpResponse(data, status=status)
-
-
-def construct_nic_id(nic):
-    return "-".join(["nic", unicode(nic.machine.id), unicode(nic.index)])
 
 
 def verify_personality(personality):
@@ -430,6 +432,16 @@ def vm_to_links(vm_id):
 
 def network_to_links(network_id):
     href = join_urls(NETWORKS_URL, str(network_id))
+    return [{"rel": rel, "href": href} for rel in ("self", "bookmark")]
+
+
+def subnet_to_links(subnet_id):
+    href = join_urls(SUBNETS_URL, str(subnet_id))
+    return [{"rel": rel, "href": href} for rel in ("self", "bookmark")]
+
+
+def port_to_links(port_id):
+    href = join_urls(PORTS_URL, str(port_id))
     return [{"rel": rel, "href": href} for rel in ("self", "bookmark")]
 
 

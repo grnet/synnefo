@@ -35,3 +35,4 @@ from astakos.im.tests.auth import *
 from astakos.im.tests.projects import *
 from astakos.im.tests.api import *
 from astakos.im.tests.views import *
+from astakos.im.tests.services import *

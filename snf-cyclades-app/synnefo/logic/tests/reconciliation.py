@@ -122,8 +122,9 @@ class ServerReconciliationTest(TestCase):
              "mtime": time(),
              "disk.sizes": [],
              "nic.ips": [],
+             "nic.names": [],
              "nic.macs": [],
-             "nic.networks": [],
+             "nic.networks.names": [],
              "tags": []}]
         self.reconciler.reconcile()
         cmrapi.DeleteInstance\
@@ -142,8 +143,9 @@ class ServerReconciliationTest(TestCase):
              "mtime": time(),
              "disk.sizes": [],
              "nic.ips": [],
+             "nic.names": [],
              "nic.macs": [],
-             "nic.networks": [],
+             "nic.networks.names": [],
              "tags": []}]
         with mocked_quotaholder():
             self.reconciler.reconcile()
@@ -168,8 +170,9 @@ class ServerReconciliationTest(TestCase):
              "mtime": time(),
              "disk.sizes": [],
              "nic.ips": [],
+             "nic.names": [],
              "nic.macs": [],
-             "nic.networks": [],
+             "nic.networks.names": [],
              "tags": []}]
         with mocked_quotaholder():
             self.reconciler.reconcile()
@@ -178,13 +181,18 @@ class ServerReconciliationTest(TestCase):
         self.assertEqual(vm1.operstate, "STARTED")
 
     def test_unsynced_nics(self, mrapi):
-        network1 = mfactory.NetworkFactory(subnet="10.0.0.0/24")
-        network2 = mfactory.NetworkFactory(subnet="192.168.2.0/24")
+        network1 = mfactory.NetworkWithSubnetFactory(
+            subnet__cidr="10.0.0.0/24", subnet__gateway="10.0.0.2")
+        network2 = mfactory.NetworkWithSubnetFactory(
+            subnet__cidr="192.168.2.0/24", subnet__gateway="192.168.2.2")
         vm1 = mfactory.VirtualMachineFactory(backend=self.backend,
                                              deleted=False,
                                              operstate="STOPPED")
-        mfactory.NetworkInterfaceFactory(machine=vm1, network=network1,
-                                         ipv4="10.0.0.0")
+        subnet = network1.subnets.get(ipversion=4)
+        ip = mfactory.IPv4AddressFactory(nic__machine=vm1, network=network1,
+                                         subnet=subnet,
+                                         address="10.0.0.3")
+        nic = ip.nic
         mrapi().GetInstances.return_value =\
             [{"name": vm1.backend_vm_id,
              "beparams": {"maxmem": 2048,
@@ -193,9 +201,10 @@ class ServerReconciliationTest(TestCase):
              "oper_state": True,
              "mtime": time(),
              "disk.sizes": [],
-             "nic.ips": ["192.168.2.1"],
+             "nic.names": [nic.backend_uuid],
+             "nic.ips": ["192.168.2.5"],
              "nic.macs": ["aa:00:bb:cc:dd:ee"],
-             "nic.networks": [network2.backend_id],
+             "nic.networks.names": [network2.backend_id],
              "tags": []}]
         with mocked_quotaholder():
             self.reconciler.reconcile()
@@ -203,7 +212,7 @@ class ServerReconciliationTest(TestCase):
         self.assertEqual(vm1.operstate, "STARTED")
         nic = vm1.nics.all()[0]
         self.assertEqual(nic.network, network2)
-        self.assertEqual(nic.ipv4, "192.168.2.1")
+        self.assertEqual(nic.ipv4_address, "192.168.2.5")
         self.assertEqual(nic.mac, "aa:00:bb:cc:dd:ee")
 
 
@@ -217,7 +226,7 @@ class NetworkReconciliationTest(TestCase):
             fix=True)
 
     def test_parted_network(self, mrapi):
-        net1 = mfactory.NetworkFactory(subnet="192.168.0.0/30", public=False)
+        net1 = mfactory.NetworkWithSubnetFactory(public=False)
         mrapi().GetNetworks.return_value = []
         # Test nothing if Ganeti returns nothing
         self.assertEqual(net1.backend_networks.count(), 0)
@@ -227,42 +236,23 @@ class NetworkReconciliationTest(TestCase):
         # Test creation if exists in Ganeti
         self.assertEqual(net1.backend_networks.count(), 0)
         mrapi().GetNetworks.return_value = [{"name": net1.backend_id,
-                                             "group_list": ["default"],
-                                             "network": net1.subnet,
+                                             "group_list": [["default",
+                                                             "bridged",
+                                                             "prv0"]],
+                                             "network": net1.subnet4.cidr,
                                              "map": "....",
                                              "external_reservations": ""}]
         self.reconciler.reconcile_networks()
         self.assertTrue(net1.backend_networks
-                            .filter(backend=self.backend).exists())
-        # ..but not if it is destroying
-        net1.backend_networks.all().delete()
-        net1.action = "DESTROY"
-        net1.save()
-        self.reconciler.reconcile_networks()
-        self.assertFalse(net1.backend_networks
-                             .filter(backend=self.backend).exists())
-        # or network is public!
-        net1.action = "CREATE"
-        net1.public = True
-        net1.save()
-        self.reconciler.reconcile_networks()
-        self.assertFalse(net1.backend_networks
-                             .filter(backend=self.backend).exists())
-        # Test creation if network is a floating IP pool
-        net2 = mfactory.NetworkFactory(subnet="192.168.0.0/30",
-                                       floating_ip_pool=True)
-        mrapi().GetNetworks.return_value = []
-        self.assertEqual(net2.backend_networks.count(), 0)
-        self.reconciler.reconcile_networks()
-        self.assertTrue(net2.backend_networks
-                            .filter(backend=self.backend).exists())
+                        .filter(backend=self.backend).exists())
 
     def test_stale_network(self, mrapi):
         # Test that stale network will be deleted from DB, if network action is
         # destroy
-        net1 = mfactory.NetworkFactory(subnet="192.168.0.0/30", public=False,
-                                       flavor="IP_LESS_ROUTED",
-                                       action="DESTROY", deleted=False)
+        net1 = mfactory.NetworkWithSubnetFactory(public=False,
+                                                 flavor="IP_LESS_ROUTED",
+                                                 action="DESTROY",
+                                                 deleted=False)
         bn1 = mfactory.BackendNetworkFactory(network=net1,
                                              backend=self.backend,
                                              operstate="ACTIVE")
@@ -270,21 +260,18 @@ class NetworkReconciliationTest(TestCase):
         self.assertFalse(net1.deleted)
         with mocked_quotaholder():
             self.reconciler.reconcile_networks()
-        bn1 = BackendNetwork.objects.get(id=bn1.id)
         net1 = Network.objects.get(id=net1.id)
-        self.assertEqual(bn1.operstate, "DELETED")
         self.assertTrue(net1.deleted)
+        self.assertFalse(net1.backend_networks.filter(id=bn1.id).exists())
         # But not if action is not DESTROY
-        net2 = mfactory.NetworkFactory(subnet="192.168.0.0/30", public=False,
-                                       action="CREATE")
+        net2 = mfactory.NetworkWithSubnetFactory(public=False, action="CREATE")
         mfactory.BackendNetworkFactory(network=net2, backend=self.backend)
         self.assertFalse(net2.deleted)
         self.reconciler.reconcile_networks()
         self.assertFalse(net2.deleted)
 
     def test_missing_network(self, mrapi):
-        net2 = mfactory.NetworkFactory(subnet="192.168.0.0/30", public=False,
-                                       action="CREATE")
+        net2 = mfactory.NetworkWithSubnetFactory(public=False, action="CREATE")
         mfactory.BackendNetworkFactory(network=net2, backend=self.backend)
         mrapi().GetNetworks.return_value = []
         self.reconciler.reconcile_networks()
@@ -294,14 +281,13 @@ class NetworkReconciliationTest(TestCase):
     #    pass
 
     def test_unsynced_networks(self, mrapi):
-        net = mfactory.NetworkFactory(subnet="192.168.0.0/30", public=False,
-                                      state="PENDING",
-                                      action="CREATE", deleted=False)
+        net = mfactory.NetworkWithSubnetFactory(public=False, state="PENDING",
+                                                action="CREATE", deleted=False)
         bn = mfactory.BackendNetworkFactory(network=net, backend=self.backend,
                                             operstate="PENDING")
         mrapi().GetNetworks.return_value = [{"name": net.backend_id,
                                              "group_list": [],
-                                             "network": net.subnet,
+                                             "network": net.subnet4.cidr,
                                              "map": "....",
                                              "external_reservations": ""}]
         self.assertEqual(bn.operstate, "PENDING")
@@ -310,11 +296,11 @@ class NetworkReconciliationTest(TestCase):
         self.assertEqual(bn.operstate, "ACTIVE")
 
     def test_orphan_networks(self, mrapi):
-        net = mfactory.NetworkFactory(subnet="192.168.0.0/30", public=False,
-                                      action="CREATE", deleted=True)
+        net = mfactory.NetworkWithSubnetFactory(public=False, action="CREATE",
+                                                deleted=True)
         mrapi().GetNetworks.return_value = [{"name": net.backend_id,
                                              "group_list": [],
-                                             "network": net.subnet,
+                                             "network": net.subnet4.cidr,
                                              "map": "....",
                                              "external_reservations": ""}]
         self.reconciler.reconcile_networks()

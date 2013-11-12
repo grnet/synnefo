@@ -2,11 +2,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <network xmlns="http://docs.openstack.org/compute/api/v1.1" xmlns:atom="http://www.w3.org/2005/Atom" id="{{ network.id }}" name="{{ network.name }}" updated="{{ network.updated }}" created="{{ network.created }}">
 
-<servers>
-  {% for server_id in network.servers.values %}
-  <server id="{{ server_id }}"></server>
-  {% endfor %}
-</servers>
-
+ <subnets>
+    {% for subnet_id in network.subnets.values %}
+    <subnet id="{{ server_id }}"></subnet>
+    {% endfor %}
+    </subnets> 
 </network>
+
 {% endspaceless %}

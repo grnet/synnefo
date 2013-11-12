@@ -1199,10 +1199,23 @@ pool-show                      Show pool details
 pool-list                      List pools
 pool-modify                    Modify a pool
 pool-remove                    Delete a pool
+port-create                    Create a port connecting a server to a network
+port-inspect                   Inspect the state of a port in DB and Ganeti
+port-list                      List ports
+port-remove                    Delete a port
+floating-ip-create             Create a new floating IP
+floating-ip-attach             Attach a floating IP to a server
+floating-ip-dettach            Dettach a flotaing IP from a server
+floating-ip-list               List floating IPs
+floating-ip-remove             Delete a floating IP
 queue-inspect                  Inspect the messages of a RabbitMQ queue
 queue-retry                    Resend messages from Dead Letter queues to original exchanges
 resource-export-cyclades       Export Cyclades resources in JSON format.
 service-export-cyclades        Export Cyclades services in JSON format.
+subnet-create                  Create a subnet
+subnet-inspect                 Inspect a subnet in DB
+subnet-list                    List subnets
+subnet-modify                  Modify a subnet
 reconcile-servers              Reconcile servers of Synnefo DB with state of Ganeti backend
 reconcile-networks             Reconcile networks of Synnefo DB with state of Ganeti backend
 reconcile-pools                Check consistency of pool resources

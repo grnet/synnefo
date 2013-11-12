@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,20 +31,38 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from synnefo.db.models import MacPrefixPoolTable, BridgePoolTable
+from astakos.im.tests.common import *
+from snf_django.utils.testing import assertRaises
 
 
-def pool_table_from_type(type_):
-    if type_ == "mac-prefix":
-        return MacPrefixPoolTable
-    elif type_ == "bridge":
-        return BridgePoolTable
-    # elif type == "ip":
-    #     return IPPoolTable
-    else:
-        raise ValueError("Invalid pool type")
+class RegisterTest(TestCase):
+    def test_register(self):
+        component1 = Component.objects.create(name="comp1")
+        component2 = Component.objects.create(name="comp2")
+        register.add_service(component1, "service1", "type1", [])
+        register.add_service(component1, "service1a", "type1a", [])
+        register.add_service(component2, "service2", "type2", [])
 
+        resource = {"name": "service.resource",
+                    "desc": "resource desc",
+                    "service_type": "type1",
+                    "service_origin": "service1"
+                    }
+        r, _ = register.add_resource(resource)
+        self.assertEqual(r.service_type, "type1")
 
-def pool_map_chunks(smap, step=64):
-    for i in xrange(0, len(smap), step):
-        yield smap[i:i + step]
+        resource = {"name": "service.resource",
+                    "desc": "resource desc",
+                    "service_type": "type2",
+                    "service_origin": "service2"
+                    }
+        with assertRaises(register.RegisterException):
+            r, _ = register.add_resource(resource)
+
+        resource = {"name": "service.resource",
+                    "desc": "resource desc",
+                    "service_type": "type1a",
+                    "service_origin": "service1a"
+                    }
+        r, _ = register.add_resource(resource)
+        self.assertEqual(r.service_type, "type1a")

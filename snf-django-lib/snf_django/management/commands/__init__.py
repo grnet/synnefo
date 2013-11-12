@@ -234,8 +234,15 @@ class ListCommand(BaseCommand):
         # Special handling of arguments
         self.handle_args(self, *args, **options)
 
+        select_related = getattr(self, "select_related", [])
+        prefetch_related = getattr(self, "prefetch_related", [])
+
         objects = self.object_class.objects
         try:
+            for sr in select_related:
+                objects = objects.select_related(sr)
+            for pr in prefetch_related:
+                objects = objects.prefetch_related(pr)
             objects = objects.filter(**self.filters)
             objects = objects.exclude(**self.excludes)
         except FieldError as e:

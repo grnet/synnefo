@@ -168,7 +168,9 @@ def pprint_table(out, table, headers=None, output_format='pretty',
 
             t_length = sum(widths) + len(sep) * (len(widths) - 1)
             if title is not None:
+                out.write("-" * t_length + "\n")
                 out.write(title.center(t_length) + "\n")
+                out.write("-" * t_length + "\n")
             if headers:
                 # pretty print the headers
                 line = sep.join(uenc(v.rjust(w))

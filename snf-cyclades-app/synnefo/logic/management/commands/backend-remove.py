@@ -55,7 +55,7 @@ class Command(BaseCommand):
         write("Trying to remove backend: %s\n" % backend.clustername)
 
         if backend.virtual_machines.filter(deleted=False).exists():
-            raise CommandError('Backend hosts non-deleted vms. Can not delete')
+            raise CommandError('Backend hosts non-deleted vms. Cannot delete')
 
         # Get networks before deleting backend, because after deleting the
         # backend, all BackendNetwork objects are deleted!
@@ -64,7 +64,7 @@ class Command(BaseCommand):
         try:
             delete_backend(backend)
         except models.ProtectedError as e:
-            msg = ("Can not delete backend because it contains"
+            msg = ("Cannot delete backend because it contains"
                    "non-deleted VMs:\n%s" % e)
             raise CommandError(msg)
 

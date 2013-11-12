@@ -30,12 +30,10 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
-import ipaddr
 
 from functools import wraps
 from django.db import transaction
 
-from django.conf import settings
 from snf_django.lib.api import faults
 from synnefo.api import util
 from synnefo import quotas
@@ -65,25 +63,17 @@ def network_command(action):
 
 
 @transaction.commit_on_success
-def create(user_id, name, flavor, subnet=None, gateway=None, subnet6=None,
-           gateway6=None, public=False, dhcp=True, link=None, mac_prefix=None,
-           mode=None, floating_ip_pool=False, tags=None, backends=None,
-           lazy_create=True):
+def create(userid, name, flavor, link=None, mac_prefix=None, mode=None,
+           floating_ip_pool=False, tags=None, public=False):
     if flavor is None:
         raise faults.BadRequest("Missing request parameter 'type'")
     elif flavor not in Network.FLAVORS.keys():
         raise faults.BadRequest("Invalid network type '%s'" % flavor)
 
     if mac_prefix is not None and flavor == "MAC_FILTERED":
-        raise faults.BadRequest("Can not override MAC_FILTERED mac-prefix")
+        raise faults.BadRequest("Cannot override MAC_FILTERED mac-prefix")
     if link is not None and flavor == "PHYSICAL_VLAN":
-        raise faults.BadRequest("Can not override PHYSICAL_VLAN link")
-
-    if subnet is None and floating_ip_pool:
-        raise faults.BadRequest("IPv6 only networks can not be"
-                                " pools.")
-    # Check that network parameters are valid
-    validate_network_params(subnet, gateway, subnet6, gateway6)
+        raise faults.BadRequest("Cannot override PHYSICAL_VLAN link")
 
     try:
         fmode, flink, fmac_prefix, ftags = util.values_from_flavor(flavor)
@@ -107,18 +97,14 @@ def create(user_id, name, flavor, subnet=None, gateway=None, subnet6=None,
 
     network = Network.objects.create(
         name=name,
-        userid=user_id,
-        subnet=subnet,
-        subnet6=subnet6,
-        gateway=gateway,
-        gateway6=gateway6,
-        dhcp=dhcp,
+        userid=userid,
         flavor=flavor,
         mode=mode,
         link=link,
         mac_prefix=mac_prefix,
         tags=tags,
         public=public,
+        external_router=public,
         floating_ip_pool=floating_ip_pool,
         action='CREATE',
         state='ACTIVE')
@@ -129,17 +115,17 @@ def create(user_id, name, flavor, subnet=None, gateway=None, subnet6=None,
     if not public:
         quotas.issue_and_accept_commission(network)
 
-    if not lazy_create:
-        if floating_ip_pool:
-            backends = Backend.objects.filter(offline=False)
-        elif backends is None:
-            backends = []
-
-        for bend in backends:
-            network.create_backend_network(bend)
-            backend_mod.create_network(network=network, backend=bend,
-                                       connect=True)
     return network
+
+
+def create_network_in_backends(network):
+    job_ids = []
+    for bend in Backend.objects.filter(offline=False):
+        network.create_backend_network(bend)
+        jobs = backend_mod.create_network(network=network, backend=bend,
+                                          connect=True)
+        job_ids.extend(jobs)
+    return job_ids
 
 
 @network_command("RENAME")
@@ -151,14 +137,17 @@ def rename(network, name):
 
 @network_command("DESTROY")
 def delete(network):
-    if network.machines.exists():
-        raise faults.NetworkInUse("Can not delete network. Servers connected"
-                                  " to this network exists.")
-    if network.floating_ips.filter(deleted=False).exists():
-        msg = "Can not delete netowrk. Network has allocated floating IPs."
-        raise faults.NetworkInUse(msg)
+    if network.nics.exists():
+        raise faults.Conflict("Cannot delete network. There are ports still"
+                              " configured on network network %s" % network.id)
+    if network.ips.filter(deleted=False, floating_ip=True).exists():
+        msg = "Cannot delete netowrk. Network has allocated floating IPs."
+        raise faults.Conflict(msg)
 
     network.action = "DESTROY"
+    # Mark network as drained to prevent automatic allocation of
+    # public/floating IPs while the network is being deleted
+    network.drained = True
     network.save()
 
     # Delete network to all backends that exists
@@ -168,51 +157,3 @@ def delete(network):
         # If network does not exist in any backend, update the network state
         backend_mod.update_network_state(network)
     return network
-
-
-def validate_network_params(subnet=None, gateway=None, subnet6=None,
-                            gateway6=None):
-    if (subnet is None) and (subnet6 is None):
-        raise faults.BadRequest("subnet or subnet6 is required")
-
-    if subnet:
-        try:
-            # Use strict option to not all subnets with host bits set
-            network = ipaddr.IPv4Network(subnet, strict=True)
-        except ValueError:
-            raise faults.BadRequest("Invalid network IPv4 subnet")
-
-        # Check that network size is allowed!
-        prefixlen = network.prefixlen
-        if prefixlen > 29 or prefixlen <= settings.MAX_CIDR_BLOCK:
-            raise faults.OverLimit(
-                message="Unsupported network size",
-                details="Netmask must be in range: (%s, 29]" %
-                settings.MAX_CIDR_BLOCK)
-        if gateway:  # Check that gateway belongs to network
-            try:
-                gateway = ipaddr.IPv4Address(gateway)
-            except ValueError:
-                raise faults.BadRequest("Invalid network IPv4 gateway")
-            if not gateway in network:
-                raise faults.BadRequest("Invalid network IPv4 gateway")
-
-    if subnet6:
-        try:
-            # Use strict option to not all subnets with host bits set
-            network6 = ipaddr.IPv6Network(subnet6, strict=True)
-        except ValueError:
-            raise faults.BadRequest("Invalid network IPv6 subnet")
-        # Check that network6 is an /64 subnet, because this is imposed by
-        # 'mac2eui64' utiity.
-        if network6.prefixlen != 64:
-            msg = ("Unsupported IPv6 subnet size. Network netmask must be"
-                   " /64")
-            raise faults.BadRequest(msg)
-        if gateway6:
-            try:
-                gateway6 = ipaddr.IPv6Address(gateway6)
-            except ValueError:
-                raise faults.BadRequest("Invalid network IPv6 gateway")
-            if not gateway6 in network6:
-                raise faults.BadRequest("Invalid network IPv6 gateway")

@@ -55,25 +55,38 @@ class PoolManager(object):
     def pool(self):
         return (self.available & self.reserved)
 
-    def get(self):
+    def get(self, value=None):
         """Get a value from the pool."""
-        if self.empty():
-            raise EmptyPool
-        # Get the first available index
-        index = int(self.pool.index(AVAILABLE))
-        assert(index < self.pool_size)
-        self._reserve(index)
-        return self.index_to_value(index)
+        if value is None:
+            if self.empty():
+                raise EmptyPool
+            # Get the first available index
+            index = int(self.pool.index(AVAILABLE))
+            assert(index < self.pool_size)
+            self._reserve(index)
+            return self.index_to_value(index)
+        else:
+            if not self.contains(value):
+                raise InvalidValue("Value %s does not belong to pool." % value)
+            if self.is_available(value):
+                self.reserve(value)
+                return value
+            else:
+                raise ValueNotAvailable("Value %s is not available" % value)
 
     def put(self, value, external=False):
         """Return a value to the pool."""
         if value is None:
             raise ValueError
+        if not self.contains(value):
+            raise InvalidValue("%s does not belong to pool." % value)
         index = self.value_to_index(value)
         self._release(index, external)
 
     def reserve(self, value, external=False):
         """Reserve a value."""
+        if not self.contains(value):
+            raise InvalidValue("%s does not belong to pool." % value)
         index = self.value_to_index(value)
         self._reserve(index, external)
         return True
@@ -105,6 +118,11 @@ class PoolManager(object):
         else:
             self.available[index] = AVAILABLE
 
+    def contains(self, value, index=False):
+        if index is False:
+            index = self.value_to_index(value)
+        return index >= 0 and index < self.pool_size
+
     def count_available(self):
         return self.pool.count(AVAILABLE)
 
@@ -118,6 +136,8 @@ class PoolManager(object):
         return self.pool_size - self.count_reserved()
 
     def is_available(self, value, index=False):
+        if not self.contains(value, index=index):
+            raise InvalidValue("%s does not belong to pool." % value)
         if not index:
             idx = self.value_to_index(value)
         else:
@@ -125,6 +145,8 @@ class PoolManager(object):
         return self.pool[idx] == AVAILABLE
 
     def is_reserved(self, value, index=False):
+        if not self.contains(value, index=index):
+            raise InvalidValue("%s does not belong to pool." % value)
         if not index:
             idx = self.value_to_index(value)
         else:
@@ -146,7 +168,7 @@ class PoolManager(object):
         size = self.pool_size
         tmp = self.available[(size - bits_num): size]
         if tmp.count(UNAVAILABLE):
-            raise Exception("Can not shrink. In use")
+            raise Exception("Cannot shrink. In use")
         self.resize(-bits_num)
 
     def resize(self, bits_num):
@@ -177,6 +199,14 @@ class PoolManager(object):
 
 
 class EmptyPool(Exception):
+    pass
+
+
+class ValueNotAvailable(Exception):
+    pass
+
+
+class InvalidValue(Exception):
     pass
 
 
@@ -247,27 +277,54 @@ class MacPrefixPool(PoolManager):
 
 class IPPool(PoolManager):
     def __init__(self, pool_table):
-        do_init = False if pool_table.available_map else True
-        network = pool_table.network
-        self.net = ipaddr.IPNetwork(network.subnet)
-        if not pool_table.size:
-            pool_table.size = self.net.numhosts
+        subnet = pool_table.subnet
+        self.net = ipaddr.IPNetwork(subnet.cidr)
+        self.offset = pool_table.offset
+        self.base = pool_table.base
+        if pool_table.available_map:
+            initialized_pool = True
+        else:
+            initialized_pool = False
         super(IPPool, self).__init__(pool_table)
-        gateway = network.gateway
-        self.gateway = gateway and ipaddr.IPAddress(gateway) or None
-        if do_init:
-            self._reserve(0, external=True)
-            if gateway:
-                self.reserve(gateway, external=True)
-            self._reserve(self.pool_size - 1, external=True)
+        if not initialized_pool:
+            self.check_pool_integrity()
+
+    def check_pool_integrity(self):
+        """Check the integrity of the IP pool
+
+        This check is required only for old IP pools(one IP pool per network
+        that contained the whole subnet cidr) that had not been initialized
+        before the migration. This checks that the network, gateway and
+        broadcast IP addresses are externally reserved, and if not reserves
+        them.
+
+        """
+        subnet = self.pool_table.subnet
+        check_ips = [str(self.net.network), str(self.net.broadcast)]
+        if subnet.gateway is not None:
+            check_ips.append(subnet.gateway)
+        for ip in check_ips:
+            if self.contains(ip):
+                self.reserve(ip, external=True)
 
     def value_to_index(self, value):
         addr = ipaddr.IPAddress(value)
-        return int(addr) - int(self.net.network)
+        return int(addr) - int(self.net.network) - int(self.offset)
 
     def index_to_value(self, index):
-        return str(self.net[index])
+        return str(self.net[index + int(self.offset)])
 
-    def contains(self, address):
-        addr = ipaddr.IPAddress(address)
-        return addr in self.net
+    def contains(self, address, index=False):
+        if index is False:
+            addr = ipaddr.IPAddress(address)
+            if addr not in self.net:
+                return False
+        return super(IPPool, self).contains(address, index=False)
+
+    def return_start(self):
+        return str(ipaddr.IPAddress(ipaddr.IPNetwork(self.base).network) +
+                   self.offset)
+
+    def return_end(self):
+        return str(ipaddr.IPAddress(ipaddr.IPNetwork(self.base).network) +
+                   self.offset + self.pool_size - 1)

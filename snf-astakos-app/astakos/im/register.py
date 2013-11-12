@@ -45,6 +45,14 @@ class RegisterException(Exception):
     pass
 
 
+def different_component(service, resource):
+    try:
+        registered_for = Service.objects.get(name=resource.service_origin)
+        return registered_for.component != service.component
+    except Service.DoesNotExist:
+        return False
+
+
 def add_resource(resource_dict):
     name = resource_dict.get('name')
     service_type = resource_dict.get('service_type')
@@ -53,7 +61,7 @@ def add_resource(resource_dict):
         raise RegisterException("Malformed resource dict.")
 
     try:
-        Service.objects.get(name=service_origin)
+        service = Service.objects.get(name=service_origin)
     except Service.DoesNotExist:
         m = "There is no service %s." % service_origin
         raise RegisterException(m)
@@ -61,15 +69,18 @@ def add_resource(resource_dict):
     try:
         r = Resource.objects.select_for_update().get(name=name)
         exists = True
-        if r.service_type != service_type:
+        if r.service_type != service_type and \
+                different_component(service, r):
             m = ("There already exists a resource named %s with service "
                  "type %s." % (name, r.service_type))
             raise RegisterException(m)
-        if r.service_origin != service_origin:
+        if r.service_origin != service_origin and \
+                different_component(service, r):
             m = ("There already exists a resource named %s registered for "
                  "service %s." % (name, r.service_origin))
             raise RegisterException(m)
-
+        r.service_origin = service_origin
+        r.service_type = service_type
     except Resource.DoesNotExist:
         r = Resource(name=name,
                      uplimit=0,

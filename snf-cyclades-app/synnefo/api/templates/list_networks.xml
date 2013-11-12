@@ -4,12 +4,12 @@
   {% for network in networks %}
   <network id="{{ network.id }}" name="{{ network.name }}"{% if detail %} updated="{{ network.updated }}" created="{{ network.created }}"{% endif %}>
 
-  {% if network.servers %}
-  <servers>
-    {% for server_id in network.servers.values %}
-    <server id="{{ server_id }}"></server>
+  {% if network.subnets %}
+  <subnets>
+    {% for subnet_id in network.subnets.values %}
+    <subnet id="{{ server_id }}"></subnet>
     {% endfor %}
-  </servers>
+  </subnets>
   {% endif %}
 
   </network>

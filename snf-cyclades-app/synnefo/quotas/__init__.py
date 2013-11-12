@@ -32,7 +32,7 @@ from django.db import transaction
 
 from snf_django.lib.api import faults
 from synnefo.db.models import (QuotaHolderSerial, VirtualMachine, Network,
-                               FloatingIP)
+                               IPAddress)
 
 from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
                               ASTAKOS_AUTH_URL)
@@ -168,7 +168,7 @@ def resolve_pending_commissions():
     to accepted and rejected, according to the state of the
     QuotaHolderSerial DB table. A pending commission in the quotaholder
     can exist in the QuotaHolderSerial table and be either accepted or
-    rejected, or can not exist in this table, so it is rejected.
+    rejected, or cannot exist in this table, so it is rejected.
 
     """
 
@@ -299,8 +299,9 @@ def prepare_qh_resources(resource):
                 'cyclades.active_ram': 1048576 * flavor.ram}
     elif isinstance(resource, Network):
         return {"cyclades.network.private": 1}
-    elif isinstance(resource, FloatingIP):
-        return {"cyclades.floating_ip": 1}
+    elif isinstance(resource, IPAddress):
+        if resource.floating_ip:
+            return {"cyclades.floating_ip": 1}
     else:
         raise ValueError("Unknown Resource '%s'" % resource)
 

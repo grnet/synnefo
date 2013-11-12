@@ -651,11 +651,15 @@
             }});
 
             this.update_status("networks", 0);
-            storage.networks.fetch({refresh:true, update:false, success: function(){
-                self.update_status("networks", 1);
-                self.check_status();
-            }});
-
+            $.when([
+                   storage.networks.fetch({refresh: true}), 
+                   storage.floating_ips.fetch({refresh: true}),
+                   storage.subnets.fetch({refresh: true}),
+                   storage.ports.fetch({refresh: true})
+            ]).done(function() {
+              self.update_status("networks", 1);
+              self.check_status();
+            })
         },  
         
         _fetchers: {},

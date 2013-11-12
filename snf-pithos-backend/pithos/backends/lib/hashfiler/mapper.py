@@ -31,7 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from filemapper import FileMapper
+from archipelagomapper import ArchipelagoMapper
 
 
 class Mapper(object):
@@ -41,25 +41,21 @@ class Mapper(object):
     """
 
     def __init__(self, **params):
-        self.rmap = None
-        try:
-            if params['mappool']:
-                from radosmapper import RadosMapper
-                self.rmap = RadosMapper(**params)
-        except KeyError:
-            pass
-
-        self.fmap = FileMapper(**params)
+        self.archip_map = ArchipelagoMapper(**params)
 
     def map_retr(self, maphash, blkoff=0, nr=100000000000000):
         """Return as a list, part of the hashes map of an object
            at the given block offset.
            By default, return the whole hashes map.
         """
-        return self.fmap.map_retr(maphash, blkoff, nr)
+        return self.archip_map.map_retr(maphash, blkoff, nr)
 
-    def map_stor(self, maphash, hashes=(), blkoff=0):
+    def map_retr_archipelago(self, maphash, size):
+        """Return as a list the hashes map of an Archipelago
+        Volume.
+        """
+        return self.archip_map.map_retr_archipelago(maphash, size)
+
+    def map_stor(self, maphash, hashes=(), blkoff=0, create=1):
         """Store hashes in the given hashes map."""
-        if self.rmap:
-            self.rmap.map_stor(maphash, hashes, blkoff)
-        self.fmap.map_stor(maphash, hashes, blkoff)
+        self.archip_map.map_stor(maphash, hashes, blkoff, create)

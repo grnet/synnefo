@@ -137,6 +137,11 @@ BACKEND_BLOCK_PATH = getattr(
     settings, 'PITHOS_BACKEND_BLOCK_PATH', '/tmp/pithos-data/')
 BACKEND_BLOCK_UMASK = getattr(settings, 'PITHOS_BACKEND_BLOCK_UMASK', 0o022)
 
+# Archipelago Configuration File
+BACKEND_ARCHIPELAGO_CONF = getattr(
+        settings, 'PITHOS_BACKEND_ARCHIPELAGO_CONF',
+        '/etc/archipelago/archipelago.conf')
+
 # Queue for billing.
 BACKEND_QUEUE_MODULE = getattr(settings, 'PITHOS_BACKEND_QUEUE_MODULE', None)
 # Example: 'pithos.backends.lib.rabbitmq'

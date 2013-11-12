@@ -103,7 +103,7 @@
 
       show_connect_overlay: function() {
         this.model.actions.reset_pending();
-        var vms = synnefo.storage.vms.models;
+        var vms = this.model.get("network").connectable_vms;
         var overlay = this.parent_view.connect_view;
         overlay.show_vms(this.model, vms, [], this.connect_vm);
       },

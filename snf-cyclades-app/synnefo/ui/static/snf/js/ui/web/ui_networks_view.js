@@ -1043,7 +1043,7 @@
         return _.filter(
           _.map(ips, function(ipid) { 
           return synnefo.storage.floating_ips.get(parseInt(ipid))
-        }), function(ip) { console.log("IP", ip); return ip });
+        }), function(ip) { return ip });
       },
 
       get_selected_networks: function() {

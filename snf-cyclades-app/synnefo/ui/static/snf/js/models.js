@@ -195,6 +195,7 @@
             var proxy = this._proxy_model_cache[proxy_cache_key];
             proxy[0].unbind('change', proxy[1]);
           }
+          var data = {};
           var changebind = _.bind(function() {
             data[attr] = cb.call(this, this.get(check_attr));
             this.set(data);

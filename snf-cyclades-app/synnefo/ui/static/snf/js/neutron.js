@@ -143,7 +143,6 @@
           collectionFilter: function(m) {
             return self.id == m.get('network_id')
         }});
-        models.Network.__super__.initialize.apply(this, arguments);
         this.ports = new Backbone.FilteredCollection(undefined, {
           collection: synnefo.storage.ports,
           collectionFilter: function(m) {
@@ -151,6 +150,12 @@
           }
         });
         this.ports.network = this;
+        this.ports.bind("reset", function() {
+          this.pending_connections = 0;
+          this.pending_disconnects = 0;
+          this.update_connecting_status();
+          this.update_actions();
+        }, this);
         this.ports.bind("add", function() {
           this.pending_connections--;
           this.update_connecting_status();
@@ -170,6 +175,7 @@
             return m.can_connect();
           }
         });
+        models.Network.__super__.initialize.apply(this, arguments);
         this.update_actions();
       },
       
@@ -227,7 +233,6 @@
       },
       
       initialize: function() {
-        models.Network.__super__.initialize.apply(this, arguments);
         var self = this;
         this.ports = new Backbone.FilteredCollection(undefined, {
           collection: synnefo.storage.ports,
@@ -246,6 +251,7 @@
           }
         });
         this.set({available_floating_ips: this.available_floating_ips});
+        models.Network.__super__.initialize.apply(this, arguments);
       },
 
     })

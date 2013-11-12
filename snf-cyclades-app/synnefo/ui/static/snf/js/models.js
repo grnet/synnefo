@@ -189,29 +189,25 @@
         
         _proxy_model_cache: {},
         
-        _set_proxy_attr: function(attr, check_attr, cb) {
-          // initial set
-          var data = {};
-          data[attr] = cb.call(this, this.get(check_attr));
-          if (data[attr] !== undefined) {
-            this.set(data, {silent:true});
+        _bind_model: function(model, attr, check_attr, cb) {
+          var proxy_cache_key = attr + '_' + check_attr;
+          if (this._proxy_model_cache[proxy_cache_key]) {
+            var proxy = this._proxy_model_cache[proxy_cache_key];
+            proxy[0].unbind('change', proxy[1]);
           }
-          
+          var changebind = _.bind(function() {
+            data[attr] = cb.call(this, this.get(check_attr));
+            this.set(data);
+          }, this);
+          model.bind('change', changebind);
+          this._proxy_model_cache[proxy_cache_key] = [model, changebind];
+        },
+
+        _bind_attr: function(attr, check_attr, cb) {
           this.bind('change:' + check_attr, function() {
             if (this.get(check_attr) instanceof models.Model) {
               var model = this.get(check_attr);
-              var proxy_cache_key = attr + '_' + check_attr;
-              if (this._proxy_model_cache[proxy_cache_key]) {
-                var proxy = this._proxy_model_cache[proxy_cache_key];
-                proxy[0].unbind('change', proxy[1]);
-              }
-              var changebind = _.bind(function() {
-                var data = {};
-                data[attr] = cb.call(this, this.get(check_attr));
-                this.set(data);
-              }, this);
-              model.bind('change', changebind);
-              this._proxy_model_cache[proxy_cache_key] = [model, changebind];
+              this._bind_model(model, attr, check_attr, cb);
             }
             var val = cb.call(this, this.get(check_attr));
             var data = {};
@@ -220,6 +216,19 @@
               this.set(data);
             }
           }, this);
+        },
+
+        _set_proxy_attr: function(attr, check_attr, cb) {
+          // initial set
+          var data = {};
+          data[attr] = cb.call(this, this.get(check_attr));
+          if (data[attr] !== undefined) {
+            this.set(data, {silent:true});
+          }
+          if(this.get(check_attr) instanceof models.Model) {
+            this._bind_model(this.get(check_attr), attr, check_attr, cb);
+          }
+          this._bind_attr(attr, check_attr, cb);
         },
 
         init_proxy_attrs: function() {

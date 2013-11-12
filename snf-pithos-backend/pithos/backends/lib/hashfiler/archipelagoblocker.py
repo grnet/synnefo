@@ -33,7 +33,8 @@
 
 from hashlib import new as newhasher
 from binascii import hexlify
-import os, re
+import os
+import re
 
 from context_archipelago import ArchipelagoObject, file_sync_read_chunks
 from archipelago.common import (
@@ -42,11 +43,15 @@ from archipelago.common import (
     string_at,
     )
 
-from pithos.workers import glue, monkey
+from pithos.workers import (
+    glue,
+    monkey,
+    )
 
 monkey.patch_Request()
 
 from pithos.api.settings import BACKEND_ARCHIPELAGO_CONF
+
 
 class ArchipelagoBlocker(object):
     """Blocker.
@@ -61,7 +66,7 @@ class ArchipelagoBlocker(object):
         cfg = {}
         bcfg = open(BACKEND_ARCHIPELAGO_CONF).read()
         cfg['blockerb'] = re.search('\'blockerb_port\'\s*:\s*\d+',
-                bcfg).group(0).split(':')[1]
+                                    bcfg).group(0).split(':')[1]
         blocksize = params['blocksize']
         hashtype = params['hashtype']
         try:
@@ -85,12 +90,12 @@ class ArchipelagoBlocker(object):
 
     def _get_rear_block(self, blkhash, create=0):
         name = hexlify(blkhash)
-        return ArchipelagoObject(name, self.ioctx_pool,self.dst_port,create)
+        return ArchipelagoObject(name, self.ioctx_pool, self.dst_port, create)
 
     def _check_rear_block(self, blkhash):
         filename = hexlify(blkhash)
         ioctx = self.ioctx_pool.pool_get()
-        req = Request.get_info_request(ioctx,self.dst_port,filename)
+        req = Request.get_info_request(ioctx, self.dst_port, filename)
         req.submit()
         req.wait()
         ret = req.success()
@@ -182,7 +187,6 @@ class ArchipelagoBlocker(object):
         self.ioctx_pool.pool_put(ioctx)
         return blocks
 
-
     def block_stor(self, blocklist):
         """Store a bunch of blocks and return (hashes, missing).
            Hashes is a list of the hashes of the blocks,
@@ -232,7 +236,8 @@ class ArchipelagoBlocker(object):
         append = hashes.append
         block_hash = self.block_hash
 
-        for block in file_sync_read_chunks(archipelagoobject, self.blocksize, 1, 0):
+        for block in file_sync_read_chunks(archipelagoobject,
+                                           self.blocksize, 1, 0):
             append(block_hash(block))
 
         return hashes

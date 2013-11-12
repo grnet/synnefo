@@ -32,7 +32,8 @@
 # or implied, of GRNET S.A.
 
 from binascii import hexlify
-import os, re
+import os
+import re
 import ctypes
 
 from context_archipelago import ArchipelagoObject
@@ -68,9 +69,9 @@ class ArchipelagoMapper(object):
         cfg = {}
         bcfg = open(BACKEND_ARCHIPELAGO_CONF).read()
         cfg['blockerm'] = re.search('\'blockerm_port\'\s*:\s*\d+',
-                                        bcfg).group(0).split(':')[1]
+                                    bcfg).group(0).split(':')[1]
         cfg['mapperd'] = re.search('\'mapper_port\'\s*:\s*\d+',
-                                        bcfg).group(0).split(':')[1]
+                                   bcfg).group(0).split(':')[1]
         self.ioctx_pool = ioctx_pool
         self.dst_port = int(cfg['blockerm'])
         self.mapperd_port = int(cfg['mapperd'])
@@ -113,23 +114,25 @@ class ArchipelagoMapper(object):
         else:
             req.put()
             self.ioctx_pool.pool_put(ioctx)
-            raise RuntimeError("Hashmap '%s' doesn't exists" % hexlify(maphash))
+            raise RuntimeError("Hashmap '%s' doesn't exists" %
+                               hexlify(maphash))
         req = Request.get_read_request(ioctx, self.dst_port,
-                                       hexlify(maphash), size = size)
+                                       hexlify(maphash), size=size)
         req.submit()
         req.wait()
         ret = req.success()
         if ret:
-            data = string_at(req.get_data(),size)
+            data = string_at(req.get_data(), size)
             req.put()
             self.ioctx_pool.pool_put(ioctx)
-            for idx in xrange(0,len(data),namelen):
+            for idx in xrange(0, len(data), namelen):
                 hashes = hashes + (data[idx:idx+namelen],)
             hashes = list(hashes)
         else:
             req.put()
             self.ioctx_pool.pool_put(ioctx)
-            raise RuntimeError("Hashmap '%s' doesn't exists" % hexlify(maphash))
+            raise RuntimeError("Hashmap '%s' doesn't exists" %
+                               hexlify(maphash))
         return hashes
 
     def map_retr_archipelago(self, maphash, size):
@@ -151,7 +154,8 @@ class ArchipelagoMapper(object):
             self.ioctx_pool.pool_put(ioctx)
             raise Exception("Could not retrieve Archipelago mapfile.")
         self.ioctx_pool.pool_put(ioctx)
-        return [string_at(segs[idx].target, segs[idx].targetlen) for idx in xrange(len(segs))]
+        return [string_at(segs[idx].target, segs[idx].targetlen)
+                for idx in xrange(len(segs))]
 
     def map_stor(self, maphash, hashes=(), blkoff=0, create=1):
         """Store hashes in the given hashes map."""

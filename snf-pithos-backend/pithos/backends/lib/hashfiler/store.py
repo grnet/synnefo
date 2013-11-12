@@ -49,11 +49,11 @@ class Store(object):
             os.umask(umask)
 
         pb = {'blocksize': params['block_size'],
-             'hashtype': params['hash_algorithm'],
-            }
+              'hashtype': params['hash_algorithm'],
+              }
         self.blocker = Blocker(**pb)
         pm = {'namelen': self.blocker.hashlen,
-            }
+              }
         self.mapper = Mapper(**pm)
 
     def map_get(self, name):

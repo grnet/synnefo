@@ -35,6 +35,7 @@
 
 import re
 
+
 class WorkerGlue(object):
 
     pmap = {}
@@ -55,9 +56,9 @@ class WorkerGlue(object):
         cfg = {}
         bcfg = open(ARCHIPELAGO_CONF_FILE).read()
         cfg['SEGMENT_PORTS'] = re.search('SEGMENT_PORTS\s*=\s*\d+',
-                bcfg).group(0).split('=')[1]
+                                         bcfg).group(0).split('=')[1]
         cfg['SEGMENT_SIZE'] = re.search('SEGMENT_SIZE\s*=\s*\d+',
-                bcfg).group(0).split('=')[1]
+                                        bcfg).group(0).split('=')[1]
         ARCHIPELAGO_SEGMENT_PORTS = int(cfg['SEGMENT_PORTS'])
         ARCHIPELAGO_SEGMENT_SIZE = int(cfg['SEGMENT_SIZE'])
         ARCHIPELAGO_SEGMENT_ALIGNMENT = 12

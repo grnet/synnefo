@@ -33,9 +33,9 @@
 
 from os import SEEK_CUR, SEEK_SET
 from archipelago.common import (
-                        Request,
-                        string_at,
-                    )
+    Request,
+    string_at,
+    )
 from pithos.workers import monkey
 monkey.patch_Request()
 
@@ -139,7 +139,7 @@ class ArchipelagoObject(object):
                                    in archipelago")
 
     def sync_write(self, data):
-        ioctx = self.ioctx_pool.pool_get() 
+        ioctx = self.ioctx_pool.pool_get()
         req = Request.get_write_request(ioctx, self.dst_port, self.name,
                                         data=data, offset=self.offset,
                                         datalen=len(data))
@@ -154,7 +154,7 @@ class ArchipelagoObject(object):
             raise IOError("archipelago: Write request error")
 
     def sync_write_chunks(self, chunksize, offset, chunks, size=None):
-        return file_sync_write_chunks(self, chunksize, offset, chunks,size)
+        return file_sync_write_chunks(self, chunksize, offset, chunks, size)
 
     def sync_read(self, size):
         read = Request.get_read_request
@@ -162,14 +162,14 @@ class ArchipelagoObject(object):
         datalen = 0
         dsize = size
         while 1:
-            ioctx = self.ioctx_pool.pool_get() 
+            ioctx = self.ioctx_pool.pool_get()
             req = read(ioctx, self.dst_port,
-                       self.name,size=dsize-datalen,offset=self.offset)
+                       self.name, size=dsize-datalen, offset=self.offset)
             req.submit()
             req.wait()
             ret = req.success()
             if ret:
-                s = string_at(req.get_data(),dsize-datalen)
+                s = string_at(req.get_data(), dsize-datalen)
             else:
                 s = None
             req.put()

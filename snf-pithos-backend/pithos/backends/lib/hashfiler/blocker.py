@@ -81,7 +81,7 @@ class Blocker(object):
         archip_hash = None
         archip_existed = True
         (archip_hash, archip_existed) = \
-                self.archip_blocker.block_delta(blkhash, offset, data)
+            self.archip_blocker.block_delta(blkhash, offset, data)
 
         if not archip_hash:
             return None, None

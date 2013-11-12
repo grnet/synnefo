@@ -56,8 +56,10 @@
           //TODO: Also check network status
           return !this.is_public() && _.contains(['ACTIVE'], this.get('status'));
         }],
-        'remove': [['status', 'is_public'], function() {
-          //TODO: Also check network status
+        'remove': [['status', 'is_public', 'ports'], function() {
+          if (this.ports && this.ports.length) {
+            return false
+          }
           return !this.is_public() && _.contains(['ACTIVE'], this.get('status'));
         }]
       },
@@ -152,10 +154,13 @@
         this.ports.bind("add", function() {
           this.pending_connections--;
           this.update_connecting_status();
+          this.update_actions();
         }, this);
+
         this.ports.bind("remove", function() {
           this.pending_disconnects--;
           this.update_connecting_status();
+          this.update_actions();
         }, this);
         this.set({ports: this.ports});
 
@@ -165,8 +170,17 @@
             return m.can_connect();
           }
         });
+        this.update_actions();
       },
       
+      update_actions: function() {
+        if (this.ports.length) {
+          this.set({can_remove: false})
+        } else {
+          this.set({can_remove: true})
+        }
+      },
+
       update_connecting_status: function() {
         if (this.pending_connections <= 0) {
           this.pending_connections = 0;
@@ -328,7 +342,7 @@
           }
           var status_ok = _.contains(['DOWN', 'ACTIVE', 'CONNECTED'], 
                                      this.get('status'));
-          var vm_status_ok = this.get('vm') && !this.get('vm').get('busy');
+          var vm_status_ok = this.get('vm') && this.get('vm').can_connect();
           return status_ok && vm_status_ok
         }]
       },

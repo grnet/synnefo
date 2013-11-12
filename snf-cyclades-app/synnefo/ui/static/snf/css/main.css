@@ -3108,7 +3108,7 @@ div.network-add-machine {
 .firewall .progress-indicator {
   position: absolute;
   right: 10px;
-  top: 53px;
+  top: 11px;
 }
 
 .firewall-content {
@@ -6699,6 +6699,11 @@ input.has-errors {
   color: #aaa;
 }
 
+.collection .select-item span.available {
+  font-size: 0.9em;
+  float: right;
+}
+
 .collection span.no-available {
   float: right;
 }
@@ -7294,7 +7299,7 @@ input.has-errors {
 }
 
 .select-item.selected {
-  background-color: #4085A5;
+  background-color: #FF7F2A;
 }
 
 .select-item.selected * {
@@ -7339,8 +7344,11 @@ input.has-errors {
 }
 
 .select-item.private-network .cidr {
-  float: left;
+  float: right;
   width: 40%;
+  font-size: 0.9em;
+  text-align: right;
+  margin-top: 3px;
 }
 
 .select-item .name {

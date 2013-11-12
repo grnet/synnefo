@@ -67,7 +67,7 @@ class Command(ListCommand):
     )
 
     object_class = Subnet
-    astakos_url = ASTAKOS_AUTH_URL
+    astakos_auth_url = ASTAKOS_AUTH_URL
     astakos_token = ASTAKOS_TOKEN
 
     FIELDS = {

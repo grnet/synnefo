@@ -61,7 +61,7 @@ class Command(ListCommand):
 
     object_class = NetworkInterface
     user_uuid_field = "userid"
-    astakos_url = ASTAKOS_AUTH_URL
+    astakos_auth_url = ASTAKOS_AUTH_URL
     astakos_token = ASTAKOS_TOKEN
     prefetch_related = ["ips"]
 

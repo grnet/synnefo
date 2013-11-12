@@ -73,7 +73,7 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
 from pithos.api.resources import resources
 from pithos.backends import connect_backend
 from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
-                                  VersionNotExists)
+                                  VersionNotExists, IllegalOperationError)
 
 from synnefo.lib import join_urls
 from synnefo.util import text
@@ -981,7 +981,11 @@ def put_object_block(request, hashmap, data, offset):
     bo = offset % request.backend.block_size
     bl = min(len(data), request.backend.block_size - bo)
     if bi < len(hashmap):
-        hashmap[bi] = request.backend.update_block(hashmap[bi], data[:bl], bo)
+        try:
+            hashmap[bi] = request.backend.update_block(hashmap[bi],
+                                                       data[:bl], bo)
+        except IllegalOperationError, e:
+            raise faults.Forbidden(e)
     else:
         hashmap.append(request.backend.put_block(('\x00' * bo) + data[:bl]))
     return bl  # Return ammount of data written.

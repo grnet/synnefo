@@ -66,7 +66,7 @@ from pithos.api import settings
 
 from pithos.backends.base import (
     NotAllowedError, QuotaError, ContainerNotEmpty, ItemNotExists,
-    VersionNotExists, ContainerExists, InvalidHash)
+    VersionNotExists, ContainerExists, InvalidHash, IllegalOperationError)
 
 from pithos.backends.filter import parse_filters
 
@@ -1129,6 +1129,8 @@ def object_write(request, v_account, v_container, v_object):
             request.user_uniq, v_account, v_container, v_object, size,
             content_type, hashmap, checksum, 'pithos', meta, True, permissions
         )
+    except IllegalOperationError, e:
+        raise faults.Forbidden(e[0])
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except IndexError, e:
@@ -1190,6 +1192,8 @@ def object_write_form(request, v_account, v_container, v_object):
             request.user_uniq, v_account, v_container, v_object, file.size,
             file.content_type, file.hashmap, checksum, 'pithos', {}, True
         )
+    except IllegalOperationError, e:
+        faults.Forbidden(e[0])
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except ItemNotExists:
@@ -1452,8 +1456,11 @@ def object_update(request, v_account, v_container, v_object):
                         hashmap[bi] = src_hashmap[sbi]
                     else:
                         data = request.backend.get_block(src_hashmap[sbi])
-                        hashmap[bi] = request.backend.update_block(
-                            hashmap[bi], data[:bl], 0)
+                        try:
+                            hashmap[bi] = request.backend.update_block(
+                                hashmap[bi], data[:bl], 0)
+                        except IllegalOperationError, e:
+                            raise faults.Forbidden(e[0])
                 else:
                     hashmap.append(src_hashmap[sbi])
                 offset += bl
@@ -1500,6 +1507,8 @@ def object_update(request, v_account, v_container, v_object):
             prev_meta['type'], hashmap, checksum, 'pithos', meta, replace,
             permissions
         )
+    except IllegalOperationError, e:
+        raise faults.Forbidden(e[0])
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except ItemNotExists:

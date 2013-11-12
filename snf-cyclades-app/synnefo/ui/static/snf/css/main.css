@@ -7290,7 +7290,7 @@ input.has-errors {
 }
 
 .select-item {
-  font-size: 0.9em;
+  font-size: 12px;
   padding: 5px 4px;
   margin-bottom: 3px;
   background-color: #efefef;
@@ -7343,6 +7343,27 @@ input.has-errors {
 .select-item.private-network .name {
   float: left;
   width: 50%;
+}
+
+.select-item.vm .status .indicators {
+  width: 60px;
+  float: left;
+  margin: 0px 0 0 0;
+}
+
+.select-item.vm .status span {
+  text-align: right;
+  display: block;
+  width: 100px;
+  float: left;
+  font-size: 0.9em;
+  margin-top: 2px;
+}
+
+.select-item.vm .status {
+  float: right;
+  margin-right: 0px;
+  width: 170px;
 }
 
 .select-item.private-network .cidr {

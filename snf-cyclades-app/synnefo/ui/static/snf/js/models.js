@@ -1006,6 +1006,10 @@
         unbind: function() {
             models.VM.__super__.unbind.apply(this, arguments);
         },
+        
+        can_connect: function() {
+          return _.contains(["ACTIVE", "STOPPED"], this.get("status"))
+        },
 
         can_resize: function() {
           return this.get('status') == 'STOPPED';

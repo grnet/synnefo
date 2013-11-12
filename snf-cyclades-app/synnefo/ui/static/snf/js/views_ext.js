@@ -518,6 +518,63 @@
         }
       }
     });
+
+    views.ext.SelectModelView = views.ext.ModelView.extend({
+      select: function() {
+        if (!this.delegate_checked) {
+          this.input.attr("checked", true);
+          this.item.addClass("selected");
+        }
+        this.selected = true;
+        this.trigger("change:select", this, this.selected);
+      },
+
+      deselect: function() {
+        if (!this.delegate_checked) {
+          this.input.attr("checked", false);
+          this.item.removeClass("selected");
+        }
+        this.selected = false;
+        this.trigger("change:select", this, this.selected);
+      },
+      
+      toggle_select: function() {
+        if (this.selected) { 
+          this.deselect();
+        } else {
+          this.select();
+        }
+      },
+
+      post_init_element: function() {
+        this.input = $(this.$("input").get(0));
+        this.item = $(this.$(".select-item").get(0));
+        this.delegate_checked = this.model.get('noselect');
+        this.deselect();
+
+        var self = this;
+        if (self.model.get('forced')) {
+          this.select();
+          this.input.attr("disabled", true);
+          $(this.el).attr('title', this.forced_title);
+          $(this.el).tooltip({
+            'tipClass': 'tooltip', 
+            'position': 'top center',
+            'offset': [29, 0]
+          });
+        }
+        
+        $(this.item).click(function(e) {
+          if (self.model.get('forced')) { return }
+          e.stopPropagation();
+          self.toggle_select();
+        });
+        
+        views.ext.SelectModelView.__super__.post_init_element.apply(this,
+                                                                    arguments);
+      }
+    });
+
     
     views.ext.ModelCreateView = views.ext.ModelView.extend({});
     views.ext.ModelEditView = views.ext.ModelCreateView.extend({});

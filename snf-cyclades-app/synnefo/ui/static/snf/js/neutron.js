@@ -158,6 +158,13 @@
           this.update_connecting_status();
         }, this);
         this.set({ports: this.ports});
+
+        this.connectable_vms = new Backbone.FilteredCollection(undefined, {
+          collection: synnefo.storage.vms,
+          collectionFilter: function(m) {
+            return m.can_connect();
+          }
+        });
       },
       
       update_connecting_status: function() {
@@ -178,12 +185,6 @@
         return this.get('router:external')
       },
 
-      pluggable_vms: function() {
-        var vms = synnefo.storage.vms.models;
-        // TODO: filter out vms
-        return vms;
-      },
-      
       connect_vm: function(vm, cb) {
         var self = this;
         var data = {

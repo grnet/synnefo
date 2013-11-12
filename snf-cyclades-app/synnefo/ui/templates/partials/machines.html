@@ -32,6 +32,34 @@
 {% include "partials/manage_metadata.html" %}
 {% include "partials/vm_connect.html" %}
 
+<div id="vm-select-collection-tpl" class="hidden">
+  <div class="collection fixed-ips-list">
+    <div class="empty-list hidden">No available machines.</div>
+    <div class="items-list clearfix"></div>
+  </div>
+</div>
+
+<div id="vm-select-model-tpl" class="hidden">
+  <div class="select-item clearfix vm">
+    <div class="checkbox">
+      <input type="checkbox" data-rv-data-id="model.id" />
+    </div>
+    <div class="ico"><img data-rv-src="model.status|get_vm_icon" /></div>
+    <div class="name">
+      <span class="" data-rv-text="model.name"></span>
+      <div data-rv-class="model.state|status_cls">
+        <span data-rv-text="model.state|status_display"></span>
+        <div class="indicators">
+          <div class="indicator1"></div>
+          <div class="indicator2"></div>
+          <div class="indicator3"></div>
+          <div class="indicator4"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="vm-port-ips-tpl" class="hidden">
   <div class="collection fixed-ips-list">
     <div class="empty-list hidden">pending ...</div>

@@ -383,6 +383,7 @@
       resolve_storage_object: function() {
         return this.collection
       },
+
       show_connect_vms_overlay: function() {
         this.parent_view.show_connect_vms_overlay();
       }
@@ -489,7 +490,7 @@
 
       show_connect_vms_overlay: function() {
         var view = new views.NetworkConnectVMsOverlay();
-        vms = this.model.pluggable_vms();
+        vms = this.model.connectable_vms;
         var cb = _.bind(function(vms) {
           view.set_in_progress();
           var cbinner = function() {
@@ -567,6 +568,57 @@
       collection_view_cls: views.NetworksCollectionView,
       collection_view_selector: '#networks-list-view'
     });
+    
+    views.VMSelectView = views.ext.SelectModelView.extend({
+      tpl: '#vm-select-model-tpl',
+      get_vm_icon: function() {
+        return $(snf.ui.helpers.vm_icon_tag(this.model, "small")).attr("src")
+      },
+
+      status_cls: function() {
+        return (views.IconView.STATE_CLASSES[this.model.get("state")] || []).join(" ") + " status clearfix"
+      },
+      status_display: function() {
+        return STATE_TEXTS[this.model.get("state")]
+      }
+    });
+
+    views.VMSelectView = views.ext.CollectionView.extend({
+      init: function() {
+        views.VMSelectView.__super__.init.apply(this);
+      },
+      tpl: '#vm-select-collection-tpl',
+      model_view_cls: views.VMSelectView,
+      
+      trigger_select: function(view, select) {
+        this.trigger("change:select", view, select);
+      },
+
+      post_add_model_view: function(view) {
+        view.bind("change:select", this.trigger_select, this);
+        if (!this.options.allow_multiple) {
+          view.input.prop("type", "radio");
+        }
+      },
+
+      post_remove_model_view: function(view) {
+        view.unbind("change:select", this.trigger_select, this);
+      },
+
+      deselect_all: function(except) {
+        _.each(this._subviews, function(view) {
+          if (view != except) { view.deselect() }
+        });
+      },
+
+      get_selected: function() {
+        return _.filter(_.map(this._subviews, function(view) {
+          if (view.selected) {
+            return view.model;
+          }
+        }), function(m) { return m });
+      }
+    });
 
     views.NetworkConnectVMsOverlay = views.Overlay.extend({
         title: "Connect machine",
@@ -582,8 +634,26 @@
             // flag for submit handler to avoid duplicate bindings
             this.submit_handler_set = false;
             this.in_progress = false;
+
         },
         
+        init_collection_view: function(collection) {
+            this.collection_view = new views.VMSelectView({
+              collection: collection,
+              el: this.list,
+              allow_multiple: this.allow_multiple
+            });
+            this.collection_view.show(true);
+            this.list.append($(this.collection_view.el));
+            if (!this.allow_multiple) {
+              this.collection_view.bind("change:select", 
+                                        function(view, selected) {
+                if (!selected) { return }
+                this.collection_view.deselect_all(view);
+              }, this);
+            }
+        },
+
         handle_vm_click: function(el) {
             if (!this.allow_multiple) {
               $(el).closest("ul").find(".selected").removeClass("selected");
@@ -595,9 +665,6 @@
 
         init_handlers: function() {
             var self = this;
-            this.list.find("li").click(function() {
-                self.handle_vm_click($(this));
-            });
             
             if (!this.submit_handler_set) {
                 // avoid duplicate submits
@@ -609,23 +676,15 @@
                 this.submit_handler_set = true;
             }
         },
-
-        reset: function() {
-            this.list.find("li").remove();
-        },
-
+        
+        reset: function() {},
         beforeOpen: function() {
             this.reset();
             this.update_layout();
         },
         
-        vm: function(vm) {
-            if (vm.id) { var id = vm.id } else {var id = vm}
-            return this.list.find(".vm-" + id);
-        },
-
         get_selected: function() {
-            return this.list.find(".selected").map(function() {return $(this).data('vm')})
+          return this.collection_view.get_selected();
         },
 
         update_layout: function() {
@@ -638,35 +697,9 @@
                 this.empty_message.hide();
             }
 
-            _.each(this.vms, _.bind(function(vm){
-                var html = '<li class="vm option options-object vm-{0}">' +
-                           '<div class="options-object-cont">' +
-                           '{2}' + 
-                           '<span class="title">{1}</span>' + 
-                           '<span class="value">{3}</span></div>' + 
-                           '</li>';
-                var el = $(html.format(vm.id, 
-                       util.truncate(_.escape(vm.get("name")), 23), 
-                       snf.ui.helpers.vm_icon_tag(vm, "small", {'class':'os'}),
-                       _.escape(vm.get_os())
-                ));
-                el.data({vm:vm, vm_id:vm.id});
-                this.list.append(el);
-
-                vm.bind("remove", function(){ el.remove()})
-                vm.bind("change:name", function(i,v){el.find(".title").text(v)})
-            }, this));
-            
             this.init_handlers();
-            this.set_selected();
         },
 
-        set_selected: function() {
-            _.each(this.selected, _.bind(function(el){
-                this.vm(el).addClass("selected");
-            }, this));
-        },
-        
         set_in_progress: function() {
           this.$(".form-action").addClass("in-progress");
           this.in_progress = true;
@@ -678,6 +711,7 @@
         },
 
         show_vms: function(network, vms, selected, callback, subtitle) {
+            this.init_collection_view(vms);
             this.network = network;
             this.reset();
             if (network) {
@@ -691,6 +725,11 @@
             this.unset_in_progress();
             this.show(true);
         },
+        
+        onClose: function() {
+          this.collection_view.hide(true);
+          delete this.collection_view;
+        },
 
         submit: function() {
             if (!this.get_selected().length) { return }
@@ -698,61 +737,7 @@
         }
     });
     
-    views.NetworkSelectModelView = views.ext.ModelView.extend({
-      select: function() {
-        if (!this.delegate_checked) {
-          this.input.attr("checked", true);
-          this.item.addClass("selected");
-        }
-        this.selected = true;
-        this.trigger("change:select", this, this.selected);
-      },
-
-      deselect: function() {
-        if (!this.delegate_checked) {
-          this.input.attr("checked", false);
-          this.item.removeClass("selected");
-        }
-        this.selected = false;
-        this.trigger("change:select", this, this.selected);
-      },
-      
-      toggle_select: function() {
-        if (this.selected) { 
-          this.deselect();
-        } else {
-          this.select();
-        }
-      },
-
-      post_init_element: function() {
-        this.input = $(this.$("input").get(0));
-        this.item = $(this.$(".select-item").get(0));
-        this.delegate_checked = this.model.get('noselect');
-        this.deselect();
-
-        var self = this;
-        if (self.model.get('forced')) {
-          this.select();
-          this.input.attr("disabled", true);
-          $(this.el).attr('title', this.forced_title);
-          $(this.el).tooltip({
-            'tipClass': 'tooltip', 
-            'position': 'top center',
-            'offset': [29, 0]
-          });
-        }
-        
-        $(this.item).click(function(e) {
-          if (self.model.get('forced')) { return }
-          e.stopPropagation();
-          self.toggle_select();
-        });
-        
-        views.NetworkSelectModelView.__super__.post_init_element.apply(this,
-                                                                       arguments);
-      }
-    });
+    views.NetworkSelectModelView = views.ext.SelectModelView.extend({});
 
     views.NetworkSelectNetworkTypeModelView = views.NetworkSelectModelView.extend({
       get_network_icon: function() {

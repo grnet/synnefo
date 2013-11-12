@@ -244,28 +244,7 @@ class NetworkReconciliationTest(TestCase):
                                              "external_reservations": ""}]
         self.reconciler.reconcile_networks()
         self.assertTrue(net1.backend_networks
-                            .filter(backend=self.backend).exists())
-        # ..but not if it is destroying
-        net1.backend_networks.all().delete()
-        net1.action = "DESTROY"
-        net1.save()
-        self.reconciler.reconcile_networks()
-        self.assertFalse(net1.backend_networks
-                             .filter(backend=self.backend).exists())
-        # or network is public!
-        net1.action = "CREATE"
-        net1.public = True
-        net1.save()
-        self.reconciler.reconcile_networks()
-        self.assertFalse(net1.backend_networks
-                             .filter(backend=self.backend).exists())
-        # Test creation if network is a floating IP pool
-        net2 = mfactory.NetworkWithSubnetFactory(floating_ip_pool=True)
-        mrapi().GetNetworks.return_value = []
-        self.assertEqual(net2.backend_networks.count(), 0)
-        self.reconciler.reconcile_networks()
-        self.assertTrue(net2.backend_networks
-                            .filter(backend=self.backend).exists())
+                        .filter(backend=self.backend).exists())
 
     def test_stale_network(self, mrapi):
         # Test that stale network will be deleted from DB, if network action is

@@ -33,7 +33,7 @@
 
 from django.utils import simplejson as json
 from snf_django.utils.testing import BaseAPITest, mocked_quotaholder
-from synnefo.db.models import IPAddress, Network
+from synnefo.db.models import IPAddress, Network, Subnet, IPPoolTable
 from synnefo.db import models_factory as mf
 
 from mock import patch, Mock
@@ -127,6 +127,8 @@ class FloatingIPAPITest(BaseAPITest):
         """Test reserve FIP without specifying network."""
         request = {"floatingip": {}}
         # delete all pools..
+        IPPoolTable.objects.all().delete()
+        Subnet.objects.all().delete()
         Network.objects.all().delete()
         # CASE: no floating IP pool
         with mocked_quotaholder():

@@ -843,7 +843,7 @@ def _create_network(network, backend):
     # network with a dummy network subnet, and make Cyclades connect instances
     # to such networks, with address=None.
     if subnet is None:
-        subnet = "10.0.0.0/30"
+        subnet = "10.0.0.0/29"
 
     try:
         bn = BackendNetwork.objects.get(network=network, backend=backend)

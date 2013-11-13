@@ -164,7 +164,17 @@ def pprint_ippool(subnet, stdout=None, title=None):
                             ("Size", size),
                             ("Available", available)])
         pprint_table(stdout, info.items(), None, separator=" | ", title=None)
-        pprint_pool(None, bitarray_to_map(pool.available[:size]), 80, stdout)
+
+        reserved = [pool.index_to_value(index)
+                    for index, ip in enumerate(pool.reserved[:size])
+                    if ip is False]
+
+        if reserved != []:
+            stdout.write("\nExternally Reserved IPs:\n\n")
+            stdout.write(", ".join(reserved) + "\n")
+
+        ip_sum = pool.available[:size] & pool.reserved[:size]
+        pprint_pool(None, bitarray_to_map(ip_sum), 80, stdout)
         stdout.write("\n\n")
 
 

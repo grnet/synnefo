@@ -157,7 +157,7 @@ def get_subnet(request, sub_id):
     user_id = request.user_uniq
     subnet = subnets.get_subnet(sub_id)
 
-    if subnet.network.userid != user_id:
+    if (subnet.network.userid != user_id) and (subnet.network.public is False):
         raise api.faults.Unauthorized("You're not allowed to view this subnet")
 
     subnet_dict = subnet_to_dict(subnet)

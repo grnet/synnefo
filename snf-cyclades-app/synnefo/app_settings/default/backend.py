@@ -33,6 +33,10 @@ GANETI_CREATEINSTANCE_KWARGS = {
 # a network. This requires qemu-kvm=1.0.
 GANETI_USE_HOTPLUG = True
 
+# If True, Ganeti will try to allocate new instances only on nodes that are
+# not already locked. This might result in slightly unbalanced clusters.
+GANETI_USE_OPPORTUNISTIC_LOCKING = True
+
 # This module implements the strategy for allocating a vm to a backend
 BACKEND_ALLOCATOR_MODULE = "synnefo.logic.allocators.default_allocator"
 # Refresh backend statistics timeout, in minutes, used in backend allocation

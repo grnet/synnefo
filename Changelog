@@ -108,6 +108,23 @@ objects by domain attribute. This is used by Plankton for listing VM images.
 
 * Enforce container-level atomicity in (most) Pithos API calls.
 
+.. _Changelog-0.14.10:
+
+v0.14.10
+=======
+
+Released: UNRELEASED
+
+Cyclades
+-------
+
+* This is the first release to support Ganeti 2.8. Support for older versions
+  of Ganeti is dropped.
+* Use Ganeti opportunistic locking to achive parallelized instance creations
+  in the same backend. Add setting 'GANETI_USE_OPPORTUNISTIC_LOCKING' to
+  enable the use of this feature.
+* Fix warning message while getting object permissions to appear only when
+  path is None and the object has permissions
 
 .. _Changelog-0.14.9:
 

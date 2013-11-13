@@ -241,7 +241,13 @@ class JobFileHandler(pyinotify.ProcessEvent):
             if op.status == "success":
                 msg["result"] = op.result
 
+            if op_id == "OP_INSTANCE_CREATE" and op.status == "error":
+                # In case an instance creation fails send the job input
+                # so that the job can be retried if needed.
+                msg["job_fields"] = op.Serialize()["input"]
+
             msg = json.dumps(msg)
+
             self.logger.debug("Delivering msg: %s (key=%s)", msg, routekey)
 
             # Send the message to RabbitMQ

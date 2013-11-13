@@ -985,7 +985,7 @@ def put_object_block(request, hashmap, data, offset):
             hashmap[bi] = request.backend.update_block(hashmap[bi],
                                                        data[:bl], bo)
         except IllegalOperationError, e:
-            raise faults.Forbidden(e)
+            raise faults.Forbidden(e[0])
     else:
         hashmap.append(request.backend.put_block(('\x00' * bo) + data[:bl]))
     return bl  # Return ammount of data written.

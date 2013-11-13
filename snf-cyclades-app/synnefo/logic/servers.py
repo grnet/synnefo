@@ -413,12 +413,12 @@ def _create_port(userid, network, machine=None, use_ipaddress=None,
     if network.state != "ACTIVE":
         raise faults.Conflict("Cannot create port while network '%s' is in"
                               " '%s' status" % (network.id, network.state))
-    elif network.drained:
-        raise faults.Conflict("Cannot create port while network %s is in"
-                              " 'SNF:DRAINED' status" % network.id)
     elif network.action == "DESTROY":
         msg = "Cannot create port. Network %s is being deleted."
         raise faults.Conflict(msg % network.id)
+    elif network.drained:
+        raise faults.Conflict("Cannot create port while network %s is in"
+                              " 'SNF:DRAINED' status" % network.id)
 
     ipaddress = None
     if use_ipaddress is not None:

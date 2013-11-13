@@ -455,7 +455,7 @@
         }
         if (this.model.id == "snf-combined-public-network" && !_.contains(
           ["CONNECTING", "DISCONNECTING"], status)) {
-          return "Internet"
+          return "Public connectivity"
         }
 
         return this.status_map[status];
@@ -574,7 +574,6 @@
       get_vm_icon: function() {
         return $(snf.ui.helpers.vm_icon_tag(this.model, "small")).attr("src")
       },
-
       status_cls: function() {
         return (views.IconView.STATE_CLASSES[this.model.get("state")] || []).join(" ") + " status clearfix"
       },
@@ -753,13 +752,6 @@
       classes: 'public-network',
       post_init_element: function() {
         views.NetworkSelectPublicNetwork.__super__.post_init_element.apply(this);
-        //$(this.el).attr('title', 'Public network tooltip');
-        //$(this.el).tooltip({
-          //'tipClass': 'tooltip', 
-          //'position': 'top center',
-          //'offset': [-5, 0]
-        //});
-
       }
     });
 
@@ -836,7 +828,7 @@
           e.preventDefault();
           self.create_ip();
         });
-        this.update_available();
+        this.reset_creating();
       },
       
       hide_parent: function() {
@@ -877,7 +869,7 @@
           no_available_el.show();
         } else {
           // available floating ip
-          var available_text = "{0} IP's available.".format(
+          var available_text = "".format(
             this.collection.length + this.quota.get_available());
           available_el.removeClass("hidden").text(available_text).show();
           available_el.show();
@@ -893,15 +885,20 @@
         } else {
           // no available quota
           create.addClass("no-available");
-          create.show();
+          create.hide();
           create_link.hide();
-          create_no_available.show();
+          //create_no_available.show();
         }
-        //
         this.update_selected();
       },
       
       update_selected: function() {
+        _.each(this.selected_ips.length, function(ip) {
+          if (!this.collection.get(ip.id)) {
+            this.selected_ips = _.without(this.selected_ips, ip);
+          }
+        }, this);
+
         if (this.selected_ips.length) {
           this.parent_view.input.attr("checked", true);
           this.parent_view.item.addClass("selected");
@@ -919,11 +916,31 @@
       },
 
       handle_create_error: function() {},
+      
+      set_creating: function() {
+        var create_link = this.$(".create a");
+        var create_no_available = this.$(".create .no-available");
+        var loading = this.$(".create .loading");
+        create_link.hide();
+        loading.show();
+      },
+
+      reset_creating: function() {
+        var loading = this.$(".create .loading");
+        loading.hide();
+        this.update_available();
+      },
 
       create_ip: function() {
         if (!this.quota.get_available()) { return }
+        var self = this;
+        this.set_creating();
         synnefo.storage.floating_ips.create({floatingip:{}}, {
           error: _.bind(this.handle_create_error, this),
+          complete: function() {
+            synnefo.storage.quotas.fetch();
+            self.reset_creating();
+          },
           skip_api_error: true
         });
       },
@@ -975,8 +992,8 @@
       select_public: true,
       
       forced_values_title_map: {
-        "SNF:ANY_PUBLIC_IPV6": "Public IPv6 Network",
-        "SNF:ANY_PUBLIC_IPV4": "Public IPv4 Network"
+        "SNF:ANY_PUBLIC_IPV6": "Internet (public IPv6)",
+        "SNF:ANY_PUBLIC_IPV4": "Internet (public IPv4)"
       },
 
       initialize: function(options) {
@@ -1019,7 +1036,9 @@
 
         // combined public
         this.combined_public = new models.networks.CombinedPublicNetwork();
-        this.combined_public.set({noselect: true, name: 'Internet', forced: false});
+        this.combined_public.set({noselect: true, 
+                                  name: 'Internet (public IPv4)', 
+                                  forced: false});
         this.public_networks.add(this.combined_public);
 
         model_attrs = {

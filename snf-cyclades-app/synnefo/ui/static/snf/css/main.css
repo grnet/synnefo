@@ -6707,6 +6707,10 @@ input.has-errors {
 .collection span.no-available {
 }
 
+.collection span.no-available {
+  float: right;
+}
+
 .collection .no-available {
   font-size: 0.8em;
   color: #f00;

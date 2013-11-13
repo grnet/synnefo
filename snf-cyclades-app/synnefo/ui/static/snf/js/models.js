@@ -359,6 +359,9 @@
             if (!model) return false;
             var success = options.success;
             options.success = function(nextModel, resp, xhr) {
+                if (coll.add_on_create) {
+                  coll.add(nextModel, options);
+                }
                 if (success) success(nextModel, resp, xhr);
             };
             model.save(null, options);

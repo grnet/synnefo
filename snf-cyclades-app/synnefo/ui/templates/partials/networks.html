@@ -257,11 +257,12 @@
   <div class="collection">
     <div class="items-list floating-ips clearfix">
     </div>
-    <div class="create model-item select-item floating-ip">
+    <div class="create model-item select-item floating-ip clearfix">
       <span class="empty-list hidden" style="padding-left:0;">
         {% trans "No ip addresses available" %} 
       </span>
       <a href="#">create new...</a>
+      <span class="loading">creating...</span>
       <span class="no-available hidden">{% trans "IP's limit reached." %}</span>
     </div>
   </div>

@@ -47,6 +47,7 @@
       
       vm_style: function() {
         var style = "background-image: url('{0}')";
+        if (!this.model.get('vm')) { return }
         return style.format(this.get_vm_icon_path(this.model.get('vm'), 
                                                   'medium'));
       },

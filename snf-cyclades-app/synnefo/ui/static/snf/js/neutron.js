@@ -29,7 +29,8 @@
       api_type: 'network',
       details: true,
       noUpdate: true,
-      updateEntries: true
+      updateEntries: true,
+      add_on_create: true
     });
   
     // Subnet model
@@ -48,6 +49,10 @@
     // Network 
     models.Network = models.NetworkModel.extend({
       path: 'networks',
+
+      parse: function(obj) {
+        return obj.network;
+      },
 
       // Available network actions.
       // connect: 
@@ -224,7 +229,7 @@
       defaults: {
         'admin_state_up': true,
         'id': 'snf-combined-public-network',
-        'name': 'Public',
+        'name': 'Internet',
         'status': 'ACTIVE',
         'router:external': true,
         'shared': false,
@@ -311,6 +316,9 @@
 
     models.Port = models.NetworkModel.extend({
       path: 'ports',
+      parse: function(obj) {
+        return obj.port;
+      },
       initialize: function() {
         models.Port.__super__.initialize.apply(this, arguments);
         var ips = new models.FixedIPs();
@@ -439,6 +447,11 @@
 
     models.FloatingIP = models.NetworkModel.extend({
       path: 'floatingips',
+
+      parse: function(obj) {
+        return obj.floatingip;
+      },
+
       storage_attrs: {
         'port_id': ['ports', 'port'],
         'floating_network_id': ['networks', 'network'],
@@ -494,7 +507,7 @@
           }
         ]
       },
-
+      
       disconnect: function(cb) {
         this.get('port').disconnect(cb);
       }

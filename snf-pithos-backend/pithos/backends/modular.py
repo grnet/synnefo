@@ -46,11 +46,12 @@ try:
 except ImportError:
     AstakosClient = None
 
-from base import (DEFAULT_ACCOUNT_QUOTA, DEFAULT_CONTAINER_QUOTA,
-                  DEFAULT_CONTAINER_VERSIONING, NotAllowedError, QuotaError,
-                  BaseBackend, AccountExists, ContainerExists, AccountNotEmpty,
-                  ContainerNotEmpty, ItemNotExists, VersionNotExists,
-                  InvalidHash, IllegalOperationError)
+from pithos.backends.base import (
+    DEFAULT_ACCOUNT_QUOTA, DEFAULT_CONTAINER_QUOTA,
+    DEFAULT_CONTAINER_VERSIONING, NotAllowedError, QuotaError,
+    BaseBackend, AccountExists, ContainerExists, AccountNotEmpty,
+    ContainerNotEmpty, ItemNotExists, VersionNotExists,
+    InvalidHash, IllegalOperationError)
 
 
 class DisabledAstakosClient(object):
@@ -1249,7 +1250,7 @@ class ModularBackend(BaseBackend):
         for h in hashmap:
             if h.startswith('archip_'):
                 raise IllegalOperationError(
-                        'Cannot update Archipelago Volume hashmap.')
+                    'Cannot update Archipelago Volume hashmap.')
         meta = meta or {}
         if size == 0:  # No such thing as an empty hashmap.
             hashmap = [self.put_block('')]
@@ -1583,7 +1584,7 @@ class ModularBackend(BaseBackend):
         logger.debug("update_block: %s %s %s", hash, len(data), offset)
         if hash.startswith('archip_'):
             raise IllegalOperationError(
-                    'Cannot update an Archipelago Volume block.')
+                'Cannot update an Archipelago Volume block.')
         if offset == 0 and len(data) == self.block_size:
             return self.put_block(data)
         h = self.store.block_update(self._unhexlify_hash(hash), offset, data)

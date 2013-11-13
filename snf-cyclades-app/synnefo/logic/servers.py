@@ -15,6 +15,7 @@ from synnefo.logic.backend_allocator import BackendAllocator
 from synnefo.db.models import (NetworkInterface, VirtualMachine,
                                VirtualMachineMetadata, IPAddressLog, Network)
 from vncauthproxy.client import request_forwarding as request_vnc_forwarding
+from synnefo.logic import rapi
 
 log = logging.getLogger(__name__)
 
@@ -244,7 +245,7 @@ def destroy(vm):
     # Ganeti before OP_INSTANCE_CREATE. This will be fixed when
     # OP_INSTANCE_REMOVE supports the 'depends' request attribute.
     if (vm.backendopcode == "OP_INSTANCE_CREATE" and
-       vm.backendjobstatus != "success" and
+       vm.backendjobstatus not in rapi.JOB_STATUS_FINALIZED and
        backend.job_is_still_running(vm) and
        not backend.vm_exists_in_backend(vm)):
             raise faults.BuildInProgress("Server is being build")

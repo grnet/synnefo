@@ -58,7 +58,7 @@ class Command(BaseCommand):
                          " networks of a user, use snf-manage network-list"),
         make_option("--cidr", dest="cidr",
                     help="The CIDR of the subnet, e.g., 192.168.42.0/24"),
-        make_option("--allocation-pools", dest="allocation_pools",
+        make_option("--allocation-pool", dest="allocation_pools",
                     action="append",
                     help="IP allocation pools to be used for assigning IPs to"
                     " VMs. Can be used multiple times. Syntax: \n"

@@ -129,7 +129,7 @@ class Command(BaseCommand):
             metavar="True|False",
             help="Use the network as a Floating IP pool."),
         make_option(
-            '--allocation-pools',
+            '--allocation-pool',
             dest='allocation_pools',
             action='append',
             help="IP allocation pools to be used for assigning IPs to"

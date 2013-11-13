@@ -1,9 +1,20 @@
 Upgrade to Synnefo v0.14.8
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Since v0.14.8, Synnefo ships an example Gunicorn configuration file, that gets
-installed automatically at ``/etc/gunicorn.d/synnefo.example``.
-To use it you need to do two things:
+Synnefo v0.14.8 release introduced support for Debian Wheezy (and Django 1.4).
+To upgrade from Squeeze to Wheezy you should make sure to change the
+``'ENGINE'`` option in ``/etc/synnefo/10-snf-webproject-databases.conf`` to
+``'django.db.backends.postgresql_psycopg2``. Replace ``postgresql_psycopg2``
+with the DB engine you are using.
+
+If you're upgrading to Synnefo v0.14.8 on Squeeze, you should also make sure to
+have the Squezee backports repository installed, since ``snf-webproject``
+depends on ``>=python-django-south-0.7.3``, which on Squeeze is only available
+from the backports repository.
+
+Since v0.14.8, Synnefo also ships an example Gunicorn configuration file, that
+gets installed automatically at ``/etc/gunicorn.d/synnefo.example``.  To use it
+you need to do two things:
 
 1. Disable your old configuration file by removing it.
    [if you are upgrading from an older version and you had such a file]

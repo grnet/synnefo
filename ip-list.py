@@ -31,41 +31,45 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-#from optparse import make_option
 
-from django.db import transaction
-from django.core.management.base import BaseCommand, CommandError
-from synnefo.management import common
+from snf_django.management.commands import ListCommand
+from synnefo.db.models import IPAddressLog
+from optparse import make_option
+
+from logging import getLogger
+log = getLogger(__name__)
 
 
-class Command(BaseCommand):
+class Command(ListCommand):
     help = "Information about a floating IP"
 
-    @transaction.commit_on_success
-    def handle(self, *args, **options):
-        if not args:
-            raise CommandError("Please provide a floating-ip address")
+    option_list = ListCommand.option_list + (
+        make_option(
+            '--address',
+            dest='address',
+            help="Get logs about a specif IP"),
+        make_option(
+            '--server',
+            dest='server',
+            help="Get logs about a specif server"),
+    )
 
-        fip_address = args[0]
+    object_class = IPAddressLog
+    order_by = "allocated_at"
 
-        floating_ip_log = common.get_floating_ip_log_by_address(fip_address)
-        if floating_ip_log:
-            for entry in floating_ip_log:
-                if entry.active:
-                    self.stdout.write("Floating IP '%s' is connected to server"
-                                      " '%s' on network '%s'.\n"
-                                      % (fip_address,
-                                         entry.server_id,
-                                         entry.network_id)
-                                      )
+    FIELDS = {
+        "address": ("address", "The IP address"),
+        "server": ("server_id", "The the server connected to"),
+        "network": ("network_id", "The id of the network"),
+        "allocated_at": ("allocated_at", "Datetime IP allocated to server"),
+        "released_at": ("released_at", "Datetime IP released from server"),
+        "active": ("active", "Whether IP still allocated to server"),
+    }
 
-                else:
-                    self.stdout.write("Floating IP '%s' was connected to server"
-                                      " '%s' from '%s' to '%s'\n"
-                                      % (fip_address, entry.server_id,
-                                         entry.allocated_at,
-                                         entry.released_at))
-        else:
-            self.stdout.write("Floating IP '%s' either doesn't exist or it"
-                               " hasn't been connected to any server yet\n"
-                               % fip_address)
+    fields = ["address", "server", "network", "allocated_at", "released_at"]
+
+    def handle_args(self, *args, **options):
+        if options["address"]:
+            self.filters["address"] = options["address"]
+        if options["server"]:
+            self.filters["server_id"] = options["server"]

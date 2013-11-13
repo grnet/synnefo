@@ -46,7 +46,7 @@ from urllib import unquote
 import astakosclient
 from snf_django.lib import astakos
 
-from synnefo.db.models import VirtualMachine, IPAddress, Network, IPAddressLog
+from synnefo.db.models import VirtualMachine, Network, IPAddressLog
 
 # server actions specific imports
 from synnefo.api import util
@@ -276,7 +276,8 @@ def search_by_ip(request, search_query):
                                                  retry=2, use_pool=True,
                                                  logger=logger)
 
-    ips = IPAddressLog.objects.filter(address=search_query)
+    ips = IPAddressLog.objects.filter(address=search_query)\
+                              .order_by("allocated_at")
 
     for ip in ips:
         # Annotate IPs with the VM, Network and account attributes

@@ -150,6 +150,10 @@ class HelpdeskTests(TestCase):
                                           network__public=True,
                                           network__userid=None,
                                           address="195.251.222.211")
+        mfactory.IPAddressLogFactory(address=ip2.address,
+                                     server_id=vm1u1.id,
+                                     network_id=ip2.network.id,
+                                     active=True)
 
     def test_enabled_setting(self):
         settings.HELPDESK_ENABLED = False
@@ -166,12 +170,16 @@ class HelpdeskTests(TestCase):
         # ip does not exist, proper message gets displayed
         r = self.client.get(reverse('helpdesk-details',
                             args=["195.251.221.122"]), user_token='0001')
-        self.assertContains(r, 'User with IP')
+        self.assertFalse(r.context["ip_exists"])
+        self.assertEqual(list(r.context["ips"]), [])
 
-        # ip exists, 'test' account discovered
+        # ip exists
         r = self.client.get(reverse('helpdesk-details',
                             args=["195.251.222.211"]), user_token='0001')
-        self.assertEqual(r.context['account'], USER1)
+        self.assertTrue(r.context["ip_exists"])
+        ips = r.context["ips"]
+        for ip in ips:
+            self.assertEqual(ip.address, "195.251.222.211")
 
     def test_vm_lookup(self):
         # vm id does not exist

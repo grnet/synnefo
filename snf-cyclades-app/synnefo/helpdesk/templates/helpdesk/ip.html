@@ -1,0 +1,47 @@
+{% extends "helpdesk/base.html" %}
+
+{% block extraheader %}
+<small>/ {{ account_name }}</small>
+{% endblock %}
+
+{% block content %}
+
+{% if ip_exists %}
+<table border 1>
+  <tr>
+    IP Address {{ search_query }}
+  </tr>
+  <tr>
+          <td> Server  </td>
+          <td> Network  </td>
+          <td> Allocated  </td>
+          <td> Released  </td>
+          <td> Account  </td>
+  </tr>
+{% for ip in ips %}
+  <tr>
+          <td>
+              {% if ip.released_at %}
+                Server {{ ip.server_id }}
+              {% else %}
+              <a href="vm-{{ ip.server_id }}">Server {{ ip.server_id }}</a>
+              {% endif %}
+          </td>
+          <td> Network {{ ip.network_id }} </td>
+          <td> {{ ip.allocated_at|date:"r" }} </td>
+          <td>
+               {% if ip.released_at %}
+                  {{ ip.released_at|date:"r" }}
+               {% else %}
+                  -
+               {% endif %}
+          </td>
+          <td><a href="{{ ip.account }}">{{ ip.account }}</a></td>
+  </tr>
+{% endfor %}
+</table>
+{% else %}
+
+<p> IP Address {{ search_query }} has never been allocated to any server. </p>
+{% endif %}
+{% endblock %}

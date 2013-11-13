@@ -274,3 +274,11 @@ class MacPrefixPoolTableFactory(factory.DjangoModelFactory):
 class QuotaHolderSerialFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.QuotaHolderSerial
     serial = factory.Sequence(lambda x: x, type=int)
+
+
+class IPAddressLogFactory(factory.DjangoModelFactory):
+    FACTORY_FOR = models.IPAddressLog
+    address = "192.168.2.1"
+    server_id = 1
+    network_id = 1
+    active = True

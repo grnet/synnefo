@@ -39,13 +39,12 @@ from archipelago.common import posixfd_signal_desc
 from ctypes import cast, POINTER
 import os
 from gevent import select
-import objpool
 
 
 def pithos_xseg_wait_signal_green(ctx, sd, timeout):
     posixfd_sd = cast(sd, POINTER(posixfd_signal_desc))
     fd = posixfd_sd.contents.fd
-    select.select([fd], [], [], timeout/1000000.0)
+    select.select([fd], [], [], timeout / 1000000.0)
     while True:
         try:
             os.read(fd, 512)

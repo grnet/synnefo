@@ -71,9 +71,6 @@ class BackendAllocator():
         # Get available backends
         available_backends = get_available_backends(flavor)
 
-        # Refresh backends, if needed
-        refresh_backends_stats(available_backends)
-
         if not available_backends:
             return None
 
@@ -109,8 +106,15 @@ def get_available_backends(flavor):
 
     backends = Backend.objects.select_for_update().filter(offline=False,
                                                           drained=False)
+    # Update the disk_templates if there are empty.
+    [backend_mod.update_backend_disk_templates(b)
+     for b in backends if not b.disk_templates]
     backends = filter(lambda b: disk_template in b.disk_templates,
                       list(backends))
+
+    # Update the backend stats if it is needed
+    refresh_backends_stats(backends)
+
     return backends
 
 

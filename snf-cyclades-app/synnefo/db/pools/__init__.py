@@ -316,7 +316,11 @@ class IPPool(PoolManager):
 
     def contains(self, address, index=False):
         if index is False:
-            addr = ipaddr.IPAddress(address)
+            try:
+                addr = ipaddr.IPAddress(address)
+            except ValueError:
+                raise InvalidValue("Invalid IP address")
+
             if addr not in self.net:
                 return False
         return super(IPPool, self).contains(address, index=False)

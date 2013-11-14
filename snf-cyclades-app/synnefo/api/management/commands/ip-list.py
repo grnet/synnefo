@@ -47,11 +47,17 @@ class Command(ListCommand):
         make_option(
             '--address',
             dest='address',
-            help="Get logs about a specif IP"),
+            help="Display IP history only for this address"),
         make_option(
             '--server',
             dest='server',
-            help="Get logs about a specif server"),
+            help="Display IP history only for this server"),
+        make_option(
+            '--active',
+            dest="active",
+            action="store_true",
+            default=False,
+            help="Display only IPs that are currently in use")
     )
 
     object_class = IPAddressLog
@@ -73,3 +79,5 @@ class Command(ListCommand):
             self.filters["address"] = options["address"]
         if options["server"]:
             self.filters["server_id"] = options["server"]
+        if options["active"]:
+            self.filters["active"] = True

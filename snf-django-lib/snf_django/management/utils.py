@@ -95,17 +95,17 @@ def parse_filters(filter_by):
             exclude_dict[key] = parse_bool(val, strict=False)
             return
 
-        OP_MAP = {
-            ">=": "__gte",
-            "=>": "__gte",
-            ">":  "__gt",
-            "<=": "__lte",
-            "=<": "__lte",
-            "<":  "__lt",
-            "=":  "",
-        }
+        OP_MAP = [
+            (">=", "__gte"),
+            ("=>", "__gte"),
+            (">",  "__gt"),
+            ("<=", "__lte"),
+            ("=<", "__lte"),
+            ("<", "__lt"),
+            ("=", ""),
+            ]
 
-        for op, new_op in OP_MAP.items():
+        for op, new_op in OP_MAP:
             if op in query:
                 key, val = query.split(op)
                 filter_dict[key + new_op] = parse_bool(val, strict=False)

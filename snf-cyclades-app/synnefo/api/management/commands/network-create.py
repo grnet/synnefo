@@ -166,8 +166,8 @@ class Command(BaseCommand):
         if flavor is None:
             raise CommandError("flavor is required")
 
-        if (subnet is None) and (subnet6 is None):
-            raise CommandError("subnet or subnet6 is required")
+        if ((subnet is None) and (subnet6 is None)) and dhcp is not False:
+            raise CommandError("Cannot set DHCP without subnet or subnet6")
 
         if subnet is None and gateway is not None:
             raise CommandError("Cannot use gateway without subnet")

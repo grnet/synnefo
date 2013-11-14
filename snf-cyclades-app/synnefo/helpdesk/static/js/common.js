@@ -2,7 +2,14 @@ $(document).ready(function(){ $("input").focus(); })
 
 $(document).ready(function(){
 
-	
+ // table sorting
+
+ $('.table-sorted').tablesorter({
+    sortList : [[2,0]],
+});
+
+
+
  // fix sub nav on scroll
   var $win = $(window)
     , $nav = $('.subnav')

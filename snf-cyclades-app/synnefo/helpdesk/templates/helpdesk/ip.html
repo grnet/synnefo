@@ -1,23 +1,23 @@
 {% extends "helpdesk/base.html" %}
 
 {% block extraheader %}
-<small>/ {{ account_name }}</small>
+<small>/ {{ search_query }}</small>
 {% endblock %}
 
 {% block content %}
-
 {% if ip_exists %}
-<table border 1>
+<h3>IP Address {{ search_query }}</h3>
+<table class="table table-striped table-sorted table-ip">
+<thead>
   <tr>
-    IP Address {{ search_query }}
+          <th><span> Server</span></th>
+          <th><span> Network </span></th>
+          <th><span> Allocated </span></th>
+          <th><span> Released </span></th>
+          <th><span> Account  </span></th>
   </tr>
-  <tr>
-          <td> Server  </td>
-          <td> Network  </td>
-          <td> Allocated  </td>
-          <td> Released  </td>
-          <td> Account  </td>
-  </tr>
+</thead>
+<tbody>
 {% for ip in ips %}
   <tr>
           <td>
@@ -39,9 +39,10 @@
           <td><a href="{{ ip.account }}">{{ ip.account }}</a></td>
   </tr>
 {% endfor %}
+</tbody>
 </table>
 {% else %}
 
-<p> IP Address {{ search_query }} has never been allocated to any server. </p>
+<p> IP Address <em>{{ search_query }}</em> has never been allocated to any server. </p>
 {% endif %}
 {% endblock %}

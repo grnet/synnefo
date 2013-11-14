@@ -80,7 +80,7 @@ def get_image(image_id, user_id):
         raise CommandError("image-id is mandatory")
 
 
-def get_vm(server_id):
+def get_vm(server_id, for_update=False):
     """Get a VirtualMachine object by its ID.
 
     @type server_id: int or string
@@ -96,7 +96,10 @@ def get_vm(server_id):
             raise CommandError("Invalid server ID: %s" % server_id)
 
     try:
-        return VirtualMachine.objects.get(id=server_id)
+        objs = VirtualMachine.objects
+        if for_update:
+            objs = objs.select_for_update()
+        return objs.get(id=server_id)
     except VirtualMachine.DoesNotExist:
         raise CommandError("Server with ID %s not found in DB."
                            " Use snf-manage server-list to find out"
@@ -166,10 +169,13 @@ def get_port(port_id, for_update=True):
                            " available port IDs" % port_id)
 
 
-def get_flavor(flavor_id):
+def get_flavor(flavor_id, for_update=False):
     try:
         flavor_id = int(flavor_id)
-        return Flavor.objects.get(id=flavor_id)
+        objs = Flavor.objects
+        if for_update:
+            objs = objs.select_for_update()
+        return objs.get(id=flavor_id)
     except ValueError:
         raise CommandError("Invalid flavor ID: %s", flavor_id)
     except Flavor.DoesNotExist:

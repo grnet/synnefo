@@ -61,7 +61,7 @@ class Command(BaseCommand):
         if len(args) != 1:
             raise CommandError("Please provide a server ID")
 
-        vm = common.get_vm(args[0])
+        vm = common.get_vm(args[0], for_update=True)
 
         displayname = options['displayname']
 

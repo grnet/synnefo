@@ -93,7 +93,7 @@ class Command(BaseCommand):
         if len(args) != 1:
             raise CommandError("Please provide a server ID")
 
-        server = get_vm(args[0])
+        server = get_vm(args[0], for_update=True)
 
         new_name = options.get("name", None)
         if new_name is not None:

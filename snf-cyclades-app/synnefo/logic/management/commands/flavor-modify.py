@@ -60,7 +60,7 @@ class Command(BaseCommand):
         if len(args) != 1:
             raise CommandError("Please provide a flavor ID")
 
-        flavor = get_flavor(args[0])
+        flavor = get_flavor(args[0], for_update=True)
 
         deleted = options['deleted']
         if deleted:

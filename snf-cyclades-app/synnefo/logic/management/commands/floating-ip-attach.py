@@ -61,7 +61,7 @@ class Command(BaseCommand):
             raise CommandError('Please give either a server or a router id')
 
         #get the vm
-        vm = common.get_vm(device)
+        vm = common.get_vm(device, for_update=True)
         floating_ip = common.get_floating_ip_by_id(floating_ip_id,
                                                    for_update=True)
         servers.create_port(vm.userid, floating_ip.network,

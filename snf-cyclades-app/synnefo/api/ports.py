@@ -218,6 +218,13 @@ def delete_port(request, port_id):
     log.info('delete_port %s', port_id)
     user_id = request.user_uniq
     port = util.get_port(port_id, user_id, for_update=True)
+
+    # Deleting port that is connected to a public network is allowed only if
+    # the port has an associated floating IP address.
+    if port.network.public and not port.ips.filter(floating_ip=True,
+                                                   deleted=False).exists():
+        raise faults.Forbidden("Cannot disconnect from public network.")
+
     servers.delete_port(port)
     return HttpResponse(status=204)
 

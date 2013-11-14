@@ -499,15 +499,9 @@ def delete_port(port):
 
     Send a Job to remove the NIC card from the instance. The port
     will be deleted and the associated IPv4 addressess will be released
-    when the job completes successfully. Deleting port that is connected to
-    a public network is allowed only if the port has an associated floating IP
-    address.
+    when the job completes successfully.
 
     """
-
-    if port.network.public and not port.ips.filter(floating_ip=True,
-                                                   deleted=False).exists():
-        raise faults.Forbidden("Cannot disconnect from public network.")
 
     if port.machine is not None:
         vm = disconnect(port.machine, port)

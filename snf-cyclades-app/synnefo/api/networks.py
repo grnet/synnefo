@@ -171,7 +171,7 @@ def network_to_dict(network, detail=True):
         d['created'] = api.utils.isoformat(network.created)
         d['status'] = state
         d['public'] = network.public
-        d['external_router'] = network.external_router
+        d['router:external'] = network.external_router
         d['admin_state_up'] = True
         d['subnets'] = list(network.subnets.values_list('id', flat=True))
         d['SNF:floating_ip_pool'] = network.floating_ip_pool

@@ -517,11 +517,11 @@
       
       check_empty: function() {
         views.NetworksCollectionView.__super__.check_empty.apply(this, arguments);
-        //if (this.$(".private").children().length == 0) {
-          //this.$(".private").hide();
-        //} else {
-          //this.$(".private").show();
-        //}
+        if (this.collection.filter(function(n){ return !n.is_public()}).length == 0) {
+          this.$(".private").hide();  
+        } else {
+          this.$(".private").show();  
+        }
       },
 
       add_model: function(m) {

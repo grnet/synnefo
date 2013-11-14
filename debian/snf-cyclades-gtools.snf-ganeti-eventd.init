@@ -33,6 +33,7 @@ if [ -s $SNF_EVENTD_DEFAULTS ]; then
 fi
 
 export PATH="${PATH:+$PATH:}/usr/sbin:/sbin"
+export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}/usr/share/ganeti"
 
 check_ganeti_master() {
     MASTER=`/usr/sbin/gnt-cluster getmaster`

@@ -143,11 +143,12 @@ def get_pending_app_quota(user):
     return quota[SYSTEM][PENDING_APP_RESOURCE]
 
 
-def update_base_quota(quota, capacity):
-    quota.capacity = capacity
-    quota.save()
-    qh_sync_locked_user(quota.user)
-
+def update_base_quota(users, resource, value):
+    userids = [user.pk for user in users]
+    AstakosUserQuota.objects.\
+        filter(resource__name=resource, user__pk__in=userids).\
+        update(capacity=value)
+    qh_sync_locked_users(users)
 
 
 def initial_quotas(users, flt=None):

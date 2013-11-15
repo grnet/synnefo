@@ -69,11 +69,11 @@ For clarity, option ``--limit`` will be renamed ``--default-quota``.
 
 We can currently change a user's base quota with::
 
-     snf-manage user-modify <id> --set-base-quota <resource_name> <value>
+  snf-manage user-modify <id> --set-base-quota <resource_name> <value>
 
 This command will be extended with option ``--all`` to allow changing base
 quota for multiple users; option ``--exclude`` will allow introducing
-exceptions.
+exceptions. ``--set-base-quota`` will be renamed ``--base-quota``.
 
 Inspecting base quota
 =====================

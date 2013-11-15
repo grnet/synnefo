@@ -78,6 +78,8 @@ class ProjectAPITest(TestCase):
                        "api_visible": False}
         r, _ = register.add_resource(pending_app)
         register.update_resources([(r, 3)])
+        accepted = AstakosUser.objects.accepted()
+        quotas.update_base_quota(accepted, r.name, 3)
 
     def create(self, app, headers):
         dump = json.dumps(app)
@@ -673,8 +675,7 @@ class TestProjects(TestCase):
     @im_settings(PROJECT_ADMINS=['uuid1'])
     def test_applications(self):
         # let user have 2 pending applications
-        q = self.user.get_resource_policy('astakos.pending_app')
-        quotas.update_base_quota(q, 2)
+        quotas.update_base_quota([self.user], 'astakos.pending_app', 2)
 
         r = self.user_client.get(reverse('project_add'), follow=True)
         self.assertRedirects(r, reverse('project_add'))

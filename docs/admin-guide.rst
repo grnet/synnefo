@@ -317,7 +317,11 @@ you can set it for each resource like this::
     # use this to display quota / uuid
     # snf-manage user-show 'uuid or email' --quota
 
-    # snf-manage user-modify 'user-uuid' --set-base-quota 'cyclades.vm' 10
+    # snf-manage user-modify <user-uuid> --base-quota 'cyclades.vm' 10
+
+You can set base quota for all existing users, with possible exceptions, using::
+
+    # snf-manage user-modify --all --base-quota cyclades.vm 10 --exclude uuid1,uuid2
 
 All quota for which values different from the default have been set,
 can be listed with::
@@ -342,7 +346,7 @@ per user with::
 
 You can also set a user-specific limit with::
 
-    # snf-manage user-modify 'user-uuid' --set-base-quota 'astakos.pending_app' 5
+    # snf-manage user-modify <user-uuid> --base-quota 'astakos.pending_app' 5
 
 When users apply for projects they are not automatically granted
 the resources. They must first be approved by the administrator.

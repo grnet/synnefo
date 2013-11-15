@@ -322,12 +322,15 @@ def get_commission_info(resource, action, action_fields=None):
             return resources
         elif action == "DESTROY":
             return reverse_quantities(resources)
-    elif isinstance(resource, FloatingIP):
-        resources = {"cyclades.floating_ip": 1}
-        if action == "BUILD":
-            return resources
-        elif action == "DESTROY":
-            return reverse_quantities(resources)
+    elif isinstance(resource, IPAddress):
+        if resource.floating_ip:
+            resources = {"cyclades.floating_ip": 1}
+            if action == "BUILD":
+                return resources
+            elif action == "DESTROY":
+                return reverse_quantities(resources)
+        else:
+            return None
 
 
 def reverse_quantities(resources):

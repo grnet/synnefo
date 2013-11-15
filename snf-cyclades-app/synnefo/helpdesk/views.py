@@ -46,7 +46,7 @@ from urllib import unquote
 import astakosclient
 from snf_django.lib import astakos
 
-from synnefo.db.models import VirtualMachine, IPAddress, Network
+from synnefo.db.models import VirtualMachine, Network, IPAddressLog
 
 # server actions specific imports
 from synnefo.api import util
@@ -190,14 +190,8 @@ def account(request, search_query):
     auth_token = request.user['access']['token']['id']
 
     if is_ip:
-        try:
-            ip = IPAddress.objects.filter(address=search_query, deleted=False)\
-                                  .get()
-            search_query = ip.userid
-            is_uuid = True
-        except IPAddress.DoesNotExist:
-            account_exists = False
-            account = None
+        # Search the IPAddressLog for the full use history of this IP
+        return search_by_ip(request, search_query)
 
     if is_vm:
         vmid = is_vm.groupdict().get('vmid')
@@ -273,6 +267,41 @@ def account(request, search_query):
     return direct_to_template(request, "helpdesk/account.html",
                               extra_context=user_context)
 
+
+def search_by_ip(request, search_query):
+    """Search IP history for all uses of an IP address."""
+    auth_token = request.user['access']['token']['id']
+    astakos_client = astakosclient.AstakosClient(auth_token,
+                                                 settings.ASTAKOS_AUTH_URL,
+                                                 retry=2, use_pool=True,
+                                                 logger=logger)
+
+    ips = IPAddressLog.objects.filter(address=search_query)\
+                              .order_by("allocated_at")
+
+    for ip in ips:
+        # Annotate IPs with the VM, Network and account attributes
+        ip.vm = VirtualMachine.objects.get(id=ip.server_id)
+        ip.network = Network.objects.get(id=ip.network_id)
+        userid = ip.vm.userid
+
+        try:
+            ip.account = astakos_client.get_username(userid)
+        except:
+            ip.account = userid
+            logger.info("Failed to resolve '%s' into account" % userid)
+
+    user_context = {
+        'ip_exists': bool(ips),
+        'ips': ips,
+        'search_query': search_query,
+        'token': auth_token,
+        'HELPDESK_MEDIA_URL': HELPDESK_MEDIA_URL,
+        'UI_MEDIA_URL': UI_MEDIA_URL
+    }
+
+    return direct_to_template(request, "helpdesk/ip.html",
+                              extra_context=user_context)
 
 @helpdesk_user_required
 @token_check

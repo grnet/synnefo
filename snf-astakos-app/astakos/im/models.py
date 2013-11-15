@@ -1108,7 +1108,8 @@ class EmailChangeManager(models.Manager):
             user.save()
             email_change.delete()
             msg = "User %s changed email from %s to %s"
-            logger.log(astakos_settings.LOGGING_LEVEL, msg, user.log_display, old_email, user.email)
+            logger.log(astakos_settings.LOGGING_LEVEL, msg, user.log_display,
+                       old_email, user.email)
             return user
         except EmailChange.DoesNotExist:
             raise ValueError(_('Invalid activation key.'))
@@ -1561,7 +1562,7 @@ class ProjectManager(models.Manager):
         relevant = model.o_states_q(model.RELEVANT_STATES)
         return self.filter(flt, relevant).order_by(
             'application__issue_date').select_related(
-                'application', 'application__owner', 'application__applicant')
+            'application', 'application__owner', 'application__applicant')
 
     def search_by_name(self, *search_strings):
         q = Q()

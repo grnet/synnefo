@@ -433,7 +433,7 @@ def project_search(request):
     else:
         accepted = request.user.projectmembership_set.filter(
             state__in=ProjectMembership.ACCEPTED_STATES).values_list(
-                'project', flat=True)
+            'project', flat=True)
 
         projects = Project.objects.search_by_name(q)
         projects = projects.filter(Project.o_state_q(Project.O_ACTIVE))

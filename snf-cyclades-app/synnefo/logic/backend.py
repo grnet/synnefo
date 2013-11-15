@@ -85,8 +85,6 @@ def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields):
     if action == "BUILD":
         # Quotas for new VMs are automatically accepted by the API
         return vm
-    commission_info = quotas.get_commission_info(vm, action=action,
-                                                 action_fields=job_fields)
 
     if vm.task_job_id == job_id and vm.serial is not None:
         # Commission for this change has already been issued. So just
@@ -101,20 +99,24 @@ def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields):
                       serial)
             quotas.reject_serial(serial)
         vm.serial = None
-    elif job_status == rapi.JOB_STATUS_SUCCESS and commission_info is not None:
-        log.debug("Expected job was %s. Processing job %s. Commission for"
-                  " this job: %s", vm.task_job_id, job_id, commission_info)
-        # Commission for this change has not been issued, or the issued
-        # commission was unaware of the current change. Reject all previous
-        # commissions and create a new one in forced mode!
-        commission_name = ("client: dispatcher, resource: %s, ganeti_job: %s"
-                           % (vm, job_id))
-        quotas.handle_resource_commission(vm, action,
-                                          commission_info=commission_info,
-                                          commission_name=commission_name,
-                                          force=True,
-                                          auto_accept=True)
-        log.debug("Issued new commission: %s", vm.serial)
+    elif job_status == rapi.JOB_STATUS_SUCCESS:
+        commission_info = quotas.get_commission_info(resource=vm,
+                                                     action=action,
+                                                     action_fields=job_fields)
+        if commission_info is not None:
+            # Commission for this change has not been issued, or the issued
+            # commission was unaware of the current change. Reject all previous
+            # commissions and create a new one in forced mode!
+            log.debug("Expected job was %s. Processing job %s.",
+                      vm.task_job_id, job_id)
+            reason = ("client: dispatcher, resource: %s, ganeti_job: %s"
+                      % (vm, job_id))
+            quotas.handle_resource_commission(vm, action,
+                                              action_fields=job_fields,
+                                              commission_name=reason,
+                                              force=True,
+                                              auto_accept=True)
+            log.debug("Issued new commission: %s", vm.serial)
 
     return vm
 
@@ -522,7 +524,7 @@ def update_network_state(network):
 
         # Issue commission
         if network.userid:
-            quotas.issue_and_accept_commission(network, delete=True)
+            quotas.issue_and_accept_commission(network, action="DESTROY")
             # the above has already saved the object and committed;
             # a second save would override others' changes, since the
             # object is now unlocked

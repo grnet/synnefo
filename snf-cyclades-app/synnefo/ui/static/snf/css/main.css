@@ -876,7 +876,7 @@ div.image-container {
 }
 
 .icon .machine-info {
-    padding: 20px 0;
+    padding: 28px 0;
 }
 
 .icon .machine-details .name {
@@ -913,7 +913,7 @@ div.image-container {
 
 .icon .vm-actions, .network .vm-actions {
     width: 180px;
-    height: 96px;
+    height: 111px;
     float: left;
 }
 

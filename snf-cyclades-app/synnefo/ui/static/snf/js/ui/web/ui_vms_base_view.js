@@ -123,7 +123,7 @@
             var name = this.text.val();
             var desc = this.description.val();
             
-            this.vm.create_snapshot(name, desc, _.bind(function() {
+            this.vm.create_snapshot({name:name, description:desc}, _.bind(function() {
               this.hide();
             }, this));
         },

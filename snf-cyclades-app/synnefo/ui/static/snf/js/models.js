@@ -1524,10 +1524,11 @@
           }, snapshot_params);
 
           snf.api.sync('create', undefined, {
-              url: synnefo.config.api_urls.volume,
-              data: params,
+              url: synnefo.config.api_urls.volume + '/snapshots/',
+              data: JSON.stringify({snapshot:params}),
               success: callback, 
-              skip_api_error: false
+              skip_api_error: false,
+	      contentType: 'application/json'
           });
         },
 

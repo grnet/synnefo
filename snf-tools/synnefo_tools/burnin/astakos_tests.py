@@ -39,7 +39,7 @@ This is the burnin class that tests the Astakos functionality
 from kamaki.clients.compute import ComputeClient
 from kamaki.clients import ClientError
 
-import common
+from synnefo_tools.burnin import common
 
 
 # Too many public methods (47/20). pylint: disable-msg=R0904
@@ -48,8 +48,8 @@ class AstakosTestCase(common.BurninTests):
     def test_unauthorized_access(self):
         """Test access without a valid token fails"""
         false_token = "12345"
-        client = ComputeClient(self.compute_url, false_token)
-        client.CONNECTION_RETRY_LIMIT = self.connection_retry_limit
+        client = ComputeClient(self.clients.compute_url, false_token)
+        client.CONNECTION_RETRY_LIMIT = self.clients.retry
 
         with self.assertRaises(ClientError) as cl_error:
             client.list_servers()

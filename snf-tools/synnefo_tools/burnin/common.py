@@ -49,14 +49,13 @@ except ImportError:
 from kamaki.clients.astakos import AstakosClient
 from kamaki.clients.compute import ComputeClient
 
-from logger import Log
+from synnefo_tools.burnin.logger import Log
 
 
 # --------------------------------------------------------------------
 # Global variables
 logger = None  # Invalid constant name. pylint: disable-msg=C0103
-AUTH_URL = "https://accounts.okeanos.grnet.gr/identity/v2.0/"
-TOKEN = ""
+SNF_TEST_PREFIX = "snf-test-"
 CONNECTION_RETRY_LIMIT = 2
 
 
@@ -99,14 +98,29 @@ class BurninTestResult(unittest.TestResult):
 
 # --------------------------------------------------------------------
 # BurninTests class
+# Too few public methods (0/2). pylint: disable-msg=R0903
+class Clients(object):
+    """Our kamaki clients"""
+    auth_url = None
+    token = None
+
+    astakos = None
+    retry = CONNECTION_RETRY_LIMIT
+
+    compute = None
+    compute_url = None
+
+
 # Too many public methods (45/20). pylint: disable-msg=R0904
 class BurninTests(unittest.TestCase):
     """Common class that all burnin tests should implement"""
+    clients = Clients()
+    opts = None
+
     @classmethod
     def setUpClass(cls):  # noqa
         """Initialize BurninTests"""
         cls.suite_name = cls.__name__
-        cls.connection_retry_limit = CONNECTION_RETRY_LIMIT
         logger.testsuite_start(cls.suite_name)
 
         # Set test parameters
@@ -115,16 +129,17 @@ class BurninTests(unittest.TestCase):
     def test_clients_setup(self):
         """Initializing astakos/cyclades/pithos clients"""
         # Update class attributes
-        cls = type(self)
-        self.info("Astakos auth url is %s", AUTH_URL)
-        cls.astakos = AstakosClient(AUTH_URL, TOKEN)
-        cls.astakos.CONNECTION_RETRY_LIMIT = CONNECTION_RETRY_LIMIT
+        self.info("Astakos auth url is %s", self.clients.auth_url)
+        self.clients.astakos = AstakosClient(
+            self.clients.auth_url, self.clients.token)
+        self.clients.astakos.CONNECTION_RETRY_LIMIT = self.clients.retry
 
-        cls.compute_url = \
-            cls.astakos.get_service_endpoints('compute')['publicURL']
-        self.info("Cyclades url is %s", cls.compute_url)
-        cls.compute = ComputeClient(cls.compute_url, TOKEN)
-        cls.compute.CONNECTION_RETRY_LIMIT = CONNECTION_RETRY_LIMIT
+        self.clients.compute_url = \
+            self.clients.astakos.get_service_endpoints('compute')['publicURL']
+        self.info("Cyclades url is %s", self.clients.compute_url)
+        self.clients.compute = ComputeClient(
+            self.clients.compute_url, self.clients.token)
+        self.clients.compute.CONNECTION_RETRY_LIMIT = self.clients.retry
 
     def log(self, msg, *args):
         """Pass the section value to logger"""
@@ -148,18 +163,62 @@ class BurninTests(unittest.TestCase):
 
 
 # --------------------------------------------------------------------
+# Initialize Burnin
+def initialize(opts, testsuites):
+    """Initalize burnin
+
+    Initialize our logger and burnin state
+
+    """
+    # Initialize logger
+    global logger  # Using global statement. pylint: disable-msg=C0103,W0603
+    logger = Log(opts.log_folder, verbose=opts.verbose,
+                 use_colors=opts.use_colors, in_parallel=False)
+
+    # Initialize clients
+    Clients.auth_url = opts.auth_url
+    Clients.token = opts.token
+
+    # Pass the rest options to BurninTests
+    BurninTests.opts = opts
+
+    # Choose tests to run
+    if opts.tests != "all":
+        testsuites = opts.tests
+    if opts.exclude_tests is not None:
+        testsuites = [tsuite for tsuite in testsuites
+                      if tsuite not in opts.exclude_tests]
+
+    return testsuites
+
+
+# --------------------------------------------------------------------
+# Run Burnin
+def run(testsuites):
+    """Run burnin testsuites"""
+    global logger  # Using global. pylint: disable-msg=C0103,W0603,W0602
+
+    success = True
+    for tcase in testsuites:
+        tsuite = unittest.TestLoader().loadTestsFromTestCase(tcase)
+        results = tsuite.run(BurninTestResult())
+        success = success and \
+            was_successful(tcase.__name__, results.wasSuccessful())
+
+    # Clean up our logger
+    del(logger)
+
+    # Return
+    return 0 if success else 1
+
+
+# --------------------------------------------------------------------
 # Helper functions
-def was_succesful(tsuite, success):
+def was_successful(tsuite, success):
     """Handle whether a testsuite was succesful or not"""
     if success:
         logger.testsuite_success(tsuite)
+        return True
     else:
         logger.testsuite_failure(tsuite)
-
-
-def setup_logger(output_dir, verbose=1, use_colors=True, in_parallel=False):
-    """Setup our logger"""
-    global logger  # Using global statement. pylint: disable-msg=C0103,W0603
-
-    logger = Log(output_dir, verbose=verbose,
-                 use_colors=use_colors, in_parallel=in_parallel)
+        return False

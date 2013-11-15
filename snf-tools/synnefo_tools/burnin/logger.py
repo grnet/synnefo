@@ -54,7 +54,7 @@ import sys
 import os.path
 import datetime
 
-import filelocker
+from synnefo_tools.burnin import filelocker
 
 
 # --------------------------------------------------------------------
@@ -87,19 +87,14 @@ def _red(msg):
     return "\x1b[31m" + str(msg) + "\x1b[0m"
 
 
-def _ts_start(msg):
-    """New testsuite color"""
+def _magenta(msg):
+    """Magenta color"""
     return "\x1b[35m" + str(msg) + "\x1b[0m"
 
 
-def _ts_success(msg):
-    """Testsuite passed color"""
-    return "\x1b[42m" + str(msg) + "\x1b[0m"
-
-
-def _ts_failure(msg):
-    """Testsuite failed color"""
-    return "\x1b[41m" + str(msg) + "\x1b[0m"
+def _green(msg):
+    """Green color"""
+    return "\x1b[32m" + str(msg) + "\x1b[0m"
 
 
 def _format_message(msg, *args):
@@ -155,7 +150,7 @@ def _locate_input(contents, section):
     # We didn't find our section??
     sys.stderr.write("Section %s could not be found in logging file\n"
                      % section)
-    sys.exit(1)
+    sys.exit("Error in logger._locate_input")
 
 
 def _add_testsuite_results(contents, section, testsuite):
@@ -176,7 +171,7 @@ def _add_testsuite_results(contents, section, testsuite):
     else:
         sys.stderr.write("Unknown section %s in _add_testsuite_results\n"
                          % section)
-        sys.exit(1)
+        sys.exit("Error in logger._add_testsuite_results")
     return contents
 
 
@@ -236,11 +231,20 @@ class Log(object):
         self.use_colors = use_colors
         self.in_parallel = in_parallel
 
+        assert output_dir
+
         # Create file for logging
         output_dir = os.path.expanduser(output_dir)
         if not os.path.exists(output_dir):
             self.debug(None, "Creating directory %s", output_dir)
-            os.makedirs(output_dir)
+            try:
+                os.makedirs(output_dir)
+            except OSError as err:
+                msg = ("Failed to create folder \"%s\" with error: %s\n"
+                       % (output_dir, err))
+                sys.stderr.write(msg)
+                sys.exit("Failed to create log folder")
+
         timestamp = datetime.datetime.strftime(
             datetime.datetime.now(), "%Y%m%d%H%M%S (%a %b %d %Y %H:%M)")
         file_name = timestamp + ".log"
@@ -267,11 +271,12 @@ class Log(object):
     def __del__(self):
         """Delete the Log object"""
         # Remove the lock file
-        file_lock = os.path.splitext(self.file_location)[0] + LOCK_EXT
-        try:
-            os.remove(file_lock)
-        except OSError:
-            self.debug(None, "Couldn't delete lock file")
+        if hasattr(self, "file_location"):
+            file_lock = os.path.splitext(self.file_location)[0] + LOCK_EXT
+            try:
+                os.remove(file_lock)
+            except OSError:
+                self.debug(None, "Couldn't delete lock file")
 
     # ----------------------------------
     # Logging methods
@@ -377,7 +382,7 @@ class Log(object):
 
         # Add new section to the stdout
         msg = "Starting testsuite %s" % testsuite
-        colored_msg = self._color_message(_ts_start, msg)
+        colored_msg = self._color_message(_magenta, msg)
         self._write_to_stdout(None, colored_msg)
 
     def testsuite_success(self, testsuite):
@@ -393,7 +398,7 @@ class Log(object):
 
         # Add success to stdout
         msg = "Testsuite %s passed" % testsuite
-        colored_msg = self._color_message(_ts_success, msg)
+        colored_msg = self._color_message(_green, msg)
         self._write_to_stdout(None, colored_msg)
 
     def testsuite_failure(self, testsuite):
@@ -409,7 +414,7 @@ class Log(object):
 
         # Add success to stdout
         msg = "Testsuite %s failed" % testsuite
-        colored_msg = self._color_message(_ts_failure, msg)
+        colored_msg = self._color_message(_red, msg)
         self._write_to_stdout(None, colored_msg)
 
     # ----------------------------------

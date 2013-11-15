@@ -61,9 +61,9 @@ def list_subnets(user_id):
     """List all subnets of a user"""
     log.debug('list_subnets %s', user_id)
 
-    user_subnets = Subnet.objects.filter((Q(network__userid=user_id) &
-                                          Q(network__public=False)) |
-                                         Q(network__public=True))
+    query = (((Q(network__userid=user_id) & Q(network__public=False)) |
+              Q(network__public=True)) & Q(deleted=False))
+    user_subnets = Subnet.objects.filter(query)
     return user_subnets
 
 

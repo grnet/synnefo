@@ -69,6 +69,7 @@ class Command(ListCommand):
     object_class = Subnet
     astakos_auth_url = ASTAKOS_AUTH_URL
     astakos_token = ASTAKOS_TOKEN
+    deleted_field = "deleted"
 
     FIELDS = {
         "id": ("id", "ID of the subnet"),

@@ -137,6 +137,7 @@ class ArchipelagoMapper(object):
 
     def map_retr_archipelago(self, maphash, size):
         """Retrieve Archipelago mapfile"""
+        hashes = []
         ioctx = self.ioctx_pool.pool_get()
         maphash = maphash.split("archip:")[1]
         req = Request.get_mapr_request(ioctx, self.mapperd_port, maphash,
@@ -148,14 +149,15 @@ class ArchipelagoMapper(object):
             data = req.get_data(xseg_reply_map)
             Segsarray = xseg_reply_map_scatterlist * data.contents.cnt
             segs = Segsarray.from_address(ctypes.addressof(data.contents.segs))
+            hashes = [string_at(segs[idx].target, segs[idx].targetlen)
+                    for idx in xrange(len(segs))]
             req.put()
         else:
             req.put()
             self.ioctx_pool.pool_put(ioctx)
             raise Exception("Could not retrieve Archipelago mapfile.")
         self.ioctx_pool.pool_put(ioctx)
-        return [string_at(segs[idx].target, segs[idx].targetlen)
-                for idx in xrange(len(segs))]
+        return hashes
 
     def map_stor(self, maphash, hashes=(), blkoff=0, create=1):
         """Store hashes in the given hashes map."""

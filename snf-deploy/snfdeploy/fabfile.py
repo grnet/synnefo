@@ -1260,10 +1260,10 @@ def import_services():
     snf-manage resource-modify --limit 2 astakos.pending_app
     snf-manage resource-modify --limit 4 cyclades.vm
     snf-manage resource-modify --limit 40G cyclades.disk
-    snf-manage resource-modify --limit 16G cyclades.ram
-    snf-manage resource-modify --limit 8G cyclades.active_ram
-    snf-manage resource-modify --limit 32 cyclades.cpu
-    snf-manage resource-modify --limit 16 cyclades.active_cpu
+    snf-manage resource-modify --limit 16G cyclades.total_ram
+    snf-manage resource-modify --limit 8G cyclades.ram
+    snf-manage resource-modify --limit 32 cyclades.total_cpu
+    snf-manage resource-modify --limit 16 cyclades.cpu
     snf-manage resource-modify --limit 4 cyclades.network.private
     snf-manage resource-modify --limit 4 cyclades.floating_ip
     """

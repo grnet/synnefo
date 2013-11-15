@@ -84,51 +84,51 @@ RESOURCES = {
             'verbose_name': 'System Disk',
             'group': 'compute'
         },
-        'cyclades.ram': {
+        'cyclades.total_ram': {
             'help_text': 'RAM used by VMs ',
             'help_text_input_each': ('This is the total amount of RAM that '
                                      'will be granted to each user of this '
                                      'Project (on all VMs)  '),
             'is_abbreviation': True,
-            'report_desc': 'RAM',
+            'report_desc': 'Total RAM',
             'placeholder': 'eg. 4GB',
-            'verbose_name': 'ram',
+            'verbose_name': 'Total ram',
             'group': 'compute'
 
         },
-        'cyclades.active_ram': {
+        'cyclades.ram': {
             'help_text': 'RAM used by active VMs ',
             'help_text_input_each': ('This is the total amount of RAM that '
                                      'will be granted to each user of this '
                                      'Project (on all active VMs)  '),
             'is_abbreviation': False,
-            'report_desc': 'Active RAM',
+            'report_desc': 'RAM',
             'placeholder': 'eg. 4GB',
-            'verbose_name': 'Active RAM',
+            'verbose_name': 'RAM',
             'group': 'compute'
 
         },
-        'cyclades.cpu': {
+        'cyclades.total_cpu': {
             'help_text': 'CPUs used by VMs ',
             'help_text_input_each': ('This is the total number of CPUs that '
                                      'will be granted to each user of this '
                                      'Project (on all VMs)  '),
             'is_abbreviation': True,
-            'report_desc': 'CPUs',
+            'report_desc': 'Total CPUs',
             'placeholder': 'eg. 1',
-            'verbose_name': 'cpu',
+            'verbose_name': 'Total cpu',
             'group': 'compute'
 
         },
-        'cyclades.active_cpu': {
+        'cyclades.cpu': {
             'help_text': 'CPUs used by active VMs ',
             'help_text_input_each': ('This is the total number of CPUs that '
                                      'will be granted to each user of this '
                                      'Project (on all active VMs)  '),
             'is_abbreviation': False,
-            'report_desc': 'Active CPUs',
+            'report_desc': 'CPUs',
             'placeholder': 'eg. 1',
-            'verbose_name': 'Active CPU',
+            'verbose_name': 'CPU',
             'group': 'compute'
 
         },
@@ -186,10 +186,10 @@ RESOURCES = {
     'groups_order': ['storage', 'compute', 'network', 'accounts'],
     'resources_order': ['pithos.diskspace',
                         'cyclades.disk',
+                        'cyclades.total_cpu',
                         'cyclades.cpu',
-                        'cyclades.active_cpu',
+                        'cyclades.total_ram',
                         'cyclades.ram',
-                        'cyclades.active_ram',
                         'cyclades.vm',
                         'cyclades.network.private',
                         'cyclades.floating_ip',

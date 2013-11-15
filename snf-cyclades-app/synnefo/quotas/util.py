@@ -51,29 +51,30 @@ def get_db_holdings(user=None):
         floating_ips = floating_ips.filter(userid=user)
 
     # Get resources related with VMs
-    vm_resources = vms.values("userid").annotate(num=Count("id"),
-                                                 ram=Sum("flavor__ram"),
-                                                 cpu=Sum("flavor__cpu"),
-                                                 disk=Sum("flavor__disk"))
+    vm_resources = vms.values("userid")\
+                      .annotate(num=Count("id"),
+                                total_ram=Sum("flavor__ram"),
+                                total_cpu=Sum("flavor__cpu"),
+                                disk=Sum("flavor__disk"))
     vm_active_resources = \
         vms.values("userid")\
            .filter(Q(operstate="STARTED") | Q(operstate="BUILD") |
                    Q(operstate="ERROR"))\
-           .annotate(active_ram=Sum("flavor__ram"),
-                     active_cpu=Sum("flavor__cpu"))
+           .annotate(ram=Sum("flavor__ram"),
+                     cpu=Sum("flavor__cpu"))
 
     for vm_res in vm_resources.iterator():
         user = vm_res['userid']
         res = {"cyclades.vm": vm_res["num"],
-               "cyclades.cpu": vm_res["cpu"],
+               "cyclades.total_cpu": vm_res["total_cpu"],
                "cyclades.disk": 1073741824 * vm_res["disk"],
-               "cyclades.ram": 1048576 * vm_res["ram"]}
+               "cyclades.total_ram": 1048576 * vm_res["total_ram"]}
         holdings[user] = res
 
     for vm_res in vm_active_resources.iterator():
         user = vm_res['userid']
-        holdings[user]["cyclades.active_cpu"] = vm_res["active_cpu"]
-        holdings[user]["cyclades.active_ram"] = 1048576 * vm_res["active_ram"]
+        holdings[user]["cyclades.cpu"] = vm_res["cpu"]
+        holdings[user]["cyclades.ram"] = 1048576 * vm_res["ram"]
 
     # Get resources related with networks
     net_resources = networks.values("userid")\

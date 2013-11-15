@@ -51,28 +51,28 @@ cyclades_services = {
                 "service_type": "compute",
                 "service_origin": "cyclades_compute",
             },
-            'cpu': {
-                "name": "cyclades.cpu",
+            'total_cpu': {
+                "name": "cyclades.total_cpu",
                 "desc": "Number of virtual machine processors",
                 "service_type": "compute",
                 "service_origin": "cyclades_compute",
             },
-            'active_cpu': {
-                "name": "cyclades.active_cpu",
+            'cpu': {
+                "name": "cyclades.cpu",
                 "desc": "Number of virtual machine processors of running"
                         " servers",
                 "service_type": "compute",
                 "service_origin": "cyclades_compute",
             },
-            'ram': {
-                "name": "cyclades.ram",
+            'total_ram': {
+                "name": "cyclades.total_ram",
                 "desc": "Virtual machine memory size",
                 "unit": "bytes",
                 "service_type": "compute",
                 "service_origin": "cyclades_compute",
             },
-            'active_ram': {
-                "name": "cyclades.active_ram",
+            'ram': {
+                "name": "cyclades.ram",
                 "desc": "Virtual machine memory size of running servers",
                 "unit": "bytes",
                 "service_type": "compute",

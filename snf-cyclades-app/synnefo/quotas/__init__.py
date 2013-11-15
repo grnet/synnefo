@@ -46,11 +46,11 @@ log = logging.getLogger(__name__)
 DEFAULT_SOURCE = 'system'
 RESOURCES = [
     "cyclades.vm",
+    "cyclades.total_cpu",
     "cyclades.cpu",
-    "cyclades.active_cpu",
     "cyclades.disk",
+    "cyclades.total_ram",
     "cyclades.ram",
-    "cyclades.active_ram",
     "cyclades.network.private",
     "cyclades.floating_ip",
 ]
@@ -280,11 +280,11 @@ def get_commission_info(resource, action, action_fields=None):
     if isinstance(resource, VirtualMachine):
         flavor = resource.flavor
         resources = {"cyclades.vm": 1,
-                     "cyclades.cpu": flavor.cpu,
+                     "cyclades.total_cpu": flavor.cpu,
                      "cyclades.disk": 1073741824 * flavor.disk,
-                     "cyclades.ram": 1048576 * flavor.ram}
-        online_resources = {"cyclades.active_cpu": flavor.cpu,
-                            "cyclades.active_ram": 1048576 * flavor.ram}
+                     "cyclades.total_ram": 1048576 * flavor.ram}
+        online_resources = {"cyclades.cpu": flavor.cpu,
+                            "cyclades.ram": 1048576 * flavor.ram}
         if action == "BUILD":
             resources.update(online_resources)
             return resources
@@ -311,8 +311,8 @@ def get_commission_info(resource, action, action_fields=None):
             beparams = action_fields.get("beparams")
             cpu = beparams.get("vcpus", flavor.cpu)
             ram = beparams.get("maxmem", flavor.ram)
-            return {"cyclades.cpu": cpu - flavor.cpu,
-                    "cyclades.ram": 1048576 * (ram - flavor.ram)}
+            return {"cyclades.total_cpu": cpu - flavor.cpu,
+                    "cyclades.total_ram": 1048576 * (ram - flavor.ram)}
         else:
             #["CONNECT", "DISCONNECT", "SET_FIREWALL_PROFILE"]:
             return None

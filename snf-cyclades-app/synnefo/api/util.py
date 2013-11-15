@@ -144,7 +144,7 @@ def get_vm(server_id, user_id, for_update=False, non_deleted=False,
         if non_suspended and vm.suspended:
             raise faults.Forbidden("Administratively Suspended VM")
         return vm
-    except ValueError:
+    except (ValueError, TypeError):
         raise faults.BadRequest('Invalid server ID.')
     except VirtualMachine.DoesNotExist:
         raise faults.ItemNotFound('Server not found.')

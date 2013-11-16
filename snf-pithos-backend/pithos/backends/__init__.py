@@ -33,15 +33,6 @@
 
 import warnings
 
-from pithos.workers import glue
-from archipelago.common import Segment, Xseg_ctx
-from objpool import ObjectPool
-from synnefo.settings import BACKEND_ARCHIPELAGO_CONF as cfile
-
-
-glue.WorkerGlue.setupXsegPool(ObjectPool, Segment, Xseg_ctx, cfile,
-                              pool_size=8)
-
 
 def connect_backend(**kwargs):
     from pithos.backends.modular import ModularBackend

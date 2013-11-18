@@ -465,7 +465,10 @@
           var status_ok = _.contains(['DISCONNECTED'], this.get('status'))
           return status_ok
         }],
-        'disconnect': [['status'], function() {
+        'disconnect': [['status', 'port_id', 'port'], function() {
+          var port = this.get('port');
+          var vm = port && port.get('vm');
+          if (vm && vm.get("task_state")) { return false }
           var status_ok = _.contains(['ACTIVE', 'CONNECTED'], this.get('status'))
           return status_ok
         }]
@@ -492,13 +495,13 @@
             } else {
               var port = this.get('port');
               if (port) {
-                var port_status = port.get('status');
+                var port_status = port.get('ext_status');
                 if (port_status == "DISCONNECTING") {
                   return port_status
                 }
                 return 'CONNECTED'
               }
-              return 'CONNECTED'  
+              return 'CONNECTING'  
             }
           }
         ]

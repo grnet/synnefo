@@ -83,7 +83,7 @@
       status_cls_map: {
         'CONNECTED': 'status-active',
         'ACTIVE': 'status-active',
-        'CONNECTING': 'status-active',
+        'CONNECTING': 'status-progress',
         'DISCONNECTING': 'status-inactive',
         'DOWN': 'status-inactive',
         'DISCONNECTED': 'status-inactive',

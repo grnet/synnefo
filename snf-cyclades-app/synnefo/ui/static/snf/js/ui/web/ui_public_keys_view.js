@@ -154,6 +154,11 @@
           this._init_reader();
           this.unset_in_progress();
         },
+
+        onOpen: function() {
+          views.PublicKeyCreateView.__super__.onOpen.apply(this, arguments);
+          this.input_name.focus();
+        },
         
         init_handlers: function() {
           this.cancel.click(_.bind(function() { this.hide(); }, this));

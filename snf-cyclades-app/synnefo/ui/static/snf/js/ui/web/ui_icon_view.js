@@ -159,6 +159,9 @@
             }, this));
 
             this.ips_toggle.click(_.bind(function(){
+                if(this.ips_toggle.parent().hasClass("disabled")) {
+                  return;
+                }
                 this.info_el.slideUp();
                 this.info_toggle.removeClass("open");
 
@@ -878,7 +881,8 @@
 
     views.IconView.VM_OS_ICON_TPLS = function() {
         return {
-            "medium": snf.config.machines_icons_url + "medium/{0}-sprite.png"
+            "medium": snf.config.machines_icons_url + "medium/{0}-sprite.png",
+            "medium2": snf.config.machines_icons_url + "medium/{0}-sprite2.png",
         }
     }
 

@@ -311,6 +311,14 @@
             this.__update_layout();
         },
         
+        update_toggles_visibility: function(vm) {
+          if (vm.is_building() || vm.in_error_state() || vm.get("status") == "DESTROY") {
+            this.vm(vm).find(".cont-toggler-wrapper.ips").addClass("disabled");
+          } else {
+            this.vm(vm).find(".cont-toggler-wrapper.ips").removeClass("disabled");
+          }
+        },
+
         // update ui for the given vm
         update_vm: function(vm) {
             // do not update deleted state vms
@@ -319,6 +327,7 @@
 
             this.update_details(vm);
             this.update_transition_state(vm);
+            this.update_toggles_visibility(vm);
 
             if (this.action_views) {
                 this.action_views[vm.id].update();
@@ -627,9 +636,6 @@
                 // action links click events
                 $(this.el).find(".action-container."+action+" a").click(function(ev) {
                     ev.preventDefault();
-                    if ($(ev.currentTarget).parent().hasClass("inactive")) {
-                      return;
-                    }
                     if (action == "resize") {
                         ui.main.vm_resize_view.show(self.vm);
                     } else {

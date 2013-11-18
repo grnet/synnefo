@@ -416,11 +416,11 @@
         var network = this.get('network');
         network.pending_disconnects++;
         network.update_connecting_status();
-        var complete = _.bind(function() {
+        var success = _.bind(function() {
           this.set({'status': 'DISCONNECTING'});
           cb();
         }, this);
-        this.destroy({complete: complete, silent: true});
+        this.destroy({success: success, complete: cb, silent: true});
       }
     });
 
@@ -468,7 +468,9 @@
         'disconnect': [['status', 'port_id', 'port'], function() {
           var port = this.get('port');
           var vm = port && port.get('vm');
+          if (!vm) { return false }
           if (vm && vm.get("task_state")) { return false }
+          if (vm && vm.in_error_state()) { return false }
           var status_ok = _.contains(['ACTIVE', 'CONNECTED'], this.get('status'))
           return status_ok
         }]
@@ -497,6 +499,9 @@
               if (port) {
                 var port_status = port.get('ext_status');
                 if (port_status == "DISCONNECTING") {
+                  return port_status
+                }
+                if (port_status == "CONNECTING") {
                   return port_status
                 }
                 return 'CONNECTED'

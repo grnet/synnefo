@@ -1148,6 +1148,7 @@ div.connect-border:hover {
 }
 
 .icon div.cont-toggler-wrapper.ips {
+    margin-top: 2px;
     font-size: 75%;
 }
 
@@ -3727,6 +3728,10 @@ div.machine a.manage-metadata:hover {
     font-size: 104%;
 }
 
+.fixed-ips-list .empty-list {
+  font-size: 0.9em !important;
+}
+
 .single .ips-content.toggler-content {
   padding: 0;
 }
@@ -3898,18 +3903,22 @@ div.single div.column3 div.server-name:hover {
     cursor: pointer;
 }
 
+.single .vm-icon.state1,
 .single .single-image-state1 {
     background-position: 0px 0;
 }
 
+.single .vm-icon.state3,
 .single .single-image-state3 {
     background-position: -252px 0;
 }
 
+.single .vm-icon.state4,
 .single .single-image-state4 {
     background-position: -378px 0;
 }
 
+.single .vm-icon.state2,
 .single .single-image-state2 {
     background-position: -126px 0;
 }
@@ -5367,6 +5376,17 @@ table.list-machines .wave {
 .cont-toggler-wrapper {
   float: left;
   margin-right: 5px;
+}
+
+.cont-toggler-wrapper.disabled .cont-toggler {
+  background-color: #C1CED4;
+  background-image: url("../images/down-arrow-lighter.png");
+  border-right-color: #C1CED4;
+}
+
+.cont-toggler-wrapper.disabled .cont-toggler .label {
+  color: #eee;
+  background-color: #B4C1C7;
 }
 
 .cont-toggler {
@@ -6895,6 +6915,28 @@ input.has-errors {
 }
 
 /* vm sprites */
+.vm-icon.medium2 {
+  width: 30px;
+  height: 32px;
+}
+
+.vm-icon.medium2.state1 {
+    background-position: 0px 0;
+}
+
+.vm-icon.medium2.state2 {
+    background-position: -60px 0;
+}
+
+.vm-icon.medium2.state3 {
+    background-position: -90px 0;
+}
+
+.vm-icon.medium2.state4 {
+    background-position: -30px 0;
+}
+
+
 .vm-icon.medium {
   width: 50px;
   height: 54px;
@@ -6933,6 +6975,31 @@ input.has-errors {
   width: 531px;
   margin-left: -41px;
   margin-bottom: 39px;
+}
+
+.entry.inline .nested-model-list {
+  font-size: 0.9em;
+}
+
+.entry.inline .nested-model-list .model-item .outer {
+  width: 220px;
+}
+
+.entry.inline .nested-model-list {
+  position: absolute;
+  top: 17px;
+  margin-left: -9px;
+  margin-bottom: 0;
+  width: 420px;
+}
+
+.entry.inline .nested-model-list .inner.main-content {
+  margin-left: 0;
+}
+
+.entry.inline .nested-model-list .model-item .inner.main-content .title,
+.entry.inline .nested-model-list .model-item .inner.main-content .subtitle {
+  left: 52px;
 }
 
 .nested-model-list .collection {
@@ -7014,6 +7081,12 @@ input.has-errors {
   background-color: #84B7D0;
 }
 
+.entry.inline .model-item .inner,
+.entry.inline *:hover .model-item .inner,
+.entry.inline .model-item:hover .inner {
+  background-color: transparent !important;
+}
+
 .nested-model-list .model-item:last-child .inner.main-content {
   border-bottom: none;
 }
@@ -7078,14 +7151,28 @@ input.has-errors {
 }
 
 /* networks */
+.nested-model-list .ip-addresses li {
+  margin-bottom: 8px;
+}
+
+.nested-model-list .ip-addresses li .type {
+  margin-right: 3px;
+  vertical-align: middle;
+  color: #fff;
+  background-color: #4085A5;
+  padding: 3px;
+}
+
+.nested-model-list .ip-addresses li .ip {
+  padding-top: 3px;
+}
+
 .nested-model-list .ip-addresses {
   padding-top: 0px;
   font-size: 0.9em;
-  margin-left: 328px;
-  text-align: right;
-  position: absolute;
-  top: 53px;
-  right: 10px;
+  margin-left: 70px;
+  margin-top:-35px;
+  margin-bottom: 35px;
 }
 
 .network-ports-toggler {

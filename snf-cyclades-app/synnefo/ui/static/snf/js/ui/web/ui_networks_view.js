@@ -455,7 +455,7 @@
         }
         if (this.model.id == "snf-combined-public-network" && !_.contains(
           ["CONNECTING", "DISCONNECTING"], status)) {
-          return "Public connectivity"
+          return "Public"
         }
 
         return this.status_map[status];
@@ -858,6 +858,7 @@
         var available = this.collection.length || left;
         var available_el = this.parent_view.$(".available");
         var no_available_el = this.parent_view.$(".no-available");
+        var parent_check = this.parent_view.$("input[type=checkbox]");
         var create = this.$(".create.model-item");
         var create_link = this.$(".create a");
         var create_no_available = this.$(".create .no-available");
@@ -867,6 +868,7 @@
           this.hide_parent();
           available_el.hide();
           no_available_el.show();
+          parent_check.attr("disabled", true);
         } else {
           // available floating ip
           var available_text = "".format(
@@ -874,6 +876,7 @@
           available_el.removeClass("hidden").text(available_text).show();
           available_el.show();
           no_available_el.hide();
+          parent_check.attr("disabled", false);
         }
 
         if (left) {

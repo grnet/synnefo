@@ -2,14 +2,14 @@
 
 <div id="ip-port-view-tpl" class="hidden ip-port-view model-item">
   <div class="outer">
-    <div class="border"></div>
-    <div class="border2"></div>
     <div class="inner clearfix main-content">
-      <div class="model-logo vm-icon medium state1" data-rv-style="model.vm|vm_style"></div>
-      <h5 class="title" data-rv-text="model.vm.name"></h5>
-      <h5 class="subtitle" data-rv-text="model.mac_address"></h5>
-      <div class="actions-content">
-      </div>
+      <div class="model-logo vm-icon medium2 state1"
+        data-rv-style="model.vm.status|vm_style"></div>
+      <h5 class="title" data-rv-text="model.vm.name|truncate 50"></h5>
+      <h5 class="subtitle">
+        <span class="key" data-rv-show="model.mac_address">MAC:</span>
+        <span class="value" data-rv-text="model.mac_address"></span>
+      </h5>
     </div>
   </div>
 </div>
@@ -20,11 +20,11 @@
     <div class="main-content clearfix">
       <div class="main-content-inner clearfix">
         <img class="logo" src="{{ SYNNEFO_IMAGES_URL }}internet.png" />
-        <div class="entry" data-rv-class-connected="model.device_id">
+        <div class="entry inline" data-rv-class-connected="model.device_id">
           <h3 class="title">
             <span data-rv-text="model.floating_ip_address">IP ADDRESS</span>
           </h3>
-          <div data-rv-if="model.port_id" class="ports nested-model-list proxy">
+          <div data-rv-if="model.port_id" class="ports nested-model-list proxy inline">
             <div data-rv-if="model.port_id">
               <div data-rv-show="model.port" data-rv-model-view="model.port|IpPortView"></div>
             </div>
@@ -52,13 +52,13 @@
            data-rv-class-isactive="model.can_connect"
            data-rv-class-selected="model.actions.connect|intEq 1"
            data-rv-on-click="view.show_connect_overlay">
-          <a>Connect</a>
+          <a>Attach</a>
         </div>
         <div class="action-container disconnect" 
              data-rv-class-isactive="model.can_disconnect" 
              data-rv-class-selected="model.actions.disconnect|intEq 1"
              data-rv-on-click="view.set_disconnect_confirm">
-             <a>Disconnect</a>
+             <a>Dettach</a>
           <div class="confirm-single clearfix">
             <span class="yes" data-rv-on-click="view.disconnect">
               {% trans "Confirm" %}

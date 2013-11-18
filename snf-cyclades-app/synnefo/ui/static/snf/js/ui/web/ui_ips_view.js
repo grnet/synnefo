@@ -46,10 +46,20 @@
       tpl: '#ip-port-view-tpl',
       
       vm_style: function() {
+        var cls, icon_state;
         var style = "background-image: url('{0}')";
-        if (!this.model.get('vm')) { return }
+        var vm = this.model.get('vm')
+        if (!vm) { return }
+        this.$(".model-logo").removeClass("state1 state2 state3 state4");
+        icon_state = vm.is_active() ? "on" : "off";
+        if (icon_state == "on") {
+          cls = "state1"
+        } else {
+          cls = "state2"
+        }
+        this.$(".model-logo").addClass(cls);
         return style.format(this.get_vm_icon_path(this.model.get('vm'), 
-                                                  'medium'));
+                                                  'medium2'));
       },
 
       get_vm_icon_path: function(vm, icon_type) {
@@ -71,12 +81,12 @@
 
     views.IpView = views.ext.ModelView.extend({
       status_map: {
-        'CONNECTED': 'Connected',
-        'ACTIVE': 'Connected',
-        'CONNECTING': 'Connecting',
-        'DISCONNECTING': 'Disconnecting',
-        'DOWN': 'Down',
-        'DISCONNECTED': 'Not connected',
+        'CONNECTED': 'In use',
+        'ACTIVE': 'In use',
+        'CONNECTING': 'Attaching',
+        'DISCONNECTING': 'Detaching',
+        'DOWN': 'In use',
+        'DISCONNECTED': 'Available',
         'REMOVING': 'Destroying'
       },
 
@@ -130,6 +140,7 @@
         var overlay = this.parent_view.connect_view;
         overlay.hide();
         overlay.unset_in_progress();
+        this.model.set({'status': 'CONNECTING'});
       },
 
       remove: function(model, e) {

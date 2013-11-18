@@ -211,6 +211,9 @@
         },
         
         _generated_key_name: function() {
+          if (this.input_name.val()) {
+            return this.input_name.val();
+          }
           var name_tpl = "Generated ssh key name";
           var name = name_tpl;
           var exists = function() {

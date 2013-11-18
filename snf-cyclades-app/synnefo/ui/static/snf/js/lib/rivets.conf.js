@@ -31,6 +31,17 @@ _.extend(rivets.formatters, {
     return prefix + value.toString();
   },
   
+  ip_type: function(value) {
+    if (value.indexOf(":") > -1) {
+      return "IPv6"
+    }
+    return "IPv4"
+  },
+
+  truncate: function(value, size) {
+    return synnefo.util.truncate(value, parseInt(size));
+  },
+
   list_truncate: function(value, size) {
     size = size === undefined ? 38 : size;
     return synnefo.util.truncate(value, size);

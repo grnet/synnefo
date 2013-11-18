@@ -94,7 +94,12 @@
     <div class="inner clearfix main-content">
       <img class="model-logo" data-rv-src="model.vm.status|vm_logo_url" />
       <h5 class="title" data-rv-text="model.vm.name"></h5>
-      <h5 class="subtitle" data-rv-text="model.mac_address"></h5>
+      <ul class="ip-addresses">
+        <li data-rv-each-item="model.fixed_ips">
+          <span data-rv-text="item:ip_address|ip_type" class="type"></span>
+          <span data-rv-text="item:ip_address" class="ip">IP</span>
+        </li>
+      </ul>
       <div data-rv-show="model.network.is_public" class="firewall">
         <img data-rv-show="model.in_progress" 
              src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" 
@@ -129,11 +134,6 @@
           <button data-rv-on-click="view.set_firewall" type="submit" class="firewall-apply hidden">Apply</button> 
         </div>
       </div>
-      <ul class="ip-addresses">
-        <li data-rv-each-item="model.fixed_ips">
-          <span data-rv-text="item:ip_address">IP</span>
-        </li>
-      </ul>
       <div class="actions-content">
         <div class="action-container isactive" 
           data-rv-on-click="view.show_vm_details">
@@ -263,7 +263,7 @@
       </span>
       <a href="#">create new...</a>
       <span class="loading">creating...</span>
-      <span class="no-available hidden">{% trans "IP's limit reached." %}</span>
+      <span class="no-available hidden">{% trans "No IPs available" %}</span>
     </div>
   </div>
 </div>
@@ -276,7 +276,7 @@
     <div class="ico"><img data-rv-src="model.is_public|get_network_icon" /></div>
     <div class="name">
       <span class="" data-rv-text="model.name"></span>
-      <span class="no-available hidden">{% trans "IP address limit reached." %}</span>
+      <span class="no-available hidden">{% trans "No IPs available" %}</span>
       <span class="available hidden"></span>
     </div>
   </div>
@@ -290,7 +290,7 @@
   <div class="select-item private-network clearfix">
     <div class="checkbox"><input type="checkbox" data-rv-data-id="model.id"></div>
     <div class="ico"><img data-rv-src="model.is_public|get_network_icon" /></div>
-    <div class="name"><span class="" data-rv-text="model.name"></span></div>
+    <div class="name"><span class="" data-rv-text="model.name|truncate 50"></span></div>
     <div class="cidr"><span class="" data-rv-text="model.subnet.cidr"></span></div>
   </div>
 </div>

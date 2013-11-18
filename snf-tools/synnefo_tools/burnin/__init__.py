@@ -161,6 +161,16 @@ def parse_arguments(args):
         "--no-colors", action="store_false",
         default=True, dest="use_colors",
         help="Disable colorful output")
+    parser.add_option(
+        "--quiet", action="store_true",
+        default=False, dest="quiet",
+        help="Turn off log output")
+    parser.add_option(
+        "--final-report-only", action="store_true",
+        default=False, dest="final_report",
+        help="Turn off log output and only print the contents of the log "
+             "file at the end of the test. Useful when burnin is used in "
+             "script files and it's output is to be sent using email")
 
     (opts, args) = parser.parse_args(args)
 
@@ -170,6 +180,17 @@ def parse_arguments(args):
     if opts.show_version:
         show_version()
         sys.exit(0)
+
+    # `delete_stale' implies `show_stale'
+    if opts.delete_stale:
+        opts.show_stale = True
+
+    # `quiet' implies not `final_report'
+    if opts.quiet:
+        opts.final_report = False
+    # `final_report' implies `quiet'
+    if opts.final_report:
+        opts.quiet = True
 
     # `token' is mandatory
     mandatory_argument(opts.token, "--token")
@@ -213,7 +234,8 @@ def main():
 
     # Run burnin
     # The return value denotes the success status
-    return common.run(testsuites)
+    return common.run(testsuites, failfast=opts.failfast,
+                      final_report=opts.final_report)
 
 
 if __name__ == "__main__":

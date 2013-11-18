@@ -173,7 +173,8 @@ def initialize(opts, testsuites):
     # Initialize logger
     global logger  # Using global statement. pylint: disable-msg=C0103,W0603
     logger = Log(opts.log_folder, verbose=opts.verbose,
-                 use_colors=opts.use_colors, in_parallel=False)
+                 use_colors=opts.use_colors, in_parallel=False,
+                 quiet=opts.quiet)
 
     # Initialize clients
     Clients.auth_url = opts.auth_url
@@ -194,7 +195,7 @@ def initialize(opts, testsuites):
 
 # --------------------------------------------------------------------
 # Run Burnin
-def run(testsuites):
+def run(testsuites, failfast=False, final_report=False):
     """Run burnin testsuites"""
     global logger  # Using global. pylint: disable-msg=C0103,W0603,W0602
 
@@ -204,7 +205,12 @@ def run(testsuites):
         results = tsuite.run(BurninTestResult())
         success = success and \
             was_successful(tcase.__name__, results.wasSuccessful())
+        if failfast and not success:
+            break
 
+    # Are we going to print final report?
+    if final_report:
+        logger.print_logfile_to_stdout()
     # Clean up our logger
     del(logger)
 

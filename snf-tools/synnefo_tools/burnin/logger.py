@@ -207,8 +207,9 @@ class Log(object):
 
     """
     # ----------------------------------
+    # Too many arguments. pylint: disable-msg=R0913
     def __init__(self, output_dir, verbose=1, use_colors=True,
-                 in_parallel=False):
+                 in_parallel=False, quiet=False):
         """Initialize our loggers
 
         The file to be used by our file logger will be created inside
@@ -225,11 +226,14 @@ class Log(object):
         @param use_colors: use colors for out stdout/stderr logger
         @type in_parallel: boolean
         @param in_parallel: this signifies that burnin is running in parallel
+        @type quiet: boolean
+        @type quiet: do not print logs to stdout/stderr
 
         """
         self.verbose = verbose
         self.use_colors = use_colors
         self.in_parallel = in_parallel
+        self.quiet = quiet
 
         assert output_dir
 
@@ -252,7 +256,7 @@ class Log(object):
 
         timestamp = datetime.datetime.strftime(
             datetime.datetime.now(), "%a %b %d %Y %H:%M")
-        sys.stdout.write("Starting burnin (%s)\n" % timestamp)
+        self._write_to_stdout(None, "Starting burnin (%s)\n" % timestamp)
 
         # Create the logging file
         self._create_logging_file(timestamp)
@@ -277,6 +281,11 @@ class Log(object):
                 os.remove(file_lock)
             except OSError:
                 self.debug(None, "Couldn't delete lock file")
+
+    def print_logfile_to_stdout(self):
+        """Print the contents of our log file to stdout"""
+        with open(self.file_location, 'r') as fin:
+            sys.stdout.write(fin.read())
 
     # ----------------------------------
     # Logging methods
@@ -346,17 +355,19 @@ class Log(object):
 
     def _write_to_stdout(self, section, msg):
         """Write to stdout"""
-        if section is not None and self.in_parallel:
-            sys.stdout.write(section + ": " + msg)
-        else:
-            sys.stdout.write(msg)
+        if not self.quiet:
+            if section is not None and self.in_parallel:
+                sys.stdout.write(section + ": " + msg)
+            else:
+                sys.stdout.write(msg)
 
     def _write_to_stderr(self, section, msg):
         """Write to stderr"""
-        if section is not None and self.in_parallel:
-            sys.stderr.write(section + ": " + msg)
-        else:
-            sys.stderr.write(msg)
+        if not self.quiet:
+            if section is not None and self.in_parallel:
+                sys.stderr.write(section + ": " + msg)
+            else:
+                sys.stderr.write(msg)
 
     def _write_to_file(self, section, msg):
         """Write to file"""

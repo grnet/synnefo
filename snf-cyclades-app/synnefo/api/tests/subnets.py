@@ -250,6 +250,24 @@ class SubnetTest(BaseAPITest):
                              json.dumps(request), "json")
         self.assertConflict(response)
 
+    def test_create_subnet_with_gateway_as_the_last_ip_of_subnet(self):
+        """Test create a subnet with a gateway, as the last IP of the subnet"""
+        test_net = mf.NetworkFactory()
+        request = {
+            'subnet': {
+                'network_id': test_net.id,
+                'cidr': '10.0.3.0/24',
+                'ip_version': 4,
+                'gateway_ip': 10.0.3.254}
+        }
+        response = self.post(SUBNETS_URL, test_net.userid,
+                             json.dumps(request), "json")
+        self.assertSuccess(response)
+        resp = json.loads(response.content)['subnet']
+        self.assertEqual("10.0.3.254", resp['gateway_ip'])
+        self.assertEqual([{"start": "10.0.3.1", "end": "10.0.3.253"}],
+                         resp['allocation_pools'])
+
     def test_create_subnet_with_ip_pool_end_lower_than_start(self):
         """Test create a subnet with a pool where end is lower than start"""
         test_net = mf.NetworkFactory()

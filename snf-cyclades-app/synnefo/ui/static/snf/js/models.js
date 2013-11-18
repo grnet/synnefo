@@ -2361,7 +2361,7 @@
                 var keysplit = key.split(".");
                 var limit_active = value.limit;
                 var usage_active = value.usage;
-                keysplit[keysplit.length-1] = "active_" + keysplit[keysplit.length-1];
+                keysplit[keysplit.length-1] = "total_" + keysplit[keysplit.length-1];
                 var activekey = keysplit.join(".");
                 var exists = resp.system[activekey];
                 if (exists) {

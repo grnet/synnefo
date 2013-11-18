@@ -2588,6 +2588,7 @@ div.actions a.selected, div.actions a.selected:hover, div.machine-actions a.sele
     margin-left: -15px;
 }
 
+.create-button a.disabled,
 .createbutton.disabled, #networkscreate.disabled {
   background-color: #888 !important;
   border-left-color: #aaa !important;

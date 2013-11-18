@@ -160,6 +160,7 @@
       collection_name: 'floating_ips',
       model_view_cls: views.IpView,
       create_view: undefined, // no create overlay for IPs
+      quota_key: 'cyclades.floating_ip',
       initialize: function() {
         views.IpCollectionView.__super__.initialize.apply(this, arguments);
         this.connect_view = new views.IPConnectVmOverlay();
@@ -187,6 +188,9 @@
           floatingip: {}
         }, 
         {
+          success: _.bind(function() {
+            this.post_create();
+          }, this),
           complete: _.bind(function() {
             this.creating = false;
             this.reset_creating();

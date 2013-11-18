@@ -216,6 +216,8 @@
 
             snf.storage.networks.create(name, type, subnet, dhcp, _.bind(function(){
                 this.hide();
+                // trigger parent view create handler
+                this.parent_view.post_create();
             }, this));
         },
 
@@ -499,7 +501,7 @@
           }
           this.connect_vms(vms, cbinner);
         }, this);
-        view.show_vms(this.model, vms, [], cb, "subtitle");
+        view.show_vms(this.model, vms, [], cb, "subtitle", this);
       }
 
     });
@@ -509,6 +511,7 @@
       collection_name: 'networks',
       model_view_cls: views.NetworkView,
       create_view_cls: views.NetworkCreateView,
+      quota_key: 'cyclades.network.private',
       
       init: function() {
         this.public_added = false;

@@ -198,6 +198,8 @@
       collection: undefined,
       model_view_cls: undefined,
       animation_speed: 200,
+      quota_key: undefined,
+      quota_limit_message: undefined,
 
       init: function() {
         var handlers = {};
@@ -214,6 +216,7 @@
         this.empty_el = $(this.$(".empty-list").get(0));
         if (this.create_view_cls) {
           this._create_view = new this.create_view_cls();
+          this._create_view.parent_view = this;
         }
 
         this.create_button = this.$(".create-button a");
@@ -221,9 +224,39 @@
           e.preventDefault();
           this.handle_create_click();
         }, this));
+        
+        if (this.quota_key && !this.quota) {
+          this.quota = synnefo.storage.quotas.get(this.quota_key);
+        }
+
+        if (this.quota) {
+          this.quota.bind("change", _.bind(this.update_quota, this));
+          this.update_quota();
+        }
       },
       
+      update_quota: function() {
+        var available = this.quota.get_available();
+        if (available) {
+          this.create_button.removeClass("disabled");
+          this.create_button.attr("title", this.quota_limit_message || "Quota limit reached")
+        } else {
+          this.create_button.addClass("disabled");
+          this.create_button.attr("title", "");
+        }
+      },
+      
+      post_create: function() {
+        this.quota && this.quota.increase();
+      },
+
+      post_destroy: function() {
+        this.quota && this.quota.decrease();
+      },
+
       handle_create_click: function() {
+        if (this.create_button.hasClass("disabled")) { return }
+
         if (this._create_view) {
           this._create_view.show();
         }

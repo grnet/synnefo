@@ -187,6 +187,11 @@ def update_db(vm, msg, event_time):
             return
         # Remove extra fields
         [job_fields.pop(f) for f in ("OP_ID", "reason")]
+        # Remove 'pnode' and 'snode' if they were set by Ganeti iallocator.
+        # Ganeti will fail if both allocator and nodes are specified.
+        allocator = job_fields.pop("iallocator")
+        if allocator is not None:
+            [job_fields.pop(f) for f in ("pnode", "snode")]
         name = job_fields.pop("name", job_fields.pop("instance_name"))
         # Turn off opportunistic locking before retrying the job
         job_fields["opportunistic_locking"] = False

@@ -42,12 +42,14 @@ import optparse
 from synnefo_tools import version
 from synnefo_tools.burnin import common
 from synnefo_tools.burnin.astakos_tests import AstakosTestSuite
+from synnefo_tools.burnin.cyclades_tests import FlavorsTestSuite
 
 
 # --------------------------------------------------------------------
 # Define our TestSuites
 TESTSUITES = [
-    AstakosTestSuite
+    AstakosTestSuite,
+    FlavorsTestSuite
     ]
 
 TSUITES_NAMES = [tsuite.__name__ for tsuite in TESTSUITES]

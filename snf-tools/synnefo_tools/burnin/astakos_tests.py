@@ -42,10 +42,10 @@ from kamaki.clients import ClientError
 from synnefo_tools.burnin import common
 
 
-# Too many public methods (47/20). pylint: disable-msg=R0904
+# Too many public methods. pylint: disable-msg=R0904
 class AstakosTestSuite(common.BurninTests):
     """Test Astakos functionality"""
-    def test_unauthorized_access(self):
+    def test_001_unauthorized_access(self):
         """Test that access without a valid token fails"""
         false_token = "12345"
         self.info("Will use token %s", false_token)
@@ -56,7 +56,7 @@ class AstakosTestSuite(common.BurninTests):
             client.list_servers()
             self.assertEqual(cl_error.exception.status, 401)
 
-    def test_name2uuid(self):
+    def test_002_name2uuid(self):
         """Test that usernames2uuids and uuids2usernames are complementary"""
         our_uuid = self._get_uuid()
 

@@ -73,14 +73,12 @@ class BurninTestResult(unittest.TestResult):
     def startTest(self, test):  # noqa
         """Called when the test case test is about to be run"""
         super(BurninTestResult, self).startTest(test)
-        # Access to a protected member. pylint: disable-msg=W0212
-        logger.log(test.__class__.__name__, test._testMethodDoc)
+        logger.log(test.__class__.__name__, test.shortDescription())
 
     # Method could be a function. pylint: disable-msg=R0201
     def _test_failed(self, test, err):
         """Test failed"""
-        # Access to a protected member. pylint: disable-msg=W0212
-        err_msg = test._testMethodDoc + "... failed (%s)."
+        err_msg = str(test) + "... failed (%s)."
         timestamp = datetime.datetime.strftime(
             datetime.datetime.now(), "%a %b %d %Y %H:%M:%S")
         logger.error(test.__class__.__name__, err_msg, timestamp)
@@ -130,7 +128,18 @@ class BurninTests(unittest.TestCase):
         # Set test parameters
         cls.longMessage = True
 
-    def test_clients_setup(self):
+    def _setattr(self, attr, value):
+        """Used by tests to set an attribute to TestCase
+
+        Since each instance of the TestCase will only be used to run a single
+        test method (a new fixture is created for each test) the attributes can
+        not be saved in the class instance. Instead the class itself should be
+        used.
+
+        """
+        setattr(self.__class__, attr, value)
+
+    def test_000_clients_setup(self):
         """Initializing astakos/cyclades/pithos clients"""
         # Update class attributes
         self.info("Astakos auth url is %s", self.clients.auth_url)
@@ -183,6 +192,15 @@ class BurninTests(unittest.TestCase):
         self.info("User's name is %s", username)
         return username
 
+    def _get_list_of_flavors(self, detail=False):
+        """Get (detailed) list of flavors"""
+        if detail:
+            self.info("Getting detailed list of flavors")
+        else:
+            self.info("Getting simple list of flavors")
+        flavors = self.clients.compute.list_flavors(detail=detail)
+        return flavors
+
 
 # --------------------------------------------------------------------
 # Initialize Burnin
@@ -227,8 +245,9 @@ def run(testsuites, failfast=False, final_report=False):
     for tcase in testsuites:
         tsuite = unittest.TestLoader().loadTestsFromTestCase(tcase)
         results = tsuite.run(BurninTestResult())
-        success = success and \
-            was_successful(tcase.__name__, results.wasSuccessful())
+
+        was_success = was_successful(tcase.__name__, results.wasSuccessful())
+        success = success and was_success
         if failfast and not success:
             break
 

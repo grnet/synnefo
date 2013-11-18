@@ -36,8 +36,12 @@ Common utils for burnin tests
 
 """
 
+import os
+import re
 import sys
+import shutil
 import datetime
+import tempfile
 import traceback
 # Use backported unittest functionality if Python < 2.7
 try:
@@ -50,6 +54,7 @@ except ImportError:
 from kamaki.clients.astakos import AstakosClient
 from kamaki.clients.compute import ComputeClient
 from kamaki.clients.pithos import PithosClient
+from kamaki.clients.image import ImageClient
 
 from synnefo_tools.burnin.logger import Log
 
@@ -59,6 +64,7 @@ from synnefo_tools.burnin.logger import Log
 logger = None  # Invalid constant name. pylint: disable-msg=C0103
 SNF_TEST_PREFIX = "snf-test-"
 CONNECTION_RETRY_LIMIT = 2
+SYSTEM_USERS = ["images@okeanos.grnet.gr", "images@demo.synnefo.org"]
 
 
 # --------------------------------------------------------------------
@@ -121,6 +127,9 @@ class Clients(object):
     # Pithos
     pithos = None
     pithos_url = None
+    # Image
+    image = None
+    image_url = None
 
 
 # Too many public methods (45/20). pylint: disable-msg=R0904
@@ -132,6 +141,7 @@ class BurninTests(unittest.TestCase):
     action_timeout = None
     action_warning = None
     query_interval = None
+    system_user = None
 
     @classmethod
     def setUpClass(cls):  # noqa
@@ -175,6 +185,13 @@ class BurninTests(unittest.TestCase):
             self.clients.pithos_url, self.clients.token)
         self.clients.pithos.CONNECTION_RETRY_LIMIT = self.clients.retry
 
+        self.clients.image_url = \
+            self.clients.astakos.get_service_endpoints('image')['publicURL']
+        self.info("Image url is %s", self.clients.image_url)
+        self.clients.image = ImageClient(
+            self.clients.image_url, self.clients.token)
+        self.clients.image.CONNECTION_RETRY_LIMIT = self.clients.retry
+
     # ----------------------------------
     # Loggers helper functions
     def log(self, msg, *args):
@@ -213,6 +230,64 @@ class BurninTests(unittest.TestCase):
         self.info("User's name is %s", username)
         return username
 
+    def _create_tmp_directory(self):
+        """Create a tmp directory
+
+        In my machine /tmp has not enough space for an image
+        to be saves, so we are going to use the current directory.
+
+        """
+        temp_dir = tempfile.mkdtemp(dir=os.getcwd())
+        self.info("Temp directory %s created", temp_dir)
+        return temp_dir
+
+    def _remove_tmp_directory(self, tmp_dir):
+        """Remove a tmp directory"""
+        try:
+            shutil.rmtree(tmp_dir)
+            self.info("Temp directory %s deleted", tmp_dir)
+        except OSError:
+            pass
+
+    def _get_uuid_of_system_user(self):
+        """Get the uuid of the system user
+
+        This is the user that upload the 'official' images.
+
+        """
+        self.info("Getting the uuid of the system user")
+        system_users = None
+        if self.system_user is not None:
+            parsed_su = parse_typed_option(self.system_user)
+            if parsed_su is None:
+                msg = "Invalid system-user format: %s. Must be [id|name]:.+"
+                self.warning(msg, self.system_user)
+            else:
+                su_type, su_value = parsed_su
+                if su_type == "name":
+                    system_users = [su_value]
+                elif su_type == "id":
+                    self.info("System user's uuid is %s", su_value)
+                    return su_value
+                else:
+                    self.error("Unrecognized system-user type %s", su_type)
+                    self.fail("Unrecognized system-user type")
+
+        if system_users is None:
+            system_users = SYSTEM_USERS
+
+        uuids = self.clients.astakos.usernames2uuids(system_users)
+        for su_name in system_users:
+            self.info("Trying username %s", su_name)
+            if su_name in uuids:
+                self.info("System user's uuid is %s", uuids[su_name])
+                return uuids[su_name]
+
+        self.warning("No system user found")
+        return None
+
+    # ----------------------------------
+    # Flavors
     def _get_list_of_flavors(self, detail=False):
         """Get (detailed) list of flavors"""
         if detail:
@@ -222,12 +297,94 @@ class BurninTests(unittest.TestCase):
         flavors = self.clients.compute.list_flavors(detail=detail)
         return flavors
 
+    # ----------------------------------
+    # Images
+    def _get_list_of_images(self, detail=False):
+        """Get (detailed) list of images"""
+        if detail:
+            self.info("Getting detailed list of images")
+        else:
+            self.info("Getting simple list of images")
+        images = self.clients.image.list_public(detail=detail)
+        # Remove images registered by burnin
+        images = [img for img in images
+                  if not img['name'].startswith(SNF_TEST_PREFIX)]
+        return images
+
+    def _get_list_of_sys_images(self, images=None):
+        """Get (detailed) list of images registered by system user or by me"""
+        self.info("Getting list of images registered by system user or by me")
+        if images is None:
+            images = self._get_list_of_images(detail=True)
+
+        su_uuid = self._get_uuid_of_system_user()
+        my_uuid = self._get_uuid()
+        ret_images = [i for i in images
+                      if i['owner'] == su_uuid or i['owner'] == my_uuid]
+
+        return ret_images
+
+    def _find_image(self, patterns, images=None):
+        """Find a suitable image to use
+
+        The patterns is a list of `typed_options'. The first pattern to
+        match an image will be the one that will be returned.
+
+        """
+        if images is None:
+            images = self._get_list_of_sys_images()
+
+        for ptrn in patterns:
+            parsed_ptrn = parse_typed_option(ptrn)
+            if parsed_ptrn is None:
+                msg = "Invalid image format: %s. Must be [id|name]:.+"
+                self.warning(msg, ptrn)
+                continue
+            img_type, img_value = parsed_ptrn
+            if img_type == "name":
+                # Filter image by name
+                msg = "Trying to find an image with name %s"
+                self.info(msg, img_value)
+                filtered_imgs = \
+                    [i for i in images if
+                     re.search(img_value, i['name'], flags=re.I) is not None]
+            elif img_type == "id":
+                # Filter images by id
+                msg = "Trying to find an image with id %s"
+                self.info(msg, img_value)
+                filtered_imgs = \
+                    [i for i in images if
+                     i['id'].lower() == img_value.lower()]
+            else:
+                self.error("Unrecognized image type %s", img_type)
+                self.fail("Unrecognized image type")
+
+            # Check if we found one
+            if filtered_imgs:
+                img = filtered_imgs[0]
+                self.info("Will use %s with id %s", img['name'], img['id'])
+                return img
+
+        # We didn't found one
+        err = "No matching image found"
+        self.error(err)
+        self.fail(err)
+
+    # ----------------------------------
+    # Pithos
     def _set_pithos_account(self, account):
-        """Set the pithos account"""
+        """Set the Pithos account"""
         assert account, "No pithos account was given"
 
-        self.info("Setting pithos account to %s", account)
+        self.info("Setting Pithos account to %s", account)
         self.clients.pithos.account = account
+
+    def _set_pithos_container(self, container):
+        """Set the Pithos container"""
+        assert container, "No pithos container was given"
+
+        self.info("Setting Pithos container to %s", container)
+        self.clients.pithos.container = container
 
     def _get_list_of_containers(self, account=None):
         """Get list of containers"""
@@ -272,6 +429,7 @@ def initialize(opts, testsuites):
     BurninTests.action_timeout = opts.action_timeout
     BurninTests.action_warning = opts.action_warning
     BurninTests.query_interval = opts.query_interval
+    BurninTests.system_user = opts.system_user
     BurninTests.run_id = SNF_TEST_PREFIX + \
         datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d%H%M%S")
 
@@ -321,3 +479,18 @@ def was_successful(tsuite, success):
     else:
         logger.testsuite_failure(tsuite)
         return False
+
+
+def parse_typed_option(value):
+    """Parse typed options (flavors and images)
+
+    The options are in the form 'id:123-345' or 'name:^Debian Base$'
+
+    """
+    try:
+        [type_, val] = value.strip().split(':')
+        if type_ not in ["id", "name"]:
+            raise ValueError
+        return type_, val
+    except ValueError:
+        return None

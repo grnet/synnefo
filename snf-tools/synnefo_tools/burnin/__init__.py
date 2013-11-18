@@ -42,7 +42,8 @@ import optparse
 from synnefo_tools import version
 from synnefo_tools.burnin import common
 from synnefo_tools.burnin.astakos_tests import AstakosTestSuite
-from synnefo_tools.burnin.cyclades_tests import FlavorsTestSuite
+from synnefo_tools.burnin.images_tests import \
+    FlavorsTestSuite, ImagesTestSuite
 from synnefo_tools.burnin.pithos_tests import PithosTestSuite
 
 
@@ -51,6 +52,7 @@ from synnefo_tools.burnin.pithos_tests import PithosTestSuite
 TESTSUITES = [
     AstakosTestSuite,
     FlavorsTestSuite,
+    ImagesTestSuite,
     PithosTestSuite,
     ]
 
@@ -130,6 +132,11 @@ def parse_arguments(args):
         help="Force all server creations to use the specified IMAGE "
              "instead of the default one (a Debian Base image). Just like the "
              "--force-flavor option, it supports both search by name and id")
+    parser.add_option(
+        "--system-user", action="store",
+        type="string", default=None, dest="system_user",
+        help="Owner of system images (typed option in the form of "
+             "\"name:user_name\" or \"id:uuuid\")")
     parser.add_option(
         "--show-stale", action="store_true",
         default=False, dest="show_stale",

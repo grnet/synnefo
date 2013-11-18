@@ -168,6 +168,12 @@ def server_command(action, action_fields=None):
 @transaction.commit_on_success
 def create(userid, name, password, flavor, image, metadata={},
            personality=[], networks=None, use_backend=None, project=None):
+
+    # Check that image fits into the disk
+    if image["size"] > (flavor.disk << 30):
+        msg = "Flavor's disk size '%s' is smaller than the image's size '%s'"
+        raise faults.BadRequest(msg % (flavor.disk << 30, image["size"]))
+
     if use_backend is None:
         # Allocate server to a Ganeti backend
         use_backend = allocate_new_server(userid, flavor)

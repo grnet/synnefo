@@ -116,7 +116,6 @@
       },
 
       disconnect_complete: function() {
-        this.model.set({status: 'DISCONNECTING'})
       },
 
       connect_vm: function(vms) {

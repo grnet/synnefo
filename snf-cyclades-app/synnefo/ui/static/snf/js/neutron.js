@@ -166,7 +166,6 @@
           this.update_connecting_status();
           this.update_actions();
         }, this);
-
         this.ports.bind("remove", function() {
           this.pending_disconnects--;
           this.update_connecting_status();
@@ -473,13 +472,6 @@
       },
 
       proxy_attrs: {
-        'ext_status': [
-          ['status'], function() {
-           if (_.contains(["DISCONNECTING"], this.get("ext_status"))) {
-            return this.get("ext_status")
-           }
-           return this.get("status")
-        }],
         'ip': [
           ['floating_ip_adress'], function() {
             return this.get('floating_ip_address'); 
@@ -494,15 +486,19 @@
 
         'status': [
           ['port_id', 'port'], function() {
-            var val = this.get('port_id');
-            if (!val) {
-                return 'DISCONNECTED'
+            var port_id = this.get('port_id');
+            if (!port_id) {
+              return 'DISCONNECTED'
             } else {
-              if (this.get('port')) {
+              var port = this.get('port');
+              if (port) {
+                var port_status = port.get('status');
+                if (port_status == "DISCONNECTING") {
+                  return port_status
+                }
                 return 'CONNECTED'
-              } else {
-                return 'CONNECTING'
               }
+              return 'CONNECTED'  
             }
           }
         ]

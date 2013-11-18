@@ -37,6 +37,7 @@ Common utils for burnin tests
 """
 
 import sys
+import datetime
 import traceback
 # Use backported unittest functionality if Python < 2.7
 try:
@@ -79,8 +80,10 @@ class BurninTestResult(unittest.TestResult):
     def _test_failed(self, test, err):
         """Test failed"""
         # Access to a protected member. pylint: disable-msg=W0212
-        err_msg = test._testMethodDoc + "... failed."
-        logger.error(test.__class__.__name__, err_msg)
+        err_msg = test._testMethodDoc + "... failed (%s)."
+        timestamp = datetime.datetime.strftime(
+            datetime.datetime.now(), "%a %b %d %Y %H:%M:%S")
+        logger.error(test.__class__.__name__, err_msg, timestamp)
         (err_type, err_value, err_trace) = err
         trcback = traceback.format_exception(err_type, err_value, err_trace)
         logger.info(test.__class__.__name__, trcback)
@@ -116,6 +119,7 @@ class BurninTests(unittest.TestCase):
     """Common class that all burnin tests should implement"""
     clients = Clients()
     opts = None
+    run_id = None
 
     @classmethod
     def setUpClass(cls):  # noqa
@@ -141,6 +145,8 @@ class BurninTests(unittest.TestCase):
             self.clients.compute_url, self.clients.token)
         self.clients.compute.CONNECTION_RETRY_LIMIT = self.clients.retry
 
+    # ----------------------------------
+    # Loggers helper functions
     def log(self, msg, *args):
         """Pass the section value to logger"""
         logger.log(self.suite_name, msg, *args)
@@ -160,6 +166,22 @@ class BurninTests(unittest.TestCase):
     def error(self, msg, *args):
         """Pass the section value to logger"""
         logger.error(self.suite_name, msg, *args)
+
+    # ----------------------------------
+    # Helper functions that every testsuite may need
+    def _get_uuid(self):
+        """Get our uuid"""
+        authenticate = self.clients.astakos.authenticate()
+        uuid = authenticate['access']['user']['id']
+        self.info("User's uuid is %s", uuid)
+        return uuid
+
+    def _get_username(self):
+        """Get our User Name"""
+        authenticate = self.clients.astakos.authenticate()
+        username = authenticate['access']['user']['name']
+        self.info("User's name is %s", username)
+        return username
 
 
 # --------------------------------------------------------------------
@@ -182,6 +204,8 @@ def initialize(opts, testsuites):
 
     # Pass the rest options to BurninTests
     BurninTests.opts = opts
+    BurninTests.run_id = datetime.datetime.strftime(
+        datetime.datetime.now(), "%Y%m%d%H%M%S")
 
     # Choose tests to run
     if opts.tests != "all":

@@ -43,11 +43,12 @@ from synnefo_tools.burnin import common
 
 
 # Too many public methods (47/20). pylint: disable-msg=R0904
-class AstakosTestCase(common.BurninTests):
+class AstakosTestSuite(common.BurninTests):
     """Test Astakos functionality"""
     def test_unauthorized_access(self):
-        """Test access without a valid token fails"""
+        """Test that access without a valid token fails"""
         false_token = "12345"
+        self.info("Will use token %s", false_token)
         client = ComputeClient(self.clients.compute_url, false_token)
         client.CONNECTION_RETRY_LIMIT = self.clients.retry
 
@@ -55,9 +56,17 @@ class AstakosTestCase(common.BurninTests):
             client.list_servers()
             self.assertEqual(cl_error.exception.status, 401)
 
+    def test_name2uuid(self):
+        """Test that usernames2uuids and uuids2usernames are complementary"""
+        our_uuid = self._get_uuid()
 
-class AstakosFoo(common.BurninTests):
-    """Just Fail"""
-    def test_just_foo(self):
-        """A test that just fails"""
-        self.fail("just fail")
+        given_name = self.clients.astakos.uuids2usernames([our_uuid])
+        self.info("uuids2usernames returned %s", given_name)
+        self.assertIn(our_uuid, given_name)
+
+        given_uuid = \
+            self.clients.astakos.usernames2uuids([given_name[our_uuid]])
+        self.info("usernames2uuids returned %s", given_uuid)
+        self.assertIn(given_name[our_uuid], given_uuid)
+
+        self.assertEqual(given_uuid[given_name[our_uuid]], our_uuid)

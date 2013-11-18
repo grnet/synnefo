@@ -41,13 +41,13 @@ import optparse
 
 from synnefo_tools import version
 from synnefo_tools.burnin import common
-from synnefo_tools.burnin.astakos_tests import AstakosTestCase, AstakosFoo
+from synnefo_tools.burnin.astakos_tests import AstakosTestSuite
 
 
 # --------------------------------------------------------------------
 # Define our TestSuites
 TESTSUITES = [
-    AstakosTestCase, AstakosFoo
+    AstakosTestSuite
     ]
 
 TSUITES_NAMES = [tsuite.__name__ for tsuite in TESTSUITES]

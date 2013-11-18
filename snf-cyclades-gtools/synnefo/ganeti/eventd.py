@@ -239,6 +239,7 @@ class JobFileHandler(pyinotify.ProcessEvent):
                         "status": op.status,
                         "cluster": self.cluster_name,
                         "logmsg": logmsg,
+                        "result": op.result,
                         "jobId": job_id})
 
             if op_id in ["OP_INSTANCE_CREATE", "OP_INSTANCE_SET_PARAMS",

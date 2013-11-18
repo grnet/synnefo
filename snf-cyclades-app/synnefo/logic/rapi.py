@@ -112,6 +112,12 @@ _INST_REINSTALL_REQV1 = INST_REINSTALL_REQV1
 _NODE_MIGRATE_REQV1 = NODE_MIGRATE_REQV1
 _NODE_EVAC_RES1 = NODE_EVAC_RES1
 
+#: Not enough resources (iallocator failure, disk space, memory, etc.)
+ECODE_NORES = "insufficient_resources"
+
+#: Temporarily out of resources; operation can be tried again
+ECODE_TEMP_NORES = "temp_insufficient_resources"
+
 # Older pycURL versions don't have all error constants
 try:
   _CURLE_SSL_CACERT = pycurl.E_SSL_CACERT

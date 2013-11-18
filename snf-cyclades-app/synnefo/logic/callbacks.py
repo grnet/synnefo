@@ -36,7 +36,7 @@ from functools import wraps
 
 from synnefo.db.models import (Backend, VirtualMachine, Network,
                                BackendNetwork, pooled_rapi_client)
-from synnefo.logic import utils, backend
+from synnefo.logic import utils, backend, rapi
 
 from synnefo.lib.utils import merge_time
 
@@ -177,33 +177,39 @@ def update_db(vm, msg, event_time):
     logmsg = msg["logmsg"]
     nics = msg.get("nics", None)
     job_fields = msg.get("job_fields", {})
+    result = msg.get("result", [])
 
     # Special case: OP_INSTANCE_CREATE with opportunistic locking may fail
     # if all Ganeti nodes are already locked. Retry the job without
     # opportunistic locking..
     if (operation == "OP_INSTANCE_CREATE" and status == "error" and
        job_fields.get("opportunistic_locking", False)):
-        if vm.backendjobid != jobID:  # The job has already been retried!
+        try:
+            error_code = result[1][1]
+        except IndexError:
+            error_code = None
+        if error_code == rapi.ECODE_TEMP_NORES:
+            if vm.backendjobid != jobID:  # The job has already been retried!
+                return
+            # Remove extra fields
+            [job_fields.pop(f) for f in ("OP_ID", "reason")]
+            # Remove 'pnode' and 'snode' if they were set by Ganeti iallocator.
+            # Ganeti will fail if both allocator and nodes are specified.
+            allocator = job_fields.pop("iallocator")
+            if allocator is not None:
+                [job_fields.pop(f) for f in ("pnode", "snode")]
+            name = job_fields.pop("name", job_fields.pop("instance_name"))
+            # Turn off opportunistic locking before retrying the job
+            job_fields["opportunistic_locking"] = False
+            with pooled_rapi_client(vm) as c:
+                jobID = c.CreateInstance(name=name, **job_fields)
+            # Update the VM fields
+            vm.backendjobid = jobID
+            vm.backendjobstatus = None
+            vm.save()
+            log.info("Retrying failed creation of instance '%s' without"
+                     " opportunistic locking. New job ID: '%s'", name, jobID)
             return
-        # Remove extra fields
-        [job_fields.pop(f) for f in ("OP_ID", "reason")]
-        # Remove 'pnode' and 'snode' if they were set by Ganeti iallocator.
-        # Ganeti will fail if both allocator and nodes are specified.
-        allocator = job_fields.pop("iallocator")
-        if allocator is not None:
-            [job_fields.pop(f) for f in ("pnode", "snode")]
-        name = job_fields.pop("name", job_fields.pop("instance_name"))
-        # Turn off opportunistic locking before retrying the job
-        job_fields["opportunistic_locking"] = False
-        with pooled_rapi_client(vm) as c:
-            jobID = c.CreateInstance(name=name, **job_fields)
-        # Update the VM fields
-        vm.backendjobid = jobID
-        vm.backendjobstatus = None
-        vm.save()
-        log.info("Retrying failed creation of instance '%s' without"
-                 " opportunistic locking. New job ID: '%s'", name, jobID)
-        return
 
     backend.process_op_status(vm, event_time, jobID, operation,
                               status, logmsg, nics)

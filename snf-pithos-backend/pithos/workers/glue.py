@@ -49,8 +49,6 @@ class WorkerGlue(object):
 
     @classmethod
     def setupXsegPool(cls, ObjectPool, Segment, Xseg_ctx, cfile, pool_size=8):
-	if WorkerGlue.worker_id == None:
-		return
         worker_id = WorkerGlue.worker_id
         ARCHIPELAGO_CONF_FILE = cfile
         ARCHIPELAGO_SEGMENT_TYPE = 'segdev'
@@ -82,11 +80,14 @@ class WorkerGlue(object):
                     ioctx = Xseg_ctx(self.segment, self.worker_id + self.cnt)
                     self.cnt += 1
                     return ioctx
-                else:
+                elif self.worker_id > 1:
                     ioctx = Xseg_ctx(self.segment,
                                      (self.worker_id - 1) * pool_size + 2 +
                                      self.cnt)
                     self.cnt += 1
+                    return ioctx
+		elif self.worker_id == None:
+                    ioctx = Xseg_ctx(self.segment, 200)
                     return ioctx
 
             def _pool_verify(self, poolobj):

@@ -45,6 +45,11 @@ import sys
 import os
 path = os.path.normpath(os.path.join(os.getcwd(), '..'))
 sys.path.append(path)
+# Since Ganeti 2.7, debian package ships the majority of the python code in
+# a private module under '/usr/share/ganeti'. Add this directory to path
+# in order to be able to import ganeti. Also, add it to the start of path
+# to allow conflicts with Ganeti RAPI client.
+sys.path.insert(0, "/usr/share/ganeti")
 
 import json
 import logging

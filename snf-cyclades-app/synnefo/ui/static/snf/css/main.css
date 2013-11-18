@@ -5461,6 +5461,11 @@ table.list-machines .wave {
 
 }
 
+.create-button a.in-progress {
+  text-indent: -1000px;
+}
+
+.create-button a.in-progress,
 .form-action.in-progress, button.in-progress {
     background-image: url("../images/icons/indicators/medium/horizontal-progress.gif");
     background-repeat: no-repeat;

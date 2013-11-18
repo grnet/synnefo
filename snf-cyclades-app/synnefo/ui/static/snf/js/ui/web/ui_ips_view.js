@@ -149,19 +149,37 @@
       collection: storage.floating_ips,
       collection_name: 'floating_ips',
       model_view_cls: views.IpView,
-      create_view: views.IpCreateView,
+      create_view: undefined, // no create overlay for IPs
       initialize: function() {
         views.IpCollectionView.__super__.initialize.apply(this, arguments);
         this.connect_view = new views.IPConnectVmOverlay();
+        this.creating = false;
+      },
+      
+      set_creating: function() {
+        this.creating = true;
+        this.create_button.addClass("in-progress");
+      },
+      
+      reset_creating: function() {
+        this.creating = false;
+        this.create_button.removeClass("in-progress");
       },
 
       handle_create_click: function() {
+        if (this.creating) { 
+          return
+        }
+
+        this.set_creating();
         network = synnefo.storage.networks.get_floating_ips_network();
         this.collection.create({
           floatingip: {}
         }, 
         {
           complete: _.bind(function() {
+            this.creating = false;
+            this.reset_creating();
             this.collection.fetch();
         }, this)});
       }

@@ -215,7 +215,9 @@
         if (this.create_view_cls) {
           this._create_view = new this.create_view_cls();
         }
-        this.$(".create-button a").click(_.bind(function(e) {
+
+        this.create_button = this.$(".create-button a");
+        this.create_button.click(_.bind(function(e) {
           e.preventDefault();
           this.handle_create_click();
         }, this));

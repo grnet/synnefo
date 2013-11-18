@@ -150,6 +150,7 @@ Drafts
 
    Sample design <design/sample>
    Resource-pool projects design <design/resource-pool-projects>
+   Resource defaults design <design/resource-defaults>
 
 
 Contact

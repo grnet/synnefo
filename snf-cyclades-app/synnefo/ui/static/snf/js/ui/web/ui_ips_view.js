@@ -88,7 +88,7 @@
         'DOWN': 'status-inactive',
         'DISCONNECTED': 'status-inactive',
         'UP': 'status-active',
-        'REMOVING': 'status-progress',
+        'REMOVING': 'status-progress destroying-state',
       },
 
       tpl: '#ip-view-tpl',

@@ -3251,7 +3251,7 @@ div.reboot-dialog button.details:hover {
   margin-bottom: 0;
 }
 
-.machine .info-content.ips .ips .port-ip-item:hover {
+.machine .info-content.ips.ips .port-item:hover {
   background-color: #75A7BF;
 }
 
@@ -3264,6 +3264,10 @@ div.reboot-dialog button.details:hover {
   padding-top: 2px;
   width: 55%;
   float: left;
+}
+
+.single .machine .info-content.ips .ips .model-item .ip {
+  padding-top: 5px;
 }
 
 .machine .info-content.ips .ips .model-item .type {
@@ -3296,8 +3300,8 @@ div.reboot-dialog button.details:hover {
 }
 
 .machine .info-content.ips .ips {
-  width: 80%;
-  float: right;
+  width: 50%;
+  float: left;
 }
 
 .machine .info-content.ips .port-item:last-child {
@@ -3323,7 +3327,7 @@ div.reboot-dialog button.details:hover {
 }
 
 .machine .info-content.ips .port-item .network-header {
-  width: 18%;
+  width: 50%;
   float: left;
 }
 
@@ -3336,8 +3340,18 @@ div.reboot-dialog button.details:hover {
   width: 100%;
 }
 
+.single .machine .info-content.ips .ips,
+.single .machine .info-content.ips .port-item .network-header {
+  float: none;
+}
+
+.single .machine .info-content.ips .port-item .network-header {
+  padding: 5px;
+  margin-top: -10px;
+}
+  
+
 .machine .info-content.ips .port-item .port {
-  font-weight: bold;
 }
 
 .single .machine .info-content.ips {
@@ -3348,7 +3362,6 @@ div.reboot-dialog button.details:hover {
 .machine .info-content.ips {
     background-color: #84B7D0;
     padding: 0px 0px;
-    padding-left: 5px;
     font-size: 0.6em;
 }
 
@@ -3712,6 +3725,10 @@ div.machine a.manage-metadata:hover {
 
 .single .toggler-header span.label {
     font-size: 104%;
+}
+
+.single .ips-content.toggler-content {
+  padding: 0;
 }
 
 .single .toggler-content {

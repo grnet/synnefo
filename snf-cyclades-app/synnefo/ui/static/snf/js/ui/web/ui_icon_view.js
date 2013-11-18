@@ -751,8 +751,7 @@
             var ports_view = new views.VMPortListView({
               collection: vm.ports, 
               container: ports_container,
-              parent: this,
-              truncate: 14
+              parent: this
             });
             this.ports_views[vm.id] = ports_view
             ports_view.show();

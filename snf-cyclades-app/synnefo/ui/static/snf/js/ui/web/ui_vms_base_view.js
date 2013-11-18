@@ -760,7 +760,7 @@
         if (!name) {
           name = 'Internet'
         }
-        var truncate_length = this.parent_view.options.truncate || 14;
+        var truncate_length = this.parent_view.options.truncate || 40;
         name = synnefo.util.truncate(name, truncate_length, '...');
         return name || 'Loading...';
       },

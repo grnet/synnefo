@@ -270,7 +270,7 @@
               collection: vm.ports, 
               container: ports_container,
               parent: this,
-              truncate: 40
+              truncate: 55
             });
             this.ports_views[vm.id] = ports_view
             ports_view.show();

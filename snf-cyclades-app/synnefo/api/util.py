@@ -177,6 +177,7 @@ def get_image_dict(image_id, user_id):
     image["name"] = img["name"]
     image["format"] = img["disk_format"]
     image["location"] = img["location"]
+    image["is_snapshot"] = img["is_snapshot"]
     size = image["size"] = img["size"]
 
     checksum = img["checksum"]

@@ -20,6 +20,12 @@ def create(user_id, volume, name, description, metadata, force=False):
     if volume.machine is None:
         raise faults.BadRequest("Can not snapshot detached volume!")
 
+    flavor = volume.machine.flavor
+    if not flavor.disk_template.startswith("ext_"):
+        msg = ("Snapshots are supported only for volumes of ext_*"
+               " disk template")
+        raise faults.BadRequest(msg)
+
     volume.snapshot_counter += 1
     volume.save()
     transaction.commit()

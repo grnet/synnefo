@@ -49,6 +49,7 @@ except ImportError:
 
 from kamaki.clients.astakos import AstakosClient
 from kamaki.clients.compute import ComputeClient
+from kamaki.clients.pithos import PithosClient
 
 from synnefo_tools.burnin.logger import Log
 
@@ -78,13 +79,18 @@ class BurninTestResult(unittest.TestResult):
     # Method could be a function. pylint: disable-msg=R0201
     def _test_failed(self, test, err):
         """Test failed"""
+        # Get class name
+        if test.__class__.__name__ == "_ErrorHolder":
+            class_name = test.id().split('.')[-1].rstrip(')')
+        else:
+            class_name = test.__class__.__name__
         err_msg = str(test) + "... failed (%s)."
         timestamp = datetime.datetime.strftime(
             datetime.datetime.now(), "%a %b %d %Y %H:%M:%S")
-        logger.error(test.__class__.__name__, err_msg, timestamp)
+        logger.error(class_name, err_msg, timestamp)
         (err_type, err_value, err_trace) = err
         trcback = traceback.format_exception(err_type, err_value, err_trace)
-        logger.info(test.__class__.__name__, trcback)
+        logger.info(class_name, trcback)
 
     def addError(self, test, err):  # noqa
         """Called when the test case test raises an unexpected exception"""
@@ -104,20 +110,28 @@ class Clients(object):
     """Our kamaki clients"""
     auth_url = None
     token = None
-
+    # Astakos
     astakos = None
     retry = CONNECTION_RETRY_LIMIT
-
+    # Compute
     compute = None
     compute_url = None
+    # Cyclades
+    cyclades = None
+    # Pithos
+    pithos = None
+    pithos_url = None
 
 
 # Too many public methods (45/20). pylint: disable-msg=R0904
 class BurninTests(unittest.TestCase):
     """Common class that all burnin tests should implement"""
     clients = Clients()
-    opts = None
     run_id = None
+    use_ipv6 = None
+    action_timeout = None
+    action_warning = None
+    query_interval = None
 
     @classmethod
     def setUpClass(cls):  # noqa
@@ -153,6 +167,13 @@ class BurninTests(unittest.TestCase):
         self.clients.compute = ComputeClient(
             self.clients.compute_url, self.clients.token)
         self.clients.compute.CONNECTION_RETRY_LIMIT = self.clients.retry
+
+        self.clients.pithos_url = self.clients.astakos.\
+            get_service_endpoints('object-store')['publicURL']
+        self.info("Pithos url is %s", self.clients.pithos_url)
+        self.clients.pithos = PithosClient(
+            self.clients.pithos_url, self.clients.token)
+        self.clients.pithos.CONNECTION_RETRY_LIMIT = self.clients.retry
 
     # ----------------------------------
     # Loggers helper functions
@@ -201,6 +222,32 @@ class BurninTests(unittest.TestCase):
         flavors = self.clients.compute.list_flavors(detail=detail)
         return flavors
 
+    def _set_pithos_account(self, account):
+        """Set the pithos account"""
+        assert account, "No pithos account was given"
+
+        self.info("Setting pithos account to %s", account)
+        self.clients.pithos.account = account
+
+    def _get_list_of_containers(self, account=None):
+        """Get list of containers"""
+        if account is not None:
+            self._set_pithos_account(account)
+        self.info("Getting list of containers")
+        return self.clients.pithos.list_containers()
+
+    def _create_pithos_container(self, container):
+        """Create a pithos container
+
+        If the container exists, nothing will happen
+
+        """
+        assert container, "No pithos container was given"
+
+        self.info("Creating pithos container %s", container)
+        self.clients.pithos.container = container
+        self.clients.pithos.container_put()
+
 
 # --------------------------------------------------------------------
 # Initialize Burnin
@@ -221,9 +268,12 @@ def initialize(opts, testsuites):
     Clients.token = opts.token
 
     # Pass the rest options to BurninTests
-    BurninTests.opts = opts
-    BurninTests.run_id = datetime.datetime.strftime(
-        datetime.datetime.now(), "%Y%m%d%H%M%S")
+    BurninTests.use_ipv6 = opts.use_ipv6
+    BurninTests.action_timeout = opts.action_timeout
+    BurninTests.action_warning = opts.action_warning
+    BurninTests.query_interval = opts.query_interval
+    BurninTests.run_id = SNF_TEST_PREFIX + \
+        datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d%H%M%S")
 
     # Choose tests to run
     if opts.tests != "all":

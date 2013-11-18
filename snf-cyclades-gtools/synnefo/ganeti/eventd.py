@@ -125,7 +125,7 @@ def get_instance_nics(instance, logger):
         nics = map(lambda x: dict(zip(nic_keys, x)), nics)
     except ganeti_errors.OpPrereqError:
         # Not running on master! Load the conf file
-        raw_data = utils.ReadFile(constants.CLUSTER_CONF_FILE)
+        raw_data = utils.ReadFile(pathutils.CLUSTER_CONF_FILE)
         config = serializer.LoadJson(raw_data)
         i = config["instances"][instance]
         nics = []

@@ -154,7 +154,7 @@ class SubnetTest(BaseAPITest):
         }
         response = self.post(SUBNETS_URL, test_net.userid,
                              json.dumps(request), "json")
-        self.assertSuccess(response)
+        self.assertSuccess201(response)
 
     def test_create_subnet_with_ip_pool_allocation(self):
         """Test create a subnet with an IP pool"""
@@ -258,11 +258,11 @@ class SubnetTest(BaseAPITest):
                 'network_id': test_net.id,
                 'cidr': '10.0.3.0/24',
                 'ip_version': 4,
-                'gateway_ip': 10.0.3.254}
+                'gateway_ip': '10.0.3.254'}
         }
         response = self.post(SUBNETS_URL, test_net.userid,
                              json.dumps(request), "json")
-        self.assertSuccess(response)
+        self.assertSuccess201(response)
         resp = json.loads(response.content)['subnet']
         self.assertEqual("10.0.3.254", resp['gateway_ip'])
         self.assertEqual([{"start": "10.0.3.1", "end": "10.0.3.253"}],

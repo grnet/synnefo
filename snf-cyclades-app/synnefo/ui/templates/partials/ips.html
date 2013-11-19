@@ -5,7 +5,7 @@
     <div class="inner clearfix main-content">
       <div class="model-logo vm-icon medium2 state1"
         data-rv-style="model.vm.status|vm_style"></div>
-      <h5 class="title" data-rv-text="model.vm.name|truncate 50"></h5>
+      <h3 class="title" data-rv-text="model.vm.name|truncate 40"></h3>
       <h5 class="subtitle">
         <span class="key" data-rv-show="model.mac_address">MAC:</span>
         <span class="value" data-rv-text="model.mac_address"></span>
@@ -21,7 +21,7 @@
       <div class="main-content-inner clearfix">
         <img class="logo" src="{{ SYNNEFO_IMAGES_URL }}internet.png" />
         <div class="entry inline" data-rv-class-connected="model.device_id">
-          <h3 class="title">
+          <h3 class="title floating-ip">
             <span data-rv-text="model.floating_ip_address">IP ADDRESS</span>
           </h3>
           <div data-rv-if="model.port_id" class="ports nested-model-list proxy inline">

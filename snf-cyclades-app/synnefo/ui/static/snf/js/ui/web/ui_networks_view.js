@@ -795,13 +795,6 @@
       tpl: '#networks-select-floating-ips-tpl',
       model_view_cls: views.NetworkSelectFloatingIpView,
 
-      select_if_available: function() {
-        var selected = false;
-        if (this._subviews[0]) {
-          this._subviews[0].select();
-        }
-      },
-
       deselect_all: function() {
         this.each_ip_view(function(v) { v.deselect() });
       },
@@ -854,11 +847,11 @@
           this.hide_parent();
           return;
         }
+        this.select_first();
         this.parent_view.item.addClass("selected");
         this.parent_view.input.attr("checked", true);
         this.parent_view.selected = true;
         this.show(true);
-        this.select_if_available();
       },
 
       update_available: function() {
@@ -904,6 +897,7 @@
       },
       
       update_selected: function() {
+        // reset missing entries
         _.each(this.selected_ips.length, function(ip) {
           if (!this.collection.get(ip.id)) {
             this.selected_ips = _.without(this.selected_ips, ip);
@@ -913,11 +907,11 @@
         if (this.selected_ips.length) {
           this.parent_view.input.attr("checked", true);
           this.parent_view.item.addClass("selected");
-          this.parent_view.item.selected = true;
+          this.parent_view.selected = true;
         } else {
           this.parent_view.input.attr("checked", false);
           this.parent_view.item.removeClass("selected");
-          this.parent_view.item.selected = false;
+          this.parent_view.selected = false;
         }
       },
 
@@ -955,14 +949,20 @@
           skip_api_error: true
         });
       },
+      
+      select_first: function() {
+        if (this.selected_ips.length > 0) { return }
+        if (this._subviews.length == 0) { return }
+        this._subviews[0].select();
+        if (!_.contains(this.selected_ips, this._subviews[0].model)) {
+          this.selected_ips.push(this._subviews[0].model);
+        }
+      },
 
       post_add_model_view: function(view, model) {
         view.bind("change:select", this.handle_ip_select)
         if (!this.selected_ips.length && this._subviews.length == 1) {
-          this._subviews[0].select();
-          if (!_.contains(this.selected_ips, model)) {
-            this.selected_ips.push(model);
-          }
+          this.select_first();
         }
       },
 

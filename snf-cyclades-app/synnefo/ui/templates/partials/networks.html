@@ -93,7 +93,7 @@
     <div class="border2"></div>
     <div class="inner clearfix main-content">
       <img class="model-logo" data-rv-src="model.vm.status|vm_logo_url" />
-      <h5 class="title" data-rv-text="model.vm.name"></h5>
+      <h5 class="title" data-rv-text="model.vm.name|truncate 35"></h5>
       <ul class="ip-addresses">
         <li data-rv-each-item="model.fixed_ips">
           <span data-rv-text="item:ip_address|ip_type" class="type"></span>
@@ -230,7 +230,7 @@
   <div class="collection">
 
     <div id="create-network" class="create-button">
-      <a href="#">{% trans "New network +" %}</a>
+      <a href="#">{% trans "New Network +" %}</a>
     </div>
 
     <div class="empty-list hidden">
@@ -273,7 +273,9 @@
     <div class="checkbox">
       <input type="checkbox" data-rv-data-id="model.id" />
     </div>
-    <div class="ico"><img data-rv-src="model.is_public|get_network_icon" /></div>
+    <div class="ico">
+      <img data-rv-src="model.is_public|get_network_icon" />
+    </div>
     <div class="name">
       <span class="" data-rv-text="model.name"></span>
       <span class="no-available hidden">{% trans "No IPs available" %}</span>
@@ -290,7 +292,7 @@
   <div class="select-item private-network clearfix">
     <div class="checkbox"><input type="checkbox" data-rv-data-id="model.id"></div>
     <div class="ico"><img data-rv-src="model.is_public|get_network_icon" /></div>
-    <div class="name"><span class="" data-rv-text="model.name|truncate 50"></span></div>
+    <div class="name"><span class="" data-rv-text="model.name|truncate 45"></span></div>
     <div class="cidr"><span class="" data-rv-text="model.subnet.cidr"></span></div>
   </div>
 </div>

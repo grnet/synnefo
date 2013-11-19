@@ -6517,6 +6517,12 @@ table.list-machines .wave {
     font-size: 0.8em;
 }
 
+.create-vm .network-select {
+  height: 278px;
+  overflow-y: scroll;
+  padding-right: 10px;
+}
+
 .vm-connect .connect-cont {
     margin-bottom: 20px;
     border-bottom: 1px solid #A1C8DB;
@@ -7420,6 +7426,14 @@ input.has-errors {
 }
 
 .steps-container .floating-ips .collection {
+}
+
+.ip-port-view .title {
+  font-weight: normal !important;
+}
+
+.pane-view .title.floating-ip {
+  font-weight: bold !important;
 }
 
 .items-list.floating-ips {

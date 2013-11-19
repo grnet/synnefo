@@ -414,9 +414,13 @@
 
       disconnect: function(cb) {
         var network = this.get('network');
+        var vm = this.get('vm');
         network.pending_disconnects++;
         network.update_connecting_status();
         var success = _.bind(function() {
+          if (vm) {
+            vm.set({'status': 'DISCONNECTING'});
+          }
           this.set({'status': 'DISCONNECTING'});
           cb();
         }, this);
@@ -472,7 +476,8 @@
           if (vm && vm.get("task_state")) { return false }
           if (vm && vm.in_error_state()) { return false }
           var status_ok = _.contains(['ACTIVE', 'CONNECTED'], this.get('status'))
-          return status_ok
+          var vm_status_ok = vm.can_disconnect();
+          return status_ok && vm_status_ok;
         }]
       },
 

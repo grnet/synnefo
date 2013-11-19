@@ -94,7 +94,7 @@
         'CONNECTED': 'status-active',
         'ACTIVE': 'status-active',
         'CONNECTING': 'status-progress',
-        'DISCONNECTING': 'status-inactive',
+        'DISCONNECTING': 'status-progress',
         'DOWN': 'status-inactive',
         'DISCONNECTED': 'status-inactive',
         'UP': 'status-active',

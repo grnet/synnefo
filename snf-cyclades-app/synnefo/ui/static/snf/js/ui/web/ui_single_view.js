@@ -65,6 +65,9 @@
         
         var self = this;
         this.toggler.click(function() {
+          if(self.toggler.parent().parent().hasClass("disabled")) {
+            return;
+          }
           self.toggle();
         });
 

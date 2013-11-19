@@ -237,7 +237,7 @@
       
       update_quota: function() {
         var available = this.quota.get_available();
-        if (available) {
+        if (available > 0) {
           this.create_button.removeClass("disabled");
           this.create_button.attr("title", this.quota_limit_message || "Quota limit reached")
         } else {
@@ -277,10 +277,13 @@
         if (!view) { return }
         el = view.el;
         parent = this.parent_for_model(model);
+        index = this.collection.indexOf(model);
         if (!parent.find(el).length) {
-          index = this.collection.indexOf(model);
           anim = true;
           this.place_in_parent(parent, el, model, index, anim);
+        }
+        if (index != view.el.data('index')) {
+          this.place_in_parent(parent, el, model, index, false);
         }
       },
 
@@ -320,7 +323,7 @@
       },
       
       place_in_parent: function(parent, el, m, index, anim) {
-        var place_func, place_func_context, position_found;
+        var place_func, place_func_context, position_found, exists;
 
         _.each(parent.find(".model-item"), function(el) {
           var el = $(el);

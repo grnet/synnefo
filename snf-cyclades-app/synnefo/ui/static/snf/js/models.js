@@ -163,26 +163,38 @@
                 this.trigger("change:" + attr_name, obj);
               } else {
                 var self = this;
-                var retry = window.setInterval(function(){
-                  var obj = store.get(val);
-                  if (obj) {
-                    data[key] = obj;
-                    self.set(data, {silent:true})
-                    self.trigger("change:" + attr_name, obj);
-                    clearInterval(retry);
-                  }
-                }, 500);
+                var retry_to_resolve = function(store, val, key) {
+                  var retries = 0;
+                  var retry = window.setInterval(function(){
+                    retries++;
+                    if (retries > 200) {
+                      clearInterval(retry);
+                    }
+                    var obj = store.get(val);
+                    if (obj) {
+                      data[key] = obj;
+                      self.set(data, {silent:false});
+                      clearInterval(retry);
+                    }
+                  }, 500);
+                  return retry
+                }
+                retry_to_resolve(store, val, key);
               }
             }
             
             var self = this;
-            this.bind('change:' + attr, function(model) {
-              resolve_related_instance.call(model, store, key, attr_resolver(model, attr));
-            }, this);
+            function init_bindings(instance, store, key, attr, attr_resolver) {
+              instance.bind('change:' + attr, function(model) {
+                resolve_related_instance.call(model, store, key, attr_resolver(model, attr));
+              }, this);
 
-            this.bind('add', function(model) {
-              resolve_related_instance.call(model, store, key, attr_resolver(model, attr));
-            }, this);
+              instance.bind('add', function(model) {
+                resolve_related_instance.call(model, store, key, attr_resolver(model, attr));
+              }, this);
+            }
+
+            init_bindings(this, store, key, attr, attr_resolver);
             resolve_related_instance.call(this, store, key, attr_resolver(this, attr));
           }, this);
         },
@@ -317,6 +329,15 @@
         initialize: function() {
             models.Collection.__super__.initialize.apply(this, arguments);
             this.api_call = _.bind(this.api.call, this);
+            if (this.sortFields) {
+              _.each(this.sortFields, function(f) {
+                this.bind("change:" + f, _.bind(this.resort, this));
+              }, this);
+            }
+        },
+          
+        resort: function() {
+          this.sort();
         },
 
         url: function(options, method) {
@@ -1024,6 +1045,10 @@
           return _.contains(["ACTIVE", "STOPPED"], this.get("status"))
         },
 
+        can_disconnect: function() {
+          return _.contains(["ACTIVE", "STOPPED"], this.get("status"))
+        },
+
         can_resize: function() {
           return this.get('status') == 'STOPPED';
         },
@@ -1325,6 +1350,7 @@
         },
       
         connect_floating_ip: function(ip, cb) {
+          this.set({'status': 'CONNECTING'});
           synnefo.storage.ports.create({
             port: {
               network_id: ip.get('floating_network_id'),
@@ -1332,7 +1358,6 @@
               fixed_ips: [{'ip_address': ip.get('floating_ip_address')}]
             }
           }, {complete: cb, skip_api_error: false})
-          // TODO: Implement
         },
 
         // action helper

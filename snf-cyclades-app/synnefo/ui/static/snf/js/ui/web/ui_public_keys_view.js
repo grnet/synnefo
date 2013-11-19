@@ -304,6 +304,14 @@
         this.model.remove(function() {
             synnefo.storage.keys.fetch();
         });
+      },
+
+      post_hide: function() {
+        views.PublicKeyView.__super__.post_hide.apply(this);
+        if (this.content_visible) {
+          this.toggle_content();
+          this.content.hide();
+        }
       }
     });
     

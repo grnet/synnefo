@@ -10,10 +10,12 @@ class Migration(DataMigration):
         "Write your forwards methods here."
         # Note: Remember to use orm['appname.ModelName'] rather than "from appname.models..."
         orm.NetworkInterface.objects.filter(state="BUILDING").update(state="BUILD")
+        orm.NetworkInterface.objects.filter(firewall_profile="").update(firewall_profile=None)
 
     def backwards(self, orm):
         "Write your backwards methods here."
         orm.NetworkInterface.objects.filter(state="BUILD").update(state="BUILDING")
+        orm.NetworkInterface.objects.filter(firewall_profile=None).update(firewall_profile="")
 
     models = {
         'db.backend': {

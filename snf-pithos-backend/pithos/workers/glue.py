@@ -41,6 +41,7 @@ class WorkerGlue(object):
     pmap = {}
     worker_id = None
     ioctx_pool = None
+    ArchipelagoConfFile = '/etc/archipelago/archipelago.conf'
 
     @classmethod
     def setmap(cls, pid, index):
@@ -48,9 +49,10 @@ class WorkerGlue(object):
         WorkerGlue.worker_id = index
 
     @classmethod
-    def setupXsegPool(cls, ObjectPool, Segment, Xseg_ctx, cfile, pool_size=8):
+    def setupXsegPool(cls, ObjectPool, Segment, Xseg_ctx,
+                      cfile=ArchipelagoConfFile, pool_size=8):
         worker_id = WorkerGlue.worker_id
-        ARCHIPELAGO_CONF_FILE = cfile
+        WorkerGlue.ArchipelagoConfFile = ARCHIPELAGO_CONF_FILE = cfile
         ARCHIPELAGO_SEGMENT_TYPE = 'segdev'
         ARCHIPELAGO_SEGMENT_NAME = 'xsegbd'
         cfg = {}

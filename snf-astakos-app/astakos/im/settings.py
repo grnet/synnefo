@@ -212,3 +212,7 @@ REDIRECT_ALLOWED_SCHEMES = getattr(settings,
 ADMIN_STATS_PERMITTED_GROUPS = getattr(settings,
                                        'ASTAKOS_ADMIN_STATS_PERMITTED_GROUPS',
                                        ['admin-stats'])
+
+ENDPOINT_CACHE_TIMEOUT = getattr(settings,
+                                 'ASTAKOS_ENDPOINT_CACHE_TIMEOUT',
+                                 60)

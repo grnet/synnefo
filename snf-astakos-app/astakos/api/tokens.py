@@ -40,6 +40,7 @@ from django.core.cache import cache
 
 from astakos.im import settings
 from astakos.im.models import Service, AstakosUser
+from astakos.oa2.backends.djangobackend import DjangoBackend
 from .util import json_response, xml_response, validate_user,\
     get_content_length
 
@@ -132,6 +133,38 @@ def authenticate(request):
             "roles_links": []}
 
     d["access"]["serviceCatalog"] = get_endpoints()
+
+    if request.serialization == 'xml':
+        return xml_response({'d': d}, 'api/access.xml')
+    else:
+        return json_response(d)
+
+
+@api_method(http_method="GET", token_required=False, user_required=False,
+            logger=logger)
+def validate_token(request, token_id):
+    oa2_backend = DjangoBackend()
+    try:
+        token = oa2_backend.consume_token(token_id)
+    except Exception, e:
+        raise faults.ItemNotFound(e.message)
+
+    belongsTo = request.GET.get('belongsTo')
+    if belongsTo is not None:
+        if not belongsTo.startswith(token.scope):
+            raise faults.ItemNotFound(
+                "The specified tenant is outside the token's scope")
+
+    d = defaultdict(dict)
+    d["access"]["token"] = {"id": token.code,
+                            "expires": token.expires_at,
+                            "tenant": {"id": token.user.uuid,
+                                       "name": token.user.realname}}
+    d["access"]["user"] = {"id": token.user.uuid,
+                           'name': token.user.realname,
+                           "roles": list(token.user.groups.values("id",
+                                                                  "name")),
+                           "roles_links": []}
 
     if request.serialization == 'xml':
         return xml_response({'d': d}, 'api/access.xml')

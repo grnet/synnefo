@@ -32,13 +32,14 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
+from datetime import datetime
 
 from django.db import transaction
 from django.core.management.base import BaseCommand, CommandError
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 
-from astakos.im.models import AstakosUser
+from astakos.im.models import AstakosUser, get_latest_terms
 
 
 class Command(BaseCommand):
@@ -83,10 +84,19 @@ class Command(BaseCommand):
         except ValidationError:
             raise CommandError("Invalid email")
 
+        if get_latest_terms() is not None:
+            has_signed_terms = False
+            date_signed_terms = None
+        else:
+            has_signed_terms = True
+            date_signed_terms = datetime.now()
+
         try:
             u = AstakosUser(email=email,
                             first_name=first_name,
                             last_name=last_name,
+                            has_signed_terms=has_signed_terms,
+                            date_signed_terms=date_signed_terms,
                             is_superuser=options['is_superuser'])
             u.set_password(password)
             u.save()

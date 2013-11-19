@@ -191,6 +191,7 @@ class LocalUserCreationForm(UserCreationForm, StoreUserMixin):
         save behavior is complete.
         """
         user = super(LocalUserCreationForm, self).save(commit=False, **kwargs)
+        user.has_signed_terms = True
         user.date_signed_terms = datetime.now()
         user.renew_token()
         if commit:
@@ -303,6 +304,7 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
                                                             **kwargs)
         user.set_unusable_password()
         user.renew_token()
+        user.has_signed_terms = True
         user.date_signed_terms = datetime.now()
         if commit:
             user.save(**kwargs)

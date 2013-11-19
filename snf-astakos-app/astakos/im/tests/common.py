@@ -152,6 +152,8 @@ def get_local_user(username, **kwargs):
                 'email': username,
                 'is_active': True,
                 'activation_sent': datetime.now(),
+                'has_signed_terms': True,
+                'date_signed_terms': datetime.now(),
                 'email_verified': True
             }
             user_params.update(kwargs)

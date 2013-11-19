@@ -409,12 +409,14 @@ class TokensApiTest(TestCase):
 
         self.user1 = AstakosUser.objects.create(
             email='test1', email_verified=True, moderated=True,
+            has_signed_terms=True,
             is_rejected=False)
         backend.activate_user(self.user1)
         assert self.user1.is_active is True
 
         self.user2 = AstakosUser.objects.create(
             email='test2', email_verified=True, moderated=True,
+            has_signed_terms=True,
             is_rejected=False)
         backend.activate_user(self.user2)
         assert self.user2.is_active is True
@@ -610,6 +612,7 @@ class UserCatalogsTest(TestCase):
     def test_get_uuid_displayname_catalogs(self):
         self.user = AstakosUser.objects.create(
             email='test1', email_verified=True, moderated=True,
+            has_signed_terms=True,
             is_rejected=False)
 
         client = Client()

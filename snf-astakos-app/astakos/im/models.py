@@ -631,19 +631,7 @@ class AstakosUser(User):
 
     @property
     def signed_terms(self):
-        term = get_latest_terms()
-        if not term:
-            return True
-        if not self.has_signed_terms:
-            return False
-        if not self.date_signed_terms:
-            return False
-        if self.date_signed_terms < term.date:
-            self.has_signed_terms = False
-            self.date_signed_terms = None
-            self.save()
-            return False
-        return True
+        return self.has_signed_terms
 
     def set_invitations_level(self):
         """

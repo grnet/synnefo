@@ -285,11 +285,15 @@
 
       toggle_content: function() {
         if (!this.content_visible) {
-          this.content.slideDown();
+          this.content.slideDown(function() {
+            $(window).trigger("resize");
+          });
           this.content_visible = true;
           this.content_toggler.addClass("open");
         } else {
-          this.content.slideUp();
+          this.content.slideUp(function() {
+            $(window).trigger("resize");
+          });
           this.content_visible = false;
           this.content_toggler.removeClass("open");
         }

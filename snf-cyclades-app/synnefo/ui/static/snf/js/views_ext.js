@@ -290,6 +290,7 @@
 
       handle_model_add: function(model, collection, options) {
         this.add_model(model);
+        $(window).trigger("resize");
       },
 
       handle_model_remove: function(model, collection, options) {
@@ -404,6 +405,7 @@
         model_view.el.remove();
         this.remove_view(model_view);
         this.post_remove_model_view(model_view, m);
+        $(window).trigger("resize");
         delete this._model_views[m.id];
         this.check_empty();
       },

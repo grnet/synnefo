@@ -281,8 +281,10 @@
           if (hide) {
             this.firewall.stop().hide();
           } else {
-            if (!cb) { cb = function() {}}
-            this.firewall.slideToggle(cb);
+            this.firewall.slideToggle(function() {
+              cb && cb();
+              $(window).trigger("resize");
+            });
           }
           this.firewall_toggler.toggleClass("open");
           this.firewall_visible = this.firewall_toggler.hasClass("open");
@@ -403,11 +405,14 @@
       },
 
       toggle_ports: function(e, hide) {
+        $(window).trigger("resize");
         hide = hide === undefined ? false : hide;
         if (hide) {
           this.ports.stop().hide();
         } else {
-          this.ports.stop().slideToggle();
+          this.ports.stop().slideToggle(function() {
+              $(window).trigger("resize");
+            });
         }
         this.ports_toggler.find(".cont-toggler").toggleClass("open");
         this.ports_visible = this.ports_toggler.find(".cont-toggler").hasClass("open");

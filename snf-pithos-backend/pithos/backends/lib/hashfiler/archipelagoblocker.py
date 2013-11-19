@@ -50,8 +50,6 @@ from pithos.workers import (
 
 monkey.patch_Request()
 
-from pithos.api.settings import BACKEND_ARCHIPELAGO_CONF
-
 
 class ArchipelagoBlocker(object):
     """Blocker.
@@ -64,7 +62,7 @@ class ArchipelagoBlocker(object):
 
     def __init__(self, **params):
         cfg = {}
-        bcfg = open(BACKEND_ARCHIPELAGO_CONF).read()
+        bcfg = open(glue.WorkerGlue.ArchipelagoConfFile).read()
         cfg['blockerb'] = re.search('\'blockerb_port\'\s*:\s*\d+',
                                     bcfg).group(0).split(':')[1]
         blocksize = params['blocksize']

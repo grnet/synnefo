@@ -52,8 +52,6 @@ from pithos.workers import (
 
 monkey.patch_Request()
 
-from pithos.api.settings import BACKEND_ARCHIPELAGO_CONF
-
 
 class ArchipelagoMapper(object):
     """Mapper.
@@ -65,14 +63,13 @@ class ArchipelagoMapper(object):
     def __init__(self, **params):
         self.params = params
         self.namelen = params['namelen']
-        ioctx_pool = glue.WorkerGlue().ioctx_pool
         cfg = {}
-        bcfg = open(BACKEND_ARCHIPELAGO_CONF).read()
+        bcfg = open(glue.WorkerGlue.ArchipelagoConfFile).read()
         cfg['blockerm'] = re.search('\'blockerm_port\'\s*:\s*\d+',
                                     bcfg).group(0).split(':')[1]
         cfg['mapperd'] = re.search('\'mapper_port\'\s*:\s*\d+',
                                    bcfg).group(0).split(':')[1]
-        self.ioctx_pool = ioctx_pool
+        self.ioctx_pool = glue.WorkerGlue().ioctx_pool
         self.dst_port = int(cfg['blockerm'])
         self.mapperd_port = int(cfg['mapperd'])
 

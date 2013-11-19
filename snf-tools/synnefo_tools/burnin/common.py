@@ -38,12 +38,17 @@ Common utils for burnin tests
 
 import os
 import re
+import time
 import shutil
+import socket
+import random
 import unittest
 import datetime
 import tempfile
 import traceback
+import subprocess
 
+from kamaki.clients.cyclades import CycladesClient
 from kamaki.clients.astakos import AstakosClient
 from kamaki.clients.compute import ComputeClient
 from kamaki.clients.pithos import PithosClient
@@ -104,7 +109,8 @@ class BurninTestResult(unittest.TestResult):
 
 # --------------------------------------------------------------------
 # BurninTests class
-# Too few public methods (0/2). pylint: disable-msg=R0903
+# Too few public methods. pylint: disable-msg=R0903
+# Too many instance attributes. pylint: disable-msg=R0902
 class Clients(object):
     """Our kamaki clients"""
     auth_url = None
@@ -135,6 +141,8 @@ class BurninTests(unittest.TestCase):
     action_warning = None
     query_interval = None
     system_user = None
+    images = None
+    flavors = None
 
     @classmethod
     def setUpClass(cls):  # noqa
@@ -159,6 +167,10 @@ class BurninTests(unittest.TestCase):
         self.clients.compute = ComputeClient(
             self.clients.compute_url, self.clients.token)
         self.clients.compute.CONNECTION_RETRY_LIMIT = self.clients.retry
+
+        self.clients.cyclades = CycladesClient(
+            self.clients.compute_url, self.clients.token)
+        self.clients.cyclades.CONNECTION_RETRY_LIMIT = self.clients.retry
 
         self.clients.pithos_url = self.clients.astakos.\
             get_service_endpoints('object-store')['publicURL']
@@ -268,6 +280,36 @@ class BurninTests(unittest.TestCase):
         self.warning("No system user found")
         return None
 
+    def _try_until_timeout_expires(self, opmsg, check_fun):
+        """Try to perform an action until timeout expires"""
+        assert callable(check_fun), "Not a function"
+
+        action_timeout = self.action_timeout
+        action_warning = self.action_warning
+        if action_warning > action_timeout:
+            action_warning = action_timeout
+
+        start_time = time.time()
+        while (start_time + action_warning) > time.time():
+            try:
+                return check_fun()
+            except Retry:
+                time.sleep(self.query_interval)
+        self.warning("Operation `%s' is taking too long", opmsg)
+        while (start_time + action_timeout) > time.time():
+            try:
+                return check_fun()
+            except Retry:
+                time.sleep(self.query_interval)
+        self.error("Operation `%s' timed out", opmsg)
+        self.fail("time out")
+
+    def _skip_if(self, condition, msg):
+        """Skip tests"""
+        if condition:
+            self.info("Test skipped: %s" % msg)
+            self.skipTest(msg)
+
     # ----------------------------------
     # Flavors
     def _get_list_of_flavors(self, detail=False):
@@ -278,6 +320,48 @@ class BurninTests(unittest.TestCase):
             self.info("Getting simple list of flavors")
         flavors = self.clients.compute.list_flavors(detail=detail)
         return flavors
+
+    def _find_flavors(self, patterns, flavors=None):
+        """Find a list of suitable flavors to use
+
+        The patterns is a list of `typed_options'. A list of all flavors
+        matching this patterns will be returned.
+
+        """
+        if flavors is None:
+            flavors = self._get_list_of_flavors(detail=True)
+
+        ret_flavors = []
+        for ptrn in patterns:
+            parsed_ptrn = parse_typed_option(ptrn)
+            if parsed_ptrn is None:
+                msg = "Invalid flavor format: %s. Must be [id|name]:.+"
+                self.warning(msg, ptrn)
+                continue
+            flv_type, flv_value = parsed_ptrn
+            if flv_type == "name":
+                # Filter flavor by name
+                msg = "Trying to find a flavor with name %s"
+                self.info(msg, flv_value)
+                filtered_flvs = \
+                    [f for f in flavors if
+                     re.search(flv_value, f['name'], flags=re.I) is not None]
+            elif flv_type == "id":
+                # Filter flavors by id
+                msg = "Trying to find a flavor with id %s"
+                self.info(msg, flv_value)
+                filtered_flvs = \
+                    [f for f in flavors if str(f['id']) == flv_value]
+            else:
+                self.error("Unrecognized flavor type %s", flv_type)
+                self.fail("Unrecognized flavor type")
+
+            # Append and continue
+            ret_flavors.extend(filtered_flvs)
+
+        self.assertGreater(len(ret_flavors), 0,
+                           "No matching flavors found")
+        return ret_flavors
 
     # ----------------------------------
     # Images
@@ -306,16 +390,17 @@ class BurninTests(unittest.TestCase):
 
         return ret_images
 
-    def _find_image(self, patterns, images=None):
-        """Find a suitable image to use
+    def _find_images(self, patterns, images=None):
+        """Find a list of suitable images to use
 
-        The patterns is a list of `typed_options'. The first pattern to
-        match an image will be the one that will be returned.
+        The patterns is a list of `typed_options'. A list of all images
+        matching this patterns will be returned.
 
         """
         if images is None:
             images = self._get_list_of_sys_images()
 
+        ret_images = []
         for ptrn in patterns:
             parsed_ptrn = parse_typed_option(ptrn)
             if parsed_ptrn is None:
@@ -341,16 +426,12 @@ class BurninTests(unittest.TestCase):
                 self.error("Unrecognized image type %s", img_type)
                 self.fail("Unrecognized image type")
 
-            # Check if we found one
-            if filtered_imgs:
-                img = filtered_imgs[0]
-                self.info("Will use %s with id %s", img['name'], img['id'])
-                return img
+            # Append and continue
+            ret_images.extend(filtered_imgs)
 
-        # We didn't found one
-        err = "No matching image found"
-        self.error(err)
-        self.fail(err)
+        self.assertGreater(len(ret_images), 0,
+                           "No matching images found")
+        return ret_images
 
     # ----------------------------------
     # Pithos
@@ -387,6 +468,148 @@ class BurninTests(unittest.TestCase):
         self.clients.pithos.container = container
         self.clients.pithos.container_put()
 
+    # ----------------------------------
+    # Servers
+    def _get_list_of_servers(self, detail=False):
+        """Get (detailed) list of servers"""
+        if detail:
+            self.info("Getting detailed list of servers")
+        else:
+            self.info("Getting simple list of servers")
+        return self.clients.cyclades.list_servers(detail=detail)
+
+    def _get_server_details(self, server):
+        """Get details for a server"""
+        self.info("Getting details for server %s with id %s",
+                  server['name'], server['id'])
+        return self.clients.cyclades.get_server_details(server['id'])
+
+    def _create_server(self, name, image, flavor):
+        """Create a new server"""
+        self.info("Creating a server with name %s", name)
+        self.info("Using image %s with id %s", image['name'], image['id'])
+        self.info("Using flavor %s with id %s", flavor['name'], flavor['id'])
+        server = self.clients.cyclades.create_server(
+            name, flavor['id'], image['id'])
+
+        self.info("Server id: %s", server['id'])
+        self.info("Server password: %s", server['adminPass'])
+
+        self.assertEqual(server['name'], name)
+        self.assertEqual(server['flavor']['id'], flavor['id'])
+        self.assertEqual(server['image']['id'], image['id'])
+        self.assertEqual(server['status'], "BUILD")
+
+        return server
+
+    def _get_connection_username(self, server):
+        """Determine the username to use to connect to the server"""
+        users = server['metadata'].get("users", None)
+        ret_user = None
+        if users is not None:
+            user_list = users.split()
+            if "root" in user_list:
+                ret_user = "root"
+            else:
+                ret_user = random.choice(user_list)
+        else:
+            # Return the login name for connections based on the server OS
+            self.info("Could not find `users' metadata in server. Let's guess")
+            os_value = server['metadata'].get("os")
+            if os_value in ("Ubuntu", "Kubuntu", "Fedora"):
+                ret_user = "user"
+            elif os_value in ("windows", "windows_alpha1"):
+                ret_user = "Administrator"
+            else:
+                ret_user = "root"
+
+        self.assertIsNotNone(ret_user)
+        self.info("User's login name: %s", ret_user)
+        return ret_user
+
+    def _insist_on_server_transition(self, server, curr_status, new_status):
+        """Insist on server transiting from curr_status to new_status"""
+        def check_fun():
+            """Check server status"""
+            srv = self.clients.cyclades.get_server_details(server['id'])
+            if srv['status'] == curr_status:
+                raise Retry()
+            elif srv['status'] == new_status:
+                return
+            else:
+                msg = "Server %s went to unexpected status %s"
+                self.error(msg, server['name'], srv['status'])
+                self.fail(msg % (server['name'], srv['status']))
+        opmsg = "Waiting for server %s to transit from %s to %s"
+        self.info(opmsg, server['name'], curr_status, new_status)
+        opmsg = opmsg % (server['name'], curr_status, new_status)
+        self._try_until_timeout_expires(opmsg, check_fun)
+
+    def _insist_on_tcp_connection(self, family, host, port):
+        """Insist on tcp connection"""
+        def check_fun():
+            """Get a connected socket from the specified family to host:port"""
+            sock = None
+            for res in socket.getaddrinfo(host, port, family,
+                                          socket.SOCK_STREAM, 0,
+                                          socket.AI_PASSIVE):
+                fam, socktype, proto, _, saddr = res
+                try:
+                    sock = socket.socket(fam, socktype, proto)
+                except socket.error:
+                    sock = None
+                    continue
+                try:
+                    sock.connect(saddr)
+                except socket.error:
+                    sock.close()
+                    sock = None
+                    continue
+            if sock is None:
+                raise Retry
+            return sock
+        familystr = {socket.AF_INET: "IPv4", socket.AF_INET6: "IPv6",
+                     socket.AF_UNSPEC: "Unspecified-IPv4/6"}
+        opmsg = "Connecting over %s to %s:%s"
+        self.info(opmsg, familystr.get(family, "Unknown"), host, port)
+        opmsg = opmsg % (familystr.get(family, "Unknown"), host, port)
+        return self._try_until_timeout_expires(opmsg, check_fun)
+
+    def _get_ip(self, server, version):
+        """Get the public IP of a server from the detailed server info"""
+        assert version in (4, 6)
+
+        nics = server['attachments']
+        public_addrs = None
+        for nic in nics:
+            net_id = nic['network_id']
+            if self.clients.cyclades.get_network_details(net_id)['public']:
+                public_addrs = nic['ipv' + str(version)]
+
+        self.assertIsNotNone(public_addrs)
+        msg = "Servers %s public IPv%s is %s"
+        self.info(msg, server['name'], version, public_addrs)
+        return public_addrs
+
+    def _insist_on_ping(self, ip_addr, version):
+        """Test server responds to a single IPv4 of IPv6 ping"""
+        def check_fun():
+            """Ping to server"""
+            assert version in (4, 6)
+            cmd = ("ping%s -c 3 -w 20 %s" %
+                   ("6" if version == 6 else "", ip_addr))
+            ping = subprocess.Popen(
+                cmd, shell=True, stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE)
+            ping.communicate()
+            ret = ping.wait()
+            if ret != 0:
+                raise Retry
+        opmsg = "Sent IPv%s ping requests to %s"
+        self.info(opmsg, version, ip_addr)
+        opmsg = opmsg % (version, ip_addr)
+        self._try_until_timeout_expires(opmsg, check_fun)
+
 
 # --------------------------------------------------------------------
 # Initialize Burnin
@@ -412,6 +635,8 @@ def initialize(opts, testsuites):
     BurninTests.action_warning = opts.action_warning
     BurninTests.query_interval = opts.query_interval
     BurninTests.system_user = opts.system_user
+    BurninTests.flavors = opts.flavors
+    BurninTests.images = opts.images
     BurninTests.run_id = SNF_TEST_PREFIX + \
         datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d%H%M%S")
 
@@ -427,16 +652,13 @@ def initialize(opts, testsuites):
 
 # --------------------------------------------------------------------
 # Run Burnin
-def run(testsuites, failfast=False, final_report=False):
+def run_burnin(testsuites, failfast=False, final_report=False):
     """Run burnin testsuites"""
     global logger  # Using global. pylint: disable-msg=C0103,W0603,W0602
 
     success = True
     for tcase in testsuites:
-        tsuite = unittest.TestLoader().loadTestsFromTestCase(tcase)
-        results = tsuite.run(BurninTestResult())
-
-        was_success = was_successful(tcase.__name__, results.wasSuccessful())
+        was_success = run_test(tcase)
         success = success and was_success
         if failfast and not success:
             break
@@ -449,6 +671,14 @@ def run(testsuites, failfast=False, final_report=False):
 
     # Return
     return 0 if success else 1
+
+
+def run_test(tcase):
+    """Run a testcase"""
+    tsuite = unittest.TestLoader().loadTestsFromTestCase(tcase)
+    results = tsuite.run(BurninTestResult())
+
+    return was_successful(tcase.__name__, results.wasSuccessful())
 
 
 # --------------------------------------------------------------------
@@ -494,3 +724,11 @@ class Proper(object):
 
     def __set__(self, obj, value):
         self.val = value
+
+
+class Retry(Exception):
+    """Retry the action
+
+    This is used by _try_unit_timeout_expires method.
+
+    """

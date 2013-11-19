@@ -135,8 +135,10 @@ class ImagesTestSuite(BurninTests):
     def test_007_download_image(self):
         """Download image from Pithos"""
         # Find the 'Debian Base' image
-        image = self._find_image(["name:^Debian Base$"],
-                                 images=self.system_images)
+        images = self._find_images(["name:^Debian Base$"],
+                                   images=self.system_images)
+        image = images[0]
+        self.info("Will use %s with id %s", image['name'], image['id'])
         image_location = \
             image['location'].replace("://", " ").replace("/", " ").split()
         image_owner = image_location[1]

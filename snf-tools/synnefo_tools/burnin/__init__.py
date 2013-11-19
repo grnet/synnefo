@@ -45,6 +45,7 @@ from synnefo_tools.burnin.astakos_tests import AstakosTestSuite
 from synnefo_tools.burnin.images_tests import \
     FlavorsTestSuite, ImagesTestSuite
 from synnefo_tools.burnin.pithos_tests import PithosTestSuite
+from synnefo_tools.burnin.server_tests import ServerTestSuite
 
 
 # --------------------------------------------------------------------
@@ -54,6 +55,7 @@ TESTSUITES = [
     FlavorsTestSuite,
     ImagesTestSuite,
     PithosTestSuite,
+    ServerTestSuite,
     ]
 
 TSUITES_NAMES = [tsuite.__name__ for tsuite in TESTSUITES]
@@ -68,13 +70,8 @@ def string_to_class(names):
 # Parse arguments
 def parse_comma(option, _, value, parser):
     """Parse comma separated arguments"""
-    tests = set(TSUITES_NAMES)
-    parse_input = value.split(',')
-
-    if not (set(parse_input)).issubset(tests):
-        raise optparse.OptionValueError("The selected set of tests is invalid")
-
-    setattr(parser.values, option.dest, value.split(','))
+    parse_input = [p.strip() for p in value.split(',')]
+    setattr(parser.values, option.dest, parse_input)
 
 
 def parse_arguments(args):
@@ -120,18 +117,18 @@ def parse_arguments(args):
         help="Query server status when requests are pending "
              "every INTERVAL seconds")
     parser.add_option(
-        "--force-flavor", action="store",
-        type="string", default=None, dest="force_flavor", metavar="FLAVOR",
-        help="Force all server creations to use the specified FLAVOR "
+        "--flavors", action="callback", callback=parse_comma,
+        type="string", default=None, dest="flavors", metavar="FLAVORS",
+        help="Force all server creations to use one of the specified FLAVORS "
              "instead of a randomly chosen one. Supports both search by name "
              "(reg expression) with \"name:flavor name\" or by id with "
              "\"id:flavor id\"")
     parser.add_option(
-        "--force-image", action="store",
-        type="string", default=None, dest="force_image", metavar="IMAGE",
-        help="Force all server creations to use the specified IMAGE "
+        "--images", action="callback", callback=parse_comma,
+        type="string", default=None, dest="images", metavar="IMAGES",
+        help="Force all server creations to use one of the specified IMAGES "
              "instead of the default one (a Debian Base image). Just like the "
-             "--force-flavor option, it supports both search by name and id")
+             "--flavors option, it supports both search by name and id")
     parser.add_option(
         "--system-user", action="store",
         type="string", default=None, dest="system_user",
@@ -203,6 +200,14 @@ def parse_arguments(args):
     if opts.final_report:
         opts.quiet = True
 
+    # Check `--set-tests' and `--exclude-tests' options
+    if opts.tests != "all" and \
+            not (set(opts.tests)).issubset(set(TSUITES_NAMES)):
+        raise optparse.OptionValueError("The selected set of tests is invalid")
+    if opts.exclude_tests is not None and \
+            not (set(opts.exclude_tests)).issubset(set(TSUITES_NAMES)):
+        raise optparse.OptionValueError("The selected set of tests is invalid")
+
     # `token' is mandatory
     mandatory_argument(opts.token, "--token")
     # `auth_url' is mandatory
@@ -245,8 +250,8 @@ def main():
 
     # Run burnin
     # The return value denotes the success status
-    return common.run(testsuites, failfast=opts.failfast,
-                      final_report=opts.final_report)
+    return common.run_burnin(testsuites, failfast=opts.failfast,
+                             final_report=opts.final_report)
 
 
 if __name__ == "__main__":

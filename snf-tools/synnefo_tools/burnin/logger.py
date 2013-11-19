@@ -99,7 +99,10 @@ def _green(msg):
 
 def _format_message(msg, *args):
     """Format the message using the args"""
-    return (msg % args) + "\n"
+    if args:
+        return (msg % args) + "\n"
+    else:
+        return msg + "\n"
 
 
 def _list_to_string(lst, append=""):
@@ -439,7 +442,10 @@ class Log(object):
         """
         if self.use_colors:
             if callable(color_fun):
-                return color_fun((msg % args)) + "\n"
+                if args:
+                    return color_fun((msg % args)) + "\n"
+                else:
+                    return color_fun(msg) + "\n"
             else:
                 args = tuple([_blue(arg) for arg in args])
                 return _format_message(msg, *args)

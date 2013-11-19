@@ -44,11 +44,12 @@ import socket
 from vncauthproxy.d3des import generate_response as d3des_generate_response
 
 from synnefo_tools.burnin.common import BurninTests, Proper, run_test
+from synnefo_tools.burnin.cyclades_common import CycladesTests
 
 
 # Too many public methods. pylint: disable-msg=R0904
 # This class gets replicated into actual TestCases dynamically
-class GeneratedServerTestSuite(BurninTests):
+class GeneratedServerTestSuite(CycladesTests):
     """Test Spawning Serverfunctionality"""
     use_image = Proper(value=None)
     avail_flavors = Proper(value=None)

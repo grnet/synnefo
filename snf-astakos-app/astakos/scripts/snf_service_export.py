@@ -69,7 +69,20 @@ astakos_services = {
             {'versionId': '',
              'publicURL': None},
         ],
+        'resources': {},
     },
+
+    'astakos_oa2': {
+        'type': 'astakos_auth',
+        'component': 'astakos',
+        'prefix': 'oa2',
+        'public': True,
+        'endpoints': [
+            {'versionId': '',
+             'publicURL': None},
+        ],
+        'resources': {},
+    }
 }
 
 cyclades_services = {

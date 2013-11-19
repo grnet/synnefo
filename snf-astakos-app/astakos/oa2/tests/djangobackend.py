@@ -10,7 +10,7 @@ from django.test import Client as TestClient
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User
 
-from astakos.oa2.models import Client, RedirectUrl, AuthorizationCode
+from astakos.oa2.models import Client, AuthorizationCode
 
 
 ParsedURL = namedtuple('ParsedURL', ['host', 'scheme', 'path', 'params',
@@ -120,10 +120,12 @@ class OA2Client(TestClient):
         params.update(urlparams)
         self.set_auth_headers(kwargs)
         if 'reject' in params:
-            self.post(self.get_url(self.auth_url), data=params)
+            return self.post(self.get_url(self.auth_url), data=params,
+                             **kwargs)
         return self.get(self.get_url(self.auth_url, **params), *args, **kwargs)
 
     def set_auth_headers(self, params):
+        print 'self.credentials:', self.credentials
         if not self.credentials:
             return
         credentials = base64.encodestring('%s:%s' % self.credentials).strip()
@@ -145,11 +147,17 @@ class TestOA2(TestCase, URLAssertionsMixin):
         baseurl = reverse('oa2_authenticate').replace('/auth', '/')
         self.client = OA2Client(baseurl)
         client1 = Client.objects.create(identifier="client1", secret="secret")
+        self.client1_redirect_uri = "https://server.com/handle_code"
+        client1.redirecturl_set.create(url=self.client1_redirect_uri)
+
         client2 = Client.objects.create(identifier="client2", type='public')
         self.client2_redirect_uri = "https://server2.com/handle_code"
         client2.redirecturl_set.create(url=self.client2_redirect_uri)
-        self.client1_redirect_uri = "https://server.com/handle_code"
-        client1.redirecturl_set.create(url=self.client1_redirect_uri)
+
+        client3 = Client.objects.create(identifier="client3", secret='secret',
+                                        is_trusted=True)
+        self.client3_redirect_uri = "https://server3.com/handle_code"
+        client3.redirecturl_set.create(url=self.client3_redirect_uri)
 
         u = User.objects.create(username="user@synnefo.org")
         u.set_password("password")
@@ -160,16 +168,10 @@ class TestOA2(TestCase, URLAssertionsMixin):
         self.assertEqual(r.status_code, 400)
         self.assertCount(AuthorizationCode, 0)
 
-        # no auth header, client is confidential
-        r = self.client.authorize_code('client1')
-        self.assertEqual(r.status_code, 400)
-        self.assertCount(AuthorizationCode, 0)
-
-        # no redirect_uri
-        #self.client.credentials = ('client1', 'secret')
-        #r = self.client.authorize_code('client1')
-        #self.assertEqual(r.status_code, 400)
-        #self.assertCount(AuthorizationCode, 0)
+#        # no auth header, client is confidential
+#        r = self.client.authorize_code('client1')
+#        self.assertEqual(r.status_code, 400)
+#        self.assertCount(AuthorizationCode, 0)
 
         # mixed up credentials/client_id's
         self.client.set_credentials('client1', 'secret')
@@ -182,10 +184,10 @@ class TestOA2(TestCase, URLAssertionsMixin):
         self.assertEqual(r.status_code, 400)
         self.assertCount(AuthorizationCode, 0)
 
-        self.client.set_credentials()
-        r = self.client.authorize_code('client1')
-        self.assertEqual(r.status_code, 400)
-        self.assertCount(AuthorizationCode, 0)
+#        self.client.set_credentials()
+#        r = self.client.authorize_code('client1')
+#        self.assertEqual(r.status_code, 400)
+#        self.assertCount(AuthorizationCode, 0)
 
         # valid request
         params = {'redirect_uri': self.client1_redirect_uri,
@@ -193,11 +195,14 @@ class TestOA2(TestCase, URLAssertionsMixin):
         self.client.set_credentials('client1', 'secret')
         r = self.client.authorize_code('client1', urlparams=params)
         self.assertEqual(r.status_code, 302)
+        self.assertTrue('Location' in r)
+        p = urlparse.urlparse(r['Location'])
+        self.assertEqual(p.netloc, 'testserver:80')
+        self.assertEqual(p.path, reverse('login'))
 
-        self.client.set_credentials()
+        self.client.set_credentials('client1', 'secret')
         self.client.login(username="user@synnefo.org", password="password")
         r = self.client.authorize_code('client1', urlparams=params)
-        print r
         self.assertEqual(r.status_code, 200)
 
         r = self.client.authorize_code('client1', urlparams=params,
@@ -219,7 +224,8 @@ class TestOA2(TestCase, URLAssertionsMixin):
         self.assertCount(AuthorizationCode, 2)
 
         code1 = AuthorizationCode.objects.get(code=redirect1.params['code'][0])
-        self.assertEqual(code1.state, '')
+        #self.assertEqual(code1.state, '')
+        self.assertEqual(code1.state, None)
         self.assertEqual(code1.redirect_uri, self.client1_redirect_uri)
 
         code2 = AuthorizationCode.objects.get(code=redirect2.params['code'][0])

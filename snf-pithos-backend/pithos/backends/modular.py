@@ -41,6 +41,11 @@ from collections import defaultdict
 from functools import wraps, partial
 from traceback import format_exc
 
+from pithos.workers import glue
+from archipelago.common import Segment, Xseg_ctx
+from objpool import ObjectPool
+
+
 try:
     from astakosclient import AstakosClient
 except ImportError:
@@ -110,6 +115,7 @@ DEFAULT_PUBLIC_URL_ALPHABET = ('0123456789'
                                'abcdefghijklmnopqrstuvwxyz'
                                'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
 DEFAULT_PUBLIC_URL_SECURITY = 16
+DEFAULT_ARCHIPELAGO_CONF_FILE = '/etc/archipelago/archipelago.conf'
 
 QUEUE_MESSAGE_KEY_PREFIX = 'pithos.%s'
 QUEUE_CLIENT_ID = 'pithos'
@@ -233,7 +239,9 @@ class ModularBackend(BaseBackend):
                  public_url_alphabet=None,
                  account_quota_policy=None,
                  container_quota_policy=None,
-                 container_versioning_policy=None):
+                 container_versioning_policy=None,
+                 archipelago_conf_file=None,
+                 xseg_pool_size=8):
         db_module = db_module or DEFAULT_DB_MODULE
         db_connection = db_connection or DEFAULT_DB_CONNECTION
         block_module = block_module or DEFAULT_BLOCK_MODULE
@@ -248,6 +256,8 @@ class ModularBackend(BaseBackend):
             or DEFAULT_CONTAINER_QUOTA
         container_versioning_policy = container_versioning_policy \
             or DEFAULT_CONTAINER_VERSIONING
+        archipelago_conf_file = archipelago_conf_file \
+            or DEFAULT_ARCHIPELAGO_CONF_FILE
 
         self.default_account_policy = {}
         self.default_container_policy = {
@@ -287,6 +297,9 @@ class ModularBackend(BaseBackend):
 
         self.ALLOWED = ['read', 'write']
 
+        glue.WorkerGlue.setupXsegPool(ObjectPool, Segment, Xseg_ctx,
+                                      cfile=archipelago_conf_file,
+                                      pool_size=xseg_pool_size)
         self.block_module = load_module(block_module)
         self.block_params = block_params
         params = {'path': block_path,

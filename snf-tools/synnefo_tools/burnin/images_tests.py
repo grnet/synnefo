@@ -42,34 +42,32 @@ import shutil
 
 from kamaki.clients import ClientError
 
-from synnefo_tools.burnin import common
+from synnefo_tools.burnin.common import BurninTests, Proper
 
 
 # Too many public methods. pylint: disable-msg=R0904
-class FlavorsTestSuite(common.BurninTests):
+class FlavorsTestSuite(BurninTests):
     """Test flavor lists for consistency"""
-    simple_flavors = None
-    detailed_flavors = None
-    simple_names = None
+    simple_flavors = Proper(value=None)
+    detailed_flavors = Proper(value=None)
+    simple_names = Proper(value=None)
 
     def test_001_simple_flavors(self):
         """Test flavor list actually returns flavors"""
-        simple_flavors = self._get_list_of_flavors(detail=False)
-        self._setattr("simple_flavors", simple_flavors)
+        self.simple_flavors = self._get_list_of_flavors(detail=False)
         self.assertGreater(len(self.simple_flavors), 0)
 
     def test_002_get_detailed_flavors(self):
         """Test detailed flavor list is the same length as list"""
-        detailed_flavors = self._get_list_of_flavors(detail=True)
-        self._setattr("detailed_flavors", detailed_flavors)
+        self.detailed_flavors = self._get_list_of_flavors(detail=True)
         self.assertEquals(len(self.simple_flavors), len(self.detailed_flavors))
 
     def test_003_same_flavor_names(self):
         """Test detailed and simple flavor list contain same names"""
-        simple_names = sorted([flv['name'] for flv in self.simple_flavors])
-        self._setattr("simple_names", simple_names)
+        names = sorted([flv['name'] for flv in self.simple_flavors])
+        self.simple_names = names
         detailed_names = sorted([flv['name'] for flv in self.detailed_flavors])
-        self.assertEqual(simple_names, detailed_names)
+        self.assertEqual(self.simple_names, detailed_names)
 
     def test_004_unique_flavor_names(self):
         """Test flavors have unique names"""
@@ -92,26 +90,24 @@ class FlavorsTestSuite(common.BurninTests):
 
 # --------------------------------------------------------------------
 # Too many public methods. pylint: disable-msg=R0904
-class ImagesTestSuite(common.BurninTests):
+class ImagesTestSuite(BurninTests):
     """Test image lists for consistency"""
-    simple_images = None
-    detailed_images = None
-    system_images = None
-    temp_dir = None
-    temp_image_name = None
-    temp_image_file = None
+    simple_images = Proper(value=None)
+    detailed_images = Proper(value=None)
+    system_images = Proper(value=None)
+    temp_dir = Proper(value=None)
+    temp_image_name = Proper(value=None)
+    temp_image_file = Proper(value=None)
 
     def test_001_list_images(self):
         """Test simple image list actually returns images"""
-        images = self._get_list_of_images(detail=False)
-        self._setattr("simple_images", images)
-        self.assertGreater(len(images), 0)
+        self.simple_images = self._get_list_of_images(detail=False)
+        self.assertGreater(len(self.simple_images), 0)
 
     def test_002_list_images_detailed(self):
         """Test detailed image list is the same length as simple list"""
-        images = self._get_list_of_images(detail=True)
-        self._setattr("detailed_images", images)
-        self.assertEqual(len(self.simple_images), len(images))
+        self.detailed_images = self._get_list_of_images(detail=True)
+        self.assertEqual(len(self.simple_images), len(self.detailed_images))
 
     def test_003_same_image_names(self):
         """Test detailed and simple image list contain the same names"""
@@ -122,7 +118,7 @@ class ImagesTestSuite(common.BurninTests):
     def test_004_system_images(self):
         """Test that there are system images registered"""
         images = self._get_list_of_sys_images(images=self.detailed_images)
-        self._setattr("system_images", images)
+        self.system_images = images
         self.assertGreater(len(images), 0)
 
     def test_005_unique_image_names(self):
@@ -149,16 +145,15 @@ class ImagesTestSuite(common.BurninTests):
         self.info("Image's container is %s", image_container)
         image_name = image_location[3]
         self.info("Image's name is %s", image_name)
-        self._setattr("temp_image_name", image_name)
+        self.temp_image_name = image_name
 
         self._set_pithos_account(image_owner)
         self._set_pithos_container(image_container)
 
         # Create temp directory
-        temp_dir = self._create_tmp_directory()
-        self._setattr("temp_dir", temp_dir)
-        self._setattr("temp_image_file",
-                      os.path.join(self.temp_dir, self.temp_image_name))
+        self.temp_dir = self._create_tmp_directory()
+        self.temp_image_file = \
+            os.path.join(self.temp_dir, self.temp_image_name)
 
         # Write to file
         self.info("Download image to %s", self.temp_image_file)
@@ -195,11 +190,11 @@ class ImagesTestSuite(common.BurninTests):
         # Remove uploaded image
         self.info("Deleting uploaded image %s", self.temp_image_name)
         self.clients.pithos.del_object(self.temp_image_name)
-        self._setattr("temp_image_name", None)
+        self.temp_image_name = None
         # Remove temp directory
         self.info("Deleting temp directory %s", self.temp_dir)
         self._remove_tmp_directory(self.temp_dir)
-        self._setattr("temp_dir", None)
+        self.temp_dir = None
 
     @classmethod
     def tearDownClass(cls):  # noqa

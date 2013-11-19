@@ -38,18 +38,11 @@ Common utils for burnin tests
 
 import os
 import re
-import sys
 import shutil
+import unittest
 import datetime
 import tempfile
 import traceback
-# Use backported unittest functionality if Python < 2.7
-try:
-    import unittest2 as unittest
-except ImportError:
-    if sys.version_info < (2, 7):
-        raise Exception("The unittest2 package is required for Python < 2.7")
-    import unittest
 
 from kamaki.clients.astakos import AstakosClient
 from kamaki.clients.compute import ComputeClient
@@ -151,17 +144,6 @@ class BurninTests(unittest.TestCase):
 
         # Set test parameters
         cls.longMessage = True
-
-    def _setattr(self, attr, value):
-        """Used by tests to set an attribute to TestCase
-
-        Since each instance of the TestCase will only be used to run a single
-        test method (a new fixture is created for each test) the attributes can
-        not be saved in the class instance. Instead the class itself should be
-        used.
-
-        """
-        setattr(self.__class__, attr, value)
 
     def test_000_clients_setup(self):
         """Initializing astakos/cyclades/pithos clients"""
@@ -494,3 +476,21 @@ def parse_typed_option(value):
         return type_, val
     except ValueError:
         return None
+
+
+class Proper(object):
+    """A descriptor used by tests implementing the TestCase class
+
+    Since each instance of the TestCase will only be used to run a single
+    test method (a new fixture is created for each test) the attributes can
+    not be saved in the class instances. Instead we use descriptors.
+
+    """
+    def __init__(self, value=None):
+        self.val = value
+
+    def __get__(self, obj, objtype=None):
+        return self.val
+
+    def __set__(self, obj, value):
+        self.val = value

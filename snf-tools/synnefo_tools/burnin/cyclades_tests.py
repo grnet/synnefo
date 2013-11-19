@@ -36,34 +36,32 @@ This is the burnin class that tests the Cyclades functionality
 
 """
 
-from synnefo_tools.burnin import common
+from synnefo_tools.burnin.common import BurninTests, Proper
 
 
 # Too many public methods. pylint: disable-msg=R0904
-class FlavorsTestSuite(common.BurninTests):
+class FlavorsTestSuite(BurninTests):
     """Test flavor lists for consistency"""
-    simple_flavors = None
-    detailed_flavors = None
-    simple_names = None
+    simple_flavors = Proper(value=None)
+    detailed_flavors = Proper(value=None)
+    simple_names = Proper(value=None)
 
     def test_001_simple_flavors(self):
         """Test flavor list actually returns flavors"""
-        simple_flavors = self._get_list_of_flavors(detail=False)
-        self._setattr("simple_flavors", simple_flavors)
+        self.simple_flavors = self._get_list_of_flavors(detail=False)
         self.assertGreater(len(self.simple_flavors), 0)
 
     def test_002_get_detailed_flavors(self):
         """Test detailed flavor list is the same length as list"""
-        detailed_flavors = self._get_list_of_flavors(detail=True)
-        self._setattr("detailed_flavors", detailed_flavors)
+        self.detailed_flavors = self._get_list_of_flavors(detail=True)
         self.assertEquals(len(self.simple_flavors), len(self.detailed_flavors))
 
     def test_003_same_flavor_names(self):
         """Test detailed and simple flavor list contain same names"""
-        simple_names = sorted([flv['name'] for flv in self.simple_flavors])
-        self._setattr("simple_names", simple_names)
+        names = sorted([flv['name'] for flv in self.simple_flavors])
+        self.simple_names = names
         detailed_names = sorted([flv['name'] for flv in self.detailed_flavors])
-        self.assertEqual(simple_names, detailed_names)
+        self.assertEqual(self.simple_names, detailed_names)
 
     def test_004_unique_flavor_names(self):
         """Test flavors have unique names"""

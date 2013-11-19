@@ -39,20 +39,19 @@ This is the burnin class that tests the Pithos functionality
 import random
 import tempfile
 
-from synnefo_tools.burnin import common
+from synnefo_tools.burnin.common import BurninTests, Proper
 
 
 # Too many public methods. pylint: disable-msg=R0904
-class PithosTestSuite(common.BurninTests):
+class PithosTestSuite(BurninTests):
     """Test Pithos functionality"""
-    containers = None
-    created_container = None
+    containers = Proper(value=None)
+    created_container = Proper(value=None)
 
     def test_001_list_containers(self):
         """Test container list actually returns containers"""
         self._set_pithos_account(self._get_uuid())
-        containers = self._get_list_of_containers()
-        self._setattr("containers", containers)
+        self.containers = self._get_list_of_containers()
         self.assertGreater(len(self.containers), 0)
 
     def test_002_unique_containers(self):
@@ -80,7 +79,7 @@ class PithosTestSuite(common.BurninTests):
         self.assertIn(rand_name, names)
         # Keep the name of the container so we can remove it
         # at cleanup phase, if something goes wrong.
-        self._setattr("created_container", rand_name)
+        self.created_container = rand_name
 
     def test_004_upload_file(self):
         """Test uploading a txt file to Pithos"""
@@ -122,7 +121,7 @@ class PithosTestSuite(common.BurninTests):
         self.assertNotIn(self.created_container, names)
         # We successfully deleted our container, no need to do it
         # in our clean up phase
-        self._setattr("created_container", None)
+        self.created_container = None
 
     @classmethod
     def tearDownClass(cls):  # noqa

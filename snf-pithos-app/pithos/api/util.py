@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -33,10 +33,9 @@
 
 from functools import wraps
 from datetime import datetime
-from urllib import quote, unquote
+from urllib import quote, unquote, urlencode
 
-from django.http import (HttpResponse, HttpResponseRedirect, Http404,
-                         HttpResponseForbidden)
+from django.http import HttpResponse, Http404, HttpResponseRedirect
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 from django.utils.http import http_date, parse_etags
@@ -44,6 +43,7 @@ from django.utils.encoding import smart_unicode, smart_str
 from django.core.files.uploadhandler import FileUploadHandler
 from django.core.files.uploadedfile import UploadedFile
 from django.core.urlresolvers import reverse
+from django.core.exceptions import PermissionDenied
 
 from snf_django.lib.api.parsedate import parse_http_date_safe, parse_http_date
 from snf_django.lib import api
@@ -65,7 +65,8 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  RADOS_STORAGE, RADOS_POOL_BLOCKS,
                                  RADOS_POOL_MAPS, TRANSLATE_UUIDS,
                                  PUBLIC_URL_SECURITY, PUBLIC_URL_ALPHABET,
-                                 COOKIE_NAME, BASE_HOST, UPDATE_MD5, LOGIN_URL)
+                                 BASE_HOST, UPDATE_MD5, VIEW_PREFIX,
+                                 OA2_CLIENT_CREDENTIALS)
 
 from pithos.api.resources import resources
 from pithos.backends import connect_backend
@@ -75,7 +76,7 @@ from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
 from synnefo.lib import join_urls
 
 from astakosclient import AstakosClient
-from astakosclient.errors import NoUserName, NoUUID
+from astakosclient.errors import NoUserName, NoUUID, AstakosClientException
 
 import logging
 import re
@@ -1119,12 +1120,16 @@ def api_method(http_method=None, token_required=True, user_required=True,
     return decorator
 
 
-def get_token_from_cookie(request):
-    token = None
-    if COOKIE_NAME in request.COOKIES:
-        cookie_value = unquote(request.COOKIES.get(COOKIE_NAME, ''))
-        account, sep, token = cookie_value.partition('|')
-    return token
+def request_oa2_token(request, client, client_credentials, redirect_uri,
+                      **kwargs):
+    """
+    :raises: AstakosClientException, ValueError
+    """
+    data = client.get_token('authorization_code', *client_credentials,
+                            redirect_uri=redirect_uri, **kwargs)
+    params = {'access_token': data.get('access_token', '')}
+    return HttpResponseRedirect('%s?%s' % (redirect_uri,
+                                           urlencode(params)))
 
 
 def view_method():
@@ -1133,18 +1138,49 @@ def view_method():
     def decorator(func):
         @wraps(func)
         def wrapper(request, *args, **kwargs):
-            token = get_token_from_cookie(request)
-            if token is None:
-                return HttpResponseRedirect('%s?next=%s' % (
-                    LOGIN_URL, join_urls(BASE_HOST, request.path)))
-            request.META['HTTP_X_AUTH_TOKEN'] = token
-            # Get the response object
-            response = func(request, *args, **kwargs)
-            if response.status_code == 404:
-                raise Http404()
-            elif response.status_code in [401, 403]:
-                return HttpResponseForbidden()
-            return response
+            try:
+                access_token = request.GET.get('access_token')
+                requested_resource = request.path.split(VIEW_PREFIX, 2)[-1]
+                astakos = AstakosClient(SERVICE_TOKEN, ASTAKOS_AUTH_URL,
+                                        retry=2, use_pool=True,
+                                        logger=logger)
+                if access_token is not None:
+                    # authenticate using the temporary access token
+                    request.user = astakos.validate_token(access_token,
+                                                          requested_resource)
+                    request.user_uniq = request.user["access"]["user"]["id"]
+
+                    response = func(request, *args, **kwargs)
+                    if response.status_code == 404:
+                        raise Http404
+                    elif response.status_code in [401, 403]:
+                        raise PermissionDenied
+                    return response
+
+                client_id, client_secret = OA2_CLIENT_CREDENTIALS
+                # TODO: check if client credentials are not set
+                authorization_code = request.GET.get('code')
+                if authorization_code is None:
+                    params = {'response_type': 'code',
+                              'client_id': client_id,
+                              'redirect_uri':
+                              request.build_absolute_uri(request.path),
+                              'scope': request.path.split(VIEW_PREFIX, 2)[-1],
+                              'state': ''  # TODO include state for security
+                              }
+                    return HttpResponseRedirect('%s?%s' %
+                                                (astakos.api_oa2_auth,
+                                                 urlencode(params)))
+                else:
+                    redirect_uri = join_urls(BASE_HOST, request.path)
+                    return request_oa2_token(request,
+                                             astakos,
+                                             OA2_CLIENT_CREDENTIALS,
+                                             redirect_uri=redirect_uri,
+                                             scope=requested_resource,
+                                             code=authorization_code)
+            except AstakosClientException:
+                raise PermissionDenied
         return wrapper
     return decorator
 

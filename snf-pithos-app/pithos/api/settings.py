@@ -58,6 +58,7 @@ fill_endpoints(pithos_services, BASE_URL)
 PITHOS_PREFIX = get_path(pithos_services, 'pithos_object-store.prefix')
 PUBLIC_PREFIX = get_path(pithos_services, 'pithos_public.prefix')
 UI_PREFIX = get_path(pithos_services, 'pithos_ui.prefix')
+VIEW_PREFIX = join_urls(UI_PREFIX, 'view')
 
 COOKIE_NAME = getattr(settings, 'PITHOS_ASTAKOS_COOKIE_NAME', '_pithos2_a')
 
@@ -182,3 +183,7 @@ BACKEND_BLOCK_SIZE = getattr(
 # The backend block hash algorithm
 BACKEND_HASH_ALGORITHM = getattr(
     settings, 'PITHOS_BACKEND_HASH_ALGORITHM', 'sha256')
+# Set the credentials (client_id, client_secret) issued to authenticate
+# the views with astakos during the resource access token generation procedure
+OA2_CLIENT_CREDENTIALS = getattr(settings, 'PITHOS_OA2_CLIENT_CREDENTIALS',
+                                 (None, None))

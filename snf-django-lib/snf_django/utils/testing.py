@@ -247,6 +247,9 @@ class BaseAPITest(TestCase):
     def assertSuccess(self, response):
         self.assertTrue(response.status_code in [200, 202, 203, 204])
 
+    def assertSuccess201(self, response):
+        self.assertEqual(response.status_code, 201)
+
     def assertFault(self, response, status_code, name):
         self.assertEqual(response.status_code, status_code)
         fault = json.loads(response.content)

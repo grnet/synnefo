@@ -75,9 +75,10 @@ def get_quota(holders=None, sources=None, resources=None, flt=None):
     return quotas
 
 
-def _get_holdings_for_update(holding_keys, delete=False):
+def _get_holdings_for_update(holding_keys, resource=None, delete=False):
+    flt = Q(resource=resource) if resource is not None else Q()
     holders = set(holder for (holder, source, resource) in holding_keys)
-    objs = Holding.objects.filter(holder__in=holders).order_by('pk')
+    objs = Holding.objects.filter(flt, holder__in=holders).order_by('pk')
     hs = objs.select_for_update()
 
     keys = set(holding_keys)
@@ -105,16 +106,19 @@ def _mkProvision(key, quantity):
             }
 
 
-def set_quota(quotas):
+def set_quota(quotas, resource=None):
     holding_keys = [key for (key, limit) in quotas]
-    holdings = _get_holdings_for_update(holding_keys, delete=True)
+    holdings = _get_holdings_for_update(
+        holding_keys, resource=resource, delete=True)
 
     new_holdings = {}
     for key, limit in quotas:
-        holder, source, resource = key
+        holder, source, res = key
+        if resource is not None and resource != res:
+            continue
         h = Holding(holder=holder,
                     source=source,
-                    resource=resource,
+                    resource=res,
                     limit=limit)
         try:
             h_old = holdings[key]

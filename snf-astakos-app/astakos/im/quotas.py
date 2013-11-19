@@ -116,9 +116,9 @@ def _level_quota_dict(quotas):
     return lst
 
 
-def _set_user_quota(quotas):
+def _set_user_quota(quotas, resource=None):
     q = _level_quota_dict(quotas)
-    qh.set_quota(q)
+    qh.set_quota(q, resource=resource)
 
 
 SYSTEM = 'system'
@@ -148,7 +148,7 @@ def update_base_quota(users, resource, value):
     AstakosUserQuota.objects.\
         filter(resource__name=resource, user__pk__in=userids).\
         update(capacity=value)
-    qh_sync_locked_users(users)
+    qh_sync_locked_users(users, resource=resource)
 
 
 def initial_quotas(users, flt=None):
@@ -179,9 +179,10 @@ def add_limits(x, y):
     return min(x+y, units.PRACTICALLY_INFINITE)
 
 
-def astakos_users_quotas(users):
+def astakos_users_quotas(users, resource=None):
     users = list(users)
-    quotas = initial_quotas(users)
+    flt = Q(resource__name=resource) if resource is not None else Q()
+    quotas = initial_quotas(users, flt=flt)
 
     userids = [user.pk for user in users]
     ACTUALLY_ACCEPTED = ProjectMembership.ACTUALLY_ACCEPTED
@@ -196,7 +197,7 @@ def astakos_users_quotas(users):
     apps = set(m.project.application_id for m in memberships)
 
     objs = ProjectResourceGrant.objects.select_related()
-    grants = objs.filter(project_application__in=apps)
+    grants = objs.filter(project_application__in=apps).filter(flt)
 
     for membership in memberships:
         uuid = membership.person.uuid
@@ -239,15 +240,15 @@ def get_user_for_update(user_id):
     return get_users_for_update([user_id])[0]
 
 
-def qh_sync_locked_users(users):
-    astakos_quotas = astakos_users_quotas(users)
-    _set_user_quota(astakos_quotas)
+def qh_sync_locked_users(users, resource=None):
+    astakos_quotas = astakos_users_quotas(users, resource=resource)
+    _set_user_quota(astakos_quotas, resource=resource)
 
 
-def qh_sync_users(users):
+def qh_sync_users(users, resource=None):
     uids = [user.id for user in users]
     users = get_users_for_update(uids)
-    qh_sync_locked_users(users)
+    qh_sync_locked_users(users, resource=resource)
 
 
 def qh_sync_users_diffs(users, sync=True):
@@ -313,4 +314,4 @@ def qh_sync_new_resource(resource):
             AstakosUserQuota(user=user, resource=resource,
                              capacity=resource.uplimit))
     AstakosUserQuota.objects.bulk_create(entries)
-    qh_sync_users(users)
+    qh_sync_users(users, resource=resource.name)

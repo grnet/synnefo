@@ -151,23 +151,31 @@ def update_base_quota(users, resource, value):
     qh_sync_locked_users(users, resource=resource)
 
 
+def _partition_by(f, l):
+    d = {}
+    for x in l:
+        group = f(x)
+        group_l = d.get(group, [])
+        group_l.append(x)
+        d[group] = group_l
+    return d
+
+
 def initial_quotas(users, flt=None):
     if flt is None:
         flt = Q()
 
     userids = [user.pk for user in users]
-    objs = AstakosUserQuota.objects.select_related()
+    objs = AstakosUserQuota.objects.select_related('resource')
     orig_quotas = objs.filter(user__pk__in=userids).filter(flt)
-    initial = {}
-    for user_quota in orig_quotas:
-        uuid = user_quota.user.uuid
-        user_init = initial.get(uuid, {})
-        source_quota = user_init.get(SYSTEM, {})
-        resource = user_quota.resource.full_name()
-        source_quota[resource] = user_quota.capacity
-        user_init[SYSTEM] = source_quota
-        initial[uuid] = user_init
+    orig_quotas = _partition_by(lambda q: q.user_id, orig_quotas)
 
+    initial = {}
+    for user in users:
+        qs = {}
+        for q in orig_quotas.get(user.pk, []):
+            qs[q.resource.name] = q.capacity
+        initial[user.uuid] = {SYSTEM: qs}
     return initial
 
 

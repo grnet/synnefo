@@ -693,7 +693,7 @@ class SynnefoCI(object):
                         synnefo_branch.startswith('feature'):
                     pithos_webclient_branch = "develop"
                 else:
-                    self.logger.waring(
+                    self.logger.warning(
                         "Cannot determine which pithos-web-client branch to "
                         "use based on \"%s\" synnefo branch. "
                         "Will use develop." % synnefo_branch)

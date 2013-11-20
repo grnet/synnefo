@@ -68,8 +68,9 @@ pithos_view_patterns = patterns(
     (r'^(?P<v_account>.+?)/(?P<v_container>.+?)/(?P<v_object>.+?)$',
      'object_read'))
 
+pithos_patterns = []
 if SERVE_API:
-    pithos_patterns = patterns(
+    pithos_patterns += patterns(
         '',
         (r'{0}v1/'.format(prefix_pattern(PITHOS_PREFIX)),
             include(pithos_api_patterns)),
@@ -79,7 +80,7 @@ if SERVE_API:
             'pithos.api.public.public_demux'),
     )
 
-urlpatterns += patterns(
+pithos_patterns += patterns(
     '',
     (r'{0}'.format(prefix_pattern(VIEW_PREFIX)),
         include(pithos_view_patterns)))

@@ -239,7 +239,7 @@ def get_nics_from_ganeti(backend=None):
 def get_nics_from_instance(i):
     ips = zip(itertools.repeat('ipv4'), i['nic.ips'])
     macs = zip(itertools.repeat('mac'), i['nic.macs'])
-    networks = zip(itertools.repeat('network'), i['nic.networks'])
+    networks = zip(itertools.repeat('network'), i['nic.networks.names'])
     # modes = zip(itertools.repeat('mode'), i['nic.modes'])
     # links = zip(itertools.repeat('link'), i['nic.links'])
     # nics = zip(ips,macs,modes,networks,links)
@@ -324,9 +324,8 @@ def hanging_networks(backend, GNets):
     """
     def get_network_groups(group_list):
         groups = set()
-        for g in group_list:
-            g_name = g.split('(')[0]
-            groups.add(g_name)
+        for (name, mode, link) in group_list:
+            groups.add(name)
         return groups
 
     with pooled_rapi_client(backend) as c:

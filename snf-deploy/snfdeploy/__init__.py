@@ -449,8 +449,9 @@ def get_actions(*args):
         "astakos_register_components",
         "setup_cms", "cms_loaddata",
         "setup_pithos",
+        "setup_vncauthproxy",
         "setup_cyclades", "cyclades_loaddata", "add_pools",
-        "export_services", "import_services", "setup_vncauthproxy",
+        "export_services", "import_services",
         "setup_kamaki", "upload_image", "register_image",
         "setup_burnin"
         ],

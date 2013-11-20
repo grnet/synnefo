@@ -45,6 +45,11 @@ import sys
 import os
 path = os.path.normpath(os.path.join(os.getcwd(), '..'))
 sys.path.append(path)
+# Since Ganeti 2.7, debian package ships the majority of the python code in
+# a private module under '/usr/share/ganeti'. Add this directory to path
+# in order to be able to import ganeti. Also, add it to the start of path
+# to allow conflicts with Ganeti RAPI client.
+sys.path.insert(0, "/usr/share/ganeti")
 
 import json
 import logging
@@ -56,9 +61,9 @@ from lockfile import LockTimeout
 from signal import signal, SIGINT, SIGTERM
 import setproctitle
 
-from ganeti import utils, jqueue, constants, serializer, cli
+from ganeti import utils, jqueue, constants, serializer, pathutils, cli
 from ganeti import errors as ganeti_errors
-from ganeti.ssconf import SimpleConfigReader
+from ganeti.ssconf import SimpleStore
 
 
 from synnefo import settings
@@ -111,7 +116,7 @@ def get_instance_nics(instance, logger):
     """
     try:
         client = cli.GetClient()
-        fields = ["nic.networks", "nic.ips", "nic.macs", "nic.modes",
+        fields = ["nic.networks.names", "nic.ips", "nic.macs", "nic.modes",
                   "nic.links", "tags"]
         info = client.QueryInstances([instance], fields, use_locking=False)
         networks, ips, macs, modes, links, tags = info[0]
@@ -120,7 +125,7 @@ def get_instance_nics(instance, logger):
         nics = map(lambda x: dict(zip(nic_keys, x)), nics)
     except ganeti_errors.OpPrereqError:
         # Not running on master! Load the conf file
-        raw_data = utils.ReadFile(constants.CLUSTER_CONF_FILE)
+        raw_data = utils.ReadFile(pathutils.CLUSTER_CONF_FILE)
         config = serializer.LoadJson(raw_data)
         i = config["instances"][instance]
         nics = []
@@ -206,10 +211,7 @@ class JobFileHandler(pyinotify.ProcessEvent):
             return
 
         data = serializer.LoadJson(data)
-        try:  # Compatibility with Ganeti version
-            job = jqueue._QueuedJob.Restore(None, data, False)
-        except TypeError:
-            job = jqueue._QueuedJob.Restore(None, data)
+        job = jqueue._QueuedJob.Restore(None, data, False, False)
 
         job_id = int(job.id)
 
@@ -242,6 +244,7 @@ class JobFileHandler(pyinotify.ProcessEvent):
                         "status": op.status,
                         "cluster": self.cluster_name,
                         "logmsg": logmsg,
+                        "result": op.result,
                         "jobId": job_id})
 
             if op_id in ["OP_INSTANCE_CREATE", "OP_INSTANCE_SET_PARAMS",
@@ -250,7 +253,13 @@ class JobFileHandler(pyinotify.ProcessEvent):
                     nics = get_instance_nics(msg["instance"], self.logger)
                     msg["nics"] = nics
 
+            if op_id == "OP_INSTANCE_CREATE" and op.status == "error":
+                # In case an instance creation fails send the job input
+                # so that the job can be retried if needed.
+                msg["job_fields"] = op.Serialize()["input"]
+
             msg = json.dumps(msg)
+
             self.logger.debug("Delivering msg: %s (key=%s)", msg, routekey)
 
             # Send the message to RabbitMQ
@@ -331,8 +340,8 @@ class JobFileHandler(pyinotify.ProcessEvent):
 def find_cluster_name():
     global handler_logger
     try:
-        scr = SimpleConfigReader()
-        name = scr.GetClusterName()
+        ss = SimpleStore()
+        name = ss.GetClusterName()
     except Exception as e:
         handler_logger.error('Can not get the name of the Cluster: %s' % e)
         raise e
@@ -437,12 +446,12 @@ def main():
 
     try:
         # Fail if adding the inotify() watch fails for any reason
-        res = wm.add_watch(constants.QUEUE_DIR, mask)
-        if res[constants.QUEUE_DIR] < 0:
+        res = wm.add_watch(pathutils.QUEUE_DIR, mask)
+        if res[pathutils.QUEUE_DIR] < 0:
             raise Exception("pyinotify add_watch returned negative descriptor")
 
-        logger.info("Now watching %s of %s" %
-                    (constants.QUEUE_DIR, cluster_name))
+        logger.info("Now watching %s of %s" % (pathutils.QUEUE_DIR,
+                    cluster_name))
 
         while True:    # loop forever
             # process the queue of events as explained above

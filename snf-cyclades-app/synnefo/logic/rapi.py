@@ -112,6 +112,12 @@ _INST_REINSTALL_REQV1 = INST_REINSTALL_REQV1
 _NODE_MIGRATE_REQV1 = NODE_MIGRATE_REQV1
 _NODE_EVAC_RES1 = NODE_EVAC_RES1
 
+#: Not enough resources (iallocator failure, disk space, memory, etc.)
+ECODE_NORES = "insufficient_resources"
+
+#: Temporarily out of resources; operation can be tried again
+ECODE_TEMP_NORES = "temp_insufficient_resources"
+
 # Older pycURL versions don't have all error constants
 try:
   _CURLE_SSL_CACERT = pycurl.E_SSL_CACERT
@@ -1661,7 +1667,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
                              None, None)
 
   def CreateNetwork(self, network_name, network, gateway=None, network6=None,
-                    gateway6=None, mac_prefix=None, network_type=None,
+                    gateway6=None, mac_prefix=None,
                     add_reserved_ips=None, tags=[],
                     conflicts_check=False, dry_run=False):
     """Creates a new network.
@@ -1685,7 +1691,6 @@ class GanetiRapiClient(object): # pylint: disable=R0904
       "gateway6": gateway6,
       "network6": network6,
       "mac_prefix": mac_prefix,
-      "network_type": network_type,
       "add_reserved_ips": add_reserved_ips,
       "conflicts_check": conflicts_check,
       "tags": tags,

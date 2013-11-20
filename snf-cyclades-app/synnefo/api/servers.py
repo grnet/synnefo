@@ -488,7 +488,7 @@ def delete_server(request, server_id):
     # Ganeti before OP_INSTANCE_CREATE. This will be fixed when
     # OP_INSTANCE_REMOVE supports the 'depends' request attribute.
     if (vm.backendopcode == "OP_INSTANCE_CREATE" and
-       vm.backendjobstatus != "success"):
+       vm.backendjobstatus not in ["success", "error", "canceled"]):
         if job_is_still_running(vm) and not vm_exists_in_backend(vm):
             raise faults.BuildInProgress("Server is being build")
 

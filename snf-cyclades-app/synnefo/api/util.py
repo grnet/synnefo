@@ -351,7 +351,7 @@ def verify_personality(personality):
                 raise faults.OverLimit("Maximum size of personality exceeded")
             if len(b64decode(contents)) > settings.MAX_PERSONALITY_SIZE:
                 raise faults.OverLimit("Maximum size of personality exceeded")
-        except AssertionError:
+        except (AssertionError, TypeError):
             raise faults.BadRequest("Malformed personality in request")
 
 

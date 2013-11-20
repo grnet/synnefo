@@ -52,7 +52,7 @@ from synnefo_tools.burnin.common import BurninTests
 # Too many public methods. pylint: disable-msg=R0904
 class CycladesTests(BurninTests):
     """Extends the BurninTests class for Cyclades"""
-    def _ry_until_timeout_expires(self, opmsg, check_fun):
+    def _try_until_timeout_expires(self, opmsg, check_fun):
         """Try to perform an action until timeout expires"""
         assert callable(check_fun), "Not a function"
 
@@ -95,24 +95,34 @@ class CycladesTests(BurninTests):
             self.info("Getting simple list of servers")
         return self.clients.cyclades.list_servers(detail=detail)
 
-    def _get_server_details(self, server):
+    def _get_list_of_networks(self, detail=False):
+        """Get (detailed) list of networks"""
+        if detail:
+            self.info("Getting detailed list of networks")
+        else:
+            self.info("Getting simple list of networks")
+        return self.clients.cyclades.list_networks(detail=detail)
+
+    def _get_server_details(self, server, quiet=False):
         """Get details for a server"""
-        self.info("Getting details for server %s with id %s",
-                  server['name'], server['id'])
+        if not quiet:
+            self.info("Getting details for server %s with id %s",
+                      server['name'], server['id'])
         return self.clients.cyclades.get_server_details(server['id'])
 
-    def _create_server(self, name, image, flavor, personality):
+    def _create_server(self, image, flavor, personality=None):
         """Create a new server"""
-        self.info("Creating a server with name %s", name)
+        servername = "%s for %s" % (self.run_id, image['name'])
+        self.info("Creating a server with name %s", servername)
         self.info("Using image %s with id %s", image['name'], image['id'])
         self.info("Using flavor %s with id %s", flavor['name'], flavor['id'])
         server = self.clients.cyclades.create_server(
-            name, flavor['id'], image['id'], personality=personality)
+            servername, flavor['id'], image['id'], personality=personality)
 
         self.info("Server id: %s", server['id'])
         self.info("Server password: %s", server['adminPass'])
 
-        self.assertEqual(server['name'], name)
+        self.assertEqual(server['name'], servername)
         self.assertEqual(server['flavor']['id'], flavor['id'])
         self.assertEqual(server['image']['id'], image['id'])
         self.assertEqual(server['status'], "BUILD")
@@ -144,22 +154,61 @@ class CycladesTests(BurninTests):
         self.info("User's login name: %s", ret_user)
         return ret_user
 
-    def _insist_on_server_transition(self, server, curr_status, new_status):
-        """Insist on server transiting from curr_status to new_status"""
+    def _insist_on_server_transition(self, server, curr_statuses, new_status):
+        """Insist on server transiting from curr_statuses to new_status"""
         def check_fun():
             """Check server status"""
-            srv = self.clients.cyclades.get_server_details(server['id'])
-            if srv['status'] == curr_status:
+            srv = self._get_server_details(server, quiet=True)
+            if srv['status'] in curr_statuses:
                 raise Retry()
             elif srv['status'] == new_status:
                 return
             else:
-                msg = "Server %s went to unexpected status %s"
-                self.error(msg, server['name'], srv['status'])
-                self.fail(msg % (server['name'], srv['status']))
-        opmsg = "Waiting for server %s to transit from %s to %s"
-        self.info(opmsg, server['name'], curr_status, new_status)
-        opmsg = opmsg % (server['name'], curr_status, new_status)
+                msg = "Server \"%s\" with id %s went to unexpected status %s"
+                self.error(msg, server['name'], server['id'], srv['status'])
+                self.fail(msg % (server['name'], server['id'], srv['status']))
+        opmsg = "Waiting for server \"%s\" to become %s"
+        self.info(opmsg, server['name'], new_status)
+        opmsg = opmsg % (server['name'], new_status)
+        self._try_until_timeout_expires(opmsg, check_fun)
+
+    def _insist_on_network_transition(self, network,
+                                      curr_statuses, new_status):
+        """Insist on network transiting from curr_statuses to new_status"""
+        def check_fun():
+            """Check network status"""
+            ntw = self.clients.cyclades.get_network_details(network['id'])
+            if ntw['status'] in curr_statuses:
+                raise Retry()
+            elif ntw['status'] == new_status:
+                return
+            else:
+                msg = "Network %s with id %s went to unexpected status %s"
+                self.error(msg, network['name'], network['id'], ntw['status'])
+                self.fail(msg %
+                          (network['name'], network['id'], ntw['status']))
+        opmsg = "Waiting for network \"%s\" to become %s"
+        self.info(opmsg, network['name'], new_status)
+        opmsg = opmsg % (network['name'], new_status)
+        self._try_until_timeout_expires(opmsg, check_fun)
+
+    def _insist_on_network_connection(self, server, network, disconnect=False):
+        """Insist that the server has connected to the network"""
+        def check_fun():
+            """Check network connection"""
+            dsrv = self._get_server_details(server, quiet=True)
+            nets = [s['network_id'] for s in dsrv['attachments']]
+            if not disconnect and network['id'] not in nets:
+                raise Retry()
+            if disconnect and network['id'] in nets:
+                raise Retry()
+        if disconnect:
+            opmsg = \
+                "Waiting for server \"%s\" to disconnect from network \"%s\""
+        else:
+            opmsg = "Waiting for server \"%s\" to connect to network \"%s\""
+        self.info(opmsg, server['name'], network['name'])
+        opmsg = opmsg % (server['name'], network['name'])
         self._try_until_timeout_expires(opmsg, check_fun)
 
     def _insist_on_tcp_connection(self, family, host, port):
@@ -192,21 +241,36 @@ class CycladesTests(BurninTests):
         opmsg = opmsg % (familystr.get(family, "Unknown"), host, port)
         return self._try_until_timeout_expires(opmsg, check_fun)
 
-    def _get_ip(self, server, version=4):
-        """Get the public IP of a server from the detailed server info"""
+    def _get_ip(self, server, version=4, network=None):
+        """Get the IP of a server from the detailed server info
+
+        If network not given then get the public IP. Else the ip
+        attached to that network
+
+        """
         assert version in (4, 6)
 
         nics = server['attachments']
-        public_addrs = None
+        addrs = None
         for nic in nics:
             net_id = nic['network_id']
-            if self.clients.cyclades.get_network_details(net_id)['public']:
-                public_addrs = nic['ipv' + str(version)]
+            if network is None:
+                if self.clients.cyclades.get_network_details(net_id)['public']:
+                    addrs = nic['ipv' + str(version)]
+                    break
+            else:
+                if net_id == network['id']:
+                    addrs = nic['ipv%s' % version]
+                    break
 
-        self.assertIsNotNone(public_addrs)
-        msg = "Server's public IPv%s is %s"
-        self.info(msg, version, public_addrs)
-        return public_addrs
+        self.assertIsNotNone(addrs, "Can not get IP from server attachments")
+        if network is None:
+            msg = "Server's public IPv%s is %s"
+            self.info(msg, version, addrs)
+        else:
+            msg = "Server's IPv%s attached to network \"%s\" is %s"
+            self.info(msg, version, network['id'], addrs)
+        return addrs
 
     def _insist_on_ping(self, ip_addr, version=4):
         """Test server responds to a single IPv4 of IPv6 ping"""
@@ -283,6 +347,16 @@ class CycladesTests(BurninTests):
             self.info("Comparing file contents")
             remote_content = base64.b64encode(ftmp.read())
             self.assertEqual(content, remote_content)
+
+    def _disconnect_from_network(self, server, network):
+        """Disconnect server from network"""
+        nid = None
+        for nic in server['attachments']:
+            if nic['network_id'] == network['id']:
+                nid = nic['id']
+                break
+        self.assertIsNotNone(nid, "Could not find network card")
+        self.clients.cyclades.disconnect_server(server['id'], nid)
 
 
 class Retry(Exception):

@@ -77,12 +77,46 @@ class StaleServersTestSuite(CycladesTests):
                 self.clients.cyclades.delete_server(stl['id'])
 
             for stl in self.stale_servers:
-                self._insist_on_server_transition(stl, "ACTIVE", "DELETED")
+                self._insist_on_server_transition(
+                    stl, ["ACTIVE", "ERROR"], "DELETED")
 
 
 # Too many public methods. pylint: disable-msg=R0904
 class StaleNetworksTestSuite(CycladesTests):
     """Handle stale Networks"""
+    stale_networks = Proper(value=None)
+
     def test_001_show_stale_networks(self):
         """Show staled networks (networks left from previous runs)"""
-        return
+        networks = self._get_list_of_networks()
+        self.stale_networks = [n for n in networks
+                               if n['name'].startswith(SNF_TEST_PREFIX)]
+
+        len_stale = len(self.stale_networks)
+        if len_stale == 0:
+            self.info("No stale networks found")
+            return
+
+        self.info("Found %s stale networks:", len_stale)
+        for stl in self.stale_networks:
+            self.info("  Network \"%s\" with id %s", stl['name'], stl['id'])
+
+    def test_002_delete_stale_networks(self):
+        """Delete staled networks (networks left from previous runs)"""
+        len_stale = len(self.stale_networks)
+        if not self.delete_stale and len_stale != 0:
+            msg = "Use --delete-stale flag to delete stale networks"
+            self.error(msg)
+            self.fail(msg)
+        elif len_stale == 0:
+            self.info("No stale networks found")
+        else:
+            self.info("Deleting %s stale networks:", len_stale)
+            for stl in self.stale_networks:
+                self.info("  Deleting network \"%s\" with id %s",
+                          stl['name'], stl['id'])
+                self.clients.cyclades.delete_network(stl['id'])
+
+            for stl in self.stale_networks:
+                self._insist_on_network_transition(
+                    stl, ["ACTIVE", "ERROR"], "DELETED")

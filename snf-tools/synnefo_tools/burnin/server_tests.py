@@ -75,11 +75,10 @@ class GeneratedServerTestSuite(CycladesTests):
                 'mode': stat.S_IRUSR | stat.S_IWUSR,
                 'contents': base64.b64encode("This is a personality file")
             }]
-        servername = "%s for %s" % (self.run_id, self.use_image['name'])
         self.use_flavor = random.choice(self.avail_flavors)
 
         self.server = self._create_server(
-            servername, self.use_image, self.use_flavor, self.personality)
+            self.use_image, self.use_flavor, self.personality)
         self.username = self._get_connection_username(self.server)
         self.password = self.server['adminPass']
 
@@ -118,7 +117,7 @@ class GeneratedServerTestSuite(CycladesTests):
 
     def test_005_server_becomes_active(self):
         """Test server becomes ACTIVE"""
-        self._insist_on_server_transition(self.server, "BUILD", "ACTIVE")
+        self._insist_on_server_transition(self.server, ["BUILD"], "ACTIVE")
 
     def test_006_get_server_oob_console(self):
         """Test getting OOB server console over VNC
@@ -189,7 +188,7 @@ class GeneratedServerTestSuite(CycladesTests):
 
     def test_012_server_becomes_stopped(self):
         """Test server becomes STOPPED"""
-        self._insist_on_server_transition(self.server, "ACTIVE", "STOPPED")
+        self._insist_on_server_transition(self.server, ["ACTIVE"], "STOPPED")
 
     def test_013_submit_start(self):
         """Test submit start server request"""
@@ -197,7 +196,7 @@ class GeneratedServerTestSuite(CycladesTests):
 
     def test_014_server_becomes_active(self):
         """Test server becomes ACTIVE again"""
-        self._insist_on_server_transition(self.server, "STOPPED", "ACTIVE")
+        self._insist_on_server_transition(self.server, ["STOPPED"], "ACTIVE")
 
     def test_015_server_ping_ipv4(self):
         """Test server OS is actually up and running again"""
@@ -262,7 +261,7 @@ class GeneratedServerTestSuite(CycladesTests):
 
     def test_022_server_becomes_deleted(self):
         """Test server becomes DELETED"""
-        self._insist_on_server_transition(self.server, "ACTIVE", "DELETED")
+        self._insist_on_server_transition(self.server, ["ACTIVE"], "DELETED")
 
     def test_023_server_no_longer(self):
         """Test server is no longer in server list"""
@@ -309,7 +308,7 @@ class ServerTestSuite(BurninTests):
             self.avail_flavors = flavors
         else:
             self.avail_flavors = self._find_flavors(
-                patterns=self.flavors, flavors=flavors)
+                self.flavors, flavors=flavors)
         self.info("Found %s flavors to choose from", len(self.avail_flavors))
 
     def test_003_create_testsuites(self):

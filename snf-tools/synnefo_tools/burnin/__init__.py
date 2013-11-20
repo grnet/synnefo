@@ -46,6 +46,7 @@ from synnefo_tools.burnin.images_tests import \
     FlavorsTestSuite, ImagesTestSuite
 from synnefo_tools.burnin.pithos_tests import PithosTestSuite
 from synnefo_tools.burnin.server_tests import ServerTestSuite
+from synnefo_tools.burnin.network_tests import NetworkTestSuite
 from synnefo_tools.burnin.stale_tests import \
     StaleServersTestSuite, StaleNetworksTestSuite
 
@@ -58,6 +59,7 @@ TESTSUITES = [
     ImagesTestSuite,
     PithosTestSuite,
     ServerTestSuite,
+    NetworkTestSuite,
 ]
 TSUITES_NAMES = [tsuite.__name__ for tsuite in TESTSUITES]
 
@@ -253,12 +255,13 @@ def main():
     (opts, _) = parse_arguments(sys.argv[1:])
 
     # Initialize burnin
-    testsuites = common.initialize(opts, TSUITES_NAMES, STALE_TSUITES_NAMES)
+    (testsuites, failfast) = \
+        common.initialize(opts, TSUITES_NAMES, STALE_TSUITES_NAMES)
     testsuites = string_to_class(testsuites)
 
     # Run burnin
     # The return value denotes the success status
-    return common.run_burnin(testsuites, failfast=opts.failfast,
+    return common.run_burnin(testsuites, failfast=failfast,
                              final_report=opts.final_report)
 
 

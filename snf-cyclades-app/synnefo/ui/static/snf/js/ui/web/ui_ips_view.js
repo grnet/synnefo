@@ -111,6 +111,15 @@
       status_display: function(v) {
         return this.status_map[this.model.get('status')];
       },
+      
+      model_icon: function() {
+        var img = 'ip-icon-detached.png';
+        var src = synnefo.config.images_url + '/{0}';
+        if (this.model.get('port')) {
+          img = 'ip-icon.png';
+        }
+        return src.format(img);
+      },
 
       show_connect_overlay: function() {
         this.model.actions.reset_pending();
